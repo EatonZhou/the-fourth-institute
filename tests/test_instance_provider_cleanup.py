@@ -87,6 +87,39 @@ class ProviderCleanupTests(unittest.TestCase):
             with self.assertRaises(subprocess.CalledProcessError):
                 providers._run("list-unit-files", "tfi-one-*")
 
+    def test_registered_daemons_follow_instance_lifecycle_without_codex_template(self):
+        self.template.unlink()
+        paths = [self.root / ("tfi-one-" + suffix + ".service")
+                 for suffix in ("claude-code", "kimi-code")]
+        for path in paths:
+            path.write_text(
+                f"Environment=HOME={self.root}/instance/home\n"
+                f"Environment=PORTAL_PATHS_CONFIG={self.root}/instance/config/paths.json\n")
+        def run(command, *arguments):
+            if command == "show":
+                return f"FragmentPath={self.root / arguments[0]}\nDropInPaths=\n"
+            return ""
+        controller = Mock()
+        controller.status.return_value = {"pid": 0, "active": "inactive"}
+        with patch.object(providers, "_run", side_effect=run):
+            plan = providers.owned_services(self.target, self.root)
+            providers.start_services(plan, controller)
+            providers.stop_services(plan, controller)
+            providers.remove_template(self.target, self.root)
+        self.assertEqual({call.args[0] for call in controller.start.call_args_list},
+                         {path.name for path in paths})
+        self.assertEqual({call.args[0] for call in controller.stop.call_args_list},
+                         {path.name for path in paths})
+        self.assertTrue(all(not path.exists() for path in paths))
+
+    def test_foreign_daemon_prevents_lifecycle_changes(self):
+        path = self.root / "tfi-one-claude-code.service"
+        path.write_text("Environment=HOME=/another-instance/home\n")
+        with patch.object(providers, "_run", self.runner):
+            with self.assertRaisesRegex(ValueError, "another instance"):
+                providers.owned_services(self.target, self.root)
+        self.runner.assert_not_called()
+
     def test_account_process_uses_instance_cache_and_temporary_directory(self):
         from scripts import portal_service_units as units
         context = {"root": self.root / "instance", "directory": self.root / "units",

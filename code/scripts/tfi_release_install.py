@@ -896,9 +896,12 @@ def lifecycle(command, root):
             if blocker:
                 raise ValueError(blocker)
             check_available(target, existing=True)
+            from scripts.tfi_release_provider_services import owned_services, start_services
+            providers = owned_services(target, unit_directory())
             register_services(target)
             controller.start(unit_name(target, "postgres"))
             wait_database(target)
+            start_services(providers, controller)
             for component in COMPONENTS[1:]:
                 controller.start(unit_name(target, component))
             save_stage(state, "start", "started")

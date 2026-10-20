@@ -37,7 +37,7 @@ CODEX_TEMPLATE = "portal-codex-app-server@.service"
 LEGACY_AI_SOCKET_RELAY_UNIT = compatibility_value('ai_socket_relay_unit', '')
 
 
-def _isolated_codex_context() -> dict | None:
+def _isolated_provider_context() -> dict | None:
     """Resolve a release installation's owned Linux Provider service namespace."""
     if not sys.platform.startswith("linux"):
         return None
@@ -64,8 +64,14 @@ def _isolated_codex_context() -> dict | None:
             raise ValueError("Isolated Provider data roots differ from installation")
     import pwd
     home = Path(pwd.getpwuid(os.getuid()).pw_dir)
-    return {"prefix": prefix + "-codex-app-server@", "root": root,
+    return {"service_prefix": prefix, "root": root,
             "directory": home / ".config/systemd/user"}
+
+
+def _isolated_codex_context() -> dict | None:
+    context = _isolated_provider_context()
+    return ({**context, "prefix": context["service_prefix"] + "-codex-app-server@"}
+            if context else None)
 
 
 def provider_units() -> tuple[str, ...]:
@@ -75,12 +81,40 @@ def provider_units() -> tuple[str, ...]:
                               for unit in runtime.unit_files))
 
 
+def provider_runtime_services(unit: str) -> tuple[str, ...]:
+    """Resolve a daemon's running services in this installation only."""
+    if unit not in {"portal-claude-code.service", "portal-kimi-code.service"}:
+        raise ValueError("Unknown Provider daemon")
+    isolated = _isolated_provider_context()
+    if isolated is None:
+        return (unit,)
+    name = isolated["service_prefix"] + "-" + unit.removeprefix("portal-")
+    path = isolated["directory"] / name
+    if not path.exists() and not path.is_symlink():
+        return ()
+    if path.is_symlink() or not path.is_file():
+        raise ValueError("Provider daemon service ownership mismatch")
+    required = {
+        f"Environment=HOME={isolated['root'] / 'home'}",
+        f"Environment=PORTAL_PATHS_CONFIG={isolated['root'] / 'config/paths.json'}",
+    }
+    if not required.issubset(path.read_text().splitlines()):
+        raise ValueError("Provider daemon belongs to another instance")
+    observed = _run("systemctl", "--user", "show", name,
+                    "--property=FragmentPath,DropInPaths,ActiveState")
+    properties = dict(line.split("=", 1) for line in observed.stdout.splitlines() if "=" in line)
+    if properties.get("FragmentPath") != str(path) or properties.get("DropInPaths"):
+        raise ValueError("Provider daemon has a foreign definition or overrides")
+    return (name,) if properties.get("ActiveState") == "active" else ()
+
+
 def _run(*args: str, check: bool = True, capture: bool = True) -> subprocess.CompletedProcess[str]:
     env = None
-    isolated = _isolated_codex_context()
+    isolated = _isolated_provider_context()
     if isolated and args[:2] == ("systemctl", "--user"):
+        prefix = isolated["service_prefix"] + "-"
         for argument in args[2:]:
-            if argument.endswith((".service", ".target")) and not argument.startswith(isolated["prefix"]):
+            if argument.endswith((".service", ".target")) and not argument.startswith(prefix):
                 raise ValueError("Refusing source service control from an isolated installation")
         env = dict(os.environ)
         runtime = f"/run/user/{os.getuid()}"

@@ -21,6 +21,26 @@ def owned_services(target, directory):
     prefix = target["service_prefix"]
     if not re.fullmatch(r"tfi-[a-z0-9][a-z0-9-]*", prefix):
         raise ValueError("Invalid installation service prefix")
+    daemons = []
+    for suffix in ("claude-code", "kimi-code"):
+        name = prefix + "-" + suffix + ".service"
+        path = Path(directory) / name
+        if not path.exists() and not path.is_symlink():
+            continue
+        if path.is_symlink() or not path.is_file():
+            raise ValueError("Provider daemon ownership mismatch")
+        lines = set(path.read_text().splitlines())
+        root = Path(target["install_root"])
+        if not {
+            f"Environment=HOME={root / 'home'}",
+            f"Environment=PORTAL_PATHS_CONFIG={root / 'config/paths.json'}",
+        }.issubset(lines):
+            raise ValueError("Provider daemon belongs to another instance")
+        properties = dict(line.split("=", 1) for line in _run(
+            "show", name, "--property=FragmentPath,DropInPaths").splitlines() if "=" in line)
+        if properties.get("FragmentPath") != str(path) or properties.get("DropInPaths"):
+            raise ValueError("Provider daemon has a foreign definition or overrides")
+        daemons.append(path)
     prefix += "-codex-app-server@"
     template = Path(directory) / (prefix + ".service")
     names = set()
@@ -29,7 +49,8 @@ def owned_services(target, directory):
         names.update(line.split()[0] for line in output.splitlines() if line.strip())
     names.discard(template.name)
     if not template.exists() and not template.is_symlink() and not names:
-        return None
+        return ({"template": None, "daemons": daemons,
+                 "names": [path.name for path in daemons]} if daemons else None)
     root = Path(target["install_root"])
     accounts = Path(target["data_roots"]["accounts_root"])
     if template.is_symlink() or not template.is_file():
@@ -50,7 +71,15 @@ def owned_services(target, directory):
             "show", name, "--property=FragmentPath,DropInPaths").splitlines() if "=" in line)
         if properties.get("FragmentPath") != str(template) or properties.get("DropInPaths"):
             raise ValueError("Provider service has a foreign definition or overrides")
-    return {"template": template, "names": sorted(names)}
+    return {"template": template, "daemons": daemons,
+            "names": sorted(names | {path.name for path in daemons})}
+
+
+def start_services(plan, controller):
+    """Registered shared daemons start with the instance; Codex stays on demand."""
+    if plan is not None:
+        for path in plan["daemons"]:
+            controller.start(path.name)
 
 
 def stop_services(plan, controller):
@@ -73,5 +102,8 @@ def remove_template(target, directory):
     if plan is not None:
         if plan["names"]:
             _run("disable", *plan["names"])
-        plan["template"].unlink()
+        if plan["template"] is not None:
+            plan["template"].unlink()
+        for path in plan["daemons"]:
+            path.unlink()
         _run("daemon-reload")

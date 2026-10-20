@@ -64,7 +64,10 @@ def run_command(*command: str, timeout: int = 600, env: dict[str, str] | None = 
 
 def _service_control():
     from scripts.portal_service_control import ServiceControl
+    from scripts.portal_service_units import _run as run_unit_command
     def run(*command, check=True):
+        if command[:2] == ("systemctl", "--user"):
+            return run_unit_command(*command, check=check)
         return run_process(command, check=check, text=True, capture_output=True, timeout=60)
     return ServiceControl(runner=run)
 
@@ -182,7 +185,12 @@ class CodexRuntime(ProviderRuntime):
 
 
 class ClaudeRuntime(ProviderRuntime):
-    services = ("portal-claude-code.service",)
+    unit_files = ("portal-claude-code.service",)
+
+    @property
+    def services(self) -> tuple[str, ...]:
+        from scripts.portal_service_units import provider_runtime_services
+        return provider_runtime_services(self.unit_files[0])
 
     def available(self) -> tuple[str, ...]:
         return (pypi_version("claude-agent-sdk"),)
@@ -226,7 +234,12 @@ class ClaudeRuntime(ProviderRuntime):
 
 
 class KimiRuntime(ProviderRuntime):
-    services = ("portal-kimi-code.service",)
+    unit_files = ("portal-kimi-code.service",)
+
+    @property
+    def services(self) -> tuple[str, ...]:
+        from scripts.portal_service_units import provider_runtime_services
+        return provider_runtime_services(self.unit_files[0])
 
     def available(self) -> tuple[str, ...]:
         return (npm_version("@moonshot-ai/kimi-code", "latest"),)
