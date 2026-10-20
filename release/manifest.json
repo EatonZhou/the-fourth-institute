@@ -4879,7 +4879,7 @@
   "unresolved": [],
   "code": {
     "path": "code",
-    "sha256": "11a3d6b96fb0aa7bc53447e8c78c505926c34e06238740d2d3251f17092f7987"
+    "sha256": "7dd46409917fb34edff98040ce59a145f04592792e8662ff2bb883cbe73868db"
   },
   "database": {
     "path": "database/distribution.sql",
@@ -8816,8 +8816,8 @@
     },
     {
       "path": "code/management_portal/society_service/resident_media_domain.py",
-      "sha256": "ca6c2d6b3096099bc22818b604f5339e2d0546fbe91c81519348bc8422979873",
-      "size": 15849
+      "sha256": "acf6bd333e9503fe5d07638941d840b45615aeedf7477f2d891e5c3128d41bb6",
+      "size": 16294
     },
     {
       "path": "code/management_portal/society_service/resident_message_contract.py",
@@ -9661,8 +9661,8 @@
     },
     {
       "path": "code/management_portal/static/portal_management_backend.js",
-      "sha256": "e19e407704ada676f190239377b9097fd63f75942bdc7bdcd02bfbd3b739299f",
-      "size": 28020
+      "sha256": "d05a0cdca86600cbbc3b87f4c7eed72f7667b1b7f19ec29c33727b4c0fd156e8",
+      "size": 28412
     },
     {
       "path": "code/management_portal/static/portal_management_resource_types.js",
@@ -42467,6 +42467,32 @@
       }
     ],
     "selection_unchanged": true,
-    "database_unchanged": true
+    "database_unchanged": true,
+    "follow_up_patches": [
+      {
+        "applied_at": "2026-10-20T01:36:46.347603+00:00",
+        "base_manifest_sha256": "b7dc5d21164b7ea4ea1075c9b3e594cf502af23ba2f5a1541dd8d50a9d6596e5",
+        "summary": "Keep execution-account registration disabled until providers load; hydrate filesystem metadata inside deferred input-image cleanup so creating Residents in a Family does not fail after admission.",
+        "changed_files": [
+          {
+            "path": "code/management_portal/static/portal_management_backend.js",
+            "before_sha256": "e19e407704ada676f190239377b9097fd63f75942bdc7bdcd02bfbd3b739299f",
+            "after_sha256": "d05a0cdca86600cbbc3b87f4c7eed72f7667b1b7f19ec29c33727b4c0fd156e8"
+          },
+          {
+            "path": "code/management_portal/society_service/resident_media_domain.py",
+            "before_sha256": "ca6c2d6b3096099bc22818b604f5339e2d0546fbe91c81519348bc8422979873",
+            "after_sha256": "acf6bd333e9503fe5d07638941d840b45615aeedf7477f2d891e5c3128d41bb6"
+          }
+        ],
+        "selection_unchanged": true,
+        "database_unchanged": true,
+        "validation": [
+          "Chromium reproduction on original account UI and delayed-provider regression on fixed UI",
+          "Real isolated installation, model setup and Resident replies",
+          "Input-media retention regression for admission records and deleted Residents"
+        ]
+      }
+    ]
   }
 }

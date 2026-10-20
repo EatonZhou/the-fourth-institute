@@ -2,7 +2,7 @@
   "version": "v0.9",
   "run_id": "62588fca6ab2401490015ee99b406915",
   "manifest": "release/manifest.json",
-  "manifest_sha256": "b7dc5d21164b7ea4ea1075c9b3e594cf502af23ba2f5a1541dd8d50a9d6596e5",
+  "manifest_sha256": "15d491d75f81c2e1ab9c69c4d7b7d8dd75a46c2e131689dde7ab60a2ea7c8825",
   "selection_sha256": "957d8e2b3c9e4ffde574ed133fef459057953858f4816001d4a89eae2bc75ec0",
   "lenia_workbench_revision": 166,
   "source": {
@@ -10,7 +10,7 @@
     "commit": "388bc16cc6f30f7ddf04dc3b6d855a95bfd1b2e2",
     "working_tree_modified": true
   },
-  "bytes": 378795179,
+  "bytes": 378796016,
   "checks": {
     "file_inventory": "passed",
     "python_syntax": "passed",
@@ -18,10 +18,14 @@
     "immutable_workbench_assets": "passed",
     "isolated_postgresql_import": "passed",
     "maintenance_installer_validation": "passed",
-    "database_import_evidence": "Reused original isolated import: SQL SHA256 unchanged"
+    "database_import_evidence": "Fresh isolated installation imported this unchanged SQL; source tables, accounts and stage-history reset were checked before startup.",
+    "isolated_installation": "passed",
+    "account_registration_loading": "passed",
+    "input_media_cleanup": "passed"
   },
   "limitations": [
-    "No full instance installation or authenticated Provider/Resident/browser end-to-end test in this publication."
+    "Validated on the current Linux host using an isolated installation of the base bundle plus the exact two maintenance code files; the updated bundle inventory passed the native installer validation without repeating a full installation.",
+    "Real authentication and replies were checked with a reused local Codex account. Other Provider credentials and operating systems were not exercised."
   ],
   "maintenance": {
     "kind": "in-place-maintenance",
@@ -59,6 +63,32 @@
       }
     ],
     "selection_unchanged": true,
-    "database_unchanged": true
+    "database_unchanged": true,
+    "follow_up_patches": [
+      {
+        "applied_at": "2026-10-20T01:36:46.347603+00:00",
+        "base_manifest_sha256": "b7dc5d21164b7ea4ea1075c9b3e594cf502af23ba2f5a1541dd8d50a9d6596e5",
+        "summary": "Keep execution-account registration disabled until providers load; hydrate filesystem metadata inside deferred input-image cleanup so creating Residents in a Family does not fail after admission.",
+        "changed_files": [
+          {
+            "path": "code/management_portal/static/portal_management_backend.js",
+            "before_sha256": "e19e407704ada676f190239377b9097fd63f75942bdc7bdcd02bfbd3b739299f",
+            "after_sha256": "d05a0cdca86600cbbc3b87f4c7eed72f7667b1b7f19ec29c33727b4c0fd156e8"
+          },
+          {
+            "path": "code/management_portal/society_service/resident_media_domain.py",
+            "before_sha256": "ca6c2d6b3096099bc22818b604f5339e2d0546fbe91c81519348bc8422979873",
+            "after_sha256": "acf6bd333e9503fe5d07638941d840b45615aeedf7477f2d891e5c3128d41bb6"
+          }
+        ],
+        "selection_unchanged": true,
+        "database_unchanged": true,
+        "validation": [
+          "Chromium reproduction on original account UI and delayed-provider regression on fixed UI",
+          "Real isolated installation, model setup and Resident replies",
+          "Input-media retention regression for admission records and deleted Residents"
+        ]
+      }
+    ]
   }
 }

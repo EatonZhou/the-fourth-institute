@@ -115,6 +115,11 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
   const canWrite = me.access?.permission_system === "open" || me.access?.allows?.UpdateProviderAccount === true;
   const execute = (name, args = {}, options = {}) => call(name, args, {...options, signal: abort.signal});
   const state = {providers: [], accounts: [], apis: [], roles: []};
+  let providersReady = false;
+  const addAccount = button("新增执行账号", accountEditor, true);
+  function syncAccountButton() {
+    addAccount.disabled = !canWrite || busy || !providersReady || !state.providers.length;
+  }
   const notice = node("p", "", {role: "status", "data-backend-notice": ""}); root.append(notice);
   const sections = {};
   for (const [key, title] of [["providers", "Provider"], ["accounts", "执行账号"], ["apis", "模型 API"], ["roles", "Backend 角色"]]) {
@@ -135,7 +140,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       notice.textContent = message;
       const alert = editor?.el.querySelector('[role="alert"]'); if (alert) alert.textContent = message;
     } }
-    finally { busy = false; buttons.forEach((el, i) => { if (el.isConnected) el.disabled = disabled[i]; }); }
+    finally { busy = false; buttons.forEach((el, i) => { if (el.isConnected) el.disabled = disabled[i]; }); syncAccountButton(); }
   };
   const table = (key, headers, rows) => {
     const output = sections[key].output; output.replaceChildren();
@@ -367,16 +372,19 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
   };
   const instructions = {providers: "ListProviders", accounts: "ListProviderAccounts", apis: "ListModelApis", roles: "ListBackendRoles"};
   async function refresh(key, args = {}) {
+    if (key === "providers") { providersReady = false; syncAccountButton(); }
     try {
       const result = await execute(instructions[key], args); if (destroyed) return;
       state[key] = key === "accounts" ? (result.accounts || []).map(account => account.registration ? {
         ...account, ...account.registration, registration_version: account.registration.version,
         initial_max_concurrency: account.registration.max_concurrency,
       } : account) : result[key] || [];
+      if (key === "providers") providersReady = true;
       renderers[key]();
     } catch (error) { if (!destroyed) sections[key].output.replaceChildren(node("p", errorText(error), {role: "alert"})); }
+    finally { if (!destroyed) syncAccountButton(); }
   }
-  sections.accounts.actions.append(button("新增执行账号", accountEditor, !canWrite));
+  sections.accounts.actions.append(addAccount);
   const checkUpdates = button("检查更新", async () => {
     checkUpdates.disabled = true;
     try { await refresh("providers", {refresh: true}); }

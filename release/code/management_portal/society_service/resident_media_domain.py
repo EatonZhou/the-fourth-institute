@@ -78,6 +78,14 @@ def cleanup_expired_input_images(record: dict[str, Any], *, dry_run: bool = Fals
     # Requeue uses this same lock: retry checkpoints and terminal states stay valid
     # until their staged copies have been removed.
     with _state_lock(record["resident_id"]):
+        # Admission records omit filesystem paths. Resolve them here, after
+        # the input transaction, instead of requiring every sender to hydrate.
+        if not record.get("workspace_path"):
+            from .resident_catalog import get_catalog
+            try:
+                record = get_catalog().get(record["resident_id"])
+            except KeyError:
+                return []  # The Resident was removed before deferred cleanup.
         runtime_dir = _sessions_path(record)
         root = runtime_dir / "input_media"
         if not root.is_dir() or root.is_symlink():
