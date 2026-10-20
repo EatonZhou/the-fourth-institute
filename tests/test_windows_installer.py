@@ -218,6 +218,24 @@ class WindowsInstallerTests(unittest.TestCase):
                 controller.stop(name)
             self.assertFalse(services.state_path(value).with_suffix(".stop").exists())
 
+    def test_exited_process_with_exit_code_259_is_not_alive(self):
+        # STILL_ACTIVE is also a legal application exit code. Only the process
+        # handle's signalled state proves whether it has actually terminated.
+        api = SimpleNamespace(**{name: Mock() for name in (
+            "OpenProcess", "CloseHandle", "WaitForSingleObject",
+            "GetProcessTimes", "GetExitCodeProcess")})
+        api.OpenProcess.return_value = 123
+        api.WaitForSingleObject.return_value = 0  # WAIT_OBJECT_0: exited
+
+        def exit_code(handle, output):
+            output._obj.value = 259
+            return True
+
+        api.GetExitCodeProcess.side_effect = exit_code
+        with patch.object(services.ctypes, "WinDLL", return_value=api, create=True):
+            self.assertIsNone(services.process_stamp(45))
+        api.CloseHandle.assert_called_once_with(123)
+
     def test_active_owned_child_and_supervisor_are_both_required(self):
         with tempfile.TemporaryDirectory() as tmp:
             base = Path(tmp)
@@ -247,6 +265,27 @@ class WindowsInstallerTests(unittest.TestCase):
             archive.write_bytes(b"tampered")
             with self.assertRaisesRegex(ValueError, "校验失败"):
                 launcher.unpack_seed(root)
+
+    def test_interrupted_seed_manifest_is_replaced_before_retry(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            archive = root / "example-seed.zip"
+            manifest = '{"schema":"fixture","inventory":[]}'
+            with zipfile.ZipFile(archive, "w") as zipped:
+                zipped.writestr("manifest.json", manifest)
+                zipped.writestr("data/share_root/example.txt", "complete")
+            (root / "windows-package.json").write_text(json.dumps({
+                "seed_sha256": hashlib.sha256(archive.read_bytes()).hexdigest()}))
+            seed = root / "instance/example_instance/seed"
+            seed.mkdir(parents=True)
+            (seed / "manifest.json").write_text('{"schema":')
+            launcher.unpack_seed(root)
+            self.assertEqual((seed / "manifest.json").read_text(), manifest)
+            self.assertEqual((seed / "data/share_root/example.txt").read_text(), "complete")
+            # A completed extraction must not rewrite instance-owned materials.
+            (seed / "data/share_root/example.txt").write_text("do not overwrite")
+            launcher.unpack_seed(root)
+            self.assertEqual((seed / "data/share_root/example.txt").read_text(), "do not overwrite")
 
     def test_installer_requires_x64_payload_and_keeps_data_on_uninstall(self):
         script = (REPO / "packaging/windows/setup.nsi").read_text()

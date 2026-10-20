@@ -38,21 +38,22 @@ def process_stamp(pid):
     api.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
     api.OpenProcess.restype = wintypes.HANDLE
     api.CloseHandle.argtypes = [wintypes.HANDLE]
+    api.WaitForSingleObject.argtypes = [wintypes.HANDLE, wintypes.DWORD]
+    api.WaitForSingleObject.restype = wintypes.DWORD
     api.GetProcessTimes.argtypes = [wintypes.HANDLE, *([ctypes.POINTER(wintypes.FILETIME)] * 4)]
-    api.GetExitCodeProcess.argtypes = [wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD)]
-    handle = api.OpenProcess(0x1000, False, pid)
+    handle = api.OpenProcess(0x1000 | 0x100000, False, pid)  # QUERY | SYNCHRONIZE
     if not handle:
         error = ctypes.get_last_error()
         if error == 87:  # process no longer exists
             return None
         raise ctypes.WinError(error)
     try:
-        status = wintypes.DWORD()
-        times = [wintypes.FILETIME() for _ in range(4)]
-        if not api.GetExitCodeProcess(handle, ctypes.byref(status)):
-            raise ctypes.WinError(ctypes.get_last_error())
-        if status.value != 259:
+        status = api.WaitForSingleObject(handle, 0)
+        if status == 0:  # A signalled process has exited, even with exit code 259.
             return None
+        if status != 258:  # WAIT_TIMEOUT: still running
+            raise ctypes.WinError(ctypes.get_last_error())
+        times = [wintypes.FILETIME() for _ in range(4)]
         if not api.GetProcessTimes(handle, *(ctypes.byref(t) for t in times)):
             raise ctypes.WinError(ctypes.get_last_error())
         return (times[0].dwHighDateTime << 32) | times[0].dwLowDateTime

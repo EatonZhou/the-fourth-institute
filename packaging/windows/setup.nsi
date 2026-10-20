@@ -99,9 +99,15 @@ Section "Uninstall"
   Delete "$INSTDIR\INSTALL.md"
   Delete "$INSTDIR\README.md"
   Delete "$INSTDIR\README_CN.md"
-  Delete "$DESKTOP\The Fourth Institute.lnk"
-  RMDir /r "$SMPROGRAMS\The Fourth Institute"
-  DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TheFourthInstitute"
+  ; A newer preview may live in a different folder. Only remove shared shell
+  ; entries when this installation still owns the registered location.
+  ReadRegStr $1 HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TheFourthInstitute" "InstallLocation"
+  StrCmp $1 "$INSTDIR" remove_shell_entries keep_shell_entries
+  remove_shell_entries:
+    Delete "$DESKTOP\The Fourth Institute.lnk"
+    RMDir /r "$SMPROGRAMS\The Fourth Institute"
+    DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TheFourthInstitute"
+  keep_shell_entries:
   Delete "$INSTDIR\Uninstall.exe"
   MessageBox MB_ICONINFORMATION "Platform removed. Your instance data remains under:$\r$\n$INSTDIR\instance"
 SectionEnd

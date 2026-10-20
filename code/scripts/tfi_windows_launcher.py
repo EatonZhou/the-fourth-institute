@@ -11,6 +11,7 @@ import re
 import socket
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 from urllib.request import urlopen
@@ -172,9 +173,13 @@ def unpack_seed(platform):
             raise ValueError("示例资料压缩包校验失败，请重新下载安装包。")
     destination = platform / "instance/example_instance/seed"
     marker = destination / "manifest.json"
-    if marker.exists():
-        return
     with zipfile.ZipFile(archive) as zipped:
+        if marker.is_symlink():
+            raise ValueError("Redirected seed destination")
+        # A crash while writing the old completion marker must not prevent a
+        # retry. Data integrity remains checked by prepare_install afterwards.
+        if marker.is_file() and marker.read_bytes() == zipped.read("manifest.json"):
+            return
         # Write the completion marker last, so interrupted extraction is resumable.
         for entry in sorted(zipped.infolist(), key=lambda e: e.filename == "manifest.json"):
             relative = Path(entry.filename)
@@ -187,8 +192,13 @@ def unpack_seed(platform):
                 target.mkdir(parents=True, exist_ok=True)
             else:
                 target.parent.mkdir(parents=True, exist_ok=True)
-                with zipped.open(entry) as source, target.open("wb") as output:
-                    __import__("shutil").copyfileobj(source, output)
+                descriptor, temporary = tempfile.mkstemp(prefix=".seed-", dir=target.parent)
+                try:
+                    with os.fdopen(descriptor, "wb") as output, zipped.open(entry) as source:
+                        __import__("shutil").copyfileobj(source, output)
+                    os.replace(temporary, target)
+                finally:
+                    Path(temporary).unlink(missing_ok=True)
 
 
 def invitation_url(text):
