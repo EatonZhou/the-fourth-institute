@@ -267,7 +267,9 @@ def install_codex_unit_template(*, reload: bool = True) -> Path:
         content = render_unit(source)
         content = content.replace("[Service]\n", "[Service]\nUMask=0077\n" +
                                   f"Environment=HOME={isolated['root'] / 'home'}\n" +
-                                  f"Environment=XDG_CONFIG_HOME={isolated['root'] / 'home/.config'}\n")
+                                  f"Environment=XDG_CONFIG_HOME={isolated['root'] / 'home/.config'}\n" +
+                                  f"Environment=XDG_CACHE_HOME={isolated['root'] / 'home/.cache'}\n" +
+                                  f"Environment=TMPDIR={isolated['root'] / 'runtime'}\n")
         if target.is_symlink() or (target.exists() and target.read_text() != content):
             raise ValueError("Refusing to replace a different Provider service template")
         if not target.exists():

@@ -87,6 +87,17 @@ class ProviderCleanupTests(unittest.TestCase):
             with self.assertRaises(subprocess.CalledProcessError):
                 providers._run("list-unit-files", "tfi-one-*")
 
+    def test_account_process_uses_instance_cache_and_temporary_directory(self):
+        from scripts import portal_service_units as units
+        context = {"root": self.root / "instance", "directory": self.root / "units",
+                   "prefix": "tfi-one-codex-app-server@"}
+        with patch.object(units, "_isolated_codex_context", return_value=context), \
+                patch("scripts.portal_instance_storage.render_unit", return_value="[Service]\nType=simple\n"):
+            path = units.install_codex_unit_template(reload=False)
+        text = path.read_text()
+        self.assertIn(f"Environment=XDG_CACHE_HOME={context['root']}/home/.cache\n", text)
+        self.assertIn(f"Environment=TMPDIR={context['root']}/runtime\n", text)
+
 
 if __name__ == "__main__":
     unittest.main()
