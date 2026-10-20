@@ -11,7 +11,6 @@ import contextlib
 import hashlib
 import importlib
 import json
-import locale
 import os
 from pathlib import Path
 import re
@@ -35,6 +34,7 @@ sys.dont_write_bytecode = True
 from management_common.portal_paths import KEYS, ENV_KEYS
 from management_common.file_lock import try_lock_descriptor
 from management_common.process_runtime import run_process
+from management_common.native_output import decode_native_output, run_native_capture
 from scripts.tfi_instance_layout import code_root, database_root, installer_path, validate_shared_code
 
 STATE_FILE = "installation.json"
@@ -329,32 +329,9 @@ def owned_state(root, *, allow_missing_native=False):
     return state
 
 
-def decode_native_output(output):
-    """Decode human-readable tool output, independent of Python UTF-8 mode.
-
-    Windows native programs can still emit the ANSI code page when their parent
-    Python uses UTF-8. Keep UTF-8 from modern tools intact; use the host encoding
-    only for native diagnostics, never for JSON or installation data files.
-    """
-    if output is None:
-        return None
-    for encoding in ("utf-8", locale.getencoding()):
-        try:
-            return output.decode(encoding).replace("\r\n", "\n").replace("\r", "\n")
-        except UnicodeDecodeError:
-            pass
-    # An unknown diagnostic encoding must not hide the tool's actual exit code.
-    return output.decode("utf-8", errors="backslashreplace")
-
-
 def run_native(command, *, target, cwd=None, timeout=90, merge_output=False):
-    result = run_process(command, env=clean_environment(target), cwd=cwd,
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.STDOUT if merge_output else subprocess.PIPE,
-                         timeout=timeout)
-    result.stdout = decode_native_output(result.stdout)
-    result.stderr = decode_native_output(result.stderr)
-    return result
+    return run_native_capture(command, env=clean_environment(target), cwd=cwd,
+                              timeout=timeout, merge_output=merge_output)
 
 
 def run_checked(command, *, target, cwd=None, timeout=1800, native_output=False):

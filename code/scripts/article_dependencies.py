@@ -16,6 +16,7 @@ import tempfile
 import urllib.request
 
 from management_common.process_runtime import run_process
+from management_common.native_output import run_native_capture
 
 VERSION = '2026.10'
 ASSETS = {
@@ -50,8 +51,8 @@ def inventory():
         detail = 'missing'
         if binary:
             try:
-                result = run_process([binary, 'help' if tool == 'synctex' else '--version'],
-                                     env=env, capture_output=True, text=True, timeout=30)
+                result = run_native_capture([binary, 'help' if tool == 'synctex' else '--version'],
+                                            env=env, timeout=30)
                 detail = (result.stdout or result.stderr).splitlines()[0] if (result.stdout or result.stderr) else binary
                 good = result.returncode == 0
             except (OSError, subprocess.TimeoutExpired) as error:
@@ -61,7 +62,7 @@ def inventory():
         checks.append({'name': 'article: ' + tool, 'ok': good, 'detail': detail})
     kpsewhich = shutil.which('kpsewhich', path=env['PATH'])
     for filename in TEX_FILES:
-        result = run_process([kpsewhich, filename], env=env, capture_output=True, text=True, timeout=30) if kpsewhich else None
+        result = run_native_capture([kpsewhich, filename], env=env, timeout=30) if kpsewhich else None
         checks.append({'name': 'article: ' + filename, 'ok': bool(result and result.returncode == 0 and result.stdout.strip()),
                        'detail': result.stdout.strip() if result else 'missing kpsewhich'})
     return checks
@@ -119,8 +120,8 @@ def prepare_tex(home):
     for command in (['updmap-sys'],
                     *(['fmtutil-sys', '--byfmt', name] for name in ('pdflatex', 'xelatex', 'lualatex'))):
         run_process(command, env=env, check=True, timeout=180)
-    installed = run_process([tlmgr, 'info', '--only-installed', '--data', 'name,localrev'],
-                            env=env, capture_output=True, text=True, check=True, timeout=90)
+    installed = run_native_capture([tlmgr, 'info', '--only-installed', '--data', 'name,localrev'],
+                                   env=env, check=True, timeout=90)
     (destination / 'tfi-dependencies.json').write_text(json.dumps({
         'distribution': url, 'sha256': expected, 'packages': installed.stdout.splitlines()}, indent=2))
     return env
@@ -133,8 +134,8 @@ def smoke_compile():
         (path / 'main.tex').write_text('\\documentclass[fontset=fandol]{ctexbook}\n'
             '\\usepackage{amsmath,amssymb,amsthm,mathtools,booktabs,longtable,array,tabularx,graphicx,xcolor,tikz,enumitem,fancyhdr,microtype,natbib,hyperref,caption,float,setspace,placeins}\n'
             '\\begin{document}TFI Portal 中文 $x^2$\\FloatBarrier\\end{document}\n', encoding='utf-8')
-        run_process(['latexmk', '-xelatex', '-interaction=nonstopmode', '-halt-on-error',
-                     '-no-shell-escape', 'main.tex'], cwd=path, env=env, check=True,
-                    capture_output=True, text=True, timeout=120)
+        run_native_capture(['latexmk', '-xelatex', '-interaction=nonstopmode', '-halt-on-error',
+                            '-no-shell-escape', 'main.tex'], cwd=path, env=env, check=True,
+                           timeout=120)
         if not (path / 'main.pdf').is_file():
             raise RuntimeError('Article smoke compile produced no PDF')

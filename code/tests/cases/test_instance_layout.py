@@ -10,6 +10,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
+from contextlib import ExitStack
 import sys
 
 REPO = Path(__file__).resolve().parents[3]
@@ -19,6 +20,41 @@ from scripts.tfi_instance_layout import code_root, database_root, dependencies_r
 
 
 class SharedInstanceTests(unittest.TestCase):
+    def test_retry_after_database_import_preserves_completed_instance_data(self):
+        """数据库导入后的启动失败重试保留已有数据，不再次复制或导入示例。"""
+        from scripts import tfi_release_native_dependencies as native
+
+        with tempfile.TemporaryDirectory() as temporary, ExitStack() as stack:
+            root = Path(temporary) / "instance"
+            root.mkdir()
+            manifest_path = Path(temporary) / "manifest.json"
+            manifest_path.write_text("{}", encoding="utf-8")
+            target = self.target(root)
+            state = {"schema": installer.SCHEMA, "target": target,
+                     "manifest_sha256": installer.digest(manifest_path),
+                     "protected_roots": [], "completed": ["prepare", "database"],
+                     "stages": [{"phase": "start", "status": "failed"}]}
+            installer.write_json(root / installer.STATE_FILE, state)
+            stack.enter_context(patch.object(native, "plan", return_value=(target, [])))
+            stack.enter_context(patch.object(installer, "owned_state", return_value=state))
+            stack.enter_context(patch.object(installer, "target_plan", return_value=target))
+            stack.enter_context(patch.object(installer, "validate_engineering", return_value=({}, root)))
+            stack.enter_context(patch.object(installer, "platform_preflight", return_value={}))
+            stack.enter_context(patch.object(installer, "dependency_preflight", return_value={}))
+            for name in ("check_available", "prepare_dependencies", "initialize_database",
+                         "initialize_features", "service_controller"):
+                stack.enter_context(patch.object(installer, name))
+            stack.enter_context(patch.object(installer, "register_services", return_value=[]))
+            stack.enter_context(patch.object(installer, "observed_status", return_value={"status": "installed"}))
+            importer = stack.enter_context(patch.object(installer, "import_database"))
+            copier = stack.enter_context(patch.object(installer, "copy_engineering"))
+            self.assertEqual(installer.install(manifest_path, target)["status"], "installed")
+            importer.assert_not_called()
+            copier.assert_not_called()
+            restored = installer.read_json(root / installer.STATE_FILE)
+            self.assertEqual(restored["completed"], ["prepare", "database"])
+            self.assertEqual(restored["stages"][-1]["status"], "installed")
+
     def target(self, root):
         return dict(install_root=str(root), shared_code_root=str(REPO / "code"),
                     service_prefix="tfi-layout-test", database_name="original_database",

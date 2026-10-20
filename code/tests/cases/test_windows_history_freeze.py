@@ -5,12 +5,14 @@
 :profiles: local.fixture
 :risk: no-external-side-effects"""
 import os
-from pathlib import Path
+import json
+from pathlib import Path, PureWindowsPath
 import socket
 import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO / "code"))
@@ -19,6 +21,30 @@ from management_portal.distribution.history import verify_frozen
 
 @unittest.skipUnless(os.environ.get("TFI_TEST_POSTGRES_ROOT"), "Explicit disposable PostgreSQL runtime required")
 class HistoryFreezeIntegration(unittest.TestCase):
+    def test_windows_unicode_directory_mappings_roundtrip_through_postgres(self):
+        """Windows 中文及空格路径在 SQL、JSON 数据导入中保持原值。"""
+        from scripts import tfi_release_install as installer
+        from scripts import tfi_release_platform_windows as windows
+
+        root = PureWindowsPath("C:/Users/安装 用户/TheFourthInstitute")
+        roots = {key: str(root / "instance/example_instance/data" / key) for key in installer.KEYS}
+        tokens = {**roots, "code_root": str(root / "code")}
+        manifest = {"directory_mappings": [
+            {"root": key, "placeholder": "${" + key + "}", "path": "."} for key in tokens]}
+        with patch.object(installer, "Path", PureWindowsPath), \
+                patch.object(installer, "code_root", return_value=root / "code"), \
+                patch.object(installer, "platform_adapter", return_value=windows):
+            mapped = installer.directory_replacements(manifest, {"data_roots": roots})
+        document = {key: "${" + key + "}/项目资料" for key in tokens}
+        sql = installer.map_directories(
+            "SELECT '" + json.dumps(document, ensure_ascii=False) + "'::jsonb", mapped)
+        with self.connection.transaction():
+            self.connection.execute("SET TRANSACTION READ ONLY")
+            actual = self.connection.execute(sql).fetchone()[0]
+        expected = {key: PureWindowsPath(path).as_posix() + "/项目资料" for key, path in tokens.items()}
+        self.assertEqual(actual, expected)
+        self.assertNotIn("\\", sql)
+
     @classmethod
     def setUpClass(cls):
         import psycopg

@@ -20,6 +20,7 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from management_common.process_runtime import run_process
+from management_common.native_output import run_native_capture
 
 VERSION = '5.26.0'
 ASSETS = {
@@ -69,8 +70,8 @@ def _extract_binary(archive, destination, name):
 
 
 def _version(binary):
-    return run_process([str(binary), '--version'], capture_output=True, text=True,
-                       check=True, timeout=20).stdout.strip()
+    return run_native_capture([str(binary), '--version'],
+                              check=True, timeout=20).stdout.strip()
 
 
 def install():

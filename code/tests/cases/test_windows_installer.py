@@ -7,6 +7,8 @@
 import importlib.util
 import json
 import os
+import locale
+import subprocess
 from pathlib import Path
 import sys
 import tempfile
@@ -25,10 +27,58 @@ from scripts import tfi_windows_user_services as services
 from scripts import tfi_release_platform_windows as windows
 from scripts import tfi_release_initialization as initialization
 from scripts import tfi_release_install as installer
+from management_common import native_output
 import prepare_install
 
 
 class WindowsInstallerTests(unittest.TestCase):
+    @contextmanager
+    def native_probe(self, stdout, stderr=b"", exitcode=0):
+        """Exercise real byte pipes while substituting only the native binary."""
+        from scripts import article_dependencies as article
+        from scripts import install_article_tooling as tooling
+
+        run = native_output.run_process
+        command = [sys.executable, "-c",
+                   f"import os; os.write(1, {stdout!r}); os.write(2, {stderr!r}); "
+                   f"raise SystemExit({exitcode})"]
+
+        def execute(_command, **options):
+            return run(command, **options)
+
+        with patch.object(locale, "getencoding", return_value="cp936"), \
+                patch.object(native_output, "run_process", side_effect=execute), \
+                patch.object(article, "run_process", side_effect=execute), \
+                patch.object(tooling, "run_process", side_effect=execute):
+            yield
+
+    def test_article_doctor_preserves_localized_paths_and_tool_diagnostics(self):
+        """文章依赖检查在 UTF-8 模式下完整保留中文工具路径与诊断。"""
+        from scripts import article_dependencies as article
+        from scripts import install_article_tooling as tooling
+
+        path = "C:/Users/安装 用户/.TinyTeX/texmf/ctexbook.cls"
+        with self.native_probe((path + "\r\n").encode("cp936"), "检查".encode("cp936")), \
+                patch.object(article, "TOOLS", ("kpsewhich",)), \
+                patch.object(article, "TEX_FILES", ("ctexbook.cls",)), \
+                patch.object(article.shutil, "which", return_value=sys.executable):
+            checks = article.inventory()
+        self.assertTrue(all(row["ok"] for row in checks))
+        self.assertEqual([row["detail"] for row in checks], [path, path])
+        with self.native_probe(b"texlab 5.26.0\r\n", "检查完成".encode("cp936")):
+            self.assertEqual(tooling._version("texlab.exe"), "texlab 5.26.0")
+
+    def test_article_compile_error_retains_exit_code_and_localized_output(self):
+        """试编译失败保留实际退出码和诊断，不被中文解码异常替换。"""
+        from scripts import article_dependencies as article
+
+        with self.native_probe("编译失败".encode("cp936"), "字体不存在".encode("cp936"), 7):
+            with self.assertRaises(subprocess.CalledProcessError) as caught:
+                article.smoke_compile()
+        self.assertEqual(caught.exception.returncode, 7)
+        self.assertEqual(caught.exception.stdout, "编译失败")
+        self.assertEqual(caught.exception.stderr, "字体不存在")
+
     def test_native_command_accepts_chinese_code_page_in_utf8_environment(self):
         """原生命令的中文输出不受父进程 UTF-8 模式限制。"""
         text = " " * 43 + "安装完成\r\n"
@@ -38,7 +88,7 @@ class WindowsInstallerTests(unittest.TestCase):
         command = [sys.executable, "-c",
                    f"import os; os.write(1, {raw!r}); os.write(2, {'警告'.encode('cp936')!r})"]
         with patch.object(installer, "clean_environment", return_value={**os.environ, "PYTHONUTF8": "1"}), \
-                patch.object(installer.locale, "getencoding", return_value="cp936"):
+                patch.object(locale, "getencoding", return_value="cp936"):
             result = installer.run_native(command, target={}, timeout=10)
         self.assertEqual(result.returncode, 0)
         self.assertEqual(result.stdout, text.replace("\r\n", "\n"))
@@ -46,7 +96,7 @@ class WindowsInstallerTests(unittest.TestCase):
 
     def test_native_output_keeps_utf8_and_unknown_bytes(self):
         """原生输出优先识别 UTF-8，未知字节作为转义诊断保留。"""
-        with patch.object(installer.locale, "getencoding", return_value="cp936"):
+        with patch.object(locale, "getencoding", return_value="cp936"):
             self.assertEqual(installer.decode_native_output("安装 ✓".encode()), "安装 ✓")
             self.assertEqual(installer.decode_native_output(b"\xff"), r"\xff")
 
@@ -57,7 +107,7 @@ class WindowsInstallerTests(unittest.TestCase):
             command = [sys.executable, "-c",
                        f"import os; os.write(2, {'安装失败'.encode('cp936')!r}); raise SystemExit(7)"]
             with patch.object(installer, "clean_environment", return_value=dict(os.environ)), \
-                    patch.object(installer.locale, "getencoding", return_value="cp936"):
+                    patch.object(locale, "getencoding", return_value="cp936"):
                 with self.assertRaisesRegex(RuntimeError, "exited 7"):
                     installer.run_checked(command, target={"install_root": tmp}, native_output=True, timeout=10)
             self.assertEqual((Path(tmp) / "runtime/command-error.log").read_text(encoding="utf-8"), "安装失败")
@@ -66,7 +116,7 @@ class WindowsInstallerTests(unittest.TestCase):
         """Python 控制输出和实例 JSON 不采用本地编码容错。"""
         command = [sys.executable, "-c", "import os; os.write(1, b'\\xb0\\xb2')"]
         with patch.object(installer, "clean_environment", return_value=dict(os.environ)), \
-                patch.object(installer.locale, "getencoding", return_value="cp936"):
+                patch.object(locale, "getencoding", return_value="cp936"):
             with self.assertRaises(UnicodeDecodeError):
                 installer.run_checked(command, target={}, timeout=10)
         with tempfile.TemporaryDirectory() as tmp:
@@ -98,7 +148,7 @@ class WindowsInstallerTests(unittest.TestCase):
                    f"os.write(2, {'安装检查'.encode('cp936')!r})"]
         api = SimpleNamespace(run_native=lambda args, **options: installer.run_native(command, **options))
         with patch.object(installer, "clean_environment", return_value=dict(os.environ)), \
-                patch.object(installer.locale, "getencoding", return_value="cp936"):
+                patch.object(locale, "getencoding", return_value="cp936"):
             result = native.verify(api, {}, {"directory": "/fixture/pg", "platform": "windows/x86_64",
                                             "name": "postgres", "version": "16.15"})
         self.assertEqual(result, {"postgres": "postgres (PostgreSQL) 16.15"})
