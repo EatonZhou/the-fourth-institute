@@ -7,7 +7,7 @@
 :risk: no-external-side-effects
 """
 import json
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 import shutil
 import subprocess
 from types import SimpleNamespace
@@ -52,6 +52,9 @@ def test_default_uninstall_retains_instance_data(platform, monkeypatch):
     cache = platform / "dependencies/download"
     cache.mkdir(parents=True)
     (cache / "keep").write_bytes(b"cached dependency")
+    prepared = platform / ".build/example_instance-windows/engineering/keep"
+    prepared.parent.mkdir(parents=True)
+    prepared.write_bytes(b"prepared seed")
     monkeypatch.setattr(launcher, "PLATFORM", platform)
     monkeypatch.setattr(launcher, "os", SimpleNamespace(name="nt"))
     monkeypatch.setattr(launcher.sys, "argv", ["launcher", "--uninstall-platform"])
@@ -61,6 +64,7 @@ def test_default_uninstall_retains_instance_data(platform, monkeypatch):
         remove.assert_not_called()
     assert (root / "data/keep.txt").read_text() == "private instance data"
     assert (cache / "keep").read_bytes() == b"cached dependency"
+    assert prepared.read_bytes() == b"prepared seed"
 
 
 def test_remove_requires_uninstall_mode(monkeypatch):
@@ -207,6 +211,58 @@ def test_valid_caches_wait_for_native_uninstaller_even_without_instances(platfor
     with patch.object(Path, "lstat", return_value=SimpleNamespace(st_mode=0o40755, st_file_attributes=0x400)):
         with pytest.raises(ValueError, match="reparse"):
             uninstall.validate_platform_caches(platform)
+
+
+@pytest.mark.parametrize(("original", "expected"), [
+    (r"C:\Users\测试 User\TFI\.build", "\\\\?\\C:\\Users\\测试 User\\TFI\\.build"),
+    (r"\\server\share\TFI\.build", "\\\\?\\UNC\\server\\share\\TFI\\.build"),
+    (r"\\?\C:\TFI\.build", "\\\\?\\C:\\TFI\\.build"),
+])
+def test_windows_removal_uses_extended_paths(original, expected):
+    """盘符、中文空格及 UNC 删除路径均保持含义，不重复添加前缀。"""
+    with patch.object(uninstall, "os", SimpleNamespace(name="nt")):
+        assert uninstall._native_path(PureWindowsPath(original)) == expected
+
+
+def test_deep_preparation_cache_is_removed_while_launcher_is_locked(platform):
+    """清理用户报告的超长准备路径，同时保留正在使用的启动锁和运行时。"""
+    relative = (
+        ".build/example_instance-windows/engineering/data/share_root/Agents/"
+        "lineage_75e3399f4877/residents/resident_2461a452e3f7/workspace/"
+        "lenia-core/code/src/local_learning/method_renewal_local_plasticity/anticipatory_io.py"
+    )
+    target = Path(uninstall._native_path(platform / relative))
+    target.parent.mkdir(parents=True)
+    target.write_bytes(b"example code")
+    assert len(str(target)) > 260
+    python = platform / "dependencies/python/python.exe"
+    python.parent.mkdir(parents=True)
+    python.write_bytes(b"runtime in use")
+    with launcher.launcher_lock(platform), patch.object(uninstall.subprocess, "run") as run:
+        uninstall.remove_instances(platform)
+        assert (platform / ".build/windows/launcher.lock").is_file()
+    run.assert_not_called()
+    assert not target.exists()
+    assert not (platform / ".build/example_instance-windows").exists()
+    assert python.is_file()
+    assert (platform / "code").is_dir()
+
+
+def test_preparation_cache_failure_preserves_instance_and_platform(platform, owned_state):
+    """准备缓存无法删除时明确失败，保留实例及卸载所需程序供重试。"""
+    root = instance(platform)
+    cached = platform / ".build/example_instance-windows"
+    cached.mkdir(parents=True)
+    (cached / "locked").write_bytes(b"locked cache")
+    with patch.object(uninstall.subprocess, "run") as run, \
+            patch.object(uninstall.shutil, "rmtree", side_effect=PermissionError("cache in use")), \
+            pytest.raises(PermissionError, match="cache in use"):
+        uninstall.remove_instances(platform)
+    assert len(run.call_args_list) == 1
+    assert run.call_args.args[0][2] == "stop"
+    assert (root / "data/keep.txt").is_file()
+    assert (cached / "locked").is_file()
+    assert (platform / "code").is_dir()
 
 
 def test_native_uninstall_cleanup_is_gated_and_checks_for_residuals():
