@@ -391,6 +391,14 @@ def requeue(
             raise MailboxConflict("恢复检查点的输入身份不一致")
         _validate_recovery_item(record, item, job)
         infos = _validate_recovery_infos(record, entry, job)
+        # Only this recovery owner may mark a fresh reservation as an explicit
+        # retry. Pre-reservation accepted orphans have no terminal predecessor.
+        item.pop("retry_of_execution_id", None)
+        predecessor = str(entry.get("execution_id") or "")
+        if predecessor:
+            original = repository.agent_data.execution(predecessor) or {}
+            if original.get("status") in REQUEUEABLE_STATES:
+                item["retry_of_execution_id"] = predecessor
         item["user_message_id"] = message_id
         item.pop("execution_id", None)
         item["enqueued_at"] = now

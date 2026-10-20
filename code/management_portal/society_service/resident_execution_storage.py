@@ -18,7 +18,7 @@ PREPARATION = frozenset({
     "compact_scope_label", "fork_context_input", "business_ref", "mailbox_members",
     "execution_request", "prompt_builder_version", "prompt_built_at",
     "authorization_prompt", "filesystem_scope",
-    "bootstrap_session", "working_directory",
+    "bootstrap_session", "working_directory", "retry_of_execution_id",
 })
 PROGRESS = frozenset({
     "actor", "activation_policy", "operation",

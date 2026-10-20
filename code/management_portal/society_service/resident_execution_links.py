@@ -21,6 +21,10 @@ def link_inputs(resident_id: str, execution: Mapping[str, Any], *, connection: A
     execution_inputs.attach_in(connection, identity, [{"message_id":message,"role":role,"accepted_at":at}
                                                      for message,role in messages.items()],
                                prefix='"' + _database_schema("agent") + '".')
+    if execution.get("retry_of_execution_id"):
+        from management_portal.execution import input_retries
+        input_retries.record(connection, predecessor=str(execution["retry_of_execution_id"]),
+                             execution_id=identity, resident_id=resident_id, message_id=main_message, at=at)
     changed = False
     # A delivery may originate in another Lineage, or predate a Resident move.
     # The admitted source steps, rather than current membership, own these links.

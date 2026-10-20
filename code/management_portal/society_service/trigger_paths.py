@@ -301,6 +301,15 @@ def link_input(lineage_id: str, resident_id: str, message_id: str, execution_id:
         if rows and (execution is None or execution["agent_id"] != resident_id):
             raise ValueError("Resident handoff must reference its own durable Execution")
         for row in rows:
+            from management_portal.execution import input_retries
+            predecessors = [link["execution_id"] for link in connection.execute(
+                "SELECT execution_id FROM trigger_path_execution_links WHERE step_id=%s", (row["step_id"],),
+            ).fetchall()]
+            if input_retries.independent_of(connection, predecessors=predecessors, execution_id=execution_id,
+                                            resident_id=resident_id, message_id=message_id):
+                # The owner authorized new work on the same input, not another
+                # delivery by this historical path. Keep its facts untouched.
+                continue
             storage.link_execution(connection, row["step_id"], execution_id)
             storage.transition_step(connection, row["step_id"], status="completed", at=iso_time(execution["accepted_at"]))
             _settle(connection, row["trigger_path_id"])
