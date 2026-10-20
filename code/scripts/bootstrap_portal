@@ -22,6 +22,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from management_common.embedding_feature import platform_issue as embeddings_platform_issue  # noqa: E402
 from management_common.process_runtime import run_process  # noqa: E402
+from management_common.native_output import run_native_capture, run_utf8_capture  # noqa: E402
 
 PROFILES = ("core", "test", "tau", "provider", "article", "embeddings")
 DSH_PACKAGE = ROOT / "management_portal" / "dsh_runtime"
@@ -71,20 +72,19 @@ def satisfies_minimum(actual: str | None, minimum: str | None) -> bool:
 
 
 def installed_versions(python: Path) -> dict[str, str]:
-    output = subprocess.check_output(
+    output = run_utf8_capture(
         [str(python), "-m", "pip", "list", "--format=json"],
-        text=True,
-        stderr=subprocess.PIPE,
-    )
+        timeout=90, check=True,
+    ).stdout
     return {item["name"].lower().replace("_", "-"): item["version"]
             for item in json.loads(output)}
 
 
 def interpreter_version(python: Path) -> tuple[int, int, int]:
-    output = subprocess.check_output(
+    output = run_utf8_capture(
         [str(python), "-c", "import sys; print(*sys.version_info[:3], sep='.')"],
-        text=True, stderr=subprocess.PIPE,
-    )
+        timeout=90, check=True,
+    ).stdout
     return tuple(map(int, output.strip().split(".")))
 
 
@@ -93,8 +93,9 @@ def node_major() -> int | None:
     if not node:
         return None
     try:
-        return int(subprocess.check_output([node, "--version"], text=True).strip().lstrip("v").split(".")[0])
-    except (ValueError, OSError, subprocess.CalledProcessError):
+        output = run_native_capture([node, "--version"], timeout=90, check=True).stdout
+        return int(output.strip().lstrip("v").split(".")[0])
+    except (ValueError, OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
         return None
 
 
@@ -180,11 +181,11 @@ def doctor(args: argparse.Namespace) -> int:
         try:
             version = interpreter_version(python)
             check("Portal Python 3.12", version[:2] == (3, 12), ".".join(map(str, version)))
-        except (OSError, subprocess.CalledProcessError, ValueError) as exc:
+        except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired, ValueError) as exc:
             check("Portal Python 3.12", False, str(exc))
         try:
             installed = installed_versions(python)
-        except (OSError, subprocess.CalledProcessError, ValueError, KeyError) as exc:
+        except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired, ValueError, KeyError) as exc:
             check("pip package inventory", False, str(exc))
             installed = {}
         for filename in ("requirements.txt", "requirements-test.txt", "requirements-society-service.txt"):

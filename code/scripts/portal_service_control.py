@@ -17,14 +17,14 @@ from typing import Any, Callable
 
 from scripts.portal_source_layout import INSTANCE_LAYOUT
 from management_common.site_compatibility import compatibility_value
+from management_common.native_output import run_native_capture
 
 
 Runner = Callable[..., subprocess.CompletedProcess[str]]
 
 
 def _run(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
-    result = subprocess.run(args, text=True, stdout=subprocess.PIPE,
-                            stderr=subprocess.STDOUT, check=False)
+    result = run_native_capture(args, timeout=None, merge_output=True)
     if check and result.returncode:
         raise RuntimeError(f"{args[0]} exited with {result.returncode}: {(result.stdout or '')[-4000:].strip()}")
     return result
@@ -110,9 +110,9 @@ class ServiceControl:
                           pid=int(pid.group(1)) if pid else 0)
         result = self.run("sc.exe", "queryex", service, check=False)
         if result.returncode:
-            if "1060" in (result.stdout or ""):
+            if result.returncode == 1060:
                 return _state(service, load="not-found", active="inactive", sub="dead")
-            raise RuntimeError(f"Cannot query Windows service {service}: {(result.stdout or '').strip()}")
+            raise RuntimeError(f"Cannot query Windows service {service} (exit {result.returncode}): {(result.stdout or '').strip()}")
         output = result.stdout or ""
         state = re.search(r"(?m)^\s*STATE\s*:\s*\d+\s+([A-Z_]+)", output)
         pid = re.search(r"(?m)^\s*PID\s*:\s*(\d+)", output)
@@ -171,7 +171,7 @@ class ServiceControl:
                     self.run("sc.exe", "stop", service)
                     self._wait_stopped(service)
 
-    def _wait_stopped(self, service: str, timeout: float = 30) -> None:
+    def _wait_stopped(self, service: str, timeout: float = 90) -> None:
         deadline = time.monotonic() + timeout
         while self.status(service)["sub"] not in {"stopped", "dead"}:
             if time.monotonic() >= deadline:

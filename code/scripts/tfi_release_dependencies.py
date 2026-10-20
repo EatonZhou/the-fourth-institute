@@ -54,10 +54,9 @@ def _prepare(api, state, manifest):
     script = code_root(target) / 'scripts/bootstrap_portal'
 
     def doctor(python):
-        result = api.run_process([python, str(script), 'doctor', *selected,
+        result = api.run_utf8_capture([python, str(script), 'doctor', *selected,
             '--venv', str(Path(python).parent.parent), '--tools-only', '--json'],
-            env=api.clean_environment(target), cwd=code_root(target), capture_output=True,
-            text=True, timeout=180)
+            env=api.clean_environment(target), cwd=code_root(target), timeout=540)
         if result.returncode == 0:
             import json
             inventory = json.loads(result.stdout)
@@ -80,7 +79,7 @@ def _prepare(api, state, manifest):
         with log.open('a', encoding='utf-8') as stream:
             result = api.run_process([target['python'], str(script), 'install', *selected,
                 '--venv', str(environment)], env=api.clean_environment(target), cwd=code_root(target),
-                stdout=stream, stderr=stream, text=True, timeout=3600)
+                stdout=stream, stderr=stream, text=True, timeout=10800)
         if result.returncode:
             raise RuntimeError('Dependency preparation failed; inspect runtime/dependency-install.log and retry installation')
         python = str(environment / ('Scripts/python.exe' if api.native_tool('python').endswith('.exe') else 'bin/python'))

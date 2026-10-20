@@ -33,3 +33,21 @@ def run_native_capture(command, *, env=None, cwd=None, timeout, check=False, mer
     if check:
         result.check_returncode()
     return result
+
+
+def run_utf8_capture(command, *, env=None, cwd=None, timeout, check=False):
+    """Keep successful control stdout strict; decode diagnostic stderr separately.
+
+    A Python child can inherit stderr from a localized native tool. Such
+    diagnostics must not corrupt its UTF-8 JSON stdout or hide an exit code.
+    Failed commands have no valid control response: retain both diagnostic
+    streams using the native-output boundary.
+    """
+    result = run_process(command, env=env, cwd=cwd, timeout=timeout,
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    result.stderr = decode_native_output(result.stderr)
+    result.stdout = (decode_native_output(result.stdout) if result.returncode
+                     else result.stdout.decode("utf-8"))
+    if check:
+        result.check_returncode()
+    return result

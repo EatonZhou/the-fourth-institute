@@ -5,6 +5,8 @@
 :profiles: local.fixture
 :risk: no-external-side-effects"""
 import importlib.util
+import importlib.machinery
+import io
 import json
 import os
 import locale
@@ -16,7 +18,7 @@ import unittest
 from unittest.mock import patch, Mock
 import zipfile
 import hashlib
-from contextlib import contextmanager
+from contextlib import contextmanager, redirect_stdout, redirect_stderr
 from types import SimpleNamespace
 
 REPO = Path(__file__).resolve().parents[3]
@@ -28,6 +30,7 @@ from scripts import tfi_release_platform_windows as windows
 from scripts import tfi_release_initialization as initialization
 from scripts import tfi_release_install as installer
 from management_common import native_output
+from scripts import portal_service_control
 import prepare_install
 
 
@@ -43,14 +46,132 @@ class WindowsInstallerTests(unittest.TestCase):
                    f"import os; os.write(1, {stdout!r}); os.write(2, {stderr!r}); "
                    f"raise SystemExit({exitcode})"]
 
+        calls = []
+
         def execute(_command, **options):
-            return run(command, **options)
+            calls.append(_command)
+            result = run(command, **options)
+            # POSIX truncates exit statuses to eight bits; SCM returns DWORDs.
+            if os.name != "nt" and exitcode > 255:
+                self.assertEqual(result.returncode, exitcode % 256)
+                result.returncode = exitcode
+            return result
 
         with patch.object(locale, "getencoding", return_value="cp936"), \
                 patch.object(native_output, "run_process", side_effect=execute), \
                 patch.object(article, "run_process", side_effect=execute), \
                 patch.object(tooling, "run_process", side_effect=execute):
-            yield
+            yield calls
+
+    def test_fresh_install_checks_real_scm_output_before_creating_state(self):
+        """首次安装穿过用户服务与 SCM 检查，接受中文输出和不存在服务的 1060。"""
+        diagnostic = (" " * 43 + "安装检查：指定服务不存在。\r\n").encode("cp936")
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            target = self.target(base)
+            target["ports"] = {key: 0 for key in target["ports"]}
+            root = Path(target["install_root"])
+            with self.native_probe(diagnostic, exitcode=1060) as calls, \
+                    patch.object(installer, "platform_adapter", return_value=windows), \
+                    patch.object(windows, "unit_directory", return_value=base / "registry"):
+                installer.check_available(target)
+                installer.check_available(target, existing=True)
+            names = [windows.unit_name(target, part) for part in installer.COMPONENTS]
+            self.assertEqual([list(args) for args in calls],
+                             [["sc.exe", "queryex", name] for name in names] * 2)
+            self.assertFalse(root.exists())
+            self.assertFalse((base / "registry").exists())
+
+    def test_scm_permission_error_is_not_mistaken_for_absent_service(self):
+        """查询被拒绝时保留实际退出码，诊断里偶然含有 1060 也不能放行。"""
+        with self.native_probe("服务 1060：拒绝访问".encode("cp936"), exitcode=5):
+            with self.assertRaisesRegex(RuntimeError, r"exit 5.*拒绝访问"):
+                portal_service_control.ServiceControl(platform="windows").status("tfi-example-web")
+
+    def test_scm_running_service_keeps_localized_diagnostics(self):
+        """原生诊断解码后仍保留服务状态与 PID，已有服务继续阻止重复安装。"""
+        output = "服务说明：知识平台\r\nSTATE : 4 RUNNING\r\nPID : 1234\r\n".encode("cp936")
+        with self.native_probe(output):
+            status = portal_service_control.ServiceControl(platform="windows").status("tfi-example-web")
+        self.assertEqual((status["load"], status["active"], status["pid"]), ("loaded", "active", 1234))
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.native_probe(output), \
+                    patch.object(installer, "platform_adapter", return_value=windows), \
+                    patch.object(windows, "unit_directory", return_value=Path(tmp) / "registry"):
+                with self.assertRaisesRegex(ValueError, "Service identity already exists"):
+                    installer.check_available(self.target(Path(tmp)))
+
+    def test_control_json_and_localized_stderr_are_separate(self):
+        """成功 JSON 保持 UTF-8，原生子程序的中文 stderr 不混入 JSON。"""
+        response = json.dumps({"name": "示例", "ok": True}, ensure_ascii=False)
+        with self.native_probe(response.encode("utf-8"), "安装提示".encode("cp936")), \
+                patch.object(installer, "clean_environment", return_value=dict(os.environ)):
+            output = installer.run_checked(["fixture-python"], target={}, timeout=10)
+        self.assertEqual(json.loads(output), {"name": "示例", "ok": True})
+
+    def test_control_failure_preserves_code_and_both_diagnostic_streams(self):
+        """失败控制进程输出本地编码时，日志保留两路诊断及真正的退出码。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / "runtime").mkdir()
+            with self.native_probe("准备失败\n".encode("cp936"), "拒绝访问".encode("cp936"), 7), \
+                    patch.object(installer, "clean_environment", return_value=dict(os.environ)):
+                with self.assertRaisesRegex(RuntimeError, "exited 7"):
+                    installer.run_checked(["fixture-python"], target={"install_root": tmp}, timeout=10)
+            self.assertEqual((Path(tmp) / "runtime/command-error.log").read_text(encoding="utf-8"),
+                             "准备失败\n拒绝访问")
+
+    def test_bootstrap_probes_keep_json_and_localized_diagnostics_separate(self):
+        """依赖引导的 pip、Python 与 Node 探测经过真实管道编码边界。"""
+        loader = importlib.machinery.SourceFileLoader(
+            "bootstrap_encoding_fixture", str(REPO / "code/scripts/bootstrap_portal"))
+        module = importlib.util.module_from_spec(importlib.util.spec_from_loader(loader.name, loader))
+        loader.exec_module(module)
+        with self.native_probe(b'[{"name":"PyYAML","version":"6.0.2"}]', "安装提示".encode("cp936")):
+            self.assertEqual(module.installed_versions(Path(sys.executable)), {"pyyaml": "6.0.2"})
+        with self.native_probe(b"3.12.8\n", "检查完成".encode("cp936")):
+            self.assertEqual(module.interpreter_version(Path(sys.executable)), (3, 12, 8))
+        with self.native_probe(b"v22.1.0\n", "检查完成".encode("cp936")), \
+                patch.object(module.shutil, "which", return_value="fixture-node"):
+            self.assertEqual(module.node_major(), 22)
+
+    def test_dependency_doctor_accepts_localized_stderr_without_reinstalling(self):
+        """已满足依赖的 doctor 带中文 stderr 时仍完成检查，不误触发重新安装。"""
+        from scripts import tfi_release_dependencies as dependencies
+
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            (base / "code").mkdir()
+            target = self.target(base)
+            state = {"target": target, "manifest_sha256": "fixture"}
+            checks = [{"name": "core: example", "ok": True}]
+            with self.native_probe(json.dumps(checks).encode("utf-8"), "检查提示".encode("cp936")), \
+                    patch.object(dependencies, "profiles", return_value=["core"]), \
+                    patch.object(dependencies, "environment_key", return_value="fixture"), \
+                    patch.object(installer, "clean_environment", return_value=dict(os.environ)), \
+                    patch.object(installer, "save_stage") as saved, \
+                    patch.object(installer, "run_process", side_effect=AssertionError("Unexpected reinstall")):
+                dependencies._prepare(installer, state, {})
+            self.assertEqual(state["dependencies"]["inventory"], checks)
+            self.assertEqual(state["dependencies"]["source"], "verified-existing-installation")
+            saved.assert_called_once_with(state, "dependencies", "prepared")
+            self.assertFalse(Path(target["install_root"]).exists())
+
+    def test_installer_error_includes_stack_without_local_values(self):
+        """失败日志包含调用位置与异常类型，标准输出仍是 JSON，不泄露局部值。"""
+        def fail(*args, **kwargs):
+            private_local = "private-value-not-for-diagnostics"
+            raise UnicodeDecodeError("utf-8", b" " * 43 + b"\xb0", 43, 44, "invalid start byte")
+
+        output, diagnostic = io.StringIO(), io.StringIO()
+        with patch.object(installer, "lifecycle", side_effect=fail), \
+                redirect_stdout(output), redirect_stderr(diagnostic):
+            self.assertEqual(installer.main(["status", "--root", "/fixture"]), 1)
+        result = json.loads(output.getvalue())
+        self.assertEqual(result["error_type"], "UnicodeDecodeError")
+        self.assertIn("position 43", result["error"])
+        self.assertIn("tfi_release_install.py:", diagnostic.getvalue())
+        self.assertIn("in fail", diagnostic.getvalue())
+        self.assertNotIn("private-value-not-for-diagnostics", diagnostic.getvalue())
 
     def test_article_doctor_preserves_localized_paths_and_tool_diagnostics(self):
         """文章依赖检查在 UTF-8 模式下完整保留中文工具路径与诊断。"""

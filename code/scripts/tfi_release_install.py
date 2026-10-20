@@ -22,6 +22,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import traceback
 import uuid
 from urllib.parse import quote
 from urllib.request import urlopen
@@ -34,7 +35,7 @@ sys.dont_write_bytecode = True
 from management_common.portal_paths import KEYS, ENV_KEYS
 from management_common.file_lock import try_lock_descriptor
 from management_common.process_runtime import run_process
-from management_common.native_output import decode_native_output, run_native_capture
+from management_common.native_output import decode_native_output, run_native_capture, run_utf8_capture
 from scripts.tfi_instance_layout import code_root, database_root, installer_path, validate_shared_code
 
 STATE_FILE = "installation.json"
@@ -301,7 +302,7 @@ def check_available(target, *, existing=False):
         adapter = platform_adapter()
         path = adapter.unit_path(unit_directory(), name)
         if existing:
-            if path.exists() and (path.is_symlink() or path.read_text() != unit_text(target, component)):
+            if path.exists() and (path.is_symlink() or path.read_text(encoding="utf-8") != unit_text(target, component)):
                 raise ValueError(f"Service definition ownership mismatch: {name}")
             if path.exists() and hasattr(adapter, "verify_service"):
                 adapter.verify_service(name, path.read_text(encoding="utf-8"))
@@ -339,15 +340,13 @@ def run_checked(command, *, target, cwd=None, timeout=1800, native_output=False)
         if native_output:
             result = run_native(command, target=target, cwd=cwd, timeout=timeout, merge_output=True)
         else:
-            result = run_process(command, env=clean_environment(target), cwd=cwd,
-                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                 text=True, encoding="utf-8", timeout=timeout)
+            result = run_utf8_capture(command, env=clean_environment(target), cwd=cwd, timeout=timeout)
     except subprocess.TimeoutExpired as exc:
         raise TimeoutError(f"{Path(command[0]).name} exceeded {timeout}s; its process tree was stopped") from exc
     if result.returncode:
         # Child output is retained locally for diagnosis, never echoed with credentials.
         log = Path(target["install_root"]) / "runtime/command-error.log"
-        log.write_text(result.stdout, encoding="utf-8")
+        log.write_text((result.stdout or "") + (result.stderr or ""), encoding="utf-8")
         log.chmod(0o600)
         raise RuntimeError(f"{Path(command[0]).name} exited {result.returncode}; diagnostic log: {log}")
     return result.stdout
@@ -696,8 +695,8 @@ def dependency_preflight(target, bundle, *, skip_file_verification=False, manife
             if name in {"PostgreSQL", "NATS"}:
                 result = run_native(command, target=target, cwd=bundle / "code", timeout=90)
             else:
-                result = run_process(command, env=clean_environment(target), cwd=bundle / "code",
-                                     capture_output=True, text=True, encoding="utf-8", timeout=90)
+                result = run_utf8_capture(command, env=clean_environment(target), cwd=bundle / "code",
+                                          timeout=90)
         except (OSError, subprocess.TimeoutExpired) as exc:
             raise ValueError(f"Dependency preflight failed: {name} ({type(exc).__name__})") from exc
         if result.returncode:
@@ -755,8 +754,8 @@ def install(manifest_path, raw_target, *, prepare_only=False, freeze_evidence=No
         adapter = platform_adapter()
         if hasattr(adapter, 'dependency_preflight'):
             adapter.dependency_preflight(target)
-        python_probe = run_process([target['python'], '--version'], env=clean_environment(target),
-                                   capture_output=True, text=True, encoding="utf-8", timeout=90)
+        python_probe = run_utf8_capture([target['python'], '--version'], env=clean_environment(target),
+                                        timeout=90)
         if python_probe.returncode or not re.match(r'Python 3\.12\.', python_probe.stdout):
             raise ValueError('Native dependency preparation requires preinstalled Python 3.12')
     with installation_lock(root):
@@ -1049,7 +1048,13 @@ def main(argv=None):
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return 0 if result["status"] not in {"failed", "unhealthy", "recovery_required"} else 1
     except Exception as exc:
-        result = {"status": "failed", "error": str(exc)}
+        # The launcher retains stderr in its local installation log. Record
+        # call sites without locals, command arguments, or source-code lines.
+        print(f"Installation command {args.command} failed ({type(exc).__name__}); call stack:",
+              file=sys.stderr)
+        for frame in traceback.extract_tb(exc.__traceback__):
+            print(f"  {frame.filename}:{frame.lineno} in {frame.name}", file=sys.stderr)
+        result = {"status": "failed", "error": str(exc), "error_type": type(exc).__name__}
         if isinstance(exc, PlatformPreflightError):
             result["platform_preflight"] = exc.report
         print(json.dumps(result, ensure_ascii=False))
