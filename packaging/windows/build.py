@@ -32,7 +32,7 @@ def public_seed(repo):
     return seed
 
 
-def stage(repo, destination, archive):
+def stage(repo, destination, archive, *, source_commit=None, source_dirty=None):
     if destination.exists():
         raise ValueError("Use a new staging directory")
     seed = public_seed(repo)
@@ -62,9 +62,10 @@ def stage(repo, destination, archive):
     receipt = {
         "schema": "tfi.windows-package.v1", "target": "windows/x86_64",
         "native_verification": "not_run", "signed": False,
-        "source_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=repo, text=True).strip(),
-        "source_dirty": bool(subprocess.check_output(["git", "status", "--porcelain", "--",
-                            "code", "prepare_install.py", "packaging/windows"], cwd=repo)),
+        "source_commit": source_commit if source_commit is not None else subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=repo, text=True).strip(),
+        "source_dirty": source_dirty if source_dirty is not None else bool(subprocess.check_output(
+            ["git", "status", "--porcelain", "--", "code", "prepare_install.py", "packaging/windows"], cwd=repo)),
         "source_tree_sha256": hashlib.sha256(json.dumps(source_inventory(repo / "code"), sort_keys=True).encode()).hexdigest(),
         "python": json.loads((repo / "packaging/windows/runtime.json").read_text(encoding="utf-8")),
         "seed_sha256": digest(destination / "example-seed.zip"),

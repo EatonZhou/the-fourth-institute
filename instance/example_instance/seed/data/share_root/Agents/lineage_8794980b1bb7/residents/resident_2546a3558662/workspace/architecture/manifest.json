@@ -1,0 +1,78 @@
+{
+  "schema": "tfi.portal-architecture-evidence.v1",
+  "mode": "current",
+  "owner": "resident_60ae6d0cdf74",
+  "repository": "repo_5d287fed9c7e",
+  "current_commit": "3182ae77ad380a85d2b271623766cd36570edc03",
+  "currentSource": {
+    "commit": "3182ae77ad380a85d2b271623766cd36570edc03",
+    "scope": "current_workspace",
+    "files": {
+      "architecture/modules.yaml": {
+        "status": "available",
+        "address": "workspace_04ad72d24263/file/architecture/model/modules.yaml",
+        "sha256": "ee8c2a1e97773fe43693d083e8b88d7f7bdf3adefe4399ff60807264339dd2e7",
+        "size": 111522
+      },
+      "architecture/evolution.yaml": {
+        "status": "available",
+        "address": "workspace_04ad72d24263/file/architecture/model/evolution.yaml",
+        "sha256": "75725c9fe1415c317c04d840ebee33ecb6a971114023d489ccbcefc9ac58a627",
+        "size": 33935
+      },
+      "SPEC.md": {
+        "status": "available",
+        "address": "workspace_04ad72d24263/file/architecture/model/SPEC.md",
+        "sha256": "47f1523dee9946a1bc1397055eb89ae501fc5570103e718bc07f2cf6c939b675",
+        "size": 15776
+      },
+      "IMPROVE.md": {
+        "status": "available",
+        "address": "workspace_04ad72d24263/file/architecture/model/IMPROVE.md",
+        "sha256": "4f7027d564b7e86714cf46e41fa6e49eb4c4db528d38a1d4b0f65444d039624f",
+        "size": 6498
+      }
+    },
+    "file_index": {
+      "address": "workspace_04ad72d24263/file/architecture/model/file-index.json",
+      "sha256": "79b840a37fa22ed997768e04ae34d643ab3937bfc953ef448599d407d0c740be",
+      "size": 2160309
+    },
+    "protocols": {
+      "address": "workspace_04ad72d24263/file/architecture/model/protocols.json",
+      "sha256": "b0ef553e3290743aa3b40aef3ecb6386e23ac1a6264af79269644ec829e70a43",
+      "size": 59003
+    },
+    "file_counts": {
+      "tracked": 3209,
+      "multi_module": 618,
+      "unmapped": 314
+    }
+  },
+  "current_meaning": "Current workspace documents; source identifier is not a historical selection.",
+  "exploration": {
+    "status": "available",
+    "manifest": {
+      "address": "workspace_04ad72d24263/file/architecture/explore/exploration-manifest.json",
+      "sha256": "1f976ef9b124d3fb3b77d8b2a0d40b48f4736f3f83a58d7172f69833cd42cbab",
+      "size": 54172
+    }
+  },
+  "catalog_attachment": {
+    "address": "workspace_04ad72d24263/file/architecture/catalog/isa.json",
+    "sha256": "835467c6bea12d0cf3a83d2eb4a75251de7a92cda4f2e8c4794bc8addd392e2d",
+    "size": 521
+  },
+  "component_relations": {
+    "status": "not_declared"
+  },
+  "catalog_supplements": {
+    "hatg": {
+      "lesson_sources": {
+        "address": "workspace_04ad72d24263/file/architecture/explore/lesson-manifest.json",
+        "sha256": "ea00e583af1c1a4693e960839eb72812f5fc3ff77052008ce24ea3634a387a3b",
+        "size": 5458
+      }
+    }
+  }
+}

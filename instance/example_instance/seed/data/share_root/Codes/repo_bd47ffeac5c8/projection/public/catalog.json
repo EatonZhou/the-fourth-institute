@@ -851,7 +851,7 @@
       "deduplicatedSteps": [],
       "framesSha256": "88f36020b3d5e6cee1f403174c121740b23013384373f447785337188cf3f9b6"
     },
-    "offlineClip": "clips/ms20261016-r2-newlocal-w50-g1.json",
+    "offlineClip": "clips/c-cf6a425f78e36e43.json",
     "deliveryGroup": "featured",
     "deliveryGroupLabel": "原精选形态"
   },
@@ -1707,7 +1707,7 @@
       "deduplicatedSteps": [],
       "framesSha256": "0d42b28e32b2a25aa639fa8840e85d7982b40bca4d9919dca746d0758c3a457e"
     },
-    "offlineClip": "clips/ms20261016-r2-native-w50-g0.json",
+    "offlineClip": "clips/c-9ab4ee84e9141e90.json",
     "deliveryGroup": "featured",
     "deliveryGroupLabel": "原精选形态"
   },
@@ -4121,7 +4121,7 @@
       "deduplicatedSteps": [],
       "framesSha256": "c8f715a4d1f6e1b0f6d23f7c357ed8a01495ea6db2a0ac9ef6cee08cda4a624d"
     },
-    "offlineClip": "clips/ms20261016-r2-native-w60-g0.35.json",
+    "offlineClip": "clips/c-368a1c30cea907fc.json",
     "deliveryGroup": "diversity",
     "deliveryGroupLabel": "形态与运动变化"
   },
@@ -4976,7 +4976,7 @@
       "deduplicatedSteps": [],
       "framesSha256": "cfdb24e0af11db3fb1f405dedd6c2a158942ec0aed3d0f2aca7270ea18937fa6"
     },
-    "offlineClip": "clips/ms20261016-r2-native-w60-g1.json",
+    "offlineClip": "clips/c-54f857aaba1f70f8.json",
     "deliveryGroup": "diversity",
     "deliveryGroupLabel": "形态与运动变化"
   },
@@ -5521,7 +5521,7 @@
       "deduplicatedSteps": [],
       "framesSha256": "efc941e594fd85b669230129c37f5dd92db4d927f08c9f472bf21215922e78bb"
     },
-    "offlineClip": "clips/m2026101607-g1-0060-state-unperturbed-sham.json",
+    "offlineClip": "clips/c-7dc6fab50511b8d0.json",
     "deliveryGroup": "stimulus",
     "deliveryGroupLabel": "刺激经历对照"
   },
@@ -6066,7 +6066,7 @@
       "deduplicatedSteps": [],
       "framesSha256": "1e24510c9c074f02d7583176d568b45059a92c51a0e4c56300ecbeebaf79e888"
     },
-    "offlineClip": "clips/m2026101607-g1-0060-state-unperturbed-probe.json",
+    "offlineClip": "clips/c-7502a3b6291cfa32.json",
     "deliveryGroup": "stimulus",
     "deliveryGroupLabel": "刺激经历对照"
   },
@@ -6611,7 +6611,7 @@
       "deduplicatedSteps": [],
       "framesSha256": "cf17201431b6e2763afc2a6b02a340b7af29a822fe60af11ec7884c4930a343f"
     },
-    "offlineClip": "clips/m2026101607-g1-0060-state-first-pulse-sham.json",
+    "offlineClip": "clips/c-ef700f2860bc72c1.json",
     "deliveryGroup": "stimulus",
     "deliveryGroupLabel": "刺激经历对照"
   },
@@ -7156,7 +7156,7 @@
       "deduplicatedSteps": [],
       "framesSha256": "33bc399c28538f767d2c9f5bb1eb3c1020361eb4a34397ae9a66287df16570b1"
     },
-    "offlineClip": "clips/m2026101607-g1-0060-state-first-pulse-probe.json",
+    "offlineClip": "clips/c-87da100ad92af75d.json",
     "deliveryGroup": "stimulus",
     "deliveryGroupLabel": "刺激经历对照"
   },
@@ -32760,7 +32760,7 @@
       "readOnly": true,
       "modelsRun": 0
     },
-    "offlineClip": "clips/diversetransport-genome_0ac80448a534dc953505--T00.json",
+    "offlineClip": "clips/c-9068956abd3b9918.json",
     "deliveryGroup": "transport",
     "deliveryGroupLabel": "资源搬运开关对照"
   },
@@ -36125,7 +36125,7 @@
       "readOnly": true,
       "modelsRun": 0
     },
-    "offlineClip": "clips/diversetransport-genome_0ac80448a534dc953505--T11.json",
+    "offlineClip": "clips/c-bd35797f9d9bc8a4.json",
     "deliveryGroup": "transport",
     "deliveryGroupLabel": "资源搬运开关对照"
   },
@@ -39490,7 +39490,7 @@
       "readOnly": true,
       "modelsRun": 0
     },
-    "offlineClip": "clips/diversetransport-genome_6bd5bfd2f629f9414376--T00.json",
+    "offlineClip": "clips/c-b8765436fee541a5.json",
     "deliveryGroup": "transport",
     "deliveryGroupLabel": "资源搬运开关对照"
   },
@@ -42855,7 +42855,7 @@
       "readOnly": true,
       "modelsRun": 0
     },
-    "offlineClip": "clips/diversetransport-genome_6bd5bfd2f629f9414376--T11.json",
+    "offlineClip": "clips/c-1cdf2221371239fb.json",
     "deliveryGroup": "transport",
     "deliveryGroupLabel": "资源搬运开关对照"
   },
@@ -46220,7 +46220,7 @@
       "readOnly": true,
       "modelsRun": 0
     },
-    "offlineClip": "clips/diversetransport-genome_85dffefe3eb5bacdfbf5--T00.json",
+    "offlineClip": "clips/c-9462da432454a903.json",
     "deliveryGroup": "transport",
     "deliveryGroupLabel": "资源搬运开关对照"
   },
@@ -49585,7 +49585,7 @@
       "readOnly": true,
       "modelsRun": 0
     },
-    "offlineClip": "clips/diversetransport-genome_85dffefe3eb5bacdfbf5--T11.json",
+    "offlineClip": "clips/c-7630b1d15f71b0f6.json",
     "deliveryGroup": "transport",
     "deliveryGroupLabel": "资源搬运开关对照"
   }

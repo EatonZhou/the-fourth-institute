@@ -1,0 +1,1 @@
+self.onmessage=()=>{self.postMessage({"width":96,"height":96,"steps":[128,136,144,152,160,168,176,184,192,200,208,216,224],"sha256":"ed438ace1f8f584cdf477afae5369ef5f8e06fca018e3699495afe4d6703063e","framesFile":"clips/c-9068956abd3b9918.frames.json"});self.close();};

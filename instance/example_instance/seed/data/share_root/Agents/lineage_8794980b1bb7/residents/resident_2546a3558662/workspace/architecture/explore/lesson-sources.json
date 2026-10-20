@@ -1,0 +1,688 @@
+{
+  "schema": "tfi.hatg-lesson-source-supplement.v2",
+  "revision": 2,
+  "catalog_manifest": {
+    "address": "workspace_04ad72d24263/file/architecture/explore/catalog-manifest.json",
+    "sha256": "7d84e6e50b8350776077d4a9e983ed86378508875a9a79c3beebf71db5894aa8",
+    "size": 7366
+  },
+  "lessons": [
+    {
+      "instruction": "ReadResource",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/resources/isa.py#L95",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/resources/isa.py",
+      "source_sha256": "f3713ced7cf6d9843c731da112ebc233a94adf32bba16dc3e2682255b4ef3622",
+      "start_line": 95,
+      "end_line": 95,
+      "excerpt": "def read_resource(inv: Invocation) -> dict[str, Any]:",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "UpdateUser",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/web_isa.py#L615",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/web_isa.py",
+      "source_sha256": "a31050cfb04e91e571890c302ea5a3874ca872b65dab96515a86f1f3a952caeb",
+      "start_line": 615,
+      "end_line": 615,
+      "excerpt": "def update_user(inv: Invocation) -> dict[str, Any]:",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "ForkResident",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/residents.py#L109",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/residents.py",
+      "source_sha256": "c1a9b8236f7a366a101abfc0296a6e2555c30933cbb9f999c2169b4268ae9c41",
+      "start_line": 109,
+      "end_line": 109,
+      "excerpt": "def fork_resident(inv: Invocation) -> dict[str, Any]:",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "DeliverMessage",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/conversation.py#L88",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/conversation.py",
+      "source_sha256": "3801c1752e25fede85ebbd022ecfce2c6fa4540343dfd7e28ba064ebea8a83a3",
+      "start_line": 88,
+      "end_line": 88,
+      "excerpt": "def deliver_message(inv: Invocation) -> dict[str, Any]:",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "WatchConversationEvents",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/conversation.py#L241",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/conversation.py",
+      "source_sha256": "3801c1752e25fede85ebbd022ecfce2c6fa4540343dfd7e28ba064ebea8a83a3",
+      "start_line": 241,
+      "end_line": 241,
+      "excerpt": "def watch_conversation_events(inv: Invocation) -> Iterator[list[dict[str, Any]]]:",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "CloseIntake",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/execution.py#L115",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/execution.py",
+      "source_sha256": "f17477d5161b5243c7d7e99b12856a1af202d4da3e6ec277578d3300d869a9c3",
+      "start_line": 115,
+      "end_line": 115,
+      "excerpt": "def close_intake(inv: Invocation) -> dict[str, Any]:",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "CancelInput",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/execution.py#L161",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/execution.py",
+      "source_sha256": "f17477d5161b5243c7d7e99b12856a1af202d4da3e6ec277578d3300d869a9c3",
+      "start_line": 161,
+      "end_line": 161,
+      "excerpt": "def cancel_input(inv: Invocation) -> dict[str, Any]:",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "GetMailbox",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/mailbox.py#L25",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/mailbox.py",
+      "source_sha256": "6f47701cc7e76b678c2f7255015c057a9cfbee393a406e4e8a392106d44c1bd6",
+      "start_line": 25,
+      "end_line": 25,
+      "excerpt": "    _d(\"GetMailbox\", \"读取一个 Mailbox，resident_id 与 user_id 二选一。\"",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "CreateWire",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/definition.py#L180",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/definition.py",
+      "source_sha256": "791c15b97d5787edcb9bd33008efc2f289783a126816bed59eee9e9f647f8a2c",
+      "start_line": 180,
+      "end_line": 180,
+      "excerpt": "def create_wire(inv: Invocation) -> dict[str, Any]:",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "UpdateSharedState",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/lineage_service/lineage_graph_state.py#L129",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/lineage_service/lineage_graph_state.py",
+      "source_sha256": "c65b740aeffb8de9effbbc9dee9c6dda40d17a17f4514f20d1ec92c6a2a0bf4c",
+      "start_line": 129,
+      "end_line": 129,
+      "excerpt": "def update_cell(",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "TriggerEvent",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/runs.py#L44",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/runs.py",
+      "source_sha256": "ac63c8c9292cecbca22f8b5686d7f67114df305d65ede607fccd114db59641fb",
+      "start_line": 44,
+      "end_line": 44,
+      "excerpt": "def trigger_event(inv: Invocation) -> dict[str, Any]:",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "RunScript",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/lineage_service/script_runs/service.py#L103",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/lineage_service/script_runs/service.py",
+      "source_sha256": "f3c38a2bd7b0c360f74d30ec01838859f1cdbb3b8db045660747a14b290f5c30",
+      "start_line": 103,
+      "end_line": 103,
+      "excerpt": "def start(arguments, caller, *, idempotency_key='', trigger_path_id=''):",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "Functionalize",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/function_blocks.py#L5",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/function_blocks.py",
+      "source_sha256": "a46122f472f799b528566b4b92e62572d1686da289239a3ed7e5c38fadac6d16",
+      "start_line": 5,
+      "end_line": 5,
+      "excerpt": "def functionalize(inv):",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "Familize",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/families.py#L7",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/families.py",
+      "source_sha256": "5a690c3ee678460adf85faabf3b65aa041a09a9703504684ebf8142dbcfc2cbb",
+      "start_line": 7,
+      "end_line": 7,
+      "excerpt": "def familize(inv):",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "ApplyTemplate",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/templates.py#L52",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/templates.py",
+      "source_sha256": "95b9ca8acea096e77279767402d82548be94eda15ac011ebaf3f569ea392b5d8",
+      "start_line": 52,
+      "end_line": 52,
+      "excerpt": "def apply(inv):",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "CreateReply",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/web_isa.py#L102",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/web_isa.py",
+      "source_sha256": "a31050cfb04e91e571890c302ea5a3874ca872b65dab96515a86f1f3a952caeb",
+      "start_line": 102,
+      "end_line": 102,
+      "excerpt": "def create_reply(inv: Invocation) -> dict[str, Any]:",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "PublishPulseItem",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/web_isa.py#L246",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/web_isa.py",
+      "source_sha256": "a31050cfb04e91e571890c302ea5a3874ca872b65dab96515a86f1f3a952caeb",
+      "start_line": 246,
+      "end_line": 246,
+      "excerpt": "def publish_pulse_item(inv: Invocation) -> dict[str, Any]:",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "RelayFamilyMessage",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/conversation.py#L103",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/conversation.py",
+      "source_sha256": "3801c1752e25fede85ebbd022ecfce2c6fa4540343dfd7e28ba064ebea8a83a3",
+      "start_line": 103,
+      "end_line": 103,
+      "excerpt": "def relay_family_message(inv: Invocation) -> dict[str, Any]:",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "MoveResident",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/organization.py#L12",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/organization.py",
+      "source_sha256": "f41d2185cc2dd674ac93b6e4c967d771ff6bd8382e08edbe91ac9322fa325982",
+      "start_line": 12,
+      "end_line": 12,
+      "excerpt": "def move_resident(inv: Invocation) -> dict[str, Any]:",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "CheckPermission",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/permission_system/management.py#L68",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/permission_system/management.py",
+      "source_sha256": "014678c33ef6e98fc21cbba6b9e0f28e899382272300d041b03ade027d100422",
+      "start_line": 68,
+      "end_line": 68,
+      "excerpt": "    def check(self, actor: str, arguments: Mapping[str, Any]) -> dict[str, Any]:",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "GetGpuStatus",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/web_isa.py#L833",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/web_isa.py",
+      "source_sha256": "a31050cfb04e91e571890c302ea5a3874ca872b65dab96515a86f1f3a952caeb",
+      "start_line": 833,
+      "end_line": 833,
+      "excerpt": "def get_gpu_status(inv: Invocation) -> dict[str, Any]:",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "GetInstructionExecution",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/hatg/routing.py#L210",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/hatg/routing.py",
+      "source_sha256": "772d862bb6c04077dfefcc4993c83ada7f96592ca538bf29f58553a150491328",
+      "start_line": 210,
+      "end_line": 210,
+      "excerpt": "        elif call.instruction == \"GetInstructionExecution\":",
+      "coverage": "fixed_authored_source_anchor"
+    }
+  ],
+  "supporting_anchors": [
+    {
+      "instruction": "ReadResource",
+      "role": "authored_implementation_support",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/resources/isa.py#L64",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/resources/isa.py",
+      "source_sha256": "f3713ced7cf6d9843c731da112ebc233a94adf32bba16dc3e2682255b4ef3622",
+      "start_line": 64,
+      "end_line": 113,
+      "excerpt": "        }\n        attributes = item.get(\"attributes\") or {}\n        projects = attributes.get(\"project_ids\") or []\n        summary.setdefault(\"project\", projects[0] if len(projects) == 1 else projects)\n        if \"status\" in attributes:\n            summary.setdefault(\"status\", attributes[\"status\"])\n        items.append(summary)\n    return {\"items\": items, \"total\": int(result.get(\"total\") or len(items))}\n\n\ndef resolve_resource(inv: Invocation) -> dict[str, Any]:\n    try:\n        resolved = _service().resolve(inv.argument(\"address\"), actor=inv.caller)\n    except PermissionError as exc:\n        raise not_found(f\"资源地址不存在或不可读：{inv.argument('address')}\") from exc\n    if resolved.get(\"exists\") is False:\n        raise not_found(f\"资源地址不存在：{inv.argument('address')}\")\n    record = resolved.get(\"record\") if isinstance(resolved.get(\"record\"), dict) else {}\n    operations = [\"read\", \"update\", \"manage\"]\n    target = {key: value for key, value in resolved.items() if key not in {\"record\"}}\n    return {\"resource\": record, \"target\": target, \"operations\": operations}\n\n\ndef _resource_version(record: dict[str, Any]) -> str:\n    \"\"\"Use the provider's version number, never a serialized audit record.\"\"\"\n    value = record.get(\"version\")\n    if isinstance(value, dict):\n        value = value.get(\"number\")\n    return str(value if value is not None else record.get(\"updated_at\") or \"\")\n\n\ndef read_resource(inv: Invocation) -> dict[str, Any]:\n    import base64\n\n    address = inv.argument(\"address\")\n    limit = int(inv.argument(\"max_bytes\") or 4 * 1024 * 1024)\n    try:\n        data, content_type, resolved = _service().read_content(address, actor=inv.caller, max_bytes=limit)\n    except ValueError as exc:\n        if \"limit\" not in str(exc):\n            raise\n        return _oversized_read(address, inv.caller)\n    version = _resource_version(resolved.get(\"record\") or {}) if \"/\" not in address else \"\"\n    result: dict[str, Any] = {\n        \"content_type\": str(content_type or \"application/octet-stream\"),\n        \"version\": version or hashlib.sha256(data).hexdigest(),\n        \"size\": len(data),\n    }\n    try:\n        result[\"text\"] = data.decode(\"utf-8\")",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "UpdateUser",
+      "role": "authored_implementation_support",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/web_isa.py#L527",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/web_isa.py",
+      "source_sha256": "a31050cfb04e91e571890c302ea5a3874ca872b65dab96515a86f1f3a952caeb",
+      "start_line": 527,
+      "end_line": 552,
+      "excerpt": "def _set_user_category(inv: Invocation, username: str, category: Any) -> bool:\n    \"\"\"UpdateUser's category: Portal 管理员, 一般用户 or 实习用户, changed only by a Portal 管理员\n    in either permission mode; the Portal always keeps one active Portal 管理员.\"\"\"\n    from management_portal import permission_system\n    from management_portal.permission_system.categories import category_name\n\n    try:\n        category = category_name(category)\n    except ValueError as exc:\n        raise invalid(str(exc)) from exc\n    user = _access().user(username)\n    if not user.get(\"configured\") or user.get(\"status\") == \"deleted\":\n        raise not_found(f\"用户不存在：{username}\")\n    if category == permission_system.user_category(username):\n        return False\n    if permission_system.user_category(inv.caller) != \"portal_admin\":\n        raise InstructionError(\"instruction.forbidden\", \"只有 Portal 管理员可以修改 User 分类\")\n    if category != \"portal_admin\" and permission_system.user_category(username) == \"portal_admin\":\n        others = [name for name, value in permission_system.user_categories().items()\n                  if value == \"portal_admin\" and name != username and _access().is_active(name)]\n        if not others:\n            raise invalid(\"至少保留一位启用中的 Portal 管理员\")\n    changed = permission_system.set_user_category(username, category, actor=inv.caller)\n    if changed:\n        _access().audit(inv.caller, \"user_category_updated\", target=username, details={\"category\": category})\n    return changed",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "UpdateUser",
+      "role": "authored_implementation_support",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/permission_system/categories.py#L19",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/permission_system/categories.py",
+      "source_sha256": "158878ac00114ee6339c86d1a1fca41f62ef878f52af7be53024db100835c9b4",
+      "start_line": 19,
+      "end_line": 47,
+      "excerpt": "CATEGORIES = {\"portal_admin\": \"Portal 管理员\", \"member\": \"一般用户\", \"intern\": \"实习用户\"}\nDEFAULT = \"member\"\n\n# Created with the other permission tables.  The first creation takes over the\n# administrator list it replaces (2026-10-17): its Users become Portal 管理员.\nDDL = \"\"\"\nCREATE TABLE IF NOT EXISTS {s}.user_categories (\n    username TEXT PRIMARY KEY,\n    category TEXT NOT NULL,\n    updated_by TEXT NOT NULL DEFAULT '',\n    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()\n);\nDO $$ BEGIN\n    IF to_regclass('{s}.administrators') IS NOT NULL THEN\n        INSERT INTO {s}.user_categories (username, category, updated_by, updated_at)\n        SELECT principal_id, 'portal_admin', granted_by, granted_at FROM {s}.administrators\n        WHERE principal_id NOT LIKE 'resident\\\\_%' ON CONFLICT DO NOTHING;\n        DROP TABLE {s}.administrators;\n    END IF;\nEND $$;\n\"\"\"\n\n\ndef category_name(value: Any) -> str:\n    text = str(value or \"\").strip()\n    if text not in CATEGORIES:\n        raise ValueError(f\"User 分类只能是：{'、'.join(CATEGORIES)}\")\n    return text\n",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "DeliverMessage",
+      "role": "authored_implementation_support",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/conversation.py#L63",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/conversation.py",
+      "source_sha256": "3801c1752e25fede85ebbd022ecfce2c6fa4540343dfd7e28ba064ebea8a83a3",
+      "start_line": 63,
+      "end_line": 101,
+      "excerpt": "def deliver_to_user(inv: Invocation, user_id: str, message: dict[str, Any]) -> dict[str, Any]:\n    \"\"\"A message to a user stays in the Conversation it is sent from; it starts no work (decision_c524c775e0be).\"\"\"\n\n    from management_portal.lineage_service import outward_messages, resident_message_contract\n\n    if str(message.get(\"role\") or \"user\") != \"user\":\n        raise invalid(\"message.role 只能是 user\")\n    if (inv.argument(\"activation_policy\") or \"enqueue_and_trigger\") != \"enqueue_and_trigger\":\n        raise invalid(\"发给用户的消息不进入队列，activation_policy 只能省略或为 enqueue_and_trigger\")\n    supplied = str(message.get(\"message_id\") or \"\").strip()\n    if supplied:\n        message_id = resident_message_contract.message_identity(supplied)\n    elif inv.idempotency_key:\n        message_id = resident_message_contract.derived_message_identity(\n            \"isa-deliver\", f\"user:{user_id}\", inv.caller, inv.idempotency_key,\n        )\n    else:\n        message_id = resident_message_contract.message_identity()\n    result = outward_messages.deliver_to_user(\n        inv.caller, user_id, message.get(\"content_parts\"),\n        message_id=message_id, business_ref=inv.argument(\"business_ref\") or \"\",\n    )\n    return {**result, \"input_state\": {}}\n\n\ndef deliver_message(inv: Invocation) -> dict[str, Any]:\n    message = inv.argument(\"message\") or {}\n    unknown = sorted(set(message) - {\"message_id\", \"role\", \"content_parts\", \"quote\"})\n    if unknown:\n        raise invalid(\"message 只包含 message_id、role、content_parts 和 quote\", unknown_fields=unknown)\n    if inv.argument(\"user_id\"):\n        if \"quote\" in message or inv.argument(\"reply_to_message_id\"):\n            # Only a user message quotes; a message to a user is the sender's own (decision_c524c775e0be).\n            raise invalid(\"发给用户的消息不带引用\")\n        return deliver_to_user(inv, inv.argument(\"user_id\"), message)\n    resident_id = inv.argument(\"resident_id\")\n    return deliver(inv, resident_id, message, business_ref=inv.argument(\"business_ref\") or \"\",\n                   reply_to=inv.argument(\"reply_to_message_id\") or \"\")\n",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "CloseIntake",
+      "role": "authored_implementation_support",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/execution.py#L47",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/execution.py",
+      "source_sha256": "f17477d5161b5243c7d7e99b12856a1af202d4da3e6ec277578d3300d869a9c3",
+      "start_line": 47,
+      "end_line": 108,
+      "excerpt": "def _change_intake(inv: Invocation, transition: str) -> dict[str, Any]:\n    from management_portal.lineage_service import resident_intake_domain\n\n    target_state = \"open\" if transition == \"open\" else \"closed\"\n    # Human or Resident callers change intake by hand; manual opening also\n    # records a manual release of the account's quota guard.\n    manual = inv.entry != \"lineage\"\n    if inv.argument(\"account_id\"):\n        change = (\n            resident_intake_domain.open_account_residents\n            if transition == \"open\"\n            else resident_intake_domain.close_account_residents\n        )\n        result = change(inv.argument(\"account_id\"), inv.caller)\n        changed_key = \"reopened\" if transition == \"open\" else \"closed\"\n        return {\n            **result,\n            \"changed_resident_ids\": list(result.get(changed_key) or []),\n            \"unchanged_resident_ids\": list(result.get(\"skipped\") or []),\n            \"failed\": list(result.get(\"errors\") or []),\n        }\n    single = inv.argument(\"resident_id\")\n    targets = [single] if single else [str(item).strip().lower() for item in inv.argument(\"resident_ids\") or []]\n    changed: list[str] = []\n    unchanged: list[str] = []\n    failed: list[dict[str, Any]] = []\n    last: dict[str, Any] = {}\n    for resident_id in targets:\n        try:\n            previous = _intake_state(resident_id, inv.caller)\n            # A manual Close still runs on a closed Resident: it turns a closure made\n            # by the quota guard into a manual one, so quota recovery keeps it closed.\n            if previous == target_state and not (manual and transition == \"close\"):\n                unchanged.append(resident_id)\n                last = {\"previous\": previous, \"current\": previous, \"changed\": False}\n                continue\n            lineage_id = lineage_of_resident(resident_id)\n            result = domain().change_lineage_resident_state(\n                lineage_id,\n                {\"resident_id\": resident_id, \"state_domain\": \"intake\", \"transition\": transition},\n                inv.caller,\n                allow_quota_override=manual,\n            )\n            # The transition returns the committed intake state; no second Resident\n            # projection is needed merely to classify the result.\n            current = str(result.get(\"intake_state\") or result.get(\"state\") or \"\")\n            (changed if previous != current else unchanged).append(resident_id)\n            last = {\"previous\": previous, \"current\": current, \"changed\": previous != current, \"state\": result}\n        except Exception as exc:  # noqa: BLE001 - one Resident failing does not stop the batch\n            if single:\n                raise\n            failed.append({\"resident_id\": resident_id, \"error\": str(exc) or type(exc).__name__})\n    if single:\n        return last\n    return {\n        \"changed_resident_ids\": changed,\n        \"unchanged_resident_ids\": unchanged,\n        \"failed\": failed,\n        \"changed_count\": len(changed),\n        \"unchanged_count\": len(unchanged),\n        \"failed_count\": len(failed),\n    }",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "CancelInput",
+      "role": "authored_implementation_support",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/execution.py#L149",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/execution.py",
+      "source_sha256": "f17477d5161b5243c7d7e99b12856a1af202d4da3e6ec277578d3300d869a9c3",
+      "start_line": 149,
+      "end_line": 195,
+      "excerpt": "\n\nFINISHED_INPUT_STATES = frozenset({\"completed\", \"failed\", \"cancelled\"})\n\n\ndef _stored_input_state(resident_id: str, message_id: str) -> dict[str, Any]:\n    try:\n        return dict(protocol()._stored_resident_input_state(resident_id, message_id) or {})\n    except (KeyError, ValueError):\n        return {}\n\n\ndef cancel_input(inv: Invocation) -> dict[str, Any]:\n    \"\"\"Stop one message (decision_2a3ff353165c).\n\n    A running turn is cancelled; a waiting request, group or info leaves the\n    Mailbox (one that starts meanwhile is stopped instead); a finished message\n    keeps its result and the receipt carries its state.  A facade request goes to\n    the member message the Router relayed it to, and one not relayed yet is\n    withdrawn from the facade (decision_44cf587c1721).\n    \"\"\"\n    _, relayed = _relayed_message(inv.argument(\"resident_id\"), inv.argument(\"message_id\"))\n    resident_id, message_id = relayed or (inv.argument(\"resident_id\"), inv.argument(\"message_id\"))\n    lineage_id = lineage_of_resident(resident_id)\n    payload = {\"resident_id\": resident_id, \"message_id\": message_id}\n    state = str(_stored_input_state(resident_id, message_id).get(\"state\") or \"\")\n    # The turn path stops what runs and reports a finished message as it is.\n    stop, withdraw = domain().cancel_lineage_resident_execution, domain().cancel_lineage_resident_queue_item\n    cancel = stop if state == \"running\" or state in FINISHED_INPUT_STATES else withdraw\n    try:\n        result = dict(cancel(lineage_id, payload, inv.caller) or {})\n    except (KeyError, ValueError) as exc:\n        current = _stored_input_state(resident_id, message_id)\n        if str(current.get(\"state\") or \"\") in FINISHED_INPUT_STATES:\n            result = {\"already_terminal\": True, \"input_state\": current}\n        elif cancel is withdraw and current.get(\"state\") == \"running\":\n            result = dict(stop(lineage_id, payload, inv.caller) or {})\n        elif any(word in str(exc) for word in (\"已经\", \"不在队列\", \"已结束\", \"已开始\", \"not queued\", \"no longer\")):\n            raise InstructionError(\"instruction.conflict\", str(exc)) from exc\n        else:\n            raise\n    receipt = {**result, \"resident_id\": resident_id, \"message_id\": message_id,\n               \"input_state\": result.get(\"input_state\") or _stored_input_state(resident_id, message_id)}\n    if relayed is not None:\n        receipt.update(facade_message_id=inv.argument(\"message_id\"), member_resident_id=resident_id,\n                       member_message_id=message_id)\n    return receipt",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "CancelInput",
+      "role": "authored_implementation_support",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/lineage_service/resident_intake_domain.py#L2034",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/lineage_service/resident_intake_domain.py",
+      "source_sha256": "7f1dee932628ac3b8aa550cf32af8861f480036c88bba1f5bea24cbb783d8f9b",
+      "start_line": 2034,
+      "end_line": 2071,
+      "excerpt": "    record = _find_resident_for_admission(resident_id)\n    if not record:\n        raise KeyError(\"resident not found\")\n    held_continuation = \"\"\n    with _state_lock(resident_id):\n        control = dict(resident_execution_work.read_control(resident_id).get(\"state\") or {})\n        if str(control.get(\"user_message_id\") or \"\") != message_id:\n            raise ValueError(\"message is not the active Resident input\")\n        if resident_execution_work.is_self_stop_request(record, control):\n            raise RuntimeError(\"当前 Resident job 不能停止自己；请从 Portal 外部停止，或等待本轮运行结束\")\n        if continue_queue and not resident_execution_work.is_execution_held(control) and control.get(\"operation\") != \"context_fork_create\":\n            accepted = get_lineage_data_store().request_resident_execution_stop(\n                resident_id, str(control.get(\"execution_id\") or \"\"), message_id, actor_id, _now_iso(),\n            )\n            if accepted:\n                from .lifecycle import notify_execution_cancellation\n                from .resident_delivery_work import wake\n                notify_execution_cancellation(resident_execution_work.submitted_execution_id(control), str(control.get(\"actor\") or \"\"))\n                invariant_locks.defer_until_state_unlock(lambda: wake(resident_id))\n            return {\"resident_id\": resident_id, \"message_id\": message_id,\n                    \"cancelled\": False, \"cancellation_requested\": accepted,\n                    \"already_terminal\": not accepted, \"backend_cancelled\": False}\n    # Withdrawing held inputs/clearing their queue also needs immutable input\n    # materialization. Prepare its Workspace before reacquiring the Job lock.\n    record = _find_resident(resident_id)\n    with _state_lock(resident_id):\n        if not record:\n            raise KeyError(\"resident not found\")\n        job = resident_execution_work.read(record)\n        if str(job.get(\"user_message_id\") or \"\") != message_id:\n            raise ValueError(\"message is not the active Resident input\")\n        if not resident_execution_work.is_active(job):\n            return _resident_operation_result(\n                resident_id,\n                cancellation_requested=False,\n                already_terminal=True,\n            )\n        if resident_execution_work.is_self_stop_request(record, job):",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "GetMailbox",
+      "role": "authored_implementation_support",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/execution.py#L266",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/execution.py",
+      "source_sha256": "f17477d5161b5243c7d7e99b12856a1af202d4da3e6ec277578d3300d869a9c3",
+      "start_line": 266,
+      "end_line": 273,
+      "excerpt": "def get_mailbox(inv: Invocation) -> dict[str, Any]:\n    \"\"\"GetMailbox with resident_id; the user_id form runs at Web (web_isa.get_user_mailbox).\"\"\"\n    if inv.argument(\"related_resident_id\"):\n        raise InstructionError(\"instruction.invalid_arguments\", \"related_resident_id 只用于读取 User Mailbox\")\n    result = protocol().get_resident_mailbox(inv.argument(\"resident_id\"), inv.caller)\n    queued = [item for item in result.get(\"pending\") or [] if item.get(\"kind\") != \"info\"]\n    return {**result, \"revision\": _queue_revision(queued)}\n",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "GetMailbox",
+      "role": "authored_implementation_support",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/web_isa.py#L314",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/web_isa.py",
+      "source_sha256": "a31050cfb04e91e571890c302ea5a3874ca872b65dab96515a86f1f3a952caeb",
+      "start_line": 314,
+      "end_line": 325,
+      "excerpt": "def get_user_mailbox(inv: Invocation) -> dict[str, Any]:\n    \"\"\"GetMailbox with user_id; the resident_id form runs at LineageService (isa.execution.get_mailbox).\"\"\"\n    from management_portal.agent_conversation_index_backend import newest_first, summarize_entries\n\n    user_id = _mailbox_user(inv)\n    # Page one carries every notification and Chatroom; order the pages as one\n    # list so the result does not depend on the page size.\n    entries = newest_first([\n        {**entry, **_inbox_message_ids(entry), \"version\": str(entry.get(\"read_revision\") or 0)}\n        for entry in _inbox_entries(user_id, inv.argument(\"related_resident_id\") or \"\")\n    ], pinned_first=True)\n    return {\"items\": entries, **summarize_entries(entries)}",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "TriggerEvent",
+      "role": "authored_implementation_support",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/lineage_service/lineage_program_backlog.py#L339",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/lineage_service/lineage_program_backlog.py",
+      "source_sha256": "30bc869e88ad09c96c3d5e90982ef5cb428031c0fc83576bd062ecfe98216bc4",
+      "start_line": 339,
+      "end_line": 410,
+      "excerpt": "def emit_manual_event(\n    lineage_id: str,\n    payload: dict[str, Any],\n    actor: str,\n    *,\n    authority: ProgramControlAuthority,\n) -> dict[str, Any]:\n    \"\"\"Trigger one ``manual.triggered`` Event Source, or only one of its wires.\"\"\"\n    _lineage_scope = authority.lineage_scope\n    _read_lineage = authority.read_lineage\n    _ensure_manager = authority.ensure_manager\n    dispatch_lineage_program_event = authority.dispatch_lineage_program_event\n    observe_trigger_path = authority.observe_trigger_path\n    get_lineage = authority.get_lineage\n\n    actor_id = _safe_actor(actor)\n    event_source_id = _text(payload.get(\"event_source_id\"), 110).lower()\n    wire_id = _text(payload.get(\"wire_id\"), 110).lower()\n    if not event_source_id and not wire_id:\n        raise ValueError(\"触发 Event 必须指定 Event Source 或连线\")\n    with _lineage_scope(lineage_id):\n        lineage = _read_lineage(lineage_id, actor=actor)\n        _ensure_manager(lineage, actor_id)\n        plan = _compiled_program(lineage)\n        if wire_id:\n            wire = next(\n                (item for item in plan.get(\"wires\") or [] if str(item.get(\"id\") or \"\") == wire_id),\n                None,\n            )\n            if not wire or str(wire.get(\"kind\") or \"\") != \"route\":\n                raise KeyError(\"Event 连线不存在\")\n            wire_source = str(wire.get(\"source\") or \"\")\n            if event_source_id and event_source_id != wire_source:\n                raise ValueError(\"连线不属于这个 Event Source\")\n            event_source_id = wire_source\n        event_source = (plan.get(\"event_sources\") or {}).get(event_source_id)\n        if not isinstance(event_source, dict) or event_source.get(\"kind\") != \"event_source\":\n            raise KeyError(\"program Event Source not found\")\n        if str(event_source.get(\"event_type\") or \"\") != \"manual.triggered\":\n            raise ValueError(\"TriggerEvent 只能触发 manual.triggered 事件源\")\n        source_contract = _program_event_source_contract_fingerprint(event_source)\n        occurrence = secrets.token_hex(12)\n        event_payload: dict[str, Any] = {\"triggered_by\": actor_id, \"prompt\": payload.get(\"prompt\")}\n        if \"content_parts\" in payload:\n            event_payload[\"content_parts\"] = payload[\"content_parts\"]\n        if wire_id:\n            event_payload[\"edge_id\"] = wire_id\n        if payload.get(\"event_name\"):\n            event_payload[\"name\"] = payload[\"event_name\"]\n        if isinstance(payload.get(\"payload\"), dict):\n            event_payload[\"data\"] = payload[\"payload\"]\n        from management_portal.hatg.kernel import current_instruction_id\n        instruction = current_instruction_id()\n        event_payload[\"cause\"] = ({\"kind\": \"instruction\", \"id\": instruction} if instruction\n                                  else {\"kind\": \"input\", \"id\": occurrence})\n        event = lineage_primitives.make_event(\n            \"manual.triggered\",\n            subject_resident_id=_text(payload.get(\"subject_resident_id\"), 80).lower(),\n            payload=event_payload,\n            correlation=f\"{event_source_id}:{occurrence}\",\n        )\n    dispatched = dispatch_lineage_program_event(\n        lineage_id,\n        event_source_id,\n        event,\n        actor_id,\n        cursor=f\"manual:{occurrence}\",\n        expected_event_source_contract=source_contract,\n        **({\"selected_wire_ids\": {wire_id}} if wire_id else {}),\n    )\n    if dispatched.get(\"paused\"):\n        raise EventSourcePausedError(\"事件源已暂停，恢复后才能触发\")",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "TriggerEvent",
+      "role": "authored_implementation_support",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/hatg/contracts.py#L97",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/hatg/contracts.py",
+      "source_sha256": "4de9ff62f4f1da4532c93ab8aa6b24fda6f2ca87d88382261a01c48516b9e88e",
+      "start_line": 97,
+      "end_line": 109,
+      "excerpt": "def normalize_error(exc: BaseException) -> InstructionError:\n    \"\"\"Map a domain exception to the instruction error vocabulary.\"\"\"\n\n    code_by_exception = (\n        (PermissionError, \"instruction.forbidden\"),\n        (FileNotFoundError, \"instruction.not_found\"),\n        (KeyError, \"instruction.not_found\"),\n        (FileExistsError, \"instruction.conflict\"),\n        (ValueError, \"instruction.invalid_arguments\"),\n    )\n    if isinstance(exc, OperationError):\n        failure = exc.failure_payload()\n        code = str(failure[\"code\"])",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "Functionalize",
+      "role": "authored_implementation_support",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/function_blocks.py#L5",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/function_blocks.py",
+      "source_sha256": "a46122f472f799b528566b4b92e62572d1686da289239a3ed7e5c38fadac6d16",
+      "start_line": 5,
+      "end_line": 8,
+      "excerpt": "def functionalize(inv):\n    block = blocks.functionalize(inv.argument(\"lineage_id\"), inv.argument(\"element_ids\"), inv.caller,\n                                 **{k: inv.argument(k) for k in (\"title\", \"x\", \"y\") if k in inv.call.arguments})\n    return {\"function_block_id\": block[\"id\"]}",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "Familize",
+      "role": "authored_implementation_support",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/lineage_service/templates/familize.py#L327",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/lineage_service/templates/familize.py",
+      "source_sha256": "ef4cbc56ae4a749f33cd26c0058f9e750a864b46d896950c9d1789ea51568f93",
+      "start_line": 327,
+      "end_line": 398,
+      "excerpt": "def familize(lineage_id: str, resident_ids: Iterable[str], actor: str, *, title: str = \"\", goal: str = \"\",\n             parameters: Mapping | None = None, placement_request: dict | None = None,\n             resident_settings: Mapping | None = None, template_id: str = TEMPLATE_ID, scope: str = \"selection\",\n             personal_ama_id: str = \"\") -> dict:\n    from .. import function_block_domain\n    lineage = _read(lineage_id, actor)\n    if scope not in {\"selection\", \"lineage\"}:\n        raise TemplateError(\"Family scope 必须是 selection 或 lineage\")\n    if scope == \"lineage\":\n        if resident_ids:\n            raise TemplateError(\"整条 Lineage Familize 不接受 resident_ids\")\n        existing = facts.lineage_family(lineage)\n        if existing:\n            family = existing[\"family\"]\n            return result(\"Lineage 已有 Family\", family_id=existing[\"id\"], resource_id=family[\"resource_id\"], function_block_ids=[existing[\"id\"]],\n                **{role + \"_resident_id\": family[role] for role in (\"facade\", \"steward\", \"router\")},\n                member_resident_ids=family[\"members\"], leader_resident_id=lineage.get(\"leader_resident_id\", \"\"),\n                rewired_wire_ids=[])\n        resident_ids = facts.lineage_members(lineage)\n    members = facts.validate_members(lineage, _selection(lineage, resident_ids))\n    if personal_ama_id and (lineage.get(\"lineage_membership\") != \"personal\" or members != [personal_ama_id]):\n        raise TemplateError(\"个人助手只以当前 AMA 为初始成员\")\n    if not members and scope != \"lineage\":\n        raise TemplateError(\"Familize 至少需要 1 个 Resident\")\n    values = _values({**dict(parameters or {}), **({\"goal\": goal} if goal else {})})\n    settings = _resident_settings(resident_settings)\n    title = str(title or lineage.get(\"title\") or \"Family\").strip()\n    element_keys = _member_elements(lineage, members, lineage_scope=scope == \"lineage\")\n    # Validate ownership and nesting before creating any roles.\n    if element_keys:\n        function_block_domain.functionalize_in_body(copy.deepcopy(lineage), list(element_keys), actor, title=title)\n    placement = dict(placement_request or {})\n    near = str(placement.get(\"near_resident_id\") or _central_member(lineage, members))\n    roles = {role: _new_role(lineage_id, role, title, actor, near, settings, placement,\n                           creation_key=f\"personal-assistant:{personal_ama_id}:{role}\" if personal_ama_id else \"\")\n             for role in (\"facade\", \"steward\", \"router\")}\n    leader = str(lineage.get(\"leader_resident_id\") or \"\")\n    from .. import identity_contract\n    family = {\"resource_id\": identity_contract.new_id(\"family\"), \"title\": title, **values, **roles, \"members\": members, \"lineage_scope\": scope == \"lineage\",\n              \"previous_leader_id\": leader if leader in members else \"\",\n              \"human_familizer_id\": canonical_actor_id(actor) if actor_principal(actor).kind == \"user\" else \"\"}\n    if personal_ama_id:\n        from .. import resident_conversation_stream\n        from ..lineage_primitives import now_iso\n        page = resident_conversation_stream.get_repository().agent_data.read_chat_message_page(personal_ama_id, limit=1)\n        family.update(personal_ama_id=personal_ama_id, history_before=now_iso(),\n                      history_before_ordinal=(page.get(\"ordinals\") or [0])[-1] + 1)\n\n    def edit(body):\n        facts.validate_members(body, members)\n        keys = {**_member_elements(body, members, lineage_scope=scope == \"lineage\"),\n                **{rid: role + \"_resident\" for role, rid in roles.items()}}\n        block = function_block_domain.functionalize_in_body(body, list(keys), actor, title=title,\n                    template_id=template_id, element_keys=keys, x=placement.get(\"x\"), y=placement.get(\"y\"))\n        block[\"family\"] = copy.deepcopy(family)\n        family_workflows.update(body, block, actor, collect=True)\n        reconcile_in_body(body, block, actor)\n        if leader in members or scope == \"lineage\" or personal_ama_id:\n            body[\"leader_resident_id\"] = roles[\"facade\"]\n        return {\"family_id\": block[\"id\"], \"rewired_wire_ids\": _rewire(body, set(members), roles[\"facade\"], block)}\n\n    view, outcome = _domain().commit_lineage_edit(lineage_id, actor, edit, reason=\"Familize：创建 Family\")\n    block = _block(view, outcome[\"family_id\"])\n    from ..personal_assistant import steward_rules\n    family_facade.tell_steward(roles[\"facade\"], roles[\"steward\"], actor, steward_rules(family, block[\"id\"]) if personal_ama_id else charter(\n        title=title, goal=values[\"goal\"], facade_id=roles[\"facade\"], router_id=roles[\"router\"],\n        members=[{\"resident_id\": rid, \"title\": str(facts._find(rid).get(\"title\") or \"\")} for rid in members],\n        threshold=values[\"route_threshold\"], family_id=block[\"id\"]))\n    return result(f\"已创建 Family「{title}」\", **outcome, resource_id=block[\"family\"][\"resource_id\"], function_block_ids=[block[\"id\"]],\n        facade_resident_id=roles[\"facade\"], steward_resident_id=roles[\"steward\"], router_resident_id=roles[\"router\"],\n        member_resident_ids=members, leader_resident_id=view.get(\"leader_resident_id\", \"\"),\n        created={\"resident_ids\": list(roles.values()),",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "ApplyTemplate",
+      "role": "authored_implementation_support",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/lineage_service/templates/registry.py#L79",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/lineage_service/templates/registry.py",
+      "source_sha256": "39730ae9e2a4ec5afbc2d131b69a1aebf72d58278212a3d8fd5f349a02dda825",
+      "start_line": 79,
+      "end_line": 87,
+      "excerpt": "def result(summary: str = \"\", **extra) -> dict:\n    return {\n        \"function_block_ids\": [],\n        \"created\": {\"resident_ids\": [], \"component_ids\": [], \"wire_ids\": []},\n        \"delivered\": [],\n        \"trigger_path_ids\": [],\n        \"summary\": summary,\n        **extra,\n    }",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "ApplyTemplate",
+      "role": "authored_implementation_support",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/lineage_service/templates/structure.py#L499",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/lineage_service/templates/structure.py",
+      "source_sha256": "f62df11e598bb591524c727a5296f1c3afb66c5131399a1a53ad7f065cfdf2c8",
+      "start_line": 499,
+      "end_line": 544,
+      "excerpt": "    def preview(self, ctx):\n        \"\"\"What applying would find, delete, update and create, without changing anything.\"\"\"\n        body = ctx.template[\"body\"]\n        lineage, info, targets, leader = self._targets(ctx)\n        _preflight(ctx)\n        items = {item[\"key\"]: item for item in body[\"match\"]}\n        entries = []\n        for target in targets:\n            entry = {\"target_resident_id\": target or \"\", \"found\": [], \"removed\": [], \"updated\": [],\n                     \"ambiguous\": [], \"created\": {}, \"error\": \"\"}\n            entries.append(entry)\n            try:\n                plan = self._plans(ctx, lineage, info, [target], leader)[target]\n            except TemplateError as exc:\n                entry[\"error\"] = str(exc)\n                continue\n            elements = plan[\"graph\"][\"elements\"]\n\n            def describe(identity, elements=elements):\n                element = elements[identity]\n                return {\"id\": identity, \"kind\": element[\"kind\"], \"title\": element[\"title\"]}\n\n            seen = set()\n            for binding in plan[\"bindings\"]:\n                for key, identity in binding.items():\n                    if identity not in seen:\n                        seen.add(identity)\n                        entry[\"found\"].append({**describe(identity), \"key\": key, \"op\": items[key][\"op\"]})\n            entry[\"removed\"] = [describe(identity) for identity in plan[\"changes\"][\"removed\"]]\n            entry[\"updated\"] = [describe(identity) for identity in plan[\"changes\"][\"updated\"]]\n            entry[\"ambiguous\"] = [\n                {\"key\": item[\"key\"], \"candidates\": [describe(identity) for identity in item[\"candidates\"]]}\n                for item in plan[\"ambiguous\"]\n            ]\n            depends = rewrite.dependencies(body)\n            entry[\"created\"] = {\n                \"roles\": sum(role[\"from\"] in {\"new\", \"fork\"} for role in body[\"roles\"]),\n                **{\n                    collection: sum(\n                        len(rewrite.projections(depends[item[\"key\"]], plan[\"bindings\"]))\n                        for item in body[collection]\n                    )\n                    for collection in (\"components\", \"wires\")\n                },\n            }\n        return result(\"预览施加结果。\", preview=entries)",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "PublishPulseItem",
+      "role": "authored_implementation_support",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/portal_pulse_backend.py#L217",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/portal_pulse_backend.py",
+      "source_sha256": "060c4d5d3b1f8c57d6204bdeacc8fc475f0812bd92503c9c34a00bdd836f820f",
+      "start_line": 217,
+      "end_line": 296,
+      "excerpt": "    actor_id = str(actor or \"\").strip()\n    if not actor_id:\n        return {\n            \"schema\": \"dirtybase.portal_pulse.home.v1\",\n            \"actor\": actor_id,\n            \"enabled\": False,\n            \"generated_at\": _now(),\n            \"periods\": {},\n            \"publications\": [],\n            \"status\": {},\n        }\n    publications = _read_publications()\n    summaries = _load_latest_summaries()\n    periods = {}\n    for period, summary in summaries.items():\n        periods[period] = {\n            \"public\": _public_summary(summary) if summary else {},\n            \"mine\": _private_summary(summary, actor_id, publications) if summary else {\"summary\": \"\", \"items\": []},\n        }\n    # The Pulse Resident publishes through index.json; it is the status.\n    index = _read_index()\n    status = {\n        \"latest\": index.get(\"latest\") if isinstance(index.get(\"latest\"), dict) else {},\n        \"updated_at\": str(index.get(\"updated_at\") or \"\"),\n    }\n    return {\n        \"schema\": \"dirtybase.portal_pulse.home.v1\",\n        \"actor\": actor_id,\n        \"enabled\": True,\n        \"generated_at\": _now(),\n        \"data_root\": str(_pulse_root()),\n        \"periods\": periods,\n        \"publications\": _published_items(publications),\n        \"status\": status if isinstance(status, dict) else {},\n    }\n\n\ndef _find_private_item(actor: str, period: str, key: str, item_id: str) -> dict:\n    payload = _read_json(_summary_path(period, key), {})\n    if not isinstance(payload, dict):\n        return {}\n    private = _private_summary(payload, actor, _read_publications())\n    for item in private.get(\"items\") or []:\n        if item.get(\"id\") == item_id:\n            return item\n    return {}\n\n\ndef update_publication(actor: str, payload: dict) -> dict:\n    actor_id = str(actor or \"\").strip()\n    if not actor_id:\n        raise PermissionError(\"需要登录后操作\")\n    action = str(payload.get(\"action\") or \"publish\").strip().lower()\n    with pulse_publication_store.database().transaction(pulse_publication_store.LOCK) as connection:\n        items = pulse_publication_store.items(connection)\n        if action == \"publish\":\n            period = str(payload.get(\"source_period\") or \"\").strip()\n            key = str(payload.get(\"source_key\") or \"\").strip()\n            item_id = str(payload.get(\"item_id\") or \"\").strip()\n            if period not in PERIODS or not key or not item_id:\n                raise ValueError(\"source_period、source_key 和 item_id 必填\")\n            source = _find_private_item(actor_id, period, key, item_id)\n            if not source:\n                raise PermissionError(\"只能发布自己的 Pulse 条目\")\n            pub_id = _publication_id(actor_id, period, key, item_id)\n            publication = next((item for item in items if item[\"publication_id\"] == pub_id), None)\n            if publication is None:\n                publication = {\n                    \"publication_id\": pub_id,\n                    \"owner\": actor_id,\n                    \"source_period\": period,\n                    \"source_key\": key,\n                    \"source_item_id\": item_id,\n                    \"text\": source.get(\"text\") or \"\",\n                    \"project\": source.get(\"project\") or \"\",\n                    \"evidence_paths\": source.get(\"evidence_paths\") or [],\n                    \"published_at\": _now(),\n                }\n                pulse_publication_store.add(connection, publication)\n        elif action == \"unpublish\":",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "RelayFamilyMessage",
+      "role": "authored_implementation_support",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/lineage_service/family_quota.py#L72",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/lineage_service/family_quota.py",
+      "source_sha256": "6b718a0fd637cfc2ef6fee163c9970a8c17c1f21644a7ec7ecd41bc485bfc154",
+      "start_line": 72,
+      "end_line": 114,
+      "excerpt": "def _relay_message(facade_id: str, message_id: str, member_id: str, actor: str,\n                   *, quota_reviewed: bool, reason: str, scope_gap: str = \"\",\n                   scope_reviewed: bool = False) -> dict[str, Any]:\n    from . import outward_messages, resident_conversation_stream, resident_protocol\n    from .resident_questions import answered_set\n    from .resident_workspace_domain import _find_resident\n\n    facade = _find_resident(facade_id)\n    if not family_facade.is_facade(facade):\n        raise ValueError(\"目标必须是 Family 门面\")\n    steward_id = family_facade.family_steward_id(facade)\n    approved = quota_reviewed\n    if quota_reviewed and not reason.strip():\n        raise ValueError(\"额度复核需要填写判断理由\")\n    # The steward's arrangement of a request no member owns, like its quota review, is a review.\n    arranging = scope_reviewed\n    if scope_reviewed and not reason.strip():\n        raise ValueError(\"安排成员需要填写判断理由\")\n    if (approved or arranging) and not family_facade.is_own_steward(facade, actor):\n        raise PermissionError(\"只有本 Family 的 steward 可以批准复核\")\n    mark = family_facade.relay_mark(facade_id, message_id)\n    if not (approved or arranging):\n        family_facade.validate_relay(mark, actor)\n    scope_gap = str(scope_gap or \"\").strip()\n    repository = resident_conversation_stream.get_repository()\n    message = repository.message(facade_id, message_id)\n    if not message:\n        raise KeyError(\"门面消息不存在\")\n    # Besides members, only the steward takes a request: an answer to a message it sent.\n    to_steward = bool(steward_id) and member_id == steward_id and family_facade.answers_steward(facade, message)\n    if member_id not in family_facade.family_member_ids(facade) and not to_steward:\n        raise ValueError(\"所选 Resident 已不属于这个 Family\")\n    state = repository.input_state(facade_id, message_id)\n    if state.get(\"state\") == \"cancelled\":\n        # Its sender or an owner stopped it while it was being routed (ET 10-09): the routing just ends.\n        return {\"status\": \"withdrawn\", \"member_id\": member_id}\n    if state.get(\"state\") == \"failed\":\n        raise ValueError(\"门面请求已失败，不能放行\")\n    arranged = (get_lineage_data_store().family_quota_reviews.get(facade['lineage_id'], facade_id)\n                .get(\"scope_requests\") or {}).get(message_id) or {}\n    link = family_facade.relay_links(facade).get(message_id)\n    if arranged.get(\"status\") == \"arranged\" and not (approved or arranging):\n        # A replayed Router relay finds the steward's arrangement in place.",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "RelayFamilyMessage",
+      "role": "authored_implementation_support",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/lineage_service/family_quota.py#L178",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/lineage_service/family_quota.py",
+      "source_sha256": "6b718a0fd637cfc2ef6fee163c9970a8c17c1f21644a7ec7ecd41bc485bfc154",
+      "start_line": 178,
+      "end_line": 266,
+      "excerpt": "            source_id = answered_set(message)\n            if (not to_steward or not source_id or review.get(\"status\") != \"delivering\"\n                    or repository.message(review[\"member_id\"], message_id) is not None\n                    or repository.message(review[\"member_id\"], source_id) is not None):\n                raise ValueError(\"该门面请求已经选定其他成员\")\n            review = {}\n        if review.get(\"status\") == \"relayed\":\n            return dict(review[\"result\"])\n        if approved and review.get(\"status\") not in {\"waiting\", \"delivering\"}:\n            raise ValueError(\"该请求没有待放行的额度复核\")\n        if not review:\n            account = resident_account(_find_resident(member_id) or {}, accounts)\n            # The steward keeps its own reserve (ensure_steward_reserve) and does not review itself.\n            remaining = None if to_steward else weekly_remaining(account)\n            review = {\"member_id\": member_id, \"account_id\": account.get(\"account_id\", \"\"),\n                      \"weekly_remaining_percent\": remaining, \"created_at\": family_facade._now()}\n            entries[message_id] = review\n            if remaining is not None and remaining < WEEKLY_RESERVE_PERCENT:\n                review[\"status\"] = \"waiting\"\n        if review.get(\"status\") == \"waiting\" and not approved:\n            if not steward_id:\n                raise ValueError(\"低周额度请求需要 Family steward 复核\")\n            review_id = resident_message_contract.derived_message_identity(\n                \"family-quota-review\", facade_id, message_id,\n            )\n            if not repository.message(steward_id, review_id):\n                pending_notices.append(dict(\n                    facade_id=facade_id, steward_id=steward_id, initiated_by=actor, content=\n                    f\"执行前额度复核：请求拟交给成员 {member_id}，账号 {review['account_id']} \"\n                    f\"周额度剩余 {review['weekly_remaining_percent']:g}%，低于 10%。\"\n                    f\"原请求 {facade_id}/message/{message_id} 保留在门面，尚未投给成员。\"\n                    f\"读取原请求及成员状态、队列、模型设置，结合任务规模与推理强度判断是否迁移。\"\n                    \"短任务可以继续；持续开发、长上下文或高推理强度优先换到额度充足的账号或后端。\"\n                    \"需要迁移时用 RestartSession(context_strategy=compact, active_execution_policy=wait)，\"\n                    \"等待当前轮完成及迁移成功；环境问题尚未解决时保留待办。\"\n                    f\"判断或迁移完成后调用 RelayFamilyMessage(resident_id={facade_id}, \"\n                    f\"message_id={message_id}, member_id={member_id}, quota_reviewed=true, reason=你的判断理由)。\"\n                    \"只放行原请求，不发送替代任务；例行处理不通知 owner。\\n\"\n                    f\"原请求内容：{json.dumps(message.get('content_parts') or [], ensure_ascii=False)}\",\n                    message_id=review_id, business_ref=f\"{facade_id}/quota-review/{message_id}\",\n                ))\n            return {\"status\": \"waiting_for_quota_review\", \"resident_id\": facade_id,\n                    \"message_id\": message_id, \"member_id\": member_id,\n                    \"steward_message_id\": review_id}\n        if approved:\n            review[\"reviewed_by\"] = actor\n            review[\"reason\"] = reason.strip()\n        if repository.input_state(facade_id, message_id).get(\"state\") in {\"cancelled\", \"failed\"}:\n            raise ValueError(\"门面请求已取消或失败，不能放行\")\n        review[\"status\"] = \"delivering\"\n        return {\"status\": \"delivering\", \"member_id\": member_id}\n\n    with get_lineage_data_store().family_quota_reviews.transaction(facade['lineage_id'], facade_id) as reviews:\n        admission = prepare(reviews)\n    for notice in pending_notices:\n        family_facade.tell_steward(**notice)\n    if admission[\"status\"] != \"delivering\":\n        return admission\n    # An answer to a member's questions keeps the question set's answer ID,\n    # so the member's Conversation knows the set answered.\n    delivered_id = message_id if answered_set(message) else resident_message_contract.derived_message_identity(\n        \"family-relay\", facade_id, message_id, member_id,\n    )\n    # The validated facade request delegates this unchanged delivery on\n    # behalf of its original author. The approving steward remains the\n    # initiator, never the author of the member's input.\n    author = str(message[\"author_id\"])\n    with operation_identity_scope(OperationIdentity.for_actor(author, initiated_by=actor)):\n        result = outward_messages.deliver_to_resident(\n            {\"resident_id\": member_id, \"message\": {\n                \"role\": \"user\", \"message_id\": delivered_id,\n                \"content_parts\": message[\"content_parts\"],\n            }, \"activation_policy\": \"enqueue_and_trigger\"}, author,\n            delivery_context=resident_protocol.ResidentDeliveryContext(\n                lineage_id=facade[\"lineage_id\"], business_ref=mark,\n            ),\n        )\n    # Delivery and its after-commit effects run without the review-row lock.\n    family_facade.complete_relay((facade_id, message_id), member_id, str(result.get(\"message_id\") or delivered_id))\n    with get_lineage_data_store().family_quota_reviews.transaction(facade['lineage_id'], facade_id) as reviews:\n        review = reviews[\"requests\"][message_id]\n        withdrawn = repository.input_state(facade_id, message_id).get(\"state\") == \"cancelled\"\n        review[\"status\"] = \"withdrawn\" if withdrawn else \"relayed\"\n        review[\"result\"] = ({\"status\": \"withdrawn\", \"member_id\": member_id} if withdrawn else\n                            {\"status\": \"relayed\", \"member_id\": member_id,\n                             \"message_id\": str(result.get(\"message_id\") or delivered_id)})\n        return dict(review[\"result\"])\n\n",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "CheckPermission",
+      "role": "authored_implementation_support",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/permission_system/management.py#L68",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/permission_system/management.py",
+      "source_sha256": "014678c33ef6e98fc21cbba6b9e0f28e899382272300d041b03ade027d100422",
+      "start_line": 68,
+      "end_line": 96,
+      "excerpt": "    def check(self, actor: str, arguments: Mapping[str, Any]) -> dict[str, Any]:\n        principal = _text(arguments, \"principal_id\") or actor\n        scheme, _engine, _instance = self.permissions.current()\n        instruction = _text(arguments, \"instruction\")\n        if instruction:\n            call = arguments.get(\"arguments\") or {}\n            if not isinstance(call, Mapping):\n                raise ValueError(\"arguments 必须是对象\")\n            try:\n                items = [(request.action, request.resource) for request in requests(scheme, instruction, call)]\n            except Unresolved as exc:\n                raise ValueError(str(exc)) from exc\n        else:\n            a = _text(arguments, \"a\", required=True)\n            if a not in scheme.trees[\"A\"].nodes:\n                raise ValueError(f\"{a} 不是 A 树的节点\")\n            items = [(a, _text(arguments, \"resource_id\", required=True))]\n        scheme, decisions = self.permissions._decide(principal, items)\n        results = []\n        for (action, resource), decision in zip(items, decisions):\n            item = {\"action\": action, \"resource\": resource, \"allowed\": decision.allowed, \"reason\": decision.reason}\n            if decision.permit is not None:\n                item[\"permit\"] = decision.permit.to_dict()\n            if decision.deny is not None:\n                item[\"deny\"] = decision.deny.to_dict()\n            results.append(item)\n        return {\"principal_id\": principal, \"scheme_id\": scheme.scheme_id,\n                \"allowed\": all(item[\"allowed\"] for item in results), \"requests\": results}\n",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "CheckPermission",
+      "role": "authored_implementation_support",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/permission_system/engine/decision.py#L51",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/permission_system/engine/decision.py",
+      "source_sha256": "7594420e1df0e213733c6f52da29332d51cc58929dea7771770ae21352182354",
+      "start_line": 51,
+      "end_line": 64,
+      "excerpt": "        actions, resources = set(a_path), set(r_path)\n        for a_node in a_path:\n            for permit in self._permits.get(a_node, ()):\n                entry = permit.entry\n                if entry.r not in resources or not entry.live(now):\n                    continue\n                for deny in permit.holes:\n                    if deny.a in actions and deny.r in resources and deny.live(now):\n                        return Decision(False, deny=deny)\n                return Decision(True, permit=entry)\n        return Decision(False)\n\n    def coverage(self, a_path: Sequence[str], now: float) -> Coverage:\n        \"\"\"The R nodes under which the action at ``a_path`` is permitted, minus its holes.\"\"\"",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "CheckPermission",
+      "role": "authored_implementation_support",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/permission_system/engine/model.py#L114",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/permission_system/engine/model.py",
+      "source_sha256": "48ae949eb27b2cf92756c49826266621d995094593551bfc330d65597a61a1dc",
+      "start_line": 114,
+      "end_line": 125,
+      "excerpt": "class Decision:\n    \"\"\"The answer for one ``(p, a, r)``: the permit entry that covers it, or why not.\"\"\"\n\n    allowed: bool\n    permit: Entry | None = None\n    deny: Entry | None = None\n\n    @property\n    def reason(self) -> str:\n        if self.allowed:\n            return \"permitted\"\n        return \"denied\" if self.deny is not None else \"no_permit\"",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "CheckPermission",
+      "role": "authored_implementation_support",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/permission_system/par.py#L80",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/permission_system/par.py",
+      "source_sha256": "d267f79bb81c1e6c46b959486713a6451b5e53fedc46155df09e0eda1625cc7c",
+      "start_line": 80,
+      "end_line": 87,
+      "excerpt": "    def _decide(self, principal: str, items: list[tuple[str, str]]):\n        \"\"\"Decisions under the active scheme, following a change of scheme once.\"\"\"\n        scheme, engine, _instance = self._load()\n        try:\n            return scheme, engine.decide(principal, items)\n        except InstanceChanged as changed:\n            scheme, engine, _instance = self._load(changed.token)\n            return scheme, engine.decide(principal, items)",
+      "coverage": "fixed_authored_source_anchor"
+    },
+    {
+      "instruction": "CheckPermission",
+      "role": "authored_implementation_support",
+      "canonical_ref": "repo_5d287fed9c7e/file/management_portal/permission_system/open.py#L202",
+      "source_address": "repo_5d287fed9c7e/file/management_portal/permission_system/open.py",
+      "source_sha256": "c2997d9da9bb803be03055ce45c8f3827b6ab2b4d6998ea5a851882d10754426",
+      "start_line": 202,
+      "end_line": 215,
+      "excerpt": "    def manage(self, instruction, arguments, *, actor, collect_facts=None) -> dict[str, Any]:\n        if instruction in SCHEME_INSTRUCTIONS:\n            from management_portal.hatg.contracts import InstructionError\n\n            from . import schemes\n\n            if not self._signed_in_or_portal(actor):\n                raise InstructionError(\"instruction.forbidden\", \"需要已登录的 User 或 Resident\")\n            context = schemes.Context(self.schemes, enabled=False, collect_facts=collect_facts,\n                                      may=lambda _actor, _instruction, _arguments: True)\n            return schemes.manage(context, instruction, arguments, actor=actor)\n        if instruction in READ_INSTRUCTIONS:\n            return {\"permission_system\": OPEN, \"message\": PermissionSystemOff.MESSAGE}\n        raise PermissionSystemOff.instruction_error()",
+      "coverage": "fixed_authored_source_anchor"
+    }
+  ],
+  "sources": [
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/resource.py",
+      "path": "management_portal/hatg/catalog/resource.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resources/isa.py",
+      "path": "management_portal/resources/isa.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/user.py",
+      "path": "management_portal/hatg/catalog/user.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/web_isa.py",
+      "path": "management_portal/web_isa.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/permission_system/categories.py",
+      "path": "management_portal/permission_system/categories.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/resident.py",
+      "path": "management_portal/hatg/catalog/resident.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/residents.py",
+      "path": "management_portal/lineage_service/isa/residents.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/conversation.py",
+      "path": "management_portal/hatg/catalog/conversation.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/conversation.py",
+      "path": "management_portal/lineage_service/isa/conversation.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/resident_execution.py",
+      "path": "management_portal/hatg/catalog/resident_execution.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/execution.py",
+      "path": "management_portal/lineage_service/isa/execution.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/resident_intake_domain.py",
+      "path": "management_portal/lineage_service/resident_intake_domain.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/mailbox.py",
+      "path": "management_portal/hatg/catalog/mailbox.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/lineage_definition.py",
+      "path": "management_portal/hatg/catalog/lineage_definition.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/definition.py",
+      "path": "management_portal/lineage_service/isa/definition.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/lineage_state.py",
+      "path": "management_portal/hatg/catalog/lineage_state.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/lineage_graph_state.py",
+      "path": "management_portal/lineage_service/lineage_graph_state.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/lineage_run.py",
+      "path": "management_portal/hatg/catalog/lineage_run.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/runs.py",
+      "path": "management_portal/lineage_service/isa/runs.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/lineage_program_backlog.py",
+      "path": "management_portal/lineage_service/lineage_program_backlog.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/contracts.py",
+      "path": "management_portal/hatg/contracts.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/script_run.py",
+      "path": "management_portal/hatg/catalog/script_run.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/script_runs/service.py",
+      "path": "management_portal/lineage_service/script_runs/service.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/function_block.py",
+      "path": "management_portal/hatg/catalog/function_block.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/function_blocks.py",
+      "path": "management_portal/lineage_service/isa/function_blocks.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/family.py",
+      "path": "management_portal/hatg/catalog/family.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/families.py",
+      "path": "management_portal/lineage_service/isa/families.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/templates/familize.py",
+      "path": "management_portal/lineage_service/templates/familize.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/template.py",
+      "path": "management_portal/hatg/catalog/template.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/templates.py",
+      "path": "management_portal/lineage_service/isa/templates.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/templates/registry.py",
+      "path": "management_portal/lineage_service/templates/registry.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/templates/structure.py",
+      "path": "management_portal/lineage_service/templates/structure.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/discussion.py",
+      "path": "management_portal/hatg/catalog/discussion.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/pulse.py",
+      "path": "management_portal/hatg/catalog/pulse.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/portal_pulse_backend.py",
+      "path": "management_portal/portal_pulse_backend.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/family_internal.py",
+      "path": "management_portal/hatg/catalog/family_internal.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/family_quota.py",
+      "path": "management_portal/lineage_service/family_quota.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/organization.py",
+      "path": "management_portal/hatg/catalog/organization.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/organization.py",
+      "path": "management_portal/lineage_service/isa/organization.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/permission.py",
+      "path": "management_portal/hatg/catalog/permission.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/permission_system/management.py",
+      "path": "management_portal/permission_system/management.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/permission_system/engine/decision.py",
+      "path": "management_portal/permission_system/engine/decision.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/permission_system/engine/model.py",
+      "path": "management_portal/permission_system/engine/model.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/permission_system/par.py",
+      "path": "management_portal/permission_system/par.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/permission_system/open.py",
+      "path": "management_portal/permission_system/open.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/environment.py",
+      "path": "management_portal/hatg/catalog/environment.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/isa.py",
+      "path": "management_portal/hatg/catalog/isa.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/routing.py",
+      "path": "management_portal/hatg/routing.py"
+    }
+  ],
+  "scope": "与A固定22项教学来源精确对齐；父尚须完成新包元数据绑定和loader验收。",
+  "authored_content": {
+    "content": {
+      "address": "workspace_04ad72d24263/file/architecture/explore/authored-lessons.js",
+      "sha256": "e08f1c8e976e255771cae0d4e103a12727d53ea8793b8e3e9afac7741112b8ae",
+      "size": 36836
+    }
+  }
+}

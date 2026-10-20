@@ -1,0 +1,194 @@
+{
+  "schema": "tfi.hatg-instruction-catalog-manifest.v1",
+  "revision": 1,
+  "observed_at": "2026-10-18T10:34:02.304548+00:00",
+  "captured_at": "2026-10-18T10:34:02.304548+00:00",
+  "catalog": {
+    "address": "workspace_04ad72d24263/file/architecture/explore/catalog.json",
+    "sha256": "2b977035a9e2e63dfd6b2d9e418efbe5998c5412a100dda661e97bdd2d3065b4",
+    "size": 522200
+  },
+  "sources": [
+    {
+      "address": "repo_5d287fed9c7e/file/management_common/__init__.py",
+      "path": "management_common/__init__.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_common/operation_errors.py",
+      "path": "management_common/operation_errors.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_common/portal_database.py",
+      "path": "management_common/portal_database.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_common/postgres_database.py",
+      "path": "management_common/postgres_database.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/__init__.py",
+      "path": "management_portal/__init__.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/__init__.py",
+      "path": "management_portal/execution/__init__.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/harness_capabilities.py",
+      "path": "management_portal/execution/harness_capabilities.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/provider_catalog.py",
+      "path": "management_portal/execution/provider_catalog.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/service_settings.py",
+      "path": "management_portal/execution/service_settings.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/__init__.py",
+      "path": "management_portal/hatg/__init__.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/__init__.py",
+      "path": "management_portal/hatg/catalog/__init__.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/conversation.py",
+      "path": "management_portal/hatg/catalog/conversation.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/discussion.py",
+      "path": "management_portal/hatg/catalog/discussion.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/environment.py",
+      "path": "management_portal/hatg/catalog/environment.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/family.py",
+      "path": "management_portal/hatg/catalog/family.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/family_internal.py",
+      "path": "management_portal/hatg/catalog/family_internal.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/function_block.py",
+      "path": "management_portal/hatg/catalog/function_block.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/isa.py",
+      "path": "management_portal/hatg/catalog/isa.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/lineage_definition.py",
+      "path": "management_portal/hatg/catalog/lineage_definition.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/lineage_run.py",
+      "path": "management_portal/hatg/catalog/lineage_run.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/lineage_state.py",
+      "path": "management_portal/hatg/catalog/lineage_state.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/mailbox.py",
+      "path": "management_portal/hatg/catalog/mailbox.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/organization.py",
+      "path": "management_portal/hatg/catalog/organization.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/permission.py",
+      "path": "management_portal/hatg/catalog/permission.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/pulse.py",
+      "path": "management_portal/hatg/catalog/pulse.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/resident.py",
+      "path": "management_portal/hatg/catalog/resident.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/resident_execution.py",
+      "path": "management_portal/hatg/catalog/resident_execution.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/resource.py",
+      "path": "management_portal/hatg/catalog/resource.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/script_run.py",
+      "path": "management_portal/hatg/catalog/script_run.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/template.py",
+      "path": "management_portal/hatg/catalog/template.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/user.py",
+      "path": "management_portal/hatg/catalog/user.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/contracts.py",
+      "path": "management_portal/hatg/contracts.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/declarations.py",
+      "path": "management_portal/hatg/declarations.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/kernel.py",
+      "path": "management_portal/hatg/kernel.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/lineage_versions.py",
+      "path": "management_portal/hatg/lineage_versions.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/maintenance.py",
+      "path": "management_portal/hatg/maintenance.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/resource_actions.py",
+      "path": "management_portal/hatg/resource_actions.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/routing.py",
+      "path": "management_portal/hatg/routing.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/slow_call_profile.py",
+      "path": "management_portal/hatg/slow_call_profile.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/socket_rpc.py",
+      "path": "management_portal/hatg/socket_rpc.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/store.py",
+      "path": "management_portal/hatg/store.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/permission_system/__init__.py",
+      "path": "management_portal/permission_system/__init__.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/permission_system/categories.py",
+      "path": "management_portal/permission_system/categories.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/prompt_injection.py",
+      "path": "management_portal/prompt_injection.py"
+    }
+  ],
+  "design_sources": [
+    {
+      "address": "decision_898b8911a2ff"
+    }
+  ]
+}
