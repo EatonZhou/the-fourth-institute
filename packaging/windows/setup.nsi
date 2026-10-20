@@ -42,18 +42,20 @@ Function .onInit
 FunctionEnd
 
 Function .onVerifyInstDir
-  IfFileExists "$INSTDIR\windows-package.json" 0 fresh
-    MessageBox MB_ICONSTOP "A platform already exists here. This preview does not perform schema upgrades. Use the existing launcher or choose a different folder."
+  ; Never install into a populated directory whose files we do not own.
+  FindFirst $0 $1 "$INSTDIR\*"
+  check_entry:
+    StrCmp $1 "" directory_empty
+    StrCmp $1 "." next_entry
+    StrCmp $1 ".." next_entry
+    FindClose $0
+    MessageBox MB_ICONSTOP "Choose a new or empty folder. Existing files and instances will not be overwritten."
     Abort
-  fresh:
-  IfFileExists "$INSTDIR\code\scripts\tfi_release_install.py" 0 done
-    MessageBox MB_ICONSTOP "This folder contains existing Portal code. Choose a separate folder."
-    Abort
-  done:
-  IfFileExists "$INSTDIR\instance\*.*" 0 empty
-    MessageBox MB_ICONSTOP "This folder contains retained instance data. Choose a new folder; this preview will not upgrade or overwrite existing instances."
-    Abort
-  empty:
+  next_entry:
+    FindNext $0 $1
+    Goto check_entry
+  directory_empty:
+    FindClose $0
 FunctionEnd
 
 Section "Platform"
