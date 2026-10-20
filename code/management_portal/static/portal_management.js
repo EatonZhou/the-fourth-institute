@@ -14,6 +14,7 @@
         <button class="portalButton" type="button" role="tab" data-management-tab="entries" aria-selected="false">权限表项</button>
         <button class="portalButton" type="button" role="tab" data-management-tab="paths" aria-selected="false">数据目录</button>
         <button class="portalButton" type="button" role="tab" data-management-tab="network" aria-selected="false">网络设置</button>
+        <button class="portalButton" type="button" role="tab" data-management-tab="instances" aria-selected="false">Portal 实例</button>
       </div>
       <div data-management-permission-host role="tabpanel" hidden></div>
       <div class="settingsNotice" data-access-notice role="status" hidden></div>
@@ -416,7 +417,7 @@
     stage.hidden = false;
     stage.removeAttribute("role");
     stage.className = "managementStage";
-    for (const view of ["users", "backend", "execution", "resource-types", "schemes", "entries", "paths", "network"]) {
+    for (const view of ["users", "backend", "execution", "resource-types", "schemes", "entries", "paths", "network", "instances"]) {
       const pane = document.createElement("section");
       pane.className = "managementView"; pane.dataset.managementView = view;
       pane.setAttribute("role", "tabpanel"); pane.hidden = view !== "users";
@@ -453,6 +454,7 @@
     tabs.querySelector('[data-management-tab="backend"]').hidden = allows.ListProviders !== true && allows.ListProviderAccounts !== true && allows.UpdateProviderAccount !== true && !permissionsOff;
     tabs.querySelector('[data-management-tab="paths"]').hidden = me.access?.user_category !== "portal_admin";
     tabs.querySelector('[data-management-tab="network"]').hidden = !portalAdmin;
+    tabs.querySelector('[data-management-tab="instances"]').hidden = !portalAdmin;
     const pathsForm = root.querySelector("[data-management-paths-form]");
     const pathsStatus = root.querySelector("[data-management-paths-status]");
     const pathInputs = [...pathsForm.querySelectorAll("[data-path-key]")];
@@ -1006,6 +1008,7 @@
         entry.container.textContent = window.PortalI18n.t("正在加载…");
         entry.promise = Promise.resolve().then(async () => {
           if (view === "network") return mountNetwork(entry.container);
+          if (view === "instances") return (await import("/static/portal_management_instances.js")).mount(entry.container);
           if (view === "resource-types") return (await import("/static/portal_management_resource_types.js")).mount(entry.container, {me});
           if (view === "backend") return (await import("/static/portal_management_backend.js")).mount(entry.container, {me, accountId: options.accountId});
           return window.PortalNav.mountPermissionManagement({container: entry.container, principalId, view, onSystemChange: syncPermissionSystem});
@@ -1041,7 +1044,7 @@
     };
     const openSection = async ({view = "users", principalId, accountId} = {}) => {
       if (!entries.has(view)) throw new Error("Unknown Portal Management view.");
-      if (view === "network" && !portalAdmin) return false;
+      if (["network", "instances"].includes(view) && !portalAdmin) return false;
       if (permissionsOff && permissionViews.has(view)) { view = "users"; principalId = undefined; }
       if (destroyed || confirming) return false;
       const current = entries.get(currentView);

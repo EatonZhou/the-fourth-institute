@@ -41,3 +41,10 @@
 .managementNetwork textarea { width:100%; min-height:130px; box-sizing:border-box; resize:vertical; padding:10px; border:1px solid var(--border); border-radius:8px; background:var(--panel); color:var(--text); font:inherit; line-height:1.5; }
 .managementNetworkHint, .managementNetwork [data-network-source] { color:var(--muted); }
 .managementNetwork fieldset:disabled { opacity:.65; }
+.managementInstanceCard {
+  border-top: 1px solid #ccd5df;
+  padding: 1rem 0;
+}
+.managementInstanceCard h3 { margin: 0 0 .5rem; }
+.managementInstanceLinks { display: flex; flex-wrap: wrap; gap: .5rem 1rem; margin-bottom: 1rem; }
+.managementInstanceLinks a { overflow-wrap: anywhere; }

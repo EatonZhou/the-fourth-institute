@@ -3,6 +3,8 @@ from __future__ import annotations
 import sys
 import logging
 import threading
+import os
+from pathlib import Path
 from urllib.parse import parse_qs
 from management_common import portal_network, portal_paths
 from management_portal import embedding_setup
@@ -35,6 +37,35 @@ class AdminHttp:
         actor = self.session_actor(request)
         if not actor or not self.is_admin(actor):
             raise PermissionError('Portal administrator account required')
+
+    def instances_get(self, request, _parsed, _actor):
+        try:
+            self._require_admin(request)
+            from scripts.tfi_instance_manager import command
+            config = os.environ.get("PORTAL_PATHS_CONFIG")
+            current = str(Path(config).resolve().parent.parent) if config else ""
+            return self.respond(request, 200, command("list", current=current))
+        except PermissionError as exc:
+            return self.respond(request, 403, {"error": str(exc)})
+        except Exception as exc:
+            return self.respond(request, 503, {"error": str(exc)})
+
+    def instances_post(self, request, _parsed, _actor):
+        try:
+            self._require_admin(request)
+            payload = self.read_json(request)
+            if (not isinstance(payload, dict) or set(payload) != {"name", "action"}
+                    or payload["action"] not in ("start", "stop")
+                    or not isinstance(payload["name"], str)):
+                raise ValueError("Only an instance name and start/stop action are accepted")
+            from scripts.tfi_instance_manager import command
+            return self.respond(request, 202, command(payload["action"], name=payload["name"]))
+        except PermissionError as exc:
+            return self.respond(request, 403, {"error": str(exc)})
+        except ValueError as exc:
+            return self.respond(request, 400, {"error": str(exc)})
+        except Exception as exc:
+            return self.respond(request, 503, {"error": str(exc)})
 
     def network_get(self, request, _parsed, _actor):
         try:

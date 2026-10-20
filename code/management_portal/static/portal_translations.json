@@ -40134,5 +40134,77 @@
   "新项目种子文档的语言，默认 zh-CN；仅用于初始化，不改写既有正文": {
     "en": "Language of the new project's seed documents; defaults to zh-CN. Used only for initialization; existing content is preserved.",
     "zh-CN": "新项目种子文档的语言，默认 zh-CN；仅用于初始化，不改写既有正文"
+  },
+  "管理此平台上已安装的实例。关闭实例会停止它的服务，保留数据和账号。": {
+    "zh-CN": "管理此平台上已安装的实例。关闭实例会停止它的服务，保留数据和账号。",
+    "en": "Manage instances installed on this platform. Stopping an instance stops its services and preserves its data and accounts."
+  },
+  "刷新实例": {
+    "zh-CN": "刷新实例",
+    "en": "Refresh instances"
+  },
+  "部分服务运行中": {
+    "zh-CN": "部分服务运行中",
+    "en": "Some services are running"
+  },
+  "无法读取实例": {
+    "zh-CN": "无法读取实例",
+    "en": "Cannot read instance"
+  },
+  "实例操作失败": {
+    "zh-CN": "实例操作失败",
+    "en": "Instance operation failed"
+  },
+  "此平台尚无已安装的实例。": {
+    "zh-CN": "此平台尚无已安装的实例。",
+    "en": "No instances are installed on this platform yet."
+  },
+  "当前实例": {
+    "zh-CN": "当前实例",
+    "en": "Current instance"
+  },
+  "正在关闭…": {
+    "zh-CN": "正在关闭…",
+    "en": "Stopping…"
+  },
+  "此实例目前仅允许服务器本机访问。": {
+    "zh-CN": "此实例目前仅允许服务器本机访问。",
+    "en": "This instance currently allows access from the server only."
+  },
+  "启动实例": {
+    "zh-CN": "启动实例",
+    "en": "Start instance"
+  },
+  "关闭实例": {
+    "zh-CN": "关闭实例",
+    "en": "Stop instance"
+  },
+  "这会关闭当前页面所在的实例，连接将断开。可从另一个运行实例或服务器命令行再次启动。": {
+    "zh-CN": "这会关闭当前页面所在的实例，连接将断开。可从另一个运行实例或服务器命令行再次启动。",
+    "en": "This stops the instance serving this page and disconnects you. You can start it again from another running instance or the server command line."
+  },
+  "关闭请求已提交，当前连接即将断开。可使用其他运行实例的地址继续管理。": {
+    "zh-CN": "关闭请求已提交，当前连接即将断开。可使用其他运行实例的地址继续管理。",
+    "en": "The stop request was accepted. This connection will close shortly. Use another running instance to continue managing instances."
+  },
+  "迁移尚未完成，暂不能启动。": {
+    "zh-CN": "迁移尚未完成，暂不能启动。",
+    "en": "Migration is not complete. Starting is disabled."
+  },
+  "安装尚未完成，暂不能启动。": {
+    "zh-CN": "安装尚未完成，暂不能启动。",
+    "en": "Installation is not complete. Starting is disabled."
+  },
+  "Migration has not completed its cutover checks": {
+    "zh-CN": "迁移尚未完成，暂不能启动。",
+    "en": "Migration has not completed its cutover checks"
+  },
+  "Initialize this instance before starting it": {
+    "zh-CN": "安装尚未完成，暂不能启动。",
+    "en": "Initialize this instance before starting it"
+  },
+  "Finish installation before starting this instance": {
+    "zh-CN": "安装尚未完成，暂不能启动。",
+    "en": "Finish installation before starting this instance"
   }
 }
