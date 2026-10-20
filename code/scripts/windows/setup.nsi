@@ -167,7 +167,8 @@ Section "Uninstall"
     Abort
   stopped:
   ; ExecToLog has waited for Python to release its runtime and launcher lock.
-  ; These validated trees are deleted only with explicit data-removal consent.
+  ; Python already removed deep preparation trees using extended Windows paths.
+  ; Remove its remaining lock/logs and runtime only after it exits.
   ${If} $RemoveInstances == ${BST_CHECKED}
     RMDir /r "$INSTDIR\.build"
     RMDir /r "$INSTDIR\dependencies"

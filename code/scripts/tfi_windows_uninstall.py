@@ -1,15 +1,29 @@
 """Optional instance removal for the Windows platform uninstaller."""
 from __future__ import annotations
 
+import ntpath
+import os
 from pathlib import Path
 import shutil
 import stat
 import subprocess
 
 
+def _native_path(path: Path) -> str:
+    """Use extended Windows paths without depending on long-path policy."""
+    if os.name != "nt":
+        return os.fspath(path)
+    value = ntpath.abspath(path)
+    if value.startswith("\\\\?\\"):
+        return value
+    if value.startswith("\\\\"):
+        return "\\\\?\\UNC\\" + value[2:]
+    return "\\\\?\\" + value
+
+
 def plain_tree(root: Path) -> None:
     """Reject redirections before any recursive deletion, including junctions."""
-    pending = [root]
+    pending = [Path(_native_path(root))]
     while pending:
         path = pending.pop()
         info = path.lstat()
@@ -20,7 +34,7 @@ def plain_tree(root: Path) -> None:
 
 
 def validate_platform_caches(platform: Path) -> None:
-    """Validate caches now; NSIS removes them after this Python process exits."""
+    """Validate all caches before deleting instance data or prepared bundles."""
     for name in (".build", "dependencies"):
         root = platform / name
         try:
@@ -30,6 +44,21 @@ def validate_platform_caches(platform: Path) -> None:
         plain_tree(root)
         if not stat.S_ISDIR(info.st_mode):
             raise ValueError(f"Expected a platform cache directory: {root}")
+
+
+def _remove_prepared_cache(platform: Path) -> None:
+    """Remove validated deep build trees; keep the live launcher lock and logs."""
+    build = Path(_native_path(platform / ".build"))
+    if not build.exists():
+        return
+    for entry in build.iterdir():
+        if entry.name == "windows":
+            continue
+        plain_tree(entry)
+        if entry.is_dir():
+            shutil.rmtree(entry)
+        else:
+            entry.unlink()
 
 
 def removal_plan(platform: Path) -> list[tuple[Path, bool]]:
@@ -69,13 +98,17 @@ def remove_instances(platform: Path) -> None:
     from scripts.tfi_windows_launcher import command
 
     plan = removal_plan(platform)
-    # Both trees are in use here (Python runtime and launcher lock). Validate
-    # them before deleting any instance; the native uninstaller owns deletion.
+    # Runtime and launcher lock are in use. Validate both trees before deletion;
+    # leave only their cleanup to NSIS after this helper exits.
     validate_platform_caches(platform)
     # Stop every initialized instance first. A failed stop preserves all data.
     for root, initialized in plan:
         if initialized:
             subprocess.run(command(platform, "stop", "--root", root), check=True)
+    # Prepared bundles can exceed MAX_PATH. Remove them through the same Python
+    # filesystem APIs that prepared them; failures preserve the installed tools
+    # and instance data for diagnosis/retry instead of stranding a deep tree.
+    _remove_prepared_cache(platform)
     # Lifecycle cleanup owns service registrations and provider cleanup.
     # It rechecks ownership and releases the Windows installation lock itself.
     for root, initialized in plan:
@@ -88,7 +121,7 @@ def remove_instances(platform: Path) -> None:
             if any(p.name != "seed" for p in root.iterdir()):
                 raise ValueError(f"Unexpected files remain after instance cleanup: {root}")
             plain_tree(root)
-            shutil.rmtree(root)
+            shutil.rmtree(_native_path(root))
     base = platform / "instance"
     if base.exists():
         base.rmdir()
