@@ -410,10 +410,21 @@ def _upload_dir(upload_id: str) -> Path:
 
 
 def read_upload(upload_id: str) -> dict[str, Any]:
+    directory = _upload_dir(upload_id)
     try:
-        return json.loads((_upload_dir(upload_id) / "meta.json").read_text(encoding="utf-8"))
+        meta = json.loads((directory / "meta.json").read_text(encoding="utf-8"))
     except FileNotFoundError:
         raise not_found(f"上传不存在：{upload_id}") from None
+    # The upload belongs to this instance. Legacy absolute paths may point at
+    # a retired installation even when its complete upload store was copied.
+    name = meta.get("file_name")
+    if (not isinstance(name, str) or name in {"", ".", ".."}
+            or any(character in name for character in ("/", "\\", "\x00"))):
+        raise invalid("上传文件名无效")
+    path = directory / name
+    if path.resolve().parent != directory.resolve():
+        raise invalid("上传文件不能位于上传目录之外")
+    return {**meta, "path": str(path)}
 
 
 # -- downloads of content larger than one ReadResource result ---------------------------
@@ -495,7 +506,9 @@ def _write_meta(meta: dict[str, Any]) -> None:
     directory = _upload_dir(meta["upload_id"])
     directory.mkdir(parents=True, exist_ok=True)
     temporary = directory / f".meta.{secrets.token_hex(4)}"
-    temporary.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
+    # Keep identity and filename portable; read_upload supplies the local path.
+    stored = {key: value for key, value in meta.items() if key != "path"}
+    temporary.write_text(json.dumps(stored, ensure_ascii=False, indent=2), encoding="utf-8")
     os.replace(temporary, directory / "meta.json")
 
 
