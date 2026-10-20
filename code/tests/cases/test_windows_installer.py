@@ -1,4 +1,9 @@
-"""Portable contract tests; these deliberately do not claim Windows acceptance."""
+"""发行安装与实例隔离回归。
+
+:module: operations.deployment
+:design: decision_d88306d0bd17
+:profiles: local.fixture
+:risk: no-external-side-effects"""
 import importlib.util
 import json
 import os
@@ -12,7 +17,7 @@ import hashlib
 from contextlib import contextmanager
 from types import SimpleNamespace
 
-REPO = Path(__file__).resolve().parents[1]
+REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO / "code"))
 sys.path.insert(0, str(REPO))
 from scripts import tfi_windows_launcher as launcher
@@ -38,6 +43,7 @@ class WindowsInstallerTests(unittest.TestCase):
         return value, windows.unit_name(target, "web")
 
     def test_instances_share_programs_but_not_state_or_identity(self):
+        """安装与实例回归：instances share programs but not state or identity。"""
         with tempfile.TemporaryDirectory() as tmp:
             base = Path(tmp)
             one = self.target(base)
@@ -51,6 +57,7 @@ class WindowsInstallerTests(unittest.TestCase):
             windows.dependency_preflight(one)
 
     def test_invalid_mode_and_instance_traversal_rejected(self):
+        """安装与实例回归：invalid mode and instance traversal rejected。"""
         for value in ("../host", "C:\\host", "sample/one", "", "example-instance"):
             with self.assertRaises(ValueError):
                 launcher.instance_name(value)
@@ -60,6 +67,7 @@ class WindowsInstallerTests(unittest.TestCase):
             windows.dependency_preflight({"windows_service_mode": "scm"})
 
     def test_running_launcher_blocks_duplicate_window_and_uninstall_until_closed(self):
+        """安装与实例回归：running launcher blocks duplicate window and uninstall until closed。"""
         with tempfile.TemporaryDirectory() as tmp:
             base = Path(tmp)
             with launcher.launcher_lock(base):
@@ -71,6 +79,7 @@ class WindowsInstallerTests(unittest.TestCase):
                 pass
 
     def test_long_path_success_restarts_unelevated_after_releasing_launcher_lock(self):
+        """安装与实例回归：long path success restarts unelevated after releasing launcher lock。"""
         events = []
 
         @contextmanager
@@ -94,6 +103,7 @@ class WindowsInstallerTests(unittest.TestCase):
             process.assert_called_once()
 
     def test_long_path_setup_shows_failures_and_only_restarts_after_success(self):
+        """安装与实例回归：long path setup shows failures and only restarts after success。"""
         for failure in (None, RuntimeError("authorization cancelled")):
             with self.subTest(failure=failure):
                 root = Mock()
@@ -115,6 +125,7 @@ class WindowsInstallerTests(unittest.TestCase):
                     messagebox.showerror.assert_not_called()
 
     def test_child_environment_keeps_service_registry_and_instance_unicode_paths(self):
+        """安装与实例回归：child environment keeps service registry and instance unicode paths。"""
         with tempfile.TemporaryDirectory() as tmp:
             base = Path(tmp) / "中文 platform"
             target = self.target(base)
@@ -135,6 +146,7 @@ class WindowsInstallerTests(unittest.TestCase):
                     self.assertEqual(nested["TFI_WINDOWS_SERVICE_DIRECTORY"], str(registry))
 
     def test_failed_native_download_can_be_stopped_without_deleting_data(self):
+        """安装与实例回归：failed native download can be stopped without deleting data。"""
         with tempfile.TemporaryDirectory() as tmp:
             base = Path(tmp)
             target = self.target(base)
@@ -168,6 +180,7 @@ class WindowsInstallerTests(unittest.TestCase):
                     installer.lifecycle("start", root)
 
     def test_first_admin_opens_only_invitation_not_full_console_text(self):
+        """安装与实例回归：first admin opens only invitation not full console text。"""
         text = ("Setup link for the first administrator:\n"
                 "  http://127.0.0.1:28199/join#invite=test-token\n"
                 "Open in browser. Next steps: http://127.0.0.1:28199/guide#admin")
@@ -176,6 +189,7 @@ class WindowsInstallerTests(unittest.TestCase):
             launcher.invitation_url("no invitation")
 
     def test_user_service_registration_is_idempotent_and_owned(self):
+        """安装与实例回归：user service registration is idempotent and owned。"""
         with tempfile.TemporaryDirectory() as tmp:
             base = Path(tmp)
             value, name = self.definition(base)
@@ -188,6 +202,7 @@ class WindowsInstallerTests(unittest.TestCase):
             self.assertEqual((directory / (name + ".json")).read_text(), content)
 
     def test_uninstall_unregisters_owned_definitions_and_preserves_instance_data(self):
+        """安装与实例回归：uninstall unregisters owned definitions and preserves instance data。"""
         with tempfile.TemporaryDirectory() as tmp:
             base = Path(tmp)
             value, name = self.definition(base)
@@ -205,6 +220,7 @@ class WindowsInstallerTests(unittest.TestCase):
             self.assertEqual(unrelated.read_text(), "leave me")
 
     def test_recycled_pid_never_reports_active_or_gets_stopped(self):
+        """安装与实例回归：recycled pid never reports active or gets stopped。"""
         with tempfile.TemporaryDirectory() as tmp:
             base = Path(tmp)
             value, name = self.definition(base)
@@ -221,6 +237,7 @@ class WindowsInstallerTests(unittest.TestCase):
     def test_exited_process_with_exit_code_259_is_not_alive(self):
         # STILL_ACTIVE is also a legal application exit code. Only the process
         # handle's signalled state proves whether it has actually terminated.
+        """安装与实例回归：exited process with exit code 259 is not alive。"""
         api = SimpleNamespace(**{name: Mock() for name in (
             "OpenProcess", "CloseHandle", "WaitForSingleObject",
             "GetProcessTimes", "GetExitCodeProcess")})
@@ -237,6 +254,7 @@ class WindowsInstallerTests(unittest.TestCase):
         api.CloseHandle.assert_called_once_with(123)
 
     def test_active_owned_child_and_supervisor_are_both_required(self):
+        """安装与实例回归：active owned child and supervisor are both required。"""
         with tempfile.TemporaryDirectory() as tmp:
             base = Path(tmp)
             value, name = self.definition(base)
@@ -252,6 +270,7 @@ class WindowsInstallerTests(unittest.TestCase):
                 self.assertEqual(controller.status(name)["pid"], 15)
 
     def test_public_seed_checksum_and_traversal(self):
+        """安装与实例回归：public seed checksum and traversal。"""
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             archive = root / "example-seed.zip"
@@ -267,6 +286,7 @@ class WindowsInstallerTests(unittest.TestCase):
                 launcher.unpack_seed(root)
 
     def test_interrupted_seed_manifest_is_replaced_before_retry(self):
+        """安装与实例回归：interrupted seed manifest is replaced before retry。"""
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             archive = root / "example-seed.zip"
@@ -288,13 +308,15 @@ class WindowsInstallerTests(unittest.TestCase):
             self.assertEqual((seed / "data/share_root/example.txt").read_text(), "do not overwrite")
 
     def test_installer_requires_x64_payload_and_keeps_data_on_uninstall(self):
-        script = (REPO / "packaging/windows/setup.nsi").read_text()
+        """安装与实例回归：installer requires x64 payload and keeps data on uninstall。"""
+        script = (REPO / "code/scripts/windows/setup.nsi").read_text()
         self.assertIn("RunningX64", script)
         self.assertIn("RequestExecutionLevel user", script)
         self.assertNotIn('RMDir /r "$INSTDIR\\instance"', script)
         self.assertNotIn('RMDir /r "$INSTDIR"', script)
 
     def test_auto_freeze_verification_does_not_override_supervision_or_failed_evidence(self):
+        """安装与实例回归：auto freeze verification does not override supervision or failed evidence。"""
         with tempfile.TemporaryDirectory() as tmp:
             target = self.target(Path(tmp))
             state = {"target": target, "manifest_sha256": "abc", "completed": ["database"]}
@@ -312,6 +334,7 @@ class WindowsInstallerTests(unittest.TestCase):
             api.run_checked.assert_not_called()
 
     def test_windows_derived_bundle_does_not_mutate_seed_or_linux_bundle(self):
+        """安装与实例回归：windows derived bundle does not mutate seed or linux bundle。"""
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             seed = root / "instance/example_instance/seed"

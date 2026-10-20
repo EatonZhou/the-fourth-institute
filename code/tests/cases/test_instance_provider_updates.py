@@ -1,3 +1,9 @@
+"""发行安装与实例隔离回归。
+
+:module: operations.deployment
+:design: decision_d88306d0bd17
+:profiles: local.fixture
+:risk: no-external-side-effects"""
 import subprocess
 import sys
 import tempfile
@@ -5,7 +11,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import PropertyMock, patch
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "code"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "code"))
 from scripts import portal_service_units as units
 from management_portal.execution import provider_updates as updates
 
@@ -48,6 +54,7 @@ class InstanceProviderUpdateTests(unittest.TestCase):
         return subprocess.CompletedProcess(arguments, 0, stdout=output, stderr="")
 
     def test_activation_restarts_only_current_instance_for_both_daemons(self):
+        """安装与实例回归：activation restarts only current instance for both daemons。"""
         for provider, runtime in (("claude", updates.ClaudeRuntime()), ("kimi", updates.KimiRuntime())):
             with self.subTest(provider=provider):
                 name, _ = self.unit(provider)
@@ -65,6 +72,7 @@ class InstanceProviderUpdateTests(unittest.TestCase):
                 self.assertEqual(link.resolve(), new)
 
     def test_codex_activation_replaces_private_link_without_changing_shared_binary(self):
+        """安装与实例回归：codex activation replaces private link without changing shared binary。"""
         shared = self.root / "shared-install/bin/codex"
         shared.parent.mkdir(parents=True)
         shared.write_text("original shared executable\n")
@@ -87,6 +95,7 @@ class InstanceProviderUpdateTests(unittest.TestCase):
         self.assertEqual(shared.read_text(), "original shared executable\n")
 
     def test_stopped_or_absent_daemon_is_not_started_by_update(self):
+        """安装与实例回归：stopped or absent daemon is not started by update。"""
         self.assertEqual(updates.KimiRuntime().services, ())
         self.assertEqual(self.commands, [])
         self.unit("kimi")
@@ -95,6 +104,7 @@ class InstanceProviderUpdateTests(unittest.TestCase):
         self.assertFalse(any("restart" in cmd for cmd in self.commands))
 
     def test_foreign_definition_is_rejected_before_service_control(self):
+        """安装与实例回归：foreign definition is rejected before service control。"""
         _, path = self.unit("claude")
         path.write_text("Environment=HOME=/another-instance/home\n")
         with self.assertRaisesRegex(ValueError, "another instance"):
@@ -102,17 +112,20 @@ class InstanceProviderUpdateTests(unittest.TestCase):
         self.assertEqual(self.commands, [])
 
     def test_foreign_unit_cannot_be_controlled_directly(self):
+        """安装与实例回归：foreign unit cannot be controlled directly。"""
         with self.assertRaisesRegex(ValueError, "Refusing source service"):
             updates._service_control().restart("portal-claude-code.service")
         self.assertEqual(self.commands, [])
 
     def test_source_deployment_keeps_its_existing_names(self):
+        """安装与实例回归：source deployment keeps its existing names。"""
         with patch.object(units, "_isolated_provider_context", return_value=None):
             self.assertEqual(updates.ClaudeRuntime().services, ("portal-claude-code.service",))
             self.assertEqual(updates.KimiRuntime().services, ("portal-kimi-code.service",))
         self.assertEqual(updates.ClaudeRuntime().unit_files, ("portal-claude-code.service",))
 
     def test_ownership_error_is_not_a_fallback_to_host(self):
+        """安装与实例回归：ownership error is not a fallback to host。"""
         with patch.object(units, "_isolated_provider_context", side_effect=ValueError("ownership")):
             with self.assertRaisesRegex(ValueError, "ownership"):
                 _ = updates.KimiRuntime().services

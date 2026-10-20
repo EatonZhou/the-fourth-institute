@@ -1,3 +1,9 @@
+"""发行安装与实例隔离回归。
+
+:module: operations.deployment
+:design: decision_d88306d0bd17
+:profiles: local.fixture
+:risk: no-external-side-effects"""
 import tempfile
 import subprocess
 import unittest
@@ -5,7 +11,7 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 import sys
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "code"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "code"))
 from scripts import tfi_release_provider_services as providers
 
 
@@ -39,6 +45,7 @@ class ProviderCleanupTests(unittest.TestCase):
         return ""
 
     def test_stops_only_owned_service_and_removes_template(self):
+        """安装与实例回归：stops only owned service and removes template。"""
         controller = Mock()
         controller.status.return_value = {"pid": 0, "active": "inactive"}
         with patch.object(providers, "_run", self.runner):
@@ -50,11 +57,13 @@ class ProviderCleanupTests(unittest.TestCase):
         self.assertFalse(self.template.exists())
 
     def test_foreign_instance_is_rejected_before_stop(self):
+        """安装与实例回归：foreign instance is rejected before stop。"""
         self.target["install_root"] = str(self.root / "other")
         with patch.object(providers, "_run", self.runner), self.assertRaisesRegex(ValueError, "another instance"):
             providers.owned_services(self.target, self.root)
 
     def test_overrides_are_not_removed(self):
+        """安装与实例回归：overrides are not removed。"""
         def run(command, *arguments):
             if command == "show":
                 return f"FragmentPath={self.template}\nDropInPaths=/foreign/custom.conf\n"
@@ -64,6 +73,7 @@ class ProviderCleanupTests(unittest.TestCase):
         self.assertTrue(self.template.exists())
 
     def test_live_provider_refuses_cleanup(self):
+        """安装与实例回归：live provider refuses cleanup。"""
         controller = Mock()
         controller.status.return_value = {"pid": 123, "active": "active"}
         with patch.object(providers, "_run", self.runner):
@@ -74,6 +84,7 @@ class ProviderCleanupTests(unittest.TestCase):
         self.assertFalse(any(call.args[0] == "disable" for call in self.runner.call_args_list))
 
     def test_absent_template_and_empty_unit_glob_need_no_cleanup(self):
+        """安装与实例回归：absent template and empty unit glob need no cleanup。"""
         self.template.unlink()
         def run(command, **kwargs):
             return subprocess.CompletedProcess(command, 1 if command[2] == "list-unit-files" else 0,
@@ -82,12 +93,14 @@ class ProviderCleanupTests(unittest.TestCase):
             self.assertIsNone(providers.owned_services(self.target, self.root))
 
     def test_systemctl_error_is_not_accepted_as_no_services(self):
+        """安装与实例回归：systemctl error is not accepted as no services。"""
         result = subprocess.CompletedProcess([], 1, stdout="", stderr="Failed to connect to bus")
         with patch.object(providers.subprocess, "run", return_value=result):
             with self.assertRaises(subprocess.CalledProcessError):
                 providers._run("list-unit-files", "tfi-one-*")
 
     def test_registered_daemons_follow_instance_lifecycle_without_codex_template(self):
+        """安装与实例回归：registered daemons follow instance lifecycle without codex template。"""
         self.template.unlink()
         paths = [self.root / ("tfi-one-" + suffix + ".service")
                  for suffix in ("claude-code", "kimi-code")]
@@ -113,6 +126,7 @@ class ProviderCleanupTests(unittest.TestCase):
         self.assertTrue(all(not path.exists() for path in paths))
 
     def test_foreign_daemon_prevents_lifecycle_changes(self):
+        """安装与实例回归：foreign daemon prevents lifecycle changes。"""
         path = self.root / "tfi-one-claude-code.service"
         path.write_text("Environment=HOME=/another-instance/home\n")
         with patch.object(providers, "_run", self.runner):
@@ -121,6 +135,7 @@ class ProviderCleanupTests(unittest.TestCase):
         self.runner.assert_not_called()
 
     def test_account_process_uses_instance_cache_and_temporary_directory(self):
+        """安装与实例回归：account process uses instance cache and temporary directory。"""
         from scripts import portal_service_units as units
         context = {"root": self.root / "instance", "directory": self.root / "units",
                    "prefix": "tfi-one-codex-app-server@"}

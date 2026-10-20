@@ -12,7 +12,7 @@
 
 双击 `TheFourthInstitute-Setup-x64.exe`。安装器会自动准备默认示例、启动 Portal 并打开浏览器。Python 已包含，首次使用需要联网；以后通过桌面图标打开 Portal。
 
-详见 [Windows 操作说明与验证范围](packaging/windows/README.md)。
+详见 [Windows 操作说明与验证范围](code/scripts/windows/README.md)。
 
 ### Linux
 

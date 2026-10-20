@@ -1,3 +1,10 @@
+"""发行安装与实例隔离回归。
+
+:module: operations.deployment
+:design: decision_d88306d0bd17
+:profiles: local.fixture
+:risk: no-external-side-effects
+"""
 import os
 from pathlib import Path
 import sys
@@ -5,7 +12,7 @@ import tempfile
 import unittest
 from unittest.mock import Mock, patch
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "code"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "code"))
 from scripts import tfi_instance_manager as manager
 
 
@@ -29,6 +36,7 @@ class InstanceManagementTests(unittest.TestCase):
         p.start(); self.addCleanup(p.stop)
 
     def test_catalog_ignores_seed_and_symlink_and_rejects_traversal(self):
+        """安装与实例回归：catalog ignores seed and symlink and rejects traversal。"""
         (self.root / "installation.json").write_text("{}")
         (self.platform / "instance/example_instance/seed").mkdir(parents=True)
         (self.platform / "instance/alias").symlink_to(self.root, target_is_directory=True)
@@ -40,11 +48,13 @@ class InstanceManagementTests(unittest.TestCase):
                 manager.instance_root(name)
 
     def test_foreign_shared_code_is_rejected(self):
+        """安装与实例回归：foreign shared code is rejected。"""
         self.state["target"]["shared_code_root"] = str(self.platform / "foreign")
         with self.assertRaisesRegex(ValueError, "different code"):
             manager.state_for("one")
 
     def test_migration_and_incomplete_install_are_not_started(self):
+        """安装与实例回归：migration and incomplete install are not started。"""
         self.state["migration"] = {"business_execution_allowed": False}
         with patch.object(manager, "launch") as launch:
             with self.assertRaisesRegex(ValueError, "Migration"):
@@ -57,6 +67,7 @@ class InstanceManagementTests(unittest.TestCase):
         self.assertEqual(manager.start_blocker(self.state), "")
 
     def test_duplicate_request_and_failed_dispatch(self):
+        """安装与实例回归：duplicate request and failed dispatch。"""
         with patch.object(manager, "launch"):
             job = manager.enqueue("stop", "one")
         with patch.object(manager, "job_alive", return_value=True), self.assertRaises(ValueError):
@@ -70,6 +81,7 @@ class InstanceManagementTests(unittest.TestCase):
         self.assertEqual(manager.operation(self.root)["status"], "failed")
 
     def test_worker_uses_lifecycle_and_records_failures(self):
+        """安装与实例回归：worker uses lifecycle and records failures。"""
         with patch.object(manager, "launch"):
             job = manager.enqueue("stop", "one")["operation"]
         with patch.object(manager.time, "sleep"), patch.object(manager.installer, "lifecycle") as lifecycle:
@@ -81,11 +93,13 @@ class InstanceManagementTests(unittest.TestCase):
             self.assertEqual(manager.execute("one", job["id"])["error"], "ownership changed")
 
     def test_runtime_and_record_symlinks_are_rejected(self):
+        """安装与实例回归：runtime and record symlinks are rejected。"""
         (self.root / "runtime").symlink_to(self.code, target_is_directory=True)
         with self.assertRaises(ValueError):
             manager.enqueue("stop", "one")
 
     def test_linux_job_outlives_web_cgroup(self):
+        """安装与实例回归：linux job outlives web cgroup。"""
         record = {"id": "test", "unit": "tfi-control-test"}
         with patch.object(manager.sys, "platform", "linux"), patch.object(manager.subprocess, "run") as run:
             manager.launch(self.root, record)
@@ -97,6 +111,7 @@ class InstanceManagementTests(unittest.TestCase):
 
     @unittest.skipIf(os.name == "nt", "POSIX service-owner environment")
     def test_control_environment_does_not_inherit_instance_secrets(self):
+        """安装与实例回归：control environment does not inherit instance secrets。"""
         with patch.dict(os.environ, {"HOME": "/private/instance/home",
                                     "PORTAL_DATABASE_URL": "secret",
                                     "PGPASSWORD": "secret", "PYTHONPATH": "/other/code"}):
@@ -105,6 +120,7 @@ class InstanceManagementTests(unittest.TestCase):
         self.assertFalse({"PORTAL_DATABASE_URL", "PGPASSWORD", "PYTHONPATH"} & env.keys())
 
     def test_urls_use_bind_and_host_interfaces(self):
+        """安装与实例回归：urls use bind and host interfaces。"""
         target = self.state["target"]
         with patch.object(manager.socket, "getaddrinfo", return_value=[
                 (2, 1, 6, "", ("10.138.30.36", 0))]):
@@ -126,6 +142,7 @@ class InstanceAuthorizationTests(unittest.TestCase):
                               is_admin=lambda _: self.admin)
 
     def test_admin_gate_applies_to_reads_and_mutations(self):
+        """安装与实例回归：admin gate applies to reads and mutations。"""
         with patch.object(manager, "command") as command:
             self.assertEqual(self.http.instances_get(None, None, None)[0], 403)
             self.assertEqual(self.http.instances_post(None, None, None)[0], 403)
@@ -136,6 +153,7 @@ class InstanceAuthorizationTests(unittest.TestCase):
             command.assert_called_once_with("start", name="one")
 
     def test_no_arbitrary_commands_or_paths(self):
+        """安装与实例回归：no arbitrary commands or paths。"""
         self.admin = True
         with patch.object(manager, "command") as command:
             for payload in ({**self.payload, "root": "/other"}, {"name": "one", "action": "cleanup"},

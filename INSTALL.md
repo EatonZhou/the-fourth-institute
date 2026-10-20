@@ -2,7 +2,7 @@
 
 Windows 11 x64 用户双击 `TheFourthInstitute-Setup-x64.exe` 即可安装；
 完成后自动准备默认示例、启动服务并打开 Portal 网页。
-详见 [Windows 预览安装说明](packaging/windows/README.md)，包括联网依赖、
+详见 [Windows 预览安装说明](code/scripts/windows/README.md)，包括联网依赖、
 长路径授权、账号配置、日志位置与当前验证范围。
 
 仓库根目录执行 `python3 prepare_install.py`，生成经过校验的

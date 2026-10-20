@@ -448,8 +448,11 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--stop-all", action="store_true")
     parser.add_argument("--uninstall-platform", action="store_true")
+    parser.add_argument("--remove-instances", action="store_true")
     parser.add_argument("--enable-long-paths", action="store_true")
     args = parser.parse_args()
+    if args.remove_instances and not args.uninstall_platform:
+        parser.error("--remove-instances requires --uninstall-platform")
     if os.name != "nt":
         raise SystemExit("This desktop launcher requires Windows.")
     if args.enable_long_paths:
@@ -460,7 +463,11 @@ def main():
         return
     if args.uninstall_platform:
         with launcher_lock(PLATFORM):
-            stop_all(PLATFORM, unregister=True)
+            if args.remove_instances:
+                from scripts.tfi_windows_uninstall import remove_instances
+                remove_instances(PLATFORM)
+            else:
+                stop_all(PLATFORM, unregister=True)
         return
     if args.stop_all:
         stop_all(PLATFORM)

@@ -1,4 +1,9 @@
-"""Exercise the desktop installer's freeze gate against an isolated real PG."""
+"""发行安装与实例隔离回归。
+
+:module: operations.deployment
+:design: decision_d88306d0bd17
+:profiles: local.fixture
+:risk: no-external-side-effects"""
 import os
 from pathlib import Path
 import socket
@@ -7,7 +12,7 @@ import sys
 import tempfile
 import unittest
 
-REPO = Path(__file__).resolve().parents[1]
+REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO / "code"))
 from management_portal.distribution.history import verify_frozen
 
@@ -54,6 +59,7 @@ class HistoryFreezeIntegration(unittest.TestCase):
         cls.temporary.cleanup()
 
     def test_gate_reads_frozen_rows_and_detects_consumable_work_without_rewriting(self):
+        """安装与实例回归：gate reads frozen rows and detects consumable work without rewriting。"""
         connection = self.connection
         with connection.transaction():
             connection.execute("SET TRANSACTION READ ONLY")

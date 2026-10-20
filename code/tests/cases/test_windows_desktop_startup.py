@@ -1,4 +1,9 @@
-"""Desktop users go directly from setup to the default Portal web page."""
+"""发行安装与实例隔离回归。
+
+:module: operations.deployment
+:design: decision_d88306d0bd17
+:profiles: local.fixture
+:risk: no-external-side-effects"""
 import contextlib
 import io
 import json
@@ -9,7 +14,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "code"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "code"))
 from scripts import tfi_windows_launcher as launcher
 from scripts import portal_setup
 from scripts import tfi_release_install as installer
@@ -31,6 +36,7 @@ class DesktopStartup(unittest.TestCase):
         return state
 
     def test_first_launch_initializes_then_opens_registration_and_next_launch_keeps_accounts(self):
+        """安装与实例回归：first launch initializes then opens registration and next launch keeps accounts。"""
         with tempfile.TemporaryDirectory() as tmp:
             flow = self.setup_flow(Path(tmp))
             actions = []
@@ -62,6 +68,7 @@ class DesktopStartup(unittest.TestCase):
                 self.assertEqual(before, (flow.root / "installation.json").read_bytes())
 
     def test_failed_install_never_attempts_start_or_opens_missing_state(self):
+        """安装与实例回归：failed install never attempts start or opens missing state。"""
         with tempfile.TemporaryDirectory() as tmp:
             flow = self.setup_flow(Path(tmp))
             def execute_command(argv):
@@ -77,6 +84,7 @@ class DesktopStartup(unittest.TestCase):
                 ready.assert_not_called()
 
     def test_preinstall_retry_rebuilds_bundle_and_keeps_target_parameters(self):
+        """安装与实例回归：preinstall retry rebuilds bundle and keeps target parameters。"""
         with tempfile.TemporaryDirectory() as tmp:
             flow = self.setup_flow(Path(tmp))
             target_path = flow.platform / ".build/windows/targets/example_instance.json"
@@ -92,6 +100,7 @@ class DesktopStartup(unittest.TestCase):
             self.assertFalse((flow.root / "installation.json").exists())
 
     def test_interrupted_initialization_resumes_before_start(self):
+        """安装与实例回归：interrupted initialization resumes before start。"""
         with tempfile.TemporaryDirectory() as tmp:
             flow = self.setup_flow(Path(tmp))
             with patch.object(flow, "execute"):
@@ -111,6 +120,7 @@ class DesktopStartup(unittest.TestCase):
             self.assertEqual(actions, ["install", "start", "first-admin"])
 
     def test_other_instances_health_cannot_open_browser(self):
+        """安装与实例回归：other instances health cannot open browser。"""
         flow = launcher.DefaultStartup(Path("/unused"))
         response = Mock()
         response.__enter__ = Mock(return_value=response)
@@ -125,6 +135,7 @@ class DesktopStartup(unittest.TestCase):
                 flow.wait_ready(state, timeout=1)
 
     def test_existing_account_does_not_create_or_replace_an_invitation(self):
+        """安装与实例回归：existing account does not create or replace an invitation。"""
         enrollment = Mock()
         enrollment.has_accounts.return_value = True
         with patch("management_portal.user_enrollment.UserEnrollment", return_value=enrollment), \
@@ -136,6 +147,7 @@ class DesktopStartup(unittest.TestCase):
         enrollment.create_invitation.assert_not_called()
 
     def test_installer_existing_account_keeps_private_file_untouched(self):
+        """安装与实例回归：installer existing account keeps private file untouched。"""
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             private = root / "secrets"

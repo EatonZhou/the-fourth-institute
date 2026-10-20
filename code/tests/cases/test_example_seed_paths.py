@@ -1,4 +1,9 @@
-"""Public seed paths must preserve resource references and published assets."""
+"""发行安装与实例隔离回归。
+
+:module: operations.deployment
+:design: decision_d88306d0bd17
+:profiles: local.fixture
+:risk: no-external-side-effects"""
 import hashlib
 import json
 import os
@@ -8,7 +13,7 @@ import sys
 import unittest
 from unittest.mock import patch
 
-REPO = Path(__file__).resolve().parents[1]
+REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(REPO / "code"))
 from prepare_install import inventory
@@ -21,12 +26,14 @@ class ExamplePaths(unittest.TestCase):
         cls.manifest = json.loads((cls.seed / "manifest.json").read_text(encoding="utf-8"))
 
     def test_inventory_and_path_budget(self):
+        """安装与实例回归：inventory and path budget。"""
         rows = [r for r in inventory(self.seed) if r["path"] != "manifest.json"]
-        self.assertEqual(rows, self.manifest["inventory"])
+        self.assertEqual(rows, sorted(self.manifest["inventory"], key=lambda row: row["path"]))
         self.assertLessEqual(max(len(r["path"]) for r in rows), 175)
         self.assertFalse(any("release-runtime-v1/workspace_" in r["path"] for r in rows))
 
     def test_architecture_descriptors(self):
+        """安装与实例回归：architecture descriptors。"""
         roots = list(self.seed.glob("data/share_root/Agents/**/workspace/architecture/manifest.json"))
         self.assertEqual(len(roots), 1)
         workspace = roots[0].parent.parent
@@ -54,6 +61,7 @@ class ExamplePaths(unittest.TestCase):
         self.assertGreaterEqual(len(checked), 14)
 
     def test_published_artifacts_through_real_reader(self):
+        """安装与实例回归：published artifacts through real reader。"""
         from management_portal.workbench_projections.application_build import read_artifact
         root = self.seed / "data/staging_root/shared/projection_applications"
         with patch.dict(os.environ, {"PORTAL_PROJECTION_ARTIFACT_ROOT": str(root.resolve())}):
@@ -65,6 +73,7 @@ class ExamplePaths(unittest.TestCase):
                     self.assertEqual(len(content), index["files"][name]["size"])
 
     def test_lenia_workers_preserve_clip_and_frame_references(self):
+        """安装与实例回归：lenia workers preserve clip and frame references。"""
         roots = list(self.seed.glob("data/staging_root/shared/projection_applications/*/files/catalog.js"))
         self.assertEqual(len(roots), 1)
         program = r"""

@@ -13,7 +13,7 @@ import tempfile
 from urllib.request import urlopen
 import zipfile
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(REPO / "code"))
 from prepare_install import digest, inventory
@@ -58,11 +58,8 @@ def stage(repo, destination, archive, *, source_commit=None, source_dirty=None):
                     ignore=shutil.ignore_patterns(*GENERATED_CODE_DIRECTORIES, "*.pyc", "*.pyo"))
     for name in ("prepare_install.py", "INSTALL.md", "README.md", "README_CN.md"):
         shutil.copyfile(repo / name, destination / name)
-    shutil.copyfile(repo / "packaging/windows/README.md", destination / "WINDOWS.md")
-    guide = destination / "packaging/windows/README.md"
-    guide.parent.mkdir(parents=True)
-    shutil.copyfile(repo / "packaging/windows/README.md", guide)
-    shutil.copytree(repo / "packaging/windows/branding", destination / "branding")
+    shutil.copyfile(repo / "code/scripts/windows/README.md", destination / "WINDOWS.md")
+    shutil.copytree(repo / "code/scripts/windows/branding", destination / "branding")
     with zipfile.ZipFile(destination / "example-seed.zip", "w", compression=zipfile.ZIP_DEFLATED) as zipped:
         for row in inventory(seed):
             zipped.write(seed / row["path"], row["path"])
@@ -83,9 +80,9 @@ def stage(repo, destination, archive, *, source_commit=None, source_dirty=None):
         "source_commit": source_commit if source_commit is not None else subprocess.check_output(
             ["git", "rev-parse", "HEAD"], cwd=repo, text=True).strip(),
         "source_dirty": source_dirty if source_dirty is not None else bool(subprocess.check_output(
-            ["git", "status", "--porcelain", "--", "code", "prepare_install.py", "packaging/windows"], cwd=repo)),
+            ["git", "status", "--porcelain", "--", "code", "prepare_install.py", "code/scripts/windows"], cwd=repo)),
         "source_tree_sha256": hashlib.sha256(json.dumps(source_inventory(repo / "code"), sort_keys=True).encode()).hexdigest(),
-        "python": json.loads((repo / "packaging/windows/runtime.json").read_text(encoding="utf-8")),
+        "python": json.loads((repo / "code/scripts/windows/runtime.json").read_text(encoding="utf-8")),
         "seed_sha256": digest(destination / "example-seed.zip"),
         "initialization_requires_network": True,
         "prepared_engineering_validation": "passed",

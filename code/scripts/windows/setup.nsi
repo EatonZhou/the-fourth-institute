@@ -2,6 +2,10 @@ Unicode true
 !include "MUI2.nsh"
 !include "x64.nsh"
 !include "WinVer.nsh"
+!include "nsDialogs.nsh"
+Var RemoveInstances
+Var RemoveInstancesCheckbox
+Var UninstallDialog
 !define MUI_ICON "${PAYLOAD}/branding/tfi.ico"
 !define MUI_UNICON "${PAYLOAD}/branding/tfi.ico"
 
@@ -18,7 +22,7 @@ VIAddVersionKey /LANG=1033 "FileDescription" "Windows x64 preview installer"
 VIAddVersionKey /LANG=1033 "FileVersion" "0.9.0-preview"
 VIAddVersionKey /LANG=1033 "LegalCopyright" "The Fourth Institute contributors"
 !define MUI_ABORTWARNING
-!define MUI_WELCOMEPAGE_TEXT "Your own research space for people and AI.$\r$\n$\r$\nAfter setup, Portal automatically prepares the included example and opens in your browser. First use downloads the required environment; keep your Internet connection available.$\r$\n$\r$\nWindows 11 x64 preview. Your data is retained when uninstalling."
+!define MUI_WELCOMEPAGE_TEXT "Your own research space for people and AI.$\r$\n$\r$\nAfter setup, Portal automatically prepares the included example and opens in your browser. First use downloads the required environment; keep your Internet connection available.$\r$\n$\r$\nWindows 11 x64 preview. Uninstall keeps instance data unless you explicitly choose to remove it."
 !insertmacro MUI_PAGE_WELCOME
 !define MUI_DIRECTORYPAGE_TEXT_TOP "Choose a new or empty folder. Existing files and instances will not be overwritten."
 !insertmacro MUI_PAGE_DIRECTORY
@@ -26,9 +30,40 @@ VIAddVersionKey /LANG=1033 "LegalCopyright" "The Fourth Institute contributors"
 !define MUI_FINISHPAGE_TEXT "Portal will now prepare your research space and open your browser. First use needs an Internet connection and can take several minutes."
 !insertmacro MUI_PAGE_FINISH
 !insertmacro MUI_UNPAGE_CONFIRM
+UninstPage custom un.InstanceOptions un.InstanceOptionsLeave
 !insertmacro MUI_UNPAGE_INSTFILES
 !insertmacro MUI_LANGUAGE "English"
 !insertmacro MUI_LANGUAGE "SimpChinese"
+
+Function un.onInit
+  StrCpy $RemoveInstances ${BST_UNCHECKED}
+FunctionEnd
+
+Function un.InstanceOptions
+  !insertmacro MUI_HEADER_TEXT "实例数据 / Instance data" "默认保留数据 / Keep data by default"
+  nsDialogs::Create 1018
+  Pop $UninstallDialog
+  ${If} $UninstallDialog == error
+    Abort
+  ${EndIf}
+  ${NSD_CreateLabel} 0 0 100% 40u "卸载平台默认保留实例。勾选后将删除本目录下所有实例的数据库、文件、账号和对话，无法撤销。$\r$\nUninstall normally keeps your data. Selecting below permanently deletes ALL local instances."
+  Pop $0
+  ${NSD_CreateLabel} 0 48u 100% 24u "$INSTDIR\instance"
+  Pop $0
+  ${NSD_CreateCheckbox} 0 80u 100% 24u "同时删除实例数据 / Also delete instance data"
+  Pop $RemoveInstancesCheckbox
+  ${NSD_SetState} $RemoveInstancesCheckbox $RemoveInstances
+  nsDialogs::Show
+FunctionEnd
+
+Function un.InstanceOptionsLeave
+  ${NSD_GetState} $RemoveInstancesCheckbox $RemoveInstances
+  ${If} $RemoveInstances == ${BST_CHECKED}
+    MessageBox MB_YESNO|MB_ICONEXCLAMATION|MB_DEFBUTTON2 "永久删除 $INSTDIR\instance 下的所有实例？数据库、账号、对话与文件无法恢复。$\r$\nPermanently delete ALL instances in this directory? This cannot be undone." IDYES confirmed
+    Abort
+    confirmed:
+  ${EndIf}
+FunctionEnd
 
 Function .onInit
   ${IfNot} ${RunningX64}
@@ -81,13 +116,18 @@ FunctionEnd
 Section "Uninstall"
   SetRegView 64
   SetShellVarContext current
-  nsExec::ExecToLog '"$INSTDIR\dependencies\python\python.exe" "$INSTDIR\code\scripts\tfi_windows_launcher.py" --uninstall-platform'
+  ${If} $RemoveInstances == ${BST_CHECKED}
+    nsExec::ExecToLog '"$INSTDIR\dependencies\python\python.exe" "$INSTDIR\code\scripts\tfi_windows_launcher.py" --uninstall-platform --remove-instances'
+  ${Else}
+    nsExec::ExecToLog '"$INSTDIR\dependencies\python\python.exe" "$INSTDIR\code\scripts\tfi_windows_launcher.py" --uninstall-platform'
+  ${EndIf}
   Pop $0
   StrCmp $0 "0" stopped
-    MessageBox MB_ICONSTOP "Could not prepare uninstall. Nothing was deleted. Wait for Portal startup to finish, close its progress window, and retry. See .build\windows\launcher-error.log if this persists."
+    MessageBox MB_ICONSTOP "卸载未完成，平台文件已保留。若已选择删除实例，部分实例可能已清理。请查看日志后重试。$\r$\nUninstall incomplete; platform files retained. Some selected instances may already have been removed. See .build\windows\launcher-error.log."
     Abort
   stopped:
-  ; Deliberately keep instance/, dependency caches and .build/ for recovery.
+  ; Instance cleanup completed above, or data was explicitly retained.
+  ; Dependency caches and diagnostic .build/ files remain available.
   RMDir /r "$INSTDIR\code"
   RMDir /r "$INSTDIR\dependencies\python"
   RMDir /r "$INSTDIR\packaging"
@@ -109,5 +149,9 @@ Section "Uninstall"
     DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TheFourthInstitute"
   keep_shell_entries:
   Delete "$INSTDIR\Uninstall.exe"
-  MessageBox MB_ICONINFORMATION "Platform removed. Your instance data remains under:$\r$\n$INSTDIR\instance"
+  ${If} $RemoveInstances == ${BST_CHECKED}
+    MessageBox MB_ICONINFORMATION "平台和本目录下的实例已删除。依赖缓存与诊断日志保留。$\r$\nPlatform and local instances removed. Dependency caches and diagnostic logs retained."
+  ${Else}
+    MessageBox MB_ICONINFORMATION "平台已卸载，实例数据保留于：$\r$\nPlatform removed. Instance data retained:$\r$\n$INSTDIR\instance"
+  ${EndIf}
 SectionEnd

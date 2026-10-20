@@ -40,7 +40,12 @@
 服务登记目录保持稳定，初始化检查与桌面启动器读取同一份登记。
 
 同一平台只允许执行一次桌面启动准备。卸载前请等待准备完成或关闭失败窗口；
-卸载会先停止本站实例，保留 `instance/`、依赖缓存与诊断记录。此预览安装包拒绝
+卸载会先停止本站实例。卸载向导的“实例数据”页面默认保留 `instance/`；
+如需全新开始，勾选 **同时删除实例数据**，再次确认后会清理本安装目录下所有实例的
+数据库、资源文件、账号、对话及示例 seed。删除无法撤销，请先备份需要保留的内容。
+未完成初始化的示例也支持清理；未知归属、外部数据目录或链接会阻止自动删除。
+部分清理失败时保留平台代码并显示错误。依赖缓存与诊断记录继续保留。
+此预览安装包拒绝
 覆盖已有平台代码，尚不提供跨版本 schema 升级；不要把重新运行 Setup 当作数据迁移。
 本版卸载器只在当前安装仍持有登记时移除公共快捷方式，保留另一个目录中较新安装的入口。
 安装包尚未代码签名，Windows 可能显示未知发布者或信誉提示。
@@ -57,7 +62,7 @@ TAU 执行器当前依赖 Linux；浏览器工具安装成功不代表 Windows T
 从仓库根目录执行：
 
 ```sh
-python3 packaging/windows/build.py
+python3 code/scripts/windows/build.py
 ```
 
 输出 `.build/windows/TheFourthInstitute-Setup-x64.exe`、SHA-256 与 `receipt.json`。
@@ -70,5 +75,17 @@ python3 packaging/windows/build.py
 安装向导使用 [NSIS](https://nsis.sourceforge.io/Docs/)；内置 Python 使用
 [python-build-standalone](https://github.com/astral-sh/python-build-standalone)。
 首轮手工验收包括安装、管理员注册、两个实例的独立启停、实际 AI 回复、长路径与中文路径、
-退出登录后重新启动，以及卸载后实例数据保留。反馈时提供错误步骤、Windows 版本和日志；
+退出登录后重新启动，以及默认卸载保留数据、显式勾选删除实例两条流程。
+反馈时提供错误步骤、Windows 版本和日志；
 不要公开账号授权文件、邀请链接或数据库。
+
+## 开发验证
+
+Windows 安装、启动与卸载用例位于 `code/tests/cases/`，沿用 Portal 的
+`code/pytest.ini`、Test Catalog 和测试工作台。没有单独的 Windows 测试框架。
+在 `code/` 下运行 `python -m management_portal.test_framework.tools.sync_catalog`
+检查目录，用测试工作台的 `operations.deployment` 分类选择相关用例。
+命令行定向验证使用同一入口，例如
+`python -m pytest tests/cases/test_windows_uninstall.py`。
+`scripts/windows/` 只存放 NSIS 构建脚本、固定运行时声明和图标等构建素材；
+实例安装与服务生命周期由已有 `scripts/tfi_release_*.py` 实现。

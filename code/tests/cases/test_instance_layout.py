@@ -1,3 +1,9 @@
+"""发行安装与实例隔离回归。
+
+:module: operations.deployment
+:design: decision_d88306d0bd17
+:profiles: local.fixture
+:risk: no-external-side-effects"""
 import importlib.util
 import json
 import tempfile
@@ -6,7 +12,7 @@ from pathlib import Path
 from unittest.mock import patch
 import sys
 
-REPO = Path(__file__).resolve().parents[1]
+REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO / "code"))
 from scripts import tfi_release_install as installer
 from scripts.tfi_instance_layout import code_root, database_root, dependencies_root, installer_path, validate_shared_code
@@ -23,6 +29,7 @@ class SharedInstanceTests(unittest.TestCase):
                         installer.KEYS, ("share", "staging", "instances", "accounts", "secrets"))})
 
     def test_two_instances_share_only_code(self):
+        """安装与实例回归：two instances share only code。"""
         with tempfile.TemporaryDirectory() as temporary:
             one = self.target(Path(temporary) / "one")
             two = self.target(Path(temporary) / "two")
@@ -46,12 +53,14 @@ class SharedInstanceTests(unittest.TestCase):
             self.assertNotEqual(database_root(one), database_root(two))
 
     def test_legacy_layout_is_preserved(self):
+        """安装与实例回归：legacy layout is preserved。"""
         target = {"install_root": "/tmp/legacy"}
         self.assertEqual(code_root(target), Path("/tmp/legacy/code"))
         self.assertEqual(database_root(target), Path("/tmp/legacy/runtime/pg"))
         self.assertEqual(installer_path(target), Path("/tmp/legacy/runtime/installer.py"))
 
     def test_shared_code_cannot_overlap_instance(self):
+        """安装与实例回归：shared code cannot overlap instance。"""
         with tempfile.TemporaryDirectory() as temporary:
             target = self.target(Path(temporary))
             target["shared_code_root"] = temporary
@@ -59,6 +68,7 @@ class SharedInstanceTests(unittest.TestCase):
                 validate_shared_code(target)
 
     def test_native_dependencies_are_shared_without_sharing_database(self):
+        """安装与实例回归：native dependencies are shared without sharing database。"""
         from scripts.tfi_release_native_dependencies import plan
         from scripts.tfi_release_dependencies import environment_key
         with tempfile.TemporaryDirectory() as temporary:
@@ -76,6 +86,7 @@ class SharedInstanceTests(unittest.TestCase):
             self.assertNotEqual(database_root(one), database_root(two))
 
     def test_start_does_not_import_seed_and_refuses_unfinished_migration(self):
+        """安装与实例回归：start does not import seed and refuses unfinished migration。"""
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary) / "instance"
             state = {"target": self.target(root), "completed": ["database"],
@@ -94,6 +105,7 @@ class SharedInstanceTests(unittest.TestCase):
                     installer.lifecycle("start", root)
 
     def test_copy_verifies_shared_code_and_does_not_overwrite_it(self):
+        """安装与实例回归：copy verifies shared code and does not overwrite it。"""
         with tempfile.TemporaryDirectory() as temporary:
             base = Path(temporary)
             target = self.target(base / "instance")
@@ -111,6 +123,7 @@ class SharedInstanceTests(unittest.TestCase):
             self.assertFalse((base / "instance/code").exists())
 
     def test_shared_source_integrity_excludes_only_generated_dependencies(self):
+        """安装与实例回归：shared source integrity excludes only generated dependencies。"""
         from scripts.tfi_instance_layout import source_inventory
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -125,6 +138,7 @@ class SharedInstanceTests(unittest.TestCase):
             self.assertNotEqual(source_inventory(root), expected)
 
     def test_cleanup_preserves_seed_and_shared_code(self):
+        """安装与实例回归：cleanup preserves seed and shared code。"""
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary) / "instance"
             (root / "seed").mkdir(parents=True)
@@ -144,6 +158,7 @@ class SharedInstanceTests(unittest.TestCase):
             self.assertTrue((REPO / "code/scripts/tfi_release_install.py").exists())
 
     def test_provider_service_recognizes_shared_source_and_private_roots(self):
+        """安装与实例回归：provider service recognizes shared source and private roots。"""
         from scripts import portal_service_units as units
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary) / "instance"
@@ -163,6 +178,7 @@ class SharedInstanceTests(unittest.TestCase):
                         units._isolated_codex_context()
 
     def test_build_updates_code_without_changing_seed_or_instance_data(self):
+        """安装与实例回归：build updates code without changing seed or instance data。"""
         spec = importlib.util.spec_from_file_location("prepare_install", REPO / "prepare_install.py")
         prepare = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(prepare)

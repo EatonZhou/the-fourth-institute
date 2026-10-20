@@ -101,7 +101,7 @@ MODULE_GROUPS = (
     )),
     ModuleGroup("operations", "11. 部署、测试与运行保障", (
         node("operations.deployment", "Dev/Release、重启与部署", "decision_850e6248d680", "decision_37f98f8fcb4b", "decision_08bb2d9141f9",
-             "decision_15aab18c0ab3", "decision_ab9880dc4c9d"),
+             "decision_15aab18c0ab3", "decision_ab9880dc4c9d", "decision_d88306d0bd17"),
         node("operations.runtime", "备份与运行保障", "decision_b06ae321a668"),
         node("operations.test-framework", "测试框架", "decision_8273271b67b1", "decision_c953eab654cd"),
         node("operations.test-workbench", "测试工作台", "decision_f2a6a5dd4646"),
