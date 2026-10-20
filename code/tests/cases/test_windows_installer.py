@@ -29,6 +29,80 @@ import prepare_install
 
 
 class WindowsInstallerTests(unittest.TestCase):
+    def test_native_command_accepts_chinese_code_page_in_utf8_environment(self):
+        """原生命令的中文输出不受父进程 UTF-8 模式限制。"""
+        text = " " * 43 + "安装完成\r\n"
+        raw = text.encode("cp936")
+        with self.assertRaises(UnicodeDecodeError):
+            raw.decode("utf-8")
+        command = [sys.executable, "-c",
+                   f"import os; os.write(1, {raw!r}); os.write(2, {'警告'.encode('cp936')!r})"]
+        with patch.object(installer, "clean_environment", return_value={**os.environ, "PYTHONUTF8": "1"}), \
+                patch.object(installer.locale, "getencoding", return_value="cp936"):
+            result = installer.run_native(command, target={}, timeout=10)
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, text.replace("\r\n", "\n"))
+        self.assertEqual(result.stderr, "警告")
+
+    def test_native_output_keeps_utf8_and_unknown_bytes(self):
+        """原生输出优先识别 UTF-8，未知字节作为转义诊断保留。"""
+        with patch.object(installer.locale, "getencoding", return_value="cp936"):
+            self.assertEqual(installer.decode_native_output("安装 ✓".encode()), "安装 ✓")
+            self.assertEqual(installer.decode_native_output(b"\xff"), r"\xff")
+
+    def test_native_failure_keeps_real_exit_code_and_chinese_diagnostic(self):
+        """原生命令失败保留退出码和中文日志，不被解码异常遮蔽。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / "runtime").mkdir()
+            command = [sys.executable, "-c",
+                       f"import os; os.write(2, {'安装失败'.encode('cp936')!r}); raise SystemExit(7)"]
+            with patch.object(installer, "clean_environment", return_value=dict(os.environ)), \
+                    patch.object(installer.locale, "getencoding", return_value="cp936"):
+                with self.assertRaisesRegex(RuntimeError, "exited 7"):
+                    installer.run_checked(command, target={"install_root": tmp}, native_output=True, timeout=10)
+            self.assertEqual((Path(tmp) / "runtime/command-error.log").read_text(encoding="utf-8"), "安装失败")
+
+    def test_python_control_output_remains_strict_utf8(self):
+        """Python 控制输出和实例 JSON 不采用本地编码容错。"""
+        command = [sys.executable, "-c", "import os; os.write(1, b'\\xb0\\xb2')"]
+        with patch.object(installer, "clean_environment", return_value=dict(os.environ)), \
+                patch.object(installer.locale, "getencoding", return_value="cp936"):
+            with self.assertRaises(UnicodeDecodeError):
+                installer.run_checked(command, target={}, timeout=10)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "target.json"
+            path.write_bytes('{"name":"安装"}'.encode("cp936"))
+            with self.assertRaises(UnicodeDecodeError):
+                installer.read_json(path)
+
+    def test_database_tools_use_native_output_boundary(self):
+        """数据库初始化及导入统一使用原生命令编码边界。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            target = self.target(Path(tmp))
+            target.update(pg_bin=str(Path(tmp) / "bin"), pg_share=str(Path(tmp) / "share"))
+            with patch.object(installer, "platform_adapter", return_value=windows), \
+                    patch.object(installer, "service_controller"), \
+                    patch.object(installer, "wait_database"), \
+                    patch.object(installer, "run_checked", return_value="") as run:
+                installer.initialize_database({"target": target})
+                installer.import_database({"target": target})
+            self.assertEqual(len(run.call_args_list), 3)
+            self.assertTrue(all(call.kwargs["native_output"] for call in run.call_args_list))
+
+    def test_native_dependency_probe_handles_localized_stderr(self):
+        """原生依赖版本探测接受本地编码的诊断输出。"""
+        from scripts import tfi_release_native_dependencies as native
+
+        command = [sys.executable, "-c",
+                   f"import os; os.write(1, b'postgres (PostgreSQL) 16.15\\n'); "
+                   f"os.write(2, {'安装检查'.encode('cp936')!r})"]
+        api = SimpleNamespace(run_native=lambda args, **options: installer.run_native(command, **options))
+        with patch.object(installer, "clean_environment", return_value=dict(os.environ)), \
+                patch.object(installer.locale, "getencoding", return_value="cp936"):
+            result = native.verify(api, {}, {"directory": "/fixture/pg", "platform": "windows/x86_64",
+                                            "name": "postgres", "version": "16.15"})
+        self.assertEqual(result, {"postgres": "postgres (PostgreSQL) 16.15"})
+
     def target(self, root):
         return launcher.make_target(root, "sample_one", {"run_id": "fixture"},
                                     ports={"web": 28199, "postgres": 56432, "nats": 14223})

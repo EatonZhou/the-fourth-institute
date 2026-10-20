@@ -136,7 +136,7 @@ def verify(api, target, entry):
         commands = {'node': [str(node), '--version'], 'npm': [str(node), str(npm), '--version']}
     versions = {}
     for name, command in commands.items():
-        result = api.run_process(command, env=api.clean_environment(target), capture_output=True, text=True, timeout=30)
+        result = api.run_native(command, target=target, timeout=30)
         version = result.stdout.strip()
         if result.returncode or not version:
             raise RuntimeError('Native dependency cannot run on this host: ' + name)

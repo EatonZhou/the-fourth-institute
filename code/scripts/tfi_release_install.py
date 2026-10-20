@@ -11,6 +11,7 @@ import contextlib
 import hashlib
 import importlib
 import json
+import locale
 import os
 from pathlib import Path
 import re
@@ -328,11 +329,42 @@ def owned_state(root, *, allow_missing_native=False):
     return state
 
 
-def run_checked(command, *, target, cwd=None, timeout=1800):
+def decode_native_output(output):
+    """Decode human-readable tool output, independent of Python UTF-8 mode.
+
+    Windows native programs can still emit the ANSI code page when their parent
+    Python uses UTF-8. Keep UTF-8 from modern tools intact; use the host encoding
+    only for native diagnostics, never for JSON or installation data files.
+    """
+    if output is None:
+        return None
+    for encoding in ("utf-8", locale.getencoding()):
+        try:
+            return output.decode(encoding).replace("\r\n", "\n").replace("\r", "\n")
+        except UnicodeDecodeError:
+            pass
+    # An unknown diagnostic encoding must not hide the tool's actual exit code.
+    return output.decode("utf-8", errors="backslashreplace")
+
+
+def run_native(command, *, target, cwd=None, timeout=90, merge_output=False):
+    result = run_process(command, env=clean_environment(target), cwd=cwd,
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.STDOUT if merge_output else subprocess.PIPE,
+                         timeout=timeout)
+    result.stdout = decode_native_output(result.stdout)
+    result.stderr = decode_native_output(result.stderr)
+    return result
+
+
+def run_checked(command, *, target, cwd=None, timeout=1800, native_output=False):
     try:
-        result = run_process(command, env=clean_environment(target), cwd=cwd,
-                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                             text=True, timeout=timeout)
+        if native_output:
+            result = run_native(command, target=target, cwd=cwd, timeout=timeout, merge_output=True)
+        else:
+            result = run_process(command, env=clean_environment(target), cwd=cwd,
+                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                 text=True, encoding="utf-8", timeout=timeout)
     except subprocess.TimeoutExpired as exc:
         raise TimeoutError(f"{Path(command[0]).name} exceeded {timeout}s; its process tree was stopped") from exc
     if result.returncode:
@@ -420,7 +452,8 @@ def initialize_database(state):
         run_checked([str(Path(target["pg_bin"]) / native_tool("initdb")), "-D", str(pg_data),
                      "-L", target["pg_share"], "--username=" + target.get("database_user", "tfi"), "--encoding=UTF8",
                      *([] if windows else ["--locale=C.UTF-8"]),
-                     "--auth-local=trust", "--auth-host=trust" if windows else "--auth-host=reject"], target=target)
+                     "--auth-local=trust", "--auth-host=trust" if windows else "--auth-host=reject"],
+                    target=target, native_output=True)
     service_controller().start(unit_name(target, "postgres"))
     wait_database(target)
 
@@ -628,9 +661,10 @@ def import_database(state):
     root = Path(target["install_root"])
     # Repeating a successful install never reimports or overwrites a running DB.
     # An interrupted import must be diagnosed; an existing DB is never dropped.
-    run_checked(database_command(target, "createdb", target["database_name"]), target=target)
+    run_checked(database_command(target, "createdb", target["database_name"]), target=target, native_output=True)
     run_checked(database_command(target, "psql", "-d", target["database_name"], "-X", "--single-transaction",
-                                 "--set", "ON_ERROR_STOP=1", "--file", str(root / "runtime/distribution.sql")), target=target)
+                                 "--set", "ON_ERROR_STOP=1", "--file", str(root / "runtime/distribution.sql")),
+                target=target, native_output=True)
 
 
 def binary_architectures(path):
@@ -682,8 +716,11 @@ def dependency_preflight(target, bundle, *, skip_file_verification=False, manife
         probes = probes[:-1]  # Selected packages are prepared in the owned root.
     for name, command in probes:
         try:
-            result = run_process(command, env=clean_environment(target), cwd=bundle / "code",
-                                 capture_output=True, text=True, timeout=90)
+            if name in {"PostgreSQL", "NATS"}:
+                result = run_native(command, target=target, cwd=bundle / "code", timeout=90)
+            else:
+                result = run_process(command, env=clean_environment(target), cwd=bundle / "code",
+                                     capture_output=True, text=True, encoding="utf-8", timeout=90)
         except (OSError, subprocess.TimeoutExpired) as exc:
             raise ValueError(f"Dependency preflight failed: {name} ({type(exc).__name__})") from exc
         if result.returncode:
@@ -742,7 +779,7 @@ def install(manifest_path, raw_target, *, prepare_only=False, freeze_evidence=No
         if hasattr(adapter, 'dependency_preflight'):
             adapter.dependency_preflight(target)
         python_probe = run_process([target['python'], '--version'], env=clean_environment(target),
-                                   capture_output=True, text=True, timeout=90)
+                                   capture_output=True, text=True, encoding="utf-8", timeout=90)
         if python_probe.returncode or not re.match(r'Python 3\.12\.', python_probe.stdout):
             raise ValueError('Native dependency preparation requires preinstalled Python 3.12')
     with installation_lock(root):
