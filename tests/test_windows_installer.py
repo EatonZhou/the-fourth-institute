@@ -9,6 +9,8 @@ import unittest
 from unittest.mock import patch, Mock
 import zipfile
 import hashlib
+from contextlib import contextmanager
+from types import SimpleNamespace
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "code"))
@@ -67,6 +69,50 @@ class WindowsInstallerTests(unittest.TestCase):
             # The lock file can remain; only the OS lock determines ownership.
             with launcher.launcher_lock(base):
                 pass
+
+    def test_long_path_success_restarts_unelevated_after_releasing_launcher_lock(self):
+        events = []
+
+        @contextmanager
+        def lock(_):
+            events.append("locked")
+            yield
+            events.append("released")
+
+        def spawn(argv, **kwargs):
+            self.assertEqual(events, ["locked", "released"])
+            self.assertEqual(argv, [sys.executable, str(Path(launcher.__file__))])
+            self.assertNotIn("--enable-long-paths", argv)
+
+        with patch.object(launcher, "os", SimpleNamespace(name="nt")), \
+                patch.object(sys, "argv", ["launcher"]), \
+                patch.object(launcher, "launcher_lock", side_effect=lock), \
+                patch.object(launcher, "launch_desktop", return_value=True), \
+                patch.object(launcher.subprocess, "CREATE_NO_WINDOW", 0, create=True), \
+                patch.object(launcher.subprocess, "Popen", side_effect=spawn) as process:
+            launcher.main()
+            process.assert_called_once()
+
+    def test_long_path_setup_shows_failures_and_only_restarts_after_success(self):
+        for failure in (None, RuntimeError("authorization cancelled")):
+            with self.subTest(failure=failure):
+                root = Mock()
+                root.after.side_effect = lambda delay, callback: setattr(root, "scheduled", callback)
+                root.mainloop.side_effect = lambda: root.scheduled()
+                messagebox = Mock()
+                tk = SimpleNamespace(ttk=Mock(), messagebox=messagebox)
+                with patch.dict(sys.modules, {"tkinter": tk}), \
+                        patch.object(launcher, "enable_long_paths_elevated", side_effect=failure), \
+                        patch.object(launcher.threading, "Thread",
+                                     side_effect=lambda target, **kwargs: Mock(start=target)):
+                    restart = launcher.wait_for_long_path_setup(root)
+                self.assertEqual(restart, failure is None)
+                root.deiconify.assert_called_once()
+                root.destroy.assert_called_once()
+                if failure:
+                    messagebox.showerror.assert_called_once()
+                else:
+                    messagebox.showerror.assert_not_called()
 
     def test_child_environment_keeps_service_registry_and_instance_unicode_paths(self):
         with tempfile.TemporaryDirectory() as tmp:

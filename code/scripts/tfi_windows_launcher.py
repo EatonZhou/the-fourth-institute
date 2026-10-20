@@ -98,6 +98,68 @@ def long_paths_enabled():
             return False
 
 
+def enable_long_paths_elevated():
+    """Wait for the narrow privileged helper; the application stays unelevated."""
+    import ctypes
+    from ctypes import wintypes as w
+
+    class ExecuteInfo(ctypes.Structure):
+        _fields_ = [
+            ("cbSize", w.DWORD), ("fMask", w.ULONG), ("hwnd", w.HWND),
+            ("lpVerb", w.LPCWSTR), ("lpFile", w.LPCWSTR),
+            ("lpParameters", w.LPCWSTR), ("lpDirectory", w.LPCWSTR),
+            ("nShow", ctypes.c_int), ("hInstApp", w.HINSTANCE),
+            ("lpIDList", ctypes.c_void_p), ("lpClass", w.LPCWSTR),
+            ("hkeyClass", w.HKEY), ("dwHotKey", w.DWORD),
+            ("hIcon", w.HANDLE), ("hProcess", w.HANDLE),
+        ]
+
+    shell = ctypes.WinDLL("shell32", use_last_error=True)
+    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+    ole = ctypes.WinDLL("ole32", use_last_error=True)
+    shell.ShellExecuteExW.argtypes = [ctypes.POINTER(ExecuteInfo)]
+    shell.ShellExecuteExW.restype = w.BOOL
+    kernel.WaitForSingleObject.argtypes = [w.HANDLE, w.DWORD]
+    kernel.WaitForSingleObject.restype = w.DWORD
+    kernel.GetExitCodeProcess.argtypes = [w.HANDLE, ctypes.POINTER(w.DWORD)]
+    kernel.GetExitCodeProcess.restype = w.BOOL
+    kernel.CloseHandle.argtypes = [w.HANDLE]
+    kernel.CloseHandle.restype = w.BOOL
+    ole.CoInitializeEx.argtypes = [ctypes.c_void_p, w.DWORD]
+    ole.CoInitializeEx.restype = ctypes.c_long
+    ole.CoUninitialize.argtypes = []
+    initialized = ole.CoInitializeEx(None, 0x6)  # STA, disable OLE1 DDE
+    if initialized < 0:
+        raise RuntimeError("无法准备 Windows 授权窗口")
+    info = ExecuteInfo()
+    info.cbSize = ctypes.sizeof(info)
+    info.fMask = 0x40 | 0x100 | 0x400  # keep process handle, no async, own error UI
+    info.lpVerb = "runas"
+    info.lpFile = sys.executable
+    info.lpParameters = subprocess.list2cmdline([str(Path(__file__)), "--enable-long-paths"])
+    info.lpDirectory = str(PLATFORM)
+    info.nShow = 0
+    try:
+        if not shell.ShellExecuteExW(ctypes.byref(info)):
+            error = ctypes.get_last_error()
+            if error == 1223:
+                raise RuntimeError("已取消 Windows 管理员授权，长路径未启用，Portal 尚未启动。")
+            raise ctypes.WinError(error)
+        if not info.hProcess:
+            raise RuntimeError("未取得设置程序的运行状态，请重新打开启动器检查。")
+        if kernel.WaitForSingleObject(info.hProcess, 30000) != 0:
+            raise RuntimeError("设置程序未在预期时间内完成，请查看 launcher-error.log 后重试。")
+        status = w.DWORD()
+        if not kernel.GetExitCodeProcess(info.hProcess, ctypes.byref(status)):
+            raise ctypes.WinError(ctypes.get_last_error())
+        if status.value or not long_paths_enabled():
+            raise RuntimeError("长路径设置未生效。请查看 .build/windows/launcher-error.log，或联系管理员检查系统策略。")
+    finally:
+        if info.hProcess:
+            kernel.CloseHandle(info.hProcess)
+        ole.CoUninitialize()
+
+
 def unpack_seed(platform):
     """Only extract the public seed; never overwrite an initialized instance."""
     import hashlib
@@ -353,7 +415,14 @@ def main():
         stop_all(PLATFORM)
         return
     with launcher_lock(PLATFORM):
-        launch_desktop()
+        restart = launch_desktop()
+    if restart:
+        # Windows caches long-path support per process. Start a fresh ordinary
+        # user process, only after releasing this launcher's exclusive lock.
+        subprocess.Popen([sys.executable, str(Path(__file__))], cwd=PLATFORM,
+                         stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                         stderr=subprocess.DEVNULL, close_fds=True,
+                         creationflags=subprocess.CREATE_NO_WINDOW)
 
 
 def launch_desktop():
@@ -362,22 +431,61 @@ def launch_desktop():
     root = tk.Tk()
     if not long_paths_enabled():
         root.withdraw()
-        if messagebox.askyesno("启用 Windows 长路径",
-                              "示例资源包含长文件路径，需要启用 Windows 长路径支持。\n"
-                              "是否允许系统显示管理员确认窗口？完成后请重新打开启动器。\n"
-                              "这不会修改系统 PATH 或安装系统服务。"):
-            import ctypes
-            arguments = subprocess.list2cmdline([str(Path(__file__)), "--enable-long-paths"])
-            api = ctypes.WinDLL("shell32", use_last_error=True)
-            api.ShellExecuteW.argtypes = [ctypes.c_void_p, *([ctypes.c_wchar_p] * 4), ctypes.c_int]
-            api.ShellExecuteW.restype = ctypes.c_void_p
-            result = api.ShellExecuteW(None, "runas", sys.executable, arguments, str(PLATFORM), 1)
-            if not result or result <= 32:
-                messagebox.showerror("未启用", "未获得修改权限。请让管理员启用 LongPathsEnabled 后再试。")
-        root.destroy()
-        return
+        if not messagebox.askyesno("启用 Windows 长路径",
+                                  "示例资源包含长文件路径，需要启用 Windows 长路径支持。\n"
+                                  "是否允许系统显示管理员确认窗口？成功后会自动打开实例管理窗口。\n"
+                                  "这不会修改系统 PATH 或安装系统服务。", parent=root):
+            messagebox.showinfo("尚未初始化", "已取消。Portal 尚未启动；稍后可重新打开桌面启动器。", parent=root)
+            root.destroy()
+            return False
+        return wait_for_long_path_setup(root)
     Launcher(root)
     root.mainloop()
+    return False
+
+
+def wait_for_long_path_setup(root):
+    """Keep visible feedback while the Windows authorization/helper completes."""
+    from tkinter import ttk, messagebox
+    root.title("The Fourth Institute — 正在准备")
+    root.geometry("490x150")
+    ttk.Label(root, padding=16, wraplength=450,
+              text="正在等待 Windows 管理员授权并启用长路径。\n"
+                   "成功后会自动重新打开实例管理窗口；当前尚未启动 Portal。").pack()
+    progress = ttk.Progressbar(root, mode="indeterminate")
+    progress.pack(fill="x", padx=16)
+    progress.start()
+    root.protocol("WM_DELETE_WINDOW", lambda: messagebox.showinfo(
+        "正在等待授权", "请在 Windows 授权窗口确认或取消，完成后会显示结果。", parent=root))
+    root.deiconify()
+    results = queue.Queue()
+    restart = False
+
+    def work():
+        try:
+            enable_long_paths_elevated()
+        except Exception as exc:
+            results.put(str(exc))
+        else:
+            results.put(None)
+
+    def poll():
+        nonlocal restart
+        try:
+            error = results.get_nowait()
+        except queue.Empty:
+            root.after(100, poll)
+            return
+        if error is not None:
+            messagebox.showerror("未完成设置", error, parent=root)
+        else:
+            restart = True
+        root.destroy()
+
+    threading.Thread(target=work, daemon=False).start()
+    root.after(100, poll)
+    root.mainloop()
+    return restart
 
 
 if __name__ == "__main__":

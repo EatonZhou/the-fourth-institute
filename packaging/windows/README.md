@@ -8,7 +8,8 @@
 1. 双击 `TheFourthInstitute-Setup-x64.exe`，选择当前用户可写的目录。
 2. 打开桌面的 **The Fourth Institute**。示例资料包含长文件路径；如果 Windows
    尚未启用长路径，启动器会询问是否启用，并由 Windows 请求管理员确认。
-   完成后重新打开启动器。取消不会初始化实例。
+   等待窗口会显示当前状态；设置成功后自动重新打开实例管理窗口。
+   取消授权或设置失败会明确显示结果，不会初始化实例。
 3. 使用默认的 `example_instance`，点击 **创建 / 继续初始化**。需要联网下载
    PostgreSQL、NATS、Node.js、Python 包和所选功能的工具；Python 本身已打包。
    如需局域网访问，在创建前勾选对应选项，并按 Windows 防火墙提示允许访问。
