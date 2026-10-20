@@ -192,7 +192,7 @@ def clean_environment(target):
                     if windows else "/usr/local/bin:/usr/bin:/bin", "LANG": "C.UTF-8",
            "HOME": str(root / "home"), "XDG_CONFIG_HOME": str(root / "home/.config"),
            "XDG_CACHE_HOME": str(root / "home/.cache"), "TMPDIR": str(runtime),
-           "PYTHONNOUSERSITE": "1", "PYTHONDONTWRITEBYTECODE": "1",
+           "PYTHONNOUSERSITE": "1", "PYTHONDONTWRITEBYTECODE": "1", "PYTHONUTF8": "1",
            "PORTAL_PATHS_CONFIG": str(root / "config/paths.json"),
            "PORTAL_SITE_CONFIG": str(root / "config/site.json"),
            "PORTAL_NETWORK_CONFIG": str(root / "config/network.env"),
@@ -216,7 +216,12 @@ def clean_environment(target):
         env.update({"SystemRoot": os.environ.get("SystemRoot", r"C:\Windows"),
                     "WINDIR": os.environ.get("WINDIR", r"C:\Windows"),
                     "TEMP": str(root / "runtime"), "TMP": str(root / "runtime"),
-                    "USERPROFILE": str(root / "home")})
+                    "USERPROFILE": str(root / "home"),
+                    "APPDATA": str(root / "home/AppData/Roaming"),
+                    "LOCALAPPDATA": str(root / "home/AppData/Local"),
+                    # Maintenance helpers retain the operator's service registry
+                    # even though application caches belong to the instance.
+                    "TFI_WINDOWS_SERVICE_DIRECTORY": str(unit_directory())})
     for component in ("resource", "execution", "society"):
         env[f"PORTAL_{component.upper()}_SERVICE_SOCKET"] = str(runtime / "s" / f"{component}-service.sock")
     if target.get("pg_lib"):
@@ -863,10 +868,23 @@ def observed_status(state):
             "cleanup_argv": [target["python"], entry, "cleanup", "--root", str(root)]}
 
 
+def start_blocker(state):
+    """One readiness contract shared by the CLI and instance management UI."""
+    if state.get("migration", {}).get("business_execution_allowed") is False:
+        return "Migration has not completed its cutover checks"
+    if "database" not in state.get("completed", []):
+        return "Initialize this instance before starting it"
+    if not state.get("migration") and not any(stage.get("status") == "installed" for stage in state.get("stages", [])):
+        return "Finish installation before starting this instance"
+    return ""
+
+
 def lifecycle(command, root):
     if command not in {"status", "start", "stop", "cleanup"}:
         raise ValueError("Unsupported installation lifecycle command")
-    state = owned_state(root)
+    # A failed download can leave an owned installation with missing managed
+    # binaries. Stopping or removing its registrations must still be possible.
+    state = owned_state(root, allow_missing_native=command in {"stop", "cleanup"})
     target = state["target"]
     root = Path(target["install_root"])
     with installation_lock(root):
@@ -874,12 +892,9 @@ def lifecycle(command, root):
             return observed_status(state)
         controller = service_controller()
         if command == "start":
-            if state.get("migration", {}).get("business_execution_allowed") is False:
-                raise ValueError("Migration has not completed its cutover checks")
-            if "database" not in state.get("completed", []):
-                raise ValueError("Initialize this instance before starting it")
-            if not state.get("migration") and not any(stage.get("status") == "installed" for stage in state.get("stages", [])):
-                raise ValueError("Finish installation before starting this instance")
+            blocker = start_blocker(state)
+            if blocker:
+                raise ValueError(blocker)
             check_available(target, existing=True)
             register_services(target)
             controller.start(unit_name(target, "postgres"))

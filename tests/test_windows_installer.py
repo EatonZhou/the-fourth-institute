@@ -1,6 +1,7 @@
 """Portable contract tests; these deliberately do not claim Windows acceptance."""
 import importlib.util
 import json
+import os
 from pathlib import Path
 import sys
 import tempfile
@@ -55,6 +56,70 @@ class WindowsInstallerTests(unittest.TestCase):
             windows.validate_service_mode({"windows_service_mode": "anything"})
         with self.assertRaises(ValueError):
             windows.dependency_preflight({"windows_service_mode": "scm"})
+
+    def test_running_launcher_blocks_duplicate_window_and_uninstall_until_closed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            with launcher.launcher_lock(base):
+                with self.assertRaisesRegex(RuntimeError, "已经打开"):
+                    with launcher.launcher_lock(base):
+                        self.fail("A second owner acquired the launcher lock")
+            # The lock file can remain; only the OS lock determines ownership.
+            with launcher.launcher_lock(base):
+                pass
+
+    def test_child_environment_keeps_service_registry_and_instance_unicode_paths(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp) / "中文 platform"
+            target = self.target(base)
+            target.update(pg_bin=str(base / "postgres/bin"))
+            registry = Path(tmp) / "operator-local/TFI/services"
+            with patch.object(installer, "platform_adapter", return_value=windows), \
+                    patch.dict(os.environ, {"LOCALAPPDATA": str(registry.parents[1])}, clear=True):
+                env = installer.clean_environment(target)
+                self.assertEqual(env["TFI_WINDOWS_SERVICE_DIRECTORY"], str(registry))
+                self.assertEqual(env["PYTHONUTF8"], "1")
+                self.assertTrue(Path(env["LOCALAPPDATA"]).is_relative_to(Path(target["install_root"])))
+                self.assertTrue(Path(env["APPDATA"]).is_relative_to(Path(target["install_root"])))
+                # Repeated boundaries must keep the original registry, rather
+                # than moving it under the new per-instance LOCALAPPDATA.
+                with patch.dict(os.environ, env, clear=True):
+                    self.assertEqual(windows.unit_directory(), registry)
+                    nested = installer.clean_environment(target)
+                    self.assertEqual(nested["TFI_WINDOWS_SERVICE_DIRECTORY"], str(registry))
+
+    def test_failed_native_download_can_be_stopped_without_deleting_data(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            target = self.target(base)
+            (base / "code/scripts").mkdir(parents=True)
+            (base / "code/scripts/tfi_release_install.py").write_text("# fixture")
+            target.update(python=sys.executable, pg_bin=str(base / "missing-pg/bin"),
+                          pg_share=str(base / "missing-pg/share"), nats_server=str(base / "missing-nats.exe"),
+                          managed_dependencies=["postgres", "nats"])
+            root = Path(target["install_root"])
+            root.mkdir(parents=True)
+            preserved = root / "data/keep.txt"
+            preserved.parent.mkdir()
+            preserved.write_text("instance data")
+            registry = base / "service-definitions"
+            absent = {"load": "not-found", "active": "inactive", "sub": "dead", "pid": 0}
+            scm = Mock()
+            scm.status.return_value = absent
+            with patch.object(installer, "platform_adapter", return_value=windows), \
+                    patch.object(windows, "unit_directory", return_value=registry), \
+                    patch.object(services.WindowsServiceControl, "scm", return_value=scm), \
+                    patch("scripts.tfi_release_provider_services.owned_services", return_value=None):
+                normalized = installer.target_plan(target, protected_roots=[], allow_missing_native=True)
+                installer.write_json(root / "installation.json", {
+                    "schema": installer.SCHEMA, "target": normalized, "status": "failed",
+                    "completed": [], "stages": [], "protected_roots": []})
+                result = installer.lifecycle("stop", root)
+                self.assertEqual(result["status"], "stopped")
+                self.assertEqual(preserved.read_text(), "instance data")
+                # Starting still requires the actual programs and initialization.
+                with self.assertRaisesRegex(ValueError, "Required executable"):
+                    installer.lifecycle("start", root)
 
     def test_first_admin_opens_only_invitation_not_full_console_text(self):
         text = ("Setup link for the first administrator:\n"

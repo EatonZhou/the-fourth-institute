@@ -27,7 +27,7 @@ def inventory(root):
 
 def prepare(repo, *, target_platforms=None):
     seed = repo / 'instance/example_instance/seed'
-    specification = json.loads((seed / 'manifest.json').read_text())
+    specification = json.loads((seed / 'manifest.json').read_text(encoding='utf-8'))
     if specification['schema'] != 'tfi.instance-seed.v1':
         raise ValueError('Unsupported instance seed')
     manifest = specification['engineering']
@@ -65,7 +65,7 @@ def prepare(repo, *, target_platforms=None):
     manifest.update(schema='tfi.release-engineering.v1', inventory=rows,
                     code={'path': 'code', 'sha256': hashlib.sha256(canonical.encode()).hexdigest()},
                     installer={'path': 'code/scripts/tfi_release_install.py'})
-    (temporary / 'manifest.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')
+    (temporary / 'manifest.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     if destination.exists():
         shutil.rmtree(destination)
     temporary.rename(destination)

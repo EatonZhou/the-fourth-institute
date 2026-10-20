@@ -18,6 +18,7 @@ VIAddVersionKey /LANG=1033 "LegalCopyright" "The Fourth Institute contributors"
 !define MUI_ABORTWARNING
 !define MUI_WELCOMEPAGE_TEXT "Install the shared Portal platform and desktop instance manager.$\r$\n$\r$\nPython is included. Initializing an instance downloads PostgreSQL, Node.js and selected feature dependencies.$\r$\n$\r$\nWindows 11 x64 preview: native acceptance testing is pending. Instance data is retained when uninstalling."
 !insertmacro MUI_PAGE_WELCOME
+!define MUI_DIRECTORYPAGE_TEXT_TOP "Choose a new or empty folder. Existing files and instances will not be overwritten."
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
 !define MUI_FINISHPAGE_RUN
@@ -49,7 +50,6 @@ Function .onVerifyInstDir
     StrCmp $1 "." next_entry
     StrCmp $1 ".." next_entry
     FindClose $0
-    MessageBox MB_ICONSTOP "Choose a new or empty folder. Existing files and instances will not be overwritten."
     Abort
   next_entry:
     FindNext $0 $1
@@ -83,7 +83,7 @@ Section "Uninstall"
   nsExec::ExecToLog '"$INSTDIR\dependencies\python\python.exe" "$INSTDIR\code\scripts\tfi_windows_launcher.py" --uninstall-platform'
   Pop $0
   StrCmp $0 "0" stopped
-    MessageBox MB_ICONSTOP "Could not stop all instances. Nothing was deleted. Use the launcher to stop them and retry."
+    MessageBox MB_ICONSTOP "Could not prepare uninstall. Nothing was deleted. Close the instance manager before uninstalling. If this persists, stop instances in the launcher, close it, and retry."
     Abort
   stopped:
   ; Deliberately keep instance/, dependency caches and .build/ for recovery.

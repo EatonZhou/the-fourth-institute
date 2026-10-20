@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+from contextlib import contextmanager
 import json
 import os
 from pathlib import Path
@@ -131,6 +132,21 @@ def invitation_url(text):
     if len(links) != 1:
         raise ValueError("初始化邀请格式不正确，请查看实例 secrets 目录中的邀请文件。")
     return links[0]
+
+
+@contextmanager
+def launcher_lock(platform):
+    """One desktop owner; uninstall must wait until that owner closes."""
+    from management_common.file_lock import try_lock_descriptor, unlock_descriptor
+    path = platform / ".build/windows/launcher.lock"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a+b") as stream:
+        if not try_lock_descriptor(stream.fileno()):
+            raise RuntimeError("实例管理窗口已经打开。请先关闭它，再重新打开或卸载平台。")
+        try:
+            yield
+        finally:
+            unlock_descriptor(stream.fileno())
 
 
 class Launcher:
@@ -329,9 +345,18 @@ def main():
                            0, winreg.KEY_SET_VALUE) as key:
             winreg.SetValueEx(key, "LongPathsEnabled", 0, winreg.REG_DWORD, 1)
         return
-    if args.stop_all or args.uninstall_platform:
-        stop_all(PLATFORM, unregister=args.uninstall_platform)
+    if args.uninstall_platform:
+        with launcher_lock(PLATFORM):
+            stop_all(PLATFORM, unregister=True)
         return
+    if args.stop_all:
+        stop_all(PLATFORM)
+        return
+    with launcher_lock(PLATFORM):
+        launch_desktop()
+
+
+def launch_desktop():
     import tkinter as tk
     from tkinter import messagebox
     root = tk.Tk()

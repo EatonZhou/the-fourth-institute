@@ -41,6 +41,9 @@ def unit_name(target, component):
 
 
 def unit_directory():
+    configured = os.environ.get("TFI_WINDOWS_SERVICE_DIRECTORY")
+    if configured:
+        return safe_path(configured)
     return Path(os.environ.get("LOCALAPPDATA") or Path.home() / "AppData/Local") / "TFI" / "services"
 
 
