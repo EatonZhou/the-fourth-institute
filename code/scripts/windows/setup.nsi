@@ -40,17 +40,17 @@ Function un.onInit
 FunctionEnd
 
 Function un.InstanceOptions
-  !insertmacro MUI_HEADER_TEXT "实例数据 / Instance data" "默认保留数据 / Keep data by default"
+  !insertmacro MUI_HEADER_TEXT "数据与缓存 / Data and caches" "默认保留数据 / Keep data by default"
   nsDialogs::Create 1018
   Pop $UninstallDialog
   ${If} $UninstallDialog == error
     Abort
   ${EndIf}
-  ${NSD_CreateLabel} 0 0 100% 40u "卸载平台默认保留实例。勾选后将删除本目录下所有实例的数据库、文件、账号和对话，无法撤销。$\r$\nUninstall normally keeps your data. Selecting below permanently deletes ALL local instances."
+  ${NSD_CreateLabel} 0 0 100% 58u "默认保留实例和缓存。勾选后永久删除本目录下所有实例的数据库、文件、账号、对话，以及依赖缓存和日志。$\r$\nKeep data by default. Selecting below permanently deletes ALL local instances, dependencies, caches and logs."
   Pop $0
-  ${NSD_CreateLabel} 0 48u 100% 24u "$INSTDIR\instance"
+  ${NSD_CreateLabel} 0 64u 100% 24u "$INSTDIR"
   Pop $0
-  ${NSD_CreateCheckbox} 0 80u 100% 24u "同时删除实例数据 / Also delete instance data"
+  ${NSD_CreateCheckbox} 0 96u 100% 24u "同时删除实例和缓存 / Delete instances and caches"
   Pop $RemoveInstancesCheckbox
   ${NSD_SetState} $RemoveInstancesCheckbox $RemoveInstances
   nsDialogs::Show
@@ -59,7 +59,7 @@ FunctionEnd
 Function un.InstanceOptionsLeave
   ${NSD_GetState} $RemoveInstancesCheckbox $RemoveInstances
   ${If} $RemoveInstances == ${BST_CHECKED}
-    MessageBox MB_YESNO|MB_ICONEXCLAMATION|MB_DEFBUTTON2 "永久删除 $INSTDIR\instance 下的所有实例？数据库、账号、对话与文件无法恢复。$\r$\nPermanently delete ALL instances in this directory? This cannot be undone." IDYES confirmed
+    MessageBox MB_YESNO|MB_ICONEXCLAMATION|MB_DEFBUTTON2 "永久删除此目录内的全部实例、依赖缓存和日志？$\r$\n$INSTDIR$\r$\n数据库、账号、对话与文件无法恢复。$\r$\nPermanently delete ALL local instances, dependencies, caches and logs? This cannot be undone." IDYES confirmed
     Abort
     confirmed:
   ${EndIf}
@@ -116,6 +116,8 @@ FunctionEnd
 Section "Uninstall"
   SetRegView 64
   SetShellVarContext current
+  ; Do not hold the directory that a complete uninstall needs to remove.
+  SetOutPath "$TEMP"
   ${If} $RemoveInstances == ${BST_CHECKED}
     nsExec::ExecToLog '"$INSTDIR\dependencies\python\python.exe" "$INSTDIR\code\scripts\tfi_windows_launcher.py" --uninstall-platform --remove-instances'
   ${Else}
@@ -126,10 +128,15 @@ Section "Uninstall"
     MessageBox MB_ICONSTOP "卸载未完成，平台文件已保留。若已选择删除实例，部分实例可能已清理。请查看日志后重试。$\r$\nUninstall incomplete; platform files retained. Some selected instances may already have been removed. See .build\windows\launcher-error.log."
     Abort
   stopped:
-  ; Instance cleanup completed above, or data was explicitly retained.
-  ; Dependency caches and diagnostic .build/ files remain available.
+  ; ExecToLog has waited for Python to release its runtime and launcher lock.
+  ; These validated trees are deleted only with explicit data-removal consent.
+  ${If} $RemoveInstances == ${BST_CHECKED}
+    RMDir /r "$INSTDIR\.build"
+    RMDir /r "$INSTDIR\dependencies"
+  ${Else}
+    RMDir /r "$INSTDIR\dependencies\python"
+  ${EndIf}
   RMDir /r "$INSTDIR\code"
-  RMDir /r "$INSTDIR\dependencies\python"
   RMDir /r "$INSTDIR\packaging"
   RMDir /r "$INSTDIR\branding"
   Delete "$INSTDIR\prepare_install.py"
@@ -150,7 +157,16 @@ Section "Uninstall"
   keep_shell_entries:
   Delete "$INSTDIR\Uninstall.exe"
   ${If} $RemoveInstances == ${BST_CHECKED}
-    MessageBox MB_ICONINFORMATION "平台和本目录下的实例已删除。依赖缓存与诊断日志保留。$\r$\nPlatform and local instances removed. Dependency caches and diagnostic logs retained."
+    ; Never recursively remove the installation root: unknown user files stay.
+    ; A nonempty directory also catches locked files left by any earlier step.
+    ClearErrors
+    RMDir "$INSTDIR"
+    ${If} ${Errors}
+      SetErrorLevel 1
+      MessageBox MB_ICONEXCLAMATION "卸载仍有残留文件：$\r$\n$INSTDIR$\r$\n可能有文件被占用，或存在自行添加的文件。请关闭相关程序后检查此目录。$\r$\nSome files remain (in use or added separately). Check this folder after closing related programs."
+    ${Else}
+      MessageBox MB_ICONINFORMATION "平台、实例、依赖缓存和日志已删除。$\r$\nPlatform, instances, dependencies, caches and logs removed."
+    ${EndIf}
   ${Else}
     MessageBox MB_ICONINFORMATION "平台已卸载，实例数据保留于：$\r$\nPlatform removed. Instance data retained:$\r$\n$INSTDIR\instance"
   ${EndIf}

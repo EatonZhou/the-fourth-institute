@@ -14,9 +14,22 @@ def plain_tree(root: Path) -> None:
         path = pending.pop()
         info = path.lstat()
         if stat.S_ISLNK(info.st_mode) or getattr(info, "st_file_attributes", 0) & 0x400:
-            raise ValueError(f"Instance contains a link or reparse point: {path}")
+            raise ValueError(f"Removal tree contains a link or reparse point: {path}")
         if stat.S_ISDIR(info.st_mode):
             pending.extend(path.iterdir())
+
+
+def validate_platform_caches(platform: Path) -> None:
+    """Validate caches now; NSIS removes them after this Python process exits."""
+    for name in (".build", "dependencies"):
+        root = platform / name
+        try:
+            info = root.lstat()
+        except FileNotFoundError:
+            continue
+        plain_tree(root)
+        if not stat.S_ISDIR(info.st_mode):
+            raise ValueError(f"Expected a platform cache directory: {root}")
 
 
 def removal_plan(platform: Path) -> list[tuple[Path, bool]]:
@@ -56,6 +69,9 @@ def remove_instances(platform: Path) -> None:
     from scripts.tfi_windows_launcher import command
 
     plan = removal_plan(platform)
+    # Both trees are in use here (Python runtime and launcher lock). Validate
+    # them before deleting any instance; the native uninstaller owns deletion.
+    validate_platform_caches(platform)
     # Stop every initialized instance first. A failed stop preserves all data.
     for root, initialized in plan:
         if initialized:

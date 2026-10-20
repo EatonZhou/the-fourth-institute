@@ -47,8 +47,11 @@ def owned_state():
 
 
 def test_default_uninstall_retains_instance_data(platform, monkeypatch):
-    """默认卸载只注销服务，保留实例数据。"""
+    """默认卸载只注销服务，保留实例与缓存数据。"""
     root = instance(platform)
+    cache = platform / "dependencies/download"
+    cache.mkdir(parents=True)
+    (cache / "keep").write_bytes(b"cached dependency")
     monkeypatch.setattr(launcher, "PLATFORM", platform)
     monkeypatch.setattr(launcher, "os", SimpleNamespace(name="nt"))
     monkeypatch.setattr(launcher.sys, "argv", ["launcher", "--uninstall-platform"])
@@ -57,6 +60,7 @@ def test_default_uninstall_retains_instance_data(platform, monkeypatch):
         stop.assert_called_once_with(platform, unregister=True)
         remove.assert_not_called()
     assert (root / "data/keep.txt").read_text() == "private instance data"
+    assert (cache / "keep").read_bytes() == b"cached dependency"
 
 
 def test_remove_requires_uninstall_mode(monkeypatch):
@@ -157,3 +161,65 @@ def test_failed_cleanup_does_not_remove_remaining_files(platform, owned_state):
         uninstall.remove_instances(platform)
     assert (root / "data/keep.txt").is_file()
     assert (platform / "code").is_dir()
+
+
+@pytest.mark.parametrize("name", [".build", "dependencies"])
+@pytest.mark.parametrize("nested", [False, True])
+def test_redirected_cache_prevents_any_instance_removal(platform, owned_state, tmp_path_factory, name, nested):
+    """缓存根或子目录指向外部时，删除实例前即拒绝卸载。"""
+    root = instance(platform)
+    external = tmp_path_factory.mktemp("external-cache-target")
+    (external / "keep").write_text("not platform data")
+    link = platform / name
+    if nested:
+        link.mkdir()
+        link = link / "redirect"
+    link.symlink_to(external, target_is_directory=True)
+    with patch.object(uninstall.subprocess, "run") as run, pytest.raises(ValueError, match="link or reparse"):
+        uninstall.remove_instances(platform)
+    run.assert_not_called()
+    assert (root / "data/keep.txt").is_file()
+    assert (external / "keep").read_text() == "not platform data"
+
+
+@pytest.mark.parametrize("name", [".build", "dependencies"])
+def test_non_directory_cache_prevents_any_instance_removal(platform, owned_state, name):
+    """未知类型的缓存入口阻止删除，不留下部分清理的实例。"""
+    root = instance(platform)
+    (platform / name).write_text("unexpected file")
+    with patch.object(uninstall.subprocess, "run") as run, pytest.raises(ValueError, match="cache directory"):
+        uninstall.remove_instances(platform)
+    run.assert_not_called()
+    assert (root / "data/keep.txt").is_file()
+
+
+def test_valid_caches_wait_for_native_uninstaller_even_without_instances(platform):
+    """Python 返回前保留运行时和日志，由原生卸载器在进程退出后删除。"""
+    files = [platform / "dependencies/python/python.exe", platform / ".build/windows/launcher.lock"]
+    for path in files:
+        path.parent.mkdir(parents=True)
+        path.write_bytes(b"in use by uninstall helper")
+    with patch.object(uninstall.subprocess, "run") as run:
+        uninstall.remove_instances(platform)
+    run.assert_not_called()
+    assert all(path.is_file() for path in files)
+    # A cached junction still blocks deletion when no instance directory exists.
+    with patch.object(Path, "lstat", return_value=SimpleNamespace(st_mode=0o40755, st_file_attributes=0x400)):
+        with pytest.raises(ValueError, match="reparse"):
+            uninstall.validate_platform_caches(platform)
+
+
+def test_native_uninstall_cleanup_is_gated_and_checks_for_residuals():
+    """原生卸载在等待 Python 退出后清理缓存，并检查根目录是否仍有残留。"""
+    script = (Path(__file__).resolve().parents[2] / "scripts/windows/setup.nsi").read_text(encoding="utf-8")
+    section = script.split('Section "Uninstall"', 1)[1]
+    consent = "${If} $RemoveInstances == ${BST_CHECKED}"
+    assert section.index('SetOutPath "$TEMP"') < section.index("nsExec::ExecToLog")
+    after_stop = section.split("stopped:", 1)[1]
+    deletion = after_stop.split(consent, 1)[1].split("${Else}", 1)[0]
+    assert 'RMDir /r "$INSTDIR\\.build"' in deletion
+    assert 'RMDir /r "$INSTDIR\\dependencies"' in deletion
+    assert 'RMDir /r "$INSTDIR"' not in section
+    assert 'RMDir /r "$INSTDIR\\instance"' not in section
+    assert 'ClearErrors\n    RMDir "$INSTDIR"\n    ${If} ${Errors}' in section
+    assert section.index("SetErrorLevel 1") < section.index("Platform, instances, dependencies, caches and logs removed.")
