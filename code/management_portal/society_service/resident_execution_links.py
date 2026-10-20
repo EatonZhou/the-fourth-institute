@@ -22,7 +22,7 @@ def link_inputs(resident_id: str, execution: Mapping[str, Any], *, connection: A
                                                      for message,role in messages.items()],
                                prefix='"' + _database_schema("agent") + '".')
     if execution.get("retry_of_execution_id"):
-        from management_portal.execution import input_retries
+        from management_portal.execution import agent_data_input_retries as input_retries
         input_retries.record(connection, predecessor=str(execution["retry_of_execution_id"]),
                              execution_id=identity, resident_id=resident_id, message_id=main_message, at=at)
     changed = False

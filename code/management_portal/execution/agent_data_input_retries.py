@@ -1,4 +1,4 @@
-"""Durable provenance for owner-authorized retries of the same admitted input.
+"""Agent-owned provenance for authorized retries of the same admitted input.
 
 A retry is independent work. It does not continue or change the Trigger Path
 that delivered an earlier Execution, unlike an unstarted internal handoff.

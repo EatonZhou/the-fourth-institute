@@ -301,7 +301,7 @@ def link_input(lineage_id: str, resident_id: str, message_id: str, execution_id:
         if rows and (execution is None or execution["agent_id"] != resident_id):
             raise ValueError("Resident handoff must reference its own durable Execution")
         for row in rows:
-            from management_portal.execution import input_retries
+            from management_portal.execution import agent_data_input_retries as input_retries
             predecessors = [link["execution_id"] for link in connection.execute(
                 "SELECT execution_id FROM trigger_path_execution_links WHERE step_id=%s", (row["step_id"],),
             ).fetchall()]
