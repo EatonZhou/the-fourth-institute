@@ -61,6 +61,11 @@ Git 默认忽略 `instance/*`，仅允许提交 `example_instance/` 的模板与
 该目录的实际 `config/data/runtime/home/maintenance` 同样忽略。
 seed 必须有文件清单、摘要、数据库格式和资源路径映射，不包含现用账号或密钥。
 `prepare_install.py` 验证 seed，并从当前共享代码组装独立工程；不会修改运行数据库。
+工程声明使用 `installer.entrypoint` 指向代码内的安装入口。准备完成前必须通过正式
+安装器同一份只读结构与文件完整性校验；校验失败不得替换已有可用工程。
+Windows 打包同样从实际待打包的代码和压缩 seed 运行该准备流程，成功后才生成安装包。
+安装状态尚未建立时，桌面重试可重新生成工程缓存；已有安装状态仍绑定原工程，
+恢复不能替换其声明或重新导入数据。
 
 公开示例使用简短的存储路径。当前架构资料在所属 Workspace 的 `architecture/`
 下按 `model/`、`explore/`、`catalog/` 组织，不叠加原打包目录和 Workspace 名称。

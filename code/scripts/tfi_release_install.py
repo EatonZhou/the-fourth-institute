@@ -328,7 +328,7 @@ def owned_state(root, *, allow_missing_native=False):
     return state
 
 
-def run_checked(command, *, target, cwd=None, timeout=600):
+def run_checked(command, *, target, cwd=None, timeout=1800):
     try:
         result = run_process(command, env=clean_environment(target), cwd=cwd,
                              stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
@@ -355,7 +355,7 @@ def wait_database(target):
         command = database_command(target, "pg_isready", "-d", "postgres")
         try:
             result = run_process(command, env=clean_environment(target),
-                                 capture_output=True, timeout=3)
+                                 capture_output=True, timeout=9)
         except subprocess.TimeoutExpired:
             continue
         if result.returncode == 0:
@@ -510,7 +510,11 @@ def validate_engineering_layout(manifest, bundle):
             raise ValueError(f"Engineering data directory is missing: {key}")
         if key in {"accounts_root", "secrets_dir"} and any(directory.iterdir()):
             raise ValueError("Engineering must not supply account or secret files")
-    installer = engineering_path(bundle, manifest["installer"]["entrypoint"])
+    declaration = manifest.get("installer")
+    entrypoint = declaration.get("entrypoint") if isinstance(declaration, dict) else None
+    if not isinstance(entrypoint, str) or not entrypoint.strip():
+        raise ValueError("Engineering manifest requires installer.entrypoint; rebuild it with prepare_install.py")
+    installer = engineering_path(bundle, entrypoint)
     if not installer.is_file() or not installer.is_relative_to(code):
         raise ValueError("Engineering installer entrypoint must exist inside code")
 
@@ -679,7 +683,7 @@ def dependency_preflight(target, bundle, *, skip_file_verification=False, manife
     for name, command in probes:
         try:
             result = run_process(command, env=clean_environment(target), cwd=bundle / "code",
-                                 capture_output=True, text=True, timeout=30)
+                                 capture_output=True, text=True, timeout=90)
         except (OSError, subprocess.TimeoutExpired) as exc:
             raise ValueError(f"Dependency preflight failed: {name} ({type(exc).__name__})") from exc
         if result.returncode:
@@ -738,7 +742,7 @@ def install(manifest_path, raw_target, *, prepare_only=False, freeze_evidence=No
         if hasattr(adapter, 'dependency_preflight'):
             adapter.dependency_preflight(target)
         python_probe = run_process([target['python'], '--version'], env=clean_environment(target),
-                                   capture_output=True, text=True, timeout=30)
+                                   capture_output=True, text=True, timeout=90)
         if python_probe.returncode or not re.match(r'Python 3\.12\.', python_probe.stdout):
             raise ValueError('Native dependency preparation requires preinstalled Python 3.12')
     with installation_lock(root):
@@ -793,7 +797,7 @@ def install(manifest_path, raw_target, *, prepare_only=False, freeze_evidence=No
                 controller.start(unit_name(target, component))
             save_stage(state, phase, "checking")
             phase = "health"
-            deadline = time.monotonic() + 120
+            deadline = time.monotonic() + 360
             while True:
                 result = observed_status(state)
                 if result["status"] == "installed" or time.monotonic() >= deadline:
@@ -836,7 +840,7 @@ def observed_status(state):
     checks = []
     for route in ("/api/health", "/login"):
         try:
-            with urlopen(url + route, timeout=5) as response:
+            with urlopen(url + route, timeout=15) as response:
                 body = response.read()
                 ok = response.status == 200
             if route == "/api/health":

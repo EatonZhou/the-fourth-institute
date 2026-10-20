@@ -62,6 +62,8 @@ python3 packaging/windows/build.py
 构建器只读取 `code/`、公开示例 seed 和指定说明文件，拒绝链接与 Git 元数据；
 不读取其他实例。Python 使用 `runtime.json` 固定 URL、大小和 SHA-256，
 保留上游许可证。生成平台声明只影响 Windows 派生工程，公开 seed 原文件保持不变。
+编译安装包前，从实际待打包的代码和 seed 压缩包运行 `prepare_install.py --platform windows`，
+由正式安装器校验生成工程的入口、数据库摘要及全部文件清单；失败时停止构建。
 
 安装向导使用 [NSIS](https://nsis.sourceforge.io/Docs/)；内置 Python 使用
 [python-build-standalone](https://github.com/astral-sh/python-build-standalone)。

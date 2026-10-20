@@ -255,15 +255,18 @@ class DefaultStartup:
     def initialize(self):
         bundle = self.platform / ".build/example_instance-windows/engineering/manifest.json"
         target_path = self.platform / ".build/windows/targets/example_instance.json"
+        state_exists = (self.root / "installation.json").exists()
+        if not state_exists:
+            # Before installation has begun, this is only a generated cache.
+            # Rebuild it on retry so an invalid earlier manifest is not reused.
+            self.progress("正在准备示例资料")
+            if (self.platform / "example-seed.zip").is_file():
+                unpack_seed(self.platform)
+            self.execute([str(self.platform / "dependencies/python/python.exe"),
+                          str(self.platform / "prepare_install.py"), "--platform", "windows"])
         if not target_path.exists():
-            if (self.root / "installation.json").exists():
+            if state_exists:
                 raise ValueError("已有未完成的初始化记录，但缺少原安装参数。请查看日志，勿覆盖实例资料。")
-            if not bundle.is_file():
-                self.progress("正在准备示例资料")
-                if (self.platform / "example-seed.zip").is_file():
-                    unpack_seed(self.platform)
-                self.execute([str(self.platform / "dependencies/python/python.exe"),
-                              str(self.platform / "prepare_install.py"), "--platform", "windows"])
             manifest = json.loads(bundle.read_text(encoding="utf-8"))
             ports = []
             for name in instances(self.platform):
@@ -275,14 +278,14 @@ class DefaultStartup:
         self.progress("正在安装环境并初始化 Portal\n首次使用需要联网，可能需要几分钟")
         self.execute(command(self.platform, "install", "--manifest", bundle, "--target", target_path))
 
-    def wait_ready(self, state, timeout=180):
+    def wait_ready(self, state, timeout=540):
         target = state["target"]
         url = f"http://127.0.0.1:{target['ports']['web']}"
         expected = target.get("runtime_instance", target["service_prefix"])
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
             try:
-                with urlopen(url + "/api/health", timeout=3) as response:
+                with urlopen(url + "/api/health", timeout=9) as response:
                     result = json.loads(response.read())
                 if (result.get("ok") is True and result.get("instance") == expected
                         and result.get("execution_layer", {}).get("ok") is True

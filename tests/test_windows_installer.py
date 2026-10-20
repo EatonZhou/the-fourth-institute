@@ -276,14 +276,18 @@ class WindowsInstallerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             seed = root / "instance/example_instance/seed"
-            for folder in ("database", "data/accounts_root", "data/secrets_dir"):
+            files = {key: "data/" + key for key in installer.KEYS}
+            for folder in ("database", *files.values()):
                 (seed / folder).mkdir(parents=True, exist_ok=True)
             (seed / "database/distribution.sql").write_text("-- fixture\n")
-            (root / "code").mkdir()
+            (root / "code/scripts").mkdir(parents=True)
             (root / "code/app.py").write_text("pass\n")
+            (root / "code/scripts/tfi_release_install.py").write_text("# installer fixture\n")
             (root / "INSTALL.md").write_text("fixture")
             spec = {"schema": "tfi.instance-seed.v1", "engineering": {
-                "files": {"accounts_root": "data/accounts_root", "secrets_dir": "data/secrets_dir"},
+                "files": files, "run_id": "fixture", "supervisor_resident_id": "",
+                "database": {"path": "database/distribution.sql", "format": "postgresql-sql",
+                             "sha256": prepare_install.digest(seed / "database/distribution.sql")},
                 "selected_targets": ["linux"], "features": []}, "inventory": prepare_install.inventory(seed)}
             marker = seed / "manifest.json"
             marker.write_text(json.dumps(spec))
@@ -294,6 +298,13 @@ class WindowsInstallerTests(unittest.TestCase):
             self.assertEqual(built["support_matrix"][0]["verification"], "not_run")
             self.assertEqual(marker.read_bytes(), original)
             self.assertFalse((root / ".build/example_instance").exists())
+            # Exercise the actual consumer, not just the producer's output shape.
+            validated, _ = installer.validate_engineering(bundle / "manifest.json",
+                                                          self.target(root))
+            self.assertEqual(validated["installer"]["entrypoint"], "code/scripts/tfi_release_install.py")
+            validated["installer"] = {"path": validated["installer"]["entrypoint"]}
+            with self.assertRaisesRegex(ValueError, "installer.entrypoint"):
+                installer.validate_engineering_layout(validated, bundle)
 
 
 if __name__ == "__main__":

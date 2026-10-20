@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import sys
 import tarfile
+import tempfile
 from urllib.request import urlopen
 import zipfile
 
@@ -32,6 +33,21 @@ def public_seed(repo):
     return seed
 
 
+def verify_prepared_payload(platform):
+    """Exercise packaged code and seed through the real prepare/validate path."""
+    with tempfile.TemporaryDirectory(prefix="verify-windows-", dir=platform.parent) as temporary:
+        root = Path(temporary)
+        shutil.copytree(platform / "code", root / "code")
+        for name in ("prepare_install.py", "INSTALL.md"):
+            shutil.copyfile(platform / name, root / name)
+        with zipfile.ZipFile(platform / "example-seed.zip") as zipped:
+            zipped.extractall(root / "instance/example_instance/seed")
+        env = os.environ.copy()
+        env.update(PYTHONUTF8="1", PYTHONDONTWRITEBYTECODE="1")
+        subprocess.run([sys.executable, str(root / "prepare_install.py"), "--platform", "windows"],
+                       cwd=root, env=env, check=True)
+
+
 def stage(repo, destination, archive, *, source_commit=None, source_dirty=None):
     if destination.exists():
         raise ValueError("Use a new staging directory")
@@ -50,6 +66,7 @@ def stage(repo, destination, archive, *, source_commit=None, source_dirty=None):
     with zipfile.ZipFile(destination / "example-seed.zip", "w", compression=zipfile.ZIP_DEFLATED) as zipped:
         for row in inventory(seed):
             zipped.write(seed / row["path"], row["path"])
+    verify_prepared_payload(destination)
     with tarfile.open(archive) as bundle:
         for entry in bundle.getmembers():
             if not (entry.isfile() or entry.isdir()) or not entry.name.startswith("python/"):
@@ -71,6 +88,7 @@ def stage(repo, destination, archive, *, source_commit=None, source_dirty=None):
         "python": json.loads((repo / "packaging/windows/runtime.json").read_text(encoding="utf-8")),
         "seed_sha256": digest(destination / "example-seed.zip"),
         "initialization_requires_network": True,
+        "prepared_engineering_validation": "passed",
     }
     (destination / "windows-package.json").write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
     return receipt

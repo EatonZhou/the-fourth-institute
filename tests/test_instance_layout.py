@@ -174,14 +174,16 @@ class SharedInstanceTests(unittest.TestCase):
             files = {key: "data/" + key for key in installer.KEYS}
             for path in files.values():
                 (seed / path).mkdir(parents=True)
-            metadata = {"files": files, "database": {"path": "database/distribution.sql"},
-                        "run_id": "test"}
+            metadata = {"files": files, "database": {"path": "database/distribution.sql",
+                        "format": "postgresql-sql", "sha256": prepare.digest(seed / "database/distribution.sql")},
+                        "run_id": "test", "supervisor_resident_id": ""}
             record = {"schema": "tfi.instance-seed.v1", "engineering": metadata,
                       "inventory": prepare.inventory(seed)}
             manifest = seed / "manifest.json"
             manifest.write_text(json.dumps(record))
             initial_seed = manifest.read_bytes()
-            (root / "code").mkdir()
+            (root / "code/scripts").mkdir(parents=True)
+            (root / "code/scripts/tfi_release_install.py").write_text("# installer fixture")
             (root / "code/main.py").write_text("old")
             (root / "INSTALL.md").write_text("Install")
             private = root / "instance/private/data"
@@ -196,6 +198,11 @@ class SharedInstanceTests(unittest.TestCase):
             self.assertEqual(initial_seed, manifest.read_bytes())
             self.assertEqual((private / "secret").read_text(), "private")
             self.assertFalse(any(path.name == "secret" and path.is_file() for path in bundle.rglob("*")))
+            valid_bundle = (bundle / "manifest.json").read_bytes()
+            (root / "code/scripts/tfi_release_install.py").unlink()
+            with self.assertRaisesRegex(ValueError, "installer entrypoint"):
+                prepare.prepare(root)
+            self.assertEqual((bundle / "manifest.json").read_bytes(), valid_bundle)
             (seed / "database/distribution.sql").write_text("tampered")
             with self.assertRaisesRegex(ValueError, "differs"):
                 prepare.prepare(root)

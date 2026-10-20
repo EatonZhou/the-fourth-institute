@@ -37,7 +37,7 @@ class DesktopStartup(unittest.TestCase):
             accounts_exist = False
             def execute(argv):
                 nonlocal accounts_exist
-                action = argv[2]
+                action = "prepare" if Path(argv[1]).name == "prepare_install.py" else argv[2]
                 actions.append(action)
                 if action == "install":
                     self.installed(flow)
@@ -53,7 +53,7 @@ class DesktopStartup(unittest.TestCase):
             with patch.object(flow, "execute", side_effect=execute), \
                     patch.object(flow, "wait_ready", return_value="http://127.0.0.1:28199"):
                 self.assertEqual(flow.run(), "http://127.0.0.1:28199/join#invite=test-token")
-                self.assertEqual(actions, ["install", "start", "first-admin"])
+                self.assertEqual(actions, ["prepare", "install", "start", "first-admin"])
                 before = (flow.root / "installation.json").read_bytes()
                 accounts_exist = True
                 actions.clear()
@@ -64,13 +64,32 @@ class DesktopStartup(unittest.TestCase):
     def test_failed_install_never_attempts_start_or_opens_missing_state(self):
         with tempfile.TemporaryDirectory() as tmp:
             flow = self.setup_flow(Path(tmp))
-            with patch.object(flow, "execute", side_effect=RuntimeError("download failed")) as execute, \
+            def execute_command(argv):
+                if argv[2] == "install":
+                    raise RuntimeError("download failed")
+                return "{}"
+            with patch.object(flow, "execute", side_effect=execute_command) as execute, \
                     patch.object(flow, "wait_ready") as ready:
                 with self.assertRaisesRegex(RuntimeError, "download failed"):
                     flow.run()
-                self.assertEqual(execute.call_count, 1)
+                self.assertEqual(execute.call_count, 2)
                 self.assertEqual(execute.call_args.args[0][2], "install")
                 ready.assert_not_called()
+
+    def test_preinstall_retry_rebuilds_bundle_and_keeps_target_parameters(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            flow = self.setup_flow(Path(tmp))
+            target_path = flow.platform / ".build/windows/targets/example_instance.json"
+            target_path.parent.mkdir(parents=True)
+            original = json.dumps(launcher.make_target(flow.platform, "example_instance", {"run_id": "fixture"}))
+            target_path.write_text(original)
+            commands = []
+            with patch.object(flow, "execute", side_effect=lambda argv: commands.append(argv)):
+                flow.initialize()
+            self.assertEqual(Path(commands[0][1]).name, "prepare_install.py")
+            self.assertEqual(commands[1][2], "install")
+            self.assertEqual(target_path.read_text(), original)
+            self.assertFalse((flow.root / "installation.json").exists())
 
     def test_interrupted_initialization_resumes_before_start(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -64,8 +64,17 @@ def prepare(repo, *, target_platforms=None):
     canonical = json.dumps(code_rows, ensure_ascii=False, sort_keys=True, separators=(',', ':'), allow_nan=False)
     manifest.update(schema='tfi.release-engineering.v1', inventory=rows,
                     code={'path': 'code', 'sha256': hashlib.sha256(canonical.encode()).hexdigest()},
-                    installer={'path': 'code/scripts/tfi_release_install.py'})
-    (temporary / 'manifest.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+                    installer={'entrypoint': 'code/scripts/tfi_release_install.py'})
+    manifest_path = temporary / 'manifest.json'
+    manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    # Use the installer's own read-only contract before publishing a candidate.
+    # This does not prepare dependencies, create services, or import a database.
+    from scripts.tfi_release_install import validate_engineering
+    validate_engineering(manifest_path, {
+        'run_id': manifest['run_id'],
+        'supervisor_resident_id': manifest['supervisor_resident_id'],
+        'install_root': str(repo / 'instance/example_instance'),
+    })
     if destination.exists():
         shutil.rmtree(destination)
     temporary.rename(destination)
