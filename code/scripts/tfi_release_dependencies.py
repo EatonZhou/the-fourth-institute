@@ -5,6 +5,7 @@ import json
 from scripts.tfi_instance_layout import code_root, dependencies_root
 
 from management_common.release_dependencies import profiles
+from management_common.installation_progress import report, relay_log_progress
 
 
 def runtime_python(target):
@@ -73,10 +74,11 @@ def _prepare(api, state, manifest):
     inventory = doctor(python)
     source = 'verified-existing-installation'
     if inventory is None:
+        report('正在准备首次使用的 Python、浏览器与排版工具，需要联网；详细过程写入安装日志')
         environment.parent.mkdir(parents=True, exist_ok=True)
         # Never pip-install into the operator's supplied/shared interpreter.
         log = root / 'runtime/dependency-install.log'
-        with log.open('a', encoding='utf-8') as stream:
+        with log.open('a', encoding='utf-8') as stream, relay_log_progress(log):
             result = api.run_process([target['python'], str(script), 'install', *selected,
                 '--venv', str(environment)], env=api.clean_environment(target), cwd=code_root(target),
                 stdout=stream, stderr=stream, text=True, timeout=10800)
@@ -90,3 +92,4 @@ def _prepare(api, state, manifest):
     state['dependencies'] = {'status': 'verified', 'manifest_sha256': state['manifest_sha256'],
         'profiles': selected, 'python': python, 'source': source, 'inventory': inventory}
     api.save_stage(state, 'dependencies', 'prepared')
+    report('运行环境准备完成')

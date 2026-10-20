@@ -23,6 +23,7 @@ sys.path.insert(0, str(ROOT))
 from management_common.embedding_feature import platform_issue as embeddings_platform_issue  # noqa: E402
 from management_common.process_runtime import run_process  # noqa: E402
 from management_common.native_output import run_native_capture, run_utf8_capture  # noqa: E402
+from management_common.installation_progress import report  # noqa: E402
 
 PROFILES = ("core", "test", "tau", "provider", "article", "embeddings")
 DSH_PACKAGE = ROOT / "management_portal" / "dsh_runtime"
@@ -130,16 +131,19 @@ def install(args: argparse.Namespace) -> int:
     if not python.is_file():
         run([sys.executable, "-m", "venv", str(directory)], dry_run=args.dry_run)
     only_binary = platform.system() in {"Windows", "Darwin"} and not args.allow_source_builds
+    report("正在准备 Portal 基础运行环境")
     run(pip_install_command(python, "requirements.txt", only_binary=only_binary),
         dry_run=args.dry_run)
 
     if "test" in profiles:
+        report("正在准备测试工具")
         run(pip_install_command(python, "requirements-test.txt", only_binary=only_binary),
             dry_run=args.dry_run)
         npm = shutil.which("npm") or "npm"
         run([npm, "run", "setup:js"], dry_run=args.dry_run)
 
     if "tau" in profiles:
+        report("正在准备浏览器自动化工具与 Chromium，首次需要下载")
         npm = shutil.which("npm") or "npm"
         node = shutil.which("node") or "node"
         run([npm, "install", "--package-lock=false", "--no-audit", "--no-fund"], cwd=TAU_PACKAGE,
@@ -149,16 +153,19 @@ def install(args: argparse.Namespace) -> int:
         print("TAU browser installed; provision the test-operator storage state and restart Portal services before running a campaign.")
 
     if "provider" in profiles:
+        report("正在准备 AI 执行工具")
         # This script owns the DSH runtime's initial link. Other provider
         # versions and switches remain with the existing runtime updater.
         run([str(python), str(ROOT / "scripts" / "prepare_agent_runtimes.py")],
             dry_run=args.dry_run)
 
     if "article" in profiles:
+        report("正在准备文档排版工具，首次需要下载 TeX 组件")
         run([str(python), str(ROOT / "scripts" / "install_article_tooling.py")],
             dry_run=args.dry_run)
 
     if "embeddings" in profiles:
+        report("正在准备语义检索模型")
         run(pip_install_command(python, "requirements-society-service.txt",
                                 only_binary=only_binary), dry_run=args.dry_run)
         run([str(python), str(ROOT / "scripts" / "install_portal_embedding_model.py")],

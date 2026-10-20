@@ -18,6 +18,7 @@ sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(REPO / "code"))
 from prepare_install import digest, inventory
 from scripts.tfi_instance_layout import GENERATED_CODE_DIRECTORIES, source_inventory
+from scripts.tfi_release_native_dependencies import artifact_name, download, unpack, package_root
 
 
 def public_seed(repo):
@@ -48,7 +49,27 @@ def verify_prepared_payload(platform):
                        cwd=root, env=env, check=True)
 
 
-def stage(repo, destination, archive, *, source_commit=None, source_dirty=None):
+def bundle_native_dependencies(repo, destination, native_cache):
+    """Ship the same pinned archives consumed by the normal installer."""
+    bundled = []
+    packages = json.loads((repo / "code/config/release-native-dependencies.json").read_text(encoding="utf-8"))
+    archives = destination / "dependencies/native/archives"
+    archives.mkdir(parents=True)
+    for name, package in sorted(packages["packages"]["windows/x86_64"].items()):
+        entry = dict(package, name=name, platform="windows/x86_64")
+        filename = artifact_name(entry)
+        cached = download(entry, native_cache / filename)
+        with tempfile.TemporaryDirectory(prefix="verify-native-", dir=native_cache) as tmp:
+            tree = Path(tmp) / "contents"
+            unpack(cached, tree, zipped=entry["url"].endswith(".zip"))
+            package_root(tree, entry)
+        shutil.copyfile(cached, archives / filename)
+        bundled.append({**entry, "path": "dependencies/native/archives/" + filename,
+                        "size": cached.stat().st_size})
+    return bundled
+
+
+def stage(repo, destination, archive, *, source_commit=None, source_dirty=None, native_cache=None):
     if destination.exists():
         raise ValueError("Use a new staging directory")
     seed = public_seed(repo)
@@ -74,6 +95,8 @@ def stage(repo, destination, archive, *, source_commit=None, source_dirty=None):
                      "tcl/tk8.6/tk.tcl", "Lib/venv/__init__.py", "vcruntime140.dll", "LICENSE.txt"):
         if not (runtime / relative).is_file():
             raise ValueError("Incomplete Python runtime: " + relative)
+    native_cache = native_cache or repo / ".build/windows/native-cache"
+    bundled = bundle_native_dependencies(repo, destination, native_cache)
     receipt = {
         "schema": "tfi.windows-package.v1", "target": "windows/x86_64",
         "native_verification": "not_run", "signed": False,
@@ -85,6 +108,8 @@ def stage(repo, destination, archive, *, source_commit=None, source_dirty=None):
         "python": json.loads((repo / "code/scripts/windows/runtime.json").read_text(encoding="utf-8")),
         "seed_sha256": digest(destination / "example-seed.zip"),
         "initialization_requires_network": True,
+        "bundled_native_dependencies": bundled,
+        "native_preparation_requires_network": False,
         "prepared_engineering_validation": "passed",
     }
     (destination / "windows-package.json").write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")

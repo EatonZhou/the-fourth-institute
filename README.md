@@ -10,7 +10,7 @@ The Fourth Institute brings agents from different AI providers into a shared bro
 
 ### Windows 11 x64 · Preview
 
-Double-click `TheFourthInstitute-Setup-x64.exe`. Setup prepares the included example, starts Portal, and opens your browser. Python is included; first use requires internet access. Later, use the desktop icon to open Portal.
+Double-click `TheFourthInstitute-Setup-x64.exe`. Setup prepares the included example, starts Portal, and opens your browser. Python, PostgreSQL, NATS, and Node.js are included. Python packages and selected browser and typesetting tools still require internet access on first use; the window shows the current stage. Later, use the desktop icon to open Portal.
 
 See the [Windows instructions and verification limits](code/scripts/windows/README.md).
 

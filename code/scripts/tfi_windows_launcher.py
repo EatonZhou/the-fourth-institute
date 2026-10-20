@@ -238,6 +238,7 @@ class DefaultStartup:
         return json.loads(path.read_text(encoding="utf-8"))
 
     def execute(self, argv):
+        from management_common.installation_progress import progress_message
         self.log_path.parent.mkdir(parents=True, exist_ok=True)
         env = os.environ.copy()
         env.update(PYTHONUTF8="1", PYTHONDONTWRITEBYTECODE="1", PYTHONUNBUFFERED="1")
@@ -254,11 +255,22 @@ class DefaultStartup:
                 stream.write(line)
                 stream.flush()
                 output.append(line)
+                message = progress_message(line)
+                if message is not None:
+                    self.progress(message)
                 # Diagnostic output is on disk; keep a bounded tail in memory.
                 if len(output) > 200:
                     del output[:100]
             if process.wait():
-                detail = "".join(output).strip()[-800:]
+                detail = "请打开日志查看完整原因。"
+                for line in reversed(output):
+                    try:
+                        record = json.loads(line)
+                        if isinstance(record, dict) and record.get("status") == "failed" and isinstance(record.get("error"), str):
+                            detail = record["error"]
+                            break
+                    except ValueError:
+                        continue
                 raise RuntimeError(f"准备未完成。\n{detail}\n\n可打开日志查看原因，处理后点击重试。")
         return "".join(output)
 

@@ -7,8 +7,9 @@
 
 1. 双击 `TheFourthInstitute-Setup-x64.exe`，选择新的、当前用户可写的空目录。
 2. 安装完成后自动准备默认示例 `example_instance`。进度窗口显示当前阶段，
-   不需要选择实例或点击创建。首次准备需要联网下载 PostgreSQL、NATS、Node.js、
-   Python 包和所选功能工具，可能耗时几分钟；Python 本身已打包。
+   不需要选择实例或点击创建。Python、PostgreSQL、NATS 和 Node.js 已随安装包提供。
+   Python 包和所选功能的浏览器、排版工具仍需首次联网准备；耗时取决于网络和磁盘，
+   窗口会显示当前准备阶段。此安装包尚非完全离线安装包。
    如果 Windows 尚未启用长路径，会请求管理员授权，成功后自动继续。
 3. 服务就绪后自动打开浏览器：首次使用进入管理员注册页，为 `admin` 设置密码；
    已有账号则进入正常 Portal 页面。不预置密码，不修改已有账号。
@@ -29,6 +30,7 @@
 - `.build/windows/logs/<名称>.log`：初始化和生命周期命令输出。
 - `instance/<名称>/runtime/dependency-install.log`：依赖下载与安装日志。
 - `instance/<名称>/runtime/<组件>.log`：Windows 用户态组件日志。
+- `dependencies/native/archives/`：安装包提供的原生依赖归档和按摘要命名的下载缓存。
 
 失败时进度窗口显示原因，并提供 **重试** 与 **查看日志**。已经导入完成的数据库不会
 重复导入；中断在导入或功能初始化内部的情况会拒绝自动覆盖，需诊断后处理。
@@ -38,6 +40,10 @@
 依赖下载尚未完成的实例也可停止并卸载平台，实例文件仍保留。
 后台 Python 统一使用 UTF-8；应用缓存放在实例的 `home/AppData/`，
 服务登记目录保持稳定，初始化检查与桌面启动器读取同一份登记。
+原生依赖先校验并复用随包归档；需要下载时显示组件与已下载大小，连接中断自动重试，
+并保留 `.part` 文件供下次续传。服务器不支持续传时重新下载；完整摘要校验通过才会解压。
+窗口显示结构化错误中的原因，完整调用栈只保留在日志。更新后的修复需要使用新安装包，
+旧安装目录中的“重试”仅重新执行旧版本代码。
 
 同一平台只允许执行一次桌面启动准备。卸载前请等待准备完成或关闭失败窗口；
 卸载会先停止本站实例。卸载向导的“数据与缓存”页面默认保留 `instance/` 和缓存；
@@ -71,7 +77,10 @@ python3 code/scripts/windows/build.py
 输出 `.build/windows/TheFourthInstitute-Setup-x64.exe`、SHA-256 与 `receipt.json`。
 构建器只读取 `code/`、公开示例 seed 和指定说明文件，拒绝链接与 Git 元数据；
 不读取其他实例。Python 使用 `runtime.json` 固定 URL、大小和 SHA-256，
-保留上游许可证。生成平台声明只影响 Windows 派生工程，公开 seed 原文件保持不变。
+保留上游许可证。PostgreSQL、NATS、Node.js 使用 `code/config/release-native-dependencies.json`
+的固定版本和摘要，构建时下载、校验并检查解压目录；归档随包放入共享依赖缓存，
+收据记录每项摘要和大小。用户首次启动无需再次下载这三项。
+生成平台声明只影响 Windows 派生工程，公开 seed 原文件保持不变。
 编译安装包前，从实际待打包的代码和 seed 压缩包运行 `prepare_install.py --platform windows`，
 由正式安装器校验生成工程的入口、数据库摘要及全部文件清单；失败时停止构建。
 
