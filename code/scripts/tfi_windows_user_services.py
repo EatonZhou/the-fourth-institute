@@ -191,7 +191,8 @@ def supervise(path):
     target = state["target"]
     command, env = api.component_command(target, value["component"])
     process = spawn_process(command, cwd=value["code"], env=env,
-                            stdin=subprocess.DEVNULL, stdout=sys.stdout, stderr=sys.stderr)
+                            stdin=subprocess.DEVNULL, stdout=sys.stdout, stderr=sys.stderr,
+                            creationflags=subprocess.CREATE_NO_WINDOW)
     record_path = state_path(value)
     created = process_stamp(os.getpid())
     try:
