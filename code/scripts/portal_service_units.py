@@ -50,10 +50,12 @@ def _isolated_codex_context() -> dict | None:
     if not state_path.is_file():
         return None
     target = json.loads(state_path.read_text())["target"]
+    from scripts.tfi_instance_layout import code_root, validate_shared_code
+    validate_shared_code(target)
     prefix = target["service_prefix"]
     if (config != root / "config/paths.json" or
             Path(target["install_root"]).resolve() != root or
-            SOURCE_ROOT.resolve() != root / "code" or
+            SOURCE_ROOT.resolve() != code_root(target).resolve() or
             not re.fullmatch(r"tfi-[a-z0-9][a-z0-9-]*", prefix)):
         raise ValueError("Isolated Provider service ownership mismatch")
     from management_common.portal_paths import path

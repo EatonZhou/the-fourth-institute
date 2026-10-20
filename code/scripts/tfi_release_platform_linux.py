@@ -3,6 +3,8 @@ from pathlib import Path
 import json
 import subprocess
 
+from scripts.tfi_instance_layout import code_root, installer_path
+
 
 def safe_path(value):
     if not isinstance(value, str) or not Path(value).is_absolute() or any(c in value for c in "\0\n\r%$'\"\\"):
@@ -29,11 +31,11 @@ def unit_path(directory, name):
 
 def unit_text(target, component, components):
     root = Path(target["install_root"])
-    arguments = [target["python"], str(root / "runtime/installer.py"), "_component",
+    arguments = [target["python"], str(installer_path(target)), "_component",
                  "--root", str(root), "--component", component]
     exec_start = " ".join(json.dumps(x) for x in arguments)
     after = " ".join(unit_name(target, c) for c in components[:components.index(component)])
-    working_directory = str(root / 'code')
+    working_directory = str(code_root(target))
     if ' ' in working_directory:
         working_directory = json.dumps(working_directory)
     # NATS 2.10 treats SIGTERM as failure; SIGINT is its clean shutdown path.

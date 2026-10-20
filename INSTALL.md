@@ -1,3 +1,41 @@
+# 共享代码与实例安装
+
+仓库根目录执行 `python3 prepare_install.py`，生成经过校验的
+`.build/example_instance/engineering/manifest.json`。
+应用源码位于 `code/`；示例初始资料位于 `instance/example_instance/seed/`。
+
+新实例的 target.json 设置：
+
+- `install_root`：仓库下 `instance/<实例名>` 的绝对路径。
+- `shared_code_root`：仓库下 `code` 的绝对路径。
+- `data_roots`：分别指向该实例的 `data/share`、`data/staging`、
+  `data/instances`、`data/accounts`、`data/secrets`。
+- `bind: "0.0.0.0"` 允许 LAN 访问；端口与服务名前缀必须未被其他实例占用。
+- `run_id`、`supervisor_resident_id` 从生成的 manifest 读取，其余依赖按下文配置。
+
+运行：
+
+```bash
+python3 code/scripts/tfi_release_install.py install --target target.json --manifest .build/example_instance/engineering/manifest.json
+```
+
+基础程序与 Python 环境会在仓库 `dependencies/` 中准备并复用；也可以指定已有程序。
+每个实例只需初始化一次。日常切换无需重新安装或导入示例数据：
+
+```bash
+python3 code/scripts/tfi_release_install.py stop --root instance/实例一
+python3 code/scripts/tfi_release_install.py start --root instance/实例二
+python3 code/scripts/tfi_release_install.py status --root instance/实例二
+```
+新实例数据库位于 `data/database/`，服务直接使用共享代码，不复制代码到实例内。
+首次安装示例实例允许既有 `seed/`，不会将它当作实际运行数据。
+
+老实例迁移必须保留原有数据与身份，不能用示例 SQL 或 first-admin 覆盖。
+共享代码更新需要核对所有实例的兼容性及数据库迁移，不使用下面旧独立工程的
+整目录替换升级命令。详情见 [Design](code/docs/design/shared-code-instances.md)。
+
+下面保留独立发行工程的参数与生命周期说明；独立模式不设置 `shared_code_root`。
+
 # 独立发行工程安装与升级
 
 固定入口 `python3 code/scripts/install_tfi_release` 消费生成模块的

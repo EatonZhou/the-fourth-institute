@@ -14,13 +14,14 @@ import threading
 SOURCE_ROOT = Path(__file__).resolve().parents[1]
 if str(SOURCE_ROOT) not in sys.path:
     sys.path.insert(0, str(SOURCE_ROOT))
+from scripts.tfi_instance_layout import code_root
 
 def run_service(target, component):
     from scripts.tfi_release_install import component_command
     root = Path(target["install_root"])
     command, environment = component_command(target, component)
     return run_command_service(f"{target['service_prefix']}-{component}", command,
-                               cwd=root / "code", log=root / "runtime" / f"{component}.log",
+                               cwd=code_root(target), log=root / "runtime" / f"{component}.log",
                                environment=environment)
 
 

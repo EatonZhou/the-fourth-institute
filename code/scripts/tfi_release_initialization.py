@@ -5,6 +5,7 @@ import sys
 
 
 def apply(api, state, manifest, *, mode="fresh", existing_feature_ids=(), freeze_evidence=None):
+    from scripts.tfi_instance_layout import code_root
     if not manifest.get("feature_resolution"):
         return {"status": "legacy_not_declared", "features": [], "work_dispatched": False}
     target = state["target"]
@@ -38,8 +39,8 @@ def apply(api, state, manifest, *, mode="fresh", existing_feature_ids=(), freeze
         api.write_json(root / "runtime/history-freeze-verification.json", evidence)
     state["feature_initialization"] = {"status": "applying", "manifest_sha256": state["manifest_sha256"]}
     api.save_stage(state, "feature_initialization", "initializing")
-    output = api.run_checked([api.runtime_python(target), str(root / "code/scripts/tfi_release_initialization.py"),
-                              str(root)], target=target, cwd=root / "code")
+    output = api.run_checked([api.runtime_python(target), str(code_root(target) / "scripts/tfi_release_initialization.py"),
+                              str(root)], target=target, cwd=code_root(target))
     result = json.loads(output)
     if result.get("work_dispatched") is not False:
         raise ValueError("Initialization must not dispatch business work")

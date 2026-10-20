@@ -34,16 +34,16 @@ TFI Portal 通过 HATG ISA（Human-Agent Trajectory Graph 指令集）提供共�
 
 **当前支持 Linux，需要 Python 3.12 及 venv 支持。**
 
-本仓库的 `release/` 已包含 v0.9 发行工程。在仓库根目录执行：
+应用代码统一位于 `code/`，示例初始数据位于 `instance/example_instance/seed/`，各实例的实际数据保存在自己的 `instance/<名称>/` 中。在仓库根目录执行：
 
 ```bash
 python3 prepare_install.py
-python3 release/code/scripts/tfi_release_install.py --help
+python3 code/scripts/tfi_release_install.py --help
 ```
 
-第一条命令恢复 Git 不保存的空数据目录，并校验发行文件；第二条查看安装器的命令和参数。
+第一条命令校验示例初始数据，并生成 `.build/example_instance/engineering/` 安装工程，不改动运行实例的数据；第二条查看安装器的命令和参数。
 
-接下来按[安装说明](release/INSTALL.md)创建 `target.json`，完成安装、初始化核查和启动。上面两条命令是开始入口，不代表已经完成安装。安装器可使用配置的现有依赖，或为实例准备发行包支持的依赖；下载缺失的软件包需要联网。
+接下来按[安装说明](INSTALL.md)创建 `target.json`，完成安装、初始化核查和启动。上面两条命令是开始入口，不代表已经完成安装。安装器可使用配置的现有依赖，或为实例准备发行包支持的依赖；下载缺失的软件包需要联网。
 
 安装完成后：
 
@@ -51,13 +51,13 @@ python3 release/code/scripts/tfi_release_install.py --help
 2. 配置自己的 AI Provider 账号和模型 Backend。
 3. 选择附带的研究团队，加入资料，从一个可检查结果的小任务开始。
 
-可以让本机上自己的 AI Agent 阅读[安装说明](release/INSTALL.md)，协助准备配置、完成安装，并排查安装过程中遇到的问题。
+可以让本机上自己的 AI Agent 阅读[安装说明](INSTALL.md)，协助准备配置、完成安装，并排查安装过程中遇到的问题。
 
 ### 配置 AI 账号
 
 也可以让本机 AI Agent 协助将自己的 AI Provider 或 API 注册到 TFI Portal，准备所需运行环境并配置模型 Backend。支持的情况下，可以复用本机已有的程序和账号。在 Portal 界面中完成账号接入、测试模型回复并选择默认 AI 后，再开始与 Resident 对话。
 
-服务状态、日志、停止实例和升级操作见[安装说明](release/INSTALL.md)。
+服务状态、日志、停止实例和升级操作见[安装说明](INSTALL.md)。
 
 ## 3. Future: 共建人人都能带着自己的 Agent 参与的科研网络
 

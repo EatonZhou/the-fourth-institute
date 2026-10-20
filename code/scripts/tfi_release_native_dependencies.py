@@ -17,6 +17,7 @@ import zipfile
 
 from management_common.distribution_targets import identify_host
 from management_common.release_dependencies import profiles
+from scripts.tfi_instance_layout import native_dependencies_root
 
 CATALOG = Path(__file__).resolve().parents[1] / 'config/release-native-dependencies.json'
 MAX_DOWNLOAD = 256 * 1024 * 1024
@@ -55,7 +56,7 @@ def plan(raw_target, manifest, *, host=None):
     entries = []
     for name in sorted(managed):
         entry = dict(catalog[platform_key][name], name=name, platform=platform_key)
-        base = root / 'runtime/native' / (name + '-' + entry['version'] + '-' + entry['sha256'][:12])
+        base = native_dependencies_root(target) / (name + '-' + entry['version'] + '-' + entry['sha256'][:12])
         values = ({'pg_bin': base / 'bin', 'pg_share': base / 'share', 'pg_lib': base / 'lib'} if name == 'postgres'
                   else {'nats_server': base / ('nats-server' + suffix)} if name == 'nats'
                   else {'node_bin': base if suffix else base / 'bin'})
@@ -146,6 +147,13 @@ def verify(api, target, entry):
 
 
 def prepare(api, target, entries):
+    if target.get('shared_code_root'):
+        with api.installation_lock(native_dependencies_root(target) / '.locks'):
+            return _prepare(api, target, entries)
+    return _prepare(api, target, entries)
+
+
+def _prepare(api, target, entries):
     receipts = []
     for entry in entries:
         destination = Path(entry['directory'])

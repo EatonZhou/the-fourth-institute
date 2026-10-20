@@ -34,6 +34,7 @@ sys.dont_write_bytecode = True
 from management_common.portal_paths import KEYS, ENV_KEYS
 from management_common.file_lock import try_lock_descriptor
 from management_common.process_runtime import run_process
+from scripts.tfi_instance_layout import code_root, database_root, installer_path, validate_shared_code
 
 STATE_FILE = "installation.json"
 SCHEMA = "tfi.release-installation.v1"
@@ -103,6 +104,13 @@ def target_plan(target, *, protected_roots=None, allow_missing_native=False):
     protected = [Path(p) for p in protected_roots] if protected_roots is not None else [SOURCE_ROOT, *current_paths().values()]
     if len(root.parts) < 4 or any(overlap(root, p.resolve()) for p in protected):
         raise ValueError("Install root overlaps the current Portal or its data roots")
+    validate_shared_code(target)
+    if target.get("shared_code_root"):
+        safe_path(target["shared_code_root"])
+    if not re.fullmatch(r"[a-z][a-z0-9_]{0,62}", target.get("database_user", "tfi")):
+        raise ValueError("Invalid database user")
+    if not re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}", target.get("runtime_instance", target["service_prefix"])):
+        raise ValueError("Invalid runtime instance")
     prefix = target["service_prefix"]
     if not re.fullmatch(r"tfi-[a-z0-9][a-z0-9-]{2,39}", prefix):
         raise ValueError("service_prefix must be a unique tfi- name (6-44 characters)")
@@ -171,6 +179,7 @@ def clean_environment(target):
     root = Path(target["install_root"])
     runtime = root / "runtime"
     paths = target["data_roots"]
+    database_user = target.get("database_user", "tfi")
     timers_enabled = bool(target.get("enable_lineage_timers", False))
     state_path = root / STATE_FILE
     if state_path.is_file():
@@ -189,15 +198,15 @@ def clean_environment(target):
            "PORTAL_SITE_CONFIG": str(root / "config/site.json"),
            "PORTAL_NETWORK_CONFIG": str(root / "config/network.env"),
            "PORTAL_POSTGRES_ENV_FILE": str(root / "config/postgres.env"),
-           "PORTAL_DATABASE_URL": (f"postgresql://tfi@127.0.0.1:{target['ports']['postgres']}/{target['database_name']}"
-                                   if windows else "postgresql://tfi@/" + target["database_name"] + "?host=" + quote(str(runtime / "s"), safe="") + "&port=" + str(target["ports"]["postgres"])),
-           "PORTAL_INSTANCE": target["service_prefix"], "PORTAL_ISA_ROUTING": "socket",
-           "PORTAL_LINEAGE_TIMER_INSTANCE": target["service_prefix"] if timers_enabled else "disabled-until-configured",
+           "PORTAL_DATABASE_URL": (f"postgresql://{database_user}@127.0.0.1:{target['ports']['postgres']}/{target['database_name']}"
+                                   if windows else f"postgresql://{database_user}@/" + target["database_name"] + "?host=" + quote(str(runtime / "s"), safe="") + "&port=" + str(target["ports"]["postgres"])),
+           "PORTAL_INSTANCE": target.get("runtime_instance", target["service_prefix"]), "PORTAL_ISA_ROUTING": "socket",
+           "PORTAL_LINEAGE_TIMER_INSTANCE": target.get("runtime_instance", target["service_prefix"]) if timers_enabled else "disabled-until-configured",
            "PORTAL_RESOURCE_DATABASE_SCHEMA": "resource_release",
            "PORTAL_RESOURCE_SERVICE_MODE": "client", "PORTAL_SOCIETY_SERVICE_MODE": "client",
            "PORTAL_NATS_URL": f"nats://127.0.0.1:{target['ports']['nats']}",
            "PORTAL_EXECUTION_STATE_ROOT": str(Path(paths["staging_root"]) / "portal_execution"),
-           "PORTAL_EXECUTION_WORKER_SOURCE_ROOT": str(root / "code"),
+           "PORTAL_EXECUTION_WORKER_SOURCE_ROOT": str(code_root(target)),
            "PORTAL_EXECUTION_WORKER_HEALTH_PATH": str(runtime / "worker-health.json"),
            "PORTAL_EXECUTION_WORKER_ID": target["service_prefix"] + ":worker",
            "PORTAL_EXECUTION_WORKER_GENERATION_ENV": str(root / "config/generation.env"),
@@ -216,11 +225,15 @@ def clean_environment(target):
             env["PATH"] = target["pg_lib"] + ";" + env["PATH"]
         else:
             env["DYLD_LIBRARY_PATH" if platform_adapter().__name__.endswith("_macos") else "LD_LIBRARY_PATH"] = target["pg_lib"]
-    tool_bins = [root / 'home/.local/bin', *sorted((root / 'home/.TinyTeX/bin').glob('*'))]
+    from scripts.tfi_instance_layout import dependencies_root
+    tool_home = dependencies_root(target) / "tools" if target.get("shared_code_root") else root / "home"
+    tool_bins = [root / 'home/.local/bin', tool_home / '.local/bin', *sorted((tool_home / '.TinyTeX/bin').glob('*'))]
     if target.get('node_bin'):
         tool_bins.insert(0, Path(target['node_bin']))
     env['PATH'] = (';' if windows else ':').join([*map(str, tool_bins), env['PATH']])
-    env['ARTICLE_TOOL_HOME'] = str(root / 'home')
+    env['ARTICLE_TOOL_HOME'] = str(tool_home)
+    if target.get("shared_code_root"):
+        env['PLAYWRIGHT_BROWSERS_PATH'] = str(dependencies_root(target) / 'browsers')
     return env
 
 
@@ -245,7 +258,7 @@ def component_command(target, component):
     python = runtime_python(target)
     if component == "postgres":
         windows = platform_adapter().__name__.endswith("_windows")
-        command = [str(Path(target["pg_bin"]) / native_tool("postgres")), "-D", str(runtime / "pg"),
+        command = [str(Path(target["pg_bin"]) / native_tool("postgres")), "-D", str(database_root(target)),
                    *([] if windows else ["-k", str(runtime / "s")]),
                    "-p", str(target["ports"]["postgres"]),
                    "-c", "listen_addresses=127.0.0.1" if windows else "listen_addresses=",
@@ -292,7 +305,7 @@ def check_available(target, *, existing=False):
         elif path.exists() or controller.status(name)["load"] != "not-found":
             raise ValueError(f"Service identity already exists: {name}")
     if not existing:
-        if root.exists() and any(root.iterdir()):
+        if root.exists() and any(p.name != "seed" or not target.get("shared_code_root") or not p.is_dir() or p.is_symlink() for p in root.iterdir()):
             raise ValueError("Installation root is not empty and has no matching installation identity")
         for port in target["ports"].values():
             with socket.socket() as probe:
@@ -330,7 +343,7 @@ def run_checked(command, *, target, cwd=None, timeout=600):
 def database_command(target, tool, *arguments):
     host = "127.0.0.1" if platform_adapter().__name__.endswith("_windows") else str(Path(target["install_root"]) / "runtime/s")
     return [str(Path(target["pg_bin"]) / native_tool(tool)), "-h", host,
-            "-p", str(target["ports"]["postgres"]), "-U", "tfi", *arguments]
+            "-p", str(target["ports"]["postgres"]), "-U", target.get("database_user", "tfi"), *arguments]
 
 
 def wait_database(target):
@@ -374,7 +387,7 @@ def prepare_configuration(target):
     write_json(site_path, {
         "site_name": "TFI Portal", "deployment": {
             "installation_id": installation_id,
-            "source_root": str(root / "code"), "release_root": str(root / "code"),
+            "source_root": str(code_root(target)), "release_root": str(code_root(target)),
             "auth": {"session_cookie_name": "db_session_" + target["service_prefix"]},
             "native_shell": {"database_env_file": str(root / "config/postgres.env")},
             "native_ui": {"test_results_root": str(root / "runtime/test-results")}}})
@@ -385,7 +398,8 @@ def prepare_configuration(target):
     (root / "config/generation.env").write_text("PORTAL_BUILD_ID=" + target["run_id"] + "\n")
     for path in (root / "config").iterdir():
         path.chmod(0o600)
-    shutil.copyfile(Path(__file__), root / "runtime/installer.py")
+    if not target.get("shared_code_root"):
+        shutil.copyfile(Path(__file__), root / "runtime/installer.py")
 
 
 def register_services(target):
@@ -396,11 +410,11 @@ def register_services(target):
 def initialize_database(state):
     target = state["target"]
     root = Path(target["install_root"])
-    pg_data = root / "runtime/pg"
+    pg_data = database_root(target)
     if not (pg_data / "PG_VERSION").exists():
         windows = platform_adapter().__name__.endswith("_windows")
         run_checked([str(Path(target["pg_bin"]) / native_tool("initdb")), "-D", str(pg_data),
-                     "-L", target["pg_share"], "--username=tfi", "--encoding=UTF8",
+                     "-L", target["pg_share"], "--username=" + target.get("database_user", "tfi"), "--encoding=UTF8",
                      *([] if windows else ["--locale=C.UTF-8"]),
                      "--auth-local=trust", "--auth-host=trust" if windows else "--auth-host=reject"], target=target)
     service_controller().start(unit_name(target, "postgres"))
@@ -498,7 +512,7 @@ def validate_engineering_layout(manifest, bundle):
 
 
 def directory_replacements(manifest, target):
-    roots = {**target["data_roots"], "code_root": str(Path(target["install_root"]) / "code")}
+    roots = {**target["data_roots"], "code_root": str(code_root(target))}
     replacements = {}
     for entry in manifest["directory_mappings"]:
         key = entry["root"]
@@ -582,8 +596,14 @@ def copy_materialized_file(src, dst, replacements=None):
 def copy_engineering(manifest, bundle, target):
     root = Path(target["install_root"])
     replacements = directory_replacements(manifest, target)
-    shutil.copytree(engineering_path(bundle, manifest["code"]["path"]), root / "code", dirs_exist_ok=True,
-                    ignore=reject_unsafe_entries, copy_function=copy_materialized_file)
+    source_code = engineering_path(bundle, manifest["code"]["path"])
+    if target.get("shared_code_root"):
+        from scripts.tfi_instance_layout import source_inventory
+        if source_inventory(source_code) != source_inventory(code_root(target)):
+            raise ValueError("Shared code differs from the verified engineering bundle")
+    else:
+        shutil.copytree(source_code, code_root(target), dirs_exist_ok=True,
+                        ignore=reject_unsafe_entries, copy_function=copy_materialized_file)
     for key, source in manifest["files"].items():
         destination = Path(target["data_roots"][key])
         def copy_and_map(src, dst):
@@ -722,7 +742,7 @@ def install(manifest_path, raw_target, *, prepare_only=False, freeze_evidence=No
                           "protected_roots": [str(SOURCE_ROOT), *map(str, current_paths().values())],
                           "completed": [], "stages": [], "status": "installing"}
         state["platform_preflight"] = preflight
-        if not prior and set(p.name for p in root.iterdir()) != {".install.lock"}:
+        if not prior and set(p.name for p in root.iterdir()) - ({".install.lock", "seed"} if target.get("shared_code_root") else {".install.lock"}):
             raise ValueError("Concurrent or unowned installation files detected")
         write_json(root / STATE_FILE, state)
         phase = "prepare"
@@ -804,6 +824,7 @@ def install(manifest_path, raw_target, *, prepare_only=False, freeze_evidence=No
 
 def observed_status(state):
     target = state["target"]
+    expected_instance = target.get("runtime_instance", target["service_prefix"])
     root = Path(target["install_root"])
     controller = service_controller()
     services = [controller.status(unit_name(target, c)) for c in COMPONENTS]
@@ -817,7 +838,7 @@ def observed_status(state):
             if route == "/api/health":
                 payload = json.loads(body)
                 ok = (ok and payload.get("ok") is True
-                      and payload.get("instance") == target["service_prefix"]
+                      and payload.get("instance") == expected_instance
                       and payload.get("execution_layer", {}).get("ok") is True
                       and payload.get("society_service", {}).get("ok") is True)
                 checks.append({"route": route, "ok": ok, "payload": payload})
@@ -828,12 +849,12 @@ def observed_status(state):
     try:
         worker = read_json(root / "runtime/worker-health.json")
         checks.append({"component": "worker", "ok": worker.get("ok") is True
-                       and worker.get("instance") == target["service_prefix"]
+                       and worker.get("instance") == expected_instance
                        and time.time() - float(worker.get("updated_at", 0)) < 60, "payload": worker})
     except (OSError, ValueError) as exc:
         checks.append({"component": "worker", "ok": False, "error": str(exc)})
     healthy = all(s["active"] == "active" for s in services) and all(c["ok"] for c in checks)
-    entry = str(root / "code/scripts/install_tfi_release")
+    entry = str(code_root(target) / "scripts/install_tfi_release")
     return {"status": "installed" if healthy else "unhealthy", "run_id": target["run_id"],
             "supervisor_resident_id": target["supervisor_resident_id"], "url": url,
             "listen_address": target["bind"], "services": services, "checks": checks,
@@ -844,7 +865,7 @@ def observed_status(state):
 
 
 def lifecycle(command, root):
-    if command not in {"status", "stop", "cleanup"}:
+    if command not in {"status", "start", "stop", "cleanup"}:
         raise ValueError("Unsupported installation lifecycle command")
     state = owned_state(root)
     target = state["target"]
@@ -853,6 +874,21 @@ def lifecycle(command, root):
         if command == "status":
             return observed_status(state)
         controller = service_controller()
+        if command == "start":
+            if state.get("migration", {}).get("business_execution_allowed") is False:
+                raise ValueError("Migration has not completed its cutover checks")
+            if "database" not in state.get("completed", []):
+                raise ValueError("Initialize this instance before starting it")
+            if not state.get("migration") and not any(stage.get("status") == "installed" for stage in state.get("stages", [])):
+                raise ValueError("Finish installation before starting this instance")
+            check_available(target, existing=True)
+            register_services(target)
+            controller.start(unit_name(target, "postgres"))
+            wait_database(target)
+            for component in COMPONENTS[1:]:
+                controller.start(unit_name(target, component))
+            save_stage(state, "start", "started")
+            return {"status": "started", "installation_root": str(root)}
         names = [unit_name(target, c) for c in reversed(COMPONENTS)]
         for name in names:
             if controller.status(name)["load"] != "not-found":
@@ -867,7 +903,15 @@ def lifecycle(command, root):
         check_available(target, existing=True)
         platform_adapter().remove_services(unit_directory(), names)
     # Windows refuses deletion while .install.lock is still open.
-    shutil.rmtree(root)
+    if target.get("shared_code_root") and (root / "seed").is_dir():
+        for child in root.iterdir():
+            if child.name != "seed":
+                if child.is_dir() and not child.is_symlink():
+                    shutil.rmtree(child)
+                else:
+                    child.unlink()
+    else:
+        shutil.rmtree(root)
     return {"status": "cleaned", "installation_root": str(root), "removed_services": names}
 
 
@@ -878,9 +922,9 @@ def first_admin(root, username):
     target = state["target"]
     root = Path(target["install_root"])
     with installation_lock(root):
-        output = run_checked([runtime_python(target), str(root / "code/scripts/portal_setup.py"), "first-admin",
+        output = run_checked([runtime_python(target), str(code_root(target) / "scripts/portal_setup.py"), "first-admin",
                               "--username", username, "--url", f"http://127.0.0.1:{target['ports']['web']}"],
-                             target=target, cwd=root / "code")
+                             target=target, cwd=code_root(target))
         path = Path(target["data_roots"]["secrets_dir"]) / "first-admin-link.txt"
         # The existing setup owner generates the secret. Keep it out of stdout,
         # installation evidence, conversation context and service journals.
@@ -894,7 +938,7 @@ def first_admin(root, username):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("plan", "install", "upgrade", "recover", "status", "stop", "cleanup", "first-admin", "_component", "_service"))
+    parser.add_argument("command", choices=("plan", "install", "upgrade", "recover", "status", "start", "stop", "cleanup", "first-admin", "_component", "_service"))
     parser.add_argument("--target", type=Path)
     parser.add_argument("--manifest", type=Path)
     parser.add_argument("--root", type=Path)
@@ -909,12 +953,16 @@ def main(argv=None):
         if args.command == "_service":
             from scripts.tfi_release_windows_service import run_service
             state = read_json(args.root / STATE_FILE)
+            if args.component not in {"postgres", "nats"} and state.get("migration", {}).get("business_execution_allowed") is False:
+                raise ValueError("Migration has not completed its cutover checks")
             return run_service(state["target"], args.component)
         if args.command == "_component":
             platform_preflight(read_json(args.root / "runtime/engineering-manifest.json"))
             state = read_json(args.root / STATE_FILE)
+            if args.component not in {"postgres", "nats"} and state.get("migration", {}).get("business_execution_allowed") is False:
+                raise ValueError("Migration has not completed its cutover checks")
             command, env = component_command(state["target"], args.component)
-            os.chdir(args.root / "code")
+            os.chdir(code_root(state["target"]))
             os.execve(command[0], command, env)
         elif args.command == "plan":
             manifest = read_json(args.manifest) if args.manifest else {}

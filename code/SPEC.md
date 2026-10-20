@@ -1,5 +1,7 @@
 # SPEC.md
 
+- [共享代码与实例状态隔离](/r/decision_d88306d0bd17) · [仓库副本](../instance/example_instance/seed/data/share_root/Projects/AI员工/knowledge_base/decision/20261020__decision__共享代码与实例状态隔离__decision_d88306d0bd17.md)
+
 - [Portal设计规范Spec.md索引](/r/decision_ef80c6d3b5ee)
 - [Portal 改进 Plan 的编写与 IMPROVE.md 索引规范](/r/decision_9c258743f91e)
 - [Meta_of_Meta：人的管理重心逐步上移](/r/thinking_218380bb8148)

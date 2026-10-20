@@ -4,6 +4,8 @@ from __future__ import annotations
 import plistlib
 from pathlib import Path
 
+from scripts.tfi_instance_layout import code_root, installer_path
+
 
 def safe_path(value):
     if not isinstance(value, str) or not Path(value).is_absolute() or any(c in value for c in "\0\n\r"):
@@ -33,9 +35,9 @@ def unit_text(target, component, components):
     del components
     root = Path(target["install_root"])
     name = unit_name(target, component)
-    return command_unit_text(name, [target["python"], str(root / "runtime/installer.py"), "_component",
+    return command_unit_text(name, [target["python"], str(installer_path(target)), "_component",
                                     "--root", str(root), "--component", component],
-                             cwd=root / "code", log_root=root / "runtime", log_name=component)
+                             cwd=code_root(target), log_root=root / "runtime", log_name=component)
 
 
 def command_unit_text(name, command, *, cwd, log_root, log_name, environment=None):

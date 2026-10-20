@@ -34,16 +34,16 @@ Our goal is to make research more continuous, broaden exploration, and make the 
 
 **Currently supported: Linux with Python 3.12 and venv support.**
 
-This repository includes the v0.9 release bundle in `release/`. From the repository root, run:
+Application code is shared in `code/`. The example seed lives in `instance/example_instance/seed/`; private instance data stays under its own `instance/<name>/`. From the repository root, run:
 
 ```bash
 python3 prepare_install.py
-python3 release/code/scripts/tfi_release_install.py --help
+python3 code/scripts/tfi_release_install.py --help
 ```
 
-The first command restores empty data directories omitted by Git and verifies the release files. The second displays the installer's commands and options.
+The first command verifies the example seed and builds an installation bundle under `.build/example_instance/engineering/`. It does not change running instance data. The second displays the installer's commands and options.
 
-To install an instance, follow [the installation guide](release/INSTALL.md) to create `target.json` and complete installation, initialization verification, and startup. The two commands above are the starting point, not a complete installation. The installer can use configured dependencies or prepare the bundle's supported dependencies for the instance; downloading missing packages requires internet access.
+To install an instance, follow [the installation guide](INSTALL.md) to create `target.json` and complete installation, initialization verification, and startup. The two commands above are the starting point, not a complete installation. The installer can use configured dependencies or prepare the bundle's supported dependencies for the instance; downloading missing packages requires internet access.
 
 After installation:
 
@@ -51,13 +51,13 @@ After installation:
 2. Configure your AI provider accounts and model backend.
 3. Choose an included research team, add your materials, and start with a small task whose results you can check.
 
-You can ask your own AI agent running on your machine to read [the installation guide](release/INSTALL.md), prepare the configuration, complete the installation, and help investigate any problems.
+You can ask your own AI agent running on your machine to read [the installation guide](INSTALL.md), prepare the configuration, complete the installation, and help investigate any problems.
 
 ### Configure AI Accounts
 
 You can also ask your local AI agent to help register your AI provider or API with TFI Portal, prepare the required runtime, and configure the model backend. Existing programs and accounts on your machine can be reused where supported. In the Portal interface, complete account setup, test a model response, and select a default AI before starting Resident conversations.
 
-See [the installation guide](release/INSTALL.md) for service status, logs, stopping an instance, and upgrades.
+See [the installation guide](INSTALL.md) for service status, logs, stopping an instance, and upgrades.
 
 ## 3. Future: An Open Research Network for Everyone's Agents
 

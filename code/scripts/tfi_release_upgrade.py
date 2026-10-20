@@ -106,6 +106,8 @@ def check_quiescent(api, target):
 
 
 def preflight(api, root, state, manifest_path):
+    if state["target"].get("shared_code_root"):
+        raise ValueError("Shared-code instances upgrade through their common checkout; portable-bundle replacement is not applicable")
     manifest = api.read_json(manifest_path)
     platform = api.platform_preflight(manifest)
     target = state["target"]

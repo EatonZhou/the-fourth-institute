@@ -1,8 +1,8 @@
 {
   "version": "v0.9",
   "run_id": "62588fca6ab2401490015ee99b406915",
-  "manifest": "release/manifest.json",
-  "manifest_sha256": "f6331f64a1380201aaf8e81434127ed7677fba7a2c8abcbe6b11322063189a50",
+  "manifest": "instance/example_instance/seed/manifest.json",
+  "manifest_sha256": "c2033979b506235558cf3d7cf12fd1903ab894aa8653913fa4bc27f81c50c3d0",
   "selection_sha256": "957d8e2b3c9e4ffde574ed133fef459057953858f4816001d4a89eae2bc75ec0",
   "lenia_workbench_revision": 166,
   "source": {
@@ -10,26 +10,16 @@
     "commit": "388bc16cc6f30f7ddf04dc3b6d855a95bfd1b2e2",
     "working_tree_modified": true
   },
-  "bytes": 378796790,
+  "bytes": 301041781,
   "checks": {
-    "file_inventory": "passed",
-    "python_syntax": "passed",
-    "empty_stage_progress_schema": "passed",
-    "immutable_workbench_assets": "passed",
-    "isolated_postgresql_import": "passed",
-    "maintenance_installer_validation": "passed",
-    "database_import_evidence": "Fresh isolated installation imported this unchanged SQL; source tables, accounts and stage-history reset were checked before startup.",
-    "isolated_installation": "passed",
-    "account_registration_loading": "passed",
-    "input_media_cleanup": "passed",
-    "bidirectional_fix_sync": "passed",
-    "native_upgrade": "passed",
-    "local_configuration_preserved": "passed",
-    "family_withdrawal_recovery": "passed"
+    "shared_instance_contracts": "passed",
+    "installer_regression": "passed",
+    "shared_dependencies": "verified_on_linux",
+    "host_instance_migration": "in_progress"
   },
   "limitations": [
-    "Validated on the current Linux host by a native upgrade of the existing independent installation to this exact manifest. Existing configuration and database table counts were preserved; existing login, Provider readiness UI, Family Resident creation and a real Codex reply passed. No second fresh installation was performed.",
-    "Real authentication and replies were checked with a reused local Codex account. Other Provider credentials and operating systems were not exercised."
+    "Existing installation evidence belongs to previous_layout_validation. It does not validate the ongoing full host migration.",
+    "Host migration still requires final data consistency, login, Resident continuity and Device acceptance. Native Windows/macOS migration has not been exercised."
   ],
   "maintenance": {
     "kind": "in-place-maintenance",
@@ -144,5 +134,36 @@
         ]
       }
     ]
-  }
+  },
+  "previous_layout_validation": {
+    "manifest": "release/manifest.json",
+    "manifest_sha256": "f6331f64a1380201aaf8e81434127ed7677fba7a2c8abcbe6b11322063189a50",
+    "bytes": 378796790,
+    "checks": {
+      "file_inventory": "passed",
+      "python_syntax": "passed",
+      "empty_stage_progress_schema": "passed",
+      "immutable_workbench_assets": "passed",
+      "isolated_postgresql_import": "passed",
+      "maintenance_installer_validation": "passed",
+      "database_import_evidence": "Fresh isolated installation imported this unchanged SQL; source tables, accounts and stage-history reset were checked before startup.",
+      "isolated_installation": "passed",
+      "account_registration_loading": "passed",
+      "input_media_cleanup": "passed",
+      "bidirectional_fix_sync": "passed",
+      "native_upgrade": "passed",
+      "local_configuration_preserved": "passed",
+      "family_withdrawal_recovery": "passed"
+    },
+    "limitations": [
+      "Validated on the current Linux host by a native upgrade of the existing independent installation to this exact manifest. Existing configuration and database table counts were preserved; existing login, Provider readiness UI, Family Resident creation and a real Codex reply passed. No second fresh installation was performed.",
+      "Real authentication and replies were checked with a reused local Codex account. Other Provider credentials and operating systems were not exercised."
+    ]
+  },
+  "layout": "shared-code-with-instances",
+  "bytes_scope": "example seed including its manifest; excludes shared code and installed dependencies",
+  "code_root": "code",
+  "installation_bundle": ".build/example_instance/engineering",
+  "prepare_command": "python3 prepare_install.py",
+  "design_resource_id": "decision_d88306d0bd17"
 }

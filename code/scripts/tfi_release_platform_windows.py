@@ -12,6 +12,8 @@ import os
 from pathlib import Path, PureWindowsPath
 import subprocess
 
+from scripts.tfi_instance_layout import code_root, installer_path
+
 
 def safe_path(value):
     if not isinstance(value, str) or not Path(value).is_absolute() or any(c in value for c in "\0\n\r'\""):
@@ -39,7 +41,7 @@ def unit_path(directory, name):
 def unit_text(target, component, components):
     del components
     root = PureWindowsPath(target["install_root"])
-    command = [target["python"], str(root / "runtime/installer.py"), "_service",
+    command = [target["python"], str(PureWindowsPath(installer_path(target))), "_service",
                "--root", str(root), "--component", component]
     return json.dumps({"name": unit_name(target, component),
                        "binary": subprocess.list2cmdline(command),
