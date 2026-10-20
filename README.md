@@ -53,6 +53,17 @@ The first command verifies the example seed and builds an installation bundle un
 
 To install an instance, follow [the installation guide](INSTALL.md) to create `target.json` and complete installation, initialization verification, and startup. The two commands above are the starting point, not a complete installation. The installer can use configured dependencies or prepare the bundle's supported dependencies for the instance; downloading missing packages requires internet access.
 
+### Open in a Browser
+
+After installation and service startup, open Portal at:
+
+- **On the installation host:** `http://127.0.0.1:<web-port>/`, for example `http://127.0.0.1:28086/`.
+- **From another device on the same LAN:** `http://<host-ip>:<web-port>/`, for example `http://192.168.1.100:28086/`.
+
+Use the `ports.web` value from your `target.json`; `28086` is the port in the installation guide's example. On Linux, run `hostname -I` on the installation host and choose its LAN IP address.
+
+Access through the host IP requires setting `"bind": "0.0.0.0"` in `target.json` before installation and allowing the Web port through the host's firewall. The default `"bind": "127.0.0.1"` allows access only from the installation host. `0.0.0.0` is a listening address; enter the host's actual IP in the browser.
+
 After installation:
 
 1. Follow the guide's `first-admin` step to create the first administrator and sign in.
