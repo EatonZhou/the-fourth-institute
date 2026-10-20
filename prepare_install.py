@@ -25,12 +25,15 @@ def inventory(root):
     return sorted(rows, key=lambda row: row["path"])
 
 
-def prepare(repo):
+def prepare(repo, *, target_platforms=None):
     seed = repo / 'instance/example_instance/seed'
     specification = json.loads((seed / 'manifest.json').read_text())
     if specification['schema'] != 'tfi.instance-seed.v1':
         raise ValueError('Unsupported instance seed')
     manifest = specification['engineering']
+    if target_platforms is not None:
+        from management_common.distribution_targets import resolve_targets
+        manifest.update(resolve_targets({'target_platforms': target_platforms}, manifest.get('features', [])))
     for name, relative in manifest['files'].items():
         if Path(relative).parts != ('data', name):
             raise ValueError('Invalid seed directory')
@@ -41,7 +44,8 @@ def prepare(repo):
     for name in ('accounts_root', 'secrets_dir'):
         if any((seed / manifest['files'][name]).iterdir()):
             raise ValueError('Example seed must not contain live accounts or secrets')
-    build = repo / '.build/example_instance'
+    suffix = '-' + '-'.join(target_platforms) if target_platforms else ''
+    build = repo / ('.build/example_instance' + suffix)
     if build.is_symlink() or (repo / '.build').is_symlink():
         raise ValueError('Build directory cannot be a symlink')
     build.mkdir(parents=True, exist_ok=True)
@@ -69,8 +73,10 @@ def prepare(repo):
 
 
 def main():
-    argparse.ArgumentParser(description=__doc__).parse_args()
-    bundle = prepare(Path(__file__).resolve().parent)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--platform', choices=('linux', 'windows', 'macos'), action='append')
+    args = parser.parse_args()
+    bundle = prepare(Path(__file__).resolve().parent, target_platforms=args.platform)
     print(f'Example seed verified; installation bundle: {bundle}')
     print('Read INSTALL.md. Instance data is never imported by this command.')
 

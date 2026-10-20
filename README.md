@@ -40,6 +40,10 @@ Our goal is to make research more continuous, broaden exploration, and make the 
 
 ## 2. Installation and Usage
 
+**Windows preview:** use `TheFourthInstitute-Setup-x64.exe` for a graphical install
+and instance launcher. Python is included; initializing an instance requires
+internet access. See the [Windows instructions and verification limits](packaging/windows/README.md).
+
 **Currently supported: Linux with Python 3.12 and venv support.**
 
 Application code is shared in `code/`. The example seed lives in `instance/example_instance/seed/`; private instance data stays under its own `instance/<name>/`. From the repository root, run:

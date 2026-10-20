@@ -15,6 +15,48 @@ CLEAR_TABLES = {
 }
 
 
+def verify_frozen(connection):
+    """Read-only verification of the exporter's freeze contract in a target DB."""
+    from psycopg import sql
+    tables = set(connection.execute(
+        "SELECT table_schema,table_name FROM information_schema.tables "
+        "WHERE table_type='BASE TABLE' AND table_schema NOT IN ('pg_catalog','information_schema')"
+    ).fetchall())
+    violations = {}
+    for schema, name in sorted(tables):
+        predicate = None
+        if name in CLEAR_TABLES or (schema, name) in {
+                ("resident_context", "snapshots"), ("lineage", "resident_sessions")}:
+            predicate = "TRUE"
+        elif name == "conversation_input_states":
+            predicate = "state IN ('queued','running')"
+        elif name == "conversation_states":
+            predicate = ("state_json::jsonb IS DISTINCT FROM "
+                         """'{"working":false,"active_message_id":"","queue":{"items":[]}}'::jsonb """
+                         "OR activity_json::jsonb IS DISTINCT FROM '[]'::jsonb")
+        elif name == "event_source_progress":
+            predicate = "checkpoint_json::jsonb->'paused' IS DISTINCT FROM 'true'::jsonb"
+        elif schema == "agent" and name == "executions":
+            predicate = "status IN ('preparing','queued','running')"
+        elif name in {"trigger_paths", "trigger_path_steps"}:
+            predicate = "status IN ('active','pending','running','waiting')"
+        if predicate:
+            query = sql.SQL("SELECT count(*) FROM {} WHERE {}").format(
+                sql.Identifier(schema, name), sql.SQL(predicate))
+            violations[schema + "." + name] = connection.execute(query).fetchone()[0]
+    if ("lineage", "lineage_nodes") in tables:
+        # Missing progress rows would allow an event source to start by default.
+        violations["unpaused_event_sources"] = connection.execute(
+            "SELECT count(*) FROM lineage.lineage_nodes n "
+            "LEFT JOIN lineage.event_source_progress p ON p.source_id=n.node_id "
+            "WHERE n.node_type='event_source' "
+            "AND p.checkpoint_json::jsonb->'paused' IS DISTINCT FROM 'true'::jsonb"
+        ).fetchone()[0]
+    if not violations:
+        raise ValueError("No exported control tables found; cannot verify history freeze")
+    return {"passed": not any(violations.values()), "violations": violations}
+
+
 def freeze(tables):
     tables = deepcopy(tables)
     archive = []

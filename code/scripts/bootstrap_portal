@@ -209,9 +209,9 @@ def doctor(args: argparse.Namespace) -> int:
         from management_portal.test_framework.tau import TauConfig, browser_runtime_issue, executor_runtime_issue
         issue = browser_runtime_issue()
         check("TAU Playwright and Chromium", not issue, issue)
-        issue = executor_runtime_issue()
-        check("TAU executor", not issue, issue)
         if not getattr(args, 'tools_only', False):
+            issue = executor_runtime_issue()
+            check("TAU executor", not issue, issue)
             readiness = TauConfig.from_environment().unavailable_reason()
             check("TAU test-operator session and DEV target", not readiness, readiness)
     if "provider" in profiles:

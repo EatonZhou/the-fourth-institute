@@ -1,0 +1,103 @@
+Unicode true
+!include "MUI2.nsh"
+!include "x64.nsh"
+!include "WinVer.nsh"
+
+Name "The Fourth Institute"
+OutFile "${OUTPUT}"
+InstallDir "$LOCALAPPDATA\TheFourthInstitute"
+RequestExecutionLevel user
+SetCompressor /SOLID lzma
+SetCompressorDictSize 32
+ManifestDPIAware true
+VIProductVersion "0.9.0.0"
+VIAddVersionKey /LANG=1033 "ProductName" "The Fourth Institute"
+VIAddVersionKey /LANG=1033 "FileDescription" "Windows x64 preview installer"
+VIAddVersionKey /LANG=1033 "FileVersion" "0.9.0-preview"
+VIAddVersionKey /LANG=1033 "LegalCopyright" "The Fourth Institute contributors"
+!define MUI_ABORTWARNING
+!define MUI_WELCOMEPAGE_TEXT "Install the shared Portal platform and desktop instance manager.$\r$\n$\r$\nPython is included. Initializing an instance downloads PostgreSQL, Node.js and selected feature dependencies.$\r$\n$\r$\nWindows 11 x64 preview: native acceptance testing is pending. Instance data is retained when uninstalling."
+!insertmacro MUI_PAGE_WELCOME
+!insertmacro MUI_PAGE_DIRECTORY
+!insertmacro MUI_PAGE_INSTFILES
+!define MUI_FINISHPAGE_RUN
+!define MUI_FINISHPAGE_RUN_TEXT "Open The Fourth Institute"
+!define MUI_FINISHPAGE_RUN_FUNCTION Launch
+!insertmacro MUI_PAGE_FINISH
+!insertmacro MUI_UNPAGE_CONFIRM
+!insertmacro MUI_UNPAGE_INSTFILES
+!insertmacro MUI_LANGUAGE "English"
+!insertmacro MUI_LANGUAGE "SimpChinese"
+
+Function .onInit
+  ${IfNot} ${RunningX64}
+    MessageBox MB_ICONSTOP "This package requires 64-bit Windows."
+    Abort
+  ${EndIf}
+  ${IfNot} ${AtLeastWin10}
+    MessageBox MB_ICONSTOP "This preview targets Windows 11 x64."
+    Abort
+  ${EndIf}
+  SetRegView 64
+FunctionEnd
+
+Function .onVerifyInstDir
+  IfFileExists "$INSTDIR\windows-package.json" 0 fresh
+    MessageBox MB_ICONSTOP "A platform already exists here. This preview does not perform schema upgrades. Use the existing launcher or choose a different folder."
+    Abort
+  fresh:
+  IfFileExists "$INSTDIR\code\scripts\tfi_release_install.py" 0 done
+    MessageBox MB_ICONSTOP "This folder contains existing Portal code. Choose a separate folder."
+    Abort
+  done:
+  IfFileExists "$INSTDIR\instance\*.*" 0 empty
+    MessageBox MB_ICONSTOP "This folder contains retained instance data. Choose a new folder; this preview will not upgrade or overwrite existing instances."
+    Abort
+  empty:
+FunctionEnd
+
+Section "Platform"
+  SetShellVarContext current
+  SetOutPath "$INSTDIR"
+  File /r "${PAYLOAD}/*"
+  WriteUninstaller "$INSTDIR\Uninstall.exe"
+  CreateDirectory "$SMPROGRAMS\The Fourth Institute"
+  CreateShortcut "$SMPROGRAMS\The Fourth Institute\Portal.lnk" "$INSTDIR\dependencies\python\pythonw.exe" '"$INSTDIR\code\scripts\tfi_windows_launcher.py"'
+  CreateShortcut "$DESKTOP\The Fourth Institute.lnk" "$INSTDIR\dependencies\python\pythonw.exe" '"$INSTDIR\code\scripts\tfi_windows_launcher.py"'
+  CreateShortcut "$SMPROGRAMS\The Fourth Institute\Uninstall.lnk" "$INSTDIR\Uninstall.exe"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TheFourthInstitute" "DisplayName" "The Fourth Institute (Windows preview)"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TheFourthInstitute" "UninstallString" '"$INSTDIR\Uninstall.exe"'
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TheFourthInstitute" "DisplayVersion" "0.9 Windows preview"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TheFourthInstitute" "InstallLocation" "$INSTDIR"
+SectionEnd
+
+Function Launch
+  Exec '"$INSTDIR\dependencies\python\pythonw.exe" "$INSTDIR\code\scripts\tfi_windows_launcher.py"'
+FunctionEnd
+
+Section "Uninstall"
+  SetRegView 64
+  SetShellVarContext current
+  nsExec::ExecToLog '"$INSTDIR\dependencies\python\python.exe" "$INSTDIR\code\scripts\tfi_windows_launcher.py" --uninstall-platform'
+  Pop $0
+  StrCmp $0 "0" stopped
+    MessageBox MB_ICONSTOP "Could not stop all instances. Nothing was deleted. Use the launcher to stop them and retry."
+    Abort
+  stopped:
+  ; Deliberately keep instance/, dependency caches and .build/ for recovery.
+  RMDir /r "$INSTDIR\code"
+  RMDir /r "$INSTDIR\dependencies\python"
+  RMDir /r "$INSTDIR\packaging"
+  Delete "$INSTDIR\prepare_install.py"
+  Delete "$INSTDIR\example-seed.zip"
+  Delete "$INSTDIR\windows-package.json"
+  Delete "$INSTDIR\WINDOWS.md"
+  Delete "$INSTDIR\INSTALL.md"
+  Delete "$INSTDIR\README.md"
+  Delete "$INSTDIR\README_CN.md"
+  Delete "$DESKTOP\The Fourth Institute.lnk"
+  RMDir /r "$SMPROGRAMS\The Fourth Institute"
+  DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TheFourthInstitute"
+  Delete "$INSTDIR\Uninstall.exe"
+  MessageBox MB_ICONINFORMATION "Platform removed. Your instance data remains under:$\r$\n$INSTDIR\instance"
+SectionEnd

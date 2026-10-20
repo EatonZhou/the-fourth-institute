@@ -22,8 +22,18 @@ def safe_path(value):
 
 
 def service_controller():
-    from scripts.portal_service_control import ServiceControl
-    return ServiceControl(platform="windows")
+    from scripts.tfi_windows_user_services import WindowsServiceControl
+    return WindowsServiceControl(unit_directory())
+
+
+def validate_service_mode(target):
+    mode = target.get("windows_service_mode", "scm")
+    if mode not in {"user", "scm"}:
+        raise ValueError("Unknown Windows service mode")
+    if mode == "scm":
+        account = target.get("windows_service_account", "")
+        if not isinstance(account, str) or not account or account.lower() in {"localsystem", "localservice", "networkservice"}:
+            raise ValueError("An explicit non-system windows_service_account is required")
 
 
 def unit_name(target, component):
@@ -40,6 +50,11 @@ def unit_path(directory, name):
 
 def unit_text(target, component, components):
     del components
+    if target.get("windows_service_mode") == "user":
+        return json.dumps({"mode": "user", "name": unit_name(target, component),
+                           "root": target["install_root"], "python": target["python"],
+                           "code": str(code_root(target)), "component": component},
+                          sort_keys=True, ensure_ascii=False) + "\n"
     root = PureWindowsPath(target["install_root"])
     command = [target["python"], str(PureWindowsPath(installer_path(target))), "_service",
                "--root", str(root), "--component", component]
@@ -103,12 +118,19 @@ def _service_binary(name):
 
 def verify_service(name, content):
     definition = json.loads(content)
+    if definition.get("mode") == "user":
+        from scripts.tfi_windows_user_services import validate_definition
+        validate_definition(definition, name)
+        return
     actual = _service_binary(name)
     if actual != definition["binary"]:
         raise ValueError(f"Windows service registration ownership mismatch: {name}")
 
 
 def dependency_preflight(target):
+    validate_service_mode(target)
+    if target.get("windows_service_mode") == "user":
+        return
     if not target.get("windows_service_account") or not os.environ.get("TFI_WINDOWS_SERVICE_PASSWORD"):
         raise ValueError("Dependency preflight failed: Windows service account and TFI_WINDOWS_SERVICE_PASSWORD are required")
 
@@ -163,6 +185,11 @@ def command_unit_text(name, command, *, account, cwd, log_path, directory, pytho
 
 
 def register_services(directory, units, *, password_env="TFI_WINDOWS_SERVICE_PASSWORD"):
+    if units and all(json.loads(value).get("mode") == "user" for value in units.values()):
+        from scripts.tfi_windows_user_services import register
+        return register(directory, units)
+    if any(json.loads(value).get("mode") == "user" for value in units.values()):
+        raise ValueError("Cannot mix Windows service modes in one registration")
     directory.mkdir(parents=True, exist_ok=True)
     new = [(name, content) for name, content in units.items()
            if not unit_path(directory, name).exists()]
@@ -201,5 +228,8 @@ def remove_services(directory, names):
             if path.is_symlink():
                 raise ValueError(f"Refusing to remove symlinked Windows service marker: {name}")
             verify_service(name, path.read_text(encoding="utf-8"))
-            _delete_service(name)
+            if json.loads(path.read_text(encoding="utf-8")).get("mode") == "user":
+                service_controller().stop(name)
+            else:
+                _delete_service(name)
             path.unlink()

@@ -143,9 +143,7 @@ def target_plan(target, *, protected_roots=None, allow_missing_native=False):
         raise ValueError("enable_lineage_timers must be a boolean")
     adapter = platform_adapter()
     if adapter.__name__.endswith("_windows"):
-        account = target.get("windows_service_account", "")
-        if not isinstance(account, str) or not account or account.lower() in {"localsystem", "localservice", "networkservice"}:
-            raise ValueError("An explicit non-system windows_service_account is required")
+        adapter.validate_service_mode(target)
     if not adapter.__name__.endswith("_windows") and len(os.fsencode(root / "runtime/s/society-service.sock")) > 103:
         raise ValueError("Install root is too long for Unix sockets; use a shorter independent directory")
     # Keep the venv interpreter's lexical path: resolve() would bypass its venv.

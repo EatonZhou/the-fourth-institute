@@ -1,0 +1,7 @@
+{
+  "name": "CPython 3.12.15 Windows x64",
+  "provider": "Astral python-build-standalone",
+  "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20261013/cpython-3.12.15%2B20261013-x86_64-pc-windows-msvc-install_only_stripped.tar.gz",
+  "sha256": "7a2aef48e5ee569e310b29b32681debbc5d888e92790d85331a47736c6b06aad",
+  "size": 22019610
+}

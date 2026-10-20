@@ -1,5 +1,9 @@
 # 共享代码与实例安装
 
+Windows 11 x64 用户可以使用 `TheFourthInstitute-Setup-x64.exe` 和图形实例管理器。
+详见 [Windows 预览安装说明](packaging/windows/README.md)，包括联网依赖、
+长路径授权、账号配置、日志位置与当前验证范围。
+
 仓库根目录执行 `python3 prepare_install.py`，生成经过校验的
 `.build/example_instance/engineering/manifest.json`。
 应用源码位于 `code/`；示例初始资料位于 `instance/example_instance/seed/`。
@@ -54,11 +58,13 @@ inventory 遍历及代码、数据、SQL、依赖文件摘要校验。仍读取 
 目标路径、端口及必要依赖；manifest 摘要仅用于实例所有权标识。记录为
 `file_verification=skipped_by_operator`，不得据此宣称工程完整性通过。
 
-带有 `feature_resolution` 的新工程先执行 `install --prepare-only`，完成复制库只读冻结
+有监督 Resident 的工程先执行 `install --prepare-only`，完成复制库只读冻结
 核查后，再以 `install --freeze-evidence <核查JSON>` 续跑。核查JSON须含本次 `run_id`、
 `supervisor_resident_id`、`manifest_sha256`、`passed:true`，`violations` 的值均为0。
 安装器在全部应用服务停止时调用本工程的初始化 helper，显式使用目标DB、五根和
 `config/site.json`，结果写入 `runtime/feature-initialization.json`，随后才启动服务。
+普通用户工程未指定监督 Resident 时，安装器在导入后自动只读核验旧任务、
+事件源和会话控制状态已冻结；核验失败保持应用停止，不伪造通过记录。
 没有声明该字段的旧工程不推导新默认值，也不据此声称v53默认状态验收通过。
 新装初始化中断或失败必须先归档诊断，再按原所有权清理重建；不能直接重放半完成初始化。
 升级在迁移、代码切换后应用新工程默认值，传旧工程已包含功能ID，保留本站已有设置；
@@ -76,10 +82,9 @@ checkpoint 与 pending deliveries。原生多组件开关采用逐项提交及�
 恢复未确认时须回读实际组件状态。安装初始化则由独立目标数据库事务管理，文件与DB仍依赖
 既有安装中断拒绝重放/升级配对恢复边界，不宣称跨文件与数据库原子提交。
 
-当前安装实现仅有 Linux 的 systemd 用户服务路径，首轮完整安装仍在验证中。
-Windows/macOS 的安装能力未完成且未进行原生验证；已有 ServiceControl 接口不代表
-实例注册、依赖、路径与本地IPC均已支持。macOS仍缺本次实例的launchd注册/卸载和
-PG依赖/IPC验证；Windows仍缺本次实例常驻服务注册/卸载、路径转义、PG依赖及IPC适配验证。
+安装器提供 Linux systemd、Windows 用户态组件/显式 SCM 和 macOS launchd 适配。
+Windows 图形安装器使用当前用户进程，不要求系统服务账号。适配代码存在不代表
+原生验收通过；Windows/macOS 的实际依赖、IPC、用户登录和 Resident 对话仍需实机验证。
 安装锁复用 management_common.file_lock 的跨进程互斥，帮助入口不导入平台专属锁或服务实现。
 目标平台与能力状态统一消费生成方的目标目录，不在安装器维护第二套支持矩阵。
 旧运行快照保持不变，其Linux范围只记为派生的legacy-effective-linux事实。

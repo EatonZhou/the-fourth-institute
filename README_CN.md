@@ -40,6 +40,10 @@ TFI Portal 通过 HATG ISA（Human-Agent Trajectory Graph 指令集）提供共�
 
 ## 2. 安装与使用
 
+**Windows 预览版：**双击 `TheFourthInstitute-Setup-x64.exe`，通过图形界面安装并
+管理实例。Python 已包含，首次初始化实例需要联网。
+详见 [Windows 操作说明与验证范围](packaging/windows/README.md)。
+
 **当前支持 Linux，需要 Python 3.12 及 venv 支持。**
 
 应用代码统一位于 `code/`，示例初始数据位于 `instance/example_instance/seed/`，各实例的实际数据保存在自己的 `instance/<名称>/` 中。在仓库根目录执行：
