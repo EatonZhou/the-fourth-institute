@@ -6,6 +6,7 @@ Unicode true
 Var RemoveInstances
 Var RemoveInstancesCheckbox
 Var UninstallDialog
+Var ResidualItems
 !define MUI_ICON "${PAYLOAD}/branding/tfi.ico"
 !define MUI_UNICON "${PAYLOAD}/branding/tfi.ico"
 
@@ -16,6 +17,8 @@ RequestExecutionLevel user
 SetCompressor /SOLID lzma
 SetCompressorDictSize 32
 ManifestDPIAware true
+ManifestLongPathAware true
+ShowUninstDetails show
 VIProductVersion "0.9.0.0"
 VIAddVersionKey /LANG=1033 "ProductName" "The Fourth Institute"
 VIAddVersionKey /LANG=1033 "FileDescription" "Windows x64 preview installer"
@@ -63,6 +66,41 @@ Function un.InstanceOptionsLeave
     Abort
     confirmed:
   ${EndIf}
+FunctionEnd
+
+Function un.ListResiduals
+  ; Report real remaining names instead of guessing whether a file is in use.
+  Push $0
+  Push $1
+  Push $2
+  Push $3
+  StrCpy $ResidualItems ""
+  StrCpy $2 0
+  FindFirst $0 $1 "$INSTDIR\*"
+  residual_entry:
+    StrCmp $1 "" residual_done
+    StrCmp $1 "." residual_next
+    StrCmp $1 ".." residual_next
+    DetailPrint "Remaining: $INSTDIR\$1"
+    ${If} $2 < 4
+      StrCpy $3 $1 64
+      StrCpy $ResidualItems "$ResidualItems$\r$\n  $3"
+    ${ElseIf} $2 == 4
+      StrCpy $ResidualItems "$ResidualItems$\r$\n  ..."
+    ${EndIf}
+    IntOp $2 $2 + 1
+  residual_next:
+    FindNext $0 $1
+    Goto residual_entry
+  residual_done:
+    FindClose $0
+    ${If} $2 == 0
+      StrCpy $ResidualItems "$\r$\n  未发现子项；目录本身可能被占用。 / No entries found; the folder itself may be in use."
+    ${EndIf}
+    Pop $3
+    Pop $2
+    Pop $1
+    Pop $0
 FunctionEnd
 
 Function .onInit
@@ -163,7 +201,8 @@ Section "Uninstall"
     RMDir "$INSTDIR"
     ${If} ${Errors}
       SetErrorLevel 1
-      MessageBox MB_ICONEXCLAMATION "卸载仍有残留文件：$\r$\n$INSTDIR$\r$\n可能有文件被占用，或存在自行添加的文件。请关闭相关程序后检查此目录。$\r$\nSome files remain (in use or added separately). Check this folder after closing related programs."
+      Call un.ListResiduals
+      MessageBox MB_ICONEXCLAMATION "卸载未能清空目录：$\r$\n$INSTDIR$\r$\n剩余项目 / Remaining:$ResidualItems$\r$\n$\r$\n请关闭相关程序后检查；完整列表见卸载详情。未知文件会保留。$\r$\nClose related programs and check uninstall details. Unknown files are preserved."
     ${Else}
       MessageBox MB_ICONINFORMATION "平台、实例、依赖缓存和日志已删除。$\r$\nPlatform, instances, dependencies, caches and logs removed."
     ${EndIf}
