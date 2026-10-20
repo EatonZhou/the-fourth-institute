@@ -26,7 +26,7 @@ EnvironmentFile=-@PORTAL_POSTGRES_ENV_FILE@
 ExecStart=@PORTAL_GROUP_COMMAND@@PORTAL_INSTANCES_ROOT@/dev/runtime-venv/bin/python -m management_portal.society_service.server
 Restart=always
 RestartSec=2
-TimeoutStopSec=180
+TimeoutStopSec=540
 
 [Install]
 WantedBy=portal-dev-execution.target

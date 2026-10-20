@@ -8,6 +8,8 @@ from management_common.domain_database import DomainDatabase
 from psycopg.types.json import Jsonb
 from management_common.database_time import encode_times, decode_times
 
+LEASE_SECONDS = 90
+
 TEXT_FIELDS = ('lineage_id','trigger_path_id','effect_id','caller_id','status','admission','cwd','path','runtime',
                'sha256','unit','exclusive_key','started_at','finished_at','stderr_tail','error_code','trigger_type')
 JSON_FIELDS = ('arguments','outputs','artifacts','identity')
@@ -125,15 +127,15 @@ def delete_expired(identifier):
 
 def acquire_lease(holder):
     with domain().transaction() as c:
-        return c.execute("""INSERT INTO worker_lease VALUES(1,%s,clock_timestamp()+INTERVAL '30 seconds')
+        return c.execute("""INSERT INTO worker_lease VALUES(1,%s,clock_timestamp()+%s*INTERVAL '1 second')
             ON CONFLICT(singleton) DO UPDATE SET holder=excluded.holder,until_at=excluded.until_at
             WHERE worker_lease.holder=excluded.holder OR worker_lease.until_at<=clock_timestamp()
-            RETURNING holder""", (holder,)).fetchone() is not None
+            RETURNING holder""", (holder, LEASE_SECONDS)).fetchone() is not None
 
 
 def renew_lease(holder):
     with domain().transaction() as c:
-        return c.execute("UPDATE worker_lease SET until_at=clock_timestamp()+INTERVAL '30 seconds' WHERE singleton=1 AND holder=%s AND until_at>clock_timestamp() RETURNING holder", (holder,)).fetchone() is not None
+        return c.execute("UPDATE worker_lease SET until_at=clock_timestamp()+%s*INTERVAL '1 second' WHERE singleton=1 AND holder=%s AND until_at>clock_timestamp() RETURNING holder", (LEASE_SECONDS, holder)).fetchone() is not None
 
 
 def release_lease(holder):

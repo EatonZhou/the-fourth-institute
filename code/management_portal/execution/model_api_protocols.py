@@ -23,7 +23,7 @@ class ChatProtocol:
     name = "openai_compatible_chat"
     settings_view = "chat"
     default_history = True
-    timeout_max = 86400
+    timeout_max = 259200
     parameters = frozenset({"temperature", "top_p", "max_tokens", "max_completion_tokens",
         "stop", "frequency_penalty", "presence_penalty", "seed", "response_format", "thinking", "reasoning_effort"})
     # Only protocol-common controls are inferred. Provider extensions require
@@ -67,7 +67,7 @@ class JevProtocol:
     name = "typesafe_system_one"
     settings_view = "jev"
     default_history = False
-    timeout_max = 120
+    timeout_max = 360
     parameters = frozenset({"questions"})
     default_controls = ()
 

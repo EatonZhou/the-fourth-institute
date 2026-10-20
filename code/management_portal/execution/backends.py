@@ -2126,7 +2126,7 @@ class CodexBackend:
                     "Codex accepted a turn but did not return its identity"
                 )
             retry_delay = 0.25
-            reconnect_deadline = time.monotonic() + 180.0
+            reconnect_deadline = time.monotonic() + 540.0
             while True:
                 if provider_cancelled():
                     raise InterruptedError(
@@ -2404,7 +2404,7 @@ class CodexBackend:
                     client.request(
                         "thread/goal/set",
                         {"threadId": backend_session_id, "status": "paused"},
-                        timeout=10.0,
+                        timeout=30.0,
                     )
                     paused = True
                 except Exception:
@@ -2523,18 +2523,18 @@ _UNCONTINUABLE_ERROR_MARKERS = (
     "safety", "content policy", "policy violation", "insufficient", "balance", "billing", "credit",
     "context length", "context window", "prompt is too long", "maximum context", "too many tokens",
 )
-PROVIDER_CONTINUATION_WAIT_SECONDS = 180.0
+PROVIDER_CONTINUATION_WAIT_SECONDS = 540.0
 # A turn that could not reach Anthropic from this host (refused for the
 # location, or the VPS tunnel down while the host holds its default traffic
 # closed) waits for the egress to come back: how long, how often it looks,
 # and how many such continuations one Execution sends.  The outages seen on
 # 10-07 lasted 30 to 150 seconds.
-EGRESS_BLOCK_WAIT_SECONDS = 600.0
+EGRESS_BLOCK_WAIT_SECONDS = 1800.0
 EGRESS_PROBE_INTERVAL_SECONDS = 10.0
 EGRESS_BLOCK_CONTINUE_ATTEMPTS = 5
 # Runtime option: tool results DSH replaces at the first step of the turn.
 # How long a Kimi turn waits for Kimi Code to register Portal tools that are new to it.
-PORTAL_TOOL_REGISTRATION_WAIT_SECONDS = 12.0
+PORTAL_TOOL_REGISTRATION_WAIT_SECONDS = 36.0
 
 
 
@@ -3881,7 +3881,7 @@ class ChatCompletionService:
             context.emit("context_history", options["context_history"])
         result = adapter.execute(
             self.provider_registry, {**item, "id": provider_id}, model, messages, parameters,
-            float(options.get("timeout_seconds") or 120), max(0, int(options.get("max_retries") or 0)),
+            float(options.get("timeout_seconds") or 360), max(0, int(options.get("max_retries") or 0)),
             context.is_cancelled, transport.update, lambda call: _until_cancelled(call, context.is_cancelled),
         )
         return self._result(context, provider_id, model, result.response, result.content, transport,

@@ -406,7 +406,7 @@ class ResourceService:
         resource_type: str,
         kind: str,
         wait_for_index: bool = False,
-        index_timeout: float = 15.0,
+        index_timeout: float = 45.0,
     ) -> dict[str, Any]:
         try:
             notify_options: dict[str, Any] = {}
@@ -464,7 +464,7 @@ class ResourceService:
         actor: str = "",
         automatic: bool = False,
         wait_for_index: bool = False,
-        index_timeout: float = 15.0,
+        index_timeout: float = 45.0,
     ) -> dict[str, Any]:
         clean_type = str(resource_type or "").strip()
         if not self._identity.is_registered(clean_type):
@@ -544,7 +544,7 @@ class ResourceService:
         actor: str = "",
         resource_type: str = "",
         wait_for_index: bool = False,
-        index_timeout: float = 15.0,
+        index_timeout: float = 45.0,
     ) -> dict[str, Any]:
         identity = self._existing_identity(resource_id, resource_type, actor=actor)
         self._ensure_mutation_providers(identity.resource_type)
@@ -591,7 +591,7 @@ class ResourceService:
         actor: str = "",
         resource_type: str = "",
         wait_for_index: bool = False,
-        index_timeout: float = 15.0,
+        index_timeout: float = 45.0,
     ) -> dict[str, Any]:
         identity = self._existing_identity(resource_id, resource_type, actor=actor)
         self._ensure_mutation_providers(identity.resource_type)
@@ -1320,7 +1320,7 @@ class ResourceService:
             # A service built without an index (test servers, tools) has
             # nothing more to load.
             return
-        deadline = time.monotonic() + 120
+        deadline = time.monotonic() + 360
         while True:
             try:
                 index.query(actor="", limit=1)
@@ -1384,7 +1384,7 @@ class ResourceService:
         resource_type: str = "",
         kind: str = "unknown",
         wait: bool = False,
-        timeout: float = 30.0,
+        timeout: float = 90.0,
     ) -> dict[str, object]:
         change = ResourceChange(
             kind=kind,

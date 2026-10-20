@@ -23,20 +23,20 @@ DEFAULT_SOCKET_PATH = (portal_path("staging_root") / "portal_locks" / "codex-app
 DEFAULT_THREAD_LOCK_ROOT = (portal_path("staging_root") / "portal_locks" / "codex-app-server-threads")
 DEFAULT_IDLE_UNSUBSCRIBE_SECONDS = 5 * 60 * 60
 DEFAULT_MAX_LOADED_THREADS = 30
-DEFAULT_REQUEST_TIMEOUT_SECONDS = 30.0
-DEFAULT_LIFECYCLE_REQUEST_TIMEOUT_SECONDS = 60.0
-DEFAULT_TURN_START_REQUEST_TIMEOUT_SECONDS = 120.0
-DEFAULT_COMPACT_TOTAL_TIMEOUT_SECONDS = 600.0
-DEFAULT_COMPACT_NO_PROGRESS_TIMEOUT_SECONDS = 300.0
+DEFAULT_REQUEST_TIMEOUT_SECONDS = 90.0
+DEFAULT_LIFECYCLE_REQUEST_TIMEOUT_SECONDS = 180.0
+DEFAULT_TURN_START_REQUEST_TIMEOUT_SECONDS = 360.0
+DEFAULT_COMPACT_TOTAL_TIMEOUT_SECONDS = 1800.0
+DEFAULT_COMPACT_NO_PROGRESS_TIMEOUT_SECONDS = 900.0
 DEFAULT_COMPACT_STATUS_POLL_INTERVAL_SECONDS = 5.0
 TURN_COMPLETION_RECONCILE_INTERVAL_SECONDS = 2.0
 TURN_ACTIVE_RECONCILE_INTERVAL_SECONDS = 10.0
-TURN_SUCCESSOR_RECONCILE_GRACE_SECONDS = 2.0
-TURN_ACCEPTED_MISSING_GRACE_SECONDS = 5.0
+TURN_SUCCESSOR_RECONCILE_GRACE_SECONDS = 6.0
+TURN_ACCEPTED_MISSING_GRACE_SECONDS = 15.0
 # Provider-owned compact turns normally release quickly. A long compact must
 # not hold a Portal worker or become a terminal user-visible failure; after
 # this short reconciliation window the execution returns to the scheduler.
-TURN_COMPACTION_CONFLICT_WAIT_SECONDS = 10.0
+TURN_COMPACTION_CONFLICT_WAIT_SECONDS = 30.0
 TASK_COMPLETE_GOAL_STATUSES = frozenset({"blocked", "complete", "usagelimited", "budgetlimited"})
 TURN_CONTROL_POLL_INTERVAL_SECONDS = 0.25
 _USE_DEFAULT_REQUEST_TIMEOUT = object()
@@ -877,7 +877,7 @@ class CodexAppServerClient:
         if not safe_thread_id:
             return
         with self._locked_thread(safe_thread_id):
-            self.request("thread/unsubscribe", {"threadId": safe_thread_id}, timeout=15.0)
+            self.request("thread/unsubscribe", {"threadId": safe_thread_id}, timeout=45.0)
             self._forget_loaded_thread(safe_thread_id)
 
     def interrupt_turn(self, thread_id: str, turn_id: str) -> dict[str, Any]:
@@ -1300,7 +1300,7 @@ class CodexAppServerClient:
 
     def _release_child(self, child: str) -> None:
         try:
-            self.request("thread/unsubscribe", {"threadId": child}, timeout=15.0)
+            self.request("thread/unsubscribe", {"threadId": child}, timeout=45.0)
         except Exception as error:
             logging.getLogger(__name__).warning(
                 "Subagent thread could not be released: thread=%s error_type=%s", child, type(error).__name__)
@@ -1611,7 +1611,7 @@ class CodexAppServerClient:
             "threadId": thread_id, "limit": 5,
             "sortDirection": "desc", "itemsView": "full",
         }
-        deadline = time.monotonic() + min(15.0, self.request_timeout_seconds)
+        deadline = time.monotonic() + min(45.0, self.request_timeout_seconds)
         cursors: set[str] = set()
         while True:
             remaining = deadline - time.monotonic()
@@ -1644,7 +1644,7 @@ class CodexAppServerClient:
                 "sortDirection": "desc",
                 "itemsView": "full",
             },
-            timeout=min(15.0, self.request_timeout_seconds),
+            timeout=min(45.0, self.request_timeout_seconds),
         )
         turns = result.get("data") if isinstance(result.get("data"), list) else []
         try:
@@ -1672,7 +1672,7 @@ class CodexAppServerClient:
         result = self.request(
             "thread/read",
             {"threadId": safe_thread_id, "includeTurns": False},
-            timeout=min(15.0, self.request_timeout_seconds),
+            timeout=min(45.0, self.request_timeout_seconds),
         )
         thread = result.get("thread") if isinstance(result, dict) else None
         status = thread.get("status") if isinstance(thread, dict) else None
@@ -1715,7 +1715,7 @@ class CodexAppServerClient:
                 "sortDirection": "desc",
                 "itemsView": "full" if include_items else "summary",
             },
-            timeout=min(15.0, self.request_timeout_seconds),
+            timeout=min(45.0, self.request_timeout_seconds),
         )
         turns = result.get("data") if isinstance(result.get("data"), list) else []
         turn = turns[0] if turns and isinstance(turns[0], dict) else None
@@ -1857,7 +1857,7 @@ class CodexAppServerClient:
         result = self.request(
             "thread/goal/get",
             {"threadId": thread_id},
-            timeout=min(15.0, self.request_timeout_seconds),
+            timeout=min(45.0, self.request_timeout_seconds),
         )
         goal = result.get("goal") if isinstance(result, dict) else None
         if not isinstance(goal, dict):
@@ -2098,7 +2098,7 @@ class CodexAppServerClient:
                             self.request(
                                 "thread/goal/set",
                                 {"threadId": safe_thread_id, "status": "paused"},
-                                timeout=10.0,
+                                timeout=30.0,
                             )
                         finally:
                             if waiter.turn_id:
@@ -2113,7 +2113,7 @@ class CodexAppServerClient:
                     observed = self.request(
                         "thread/goal/get",
                         {"threadId": safe_thread_id},
-                        timeout=15.0,
+                        timeout=45.0,
                     )
                     observed_goal = observed.get("goal") if isinstance(observed, dict) else None
                     waiter.goal = dict(observed_goal) if isinstance(observed_goal, dict) else None
@@ -2748,7 +2748,7 @@ class CodexAppServerClient:
                         or self._thread_activity.get(thread_id) != activity[thread_id]
                     ):
                         continue
-                self.request("thread/unsubscribe", {"threadId": thread_id}, timeout=15.0)
+                self.request("thread/unsubscribe", {"threadId": thread_id}, timeout=45.0)
                 self._forget_loaded_thread(thread_id)
             except Exception:
                 continue

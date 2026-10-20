@@ -78,18 +78,18 @@ def _default_watchboard_agent_manifest(record: dict[str, Any]) -> dict[str, Any]
         "entrypoint": "src/main.py",
         "config": "config/config.yaml",
         "status_path": "state/status.json",
-        "default_timeout_seconds": 120,
+        "default_timeout_seconds": 360,
         "execution": {"kind": "process"},
         "commands": {
             "status": {
                 "description": "读取脚本侧状态。",
                 "risk": "read_only",
-                "timeout_seconds": 60,
+                "timeout_seconds": 180,
             },
             "run-once": {
                 "description": "执行一次脚本侧工作循环。",
                 "risk": "agent_state_write",
-                "timeout_seconds": 1800,
+                "timeout_seconds": 5400,
             },
         },
     }

@@ -52,7 +52,7 @@ SUBAGENT_TOOL = "task"
 STOPPING_METHOD = "subagent/stopping"
 # A turn whose Worker left (a handover) keeps running; its Portal tool calls
 # wait this long for the next Worker.
-DETACHED_TOOL_WAIT_SECONDS = 180
+DETACHED_TOOL_WAIT_SECONDS = 540
 # A bridge without work exits after this long; the next operation starts it again.
 IDLE_EXIT_SECONDS = 300
 # A turn's run is also checked against OpenCode's session status this often,
@@ -153,7 +153,7 @@ class OpenCodeServer:
             if line.strip() and "OPENCODE_SERVER_PASSWORD" not in line:
                 log("opencode: " + line.rstrip()[:2000])
 
-    def request(self, method: str, path: str, body=None, timeout: float = 60):
+    def request(self, method: str, path: str, body=None, timeout: float = 180):
         connection = http.client.HTTPConnection(self.host, self.port, timeout=timeout)
         try:
             payload = None if body is None else json.dumps(body).encode()
@@ -182,7 +182,7 @@ class OpenCodeServer:
                     continue
 
     def stop(self) -> None:
-        terminate_process_tree(self.process, timeout=10)
+        terminate_process_tree(self.process, timeout=30)
 
 
 class Turn:
@@ -378,7 +378,7 @@ class Bridge:
     def _call_id(self, name: str, arguments: dict) -> str:
         """The OpenCode call this MCP request comes from (its tool part runs with the same input)."""
 
-        deadline = time.monotonic() + 2
+        deadline = time.monotonic() + 6
         while True:
             with self.lock:
                 for call_id, part in reversed(list(self.tool_parts.items())):
@@ -772,7 +772,7 @@ class Bridge:
     def _outcome(self, turn: Turn) -> dict:
         while not self._settled(turn):
             pass
-        messages = self.server.request("GET", f"/session/{self.opencode_session}/message", timeout=120) or []
+        messages = self.server.request("GET", f"/session/{self.opencode_session}/message", timeout=360) or []
         mine = [message for message in messages
                 if int(((message.get("info") or {}).get("time") or {}).get("created") or 0) >= turn.started_ms - 1000]
         answers = [message for message in mine if (message.get("info") or {}).get("role") == "assistant"]
@@ -891,13 +891,13 @@ class Bridge:
                 return {"compacted": False, "reason": "no_session"}
             self.compacting = True
         try:
-            before = self.server.request("GET", f"/session/{self.opencode_session}/message", timeout=120) or []
+            before = self.server.request("GET", f"/session/{self.opencode_session}/message", timeout=360) or []
             if len([m for m in before if (m.get("info") or {}).get("role") == "user"]) < 2:
                 return {"compacted": False, "reason": "nothing_to_compact", "session_id": self.session_id}
             pre = context_tokens(before)
             self.server.request("POST", f"/session/{self.opencode_session}/summarize",
-                                self.model(params), timeout=590)
-            after = self.server.request("GET", f"/session/{self.opencode_session}/message", timeout=120) or []
+                                self.model(params), timeout=1770)
+            after = self.server.request("GET", f"/session/{self.opencode_session}/message", timeout=360) or []
             return {"compacted": True, "session_id": self.session_id, "pre_tokens": pre,
                     "context_tokens": summary_tokens(after)}
         finally:
@@ -911,7 +911,7 @@ class Bridge:
         since = int(params.get("since_ms") or 0)
         if not self.opencode_session:
             return {"requests": []}
-        messages = self.server.request("GET", f"/session/{self.opencode_session}/message", timeout=120) or []
+        messages = self.server.request("GET", f"/session/{self.opencode_session}/message", timeout=360) or []
         rows = steps(messages, since)
         return {"requests": rows + self.subagent_steps(messages, since),
                 "context_window": self.window(rows[-1]["model"]) if rows else 0}
@@ -929,7 +929,7 @@ class Bridge:
             if child in seen:
                 continue
             seen.add(child)
-            found = self.server.request("GET", f"/session/{child}/message", timeout=120) or []
+            found = self.server.request("GET", f"/session/{child}/message", timeout=360) or []
             rows.extend({**row, "context": False} for row in steps(found, since))
             pending.extend(task_sessions(found))
         return rows
@@ -939,7 +939,7 @@ class Bridge:
 
         if not self.opencode_session:
             return {}
-        messages = self.server.request("GET", f"/session/{self.opencode_session}/message", timeout=120) or []
+        messages = self.server.request("GET", f"/session/{self.opencode_session}/message", timeout=360) or []
         for index in range(len(messages) - 1, -1, -1):
             info = messages[index].get("info") or {}
             if info.get("role") != "assistant" or not info.get("summary"):

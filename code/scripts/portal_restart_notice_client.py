@@ -22,7 +22,7 @@ def publish_restart_notice(
         headers={"Content-Type": "application/json"},
         method="POST",
     )
-    with urllib.request.urlopen(request, timeout=3) as response:
+    with urllib.request.urlopen(request, timeout=9) as response:
         payload = json.loads(response.read().decode("utf-8"))
     notice = payload.get("notice") if isinstance(payload, dict) else None
     if not (
@@ -39,7 +39,7 @@ def publish_restart_notice(
 def drain_realtime(
     url: str,
     *,
-    timeout_seconds: float = 4.0,
+    timeout_seconds: float = 12.0,
 ) -> dict[str, Any]:
     """Request realtime drain and return only after the server confirms closure."""
 

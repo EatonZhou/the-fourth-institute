@@ -4,7 +4,7 @@
   const SESSION_VERSION = 1;
   const SESSION_TTL = 15 * 60 * 1000;
   const STEP_DELAY = 850;
-  const READY_TIMEOUT = 15_000;
+  const READY_TIMEOUT = 45_000;
   // Page adapters load on demand into PortalDesignLiveAdapters; production
   // components carry none.  Test's own adapter (test-lab) comes with its view.
   const DESIGN_ADAPTER_ASSETS = Object.freeze({

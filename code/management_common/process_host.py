@@ -32,7 +32,7 @@ def run(command):
     finally:
         try:
             if child is not None:
-                terminate_process_tree(child, timeout=5)
+                terminate_process_tree(child, timeout=15)
         finally:
             restore_shutdown_handlers(previous)
 

@@ -16,7 +16,8 @@ from typing import Any
 
 from .service import ResidentContext, resident_context
 
-LEASE_TTL_SECONDS = 90.0
+LEASE_TTL_SECONDS = 270.0
+LEASE_RENEW_SECONDS = 30.0
 _LOG = logging.getLogger(__name__)
 
 
@@ -40,7 +41,7 @@ class ResidentContextWorker:
         self._thread = threading.Thread(target=self._run, name="resident-context-worker", daemon=True)
         self._thread.start()
 
-    def stop(self, timeout: float = 10.0) -> None:
+    def stop(self, timeout: float = 30.0) -> None:
         self._stop.set()
         if self._thread is not None:
             self._thread.join(timeout=timeout)
@@ -58,7 +59,7 @@ class ResidentContextWorker:
         while not self._stop.is_set():
             now = time.monotonic()
             try:
-                if not holding or now - last_lease >= LEASE_TTL_SECONDS / 3:
+                if not holding or now - last_lease >= LEASE_RENEW_SECONDS:
                     was_holding = holding
                     holding = self.context.store.hold_worker_lease(self.holder, ttl_seconds=LEASE_TTL_SECONDS)
                     last_lease = now
@@ -66,7 +67,7 @@ class ResidentContextWorker:
                         self._take_over()
                         last_catalog = last_reconcile = 0.0
                 if not holding:
-                    self._stop.wait(LEASE_TTL_SECONDS / 3)
+                    self._stop.wait(LEASE_RENEW_SECONDS)
                     continue
                 busy = self.run_once(
                     sync_catalog=now - last_catalog >= self.context.settings.catalog_sync_seconds,

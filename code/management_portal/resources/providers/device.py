@@ -66,7 +66,7 @@ def install_action_provider(service: "ResourceService") -> None:
         del actor
         return device_identity_backend.test_ssh_connection(
             resource_id,
-            timeout_seconds=payload.get("timeout_seconds", 5),
+            timeout_seconds=payload.get("timeout_seconds", 15),
         )
 
     def save_ssh_credential(

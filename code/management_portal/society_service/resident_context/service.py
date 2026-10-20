@@ -56,8 +56,8 @@ class Settings:
     full_rebuild_max_age_days: int = 30
     max_job_attempts: int = 6
     prepare_batch_size: int = 4
-    prepare_lease_seconds: float = 600.0
-    claim_lease_seconds: float = 1800.0
+    prepare_lease_seconds: float = 1800.0
+    claim_lease_seconds: float = 5400.0
     evidence_budget_chars: int = 160_000
     search_pool: int = 60
 

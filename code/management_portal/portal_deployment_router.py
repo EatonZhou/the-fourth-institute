@@ -54,7 +54,7 @@ HOP_HEADERS = {
 # RestartSec.  The request has not reached it yet, so the router waits for the
 # backend this long instead of answering 502 at once; nothing is sent twice.
 # It retries with the services' backoff (``retry_delays``).
-BACKEND_RESTART_WAIT_SECONDS = 30.0
+BACKEND_RESTART_WAIT_SECONDS = 90.0
 # A page the browser asked for while its backend stayed away: it tries again
 # by itself, so a person does not have to refresh.
 BACKEND_UNAVAILABLE_PAGE = """<!doctype html>
@@ -666,7 +666,7 @@ def main() -> int:
         default=None,
     )
     parser.add_argument("--allow-network", action="append", default=[])
-    parser.add_argument("--timeout", type=float, default=float(os.getenv("PORTAL_ROUTER_BACKEND_TIMEOUT", "3600")))
+    parser.add_argument("--timeout", type=float, default=float(os.getenv("PORTAL_ROUTER_BACKEND_TIMEOUT", "10800")))
     args = parser.parse_args()
 
     binds, port, networks = _listener_settings(args)

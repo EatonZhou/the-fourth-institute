@@ -49,7 +49,7 @@ def _read_endpoint(path):
     return data
 
 
-def connect_transport(path, *, timeout=5.0, platform=None):
+def connect_transport(path, *, timeout=15.0, platform=None):
     """Return an authenticated WebSocket, closing the socket on every failure."""
     windows = _platform(platform) == "win32"
     record = _read_endpoint(path) if windows else None
@@ -65,7 +65,7 @@ def connect_transport(path, *, timeout=5.0, platform=None):
         raise
 
 
-def run_host(path, binary, account_home, stop_event, *, platform=None, startup_timeout=30.0):
+def run_host(path, binary, account_home, stop_event, *, platform=None, startup_timeout=90.0):
     windows = _platform(platform) == "win32"
     path, binary, account_home = Path(path), Path(binary), Path(account_home)
     if not binary.is_absolute() or not binary.is_file():
@@ -118,7 +118,7 @@ def run_host(path, binary, account_home, stop_event, *, platform=None, startup_t
                     record = {"schema": _SCHEMA, "host": "127.0.0.1", "port": port, "token": token}
                     # Verify authentication before advertising readiness. An old
                     # CLI lacking capability-token support fails closed.
-                    with socket.create_connection(("127.0.0.1", port), timeout=5) as probe:
+                    with socket.create_connection(("127.0.0.1", port), timeout=15) as probe:
                         WebSocketTransport(probe, bearer_token=token).close()
                     atomic_write_private_bytes(rendezvous_path(path), json.dumps(record).encode())
                     published = True
@@ -146,7 +146,7 @@ def run_host(path, binary, account_home, stop_event, *, platform=None, startup_t
         return 0
     finally:
         try:
-            terminate_process_tree(process, timeout=10)
+            terminate_process_tree(process, timeout=30)
         finally:
             reader.join(2)
             process.stderr.close()

@@ -15,7 +15,7 @@ from management_common.local_ipc import connect_local
 # come back within seconds.  The request has not reached the service, so the
 # caller waits for it this long instead of failing at once; nothing is sent
 # twice.  A probe (health, a wake-up) passes ``restart_wait=0``.
-SERVICE_RESTART_WAIT_SECONDS = 30.0
+SERVICE_RESTART_WAIT_SECONDS = 90.0
 # While it is away the caller backs off: the first retry after 0.25 s, each
 # later one twice as long, at most 2 s apart.
 RETRY_FIRST_SECONDS = 0.25

@@ -84,7 +84,7 @@ def native_egress() -> str:
 def enabled() -> bool:
     """ExecutionService owns the switch and listener; unavailable observation is optional."""
     try:
-        with _local.open(endpoint() + '/health', timeout=.5) as response:
+        with _local.open(endpoint() + '/health', timeout=1.5) as response:
             value = json.load(response)
             return isinstance(value, dict) and value.get('enabled') is True
     except (OSError, ValueError, HTTPException):
@@ -110,7 +110,7 @@ def lookup(provider: str, output_id: str) -> dict[str, str]:
         query = urllib.parse.urlencode({'provider': provider, 'id': output_id})
         request = urllib.request.Request(endpoint() + '/timing?' + query,
                                          headers={'Authorization': 'Bearer ' + key.hex()})
-        with _local.open(request, timeout=1) as response:
+        with _local.open(request, timeout=3) as response:
             value = json.load(response)
             if not isinstance(value, dict):
                 return {}

@@ -58,7 +58,7 @@ def readiness() -> dict:
             probe = process_runtime.run_process(
                 [str(python), "-c", "import numpy, onnxruntime, tokenizers"],
                 capture_output=True, text=True, encoding="utf-8", errors="replace",
-                timeout=20, check=False,
+                timeout=60, check=False,
             )
             if probe.returncode:
                 missing.append("numpy、onnxruntime、tokenizers")

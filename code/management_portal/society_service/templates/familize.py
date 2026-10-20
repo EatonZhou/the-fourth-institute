@@ -19,7 +19,7 @@ from .registry import ApplyContext, TemplateError, result
 
 TEMPLATE_ID = "template_" + hashlib.sha256(b"builtin-template:family").hexdigest()[:12]
 REWIRED_KINDS = frozenset({"route", "target"})
-ROLE_STOP_WAIT_SECONDS = 30.0
+ROLE_STOP_WAIT_SECONDS = 90.0
 RESIDENT_ROLES = [
     {"key": "steward", "title": "steward", "from": "new", "provider": "codex"},
     {"key": "router", "title": "Router", "from": "new", "provider": "codex",

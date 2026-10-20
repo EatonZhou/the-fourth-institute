@@ -11,8 +11,8 @@ from management_common.service_socket import SERVICE_RESTART_WAIT_SECONDS, conne
 from .config import execution_service_socket, portal_instance
 
 
-DEFAULT_REQUEST_TIMEOUT_SECONDS = 30.0
-CONTROL_REQUEST_TIMEOUT_SECONDS = 5.0
+DEFAULT_REQUEST_TIMEOUT_SECONDS = 90.0
+CONTROL_REQUEST_TIMEOUT_SECONDS = 15.0
 
 
 class ExecutionServiceUnavailable(RuntimeError):

@@ -32,7 +32,7 @@ class Worker:
         started = time.monotonic()
         if not store.acquire_lease(self.holder):
             return
-        self.lease_until = started + 30
+        self.lease_until = started + store.LEASE_SECONDS
         self.lease_lost.clear()
         finished = threading.Event()
 
@@ -41,7 +41,7 @@ class Worker:
                 try:
                     renewed = time.monotonic()
                     if store.renew_lease(self.holder):
-                        self.lease_until = renewed + 30
+                        self.lease_until = renewed + store.LEASE_SECONDS
                         continue
                 except Exception:
                     LOGGER.warning('脚本协调器续租失败', exc_info=True)
@@ -72,7 +72,7 @@ class Worker:
                     store.delete_expired(identifier)
         finally:
             finished.set()
-            renewal.join(timeout=1)
+            renewal.join(timeout=3)
 
     def reconcile(self, identifier, record):
         root = runtime.RUN_ROOT / identifier
@@ -130,7 +130,7 @@ class Worker:
     def stop(self):
         self.stop_event.set()
         if self.thread:
-            self.thread.join(timeout=5)
+            self.thread.join(timeout=15)
             if self.thread.is_alive():
                 return  # Keep the lease until this process ends or it expires.
         store.release_lease(self.holder)

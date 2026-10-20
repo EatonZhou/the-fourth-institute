@@ -51,7 +51,7 @@ class FamilyResourceProjectionWorker:
             if self._stop.wait(self._poll_seconds):
                 return
 
-    def stop(self, timeout=5):
+    def stop(self, timeout=15):
         self._stop.set()
         if self._thread is not None:
             self._thread.join(timeout)

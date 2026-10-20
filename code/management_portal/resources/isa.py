@@ -270,7 +270,7 @@ def update_resource_type(inv: Invocation) -> dict[str, Any]:
 
 
 # Updates and unregisters still wait for their queued index refresh.
-INDEX_WAIT = {"wait_for_index": True, "index_timeout": 20}
+INDEX_WAIT = {"wait_for_index": True, "index_timeout": 60}
 
 
 @contextmanager

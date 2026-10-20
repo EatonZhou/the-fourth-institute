@@ -309,7 +309,7 @@ def _target(root: Path, relative_path: str, *, must_exist: bool = False) -> Path
 def _git_bytes(
     checkout: Path,
     *args: str,
-    timeout: int = 30,
+    timeout: int = 90,
     allowed_returncodes: Iterable[int] = (0,),
     git_config: Iterable[str] = (),
     env_overrides: dict[str, str] | None = None,
@@ -361,7 +361,7 @@ def _git_bytes(
 def _git(
     checkout: Path,
     *args: str,
-    timeout: int = 30,
+    timeout: int = 90,
     allowed_returncodes: Iterable[int] = (0,),
     git_config: Iterable[str] = (),
     env_overrides: dict[str, str] | None = None,
@@ -731,7 +731,7 @@ def _network_git(
     actor: str = "",
     credential: dict[str, Any] | None = None,
     remember: bool = False,
-    timeout: int = 120,
+    timeout: int = 360,
     credential_root: str | Path | None = None,
     credential_key_path: str | Path | None = None,
     ssh_identity_file: Path | None = None,
@@ -2522,7 +2522,7 @@ def _commit_llm_config(provider_id: str) -> dict[str, Any]:
     return {
         "api_id": clean_provider,
         "model": model,
-        "timeout_s": max(10, int(api.get("timeout_s") or 120)),
+        "timeout_s": max(10, int(api.get("timeout_s") or 360)),
         "max_retries": max(0, min(3, int(api.get("max_retries") or 0))),
         "default_parameters": dict(api.get("default_parameters") or {}),
     }
@@ -3377,7 +3377,7 @@ def commit_repo_changes(
         ]
         if clean_description:
             args.extend(["-m", clean_description])
-        _git(checkout, *args, timeout=60)
+        _git(checkout, *args, timeout=180)
         return {
             "id": repo_id,
             "commit": _head_commit(checkout),
@@ -3644,7 +3644,7 @@ def commit_scoped_git_changes(
         ]
         if clean_description:
             args.extend(["-m", clean_description])
-        _git(workspace, *args, timeout=60)
+        _git(workspace, *args, timeout=180)
         return {"commit": _head_commit(workspace), "status": scoped_git_status(workspace)}
 
 
@@ -3821,7 +3821,7 @@ def sync_repo(
             output = _git(
                 checkout,
                 *args,
-                timeout=120,
+                timeout=360,
                 git_config=("credential.helper=",),
             )
         return {

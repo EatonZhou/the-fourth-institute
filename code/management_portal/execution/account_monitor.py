@@ -206,4 +206,4 @@ class AccountMonitor:
         self.stopped.set()
         self.wakeup.set()
         if self.thread.is_alive():
-            self.thread.join(timeout=7)
+            self.thread.join(timeout=21)

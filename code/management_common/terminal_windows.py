@@ -178,7 +178,7 @@ class NativeConsole:
                 self.api.ClosePseudoConsole(self.hpc)
                 self.hpc = w.HANDLE()
             if self.reader:
-                self.reader.join(timeout=2)
+                self.reader.join(timeout=6)
             for name in ('input_read', 'input_write', 'output_read', 'output_write'):
                 self._close_handle(name)
             if self.info.hProcess:
@@ -280,7 +280,7 @@ class WindowsTerminal:
             from management_common.process_runtime import terminate_process_tree
             self._closing.set()
             try:
-                terminate_process_tree(self.process, timeout=1.5, force=True)
+                terminate_process_tree(self.process, timeout=4.5, force=True)
             finally:
                 for stream in (self.process.stdin, self.process.stdout):
                     stream.close()
@@ -338,7 +338,7 @@ class WindowsTerminal:
                     if not count:
                         raise BrokenPipeError('ConPTY input transport closed')
                     data = data[count:]
-            if not pending['event'].wait(5):
+            if not pending['event'].wait(15):
                 raise TimeoutError('ConPTY input acknowledgement timed out; do not replay input')
             if pending['error']:
                 raise RuntimeError(pending['error'])
@@ -386,14 +386,14 @@ class WindowsTerminal:
             if self.process.poll() is None:
                 try:
                     self._command({'close': True})
-                    self.process.wait(timeout=1.5)
+                    self.process.wait(timeout=4.5)
                 except (OSError, RuntimeError, subprocess.TimeoutExpired):
                     pass
         finally:
-            terminate_process_tree(self.process, timeout=1.5, force=True)
+            terminate_process_tree(self.process, timeout=4.5, force=True)
             for stream in (self.process.stdin, self.process.stdout):
                 stream.close()
-            self._reader.join(timeout=2)
+            self._reader.join(timeout=6)
             self._closed = True
 
 

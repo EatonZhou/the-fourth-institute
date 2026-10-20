@@ -54,12 +54,12 @@ def require_released_commit(commit: object) -> str:
         raise ValueError('Release 检出目录不存在')
     resolved = subprocess.run(
         ['git', 'rev-parse', '--verify', f'{commit}^{{commit}}'],
-        cwd=RELEASE_ROOT, capture_output=True, text=True, timeout=15)
+        cwd=RELEASE_ROOT, capture_output=True, text=True, timeout=45)
     if resolved.returncode or resolved.stdout.strip() != commit:
         raise ValueError('publication_commit 不是有效的 Git commit')
     result = subprocess.run(
         ['git', 'merge-base', '--is-ancestor', commit, f'refs/heads/{RELEASE_BRANCH}'],
-        cwd=RELEASE_ROOT, capture_output=True, text=True, timeout=15)
+        cwd=RELEASE_ROOT, capture_output=True, text=True, timeout=45)
     if result.returncode == 1:
         raise ValueError('publication_commit 尚未进入 Release 分支')
     if result.returncode:

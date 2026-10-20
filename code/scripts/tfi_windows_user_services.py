@@ -152,7 +152,7 @@ class WindowsServiceControl:
                         stdin=subprocess.DEVNULL, stdout=output, stderr=output,
                         creationflags=subprocess.CREATE_NO_WINDOW | subprocess.CREATE_NEW_PROCESS_GROUP,
                         close_fds=True)
-                deadline = time.monotonic() + 20
+                deadline = time.monotonic() + 60
                 while time.monotonic() < deadline:
                     if self.status(name)["active"] == "active":
                         break
@@ -173,7 +173,7 @@ class WindowsServiceControl:
                 continue
             record = json.loads(path.read_text(encoding="utf-8"))
             path.with_suffix(".stop").write_text(str(record["created"]), encoding="utf-8")
-            deadline = time.monotonic() + 100
+            deadline = time.monotonic() + 300
             while self.status(name)["pid"] and time.monotonic() < deadline:
                 time.sleep(0.2)
             if self.status(name)["pid"]:
@@ -205,11 +205,11 @@ def supervise(path):
                 if value["component"] == "postgres":
                     subprocess.run([str(Path(target["pg_bin"]) / "pg_ctl.exe"), "stop", "-D",
                                     str(database_root(target)), "-m", "fast", "-w", "-t", "60"],
-                                   env=env, check=True, timeout=70)
+                                   env=env, check=True, timeout=210)
                 break
             time.sleep(0.2)
     finally:
-        terminate_process_tree(process, timeout=10)
+        terminate_process_tree(process, timeout=30)
         record_path.unlink(missing_ok=True)
         record_path.with_suffix(".stop").unlink(missing_ok=True)
 

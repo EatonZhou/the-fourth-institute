@@ -592,7 +592,7 @@ def restart_portal(inv: Invocation) -> dict[str, Any]:
         command += ["--component", component]
     if instance == "dev":
         # The Dev request is queued and returns at once.
-        completed = subprocess.run(command, capture_output=True, text=True, cwd=str(REPO_ROOT), timeout=60)
+        completed = subprocess.run(command, capture_output=True, text=True, cwd=str(REPO_ROOT), timeout=180)
         if completed.returncode != 0:
             raise InstructionError("instruction.failed", (completed.stderr or completed.stdout).strip()[-500:] or "重启请求没有被接受")
         try:
@@ -609,7 +609,7 @@ def restart_portal(inv: Invocation) -> dict[str, Any]:
     completed = subprocess.run(
         ['systemd-run', '--user', '--collect', f'--unit={request_id}',
          f'--working-directory={REPO_ROOT}', *command],
-        capture_output=True, text=True, timeout=60,
+        capture_output=True, text=True, timeout=180,
     )
     if completed.returncode:
         raise InstructionError('instruction.failed', (completed.stderr or completed.stdout).strip()[-500:])

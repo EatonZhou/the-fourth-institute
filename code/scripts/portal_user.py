@@ -65,7 +65,7 @@ def _post(base, path, payload, token="", accept="application/json"):
 
 def request(base, path, payload, token=""):
     try:
-        with build_opener(NoRedirect()).open(_post(base, path, payload, token), timeout=60) as response:
+        with build_opener(NoRedirect()).open(_post(base, path, payload, token), timeout=180) as response:
             return json.load(response)
     except HTTPError as exc:
         raise RuntimeError(f"HTTP {exc.code}: {exc.read(8192).decode(errors='replace')}") from None
@@ -95,7 +95,7 @@ def watch(base, payload, token):
     while True:
         try:
             req = _post(base, "/api/instructions/execute", {**payload, "arguments": arguments}, token, "text/event-stream")
-            with build_opener(NoRedirect()).open(req, timeout=330) as response:
+            with build_opener(NoRedirect()).open(req, timeout=990) as response:
                 for name, value in events(response):
                     if name == "batch":
                         for item in (value or {}).get("items") or []:
@@ -157,7 +157,7 @@ def main():
         parser.error(str(error))
     if args.command == "guide":
         req = Request(base + "/guide/agent.md", headers={"Accept": "text/markdown"})
-        with build_opener(NoRedirect()).open(req, timeout=60) as response:
+        with build_opener(NoRedirect()).open(req, timeout=180) as response:
             print(response.read().decode("utf-8"))
         return
     if args.credentials is None:

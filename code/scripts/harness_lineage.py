@@ -137,7 +137,7 @@ def release_rules_current() -> bool:
     try:
         result = subprocess.run(
             ["git", "diff", "--quiet", "main", "HEAD", "--", *EVOLUTION_SOURCES],
-            cwd=release_tree, capture_output=True, timeout=10,
+            cwd=release_tree, capture_output=True, timeout=30,
         )
         return result.returncode == 0
     except (OSError, subprocess.TimeoutExpired):

@@ -63,7 +63,7 @@ def notify(message):
                                              array.array('i', [write_fd]))])
                 os.close(write_fd)
                 write_fd = -1
-                if not select.select([read_fd], [], [], 5)[0]:
+                if not select.select([read_fd], [], [], 15)[0]:
                     raise TimeoutError('systemd did not acknowledge ExecutionService handover')
             finally:
                 os.close(read_fd)
@@ -97,7 +97,7 @@ class TimingRelay:
         # No provider transport remains at this point. A broken observation
         # recipient still cannot prevent a retiring process from exiting.
         try:
-            self.queue.put(None, timeout=1)
+            self.queue.put(None, timeout=3)
         except queue.Full:
             pass
         self.thread.join(5)
@@ -159,7 +159,7 @@ class ServiceLifecycle:
                 kill_on_owner_exit=False,
             )
             child.close()
-            parent.settimeout(60)
+            parent.settimeout(180)
             # One-byte readiness avoids consuming timing records from the stream.
             if parent.recv(1) != b'R':
                 raise RuntimeError('ExecutionService successor exited before readiness')
@@ -170,7 +170,7 @@ class ServiceLifecycle:
             child.close()
             try:
                 if process is not None:
-                    process_runtime.terminate_process_tree(process, timeout=5)
+                    process_runtime.terminate_process_tree(process, timeout=15)
             finally:
                 if self.server.timing_proxy is not None:
                     self.server.timing_proxy.cancel_handover()

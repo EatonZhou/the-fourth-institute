@@ -185,7 +185,7 @@ class JevProvider:
         }
         if _json_size(payload) > MAX_REQUEST_BYTES:
             raise ValueError("Jev request exceeds the 2 MB Portal limit")
-        timeout = timeout_seconds if timeout_seconds is not None else item.get("timeout_s", 30)
+        timeout = timeout_seconds if timeout_seconds is not None else item.get("timeout_s", 90)
         attempts = 1 + max(0, int(item.get("max_retries") or 0) if max_retries is None else int(max_retries))
         for attempt in range(attempts):
             if is_cancelled and is_cancelled():
@@ -197,7 +197,7 @@ class JevProvider:
 
                 response = self.registry.request(
                     self.provider_id, JEV_ENDPOINT, payload,
-                    timeout_seconds=max(1.0, min(float(timeout), 120.0)), configuration=item,
+                    timeout_seconds=max(1.0, min(float(timeout), 360.0)), configuration=item,
                     **({"observe_transport": observe} if observe_transport else {}),
                 )
                 break

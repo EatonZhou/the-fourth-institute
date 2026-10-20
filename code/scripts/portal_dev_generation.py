@@ -65,7 +65,7 @@ def source_paths(root: Path = ROOT) -> list[Path]:
             text=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
-            timeout=5,
+            timeout=15,
         )
     except (OSError, subprocess.SubprocessError):
         candidates = [

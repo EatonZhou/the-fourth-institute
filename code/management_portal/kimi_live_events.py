@@ -42,7 +42,7 @@ class KimiLiveStream:
         while not self.stop.is_set():
             try:
                 port = self.url.port or (443 if self.url.scheme == "https" else 80)
-                sock = socket.create_connection((self.url.hostname or "localhost", port), timeout=10)
+                sock = socket.create_connection((self.url.hostname or "localhost", port), timeout=30)
                 if self.url.scheme == "https":
                     sock = ssl.create_default_context().wrap_socket(sock, server_hostname=self.url.hostname)
                 try:
@@ -110,7 +110,7 @@ class KimiLiveStream:
         self.stop.set()
         if self.transport:
             self.transport.close()
-        self.thread.join(timeout=2)
+        self.thread.join(timeout=6)
 
 
 @dataclass

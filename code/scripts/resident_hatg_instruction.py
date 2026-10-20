@@ -112,7 +112,7 @@ def execute(resident_id: str, body: dict[str, Any]) -> dict[str, Any]:
     delay = 1.0
     while True:
         try:
-            with urlopen(_request(resident_id, body, accept="application/json"), timeout=120) as response:
+            with urlopen(_request(resident_id, body, accept="application/json"), timeout=360) as response:
                 payload = json.loads(response.read().decode("utf-8"))
         except urllib.error.HTTPError as exc:
             payload = _read_error(exc)
@@ -159,7 +159,7 @@ def watch(resident_id: str, body: dict[str, Any]) -> int:
     while True:
         try:
             with urlopen(_request(resident_id, {**body, "arguments": arguments}, accept="text/event-stream"),
-                         timeout=300) as response:
+                         timeout=900) as response:
                 delay = 1.0
                 for name, value in _events(response):
                     if name == "batch":

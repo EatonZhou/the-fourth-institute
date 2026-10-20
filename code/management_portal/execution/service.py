@@ -220,7 +220,7 @@ class ExecutionService:
         # Optional live projection: never wait through a service restart or
         # observe a peer instance's scheduling policy.
         return self.client.request("scheduler.quota_states", {"bindings": dict(bindings)},
-                                   timeout=1.0, restart_wait=0.0, retry_on_unavailable=False)
+                                   timeout=3.0, restart_wait=0.0, retry_on_unavailable=False)
 
     def forget_binding_quota_overrides(self, binding_ids: list[str]) -> dict[str, Any]:
         return self.client.request(
@@ -474,7 +474,7 @@ class ExecutionService:
                         "include_result": True,
                         "quiet_reply": True,
                     },
-                    timeout=wait_seconds + 2,
+                    timeout=wait_seconds + 6,
                 )
                 last_control_plane_error = ""
             except (ExecutionServiceUnavailable, ExecutionResponseUnknown) as exc:
@@ -1090,7 +1090,7 @@ class ExecutionServiceServer(LocalServiceSocketMixin, socketserver.ThreadingTCPS
                     for item in params.get("capabilities") or []
                     if str(item)
                 ],
-                "lease_seconds": int(params.get("lease_seconds") or 90),
+                "lease_seconds": int(params.get("lease_seconds") or 270),
             }
             claim_params["timeout_seconds"] = min(
                 30.0,
@@ -1123,7 +1123,7 @@ class ExecutionServiceServer(LocalServiceSocketMixin, socketserver.ThreadingTCPS
                 self._required(params, "execution_id"),
                 worker_id=self._required(params, "worker_id"),
                 claim_token=self._required(params, "claim_token"),
-                lease_seconds=int(params.get("lease_seconds") or 90),
+                lease_seconds=int(params.get("lease_seconds") or 270),
             )
         if method == "scheduler.handover.prepare":
             return self.scheduler.prepare_handover(

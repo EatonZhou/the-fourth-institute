@@ -25,7 +25,7 @@ EnvironmentFile=-@PORTAL_POSTGRES_ENV_FILE@
 ExecStart=@PORTAL_GROUP_COMMAND@@PORTAL_INSTANCES_ROOT@/dev/runtime-venv/bin/python @PORTAL_SOURCE_ROOT@/scripts/run_portal_shared_component.py society-service
 Restart=always
 RestartSec=2
-TimeoutStopSec=180
+TimeoutStopSec=540
 
 [Install]
 WantedBy=portal-release-execution.target

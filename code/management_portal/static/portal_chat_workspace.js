@@ -11,7 +11,7 @@
   const FORWARD_REFERENCE_SPEAKER_RE = /^([A-Za-z][A-Za-z0-9_. -]{0,79}):[ \t]*(.*)$/;
   const WORKSPACE_PASTE_HANDLED_FLAG = "__portalWorkspacePasteHandled";
   const DEFAULT_RESIDENT_HISTORY_PAGE_SIZE = 50;
-  const RESIDENT_INITIAL_LOAD_TIMEOUT_MS = 30_000;
+  const RESIDENT_INITIAL_LOAD_TIMEOUT_MS = 90_000;
   const RESIDENT_CHAT_WORKSPACE_SCHEMA = "portal.chat_workspace.v3";
 
   function residentHandoffCards(value) {
@@ -3806,7 +3806,7 @@
       rows.push(["API 账号", catalog.account_id || catalog.backend_route_id || "—"]);
       rows.push(["上下文", data.prompt_context?.history?.enabled ? window.PortalI18n.t("携带会话历史") : window.PortalI18n.t("单轮独立")]);
       if (catalog.api_settings.view === "jev") rows.push(["Jev 判定", `${Object.keys(data.backend_options?.parameters?.questions || {}).length} ${window.PortalI18n.t("个问题")}`]);
-      rows.push(["高级", `${data.backend_options?.timeout_seconds ?? 120}s · ${data.backend_options?.max_retries ?? 0} ${window.PortalI18n.t("次重试")}`]);
+      rows.push(["高级", `${data.backend_options?.timeout_seconds ?? 360}s · ${data.backend_options?.max_retries ?? 0} ${window.PortalI18n.t("次重试")}`]);
     }
     return rows;
   }
@@ -3969,7 +3969,7 @@
       providerCatalog = route;
       currentSettings = apiAccount.value === initialApiRoute ? {...initialSettings} : {
         ...initialSettings, model: route.default_model,
-        backend_options: {parameters: {}, timeout_seconds: Math.min(initialSettings.backend_options?.timeout_seconds ?? 120, route.api_settings.timeout_max), max_retries: initialSettings.backend_options?.max_retries ?? 0},
+        backend_options: {parameters: {}, timeout_seconds: Math.min(initialSettings.backend_options?.timeout_seconds ?? 360, route.api_settings.timeout_max), max_retries: initialSettings.backend_options?.max_retries ?? 0},
       };
       setOptions(model, route.models, currentSettings.model, `${route.default_model || "Provider"} (default)`);
       apiFields.open(currentSettings, route);

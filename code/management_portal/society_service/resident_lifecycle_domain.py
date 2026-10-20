@@ -342,7 +342,7 @@ def _compensate_resident_registration(operation_id: str, step: dict[str, Any]) -
             service.submit(request)
         snapshot = service.wait(
             request.execution_id, actor=step["actor"],
-            timeout_seconds=CODEX_COMPACT_TIMEOUT_SECONDS + 30,
+            timeout_seconds=CODEX_COMPACT_TIMEOUT_SECONDS + 90,
         )
         result = snapshot.get("result") or {}
         if (

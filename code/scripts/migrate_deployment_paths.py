@@ -150,7 +150,7 @@ def service_keys(services: list[dict]) -> set[tuple[str, str]]:
 def systemctl(scope: str, *args: str) -> str:
     # The caller must be attached to the SOURCE user's bus, not root's user bus.
     command = ['systemctl', '--user' if scope == 'user' else '--system', *args]
-    result = subprocess.run(command, capture_output=True, text=True, timeout=60)
+    result = subprocess.run(command, capture_output=True, text=True, timeout=180)
     if result.returncode: raise RuntimeError(f'{scope} service inventory unavailable (exit {result.returncode})')
     return result.stdout
 

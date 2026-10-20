@@ -31,7 +31,7 @@ SOCKETS = Path(os.environ.get("PORTAL_OPENCODE_SOCKETS", str(portal_path("stagin
 BRIDGE = Path(__file__).with_name("opencode_bridge.py")
 SESSION_ID = re.compile(r"opencode-[0-9a-f]{32}")
 # An on-demand compaction writes one summary with the session's model.
-COMPACT_TIMEOUT_SECONDS = 590.0
+COMPACT_TIMEOUT_SECONDS = 1770.0
 # OpenCode's delegation tool; its subagent runs in a child session.
 SUBAGENT_TOOL = "task"
 # How the client gives the bridge the route's key (``opencode_bridge``).
@@ -155,7 +155,7 @@ class OpenCodeClient:
         root.mkdir(exist_ok=True, mode=0o700)
         with (root / "launch.lock").open("a+") as lock, lock_stream(lock):
             try:
-                transport._request("health", response_timeout=1)
+                transport._request("health", response_timeout=3)
                 return transport
             except NativeAgentUnavailable:
                 pass
@@ -189,12 +189,12 @@ class OpenCodeClient:
                 process = spawn_process([sys.executable, "-I", str(BRIDGE), str(launch)], cwd=params["cwd"], env=environment,
                                            stdin=subprocess.DEVNULL, stdout=log, stderr=log, kill_on_owner_exit=False)
             try:
-                deadline = time.monotonic() + 60
+                deadline = time.monotonic() + 180
                 while time.monotonic() < deadline:
                     if process.poll() is not None:
                         raise NativeAgentUnavailable(f"OpenCode startup failed; inspect {log_path}")
                     try:
-                        transport._request("health", response_timeout=1)
+                        transport._request("health", response_timeout=3)
                         return transport
                     except NativeAgentUnavailable:
                         time.sleep(.2)
@@ -237,7 +237,7 @@ class OpenCodeClient:
         """Every model request of the session since ``since_ms``, from OpenCode's own record."""
 
         try:
-            return self._transport(session_id)._request("usage/read", {"since_ms": since_ms}, response_timeout=60)
+            return self._transport(session_id)._request("usage/read", {"since_ms": since_ms}, response_timeout=180)
         except NativeAgentUnavailable:
             return {"requests": []}
 
@@ -245,7 +245,7 @@ class OpenCodeClient:
         """The newest compaction OpenCode committed in the session, ``{}`` when it has none."""
 
         try:
-            return self._transport(session_id)._request("compaction/read", {}, response_timeout=60)
+            return self._transport(session_id)._request("compaction/read", {}, response_timeout=180)
         except NativeAgentUnavailable:
             return {}
 
@@ -263,7 +263,7 @@ class OpenCodeClient:
         try:
             return self._transport(session_id)._request("turn/steer", {
                 "session_id": session_id, "turn_id": turn_id, "text": text, "control_id": control_id,
-            }, response_timeout=10)
+            }, response_timeout=30)
         except NativeAgentUnavailable:
             return {"steered": False, "reason": "opencode_unavailable"}
 
@@ -274,7 +274,7 @@ class OpenCodeClient:
             return {"stopped": False, "reason": "unknown_subagent"}
         try:
             return self._transport(session_id)._request("subagent/stop", {
-                "session_id": session_id, "tool_use_id": tool_use_id}, response_timeout=10)
+                "session_id": session_id, "tool_use_id": tool_use_id}, response_timeout=30)
         except NativeAgentUnavailable:
             return {"stopped": False, "reason": "opencode_unavailable"}
         except NativeAgentError as error:
@@ -288,7 +288,7 @@ class OpenCodeClient:
             return {"interrupted": False}
         try:
             return self._transport(session_id)._request(
-                "turn/interrupt", {"session_id": session_id, "turn_id": turn_id}, response_timeout=10)
+                "turn/interrupt", {"session_id": session_id, "turn_id": turn_id}, response_timeout=30)
         except NativeAgentUnavailable:
             return {"interrupted": False}
 
@@ -301,12 +301,12 @@ class OpenCodeClient:
         with (STATE / session_id / "launch.lock").open("a+") as lock, lock_stream(lock):
             transport = self._transport(session_id)
             try:
-                result = transport._request("session/close", {"session_id": session_id}, response_timeout=10)
-                deadline = time.monotonic() + 15
+                result = transport._request("session/close", {"session_id": session_id}, response_timeout=30)
+                deadline = time.monotonic() + 45
                 while time.monotonic() < deadline:
                     time.sleep(0.05)
                     try:
-                        transport._request("health", response_timeout=1)
+                        transport._request("health", response_timeout=3)
                     except NativeAgentUnavailable:
                         return result
                 raise RuntimeError("OpenCode native release has not completed")

@@ -99,7 +99,7 @@ class KnowledgeArchiveBackendClient:
             headers["Content-Type"] = "application/json; charset=utf-8"
         req = urllib.request.Request(f"{self.base_url}{path}", data=data, headers=headers, method=method)
         try:
-            with urllib.request.urlopen(req, timeout=180) as resp:
+            with urllib.request.urlopen(req, timeout=540) as resp:
                 return self._decode_response(resp.read())
         except urllib.error.HTTPError as exc:
             error = self._decode_response(exc.read()).get("error") or str(exc)

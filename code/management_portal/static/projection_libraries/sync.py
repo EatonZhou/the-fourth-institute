@@ -27,7 +27,7 @@ PACKAGES = {
 
 def npm_json(*arguments):
     result = subprocess.run(["npm", *arguments, "--json", "--registry=https://registry.npmjs.org", "--prefer-offline"],
-                            check=True, capture_output=True, text=True, timeout=90)
+                            check=True, capture_output=True, text=True, timeout=270)
     return json.loads(result.stdout)
 
 

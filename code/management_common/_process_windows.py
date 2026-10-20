@@ -219,7 +219,7 @@ def spawn_process(*args, tree_id=None, kill_on_owner_exit=True, **kwargs):
                 if process is not None:
                     # The child never ran if assignment failed; no descendants exist.
                     process.kill()
-                    process.wait(timeout=5)
+                    process.wait(timeout=15)
             finally:
                 try:
                     job.terminate()
@@ -269,7 +269,7 @@ def process_tree_alive(process=None, *, tree_id=None):
             job.close()
 
 
-def terminate_process_tree(process, timeout=5, force=False, *, tree_id=None):
+def terminate_process_tree(process, timeout=15, force=False, *, tree_id=None):
     managed = process is not None and not isinstance(process, int)
     if managed and getattr(process, "_portal_tree_stopped", False):
         return

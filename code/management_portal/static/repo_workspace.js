@@ -3909,7 +3909,7 @@
       await postJson("/api/resource-index/refresh", {
         adapters: ["resource_registry"],
         wait: true,
-        timeout: 15,
+        timeout: 45,
       });
       await loadRepos({ keepWorkspace: false });
       showToast(window.PortalI18n.t("Repo 资源与 checkout 状态已刷新。"), "success");

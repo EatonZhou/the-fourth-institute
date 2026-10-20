@@ -6,7 +6,7 @@ function installPortalPageBoot(config) {
   // Embedded Portal documents share sessionStorage; never reset a sibling's budget.
   const storageKey = `portal.page-boot.retry.v1:${initialUrl}`;
   const maxRetries = 2;
-  const deadlineMs = 30000;
+  const deadlineMs = 90000;
   const assets = new Map(config.assets.map(url => [new URL(url, initialUrl).href, false]));
   const readyRoots = new WeakSet();
   const failures = new Set();

@@ -67,7 +67,7 @@ def run_shared_search_batch(
     prompt: str,
     batch_id: str,
     plan_fingerprint: str,
-    timeout_seconds: float = 120.0,
+    timeout_seconds: float = 360.0,
     cancellation_requested: Callable[[], bool] | None = None,
     on_assigned: Callable[[dict[str, Any]], None] | None = None,
 ) -> dict[str, Any]:
@@ -125,7 +125,7 @@ def run_shared_search_batch(
 
 def run_shared_search_turn(
     *, job: Mapping[str, Any], surface: str, prompt: str,
-    timeout_seconds: float = 120.0,
+    timeout_seconds: float = 360.0,
     cancellation_requested: Callable[[], bool] | None = None,
     on_assigned: Callable[[dict[str, Any]], None] | None = None,
 ) -> dict[str, Any]:

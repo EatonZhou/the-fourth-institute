@@ -62,7 +62,7 @@ class ResidentExecutionFailed(RuntimeError):
         # What the failed turn's execution counted for its Provider requests.
         self.usage = dict(usage or {})
 
-CODEX_COMPACT_TIMEOUT_SECONDS = int(os.getenv("RESIDENT_AGENT_CODEX_COMPACT_TIMEOUT_SECONDS", "600"))
+CODEX_COMPACT_TIMEOUT_SECONDS = int(os.getenv("RESIDENT_AGENT_CODEX_COMPACT_TIMEOUT_SECONDS", "1800"))
 RESIDENT_RESOURCE_ACTIVITY_TOTAL_CHARS = 48_000
 LINEAGE_FOLDER_SCHEMA_VERSION = "lineage-folder-v3"
 RESIDENT_INSTRUCTIONS_FILE = "resident.md"

@@ -153,7 +153,7 @@ def _run_backend_session_operation(
             resident_id=_resident_id(exact_record),
 
             persist_messages=False,
-            timeout_seconds=CODEX_COMPACT_TIMEOUT_SECONDS + 30,
+            timeout_seconds=CODEX_COMPACT_TIMEOUT_SECONDS + 90,
         )
     else:
         execution_id = request.execution_id
@@ -178,7 +178,7 @@ def _run_backend_session_operation(
         snapshot = service.wait(
             execution_id,
             actor=actor,
-            timeout_seconds=CODEX_COMPACT_TIMEOUT_SECONDS + 30,
+            timeout_seconds=CODEX_COMPACT_TIMEOUT_SECONDS + 90,
         )
     result = (
         snapshot.get("result")

@@ -188,7 +188,7 @@ def start_and_check(api, state):
         control.start(api.unit_name(target, component))
         if component == "postgres":
             api.wait_database(target)
-    deadline = time.monotonic() + 120
+    deadline = time.monotonic() + 360
     while True:
         result = api.observed_status(state)
         if result["status"] == "installed":

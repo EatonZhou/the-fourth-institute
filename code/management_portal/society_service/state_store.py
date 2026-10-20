@@ -1690,7 +1690,7 @@ class LineageDataStore:
         self,
         *,
         limit: int = 50,
-        lease_seconds: float = 30.0,
+        lease_seconds: float = 90.0,
         resident_id: str = "",
     ) -> list[dict[str, Any]]:
         now = time.time()

@@ -65,7 +65,7 @@ class LifecycleStore:
         with self.db.read() as db:
             return db.execute("SELECT hashtextextended(%s,0)", (scope_id,)).fetchone()[0]
 
-    def seal(self, scope_id, *, timeout=30):
+    def seal(self, scope_id, *, timeout=90):
         # Never queue an exclusive lock behind a request: it may still need a
         # nested RPC's shared lock to finish. Wait without blocking that RPC.
         deadline = time.monotonic() + timeout

@@ -16,7 +16,7 @@ from management_common.site_config import read_site_config
 
 
 def _watch_pending() -> int:
-    deadline = time.monotonic() + 24 * 60 * 60
+    deadline = time.monotonic() + 72 * 60 * 60
     while True:
         result = activate_pending_once()
         print(json.dumps(result, ensure_ascii=False, sort_keys=True), flush=True)

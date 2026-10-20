@@ -19,7 +19,7 @@ EnvironmentFile=-@PORTAL_POSTGRES_ENV_FILE@
 ExecStart=@PORTAL_INSTANCES_ROOT@/dev/runtime-venv/bin/python -m management_portal.portal_deployment_router
 Restart=always
 RestartSec=2
-TimeoutStopSec=15
+TimeoutStopSec=45
 
 [Install]
 WantedBy=default.target

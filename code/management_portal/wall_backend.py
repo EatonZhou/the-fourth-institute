@@ -1273,7 +1273,7 @@ def stop_runtime() -> None:
         thread = _RUNTIME_THREAD
         _RUNTIME_STARTED, _RUNTIME_STOP, _RUNTIME_THREAD = False, None, None
     if thread:
-        thread.join(timeout=2)
+        thread.join(timeout=6)
 
 
 def web_lifespan():

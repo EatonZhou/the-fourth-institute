@@ -158,7 +158,7 @@
       find('[data-api-system]').value = settings.prompt_context?.system_prompt || '';
       find('[data-api-presets]').value = JSON.stringify(settings.prompt_context?.messages || [], null, 2);
       find('[data-api-timeout]').max = catalog.api_settings.timeout_max;
-      find('[data-api-timeout]').value = settings.backend_options?.timeout_seconds ?? 120;
+      find('[data-api-timeout]').value = settings.backend_options?.timeout_seconds ?? 360;
       find('[data-api-retries]').value = settings.backend_options?.max_retries ?? 0;
       originalParameters = clone(settings.backend_options?.parameters || {});
       const jev = catalog.api_settings.view === 'jev';

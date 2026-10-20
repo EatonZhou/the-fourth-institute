@@ -88,7 +88,7 @@ class RecursiveFileChangeWatcher:
                 os.close(fd)
             except OSError:
                 pass
-        self._thread.join(timeout=2)
+        self._thread.join(timeout=6)
 
     def status(self) -> dict[str, object]:
         with self._lock:

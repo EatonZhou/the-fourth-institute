@@ -233,6 +233,6 @@ class ResourceHttp:
         else:
             adapters = []
         try:
-            return self.respond(request, 202, self.resource_service().refresh(adapters=adapters, path=str(payload.get('path') or '').strip(), wait=bool(payload.get('wait')), timeout=float(payload.get('timeout') or 60)))
+            return self.respond(request, 202, self.resource_service().refresh(adapters=adapters, path=str(payload.get('path') or '').strip(), wait=bool(payload.get('wait')), timeout=float(payload.get('timeout') or 180)))
         except Exception as exc:
             return self.resource_error(request, exc)

@@ -348,7 +348,7 @@ class _CoalescingReadCache:
         key: object,
         builder,
         *,
-        timeout: float = 30.0,
+        timeout: float = 90.0,
         cold_value: object = _NO_COLD_READ_VALUE,
         stale_transform=None,
         allow_stale: bool = True,
@@ -549,7 +549,7 @@ def _cached_active_agents(actor: str) -> dict:
     if not owns_refresh:
         if stale is not missing:
             return {**stale, "refreshing": True}
-        return refresh.result(timeout=15.0)
+        return refresh.result(timeout=45.0)
 
     def build() -> dict:
         try:
@@ -1254,7 +1254,7 @@ def _society_service_status_payload() -> dict:
     lifecycle = read_component_state(_PORTAL_INSTANCE, "lineage")
     try:
         if isinstance(_SOCIETY_SERVICE, SocietyServiceClient):
-            health = _SOCIETY_SERVICE.health(timeout=0.75)
+            health = _SOCIETY_SERVICE.health(timeout=2.25)
         else:
             health = _SOCIETY_SERVICE.health()
     except Exception as exc:
@@ -1297,7 +1297,7 @@ def _society_service_status_payload() -> dict:
 def _resource_service_status_payload() -> dict:
     lifecycle = read_component_state(_PORTAL_INSTANCE, "resource")
     try:
-        health = get_resource_service().status(timeout=0.75)
+        health = get_resource_service().status(timeout=2.25)
     except Exception as exc:
         announced_restart = lifecycle.get("state") == "restarting"
         return {
@@ -2497,7 +2497,7 @@ def _notify_resource_index(
     resource_type: str = "",
     kind: str = "unknown",
     wait: bool = False,
-    timeout: float = 20.0,
+    timeout: float = 60.0,
 ) -> dict[str, object]:
     try:
         return get_resource_service().notify_source_changed(

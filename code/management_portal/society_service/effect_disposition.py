@@ -22,7 +22,7 @@ def activation_guard(lineage_id: str, activation_key: str):
     key = int.from_bytes(hashlib.sha256(
         f"{database.schema}:effect-activation:{lineage_id}:{activation_key}".encode()
     ).digest()[:8], "big", signed=True)
-    with psycopg.connect(database.dsn, autocommit=True, connect_timeout=10) as connection:
+    with psycopg.connect(database.dsn, autocommit=True, connect_timeout=30) as connection:
         acquired = connection.execute("SELECT pg_try_advisory_lock(%s)", (key,)).fetchone()[0]
         yield acquired
 

@@ -53,17 +53,17 @@ MCP_SERVER_NAME = "portal"
 TOOL_NAME_PREFIX = f"mcp__{MCP_SERVER_NAME}__"
 GATEWAY_ROOT = Path(os.environ.get("PORTAL_KIMI_TOOLS_ROOT", str(portal_path("staging_root") / "portal_locks" / "kimi-tools")))
 CATALOG_ENVIRONMENT = "PORTAL_KIMI_TOOLS_CATALOG"
-CALL_TIMEOUT_SECONDS = 330.0
+CALL_TIMEOUT_SECONDS = 990.0
 # A Worker handover leaves the session's prompt running without a Worker for
 # a moment; a call made then waits this long for the next Worker's gateway.
-GATEWAY_WAIT_SECONDS = 180.0
+GATEWAY_WAIT_SECONDS = 540.0
 # How long the server waits for the note of a call that has arrived.
-NOTE_WAIT_SECONDS = 3.0
+NOTE_WAIT_SECONDS = 9.0
 # How long a call waits for an identical call of another session to be picked up.
-ANNOUNCE_WAIT_SECONDS = 20.0
+ANNOUNCE_WAIT_SECONDS = 60.0
 # A note nobody picked up belongs to a call that was never made.
-NOTE_STALE_SECONDS = 60.0
-HOOK_TIMEOUT_SECONDS = 30
+NOTE_STALE_SECONDS = 180.0
+HOOK_TIMEOUT_SECONDS = 90
 
 
 def catalog_path() -> Path:
@@ -213,7 +213,7 @@ def _connect(path: Path, *, wait: float) -> socket.socket:
     deadline = time.monotonic() + wait
     while True:
         try:
-            return connect_local(path, timeout=5)
+            return connect_local(path, timeout=15)
         except (FileNotFoundError, ConnectionRefusedError):
             if time.monotonic() >= deadline:
                 raise

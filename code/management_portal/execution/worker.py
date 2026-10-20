@@ -64,7 +64,7 @@ class ExecutionWorker:
 
     def claim(
         self,
-        lease_seconds: int = 90,
+        lease_seconds: int = 270,
         *,
         wait_seconds: float = 15.0,
     ) -> dict[str, Any]:
@@ -77,7 +77,7 @@ class ExecutionWorker:
         self,
         claim: dict[str, Any],
         *,
-        lease_seconds: int = 90,
+        lease_seconds: int = 270,
     ) -> dict[str, Any]:
         execution = (
             claim.get("execution")
@@ -121,7 +121,7 @@ class ExecutionWorker:
                     turn_controls.put(dict(control))
 
         def heartbeat_loop() -> None:
-            heartbeat_interval = max(5.0, float(lease_seconds) / 3)
+            heartbeat_interval = max(5.0, min(30.0, float(lease_seconds) / 3))
             lease_deadline = time.monotonic() + float(lease_seconds)
 
             def interrupt_cancelled_turn() -> None:
@@ -398,21 +398,21 @@ class ExecutionWorker:
             except (ExecutionClaimOwnershipLost, ExecutionServiceUnavailable):
                 ownership_lost.set()
         if ownership_lost.is_set():
-            heartbeat.join(timeout=2)
+            heartbeat.join(timeout=6)
             return {
                 "execution_id": execution_id,
                 "status": "claim_lost",
                 "reason": "execution claim ownership changed",
             }
         if deferred_reason:
-            heartbeat.join(timeout=2)
+            heartbeat.join(timeout=6)
             return {
                 "execution_id": execution_id,
                 "status": "requeued",
                 "reason": deferred_reason,
             }
         if result is None:
-            heartbeat.join(timeout=2)
+            heartbeat.join(timeout=6)
             raise RuntimeError("execution produced no terminal result")
         try:
             snapshot = self.scheduler.finish(result, claim_token)
@@ -426,7 +426,7 @@ class ExecutionWorker:
             # Publishing the terminal state wakes the blocking control wait,
             # so the heartbeat can be reclaimed without paying its join
             # timeout on every successful execution.
-            heartbeat.join(timeout=2)
+            heartbeat.join(timeout=6)
         return {
             "execution_id": execution_id,
             "status": result.status,
@@ -483,9 +483,9 @@ class ExecutionWorkerDaemon:
             float(
                 os.getenv(
                     "PORTAL_EXECUTION_WORKER_DRAIN_TIMEOUT_SECONDS",
-                    "60",
+                    "180",
                 )
-                or 60
+                or 180
             ),
         )
         self._draining_started_at = 0.0
@@ -655,7 +655,7 @@ class ExecutionWorkerDaemon:
 
     def _wait_for_service(
         self,
-        timeout_seconds: float = 30.0,
+        timeout_seconds: float = 90.0,
     ) -> dict[str, Any]:
         deadline = time.monotonic() + max(1.0, timeout_seconds)
         last_error = ""

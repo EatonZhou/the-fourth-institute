@@ -25,7 +25,7 @@ from management_common.file_permissions import atomic_write_private_bytes, read_
 from management_common.site_compatibility import compatibility_value
 
 _SCHEMA = "portal.local-ipc.v1"
-_HANDSHAKE_TIMEOUT = 5.0
+_HANDSHAKE_TIMEOUT = 15.0
 
 
 def rendezvous_path(path: str | Path) -> Path:

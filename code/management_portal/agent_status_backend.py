@@ -30,13 +30,13 @@ GPU_STATUS_SCRIPT = Path(os.getenv(
     "AGENT_STATUS_GPU_SCRIPT",
     str(PORTAL_ROOT / "scripts" / "thor_gpu_status.py"),
 )).expanduser()
-GPU_STATUS_TIMEOUT_SECONDS = float(os.getenv("AGENT_STATUS_GPU_TIMEOUT_SECONDS", "20"))
+GPU_STATUS_TIMEOUT_SECONDS = float(os.getenv("AGENT_STATUS_GPU_TIMEOUT_SECONDS", "60"))
 GPU_STATUS_CACHE_SECONDS = int(os.getenv("AGENT_STATUS_GPU_CACHE_SECONDS", "60"))
 GPU_BUSY_UTIL_PERCENT = float(os.getenv("AGENT_STATUS_GPU_BUSY_UTIL_PERCENT", "50"))
 GPU_BUSY_MEMORY_PERCENT = float(os.getenv("AGENT_STATUS_GPU_BUSY_MEMORY_PERCENT", "50"))
 GPU_EMPTY_UTIL_PERCENT = float(os.getenv("AGENT_STATUS_GPU_EMPTY_UTIL_PERCENT", "5"))
 GPU_EMPTY_MEMORY_PERCENT = float(os.getenv("AGENT_STATUS_GPU_EMPTY_MEMORY_PERCENT", "5"))
-DISK_STATUS_TIMEOUT_SECONDS = float(os.getenv("AGENT_STATUS_DISK_TIMEOUT_SECONDS", "8"))
+DISK_STATUS_TIMEOUT_SECONDS = float(os.getenv("AGENT_STATUS_DISK_TIMEOUT_SECONDS", "24"))
 DISK_STATUS_CACHE_SECONDS = int(os.getenv("AGENT_STATUS_DISK_CACHE_SECONDS", "300"))
 DISK_WARN_USED_PERCENT = float(os.getenv("AGENT_STATUS_DISK_WARN_USED_PERCENT", "85"))
 DISK_CRITICAL_USED_PERCENT = float(os.getenv("AGENT_STATUS_DISK_CRITICAL_USED_PERCENT", "92"))
@@ -508,7 +508,7 @@ def _disk_status_placeholder(resource: dict[str, Any]) -> dict[str, Any]:
 
 def _run_disk_script(resource: dict[str, Any], script: str, args: list[str]) -> subprocess.CompletedProcess[str]:
     kind = str(resource.get("kind") or "local")
-    timeout = max(2.0, DISK_STATUS_TIMEOUT_SECONDS)
+    timeout = max(6.0, DISK_STATUS_TIMEOUT_SECONDS)
     if kind == "ssh":
         ssh_config = str(resource.get("ssh_config") or "").strip()
         ssh_host = str(resource.get("ssh_host") or "").strip()
@@ -521,7 +521,7 @@ def _run_disk_script(resource: dict[str, Any], script: str, args: list[str]) -> 
             "-o",
             "BatchMode=yes",
             "-o",
-            f"ConnectTimeout={max(1, min(5, int(timeout)))}",
+            f"ConnectTimeout={max(1, min(15, int(timeout)))}",
             ssh_host,
             "sh",
             "-s",

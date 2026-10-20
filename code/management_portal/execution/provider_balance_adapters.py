@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from typing import Any
 from management_portal.ai_provider_registry import shared_ai_provider_registry
 
-PROVIDER_BALANCE_TIMEOUT_SECONDS = float(os.getenv("AGENT_STATUS_PROVIDER_TIMEOUT_SECONDS", "8"))
+PROVIDER_BALANCE_TIMEOUT_SECONDS = float(os.getenv("AGENT_STATUS_PROVIDER_TIMEOUT_SECONDS", "24"))
 
 def _now_iso():
     return datetime.now(timezone.utc).isoformat()

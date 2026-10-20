@@ -301,7 +301,7 @@ class ResourceServiceServer(LocalServiceSocketMixin, DrainingStreamServer):
         callbacks = {"instruction-maintenance": self.instruction_maintenance.stop}
         thread = self._auto_registration_thread
         if thread is not None:
-            callbacks["resource-registration"] = lambda: thread.join(timeout=2.0)
+            callbacks["resource-registration"] = lambda: thread.join(timeout=6.0)
         stop_workers(callbacks)
         super().server_close()
         if self.endpoint.is_unix:

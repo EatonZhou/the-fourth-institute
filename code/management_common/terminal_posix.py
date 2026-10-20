@@ -82,5 +82,5 @@ class PosixTerminal:
         if self.master_fd >= 0:
             os.close(self.master_fd)
             self.master_fd = -1
-        terminate_process_tree(self.process, timeout=1.5)
+        terminate_process_tree(self.process, timeout=4.5)
         self._closed = True

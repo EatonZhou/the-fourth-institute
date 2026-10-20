@@ -13,7 +13,7 @@ Environment=PORTAL_KIMI_CODE_CONFIG_TEMPLATE=@PORTAL_SOURCE_ROOT@/systemd/portal
 ExecStart=/usr/bin/python3 -m management_portal.kimi_code_server
 Restart=always
 RestartSec=2
-TimeoutStopSec=30
+TimeoutStopSec=90
 
 [Install]
 WantedBy=default.target

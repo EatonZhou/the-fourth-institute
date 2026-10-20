@@ -81,7 +81,7 @@ DECLARATIONS = (
         P("provider", description="服务商名称"),
         P("routes", "array", "明确绑定的服务路线；每项包含 backend 和 route_id", items={"type": "object"}),
         P("default_parameters", "object", "协议允许的默认生成参数"),
-        P("timeout_seconds", "number", "单次请求超时秒数，默认 120", minimum=1),
+        P("timeout_seconds", "number", "单次请求超时秒数，默认 360", minimum=1),
         P("retries", "integer", "请求失败后的重试次数，默认 0", minimum=0),
         P("headers", "object", "不含密钥"), P("enabled", "boolean", "是否启用，默认 true；停用后不能调用"),
     ), (MODEL_API,), mutates=True, owner="execution"),

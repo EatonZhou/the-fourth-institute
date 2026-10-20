@@ -547,7 +547,7 @@
         state = { ...state, closePending: false };
         options.onCloseTimeout?.(snapshot(), context);
         emit("close-timeout", { context });
-      }, Number(options.closeTimeout || 2500));
+      }, Number(options.closeTimeout || 7500));
       return false;
     };
     const dialog = global.PortalUI.createDialogController({
@@ -605,10 +605,10 @@
         ? options.title(normalized, context)
         : clean(options.title) || window.PortalI18n.t("Resource detail");
       if (!dialog.isOpen()) dialog.open(context);
-      const configuredReadyTimeout = Number(options.readyTimeout ?? 15_000);
+      const configuredReadyTimeout = Number(options.readyTimeout ?? 45_000);
       const readyTimeout = Number.isFinite(configuredReadyTimeout) && configuredReadyTimeout > 0
         ? configuredReadyTimeout
-        : 15_000;
+        : 45_000;
       readyTimer = global.setTimeout(() => failReady(), readyTimeout);
       activeFrameLocation = frameLocation;
       restoredFrameNavigation = false;

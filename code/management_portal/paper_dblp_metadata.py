@@ -28,7 +28,7 @@ def _query(query, limit):
         headers={"Accept": "application/sparql-results+json", "User-Agent": "TFIPortalPaper/0.1"},
     )
     try:
-        with urllib.request.urlopen(request, timeout=30) as response:
+        with urllib.request.urlopen(request, timeout=90) as response:
             content = response.read(MAX_RESPONSE_BYTES + 1)
     except urllib.error.HTTPError as error:
         raise DblpMetadataError(f"DBLP 结构化数据接口返回 HTTP {error.code}，本地缓存未改动。") from error

@@ -196,10 +196,10 @@ class PortalSmtpMailer:
         context = ssl.create_default_context()
         if self.security == "ssl":
             client: smtplib.SMTP = smtplib.SMTP_SSL(
-                self.host, self.port, timeout=15, context=context
+                self.host, self.port, timeout=45, context=context
             )
         else:
-            client = smtplib.SMTP(self.host, self.port, timeout=15)
+            client = smtplib.SMTP(self.host, self.port, timeout=45)
         with client:
             if self.security == "starttls":
                 client.starttls(context=context)

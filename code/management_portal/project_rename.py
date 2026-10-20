@@ -52,7 +52,7 @@ MOUNTINFO = Path("/proc/self/mountinfo")
 SYMLINK_ROOTS = (PROJECTS_ROOT, SHARE_ROOT / "Agents")
 KIMI_HOME = (portal_path("staging_root") / "shared" / "kimi-code-portal")
 MAX_REWRITE_BYTES = 16 * 1024 * 1024
-SCAN_TIMEOUT_SECONDS = 600
+SCAN_TIMEOUT_SECONDS = 1800
 BUSY_WORK_STATES = frozenset({"running", "stopping"})
 
 PROJECT_ID = project_registry.PROJECT_ID
@@ -416,7 +416,7 @@ def rewrite_database(change: ProjectRename, rewriter: Rewriter, *, apply: bool) 
     database = portal_database(schema="lineage")
     with (database.transaction() if apply else database.snapshot()) as connection:
         if apply:
-            connection.execute("SET LOCAL lock_timeout = '20s'")
+            connection.execute("SET LOCAL lock_timeout = '60s'")
         schemas = _portal_schemas(connection)
         columns: dict[tuple[str, str], list[tuple[str, str]]] = {}
         for row in connection.execute(

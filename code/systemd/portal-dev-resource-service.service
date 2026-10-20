@@ -24,7 +24,7 @@ Environment=PORTAL_RESOURCE_DATABASE_SCHEMA=resource_dev
 ExecStart=@PORTAL_GROUP_COMMAND@@PORTAL_INSTANCES_ROOT@/dev/runtime-venv/bin/python -m management_portal.resources.server
 Restart=always
 RestartSec=2
-TimeoutStopSec=30
+TimeoutStopSec=90
 
 [Install]
 WantedBy=portal-dev-execution.target

@@ -116,7 +116,7 @@ def _run_git(
     from .repo_workspace_backend import _git, GitOperationError
 
     try:
-        return _git(checkout, *args, timeout=15, env_overrides=env_overrides)
+        return _git(checkout, *args, timeout=45, env_overrides=env_overrides)
     except GitOperationError as exc:
         if not check:
             return ""
@@ -998,7 +998,7 @@ def read_resolved_resource_content(
             ["git", "-c", "safe.directory=*", "-C", str(checkout), "cat-file", "blob", spec],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            timeout=15,
+            timeout=45,
             check=False,
         )
         if proc.returncode != 0:

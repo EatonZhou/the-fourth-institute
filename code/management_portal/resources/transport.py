@@ -20,14 +20,14 @@ from .rpc_auth import DOMAIN_PROJECTION_METHODS, RPC_ACTOR_METHODS, load_rpc_sig
 class ResourceServiceClient:
     """Thin ResourceService RPC client; ID parsing remains a pure local contract."""
 
-    _RPC_GRACE_SECONDS = 5.0
-    _INDEX_READY_SECONDS = 30.0
+    _RPC_GRACE_SECONDS = 15.0
+    _INDEX_READY_SECONDS = 90.0
 
     def __init__(
         self,
         socket_path: Path | str | None = None,
         *,
-        timeout: float = 10.0,
+        timeout: float = 30.0,
     ) -> None:
         self.socket_path = Path(socket_path or resource_service_socket())
         self.timeout = max(0.1, float(timeout))
@@ -66,7 +66,7 @@ class ResourceServiceClient:
 
     def prepare_permissions(self, *, actor: str) -> dict[str, Any]:
         # Reads every User, Project, Lineage object and indexed resource once; allow it minutes.
-        return self._exchange("permission.prepare", {"actor": actor}, timeout=max(self.timeout, 600.0))
+        return self._exchange("permission.prepare", {"actor": actor}, timeout=max(self.timeout, 1800.0))
 
     def new_id(self, resource_type: str, existing_ids: Iterable[str] = ()) -> str:
         return self._identity.new_id(resource_type, existing_ids)
@@ -311,7 +311,7 @@ class ResourceServiceClient:
                 "actor": actor,
                 "max_bytes": int(max_bytes),
             },
-            timeout=max(self.timeout, 60.0),
+            timeout=max(self.timeout, 180.0),
             expect_content=True,
         )
 
@@ -325,7 +325,7 @@ class ResourceServiceClient:
         return self._exchange(
             "resource.open_content",
             {"address": address, "actor": actor, "max_bytes": int(max_bytes)},
-            timeout=max(self.timeout, 60.0),
+            timeout=max(self.timeout, 180.0),
             expect_content="optional",
         )
 
@@ -345,7 +345,7 @@ class ResourceServiceClient:
                 "start": int(start),
                 "end": int(end),
             },
-            timeout=max(self.timeout, 60.0),
+            timeout=max(self.timeout, 180.0),
             expect_content=True,
         )
 
@@ -389,7 +389,7 @@ class ResourceServiceClient:
         result = self._exchange(
             "resource.collaboration.sync",
             {"descriptor": dict(descriptor), "actor": "society-service"},
-            timeout=max(self.timeout, 60.0),
+            timeout=max(self.timeout, 180.0),
         )
         return dict(result or {})
 
@@ -400,7 +400,7 @@ class ResourceServiceClient:
         result = self._exchange(
             "resource.collaboration.sync-many",
             {"resources": [dict(item) for item in resources], "actor": "society-service"},
-            timeout=max(self.timeout, 60.0),
+            timeout=max(self.timeout, 180.0),
         )
         return dict(result or {})
 
