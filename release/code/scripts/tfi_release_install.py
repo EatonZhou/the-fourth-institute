@@ -937,8 +937,18 @@ def main(argv=None):
             if Path(python).absolute() != Path(sys.executable).absolute():
                 # Database maintenance must use this site's verified packages,
                 # even when the operator starts from the base Python runtime.
+                environment = clean_environment(target)
+                # This is still the operator's service controller, not an
+                # application service. Keep its user bus and service directory;
+                # child services continue to use clean_environment(target).
+                for key in ("HOME", "USERPROFILE", "XDG_CONFIG_HOME", "XDG_RUNTIME_DIR",
+                            "DBUS_SESSION_BUS_ADDRESS"):
+                    if key in os.environ:
+                        environment[key] = os.environ[key]
+                    else:
+                        environment.pop(key, None)
                 os.execve(python, [python, str(Path(__file__).resolve()),
-                                  *(sys.argv[1:] if argv is None else argv)], clean_environment(target))
+                                  *(sys.argv[1:] if argv is None else argv)], environment)
             from scripts import tfi_release_upgrade
             # Pass this module even when executed as __main__, preserving one
             # shared installation owner and platform adapter.

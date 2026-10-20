@@ -88,6 +88,11 @@ def drain(resident_id):
         for row in rows:
             if row["message_id"]:
                 lineage_message_events.wake_watchers(record, row["message_id"])
+        # Checkpoint retention runs during admission with identity-only records.
+        # Filesystem cleanup belongs to this durable, hydrated publication step;
+        # a cleanup failure retains the work without rejecting an accepted input.
+        from .resident_media_domain import cleanup_expired_input_images
+        cleanup_expired_input_images(record)
         if not settled:
             return False
     store.database.write(lambda connection: connection.execute(

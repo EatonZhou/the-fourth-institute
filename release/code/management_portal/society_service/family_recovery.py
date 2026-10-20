@@ -142,7 +142,14 @@ def handle(facade: Mapping[str, Any], message_id: str) -> bool:
         if entry.get("status") == "routing":
             # Finish admission if the process stopped after saving the retry intent.
             previous = _state(repository, facade_id, entry["request_message_id"])
-            if previous["state"] in {"failed", "cancelled"} and _instant(previous.get("updated_at")) <= _instant(entry.get("requested_at")):
+            if previous["state"] == "cancelled":
+                # Withdrawal wins over a saved retry intent, regardless of timestamps.
+                entry.update(status="observing")
+                with get_lineage_data_store().family_relays.transaction(lineage_id, facade_id) as state:
+                    state.setdefault("recoveries", {})[message_id] = entry
+                repository.set_input_state(facade_id, message_id, "completed")
+                return True
+            if previous["state"] == "failed" and _instant(previous.get("updated_at")) <= _instant(entry.get("requested_at")):
                 repository.reopen_input(facade_id, entry["request_message_id"])
             return True
         if entry.get("status") not in {"selecting", "selected"}:
@@ -161,7 +168,7 @@ def handle(facade: Mapping[str, Any], message_id: str) -> bool:
             else:
                 current = request_status(facade, root)
                 try:
-                    if current["state"] in {"failed", "cancelled"}:
+                    if current["state"] == "failed":
                         if current.get("resident_id"):
                             member = _find_resident(current["resident_id"])
                             if not member or member.get("deleted_at"):
@@ -175,7 +182,7 @@ def handle(facade: Mapping[str, Any], message_id: str) -> bool:
                             entry.update(status="routing", route_occurrence=message_id, resumed=True)
                             with get_lineage_data_store().family_relays.transaction(lineage_id, facade_id) as state:
                                 state.setdefault("recoveries", {})[message_id] = entry
-                            if _state(repository, facade_id, root)["state"] in {"failed", "cancelled"}:
+                            if _state(repository, facade_id, root)["state"] == "failed":
                                 repository.reopen_input(facade_id, root)
                     else:
                         entry.update(status="observing")

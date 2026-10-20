@@ -123,9 +123,6 @@ def retain_input_checkpoint(record: Mapping[str, Any], job: Mapping[str, Any], c
             if item.get("message_id") in completed:
                 item.pop("item", None)
         state["checkpoints"] = [*kept, entry][-MAX_CHECKPOINTS:]
-    from .resident_media_domain import cleanup_expired_input_images
-    from .invariant_locks import defer_until_state_unlock
-    defer_until_state_unlock(lambda: cleanup_expired_input_images(dict(record)))
 
 
 def recent_executions(resident_id: str) -> list[dict[str, Any]]:

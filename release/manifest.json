@@ -4879,7 +4879,7 @@
   "unresolved": [],
   "code": {
     "path": "code",
-    "sha256": "7dd46409917fb34edff98040ce59a145f04592792e8662ff2bb883cbe73868db"
+    "sha256": "486f588a6d69ba12d186d58aa6274212dc3ce63e735166e1c06a988bd8e36f0a"
   },
   "database": {
     "path": "database/distribution.sql",
@@ -4976,8 +4976,8 @@
     },
     {
       "path": "code/SPEC.md",
-      "sha256": "18cbaf0550c07e412ba0b6b77e5b06b07c6f4e242ff504d2b8f1307eda743086",
-      "size": 13872
+      "sha256": "512add734244601bb76f46fec5f0626b0e593e640324ddeb2814680c5a370f25",
+      "size": 13914
     },
     {
       "path": "code/THIRD_PARTY_NOTICES.md",
@@ -8051,8 +8051,8 @@
     },
     {
       "path": "code/management_portal/society_service/family_recovery.py",
-      "sha256": "9aaf856cea24ace16ab18de807ce0c5bdcc870013b0ec6b141557a64fa3cd449",
-      "size": 20269
+      "sha256": "ee77411cd8769b9e99a645a895333930939db1a7ebd2ae2dd3cccf66ddbcac22",
+      "size": 20696
     },
     {
       "path": "code/management_portal/society_service/family_resource_projection.py",
@@ -8686,8 +8686,8 @@
     },
     {
       "path": "code/management_portal/society_service/resident_delivery_work.py",
-      "sha256": "7f44248b3b5abf98700a1e45a1029cba5eb9a6abb979aa7e43a5b46801de5c38",
-      "size": 4302
+      "sha256": "c3c41fdbe5975ea1048c5de339d7841e8fe58ebcd180f16fb92b849a30dc6ebe",
+      "size": 4663
     },
     {
       "path": "code/management_portal/society_service/resident_directory_domain.py",
@@ -8771,8 +8771,8 @@
     },
     {
       "path": "code/management_portal/society_service/resident_input_recovery.py",
-      "sha256": "ac60905094c9a25a62ac0ee426ed2cfae104ca1b9c7550a9dd15b10b304915ec",
-      "size": 32004
+      "sha256": "cfa81fc8cc920eef79b3651d1b62d74445f9d056517fd303625337c9264c7eb0",
+      "size": 31797
     },
     {
       "path": "code/management_portal/society_service/resident_input_scope.py",
@@ -8816,8 +8816,8 @@
     },
     {
       "path": "code/management_portal/society_service/resident_media_domain.py",
-      "sha256": "acf6bd333e9503fe5d07638941d840b45615aeedf7477f2d891e5c3128d41bb6",
-      "size": 16294
+      "sha256": "ca6c2d6b3096099bc22818b604f5339e2d0546fbe91c81519348bc8422979873",
+      "size": 15849
     },
     {
       "path": "code/management_portal/society_service/resident_message_contract.py",
@@ -15471,8 +15471,8 @@
     },
     {
       "path": "code/scripts/tfi_release_install.py",
-      "sha256": "0a1ba9a49477fceaa39139a19b6b492c0a55a8bb6df58ec87996061659f8d00b",
-      "size": 52371
+      "sha256": "62df8857223b3e22ccb3b4dbec539b4faed84225803c2719e10cd404aaaa8d88",
+      "size": 52967
     },
     {
       "path": "code/scripts/tfi_release_native_dependencies.py",
@@ -42492,7 +42492,64 @@
           "Real isolated installation, model setup and Resident replies",
           "Input-media retention regression for admission records and deleted Residents"
         ]
+      },
+      {
+        "applied_at": "2026-10-20T08:06:42.438206+00:00",
+        "base_manifest_sha256": "15d491d75f81c2e1ab9c69c4d7b7d8dd75a46c2e131689dde7ab60a2ea7c8825",
+        "source_release_commit": "9f661df8648a50eaeada883e4956fb9e92dab483",
+        "host_fix_commits": [
+          "9d3bb192bd6b7877445eaa372772c20747b3ac82",
+          "5051d1ae6e306a93e8f9b1dd9888ebdaaae54af5"
+        ],
+        "public_fix_backported_from": "e376f6b77752bc7b4d9865b08ace1af2bf46b800",
+        "summary": "Synchronize host and public v0.9 fixes: preserve cancelled Family requests; move input-image cleanup to durable hydrated delivery work, superseding the previous catalog fallback; backport Provider readiness UI to host. Preserve the operator service-manager context when upgrade/recover switches to the instance Python.",
+        "changed_files": [
+          {
+            "path": "code/SPEC.md",
+            "before_sha256": "18cbaf0550c07e412ba0b6b77e5b06b07c6f4e242ff504d2b8f1307eda743086",
+            "after_sha256": "512add734244601bb76f46fec5f0626b0e593e640324ddeb2814680c5a370f25"
+          },
+          {
+            "path": "code/management_portal/society_service/family_recovery.py",
+            "before_sha256": "9aaf856cea24ace16ab18de807ce0c5bdcc870013b0ec6b141557a64fa3cd449",
+            "after_sha256": "ee77411cd8769b9e99a645a895333930939db1a7ebd2ae2dd3cccf66ddbcac22"
+          },
+          {
+            "path": "code/management_portal/society_service/resident_delivery_work.py",
+            "before_sha256": "7f44248b3b5abf98700a1e45a1029cba5eb9a6abb979aa7e43a5b46801de5c38",
+            "after_sha256": "c3c41fdbe5975ea1048c5de339d7841e8fe58ebcd180f16fb92b849a30dc6ebe"
+          },
+          {
+            "path": "code/management_portal/society_service/resident_input_recovery.py",
+            "before_sha256": "ac60905094c9a25a62ac0ee426ed2cfae104ca1b9c7550a9dd15b10b304915ec",
+            "after_sha256": "cfa81fc8cc920eef79b3651d1b62d74445f9d056517fd303625337c9264c7eb0"
+          },
+          {
+            "path": "code/management_portal/society_service/resident_media_domain.py",
+            "before_sha256": "acf6bd333e9503fe5d07638941d840b45615aeedf7477f2d891e5c3128d41bb6",
+            "after_sha256": "ca6c2d6b3096099bc22818b604f5339e2d0546fbe91c81519348bc8422979873"
+          },
+          {
+            "path": "code/scripts/tfi_release_install.py",
+            "before_sha256": "0a1ba9a49477fceaa39139a19b6b492c0a55a8bb6df58ec87996061659f8d00b",
+            "after_sha256": "62df8857223b3e22ccb3b4dbec539b4faed84225803c2719e10cd404aaaa8d88"
+          }
+        ],
+        "selection_unchanged": true,
+        "database_unchanged": true,
+        "validation": [
+          "Targeted admission, durable cleanup, Family maintenance and withdrawn-request recovery regressions passed",
+          "Chromium delayed-Provider regression passed against the exact backported JavaScript",
+          "Installer and upgrade regression checks passed; real reproduction showed healthy HTTP but unavailable user service bus after old re-exec"
+        ]
       }
     ]
+  },
+  "upgrade": {
+    "from_manifest_sha256": [
+      "15d491d75f81c2e1ab9c69c4d7b7d8dd75a46c2e131689dde7ab60a2ea7c8825",
+      "b7dc5d21164b7ea4ea1075c9b3e594cf502af23ba2f5a1541dd8d50a9d6596e5"
+    ],
+    "migrations": []
   }
 }
