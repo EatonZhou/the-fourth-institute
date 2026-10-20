@@ -4,8 +4,6 @@ import json
 import logging
 import re
 import secrets
-from functools import lru_cache
-from pathlib import Path
 
 from management_portal.avatar_store import SPRITE_RARITIES, AvatarStore, avatar_root
 from management_portal.shared_state import exclusive_file_lock
@@ -54,13 +52,10 @@ class ResidentAvatarStore(AvatarStore):
         return self.read(resident_id)
 
 
-@lru_cache(maxsize=8)
-def _store(root: str) -> ResidentAvatarStore:
-    return ResidentAvatarStore(Path(root))
-
-
-def resident_avatar_store() -> ResidentAvatarStore:
-    return _store(str(avatar_root("resident")))
+def resident_avatar_store():
+    from management_portal.avatar_database import DatabaseAvatarStore
+    return DatabaseAvatarStore(ResidentAvatarStore(avatar_root("resident")), "resident",
+                               default_sprite=_draw_sprite, persist_default=True)
 
 
 def get_avatar(resident_id: str) -> dict[str, object] | None:

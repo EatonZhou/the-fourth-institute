@@ -1,9 +1,8 @@
 """Avatars of Users, Residents, Lineages and Projects.
 
-An avatar is one of the 42 ocean sprites or an uploaded image, normalized to a
-PNG of at most 256 px.  Each subject has one JSON record in its store's root.
-An uploaded image is kept beside the record and named by its content hash, so
-the image address of one version never changes and a browser may keep it.
+An avatar is one of the 42 ocean sprites or an uploaded PNG of at most 256 px.
+Runtime factories use PostgreSQL for both records and bytes. The file store
+below remains the legacy importer. Image URLs retain their content hashes.
 """
 from __future__ import annotations
 
@@ -16,7 +15,6 @@ import os
 import re
 import tempfile
 import warnings
-from functools import lru_cache
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlencode
@@ -267,13 +265,9 @@ class ScopeAvatarStore(AvatarStore):
         return {kind: object_id}
 
 
-@lru_cache(maxsize=8)
-def _scope_store(root: str) -> ScopeAvatarStore:
-    return ScopeAvatarStore(Path(root))
-
-
-def scope_avatar_store() -> ScopeAvatarStore:
-    return _scope_store(str(avatar_root("scope")))
+def scope_avatar_store():
+    from management_portal.avatar_database import DatabaseAvatarStore
+    return DatabaseAvatarStore(ScopeAvatarStore(avatar_root("scope")), "scope")
 
 
 def get_scope_avatar(kind: str, object_id: str) -> dict[str, Any] | None:

@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import hashlib
-from functools import lru_cache
-from pathlib import Path
 
 from management_common.principal import actor_principal
 from management_portal.avatar_store import MAX_IMAGE_BYTES, MAX_JSON_BYTES, SPRITE_RARITIES, AvatarStore, avatar_root, sprite
@@ -36,14 +34,11 @@ class UserAvatarStore(AvatarStore):
         return self.read(username) or sprite(0)
 
 
-@lru_cache(maxsize=8)
-def _store(root):
-    return UserAvatarStore(Path(root))
-
-
 def get_user_avatar(username):
     return user_avatar_store().get(username)
 
 
 def user_avatar_store():
-    return _store(str(avatar_root('user')))
+    from management_portal.avatar_database import DatabaseAvatarStore
+    return DatabaseAvatarStore(UserAvatarStore(avatar_root('user')), 'user',
+                               default_sprite=lambda: 0)
