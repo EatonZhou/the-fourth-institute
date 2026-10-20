@@ -91,7 +91,7 @@
             "live.controlled"
           ],
           "risk": "external-side-effects",
-          "task_prompt": "使用当前 已配置并核验的受测实例、真实 Chromium 和框架提供的 <test-actor> 会话，按真实 UI 操作；不 mock API、不注入业务状态。所有自建对象保留完整 [TAU:<run_id>:<module_id>] 标记；没有声明 lineage_fixture 的用例复用固定 TAU Lineage，不能新建团队。每个动作等待对应提交和可见结果，记录精确 ID、脱敏回执、真实耗时并查看截图。已受理工作沿同一 ID 观察至终态，不超时重投。\n在独立临时 Lineage 创建规则 Filter，通过编辑器输入不以 packet. 开头的字段路径，确认明确拒绝、未提交、草稿保留。改为 packet.events.0.type 等于 manual.triggered；通过仅作用于本用例组件的过期版本制造一次真实保存拒绝，确认标题、条件和可重试保存按钮仍在。按页面恢复版本后保存同一草稿，核对 GetLineage 的配置、标题及刷新后的显示。无法安全产生拒绝分支时报告该分支证据不足。\n成功、失败和取消均清理本用例创建的对象与辅助进程，保留证据；禁止清理既有业务对象。各验收点分别报告实际结果与未覆盖项。",
+          "task_prompt": "使用当前 已配置并核验的受测实例、真实 Chromium 和框架提供的 <test-actor> 会话，按真实 UI 操作；不 mock API、不注入业务状态。所有自建对象保留完整 [TAU:<run_id>:<module_id>] 标记；没有声明 lineage_fixture 的用例复用固定 TAU Lineage，不能新建团队。每个动作等待对应提交和可见结果，记录精确 ID、脱敏回执、真实耗时并查看截图。已受理工作沿同一 ID 观察至终态，不超时重投。\n在独立临时 Lineage 创建规则 Filter，通过编辑器输入不以 packet. 开头的字段路径，确认明确拒绝、未提交、草稿保留。改为 packet.events.0.type 等于 manual.triggered；通过仅作用于本用例组件的过期版本制造一次真实保存拒绝，确认标题、条件和可重试保存按钮仍在。保留冲突后的原编辑器和原草稿，核对页面已重读最新版本后，再次点击同一表单的保存按钮；如果重读失败，记录该失败并通过保存按钮重读重试。此步骤不得整页刷新、关闭重开编辑器或重新输入字段，不能用重新输入后的成功代替原草稿重试。原草稿保存成功后再刷新，核对 GetLineage 的配置、标题及刷新后的显示。无法安全产生拒绝分支时报告该分支证据不足。\n成功、失败和取消均清理本用例创建的对象与辅助进程，保留证据；禁止清理既有业务对象。各验收点分别报告实际结果与未覆盖项。",
           "lineage_fixture": "需要隔离创建和修改 Filter 及其版本，不改固定团队的业务图。"
         }
       ]
@@ -275,34 +275,6 @@
           ],
           "risk": "no-external-side-effects",
           "task_prompt": "使用当前 已配置并核验的受测实例、真实 Chromium 和框架提供的 <test-actor> 会话，按真实 UI 操作；不 mock API、不注入业务状态。所有自建对象保留完整 [TAU:<run_id>:<module_id>] 标记；没有声明 lineage_fixture 的用例复用固定 TAU Lineage，不能新建团队。每个动作等待对应提交和可见结果，记录精确 ID、脱敏回执、真实耗时并查看截图。已受理工作沿同一 ID 观察至终态，不超时重投。\n打开 <test-actor> 可读且有正式门面绑定的 Workbench 投影，使用真实页面资源加载和原生 Chat 面板。等待 Chat 就绪，核对显示和公开目标均为该绑定的 resident_id/lineage_id，面板含原生消息、输入与操作控件，没有缺失脚本或 pageerror。切换侧栏后 Chat 仍可用；不替换 Chat package，不发送消息或改绑定。没有可读样本时报告前置不足。\n成功、失败和取消均清理本用例创建的对象与辅助进程，保留证据；禁止清理既有业务对象。各验收点分别报告实际结果与未覆盖项。"
-        }
-      ]
-    },
-    {
-      "id": "test_5c87bf65cd75",
-      "key": "tests/cases/ui/portal_workbench.spec.js::editor catalog refresh preserves the expanded creation menu",
-      "title": "编辑器目录刷新保留展开的创建菜单",
-      "description": "独立真实使用验收：编辑器目录刷新保留展开的创建菜单。由浏览器脚本迁移并保留测试身份，执行证据由 TAU 实际运行产生。",
-      "importance": "P2",
-      "module": "workbench.panels",
-      "aspects": [
-        "ui",
-        "behavior"
-      ],
-      "is_design_point": false,
-      "design_refs": [],
-      "lifecycle": "active",
-      "implementations": [
-        {
-          "id": "impl-tau-test_5c87bf65cd75",
-          "runner": "tau",
-          "entrypoint": "tau:browser-migration-test_5c87bf65cd75",
-          "source": "tests/cases/tau_cases.json",
-          "profiles": [
-            "live.controlled"
-          ],
-          "risk": "external-side-effects",
-          "task_prompt": "使用当前 已配置并核验的受测实例、真实 Chromium 和框架提供的 <test-actor> 会话，按真实 UI 操作；不 mock API、不注入业务状态。所有自建对象保留完整 [TAU:<run_id>:<module_id>] 标记；没有声明 lineage_fixture 的用例复用固定 TAU Lineage，不能新建团队。每个动作等待对应提交和可见结果，记录精确 ID、脱敏回执、真实耗时并查看截图。已受理工作沿同一 ID 观察至终态，不超时重投。\n在真实 Workbench 解锁布局并打开自定义中的创建编辑器菜单；保持菜单展开，通过页面正式的目录刷新入口重读编辑器目录，观察真实响应完成。确认创建菜单仍展开，返回目录中的编辑器可见且可点击打开，新面板加载完成。使用本轮新建的临时 Workbench 或记录并恢复 <test-actor> 的原布局；不注入 PanelPackage、不改内部 Store、不用固定等待伪造刷新。若页面不存在可触发目录刷新的正式路径，报告前置不足。\n成功、失败和取消均清理本用例创建的对象与辅助进程，保留证据；禁止清理既有业务对象。各验收点分别报告实际结果与未覆盖项。"
         }
       ]
     },

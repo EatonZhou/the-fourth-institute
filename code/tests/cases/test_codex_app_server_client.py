@@ -1545,20 +1545,20 @@ class CodexAppServerClientTest(unittest.TestCase):
         client.close()
 
     def test_turn_start_has_separate_extended_timeout(self) -> None:
-        """turn/start 使用单独的 120 秒请求时限"""
+        """turn/start 使用单独的 360 秒请求时限"""
         server = FakeAppServer(self.socket_path)
         server.start()
         client = CodexAppServerClient(self.socket_path)
         try:
-            self.assertEqual(client.turn_start_request_timeout_seconds, 120.0)
-            self.assertEqual(client.lifecycle_request_timeout_seconds, 60.0)
+            self.assertEqual(client.turn_start_request_timeout_seconds, 360.0)
+            self.assertEqual(client.lifecycle_request_timeout_seconds, 180.0)
             with mock.patch.object(client, "request", wraps=client.request) as requests:
                 result = client.run_turn(
                     "019f0000-0000-7000-8000-000000000219", "hello", cwd="/tmp",
                 )
             self.assertEqual(result.response, "finished")
             starts = [call for call in requests.call_args_list if call.args[0] == "turn/start"]
-            self.assertEqual([call.kwargs["timeout"] for call in starts], [120.0])
+            self.assertEqual([call.kwargs["timeout"] for call in starts], [360.0])
         finally:
             client.close()
 
@@ -1568,7 +1568,7 @@ class CodexAppServerClientTest(unittest.TestCase):
             self.socket_path, turn_start_request_timeout_seconds=0.25,
         )
         self.assertEqual(client.turn_start_request_timeout_seconds, 0.25)
-        self.assertEqual(client.lifecycle_request_timeout_seconds, 60.0)
+        self.assertEqual(client.lifecycle_request_timeout_seconds, 180.0)
         client.close()
 
     def test_run_turn_resume_request_uses_lifecycle_timeout(self) -> None:

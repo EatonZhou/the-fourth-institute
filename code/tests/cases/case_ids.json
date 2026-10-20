@@ -5380,6 +5380,7 @@
     "tests/cases/test_watchboard_schema_retirement.py::test_retirement_rolls_back_ddl_with_schema_version": "test_68f6acf26768",
     "tests/cases/test_workbench_cold_import.py::test_cold_resource_provider_read_preserves_actor_and_errors": "test_1ec46147662f",
     "tests/cases/test_workbench_cold_import.py::test_concurrent_workbench_package_and_store_cold_import": "test_b3cca9122097",
+    "tests/cases/test_workbench_editor_catalog.py::test_editor_catalog_refresh_preserves_expanded_creation_menu": "test_5c87bf65cd75",
     "tests/cases/test_workbench_package_lifecycle.py::test_registered_package_lifecycle": "test_ebd70025ddb6",
     "tests/cases/test_workbench_projections.py::test_a_deleted_resident_of_a_role_the_page_created_does_not_block_other_roles": "test_edbb3a47549f",
     "tests/cases/test_workbench_projections.py::test_a_new_role_is_refused_before_creation_when_the_published_page_has_a_broken_binding": "test_763877537952",

@@ -375,7 +375,10 @@ write('c2',path.join(cwd,'secret'),'overwrite');
 assert.equal(fs.statSync(path.join(cwd,'secret')).mode&0o777,0o600);
 assert.deepEqual(fs.readdirSync(cwd).sort(),['new.md','ordinary','secret']);
 """
-    subprocess.run(["node","-e",script,str(bridge),str(tmp_path)],check=True,capture_output=True,text=True)
+    work = tmp_path / "tool-created-files"
+    work.mkdir()
+    result = subprocess.run(["node", "-e", script, str(bridge), str(work)], capture_output=True, text=True)
+    assert result.returncode == 0, result.stdout + result.stderr
 
 
 def test_codex_joins_a_subagent_thread_its_parent_reports_and_leaves_it_when_done(tmp_path):

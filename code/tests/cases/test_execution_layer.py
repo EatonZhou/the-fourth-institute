@@ -255,13 +255,13 @@ def test_codex_runtime_options_leave_backend_defaults_implicit_contracts(subtest
         client = mock.Mock()
         client.request.return_value = {}
         ExecutionService(client=client).cancel("execution-budget", actor="test")
-        assert client.request.call_args.kwargs["timeout"] == 5.0
+        assert client.request.call_args.kwargs["timeout"] == 15.0
         scheduler = SchedulerClient(
             worker_id="worker-budget", build_id="test", capabilities=["codex"],
             service_client=client,
         )
         scheduler.heartbeat("execution-budget", "claim-budget")
-        assert client.request.call_args.kwargs["timeout"] == 5.0
+        assert client.request.call_args.kwargs["timeout"] == 15.0
 
 
 def test_execution_request_rejects_invalid_input_media(subtests, isolated_portal_case):
@@ -698,12 +698,12 @@ def test_scheduler_event_cursor_advances_across_service_replacement_contracts(tm
 
 
 @pytest.mark.parametrize("client_timeout,request_timeout,method,connect_timeout,response_timeout", [
-    (None, None, "scheduler.checkpoint", 5.0, 30.0),
+    (None, None, "scheduler.checkpoint", 15.0, 90.0),
     (None, 1.25, "execution.wait", 1.25, 1.25),
     (2.0, None, "scheduler.event", 2.0, 2.0),
-    (None, None, "health", 5.0, 5.0),
+    (None, None, "health", 15.0, 15.0),
     (2.0, None, "health", 2.0, 2.0),
-    (None, 60.0, "scheduler.checkpoint", 5.0, 60.0),
+    (None, 60.0, "scheduler.checkpoint", 15.0, 60.0),
 ])
 def test_execution_rpc_timeout_budgets(
     tmp_path: Path,
@@ -2804,7 +2804,7 @@ def test_codex_interrupt_attempts_goal_pause_even_if_turn_request_fails_contract
                 backend_route_id="route-stop", runtime_options={"goal": {}},
             )
         client.request.assert_called_once_with(
-            "thread/goal/set", {"threadId": "thread-stop", "status": "paused"}, timeout=10.0,
+            "thread/goal/set", {"threadId": "thread-stop", "status": "paused"}, timeout=30.0,
         )
     with subtests.test(contract='test_codex_backend_continues_after_unexplained_provider_interruption'), isolated_portal_case() as case_path:
         client = mock.Mock()
@@ -4148,7 +4148,7 @@ def test_codex_backend_enables_subagents_only_when_explicitly_allowed_contracts(
 
         assert worker.claim(wait_seconds=0.1) == scheduler_client.claim.return_value
         scheduler_client.register.assert_not_called()
-        scheduler_client.claim.assert_called_once_with(90, wait_seconds=0.1)
+        scheduler_client.claim.assert_called_once_with(270, wait_seconds=0.1)
 
 
 def test_codex_backend_owns_interrupt_attribution(subtests, isolated_portal_case):

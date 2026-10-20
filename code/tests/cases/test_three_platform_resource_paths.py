@@ -311,7 +311,9 @@ def test_git_credential_permissions_precede_payload_and_cleanup(tmp_path, monkey
 
 
 def test_knowledge_atomic_writes_set_permissions_before_payload_and_never_overwrite_create(tmp_path, monkeypatch):
-    target = tmp_path / "record.md"
+    directory = tmp_path / "atomic-writes"
+    directory.mkdir()
+    target = directory / "record.md"
     target.write_text("original")
     calls = []
     def permissions(temporary, source, mode):
@@ -322,7 +324,7 @@ def test_knowledge_atomic_writes_set_permissions_before_payload_and_never_overwr
     assert target.read_text() == "updated" and calls
     with pytest.raises(FileExistsError):
         knowledge_backend._write_new_text_atomic(target, "replacement")
-    assert target.read_text() == "updated" and sorted(tmp_path.iterdir()) == [target]
+    assert target.read_text() == "updated" and sorted(directory.iterdir()) == [target]
 
 
 def _assert_held(path):
