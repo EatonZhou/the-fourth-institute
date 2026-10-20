@@ -47,7 +47,7 @@ DECLARATIONS = (
         R("lineage_ids", "array", "随之删除的 Lineage ID"), R("resident_ids", "array", "随之删除的 Resident ID"),
         R("unlinked", "object", "去掉了与该 Project 关联的共享库对象，按功能分组的资源 ID 数组（如 paper：论文）"),
     ), mutates=True, target="project_id", owner="resource"),
-    _d("RenameProject", ON_PROJECT, "修改 Project 的 ID，并把项目目录移到 /share/Projects/<新 ID>；Portal 中的引用一起改："
+    _d("RenameProject", ON_PROJECT, "修改 Project 的 ID，并把项目目录移到当前实例的 Projects/<新 ID>；Portal 中的引用一起改："
        "登记、权限、Lineage、Resident、资源索引，目录内文件、git worktree、符号链接与执行环境里的旧路径。"
        "期间项目中的 Resident 暂停接单，有 Resident 正在执行、或目录被 Portal 之外的挂载与服务使用时拒绝。"
        "历史消息与执行记录保留原文。", (

@@ -1,6 +1,6 @@
 """Renaming a Project changes its ID and moves its directory (decision_6591e7793116).
 
-RenameProject moves the Project directory to ``/share/Projects/<new ID>`` and
+RenameProject moves the Project directory under the instance's configured Projects root and
 rewrites every reference Portal keeps to the old ID or the old directory:
 
 * the database, in one transaction over every Portal schema: JSON strings and

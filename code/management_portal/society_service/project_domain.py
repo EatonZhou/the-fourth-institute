@@ -263,5 +263,5 @@ def _deletable_root(project_root: Path) -> Path:
     resolved = project_root.resolve(strict=False)
     projects_root = PROJECTS_ROOT.resolve(strict=False)
     if resolved == projects_root or projects_root not in resolved.parents:
-        raise PermissionError("拒绝删除 /share/Projects 之外的 project")
+        raise PermissionError(f"拒绝删除当前实例项目目录 {projects_root} 之外的 project")
     return resolved
