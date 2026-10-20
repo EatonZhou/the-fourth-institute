@@ -212,6 +212,7 @@ def test_valid_caches_wait_for_native_uninstaller_even_without_instances(platfor
 def test_native_uninstall_cleanup_is_gated_and_checks_for_residuals():
     """原生卸载在等待 Python 退出后清理缓存，并检查根目录是否仍有残留。"""
     script = (Path(__file__).resolve().parents[2] / "scripts/windows/setup.nsi").read_text(encoding="utf-8")
+    assert "ManifestLongPathAware true" in script
     section = script.split('Section "Uninstall"', 1)[1]
     consent = "${If} $RemoveInstances == ${BST_CHECKED}"
     assert section.index('SetOutPath "$TEMP"') < section.index("nsExec::ExecToLog")
@@ -223,3 +224,5 @@ def test_native_uninstall_cleanup_is_gated_and_checks_for_residuals():
     assert 'RMDir /r "$INSTDIR\\instance"' not in section
     assert 'ClearErrors\n    RMDir "$INSTDIR"\n    ${If} ${Errors}' in section
     assert section.index("SetErrorLevel 1") < section.index("Platform, instances, dependencies, caches and logs removed.")
+    assert "Call un.ListResiduals" in section
+    assert "Remaining:$ResidualItems" in section
