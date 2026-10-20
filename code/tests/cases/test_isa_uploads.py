@@ -293,8 +293,8 @@ def test_code_generations_of_one_instance_share_configured_upload_store(tmp_path
     :module: platform.core
     :importance: P1
     """
-    # Both deployments show the same Conversations, and the router may send one
-    # user to either; 10-12 an image uploaded through Release was 404 on Dev.
+    # Source generations share storage only when they use the same configured
+    # instance. Separate installed instances supply distinct instances_root.
     monkeypatch.delenv("PORTAL_UPLOAD_ROOT")
     from management_common import portal_paths
     saved = portal_paths.path_values()

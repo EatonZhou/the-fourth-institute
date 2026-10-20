@@ -8,7 +8,7 @@ from management_portal.execution import account_login, provider_updates as updat
 
 @pytest.mark.parametrize("platform,executable", [("linux", "systemctl"), ("darwin", "launchctl"), ("win32", "sc.exe")])
 def test_provider_control_uses_platform_service_owner(monkeypatch, platform, executable):
-    from scripts import portal_service_control
+    from scripts import portal_service_control, portal_service_units
     calls = []
     def run(command, **kwargs):
         calls.append((command, kwargs))
@@ -20,10 +20,14 @@ def test_provider_control_uses_platform_service_owner(monkeypatch, platform, exe
         return SimpleNamespace(returncode=0, stdout=output)
     monkeypatch.setattr(portal_service_control.sys, "platform", platform)
     monkeypatch.setattr(updates, "run_process", run)
+    monkeypatch.setattr(portal_service_units, "_run", lambda *command, **kwargs: run(command, **kwargs))
     result = updates._service_control().status("example.service")
     assert result["active"] == "active" and result["pid"] == 42
     assert calls[0][0][0] == executable
-    assert calls[0][1]["timeout"] == 60
+    if platform != "linux":
+        assert calls[0][1]["timeout"] == 180
+    else:
+        assert calls[0][0][:3] == ("systemctl", "--user", "show")
 
 
 def test_login_stops_tree_even_if_leader_already_exited(monkeypatch):

@@ -202,11 +202,13 @@ async function contracts(browser) {
 (async () => {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   origin = 'http://127.0.0.1:' + server.address().port;
-  const browser = await chromium.launch({ headless: true });
+  let browser;
   let passed = false;
-  try { if (!process.argv.includes('--contracts-only') && !process.argv.includes('--lifecycle-only')) await timing(browser); if (!measureOnly) await contracts(browser); passed = true; }
+  try { browser = await chromium.launch({ headless: true }); if (!process.argv.includes('--contracts-only') && !process.argv.includes('--lifecycle-only')) await timing(browser); if (!measureOnly) await contracts(browser); passed = true; }
   finally {
-    await browser.close(); await new Promise(resolve => server.close(resolve));
+    if (browser) await browser.close();
+    server.closeAllConnections();
+    await new Promise(resolve => server.close(resolve));
     const report = { passed, hostSource: hostPath, hostSha256: hash(hostSource), singleWorker: true, boundary: 'loopback fixture; production host/SDK/Workbench; no live application execution', reports };
     if (process.env.PROJECTION_LOADING_REPORT) fs.writeFileSync(process.env.PROJECTION_LOADING_REPORT, JSON.stringify(report, null, 2) + '\n');
     console.log(JSON.stringify(report.reports.filter(x => x.name === 'timings' || x.name === 'overlap')));

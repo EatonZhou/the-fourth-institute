@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
 const vm = require('node:vm');
+const { babelParse } = require('./babel_parse.cjs');
 
 const sourcePath = path.resolve(__dirname, '../../../management_portal/static/portal_resource_chips.js');
 const MEMBER = 'resident_111111111111';
@@ -58,6 +59,9 @@ async function destination(routeScript, canonicalUrl, source = fs.readFileSync(s
     },
   };
   const context = vm.createContext({ window, document: { readyState: 'complete' }, URL, URLSearchParams });
+  const identitySource = fs.readFileSync(path.join(path.dirname(sourcePath), 'portal_state.js'), 'utf8');
+  const identityModule = babelParse(identitySource, 'portal_state.js').program.body[0];
+  vm.runInContext(identitySource.slice(identityModule.start, identityModule.end), context);
   vm.runInContext(routeScript, context, { filename: 'portal_resource_routes.js' });
   vm.runInContext(source, context, { filename: sourcePath });
   window.PortalResourceChips.bindResourceLinks(link);

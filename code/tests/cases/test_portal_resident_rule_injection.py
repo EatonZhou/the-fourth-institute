@@ -1,4 +1,5 @@
 from pathlib import Path
+from management_common.portal_paths import path as portal_path
 
 from management_portal.agent_prompt_context import (
     portal_system_instructions,
@@ -16,8 +17,9 @@ def test_resident_injection_uses_the_unified_rule_entry_contracts(subtests, isol
         assert '无需调用接口或工具写消息' in content
         assert portal_system_instructions('resident').parts[0].timing == 'session_start'
         assert '<portal-materialized-skill-set role="resident"' in content
-        assert '<portal-materialized-skill path="/share/Skills/tfi-agent-rule/portal-resident.md" sha256="' in content
-        assert Path('/share/Skills/tfi-agent-rule/portal-resident.md').is_file()
+        rule = portal_path('share_root') / 'Skills/tfi-agent-rule/portal-resident.md'
+        assert f'<portal-materialized-skill path="{rule}" sha256="' in content
+        assert rule.is_file()
     with subtests.test(contract='test_resident_injection_includes_create_team_command_protocol'), isolated_portal_case() as case_path:
         content = portal_system_instructions('resident').parts[0].content
         assert '## “创建团队：”命令协议' in content

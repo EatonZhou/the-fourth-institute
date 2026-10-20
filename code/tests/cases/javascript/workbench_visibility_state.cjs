@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { JSDOM, VirtualConsole } = require('jsdom');
+const { babelParse } = require('./babel_parse.cjs');
 
 const repository = path.resolve(__dirname, '../../..');
 const scripts = [
@@ -62,6 +63,9 @@ function createHarness({ sourceTransform = (_name, source) => source } = {}) {
   };
   window.cancelAnimationFrame = id => { pendingFrames.delete(id); cancelFrame(id); };
   try {
+    const identitySource = fs.readFileSync(path.join(repository, 'management_portal/static/portal_state.js'), 'utf8');
+    const identityModule = babelParse(identitySource, 'portal_state.js').program.body[0];
+    window.eval(identitySource.slice(identityModule.start, identityModule.end));
     for (const name of scripts) {
       const source = fs.readFileSync(path.join(repository, 'management_portal/static', name), 'utf8');
       window.eval(sourceTransform(name, source) + `\n//# sourceURL=${name}`);

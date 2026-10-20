@@ -19,6 +19,11 @@ function owner(file, names, dependencies) {
   return context;
 }
 const noop = () => {};
+function deferred() {
+  let resolve, reject;
+  const promise = new Promise((yes, no) => { resolve = yes; reject = no; });
+  return { promise, resolve, reject };
+}
 const i18n = {t: value => value, text: (parts, ...values) => parts.reduce((text, part, i) => text + part + (values[i] ?? ''), '')};
 
 async function familySettingsFixture({runtime = true, restart = true} = {}) {

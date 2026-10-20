@@ -256,7 +256,7 @@
       "title": "Workbench 原生门面对话加载",
       "description": "独立真实使用验收：Workbench 原生门面对话加载。由浏览器脚本迁移并保留测试身份，执行证据由 TAU 实际运行产生。",
       "importance": "P2",
-      "module": "workflow.project",
+      "module": "workbench.panels",
       "aspects": [
         "ui",
         "behavior"
