@@ -95,23 +95,25 @@ Windows 图形安装器使用当前用户进程，不要求系统服务账号。
 安装状态保存platform_preflight（实际主机、工程摘要、检查时间、依赖结果），不回写运行快照。
 
 使用主机已有 Python 3.12（含 venv）、PostgreSQL 二进制与 nats-server。
-新工程的 `runtime_dependencies` 按所选功能声明 bootstrap profiles；安装器先检查
-现有环境，缺依赖时在本站 `runtime/dependencies/<工程摘要>/venv` 自动准备，
-不修改传入的共享 Python 环境。启用的服务和初始化均使用验证通过的解释器。
-缺少依赖或准备失败不会启动应用服务；查看 `runtime/dependency-install.log` 后可重试。
+新工程的 `runtime_dependencies` 按所选功能声明 bootstrap profiles，其中 `core` 是
+启动必需，其余是功能可选。安装器只检查和准备核心 Python 包；共享布局的环境放在
+`dependencies/<核心依赖摘要>/venv`，独立工程放在 `runtime/dependencies/<工程摘要>/venv`，
+不修改传入的 Python 环境。启用的服务和初始化均使用核心核验通过的解释器。
+核心依赖准备失败不会启动应用服务；查看 `runtime/dependency-install.log` 后可重试。
 历史工程未声明 profiles 时继续使用原有核心依赖预检，不改写其 manifest。
 
-选中 Article 时会准备本站 `home/.TinyTeX`、常用中英文 LaTeX 宏包及 `home/.local/bin/texlab`，
-校验固定下载摘要并实际编译中文 PDF；服务 PATH 使用本站工具目录。
-TinyTeX 支持 Linux x86_64/aarch64、macOS x86_64/arm64、Windows x86_64；其他平台
-需先提供可执行的原生 TeX 工具链，否则明确失败。联网包解析的实际版本保存在
-`home/.TinyTeX/tfi-dependencies.json`，Python/工具就绪记录保存在 installation.json。
-Test/TAU/Provider profile 仍要求主机具备 Node.js >=20 与 npm；安装器不修改系统包管理器。
+Article、浏览器自动化、测试及模型工具不在首次安装时自动下载，也不参与启动必需核验。
+`installation.json` 分别保存已验证的 `profiles`、完整 `declared_profiles` 和
+按需检查的 `optional_profiles`；可选项没有经过验证时不会记录成已就绪。
+安装器和通用 bootstrap 不自动安装 TeX。用户按需要自行安装 TeX 编译器、`latexmk`、
+文档所用宏包以及可选的 `texlab`，使 Portal 进程的 PATH 能找到工具后重启进程。
+Article 的资料预检不要求工具齐全；实际编译时检测缺失并提示，工具可用后重新检测。
+其他扩展可在需要时显式调用 bootstrap 的相应 profile；Test/TAU/Provider 的
+显式准备仍要求 Node.js >=20 与 npm。安装器不修改系统包管理器。
 账号、TAU 测试会话等本站配置由功能初始化检查，工具安装不伪造配置。
-升级在原有完整备份后准备新依赖；依赖失败沿原恢复入口恢复成对代码、数据和配置。
+升级在原有完整备份后准备核心依赖；核心依赖失败沿原恢复入口恢复成对代码、数据和配置。
 发布器同时保留所选文章的编译器与主文件设置，不导入编译日志/报告。
-文章自行引用的额外宏包、系统字体或外部工具仍须通过该文章的编译预检和实际编译确认；
-通用中文 PDF 自检不替代每篇文章的验收。
+文章自行引用的额外宏包、系统字体或外部工具仍须通过该文章的编译预检和实际编译确认。
 
 目标配置为 JSON，包含以下字段：
 

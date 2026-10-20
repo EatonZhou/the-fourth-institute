@@ -10,7 +10,7 @@
 
 ### Windows 11 x64 · 预览版
 
-双击 `TheFourthInstitute-Setup-x64.exe`。安装器会自动准备默认示例、启动 Portal 并打开浏览器。Python、PostgreSQL、NATS 和 Node.js 已包含；Python 包及所选浏览器、排版工具仍需首次联网准备，窗口显示当前阶段。以后通过桌面图标打开 Portal。
+双击 `TheFourthInstitute-Setup-x64.exe`。安装器会自动准备默认示例、启动 Portal 并打开浏览器。Python、PostgreSQL、NATS 和 Node.js 已包含；首次联网仅准备核心 Python 包，窗口显示当前阶段。TeX 等可选工具不自动安装，缺失时只影响使用这些工具的功能。以后通过桌面图标打开 Portal。
 
 详见 [Windows 操作说明与验证范围](code/scripts/windows/README.md)。
 

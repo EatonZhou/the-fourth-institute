@@ -1,10 +1,10 @@
-"""Prepare selected dependencies inside an owned installation, before services."""
+"""Prepare startup dependencies; feature tools are checked when used."""
 from pathlib import Path
 import hashlib
 import json
 from scripts.tfi_instance_layout import code_root, dependencies_root
 
-from management_common.release_dependencies import profiles
+from management_common.release_dependencies import STARTUP_PROFILES, profiles
 from management_common.installation_progress import report, relay_log_progress
 
 
@@ -50,12 +50,14 @@ def _prepare(api, state, manifest):
     selected = profiles(manifest)
     if not selected:
         return
+    required = [profile for profile in selected if profile in STARTUP_PROFILES]
+    optional = [profile for profile in selected if profile not in STARTUP_PROFILES]
     target = state['target']
     root = Path(target['install_root'])
     script = code_root(target) / 'scripts/bootstrap_portal'
 
     def doctor(python):
-        result = api.run_utf8_capture([python, str(script), 'doctor', *selected,
+        result = api.run_utf8_capture([python, str(script), 'doctor', *required,
             '--venv', str(Path(python).parent.parent), '--tools-only', '--json'],
             env=api.clean_environment(target), cwd=code_root(target), timeout=540)
         if result.returncode == 0:
@@ -67,19 +69,19 @@ def _prepare(api, state, manifest):
         return None
 
     environment = dependencies_root(target) / (
-        environment_key(target, selected) if target.get('shared_code_root') else state['manifest_sha256']
+        environment_key(target, required) if target.get('shared_code_root') else state['manifest_sha256']
     ) / 'venv'
     shared_python = environment / ('Scripts/python.exe' if api.native_tool('python').endswith('.exe') else 'bin/python')
     python = str(shared_python) if target.get('shared_code_root') and shared_python.is_file() else runtime_python(target)
     inventory = doctor(python)
     source = 'verified-existing-installation'
     if inventory is None:
-        report('正在准备首次使用的 Python、浏览器与排版工具，需要联网；详细过程写入安装日志')
+        report('正在准备 Portal 核心 Python 依赖；可选浏览器、排版与测试工具不参与首次安装')
         environment.parent.mkdir(parents=True, exist_ok=True)
         # Never pip-install into the operator's supplied/shared interpreter.
         log = root / 'runtime/dependency-install.log'
         with log.open('a', encoding='utf-8') as stream, relay_log_progress(log):
-            result = api.run_process([target['python'], str(script), 'install', *selected,
+            result = api.run_process([target['python'], str(script), 'install', *required,
                 '--venv', str(environment)], env=api.clean_environment(target), cwd=code_root(target),
                 stdout=stream, stderr=stream, text=True, timeout=10800)
         if result.returncode:
@@ -87,9 +89,11 @@ def _prepare(api, state, manifest):
         python = str(environment / ('Scripts/python.exe' if api.native_tool('python').endswith('.exe') else 'bin/python'))
         inventory = doctor(python)
         if inventory is None:
-            raise RuntimeError('Prepared dependencies failed selected-profile verification; services were not started')
+            raise RuntimeError('Prepared core dependencies failed verification; services were not started')
         source = 'shared-platform-bootstrap' if target.get('shared_code_root') else 'instance-owned-bootstrap'
     state['dependencies'] = {'status': 'verified', 'manifest_sha256': state['manifest_sha256'],
-        'profiles': selected, 'python': python, 'source': source, 'inventory': inventory}
+        'profiles': required, 'declared_profiles': selected,
+        'optional_profiles': optional, 'optional_policy': 'user-managed; checked on use',
+        'python': python, 'source': source, 'inventory': inventory}
     api.save_stage(state, 'dependencies', 'prepared')
-    report('运行环境准备完成')
+    report('核心运行环境准备完成；可选功能的工具可在需要时自行安装' if optional else '运行环境准备完成')

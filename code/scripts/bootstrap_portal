@@ -160,9 +160,8 @@ def install(args: argparse.Namespace) -> int:
             dry_run=args.dry_run)
 
     if "article" in profiles:
-        report("正在准备文档排版工具，首次需要下载 TeX 组件")
-        run([str(python), str(ROOT / "scripts" / "install_article_tooling.py")],
-            dry_run=args.dry_run)
+        report("Article 排版工具由用户自行安装；缺少 TeX 不影响 Portal 启动。"
+               "编译时需可用的 TeX 编译器和 latexmk，语言服务需 TexLab。")
 
     if "embeddings" in profiles:
         report("正在准备语义检索模型")

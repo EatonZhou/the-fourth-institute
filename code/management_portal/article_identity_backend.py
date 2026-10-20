@@ -1693,7 +1693,7 @@ def latex_environment() -> dict[str, Any]:
         "latexmk": latexmk,
         "version": version or "TeX Live",
         "profile_id": f"portal-texlive-{hashlib.sha256(identity.encode()).hexdigest()[:12]}",
-        "policy": "Portal 固定 TeX Live；隔离输出、固定区域设置，不执行任意构建命令",
+        "policy": "使用已配置的原生 TeX 工具链；隔离输出、固定区域设置，不执行任意构建命令",
         "texmf_root": texmf_root,
         "package_database_identity": package_database_identity,
         "available_compilers": [
@@ -1843,9 +1843,9 @@ def inspect_article_build_profile(
     if selected_compiler not in SUPPORTED_LATEX_COMPILERS:
         issue("error", "configuration", f"不支持的 LaTeX 编译器：{selected_compiler}")
     elif not _tex_which(selected_compiler):
-        issue("error", "environment", f"Portal TeX 环境缺少编译器：{selected_compiler}")
+        issue("error", "environment", f"缺少 TeX 编译器 {selected_compiler}；请自行安装并加入 Portal 进程的 PATH 后再编译")
     if not _tex_which("latexmk"):
-        issue("error", "environment", "缺少 latexmk；请安装 Article 工具链后再编译")
+        issue("error", "environment", "缺少 latexmk；请自行安装并加入 Portal 进程的 PATH 后再编译")
 
     dependencies: list[dict[str, str]] = []
     if selected_candidate and selected_candidate["standalone"]:

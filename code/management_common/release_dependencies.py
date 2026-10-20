@@ -1,5 +1,6 @@
 """Runtime dependency contract shared by engineering and installation."""
 SCHEMA = 'tfi.release-runtime-dependencies.v1'
+STARTUP_PROFILES = ('core',)
 FEATURE_PROFILES = {'article': 'article', 'test_framework': 'test', 'tau': 'tau',
                     'resident_semantic_search': 'embeddings'}
 
@@ -13,9 +14,11 @@ def declaration(features, resource_types=()):
     if 'article' in resource_types:
         reasons.setdefault('article', []).append('resource_type:article')
     return {'schema': SCHEMA, 'profiles': sorted(reasons), 'reasons': reasons,
+            'required_profiles': list(STARTUP_PROFILES),
+            'optional_profiles': sorted(set(reasons) - set(STARTUP_PROFILES)),
             'host_prerequisites': ['Python 3.12 with venv'],
             'native_preparation': 'Omitted PostgreSQL/NATS paths are installed privately; Node.js with npm is prepared for test/tau/provider profiles',
-            'preparation': 'reuse verified explicit tools or prepare pinned instance-owned native tools and a Python environment'}
+            'preparation': 'prepare native services and core Python packages; optional feature tools are user-managed and checked on use'}
 
 
 def profiles(manifest):
