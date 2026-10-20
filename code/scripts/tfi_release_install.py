@@ -193,6 +193,7 @@ def clean_environment(target):
                      os.environ.get("SystemRoot", r"C:\Windows") + ";" + str(Path(target["pg_bin"])))
                     if windows else "/usr/local/bin:/usr/bin:/bin", "LANG": "C.UTF-8",
            "HOME": str(root / "home"), "XDG_CONFIG_HOME": str(root / "home/.config"),
+           "XDG_CACHE_HOME": str(root / "home/.cache"), "TMPDIR": str(runtime),
            "PYTHONNOUSERSITE": "1", "PYTHONDONTWRITEBYTECODE": "1",
            "PORTAL_PATHS_CONFIG": str(root / "config/paths.json"),
            "PORTAL_SITE_CONFIG": str(root / "config/site.json"),

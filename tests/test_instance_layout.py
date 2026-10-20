@@ -32,6 +32,8 @@ class SharedInstanceTests(unittest.TestCase):
                 validate_shared_code(target)
                 env = installer.clean_environment(target)
                 self.assertEqual(env["PORTAL_INSTANCE"], "release")
+                self.assertEqual(env["TMPDIR"], str(Path(target["install_root"]) / "runtime"))
+                self.assertEqual(env["XDG_CACHE_HOME"], str(Path(target["install_root"]) / "home/.cache"))
                 self.assertEqual(env["PORTAL_EXECUTION_WORKER_SOURCE_ROOT"], str(REPO / "code"))
                 self.assertTrue(env["PORTAL_DATABASE_URL"].startswith("postgresql://dirtybase@/"))
                 self.assertIn(str(installer_path(target)), installer.unit_text(target, "web"))
