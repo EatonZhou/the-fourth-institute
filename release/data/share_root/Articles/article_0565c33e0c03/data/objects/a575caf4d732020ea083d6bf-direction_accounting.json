@@ -1,0 +1,68 @@
+{
+  "batches": [
+    {
+      "task": "material_action_map_20261019",
+      "native": 6400,
+      "attempted": 6400,
+      "unknown": 0,
+      "job": "9bd95da2-d847-4166-a786-1333c27bc6dd",
+      "worker_seconds": 18.751938,
+      "raw_bytes": 34648456,
+      "old_replay": 0,
+      "plan_sha256": "ec8949279cb8699023611df912704155cae0305a2a897b83e706860069bbca58",
+      "result_sha256": "7d3aafa9692aaf4df5b6a38e0a6da71bdb513d55e1163c458993069e1f8530fb"
+    },
+    {
+      "task": "action_map_change_separation_20261019",
+      "native": 4480,
+      "attempted": 4480,
+      "unknown": 0,
+      "job": "c1e8cdc0-fe9e-487c-a941-071e17bf148b",
+      "worker_seconds": 12.928298,
+      "raw_bytes": 30019508,
+      "old_replay": 0,
+      "plan_sha256": "432507994ade08da821eb7fc1668d305cc49bca259292d929f139cd7e6011a22",
+      "result_sha256": "e008bb190ad6d745297be66ad26f43817f4282ca8b881008fed24e985315a0d2"
+    },
+    {
+      "task": "action_map_content_20261019",
+      "native": 1792,
+      "attempted": 1792,
+      "unknown": 0,
+      "job": "0a5a955d-c452-4931-a3d7-0ae327e1d193",
+      "worker_seconds": 6.394316,
+      "raw_bytes": 11505211,
+      "old_replay": 0,
+      "plan_sha256": "fef7598aaff54638a43b9c863e1abbcf1824a38e86590e6e5c78c5c65fafa4c6",
+      "result_sha256": "09de16b942a686c2b57049108904f67506fcc955abd2cb03fc73304625954dd8"
+    },
+    {
+      "task": "material_coupling_transport_20261019",
+      "native": 4159,
+      "attempted": 4159,
+      "unknown": 0,
+      "job": "bab92c9d-930b-45db-a7fc-4efd0ef31c54",
+      "worker_seconds": 14.88843,
+      "raw_bytes": 24297710,
+      "old_replay": 0,
+      "plan_sha256": "305ac4bcdfeab532168cd22dfd662f4fcf3246b570bbb6a032ab41039f9d5f57",
+      "result_sha256": "ca014ecab85a07ffe1422a151fa9309f73294970844b84442ae1edac392f71c4"
+    }
+  ],
+  "native": 16831,
+  "worker_seconds": 52.962982,
+  "unknown": 0,
+  "old_replay": 0,
+  "paths": 30,
+  "raw_bytes": 100470885,
+  "failures": [
+    {
+      "task": "material_coupling_transport",
+      "condition": 1,
+      "arm": "reflex",
+      "clock": 319,
+      "cause": "connected component below .75; mass remained24"
+    }
+  ],
+  "postprocessing_correction": "Analyzer syntax fixed before output; mean_J metadata changed from sum to mass mean. Native/source plans and raw scalar data not changed."
+}

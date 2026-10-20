@@ -1,0 +1,52 @@
+{
+  "edition": 3,
+  "review_date": "2026-09-13",
+  "references": [
+    {
+      "key": "blackwell1953",
+      "doi": "10.1214/aoms/1177729032",
+      "review": "Crossref DOI入口核对标题、作者、1953年、24(2):265–272；用于实验比较和后处理的来源定位。"
+    },
+    {
+      "key": "chernoff1959",
+      "doi": "10.1214/aoms/1177706205",
+      "review": "Crossref核对标题、作者、1959年、30(3):755–770；序贯实验设计背景。"
+    },
+    {
+      "key": "naghshvar2013",
+      "doi": "10.1214/13-AOS1144",
+      "source": "https://arxiv.org/abs/1203.4626",
+      "pdf_sha256": "37bdc95d47fe974c81b619ffeb1b43031574870197cd4101c697b1199c0944e0",
+      "review": "下载2013年v4原论文并读取摘要及上下界、可靠性和主动观察相关文本。正文为固定预算最坏风险，不把论文中的期望总代价结论直接移植。"
+    },
+    {
+      "key": "kaufmann2016",
+      "source": "https://www.jmlr.org/papers/volume17/kaufman16a/kaufman16a.pdf",
+      "pdf_sha256": "034fbca521666f7eea11a77f7f169f962de7f80a3f731b110d07eb1e6b6e4a4a",
+      "review": "读取JMLR原论文的摘要和换测度下界讨论，书内给出固定预算KL账本的完整推导。"
+    },
+    {
+      "key": "howard2020",
+      "doi": "10.1214/18-PS321",
+      "source": "https://arxiv.org/abs/1808.03204",
+      "pdf_sha256": "7d0a6788b11fe9bbcc36ae19b0c7c18cf39d9e12ab82c6cce59834244efa7cd2",
+      "review": "Crossref确认2020年Probability Surveys正式出版；下载的是2025年12月17日arXiv v8，读取Ville不等式及非负鞅背景。附录自行给出使用的初等证明。"
+    },
+    {
+      "key": "shannon1948",
+      "doi": "10.1002/j.1538-7305.1948.tb01338.x",
+      "review": "沿用前版已核对书目；信息量与编码的背景，正文条件信息和Fano推导在书内展开。"
+    },
+    {
+      "key": "hoeffding1963",
+      "doi": "10.1080/01621459.1963.10500830",
+      "review": "沿用前版已核对书目；多数重复使用独立有界和的经典集中，附录给出所需形式。"
+    },
+    {
+      "key": "xu2020",
+      "source": "https://arxiv.org/abs/2002.10689",
+      "review": "沿用前版原论文核对；受限计算下可利用信息的背景，不把读出成本问题列为本书首创。"
+    }
+  ],
+  "review_scope": "与当前推导直接相关的原论文及元数据核对，区别固定预算、序贯期望代价与不同计算口径；外部全文不打包。"
+}

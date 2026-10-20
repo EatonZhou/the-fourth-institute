@@ -1,0 +1,13 @@
+{
+  "all_saved_fee_keys": [
+    "heat",
+    "actor_movement_paid",
+    "actor_movement_unpaid",
+    "actor_basal_paid",
+    "actor_basal_unpaid",
+    "synthesis_heat",
+    "template_heat",
+    "pump_fee_paid"
+  ],
+  "missing_requested_panels": []
+}

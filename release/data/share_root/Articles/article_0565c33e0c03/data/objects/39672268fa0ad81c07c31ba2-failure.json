@@ -1,0 +1,6 @@
+{
+  "error": "TypeError('Object of type int64 is not JSON serializable')",
+  "native": 16,
+  "returned": 16,
+  "current": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/plus/width1.6/effort0.5"
+}

@@ -1,0 +1,32 @@
+{
+  "schema": "diverse-transport-continuation-visual-readout.v1",
+  "reader": "resident_ce2a5ab005bc",
+  "scope": "实际查看六完整atlas共78保存条目及每体process/resource-fields/effects/first129的PNG原图；对应18图，不声称另看动画或全部逐步空间场。旧51形成条目复用原1024观察与精确引用。",
+  "files": [
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_transport_continuation_20261018/genome_0ac80448a534dc953505--T00-atlas.png",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_transport_continuation_20261018/genome_0ac80448a534dc953505--T11-atlas.png",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_transport_continuation_20261018/genome_0ac80448a534dc953505-process.png",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_transport_continuation_20261018/genome_0ac80448a534dc953505-resource-fields.png",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_transport_continuation_20261018/genome_0ac80448a534dc953505-effects.png",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_transport_continuation_20261018/genome_0ac80448a534dc953505-first129.png",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_transport_continuation_20261018/genome_6bd5bfd2f629f9414376--T00-atlas.png",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_transport_continuation_20261018/genome_6bd5bfd2f629f9414376--T11-atlas.png",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_transport_continuation_20261018/genome_6bd5bfd2f629f9414376-process.png",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_transport_continuation_20261018/genome_6bd5bfd2f629f9414376-resource-fields.png",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_transport_continuation_20261018/genome_6bd5bfd2f629f9414376-effects.png",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_transport_continuation_20261018/genome_6bd5bfd2f629f9414376-first129.png",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_transport_continuation_20261018/genome_85dffefe3eb5bacdfbf5--T00-atlas.png",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_transport_continuation_20261018/genome_85dffefe3eb5bacdfbf5--T11-atlas.png",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_transport_continuation_20261018/genome_85dffefe3eb5bacdfbf5-process.png",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_transport_continuation_20261018/genome_85dffefe3eb5bacdfbf5-resource-fields.png",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_transport_continuation_20261018/genome_85dffefe3eb5bacdfbf5-effects.png",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_transport_continuation_20261018/genome_85dffefe3eb5bacdfbf5-first129.png"
+  ],
+  "observations": {
+    "genome_0ac80448a534dc953505": "宽矩形多孔/竖条骨架保留，密度集中于边缘和斑块；两臂先增后损，T11额外质量优势晚期回落且E差转负。资源场在已占据部位变暗，仍有明亮条带。首129差图显示局部出生/库存/能量差，body色尺未放大。",
+    "genome_6bd5bfd2f629f9414376": "四叶轮廓持续增厚，边缘出现细孔，两侧叶片T11密度与增长较明显；资源暗区与身体活动位置相邻，域内别处仍留条带。M/E/体时配对曲线为正，伴更多出生、死亡、库存消耗与费用。",
+    "genome_85dffefe3eb5bacdfbf5": "短桥连接两端小环保持，主要为小幅密度变化；原比例看不到大幅平移或全域扩张。资源场局部消耗而大域库存留存。每8步atlas不能展示T00末32中的4个负步，逐步表另存。"
+  },
+  "first_separation": "129流/费/出生/body/E/P/F场，130身体K/q；exact与>1e−12分开，first129差场按每字段显示各自色标。",
+  "limits": "真实96坐标；body固定0..1，资源图同体跨臂共尺度。掩码随状态变，孔洞/阈值分量不是个体，圆周质心不是组织轨迹；不由图外推稳态或学习。"
+}

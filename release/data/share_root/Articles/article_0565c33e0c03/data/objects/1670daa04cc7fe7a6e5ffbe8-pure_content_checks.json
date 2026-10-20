@@ -1,0 +1,18 @@
+[
+  {
+    "condition": "0",
+    "rotation_relation_error": 2.7755575615628914e-17,
+    "J_Frobenius_norm_error": 2.7755575615628914e-17,
+    "nonmap_aux_exact": true,
+    "initial_mean_norm_error": 3.3306690738754696e-16,
+    "body_energy_memory_eligibility_rng": "loaded unchanged from same SHA parent"
+  },
+  {
+    "condition": "1",
+    "rotation_relation_error": 1.3877787807814457e-17,
+    "J_Frobenius_norm_error": 2.7755575615628914e-17,
+    "nonmap_aux_exact": true,
+    "initial_mean_norm_error": 3.3306690738754696e-16,
+    "body_energy_memory_eligibility_rng": "loaded unchanged from same SHA parent"
+  }
+]

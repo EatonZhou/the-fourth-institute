@@ -1,0 +1,152 @@
+{
+  "task": "temporal_credit_reassignment_20261019",
+  "status": "complete",
+  "owner": "resident_d3ccfa2d95b7",
+  "native": 11968,
+  "unknown": 0,
+  "runner_worker_seconds": 35.809792,
+  "job": "16ebe627-2fa2-40f3-bc70-43d0555679e6",
+  "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/temporal_credit_reassignment_20261019/16ebe627-2fa2-40f3-bc70-43d0555679e6",
+  "raw_bytes": 46960768,
+  "groups": {
+    "fast_delta": {
+      "original_n": 4,
+      "continued_n": 3,
+      "prior_failed_absorbed": 1,
+      "passed_on_continued": 3,
+      "survived_continuation": 3,
+      "gate_start": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "gate_end": [
+        0.5,
+        0.5,
+        0.5
+      ]
+    },
+    "fixed_trace": {
+      "original_n": 4,
+      "continued_n": 2,
+      "prior_failed_absorbed": 2,
+      "passed_on_continued": 2,
+      "survived_continuation": 2,
+      "gate_start": [
+        0.5,
+        0.5
+      ],
+      "gate_end": [
+        0.5,
+        0.5
+      ]
+    },
+    "lag1_delta": {
+      "original_n": 4,
+      "continued_n": 4,
+      "prior_failed_absorbed": 0,
+      "passed_on_continued": 0,
+      "survived_continuation": 4,
+      "gate_start": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "gate_end": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ]
+    },
+    "joint_delta": {
+      "original_n": 4,
+      "continued_n": 4,
+      "prior_failed_absorbed": 0,
+      "passed_on_continued": 4,
+      "survived_continuation": 4,
+      "gate_start": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "gate_end": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ]
+    },
+    "gated_lags": {
+      "original_n": 4,
+      "continued_n": 4,
+      "prior_failed_absorbed": 0,
+      "passed_on_continued": 4,
+      "survived_continuation": 4,
+      "gate_start": [
+        0.999452296162346,
+        0.9995236196286282,
+        0.9995096125953552,
+        0.9992506740736461
+      ],
+      "gate_end": [
+        0.01720686091446245,
+        0.04006845161459565,
+        0.009957889285623793,
+        0.039026945951539806
+      ]
+    }
+  },
+  "prior_absorbed_failures": 3,
+  "claim": "Continuing-body reassignment demonstrated; joint delta also succeeds; no gated-method superiority.",
+  "next_question": "Self-generated contacts in a fixed arena; keep strong joint delta. Not yet run.",
+  "files": {
+    "plan.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/temporal_credit_reassignment_20261019/plan.json",
+      "sha256": "63183a2d762ba56f0bcaec9c03237681a0ced43d7c309ed39d5e47d3afc879cc"
+    },
+    "summary.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/temporal_credit_reassignment_20261019/summary.json",
+      "sha256": "c6aef33b62adb3050a9e9dc8a7967c34a710878894d68b44901f80fcc1e84477"
+    },
+    "comparisons.csv": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/temporal_credit_reassignment_20261019/comparisons.csv",
+      "sha256": "ab93e5a1d282c76faf6d24348fdc94a60bfe7a33ecc3187cec9a1b3c2475ce9e"
+    },
+    "continuity_and_erase_checks.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/temporal_credit_reassignment_20261019/continuity_and_erase_checks.json",
+      "sha256": "239d4861451a00f268232cd85ca16d50d5c3b709538f58849c753b00bbf79767"
+    },
+    "accounting.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/temporal_credit_reassignment_20261019/accounting.json",
+      "sha256": "56c992e6bee121cca2f3004ae0c8fd42cd35ec4c426d2033af8d799adfd74f2a"
+    },
+    "science_outcomes.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/temporal_credit_reassignment_20261019/science_outcomes.json",
+      "sha256": "b85803b054fc4f3ad27788d2704ef6d87183fd329f4c8a5e2aa072e99b9702b9"
+    },
+    "science_result.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/temporal_credit_reassignment_20261019/science_result.json",
+      "sha256": "54c4a8f86f521dba4b322c4f95f90107e9439517f3d031660a91c20a0af35280"
+    },
+    "REPORT.txt": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/temporal_credit_reassignment_20261019/REPORT.txt",
+      "sha256": "9cf35e9f89d4459dfd18d553e695271c62f940fd667d8e66f551b4bc32933bb6"
+    },
+    "reassignment_curves.png": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/temporal_credit_reassignment_20261019/reassignment_curves.png",
+      "sha256": "7e5c6135edc68380e3d0a235b66e485ab88a6a1818bb573b4564a51129281aec"
+    },
+    "continuous_learning_credit_shift.gif": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/temporal_credit_reassignment_20261019/continuous_learning_credit_shift.gif",
+      "sha256": "a5b7108880bcd20c00d5664e6522c1015f040393e8757f8980e9d07e23130617"
+    },
+    "actual_sequence.png": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/temporal_credit_reassignment_20261019/actual_sequence.png",
+      "sha256": "dc42e3976d1b4fb75f23c70dad18967aa5b4191dbee643d0c54d4e88db974b7f"
+    }
+  },
+  "metric_definition": "指标释义更正（零native，原数值不变）：每个探针末帧的 f=M_good/(M_0+M_1)，M_i=sum_x rho(x)*1[torus_distance(x,spot_i)<2.5]。这是两个半径2.5接触区的材料质量份额，不是高斯cue强度加权sum(rho*cue)，也不是整阶段正确率。感觉场及付费反馈场与此观察指标应分开；原CSV、模型源、实际轨迹和运行计数不变。"
+}

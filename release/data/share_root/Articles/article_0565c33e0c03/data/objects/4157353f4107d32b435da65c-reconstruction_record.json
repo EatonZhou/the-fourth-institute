@@ -1,0 +1,137 @@
+{
+  "status": "completed_GUI_reconstruction_not_original_byte_recovery",
+  "resident_id": "resident_0b7dc096e3c9",
+  "completed_utc": "2026-10-19T11:14:39.811508+00:00",
+  "original_unavailable_pptx": {
+    "bytes": 28777,
+    "sha256": "ed8e79c52b8d71066c77834a0bbb11ec082c651debb6d9c301260306e8d88c52",
+    "byte_recovered": false
+  },
+  "unchanged_original_pdf_sha256": "46848ec15cc217770bc17b5c8c7f1749e78c36de4c74bb885fcd3e2efeb5583e",
+  "unchanged_original_png_sha256": "c0f20b8901582a1ac833cd847a42b030ad6b0d460e9b8764e3f3e23dfdf2c81e",
+  "protected_original_files": {
+    "local_motor.pdf": {
+      "sha256": "46848ec15cc217770bc17b5c8c7f1749e78c36de4c74bb885fcd3e2efeb5583e",
+      "unchanged": true
+    },
+    "local_motor.png": {
+      "sha256": "c0f20b8901582a1ac833cd847a42b030ad6b0d460e9b8764e3f3e23dfdf2c81e",
+      "unchanged": true
+    },
+    "local_motor.pptx": {
+      "sha256": "7eb948fb3fcada1e3d9f66493419e67b2ffc62584415e3da92fad54e1b7cc44b",
+      "unchanged": true
+    },
+    "production.json": {
+      "sha256": "4477befda5490c9e14223868d957a3eec2bcfe58a50c13dd0139e2a428709e93",
+      "unchanged": true
+    },
+    "SHA256SUMS": {
+      "sha256": "9e75818315939fcf9cb1d33f049a6b7cdf16cb617e43c143834cd457e78bf6d9",
+      "unchanged": true
+    },
+    "source.json": {
+      "sha256": "1b9b8019689a4ce83e570a399fd683c87624735e1fb6fc25fd151447cad5c13a",
+      "unchanged": true
+    },
+    "caption.txt": {
+      "sha256": "aacc8d1a64707cd119b0f3b3dbae69e1d58448ff4bdc80380370e50b5f78fe70",
+      "unchanged": true
+    },
+    "caption_full.txt": {
+      "sha256": "1e27a5c4eeb91ac769529a1f137411a36202d65ba801b8658005ca0bdc513f67",
+      "unchanged": true
+    },
+    "gui_record.txt": {
+      "sha256": "fd24bfd9e077341fa0e0e59566a24ad949fcef689427f961ccb06727ef6b2411",
+      "unchanged": true
+    }
+  },
+  "application": {
+    "editor": "LibreOffice Impress 24.2.7.2",
+    "vector_import_bridge": "LibreOffice Draw, original GUI-authored PDF opened and copied via visible UI",
+    "display": ":100",
+    "profile": "${share_root}/Agents/lineage_75e3399f4877/residents/resident_0b7dc096e3c9/workspace/impress-runtime/display-100/lo-profile",
+    "reopened_window": "2987256"
+  },
+  "final_construction": [
+    "Original native PDF vectors/text copied via GUI into fresh Impress; all initial direct-replay trial objects discarded",
+    "All imported PDF atlas image objects removed via GUI",
+    "Eight byte-identical raw image instances independently inserted and cropped through visible Crop and Position/Size dialogs",
+    "Coordinate-line text edited and resized through visible text controls",
+    "Saved as new PPTX; closed and reopened; exported through PDF/PNG GUI"
+  ],
+  "no_UNO_or_direct_document_generation": true,
+  "whole_figure_raster_imported": false,
+  "new_model_steps": 0,
+  "new_fits": 0,
+  "native_content": {
+    "shape_text_objects": 102,
+    "picture_instances": 8,
+    "nonempty_text_runs": 72,
+    "native_charts": 0,
+    "original_shape_objects_as_recorded": 94,
+    "shape_count_difference": 8,
+    "reason": "PDF import split multiline text into native fragments; vector data geometry retained"
+  },
+  "checks": {
+    "all16_table_scores_match": true,
+    "all6_signed_displacements_match": true,
+    "full_precision_displacements": "content_validation.json",
+    "embedded_raw_image_byte_hashes_match": true,
+    "all8_images_have_native_crops": true,
+    "original_vs_new_PDF_text_token_multisets_identical": true,
+    "PPTX_closed_reopened_and_personally_viewed": true,
+    "PDF_personally_viewed": "gui_records/pdf-review.png",
+    "PNG_personally_viewed": true,
+    "PDF_pages": 1,
+    "PDF_fonts_all_embedded": true,
+    "PNG_pixels": [
+      3360,
+      4080
+    ],
+    "PNG_mode": "RGB",
+    "PNG_DPI_metadata": null
+  },
+  "differences": [
+    "GUI reconstruction, not unavailable original PPTX bytes",
+    "102 native shape/text objects instead of94 due to multiline text splitting",
+    "Coordinate-line frame reset to12pt/24.5cm; minor spacing/crop-rounding differences possible",
+    "Fresh PPTX/PDF/PNG hashes; no pixel-identity claim"
+  ],
+  "scientific_scope_preserved": [
+    "all16 score cells and both measured conditions",
+    "two actual320 parents and six dependent128-step retain/zero/negate futures",
+    "all6 exact signed displacements preserved in source table; displayed four decimals unchanged",
+    "acquire2/2 versus prescribed reversal0/2",
+    "feedback and writes OFF in original expression forks",
+    "zero territory not learned stopping; no birth; preset actuator/cohesion; one-hop communication unpriced",
+    "separate from newer acquired-gain Fig3"
+  ],
+  "outputs": {
+    "local_motor_reconstructed.pptx": {
+      "bytes": 29287,
+      "sha256": "82b389c815f2bbd31ed295cd5208498d5acde7e77bdddb9c3f0f5f6eb6c27eb6"
+    },
+    "local_motor_reconstructed.pdf": {
+      "bytes": 95132,
+      "sha256": "db150919dc56fcb1885bd6aa768592d822d9c6906f7110a5b03fcc7f84a43925"
+    },
+    "local_motor_reconstructed.png": {
+      "bytes": 692476,
+      "sha256": "c5a6ed2002f9a73bcb27c2b187261bfe07ec66745cab830f140036ab9f729af3"
+    },
+    "caption.txt": {
+      "bytes": 1060,
+      "sha256": "aacc8d1a64707cd119b0f3b3dbae69e1d58448ff4bdc80380370e50b5f78fe70"
+    },
+    "caption_full.txt": {
+      "bytes": 4180,
+      "sha256": "1e27a5c4eeb91ac769529a1f137411a36202d65ba801b8658005ca0bdc513f67"
+    }
+  },
+  "notes": "reconstruction_notes.txt",
+  "source_register": "original_source.json",
+  "validation": "content_validation.json",
+  "paper_source_mapping": "author next action; no canonical wrapper or default preview changed"
+}

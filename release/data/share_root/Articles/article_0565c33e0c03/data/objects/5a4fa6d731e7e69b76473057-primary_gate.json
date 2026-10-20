@@ -1,0 +1,126 @@
+[
+  {
+    "seed": 202610195601,
+    "shape": "ring",
+    "delta": {
+      "M": -12.638781305495385,
+      "E": -17.004937046780213,
+      "bodytime": -56.49052424011256,
+      "post256": 0.3019404968259316
+    },
+    "gates": {
+      "1e-08": {
+        "post256_increase": true,
+        "M_nondecline": false,
+        "E_nondecline": false,
+        "bodytime_nondecline": false,
+        "minM32": true,
+        "all": false
+      },
+      "0": {
+        "post256_increase": true,
+        "M_nondecline": false,
+        "E_nondecline": false,
+        "bodytime_nondecline": false,
+        "minM32": true,
+        "all": false
+      }
+    },
+    "G_maintenance": false,
+    "G_maintenance_zero": false,
+    "both_maintenance": true
+  },
+  {
+    "seed": 202610195601,
+    "shape": "separate_seeds",
+    "delta": {
+      "M": -27.522861149937093,
+      "E": -60.8604008126552,
+      "bodytime": -108.58270619447467,
+      "post256": -4.1732664147464185
+    },
+    "gates": {
+      "1e-08": {
+        "post256_increase": false,
+        "M_nondecline": false,
+        "E_nondecline": false,
+        "bodytime_nondecline": false,
+        "minM32": true,
+        "all": false
+      },
+      "0": {
+        "post256_increase": false,
+        "M_nondecline": false,
+        "E_nondecline": false,
+        "bodytime_nondecline": false,
+        "minM32": true,
+        "all": false
+      }
+    },
+    "G_maintenance": false,
+    "G_maintenance_zero": false,
+    "both_maintenance": true
+  },
+  {
+    "seed": 202610195602,
+    "shape": "ring",
+    "delta": {
+      "M": -14.650836447207652,
+      "E": -21.094969515678088,
+      "bodytime": -70.0439563815537,
+      "post256": 0.1627386470274672
+    },
+    "gates": {
+      "1e-08": {
+        "post256_increase": true,
+        "M_nondecline": false,
+        "E_nondecline": false,
+        "bodytime_nondecline": false,
+        "minM32": true,
+        "all": false
+      },
+      "0": {
+        "post256_increase": true,
+        "M_nondecline": false,
+        "E_nondecline": false,
+        "bodytime_nondecline": false,
+        "minM32": true,
+        "all": false
+      }
+    },
+    "G_maintenance": false,
+    "G_maintenance_zero": false,
+    "both_maintenance": true
+  },
+  {
+    "seed": 202610195602,
+    "shape": "separate_seeds",
+    "delta": {
+      "M": -24.135121486945366,
+      "E": -51.93552845828245,
+      "bodytime": -91.01831019792473,
+      "post256": -2.618717772463121
+    },
+    "gates": {
+      "1e-08": {
+        "post256_increase": false,
+        "M_nondecline": false,
+        "E_nondecline": false,
+        "bodytime_nondecline": false,
+        "minM32": true,
+        "all": false
+      },
+      "0": {
+        "post256_increase": false,
+        "M_nondecline": false,
+        "E_nondecline": false,
+        "bodytime_nondecline": false,
+        "minM32": true,
+        "all": false
+      }
+    },
+    "G_maintenance": false,
+    "G_maintenance_zero": false,
+    "both_maintenance": true
+  }
+]

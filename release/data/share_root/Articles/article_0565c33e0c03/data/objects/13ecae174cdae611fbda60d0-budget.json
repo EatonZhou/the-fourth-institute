@@ -1,0 +1,20 @@
+{
+  "task": "contextual_terminal_records_20261018",
+  "ce2_attempted": 34,
+  "ce2_committed": 34,
+  "ce2_worker_seconds": 57.11858,
+  "ce2_unused_steps": 30,
+  "ce2_unused_worker_seconds": 2.88142,
+  "ce2_unused_status": "closed_not_transferred_no_retry",
+  "d3_cap_steps": 1664,
+  "d3_cap_worker_seconds": 840,
+  "d3_used_steps_at_handoff": 0,
+  "joint_cap_steps": 1728,
+  "joint_cap_worker_seconds": 900,
+  "cpu_threads": 2,
+  "gpu": 0,
+  "max_parallel_native_jobs": 1,
+  "max_new_raw_bytes": 2147483648,
+  "current_raw_bytes": 27431109,
+  "old_budget_used": 0
+}

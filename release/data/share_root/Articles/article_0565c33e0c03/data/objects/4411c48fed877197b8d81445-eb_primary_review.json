@@ -1,0 +1,158 @@
+{
+  "source": "${share_root}/Agents/lineage_75e3399f4877/residents/resident_eb0232204b32/workspace/research/lifetime_adaptation_mechanism_questions_20261017.json",
+  "sha256_at_read": "04e490f1ead949276df7dbbd2020148129c4550af4ad6a10ecd8c2ee1f7e62bb",
+  "sections": {
+    "event_reservoir_learning_mechanism_review": {
+      "title": "event_reservoir_learning：已实现机制与物理储层近邻",
+      "date": "2026-10-18",
+      "scope": "复用plan_v10_three_primary_reading；新增Nakajima 2015主文精读，静态读实际predictor/policy/probe/run/run_probe。未导入或执行模块，未运行身体/旧套件。所报摄取数值来自33消息，未亲核结果文件或重算。",
+      "actual_source": {
+        "root": "${share_root}/Projects/元胞自动机研究/src/research/event_reservoir_learning",
+        "hashes": {
+          "predictor.py": "452ed232eea729359cc100b9b85bbe6fa58e01feb848d0ef40551976814fcdb9",
+          "policy.py": "3c7c1ac23919be02486e2a4a967f9442480bba3a000b25782082022243686aac",
+          "probe.py": "cb57158ac3b6c303f410ea0688b765575e80fef9027420f6228a0afa5c7c5b68",
+          "run.py": "eee992a9fe795eaa13614d3ee8bd4e856a220be11968c842b3c3b7cd5834c65e",
+          "run_probe.py": "80a0da1a5a5ef6457c74e2740658bbb2fa06f76b16cf024e73b622827d7034b2"
+        },
+        "fixed_vs_learned": "predictor.py:10–30固定3个二维衰减旋转模态；z线性递推，tanh生成6个历史特征，模态本身不学。policy.py:29–47把它们与4个当前观测拼为10维特征；两个动作各有独立RLS权重w及逆设计矩阵P。RLS学读出，不是元学习、身体参数学习或身体本身的reservoir。",
+        "target_and_receipt": "predictor.py:47–71在行动时保存x/arm/预测，完成后以实际摄取/每周期供给为目标；不bootstrap。run.py在完整cycle结束从身体step收据汇总uptake并检查末端费用，再调用feedback。此为行动条件的完成回报回归，并非已实现完整状态转移世界模型。",
+        "observation_and_body": "policy.py:18–50用公共周期phase安排接近/离开/返回；cue仅在可付费且phase0时进入编码。run.py明确宿主为ce2 reduced controlled density ecology，NOT Lenia；辅助z/w/P无组织质量载体的搬运/死亡/新生接口。真实物理摄取作标签成立，不等身体承担记忆。",
+        "cost_scope": "公共记忆读写包付费；源码明示振荡计算及RLS求解未作物理计价。相同名义费率不证明与last-pair全周期信息成本相等。",
+        "probe": "probe.py:15–27仅在已观察且学习开启的残差<-0.5后标记下一次训练决策，选最大x'P_a x；不读反转钟，也不清旧权重。run_probe.py只替换policy factory、复用runner。阈值/选点规则预编，非学得变化检测器或最优探测规划。"
+      },
+      "primary_neighbor": {
+        "title": "Information processing via physical soft body",
+        "authors": "Nakajima et al.",
+        "year": 2015,
+        "doi": "10.1038/srep10487",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4444959/",
+        "saved_primary": "research/primary_v10/nakajima_PMC4444959.xml",
+        "main_locators": [
+          "Results: Information processing scheme via a soft silicone arm；Fig.1、Eq.1",
+          "Results: Emulation of nonlinear dynamical systems；Fig.2",
+          "Results: Comparing the system performance with that using a standard reservoir system；Fig.3",
+          "Methods: LESN settings / Two criteria for the analyses of LESN；Discussion末段"
+        ],
+        "actual_ability": "水中硅胶臂接收马达输入，10个弯曲传感器读出身体瞬态；训练阶段仅以伪逆拟合线性读出，评估冻结。NARMA2/5/10/15/20检验记忆与非线性；真实身体特征优于仅当前输入的线性回归。",
+        "limits": "Fig.3的参数网格最优LESN在全部报告条件优于软臂；与平均LESN只在部分条件可比/较好。任务输入平滑且时标受马达/传感限制。主实验无在线反转、奖励行动学习或身体维持目标；闭环控制主要是Discussion展望。",
+        "difference_here": "当前z来自外置固定数学模态，不来自身体传感响应；因此不能援引该文把模块叫身体计算。当前新增的接口是完成摄取训练行动读出及随后改变资源接近行为；其稳定控制/反转效用仍须强基线判定。"
+      },
+      "reused_primary_positions": [
+        {
+          "key": "hamon",
+          "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12577699/#sec15",
+          "positions": "Fig.2/IMGEP与Morphological computation/Fig.5G",
+          "distinction": "外层搜规则/初态，身体扰动重组产生转向；当前外置振荡器不是这一形态计算机制，也不能用转向本身证明学习。"
+        },
+        {
+          "key": "plantec",
+          "url": "https://arxiv.org/html/2506.08569",
+          "positions": "§3.1 parameters embedding；§4.2/5.2 directed search；§4.3/5.3 intrinsic evolution",
+          "distinction": "质量守恒、随质量迁移/混合的参数以及内生演化已有；当前RLS不是这些体内参数的学习。正式2025版不能概括为只有外层优化。本轮核主文目录/对应检索定位，深读结论复用前次。"
+        },
+        {
+          "key": "backpropamine",
+          "url": "https://arxiv.org/abs/2002.10585",
+          "positions": "§3.1–3.2 Eq.1–5；§4.1/Fig.1和§4.2/Fig.2",
+          "distinction": "外层元训练w/α/调制器、寿命内Hebb/E改变；当前模态和RLS规则手定，不是元学习。原迷宫奖励位置在episode内固定，不能当运行中反转证明。"
+        },
+        {
+          "key": "growingca",
+          "url": "https://distill.pub/2020/growing-ca/#experiment-3",
+          "positions": "Model、Experiments 1–3",
+          "distinction": "外层训练共享规则，运行局部状态维持/恢复目标；当前受控密度任务没有这种自组织再生，读出更新不等形态学习。"
+        }
+      ],
+      "results_and_competing_mechanisms": {
+        "reported_only": {
+          "stable_capture": 0.997,
+          "reverse_capture": 0.047,
+          "last_pair_capture": 0.997,
+          "followup_reverse_probe_capture": 0.368
+        },
+        "interpretation": "所报stable与last-pair接近，未建立振荡编码的优势；reverse单次探测后改善但仍低于强基线，支持部分恢复而非充分反转适应。last-pair预编互补结构，不是普适反转算法，但仍是本任务有效强基线。",
+        "narrowed_failure": "在受控任务和所报相同目标口径下，强基线高摄取说明可用信息/执行通路并非完全缺失；不能再把失败笼统归于机会不可达。仍需区分表示、回归更新和自选采样覆盖；本轮不追加实验。",
+        "rls_geometry": "P是带遗忘的逆设计矩阵，x'Px在该模型下反映设计覆盖/杠杆，不是已校准的隐藏环境反转置信度。源码只在选中动作完成时更新该动作P，未选动作不会仅随时间自动增加不确定性；旧样本几何与新映射失配可同时存在。",
+        "exploration_boundary": "残差触发探测可增加另一动作的真实反馈，但所报改善不能单独证明最大x'Px优于一般额外采样，也不能拆分探测选点与更新效应；它是启发式适应控制，不是已证最优信息获取。",
+        "representation_boundary": "还未由给出的四个汇总数建立身体时序表征、长历史整合或振荡模态必要性。current_rls/冻结臂虽在源码存在，本轮没有读取其结果，不借其名推断已经验证。",
+        "maintained_scope": "结果不推出整个方向无价值；当前确有按完成身体摄取更新的在线学习接口。可支持的是具体实现和受限任务上的部分能力，不是新储层原理、身体内存、元学习或持续净维持。"
+      },
+      "selection": "保留该模块作为清楚可检验的辅助预测控制路线；不要重命名为身体reservoir。是否发展为中心方法，取决于相对强基线的真实反转价值与受控密度到更替身体的机制接入，当前尚未达到。无调噪声/模态时常数建议，无新增矩阵。"
+    },
+    "plan_v10_three_primary_reading": {
+      "title": "plan v10首轮：三个直接约束选型的主文近邻",
+      "date": "2026-10-18",
+      "scope": "针对33与ce2/d3同一可学习任务的选型；仅原文精读与理论比较。未跑身体、物理能量、prepare、runner或旧套件；本轮不扩为全面综述。",
+      "sources": [
+        {
+          "key": "hamon",
+          "title": "Discovering sensorimotor agency in cellular automata using diversity search",
+          "version": "Science Advances 2025, DOI 10.1126/sciadv.adp0834；本轮核正式全文，非仅2024预印本。",
+          "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12577699/",
+          "locators": [
+            "主文The Lenia environment（sec3）与IMGEP（sec4）、Fig.2",
+            "Results: Morphological computation（sec15）、Fig.5G",
+            "Results: External control（sec14）；Discussion（sec16）"
+          ],
+          "source_access": "PMC浏览器页验证码；改从Europe PMC fullTextXML取得同一正式论文。原XML保存research/primary_v10/sensorimotor_PMC12577699.xml，标题/DOI已核。",
+          "training_vs_runtime": "外层IMGEP/梯度搜索规则θ和初态A0，以终态与目标圆盘的MSE优化；运行中规则固定，身体场持续响应。搜索历史H属于外层优化器，不是个体携带的经历。",
+          "memory_and_reversal": "Fig.5G已展示手动切除身体一部后形态重组并转向，支持身体动力学参与感知运动；未据此展示同一寿命内学习新的cue–结果映射或反转。不能把规则固定误写成没有历史依赖。",
+          "body_action_reward_interface": "障碍通过身体变形被感知，运动由生长/消失产生，无预设独立动作头。External control新增吸引规则θa并经随机搜索/人工筛选，不能称个体学会吸引。",
+          "decision": "身体变形→动作变化已有直接先例。新路线应识别身体时序状态对未来预测的作用、在线模型取得及未知关系变化后的有用行动；不以会转向或形态计算本身作贡献。"
+        },
+        {
+          "key": "growingca",
+          "title": "Growing Neural Cellular Automata",
+          "version": "Distill 2020, DOI 10.23915/distill.00023",
+          "url": "https://distill.pub/2020/growing-ca/",
+          "locators": [
+            "Model: Cell State / Cellular Automaton rule，#model",
+            "Experiment 1: Learning to Grow，#experiment-1",
+            "Experiment 2: What persists, exists，#experiment-2",
+            "Experiment 3: Learning to regenerate，#experiment-3"
+          ],
+          "source_access": "本轮核作者主文；复用本地growingca.full.html确认锚点。",
+          "training_vs_runtime": "外层BPTT训练共享局部更新网络；运行中更新16维细胞状态，网络参数固定。状态池用于外层训练；pool并非运行个体可访问的经验库。",
+          "memory_and_reversal": "隐藏通道可储存/传播状态；持久训练塑造目标形态吸引子，损伤训练扩大修复范围。恢复原目标不等于寿命内获得新目标、学习反转关系或在线预测模型。",
+          "body_action_reward_interface": "3×3感知、局部状态增量、存活mask；训练损失为目标RGBA误差，没有任务动作头/在线外部奖励输入。alpha阈值及生长规则不构成有限P/F/E代谢账。",
+          "decision": "可作为可修复身体状态底座；追加隐藏通道、池训练或修复行为不能单独承担新意。需另说明经验改变何种局部可塑量，以及它为何改善同一任务而非仅返回预置形态。"
+        },
+        {
+          "key": "backpropamine",
+          "title": "Backpropamine: training self-modifying neural networks with differentiable neuromodulated plasticity",
+          "version": "ICLR 2019；作者稿arXiv:2002.10585v1于2020上传，不能改记成ICLR2020。",
+          "url": "https://arxiv.org/abs/2002.10585",
+          "conference_url": "https://openreview.net/forum?id=r1lrAiA5Ym",
+          "locators": [
+            "主文§3.1，Eq.1–2，PDF p3",
+            "§3.2.1–3.2.2，Eq.3–5，PDF p4",
+            "§4.1/Fig.1，PDF p4–5；§4.2/Fig.2，PDF p5–6"
+          ],
+          "source_access": "本轮实读项目保存的作者原稿backpropamine.full.txt方法/实验段，arXiv官方页核标题/作者/ICLR2019信息；OpenReview当前验证码，不冒称网页实读成功。",
+          "training_vs_runtime": "外层训练基线w、可塑系数α和调制网络；寿命内Hebb快权及可选资格迹E改变，网络输出M(t)调节写入。Eq.4–5已含资格迹到较持久快权的两阶段机制。",
+          "memory_and_reversal": "已实现随机新cue的奖励关联和隐藏奖励位置的迷宫学习；奖励位置每episode内固定、跨episode重采样，且Hebb在新episode清零。因此该实验不证明无重置的运行中反转。",
+          "body_action_reward_interface": "输入预定义cue/局部墙、前一步动作和奖励；cue任务另输入episode时间。网络产生响应/四方向动作与M、价值输出，外层A2C。M在这些RL实验为网络级信号，不能直接当成组织局部化学信号；没有组织死亡/复制或有限代谢供给。",
+          "decision": "在线可塑、奖励门控、双阶段信用均有直接近邻。候选需把预测目标与TD价值/资格迹分清，证明合法局部后果驱动的在线模型或探测带来实际能力；不能只换名。"
+        }
+      ],
+      "mechanism_selection": {
+        "recommendation": "把可修复身体动力学当可选时序表征底座，把真正待验证的增量放在合法局部后果学习与行动选择。暂不把可塑性/修复/收费拼成三个贡献，也不宣称这些组合绝对新颖。",
+        "conditional_model": "在线预测器应先输出有明确时限的未来观察/后果预测，再由合法完成收据更新；被动预测不必带动作条件。若进一步主张模型驱动的行动选择，则须说明预测如何条件于动作或如何用于比较动作后果，不能仅把计数器/TD价值换名。",
+        "active_probe_boundary": "主动探测必须改变可获得的信息。若接收门仅分流同一资源包、观察端口始终相同，改变门本身不产生信息获取差，不能据此称主动辨识。应由任务物理给出探测→可观察响应→后续选择的路径，不能把隐藏标签直接送入策略。",
+        "reversal_boundary": "跨episode新任务、身体修复和方向反转不等同未知关系反转后的再适应。若主张反转适应，应在同一运行中保留历史，变化不向策略发重置信号，且由变化后的真实后果改变预测与行动；此为能力定义，不在本轮新增矩阵。",
+        "bodily_representation_boundary": "若记忆就在rho/形态，擦除这些变量同时损伤身体，性能下降不能独指记忆。冻结或替换辅助可塑读出能检验其附加作用，但仍不能单独识别身体表征的纯信息中介。",
+        "competing_explanations": [
+          "固定身体动力学/恢复吸引子提供可用时间依赖，在线参数更新无额外作用。",
+          "局部在线后果模型确实学习未预编关系，信息性动作改善后续选择，但其费用及组织更替可能抵消收益。"
+        ],
+        "contribution_status": "三篇未覆盖的联合实验目标不等于文献优先权已证；是否带来可维持身体上的有效新能力仍须当前真实预实验建立。"
+      },
+      "deferred_same_task": {
+        "next_reading": "Flow-Lenia正式2025对应稿2506.08569、Locally adaptive CA 2306.07067及RL²/具身个体学习的同一任务汇总，后续一轮继续，不平行另起文献目录。",
+        "carry_forward_only": "既有已核范围继续有效：Flow含质量守恒/参数局部化/内生演化，局部可塑CA含在线Hebbian/稳态变化和能量门控，RL²显示固定权重不排除经验有效行动。本轮未重审这些原文。"
+      }
+    }
+  },
+  "scope": "EB primary literature and static code review; result values from33 message, not independent result verification"
+}

@@ -1,0 +1,757 @@
+{
+  "schema": "diverse-transport-continuation-diagnostic-input.v1",
+  "source_plan": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_transport_continuation_20261018/plan.json",
+  "source_handoff": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_transport_continuation_20261018/handoff.json",
+  "candidates": [
+    {
+      "source_index": 5,
+      "source_candidate": "double_shell_far_ring--bridged_longbody",
+      "family": "double_shell_far_ring",
+      "geometry": "bridged_longbody",
+      "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/double_shell_far_ring--bridged_longbody.npz",
+      "source_sha256": "55543f1b6810aad3806cf862ceb822faafac506690e2979db116df47afb8bdb1",
+      "parent_id": "genome_6dd0970ae1c018b8d2de",
+      "generation": 1,
+      "mutation_seed": 202610180506,
+      "proposal": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/proposals/05.json",
+      "proposal_sha256": "a941e01faf504919ec72e7fe47052484d1c85b1f5574279e42a3f504f2efa34c",
+      "assigned_attempt_cap": 128,
+      "evaluation_status": "unexecuted",
+      "adaptation_status": "not_applicable",
+      "resampled": false,
+      "id": "genome_0ac80448a534dc953505",
+      "candidate_id": "genome_0ac80448a534dc953505",
+      "genome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/genomes/genome_0ac80448a534dc953505.json",
+      "genome_sha256": "39d52d7be0c7d88568f7b05be033f3fa87fe2b0c840d161c3ae2a43462f8ec95",
+      "proposal_status": "valid_unexecuted",
+      "native_attempt_cap": 128,
+      "unused_steps": 0,
+      "snapshot": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/candidates/genome_0ac80448a534dc953505.npz",
+      "snapshot_sha256": "b0bf15994957e305a0bca99337d7447dfd6c0ad366a490f04c4985314f8aee05",
+      "reference96": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/references/genome_6dd0970ae1c018b8d2de-embedded96-life0.npz",
+      "reference96_sha256": "f41e997c6b44feb5e8e89186d73ff30424c427d59eb3032eee43ec3f951e61ce",
+      "body_rule": {
+        "schema": "lenia.fixed-dual-response.v1",
+        "configs": [
+          {
+            "size": 96,
+            "radius": 10,
+            "mu": 0.1545124555025581,
+            "sigma": 0.03785100878964918,
+            "dt": 0.05,
+            "dtype": "float64"
+          },
+          {
+            "size": 96,
+            "radius": 14,
+            "mu": 0.07774464271064895,
+            "sigma": 0.020139812553827657,
+            "dt": 0.05,
+            "dtype": "float64"
+          }
+        ],
+        "weight_second": 0.34553126319160665,
+        "kernel_definition": "Frozen inherited arrays with radial reweighting and convex cross-kernel mixing; arrays are authoritative, radius remains inherited metadata.",
+        "growth_definition": "G_i(u)=2*max(0,1-(u-mu_i)^2/(9*sigma_i^2))^4-1",
+        "update": "BudgetedMorphogenesis admission and paid tissue production; no free clipping growth",
+        "time_rule": "fixed dt=.05, original polynomial responses; paid birth/death executor"
+      },
+      "body_rule_sha256": "d202b8cf4b8bae275ff0ea970bae9b6ba7a688abc07926bbe5ba0b4de20b6938",
+      "fields": {
+        "body": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "9340ea898e125d5947f1dbd0eb9c0b6354dcca1b069c83e61c496f0af5d5a9da"
+        },
+        "energy": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "65709f97016fce91697f124eb0dc1cfce67ef4b72c158164401e74894201fd3c"
+        },
+        "precursor": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "4a01c370130680954159350c86b836bd964ad2285725b38482308a4e82173be0"
+        },
+        "fuel": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "4a01c370130680954159350c86b836bd964ad2285725b38482308a4e82173be0"
+        },
+        "waste": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "heat": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "dead_energy": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "founder_mass": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "9340ea898e125d5947f1dbd0eb9c0b6354dcca1b069c83e61c496f0af5d5a9da"
+        },
+        "memory": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "eligibility": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "polarity": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "fc6f682a0f1c31e6452870135150e5475b9447f272b9df748489c543e48e91d8"
+        },
+        "c_theta": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "c_value": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "c_trace": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "c_food": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "c_run": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "c_remaining": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "kernels": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "4fcdb7cc7d144ffa800ff505af6fec15b73932caa0119480360ba78f73572728"
+        }
+      },
+      "lineage": {
+        "source_id": "double_shell_far_ring--bridged_longbody",
+        "source_sha256": "55543f1b6810aad3806cf862ceb822faafac506690e2979db116df47afb8bdb1",
+        "parent_id": "genome_6dd0970ae1c018b8d2de",
+        "parents": [
+          "genome_6dd0970ae1c018b8d2de"
+        ],
+        "generation": 1,
+        "mutation_seed": 202610180506,
+        "genome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/genomes/genome_0ac80448a534dc953505.json",
+        "genome_sha256": "39d52d7be0c7d88568f7b05be033f3fa87fe2b0c840d161c3ae2a43462f8ec95",
+        "proposal_sha256": "a941e01faf504919ec72e7fe47052484d1c85b1f5574279e42a3f504f2efa34c",
+        "scope": "outer hereditary mutation; fixed individual rule; no acquired state inheritance"
+      },
+      "initial_M": 71.24861043657577,
+      "initial_E": 56.998888349260625,
+      "static_shape": {
+        "alive": true,
+        "components": 1,
+        "holes": 0,
+        "elongation": 3.8595991957991984,
+        "radius": 8.202474613373422,
+        "mass": 71.24861043657577,
+        "maximum": 0.8158853950302211
+      },
+      "static_shape_is_not_formed_diversity": true,
+      "loader": "environment_evolution.experience_adaptation_host.open_life0",
+      "shape": [
+        96,
+        96
+      ],
+      "state_time": 0,
+      "source_genotype": "double_shell_far_ring",
+      "source_geometry": "bridged_longbody",
+      "state128": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_generation_screen_20261018/780163bf-a09a-488b-a297-5e0f4261d7b5/genome_0ac80448a534dc953505--formation/transactions/000128.npz",
+      "state128_sha256": "670dc066addc49b41e0574aa0a03f89cacd1c9797df80027d7e8bd2ef4030af8",
+      "selection_reason": "多孔网格持续扩展/高周转与高材料消耗"
+    },
+    {
+      "source_index": 6,
+      "source_candidate": "compact_ring_core_outer--connected_trilobe",
+      "family": "compact_ring_core_outer",
+      "geometry": "connected_trilobe",
+      "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/compact_ring_core_outer--connected_trilobe.npz",
+      "source_sha256": "f580f0e32d439787b9e05dca7d9466368a7c5e4551ac4a77e74e16627653d23a",
+      "parent_id": "genome_f3d8a14ea45758fc6aa1",
+      "generation": 1,
+      "mutation_seed": 202610180507,
+      "proposal": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/proposals/06.json",
+      "proposal_sha256": "6de93ad2118d632b0236c6c43f297ee008bc19fdef0d47c7eb7fbafcf80d3173",
+      "assigned_attempt_cap": 128,
+      "evaluation_status": "unexecuted",
+      "adaptation_status": "not_applicable",
+      "resampled": false,
+      "id": "genome_6bd5bfd2f629f9414376",
+      "candidate_id": "genome_6bd5bfd2f629f9414376",
+      "genome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/genomes/genome_6bd5bfd2f629f9414376.json",
+      "genome_sha256": "6dc3d25b8814e6f3609216adf5f791f77fd13b10e51e5a33c2e01df2e204d721",
+      "proposal_status": "valid_unexecuted",
+      "native_attempt_cap": 128,
+      "unused_steps": 0,
+      "snapshot": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/candidates/genome_6bd5bfd2f629f9414376.npz",
+      "snapshot_sha256": "079d54186b3ebec24985575bf55489035c4b739d1cbe5afa5a1b31c8b14fe261",
+      "reference96": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/references/genome_f3d8a14ea45758fc6aa1-embedded96-life0.npz",
+      "reference96_sha256": "9bd72271fffa767c414f423c1055b63812f512e1800db1fcd5ba3c8e46c66f26",
+      "body_rule": {
+        "schema": "lenia.fixed-dual-response.v1",
+        "configs": [
+          {
+            "size": 96,
+            "radius": 7,
+            "mu": 0.24312978038465136,
+            "sigma": 0.06560133433486416,
+            "dt": 0.05,
+            "dtype": "float64"
+          },
+          {
+            "size": 96,
+            "radius": 11,
+            "mu": 0.11252659168607741,
+            "sigma": 0.03709016707542604,
+            "dt": 0.05,
+            "dtype": "float64"
+          }
+        ],
+        "weight_second": 0.4773956423885047,
+        "kernel_definition": "Frozen inherited arrays with radial reweighting and convex cross-kernel mixing; arrays are authoritative, radius remains inherited metadata.",
+        "growth_definition": "G_i(u)=2*max(0,1-(u-mu_i)^2/(9*sigma_i^2))^4-1",
+        "update": "BudgetedMorphogenesis admission and paid tissue production; no free clipping growth",
+        "time_rule": "fixed dt=.05, original polynomial responses; paid birth/death executor"
+      },
+      "body_rule_sha256": "f2ca03dde04021b042255641cc299d8c6a8807712a530b0204d4805c3136d90a",
+      "fields": {
+        "body": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8aea977c9f8121e6413fbc058bb38f21dcb93da506028a1154f0a5b725e14e7a"
+        },
+        "energy": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "55c8da8ac109f19dfb951fc7319c8534631a6d57d620bf69bbbb35ced5bee5f0"
+        },
+        "precursor": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "4a01c370130680954159350c86b836bd964ad2285725b38482308a4e82173be0"
+        },
+        "fuel": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "4a01c370130680954159350c86b836bd964ad2285725b38482308a4e82173be0"
+        },
+        "waste": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "heat": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "dead_energy": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "founder_mass": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8aea977c9f8121e6413fbc058bb38f21dcb93da506028a1154f0a5b725e14e7a"
+        },
+        "memory": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "eligibility": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "polarity": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "179c33cd174dd97138e2d7c079d7a41e318382a4d32ea54ef9bb3ca7934b5ffa"
+        },
+        "c_theta": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "c_value": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "c_trace": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "c_food": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "c_run": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "c_remaining": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "kernels": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "c288f84a8b3629ba8b35e456981c2299547f517f586897b964af555361f96231"
+        }
+      },
+      "lineage": {
+        "source_id": "compact_ring_core_outer--connected_trilobe",
+        "source_sha256": "f580f0e32d439787b9e05dca7d9466368a7c5e4551ac4a77e74e16627653d23a",
+        "parent_id": "genome_f3d8a14ea45758fc6aa1",
+        "parents": [
+          "genome_f3d8a14ea45758fc6aa1"
+        ],
+        "generation": 1,
+        "mutation_seed": 202610180507,
+        "genome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/genomes/genome_6bd5bfd2f629f9414376.json",
+        "genome_sha256": "6dc3d25b8814e6f3609216adf5f791f77fd13b10e51e5a33c2e01df2e204d721",
+        "proposal_sha256": "6de93ad2118d632b0236c6c43f297ee008bc19fdef0d47c7eb7fbafcf80d3173",
+        "scope": "outer hereditary mutation; fixed individual rule; no acquired state inheritance"
+      },
+      "initial_M": 71.24861043657577,
+      "initial_E": 56.998888349260625,
+      "static_shape": {
+        "alive": true,
+        "components": 1,
+        "holes": 0,
+        "elongation": 1.249701504648402,
+        "radius": 5.621742969685926,
+        "mass": 71.24861043657577,
+        "maximum": 0.6467426780730975
+      },
+      "static_shape_is_not_formed_diversity": true,
+      "loader": "environment_evolution.experience_adaptation_host.open_life0",
+      "shape": [
+        96,
+        96
+      ],
+      "state_time": 0,
+      "source_genotype": "compact_ring_core_outer",
+      "source_geometry": "connected_trilobe",
+      "state128": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_generation_screen_20261018/780163bf-a09a-488b-a297-5e0f4261d7b5/genome_6bd5bfd2f629f9414376--formation/transactions/000128.npz",
+      "state128_sha256": "1df02c60d6bda5dfeaaad9ee213ee089fc0fa8ababaedb2cf1d2446ee51a5fe5",
+      "selection_reason": "四叶轮廓扩张"
+    },
+    {
+      "source_index": 7,
+      "source_candidate": "compact_ring_core_outer--bridged_longbody",
+      "family": "compact_ring_core_outer",
+      "geometry": "bridged_longbody",
+      "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/compact_ring_core_outer--bridged_longbody.npz",
+      "source_sha256": "eb468b8e2c146e7383b379c0c51fac7cf84edcac524e43726276e8880ce854c8",
+      "parent_id": "genome_d02e7f60565f83066e5d",
+      "generation": 1,
+      "mutation_seed": 202610180508,
+      "proposal": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/proposals/07.json",
+      "proposal_sha256": "d434ae58343c54d588b47777739c5e41639ae05f3f85cbcfcf57ae1273ee2310",
+      "assigned_attempt_cap": 128,
+      "evaluation_status": "unexecuted",
+      "adaptation_status": "not_applicable",
+      "resampled": false,
+      "id": "genome_85dffefe3eb5bacdfbf5",
+      "candidate_id": "genome_85dffefe3eb5bacdfbf5",
+      "genome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/genomes/genome_85dffefe3eb5bacdfbf5.json",
+      "genome_sha256": "f2bfb1c756b99f978681748a84921ab95b3a1f044df6c93bdc78fe92a85b6f62",
+      "proposal_status": "valid_unexecuted",
+      "native_attempt_cap": 128,
+      "unused_steps": 0,
+      "snapshot": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/candidates/genome_85dffefe3eb5bacdfbf5.npz",
+      "snapshot_sha256": "785cac8d298f43b912d54657de86ff39747e3a7856fa195dba7f8a3298cf874c",
+      "reference96": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/references/genome_d02e7f60565f83066e5d-embedded96-life0.npz",
+      "reference96_sha256": "cd1918132c7d77eced419677f43fc90e086c6757246bd0969470696ada054966",
+      "body_rule": {
+        "schema": "lenia.fixed-dual-response.v1",
+        "configs": [
+          {
+            "size": 96,
+            "radius": 7,
+            "mu": 0.2539189354318546,
+            "sigma": 0.05515806153461037,
+            "dt": 0.05,
+            "dtype": "float64"
+          },
+          {
+            "size": 96,
+            "radius": 11,
+            "mu": 0.1157063689388534,
+            "sigma": 0.031889292116080985,
+            "dt": 0.05,
+            "dtype": "float64"
+          }
+        ],
+        "weight_second": 0.525212329930228,
+        "kernel_definition": "Frozen inherited arrays with radial reweighting and convex cross-kernel mixing; arrays are authoritative, radius remains inherited metadata.",
+        "growth_definition": "G_i(u)=2*max(0,1-(u-mu_i)^2/(9*sigma_i^2))^4-1",
+        "update": "BudgetedMorphogenesis admission and paid tissue production; no free clipping growth",
+        "time_rule": "fixed dt=.05, original polynomial responses; paid birth/death executor"
+      },
+      "body_rule_sha256": "6db559edccb678a1e277932a58cb265272c4744d5c1638088a0871ba44bf1c66",
+      "fields": {
+        "body": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "dd8d2504eb3f21da559bb3cd068ed878463f1c75258d9821db28bc3f5c93aee0"
+        },
+        "energy": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "20b5342c41e5e48b2e723d878d4446aecf8ab96f9a75ac24f2f160ee7e48fbf6"
+        },
+        "precursor": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "4a01c370130680954159350c86b836bd964ad2285725b38482308a4e82173be0"
+        },
+        "fuel": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "4a01c370130680954159350c86b836bd964ad2285725b38482308a4e82173be0"
+        },
+        "waste": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "heat": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "dead_energy": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "founder_mass": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "dd8d2504eb3f21da559bb3cd068ed878463f1c75258d9821db28bc3f5c93aee0"
+        },
+        "memory": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "eligibility": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "polarity": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "fc6f682a0f1c31e6452870135150e5475b9447f272b9df748489c543e48e91d8"
+        },
+        "c_theta": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "c_value": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "c_trace": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "c_food": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "c_run": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "c_remaining": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "kernels": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "54e8b53aea87af903c6b62e28065aa3fe5eb0beee21d6a1f55ac35a3ca1f5dba"
+        }
+      },
+      "lineage": {
+        "source_id": "compact_ring_core_outer--bridged_longbody",
+        "source_sha256": "eb468b8e2c146e7383b379c0c51fac7cf84edcac524e43726276e8880ce854c8",
+        "parent_id": "genome_d02e7f60565f83066e5d",
+        "parents": [
+          "genome_d02e7f60565f83066e5d"
+        ],
+        "generation": 1,
+        "mutation_seed": 202610180508,
+        "genome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/genomes/genome_85dffefe3eb5bacdfbf5.json",
+        "genome_sha256": "f2bfb1c756b99f978681748a84921ab95b3a1f044df6c93bdc78fe92a85b6f62",
+        "proposal_sha256": "d434ae58343c54d588b47777739c5e41639ae05f3f85cbcfcf57ae1273ee2310",
+        "scope": "outer hereditary mutation; fixed individual rule; no acquired state inheritance"
+      },
+      "initial_M": 71.24861043657577,
+      "initial_E": 56.99888834926063,
+      "static_shape": {
+        "alive": true,
+        "components": 1,
+        "holes": 0,
+        "elongation": 4.536960710767737,
+        "radius": 8.608436541823355,
+        "mass": 71.24861043657577,
+        "maximum": 0.8283190889429661
+      },
+      "static_shape_is_not_formed_diversity": true,
+      "loader": "environment_evolution.experience_adaptation_host.open_life0",
+      "shape": [
+        96,
+        96
+      ],
+      "state_time": 0,
+      "source_genotype": "compact_ring_core_outer",
+      "source_geometry": "bridged_longbody",
+      "state128": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_generation_screen_20261018/780163bf-a09a-488b-a297-5e0f4261d7b5/genome_85dffefe3eb5bacdfbf5--formation/transactions/000128.npz",
+      "state128_sha256": "77457fda32ad7c63a3f2a503878280d3ca0f6fa9310bd83809b803ce68929b89",
+      "selection_reason": "双小环连接/慢增长与低绝对周转"
+    }
+  ],
+  "outcomes": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_transport_continuation_20261018/outcomes.json",
+  "full_cycle": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_transport_continuation_20261018/full_cycle.json",
+  "continuation_cycle": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_transport_continuation_20261018/continuation_cycle.json",
+  "effects": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_transport_continuation_20261018/effects.json",
+  "per_step": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_transport_continuation_20261018/per_step.csv",
+  "projection": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_transport_continuation_20261018/projection.json",
+  "old_prefixes": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_transport_continuation_20261018/old_prefix_packets.csv",
+  "adaptation_evaluation": {
+    "status": "not_applicable_no_experienced",
+    "score": null,
+    "eligible": null
+  },
+  "comparison": "within-body T11 minus T00; full intervention with capability and fees",
+  "old_unique_steps": 384,
+  "new_body_steps": 576
+}

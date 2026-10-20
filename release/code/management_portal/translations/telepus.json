@@ -1,0 +1,54 @@
+{
+  "Telepus 服务状态不可用：{p0}": {
+    "en": "Telepus service status unavailable: {p0}",
+    "zh-CN": "Telepus 服务状态不可用：{p0}"
+  },
+  "Telepus 已开启，三个服务正在运行。": {
+    "en": "Telepus is on; all three services are running.",
+    "zh-CN": "Telepus 已开启，三个服务正在运行。"
+  },
+  "Telepus 已关闭，三个服务已停止并取消开机自启。": {
+    "en": "Telepus is off; all three services are stopped and disabled at startup.",
+    "zh-CN": "Telepus 已关闭，三个服务已停止并取消开机自启。"
+  },
+  "Telepus 部分开启；需检查：{p0}。": {
+    "en": "Telepus is partially on; check: {p0}.",
+    "zh-CN": "Telepus 部分开启；需检查：{p0}。"
+  },
+  "关闭后停止 Telepus 的三个服务并取消开机自启；已有联系人和数据保留。": {
+    "en": "Turning it off stops all three Telepus services and disables startup; existing contacts and data remain.",
+    "zh-CN": "关闭后停止 Telepus 的三个服务并取消开机自启；已有联系人和数据保留。"
+  },
+  "正在启动 Telepus 服务…": {
+    "en": "Starting Telepus services…",
+    "zh-CN": "正在启动 Telepus 服务…"
+  },
+  "正在停止 Telepus 服务…": {
+    "en": "Stopping Telepus services…",
+    "zh-CN": "正在停止 Telepus 服务…"
+  },
+  "缺少 Telepus 服务：{p0}。": {
+    "en": "Missing Telepus service: {p0}.",
+    "zh-CN": "缺少 Telepus 服务：{p0}。"
+  },
+  "Telegram id token 必须是 5-32 位数字": {
+    "en": "Telegram id token must be 5-32 digits",
+    "zh-CN": "Telegram id token 必须是 5-32 位数字"
+  },
+  "Unsupported Telepus contact operation": {
+    "en": "Unsupported Telepus contact operation",
+    "zh-CN": "不支持的 Telepus 联系人操作"
+  },
+  "原 Telegram id token 格式无效": {
+    "en": "Original Telegram id token format is invalid",
+    "zh-CN": "原 Telegram id token 格式无效"
+  },
+  "这个 Portal user 已绑定到其它 Telepus contact": {
+    "en": "This Portal user is already bound to another Telepus contact",
+    "zh-CN": "这个 Portal user 已绑定到其它 Telepus contact"
+  },
+  "这个 Telegram id token 已存在": {
+    "en": "This Telegram id token already exists",
+    "zh-CN": "这个 Telegram id token 已存在"
+  }
+}

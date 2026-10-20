@@ -1,0 +1,318 @@
+[
+  {
+    "id": "g1_f0_c0",
+    "generation": 1,
+    "family": "compact",
+    "genome": {
+      "schema": "experience-adaptation-genome.v1",
+      "id": "genome_93e6148d32bbb0862163",
+      "family": "compact",
+      "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/reference_anisotropic--connected_trilobe.npz",
+      "source_sha256": "c73aa228328b141bf094093030fcd8c82fa49f7b022d5e3f4bffe171b29d300a",
+      "genes": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "parent_id": null,
+      "generation": 0,
+      "mutation_seed": null,
+      "named_genes": {
+        "log_mu1": 0.0,
+        "log_mu2": 0.0,
+        "log_sigma1": 0.0,
+        "log_sigma2": 0.0,
+        "weight_shift": 0.0,
+        "kernel_radial1": 0.0,
+        "kernel_radial2": 0.0,
+        "kernel_crossmix": 0.0,
+        "log_stretch_y": 0.0,
+        "log_stretch_x": 0.0,
+        "neck_density": 0.0
+      },
+      "lifetime_rule": "fixed; only outer generations mutate"
+    },
+    "parent_candidate": null,
+    "kernel_log_scales": [
+      -0.06,
+      0.06
+    ],
+    "legal": true
+  },
+  {
+    "id": "g1_f1_c0",
+    "generation": 1,
+    "family": "ring",
+    "genome": {
+      "schema": "experience-adaptation-genome.v1",
+      "id": "genome_68dc2655fca077092477",
+      "family": "ring",
+      "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/core_ring--connected_trilobe.npz",
+      "source_sha256": "a878d57858176d7701fc00bc8b7e6e2fa6139a6c2e73047b5f69b7c9c0ea99cd",
+      "genes": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "parent_id": null,
+      "generation": 0,
+      "mutation_seed": null,
+      "named_genes": {
+        "log_mu1": 0.0,
+        "log_mu2": 0.0,
+        "log_sigma1": 0.0,
+        "log_sigma2": 0.0,
+        "weight_shift": 0.0,
+        "kernel_radial1": 0.0,
+        "kernel_radial2": 0.0,
+        "kernel_crossmix": 0.0,
+        "log_stretch_y": 0.0,
+        "log_stretch_x": 0.0,
+        "neck_density": 0.0
+      },
+      "lifetime_rule": "fixed; only outer generations mutate"
+    },
+    "parent_candidate": null,
+    "kernel_log_scales": [
+      -0.06,
+      0.06
+    ],
+    "legal": true
+  },
+  {
+    "id": "g1_f2_c0",
+    "generation": 1,
+    "family": "double_lobe",
+    "genome": {
+      "schema": "experience-adaptation-genome.v1",
+      "id": "genome_d02e7f60565f83066e5d",
+      "family": "double_lobe",
+      "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/compact_ring_core_outer--bridged_longbody.npz",
+      "source_sha256": "eb468b8e2c146e7383b379c0c51fac7cf84edcac524e43726276e8880ce854c8",
+      "genes": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "parent_id": null,
+      "generation": 0,
+      "mutation_seed": null,
+      "named_genes": {
+        "log_mu1": 0.0,
+        "log_mu2": 0.0,
+        "log_sigma1": 0.0,
+        "log_sigma2": 0.0,
+        "weight_shift": 0.0,
+        "kernel_radial1": 0.0,
+        "kernel_radial2": 0.0,
+        "kernel_crossmix": 0.0,
+        "log_stretch_y": 0.0,
+        "log_stretch_x": 0.0,
+        "neck_density": 0.0
+      },
+      "lifetime_rule": "fixed; only outer generations mutate"
+    },
+    "parent_candidate": null,
+    "kernel_log_scales": [
+      -0.06,
+      0.06
+    ],
+    "legal": true
+  },
+  {
+    "id": "g1_f3_c0",
+    "generation": 1,
+    "family": "separate_seeds",
+    "genome": {
+      "schema": "experience-adaptation-genome.v1",
+      "id": "genome_6dd0970ae1c018b8d2de",
+      "family": "separate_seeds",
+      "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/double_shell_far_ring--bridged_longbody.npz",
+      "source_sha256": "55543f1b6810aad3806cf862ceb822faafac506690e2979db116df47afb8bdb1",
+      "genes": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "parent_id": null,
+      "generation": 0,
+      "mutation_seed": null,
+      "named_genes": {
+        "log_mu1": 0.0,
+        "log_mu2": 0.0,
+        "log_sigma1": 0.0,
+        "log_sigma2": 0.0,
+        "weight_shift": 0.0,
+        "kernel_radial1": 0.0,
+        "kernel_radial2": 0.0,
+        "kernel_crossmix": 0.0,
+        "log_stretch_y": 0.0,
+        "log_stretch_x": 0.0,
+        "neck_density": 0.0
+      },
+      "lifetime_rule": "fixed; only outer generations mutate"
+    },
+    "parent_candidate": null,
+    "kernel_log_scales": [
+      -0.06,
+      0.06
+    ],
+    "legal": true
+  },
+  {
+    "id": "g2_p0_c0",
+    "generation": 2,
+    "family": "double_lobe",
+    "genome": {
+      "schema": "experience-adaptation-genome.v1",
+      "id": "genome_bd818f3cd82ee24316f5",
+      "family": "double_lobe",
+      "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/compact_ring_core_outer--bridged_longbody.npz",
+      "source_sha256": "eb468b8e2c146e7383b379c0c51fac7cf84edcac524e43726276e8880ce854c8",
+      "genes": [
+        0.03805112412521015,
+        0.0018895267609443866,
+        -0.05434230796821879,
+        0.03500208173589314,
+        -0.005742716135906684,
+        -0.014487744102262416,
+        0.11184272048007587,
+        0.021018927058154033,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "parent_id": "genome_d02e7f60565f83066e5d",
+      "generation": 1,
+      "mutation_seed": 202610193001,
+      "named_genes": {
+        "log_mu1": 0.03805112412521015,
+        "log_mu2": 0.0018895267609443866,
+        "log_sigma1": -0.05434230796821879,
+        "log_sigma2": 0.03500208173589314,
+        "weight_shift": -0.005742716135906684,
+        "kernel_radial1": -0.014487744102262416,
+        "kernel_radial2": 0.11184272048007587,
+        "kernel_crossmix": 0.021018927058154033,
+        "log_stretch_y": 0.0,
+        "log_stretch_x": 0.0,
+        "neck_density": 0.0
+      },
+      "lifetime_rule": "fixed; only outer generations mutate"
+    },
+    "parent_candidate": "g1_f2_c0",
+    "kernel_log_scales": [
+      -0.06,
+      0.06
+    ],
+    "legal": true,
+    "mutation_seed": 202610193001,
+    "proposed_genes": [
+      0.03805112412521015,
+      0.0018895267609443866,
+      -0.05434230796821879,
+      0.03500208173589314,
+      -0.005742716135906684,
+      -0.014487744102262416,
+      0.11184272048007587,
+      0.021018927058154033,
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  {
+    "id": "g2_p0_c1",
+    "generation": 2,
+    "family": "double_lobe",
+    "genome": {
+      "schema": "experience-adaptation-genome.v1",
+      "id": "genome_436e63713954c64af644",
+      "family": "double_lobe",
+      "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/compact_ring_core_outer--bridged_longbody.npz",
+      "source_sha256": "eb468b8e2c146e7383b379c0c51fac7cf84edcac524e43726276e8880ce854c8",
+      "genes": [
+        -0.00739180459532859,
+        -0.027644293302018202,
+        -0.04287720422032604,
+        0.029235263930421154,
+        -0.0072845931612713416,
+        -0.05612943093216481,
+        -0.10932026176418257,
+        0.04898236763459883,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "parent_id": "genome_d02e7f60565f83066e5d",
+      "generation": 1,
+      "mutation_seed": 202610193002,
+      "named_genes": {
+        "log_mu1": -0.00739180459532859,
+        "log_mu2": -0.027644293302018202,
+        "log_sigma1": -0.04287720422032604,
+        "log_sigma2": 0.029235263930421154,
+        "weight_shift": -0.0072845931612713416,
+        "kernel_radial1": -0.05612943093216481,
+        "kernel_radial2": -0.10932026176418257,
+        "kernel_crossmix": 0.04898236763459883,
+        "log_stretch_y": 0.0,
+        "log_stretch_x": 0.0,
+        "neck_density": 0.0
+      },
+      "lifetime_rule": "fixed; only outer generations mutate"
+    },
+    "parent_candidate": "g1_f2_c0",
+    "kernel_log_scales": [
+      -0.06,
+      0.06
+    ],
+    "legal": true,
+    "mutation_seed": 202610193002,
+    "proposed_genes": [
+      -0.00739180459532859,
+      -0.027644293302018202,
+      -0.04287720422032604,
+      0.029235263930421154,
+      -0.0072845931612713416,
+      -0.05612943093216481,
+      -0.10932026176418257,
+      0.04898236763459883,
+      0.0,
+      0.0,
+      0.0
+    ]
+  }
+]

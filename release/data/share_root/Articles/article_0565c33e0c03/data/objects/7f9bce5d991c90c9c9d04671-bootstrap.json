@@ -1,0 +1,8 @@
+{
+  "pid": 2217601,
+  "owner": "resident_d3ccfa2d95b7",
+  "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/turnover_compatible_morphogenesis/supervise.py",
+  "sha256": "4412d45afffcbfc866d289bbb4e60acd838cd2f09bc87ca231bf9d4aa6abced0",
+  "original_runtime_unchanged": true,
+  "pre_job_socket_failure_native": 0
+}

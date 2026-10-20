@@ -1,0 +1,34 @@
+{
+  "task": "local_terminal_feedback_20261018",
+  "status": "ce2_closed_partial_at_time_cap",
+  "objective_met": false,
+  "channel_target_available": true,
+  "job": "b63cdc7c-3f38-4a43-af6e-9c481c419fa9",
+  "runner_status": "failed",
+  "returncode": 1,
+  "attempted_steps": 771,
+  "committed_steps": 771,
+  "runner_worker_seconds": 174.508036,
+  "complete_paths": 3,
+  "incomplete_paths": [
+    {
+      "source": "6bd",
+      "geometry": "heldout_rotated",
+      "steps": 1,
+      "missing_steps": 255
+    }
+  ],
+  "raw_bytes": 719432132,
+  "manifest": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/local_terminal_feedback_20261018/manifest.json",
+    "sha256": "aa23ce6a7ee880341b5a1fa8aa4ff10a733bdbbcfaa71a6798dfaa7f9060fa19"
+  },
+  "api": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/local_terminal_feedback_20261018/API.txt",
+  "report": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/local_terminal_feedback_20261018/REPORT.txt",
+  "summary": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/local_terminal_feedback_20261018/summary.json",
+  "budget": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/local_terminal_feedback_20261018/budget.json",
+  "raw_manifest": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/local_terminal_feedback_20261018/raw_manifest.json",
+  "core_sha256": "f9e46ff79923af67be5eb6cab38ca42593014f0249522f762dd36de145398106",
+  "plan_sha256": "8e3989db095940688e0b59a397bea4613228927b7b93c6d8f1360665c832fcf8",
+  "continuation": "d3 exclusively <=4864 native steps/420worker seconds; same paid channel ignore/freeze controls, strong Euler/none; no transfer of ce2 unspent or old budget"
+}

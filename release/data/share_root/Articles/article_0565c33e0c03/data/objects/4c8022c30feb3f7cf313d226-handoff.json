@@ -1,0 +1,46 @@
+{
+  "task": "fixed_amount_rule_deletion_layout_20261019",
+  "status": "completed_with_documented_same_job_recovery",
+  "owner": "resident_d3ccfa2d95b7",
+  "job": "0b471f2a-d4d9-4469-94e5-6ab4d5a1540a",
+  "plan": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/fixed_amount_rule_deletion_layout_20261019/plan.json",
+    "sha256": "659e580e9a798155b36bdf88c401f85f6dd7d6577b7586e57a469da4c7476025"
+  },
+  "manifest": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/fixed_amount_rule_deletion_layout_20261019/manifest.json",
+    "sha256": "4867eb6522e747e89b926ee6178bac0c8d004eff51b1a28649fd1270e65ce9e3",
+    "files": 99
+  },
+  "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/fixed_amount_rule_deletion_layout_20261019/REPORT.txt",
+  "method": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/fixed_amount_rule_deletion_layout_20261019/METHOD.txt",
+  "budget": {
+    "native": 1540,
+    "worker_seconds": 79.087806,
+    "science": 1536,
+    "boundaries": 4,
+    "authorized_reference_replay": 512,
+    "old_acquisition": 0,
+    "unused_native": 4,
+    "unused_worker_seconds": 520.912194,
+    "prior_attempt_native": 388,
+    "second_attempt_native": 1152,
+    "failed_attempt_count": 1,
+    "physics_failures": 0,
+    "one_job_id": "0b471f2a-d4d9-4469-94e5-6ab4d5a1540a",
+    "raw_bytes": 47476794
+  },
+  "analysis": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/fixed_amount_rule_deletion_layout_20261019/analysis.json",
+  "raw_manifest": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/fixed_amount_rule_deletion_layout_20261019/raw_manifest.json",
+  "observed": "both layouts improve M/E/bodytime/true post256 vs original in all four related contexts; mass not consistently better than uniform; 0/12 pass both maintenance windows",
+  "objective_met": false,
+  "next_request": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/fixed_amount_rule_deletion_layout_20261019/scientific_next_request.json",
+  "native_complete": true,
+  "actual_futures": 12,
+  "complete_256_320_384_joints": 36,
+  "saved_receipts": 96,
+  "raw_files": 279,
+  "raw_bytes": 47476794,
+  "old_acquisition_replay": 0,
+  "authorized_reference_future_replay": 512
+}

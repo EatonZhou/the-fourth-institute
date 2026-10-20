@@ -1,0 +1,78 @@
+{
+  "schema": "tfi.portal-architecture-evidence.v1",
+  "mode": "current",
+  "owner": "resident_60ae6d0cdf74",
+  "repository": "repo_5d287fed9c7e",
+  "current_commit": "3182ae77ad380a85d2b271623766cd36570edc03",
+  "currentSource": {
+    "commit": "3182ae77ad380a85d2b271623766cd36570edc03",
+    "scope": "current_workspace",
+    "files": {
+      "architecture/modules.yaml": {
+        "status": "available",
+        "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/architecture-evidence/current/architecture/modules.yaml",
+        "sha256": "ee8c2a1e97773fe43693d083e8b88d7f7bdf3adefe4399ff60807264339dd2e7",
+        "size": 111522
+      },
+      "architecture/evolution.yaml": {
+        "status": "available",
+        "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/architecture-evidence/current/architecture/evolution.yaml",
+        "sha256": "75725c9fe1415c317c04d840ebee33ecb6a971114023d489ccbcefc9ac58a627",
+        "size": 33935
+      },
+      "SPEC.md": {
+        "status": "available",
+        "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/architecture-evidence/current/SPEC.md",
+        "sha256": "47f1523dee9946a1bc1397055eb89ae501fc5570103e718bc07f2cf6c939b675",
+        "size": 15776
+      },
+      "IMPROVE.md": {
+        "status": "available",
+        "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/architecture-evidence/current/IMPROVE.md",
+        "sha256": "4f7027d564b7e86714cf46e41fa6e49eb4c4db528d38a1d4b0f65444d039624f",
+        "size": 6498
+      }
+    },
+    "file_index": {
+      "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/architecture-evidence/current/file-index.json",
+      "sha256": "79b840a37fa22ed997768e04ae34d643ab3937bfc953ef448599d407d0c740be",
+      "size": 2160309
+    },
+    "protocols": {
+      "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/architecture-evidence/current/protocols.json",
+      "sha256": "b0ef553e3290743aa3b40aef3ecb6386e23ac1a6264af79269644ec829e70a43",
+      "size": 59003
+    },
+    "file_counts": {
+      "tracked": 3209,
+      "multi_module": 618,
+      "unmapped": 314
+    }
+  },
+  "current_meaning": "Current workspace documents; source identifier is not a historical selection.",
+  "exploration": {
+    "status": "available",
+    "manifest": {
+      "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/deep-architecture/current/exploration-manifest.json",
+      "sha256": "11c95c95558c2ec20cc00e331359781f6659850c35b40474051303bb77c05ddd",
+      "size": 54266
+    }
+  },
+  "catalog_attachment": {
+    "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/deep-architecture/objects/isa-catalog-attachment-664e88043ae96e8717abac64faebf7bd4be75f25912ad3085954384fb4ae15fb.json",
+    "sha256": "678c19c9814ee901bc384312476a4a7d0f3563bcabd6b3429cd256df41a5c542",
+    "size": 615
+  },
+  "component_relations": {
+    "status": "not_declared"
+  },
+  "catalog_supplements": {
+    "hatg": {
+      "lesson_sources": {
+        "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/deep-architecture/current/lesson-manifest.json",
+        "sha256": "de177ad9bcdac8688f0a9acb69d96e10e2a24f44853dcf029cb488584ddae46d",
+        "size": 5552
+      }
+    }
+  }
+}

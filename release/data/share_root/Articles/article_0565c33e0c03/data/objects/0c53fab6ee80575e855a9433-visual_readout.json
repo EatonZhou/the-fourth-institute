@@ -1,0 +1,15 @@
+{
+  "inspected": [
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_second_parent_completion_20261019/actual_compact.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_second_parent_completion_20261019/actual_double_lobe.png"
+  ],
+  "times": [
+    0,
+    32,
+    64,
+    96,
+    128
+  ],
+  "interpretation": "亲看两组真实0/32/64/96/128图：compact由填充圆盘形成带中心凹空的小环；双叶共定位形成不等孔的连接体，分离供给持续缩小，c0至128仅余低质量小斑。c1保留较大连接体但质量继续下降。",
+  "rendering": "Exact saved fields, no interpolation between times. Common density 0..1 display; per-track common crop documented in figure_sources."
+}

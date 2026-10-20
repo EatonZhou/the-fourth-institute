@@ -1,0 +1,17 @@
+{
+  "type": "project",
+  "category": "resource",
+  "format": "registered_project_id",
+  "description": "A Project uses its unique human-readable ID registered in the Portal Project registry (read with GetProject), such as AI员工 or RobotCompany.",
+  "title": {
+    "zh": "项目",
+    "en": "Project"
+  },
+  "provider": "management_portal.resources.providers.project:install_mutation_provider",
+  "catalog_section": "",
+  "catalog_order": 0,
+  "registerable": true,
+  "scope": "shared",
+  "unit": "core",
+  "enabled_by_default": true
+}

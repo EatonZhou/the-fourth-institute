@@ -1,0 +1,10 @@
+{
+  "raw": 620701200,
+  "report_before_manifest": 934452,
+  "runner": 3984,
+  "ce2": 27431109,
+  "cap_bytes": 2147483648,
+  "metadata_reserve_bytes": 1048576,
+  "conservative_total": 650119321,
+  "within_cap": true
+}

@@ -1,0 +1,16 @@
+{
+  "task": "birth_clock_retention_accounting_20261019",
+  "status": "proposed_for_PI_scientific_choice_only",
+  "authorized_new_native": 0,
+  "choice": "保留both删除分支的可付出生分支选择：使正请求与删除响应解耦，而非额外保护C。",
+  "evidence": "39/40共同钟同龄汇总两权重为正；6个末N负例均为出生量负项超过留存率正项。原正请求both−G反而8/8增加；仅加请求幅度没有证据。",
+  "minimal_candidate": {
+    "observable_inputs": "当前ready rho/P/F/E、原邻域模板、原A/B/C响应及价格；无C/O/N、出生钟或未来留存输入。",
+    "prechoice": "原both先锁定响应和其删除D。以同一ready D及同一admit纯函数，分别评估原A/B/C的正请求；仅严格更高可付出生时选择对应正请求分支，平局保both。",
+    "execution": "先锁分支，actual after-actor计算原候选响应；D仍取both的原D，正R取所选候选的正分支。只走一次原实际admit/价格/泵，不增加或归一化R。",
+    "semantic_change": "明确新增正负响应解耦，可能同格先删除后出生；不是原有响应等价改写、学习成功或已验证收益。原拒绝、死能、模板和物能支付不能省略。"
+  },
+  "necessary_comparison": "固定both强同行及ring反例。先零native判断此正分支是否真的产生非重复可付选择；若不产生，关闭该具体机制，不堆writer或扫幅度。实际身体比较须另立冻结授权。",
+  "evaluation": "既有C留存+未来N+M/E/体时并列、minM与固定晚窗维护不放宽。出生量增加本身不算成功；保存所有同龄反例。",
+  "limit": "当前数据不证明缺P/缺F原因、位置因果或干预中介；本轮不运行该机制。"
+}

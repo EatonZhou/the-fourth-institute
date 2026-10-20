@@ -1,0 +1,21 @@
+[Unit]
+Description=Portal AI Socket Relay
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=@PORTAL_SOURCE_ROOT@
+Environment=PORTAL_INSTANCE=dev
+EnvironmentFile=-@PORTAL_POSTGRES_ENV_FILE@
+Environment=PORTAL_AI_RELAY_HOST=@PORTAL_RELAY_BIND@
+Environment=PORTAL_AI_RELAY_PORT=@PORTAL_RELAY_PORT@
+Environment=PORTAL_AI_RELAY_ALLOWED_IPS=@PORTAL_RELAY_ALLOWED_IPS@
+Environment=PORTAL_AI_RELAY_MAX_BYTES=4194304
+Environment=PORTAL_AI_RELAY_MAX_CONCURRENT=16
+ExecStart=@PORTAL_INSTANCES_ROOT@/dev/runtime-venv/bin/python -m management_portal.ai_socket_relay
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=default.target

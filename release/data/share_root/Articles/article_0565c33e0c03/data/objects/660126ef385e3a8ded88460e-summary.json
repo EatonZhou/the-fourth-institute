@@ -1,0 +1,40 @@
+{
+  "status": "passed",
+  "scope": "only added pure binding/partition/consistency cases",
+  "body_steps": 0,
+  "environment_calls": 0,
+  "passed": [
+    "host_shaped_local_paid_zero_with_age",
+    "neighbor_missing_not_inferred_from_zero_uptake",
+    "exact_array_encoding_is_read_only_and_dtype_sensitive",
+    "full_public_capacity_blocks_false_history_only_claim",
+    "declared_continuous_unit_target"
+  ],
+  "expected_rejections": [
+    {
+      "case": "mixed_assessment_kinds",
+      "reason": "incomparable assessment kinds in common context"
+    },
+    {
+      "case": "same_fixed_rule_input_inconsistent_output",
+      "reason": "same fixed rule/input produced different predictions"
+    },
+    {
+      "case": "declared_binary_rejects_continuous",
+      "reason": "completed binary opportunity label must be 0 or 1"
+    },
+    {
+      "case": "fractional_label_not_cast_to_zero",
+      "reason": "nonbinary local label cannot be rounded"
+    },
+    {
+      "case": "paid_shortfall_cannot_complete",
+      "reason": "local completion contradicts saved fee/carrier/capacity"
+    },
+    {
+      "case": "post_commit_snapshot_not_accepted",
+      "reason": "this binding audits phase4 before commitment only"
+    }
+  ],
+  "limitation": "Hand-authored host-shaped records; no physical run or claim of native certification."
+}

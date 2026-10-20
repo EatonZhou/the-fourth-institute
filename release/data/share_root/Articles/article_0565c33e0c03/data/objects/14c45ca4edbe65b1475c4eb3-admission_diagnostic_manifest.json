@@ -1,0 +1,74 @@
+[
+  {
+    "stage_id": "genome_0ac80448a534dc953505/T00",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_resource_factorial_20261018/c1f46de0-fa66-41b5-93ea-dd11f81e7ef6/admission_diagnostics/genome_0ac80448a534dc953505--T00.npz",
+    "sha256": "e308d1aa39fe44a55fc330f1607441b82b062451c8af32b820be680728ccf749",
+    "bytes": 17226136,
+    "execution_source": "old_readonly",
+    "provenance": "saved committed fields only; no forwards",
+    "steps": 96
+  },
+  {
+    "stage_id": "genome_0ac80448a534dc953505/T10",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_resource_factorial_20261018/c1f46de0-fa66-41b5-93ea-dd11f81e7ef6/admission_diagnostics/genome_0ac80448a534dc953505--T10.npz",
+    "sha256": "4e464c653fe055f8b16267fca156498c8b2d66d0c28ab45b5f93f7aeca60cc79",
+    "bytes": 18699303,
+    "execution_source": "new",
+    "provenance": "saved committed fields only; no forwards",
+    "steps": 96
+  },
+  {
+    "stage_id": "genome_0ac80448a534dc953505/T01",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_resource_factorial_20261018/c1f46de0-fa66-41b5-93ea-dd11f81e7ef6/admission_diagnostics/genome_0ac80448a534dc953505--T01.npz",
+    "sha256": "2b7a3ec4db75cf09e8e97a06ec13da3774284a4aa51afb88f007595d0ec2df4c",
+    "bytes": 17897026,
+    "execution_source": "new",
+    "provenance": "saved committed fields only; no forwards",
+    "steps": 96
+  },
+  {
+    "stage_id": "genome_0ac80448a534dc953505/T11",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_resource_factorial_20261018/c1f46de0-fa66-41b5-93ea-dd11f81e7ef6/admission_diagnostics/genome_0ac80448a534dc953505--T11.npz",
+    "sha256": "67fb7f47e7cf634b65d9cf1877cf1821c9a7ae178d6bb5802a690f7e274a3c0d",
+    "bytes": 19395218,
+    "execution_source": "old_readonly",
+    "provenance": "saved committed fields only; no forwards",
+    "steps": 96
+  },
+  {
+    "stage_id": "genome_6bd5bfd2f629f9414376/T00",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_resource_factorial_20261018/c1f46de0-fa66-41b5-93ea-dd11f81e7ef6/admission_diagnostics/genome_6bd5bfd2f629f9414376--T00.npz",
+    "sha256": "715c6216ab56378ea1d42f2fe9e12b8fc51186ac427c8d381f1d86b371494a6c",
+    "bytes": 9629159,
+    "execution_source": "old_readonly",
+    "provenance": "saved committed fields only; no forwards",
+    "steps": 96
+  },
+  {
+    "stage_id": "genome_6bd5bfd2f629f9414376/T10",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_resource_factorial_20261018/c1f46de0-fa66-41b5-93ea-dd11f81e7ef6/admission_diagnostics/genome_6bd5bfd2f629f9414376--T10.npz",
+    "sha256": "40991200eed95ecd09e5979dc5ae379388e49a60351f457b492fcd711072a403",
+    "bytes": 10822021,
+    "execution_source": "new",
+    "provenance": "saved committed fields only; no forwards",
+    "steps": 96
+  },
+  {
+    "stage_id": "genome_6bd5bfd2f629f9414376/T01",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_resource_factorial_20261018/c1f46de0-fa66-41b5-93ea-dd11f81e7ef6/admission_diagnostics/genome_6bd5bfd2f629f9414376--T01.npz",
+    "sha256": "01734a455c46cc1876c35f79f2dc02718557b9627f5bf4afe3e369e3ef15618f",
+    "bytes": 10005755,
+    "execution_source": "new",
+    "provenance": "saved committed fields only; no forwards",
+    "steps": 96
+  },
+  {
+    "stage_id": "genome_6bd5bfd2f629f9414376/T11",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_resource_factorial_20261018/c1f46de0-fa66-41b5-93ea-dd11f81e7ef6/admission_diagnostics/genome_6bd5bfd2f629f9414376--T11.npz",
+    "sha256": "a4c7ed6903390dded59473d181dddecb1fa3422b332412ee0ac577ab36dc22b1",
+    "bytes": 11245256,
+    "execution_source": "old_readonly",
+    "provenance": "saved committed fields only; no forwards",
+    "steps": 96
+  }
+]

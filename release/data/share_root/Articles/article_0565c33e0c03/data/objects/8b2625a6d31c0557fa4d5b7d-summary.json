@@ -1,0 +1,744 @@
+{
+  "selected": "ema",
+  "development": [
+    {
+      "body": 0,
+      "E": 0.00884184410786304,
+      "body_time": 0.14194328850788906,
+      "U": 0.19476483111051834
+    },
+    {
+      "body": 1,
+      "E": -0.34807858065330777,
+      "body_time": 0.10101129503317452,
+      "U": -0.06258405642831377
+    }
+  ],
+  "counts": {
+    "test_paths": 24,
+    "known_rules": 2,
+    "paired_schedules": 2
+  },
+  "aggregate": {
+    "ema - demand": {
+      "M": {
+        "mean": 0.4550514474601961,
+        "positive": 4,
+        "negative": 0,
+        "n": 4
+      },
+      "E": {
+        "mean": -2.3340706836449954,
+        "positive": 0,
+        "negative": 4,
+        "n": 4
+      },
+      "U": {
+        "mean": 4.504579934334815,
+        "positive": 4,
+        "negative": 0,
+        "n": 4
+      },
+      "body_time": {
+        "mean": 2.6481687123935416,
+        "positive": 4,
+        "negative": 0,
+        "n": 4
+      },
+      "born": {
+        "mean": 2.3747277861818334,
+        "positive": 4,
+        "negative": 0,
+        "n": 4
+      },
+      "death": {
+        "mean": 1.9196763387216462,
+        "positive": 4,
+        "negative": 0,
+        "n": 4
+      },
+      "new_tissue": {
+        "mean": 1.7452160709307778,
+        "positive": 4,
+        "negative": 0,
+        "n": 4
+      },
+      "old_material": {
+        "mean": -1.2901646234705844,
+        "positive": 0,
+        "negative": 4,
+        "n": 4
+      },
+      "pump_fee": {
+        "mean": 3.3123741477847073,
+        "positive": 4,
+        "negative": 0,
+        "n": 4
+      },
+      "flow": {
+        "mean": 41.40467684730885,
+        "positive": 4,
+        "negative": 0,
+        "n": 4
+      },
+      "total_heat": {
+        "mean": 4.028186846053785,
+        "positive": 4,
+        "negative": 0,
+        "n": 4
+      },
+      "dead_energy": {
+        "mean": 3.8078494421223894,
+        "positive": 4,
+        "negative": 0,
+        "n": 4
+      }
+    },
+    "ema - diffusion": {
+      "M": {
+        "mean": 0.07920454243630459,
+        "positive": 3,
+        "negative": 1,
+        "n": 4
+      },
+      "E": {
+        "mean": -0.5318924218669991,
+        "positive": 1,
+        "negative": 3,
+        "n": 4
+      },
+      "U": {
+        "mean": -2.5440574432262153,
+        "positive": 0,
+        "negative": 4,
+        "n": 4
+      },
+      "body_time": {
+        "mean": 0.5033237437918388,
+        "positive": 3,
+        "negative": 1,
+        "n": 4
+      },
+      "born": {
+        "mean": 0.28201123389397775,
+        "positive": 3,
+        "negative": 1,
+        "n": 4
+      },
+      "death": {
+        "mean": 0.20280669145767227,
+        "positive": 3,
+        "negative": 1,
+        "n": 4
+      },
+      "new_tissue": {
+        "mean": 0.28852931297506235,
+        "positive": 3,
+        "negative": 1,
+        "n": 4
+      },
+      "old_material": {
+        "mean": -0.20932477053875864,
+        "positive": 0,
+        "negative": 4,
+        "n": 4
+      },
+      "pump_fee": {
+        "mean": -2.4856064874470283,
+        "positive": 0,
+        "negative": 4,
+        "n": 4
+      },
+      "flow": {
+        "mean": -31.07008109308785,
+        "positive": 0,
+        "negative": 4,
+        "n": 4
+      },
+      "total_heat": {
+        "mean": -2.371109865465243,
+        "positive": 0,
+        "negative": 4,
+        "n": 4
+      },
+      "dead_energy": {
+        "mean": 0.4773895623415143,
+        "positive": 3,
+        "negative": 1,
+        "n": 4
+      }
+    },
+    "ema - flux": {
+      "M": {
+        "mean": 0.06023242927742345,
+        "positive": 3,
+        "negative": 1,
+        "n": 4
+      },
+      "E": {
+        "mean": -0.2394990405973374,
+        "positive": 1,
+        "negative": 3,
+        "n": 4
+      },
+      "U": {
+        "mean": -1.4230386505685875,
+        "positive": 0,
+        "negative": 4,
+        "n": 4
+      },
+      "body_time": {
+        "mean": 0.3569688001357747,
+        "positive": 3,
+        "negative": 1,
+        "n": 4
+      },
+      "born": {
+        "mean": -0.05257392199153621,
+        "positive": 2,
+        "negative": 2,
+        "n": 4
+      },
+      "death": {
+        "mean": -0.1128063512689561,
+        "positive": 1,
+        "negative": 3,
+        "n": 4
+      },
+      "new_tissue": {
+        "mean": 0.09502949740916566,
+        "positive": 3,
+        "negative": 1,
+        "n": 4
+      },
+      "old_material": {
+        "mean": -0.034797068131742215,
+        "positive": 1,
+        "negative": 3,
+        "n": 4
+      },
+      "pump_fee": {
+        "mean": -1.0929012380913057,
+        "positive": 0,
+        "negative": 4,
+        "n": 4
+      },
+      "flow": {
+        "mean": -13.661265476141319,
+        "positive": 0,
+        "negative": 4,
+        "n": 4
+      },
+      "total_heat": {
+        "mean": -1.06774041770381,
+        "positive": 0,
+        "negative": 4,
+        "n": 4
+      },
+      "dead_energy": {
+        "mean": -0.13788023950387185,
+        "positive": 2,
+        "negative": 2,
+        "n": 4
+      }
+    },
+    "ema - frozen_ema": {
+      "M": {
+        "mean": -0.023560589304468138,
+        "positive": 1,
+        "negative": 3,
+        "n": 4
+      },
+      "E": {
+        "mean": 0.0025152225807971718,
+        "positive": 2,
+        "negative": 2,
+        "n": 4
+      },
+      "U": {
+        "mean": -0.06765641543096912,
+        "positive": 1,
+        "negative": 3,
+        "n": 4
+      },
+      "body_time": {
+        "mean": -0.0099940404530372,
+        "positive": 1,
+        "negative": 3,
+        "n": 4
+      },
+      "born": {
+        "mean": -0.0321407481139202,
+        "positive": 1,
+        "negative": 3,
+        "n": 4
+      },
+      "death": {
+        "mean": -0.008580158809458283,
+        "positive": 1,
+        "negative": 3,
+        "n": 4
+      },
+      "new_tissue": {
+        "mean": -0.029028928594543757,
+        "positive": 1,
+        "negative": 3,
+        "n": 4
+      },
+      "old_material": {
+        "mean": 0.005468339290081836,
+        "positive": 3,
+        "negative": 1,
+        "n": 4
+      },
+      "pump_fee": {
+        "mean": -0.05789202389361592,
+        "positive": 1,
+        "negative": 3,
+        "n": 4
+      },
+      "flow": {
+        "mean": -0.7236502986701971,
+        "positive": 1,
+        "negative": 3,
+        "n": 4
+      },
+      "total_heat": {
+        "mean": -0.0660787963780578,
+        "positive": 1,
+        "negative": 3,
+        "n": 4
+      },
+      "dead_energy": {
+        "mean": -0.017591955841581353,
+        "positive": 1,
+        "negative": 3,
+        "n": 4
+      }
+    },
+    "ema - none": {
+      "M": {
+        "mean": 1.0981215005290714,
+        "positive": 4,
+        "negative": 0,
+        "n": 4
+      },
+      "E": {
+        "mean": -3.410830603142351,
+        "positive": 0,
+        "negative": 4,
+        "n": 4
+      },
+      "U": {
+        "mean": 13.470522218066277,
+        "positive": 4,
+        "negative": 0,
+        "n": 4
+      },
+      "body_time": {
+        "mean": 6.411143444759546,
+        "positive": 4,
+        "negative": 0,
+        "n": 4
+      },
+      "born": {
+        "mean": 7.81756390356143,
+        "positive": 4,
+        "negative": 0,
+        "n": 4
+      },
+      "death": {
+        "mean": 6.719442403032368,
+        "positive": 4,
+        "negative": 0,
+        "n": 4
+      },
+      "new_tissue": {
+        "mean": 5.588492472899612,
+        "positive": 4,
+        "negative": 0,
+        "n": 4
+      },
+      "old_material": {
+        "mean": -4.490370972370535,
+        "positive": 0,
+        "negative": 4,
+        "n": 4
+      },
+      "pump_fee": {
+        "mean": 4.553810895805526,
+        "positive": 4,
+        "negative": 0,
+        "n": 4
+      },
+      "flow": {
+        "mean": 56.922636197569076,
+        "positive": 4,
+        "negative": 0,
+        "n": 4
+      },
+      "total_heat": {
+        "mean": 6.816262738976789,
+        "positive": 4,
+        "negative": 0,
+        "n": 4
+      },
+      "dead_energy": {
+        "mean": 13.348466921727649,
+        "positive": 4,
+        "negative": 0,
+        "n": 4
+      }
+    }
+  },
+  "individual": [
+    {
+      "body": 0,
+      "condition": "static",
+      "comparison": "ema - flux",
+      "M": -0.06140739152489516,
+      "E": 0.31987564046409034,
+      "U": -0.4407213983904015,
+      "body_time": -0.20510200604815054,
+      "born": -0.32778304925481194,
+      "death": -0.26637565772992033,
+      "new_tissue": -0.17957331615552619,
+      "old_material": 0.11816592463064524,
+      "pump_fee": -0.28006780797311936,
+      "flow": -3.5008475996639987,
+      "total_heat": -0.3676091986849883,
+      "dead_energy": -0.5306567208565411
+    },
+    {
+      "body": 0,
+      "condition": "static",
+      "comparison": "ema - demand",
+      "M": 0.4059391451352923,
+      "E": -1.609360737937493,
+      "U": 5.611311269688514,
+      "body_time": 2.362204810596495,
+      "born": 2.9288500719723345,
+      "death": 2.522910926837053,
+      "new_tissue": 1.931645784798775,
+      "old_material": -1.5257066396634897,
+      "pump_fee": 2.5539523622207922,
+      "flow": 31.9244045277599,
+      "total_heat": 3.420625816902742,
+      "dead_energy": 5.030163220951636
+    },
+    {
+      "body": 0,
+      "condition": "static",
+      "comparison": "ema - diffusion",
+      "M": -0.057184590703030835,
+      "E": 0.07376347705985609,
+      "U": -1.3679261148418718,
+      "body_time": -0.0010128050215598705,
+      "born": -0.06498539779530432,
+      "death": -0.00780080709227704,
+      "new_tissue": -0.04547522084460809,
+      "old_material": -0.011709369858415641,
+      "pump_fee": -1.4362385900611598,
+      "flow": -17.9529823757645,
+      "total_heat": -1.4531066731279907,
+      "dead_energy": -0.015876785847751762
+    },
+    {
+      "body": 0,
+      "condition": "static",
+      "comparison": "ema - none",
+      "M": 1.2393713260123747,
+      "E": -0.4550561915579294,
+      "U": 15.936818527755058,
+      "body_time": 7.227932648319438,
+      "born": 8.43064598589056,
+      "death": 7.191274659878179,
+      "new_tissue": 5.792136408234896,
+      "old_material": -4.5527650822225,
+      "pump_fee": 3.133809978688665,
+      "flow": 39.17262473360831,
+      "total_heat": 5.605713374287205,
+      "dead_energy": 14.32703265909987
+    },
+    {
+      "body": 0,
+      "condition": "static",
+      "comparison": "ema - frozen_ema",
+      "M": -0.06756605533432491,
+      "E": 0.12321125189029658,
+      "U": -0.16149105857130763,
+      "body_time": -0.0677940814368867,
+      "born": -0.1458047163205265,
+      "death": -0.0782386609862229,
+      "new_tissue": -0.12042160758269915,
+      "old_material": 0.05285555224838845,
+      "pump_fee": -0.15100720902715947,
+      "flow": -1.8875901128394972,
+      "total_heat": -0.18945709965285573,
+      "dead_energy": -0.15648319166342617
+    },
+    {
+      "body": 0,
+      "condition": "changed",
+      "comparison": "ema - flux",
+      "M": 0.017626515345568805,
+      "E": -0.03004853806881158,
+      "U": -0.15977529760071718,
+      "body_time": 0.10938145278714728,
+      "born": 0.03703512648896634,
+      "death": 0.01940861114340109,
+      "new_tissue": 0.08447996568954252,
+      "old_material": -0.06685345034399148,
+      "pump_fee": -0.1951773150857976,
+      "flow": -2.439716438572468,
+      "total_heat": -0.17235797412887166,
+      "dead_energy": 0.05818596772232354
+    },
+    {
+      "body": 0,
+      "condition": "changed",
+      "comparison": "ema - demand",
+      "M": 0.38566455253084087,
+      "E": -1.179686694975473,
+      "U": 6.100195091675751,
+      "body_time": 2.3567884222483144,
+      "born": 2.9558750150039366,
+      "death": 2.5702104624730886,
+      "new_tissue": 1.976953403023746,
+      "old_material": -1.5912888504929086,
+      "pump_fee": 2.52157439119588,
+      "flow": 31.519679889948495,
+      "total_heat": 3.3955722777844812,
+      "dead_energy": 5.12577701516841
+    },
+    {
+      "body": 0,
+      "condition": "changed",
+      "comparison": "ema - diffusion",
+      "M": 0.0397296370695841,
+      "E": -0.20446591831831995,
+      "U": -1.1022350587405967,
+      "body_time": 0.27869018418539326,
+      "born": 0.2629041555161429,
+      "death": 0.22317451844654457,
+      "new_tissue": 0.21131019354073644,
+      "old_material": -0.1715805564711559,
+      "pump_fee": -1.3393029657095061,
+      "flow": -16.741287071368824,
+      "total_heat": -1.2600907632842677,
+      "dead_energy": 0.47274136817875956
+    },
+    {
+      "body": 0,
+      "condition": "changed",
+      "comparison": "ema - none",
+      "M": 1.2564928054587057,
+      "E": -0.22645546296332952,
+      "U": 15.904182487364437,
+      "body_time": 7.331443996222333,
+      "born": 8.35601346629451,
+      "death": 7.099520660835822,
+      "new_tissue": 5.889526037937227,
+      "old_material": -4.633033232478532,
+      "pump_fee": 3.089759014051693,
+      "flow": 38.62198767564616,
+      "total_heat": 5.526495641567777,
+      "dead_energy": 14.113667964603707
+    },
+    {
+      "body": 0,
+      "condition": "changed",
+      "comparison": "ema - frozen_ema",
+      "M": 0.009477569501527228,
+      "E": -0.049862285858580435,
+      "U": 0.047824969737746414,
+      "body_time": 0.0889913605565198,
+      "born": 0.11032676883652215,
+      "death": 0.10084919933496295,
+      "new_tissue": 0.06714694265060928,
+      "old_material": -0.05766937314907494,
+      "pump_fee": -0.09081035856097586,
+      "flow": -1.1351294820121964,
+      "total_heat": -0.05968985890368117,
+      "dead_energy": 0.20371435741128607
+    },
+    {
+      "body": 1,
+      "condition": "static",
+      "comparison": "ema - flux",
+      "M": 0.12595525341420455,
+      "E": -0.4911143114525913,
+      "U": -2.38064294588834,
+      "body_time": 0.7817399783405676,
+      "born": 0.09994031300065132,
+      "death": -0.026014940413542575,
+      "new_tissue": 0.2852071788697117,
+      "old_material": -0.15925192545550004,
+      "pump_fee": -2.0837669979578344,
+      "flow": -26.047087474472917,
+      "total_heat": -1.9844446380430867,
+      "dead_energy": 0.13689093506764038
+    },
+    {
+      "body": 1,
+      "condition": "static",
+      "comparison": "ema - demand",
+      "M": 0.5535088313724401,
+      "E": -3.4225206495253104,
+      "U": 3.428116626889704,
+      "body_time": 3.0543769006648063,
+      "born": 2.0009373816992486,
+      "death": 1.4474285503268192,
+      "new_tissue": 1.66175280959677,
+      "old_material": -1.1082439782243227,
+      "pump_fee": 4.237008278326764,
+      "flow": 52.96260347908456,
+      "total_heat": 4.8489604258835755,
+      "dead_energy": 2.8420705508451363
+    },
+    {
+      "body": 1,
+      "condition": "static",
+      "comparison": "ema - diffusion",
+      "M": 0.17159211622730908,
+      "E": -0.8415004022320716,
+      "U": -3.6635274378077582,
+      "body_time": 0.9121367766327921,
+      "born": 0.5382518499210676,
+      "death": 0.3666597336937656,
+      "new_tissue": 0.5466691963391241,
+      "old_material": -0.3750770801118115,
+      "pump_fee": -3.6983491053307773,
+      "flow": -46.22936381663472,
+      "total_heat": -3.4811249054917255,
+      "dead_energy": 0.8851636468829156
+    },
+    {
+      "body": 1,
+      "condition": "static",
+      "comparison": "ema - none",
+      "M": 1.0142797054609218,
+      "E": -6.536512204261456,
+      "U": 11.560887590577082,
+      "body_time": 5.576375985682432,
+      "born": 7.651659960128573,
+      "death": 6.637380254667669,
+      "new_tissue": 5.551531637759567,
+      "old_material": -4.537251932298638,
+      "pump_fee": 5.987197654045284,
+      "flow": 74.83997067556605,
+      "total_heat": 8.154551441819024,
+      "dead_energy": 13.156545536273484
+    },
+    {
+      "body": 1,
+      "condition": "static",
+      "comparison": "ema - frozen_ema",
+      "M": -0.02967077422134423,
+      "E": -0.06761391739360079,
+      "U": -0.15234610755555877,
+      "body_time": -0.027179845699890848,
+      "born": -0.03800127625361327,
+      "death": -0.00833050203225838,
+      "new_tissue": -0.03200750680908726,
+      "old_material": 0.002336732587753687,
+      "pump_fee": -0.07030883446464209,
+      "flow": -0.8788604308080181,
+      "total_heat": -0.08087903077128544,
+      "dead_energy": -0.019813695417212784
+    },
+    {
+      "body": 1,
+      "condition": "changed",
+      "comparison": "ema - flux",
+      "M": 0.1587553398748156,
+      "E": -0.756708953332037,
+      "U": -2.711014960394891,
+      "body_time": 0.7418557754635344,
+      "born": -0.019488078200950554,
+      "death": -0.1782434180757626,
+      "new_tissue": 0.19000416123293462,
+      "old_material": -0.03124882135812257,
+      "pump_fee": -1.8125928313484714,
+      "flow": -22.65741039185589,
+      "total_heat": -1.746549859958293,
+      "dead_energy": -0.21594113994891018
+    },
+    {
+      "body": 1,
+      "condition": "changed",
+      "comparison": "ema - demand",
+      "M": 0.47509326080221115,
+      "E": -3.124714652141705,
+      "U": 2.878696749085293,
+      "body_time": 2.8193047160645506,
+      "born": 1.613248676051814,
+      "death": 1.1381554152496243,
+      "new_tissue": 1.4105122863038204,
+      "old_material": -0.9354190255016164,
+      "pump_fee": 3.9369615593953933,
+      "flow": 49.21201949244242,
+      "total_heat": 4.4475888636443415,
+      "dead_energy": 2.233386981524376
+    },
+    {
+      "body": 1,
+      "condition": "changed",
+      "comparison": "ema - diffusion",
+      "M": 0.16268100715135603,
+      "E": -1.1553668439774611,
+      "U": -4.0425411615146345,
+      "body_time": 0.8234808193707295,
+      "born": 0.3918743279340049,
+      "death": 0.22919332078265597,
+      "new_tissue": 0.4416130828649969,
+      "old_material": -0.27893207571365153,
+      "pump_fee": -3.4685352886866694,
+      "flow": -43.35669110858336,
+      "total_heat": -3.2901171199569887,
+      "dead_energy": 0.5675300201521338
+    },
+    {
+      "body": 1,
+      "condition": "changed",
+      "comparison": "ema - none",
+      "M": 0.8823421651842835,
+      "E": -6.425298553786689,
+      "U": 10.48020026656853,
+      "body_time": 5.508821148813979,
+      "born": 6.831936201932077,
+      "death": 5.949594036747804,
+      "new_tissue": 5.12077580766676,
+      "old_material": -4.23843364248247,
+      "pump_fee": 6.004476936436464,
+      "flow": 75.0559617054558,
+      "total_heat": 7.97829049823315,
+      "dead_energy": 11.796621526933535
+    },
+    {
+      "body": 1,
+      "condition": "changed",
+      "comparison": "ema - frozen_ema",
+      "M": -0.006483097163730633,
+      "E": 0.004325841685073328,
+      "U": -0.004613465334756484,
+      "body_time": -0.03399359523189105,
+      "born": -0.0550837687180632,
+      "death": -0.0486006715543148,
+      "new_tissue": -0.03083354263699789,
+      "old_material": 0.02435044547326015,
+      "pump_fee": 0.08055830647831375,
+      "flow": 1.0069788309789232,
+      "total_heat": 0.06571080381559113,
+      "dead_energy": -0.09778529369697253
+    }
+  ],
+  "body_failures": 0,
+  "max_balance_error": 1.425526363618701e-13,
+  "recomposition_error": 0.0,
+  "same_full_initial_state_per_condition": true,
+  "all_frozen_writer_exact": true,
+  "histories_change_actual_directions": true,
+  "missing": "one logging-failed development first-step scalar/receipt; no retrospective reconstruction",
+  "evidence_boundary": "Two known parents and deterministic spatial schedules; no population or old512-step maintenance claim. Usage allocations are descriptive, not isolated causal effects."
+}

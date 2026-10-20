@@ -1,0 +1,180 @@
+{
+  "schema": "material-action-response-delivery-v1",
+  "attachments": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/INTERPRETATION.txt",
+      "relative": "INTERPRETATION.txt",
+      "bytes": 1012,
+      "sha256": "bb16f59bcd2b4189427eafe0074b0f5bc0e83524b8c1ce762a0ad3a84cbf5b09"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/METHOD.txt",
+      "relative": "METHOD.txt",
+      "bytes": 3814,
+      "sha256": "907363339f0e59c0b43b12d411b9c9d59eccc7ce408875ee383002abeebdbf88"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/REPORT.txt",
+      "relative": "REPORT.txt",
+      "bytes": 4891,
+      "sha256": "19c8978ca995f39fd31d4e8f9aa287da2146f8cb67e273bbf4cef426f7223600"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/actual_bodies.png",
+      "relative": "actual_bodies.png",
+      "bytes": 170857,
+      "sha256": "d637c41ef62bfe10ada8e5b3624b205368bbdd341db5007d726f09e2aaedebfb"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/actual_process.png",
+      "relative": "actual_process.png",
+      "bytes": 225908,
+      "sha256": "9ee0f7f5cb9c85ae575d4a9419e92de8bb0850a65d57f81b8afa4068c4be756d"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/baseline_reference.json",
+      "relative": "baseline_reference.json",
+      "bytes": 868,
+      "sha256": "52313a32e8ee12b50a17b5bd523703f32e3350393d7d3c361fc07ac162fc5335"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/checks.json",
+      "relative": "checks.json",
+      "bytes": 4805,
+      "sha256": "513d2ed35bfa4477a27bca39a4bf69ed5ade65eac88892c482580f6b7a83507f"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/outcomes.csv",
+      "relative": "outcomes.csv",
+      "bytes": 15901,
+      "sha256": "b46787b94df793415c6265df46a4b4d2ce9cdb6b62a6d7d2f7e5ef726c9279ba"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/paired_outcomes.csv",
+      "relative": "paired_outcomes.csv",
+      "bytes": 3502,
+      "sha256": "eb1695036c090c4aec822ed12fd188920cba3e751cb4970a3e344a17379f9023"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/plan.json",
+      "relative": "plan.json",
+      "bytes": 4726,
+      "sha256": "e0a6338d96fbd48c4b7f65e977969f95c0a56d8a13e9c3b24ce89c07f005735c"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/preparation.json",
+      "relative": "preparation.json",
+      "bytes": 1745,
+      "sha256": "cd2a2a74608728fbcb6dbbde8258a30373c47d70d1e5f8d787a6aa19639e3a72"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/raw_manifest.json",
+      "relative": "raw_manifest.json",
+      "bytes": 60447,
+      "sha256": "ecf8e76c52969a8053a11e87fb2443dc4adf8f5a6d12f3b1997b95cb79f3624a"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/result.json",
+      "relative": "result.json",
+      "bytes": 535,
+      "sha256": "e795e747230c8734e2331987f33cbb4ae9ce84edab2a187fdbb2c867738d95b5"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/saved_action_disagreements.csv",
+      "relative": "saved_action_disagreements.csv",
+      "bytes": 2201,
+      "sha256": "6a3ead20bc130d21f68b05d613628c18f618d73562159582617a81f18ff926ba"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/source/environment_evolution/material_action_response/core.py",
+      "relative": "source/environment_evolution/material_action_response/core.py",
+      "bytes": 9751,
+      "sha256": "15691ada9fd805c076f7c5770ba955dbf6cc454ea3af129b1ba03fe958467b5b"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/source/environment_evolution/regenerative_actor/conversion.py",
+      "relative": "source/environment_evolution/regenerative_actor/conversion.py",
+      "bytes": 2821,
+      "sha256": "d2b73ccf44d6720e01e2166c055f9a427406dc483b21746476b9f8cc5f95189a"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/source/environment_evolution/regenerative_actor/model.py",
+      "relative": "source/environment_evolution/regenerative_actor/model.py",
+      "bytes": 8610,
+      "sha256": "3941450e97d2311f833d1c9c8964f348218467d4cd8d41a68b6584b72b24b5b0"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/source/local_learning/active_observation_commitment/io.py",
+      "relative": "source/local_learning/active_observation_commitment/io.py",
+      "bytes": 643,
+      "sha256": "7431902820c71eda7c5b8d6c7c8e24557713c8c96ff28a9f95870e88a6539130"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/source/local_learning/material_action_response/analyze.py",
+      "relative": "source/local_learning/material_action_response/analyze.py",
+      "bytes": 8591,
+      "sha256": "15d58c52891c4a4c32e19df85f97b24bf8cf7266b85508bda2cd9d58ce1fa039"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/source/local_learning/material_action_response/check_semantics.py",
+      "relative": "source/local_learning/material_action_response/check_semantics.py",
+      "bytes": 4088,
+      "sha256": "a70e452fa9136670af9fcf5988c55178aaa9c76f24557b6be30589710b3f9847"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/source/local_learning/material_action_response/core.py",
+      "relative": "source/local_learning/material_action_response/core.py",
+      "bytes": 8851,
+      "sha256": "4b733b162b1eac6ab484cbb44ab4b292724d9575f9640aaa0dbcfd404efba881"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/source/local_learning/material_action_response/experiment.py",
+      "relative": "source/local_learning/material_action_response/experiment.py",
+      "bytes": 15865,
+      "sha256": "b3d0385fd48b692202eef8a3d9f954bf1f47955949a859170ebc7b72dd369439"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/source/local_learning/material_transport.py",
+      "relative": "source/local_learning/material_transport.py",
+      "bytes": 17572,
+      "sha256": "dd5622a2df6a5d50642a31ad586215d5e30e33929cf8f57ee9efff36fdef08d5"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/source/morphology_evolution/dual_kernel.py",
+      "relative": "source/morphology_evolution/dual_kernel.py",
+      "bytes": 2922,
+      "sha256": "529d42e50876a68bce54a512f8a9cafd48a8f68276cf8507a0e2243b3f450d6e"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/source/simulation/snapshot.py",
+      "relative": "source/simulation/snapshot.py",
+      "bytes": 6192,
+      "sha256": "e99d3eccee47ded2abe1518e3fb80d2d630a8ff21a2a339ff6723c2878dfc382"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/source_refs.json",
+      "relative": "source_refs.json",
+      "bytes": 1378,
+      "sha256": "64629e44e97bcac199947a62d87f1666429a505cf788be83b59385d7fcf8e2de"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/summary.json",
+      "relative": "summary.json",
+      "bytes": 55118,
+      "sha256": "9e4227ef836e68a4d336dd64af92fe9be7c42ba79e2853333b45109eea8ebaa0"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/usage.json",
+      "relative": "usage.json",
+      "bytes": 1269,
+      "sha256": "031d81e0c1da7f8e76a0fe15351f39be76a184851af7246e757e8a891c9f0eda"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/windows.csv",
+      "relative": "windows.csv",
+      "bytes": 10275,
+      "sha256": "00f7667583f02cac493a5a256cddecbc0206fd793e26f04d217bbf5eaada216c"
+    }
+  ],
+  "count": 29
+}

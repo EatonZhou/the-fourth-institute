@@ -1,0 +1,164 @@
+[
+  {
+    "role": "constant_5--compact",
+    "actual": "constant_w0--compact",
+    "canonical_policy": {
+      "kind": "constant",
+      "w": 0.5442572838640933
+    },
+    "registered_before_execution": true
+  },
+  {
+    "role": "constant_5--double_lobe",
+    "actual": "constant_w0--double_lobe",
+    "canonical_policy": {
+      "kind": "constant",
+      "w": 0.5442572838640933
+    },
+    "registered_before_execution": true
+  },
+  {
+    "role": "cem1_proposal0--compact",
+    "actual": "constant_w0--compact",
+    "canonical_policy": {
+      "kind": "constant",
+      "w": 0.5442572838640933
+    },
+    "registered_before_execution": true
+  },
+  {
+    "role": "cem1_proposal0--double_lobe",
+    "actual": "constant_w0--double_lobe",
+    "canonical_policy": {
+      "kind": "constant",
+      "w": 0.5442572838640933
+    },
+    "registered_before_execution": true
+  },
+  {
+    "role": "cem2_proposal0--compact",
+    "actual": "constant_w0--compact",
+    "canonical_policy": {
+      "kind": "constant",
+      "w": 0.5442572838640933
+    },
+    "registered_before_execution": true
+  },
+  {
+    "role": "cem2_proposal0--double_lobe",
+    "actual": "constant_w0--double_lobe",
+    "canonical_policy": {
+      "kind": "constant",
+      "w": 0.5442572838640933
+    },
+    "registered_before_execution": true
+  },
+  {
+    "role": "validation_202610195401_compact_best_constant",
+    "actual": "validation_202610195401_compact_learned",
+    "canonical_policy": {
+      "kind": "constant",
+      "w": 0.5442572838640933
+    },
+    "registered_before_execution": true
+  },
+  {
+    "role": "validation_202610195401_compact_pooled_same_phi",
+    "actual": "validation_202610195401_compact_learned",
+    "canonical_policy": {
+      "kind": "constant",
+      "w": 0.5442572838640933
+    },
+    "registered_before_execution": true
+  },
+  {
+    "role": "validation_202610195401_compact_original_w0",
+    "actual": "validation_202610195401_compact_learned",
+    "canonical_policy": {
+      "kind": "constant",
+      "w": 0.5442572838640933
+    },
+    "registered_before_execution": true
+  },
+  {
+    "role": "validation_202610195401_double_lobe_best_constant",
+    "actual": "validation_202610195401_double_lobe_learned",
+    "canonical_policy": {
+      "kind": "constant",
+      "w": 0.5442572838640933
+    },
+    "registered_before_execution": true
+  },
+  {
+    "role": "validation_202610195401_double_lobe_pooled_same_phi",
+    "actual": "validation_202610195401_double_lobe_learned",
+    "canonical_policy": {
+      "kind": "constant",
+      "w": 0.5442572838640933
+    },
+    "registered_before_execution": true
+  },
+  {
+    "role": "validation_202610195401_double_lobe_original_w0",
+    "actual": "validation_202610195401_double_lobe_learned",
+    "canonical_policy": {
+      "kind": "constant",
+      "w": 0.5442572838640933
+    },
+    "registered_before_execution": true
+  },
+  {
+    "role": "validation_202610195402_compact_best_constant",
+    "actual": "validation_202610195402_compact_learned",
+    "canonical_policy": {
+      "kind": "constant",
+      "w": 0.5442572838640933
+    },
+    "registered_before_execution": true
+  },
+  {
+    "role": "validation_202610195402_compact_pooled_same_phi",
+    "actual": "validation_202610195402_compact_learned",
+    "canonical_policy": {
+      "kind": "constant",
+      "w": 0.5442572838640933
+    },
+    "registered_before_execution": true
+  },
+  {
+    "role": "validation_202610195402_compact_original_w0",
+    "actual": "validation_202610195402_compact_learned",
+    "canonical_policy": {
+      "kind": "constant",
+      "w": 0.5442572838640933
+    },
+    "registered_before_execution": true
+  },
+  {
+    "role": "validation_202610195402_double_lobe_best_constant",
+    "actual": "validation_202610195402_double_lobe_learned",
+    "canonical_policy": {
+      "kind": "constant",
+      "w": 0.5442572838640933
+    },
+    "registered_before_execution": true
+  },
+  {
+    "role": "validation_202610195402_double_lobe_pooled_same_phi",
+    "actual": "validation_202610195402_double_lobe_learned",
+    "canonical_policy": {
+      "kind": "constant",
+      "w": 0.5442572838640933
+    },
+    "registered_before_execution": true
+  },
+  {
+    "role": "validation_202610195402_double_lobe_original_w0",
+    "actual": "validation_202610195402_double_lobe_learned",
+    "canonical_policy": {
+      "kind": "constant",
+      "w": 0.5442572838640933
+    },
+    "registered_before_execution": true
+  }
+]

@@ -1,0 +1,20 @@
+{
+  "id": "7650ded9-1c29-4999-ba79-570fb4f52048",
+  "name": "coordinated_feedback_retention_20261019",
+  "command": [
+    "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+    "-m",
+    "local_learning.coordinated_feedback_retention.run",
+    "run"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "d3-coordinated-feedback-retention-v1",
+  "status": "running",
+  "created_at": "2026-10-19T03:16:17.820032+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/7650ded9-1c29-4999-ba79-570fb4f52048",
+  "pid": 3089727,
+  "manual_pause": false,
+  "create_time": 1792379777.42,
+  "started_at": "2026-10-19T03:16:18.035466+00:00"
+}

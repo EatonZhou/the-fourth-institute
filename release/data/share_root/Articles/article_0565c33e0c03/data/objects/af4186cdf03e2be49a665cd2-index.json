@@ -1,0 +1,71 @@
+{
+  "schema": "lenia.paired-replay-index.v1",
+  "cases": [
+    {
+      "id": "moderate",
+      "title": "温和经历与共同探测",
+      "manifest": "moderate/manifest.json",
+      "verification": {
+        "pre_probe_states": "bitwise_equal",
+        "probe_mass_curves": "bitwise_equal",
+        "max_response_curve_error": 0.0
+      },
+      "responses": [
+        {
+          "history": "naive",
+          "probe_mass_response_peak": 0.019230220470769395,
+          "pre_probe_mass": 71.57958589053001,
+          "final_probe_mass": 71.5556170329796,
+          "final_sham_mass": 71.72382672420025
+        },
+        {
+          "history": "regular",
+          "probe_mass_response_peak": 0.01779477453217678,
+          "pre_probe_mass": 71.38555274323639,
+          "final_probe_mass": 71.71835720447487,
+          "final_sham_mass": 71.60408859108442
+        },
+        {
+          "history": "clustered",
+          "probe_mass_response_peak": 0.018802641100007313,
+          "pre_probe_mass": 71.63064668358787,
+          "final_probe_mass": 71.57988155229745,
+          "final_sham_mass": 71.5638911462717
+        }
+      ]
+    },
+    {
+      "id": "strong",
+      "title": "强刺激与迟发消亡",
+      "manifest": "strong/manifest.json",
+      "verification": {
+        "pre_probe_states": "bitwise_equal",
+        "probe_mass_curves": "bitwise_equal",
+        "max_response_curve_error": 0.0
+      },
+      "responses": [
+        {
+          "history": "naive",
+          "probe_mass_response_peak": 0.01873202088955455,
+          "pre_probe_mass": 71.52063772716684,
+          "final_probe_mass": 71.50923268964146,
+          "final_sham_mass": 71.82307729215762
+        },
+        {
+          "history": "regular",
+          "probe_mass_response_peak": 0.024581860103108564,
+          "pre_probe_mass": 71.55883963140562,
+          "final_probe_mass": 71.39914549009666,
+          "final_sham_mass": 71.44028317768372
+        },
+        {
+          "history": "clustered",
+          "probe_mass_response_peak": 0.15432813264918518,
+          "pre_probe_mass": 87.66425135917214,
+          "final_probe_mass": 0.0,
+          "final_sham_mass": 0.0
+        }
+      ]
+    }
+  ]
+}

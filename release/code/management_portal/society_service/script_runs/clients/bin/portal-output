@@ -1,0 +1,3 @@
+#!/usr/bin/python3
+from portal_script import cli
+cli(output=True)

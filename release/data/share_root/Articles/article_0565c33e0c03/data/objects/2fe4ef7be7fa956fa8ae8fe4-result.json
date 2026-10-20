@@ -1,0 +1,431 @@
+{
+  "task": "embodied_action_learning_20261019",
+  "status": "complete",
+  "job": "7c3e1af1-a28a-492a-833d-f01f15248091",
+  "attempted": 7680,
+  "returned": 7680,
+  "unknown": 0,
+  "old_replay": 0,
+  "paths": [
+    {
+      "stage": "pilot",
+      "condition": 0,
+      "arm": "fixed",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/embodied_action_learning_20261019/88644365-c43f-4faa-b720-d4d119e4ffac/pilot_c0_fixed",
+      "steps": 256,
+      "alive": true,
+      "initial_sign": 1,
+      "endpoint_displacement": 11.478719900367235,
+      "first_feedback": 1.0,
+      "phases": {
+        "pilot": {
+          "steps": 256,
+          "last64_score": 0.7695361808149501,
+          "last64_positive_fraction": 0.9573968040481747,
+          "gain": 20.101131595254714,
+          "loss": 0.9226380483781015,
+          "movement": 0.927034994803586,
+          "end_energy": 154.87865855207303,
+          "end_mass": 24.000000000000007,
+          "gate": true
+        }
+      }
+    },
+    {
+      "stage": "pilot",
+      "condition": 1,
+      "arm": "fixed",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/embodied_action_learning_20261019/7c3e1af1-a28a-492a-833d-f01f15248091/pilot_c1_fixed",
+      "steps": 256,
+      "alive": true,
+      "initial_sign": -1,
+      "endpoint_displacement": 11.629959275570652,
+      "first_feedback": 1,
+      "phases": {
+        "pilot": {
+          "steps": 256,
+          "last64_score": -0.7559792740860465,
+          "last64_positive_fraction": 0.04296448485143334,
+          "gain": 0.9321850837278334,
+          "loss": 20.045364551346406,
+          "movement": 0.9272022335220943,
+          "end_energy": 116.58681829885936,
+          "end_mass": 24.0,
+          "gate": false
+        }
+      }
+    },
+    {
+      "stage": "science",
+      "condition": 0,
+      "arm": "fixed",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/embodied_action_learning_20261019/7c3e1af1-a28a-492a-833d-f01f15248091/science_c0_fixed",
+      "steps": 896,
+      "alive": true,
+      "initial_sign": 1,
+      "endpoint_displacement": 8.458389857037025,
+      "first_feedback": 1,
+      "phases": {
+        "acquisition": {
+          "steps": 320,
+          "last64_score": 0.4665895431659022,
+          "last64_positive_fraction": 0.8151344031417811,
+          "gain": 24.06559745582631,
+          "loss": 1.3035647115313846,
+          "movement": 1.1600221520206062,
+          "end_energy": 156.38601059227437,
+          "end_mass": 24.0,
+          "gate": true
+        },
+        "reversal": {
+          "steps": 320,
+          "last64_score": 0.5993331690985149,
+          "last64_positive_fraction": 0.8817529893530553,
+          "gain": 21.813691681895495,
+          "loss": 2.8424795742179043,
+          "movement": 1.1677017823320783,
+          "end_energy": 164.97352091761985,
+          "end_mass": 24.000000000000007,
+          "gate": true
+        },
+        "retention": {
+          "steps": 256,
+          "last64_score": -0.7178425462393774,
+          "last64_positive_fraction": 0.0764089849193115,
+          "gain": 0.0,
+          "loss": 0.0,
+          "movement": 0.9314010753734298,
+          "end_energy": 156.66931984224644,
+          "end_mass": 24.000000000000018,
+          "gate": false
+        }
+      }
+    },
+    {
+      "stage": "science",
+      "condition": 0,
+      "arm": "local_immediate",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/embodied_action_learning_20261019/7c3e1af1-a28a-492a-833d-f01f15248091/science_c0_local_immediate",
+      "steps": 896,
+      "alive": true,
+      "initial_sign": 1,
+      "endpoint_displacement": 3.2514705873531757,
+      "first_feedback": 1,
+      "phases": {
+        "acquisition": {
+          "steps": 320,
+          "last64_score": 0.009112793667128038,
+          "last64_positive_fraction": 0.4151828689605448,
+          "gain": 6.054738509057141,
+          "loss": 6.231934394609785,
+          "movement": 0.8930592101495369,
+          "end_energy": 133.7137449042979,
+          "end_mass": 24.00000000000001,
+          "gate": false
+        },
+        "reversal": {
+          "steps": 320,
+          "last64_score": 0.18017866996591542,
+          "last64_positive_fraction": 0.5870768126681178,
+          "gain": 7.824802158368119,
+          "loss": 4.4424669445134795,
+          "movement": 0.8938745486145491,
+          "end_energy": 126.98620556953801,
+          "end_mass": 24.0,
+          "gate": false
+        },
+        "retention": {
+          "steps": 256,
+          "last64_score": 0.39093761026259677,
+          "last64_positive_fraction": 0.7988634402978321,
+          "gain": 0.0,
+          "loss": 0.0,
+          "movement": 0.7136656991488798,
+          "end_energy": 118.89973987038914,
+          "end_mass": 23.999999999999993,
+          "gate": true
+        }
+      }
+    },
+    {
+      "stage": "science",
+      "condition": 0,
+      "arm": "local_trace",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/embodied_action_learning_20261019/7c3e1af1-a28a-492a-833d-f01f15248091/science_c0_local_trace",
+      "steps": 896,
+      "alive": true,
+      "initial_sign": 1,
+      "endpoint_displacement": 1.2164241878485582,
+      "first_feedback": 1,
+      "phases": {
+        "acquisition": {
+          "steps": 320,
+          "last64_score": -0.012528745911180306,
+          "last64_positive_fraction": 0.3930259511266844,
+          "gain": 5.865562374342307,
+          "loss": 6.334216815738561,
+          "movement": 0.8936956982223883,
+          "end_energy": 133.42164986038142,
+          "end_mass": 24.000000000000007,
+          "gate": false
+        },
+        "reversal": {
+          "steps": 320,
+          "last64_score": 0.0721986361076464,
+          "last64_positive_fraction": 0.4794882800514376,
+          "gain": 6.780554707038951,
+          "loss": 4.918785524597485,
+          "movement": 0.8831944370458054,
+          "end_energy": 125.18422460577706,
+          "end_mass": 24.000000000000007,
+          "gate": false
+        },
+        "retention": {
+          "steps": 256,
+          "last64_score": 0.1209077801759938,
+          "last64_positive_fraction": 0.5309606018817108,
+          "gain": 0.0,
+          "loss": 0.0,
+          "movement": 0.7069749378975119,
+          "end_energy": 117.10444966787952,
+          "end_mass": 24.000000000000007,
+          "gate": false
+        }
+      }
+    },
+    {
+      "stage": "science",
+      "condition": 0,
+      "arm": "neighbor_trace",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/embodied_action_learning_20261019/7c3e1af1-a28a-492a-833d-f01f15248091/science_c0_neighbor_trace",
+      "steps": 896,
+      "alive": true,
+      "initial_sign": 1,
+      "endpoint_displacement": 1.0743786574877563,
+      "first_feedback": 1,
+      "phases": {
+        "acquisition": {
+          "steps": 320,
+          "last64_score": -0.014587627883685344,
+          "last64_positive_fraction": 0.3910965721845573,
+          "gain": 5.849653634335431,
+          "loss": 6.3513575936702145,
+          "movement": 0.8937277885067176,
+          "end_energy": 133.3885682521585,
+          "end_mass": 24.000000000000014,
+          "gate": false
+        },
+        "reversal": {
+          "steps": 320,
+          "last64_score": 0.06693575771124008,
+          "last64_positive_fraction": 0.4742654540005714,
+          "gain": 6.628945550965502,
+          "loss": 4.827733462195864,
+          "movement": 0.8847829953053665,
+          "end_energy": 125.08899734562277,
+          "end_mass": 24.00000000000002,
+          "gate": false
+        },
+        "retention": {
+          "steps": 256,
+          "last64_score": 0.10562001149143009,
+          "last64_positive_fraction": 0.5149167536369278,
+          "gain": 0.0,
+          "loss": 0.0,
+          "movement": 0.7071899366496178,
+          "end_energy": 117.00900740897313,
+          "end_mass": 24.00000000000002,
+          "gate": false
+        }
+      }
+    },
+    {
+      "stage": "science",
+      "condition": 1,
+      "arm": "fixed",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/embodied_action_learning_20261019/7c3e1af1-a28a-492a-833d-f01f15248091/science_c1_fixed",
+      "steps": 896,
+      "alive": true,
+      "initial_sign": -1,
+      "endpoint_displacement": 8.692123933066721,
+      "first_feedback": 1,
+      "phases": {
+        "acquisition": {
+          "steps": 320,
+          "last64_score": -0.4384427228260349,
+          "last64_positive_fraction": 0.2085819029295455,
+          "gain": 1.3585530493797293,
+          "loss": 23.83910246901068,
+          "movement": 1.1620166867248976,
+          "end_energy": 111.14143389364416,
+          "end_mass": 24.0,
+          "gate": false
+        },
+        "reversal": {
+          "steps": 320,
+          "last64_score": -0.5794781098725634,
+          "last64_positive_fraction": 0.08953735334921213,
+          "gain": 2.769210384353396,
+          "loss": 22.04827023107493,
+          "movement": 1.1618420852437132,
+          "end_energy": 81.4845319616789,
+          "end_mass": 24.0,
+          "gate": false
+        },
+        "retention": {
+          "steps": 256,
+          "last64_score": 0.7202451822886484,
+          "last64_positive_fraction": 0.9101603111249179,
+          "gain": 0.0,
+          "loss": 0.0,
+          "movement": 0.9337716223090502,
+          "end_energy": 73.17796033936986,
+          "end_mass": 23.999999999999996,
+          "gate": true
+        }
+      }
+    },
+    {
+      "stage": "science",
+      "condition": 1,
+      "arm": "local_immediate",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/embodied_action_learning_20261019/7c3e1af1-a28a-492a-833d-f01f15248091/science_c1_local_immediate",
+      "steps": 896,
+      "alive": true,
+      "initial_sign": -1,
+      "endpoint_displacement": 4.985624102660387,
+      "first_feedback": 1,
+      "phases": {
+        "acquisition": {
+          "steps": 320,
+          "last64_score": 0.07102383859215872,
+          "last64_positive_fraction": 0.47629536468518907,
+          "gain": 6.643791033896367,
+          "loss": 5.6682859063507305,
+          "movement": 0.88428294671569,
+          "end_energy": 134.87522218082998,
+          "end_mass": 23.999999999999996,
+          "gate": false
+        },
+        "reversal": {
+          "steps": 320,
+          "last64_score": -0.41815633557373866,
+          "last64_positive_fraction": 0.05626762391277796,
+          "gain": 1.826551369348338,
+          "loss": 12.712951010441287,
+          "movement": 0.8986925655487877,
+          "end_energy": 113.87412997418822,
+          "end_mass": 24.0,
+          "gate": false
+        },
+        "retention": {
+          "steps": 256,
+          "last64_score": -0.6087226790746942,
+          "last64_positive_fraction": 0.033270393642332086,
+          "gain": 0.0,
+          "loss": 0.0,
+          "movement": 0.711968587821989,
+          "end_energy": 105.78936138636624,
+          "end_mass": 23.999999999999996,
+          "gate": false
+        }
+      }
+    },
+    {
+      "stage": "science",
+      "condition": 1,
+      "arm": "local_trace",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/embodied_action_learning_20261019/7c3e1af1-a28a-492a-833d-f01f15248091/science_c1_local_trace",
+      "steps": 896,
+      "alive": true,
+      "initial_sign": -1,
+      "endpoint_displacement": 0.29872748022721773,
+      "first_feedback": 1,
+      "phases": {
+        "acquisition": {
+          "steps": 320,
+          "last64_score": 0.014054186731735622,
+          "last64_positive_fraction": 0.4184337714301957,
+          "gain": 6.2390179993047,
+          "loss": 6.094749388110247,
+          "movement": 0.8834897066489223,
+          "end_energy": 134.04477890454552,
+          "end_mass": 24.000000000000007,
+          "gate": false
+        },
+        "reversal": {
+          "steps": 320,
+          "last64_score": -0.02932930078968786,
+          "last64_positive_fraction": 0.36506885783197707,
+          "gain": 5.024563609957322,
+          "loss": 6.004272826445506,
+          "movement": 0.888410412891228,
+          "end_energy": 122.96065927516605,
+          "end_mass": 24.000000000000007,
+          "gate": false
+        },
+        "retention": {
+          "steps": 256,
+          "last64_score": -0.055772706673869014,
+          "last64_positive_fraction": 0.3385215429935663,
+          "gain": 0.0,
+          "loss": 0.0,
+          "movement": 0.709349458965207,
+          "end_energy": 114.87850981620088,
+          "end_mass": 24.000000000000014,
+          "gate": false
+        }
+      }
+    },
+    {
+      "stage": "science",
+      "condition": 1,
+      "arm": "neighbor_trace",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/embodied_action_learning_20261019/7c3e1af1-a28a-492a-833d-f01f15248091/science_c1_neighbor_trace",
+      "steps": 896,
+      "alive": true,
+      "initial_sign": -1,
+      "endpoint_displacement": 0.1976453631884769,
+      "first_feedback": 1,
+      "phases": {
+        "acquisition": {
+          "steps": 320,
+          "last64_score": 0.01156478598484504,
+          "last64_positive_fraction": 0.4159858243216352,
+          "gain": 6.213467611325821,
+          "loss": 6.10944019251738,
+          "movement": 0.883747929860998,
+          "end_energy": 134.00427948894747,
+          "end_mass": 24.000000000000007,
+          "gate": false
+        },
+        "reversal": {
+          "steps": 320,
+          "last64_score": -0.016248802370105633,
+          "last64_positive_fraction": 0.3826224342203858,
+          "gain": 5.2846679958141785,
+          "loss": 5.921302660159396,
+          "movement": 0.8879984988484552,
+          "end_energy": 123.26364632575377,
+          "end_mass": 24.000000000000007,
+          "gate": false
+        },
+        "retention": {
+          "steps": 256,
+          "last64_score": -0.03672141150984802,
+          "last64_positive_fraction": 0.3607287333731406,
+          "gain": 0.0,
+          "loss": 0.0,
+          "movement": 0.7092623447415977,
+          "end_energy": 115.1815839810122,
+          "end_mass": 24.0,
+          "gate": false
+        }
+      }
+    }
+  ],
+  "error": null,
+  "wall_seconds": 9.613581012934446,
+  "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/embodied_action_learning_20261019/7c3e1af1-a28a-492a-833d-f01f15248091",
+  "raw_bytes": 36292781
+}

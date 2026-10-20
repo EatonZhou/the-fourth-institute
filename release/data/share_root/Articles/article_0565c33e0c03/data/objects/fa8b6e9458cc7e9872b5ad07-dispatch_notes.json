@@ -1,0 +1,16 @@
+{
+  "pre_job_failures": [
+    {
+      "reason": "Unix socket absent",
+      "jobs_created": 0,
+      "native": 0
+    },
+    {
+      "reason": "default runtime control bound another Resident; blocked",
+      "jobs_created": 0,
+      "native": 0
+    }
+  ],
+  "resolution": "isolated same scheduler bootstrap uses resident_ce2a5ab005bc; no old source edit or start-event reset",
+  "allocated_worker_seconds_for_pre_job_failures": 0
+}

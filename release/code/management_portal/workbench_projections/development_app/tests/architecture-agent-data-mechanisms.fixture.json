@@ -1,0 +1,2953 @@
+{
+  "scope": "Exact AgentData subset of the frozen development model; local authorization assumed by isolated test only.",
+  "provenance": {
+    "capture": "${share_root}/Projects/AI员工/knowledge_base/agents/lineage_8794980b1bb7/residents/resident_2546a3558662/workspace/architecture-deep-exploration/fixtures/discovery-candidate-lessons.json",
+    "captureSha256": "d5140814a30b47fa3f920fb75ccfae8325fa9b502b9efd18cb56f4187ef53b62",
+    "model": {
+      "address": "workspace_13209cb6666b/file/deep-architecture/objects/model-9105515ec8785625eec38571299947d6a877504af9ac3f17721d12a48a0103b8.json",
+      "sha256": "9105515ec8785625eec38571299947d6a877504af9ac3f17721d12a48a0103b8",
+      "size": 4346630
+    },
+    "binding": {
+      "commit": "a0dac83394748582158ee9c63a8b23c715872a1e",
+      "base_manifest": {
+        "address": "workspace_13209cb6666b/file/architecture-evidence/objects/manifest-43e2c68c22125fa9e390d3970bb3ba890e7304a4d3fbd6c1bb39465138b1faa2.json",
+        "sha256": "43e2c68c22125fa9e390d3970bb3ba890e7304a4d3fbd6c1bb39465138b1faa2",
+        "size": 312931
+      },
+      "consumer_contract": {
+        "address": "workspace_13209cb6666b/file/architecture-evidence/objects/consumer-contract-44b674154fb267114f3285b6b3b3039a285fcccb8ae891dc46039c715499cd92.json",
+        "sha256": "44b674154fb267114f3285b6b3b3039a285fcccb8ae891dc46039c715499cd92",
+        "size": 332878
+      },
+      "module_map": {
+        "address": "workspace_13209cb6666b/file/architecture-evidence/commits/a0dac83394748582158ee9c63a8b23c715872a1e/architecture/modules.yaml",
+        "sha256": "9aa3b1615bf8ddc192cc7859ab5257abbf063fa5d52fceaff7fe7eb3c539048e",
+        "size": 48968
+      },
+      "evolution": {
+        "address": "workspace_13209cb6666b/file/architecture-evidence/commits/a0dac83394748582158ee9c63a8b23c715872a1e/architecture/evolution.yaml",
+        "sha256": "9c9c4c6d0340cd2a86ff6ff491fe3e0819500de53a86f1cb29a8b7ead6f135f3",
+        "size": 34097
+      }
+    }
+  },
+  "mechanisms": [
+    {
+      "id": "agent-data.segment-identity",
+      "owner_id": "execution.agent-data.records",
+      "title": "同一内容与同一事件的区别",
+      "question": "重放写入为什么可幂等，而相同正文不能合并两个事件？",
+      "presentation": "revision_diff",
+      "entry_conditions": [
+        "仅运行固定版本的本地案例；不调用 Provider、ISA 或数据库。",
+        "输入前提须显式载入声明状态，所有 when 仅检查状态。",
+        "相同字节的新事件案例预置一个与待写正文逐字相同的 Payload，以及另一个事件 ID；仅检验内容复用与事件身份分离。"
+      ],
+      "participants": [
+        {
+          "object_id": "execution.agent-data.records",
+          "role": "本机制的明确调用、写入或观察参与者"
+        }
+      ],
+      "state_fields": [
+        {
+          "id": "identity",
+          "label": "identity",
+          "meaning": "待写入事件 ID 与现存四元组的关系",
+          "type": "string",
+          "initial": "new",
+          "state_scope": "observation",
+          "enum": [
+            "new",
+            "same",
+            "conflict"
+          ]
+        },
+        {
+          "id": "payload_shared",
+          "label": "payload_shared",
+          "meaning": "字节存储是否按 SHA 复用",
+          "type": "boolean",
+          "initial": false,
+          "state_scope": "observation"
+        },
+        {
+          "id": "segment_count_delta",
+          "label": "segment_count_delta",
+          "meaning": "本次新增事件身份数",
+          "type": "integer",
+          "initial": 0,
+          "state_scope": "authoritative",
+          "authority_id": "execution.agent-data.records"
+        },
+        {
+          "id": "error",
+          "label": "error",
+          "meaning": "真实异常类型",
+          "type": "string",
+          "initial": "",
+          "state_scope": "observation"
+        }
+      ],
+      "invariants": [
+        "Payload 的物理去重不改变事件数量。",
+        "已存在 Segment 的内容四元组不可改写。"
+      ],
+      "steps": [
+        {
+          "id": "load",
+          "title": "载入演示输入与已观察前提",
+          "from": "execution.agent-data.records",
+          "to": "execution.agent-data.records",
+          "relation_id": null,
+          "trigger": "载入演示输入与已观察前提",
+          "guard": "按已声明状态判断；无 when 表示当前步骤无额外条件。",
+          "state_changes": [
+            {
+              "field": "identity",
+              "op": "set",
+              "value": {
+                "input": "identity"
+              },
+              "writer_id": "execution.agent-data.records"
+            }
+          ],
+          "observable": [
+            "载入演示输入与已观察前提"
+          ],
+          "next": [
+            "new-payload",
+            "same",
+            "conflict"
+          ],
+          "evidence_ids": [
+            "es.ev.payload",
+            "es.ev.segment"
+          ]
+        },
+        {
+          "id": "new-payload",
+          "title": "按原始字节摘要复用 Payload",
+          "from": "execution.agent-data.records",
+          "to": "execution.agent-data.records",
+          "relation_id": null,
+          "trigger": "按原始字节摘要复用 Payload",
+          "guard": "按已声明状态判断；无 when 表示当前步骤无额外条件。",
+          "state_changes": [
+            {
+              "field": "payload_shared",
+              "op": "set",
+              "value": true,
+              "writer_id": "execution.agent-data.records"
+            }
+          ],
+          "observable": [
+            "按原始字节摘要复用 Payload"
+          ],
+          "next": [
+            "new-event"
+          ],
+          "evidence_ids": [
+            "es.ev.payload"
+          ],
+          "when": {
+            "field": "identity",
+            "equals": "new"
+          }
+        },
+        {
+          "id": "new-event",
+          "title": "不同事件 ID 仍插入独立 Segment",
+          "from": "execution.agent-data.records",
+          "to": "execution.agent-data.records",
+          "relation_id": null,
+          "trigger": "不同事件 ID 仍插入独立 Segment",
+          "guard": "按已声明状态判断；无 when 表示当前步骤无额外条件。",
+          "state_changes": [
+            {
+              "field": "segment_count_delta",
+              "op": "set",
+              "value": 1,
+              "writer_id": "execution.agent-data.records"
+            }
+          ],
+          "observable": [
+            "不同事件 ID 仍插入独立 Segment"
+          ],
+          "next": [],
+          "evidence_ids": [
+            "es.ev.segment"
+          ]
+        },
+        {
+          "id": "same",
+          "title": "核对内容四元组，返回已有 ID",
+          "from": "execution.agent-data.records",
+          "to": "execution.agent-data.records",
+          "relation_id": null,
+          "trigger": "核对内容四元组，返回已有 ID",
+          "guard": "按已声明状态判断；无 when 表示当前步骤无额外条件。",
+          "state_changes": [
+            {
+              "field": "segment_count_delta",
+              "op": "set",
+              "value": 0,
+              "writer_id": "execution.agent-data.records"
+            }
+          ],
+          "observable": [
+            "核对内容四元组，返回已有 ID"
+          ],
+          "next": [],
+          "evidence_ids": [
+            "es.ev.segment"
+          ],
+          "when": {
+            "field": "identity",
+            "equals": "same"
+          }
+        },
+        {
+          "id": "conflict",
+          "title": "拒绝身份冲突",
+          "from": "execution.agent-data.records",
+          "to": "execution.agent-data.records",
+          "relation_id": null,
+          "trigger": "拒绝身份冲突",
+          "guard": "按已声明状态判断；无 when 表示当前步骤无额外条件。",
+          "state_changes": [
+            {
+              "field": "error",
+              "op": "set",
+              "value": "SegmentIdentityConflict",
+              "writer_id": "execution.agent-data.records"
+            }
+          ],
+          "observable": [
+            "拒绝身份冲突"
+          ],
+          "next": [],
+          "evidence_ids": [
+            "es.ev.segment"
+          ],
+          "when": {
+            "field": "identity",
+            "equals": "conflict"
+          }
+        }
+      ],
+      "cases": [
+        {
+          "id": "new",
+          "title": "相同字节的新事件",
+          "inputs": {
+            "identity": "new"
+          },
+          "path": [
+            "load",
+            "new-payload",
+            "new-event"
+          ],
+          "outcome": {
+            "segment_count_delta": 1
+          },
+          "evidence_ids": [
+            "es.ev.payload",
+            "es.ev.segment"
+          ]
+        },
+        {
+          "id": "replay",
+          "title": "同身份同内容重放",
+          "inputs": {
+            "identity": "same"
+          },
+          "path": [
+            "load",
+            "same"
+          ],
+          "outcome": {
+            "segment_count_delta": 0,
+            "error": ""
+          },
+          "evidence_ids": [
+            "es.ev.segment"
+          ]
+        },
+        {
+          "id": "conflict",
+          "title": "同身份被另一正文覆盖",
+          "inputs": {
+            "identity": "conflict"
+          },
+          "path": [
+            "load",
+            "conflict"
+          ],
+          "outcome": {
+            "error": "SegmentIdentityConflict",
+            "segment_count_delta": 0
+          },
+          "evidence_ids": [
+            "es.ev.segment"
+          ]
+        }
+      ],
+      "evidence_ids": [
+        "es.ev.payload",
+        "es.ev.segment"
+      ],
+      "mode": "simulated",
+      "adapter": "agent-data.segment-identity.v1",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "identity": {
+            "type": "string",
+            "enum": [
+              "new",
+              "same",
+              "conflict"
+            ]
+          }
+        },
+        "required": [
+          "identity"
+        ],
+        "additionalProperties": false
+      },
+      "state_model": {
+        "semantics": "领域案例局部状态；authoritative 表示模拟该责任方的事实，不是实时状态。",
+        "operations": {
+          "set": "替换声明字段；{input:name} 只读本案例输入",
+          "increment": "数值加法",
+          "append": "数组追加"
+        },
+        "condition_source": "declared_state_only",
+        "unknown_operation": "reject",
+        "unknown_field": "reject",
+        "terminal_authority": "Execution queued/running/terminal 归 Scheduler；Harness 报告与 Provider result 单独呈现。"
+      }
+    },
+    {
+      "id": "agent-data.trace-revision",
+      "owner_id": "execution.agent-data.traces",
+      "title": "当前版本替换与 Fork 隔离",
+      "question": "如何改写当前输入而保留审计来源及 Fork 的历史选择？",
+      "presentation": "revision_diff",
+      "entry_conditions": [
+        "仅运行固定版本的本地案例；不调用 Provider、ISA 或数据库。",
+        "输入前提须显式载入声明状态，所有 when 仅检查状态。"
+      ],
+      "participants": [
+        {
+          "object_id": "execution.agent-data.traces",
+          "role": "本机制的明确调用、写入或观察参与者"
+        },
+        {
+          "object_id": "execution.agent-data.records",
+          "role": "本机制的明确调用、写入或观察参与者"
+        }
+      ],
+      "state_fields": [
+        {
+          "id": "source_membership",
+          "label": "source_membership",
+          "meaning": "转换来源是否仍为当前成员",
+          "type": "string",
+          "initial": "current",
+          "state_scope": "observation",
+          "enum": [
+            "current",
+            "partial_missing",
+            "already_transformed"
+          ]
+        },
+        {
+          "id": "current",
+          "label": "current",
+          "meaning": "父当前成员",
+          "type": "array",
+          "initial": [
+            "s1",
+            "s2"
+          ],
+          "state_scope": "authoritative",
+          "authority_id": "execution.agent-data.traces"
+        },
+        {
+          "id": "fork",
+          "label": "fork",
+          "meaning": "先前 Fork 的固定引用",
+          "type": "array",
+          "initial": [
+            "s1",
+            "s2"
+          ],
+          "state_scope": "authoritative",
+          "authority_id": "execution.agent-data.traces"
+        },
+        {
+          "id": "source_retained",
+          "label": "source_retained",
+          "meaning": "原内容仍可审计",
+          "type": "boolean",
+          "initial": true,
+          "state_scope": "authoritative",
+          "authority_id": "execution.agent-data.records"
+        },
+        {
+          "id": "error",
+          "label": "error",
+          "meaning": "异常",
+          "type": "string",
+          "initial": "",
+          "state_scope": "observation"
+        }
+      ],
+      "invariants": [
+        "转换不物理删除旧 Segment。",
+        "Fork 选择与父当前引用独立。"
+      ],
+      "steps": [
+        {
+          "id": "load",
+          "title": "载入演示输入与已观察前提",
+          "from": "execution.agent-data.traces",
+          "to": "execution.agent-data.traces",
+          "relation_id": null,
+          "trigger": "载入演示输入与已观察前提",
+          "guard": "按已声明状态判断；无 when 表示当前步骤无额外条件。",
+          "state_changes": [
+            {
+              "field": "source_membership",
+              "op": "set",
+              "value": {
+                "input": "source_membership"
+              },
+              "writer_id": "execution.agent-data.traces"
+            }
+          ],
+          "observable": [
+            "载入演示输入与已观察前提"
+          ],
+          "next": [
+            "transform",
+            "observe-missing",
+            "observe-replay"
+          ],
+          "evidence_ids": [
+            "es.ev.transform",
+            "es.ev.fork",
+            "es.ev.append"
+          ]
+        },
+        {
+          "id": "transform",
+          "title": "写目标和 transformed_from 后替换当前成员",
+          "from": "execution.agent-data.traces",
+          "to": "execution.agent-data.records",
+          "relation_id": "es.trace.record",
+          "trigger": "写目标和 transformed_from 后替换当前成员",
+          "guard": "按已声明状态判断；无 when 表示当前步骤无额外条件。",
+          "state_changes": [
+            {
+              "field": "current",
+              "op": "set",
+              "value": [
+                "s3"
+              ],
+              "writer_id": "execution.agent-data.traces"
+            }
+          ],
+          "observable": [
+            "写目标和 transformed_from 后替换当前成员"
+          ],
+          "next": [
+            "fork-stable"
+          ],
+          "evidence_ids": [
+            "es.ev.transform"
+          ],
+          "when": {
+            "field": "source_membership",
+            "equals": "current"
+          }
+        },
+        {
+          "id": "fork-stable",
+          "title": "原 Fork 引用继续指向 s1/s2",
+          "from": "execution.agent-data.traces",
+          "to": "execution.agent-data.traces",
+          "relation_id": null,
+          "trigger": "原 Fork 引用继续指向 s1/s2",
+          "guard": "按已声明状态判断；无 when 表示当前步骤无额外条件。",
+          "state_changes": [
+            {
+              "field": "fork",
+              "op": "set",
+              "value": [
+                "s1",
+                "s2"
+              ],
+              "writer_id": "execution.agent-data.traces"
+            }
+          ],
+          "observable": [
+            "原 Fork 引用继续指向 s1/s2"
+          ],
+          "next": [],
+          "evidence_ids": [
+            "es.ev.fork"
+          ]
+        },
+        {
+          "id": "observe-missing",
+          "title": "观察调用前当前成员仅剩 s1，转换请求仍引用 s1/s2",
+          "from": "execution.agent-data.traces",
+          "to": "execution.agent-data.traces",
+          "relation_id": null,
+          "trigger": "观察调用前当前成员仅剩 s1，转换请求仍引用 s1/s2",
+          "guard": "按已声明状态判断；无 when 表示当前步骤无额外条件。",
+          "state_changes": [
+            {
+              "field": "current",
+              "op": "set",
+              "value": [
+                "s1"
+              ],
+              "writer_id": "execution.agent-data.traces"
+            }
+          ],
+          "observable": [
+            "观察调用前当前成员仅剩 s1，转换请求仍引用 s1/s2"
+          ],
+          "next": [
+            "invalid-source"
+          ],
+          "evidence_ids": [
+            "es.ev.transform"
+          ],
+          "when": {
+            "field": "source_membership",
+            "equals": "partial_missing"
+          }
+        },
+        {
+          "id": "invalid-source",
+          "title": "事务拒绝非当前来源，保持调用前成员不变",
+          "from": "execution.agent-data.traces",
+          "to": "execution.agent-data.traces",
+          "relation_id": null,
+          "trigger": "事务拒绝非当前来源，保持调用前成员不变",
+          "guard": "按已声明状态判断；无 when 表示当前步骤无额外条件。",
+          "state_changes": [
+            {
+              "field": "error",
+              "op": "set",
+              "value": "ValueError",
+              "writer_id": "execution.agent-data.traces"
+            }
+          ],
+          "observable": [
+            "事务拒绝非当前来源，保持调用前成员不变"
+          ],
+          "next": [],
+          "evidence_ids": [
+            "es.ev.transform"
+          ]
+        },
+        {
+          "id": "observe-replay",
+          "title": "观察调用前目标 s3 已在当前轨迹",
+          "from": "execution.agent-data.traces",
+          "to": "execution.agent-data.traces",
+          "relation_id": null,
+          "trigger": "观察调用前目标 s3 已在当前轨迹",
+          "guard": "按已声明状态判断；无 when 表示当前步骤无额外条件。",
+          "state_changes": [
+            {
+              "field": "current",
+              "op": "set",
+              "value": [
+                "s3"
+              ],
+              "writer_id": "execution.agent-data.traces"
+            }
+          ],
+          "observable": [
+            "观察调用前目标 s3 已在当前轨迹"
+          ],
+          "next": [
+            "idempotent"
+          ],
+          "evidence_ids": [
+            "es.ev.transform"
+          ],
+          "when": {
+            "field": "source_membership",
+            "equals": "already_transformed"
+          }
+        },
+        {
+          "id": "idempotent",
+          "title": "幂等确认既有目标，不再追加",
+          "from": "execution.agent-data.traces",
+          "to": "execution.agent-data.traces",
+          "relation_id": null,
+          "trigger": "幂等确认既有目标，不再追加",
+          "guard": "按已声明状态判断；无 when 表示当前步骤无额外条件。",
+          "state_changes": [],
+          "observable": [
+            "幂等确认既有目标，不再追加"
+          ],
+          "next": [],
+          "evidence_ids": [
+            "es.ev.transform"
+          ]
+        }
+      ],
+      "cases": [
+        {
+          "id": "replace",
+          "title": "完整来源原子转换",
+          "inputs": {
+            "source_membership": "current"
+          },
+          "path": [
+            "load",
+            "transform",
+            "fork-stable"
+          ],
+          "outcome": {
+            "current": [
+              "s3"
+            ],
+            "fork": [
+              "s1",
+              "s2"
+            ],
+            "source_retained": true
+          },
+          "evidence_ids": [
+            "es.ev.transform",
+            "es.ev.fork"
+          ]
+        },
+        {
+          "id": "missing",
+          "title": "部分来源已退出当前窗口",
+          "inputs": {
+            "source_membership": "partial_missing"
+          },
+          "path": [
+            "load",
+            "observe-missing",
+            "invalid-source"
+          ],
+          "outcome": {
+            "current": [
+              "s1"
+            ],
+            "error": "ValueError"
+          },
+          "evidence_ids": [
+            "es.ev.transform"
+          ]
+        },
+        {
+          "id": "replay",
+          "title": "全部来源已移除且目标已在当前轨迹",
+          "inputs": {
+            "source_membership": "already_transformed"
+          },
+          "path": [
+            "load",
+            "observe-replay",
+            "idempotent"
+          ],
+          "outcome": {
+            "current": [
+              "s3"
+            ],
+            "fork": [
+              "s1",
+              "s2"
+            ]
+          },
+          "evidence_ids": [
+            "es.ev.transform"
+          ]
+        }
+      ],
+      "evidence_ids": [
+        "es.ev.transform",
+        "es.ev.fork",
+        "es.ev.append"
+      ],
+      "mode": "simulated",
+      "adapter": "agent-data.trace-revision.v1",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "source_membership": {
+            "type": "string",
+            "enum": [
+              "current",
+              "partial_missing",
+              "already_transformed"
+            ]
+          }
+        },
+        "required": [
+          "source_membership"
+        ],
+        "additionalProperties": false
+      },
+      "state_model": {
+        "semantics": "领域案例局部状态；authoritative 表示模拟该责任方的事实，不是实时状态。",
+        "operations": {
+          "set": "替换声明字段；{input:name} 只读本案例输入",
+          "increment": "数值加法",
+          "append": "数组追加"
+        },
+        "condition_source": "declared_state_only",
+        "unknown_operation": "reject",
+        "unknown_field": "reject",
+        "terminal_authority": "Execution queued/running/terminal 归 Scheduler；Harness 报告与 Provider result 单独呈现。"
+      }
+    },
+    {
+      "id": "agent-data.execution-receipt",
+      "owner_id": "execution.agent-data.executions",
+      "title": "接受回执与执行终态分离",
+      "question": "Provider 已接受输入之后失败，哪些事实仍应保留？",
+      "presentation": "event_timeline",
+      "entry_conditions": [
+        "仅运行固定版本的本地案例；不调用 Provider、ISA 或数据库。",
+        "输入前提须显式载入声明状态，所有 when 仅检查状态。"
+      ],
+      "participants": [
+        {
+          "object_id": "execution.agent-data.executions",
+          "role": "本机制的明确调用、写入或观察参与者"
+        },
+        {
+          "object_id": "execution.agent-data.projector.events",
+          "role": "本机制的明确调用、写入或观察参与者"
+        },
+        {
+          "object_id": "execution.scheduling",
+          "role": "本机制的明确调用、写入或观察参与者"
+        }
+      ],
+      "state_fields": [
+        {
+          "id": "event",
+          "label": "event",
+          "meaning": "实际需要处理的接受/终态条件",
+          "type": "string",
+          "initial": "accepted_then_failed",
+          "state_scope": "observation",
+          "enum": [
+            "accepted_then_failed",
+            "empty_turn",
+            "terminal_conflict"
+          ]
+        },
+        {
+          "id": "accepted",
+          "label": "accepted",
+          "meaning": "已持久保存输入接受回执",
+          "type": "boolean",
+          "initial": false,
+          "state_scope": "authoritative",
+          "authority_id": "execution.agent-data.executions"
+        },
+        {
+          "id": "execution_status",
+          "label": "execution_status",
+          "meaning": "共同执行记录状态",
+          "type": "string",
+          "initial": "running",
+          "state_scope": "authoritative",
+          "authority_id": "execution.scheduling"
+        },
+        {
+          "id": "error",
+          "label": "error",
+          "meaning": "异常",
+          "type": "string",
+          "initial": "",
+          "state_scope": "observation"
+        }
+      ],
+      "invariants": [
+        "接受回执不是内容 Segment。",
+        "record_execution_output 不推进终态。"
+      ],
+      "steps": [
+        {
+          "id": "load",
+          "title": "载入演示输入与已观察前提",
+          "from": "execution.agent-data.executions",
+          "to": "execution.agent-data.executions",
+          "relation_id": null,
+          "trigger": "载入演示输入与已观察前提",
+          "guard": "按已声明状态判断；无 when 表示当前步骤无额外条件。",
+          "state_changes": [
+            {
+              "field": "event",
+              "op": "set",
+              "value": {
+                "input": "event"
+              },
+              "writer_id": "execution.agent-data.executions"
+            }
+          ],
+          "observable": [
+            "载入演示输入与已观察前提"
+          ],
+          "next": [
+            "accept",
+            "no-turn",
+            "first-terminal"
+          ],
+          "evidence_ids": [
+            "es.ev.execution",
+            "es.ev.receipt",
+            "es.ev.accept",
+            "es.ev.terminal",
+            "es.ev.design-data"
+          ]
+        },
+        {
+          "id": "accept",
+          "title": "非空 turn 写入接受回执",
+          "from": "execution.agent-data.projector.events",
+          "to": "execution.agent-data.executions",
+          "relation_id": "es.accept.execution",
+          "trigger": "非空 turn 写入接受回执",
+          "guard": "按已声明状态判断；无 when 表示当前步骤无额外条件。",
+          "state_changes": [
+            {
+              "field": "accepted",
+              "op": "set",
+              "value": true,
+              "writer_id": "execution.agent-data.executions"
+            }
+          ],
+          "observable": [
+            "非空 turn 写入接受回执"
+          ],
+          "next": [
+            "failed"
+          ],
+          "evidence_ids": [
+            "es.ev.accept",
+            "es.ev.receipt"
+          ],
+          "when": {
+            "field": "event",
+            "equals": "accepted_then_failed"
+          }
+        },
+        {
+          "id": "failed",
+          "title": "Scheduler 提交 failed",
+          "from": "execution.scheduling",
+          "to": "execution.agent-data.executions",
+          "relation_id": "es.scheduler.record",
+          "trigger": "Scheduler 提交 failed",
+          "guard": "按已声明状态判断；无 when 表示当前步骤无额外条件。",
+          "state_changes": [
+            {
+              "field": "execution_status",
+              "op": "set",
+              "value": "failed",
+              "writer_id": "execution.scheduling"
+            }
+          ],
+          "observable": [
+            "Scheduler 提交 failed"
+          ],
+          "next": [],
+          "evidence_ids": [
+            "es.ev.terminal"
+          ]
+        },
+        {
+          "id": "no-turn",
+          "title": "拒绝空输入身份",
+          "from": "execution.agent-data.projector.events",
+          "to": "execution.agent-data.executions",
+          "relation_id": "es.accept.execution",
+          "trigger": "拒绝空输入身份",
+          "guard": "按已声明状态判断；无 when 表示当前步骤无额外条件。",
+          "state_changes": [
+            {
+              "field": "error",
+              "op": "set",
+              "value": "ValueError",
+              "writer_id": "execution.agent-data.executions"
+            }
+          ],
+          "observable": [
+            "拒绝空输入身份"
+          ],
+          "next": [],
+          "evidence_ids": [
+            "es.ev.accept"
+          ],
+          "when": {
+            "field": "event",
+            "equals": "empty_turn"
+          }
+        },
+        {
+          "id": "first-terminal",
+          "title": "先提交 completed",
+          "from": "execution.scheduling",
+          "to": "execution.agent-data.executions",
+          "relation_id": "es.scheduler.record",
+          "trigger": "先提交 completed",
+          "guard": "按已声明状态判断；无 when 表示当前步骤无额外条件。",
+          "state_changes": [
+            {
+              "field": "execution_status",
+              "op": "set",
+              "value": "completed",
+              "writer_id": "execution.scheduling"
+            }
+          ],
+          "observable": [
+            "先提交 completed"
+          ],
+          "next": [
+            "reject-terminal"
+          ],
+          "evidence_ids": [
+            "es.ev.terminal"
+          ],
+          "when": {
+            "field": "event",
+            "equals": "terminal_conflict"
+          }
+        },
+        {
+          "id": "reject-terminal",
+          "title": "不同终态写入被拒绝",
+          "from": "execution.scheduling",
+          "to": "execution.agent-data.executions",
+          "relation_id": "es.scheduler.record",
+          "trigger": "不同终态写入被拒绝",
+          "guard": "按已声明状态判断；无 when 表示当前步骤无额外条件。",
+          "state_changes": [
+            {
+              "field": "error",
+              "op": "set",
+              "value": "ValueError",
+              "writer_id": "execution.agent-data.executions"
+            }
+          ],
+          "observable": [
+            "不同终态写入被拒绝"
+          ],
+          "next": [],
+          "evidence_ids": [
+            "es.ev.terminal"
+          ]
+        }
+      ],
+      "cases": [
+        {
+          "id": "receipt",
+          "title": "接受后失败仍保留回执",
+          "inputs": {
+            "event": "accepted_then_failed"
+          },
+          "path": [
+            "load",
+            "accept",
+            "failed"
+          ],
+          "outcome": {
+            "accepted": true,
+            "execution_status": "failed"
+          },
+          "evidence_ids": [
+            "es.ev.accept",
+            "es.ev.receipt",
+            "es.ev.terminal"
+          ]
+        },
+        {
+          "id": "missing-turn",
+          "title": "无 turn 不能登记接受",
+          "inputs": {
+            "event": "empty_turn"
+          },
+          "path": [
+            "load",
+            "no-turn"
+          ],
+          "outcome": {
+            "accepted": false,
+            "error": "ValueError"
+          },
+          "evidence_ids": [
+            "es.ev.accept"
+          ]
+        },
+        {
+          "id": "immutable-terminal",
+          "title": "不能用第二份不同终态覆盖第一次",
+          "inputs": {
+            "event": "terminal_conflict"
+          },
+          "path": [
+            "load",
+            "first-terminal",
+            "reject-terminal"
+          ],
+          "outcome": {
+            "execution_status": "completed",
+            "error": "ValueError"
+          },
+          "evidence_ids": [
+            "es.ev.terminal"
+          ]
+        }
+      ],
+      "evidence_ids": [
+        "es.ev.execution",
+        "es.ev.receipt",
+        "es.ev.accept",
+        "es.ev.terminal",
+        "es.ev.design-data"
+      ],
+      "mode": "simulated",
+      "adapter": "agent-data.execution-receipt.v1",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "event": {
+            "type": "string",
+            "enum": [
+              "accepted_then_failed",
+              "empty_turn",
+              "terminal_conflict"
+            ]
+          }
+        },
+        "required": [
+          "event"
+        ],
+        "additionalProperties": false
+      },
+      "state_model": {
+        "semantics": "领域案例局部状态；authoritative 表示模拟该责任方的事实，不是实时状态。",
+        "operations": {
+          "set": "替换声明字段；{input:name} 只读本案例输入",
+          "increment": "数值加法",
+          "append": "数组追加"
+        },
+        "condition_source": "declared_state_only",
+        "unknown_operation": "reject",
+        "unknown_field": "reject",
+        "terminal_authority": "Execution queued/running/terminal 归 Scheduler；Harness 报告与 Provider result 单独呈现。"
+      }
+    },
+    {
+      "id": "agent-data.read-views",
+      "owner_id": "execution.agent-data.views",
+      "title": "同一轨迹的 Chat 与模型窗口",
+      "question": "为何界面可看到失败通知，而模型上下文不能因此新增一段正文？",
+      "presentation": "address_resolution",
+      "entry_conditions": [
+        "仅运行固定版本的本地案例；不调用 Provider、ISA 或数据库。",
+        "输入前提须显式载入声明状态，所有 when 仅检查状态。"
+      ],
+      "participants": [
+        {
+          "object_id": "execution.agent-data.views",
+          "role": "本机制的明确调用、写入或观察参与者"
+        },
+        {
+          "object_id": "execution.agent-data.records",
+          "role": "本机制的明确调用、写入或观察参与者"
+        },
+        {
+          "object_id": "execution.agent-data.traces",
+          "role": "本机制的明确调用、写入或观察参与者"
+        }
+      ],
+      "state_fields": [
+        {
+          "id": "cutoff",
+          "label": "cutoff",
+          "meaning": "请求的上下文截止消息是否在本 Agent trace",
+          "type": "string",
+          "initial": "valid",
+          "state_scope": "observation",
+          "enum": [
+            "valid",
+            "missing"
+          ]
+        },
+        {
+          "id": "chat_includes_notice",
+          "label": "chat_includes_notice",
+          "meaning": "Chat 查询包含运行通知",
+          "type": "boolean",
+          "initial": false,
+          "state_scope": "observation"
+        },
+        {
+          "id": "model_includes_notice",
+          "label": "model_includes_notice",
+          "meaning": "通知不是模型 Segment",
+          "type": "boolean",
+          "initial": false,
+          "state_scope": "observation"
+        },
+        {
+          "id": "window",
+          "label": "window",
+          "meaning": "压缩后保留的有序 Segment",
+          "type": "array",
+          "initial": [],
+          "state_scope": "observation"
+        },
+        {
+          "id": "error",
+          "label": "error",
+          "meaning": "异常",
+          "type": "string",
+          "initial": "",
+          "state_scope": "observation"
+        }
+      ],
+      "invariants": [
+        "读策略不改变 Segment 或 trace。",
+        "Execution 回执不决定 trace 成员。"
+      ],
+      "steps": [
+        {
+          "id": "load",
+          "title": "载入演示输入与已观察前提",
+          "from": "execution.agent-data.views",
+          "to": "execution.agent-data.views",
+          "relation_id": null,
+          "trigger": "载入演示输入与已观察前提",
+          "guard": "按已声明状态判断；无 when 表示当前步骤无额外条件。",
+          "state_changes": [
+            {
+              "field": "cutoff",
+              "op": "set",
+              "value": {
+                "input": "cutoff"
+              },
+              "writer_id": "execution.agent-data.views"
+            }
+          ],
+          "observable": [
+            "载入演示输入与已观察前提"
+          ],
+          "next": [
+            "chat",
+            "bad-cutoff"
+          ],
+          "evidence_ids": [
+            "es.ev.context",
+            "es.ev.chat",
+            "es.ev.message",
+            "es.ev.chat-read"
+          ]
+        },
+        {
+          "id": "chat",
+          "title": "Chat 合入通知并投影消息",
+          "from": "execution.agent-data.views",
+          "to": "execution.agent-data.records",
+          "relation_id": "es.view.record",
+          "trigger": "Chat 合入通知并投影消息",
+          "guard": "按已声明状态判断；无 when 表示当前步骤无额外条件。",
+          "state_changes": [
+            {
+              "field": "chat_includes_notice",
+              "op": "set",
+              "value": true,
+              "writer_id": "execution.agent-data.records"
+            }
+          ],
+          "observable": [
+            "Chat 合入通知并投影消息"
+          ],
+          "next": [
+            "context"
+          ],
+          "evidence_ids": [
+            "es.ev.chat",
+            "es.ev.message"
+          ],
+          "when": {
+            "field": "cutoff",
+            "equals": "valid"
+          }
+        },
+        {
+          "id": "context",
+          "title": "从指定边界回溯到压缩片段",
+          "from": "execution.agent-data.views",
+          "to": "execution.agent-data.traces",
+          "relation_id": "es.view.trace",
+          "trigger": "从指定边界回溯到压缩片段",
+          "guard": "按已声明状态判断；无 when 表示当前步骤无额外条件。",
+          "state_changes": [
+            {
+              "field": "window",
+              "op": "set",
+              "value": [
+                "compaction",
+                "input",
+                "model"
+              ],
+              "writer_id": "execution.agent-data.traces"
+            },
+            {
+              "field": "model_includes_notice",
+              "op": "set",
+              "value": false,
+              "writer_id": "execution.agent-data.traces"
+            }
+          ],
+          "observable": [
+            "从指定边界回溯到压缩片段"
+          ],
+          "next": [],
+          "evidence_ids": [
+            "es.ev.context"
+          ]
+        },
+        {
+          "id": "bad-cutoff",
+          "title": "不猜测相邻窗口",
+          "from": "execution.agent-data.views",
+          "to": "execution.agent-data.traces",
+          "relation_id": "es.view.trace",
+          "trigger": "不猜测相邻窗口",
+          "guard": "按已声明状态判断；无 when 表示当前步骤无额外条件。",
+          "state_changes": [
+            {
+              "field": "error",
+              "op": "set",
+              "value": "ValueError",
+              "writer_id": "execution.agent-data.traces"
+            }
+          ],
+          "observable": [
+            "不猜测相邻窗口"
+          ],
+          "next": [],
+          "evidence_ids": [
+            "es.ev.context"
+          ],
+          "when": {
+            "field": "cutoff",
+            "equals": "missing"
+          }
+        }
+      ],
+      "cases": [
+        {
+          "id": "read",
+          "title": "按各自策略读取",
+          "inputs": {
+            "cutoff": "valid"
+          },
+          "path": [
+            "load",
+            "chat",
+            "context"
+          ],
+          "outcome": {
+            "chat_includes_notice": true,
+            "model_includes_notice": false,
+            "window": [
+              "compaction",
+              "input",
+              "model"
+            ]
+          },
+          "evidence_ids": [
+            "es.ev.chat",
+            "es.ev.message",
+            "es.ev.context"
+          ]
+        },
+        {
+          "id": "invalid",
+          "title": "非法截止消息拒绝上下文查询",
+          "inputs": {
+            "cutoff": "missing"
+          },
+          "path": [
+            "load",
+            "bad-cutoff"
+          ],
+          "outcome": {
+            "error": "ValueError",
+            "window": []
+          },
+          "evidence_ids": [
+            "es.ev.context"
+          ]
+        }
+      ],
+      "evidence_ids": [
+        "es.ev.context",
+        "es.ev.chat",
+        "es.ev.message",
+        "es.ev.chat-read"
+      ],
+      "mode": "simulated",
+      "adapter": "agent-data.read-views.v1",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "cutoff": {
+            "type": "string",
+            "enum": [
+              "valid",
+              "missing"
+            ]
+          }
+        },
+        "required": [
+          "cutoff"
+        ],
+        "additionalProperties": false
+      },
+      "state_model": {
+        "semantics": "领域案例局部状态；authoritative 表示模拟该责任方的事实，不是实时状态。",
+        "operations": {
+          "set": "替换声明字段；{input:name} 只读本案例输入",
+          "increment": "数值加法",
+          "append": "数组追加"
+        },
+        "condition_source": "declared_state_only",
+        "unknown_operation": "reject",
+        "unknown_field": "reject",
+        "terminal_authority": "Execution queued/running/terminal 归 Scheduler；Harness 报告与 Provider result 单独呈现。"
+      }
+    },
+    {
+      "id": "agent-data.actual-input",
+      "owner_id": "execution.agent-data.projector.inputs",
+      "title": "实际输入替换与 Fork 边界",
+      "question": "Harness 改写 prompt 时如何只替换新输入而保留继承上下文？",
+      "presentation": "revision_diff",
+      "entry_conditions": [
+        "仅运行固定版本的本地案例；不调用 Provider、ISA 或数据库。",
+        "输入前提须显式载入声明状态，所有 when 仅检查状态。"
+      ],
+      "participants": [
+        {
+          "object_id": "execution.agent-data.projector.inputs",
+          "role": "本机制的明确调用、写入或观察参与者"
+        },
+        {
+          "object_id": "execution.agent-data.traces",
+          "role": "本机制的明确调用、写入或观察参与者"
+        }
+      ],
+      "state_fields": [
+        {
+          "id": "canonical_occurrence",
+          "label": "canonical_occurrence",
+          "meaning": "原新输入在 Fork 合成 prompt 中的出现次数",
+          "type": "string",
+          "initial": "one",
+          "state_scope": "observation",
+          "enum": [
+            "one",
+            "zero_or_many"
+          ]
+        },
+        {
+          "id": "effective_input",
+          "label": "effective_input",
+          "meaning": "当前新输入版本",
+          "type": "string",
+          "initial": "original",
+          "state_scope": "authoritative",
+          "authority_id": "execution.agent-data.traces"
+        },
+        {
+          "id": "inherited_unchanged",
+          "label": "inherited_unchanged",
+          "meaning": "Fork 继承正文保持",
+          "type": "boolean",
+          "initial": true,
+          "state_scope": "observation"
+        },
+        {
+          "id": "error",
+          "label": "error",
+          "meaning": "异常",
+          "type": "string",
+          "initial": "",
+          "state_scope": "observation"
+        }
+      ],
+      "invariants": [
+        "发送输入变化必须留下转换关系。",
+        "不能按正文猜测继承窗口。"
+      ],
+      "steps": [
+        {
+          "id": "load",
+          "title": "载入演示输入与已观察前提",
+          "from": "execution.agent-data.projector.inputs",
+          "to": "execution.agent-data.projector.inputs",
+          "relation_id": null,
+          "trigger": "载入演示输入与已观察前提",
+          "guard": "按已声明状态判断；无 when 表示当前步骤无额外条件。",
+          "state_changes": [
+            {
+              "field": "canonical_occurrence",
+              "op": "set",
+              "value": {
+                "input": "canonical_occurrence"
+              },
+              "writer_id": "execution.agent-data.projector.inputs"
+            }
+          ],
+          "observable": [
+            "载入演示输入与已观察前提"
+          ],
+          "next": [
+            "rewrite",
+            "reject-boundary"
+          ],
+          "evidence_ids": [
+            "es.ev.project-input",
+            "es.ev.project-begin",
+            "es.ev.transform"
+          ]
+        },
+        {
+          "id": "rewrite",
+          "title": "物化实际 prompt/media 并替换当前输入",
+          "from": "execution.agent-data.projector.inputs",
+          "to": "execution.agent-data.traces",
+          "relation_id": "es.input.trace",
+          "trigger": "物化实际 prompt/media 并替换当前输入",
+          "guard": "按已声明状态判断；无 when 表示当前步骤无额外条件。",
+          "state_changes": [
+            {
+              "field": "effective_input",
+              "op": "set",
+              "value": "harness-transformed",
+              "writer_id": "execution.agent-data.traces"
+            }
+          ],
+          "observable": [
+            "物化实际 prompt/media 并替换当前输入"
+          ],
+          "next": [],
+          "evidence_ids": [
+            "es.ev.project-input",
+            "es.ev.transform"
+          ],
+          "when": {
+            "field": "canonical_occurrence",
+            "equals": "one"
+          }
+        },
+        {
+          "id": "reject-boundary",
+          "title": "拒绝改写 Fork 继承区",
+          "from": "execution.agent-data.projector.inputs",
+          "to": "execution.agent-data.traces",
+          "relation_id": "es.input.trace",
+          "trigger": "拒绝改写 Fork 继承区",
+          "guard": "按已声明状态判断；无 when 表示当前步骤无额外条件。",
+          "state_changes": [
+            {
+              "field": "error",
+              "op": "set",
+              "value": "ValueError",
+              "writer_id": "execution.agent-data.traces"
+            }
+          ],
+          "observable": [
+            "拒绝改写 Fork 继承区"
+          ],
+          "next": [],
+          "evidence_ids": [
+            "es.ev.project-input"
+          ],
+          "when": {
+            "field": "canonical_occurrence",
+            "equals": "zero_or_many"
+          }
+        }
+      ],
+      "cases": [
+        {
+          "id": "rewrite",
+          "title": "唯一边界可以转换",
+          "inputs": {
+            "canonical_occurrence": "one"
+          },
+          "path": [
+            "load",
+            "rewrite"
+          ],
+          "outcome": {
+            "effective_input": "harness-transformed",
+            "inherited_unchanged": true
+          },
+          "evidence_ids": [
+            "es.ev.project-input",
+            "es.ev.transform"
+          ]
+        },
+        {
+          "id": "ambiguous",
+          "title": "边界丢失或出现多次",
+          "inputs": {
+            "canonical_occurrence": "zero_or_many"
+          },
+          "path": [
+            "load",
+            "reject-boundary"
+          ],
+          "outcome": {
+            "effective_input": "original",
+            "inherited_unchanged": true,
+            "error": "ValueError"
+          },
+          "evidence_ids": [
+            "es.ev.project-input"
+          ]
+        }
+      ],
+      "evidence_ids": [
+        "es.ev.project-input",
+        "es.ev.project-begin",
+        "es.ev.transform"
+      ],
+      "mode": "simulated",
+      "adapter": "agent-data.actual-input.v1",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "canonical_occurrence": {
+            "type": "string",
+            "enum": [
+              "one",
+              "zero_or_many"
+            ]
+          }
+        },
+        "required": [
+          "canonical_occurrence"
+        ],
+        "additionalProperties": false
+      },
+      "state_model": {
+        "semantics": "领域案例局部状态；authoritative 表示模拟该责任方的事实，不是实时状态。",
+        "operations": {
+          "set": "替换声明字段；{input:name} 只读本案例输入",
+          "increment": "数值加法",
+          "append": "数组追加"
+        },
+        "condition_source": "declared_state_only",
+        "unknown_operation": "reject",
+        "unknown_field": "reject",
+        "terminal_authority": "Execution queued/running/terminal 归 Scheduler；Harness 报告与 Provider result 单独呈现。"
+      }
+    },
+    {
+      "id": "agent-data.acceptance-projection",
+      "owner_id": "execution.agent-data.projector.events",
+      "title": "Provider 输入接受的关联顺序",
+      "question": "原生 turn 接受事件怎样变成可恢复的长期证据？",
+      "presentation": "event_timeline",
+      "entry_conditions": [
+        "仅运行固定版本的本地案例；不调用 Provider、ISA 或数据库。",
+        "输入前提须显式载入声明状态，所有 when 仅检查状态。"
+      ],
+      "participants": [
+        {
+          "object_id": "execution.agent-data.projector.events",
+          "role": "本机制的明确调用、写入或观察参与者"
+        },
+        {
+          "object_id": "execution.agent-data.executions",
+          "role": "本机制的明确调用、写入或观察参与者"
+        }
+      ],
+      "state_fields": [
+        {
+          "id": "identity",
+          "label": "identity",
+          "meaning": "事件携带的会话与 turn 是否可信且一致",
+          "type": "string",
+          "initial": "valid",
+          "state_scope": "observation",
+          "enum": [
+            "valid",
+            "missing_turn",
+            "changed_session"
+          ]
+        },
+        {
+          "id": "session_linked",
+          "label": "session_linked",
+          "meaning": "执行已关联 Provider Session",
+          "type": "boolean",
+          "initial": false,
+          "state_scope": "authoritative",
+          "authority_id": "execution.agent-data.executions"
+        },
+        {
+          "id": "receipt",
+          "label": "receipt",
+          "meaning": "接受回执存在",
+          "type": "boolean",
+          "initial": false,
+          "state_scope": "authoritative",
+          "authority_id": "execution.agent-data.executions"
+        },
+        {
+          "id": "stable_binding_updated",
+          "label": "stable_binding_updated",
+          "meaning": "此投影步骤不更新稳定 binding",
+          "type": "boolean",
+          "initial": false,
+          "state_scope": "observation"
+        },
+        {
+          "id": "error",
+          "label": "error",
+          "meaning": "异常",
+          "type": "string",
+          "initial": "",
+          "state_scope": "observation"
+        }
+      ],
+      "invariants": [
+        "接受事实不等于完成事实。",
+        "稳定 binding 与执行到会话的关联是不同记录。"
+      ],
+      "steps": [
+        {
+          "id": "load",
+          "title": "载入演示输入与已观察前提",
+          "from": "execution.agent-data.projector.events",
+          "to": "execution.agent-data.projector.events",
+          "relation_id": null,
+          "trigger": "载入演示输入与已观察前提",
+          "guard": "按已声明状态判断；无 when 表示当前步骤无额外条件。",
+          "state_changes": [
+            {
+              "field": "identity",
+              "op": "set",
+              "value": {
+                "input": "identity"
+              },
+              "writer_id": "execution.agent-data.projector.events"
+            }
+          ],
+          "observable": [
+            "载入演示输入与已观察前提"
+          ],
+          "next": [
+            "bind-execution",
+            "missing",
+            "changed"
+          ],
+          "evidence_ids": [
+            "es.ev.project-bind",
+            "es.ev.project-accept",
+            "es.ev.accept",
+            "es.ev.receipt"
+          ]
+        },
+        {
+          "id": "bind-execution",
+          "title": "核对并关联实际原生会话",
+          "from": "execution.agent-data.projector.events",
+          "to": "execution.agent-data.executions",
+          "relation_id": null,
+          "trigger": "核对并关联实际原生会话",
+          "guard": "按已声明状态判断；无 when 表示当前步骤无额外条件。",
+          "state_changes": [
+            {
+              "field": "session_linked",
+              "op": "set",
+              "value": true,
+              "writer_id": "execution.agent-data.executions"
+            }
+          ],
+          "observable": [
+            "核对并关联实际原生会话"
+          ],
+          "next": [
+            "write-receipt"
+          ],
+          "evidence_ids": [
+            "es.ev.project-bind"
+          ],
+          "when": {
+            "field": "identity",
+            "equals": "valid"
+          }
+        },
+        {
+          "id": "write-receipt",
+          "title": "保存非空 turn 的接受回执",
+          "from": "execution.agent-data.projector.events",
+          "to": "execution.agent-data.executions",
+          "relation_id": "es.accept.execution",
+          "trigger": "保存非空 turn 的接受回执",
+          "guard": "按已声明状态判断；无 when 表示当前步骤无额外条件。",
+          "state_changes": [
+            {
+              "field": "receipt",
+              "op": "set",
+              "value": true,
+              "writer_id": "execution.agent-data.executions"
+            }
+          ],
+          "observable": [
+            "保存非空 turn 的接受回执"
+          ],
+          "next": [],
+          "evidence_ids": [
+            "es.ev.project-accept",
+            "es.ev.accept"
+          ]
+        },
+        {
+          "id": "missing",
+          "title": "接受事件没有 turn 身份",
+          "from": "execution.agent-data.projector.events",
+          "to": "execution.agent-data.executions",
+          "relation_id": null,
+          "trigger": "接受事件没有 turn 身份",
+          "guard": "按已声明状态判断；无 when 表示当前步骤无额外条件。",
+          "state_changes": [
+            {
+              "field": "error",
+              "op": "set",
+              "value": "ValueError",
+              "writer_id": "execution.agent-data.executions"
+            }
+          ],
+          "observable": [
+            "接受事件没有 turn 身份"
+          ],
+          "next": [],
+          "evidence_ids": [
+            "es.ev.project-accept"
+          ],
+          "when": {
+            "field": "identity",
+            "equals": "missing_turn"
+          }
+        },
+        {
+          "id": "changed",
+          "title": "拒绝关联第二个原生会话",
+          "from": "execution.agent-data.projector.events",
+          "to": "execution.agent-data.executions",
+          "relation_id": null,
+          "trigger": "拒绝关联第二个原生会话",
+          "guard": "按已声明状态判断；无 when 表示当前步骤无额外条件。",
+          "state_changes": [
+            {
+              "field": "error",
+              "op": "set",
+              "value": "RuntimeError",
+              "writer_id": "execution.agent-data.executions"
+            }
+          ],
+          "observable": [
+            "拒绝关联第二个原生会话"
+          ],
+          "next": [],
+          "evidence_ids": [
+            "es.ev.project-bind"
+          ],
+          "when": {
+            "field": "identity",
+            "equals": "changed_session"
+          }
+        }
+      ],
+      "cases": [
+        {
+          "id": "accepted",
+          "title": "先会话后接受回执",
+          "inputs": {
+            "identity": "valid"
+          },
+          "path": [
+            "load",
+            "bind-execution",
+            "write-receipt"
+          ],
+          "outcome": {
+            "session_linked": true,
+            "receipt": true,
+            "stable_binding_updated": false
+          },
+          "evidence_ids": [
+            "es.ev.project-bind",
+            "es.ev.project-accept",
+            "es.ev.accept"
+          ]
+        },
+        {
+          "id": "empty",
+          "title": "拒绝空 turn",
+          "inputs": {
+            "identity": "missing_turn"
+          },
+          "path": [
+            "load",
+            "missing"
+          ],
+          "outcome": {
+            "error": "ValueError",
+            "receipt": false
+          },
+          "evidence_ids": [
+            "es.ev.project-accept"
+          ]
+        },
+        {
+          "id": "changed",
+          "title": "执行内会话身份变化",
+          "inputs": {
+            "identity": "changed_session"
+          },
+          "path": [
+            "load",
+            "changed"
+          ],
+          "outcome": {
+            "error": "RuntimeError",
+            "receipt": false
+          },
+          "evidence_ids": [
+            "es.ev.project-bind"
+          ]
+        }
+      ],
+      "evidence_ids": [
+        "es.ev.project-bind",
+        "es.ev.project-accept",
+        "es.ev.accept",
+        "es.ev.receipt"
+      ],
+      "mode": "simulated",
+      "adapter": "agent-data.acceptance-projection.v1",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "identity": {
+            "type": "string",
+            "enum": [
+              "valid",
+              "missing_turn",
+              "changed_session"
+            ]
+          }
+        },
+        "required": [
+          "identity"
+        ],
+        "additionalProperties": false
+      },
+      "state_model": {
+        "semantics": "领域案例局部状态；authoritative 表示模拟该责任方的事实，不是实时状态。",
+        "operations": {
+          "set": "替换声明字段；{input:name} 只读本案例输入",
+          "increment": "数值加法",
+          "append": "数组追加"
+        },
+        "condition_source": "declared_state_only",
+        "unknown_operation": "reject",
+        "unknown_field": "reject",
+        "terminal_authority": "Execution queued/running/terminal 归 Scheduler；Harness 报告与 Provider result 单独呈现。"
+      }
+    },
+    {
+      "id": "agent-data.completed-content",
+      "owner_id": "execution.agent-data.projector.outputs",
+      "title": "完成条目与收尾校验",
+      "question": "流式活动、已完成模型条目和完成返回值分别怎样进入内容？",
+      "presentation": "event_timeline",
+      "entry_conditions": [
+        "仅运行固定版本的本地案例；不调用 Provider、ISA 或数据库。",
+        "输入前提须显式载入声明状态，所有 when 仅检查状态。"
+      ],
+      "participants": [
+        {
+          "object_id": "execution.agent-data.projector.outputs",
+          "role": "本机制的明确调用、写入或观察参与者"
+        },
+        {
+          "object_id": "execution.agent-data.records",
+          "role": "本机制的明确调用、写入或观察参与者"
+        },
+        {
+          "object_id": "execution.agent-data.executions",
+          "role": "本机制的明确调用、写入或观察参与者"
+        }
+      ],
+      "state_fields": [
+        {
+          "id": "result",
+          "label": "result",
+          "meaning": "本次输出与收尾的实际条件",
+          "type": "string",
+          "initial": "completed_item",
+          "state_scope": "observation",
+          "enum": [
+            "completed_item",
+            "missing_session",
+            "compact_without_segment",
+            "fallback_response"
+          ]
+        },
+        {
+          "id": "segments",
+          "label": "segments",
+          "meaning": "本案例捕获的完成 Segment 数",
+          "type": "integer",
+          "initial": 0,
+          "state_scope": "authoritative",
+          "authority_id": "execution.agent-data.records"
+        },
+        {
+          "id": "source_kind",
+          "label": "source_kind",
+          "meaning": "实际内容来源",
+          "type": "string",
+          "initial": "",
+          "state_scope": "observation"
+        },
+        {
+          "id": "terminal_written",
+          "label": "terminal_written",
+          "meaning": "Projector.complete 不写 Execution 终态",
+          "type": "boolean",
+          "initial": false,
+          "state_scope": "observation"
+        },
+        {
+          "id": "error",
+          "label": "error",
+          "meaning": "异常",
+          "type": "string",
+          "initial": "",
+          "state_scope": "observation"
+        }
+      ],
+      "invariants": [
+        "流式 delta 不覆盖已完成 Segment。",
+        "回填分支与当前 Design sole-event 陈述差异单独列工作项。"
+      ],
+      "steps": [
+        {
+          "id": "load",
+          "title": "载入演示输入与已观察前提",
+          "from": "execution.agent-data.projector.outputs",
+          "to": "execution.agent-data.projector.outputs",
+          "relation_id": null,
+          "trigger": "载入演示输入与已观察前提",
+          "guard": "按已声明状态判断；无 when 表示当前步骤无额外条件。",
+          "state_changes": [
+            {
+              "field": "result",
+              "op": "set",
+              "value": {
+                "input": "result"
+              },
+              "writer_id": "execution.agent-data.projector.outputs"
+            }
+          ],
+          "observable": [
+            "载入演示输入与已观察前提"
+          ],
+          "next": [
+            "item",
+            "no-session",
+            "no-compaction",
+            "fallback"
+          ],
+          "evidence_ids": [
+            "es.ev.project-events",
+            "es.ev.project-model",
+            "es.ev.model-identity",
+            "es.ev.project-complete",
+            "es.ev.design-data"
+          ]
+        },
+        {
+          "id": "item",
+          "title": "完整 item 按稳定 ID 入库",
+          "from": "execution.agent-data.projector.outputs",
+          "to": "execution.agent-data.records",
+          "relation_id": "es.output.record",
+          "trigger": "完整 item 按稳定 ID 入库",
+          "guard": "按已声明状态判断；无 when 表示当前步骤无额外条件。",
+          "state_changes": [
+            {
+              "field": "segments",
+              "op": "set",
+              "value": 1,
+              "writer_id": "execution.agent-data.records"
+            },
+            {
+              "field": "source_kind",
+              "op": "set",
+              "value": "completed_provider_item",
+              "writer_id": "execution.agent-data.records"
+            }
+          ],
+          "observable": [
+            "完整 item 按稳定 ID 入库"
+          ],
+          "next": [
+            "output"
+          ],
+          "evidence_ids": [
+            "es.ev.project-model",
+            "es.ev.model-identity"
+          ],
+          "when": {
+            "field": "result",
+            "equals": "completed_item"
+          }
+        },
+        {
+          "id": "output",
+          "title": "记录 usage/turn，不推进终态",
+          "from": "execution.agent-data.projector.outputs",
+          "to": "execution.agent-data.executions",
+          "relation_id": "es.output.usage",
+          "trigger": "记录 usage/turn，不推进终态",
+          "guard": "按已声明状态判断；无 when 表示当前步骤无额外条件。",
+          "state_changes": [
+            {
+              "field": "terminal_written",
+              "op": "set",
+              "value": false,
+              "writer_id": "execution.agent-data.executions"
+            }
+          ],
+          "observable": [
+            "记录 usage/turn，不推进终态"
+          ],
+          "next": [],
+          "evidence_ids": [
+            "es.ev.project-complete",
+            "es.ev.terminal"
+          ]
+        },
+        {
+          "id": "no-session",
+          "title": "拒绝无法关联的完成结果",
+          "from": "execution.agent-data.projector.outputs",
+          "to": "execution.agent-data.projector.outputs",
+          "relation_id": null,
+          "trigger": "拒绝无法关联的完成结果",
+          "guard": "按已声明状态判断；无 when 表示当前步骤无额外条件。",
+          "state_changes": [
+            {
+              "field": "error",
+              "op": "set",
+              "value": "RuntimeError",
+              "writer_id": "execution.agent-data.projector.outputs"
+            }
+          ],
+          "observable": [
+            "拒绝无法关联的完成结果"
+          ],
+          "next": [],
+          "evidence_ids": [
+            "es.ev.project-complete"
+          ],
+          "when": {
+            "field": "result",
+            "equals": "missing_session"
+          }
+        },
+        {
+          "id": "no-compaction",
+          "title": "拒绝仅有完成信号的 compact",
+          "from": "execution.agent-data.projector.outputs",
+          "to": "execution.agent-data.projector.outputs",
+          "relation_id": null,
+          "trigger": "拒绝仅有完成信号的 compact",
+          "guard": "按已声明状态判断；无 when 表示当前步骤无额外条件。",
+          "state_changes": [
+            {
+              "field": "error",
+              "op": "set",
+              "value": "RuntimeError",
+              "writer_id": "execution.agent-data.projector.outputs"
+            }
+          ],
+          "observable": [
+            "拒绝仅有完成信号的 compact"
+          ],
+          "next": [],
+          "evidence_ids": [
+            "es.ev.project-complete"
+          ],
+          "when": {
+            "field": "result",
+            "equals": "compact_without_segment"
+          }
+        },
+        {
+          "id": "fallback",
+          "title": "非空 response 且未捕获 final 时回填",
+          "from": "execution.agent-data.projector.outputs",
+          "to": "execution.agent-data.records",
+          "relation_id": "es.output.record",
+          "trigger": "非空 response 且未捕获 final 时回填",
+          "guard": "按已声明状态判断；无 when 表示当前步骤无额外条件。",
+          "state_changes": [
+            {
+              "field": "segments",
+              "op": "set",
+              "value": 1,
+              "writer_id": "execution.agent-data.records"
+            },
+            {
+              "field": "source_kind",
+              "op": "set",
+              "value": "completion_response_fallback",
+              "writer_id": "execution.agent-data.records"
+            }
+          ],
+          "observable": [
+            "非空 response 且未捕获 final 时回填"
+          ],
+          "next": [],
+          "evidence_ids": [
+            "es.ev.project-complete"
+          ],
+          "when": {
+            "field": "result",
+            "equals": "fallback_response"
+          }
+        }
+      ],
+      "cases": [
+        {
+          "id": "content",
+          "title": "已完成条目入库并收尾",
+          "inputs": {
+            "result": "completed_item"
+          },
+          "path": [
+            "load",
+            "item",
+            "output"
+          ],
+          "outcome": {
+            "segments": 1,
+            "terminal_written": false
+          },
+          "evidence_ids": [
+            "es.ev.project-model",
+            "es.ev.model-identity",
+            "es.ev.project-complete",
+            "es.ev.terminal"
+          ]
+        },
+        {
+          "id": "missing",
+          "title": "持续会话结果缺少身份",
+          "inputs": {
+            "result": "missing_session"
+          },
+          "path": [
+            "load",
+            "no-session"
+          ],
+          "outcome": {
+            "segments": 0,
+            "error": "RuntimeError"
+          },
+          "evidence_ids": [
+            "es.ev.project-complete"
+          ]
+        },
+        {
+          "id": "compact",
+          "title": "compact 没有规范正文",
+          "inputs": {
+            "result": "compact_without_segment"
+          },
+          "path": [
+            "load",
+            "no-compaction"
+          ],
+          "outcome": {
+            "error": "RuntimeError"
+          },
+          "evidence_ids": [
+            "es.ev.project-complete"
+          ]
+        },
+        {
+          "id": "fallback",
+          "title": "固定代码的无 final 回填分支",
+          "inputs": {
+            "result": "fallback_response"
+          },
+          "path": [
+            "load",
+            "fallback"
+          ],
+          "outcome": {
+            "segments": 1,
+            "source_kind": "completion_response_fallback"
+          },
+          "evidence_ids": [
+            "es.ev.project-complete"
+          ]
+        }
+      ],
+      "evidence_ids": [
+        "es.ev.project-events",
+        "es.ev.project-model",
+        "es.ev.model-identity",
+        "es.ev.project-complete",
+        "es.ev.design-data"
+      ],
+      "mode": "simulated",
+      "adapter": "agent-data.completed-content.v1",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "type": "string",
+            "enum": [
+              "completed_item",
+              "missing_session",
+              "compact_without_segment",
+              "fallback_response"
+            ]
+          }
+        },
+        "required": [
+          "result"
+        ],
+        "additionalProperties": false
+      },
+      "state_model": {
+        "semantics": "领域案例局部状态；authoritative 表示模拟该责任方的事实，不是实时状态。",
+        "operations": {
+          "set": "替换声明字段；{input:name} 只读本案例输入",
+          "increment": "数值加法",
+          "append": "数组追加"
+        },
+        "condition_source": "declared_state_only",
+        "unknown_operation": "reject",
+        "unknown_field": "reject",
+        "terminal_authority": "Execution queued/running/terminal 归 Scheduler；Harness 报告与 Provider result 单独呈现。"
+      }
+    }
+  ],
+  "objects": [
+    {
+      "id": "execution.scheduling",
+      "kind": "module",
+      "title": "持久调度、账号与用量",
+      "responsibility": "维护队列与持有资格；按账号容量、binding互斥、优先级和actor公平选工作；按恢复证据接管而不猜测外部执行。",
+      "parent_id": "execution",
+      "child_ids": [
+        "execution.scheduling.admission",
+        "execution.scheduling.leases",
+        "execution.scheduling.accounts"
+      ],
+      "host_ids": [],
+      "state_owned": [
+        "Scheduler数据库executions/worker注册/公平/容量/账号观察与用量记录"
+      ],
+      "relation_ids": [
+        "ex.enqueue",
+        "ex.prepare",
+        "ex.claim.rpc",
+        "ex.checkpoint",
+        "ex.finish.rpc",
+        "ex.cancel.request",
+        "control.rel.enqueue",
+        "control.rel.prepare",
+        "control.rel.admission",
+        "control.rel.generation",
+        "control.rel.ack",
+        "es.scheduler.record"
+      ],
+      "protocol_ids": [
+        "resident-execution",
+        "worker-lease"
+      ],
+      "mechanism_ids": [
+        "control.admission",
+        "control.fairness",
+        "control.expiry",
+        "execution.lifecycle"
+      ],
+      "evidence_ids": [
+        "control.ev.capacity",
+        "control.ev.fair",
+        "control.ev.expiry",
+        "control.ev.design-scheduling",
+        "ex.overview",
+        "ex.provider"
+      ],
+      "identity": {
+        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "focus_owner_id": "execution.scheduling",
+        "focus_kind": "module:execution.scheduling",
+        "local_only": false
+      }
+    },
+    {
+      "id": "execution.agent-data.records",
+      "kind": "concept",
+      "title": "不可变 Payload 与 Segment",
+      "parent_id": "execution.agent-data",
+      "child_ids": [],
+      "host_ids": [
+        "execution",
+        "worker"
+      ],
+      "responsibility": "以字节摘要复用 Payload；以稳定事件身份固定 Segment 内容与元数据。",
+      "state_owned": [
+        "Payload 正文字节、不可变 Segment 身份；相同正文不等于同一事件。"
+      ],
+      "relation_ids": [
+        "es.trace.record",
+        "es.view.record",
+        "es.output.record"
+      ],
+      "protocol_ids": [],
+      "mechanism_ids": [
+        "agent-data.segment-identity"
+      ],
+      "evidence_ids": [
+        "es.ev.payload",
+        "es.ev.segment"
+      ],
+      "identity": {
+        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "focus_owner_id": "execution.agent-data",
+        "focus_kind": "module:execution.agent-data",
+        "local_only": true
+      }
+    },
+    {
+      "id": "execution.agent-data.traces",
+      "kind": "concept",
+      "title": "当前轨迹、转换和 Fork 引用",
+      "parent_id": "execution.agent-data",
+      "child_ids": [],
+      "host_ids": [
+        "execution",
+        "worker"
+      ],
+      "responsibility": "在事务内维护 Sequence 当前成员；转换保留来源，Fork 固定选择。",
+      "state_owned": [
+        "sequence_segments 顺序；transformed_from 审计边；Fork 独立当前引用。"
+      ],
+      "relation_ids": [
+        "es.trace.record",
+        "es.view.trace",
+        "es.input.trace",
+        "es.output.trace"
+      ],
+      "protocol_ids": [],
+      "mechanism_ids": [
+        "agent-data.trace-revision"
+      ],
+      "evidence_ids": [
+        "es.ev.append",
+        "es.ev.transform",
+        "es.ev.fork"
+      ],
+      "identity": {
+        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "focus_owner_id": "execution.agent-data",
+        "focus_kind": "module:execution.agent-data",
+        "local_only": true
+      }
+    },
+    {
+      "id": "execution.agent-data.executions",
+      "kind": "concept",
+      "title": "Execution 记录与接受回执",
+      "parent_id": "execution.agent-data",
+      "child_ids": [],
+      "host_ids": [
+        "execution",
+        "worker"
+      ],
+      "responsibility": "保存执行来源身份、输入接受凭据和内容用量；提供终态一致性写入 API。",
+      "state_owned": [
+        "executions 唯一长期记录；agent_operations 输入接受收据；终态变更调用方仍为 Scheduler/准备协调者。"
+      ],
+      "relation_ids": [
+        "es.accept.execution",
+        "es.output.usage",
+        "es.scheduler.record"
+      ],
+      "protocol_ids": [],
+      "mechanism_ids": [
+        "agent-data.execution-receipt"
+      ],
+      "evidence_ids": [
+        "es.ev.execution",
+        "es.ev.accept",
+        "es.ev.receipt",
+        "es.ev.terminal",
+        "es.ev.design-data"
+      ],
+      "identity": {
+        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "focus_owner_id": "execution.agent-data",
+        "focus_kind": "module:execution.agent-data",
+        "local_only": true
+      }
+    },
+    {
+      "id": "execution.agent-data.views",
+      "kind": "concept",
+      "title": "Chat 与上下文读取策略",
+      "parent_id": "execution.agent-data",
+      "child_ids": [],
+      "host_ids": [
+        "execution",
+        "worker"
+      ],
+      "responsibility": "按同一 trace 的不同语义窗口读取内容；Chat 合入运行通知，上下文按压缩/重置截断。",
+      "state_owned": [
+        "无新增内容权威；查询局部选择、消息格式和有效窗口。"
+      ],
+      "relation_ids": [
+        "es.view.trace",
+        "es.view.record"
+      ],
+      "protocol_ids": [],
+      "mechanism_ids": [
+        "agent-data.read-views"
+      ],
+      "evidence_ids": [
+        "es.ev.context",
+        "es.ev.chat",
+        "es.ev.message",
+        "es.ev.chat-read"
+      ],
+      "identity": {
+        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "focus_owner_id": "execution.agent-data",
+        "focus_kind": "module:execution.agent-data",
+        "local_only": true
+      }
+    },
+    {
+      "id": "execution.agent-data.projector.inputs",
+      "kind": "concept",
+      "title": "输入物化与当前版本",
+      "parent_id": "execution.agent-data.projector",
+      "child_ids": [],
+      "host_ids": [
+        "worker"
+      ],
+      "responsibility": "记录实际发送输入，将 Harness 改写转成当前引用替换，守住 Fork 新输入边界。",
+      "state_owned": [
+        "input/effective_provider_input 的当前引用及 transformed_from；不改继承正文。"
+      ],
+      "relation_ids": [
+        "es.input.trace"
+      ],
+      "protocol_ids": [],
+      "mechanism_ids": [
+        "agent-data.actual-input"
+      ],
+      "evidence_ids": [
+        "es.ev.project-begin",
+        "es.ev.project-input",
+        "es.ev.transform"
+      ],
+      "identity": {
+        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "focus_owner_id": "execution.agent-data",
+        "focus_kind": "module:execution.agent-data",
+        "local_only": true
+      }
+    },
+    {
+      "id": "execution.agent-data.projector.events",
+      "kind": "concept",
+      "title": "会话关联与输入接受事件",
+      "parent_id": "execution.agent-data.projector",
+      "child_ids": [],
+      "host_ids": [
+        "worker"
+      ],
+      "responsibility": "消费 provider_input_bound，将实际原生会话与 turn 记录到执行和接受回执。",
+      "state_owned": [
+        "执行到 Provider Session 的关联、turn 和首次接受收据；不等于稳定 binding 更新。"
+      ],
+      "relation_ids": [
+        "es.accept.execution",
+        "es.adapter.accept"
+      ],
+      "protocol_ids": [
+        "provider-capabilities"
+      ],
+      "mechanism_ids": [
+        "agent-data.acceptance-projection"
+      ],
+      "evidence_ids": [
+        "es.ev.project-bind",
+        "es.ev.project-accept",
+        "es.ev.receipt",
+        "es.ev.accept"
+      ],
+      "identity": {
+        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "focus_owner_id": "execution.agent-data",
+        "focus_kind": "module:execution.agent-data",
+        "local_only": true
+      }
+    },
+    {
+      "id": "execution.agent-data.projector.outputs",
+      "kind": "concept",
+      "title": "完成条目与输出收尾",
+      "parent_id": "execution.agent-data.projector",
+      "child_ids": [],
+      "host_ids": [
+        "worker"
+      ],
+      "responsibility": "采集已完成模型/工具条目，以稳定身份去重，并在完成阶段核对会话与压缩结果。",
+      "state_owned": [
+        "完成 Segment、first final 标识、运行卡片记录；discard 仅清内存。"
+      ],
+      "relation_ids": [
+        "es.output.record",
+        "es.output.trace",
+        "es.output.usage"
+      ],
+      "protocol_ids": [],
+      "mechanism_ids": [
+        "agent-data.completed-content"
+      ],
+      "evidence_ids": [
+        "es.ev.project-events",
+        "es.ev.project-model",
+        "es.ev.model-identity",
+        "es.ev.project-complete"
+      ],
+      "identity": {
+        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "focus_owner_id": "execution.agent-data",
+        "focus_kind": "module:execution.agent-data",
+        "local_only": true
+      }
+    }
+  ],
+  "evidence": [
+    {
+      "id": "es.ev.payload",
+      "kind": "code",
+      "claim": "Payload 依原始字节 SHA-256 复用物理正文。",
+      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_store.py",
+      "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
+      "sha256": "3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85",
+      "start_line": 673,
+      "end_line": 687,
+      "symbol": "AgentDataStore._payload",
+      "excerpt": "    def _payload(\n        connection: Any,\n        raw: bytes,\n        content_type: str,\n        created_at: str,\n    ) -> tuple[str, str]:\n        from .harness_retention import protect_artifact_references\n        protect_artifact_references(connection, raw)\n        sha256 = hashlib.sha256(raw).hexdigest()\n        payload_ref = f\"payload_{sha256}\"\n        connection.execute(\n            '\\n            INSERT INTO payloads(\\n                payload_ref, sha256, byte_length, content_type, body, created_at\\n            ) VALUES (%s, %s, %s, %s, %s, %s)\\n            ON CONFLICT DO NOTHING\\n            ',\n            (payload_ref, sha256, len(raw), content_type, raw, created_at),\n        )\n        return payload_ref, sha256",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85.json",
+        "sha256": "3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85",
+        "size": 246584
+      }
+    },
+    {
+      "id": "es.ev.segment",
+      "kind": "code",
+      "claim": "Segment 身份及内容四元组不可变；相同身份冲突抛 SegmentIdentityConflict。",
+      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_store.py",
+      "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
+      "sha256": "3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85",
+      "start_line": 709,
+      "end_line": 776,
+      "symbol": "AgentDataStore._insert_segment",
+      "excerpt": "    def _insert_segment(\n        connection: Any,\n        *,\n        segment_id: str,\n        segment_type: str,\n        content: object,\n        started_at: str,\n        finished_at: str,\n        status: str,\n        created_by_actor_ref: str,\n        performed_by_actor_ref: str,\n        content_type: str,\n        metadata: Mapping[str, Any],\n        created_by_agent_id: str,\n        execution_id: str,\n    ) -> str:\n        if segment_type not in SEGMENT_TYPES:\n            raise ValueError(f\"invalid Segment type: {segment_type}\")\n        clean_id = str(segment_id or \"\").strip()\n        if not clean_id:\n            raise ValueError(\"Segment identity is required\")\n        at = str(finished_at or started_at or utc_now())\n        clean_content_type = str(content_type or \"text/plain; charset=utf-8\")\n        raw = _content_bytes(content, clean_content_type)\n        payload_ref, sha256 = AgentDataStore._payload(\n            connection, raw, clean_content_type, at\n        )\n        forbidden = {\"hidden_from_chat\", \"show_in_chat\", \"send_to_ai\", \"native_id\"}\n        if forbidden.intersection(metadata):\n            raise ValueError(\"Segment metadata cannot store consumer eligibility or transport aliases\")\n        metadata_json = canonical_json(dict(metadata))\n        existing = connection.execute(\n            'SELECT * FROM segments WHERE segment_id = %s', (clean_id,)\n        ).fetchone()\n        if existing is not None:\n            content_identity = (\n                str(existing[\"segment_type\"]),\n                str(existing[\"content_ref\"]),\n                str(existing[\"content_type\"]),\n                str(existing[\"metadata_json\"]),\n            )\n            if content_identity != (\n                segment_type,\n                payload_ref,\n                clean_content_type,\n                metadata_json,\n            ):\n                raise SegmentIdentityConflict(clean_id)\n            return clean_id\n        connection.execute(\n            '\\n            INSERT INTO segments(\\n                segment_id, segment_type, started_at, finished_at,\\n                status, created_by_actor_ref, performed_by_actor_ref,\\n                content_ref, content_sha256, content_type,\\n                metadata_json, created_by_agent_id, execution_id\\n            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)\\n            ',\n            (\n                clean_id,\n                segment_type,\n                instant(str(started_at or \"\")),\n                instant(str(finished_at or \"\")),\n                str(status or \"completed\"),\n                str(created_by_actor_ref or \"\"),\n                str(performed_by_actor_ref or \"\"),\n                payload_ref,\n                sha256,\n                clean_content_type,\n                metadata_json,\n                str(created_by_agent_id or \"\"),\n                str(execution_id or \"\"),\n            ),\n        )\n        return clean_id",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85.json",
+        "sha256": "3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85",
+        "size": 246584
+      }
+    },
+    {
+      "id": "es.ev.append",
+      "kind": "code",
+      "claim": "锁住目标 Sequence 后按位置追加已存在 Segment；重复选择不重复添加。",
+      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_store.py",
+      "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
+      "sha256": "3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85",
+      "start_line": 1124,
+      "end_line": 1176,
+      "symbol": "AgentDataStore._append_sequence_ids",
+      "excerpt": "    def _append_sequence_ids(\n        cls,\n        connection: Any,\n        *,\n        sequence: Any,\n        segment_ids: Iterable[str],\n        actor_ref: str,\n    ) -> list[str]:\n        requested = list(dict.fromkeys(\n            str(value or \"\").strip()\n            for value in segment_ids\n            if str(value or \"\").strip()\n        ))\n        if not requested:\n            return []\n        found = cls._existing_segment_ids(connection, requested)\n        missing = [item for item in requested if item not in found]\n        if missing:\n            raise KeyError(missing[0])\n        sequence_id = str(sequence[\"sequence_id\"])\n        # MAX(ordinal) + 1 is safe only while this Sequence's parent row is\n        # locked. Unrelated Sequences still append in parallel.\n        locked = connection.execute(\n            'SELECT sequence_id FROM sequences WHERE sequence_id = %s FOR UPDATE',\n            (sequence_id,),\n        ).fetchone()\n        if locked is None:\n            raise RuntimeError(\"Sequence disappeared during append\")\n        selected: set[str] = set()\n        for chunk in _batches(requested):\n            placeholders = \",\".join(\"%s\" for _ in chunk)\n            selected.update(\n                str(row[\"segment_id\"])\n                for row in connection.execute(\n                    f\"SELECT segment_id FROM sequence_segments \"\n                    f\"WHERE sequence_id = %s AND segment_id IN ({placeholders})\",\n                    [sequence_id, *chunk],\n                ).fetchall()\n            )\n        additions = [item for item in requested if item not in selected]\n        if not additions:\n            return []\n        base = next_position(connection, sequence_id) - 1\n        connection.executemany(\n            'INSERT INTO sequence_segments(sequence_id, ordinal, segment_id) VALUES (%s, %s, %s)',\n            [\n                (sequence_id, base + index, segment_id)\n                for index, segment_id in enumerate(additions, 1)\n            ],\n        )\n        chat_position_index.upsert_segments(connection, sequence_id, additions)\n        cls._touch_sequence(connection, sequence_id, actor_ref)\n        return additions",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85.json",
+        "sha256": "3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85",
+        "size": 246584
+      }
+    },
+    {
+      "id": "es.ev.transform",
+      "kind": "code",
+      "claim": "事务检查当前成员，建立转换边并替换当前引用；不删除来源内容。",
+      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_store.py",
+      "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
+      "sha256": "3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85",
+      "start_line": 1190,
+      "end_line": 1254,
+      "symbol": "AgentDataStore.transform_agent_segments",
+      "excerpt": "    def transform_agent_segments(\n        self, agent_id: str, source_ids: Sequence[str], *, segment_id: str,\n        content: Any, actor_ref: str, operation_id: str, operation_type: str,\n        segment_type: str = \"input\", content_type: str = \"text/plain; charset=utf-8\",\n        metadata: Mapping[str, Any] | None = None, execution_id: str = \"\",\n        created_at: str = \"\",\n    ) -> str:\n        \"\"\"Atomically replace consumed occurrences, retaining immutable ancestry.\n\n        Only this Agent's sequence changes. A Fork already holding a source keeps\n        it. Identical text in another occurrence has no bearing on replacement.\n        \"\"\"\n        sources = list(dict.fromkeys(source_ids))\n        if not sources:\n            raise ValueError(\"A transformation needs source Segment identities\")\n\n        def write(connection: Any) -> str:\n            sequence_id = self._locked_trace(connection, agent_id, actor_ref)\n            members = connection.execute(\n                \"SELECT ordinal, segment_id FROM sequence_segments WHERE sequence_id=%s \"\n                \"AND segment_id=ANY(%s) ORDER BY ordinal\", (sequence_id, sources),\n            ).fetchall()\n            if not members:\n                replay = connection.execute(\n                    \"SELECT 1 FROM sequence_segments WHERE sequence_id=%s AND segment_id=%s\",\n                    (sequence_id, segment_id),\n                ).fetchone()\n                if replay:\n                    return segment_id\n                raise ValueError(\"Transformation sources are outside the current trace\")\n            if len(members) != len(sources):\n                raise ValueError(\"Transformation must consume all its current sources\")\n            first = self._read_segment_row(connection, members[0][\"segment_id\"])\n            facts = {**first[\"metadata\"], **dict(metadata or {})}\n            # Message identity is attached to the occurrence, not its old text.\n            at = str(created_at or utc_now())\n            self._insert_segment(\n                connection, segment_id=segment_id, segment_type=segment_type,\n                content=content, content_type=content_type, metadata=facts,\n                 started_at=at, finished_at=at,\n                status=\"completed\", created_by_actor_ref=first[\"created_by_actor_ref\"],\n                performed_by_actor_ref=actor_ref, created_by_agent_id=agent_id,\n                execution_id=execution_id or first[\"execution_id\"],\n            )\n            for source_id in sources:\n                relation_id = stable_segment_id(\"transform\", operation_id, source_id, segment_id).replace(\"segment_\", \"relation_\", 1)\n                connection.execute(\n                    \"INSERT INTO segment_relations VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING\",\n                    (relation_id, \"transformed_from\", source_id, segment_id,\n                     operation_id, operation_type, \"1\", at, actor_ref, \"{}\"),\n                )\n            # Preserve the first position; gaps are harmless and retain cursors.\n            connection.execute(\n                \"DELETE FROM sequence_segments WHERE sequence_id=%s AND segment_id=ANY(%s)\",\n                (sequence_id, sources),\n            )\n            connection.execute(\n                \"INSERT INTO sequence_segments(sequence_id,ordinal,segment_id) VALUES (%s,%s,%s)\",\n                (sequence_id, int(members[0][\"ordinal\"]), segment_id),\n            )\n            self._touch_sequence(connection, sequence_id, actor_ref)\n            chat_position_index.refresh_sequence(connection, sequence_id)\n            return segment_id\n\n        return self.database.write(write)",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85.json",
+        "sha256": "3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85",
+        "size": 246584
+      }
+    },
+    {
+      "id": "es.ev.fork",
+      "kind": "code",
+      "claim": "Fork 冻结所选有序 ID，拒绝重复/未知 ID 或不同内容的非空目标。",
+      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_store.py",
+      "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
+      "sha256": "3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85",
+      "start_line": 1257,
+      "end_line": 1295,
+      "symbol": "AgentDataStore.fork_agent",
+      "excerpt": "    def fork_agent(\n        self, *, source_agent_id: str, target_agent_id: str,\n        segment_ids: Sequence[str], actor_ref: str,\n    ) -> dict[str, Any]:\n        \"\"\"Materialize the selected immutable references, never a parent's prefix.\n\n        The creation owner freezes selection before publishing the child. Retries\n        verify the same selection even after the child has started working.\n        \"\"\"\n        source_id, target_id = str(source_agent_id).strip(), str(target_agent_id).strip()\n        identities = list(segment_ids)\n        if not source_id or not target_id or source_id == target_id:\n            raise ValueError(\"Agent fork requires distinct source and target identities\")\n        if len(identities) != len(set(identities)):\n            raise ValueError(\"Fork selection contains repeated Segment identities\")\n\n        def write(connection: Any) -> dict[str, Any]:\n            if self._agent_trace(connection, source_id) is None:\n                raise ValueError(\"Fork source Agent is not registered\")\n            target_sequence_id = self._locked_trace(connection, target_id, actor_ref)\n            if len(self._existing_segment_ids(connection, identities)) != len(identities):\n                raise ValueError(\"Fork selection contains unknown Segments\")\n            operation_id = stable_segment_id(\"fork\", target_id)\n            facts = {\"source_agent_id\": source_id, \"segment_count\": len(identities),\n                     \"selection_sha256\": hashlib.sha256(canonical_json(identities).encode()).hexdigest()}\n            receipt = connection.execute(\"SELECT operation_id FROM agent_operations WHERE operation_id=%s\", (operation_id,)).fetchone()\n            if not receipt:\n                existing = self._sequence_ids(connection, target_sequence_id)\n                if existing and existing != identities:\n                    raise ValueError(\"Fork target already contains different work\")\n                if not existing:\n                    self._append_sequence_ids(connection, sequence={\"sequence_id\": target_sequence_id},\n                                              segment_ids=identities, actor_ref=actor_ref)\n            put_operation(connection, operation_id=operation_id, kind=\"forked\", agent_id=target_id,\n                          created_at=utc_now(), data=facts)\n            return {\"source_agent_id\": source_id, \"target_agent_id\": target_id,\n                    \"trace_sequence_id\": target_sequence_id, \"segment_count\": len(identities)}\n\n        return self.database.write(write)",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85.json",
+        "sha256": "3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85",
+        "size": 246584
+      }
+    },
+    {
+      "id": "es.ev.context",
+      "kind": "code",
+      "claim": "按 trace 与明确截止位置读取有效窗口，到压缩/重置停止；非法截止点拒绝。",
+      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_store.py",
+      "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
+      "sha256": "3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85",
+      "start_line": 1350,
+      "end_line": 1454,
+      "symbol": "AgentDataStore.agent_context_snapshot",
+      "excerpt": "    def agent_context_snapshot(self, agent_id: str, *, before_message_id: str = \"\", through_message_id: str = \"\", through_turn_id: str = \"\", provider_session_ref: str = \"\") -> dict[str, Any]:\n        \"\"\"The Agent's own effective window, including a Fork with no session yet.\n\n        Walk backwards to the last compaction/reset. Read payloads only for the\n        retained window. Execution receipts do not determine trace membership.\n        Delivery excludes its current input with before_message_id.\n        \"\"\"\n        with self.database.snapshot() as connection:\n            return self._agent_context_snapshot(connection, agent_id, before_message_id=before_message_id, through_message_id=through_message_id, through_turn_id=through_turn_id, provider_session_ref=provider_session_ref)\n\n    def _agent_context_snapshot(self, connection: Any, agent_id: str, *, before_message_id: str = \"\", through_message_id: str = \"\", through_turn_id: str = \"\", provider_session_ref: str = \"\") -> dict[str, Any]:\n        trace = self._agent_trace(connection, agent_id)\n        if trace is None:\n            raise KeyError(f\"Agent trace not found: {agent_id}\")\n        sequence_id = str(trace[\"sequence_id\"])\n        first = 1\n        before = None\n        if provider_session_ref:\n            session_owner = connection.execute(\n                \"SELECT 1 FROM executions WHERE provider_session_ref=%s AND agent_id=%s \"\n                \"UNION ALL SELECT 1 FROM agent_operations WHERE session_ref=%s AND agent_id=%s \"\n                \"AND kind='context_received' LIMIT 1\",\n                (provider_session_ref, agent_id, provider_session_ref, agent_id),\n            ).fetchone()\n            # Inherited messages retain their original session provenance. Its\n            # delivery receipts belong to the source, not this independent trace.\n            window = self._session_window(connection, provider_session_ref, agent_id) if (\n                session_owner is not None\n            ) else None\n            if window and window[0] == sequence_id:\n                first = max(first, window[1])\n                before = window[2] + 1\n        if before_message_id:\n            member = self._chat_member(connection, sequence_id, before_message_id)\n            if member is None:\n                raise ValueError(\"Context input boundary is not in the Agent trace\")\n            before = int(member[\"ordinal\"])\n        if through_message_id:\n            member = self._chat_member(connection, sequence_id, through_message_id)\n            if member is None:\n                raise ValueError(\"Fork cutoff message is not in the Agent trace\")\n            # The selected input and following responses form a trace interval.\n            # A recorded Provider turn can group appended inputs, but old traces\n            # remain usable without any Execution or Provider session record.\n            target = self.trace_rows(connection, sequence_id, first=int(member[\"ordinal\"]), limit=1)[0]\n            target_turn = str(target[\"provider_turn_id\"] or \"\")\n            cutoff = connection.execute(\n                \"SELECT MIN(m.ordinal) AS ordinal FROM sequence_segments m JOIN segments segment USING(segment_id) \"\n                \"LEFT JOIN executions execution USING(execution_id) \"\n                \"WHERE m.sequence_id=%s AND m.ordinal>%s AND (segment.segment_type='compaction' OR (\"\n                \"((segment.segment_type='input' AND COALESCE(segment.metadata_json::jsonb->>'role','user')='user') OR \"\n                \"(segment.segment_type='harness' AND segment.metadata_json::jsonb->>'kind'='effective_provider_input' \"\n                \"AND segment.metadata_json::jsonb->>'role'='user')) \"\n                f\"AND (%s='' OR COALESCE({PROVIDER_TURN_SQL},'')<>%s)))\",\n                (sequence_id, member[\"ordinal\"], target_turn, target_turn),\n            ).fetchone()\n            before = int(cutoff[\"ordinal\"]) if cutoff[\"ordinal\"] is not None else None\n            reset = connection.execute(\n                \"SELECT MIN(p.ordinal) AS ordinal FROM operation_positions p JOIN agent_operations o USING(operation_id) \"\n                \"WHERE p.sequence_id=%s AND p.ordinal>%s AND o.kind IN ('context_reset','provider_context_reset')\",\n                (sequence_id, member[\"ordinal\"]),\n            ).fetchone()\n            if reset[\"ordinal\"] is not None:\n                before = min(before, int(reset[\"ordinal\"])) if before is not None else int(reset[\"ordinal\"])\n        if through_turn_id:\n            cutoff = connection.execute(\n                \"SELECT MAX(m.ordinal) AS ordinal FROM sequence_segments m JOIN segments segment USING(segment_id) \"\n                \"LEFT JOIN executions execution USING(execution_id) WHERE m.sequence_id=%s \"\n                f\"AND {PROVIDER_TURN_SQL}=%s\",\n                (sequence_id, through_turn_id),\n            ).fetchone()\n            if cutoff[\"ordinal\"] is None:\n                raise ValueError(\"Fork cutoff has no recorded context in this Agent trace\")\n            before = int(cutoff[\"ordinal\"]) + 1\n        boundary = connection.execute(\n            \"SELECT COALESCE(MAX(p.ordinal),0) AS ordinal FROM operation_positions p \"\n            \"JOIN agent_operations o USING(operation_id) WHERE p.sequence_id=%s \"\n            \"AND o.kind IN ('context_reset','provider_context_reset') \"\n            \"AND (%s::bigint IS NULL OR p.ordinal < %s)\", (sequence_id, before, before),\n        ).fetchone()\n        first = max(first, int(boundary[\"ordinal\"]) + 1)\n        rows = []\n        while True:\n            page = self.trace_rows(connection, sequence_id, first=first, before=before,\n                                   newest_first=True, limit=256)\n            stop = False\n            for row in page:\n                rows.append(row)\n                if row[\"segment_type\"] == \"compaction\":\n                    stop = True\n                    break\n            if stop or len(page) < 256:\n                break\n            before = int(page[-1][\"ordinal\"])\n        rows.reverse()\n        selected = []\n        for row in rows:\n            metadata = json.loads(row[\"metadata_json\"])\n            if metadata.get(\"kind\") in PROVIDER_ONLY_KINDS | {\"system_instructions\"}:\n                continue\n            selected.append(row)\n        segments = self._read_segment_rows(connection, [str(row[\"segment_id\"]) for row in selected])\n        for item, row in zip(segments, selected):\n            item[\"provider_turn_id\"] = str(row[\"provider_turn_id\"] or \"\")\n        return {\"segments\": segments, \"empty_context\": not segments}",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85.json",
+        "sha256": "3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85",
+        "size": 246584
+      }
+    },
+    {
+      "id": "es.ev.chat",
+      "kind": "code",
+      "claim": "Chat 是查询局部投影，消息事实/通知和最终回复折叠不改变模型 trace。",
+      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/conversation_projection.py",
+      "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
+      "sha256": "410ac457067054040727124eeb9a93a3d47221990bd9239a1c6fc1872f817016",
+      "start_line": 14,
+      "end_line": 100,
+      "symbol": "ConversationConnection.execute / READ_POLICY",
+      "excerpt": "CHAT_PREDICATE = \"jsonb_typeof(metadata_json::jsonb -> 'message') = 'object'\"\nCHAT_SEGMENT = \"jsonb_typeof(segment.metadata_json::jsonb -> 'message') = 'object'\"\n# Turn/changes/subagent cards describe work in the UI; they cannot answer an\n# input or supersede its textual/structured reply merely by arriving later.\nREPLY_SEGMENT = \"\"\"NOT (segment.metadata_json::jsonb->'message' ? 'harness_input') AND NOT EXISTS (\n SELECT 1 FROM jsonb_array_elements(COALESCE(segment.metadata_json::jsonb#>'{message,parts}', '[]'::jsonb)) part\n WHERE part->>'type' IN ('native_turn','resource_changes','subagent_run','tool_call','tool_result')\n)\"\"\"\n\n\n# OFFSET 0 keeps each content lookup correlated to the selected occurrence.\n# Flattening these lookups made PostgreSQL scan the global content table even\n# for a small chat page, including large payloads belonging to other Agents.\nCONTENT_POLICY = \"\"\"WITH\ncontent_payloads AS NOT MATERIALIZED (SELECT * FROM payloads),\npayloads AS NOT MATERIALIZED (\n SELECT * FROM content_payloads\n UNION ALL\n SELECT operation_id, '', octet_length(convert_to(data_json::jsonb->>'content','UTF8')),\n        'text/plain; charset=utf-8', convert_to(data_json::jsonb->>'content','UTF8'), created_at\n FROM agent_operations WHERE kind='notice'\n),\ncontent_segments AS NOT MATERIALIZED (\n SELECT segment_id, segment_type, started_at, finished_at, status,\n        created_by_actor_ref, performed_by_actor_ref, content_ref, content_sha256,\n        content_type, metadata_json, created_by_agent_id, execution_id FROM segments\n),\nsegments AS NOT MATERIALIZED (\n SELECT content_segments.*, COALESCE(NULLIF(metadata_json::jsonb#>>'{message,created_at}','')::timestamptz, finished_at, started_at) AS created_at FROM content_segments\n UNION ALL\n SELECT operation_id, data_json::jsonb->>'segment_type',\n        created_at, created_at, 'completed', data_json::jsonb->>'created_by_actor_ref', 'portal',\n        operation_id, '', 'text/plain; charset=utf-8',\n        (data_json::jsonb->'metadata')::text, agent_id, COALESCE(data_json::jsonb->>'execution_id',''), created_at\n FROM agent_operations WHERE kind='notice'\n),\n\"\"\"\nFINAL_MEMBERS = \"\"\"\n SELECT member.* FROM sequence_segments member\n JOIN LATERAL (\n   SELECT metadata_json FROM content_segments WHERE segment_id=member.segment_id\n     AND jsonb_typeof(metadata_json::jsonb->'message')='object' OFFSET 0\n ) current_message ON TRUE\n WHERE current_message.metadata_json::jsonb->>'kind' IS DISTINCT FROM 'final_answer' OR NOT EXISTS (\n   SELECT 1 FROM LATERAL (\n     SELECT segment_id FROM content_segments candidate\n     WHERE jsonb_typeof(candidate.metadata_json::jsonb->'message')='object'\n       AND candidate.metadata_json::jsonb#>>'{message,message_id}'=current_message.metadata_json::jsonb#>>'{message,message_id}'\n     OFFSET 0\n   ) previous_message\n   JOIN sequence_segments earlier ON earlier.segment_id=previous_message.segment_id\n     AND earlier.sequence_id=member.sequence_id AND earlier.ordinal<member.ordinal\n )\n\"\"\"\n# Start with the selected trace's positions. The lateral OFFSET 0 prevents a\n# per-Resident count from scanning all notices before applying sequence_id.\nNOTICE_MEMBERS = \"\"\" UNION ALL\n SELECT position.sequence_id, position.ordinal, position.operation_id\n FROM operation_positions position JOIN LATERAL (\n   SELECT 1 FROM agent_operations operation\n   WHERE operation.operation_id=position.operation_id AND operation.kind='notice' OFFSET 0\n ) notice ON TRUE\n\"\"\"\nREAD_POLICY = CONTENT_POLICY + \"sequence_segments AS NOT MATERIALIZED (\" + FINAL_MEMBERS + NOTICE_MEMBERS + \")\\n\"\n# Activity and input counters observe events, not the choice of one final reply\n# for a rendered message. They use ordinary membership indexes directly.\nACTIVITY_POLICY = CONTENT_POLICY + \"sequence_segments AS NOT MATERIALIZED (SELECT * FROM sequence_segments\" + NOTICE_MEMBERS + \")\\n\"\n\n\nclass ConversationConnection:\n    def __init__(self, connection: Any, *, collapse_final_replies: bool = True):\n        self.connection = connection.connection if isinstance(connection, ConversationConnection) else connection\n        self.policy = READ_POLICY if collapse_final_replies else ACTIVITY_POLICY\n\n    def execute(self, statement: str, parameters=None):\n        clean = statement.lstrip()\n        if \"segments\" in clean and clean.upper().startswith((\"SELECT\", \"WITH\")):\n            if clean.upper().startswith(\"WITH RECURSIVE \"):\n                statement = self.policy + \"SELECT * FROM (\" + clean.rstrip().rstrip(\";\") + \") portal_chat_read\"\n            elif clean.upper().startswith(\"WITH \"):\n                statement = self.policy + \", \" + clean[5:]\n            else:\n                statement = self.policy + clean\n        return self.connection.execute(statement, parameters)\n\n    def __getattr__(self, name: str):\n        return getattr(self.connection, name)",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-410ac457067054040727124eeb9a93a3d47221990bd9239a1c6fc1872f817016.json",
+        "sha256": "410ac457067054040727124eeb9a93a3d47221990bd9239a1c6fc1872f817016",
+        "size": 5314
+      }
+    },
+    {
+      "id": "es.ev.message",
+      "kind": "code",
+      "claim": "从唯一正文和附件顺序恢复通信消息；改写后长度不符使用当前正文。",
+      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/message_projection.py",
+      "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
+      "sha256": "0b20e1cbe1818018c281b1767357c502a101ecf0f907e1088e59f793d0cb3c3d",
+      "start_line": 70,
+      "end_line": 126,
+      "symbol": "message_facts / project_message",
+      "excerpt": "def message_facts(message: Mapping[str, Any]) -> dict[str, Any]:\n    facts = {key: value for key, value in message.items()\n             if key not in {\"content_parts\", \"segment_id\", \"usage\", \"provider_response\"}}\n    # Attachments retain their order relative to text without storing that text.\n    facts[\"parts\"] = [\n        {\"type\": \"text\", \"length\": len(str(part.get(\"text\") or \"\"))} if part.get(\"type\") == \"text\" else dict(part)\n        for part in message.get(\"content_parts\", ()) if isinstance(part, Mapping)\n    ]\n    return facts\n\n\ndef content_text(content: Any) -> str:\n    if isinstance(content, str):\n        return content\n    if isinstance(content, Mapping):\n        parts = content.get(\"content\")\n        if isinstance(parts, list):\n            return \"\\n\".join(str(part.get(\"text\", \"\")) for part in parts\n                             if isinstance(part, Mapping) and part.get(\"type\") in {\"input_text\", \"text\"})\n    return str(content or \"\")\n\n\ndef project_message(segment_id: object, facts: Mapping[str, Any], content: Any) -> dict[str, Any]:\n    message = {key: value for key, value in facts.items() if key != \"parts\"}\n    text = content_text(content)\n    if facts.get(\"role\") == \"user\" or facts.get(\"harness_input\"):\n        text = unwrap_message(text)\n    parts: list[dict[str, Any]] = []\n    templates = facts.get(\"parts\", ({\"type\": \"text\"},))\n    texts = [part for part in templates if part.get(\"type\") == \"text\"]\n    original_length = (\n        sum(part[\"length\"] for part in texts) + len(texts) - 1\n        if texts and all(\"length\" in part for part in texts) else None\n    )\n    exact = original_length == len(text)\n    quote = facts.get(\"quote\")\n    if facts.get(\"role\") == \"user\" and isinstance(quote, Mapping) and quote and not exact:\n        # Original message text is already the body. Composed input also carries\n        # the accepted quote; remove only its complete matching envelope.\n        text = _unwrap_quote(text, quote)\n        exact = original_length == len(text)\n    inserted, offset = False, 0\n    for part in templates:\n        if part.get(\"type\") == \"text\":\n            if exact:\n                length = part[\"length\"]\n                parts.append({\"type\": \"text\", \"text\": text[offset:offset + length]})\n                offset += length + 1\n            elif not inserted:\n                parts.append({\"type\": \"text\", \"text\": text})\n            inserted = True\n        else:\n            parts.append(dict(part))\n    if text and not inserted:\n        parts.insert(0, {\"type\": \"text\", \"text\": text})\n    message.update(segment_id=str(segment_id), content_parts=parts)\n    return message",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-0b20e1cbe1818018c281b1767357c502a101ecf0f907e1088e59f793d0cb3c3d.json",
+        "sha256": "0b20e1cbe1818018c281b1767357c502a101ecf0f907e1088e59f793d0cb3c3d",
+        "size": 5230
+      }
+    },
+    {
+      "id": "es.ev.chat-read",
+      "kind": "code",
+      "claim": "按 Agent trace 读取聊天；没有 trace 返回空，不扫描全库构造对话。",
+      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_store.py",
+      "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
+      "sha256": "3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85",
+      "start_line": 3142,
+      "end_line": 3157,
+      "symbol": "AgentDataStore.read_chat_messages",
+      "excerpt": "    def read_chat_messages(\n        self,\n        agent_id: str,\n        *,\n        limit: int = 0,\n    ) -> list[dict[str, Any]]:\n        \"\"\"The Agent's Chat, oldest first; the newest ``limit`` messages when given.\"\"\"\n\n        with self._conversation_read() as connection:\n            sequence_id = self._trace_id(connection, agent_id)\n            if not sequence_id:\n                return []\n            return self._chat_from_rows(self._chat_rows(\n                connection, sequence_id, after=self._chat_floor(connection, sequence_id),\n                limit=max(0, int(limit)),\n            ))",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85.json",
+        "sha256": "3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85",
+        "size": 246584
+      }
+    },
+    {
+      "id": "es.ev.execution",
+      "kind": "code",
+      "claim": "同一 execution_id 保留 agent/actor/provider 身份，开始重放不能改 provenance。",
+      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_store.py",
+      "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
+      "sha256": "3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85",
+      "start_line": 1994,
+      "end_line": 2096,
+      "symbol": "reserve_execution / queue_execution / begin_execution",
+      "excerpt": "    def reserve_execution(\n        self, *, execution_id: str, agent_id: str, actor_ref: str, provider: str,\n        created_at: str = \"\",\n    ) -> dict[str, Any]:\n        \"\"\"Create the single execution identity before preparing its request.\n\n        Preparation and pre-start cancellation are part of execution history.\n        The queue and worker use this identity; they never allocate a second\n        Resident job or turn identity.\n        \"\"\"\n        if not all((execution_id, agent_id, actor_ref, provider)):\n            raise ValueError(\"Execution reservation requires identity, agent, actor and provider\")\n\n        def write(connection: Any) -> dict[str, Any]:\n            connection.execute(\n                \"INSERT INTO executions(execution_id,agent_id,actor_ref,provider,provider_session_ref,\"\n                \"provider_turn_id,created_at,started_at,finished_at,status,usage_json) \"\n                \"VALUES(%s,%s,%s,%s,NULL,'',%s,NULL,NULL,'preparing','{}') \"\n                \"ON CONFLICT(execution_id) DO NOTHING\",\n                (execution_id, agent_id, actor_ref, provider, created_at or utc_now()),\n            )\n            row = connection.execute(\"SELECT * FROM executions WHERE execution_id=%s FOR UPDATE\", (execution_id,)).fetchone()\n            if (row[\"agent_id\"], row[\"actor_ref\"], row[\"provider\"]) != (agent_id, actor_ref, provider):\n                raise ValueError(\"Execution identity refers to different immutable provenance\")\n            return self._execution_record(row)\n\n        return self.database.write(write)\n\n    def queue_execution(self, execution_id: str) -> None:\n        \"\"\"Mark request admission; retries cannot rewind a started execution.\"\"\"\n        def write(connection: Any) -> None:\n            row = connection.execute(\"SELECT status FROM executions WHERE execution_id=%s FOR UPDATE\", (execution_id,)).fetchone()\n            if row is None:\n                raise KeyError(execution_id)\n            if row[\"status\"] == \"preparing\":\n                connection.execute(\"UPDATE executions SET status='queued' WHERE execution_id=%s\", (execution_id,))\n        self.database.write(write)\n\n    def begin_execution(\n        self,\n        *,\n        execution_id: str,\n        agent_id: str,\n        actor_ref: str,\n        provider: str,\n        started_at: str,\n    ) -> dict[str, Any]:\n        clean_execution_id = str(execution_id or \"\").strip()\n        if not clean_execution_id:\n            raise ValueError(\"Execution identity is required\")\n        identity = (\n            str(agent_id or \"\"),\n            str(actor_ref or \"\"),\n            str(provider or \"\"),\n            instant(started_at or utc_now()),\n        )\n\n        def write(connection: Any) -> dict[str, Any]:\n            existing = connection.execute(\n                'SELECT * FROM executions WHERE execution_id = %s',\n                (clean_execution_id,),\n            ).fetchone()\n            if existing is not None:\n                existing_identity = (\n                    str(existing[\"agent_id\"]),\n                    str(existing[\"actor_ref\"]),\n                    str(existing[\"provider\"]),\n                )\n                if existing_identity != identity[:3]:\n                    raise ValueError(\n                        \"Execution identity refers to different immutable provenance\"\n                    )\n                if existing[\"status\"] in {\"preparing\", \"queued\"}:\n                    connection.execute(\n                        \"UPDATE executions SET status='running',started_at=%s WHERE execution_id=%s\",\n                        (identity[3], clean_execution_id),\n                    )\n                    existing = connection.execute(\"SELECT * FROM executions WHERE execution_id=%s\", (clean_execution_id,)).fetchone()\n                elif existing[\"started_at\"] != identity[3]:\n                    raise ValueError(\"Execution identity refers to different immutable provenance\")\n                return self._execution_record(existing)\n            connection.execute(\n                \"INSERT INTO executions(execution_id,agent_id,actor_ref,provider,provider_session_ref,\"\n                \"provider_turn_id,created_at,started_at,finished_at,status,usage_json) \"\n                \"VALUES(%s,%s,%s,%s,NULL,'',%s,%s,NULL,'running','{}')\",\n                (\n                    clean_execution_id,\n                    identity[0],\n                    identity[1],\n                    identity[2],\n                    identity[3],\n                    identity[3],\n                ),\n            )\n            created = connection.execute(\n                'SELECT * FROM executions WHERE execution_id = %s',\n                (clean_execution_id,),\n            ).fetchone()\n            if created is None:\n                raise RuntimeError(\"Execution creation did not produce a record\")\n            return self._execution_record(created)\n\n        return self.database.write(write)",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85.json",
+        "sha256": "3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85",
+        "size": 246584
+      }
+    },
+    {
+      "id": "es.ev.accept",
+      "kind": "code",
+      "claim": "输入接受需非空 Provider turn；相同 turn 重放幂等，非 running 新 turn 拒绝。",
+      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_store.py",
+      "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
+      "sha256": "3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85",
+      "start_line": 2318,
+      "end_line": 2345,
+      "symbol": "AgentDataStore.record_input_acceptance",
+      "excerpt": "    def record_input_acceptance(\n        self, execution_id: str, *, agent_id: str, provider_turn_id: str,\n    ) -> None:\n        turn_id = str(provider_turn_id or \"\").strip()\n        if not turn_id:\n            raise ValueError(\"Provider input acceptance requires a turn identity\")\n\n        def write(connection: Any) -> None:\n            execution = connection.execute(\n                'SELECT * FROM executions WHERE execution_id = %s FOR UPDATE',\n                (execution_id,),\n            ).fetchone()\n            if execution is None or execution[\"agent_id\"] != agent_id:\n                raise KeyError(execution_id)\n            if execution[\"provider_turn_id\"] == turn_id:\n                self._record_session_input_acceptance(connection, execution)\n                return\n            if execution[\"status\"] != \"running\":\n                raise ValueError(\"Execution terminal fact cannot be changed\")\n            connection.execute(\n                'UPDATE executions SET provider_turn_id = %s WHERE execution_id = %s',\n                (turn_id, execution_id),\n            )\n            self._record_session_input_acceptance(\n                connection, {**dict(execution), \"provider_turn_id\": turn_id},\n            )\n\n        self.database.write(write)",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85.json",
+        "sha256": "3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85",
+        "size": 246584
+      }
+    },
+    {
+      "id": "es.ev.receipt",
+      "kind": "code",
+      "claim": "首次会话接受回执存 agent_operations，不是内容 Segment。",
+      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_store.py",
+      "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
+      "sha256": "3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85",
+      "start_line": 2151,
+      "end_line": 2174,
+      "symbol": "AgentDataStore._record_session_input_acceptance",
+      "excerpt": "    def _record_session_input_acceptance(\n        cls, connection: Any, execution: Mapping[str, Any],\n    ) -> bool:\n        \"\"\"Persist the first accepted turn independently of Execution retention.\"\"\"\n        session_ref = str(execution[\"provider_session_ref\"] or \"\")\n        turn_id = str(execution[\"provider_turn_id\"] or \"\").strip()\n        agent_id = str(execution[\"agent_id\"])\n        if not session_ref or not turn_id:\n            return False\n        if cls._session_input_acceptance(connection, session_ref, agent_id) is not None:\n            return False\n        session = connection.execute(\n            'SELECT provider FROM provider_sessions WHERE provider_session_ref = %s',\n            (session_ref,),\n        ).fetchone()\n        if session is None or session[\"provider\"] != execution[\"provider\"]:\n            raise ValueError(\"Session input acceptance requires the matching Provider Session\")\n        at = utc_now()\n        put_operation(connection, operation_id=cls._session_input_acceptance_id(session_ref, agent_id),\n            kind=\"input_accepted\", agent_id=agent_id, session_ref=session_ref, created_at=at,\n            data={\"schema\": SESSION_INPUT_ACCEPTANCE_SCHEMA, \"provider_session_ref\": session_ref,\n                  \"agent_id\": agent_id, \"provider_turn_id\": turn_id,\n                  \"evidence_execution_id\": str(execution[\"execution_id\"]), \"recorded_at\": at})\n        return True",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85.json",
+        "sha256": "3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85",
+        "size": 246584
+      }
+    },
+    {
+      "id": "es.ev.terminal",
+      "kind": "code",
+      "claim": "终态相同重放可接受、冲突终态拒绝；内容收尾仅记录用量和 turn。",
+      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_store.py",
+      "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
+      "sha256": "3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85",
+      "start_line": 2354,
+      "end_line": 2427,
+      "symbol": "finish_execution_in / record_execution_output",
+      "excerpt": "    def finish_execution_in(self, connection: Any, execution_id: str, *, status: str,\n                            finished_at: str = \"\", usage: Mapping[str, Any] | None = None,\n                            provider_turn_id: str = \"\", only_if_running: bool = False) -> bool:\n        \"\"\"Finalize in a transaction whose search path addresses Agent tables.\"\"\"\n        clean_status = str(status or \"\").strip()\n        if clean_status not in {\"completed\", \"failed\", \"cancelled\"}:\n            raise ValueError(f\"invalid terminal Execution status: {clean_status}\")\n        row = connection.execute(\n            'SELECT * FROM executions WHERE execution_id = %s FOR UPDATE',\n            (str(execution_id or \"\"),),\n        ).fetchone()\n        if row is None:\n            raise KeyError(execution_id)\n        desired_finished_at = instant(finished_at or row[\"finished_at\"] or utc_now())\n        desired_turn_id = str(provider_turn_id or row[\"provider_turn_id\"] or \"\")\n        desired_usage = canonical_json(dict(usage or {}))\n        if only_if_running and row[\"status\"] != \"running\":\n            return False\n        if str(row[\"status\"]) in {\"completed\", \"failed\", \"cancelled\"}:\n            # Maintenance enumerates running rows before reading Scheduler.\n            # A Worker may have finalized this row in that interval.\n            if only_if_running:\n                return False\n            reported = json.loads(str(row[\"usage_json\"] or \"{}\"))\n            # The Scheduler's count is added after the Worker's terminal fact.\n            reported.pop(\"accounted\", None)\n            current = (\n                str(row[\"status\"]),\n                row[\"finished_at\"],\n                str(row[\"provider_turn_id\"]),\n                canonical_json(reported),\n            )\n            desired = (\n                clean_status,\n                desired_finished_at,\n                desired_turn_id,\n                desired_usage,\n            )\n            if current != desired:\n                raise ValueError(\"Execution terminal fact cannot be changed\")\n            self._record_session_input_acceptance(connection, row)\n            if row[\"final_message_id\"] is None:\n                self._refresh_finished_execution_pointer(connection, str(execution_id or \"\"))\n            return False\n        connection.execute(\n            '\\n                UPDATE executions\\n                SET finished_at = %s, status = %s, usage_json = %s,\\n                    provider_turn_id = %s\\n                WHERE execution_id = %s\\n                ',\n            (\n                desired_finished_at,\n                clean_status,\n                desired_usage,\n                desired_turn_id,\n                str(execution_id or \"\"),\n            ),\n        )\n        self._record_session_input_acceptance(\n            connection, {**dict(row), \"provider_turn_id\": desired_turn_id},\n        )\n        self._refresh_finished_execution_pointer(connection, str(execution_id or \"\"))\n        return True\n\n    def record_execution_output(self, execution_id: str, *, usage: Mapping[str, Any] | None = None,\n                                provider_turn_id: str = \"\") -> None:\n        \"\"\"Persist Provider output metadata; the scheduler owns the terminal outcome.\"\"\"\n        def write(connection):\n            row = connection.execute(\"SELECT * FROM executions WHERE execution_id=%s FOR UPDATE\", (execution_id,)).fetchone()\n            if row is None:\n                raise KeyError(execution_id)\n            if row[\"status\"] in {\"completed\", \"failed\", \"cancelled\"}:\n                return\n            turn = provider_turn_id or row[\"provider_turn_id\"]\n            connection.execute(\"UPDATE executions SET usage_json=%s,provider_turn_id=%s WHERE execution_id=%s\",\n                               (canonical_json(dict(usage or {})),turn,execution_id))\n            self._record_session_input_acceptance(connection,{**dict(row),\"provider_turn_id\":turn})\n        self.database.write(write)",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85.json",
+        "sha256": "3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85",
+        "size": 246584
+      }
+    },
+    {
+      "id": "es.ev.project-begin",
+      "kind": "code",
+      "claim": "开始输入投影与恢复有效输入；准备投影失败的实现路径还会 finish_execution(failed)。",
+      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_projection.py",
+      "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
+      "sha256": "a509c7736ec33b32f061d1bbdfc0dfb0ce324383f9929f7d90db13f15c807365",
+      "start_line": 382,
+      "end_line": 469,
+      "symbol": "AgentDataProjector.begin",
+      "excerpt": "    def begin(\n        self,\n        request: ExecutionRequest,\n        session: RuntimeSession,\n        *,\n        created_at: str = \"\",\n        recovery: bool = False,\n    ) -> None:\n        agent_id = request.agent_id\n        has_provider_input = request.operation in {\"turn\", \"generate\"}\n        accepted_at = str(created_at or utc_now())\n        input_segment_id = (\n            stable_segment_id(\"execution-input\", request.execution_id)\n            if has_provider_input\n            else \"\"\n        )\n        projection = _Projection(\n            request=request,\n            session=session,\n            agent_id=agent_id,\n            input_segment_id=input_segment_id,\n            effective_input_segment_id=input_segment_id,\n            provider=request.provider,\n            backend_session_id=session.backend_session_id,\n            backend_route_id=session.backend_route_id,\n        )\n        with self._lock:\n            if request.execution_id in self._active:\n                raise RuntimeError(\n                    f\"Agent data projection already active: {request.execution_id}\"\n                )\n            self._active[request.execution_id] = projection\n        execution_started = False\n        try:\n            self.store.begin_execution(\n                execution_id=request.execution_id,\n                agent_id=agent_id,\n                actor_ref=request.actor,\n                provider=request.provider,\n                started_at=accepted_at,\n            )\n            execution_started = True\n            if not has_provider_input:\n                return\n            metadata = {\n                \"role\": \"user\",\n                \"source\": \"human_prompt\",\n                \"kind\": \"provider_input\",\n                \"title\": request.actor or \"User message\",\n                \"author\": request.actor,\n            }\n            with self.store.database.read() as connection:\n                current = connection.execute(\n                    \"SELECT segment.segment_id FROM agents agent JOIN sequence_segments member ON member.sequence_id=agent.trace_sequence_id \"\n                    \"JOIN segments segment USING(segment_id) WHERE agent.agent_id=%s AND segment.execution_id=%s \"\n                    \"AND segment.segment_type='input' AND segment.metadata_json::jsonb->>'kind' IN ('provider_input','effective_provider_input') \"\n                    \"ORDER BY member.ordinal LIMIT 1\", (agent_id, request.execution_id),\n                ).fetchone()\n            if current:\n                projection.effective_input_segment_id = str(current[\"segment_id\"])\n                projection.persisted_segments.add(projection.effective_input_segment_id)\n                return\n            content = (request.metadata.get(\"fork_context_input\") or {}).get(\"prompt\", request.prompt)\n            portal_message_id = _input_message_id(request)\n            source = self.store.chat_message(agent_id, portal_message_id) if portal_message_id else None\n            if source:\n                self.store.transform_agent_segments(\n                    agent_id, [source[\"segment_id\"]], segment_id=input_segment_id,\n                    content=content, metadata=metadata, actor_ref=request.actor,\n                    operation_id=request.execution_id, operation_type=\"provider_input.compose\",\n                    execution_id=request.execution_id, created_at=accepted_at,\n                )\n            else:\n                self.store.put_segment(\n                    segment_id=input_segment_id, segment_type=\"input\", content=content,\n                    started_at=accepted_at, finished_at=accepted_at, status=\"completed\",\n                    created_by_actor_ref=request.actor, performed_by_actor_ref=request.actor,\n                    metadata=metadata, created_by_agent_id=agent_id, execution_id=request.execution_id,\n                )\n                self.store.append_agent_segments(agent_id, [input_segment_id], actor_ref=request.actor)\n            projection.persisted_segments.add(input_segment_id)\n        except BaseException:\n            with self._lock:\n                if self._active.get(request.execution_id) is projection:\n                    self._active.pop(request.execution_id, None)\n            if execution_started:\n                self.store.finish_execution(request.execution_id, status=\"failed\")\n            raise",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-a509c7736ec33b32f061d1bbdfc0dfb0ce324383f9929f7d90db13f15c807365.json",
+        "sha256": "a509c7736ec33b32f061d1bbdfc0dfb0ce324383f9929f7d90db13f15c807365",
+        "size": 59206
+      }
+    },
+    {
+      "id": "es.ev.project-input",
+      "kind": "code",
+      "claim": "Harness 实际输入替换当前引用；Fork 只能替换唯一新输入片段，保留继承边界。",
+      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_projection.py",
+      "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
+      "sha256": "a509c7736ec33b32f061d1bbdfc0dfb0ce324383f9929f7d90db13f15c807365",
+      "start_line": 471,
+      "end_line": 575,
+      "symbol": "AgentDataProjector.observe_invocation",
+      "excerpt": "    def observe_invocation(\n        self,\n        execution_id: str,\n        invocation: object,\n        reports: list[dict[str, Any]] | None = None,\n    ) -> None:\n        with self._lock:\n            projection = self._active.get(execution_id)\n        if projection is None:\n            return\n        operation = projection.request.operation\n        if operation not in {\"turn\", \"generate\"}:\n            return\n        user_prompt = str(getattr(invocation, \"user_prompt\", \"\") or \"\")\n        prepared_request = getattr(invocation, \"request\", projection.request)\n        input_media = prepared_request.input_media\n        if user_prompt and (user_prompt != projection.request.prompt or input_media):\n            context_input = projection.request.metadata.get(\"fork_context_input\")\n            if context_input:\n                # Harness features may wrap the wire input, but the inherited\n                # prefix already has canonical Segment identities. Transform\n                # only this occurrence of the request into its new-input part.\n                # Unknown/lossy transforms must not silently duplicate history.\n                if user_prompt.count(projection.request.prompt) != 1:\n                    raise ValueError(\"Fork input transformation lost its canonical PostgreSQL context boundary\")\n                user_prompt = user_prompt.replace(\n                    projection.request.prompt, context_input[\"prompt\"], 1,\n                )\n            content = (\n                codex_input_message(\n                    user_prompt, input_media,\n                    detail=str(prepared_request.runtime_options.get(\"input_image_detail\") or \"\"),\n                )\n                if input_media else user_prompt\n            )\n            metadata = {\n                \"role\": \"user\",\n                \"source\": \"harness_output\",\n                \"kind\": \"effective_provider_input\",\n            }\n            content_type = \"application/json\" if input_media else \"text/plain; charset=utf-8\"\n            target_id = stable_segment_id(\n                \"harness-preparation\", execution_id,\n                json.dumps(\n                    {\"content\": content, \"content_type\": content_type, \"metadata\": metadata},\n                    ensure_ascii=False, sort_keys=True, separators=(\",\", \":\"),\n                ),\n            )\n            if target_id not in projection.persisted_segments:\n                at = utc_now()\n                self.store.transform_agent_segments(\n                    projection.agent_id, [projection.effective_input_segment_id],\n                    segment_id=target_id, segment_type=\"input\", content=content,\n                    content_type=content_type, metadata=metadata,\n                    actor_ref=\"agent_harness\", operation_id=execution_id,\n                    operation_type=\"agent_harness.prepare_invocation\",\n                    execution_id=execution_id, created_at=at,\n                )\n                projection.persisted_segments.add(target_id)\n            projection.effective_input_segment_id = target_id\n        system_context = str(getattr(invocation, \"system_context\", \"\") or \"\")\n        attach_system = bool(getattr(invocation, \"attach_system_context\", False))\n        if attach_system and system_context:\n            system_id = stable_segment_id(\n                \"system-context\",\n                execution_id,\n                hashlib.sha256(system_context.encode(\"utf-8\")).hexdigest(),\n            )\n            if system_id not in projection.persisted_segments:\n                at = utc_now()\n                self.store.put_segment(\n                    segment_id=system_id,\n                    segment_type=\"input\",\n                    content=system_context,\n                    started_at=at,\n                    finished_at=at,\n                    status=\"completed\",\n                    created_by_actor_ref=\"portal\",\n                    performed_by_actor_ref=\"portal\",\n                    metadata={\n                        \"role\": \"system\",\n                        \"source\": \"system_context\",\n                        \"kind\": \"system_instructions\",\n                    },\n                    created_by_agent_id=projection.agent_id,\n                    execution_id=execution_id,\n                )\n                self.store.append_agent_segments(projection.agent_id, [system_id], actor_ref='portal')\n                projection.system_segment_ids.append(system_id)\n                projection.persisted_segments.add(system_id)\n        projection.provider_input_observed = True\n        initial_backend_session_id = projection.session.backend_session_id\n        if (\n            not initial_backend_session_id\n            and projection.request.session.mode == \"stateless\"\n        ):\n            initial_backend_session_id = projection.request.execution_id\n        if initial_backend_session_id and not projection.request.metadata.get(\"fork_context_input\"):\n            self._bind_provider_session(\n                projection,\n                provider=projection.request.provider,\n                backend_session_id=initial_backend_session_id,\n                backend_route_id=projection.session.backend_route_id,\n            )\n",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-a509c7736ec33b32f061d1bbdfc0dfb0ce324383f9929f7d90db13f15c807365.json",
+        "sha256": "a509c7736ec33b32f061d1bbdfc0dfb0ce324383f9929f7d90db13f15c807365",
+        "size": 59206
+      }
+    },
+    {
+      "id": "es.ev.project-bind",
+      "kind": "code",
+      "claim": "建立执行到原生会话的关联；执行内身份改变拒绝，提前缓存的压缩按序补写。",
+      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_projection.py",
+      "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
+      "sha256": "a509c7736ec33b32f061d1bbdfc0dfb0ce324383f9929f7d90db13f15c807365",
+      "start_line": 576,
+      "end_line": 649,
+      "symbol": "AgentDataProjector._bind_provider_session",
+      "excerpt": "    def _bind_provider_session(\n        self,\n        projection: _Projection,\n        *,\n        provider: str,\n        backend_session_id: str,\n        backend_route_id: str,\n        source_backend_session_id: str = \"\",\n        source_backend_route_id: str = \"\",\n    ) -> None:\n        clean_session = str(backend_session_id or \"\").strip()\n        if projection.request.session.mode == \"stateless\":\n            clean_session = projection.request.execution_id\n        if not clean_session:\n            return\n        if projection.provider_session_ref:\n            if (\n                projection.backend_session_id\n                and projection.backend_session_id != clean_session\n            ):\n                raise RuntimeError(\"Provider Session changed during one execution\")\n            return\n        session = self.store.ensure_provider_session(\n            provider=provider,\n            backend_route_id=backend_route_id,\n            backend_session_id=clean_session,\n            agent_id=projection.agent_id,\n            actor_ref=projection.request.actor,\n            source_backend_session_id=source_backend_session_id,\n            source_backend_route_id=source_backend_route_id,\n            # A native fork for a Resident (a restart, a Fork) runs under its\n            # binding's name; the inherited context is marked in the\n            # Resident's own trace.\n            context_agent_id=str(projection.request.metadata.get(\"resident_id\") or \"\"),\n\n        )\n        projection.provider_session_ref = str(session[\"provider_session_ref\"])\n        projection.provider = provider\n        projection.backend_session_id = clean_session\n        projection.backend_route_id = backend_route_id\n        self.store.bind_execution_provider_session(\n            projection.request.execution_id,\n            provider_session_ref=projection.provider_session_ref,\n        )\n        operation = projection.request.operation\n        context_input = projection.request.metadata.get(\"fork_context_input\") or {}\n        if operation == \"compact\" and context_input:\n            references = context_input[\"segments\"]\n            segments = self.store.fork_context_segments(references)\n            self._mark_context_received(projection, [item[\"segment_id\"] for item in segments])\n        if operation not in {\"turn\", \"generate\"}:\n            return\n        if projection.pending_compactions:\n            pending = list(projection.pending_compactions)\n            projection.pending_compactions.clear()\n            for content, created_at, options in pending:\n                # Compacted before the Provider took this turn's input: the\n                # turn's records stay after the compaction in the trace.\n                self._persist_compaction(\n                    projection,\n                    content=content,\n                    created_at=created_at,\n                    kept_execution_id=projection.request.execution_id,\n                    **options,\n                )\n        if context_input:\n            # The inherited prefix already belongs to the Agent trace; the\n            # mark puts it in the new session's context, before this turn's\n            # input.  The new user Segment holds only the new input.\n            references = context_input[\"segments\"]\n            segments = self.store.fork_context_segments(references)\n            self._mark_context_received(\n                projection, [item[\"segment_id\"] for item in segments],\n            )",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-a509c7736ec33b32f061d1bbdfc0dfb0ce324383f9929f7d90db13f15c807365.json",
+        "sha256": "a509c7736ec33b32f061d1bbdfc0dfb0ce324383f9929f7d90db13f15c807365",
+        "size": 59206
+      }
+    },
+    {
+      "id": "es.ev.project-accept",
+      "kind": "code",
+      "claim": "provider_input_bound 先关联 Provider Session 再写输入接受回执。",
+      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_projection.py",
+      "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
+      "sha256": "a509c7736ec33b32f061d1bbdfc0dfb0ce324383f9929f7d90db13f15c807365",
+      "start_line": 669,
+      "end_line": 709,
+      "symbol": "AgentDataProjector.observe_runtime_event",
+      "excerpt": "    def observe_runtime_event(\n        self,\n        execution_id: str,\n        event_type: str,\n        details: Mapping[str, Any],\n    ) -> None:\n        with self._lock:\n            projection = self._active.get(execution_id)\n        if projection is None:\n            return\n        if event_type == \"provider_input_bound\":\n            if projection.request.operation not in {\"turn\", \"generate\"}:\n                return\n            projection.turn_id = str(details.get(\"turn_id\") or \"\")\n            if not projection.turn_id.strip():\n                raise ValueError(\"Provider input acceptance requires a turn identity\")\n            resolved_backend_session_id = str(\n                details.get(\"backend_session_id\")\n                or projection.session.backend_session_id\n                or \"\"\n            )\n            if (\n                not resolved_backend_session_id\n                and projection.request.session.mode == \"stateless\"\n            ):\n                resolved_backend_session_id = projection.request.execution_id\n            if not resolved_backend_session_id:\n                return\n            self._bind_provider_session(\n                projection,\n                provider=str(details.get(\"provider\") or projection.request.provider),\n                backend_session_id=resolved_backend_session_id,\n                backend_route_id=str(\n                    details.get(\"backend_route_id\")\n                    or projection.session.backend_route_id\n                ),\n            )\n            self.store.record_input_acceptance(\n                execution_id, agent_id=projection.agent_id,\n                provider_turn_id=projection.turn_id,\n            )",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-a509c7736ec33b32f061d1bbdfc0dfb0ce324383f9929f7d90db13f15c807365.json",
+        "sha256": "a509c7736ec33b32f061d1bbdfc0dfb0ce324383f9929f7d90db13f15c807365",
+        "size": 59206
+      }
+    },
+    {
+      "id": "es.ev.project-events",
+      "kind": "code",
+      "claim": "运行卡片、子 agent 更新等有自己的记录路径，不能据卡片推断模型完成。",
+      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_projection.py",
+      "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
+      "sha256": "a509c7736ec33b32f061d1bbdfc0dfb0ce324383f9929f7d90db13f15c807365",
+      "start_line": 934,
+      "end_line": 972,
+      "symbol": "AgentDataProjector.observe",
+      "excerpt": "        if method == SUBAGENT_PROGRESS_METHOD:\n            # A running subagent's card is live activity only; its steps are in its own trace.\n            return\n        if item.get(\"type\") in {\"userInputRequest\", \"userInputResponse\", \"turnArtifacts\", \"subagentRun\"}:\n            from management_common.provider_user_input import content_part\n\n            if item.get(\"type\") == \"turnArtifacts\":\n                from management_common.provider_turn_artifacts import content_part\n            if item.get(\"type\") == \"subagentRun\":\n                from management_common.provider_subagent_runs import content_part\n\n            part = content_part(dict(item), execution_id)\n            segment_id = part[\"segment_id\"]\n            operational = part[\"type\"] in {\"native_turn\", \"subagent_run\"}\n            try:\n                existing = (self.store.operation_record if operational else self.store.segment)(segment_id)\n            except KeyError:\n                existing = None\n            # A run's card is read again by a Worker that takes the turn\n            # over; the first reading stands.\n            if existing is not None and existing[\"content\"] != part and part[\"type\"] != \"subagent_run\":\n                raise ValueError(\"native user input Segment changed during replay\")\n            if existing is None:\n                (self.store.put_operation_record if operational else self.store.put_segment)(\n                    segment_id=segment_id,\n                    segment_type={\"native_turn\": \"model\", \"subagent_run\": \"artifact\"}.get(part[\"type\"], \"tool\"),\n                    content=part,\n                    content_type=\"application/json\",\n                    **({\"created_at\": created_at} if operational else {\"started_at\": created_at, \"finished_at\": created_at}),\n                    status=\"completed\", created_by_agent_id=projection.agent_id,\n                    created_by_actor_ref=projection.request.identity.principal.id,\n                    performed_by_actor_ref=projection.request.identity.principal.id,\n                    execution_id=execution_id,\n                    metadata={\"tool_name\": part.get(\"tool_name\", \"\"), \"kind\": part[\"type\"],\n                              \"identity\": projection.request.identity.to_dict()},\n                )\n            if not operational:\n                self.store.append_agent_segments(projection.agent_id, [segment_id], actor_ref=provider)\n            return",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-a509c7736ec33b32f061d1bbdfc0dfb0ce324383f9929f7d90db13f15c807365.json",
+        "sha256": "a509c7736ec33b32f061d1bbdfc0dfb0ce324383f9929f7d90db13f15c807365",
+        "size": 59206
+      }
+    },
+    {
+      "id": "es.ev.project-model",
+      "kind": "code",
+      "claim": "已完成 agentMessage/assistant response_item 进入内容投影；流式文字不覆盖此路径。",
+      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_projection.py",
+      "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
+      "sha256": "a509c7736ec33b32f061d1bbdfc0dfb0ce324383f9929f7d90db13f15c807365",
+      "start_line": 1021,
+      "end_line": 1058,
+      "symbol": "AgentDataProjector._observe_output",
+      "excerpt": "        text = \"\"\n        phase = \"\"\n        item_id = \"\"\n        if method == \"item/completed\" and str(item.get(\"type\") or \"\") == \"agentMessage\":\n            text = str(item.get(\"text\") or item.get(\"message\") or \"\").strip()\n            phase = str(item.get(\"phase\") or \"message\").strip()\n            item_id = str(item.get(\"id\") or \"\").strip()\n        elif (\n            event_type == \"response_item\"\n            and str(payload.get(\"type\") or \"\") == \"message\"\n            and str(payload.get(\"role\") or \"\") == \"assistant\"\n        ):\n            text = _text(payload.get(\"content\"))\n            phase = str(payload.get(\"phase\") or \"message\").strip()\n            item_id = str(payload.get(\"id\") or \"\").strip()\n        if text:\n            self._persist_model_message(\n                projection,\n                text=text,\n                phase=phase,\n                item_id=item_id,\n                created_at=created_at,\n                turn_id=turn_id,\n                request_timing=request_timing,\n            )\n\n        tool = item if item else payload\n        tool_type = str(tool.get(\"type\") or \"\")\n        if tool_type in _TOOL_TYPES:\n            self._observe_tool(\n                projection,\n                event=event,\n                tool=tool,\n                tool_type=tool_type,\n                created_at=created_at,\n                turn_id=turn_id,\n            )\n",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-a509c7736ec33b32f061d1bbdfc0dfb0ce324383f9929f7d90db13f15c807365.json",
+        "sha256": "a509c7736ec33b32f061d1bbdfc0dfb0ce324383f9929f7d90db13f15c807365",
+        "size": 59206
+      }
+    },
+    {
+      "id": "es.ev.model-identity",
+      "kind": "code",
+      "claim": "模型输出 ID 由执行/turn/item/phase 确定；Resident 主回复交有序 Conversation 消费者加入 trace。",
+      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_projection.py",
+      "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
+      "sha256": "a509c7736ec33b32f061d1bbdfc0dfb0ce324383f9929f7d90db13f15c807365",
+      "start_line": 1123,
+      "end_line": 1195,
+      "symbol": "AgentDataProjector._persist_model_message",
+      "excerpt": "    def _persist_model_message(\n        self,\n        projection: _Projection,\n        *,\n        text: str,\n        phase: str,\n        item_id: str,\n        created_at: str,\n        turn_id: str,\n        request_timing: object = None,\n    ) -> str:\n        normalized_phase = str(phase or \"message\").strip().casefold()\n        segment_id = stable_segment_id(\n            \"provider-model\",\n            self._output_scope(projection),\n            item_id or uuid.uuid4().hex,\n            normalized_phase,\n        )\n        from .message_projection import model_message_id\n        is_final = normalized_phase in {\"final\", \"final_answer\"}\n        try:\n            recorded = self.store.segment(segment_id)\n        except KeyError:\n            recorded = None\n        if recorded is not None:\n            # Preserve the original immutable message's timestamp spelling.\n            # SQL TIMESTAMPTZ normalizes offsets/precision when read; using\n            # that projection here would change otherwise identical metadata.\n            created_at = recorded[\"metadata\"][\"message\"][\"created_at\"]\n        self._put_output_segment(\n            projection,\n            segment_id=segment_id,\n            segment_type=\"model\",\n            content=text,\n            **_model_timing(request_timing, created_at),\n            status=\"completed\",\n            created_by_actor_ref=projection.request.identity.principal.id,\n            performed_by_actor_ref=projection.request.identity.principal.id,\n            metadata={\n                \"role\": \"assistant\",\n                \"message\": {\n                    \"message_id\": model_message_id(projection.request.execution_id, item_id, normalized_phase),\n                    \"role\": \"agent\", \"author_id\": projection.request.identity.principal.id,\n                    \"created_at\": created_at, \"activated_at\": created_at,\n                    \"execution_id\": projection.request.execution_id,\n                    \"provider_turn_id\": turn_id,\n                    \"reply_to_message_id\": _input_message_id(projection.request),\n                    \"parts\": [{\"type\": \"text\"}],\n                },\n                \"source\": (\n                    f\"{projection.request.provider}_output\"\n                ),\n                \"kind\": \"final_answer\" if is_final else normalized_phase,\n                \"title\": \"Agent answer\" if is_final else \"Agent update\",\n                \"author\": projection.request.identity.principal.id,\n                \"identity\": projection.request.identity.to_dict(),\n            },\n            created_by_agent_id=projection.agent_id,\n            execution_id=projection.request.execution_id,\n        )\n        # Resident Chat has one delivery path: its ordered Execution event\n        # consumer appends this captured Segment and publishes the Conversation\n        # event before processing the next visible message.\n        if not projection.agent_id.startswith(\"resident_\") or projection.trace_key:\n            self._append_output(projection, segment_id, projection.request.provider)\n        projection.persisted_segments.add(segment_id)\n        # A provider turn must have one canonical answer.  Runtime steering or\n        # transport replay can still surface a second final_answer item before\n        # turn/completed.  Capture every item, but only the selected visible\n        # answer enters the Resident trace through the Conversation consumer.\n        if is_final and not projection.final_segment_id:\n            projection.final_segment_id = segment_id\n        return segment_id",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-a509c7736ec33b32f061d1bbdfc0dfb0ce324383f9929f7d90db13f15c807365.json",
+        "sha256": "a509c7736ec33b32f061d1bbdfc0dfb0ce324383f9929f7d90db13f15c807365",
+        "size": 59206
+      }
+    },
+    {
+      "id": "es.ev.project-complete",
+      "kind": "code",
+      "claim": "缺会话身份或缺 compact 正文拒绝；无已捕获 final 时有 response 回填分支；discard 仅清理内存。",
+      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_projection.py",
+      "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
+      "sha256": "a509c7736ec33b32f061d1bbdfc0dfb0ce324383f9929f7d90db13f15c807365",
+      "start_line": 1321,
+      "end_line": 1396,
+      "symbol": "AgentDataProjector.complete / discard",
+      "excerpt": "    def complete(\n        self,\n        *,\n        execution_id: str,\n        backend_session_id: str,\n        backend_route_id: str,\n        turn_id: str,\n        response: str,\n        usage: Mapping[str, Any] | None = None,\n    ) -> str:\n        with self._lock:\n            projection = self._active.get(execution_id)\n        if projection is None:\n            return \"\"\n        projection.turn_id = str(turn_id or projection.turn_id)\n        operation = projection.request.operation\n        if operation in {\"turn\", \"generate\", \"create\", \"compact\"}:\n            resolved_backend_session_id = (\n                backend_session_id or projection.backend_session_id\n            )\n            if (\n                not resolved_backend_session_id\n                and projection.request.session.mode == \"stateless\"\n            ):\n                resolved_backend_session_id = projection.request.execution_id\n            if not resolved_backend_session_id:\n                raise RuntimeError(\n                    \"Provider Session identity is missing at execution completion\"\n                )\n            self._bind_provider_session(\n                projection,\n                provider=projection.request.provider,\n                backend_session_id=resolved_backend_session_id,\n                backend_route_id=backend_route_id or projection.backend_route_id,\n            )\n        elif operation == \"fork\":\n            source_backend_session_id = projection.session.backend_session_id\n            self._bind_provider_session(\n                projection,\n                provider=projection.request.provider,\n                backend_session_id=backend_session_id,\n                backend_route_id=backend_route_id or projection.backend_route_id,\n                source_backend_session_id=source_backend_session_id,\n                source_backend_route_id=projection.session.backend_route_id,\n            )\n        if operation == \"compact\" and not projection.compaction_segment_id:\n            raise RuntimeError(\"Compact execution produced no canonical Segment\")\n        if operation not in {\"turn\", \"generate\"}:\n            self.store.record_execution_output(\n                execution_id,\n                usage=usage,\n                provider_turn_id=projection.turn_id,\n            )\n            return projection.compaction_segment_id\n        clean_response = str(response or \"\").strip()\n        if clean_response and not projection.final_segment_id:\n            projection.final_segment_id = self._persist_model_message(\n                projection,\n                text=clean_response,\n                phase=\"final\",\n                item_id=\"final\",\n                created_at=utc_now(),\n                turn_id=projection.turn_id,\n            )\n        self.store.record_execution_output(\n            execution_id,\n            usage=usage,\n            provider_turn_id=projection.turn_id,\n        )\n        return projection.final_segment_id\n\n\n\n    def discard(self, execution_id: str) -> None:\n        with self._lock:\n            self._active.pop(str(execution_id or \"\"), None)",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-a509c7736ec33b32f061d1bbdfc0dfb0ce324383f9929f7d90db13f15c807365.json",
+        "sha256": "a509c7736ec33b32f061d1bbdfc0dfb0ce324383f9929f7d90db13f15c807365",
+        "size": 59206
+      }
+    },
+    {
+      "id": "es.ev.design-data",
+      "kind": "design",
+      "claim": "当前规范将队列/终态归 Scheduler，内容归 Projector；含需与固定代码核对的 v16 和 sole-event 陈述。",
+      "address": "decision_b1ab45c4b3ec",
+      "version": 76,
+      "sha256": "1744eec63799cf6e31a514fddecb2808c8cd74c94d93080611c787373305911a",
+      "start_line": 163,
+      "end_line": 189,
+      "symbol": "Execution 的唯一身份与生命周期 / PostgreSQL 结构与一致性",
+      "excerpt": "## Execution 的唯一身份与生命周期\n\nagent.executions 是每次 Resident 执行的唯一长期记录。输入只在 Mailbox 排队时不创建 Execution；接纳输入开始准备时分配 execution_id，状态为 preparing。准备失败、取消、排队、运行和完成均更新同一记录。状态集合为 preparing、queued、running、completed、failed、cancelled，created_at 保存接纳时间，started_at 与 finished_at 表达实际开始和结束。\n\nagent.execution_inputs 保存本次执行实际接纳的输入身份。多条输入可以合并到一个 Execution，同一输入显式重新执行时关联新 Execution；仅重试提交或恢复同一执行时保留原 ID。运行中追加输入成功接纳后加入同一输入集合。输入状态查询以这些关系和执行终态为准，不需要另建 job、轮次收据或 invocation 执行记录。\n\nLineage Trigger Path 从自己的关联表引用 execution_id；Execution 不保存 trigger_path_id 或来源路径列表。Scheduler 在队列状态事务中提交执行的 queued、running 和终态；Lineage 输入协调者负责 preparing 与提交前的失败或取消。AgentDataProjector 保存正文、Provider 身份和用量，不能独立推进第二套生命周期。终态通知与界面投影读取这个共同事实。\n\n## PostgreSQL 结构与一致性\n\n当前结构为 tfi.agent-data.v16，直接维护已有 PostgreSQL 数据库。正文统一从 Payload 读取；按 Agent 检查内容时沿 trace 的 Sequence 成员定位，不建立按内容作者与时间排列的全局 Segment 索引。规范内容表为 payloads、segments、segment_relations、sequences、sequence_segments、agents；会话及执行表为 provider_sessions、provider_bindings、executions、execution_inputs；运行记录表为 agent_operations、operation_positions。agent_store_meta 保存结构版本。\n\nSegment 类型为 input、model、tool、compaction、harness。工具和模型输出在完成时进入内容库，流式增量不覆盖已完成 Segment。纯 UI artifact 与 context_reset 不属于 Segment 类型。\n\n内容插入、转换关系与当前引用替换在事务中完成。现有数据的结构整理直接在原库执行：先核对类型与转换关系，将运行事实移出 Segments，清除旧正文副本，再按已记录转换关系收敛当前引用。相同正文不能作为删除独立事件的依据。整理过程中保留不可变内容的审计关系，并核对已有 Fork 与聊天窗口。\n\nAgentData 的健康查询核对数据库 schema 版本；需要内容、用量或条目数量的业务读取对应事实。调度器决定运行和重试，Provider 适配器解释原生协议，Chat service 决定投影规则，业务权限服务决定访问权限。\n\n排队输入在 Mailbox 中也使用同一无损正文包装，读取时按规则解包；进入 trace 后删除 Mailbox 中的等待记录。群组递交在一个 AgentData 事务中将成员替换为群组，成员原文仅通过转换关系用于审计与重新排队，不重新成为当前 trace 条目。\n\n## 完成事件与界面投影的顺序\n\n所有 Resident 执行都以同一 Portal 输入身份建立正文替换及回复关联。原生会话传输选项中的 client_user_message_id 与 API 请求元数据中的 user_message_id 都引用该输入；录入时将其归一到同一关联规则。执行输入消费原输入当前引用，模型完成事件的 reply_to_message_id 指向该输入身份，业务服务据此读取结果。API 请求不能留下原输入与执行输入两个当前条目，也不能因 Provider 类型而失去回复关联。\n\n完成的 Provider 事件是模型 Segment 的唯一写入来源。界面通知先到达时作为运行通知保存；完成事件到达后，在同一事务中用内容事件替换该通知的位置。重复通知读取当前内容，不再次写入模型正文。相同执行的多条真实 final 事件均保留在 trace，其他消费者可以使用不同策略。聊天服务投递最终回复时，在共享该回复身份的已捕获 final 中，按时间顺序选第一条正文与这条回复相同的，没有相同的就报错 `Captured message does not match the selected content`，不随便拿一条。比较之前，两边的 `portal-question` 代码块都先转成提问卡片再去掉：投递的回复已经把代码块转成了 `async_questions` 部分，已捕获的 Segment 仍保留代码块原文（`agent_data_store._answer_text`）。\n\n模型输出中的提问卡片由聊天服务读取时解析。模型文字中出现的用户包装标签是输出正文，不执行输入解包。模型原始响应附件和用量由运行记录及 Execution 提供，消息元数据不复制正文或执行统计。多段文字与附件以结构顺序和文字长度恢复；Harness 改写后长度不再匹配时展示当前文字及附件。",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-1744eec63799cf6e31a514fddecb2808c8cd74c94d93080611c787373305911a.json",
+        "sha256": "1744eec63799cf6e31a514fddecb2808c8cd74c94d93080611c787373305911a",
+        "size": 41598
+      }
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "scope": "descriptive read of saved outcomes; no new simulation or survival criterion used by policy",
+  "threshold": 1e-06,
+  "exact_zero_endpoints": 4,
+  "endpoints_at_or_below_threshold": 5,
+  "positive_but_at_or_below_threshold": 1,
+  "paths": [
+    {
+      "id": "stable-6202-compact-camp_left",
+      "M": 0.0,
+      "E": 0.0,
+      "minimum_M": 0.0,
+      "first_exact_zero": 1495,
+      "actual_distance": 1354.15000418708,
+      "movement_paid": 0.279492903837405
+    },
+    {
+      "id": "stable-6202-compact-camp_right",
+      "M": 0.0,
+      "E": 0.0,
+      "minimum_M": 0.0,
+      "first_exact_zero": 541,
+      "actual_distance": 2166.8500008009414,
+      "movement_paid": 0.279492776691749
+    },
+    {
+      "id": "stable-6202-ring-camp_left",
+      "M": 7.348362919661132e-188,
+      "E": 1.175738067145781e-187,
+      "minimum_M": 1.520302210694483e-301,
+      "first_exact_zero": null,
+      "actual_distance": 7.0000079621357765,
+      "movement_paid": 0.27945723725314014
+    },
+    {
+      "id": "stable-6202-ring-camp_right",
+      "M": 0.0,
+      "E": 0.0,
+      "minimum_M": 0.0,
+      "first_exact_zero": 541,
+      "actual_distance": 2166.8500004243597,
+      "movement_paid": 0.2794572451837358
+    },
+    {
+      "id": "persistent-6202-ring-camp_left",
+      "M": 0.0,
+      "E": 0.0,
+      "minimum_M": 0.0,
+      "first_exact_zero": 1554,
+      "actual_distance": 1304.8000095332384,
+      "movement_paid": 0.27945759449190966
+    }
+  ],
+  "interpretation": "4 exact zero endpoints plus 1 tiny positive remainder, not 44 meaningful survivors. Distance is unweighted host actual_v, not material displacement; empty-body velocity must not be interpreted as useful movement."
+}

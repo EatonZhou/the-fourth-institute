@@ -1,0 +1,47 @@
+{
+  "id": "0b471f2a-d4d9-4469-94e5-6ab4d5a1540a",
+  "name": "fixed_amount_rule_deletion_layout_20261019",
+  "command": [
+    "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+    "-m",
+    "local_learning.fixed_amount_rule_deletion_layout.run"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "d3-fixed-amount-rule-deletion-layout-20261019-v1",
+  "status": "running",
+  "created_at": "2026-10-18T21:07:45.101445+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/0b471f2a-d4d9-4469-94e5-6ab4d5a1540a",
+  "pid": 3833124,
+  "manual_pause": false,
+  "attempt_history": [
+    {
+      "attempt_number": 1,
+      "status": "failed",
+      "returncode": 1,
+      "started_at": "2026-10-18T21:07:45.178886+00:00",
+      "finished_at": "2026-10-18T21:07:55.008156+00:00",
+      "archive": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/0b471f2a-d4d9-4469-94e5-6ab4d5a1540a/attempts/0001",
+      "resume_request": {
+        "finished_at": "2026-10-18T21:07:55.008156+00:00",
+        "evidence_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/0b471f2a-d4d9-4469-94e5-6ab4d5a1540a/resume_evidence.json",
+        "evidence_sha256": "d0e7cc34da4196b2f79b57e0be9bb0b11e0df4ca9fc16ee3c91090fa0b1157ec"
+      }
+    }
+  ],
+  "attempt_number": 2,
+  "execution_command": [
+    "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+    "-m",
+    "local_learning.fixed_amount_rule_deletion_layout.run",
+    "--resume"
+  ],
+  "resume_evidence": {
+    "finished_at": "2026-10-18T21:07:55.008156+00:00",
+    "evidence_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/0b471f2a-d4d9-4469-94e5-6ab4d5a1540a/resume_evidence.json",
+    "evidence_sha256": "d0e7cc34da4196b2f79b57e0be9bb0b11e0df4ca9fc16ee3c91090fa0b1157ec"
+  },
+  "resumed_at": "2026-10-18T21:09:25.157324+00:00",
+  "create_time": 1792357764.87,
+  "started_at": "2026-10-18T21:09:25.486520+00:00"
+}

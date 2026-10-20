@@ -1,0 +1,13 @@
+{
+  "source": [
+    "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9bfb1b8c-a7b6-4c0f-a4d5-ae5073e26203/7501-online/trajectory.npz",
+    "${share_root}/Projects/元胞自动机研究/src/runs/jobs/72ceda07-54a9-47ed-ae54-03d954d78ee9/no-new-writing/trajectory.npz"
+  ],
+  "quantity": "body_frames summed over spatial axes",
+  "points": 61,
+  "new_simulations": 0,
+  "window": [
+    240,
+    720
+  ]
+}

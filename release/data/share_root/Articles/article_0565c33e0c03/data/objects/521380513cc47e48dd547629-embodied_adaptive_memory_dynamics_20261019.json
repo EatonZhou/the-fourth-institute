@@ -1,0 +1,450 @@
+{
+  "task": "embodied_adaptive_memory_dynamics_20261019",
+  "owner": "resident_33af539c4a17",
+  "status": "scalar_gain_candidate_closed_actual_local_history_capability_retained",
+  "native": 23491,
+  "worker_seconds": 32.21922,
+  "usage": [
+    {
+      "job": "a22f87e4-c19d-4b3c-bb63-848d5eff4173",
+      "native": 298,
+      "status": "failed",
+      "returncode": 1,
+      "worker_seconds": 0.560162,
+      "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/a22f87e4-c19d-4b3c-bb63-848d5eff4173"
+    },
+    {
+      "job": "5f08b6b0-ceb7-4dc1-a70e-ee5d0052e9aa",
+      "native": 7208,
+      "status": "completed",
+      "returncode": 0,
+      "worker_seconds": 9.323677,
+      "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5f08b6b0-ceb7-4dc1-a70e-ee5d0052e9aa"
+    },
+    {
+      "job": "88cfadaf-41a4-4ab2-9536-86902869abfe",
+      "native": 6938,
+      "status": "failed",
+      "returncode": 1,
+      "worker_seconds": 10.231565,
+      "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe"
+    },
+    {
+      "job": "fecb9eed-feb6-4c29-a883-2d0a7f462286",
+      "native": 990,
+      "status": "completed",
+      "returncode": 0,
+      "worker_seconds": 1.263846,
+      "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/fecb9eed-feb6-4c29-a883-2d0a7f462286"
+    },
+    {
+      "job": "423c1c64-adb8-4ebe-a860-54a07ee35416",
+      "native": 311,
+      "status": "completed",
+      "returncode": 0,
+      "worker_seconds": 1.499996,
+      "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416"
+    },
+    {
+      "job": "a2c32928-b2b8-4ee0-9096-c006ee1efbf1",
+      "native": 7746,
+      "status": "completed",
+      "returncode": 0,
+      "worker_seconds": 9.339974,
+      "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/a2c32928-b2b8-4ee0-9096-c006ee1efbf1"
+    }
+  ],
+  "hypothesis": "Can experience-dependent local recurrent gain improve retained/revised behavioral history beyond fixed material-carried dynamics and ordinary online readout?",
+  "result": "Not supported. Strong fixed local six-event memory plus local delta readout learns initial negative relation, survives unseen blank intervals and recovers after reversal. Adaptive scalar gain does not beat these controls; resetting gained excitability has no action effect in four declared same-body parents.",
+  "evidence": {
+    "unreturned": [
+      {
+        "arm": "adaptive_gain",
+        "stages": {
+          "acquire": {
+            "correct": 27,
+            "n": 64,
+            "feedback_completed": 43
+          },
+          "unseen_gap": {
+            "correct": 4,
+            "n": 16,
+            "feedback_completed": 8
+          },
+          "reverse": {
+            "correct": 2,
+            "n": 32,
+            "feedback_completed": 2
+          },
+          "retained_gap": {
+            "correct": 0,
+            "n": 16,
+            "feedback_completed": 0
+          }
+        }
+      },
+      {
+        "arm": "fixed_tick",
+        "stages": {
+          "acquire": {
+            "correct": 13,
+            "n": 64,
+            "feedback_completed": 21
+          },
+          "unseen_gap": {
+            "correct": 0,
+            "n": 16,
+            "feedback_completed": 0
+          },
+          "reverse": {
+            "correct": 0,
+            "n": 32,
+            "feedback_completed": 0
+          },
+          "retained_gap": {
+            "correct": 0,
+            "n": 16,
+            "feedback_completed": 0
+          }
+        }
+      },
+      {
+        "arm": "fixed_event",
+        "stages": {
+          "acquire": {
+            "correct": 15,
+            "n": 64,
+            "feedback_completed": 26
+          },
+          "unseen_gap": {
+            "correct": 0,
+            "n": 16,
+            "feedback_completed": 0
+          },
+          "reverse": {
+            "correct": 0,
+            "n": 32,
+            "feedback_completed": 0
+          },
+          "retained_gap": {
+            "correct": 0,
+            "n": 16,
+            "feedback_completed": 0
+          }
+        }
+      },
+      {
+        "arm": "history_table",
+        "stages": {
+          "acquire": {
+            "correct": 56,
+            "n": 64,
+            "feedback_completed": 64
+          },
+          "unseen_gap": {
+            "correct": 16,
+            "n": 16,
+            "feedback_completed": 16
+          },
+          "reverse": {
+            "correct": 16,
+            "n": 32,
+            "feedback_completed": 32
+          },
+          "retained_gap": {
+            "correct": 16,
+            "n": 16,
+            "feedback_completed": 16
+          }
+        }
+      }
+    ],
+    "paid_return": [
+      {
+        "arm": "adaptive_gain",
+        "stages": {
+          "acquire": {
+            "correct": 31,
+            "n": 48,
+            "feedback_completed": 48
+          },
+          "unseen_gap": {
+            "correct": 12,
+            "n": 16,
+            "feedback_completed": 16
+          },
+          "reverse": {
+            "correct": 3,
+            "n": 16,
+            "feedback_completed": 16
+          },
+          "retained_gap": {
+            "correct": 6,
+            "n": 16,
+            "feedback_completed": 16
+          }
+        }
+      },
+      {
+        "arm": "fixed_event",
+        "stages": {
+          "acquire": {
+            "correct": 31,
+            "n": 48,
+            "feedback_completed": 48
+          },
+          "unseen_gap": {
+            "correct": 14,
+            "n": 16,
+            "feedback_completed": 16
+          },
+          "reverse": {
+            "correct": 2,
+            "n": 16,
+            "feedback_completed": 16
+          },
+          "retained_gap": {
+            "correct": 3,
+            "n": 16,
+            "feedback_completed": 16
+          }
+        }
+      },
+      {
+        "arm": "local_delay",
+        "stages": {
+          "acquire": {
+            "correct": 48,
+            "n": 48,
+            "feedback_completed": 48
+          },
+          "unseen_gap": {
+            "correct": 16,
+            "n": 16,
+            "feedback_completed": 16
+          },
+          "reverse": {
+            "correct": 0,
+            "n": 16,
+            "feedback_completed": 16
+          },
+          "retained_gap": {
+            "correct": 8,
+            "n": 16,
+            "feedback_completed": 16
+          }
+        }
+      },
+      {
+        "arm": "history_table",
+        "stages": {
+          "acquire": {
+            "correct": 40,
+            "n": 48,
+            "feedback_completed": 48
+          },
+          "unseen_gap": {
+            "correct": 16,
+            "n": 16,
+            "feedback_completed": 16
+          },
+          "reverse": {
+            "correct": 0,
+            "n": 16,
+            "feedback_completed": 16
+          },
+          "retained_gap": {
+            "correct": 16,
+            "n": 16,
+            "feedback_completed": 16
+          }
+        }
+      }
+    ],
+    "balanced": [
+      {
+        "arm": "adaptive_gain",
+        "stages": {
+          "acquire": {
+            "correct": 30,
+            "n": 64,
+            "feedback_completed": 64
+          },
+          "unseen_gap": {
+            "correct": 10,
+            "n": 16,
+            "feedback_completed": 16
+          },
+          "reverse": {
+            "correct": 9,
+            "n": 32,
+            "feedback_completed": 32
+          },
+          "retained_gap": {
+            "correct": 8,
+            "n": 16,
+            "feedback_completed": 16
+          }
+        }
+      },
+      {
+        "arm": "local_delay",
+        "stages": {
+          "acquire": {
+            "correct": 60,
+            "n": 64,
+            "feedback_completed": 64
+          },
+          "unseen_gap": {
+            "correct": 16,
+            "n": 16,
+            "feedback_completed": 16
+          },
+          "reverse": {
+            "correct": 13,
+            "n": 32,
+            "feedback_completed": 32
+          },
+          "retained_gap": {
+            "correct": 16,
+            "n": 16,
+            "feedback_completed": 16
+          }
+        }
+      },
+      {
+        "arm": "history_table",
+        "stages": {
+          "acquire": {
+            "correct": 56,
+            "n": 64,
+            "feedback_completed": 64
+          },
+          "unseen_gap": {
+            "correct": 16,
+            "n": 16,
+            "feedback_completed": 16
+          },
+          "reverse": {
+            "correct": 16,
+            "n": 32,
+            "feedback_completed": 32
+          },
+          "retained_gap": {
+            "correct": 16,
+            "n": 16,
+            "feedback_completed": 16
+          }
+        }
+      }
+    ]
+  },
+  "causal": [
+    {
+      "arm": "adaptive_gain",
+      "treatment": "negate_content",
+      "n": 4,
+      "factual_correct": 2,
+      "intervened_correct": 0,
+      "commands_changed": 2,
+      "nonzero_interventions": 4
+    },
+    {
+      "arm": "adaptive_gain",
+      "treatment": "reset_gain",
+      "n": 4,
+      "factual_correct": 2,
+      "intervened_correct": 2,
+      "commands_changed": 0,
+      "nonzero_interventions": 4
+    },
+    {
+      "arm": "adaptive_gain",
+      "treatment": "sham",
+      "n": 1,
+      "factual_correct": 1,
+      "intervened_correct": 1,
+      "commands_changed": 0,
+      "nonzero_interventions": 0
+    },
+    {
+      "arm": "fixed_event",
+      "treatment": "negate_content",
+      "n": 4,
+      "factual_correct": 2,
+      "intervened_correct": 1,
+      "commands_changed": 3,
+      "nonzero_interventions": 4
+    },
+    {
+      "arm": "local_delay",
+      "treatment": "negate_content",
+      "n": 4,
+      "factual_correct": 3,
+      "intervened_correct": 0,
+      "commands_changed": 3,
+      "nonzero_interventions": 4
+    },
+    {
+      "arm": "history_table",
+      "treatment": "negate_content",
+      "n": 4,
+      "factual_correct": 4,
+      "intervened_correct": 0,
+      "commands_changed": 4,
+      "nonzero_interventions": 4
+    }
+  ],
+  "independent_histories": {
+    "opportunity": 1,
+    "unreturned": 2,
+    "paid_return": 2,
+    "counterbalanced": 2,
+    "whole_continuous_paths": 23,
+    "mechanistic_branches": 21
+  },
+  "interpretation": [
+    "Local memory contents have a causal role: sign-only interventions change later real paid motion while full parent body/energy/readout remain unchanged.",
+    "That does not establish learned internal dynamics: fixed temporal organization plus standard local output learning is sufficient in the tested task.",
+    "The first unreturned batch loses sensory access under biased actions; score all trials, retain missing observations, do not interpret conditional survivors as general integration failure.",
+    "Paid-return random seeds both drew positive maps; fixed delay initially solves by majority and acquire48/48 is not evidence of acquisition. A separately frozen negative/positive map-balanced batch removes that particular inference.",
+    "This is not a dense central RNN tiled on a grid: each occupied cell has scalar traces/readout, local exchange and actual source-K transport/mixing. Still, scalar gain plasticity/delay lines/local delta are standard components, not a new algorithm.",
+    "No new morphology, regeneration, Lenia learning, independent motor learning or physical efficiency established."
+  ],
+  "assay": "Fixed local patch disk16,16/radius3.4; genuinely paid local signs and GO, then6 native motor steps and local energy gain/loss. Unknown feedback is not zero. Known binary executed direction and local completed consequence define local learning target. No total reward broadcast into local learner.",
+  "state": "All q/gain/readout/eligibility fields move with actual source K and mix by mass. No START clearing; fixed-event/6-event delay holds through blank intervals. Fields die with absent support; host has no birth. Existing host motor memory is overwritten by common external actuator and is separate from history fields.",
+  "dynamics": "Adaptive tanh(a*q+.12*neighbor exchange+.7*local input), local gain sensitivity approximation (not exact BPTT through mixing); a starts.8, updates locally only after completed feedback. Fixed bank gains0,.8,1.2. Delay line is6 own paid signed events; local linear readout learns using carried action-time features.",
+  "task_limits": "Four repeated early signs, independent2-sign distractors, commonGO,0..1 training blanks and6..8 unseen blanks; target relation reversed without flag. No task/stage/clock/seed delivered to controller. Writer disabled by experiment during retention tests only; ongoing state/physical dynamics continue. GO/latching/common actuator are engineered protocol.",
+  "capacity_and_cost": "14 local fields adaptive/bank vs22 fixed-delay implementation; central6-event/128-entry Q table. Same local sensory/upkeep package, true movement/basal/assay costs; arithmetic, retention and central communication incompletely priced. No equal-bit or efficiency claim. Fixed delay has larger explicit capacity and is intentionally strong.",
+  "paid_return": "6 common physical servo ticks after every assay, using current centroid/known station only. Body/energy and history not reset. Total extra motion/upkeep/basal charged and separately summarized.",
+  "causal_limits": "Four predefined parents per arm, first retained test in each phase/seed. Content sign flips and gain reset are external mechanistic interventions, not deployable behavior. No-body-damage check exact; sham continuation full state error0. Gain reset absent action effect is limited to these four parents.",
+  "failures": [
+    {
+      "job": "a22f87e4-c19d-4b3c-bb63-848d5eff4173",
+      "native": 298,
+      "reason": "history_table completed24 trials; ndarray JSON serialization failed, fixed_event unstarted. Evidence recovered from exact saved states,0 replay; immutable source kept."
+    },
+    {
+      "job": "88cfadaf-41a4-4ab2-9536-86902869abfe",
+      "native": 6938,
+      "reason": "All first7 lives completed;112MiB operating guard failed at124746118bytes below128MiB usercap. Only last unstarted990-step life executed, aggregate130791699bytes<128MiB. First job remains failed."
+    }
+  ],
+  "caps": "Each independent batch<=8192native/240worker/CPU2/GPU0/raw128MiB. First pilot+comparison7506native; return7928 across2jobs with one aggregate rawcap; causal311; balanced7746. No uncertain job replay.",
+  "batch_raw_bytes": {
+    "opportunity": 2246722,
+    "comparison": 111624275,
+    "return_batch": 130791699,
+    "causal": 36833686,
+    "balanced": 97171456
+  },
+  "directories": {
+    "opportunity": "${share_root}/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_opportunity_20261019",
+    "comparison": "${share_root}/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_comparison_20261019",
+    "paid_return": "${share_root}/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_return_join_20261019",
+    "causal": "${share_root}/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_probe_20261019",
+    "balanced": "${share_root}/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_balanced_20261019"
+  },
+  "decision": "Close extra value of this gain-learning candidate; retain material-carried local fixed-history+online-readout as strong reference. No threshold/gain sweep, old matrices unchanged.",
+  "observed_visuals": "Viewed comparison plots and actual middle frames for unreturned/paid-return; full per-native animation arrays saved. Do not claim every saved frame visually inspected."
+}

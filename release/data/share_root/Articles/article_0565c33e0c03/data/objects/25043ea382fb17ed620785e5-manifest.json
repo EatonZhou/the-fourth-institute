@@ -1,0 +1,2062 @@
+[
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/INTERPRETATION.txt",
+    "sha256": "704472dd345573cd9d31b60f6118c79ea6e386632fa12e2f80346ff8313145db",
+    "bytes": 3993
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/METHOD.txt",
+    "sha256": "1ba57c6b6dcefaa40f742229bee52a6f95234f1773910f596e64852f77973bb8",
+    "bytes": 3179
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/REPORT.txt",
+    "sha256": "ce631b558c03b4c48ad48c42799ab86e8f030f0af8d4345c64fed2dca716fb51",
+    "bytes": 25484
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/absolute_negative_intervals.json",
+    "sha256": "c42bfedff37b1243ba789e8386a31455ecbb4d30a08164d0fc7cad6024935b2f",
+    "bytes": 16903
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/acquisition_future_cycle.csv",
+    "sha256": "8274f4011c8c09f784c9253582815e4bca48537026bb4bbcc76bcf5f2ee558de",
+    "bytes": 20581
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/acquisition_future_cycle.json",
+    "sha256": "85443aa5ea18ba95f8e26a75fe918ad89cd9e5488f9b3721e08e6cf110006ea0",
+    "bytes": 49270
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/analysis_checks.json",
+    "sha256": "bb124aa1ffbfc7d7df2d057ea0bdeab1eca4f7bb350a9682bda0cc8ace5293fd",
+    "bytes": 428
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/analysis_source/environment_evolution/experience_adaptation_outer_search_native/__init__.py",
+    "sha256": "e683e8a79313f8fe624366688c709dfdd0726fc9f91091aa633adc2fcebc6f93",
+    "bytes": 79
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/analysis_source/environment_evolution/experience_adaptation_outer_search_native/analyze.py",
+    "sha256": "a1ba051a7ce1fdbe7f51e763c1eee2c11ba74076ff1dd0c50d9ef7575d4f65c7",
+    "bytes": 18539
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/analysis_source/environment_evolution/experience_adaptation_outer_search_native/binding.py",
+    "sha256": "3e029b65bf401d6b1b2d64f732772f1cda6f0bc6389d465ca163b57f25f27082",
+    "bytes": 2734
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/analysis_source/environment_evolution/experience_adaptation_outer_search_native/common.py",
+    "sha256": "559d0f4dc089450d8acac2af99f4337aaa0fcd0609543001f81d1764a36425f1",
+    "bytes": 523
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/analysis_source/environment_evolution/experience_adaptation_outer_search_native/package.py",
+    "sha256": "21e6a2f123b41aa6cce12a258e3faa2179ac9e157f268431e1ae0801c9822352",
+    "bytes": 9885
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/analysis_source/environment_evolution/experience_adaptation_outer_search_native/plot.py",
+    "sha256": "6379f6fc0a4cbbd161f1fe98e44e3ac276039d577a3fe0f0a482be74e4289d50",
+    "bytes": 7475
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/analysis_source/environment_evolution/experience_adaptation_outer_search_native/prepare.py",
+    "sha256": "de6febb2feb48d7806c68b1b0e80a5352d1882f9f0eba49e3d0e3bd252e3ac31",
+    "bytes": 7602
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/analysis_source/environment_evolution/experience_adaptation_outer_search_native/run.py",
+    "sha256": "4c809d2c366095bbc6b8b86e0fdedf921e4c609290e3283f1e8744c656faaed3",
+    "bytes": 5511
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/analysis_source/environment_evolution/experience_adaptation_outer_search_native/submit.py",
+    "sha256": "159b29cd7c0c385db5f32dc795ae5042302a2229c5d499c113974b8a6587a52c",
+    "bytes": 1019
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/analysis_source/environment_evolution/local_supply_memory_native/analyze.py",
+    "sha256": "8980796c4d2b5251ce1bbac60381377b379bbe9e0c548d4cbe5d4fae7ea46116",
+    "bytes": 19077
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/analysis_source/environment_evolution/regenerative_reserve_morphology_transfer/analyze.py",
+    "sha256": "71cc63899374ba04fac9529dc41afc7dee253fbcd12872155e6a306dbf7bf606",
+    "bytes": 18758
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/analysis_source/environment_evolution/regenerative_transport_allocation_interaction/analyze.py",
+    "sha256": "2c7505ea71332af66e93b43785926ccb732aded274b5abb4f5575930c7d2af1d",
+    "bytes": 19989
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/analysis_source_archive.json",
+    "sha256": "00a7974225923d523214ca778e0f04b8c3f34d1de0cbd43688c83758b850676b",
+    "bytes": 5411
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/archive_input.json",
+    "sha256": "635a8eb2bd88627827f61a126ebd3362e9a86a10b4c26df3a0aeab61e3b8f02a",
+    "bytes": 8865
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/binding_checks/experienced-synthetic160.npz",
+    "sha256": "1e1a5c7b1c375258ffe15f8414ef27c191c59cc3d23fc397b838651ac4818c13",
+    "bytes": 23271
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/binding_checks/genome_8d60f7d250e8e9f2a25b-T00-ready0.npz",
+    "sha256": "e2757036c6658ee3acdf88980e077dd011d8a10261f64a2650d2b721f887ab50",
+    "bytes": 33596
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/binding_checks/genome_93e6148d32bbb0862163-T00-ready0.npz",
+    "sha256": "378e3890ec0c355bd24339fe68f409f0790dd3f0537507b9568a46e754996f69",
+    "bytes": 23224
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/binding_checks/genome_a6a821dffd4f4046c97a-T00-ready0.npz",
+    "sha256": "2891e55efd2fd34c71500e4333bdee6a7dc256a224081416bcecc07581e69d6c",
+    "bytes": 13505
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/binding_checks/genome_d02e7f60565f83066e5d-T00-ready0.npz",
+    "sha256": "b2e54e75e88cde19be4ab0bb126d1209520169f10fa91336e219530167abc62f",
+    "bytes": 11607
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/binding_checks/low_cost_T00-synthetic160.npz",
+    "sha256": "6ea4e8c47885da3d47d767707a0a074a5aed00d380f656cae6c721d2ca5ceba9",
+    "bytes": 23273
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/binding_checks/naive-synthetic160.npz",
+    "sha256": "645ee83f55c033c61030faf156fad2e9cb04d0439cc8a02a80f0f1cea667eea4",
+    "bytes": 23271
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/binding_checks/synthetic-parent128.npz",
+    "sha256": "09f52d5e6506aee5a5276a1be95f899d17442f7a3adc1abed1684504e3c7f4f5",
+    "bytes": 23225
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/binding_checks/unknown-inflight.npz",
+    "sha256": "8ab26349f278c92cf1253b497f748c735bfbff5ee4aa95b0f7e0d4c88f2c05ee",
+    "bytes": 23227
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/branch_boundaries.json",
+    "sha256": "602413b61251e689218f321b160b1cab727ef035d3ba5b85509edc5a73eb2f30",
+    "bytes": 27895
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/checks.json",
+    "sha256": "d817176d61a7224457fba7d1e10b2efd3b545bf3e28ed2d423dcd7f50e972ab9",
+    "bytes": 1012
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/completion.json",
+    "sha256": "930d613b3e4891921f1bf851c28a59c0134b8b5259a58c5d4c651aa9e2d57e89",
+    "bytes": 72230
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/effect_signs.json",
+    "sha256": "d7d84b82a435c66f54c39656356d74e7c96e1844e3e8222a26149edd520b3a30",
+    "bytes": 38283
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/effect_steps.csv",
+    "sha256": "1f67ec470c678331eb8da7e5b2a57013e272af96fd86ae501c11b63f3d30b6db",
+    "bytes": 2666419
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/effect_windows.csv",
+    "sha256": "b22df8a74e15fcc1f7ec48940c6e97c3223bf99f5a9e5208952408534c3992b5",
+    "bytes": 425876
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/effects.csv",
+    "sha256": "a05a3e4215a1d676ad1dcf818dd1845d7affe93ec1612dd1a78d0d4e5a932a87",
+    "bytes": 49473
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/effects.json",
+    "sha256": "be06ba2ed8d020f23b6b89f210b0d95cc6fa3a39727e873645af888fb393c04b",
+    "bytes": 111925
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/fixed_segments.csv",
+    "sha256": "d26a657f340e2e0eb3d8f3e1b03fb49eb147aef9279a2a649405d6c015507565",
+    "bytes": 137203
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/fixed_windows.csv",
+    "sha256": "c0ae7a1d00f6ad7ae028a6a913a8eac8b41204b4b0b85942b41fb6fdd2c5c42a",
+    "bytes": 141081
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/formation-process.pdf",
+    "sha256": "05fcf0720d702543a7017a119a71ff4b66c4828b16f6328946a27c253e13f731",
+    "bytes": 28694
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/formation-process.png",
+    "sha256": "9ba473b2709b6c5c3bac582d1890063d7d9ecdfa69d28cf558dd2e3491ecb12c",
+    "bytes": 164861
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/formation-process.svg",
+    "sha256": "70fc76569fb3d2e9d586654eac0021ec4c08e14ac6e156dab827cdc6ff124f0a",
+    "bytes": 106609
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/frame_coverage.csv",
+    "sha256": "5a3feba0c40bfe8fd90ab076c2601accd4acdf589767ef8b0c957e09efc0bab1",
+    "bytes": 55724
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/full_cycle.csv",
+    "sha256": "f03fe9075fe1d2a40525c3cbbf9d471b4c4c76621aa8057431c1b61348604134",
+    "bytes": 20595
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/full_cycle.json",
+    "sha256": "aaacb5f88937c6e3c5c517a51fe0408a77302a5ab03676d925b716aca0082be2",
+    "bytes": 49284
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/full_cycle_differences.csv",
+    "sha256": "f021ce78aff6b356109cab7780100a774d7aac80aefb03a5ea17761fefbb5395",
+    "bytes": 52491
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/full_cycle_effect_signs.json",
+    "sha256": "dddb33d20cfe562a1938ee185979b111ff749cdb02c3252a2f726103b9aaf6f8",
+    "bytes": 53181
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/full_cycle_effect_steps.csv",
+    "sha256": "466c312b16969fc0bbfbd2eede52f0863536427173558785e49f98c0f5c561ee",
+    "bytes": 6654966
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/full_cycle_effect_windows.csv",
+    "sha256": "ba35197d6ea47a1fd421e54e5bfd4f6590e74f826d0b0ee920165e67f3ad4870",
+    "bytes": 415231
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--experienced--acquisition-atlas.pdf",
+    "sha256": "6fb7d80c7b18498d5c0529219275f96599b25094b3bdaf7f058fa33fe726391c",
+    "bytes": 35757
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--experienced--acquisition-atlas.png",
+    "sha256": "a34bfbd7b9d0f6b57f25e1ecfe84787ce3ccd78fc9a48c707f8dbc724d9a8f5c",
+    "bytes": 46603
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--experienced--acquisition-atlas.svg",
+    "sha256": "343647fa129d5c3bc47d8ffede97514cd2f9ddcb0fec692cf720fe88973b5054",
+    "bytes": 75320
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--experienced--acquisition-frames.npz",
+    "sha256": "0c548da1571868d7852ff7b8e2a850992339f41c3ca12ed9e374461fcc6caddc",
+    "bytes": 46541
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--experienced--acquisition.gif",
+    "sha256": "33b78f72478a08022a41e807544923f036946039ecbad3fd9e8e26b05905d174",
+    "bytes": 23530
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--experienced--none-atlas.pdf",
+    "sha256": "659d9ce46c1e6533a8f6abc385720cbbc8ec1a71b0fb2481c433f7c004c83c3a",
+    "bytes": 49586
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--experienced--none-atlas.png",
+    "sha256": "0e41c01a633c043961e55b3f457c2707d30ef8b6af6994df8c83d22b088270be",
+    "bytes": 78663
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--experienced--none-atlas.svg",
+    "sha256": "0fd1f39885bac73d532391c934ba562a2b27ec1b97580a7eff2892fa204f8b3b",
+    "bytes": 113890
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--experienced--none-frames.npz",
+    "sha256": "657eeb5838af914e38239ad0c16f2ffd84f2e2a892f9d6a2426217d5d1d68e21",
+    "bytes": 81739
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--experienced--none.gif",
+    "sha256": "cff7411e1c10eebcecd26b268e3c82866f97c780c3506264247cfa6f628ecbf1",
+    "bytes": 40181
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--experienced--x-atlas.pdf",
+    "sha256": "a47b97c845b0d4ad7d144f1c7c7f1d3160ecef4d3230cbe4c97880abe2b28635",
+    "bytes": 49545
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--experienced--x-atlas.png",
+    "sha256": "5af62fc5b4395a23443d46576704a2a890120d673d67b80c2d79957151288551",
+    "bytes": 77414
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--experienced--x-atlas.svg",
+    "sha256": "491faecd73569857dc70c8b2ab1f157bfcf856175b063426e65d619f1a74f9a1",
+    "bytes": 113539
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--experienced--x-frames.npz",
+    "sha256": "c7cc956eb44d164da0f4b95d363a80fddc6e34a50d6fcf0142d80fef891c7b59",
+    "bytes": 83084
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--experienced--x.gif",
+    "sha256": "5bd05be5ccb04918175541725937a7efc10054d473fc0441fbf1922fbc95ffb1",
+    "bytes": 38584
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--formation-atlas.pdf",
+    "sha256": "6669122898ac0b9ee11b63b5ea27cfc8aed33d5bb312f359fa15a453b29f1f6f",
+    "bytes": 85216
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--formation-atlas.png",
+    "sha256": "ed4701fd67350ff1759c75c3b50949121e411a807591a738fbf52101ca8a7e52",
+    "bytes": 144513
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--formation-atlas.svg",
+    "sha256": "bf63f5d63a42305dd1607afb74e2949a85b948244fb8bd59bc14f9ea45e7bdf2",
+    "bytes": 201637
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--formation-frames.npz",
+    "sha256": "4d0b5db5edde9c20bd68a02cd3d8e2fecab78c4b462ba0cbc4f2fb562e687d73",
+    "bytes": 119873
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--formation.gif",
+    "sha256": "cba3d70f11fd568c2ae9df30b5f38557de958cc91d348512f3460f6a0b3af245",
+    "bytes": 74053
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--low_cost_T00--acquisition-atlas.pdf",
+    "sha256": "7b7b7d11e7a6f637a7b9e731d4810cf1ef6687cf2682dcb49b4cf4f09c3b7dcc",
+    "bytes": 39048
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--low_cost_T00--acquisition-atlas.png",
+    "sha256": "178b2183f51b3174d0b5c7d2a6986bd72c0028e323c55995a569a3b9dc137ac1",
+    "bytes": 49650
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--low_cost_T00--acquisition-atlas.svg",
+    "sha256": "0f5965fcf1cc2013f1ea961c3edf3790d3f96eadae1a3413dd7aedfb11a16fd2",
+    "bytes": 80459
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--low_cost_T00--acquisition-frames.npz",
+    "sha256": "82e22372d690266ab0054f0b72ebaf7dde4ccd873ca6f3ce702ff26490a1cfee",
+    "bytes": 47505
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--low_cost_T00--acquisition.gif",
+    "sha256": "2da56b0422a408afd045930d7630d87e268ba844a5501cd17dc2df94ddd69efd",
+    "bytes": 25472
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--low_cost_T00--none-atlas.pdf",
+    "sha256": "c6504738d46718bf6f3004fb087da7d494dc1adafdbb886ed546f7e8409dc9cf",
+    "bytes": 59007
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--low_cost_T00--none-atlas.png",
+    "sha256": "546075f928b717da689656f19d1eb9b4f19495edd9b936104b4e35442f9df34f",
+    "bytes": 89078
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--low_cost_T00--none-atlas.svg",
+    "sha256": "db522444fc45da8b9267e7c9043d88a55ed501c3b56a601959ae98267fea2444",
+    "bytes": 128083
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--low_cost_T00--none-frames.npz",
+    "sha256": "b6f5c314ef9bce1165a78f9ccfb40ac9aa1947031812391f7ee86b4c3ac5d556",
+    "bytes": 79968
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--low_cost_T00--none.gif",
+    "sha256": "f3d3bfe7a632c1fa24f752b24f518cab663c30d2179739ae273ba50b1150d8fb",
+    "bytes": 43707
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--low_cost_T00--x-atlas.pdf",
+    "sha256": "3e68177dd7eff34d78d1acd2a94bad3c475334ccf6ba8f45188a1d543fcb900d",
+    "bytes": 51527
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--low_cost_T00--x-atlas.png",
+    "sha256": "16db50e39f3530faedfc2757a058f3b76c81a95992f400739b1a8a8e064250bb",
+    "bytes": 80836
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--low_cost_T00--x-atlas.svg",
+    "sha256": "b0b24e54978ff24b38cdb8b4e02aee8c329254d58e5df7f247dba996348c0b9d",
+    "bytes": 116687
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--low_cost_T00--x-frames.npz",
+    "sha256": "02e5c78b072c6ef51111915de41e90a26a105d9e61dde93a02feb09b3c1730f1",
+    "bytes": 78743
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--low_cost_T00--x.gif",
+    "sha256": "a70ddccd104aaf754de32be11797eb22cd34fdc3aaf752744c44c830c2e9a56b",
+    "bytes": 40983
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--naive--acquisition-atlas.pdf",
+    "sha256": "2a07057ebaf4f1dbb368560a11b24445112dabdb70906ea3bb64b61e3eeac04e",
+    "bytes": 38595
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--naive--acquisition-atlas.png",
+    "sha256": "3bf59ecc9866c2155195999226ccd31a945362da3656e0ea6ee247876bf98931",
+    "bytes": 49124
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--naive--acquisition-atlas.svg",
+    "sha256": "41a6860ae28a5ed629ea03a8302c6b6582c295a88c70ff27417ae8bfa0ed3722",
+    "bytes": 79236
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--naive--acquisition-frames.npz",
+    "sha256": "4b83434576593339ef3ea0e71ff17f31145bb1aaba6d5ecaa68f1a89e13d6246",
+    "bytes": 50761
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--naive--acquisition.gif",
+    "sha256": "f7aa990b1df89f9565b3eb02b61aab4e0f5622b718600faeb710d2fb406aa4a2",
+    "bytes": 24624
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--naive--none-atlas.pdf",
+    "sha256": "5f033297c3756b832043519eaf610818a8841dd69523371082039fa766dd5f86",
+    "bytes": 58173
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--naive--none-atlas.png",
+    "sha256": "3b1d66f73e084d4d1a4cb16f3a5a85837ecd723d213b823c94644b131163a034",
+    "bytes": 87835
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--naive--none-atlas.svg",
+    "sha256": "5f6f1b5e4a4056115d6a6792e30535c69bccf3101b7134345b12491384c3aa5e",
+    "bytes": 126333
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--naive--none-frames.npz",
+    "sha256": "5c8a62ca6bb0b970521b9f00e73179075b2b33c3bb18085038d3436ef6c3ed5e",
+    "bytes": 94590
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--naive--none.gif",
+    "sha256": "36f307aec8823bd0e627601a189f679b567d93b7b288c0563d7bbea7bb5f8eac",
+    "bytes": 43245
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--naive--x-atlas.pdf",
+    "sha256": "75ab4dbdc6629e1d4a080b9d03b332807747c967ee873bbebb10a3d3f3beb6db",
+    "bytes": 50835
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--naive--x-atlas.png",
+    "sha256": "2f7022182edd879206d77d1786bd3a9a0ddf89f491bbb2d9d38969c3d51f94dd",
+    "bytes": 78913
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--naive--x-atlas.svg",
+    "sha256": "a50b1bafa5dcc1384f34db1880817ff7b4a44f9364c7888b63b33a68472bb4d1",
+    "bytes": 115045
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--naive--x-frames.npz",
+    "sha256": "940fdd0bda1454ee7c186f3672a697df3db10d8f4a24e11b2fc74d6a63036bda",
+    "bytes": 88222
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--naive--x.gif",
+    "sha256": "b3c152ad55f992fb72b05df17c0318f013f04525d29a21275c46bffa3624b34e",
+    "bytes": 39438
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b-effects.pdf",
+    "sha256": "09e30d13ed3a344f6f931c92a2d1bd5074bec8710f8c05eafa8f60913bb6b511",
+    "bytes": 25737
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b-effects.png",
+    "sha256": "bf715a48ba806de92b20a4e42918ded12f8022a3dfead8a627579a46418d4d81",
+    "bytes": 169210
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b-effects.svg",
+    "sha256": "03aafee502b28d8fd61d135b9ee1996a2a3627cb02e2c91acd0ee400769b0899",
+    "bytes": 98840
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b-parent-effects.pdf",
+    "sha256": "aaae664b49f700a5021fa4d1e04b0076e0dd541963964e5a32a1f95dacf11191",
+    "bytes": 31287
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b-parent-effects.png",
+    "sha256": "47c45be02a133cf535b6e99b4ee4c822133818fbbd9880b258a5c978f387511d",
+    "bytes": 194210
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b-parent-effects.svg",
+    "sha256": "fe387764a5bb7172f013291ebecbce2fcf1eb4a6cd1c3461a8306213c6b6eb49",
+    "bytes": 125527
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b-process.pdf",
+    "sha256": "aff567ec696fb6d608209e53a136e0a5cae3de739d33e389903770782b68c3d7",
+    "bytes": 36551
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b-process.png",
+    "sha256": "70c206bc313d71c6d39848b1f2cf99b1726c98921ff802b25076bab172430abc",
+    "bytes": 225388
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b-process.svg",
+    "sha256": "3bb71e6630cb5204fc7dce734181bce171996932a9ada46dc967dfc71899d0ce",
+    "bytes": 211989
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--experienced--acquisition-atlas.pdf",
+    "sha256": "4a4542fee9903996f5171ec4bc8bf2bd74b944183a44bfc3c36219c3ba0d2e9f",
+    "bytes": 32714
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--experienced--acquisition-atlas.png",
+    "sha256": "85d40ecbc175157e17840a65847145060da01bebf21227c48708a330b705baa3",
+    "bytes": 43877
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--experienced--acquisition-atlas.svg",
+    "sha256": "20c1163e86f85ac0c606d5873eab90e19b19725a2c9ce9db4594f8ef103dbe1d",
+    "bytes": 70941
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--experienced--acquisition-frames.npz",
+    "sha256": "e7be08a3a909386e0e31049850fb13dd75f8848d3fbb1577dfa57453b7d12cee",
+    "bytes": 30964
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--experienced--acquisition.gif",
+    "sha256": "86bc7d9f165deeb7306f765dff50c12d4e11e858f56f3f211b31fceb0bfab10a",
+    "bytes": 21885
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--experienced--none-atlas.pdf",
+    "sha256": "9eb564ed3d422b5e76a13963db63274e98f740e36273c6fbb4214674ad4d51dc",
+    "bytes": 46541
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--experienced--none-atlas.png",
+    "sha256": "51cfded201bf3622df0337df6a280deba680b476049f8029e8b647a283a2addf",
+    "bytes": 75282
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--experienced--none-atlas.svg",
+    "sha256": "b476c2cfbaf4ada38d4a6bce5bae90177d1af0cea9ae2a1254e6c17d8e72c56a",
+    "bytes": 109428
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--experienced--none-frames.npz",
+    "sha256": "3b4137ee4d87d0dc7cc6981488a6a2d55a5bcc7dd41c63e047ebd0609302d5ae",
+    "bytes": 58421
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--experienced--none.gif",
+    "sha256": "230cc6f70cc4e977537cff3bb116971162ac8865eeee84dad244dc0f0af6b8b3",
+    "bytes": 37448
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--experienced--x-atlas.pdf",
+    "sha256": "2843c13ff30a6259a38df216882e08e8fd006c4bc8c8ce1ad8af0e294be55870",
+    "bytes": 27718
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--experienced--x-atlas.png",
+    "sha256": "8e0fd088aed1a0ee14afcf8bf8d0711ec65c16dfa777a8103c6e6f5446b10024",
+    "bytes": 55014
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--experienced--x-atlas.svg",
+    "sha256": "0ff2fc47e18a188124ecb48f331ebac50f47488ab4396f752f33f6bdf485d68c",
+    "bytes": 85800
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--experienced--x-frames.npz",
+    "sha256": "b5f7bf959be18649d418d606511345b549dfda1fe53c80976da3673cb0f01f98",
+    "bytes": 49785
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--experienced--x.gif",
+    "sha256": "d978549f48e3d37fd34abdb364030ce94c1492f4cac1c47a66793aa5ebc38ad5",
+    "bytes": 17465
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--formation-atlas.pdf",
+    "sha256": "2d62c5b34a05bce8e2fa7125f0f0907a368b6b31c8f7aea0896a062b8d038077",
+    "bytes": 75108
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--formation-atlas.png",
+    "sha256": "e7efa6b95eedc18cb4bd2181794bc6ac62870ffd8ef377d8c4a0269fcb8f5acc",
+    "bytes": 131478
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--formation-atlas.svg",
+    "sha256": "63b5c23089f9701dda9e8e915cfb0af0a7fdc2ff95e44999663f52cce7135962",
+    "bytes": 186286
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--formation-frames.npz",
+    "sha256": "695b8c3585c62aadabf256fe0d0c98ca8a2ecce3316dc2c5be74603f14787af8",
+    "bytes": 84146
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--formation.gif",
+    "sha256": "914d50a2efb03b03e82676a5768f90bd011249e0afc9efaa0d5f60d56507d381",
+    "bytes": 57910
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--low_cost_T00--acquisition-atlas.pdf",
+    "sha256": "88e5b26c55b9b4a801ed93eeb1bb19bf74ffcb2a8ff2136f37bb7e530639d3cb",
+    "bytes": 32236
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--low_cost_T00--acquisition-atlas.png",
+    "sha256": "ddf764f8faf5362e2ebd2ae631a1f02e863249aa3583ffa2fed18095a75dc27e",
+    "bytes": 42729
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--low_cost_T00--acquisition-atlas.svg",
+    "sha256": "acb42df657cae718f83d057a1c8b628f17f930a25a6b84adf80092b3613c2fe9",
+    "bytes": 70203
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--low_cost_T00--acquisition-frames.npz",
+    "sha256": "1335eeb7ca6be70c9e59a4a46ce09ffba864f58ae22a9c646c705620c90d3567",
+    "bytes": 28170
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--low_cost_T00--acquisition.gif",
+    "sha256": "e93c1115ec3228926d0ab785c49c2e4ec7110608221f5182a4fe4cdd4849f6dc",
+    "bytes": 21311
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--low_cost_T00--none-atlas.pdf",
+    "sha256": "f3185dcffd7ee63b28746d7cd12675390e05989979a3361e3be3e57a6a77ac95",
+    "bytes": 45673
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--low_cost_T00--none-atlas.png",
+    "sha256": "506cc5e7db6d0677426f7a3540f90f564fc6616301ba629c3aa0e71679d6dcaa",
+    "bytes": 73483
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--low_cost_T00--none-atlas.svg",
+    "sha256": "3f75b752aaf590961a1b42310448a29fa912c84845e4b044eb15ca52a92f980b",
+    "bytes": 108098
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--low_cost_T00--none-frames.npz",
+    "sha256": "ad557fdcfea8f908d2c6e4b97de3545ba800ccccb08d4c2657954e66d6d3198c",
+    "bytes": 54924
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--low_cost_T00--none.gif",
+    "sha256": "6f76f9942eafd6cc55c4489503b31221e661c2499e1af36b5136fa9f8ee09d67",
+    "bytes": 37800
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--low_cost_T00--x-atlas.pdf",
+    "sha256": "fbeb483461005f9dd44b3e341fd13e219350690d600ae4d18d549c01389f97f4",
+    "bytes": 25060
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--low_cost_T00--x-atlas.png",
+    "sha256": "1d5648b5688b949714696a4485136e9f1fa1f3d5db65784a5151983d994deeaa",
+    "bytes": 50412
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--low_cost_T00--x-atlas.svg",
+    "sha256": "4e3cc970dfbf8f7b2ffa13233a6ae638cfb6eb86f3e8584956ef3b6e9d1bfaf5",
+    "bytes": 81990
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--low_cost_T00--x-frames.npz",
+    "sha256": "c43a1bdd93a856cf1b75078e1cad0f99b74b932988ec2f52a49dfbee57c7d9bd",
+    "bytes": 42036
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--low_cost_T00--x.gif",
+    "sha256": "c23594c53ea97a1a4784a91fbc47e38390bf2aeb37663d0ca7ab2b939a072c55",
+    "bytes": 16389
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--naive--acquisition-atlas.pdf",
+    "sha256": "281a34f35f601a91a41803a6d1f77ae151fd6fe958c329e5bf3c98fe55cfaf37",
+    "bytes": 32245
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--naive--acquisition-atlas.png",
+    "sha256": "7bb46a84a311c93899f1e020eb98089923b436dc2c204f36b94bc58af8836c64",
+    "bytes": 43001
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--naive--acquisition-atlas.svg",
+    "sha256": "8f5610b8d195386309b6ec9aa484f4256e0c3a6a212d7afc4c73d6dbefb1f259",
+    "bytes": 69645
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--naive--acquisition-frames.npz",
+    "sha256": "bee74ac71b78400423e07efc788d3eeebb1eb4d116dff21366b4fa184f5fcaf9",
+    "bytes": 28804
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--naive--acquisition.gif",
+    "sha256": "ea9751473ca258d1cf65592e35696567ee27067193f45f53f7fc577deb8ad441",
+    "bytes": 20791
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--naive--none-atlas.pdf",
+    "sha256": "3ebdf058ab7aadc3b888690f245eb31b8177012074b9802efd14282581d76b3f",
+    "bytes": 45718
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--naive--none-atlas.png",
+    "sha256": "8c78ffafacb1b97381c8ead7fcea8658bc3d26ceee5101cf0390484c93de7d45",
+    "bytes": 74798
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--naive--none-atlas.svg",
+    "sha256": "ea1edf1e39b720d1372d96a36e9d969ce291c24a5a43f3295d5248d7377d2e42",
+    "bytes": 107453
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--naive--none-frames.npz",
+    "sha256": "b6907a451ae2b316f14dc42cacecf79e0423d0f9e671beabe3ad8ca754f9b33d",
+    "bytes": 56226
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--naive--none.gif",
+    "sha256": "120fa9d59c0eda46ccf22b22ccd7cb1e98c1e6fff146bf1bee6a1050fa12172d",
+    "bytes": 36053
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--naive--x-atlas.pdf",
+    "sha256": "4be3626ba0c10e5cf9c67475547c4bf10aee695800c8a283e3ba0418065ed5bb",
+    "bytes": 25644
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--naive--x-atlas.png",
+    "sha256": "a943adc7eb5855b58031f01429186a30c07d5d2414fda4208460b49610cd1def",
+    "bytes": 50276
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--naive--x-atlas.svg",
+    "sha256": "984498f15c665aa44f7d1a2c5da81798bfd80b4e78271eed366bce54856985a2",
+    "bytes": 81781
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--naive--x-frames.npz",
+    "sha256": "eec570e5ba00eacfeed692a2d17cf947ccc7bdf2049649c546e5ddda75ebd614",
+    "bytes": 44393
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--naive--x.gif",
+    "sha256": "65144b7cc6f1daefebf0241b344cf06f10da250ada6525fccb9731e87547698a",
+    "bytes": 14820
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163-effects.pdf",
+    "sha256": "26504a4268a711bbe976dd382dd4b32640c09be8d01d55ce43a8cf06260fbb5b",
+    "bytes": 25111
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163-effects.png",
+    "sha256": "314481b727de2af64471e2ac62b31fe8928ba53ce0fcc95369f1f4ef5e31542f",
+    "bytes": 153587
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163-effects.svg",
+    "sha256": "96276946aa97db426f40bc0578e3cd4d42dd4c4aeffbcd8d8ec5825ce8f63205",
+    "bytes": 100603
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163-process.pdf",
+    "sha256": "3c8ba2122f53469b8e01e2567ad295f362b5fbed2d8d787e14916c0d8bdd3252",
+    "bytes": 34008
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163-process.png",
+    "sha256": "f08c6a0c3dc0077b558985aba8bb85723825b62562e868833becb23f588668ae",
+    "bytes": 205300
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163-process.svg",
+    "sha256": "848f02453066da3b9d40cb7e30326f854de259bc68ee821e022d2f8fa4a317eb",
+    "bytes": 203141
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--experienced--acquisition-atlas.pdf",
+    "sha256": "eb2654c93d925d4b4cddbfed6e566fdf286cb8234630c596901b3ae67c456d35",
+    "bytes": 80297
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--experienced--acquisition-atlas.png",
+    "sha256": "19483b108fa9d1d6e585f809ca2bf1b0503e5b7592127aa90603364b8dbce0c8",
+    "bytes": 97951
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--experienced--acquisition-atlas.svg",
+    "sha256": "21e1621da2658d9a7779edcd54049ff7d20b1191489bd766759d0ee6e5db164b",
+    "bytes": 143259
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--experienced--acquisition-frames.npz",
+    "sha256": "fdd95d249685a7835f1aca04d0437280a16a3ad8e49303b3b9db86e37710a517",
+    "bytes": 117294
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--experienced--acquisition.gif",
+    "sha256": "bb9a39f4fd7d69640d56b519169fb49e5f16187a7878d79571e63aa6e88ad30d",
+    "bytes": 50775
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--experienced--none-atlas.pdf",
+    "sha256": "7dedb3cf1ee4bb1faa6f415078efb3bc3fc5084b859cb43093afa9e15f8ee038",
+    "bytes": 173640
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--experienced--none-atlas.png",
+    "sha256": "9c52a720762bbc1013d8b1c6c9033021025968cc0baf5735e4576a39641121a4",
+    "bytes": 222673
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--experienced--none-atlas.svg",
+    "sha256": "4de5b073bb9f1f9c2e02f490946033ba494cf89788e596708c8e23f308374632",
+    "bytes": 300423
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--experienced--none-frames.npz",
+    "sha256": "47a26d9e6eb6e9ae23cf59314936b9b02c1bba5ccfee9714f0f85e8f173d8366",
+    "bytes": 302606
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--experienced--none.gif",
+    "sha256": "f3f05f9a476ff85c1d08fb3cfe9dd13150785fd45fa22ff3fab365dea9363ec8",
+    "bytes": 113146
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--experienced--x-atlas.pdf",
+    "sha256": "fdd4bde79564a01346355ac135be7bf8fa25f9f0597569e6143face199e3b8e1",
+    "bytes": 164480
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--experienced--x-atlas.png",
+    "sha256": "826ebf4e1a3c0409e8f9dae7bbad5f3941cc72e732f7a71042461b05670cf072",
+    "bytes": 212835
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--experienced--x-atlas.svg",
+    "sha256": "f68fb30af0d35d5ff4ccef8194a7bd0d23c61c2676187e7a14c0b654b028416a",
+    "bytes": 287016
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--experienced--x-frames.npz",
+    "sha256": "538af594fc08346374b27705da721cb635b707d4d399f555a4d1f5c97c735381",
+    "bytes": 290721
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--experienced--x.gif",
+    "sha256": "69d43d24e65932c73101e30e480fe6186de0ce7bf5ea01c8eb15ebaab52332cd",
+    "bytes": 108076
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--formation-atlas.pdf",
+    "sha256": "7b2547f60b0a3e70bee2be6874d314f8c8b369e2f8fbc6533fec6a68e96ddeda",
+    "bytes": 156969
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--formation-atlas.png",
+    "sha256": "038374b572204fc04244c275ac9ab53d63030017d9016268017ee142f5400336",
+    "bytes": 230985
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--formation-atlas.svg",
+    "sha256": "9f88e9a51b1814a58b1d0950ffae3c7ed0ee1e7084ad2f6d58d7a330709ee9f2",
+    "bytes": 311019
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--formation-frames.npz",
+    "sha256": "4459a9f0237911720b52723c483f7771502edbba8f9c46c9a12c89a635216e43",
+    "bytes": 176269
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--formation.gif",
+    "sha256": "feb93f0fc86a4454fcff52ec3492a5589c9012bc83f61678e8115ddb3000b313",
+    "bytes": 117495
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--low_cost_T00--acquisition-atlas.pdf",
+    "sha256": "9b731cbc1d02b1a7b6627d0bb91cc71dbdc53daff07b70ab84371c05e55af5c6",
+    "bytes": 81652
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--low_cost_T00--acquisition-atlas.png",
+    "sha256": "a22e8b37efbd55d0722b380623f03dd8343f0c8cb0615420992adfc58f53b4e1",
+    "bytes": 99102
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--low_cost_T00--acquisition-atlas.svg",
+    "sha256": "c106c3a5f581d4e0e8a3d5df0799b43e2ae02c21c4b26862988a619d442db13c",
+    "bytes": 145021
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--low_cost_T00--acquisition-frames.npz",
+    "sha256": "b536b6e5ced17afa18b5403bf31c74f6979b77edf7cbd122eeb73f21a12bfa6f",
+    "bytes": 93871
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--low_cost_T00--acquisition.gif",
+    "sha256": "26a26ccc0376586cafbb7dd731b3e68e46bbbbdfc007dc9a1f5826914bc63eea",
+    "bytes": 50325
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--low_cost_T00--none-atlas.pdf",
+    "sha256": "60b28577b5257998932aad59aead23cfbad6718c93fd0a2910cf783a996aecef",
+    "bytes": 172599
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--low_cost_T00--none-atlas.png",
+    "sha256": "299c93f7d9cd565af3900097e510c8ed7ec72c5f9b2d13d78a3b91fe8e1ce4a9",
+    "bytes": 221875
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--low_cost_T00--none-atlas.svg",
+    "sha256": "7c92fc12117ac3f362a8322573e00eccd550ea51652eebaa127ed4de2d19f5f1",
+    "bytes": 298812
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--low_cost_T00--none-frames.npz",
+    "sha256": "df09a4d18c2f453f774130a1583fb28c04bf0e02a506099b4d3264d1a10b46f6",
+    "bytes": 218220
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--low_cost_T00--none.gif",
+    "sha256": "4effb434fb2cfb95c42ae9e13171713fa1026e5976520b60462a3efcd9c6194c",
+    "bytes": 109152
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--low_cost_T00--x-atlas.pdf",
+    "sha256": "b994814fae6f6370304fdeb28895a7098497023378bf6bd3b16e646e99acde76",
+    "bytes": 164067
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--low_cost_T00--x-atlas.png",
+    "sha256": "01b40d65ad90824d2929f3d84f56dc12fe2317ad7727239c880156f6e3c6d014",
+    "bytes": 212622
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--low_cost_T00--x-atlas.svg",
+    "sha256": "a950d17edc462c162504f713520715589f4b85c26c284fbfb5954d79f9c7b573",
+    "bytes": 286156
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--low_cost_T00--x-frames.npz",
+    "sha256": "092c733eb1aa1b237df5efae5d8cef98bf1d8158be28d3d2a917133a0d3a9069",
+    "bytes": 271402
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--low_cost_T00--x.gif",
+    "sha256": "09a13e4232e6fcd7b80ed249acb0dcbded14dc59b43140026168ef773a1a2122",
+    "bytes": 107458
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--naive--acquisition-atlas.pdf",
+    "sha256": "32cf154288afd4f4d5fa7fa2c9d1ee13c5fa501f004b52ac6a67d31c7692513d",
+    "bytes": 81769
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--naive--acquisition-atlas.png",
+    "sha256": "54fa3e2edb61ebe2dec5c49667d9ccb1424859ec1a0e9215c192e0f959202f94",
+    "bytes": 99117
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--naive--acquisition-atlas.svg",
+    "sha256": "ab31cbc72ba342ed20368bb8601b9cd1d16ec0e3d33e1512aea53ef131a7e3bc",
+    "bytes": 144855
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--naive--acquisition-frames.npz",
+    "sha256": "207d0985e02848c27440995306f6be5a6954f7aadaa563c1cb2055103ef391dc",
+    "bytes": 96891
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--naive--acquisition.gif",
+    "sha256": "2df0c3b66ec1ae2c9b7e02d1e110ea940150177b96db2f7bda65abb0f7af6885",
+    "bytes": 49801
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--naive--none-atlas.pdf",
+    "sha256": "c988cd56d126172ee3d0408175d3e2e7d965d84ce33d551695a2e6dade0cae01",
+    "bytes": 178711
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--naive--none-atlas.png",
+    "sha256": "e29cf8109ad92759334b1c7d7285f8cb55ebe0fdd924aeab566e80f77ada3e27",
+    "bytes": 227487
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--naive--none-atlas.svg",
+    "sha256": "a3697bf2fab2a3dd4050917cc2596191ae34429a3990748a6f42492edd4190c2",
+    "bytes": 307150
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--naive--none-frames.npz",
+    "sha256": "b4af52b53dcc0546aa59374848fe4dec6e83b30ff8da6f2b704234b864bc17b8",
+    "bytes": 236280
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--naive--none.gif",
+    "sha256": "aa6f3101d8719c7b194e67f19655e72629e4ed544e311aca5a24dd45bd485349",
+    "bytes": 111127
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--naive--x-atlas.pdf",
+    "sha256": "348c44e0b05383f53eafeeee385b06186822ca5de28c4f1187fff4798cf40588",
+    "bytes": 168394
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--naive--x-atlas.png",
+    "sha256": "4588784c04a33442ff62bec7b07b40fdd8310b463a8159476b47bbfbc57b9fc2",
+    "bytes": 215358
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--naive--x-atlas.svg",
+    "sha256": "5e60a85e26e2cfb8878111a5a28408ce6104fe8dd9910ac9788d128982e412d4",
+    "bytes": 292226
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--naive--x-frames.npz",
+    "sha256": "11c9334a6c807bc1b0c946e8d6ec305fc50e6c1a9cbbca48535fd08a5662396b",
+    "bytes": 294035
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--naive--x.gif",
+    "sha256": "de642aff58407c801e92c2cae13c6f17df869835ef1b0f5f8ffe9523015eb0e3",
+    "bytes": 109327
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a-effects.pdf",
+    "sha256": "a7252e0df25c67cff0c160335a50bffdcccb896a5008c001c9d80eb22f461bf2",
+    "bytes": 25667
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a-effects.png",
+    "sha256": "9bbf60aa0de3af49a5d5ce6983bfc933075186bf17740f01b228eaf129d03937",
+    "bytes": 156772
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a-effects.svg",
+    "sha256": "6dda9a3c008b36f4941074fd93740147a4120fcdb6109294ee9c024d699efba1",
+    "bytes": 97355
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a-parent-effects.pdf",
+    "sha256": "256580414376c46db3d2b4420e1dddd584a25c85f4763787c9fd62ed5cf53b8a",
+    "bytes": 31518
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a-parent-effects.png",
+    "sha256": "9473a8f29c4895a4bb2cdd9f3ee9351c93716e5941977f17c7c100c0c365858f",
+    "bytes": 212530
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a-parent-effects.svg",
+    "sha256": "ba3151a51652f9ce86a364ebeb264d0ac05c94e5d56b6698570a8f61ee5c7b49",
+    "bytes": 125174
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a-process.pdf",
+    "sha256": "1dd0ddd569a3c9b217a7d423daf7b6172f83c2eba9ba7c723ecfd789eeb97adc",
+    "bytes": 36776
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a-process.png",
+    "sha256": "68a9c1994f161929eac4cc09aecf0d91df156d7646deb8550c1fd9df7f101073",
+    "bytes": 233469
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a-process.svg",
+    "sha256": "dec014f4c4b280b29dd7e1c927937e8976ada6a3b6f782649313652139ddb16b",
+    "bytes": 205033
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--experienced--acquisition-atlas.pdf",
+    "sha256": "18794311de76db86c14e03e1644638958c2cde5d989e0fbb6de5758aaf79586d",
+    "bytes": 104364
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--experienced--acquisition-atlas.png",
+    "sha256": "24c2fa14495bbb39c7da3b5e302033fdabbccb995009dca36221d3be1c6dc4e9",
+    "bytes": 124631
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--experienced--acquisition-atlas.svg",
+    "sha256": "fdc8949224e9f656a46e6cb2f57bdcb4ef0fe20dcb66242176ffd50fad92b7e3",
+    "bytes": 178325
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--experienced--acquisition-frames.npz",
+    "sha256": "6c7b14c1a59fe7c0831d717d2052650e37921f9814a228d9d9662f1b829db789",
+    "bytes": 183354
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--experienced--acquisition.gif",
+    "sha256": "a46a5c61483ea388584b140233057961fafbcd552ce2dd685a7d48ecbec98047",
+    "bytes": 67415
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--experienced--none-atlas.pdf",
+    "sha256": "64970c09144eeb3eea9cf73f9d98c53a3240a1402b30113971fd916c6808f1ba",
+    "bytes": 225269
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--experienced--none-atlas.png",
+    "sha256": "1a146f1a6ecfd251239d1c3ed9b88e3c1f009cf67a111e790c49b9712320cbd9",
+    "bytes": 283467
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--experienced--none-atlas.svg",
+    "sha256": "854173992f5d9611e4ea3f23ab71ef41b00ce8152134742a1de17b47dd3d1ef8",
+    "bytes": 378469
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--experienced--none-frames.npz",
+    "sha256": "3f47cbc88c7ad5d50420bfbb537d0a72f2c2e3df5cf2f418f0c31c322f85c44f",
+    "bytes": 472757
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--experienced--none.gif",
+    "sha256": "bc4a2f59b7b2ee522d3d4e5951c52b4f8a4b9cb73cccbe51407638edbc177c5c",
+    "bytes": 144155
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--experienced--x-atlas.pdf",
+    "sha256": "81cbd9b449f406a5783ad5df9d72c59c95adce538809e57fda655588d43ce925",
+    "bytes": 187332
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--experienced--x-atlas.png",
+    "sha256": "a18e05bf00421fba21ebb124c9fd60314eb9a2541dea1664e46802e8d1e8e8ec",
+    "bytes": 240312
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--experienced--x-atlas.svg",
+    "sha256": "8cc585a4c626e9c9c9545a8b91192cbe4d32aedaa12836d4c4962741ec3a3dd1",
+    "bytes": 322953
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--experienced--x-frames.npz",
+    "sha256": "9dd541ed0002c3beeaceb0865c45fb1f915472e21fe75338b8f532a34a1813c0",
+    "bytes": 395944
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--experienced--x.gif",
+    "sha256": "2997691bb38c7015342b52155716d8e5237f2fc1dd3b166f73a3d8c29af67869",
+    "bytes": 119279
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--formation-atlas.pdf",
+    "sha256": "0f2abf8832d33ab20901e209a2b659f6bce26416dc884347b181f4fa8292dacc",
+    "bytes": 193178
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--formation-atlas.png",
+    "sha256": "f928fa60fe34474c435bfa84ad23ad694382d8aee592d8072ac53b54e28f0083",
+    "bytes": 273912
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--formation-atlas.svg",
+    "sha256": "9c88b5a658aba2a2a6dc18992b4cc540ce212e53b68bfe81b66a6b87224a23ef",
+    "bytes": 365215
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--formation-frames.npz",
+    "sha256": "2ae8d8dd29dc24839f3f9b680be286b8f64ac17829b6a65884b93ce58bfe06d1",
+    "bytes": 241890
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--formation.gif",
+    "sha256": "15d29cf14e384728f02c5ad466f41ca17fb75b4233228873a39ebe840ac2868b",
+    "bytes": 142197
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--low_cost_T00--acquisition-atlas.pdf",
+    "sha256": "fe6c638b310d942b7ba56fdb5fc2dadbb9c462d12059c4e593989f76e5e82aee",
+    "bytes": 108562
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--low_cost_T00--acquisition-atlas.png",
+    "sha256": "69767874528300583c57b5b89f5fa5c975c796f19f3eb3296fa542bfe80af6a4",
+    "bytes": 127671
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--low_cost_T00--acquisition-atlas.svg",
+    "sha256": "c230f30c507db95ac11a3007e30a43a5aa5be4857d48a9d6e13587d3ef6aca3a",
+    "bytes": 184120
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--low_cost_T00--acquisition-frames.npz",
+    "sha256": "5f8bcc2e8655208ade20a62f38555129d19af8e664e3453e5a0098ab9eb9b3d4",
+    "bytes": 150663
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--low_cost_T00--acquisition.gif",
+    "sha256": "901370f74ac7f839dc4b06323add34f3ec588e3ab558b8c01c02cd7afc14cd25",
+    "bytes": 68435
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--low_cost_T00--none-atlas.pdf",
+    "sha256": "f2c0b6834c4974d43bf1bca4e48fd0aad4e1de44a3568f294dd0f8d228e3a358",
+    "bytes": 243157
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--low_cost_T00--none-atlas.png",
+    "sha256": "faaf2d0347e54525db7456bd7ea8fdc5bc5ce5eff223fea84f55c897f44071ba",
+    "bytes": 302214
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--low_cost_T00--none-atlas.svg",
+    "sha256": "31b0fc6f79c57f82505c7cbfddb65accbf26c6251de65aee71a8401ff2b1b94d",
+    "bytes": 404661
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--low_cost_T00--none-frames.npz",
+    "sha256": "21ecfe160a931c99d68b3e5edb5543e9c3927cafc1664920ccc4dfe6685e1b3d",
+    "bytes": 369652
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--low_cost_T00--none.gif",
+    "sha256": "72be8cd7a0ab6be062cf740de9ab6a0151821f297b7734b68eeef8dc6f6185aa",
+    "bytes": 151558
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--low_cost_T00--x-atlas.pdf",
+    "sha256": "5a68c1e16a9c5832210448add8518c92cd2fb06a29994a23ff13775e97e49e06",
+    "bytes": 208984
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--low_cost_T00--x-atlas.png",
+    "sha256": "d620e189f8e6c31337eb1e40606b289c24ed6b3d18fb23b3a62b57865ce674c3",
+    "bytes": 262363
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--low_cost_T00--x-atlas.svg",
+    "sha256": "ac8a1d717533612548910f6d89143416672538f1841f5b72c49bf07dc3034b5f",
+    "bytes": 354556
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--low_cost_T00--x-frames.npz",
+    "sha256": "d6d8b11c75ff1b1f3ce5ca476269ec6bb077b24a5f1fd31e59b0dd868452e64d",
+    "bytes": 414060
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--low_cost_T00--x.gif",
+    "sha256": "bee8eda9f50f4cf24dd85cfdb6e1591fa979d9c6d02f8312297fe6c7368c5330",
+    "bytes": 134103
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--naive--acquisition-atlas.pdf",
+    "sha256": "3504efe1b8b5cf72a12c020040e032ef3aa1fa73711400ebc828181c02507e0f",
+    "bytes": 108840
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--naive--acquisition-atlas.png",
+    "sha256": "a4445027cbba228977ba6f52c61a20e80616769926da6199b426a2b16f768e5d",
+    "bytes": 128216
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--naive--acquisition-atlas.svg",
+    "sha256": "0e7128460d176c25fa240fd7ead96e5fb3732d2cd76dacf6eaa50f66262433c7",
+    "bytes": 183989
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--naive--acquisition-frames.npz",
+    "sha256": "7cac65fd934d523a38b85f591239a8f8765ebe10c2149ad5bbece6a55346e242",
+    "bytes": 154490
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--naive--acquisition.gif",
+    "sha256": "1e8a1dcf8524ccd708deef4b571354799493854e35219f811da74b328c269d81",
+    "bytes": 68585
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--naive--none-atlas.pdf",
+    "sha256": "ecac12a5574e00a5bf293ed7ee6b84ba6d2eebba847e78625c73b46ece00c616",
+    "bytes": 248882
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--naive--none-atlas.png",
+    "sha256": "e8c499d6da0be4b91505010ff8bc2e0cee77be07850715ecf75462b6118e1304",
+    "bytes": 307308
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--naive--none-atlas.svg",
+    "sha256": "ec8bdd7d9e5943fa8e834de4d60e0bd7c8915500a122a71637453b11acb4a959",
+    "bytes": 412321
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--naive--none-frames.npz",
+    "sha256": "24533af29ffa306f35ba55c93f95f227a79499845484b3bd1abffd9a2a57dc1a",
+    "bytes": 430462
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--naive--none.gif",
+    "sha256": "44e726d8a1c976ad71414f330e9640dc765d676ad63a5e113dcb7edf16d4fb37",
+    "bytes": 150884
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--naive--x-atlas.pdf",
+    "sha256": "56b8009cab204c54ef210eaafa8f8429e4ade02eac45307b771c2d12dd637bff",
+    "bytes": 214425
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--naive--x-atlas.png",
+    "sha256": "b1b7534493da860abec7a356be18688d2fea8af544292ea7485ddd32ef552e08",
+    "bytes": 270323
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--naive--x-atlas.svg",
+    "sha256": "c9f0e02bf41afe3f42a0819946bab477992bad0f6b9753185154bfb6cd0b3048",
+    "bytes": 362228
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--naive--x-frames.npz",
+    "sha256": "f2797d70fe5bb006418af7555fbba91731d9b54a1a6e90cf53bde7f18cc2b5cd",
+    "bytes": 440776
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--naive--x.gif",
+    "sha256": "264c30f335b73e2dd9480a24aa58c8e7cc29adf19ab80dc266ef0ff63a7eb6ed",
+    "bytes": 134965
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d-effects.pdf",
+    "sha256": "f5e8fbb9685ec0e1a2fb035a8816d1120429ee8117d78b1f3403c1f272628f53",
+    "bytes": 25664
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d-effects.png",
+    "sha256": "90380c28a91bab05c0f7f96d70aa1773faf2f72d3bf981e0423f476c4ae9e5bd",
+    "bytes": 159274
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d-effects.svg",
+    "sha256": "9861e25b6a3e15887f78b9524020f988bd13f4f6696a3886592e1f9d40f019d5",
+    "bytes": 98618
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d-process.pdf",
+    "sha256": "9fc4acafe99f5e648ed0666d4ffc7c1691c529461eb8e11af909fcd36caaeef2",
+    "bytes": 35716
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d-process.png",
+    "sha256": "baa0e5e15dc25f723cdb2ad7afcb7bd5284793043dda13c94377d4846348e347",
+    "bytes": 225653
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d-process.svg",
+    "sha256": "80754a5a5d9f9dc2d62fed3f5a5250b698b1719de91606f072529ab0bc63c200",
+    "bytes": 200430
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/outcomes.csv",
+    "sha256": "f8c7717f22ecd3545851992444f912eda86a699eb5053416e397ea9fa975d12e",
+    "bytes": 35901
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/outcomes.json",
+    "sha256": "d29068021298498fa465fc95e413ecc24d1bd7cdbf594e9d8d55a083034bcdc8",
+    "bytes": 98443
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/paper_insert.tex",
+    "sha256": "16baa9ea4a3ff57f7a5c326be1cd2c9bb7c467b23ac6aa4cffeef551163d8215",
+    "bytes": 6379
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/per_step.csv",
+    "sha256": "f414a8094396e3850b89ada21c8f76236f6c75782f0d86e945c73f1dbc3fab59",
+    "bytes": 2595859
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/plan.json",
+    "sha256": "f2b2ae1bc697b6be227264f4956d956731690b9acf0ec05495c23e4b044a72d4",
+    "bytes": 53192
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/projection.json",
+    "sha256": "207310861c2a0b5419a411b804c0d2b374e8cc291041d1d6fe170af027a68a0d",
+    "bytes": 352560
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/pulses.csv",
+    "sha256": "cf1819715e1f9987553a5f7e0df8c2bc8357158aa9c92ed12aa84ca36c9919bc",
+    "bytes": 18388
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/pulses.json",
+    "sha256": "11211cd427a4850c1d711e09c9f2d3ce01f5c0cd763f20e23e211a56b7b52b4e",
+    "bytes": 29582
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/raw_manifest.json",
+    "sha256": "7703e447833e3b8ed0c1cc45c8590b46d9ef4bd1328dcf5a1ced7ba58d0664e9",
+    "bytes": 852016
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/ready_recovery.json",
+    "sha256": "d4e35dd8769fbceffb3ccfbe234b7a0f4df1e707fc76985fdc54c631d64f5b6c",
+    "bytes": 17515
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/experience_adaptation_host/__init__.py",
+    "sha256": "9176fe49af7d8cd4daf408325b5a49a6223e500b59f65c586618ae4abac95736",
+    "bytes": 222
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/experience_adaptation_host/check_interface.py",
+    "sha256": "9e470a03eb8d9df43f20d16f5593393b06b99b47f84f8f5589bc833a1adbe69a",
+    "bytes": 9976
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/experience_adaptation_host/interface.py",
+    "sha256": "b4ae75ca53bacb912a418d3e9fa4bcdc96cda17e5f6ff20cc96d5da83c1cb7bc",
+    "bytes": 8241
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/experience_adaptation_outer_search_native/__init__.py",
+    "sha256": "e683e8a79313f8fe624366688c709dfdd0726fc9f91091aa633adc2fcebc6f93",
+    "bytes": 79
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/experience_adaptation_outer_search_native/binding.py",
+    "sha256": "3e029b65bf401d6b1b2d64f732772f1cda6f0bc6389d465ca163b57f25f27082",
+    "bytes": 2734
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/experience_adaptation_outer_search_native/common.py",
+    "sha256": "559d0f4dc089450d8acac2af99f4337aaa0fcd0609543001f81d1764a36425f1",
+    "bytes": 523
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/experience_adaptation_outer_search_native/prepare.py",
+    "sha256": "de6febb2feb48d7806c68b1b0e80a5352d1882f9f0eba49e3d0e3bd252e3ac31",
+    "bytes": 7602
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/experience_adaptation_outer_search_native/run.py",
+    "sha256": "4c809d2c366095bbc6b8b86e0fdedf921e4c609290e3283f1e8744c656faaed3",
+    "bytes": 5511
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/experience_adaptation_outer_search_native/submit.py",
+    "sha256": "159b29cd7c0c385db5f32dc795ae5042302a2229c5d499c113974b8a6587a52c",
+    "bytes": 1019
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/prepare_regenerative_pilot.py",
+    "sha256": "f07e03d196cd28366064d6ec9591b1128d0f83a75e762e956be3b312b733c2de",
+    "bytes": 4764
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_action_capability/__init__.py",
+    "sha256": "085cfdf3682cf112fd03129e6366c4f26a8b261ef0c83b0da5002580a0599fb3",
+    "bytes": 84
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_action_capability/check_policy.py",
+    "sha256": "3c047f47aa94719511a176563b90e05a577cb50a3f1b849a0ceaf2fed61c3e3e",
+    "bytes": 2184
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_action_capability/policy.py",
+    "sha256": "de581bd0ef63548883dbf7d08e6139bd3b11a31e6d4e07b1695829a0b8d2d840",
+    "bytes": 2747
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_action_capability/prepare.py",
+    "sha256": "8dffc115a6236f39bf8a693a8bdcf5e022cd7455a50ee017ff7a21f9075ee249",
+    "bytes": 3917
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_action_capability/run.py",
+    "sha256": "9a59900b20a0cb920d5cf9f2e6ceba57d9e577af4d72a753eea5755ddab67194",
+    "bytes": 4583
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_actor/__init__.py",
+    "sha256": "b9438b684a84e8b7868c892b912a638023c8afa18ad426135b0a4c5dc6369b66",
+    "bytes": 154
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_actor/check_algebra.py",
+    "sha256": "b6566787ca6f7b245603533bb92a86179d69c0c276a70bbfce1f7418482c22ee",
+    "bytes": 5470
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_actor/check_interface.py",
+    "sha256": "c7b48b4117afc793a01e091bdcc53d922e1b69fca75a74788248552649e80915",
+    "bytes": 2545
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_actor/conversion.py",
+    "sha256": "d2b73ccf44d6720e01e2166c055f9a427406dc483b21746476b9f8cc5f95189a",
+    "bytes": 2821
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_actor/model.py",
+    "sha256": "3941450e97d2311f833d1c9c8964f348218467d4cd8d41a68b6584b72b24b5b0",
+    "bytes": 8610
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_actor/prepare.py",
+    "sha256": "dfeac30fd839c0fda9e88398b4ed4446bc332b2be54c4d7287e7c6ad84317620",
+    "bytes": 8045
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_actor/runner.py",
+    "sha256": "4d48a7a9fe11bda60fcf743753a733ef0e574feabb5f0e2192c9b3bb4e7f419d",
+    "bytes": 6011
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_conditioning_transfer/__init__.py",
+    "sha256": "8cbfc59f3cfd00b503143d77b8c7234d040d23e4cb08a46e3eed37e68e231848",
+    "bytes": 80
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_conditioning_transfer/common.py",
+    "sha256": "9eb7c168c3c2ae83f0ac9e1e2302dfb260614c0f83f1c6b51d9f140dd884fca7",
+    "bytes": 552
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_conditioning_transfer/prepare.py",
+    "sha256": "e2d18d458b7c1da6a88162a4e512fa74658f9b13818771ac5916236c423ad7ec",
+    "bytes": 8447
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_conditioning_transfer/pulse.py",
+    "sha256": "ec772c3d5e0983d0f5d0c443e7d45384573ef344459ac530e6e88a01fadc07d0",
+    "bytes": 3304
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_conditioning_transfer/run.py",
+    "sha256": "ea2b68e749a4f938b6157da1fb7064bea27d3d5237217e05190e2a58802ec980",
+    "bytes": 5449
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_conditioning_transfer/submit.py",
+    "sha256": "19e536e16de56b367ddab782c17973fd6f4f77a2f5f1367d9e5ee47ba0d221eb",
+    "bytes": 715
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_domain_embedding/__init__.py",
+    "sha256": "729b06624194a9f116124ec689bc8b12312b792e94f2307cb0ed4b964273a9ce",
+    "bytes": 69
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_domain_embedding/common.py",
+    "sha256": "b301e92fc3a708b1a01222303edc8cd7994576091f3339ef015236baa1c628ce",
+    "bytes": 1130
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_domain_embedding/prepare.py",
+    "sha256": "2b780debc0db0957fd77215768f77809edb351b80c1778dcccdc84f4c5407f01",
+    "bytes": 7372
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_domain_embedding/run.py",
+    "sha256": "5b1755a6ad57e1b5b8f22f12691d4c6fcc0a98e0a0653a1997059b3f55d356be",
+    "bytes": 4644
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_domain_embedding/submit.py",
+    "sha256": "e62433a5e33acce2d170bee6d1a2986e02f05e39179d40bd5423caf1c5589e0a",
+    "bytes": 835
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_excision_transfer/excision.py",
+    "sha256": "481ebca7dae34082675a0bdf0ada9984583d1ef980113f5e6a58cc53e72e1c01",
+    "bytes": 3283
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_fuel_allocation/__init__.py",
+    "sha256": "6e4ff249f6e6e46946a3c077a54b8245d720e1fafdd0fdaa3e5afff90588911c",
+    "bytes": 379
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_fuel_allocation/adapter.py",
+    "sha256": "34dadde16dd27757d9d439fcfa47169114b808ec6e632f62fdc32a837f7923b7",
+    "bytes": 5351
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_fuel_allocation/allocation.py",
+    "sha256": "8ae962b37eb07a65867d7d2ce0139caab969a17c688a93a32a5aab0f52d75d81",
+    "bytes": 4872
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_fuel_allocation/check_cap0.py",
+    "sha256": "61e2be882d6bf29d414146b03e587d502346972d1763b2eef9261c42d0c32d8b",
+    "bytes": 14378
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_fuel_allocation/package.py",
+    "sha256": "efbbec1b17cc13c1767a94b5fa6c8acf2492aba160ed949cd514ee93754c9824",
+    "bytes": 5781
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_fuel_allocation/runtime.py",
+    "sha256": "122b0ead498e0b78854aad48927784a1f65a635672043efb1a7ee36658b735b6",
+    "bytes": 3135
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_fuel_allocation_native/__init__.py",
+    "sha256": "b6a52497b223661424d1b96b6d64add0bf655e119521cf7239baa2a1f9fcbd8a",
+    "bytes": 54
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_fuel_allocation_native/adapter.py",
+    "sha256": "e2667470c9a268bd3c4897dc8d7f666590cbd5d4f61062ec7e5b86c84750927f",
+    "bytes": 6183
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_fuel_allocation_native/check.py",
+    "sha256": "1c60bfac8ce7979dd1d23c1bfb65cfa1038cba1da706f016dcc04380042d022a",
+    "bytes": 4845
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_fuel_allocation_native/prepare.py",
+    "sha256": "3542bed95b2e4057abfa403a5da65e2d6352a2238956252ed87aa03b463208f4",
+    "bytes": 4294
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_fuel_allocation_native/run.py",
+    "sha256": "a54bf2b10615567d348cb65e3512408972ca02d0829d7546d6d425bd92143810",
+    "bytes": 4836
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_fuel_allocation_native/runtime.py",
+    "sha256": "f8b1196735277fa02cfc2b9ce1b6f292136a265ea726df790028a651ff2e6d0b",
+    "bytes": 2047
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_homeostatic_allocation/__init__.py",
+    "sha256": "ab1c5b1fac15aed084205e336fd7c78e14c7199150a3a8cd789d9ac474f25049",
+    "bytes": 76
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_homeostatic_allocation/checks.py",
+    "sha256": "828eaa10993ec261ededc819d54923db18fe6482e01ebbb10be4cb381636223f",
+    "bytes": 6352
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_homeostatic_allocation/common.py",
+    "sha256": "ccdcd73fe0860f189d6ded29c94ce39c190ef85ecc763695ba220f4d5de08356",
+    "bytes": 463
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_homeostatic_allocation/policy.py",
+    "sha256": "bee98b8d30e65e9fe1fdc8e0a6483d7594c620fb7b94a587ae69a2485c49672f",
+    "bytes": 586
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_homeostatic_allocation/prepare.py",
+    "sha256": "316a19478fece768dbe74beaf6fd491468ae2255aa56b8715f32c8f51479712e",
+    "bytes": 3200
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_homeostatic_allocation/run.py",
+    "sha256": "ed63e56206b664a531d1f866ad36fa871e92d3757d802f0077b54c0c156d0b16",
+    "bytes": 4256
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_homeostatic_allocation/runtime.py",
+    "sha256": "c464049636d5dd3d6885bd24669baa77356f6ae1e2bd2caf29f01dcda86f7b93",
+    "bytes": 5102
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_homeostatic_allocation/submit.py",
+    "sha256": "b76c83a4f77b80b3264693850af36a1a79273231d0e7b940947469795c07e920",
+    "bytes": 734
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_joint_resource_transport/__init__.py",
+    "sha256": "ccdcfe8ddcb025f044f6d72b121aabc7858551b4736dd4e4db36c7fd7056f9b3",
+    "bytes": 79
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_joint_resource_transport/checks.py",
+    "sha256": "dd9f839b4d046a605b2017c8634eb1aeb8fbb8fabf5b295632814ab2509ec1fb",
+    "bytes": 7851
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_joint_resource_transport/common.py",
+    "sha256": "1eff162e931e9a4c1ba580ae5820c74355733913ab39bf2ea72559bf8b7b9b96",
+    "bytes": 714
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_joint_resource_transport/prepare.py",
+    "sha256": "60c42182075a0443f17170612ec84f3877d690f863e62fffa4f5ed8bbf387798",
+    "bytes": 3137
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_joint_resource_transport/run.py",
+    "sha256": "c378b648a58338111cb15fe48546fcef00fe830fc9407b229dbe2d1b3a050e6c",
+    "bytes": 4332
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_joint_resource_transport/runtime.py",
+    "sha256": "afe0c82fdd06265566fcd1fd614146bcfeacfa980c516e101a651731911f6f9a",
+    "bytes": 4092
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_joint_resource_transport/submit.py",
+    "sha256": "1869f8768de509f6077ac52d927eac0195c93a068b071912da78eca65c573b9c",
+    "bytes": 731
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_joint_resource_transport/transport.py",
+    "sha256": "19cf10d64d52fad045d4b373ba6d8205b338b520e1ef60bcab6a90463031a6d6",
+    "bytes": 3489
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_local_fuel_transport/__init__.py",
+    "sha256": "403b134646c8b20111cf5c48fce7bb4057ee02d0892ccb119777dd5ef84d1376",
+    "bytes": 83
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_local_fuel_transport/check.py",
+    "sha256": "b889b63a5d132606142d2ca0270d60b906a527ae1d4607c43abde832c6f79e76",
+    "bytes": 7932
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_local_fuel_transport/prepare.py",
+    "sha256": "522b6c58fa1ecfc479660b236106aef6711792d9c354a34ee4ad275d30372012",
+    "bytes": 4290
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_local_fuel_transport/run.py",
+    "sha256": "f715c1c45ca1de792324767c8e937227cfd50fb0722402f9932f97a768517d8f",
+    "bytes": 4812
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_local_fuel_transport/runtime.py",
+    "sha256": "c05e5ca199fc29085f74b97a832f52c99d729f4281b82c105b27699ef4a74d7a",
+    "bytes": 5697
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_local_fuel_transport/submit.py",
+    "sha256": "0212ceeb52d5e3a808e4eb0172de433a08cee43adc2402018cd1d154c099001c",
+    "bytes": 963
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_local_fuel_transport/transport.py",
+    "sha256": "67c16127790b782f6b4cab6d45b27cba36408fb0f0a87cf3bad8305179714d6b",
+    "bytes": 3484
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_morphology_transport_search/__init__.py",
+    "sha256": "0701540667e63bf983b2ba70b7a6c4a5be84af681f0c95811d7f2fc6b5bc23ba",
+    "bytes": 83
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_morphology_transport_search/common.py",
+    "sha256": "02602cc25a29ba9c67c4f956158dee0148869d6d23660acfdf59a73db40f6b6f",
+    "bytes": 1390
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_morphology_transport_search/observe.py",
+    "sha256": "e49c3e65b1c590b9120652702196136081f67eb3887795da5757683762200e4c",
+    "bytes": 17196
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_morphology_transport_search/prepare.py",
+    "sha256": "3be4e99241bf79b0edce71bab2a083270a768d4cc7a57b321c852f51423c3a51",
+    "bytes": 8675
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_morphology_transport_search/run.py",
+    "sha256": "30e41997888e4110c161a3dbf78816b7aebcae2d8bda210bcbf3725eb61888c9",
+    "bytes": 5105
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_morphology_transport_search/select.py",
+    "sha256": "4cff1fe82f2cf4fbe34faa3dbb8baacb3421c7a627418ce42a9f31a975dced1e",
+    "bytes": 7719
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_morphology_transport_search/submit.py",
+    "sha256": "10d5bd2c16c07cb10e7d82ce01ef559d5079b070487b6db10bb1a65ba0e66820",
+    "bytes": 1043
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_reciprocal_conditioning/__init__.py",
+    "sha256": "4aa6423e6254e5ec6a742ed6e7609307fd05c68fcd5a6302374a1b2b317d5a56",
+    "bytes": 77
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_reciprocal_conditioning/common.py",
+    "sha256": "095cac418fdab71a5d9ebd287959a4074b268593ca70ef0e6652199142d8e738",
+    "bytes": 434
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_reciprocal_conditioning/prepare.py",
+    "sha256": "76082570e36d19d5f0f6b0fe7204f377baa029fdaaddacbfa5573b2775f0b2ae",
+    "bytes": 6353
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_reciprocal_conditioning/run.py",
+    "sha256": "44f0139ba0d1675708c942cd14c2b4bcdb0b01ed83ff36de48618adc5c3aa546",
+    "bytes": 5649
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_reciprocal_conditioning/submit.py",
+    "sha256": "5f2380a6860520eef57e9170fce486cf78976a63b0aef27ec9962209583e99f6",
+    "bytes": 719
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_reserve_morphology_transfer/__init__.py",
+    "sha256": "7b374adb2924a398824c1e23382408788a10a7ec66cb2e41c059d70de9df7553",
+    "bytes": 73
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_reserve_morphology_transfer/common.py",
+    "sha256": "e1569199347ddfb8cab71e0965536e479d8fc6078b7e030687fa53f6f586f396",
+    "bytes": 556
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_reserve_morphology_transfer/prepare.py",
+    "sha256": "e97d50f041d27c3cfb0cdb612b4123f25680e98e97b4f6ed8ec5129110e75ab7",
+    "bytes": 6919
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_reserve_morphology_transfer/run.py",
+    "sha256": "157b114a94e953e7e40825f9f2fd7a2a58eef0f4b1a9517001438280e76196a9",
+    "bytes": 4238
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_reserve_morphology_transfer/runtime.py",
+    "sha256": "8626cd0ea0f8e9709a2215c33d6af6fd56ea1934cbf72d4ccc4ffe84b6b67ea5",
+    "bytes": 2930
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_reserve_morphology_transfer/submit.py",
+    "sha256": "d90e631edf8b01f52144391d5e19013d86c0f7688e3b3df2a979e68bcde88fdc",
+    "bytes": 736
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_resource_opportunity/__init__.py",
+    "sha256": "7f71bbfb5062ebbb094b9c8ee5ae961f88decf5569711a9dbae0340685eb711e",
+    "bytes": 78
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_resource_opportunity/check.py",
+    "sha256": "609f6ae67673cf8a7ddd8f7288eb7d471c842c09290eafe1c99c4ffcd05d0556",
+    "bytes": 2823
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_resource_opportunity/packet.py",
+    "sha256": "ec4b3d612c6bf3c98e6c41167259c89c6722e7f4ee0ba89a33832bafaa14c40a",
+    "bytes": 1240
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_resource_opportunity/policy.py",
+    "sha256": "c19a4f72a2b34f3ddd5c5801e2a398f5cf0b444b46f11d758f1f6d16348b5ad0",
+    "bytes": 2743
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_resource_opportunity/prepare.py",
+    "sha256": "be9d2d5cdf006e1a1d4c28eeb7bcd214c30e1145013faba9de7e96d3b8ea450c",
+    "bytes": 4965
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_resource_opportunity/run.py",
+    "sha256": "894506acb8cfc98f9f4a4015dcb8d68c267d342b362c71748bb3e9f9c14677ae",
+    "bytes": 4097
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_supply_factorial/__init__.py",
+    "sha256": "43a9f20450ddd01c2f7664a3e78bdf5b2e500edbe62d833095ce1c806e7e77ce",
+    "bytes": 71
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_supply_factorial/prepare.py",
+    "sha256": "8cd9464d7300506256801d71ced75d806a95578b26d2ab8bdce5e5c64f799345",
+    "bytes": 6608
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_supply_factorial/run.py",
+    "sha256": "35a4daed8abff2dd3af5ee0ffba3a8d65b9dee2c6006ddbb37fe5f32f39341f1",
+    "bytes": 359
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_supply_recovery/__init__.py",
+    "sha256": "59e09546ab763578815e115fa6dd978d84b38f602320bff6197f129af573c509",
+    "bytes": 84
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_supply_recovery/prepare.py",
+    "sha256": "ee68aa1a88c6cc048af667abd98db22130a1abb8ae432ca72562a56c41aab749",
+    "bytes": 6575
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_supply_recovery/run.py",
+    "sha256": "9e4949e0c8c3ee61db303effd20302b97cc491d95cb503100f7d9fec1fda5f66",
+    "bytes": 4571
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_transport_allocation_interaction/__init__.py",
+    "sha256": "0eaaac2944d6f3a000e5a20d78d6f83db0981c037d092cd9e5217db3d50fd2e3",
+    "bytes": 74
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_transport_allocation_interaction/checks.py",
+    "sha256": "e2cffbc49109c43e11ab312bd6444c0ad2a70b26af272341f9236a718c93ac3d",
+    "bytes": 6946
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_transport_allocation_interaction/common.py",
+    "sha256": "79790b162ebabe68b210f5dfb9642fa86f988fda7a91c6542f96ac067652431a",
+    "bytes": 744
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_transport_allocation_interaction/prepare.py",
+    "sha256": "c838bc191d34119c32573e19f1e3666cb4b714ae8994f887d1039cb67c66e864",
+    "bytes": 3272
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_transport_allocation_interaction/run.py",
+    "sha256": "e1ceb67dd95bc1e2bbb441e92b2087eec4247c807c9b2140c8a4a2e1d415e186",
+    "bytes": 4242
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_transport_allocation_interaction/runtime.py",
+    "sha256": "69058e166b723146b0086b5359d111079fb499a5fd9168751f944175a61c0d97",
+    "bytes": 5283
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/environment_evolution/regenerative_transport_allocation_interaction/submit.py",
+    "sha256": "cd550e5bcb84c98cc195b392f3d880ee6b0e4c76f3cc35caa875a9d81982e7d3",
+    "bytes": 754
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/local_learning/adaptive_action_renewal/controller.py",
+    "sha256": "82ce81c7e382119e74ef8f17fe002dfd74d05f8ba87005a6fdaf73b2540bbeb6",
+    "bytes": 3576
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/local_learning/material_transport.py",
+    "sha256": "dd5622a2df6a5d50642a31ad586215d5e30e33929cf8f57ee9efff36fdef08d5",
+    "bytes": 17572
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/local_learning/regenerative_actor_adapter.py",
+    "sha256": "3004fc43d26ce781d8a1945f7f399d238114d623509001855005a6d087b7418e",
+    "bytes": 2131
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/morphology_evolution/dual_kernel.py",
+    "sha256": "529d42e50876a68bce54a512f8a9cafd48a8f68276cf8507a0e2243b3f450d6e",
+    "bytes": 2922
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/runtime/runner.py",
+    "sha256": "bb5f95162e2a99802450e8039ac23a89e35217889cf339c6e8c82f88f96439ae",
+    "bytes": 29637
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/simulation/__init__.py",
+    "sha256": "564809e49203a4dc2f071ada201b8ac8bc142d83583a4ff3b4fa861bdeae79da",
+    "bytes": 389
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/simulation/core.py",
+    "sha256": "0e832298f01c53a5774df1fbd144d40a816529907fcc6ac58ea6dcf9296d4974",
+    "bytes": 2976
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/simulation/data.py",
+    "sha256": "dfcec89a87caecf81836582b4639b01f8ab14edeec154d7f2e769356547805e5",
+    "bytes": 4960
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source/simulation/snapshot.py",
+    "sha256": "e99d3eccee47ded2abe1518e3fb80d2d630a8ff21a2a339ff6723c2878dfc382",
+    "bytes": 6192
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source_archive.json",
+    "sha256": "eecdc474826e7f63437c5a531128a59915eea356b701d38789f48dfb31718949",
+    "bytes": 48740
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source_packets.csv",
+    "sha256": "cc8d5c5e6c17179712980e47274fa589c55dd0af15b1bca6b405e7707cad4f5d",
+    "bytes": 923063
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/storage.json",
+    "sha256": "b1cda2a18e245b8c685d4aeff7140d2889df57337984967583b1b6c1edb91b3b",
+    "bytes": 194
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/submission-control.json",
+    "sha256": "ca4c6a5668b5ded8ebaa79d71d1eac806b9fd8591dcc15c978b84eb220020df8",
+    "bytes": 70
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/submission-slot.json",
+    "sha256": "b7e80396bab2f37f56773c0aa9f86f32ac74c69c2ad33e445fc5c1643472086c",
+    "bytes": 178
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/submission.json",
+    "sha256": "24dd170a46d76a07d60484bc1ac06affae0f4aff23bf8618ec95f1832c9a5493",
+    "bytes": 894
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/visual_readout.json",
+    "sha256": "a6d1260a64b8a8d8454b020ab55d1fdf9a301518959c5d91a7acfe56c9ff73b1",
+    "bytes": 1734
+  }
+]

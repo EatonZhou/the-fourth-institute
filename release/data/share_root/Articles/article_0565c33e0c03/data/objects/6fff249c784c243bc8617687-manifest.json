@@ -1,0 +1,440 @@
+{
+  "source_handoff": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/experience_dependent_development_20261017/handoff.json",
+  "handoff_sha256": "a5bae37fa69f8f7fcbe2a9a586029c21a80ec6a752773830abec780652f75148",
+  "new_model_updates": 0,
+  "assets": [
+    {
+      "file": "rho_128.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9c7f7a56-4e0c-4a30-9bbc-7b8cda7f60f6/unequal_peaks__retain_copy/states.npz",
+      "source_sha256": "f5fb513317c234c39c0ce4f73dbad96f1200165c71cad6c89ac10b4753d32088",
+      "field": "body",
+      "step": 128,
+      "x": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19
+      ],
+      "y": [
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "linear_range": [
+        0,
+        1
+      ],
+      "mask": "body exactly zero is grey",
+      "mass_fraction": 1.0,
+      "full_load": 0.6894327873605051,
+      "full_body": 7.2925307801603525,
+      "max": 0.9239408354052644
+    },
+    {
+      "file": "a_128.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9c7f7a56-4e0c-4a30-9bbc-7b8cda7f60f6/unequal_peaks__retain_copy/states.npz",
+      "source_sha256": "f5fb513317c234c39c0ce4f73dbad96f1200165c71cad6c89ac10b4753d32088",
+      "field": "protection",
+      "step": 128,
+      "x": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19
+      ],
+      "y": [
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "linear_range": [
+        0,
+        1
+      ],
+      "mask": "body exactly zero is grey",
+      "mass_fraction": 1.0,
+      "full_load": 0.6894327873605051,
+      "full_body": 7.2925307801603525,
+      "max": 0.13981883020616268
+    },
+    {
+      "file": "rho_205.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9c7f7a56-4e0c-4a30-9bbc-7b8cda7f60f6/unequal_peaks__retain_copy/states.npz",
+      "source_sha256": "f5fb513317c234c39c0ce4f73dbad96f1200165c71cad6c89ac10b4753d32088",
+      "field": "body",
+      "step": 205,
+      "x": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19
+      ],
+      "y": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "linear_range": [
+        0,
+        1
+      ],
+      "mask": "body exactly zero is grey",
+      "mass_fraction": 1.0000000000000002,
+      "full_load": 0.15928730020697635,
+      "full_body": 6.873189779244155,
+      "max": 0.972629234008014
+    },
+    {
+      "file": "a_205.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9c7f7a56-4e0c-4a30-9bbc-7b8cda7f60f6/unequal_peaks__retain_copy/states.npz",
+      "source_sha256": "f5fb513317c234c39c0ce4f73dbad96f1200165c71cad6c89ac10b4753d32088",
+      "field": "protection",
+      "step": 205,
+      "x": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19
+      ],
+      "y": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "linear_range": [
+        0,
+        1
+      ],
+      "mask": "body exactly zero is grey",
+      "mass_fraction": 1.0000000000000002,
+      "full_load": 0.15928730020697635,
+      "full_body": 6.873189779244155,
+      "max": 0.024352099063789278
+    },
+    {
+      "file": "rho_256.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9c7f7a56-4e0c-4a30-9bbc-7b8cda7f60f6/unequal_peaks__retain_copy/states.npz",
+      "source_sha256": "f5fb513317c234c39c0ce4f73dbad96f1200165c71cad6c89ac10b4753d32088",
+      "field": "body",
+      "step": 256,
+      "x": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19
+      ],
+      "y": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "linear_range": [
+        0,
+        1
+      ],
+      "mask": "body exactly zero is grey",
+      "mass_fraction": 1.0000000000000002,
+      "full_load": 0.06448144861447463,
+      "full_body": 8.0010238635506,
+      "max": 0.972629234008014
+    },
+    {
+      "file": "a_256.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9c7f7a56-4e0c-4a30-9bbc-7b8cda7f60f6/unequal_peaks__retain_copy/states.npz",
+      "source_sha256": "f5fb513317c234c39c0ce4f73dbad96f1200165c71cad6c89ac10b4753d32088",
+      "field": "protection",
+      "step": 256,
+      "x": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19
+      ],
+      "y": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "linear_range": [
+        0,
+        1
+      ],
+      "mask": "body exactly zero is grey",
+      "mass_fraction": 1.0000000000000002,
+      "full_load": 0.06448144861447463,
+      "full_body": 8.0010238635506,
+      "max": 0.010964618866973455
+    },
+    {
+      "file": "rho_384.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9c7f7a56-4e0c-4a30-9bbc-7b8cda7f60f6/unequal_peaks__retain_copy/states.npz",
+      "source_sha256": "f5fb513317c234c39c0ce4f73dbad96f1200165c71cad6c89ac10b4753d32088",
+      "field": "body",
+      "step": 384,
+      "x": [
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26
+      ],
+      "y": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "linear_range": [
+        0,
+        1
+      ],
+      "mask": "body exactly zero is grey",
+      "mass_fraction": 1.0,
+      "full_load": 0.0015790458280351039,
+      "full_body": 7.3365595349882415,
+      "max": 1.0
+    },
+    {
+      "file": "a_384.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9c7f7a56-4e0c-4a30-9bbc-7b8cda7f60f6/unequal_peaks__retain_copy/states.npz",
+      "source_sha256": "f5fb513317c234c39c0ce4f73dbad96f1200165c71cad6c89ac10b4753d32088",
+      "field": "protection",
+      "step": 384,
+      "x": [
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26
+      ],
+      "y": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "linear_range": [
+        0,
+        1
+      ],
+      "mask": "body exactly zero is grey",
+      "mass_fraction": 1.0,
+      "full_load": 0.0015790458280351039,
+      "full_body": 7.3365595349882415,
+      "max": 0.0002602008294040621
+    },
+    {
+      "file": "early_a183.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/34c0b5de-229f-42f8-976c-9188786fc855/unequal_peaks__massed__plastic/states.npz",
+      "field": "protection",
+      "step": 183,
+      "x": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19
+      ],
+      "y": [
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "linear_range": [
+        0,
+        1
+      ],
+      "mask": "body exactly zero is grey"
+    }
+  ],
+  "curves": {
+    "unequal_peaks__retain_copy": {
+      "source": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9c7f7a56-4e0c-4a30-9bbc-7b8cda7f60f6/unequal_peaks__retain_copy/stocks.csv",
+      "sha256": "fe015280ead718b25c0643fca69b96e602318b12e20ae27be856f54b016208d7",
+      "rows": 257
+    },
+    "unequal_peaks__erase": {
+      "source": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9c7f7a56-4e0c-4a30-9bbc-7b8cda7f60f6/unequal_peaks__erase/stocks.csv",
+      "sha256": "d056fd23a51cfb504afe2df685b4f69d9447f64788905f36d23f91445584ca8d",
+      "rows": 257
+    },
+    "unequal_peaks__retain_newborn_zero": {
+      "source": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9c7f7a56-4e0c-4a30-9bbc-7b8cda7f60f6/unequal_peaks__retain_newborn_zero/stocks.csv",
+      "sha256": "ca620d3c7d2b7d815c9fbe03acf985df9fa15cfc85b65e518596762e7d43ab0d",
+      "rows": 257
+    },
+    "developed_ring__retain_copy": {
+      "source": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9c7f7a56-4e0c-4a30-9bbc-7b8cda7f60f6/developed_ring__retain_copy/stocks.csv",
+      "sha256": "6a55e771db6a32b52758afdcf67e3b54bd76e2fafcfd65b25a397ed0616c0c81",
+      "rows": 257
+    },
+    "developed_ring__erase": {
+      "source": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9c7f7a56-4e0c-4a30-9bbc-7b8cda7f60f6/developed_ring__erase/stocks.csv",
+      "sha256": "8fad873fa3a2cdaeda2ce16b851416bfc808b682ca859afaa7c2ac0077264d05",
+      "rows": 257
+    },
+    "developed_ring__retain_newborn_zero": {
+      "source": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9c7f7a56-4e0c-4a30-9bbc-7b8cda7f60f6/developed_ring__retain_newborn_zero/stocks.csv",
+      "sha256": "69c8b04e2cca1887c03fd141bad84ea3a35dda05421f9ecb3b97bd2f8f8e7a9e",
+      "rows": 257
+    },
+    "unequal_peaks__late_erase": {
+      "source": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/c28fb012-fa08-4adb-aeb5-55b19d364217/unequal_peaks__late_erase/stocks.csv",
+      "sha256": "07739c14c869763a17dcdb1a7c5b5fb24237f037138b4d65be40a9e07b2b568d",
+      "rows": 129
+    },
+    "developed_ring__late_erase": {
+      "source": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/c28fb012-fa08-4adb-aeb5-55b19d364217/developed_ring__late_erase/stocks.csv",
+      "sha256": "03bf576f35dbcd209e50e83e8732d30a2925cbb841d26e7706f180e6344b1160",
+      "rows": 129
+    }
+  }
+}

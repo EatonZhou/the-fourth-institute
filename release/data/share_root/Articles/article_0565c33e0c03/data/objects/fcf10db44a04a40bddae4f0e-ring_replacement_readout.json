@@ -1,0 +1,242 @@
+[
+  {
+    "seed": 202610195601,
+    "arm": "original_prestate_greedy_reference",
+    "M": 72.55684531648953,
+    "E": 95.07419758130894,
+    "founder": 36.866403065440565,
+    "life0_new": 35.690442251048935,
+    "L128": 50.52672145657873,
+    "post128": 22.03012385991078,
+    "windows": [
+      {
+        "start": 1,
+        "end": 64,
+        "born_minus_death": 6.360330357670544,
+        "deltaE": 13.268660017875156,
+        "minM": 64.14192408382345,
+        "born": 12.284792815426211,
+        "death": 5.924462457755668,
+        "bodytime": 218.12025144765204,
+        "pass_tolerance": true,
+        "pass_zero": true
+      },
+      {
+        "start": 65,
+        "end": 128,
+        "born_minus_death": 1.394834371397303,
+        "deltaE": 8.06558173424908,
+        "minM": 70.40364352831492,
+        "born": 12.724760480137668,
+        "death": 11.329926108740366,
+        "bodytime": 227.9737682705764,
+        "pass_tolerance": true,
+        "pass_zero": true
+      },
+      {
+        "start": 129,
+        "end": 192,
+        "born_minus_death": 0.21744634326739162,
+        "deltaE": 5.2290727233119725,
+        "minM": 71.7606185716931,
+        "born": 12.764365670601515,
+        "death": 12.546919327334123,
+        "bodytime": 230.0618772885816,
+        "pass_tolerance": true,
+        "pass_zero": true
+      },
+      {
+        "start": 193,
+        "end": 256,
+        "born_minus_death": 0.5842342441542251,
+        "deltaE": 4.510883105872736,
+        "minM": 71.9764903175915,
+        "born": 12.448211749179528,
+        "death": 11.863977505025304,
+        "bodytime": 231.10269540634513,
+        "pass_tolerance": true,
+        "pass_zero": true
+      }
+    ]
+  },
+  {
+    "seed": 202610195601,
+    "arm": "matched_uniform",
+    "M": 72.26513895447937,
+    "E": 94.98248058938862,
+    "founder": 36.60133291897944,
+    "life0_new": 35.66380603549989,
+    "L128": 50.1975355989253,
+    "post128": 22.067603355554034,
+    "windows": [
+      {
+        "start": 1,
+        "end": 64,
+        "born_minus_death": 6.187743644477558,
+        "deltaE": 13.089803982907746,
+        "minM": 64.14192408382345,
+        "born": 12.267805116592221,
+        "death": 6.080061472114663,
+        "bodytime": 217.9917931356593,
+        "pass_tolerance": true,
+        "pass_zero": true
+      },
+      {
+        "start": 65,
+        "end": 128,
+        "born_minus_death": 1.193157357716012,
+        "deltaE": 7.871980626518166,
+        "minM": 70.22165722132578,
+        "born": 12.737896000913334,
+        "death": 11.544738643197322,
+        "bodytime": 226.9922828919213,
+        "pass_tolerance": true,
+        "pass_zero": true
+      },
+      {
+        "start": 129,
+        "end": 192,
+        "born_minus_death": 0.1982061219753,
+        "deltaE": 5.367768619765229,
+        "minM": 71.38896084887537,
+        "born": 12.763927746552044,
+        "death": 12.565721624576744,
+        "bodytime": 228.85971636854038,
+        "pass_tolerance": true,
+        "pass_zero": true
+      },
+      {
+        "start": 193,
+        "end": 256,
+        "born_minus_death": 0.6860318303104334,
+        "deltaE": 4.652927360197481,
+        "minM": 71.5796503827104,
+        "born": 12.442947064526058,
+        "death": 11.756915234215624,
+        "bodytime": 229.94105307937477,
+        "pass_tolerance": true,
+        "pass_zero": true
+      }
+    ]
+  },
+  {
+    "seed": 202610195602,
+    "arm": "original_prestate_greedy_reference",
+    "M": 71.48596516200224,
+    "E": 95.12068952264022,
+    "founder": 36.1789555066835,
+    "life0_new": 35.307009655318694,
+    "L128": 49.49075654286247,
+    "post128": 21.995208619139746,
+    "windows": [
+      {
+        "start": 1,
+        "end": 64,
+        "born_minus_death": 5.5901679603492065,
+        "deltaE": 13.134770595031462,
+        "minM": 64.15556830097069,
+        "born": 12.443703029435696,
+        "death": 6.8535350690864885,
+        "bodytime": 217.24844485169385,
+        "pass_tolerance": true,
+        "pass_zero": true
+      },
+      {
+        "start": 65,
+        "end": 128,
+        "born_minus_death": 0.2867696258068555,
+        "deltaE": 7.359477533232223,
+        "minM": 69.608471053308,
+        "born": 12.623099255964576,
+        "death": 12.33632963015772,
+        "bodytime": 223.5928694316692,
+        "pass_tolerance": true,
+        "pass_zero": true
+      },
+      {
+        "start": 129,
+        "end": 192,
+        "born_minus_death": 0.26581053322884524,
+        "deltaE": 5.815788899508334,
+        "minM": 69.87907063529141,
+        "born": 12.531290127948882,
+        "death": 12.265479594720036,
+        "bodytime": 223.9151179535848,
+        "pass_tolerance": true,
+        "pass_zero": true
+      },
+      {
+        "start": 193,
+        "end": 256,
+        "born_minus_death": 1.343217042617271,
+        "deltaE": 4.810652494868208,
+        "minM": 70.14924299781876,
+        "born": 12.549027990495361,
+        "death": 11.20581094787809,
+        "bodytime": 226.65404383347655,
+        "pass_tolerance": true,
+        "pass_zero": true
+      }
+    ]
+  },
+  {
+    "seed": 202610195602,
+    "arm": "matched_uniform",
+    "M": 71.41615293944949,
+    "E": 95.3197221080766,
+    "founder": 35.98244214122455,
+    "life0_new": 35.43371079822489,
+    "L128": 49.467272511919035,
+    "post128": 21.94888042753042,
+    "windows": [
+      {
+        "start": 1,
+        "end": 64,
+        "born_minus_death": 5.466983036225848,
+        "deltaE": 13.074304910731648,
+        "minM": 64.15556830097069,
+        "born": 12.441667015122444,
+        "death": 6.974683978896596,
+        "bodytime": 217.14774861034144,
+        "pass_tolerance": true,
+        "pass_zero": true
+      },
+      {
+        "start": 65,
+        "end": 128,
+        "born_minus_death": 0.14634538949035897,
+        "deltaE": 7.007882191164853,
+        "minM": 69.47904159814658,
+        "born": 12.629788923575509,
+        "death": 12.483443534085149,
+        "bodytime": 222.88590290508324,
+        "pass_tolerance": true,
+        "pass_zero": true
+      },
+      {
+        "start": 129,
+        "end": 192,
+        "born_minus_death": 0.2694852056066427,
+        "deltaE": 5.8941875677432165,
+        "minM": 69.59916894435773,
+        "born": 12.473817623275636,
+        "death": 12.204332417668994,
+        "bodytime": 223.01866665282557,
+        "pass_tolerance": true,
+        "pass_zero": true
+      },
+      {
+        "start": 193,
+        "end": 256,
+        "born_minus_death": 1.5333393081265743,
+        "deltaE": 5.3433474384368935,
+        "minM": 69.8981319539711,
+        "born": 12.586018536636004,
+        "death": 11.05267922850943,
+        "bodytime": 226.06896870017832,
+        "pass_tolerance": true,
+        "pass_zero": true
+      }
+    ]
+  }
+]

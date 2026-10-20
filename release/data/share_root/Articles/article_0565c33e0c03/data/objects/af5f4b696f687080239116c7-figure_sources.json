@@ -1,0 +1,1352 @@
+{
+  "process": {
+    "file": "actual_process.png",
+    "sources": [
+      "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b0--none/steps.csv",
+      "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b0--paid_inert/steps.csv",
+      "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b0--paid_recycle/steps.csv",
+      "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b1--none/steps.csv",
+      "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b1--paid_inert/steps.csv",
+      "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b1--paid_recycle/steps.csv",
+      "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b2--none/steps.csv",
+      "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b2--paid_inert/steps.csv",
+      "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b2--paid_recycle/steps.csv",
+      "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b3--none/steps.csv",
+      "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b3--paid_inert/steps.csv",
+      "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b3--paid_recycle/steps.csv",
+      "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b4--none/steps.csv",
+      "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b4--paid_inert/steps.csv",
+      "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b4--paid_recycle/steps.csv",
+      "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b5--none/steps.csv",
+      "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b5--paid_inert/steps.csv",
+      "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b5--paid_recycle/steps.csv",
+      "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b6--none/steps.csv",
+      "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b6--paid_inert/steps.csv",
+      "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b6--paid_recycle/steps.csv",
+      "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b7--none/steps.csv",
+      "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b7--paid_inert/steps.csv",
+      "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b7--paid_recycle/steps.csv"
+    ]
+  },
+  "atlases": {
+    "files": [
+      "actual_fields_history1.png",
+      "actual_fields_history2.png"
+    ],
+    "sources": [
+      {
+        "id": "b0--none",
+        "parent": "b0",
+        "arm": "none",
+        "future": 128,
+        "clock": 384,
+        "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b0--none/fields384.npz",
+        "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b0--none/receipt384.npz"
+      },
+      {
+        "id": "b0--paid_inert",
+        "parent": "b0",
+        "arm": "paid_inert",
+        "future": 128,
+        "clock": 384,
+        "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b0--paid_inert/fields384.npz",
+        "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b0--paid_inert/receipt384.npz"
+      },
+      {
+        "id": "b0--paid_recycle",
+        "parent": "b0",
+        "arm": "paid_recycle",
+        "future": 128,
+        "clock": 384,
+        "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b0--paid_recycle/fields384.npz",
+        "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b0--paid_recycle/receipt384.npz"
+      },
+      {
+        "id": "b1--none",
+        "parent": "b1",
+        "arm": "none",
+        "future": 128,
+        "clock": 384,
+        "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b1--none/fields384.npz",
+        "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b1--none/receipt384.npz"
+      },
+      {
+        "id": "b1--paid_inert",
+        "parent": "b1",
+        "arm": "paid_inert",
+        "future": 128,
+        "clock": 384,
+        "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b1--paid_inert/fields384.npz",
+        "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b1--paid_inert/receipt384.npz"
+      },
+      {
+        "id": "b1--paid_recycle",
+        "parent": "b1",
+        "arm": "paid_recycle",
+        "future": 128,
+        "clock": 384,
+        "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b1--paid_recycle/fields384.npz",
+        "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b1--paid_recycle/receipt384.npz"
+      },
+      {
+        "id": "b2--none",
+        "parent": "b2",
+        "arm": "none",
+        "future": 128,
+        "clock": 384,
+        "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b2--none/fields384.npz",
+        "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b2--none/receipt384.npz"
+      },
+      {
+        "id": "b2--paid_inert",
+        "parent": "b2",
+        "arm": "paid_inert",
+        "future": 128,
+        "clock": 384,
+        "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b2--paid_inert/fields384.npz",
+        "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b2--paid_inert/receipt384.npz"
+      },
+      {
+        "id": "b2--paid_recycle",
+        "parent": "b2",
+        "arm": "paid_recycle",
+        "future": 128,
+        "clock": 384,
+        "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b2--paid_recycle/fields384.npz",
+        "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b2--paid_recycle/receipt384.npz"
+      },
+      {
+        "id": "b3--none",
+        "parent": "b3",
+        "arm": "none",
+        "future": 128,
+        "clock": 384,
+        "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b3--none/fields384.npz",
+        "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b3--none/receipt384.npz"
+      },
+      {
+        "id": "b3--paid_inert",
+        "parent": "b3",
+        "arm": "paid_inert",
+        "future": 128,
+        "clock": 384,
+        "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b3--paid_inert/fields384.npz",
+        "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b3--paid_inert/receipt384.npz"
+      },
+      {
+        "id": "b3--paid_recycle",
+        "parent": "b3",
+        "arm": "paid_recycle",
+        "future": 128,
+        "clock": 384,
+        "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b3--paid_recycle/fields384.npz",
+        "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b3--paid_recycle/receipt384.npz"
+      },
+      {
+        "id": "b4--none",
+        "parent": "b4",
+        "arm": "none",
+        "future": 128,
+        "clock": 384,
+        "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b4--none/fields384.npz",
+        "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b4--none/receipt384.npz"
+      },
+      {
+        "id": "b4--paid_inert",
+        "parent": "b4",
+        "arm": "paid_inert",
+        "future": 128,
+        "clock": 384,
+        "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b4--paid_inert/fields384.npz",
+        "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b4--paid_inert/receipt384.npz"
+      },
+      {
+        "id": "b4--paid_recycle",
+        "parent": "b4",
+        "arm": "paid_recycle",
+        "future": 128,
+        "clock": 384,
+        "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b4--paid_recycle/fields384.npz",
+        "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b4--paid_recycle/receipt384.npz"
+      },
+      {
+        "id": "b5--none",
+        "parent": "b5",
+        "arm": "none",
+        "future": 128,
+        "clock": 384,
+        "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b5--none/fields384.npz",
+        "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b5--none/receipt384.npz"
+      },
+      {
+        "id": "b5--paid_inert",
+        "parent": "b5",
+        "arm": "paid_inert",
+        "future": 128,
+        "clock": 384,
+        "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b5--paid_inert/fields384.npz",
+        "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b5--paid_inert/receipt384.npz"
+      },
+      {
+        "id": "b5--paid_recycle",
+        "parent": "b5",
+        "arm": "paid_recycle",
+        "future": 128,
+        "clock": 384,
+        "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b5--paid_recycle/fields384.npz",
+        "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b5--paid_recycle/receipt384.npz"
+      },
+      {
+        "id": "b6--none",
+        "parent": "b6",
+        "arm": "none",
+        "future": 128,
+        "clock": 384,
+        "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b6--none/fields384.npz",
+        "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b6--none/receipt384.npz"
+      },
+      {
+        "id": "b6--paid_inert",
+        "parent": "b6",
+        "arm": "paid_inert",
+        "future": 128,
+        "clock": 384,
+        "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b6--paid_inert/fields384.npz",
+        "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b6--paid_inert/receipt384.npz"
+      },
+      {
+        "id": "b6--paid_recycle",
+        "parent": "b6",
+        "arm": "paid_recycle",
+        "future": 128,
+        "clock": 384,
+        "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b6--paid_recycle/fields384.npz",
+        "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b6--paid_recycle/receipt384.npz"
+      },
+      {
+        "id": "b7--none",
+        "parent": "b7",
+        "arm": "none",
+        "future": 128,
+        "clock": 384,
+        "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b7--none/fields384.npz",
+        "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b7--none/receipt384.npz"
+      },
+      {
+        "id": "b7--paid_inert",
+        "parent": "b7",
+        "arm": "paid_inert",
+        "future": 128,
+        "clock": 384,
+        "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b7--paid_inert/fields384.npz",
+        "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b7--paid_inert/receipt384.npz"
+      },
+      {
+        "id": "b7--paid_recycle",
+        "parent": "b7",
+        "arm": "paid_recycle",
+        "future": 128,
+        "clock": 384,
+        "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b7--paid_recycle/fields384.npz",
+        "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b7--paid_recycle/receipt384.npz"
+      }
+    ],
+    "common_spatial_crops_y0_y1_x0_x1": [
+      [
+        36,
+        61,
+        49,
+        75
+      ],
+      [
+        36,
+        61,
+        49,
+        75
+      ]
+    ],
+    "crop_rule": "union of actual body>1e-7 over all twelve arms in same history, plus4 cells; full arrays preserved"
+  },
+  "all_scheduled_frames": [
+    {
+      "id": "b0--none",
+      "parent": "b0",
+      "arm": "none",
+      "future": 1,
+      "clock": 257,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b0--none/fields257.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b0--none/receipt257.npz"
+    },
+    {
+      "id": "b0--none",
+      "parent": "b0",
+      "arm": "none",
+      "future": 8,
+      "clock": 264,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b0--none/fields264.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b0--none/receipt264.npz"
+    },
+    {
+      "id": "b0--none",
+      "parent": "b0",
+      "arm": "none",
+      "future": 32,
+      "clock": 288,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b0--none/fields288.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b0--none/receipt288.npz"
+    },
+    {
+      "id": "b0--none",
+      "parent": "b0",
+      "arm": "none",
+      "future": 64,
+      "clock": 320,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b0--none/fields320.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b0--none/receipt320.npz"
+    },
+    {
+      "id": "b0--none",
+      "parent": "b0",
+      "arm": "none",
+      "future": 128,
+      "clock": 384,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b0--none/fields384.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b0--none/receipt384.npz"
+    },
+    {
+      "id": "b0--paid_inert",
+      "parent": "b0",
+      "arm": "paid_inert",
+      "future": 1,
+      "clock": 257,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b0--paid_inert/fields257.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b0--paid_inert/receipt257.npz"
+    },
+    {
+      "id": "b0--paid_inert",
+      "parent": "b0",
+      "arm": "paid_inert",
+      "future": 8,
+      "clock": 264,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b0--paid_inert/fields264.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b0--paid_inert/receipt264.npz"
+    },
+    {
+      "id": "b0--paid_inert",
+      "parent": "b0",
+      "arm": "paid_inert",
+      "future": 32,
+      "clock": 288,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b0--paid_inert/fields288.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b0--paid_inert/receipt288.npz"
+    },
+    {
+      "id": "b0--paid_inert",
+      "parent": "b0",
+      "arm": "paid_inert",
+      "future": 64,
+      "clock": 320,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b0--paid_inert/fields320.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b0--paid_inert/receipt320.npz"
+    },
+    {
+      "id": "b0--paid_inert",
+      "parent": "b0",
+      "arm": "paid_inert",
+      "future": 128,
+      "clock": 384,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b0--paid_inert/fields384.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b0--paid_inert/receipt384.npz"
+    },
+    {
+      "id": "b0--paid_recycle",
+      "parent": "b0",
+      "arm": "paid_recycle",
+      "future": 1,
+      "clock": 257,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b0--paid_recycle/fields257.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b0--paid_recycle/receipt257.npz"
+    },
+    {
+      "id": "b0--paid_recycle",
+      "parent": "b0",
+      "arm": "paid_recycle",
+      "future": 8,
+      "clock": 264,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b0--paid_recycle/fields264.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b0--paid_recycle/receipt264.npz"
+    },
+    {
+      "id": "b0--paid_recycle",
+      "parent": "b0",
+      "arm": "paid_recycle",
+      "future": 32,
+      "clock": 288,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b0--paid_recycle/fields288.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b0--paid_recycle/receipt288.npz"
+    },
+    {
+      "id": "b0--paid_recycle",
+      "parent": "b0",
+      "arm": "paid_recycle",
+      "future": 64,
+      "clock": 320,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b0--paid_recycle/fields320.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b0--paid_recycle/receipt320.npz"
+    },
+    {
+      "id": "b0--paid_recycle",
+      "parent": "b0",
+      "arm": "paid_recycle",
+      "future": 128,
+      "clock": 384,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b0--paid_recycle/fields384.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b0--paid_recycle/receipt384.npz"
+    },
+    {
+      "id": "b1--none",
+      "parent": "b1",
+      "arm": "none",
+      "future": 1,
+      "clock": 257,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b1--none/fields257.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b1--none/receipt257.npz"
+    },
+    {
+      "id": "b1--none",
+      "parent": "b1",
+      "arm": "none",
+      "future": 8,
+      "clock": 264,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b1--none/fields264.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b1--none/receipt264.npz"
+    },
+    {
+      "id": "b1--none",
+      "parent": "b1",
+      "arm": "none",
+      "future": 32,
+      "clock": 288,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b1--none/fields288.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b1--none/receipt288.npz"
+    },
+    {
+      "id": "b1--none",
+      "parent": "b1",
+      "arm": "none",
+      "future": 64,
+      "clock": 320,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b1--none/fields320.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b1--none/receipt320.npz"
+    },
+    {
+      "id": "b1--none",
+      "parent": "b1",
+      "arm": "none",
+      "future": 128,
+      "clock": 384,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b1--none/fields384.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b1--none/receipt384.npz"
+    },
+    {
+      "id": "b1--paid_inert",
+      "parent": "b1",
+      "arm": "paid_inert",
+      "future": 1,
+      "clock": 257,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b1--paid_inert/fields257.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b1--paid_inert/receipt257.npz"
+    },
+    {
+      "id": "b1--paid_inert",
+      "parent": "b1",
+      "arm": "paid_inert",
+      "future": 8,
+      "clock": 264,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b1--paid_inert/fields264.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b1--paid_inert/receipt264.npz"
+    },
+    {
+      "id": "b1--paid_inert",
+      "parent": "b1",
+      "arm": "paid_inert",
+      "future": 32,
+      "clock": 288,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b1--paid_inert/fields288.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b1--paid_inert/receipt288.npz"
+    },
+    {
+      "id": "b1--paid_inert",
+      "parent": "b1",
+      "arm": "paid_inert",
+      "future": 64,
+      "clock": 320,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b1--paid_inert/fields320.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b1--paid_inert/receipt320.npz"
+    },
+    {
+      "id": "b1--paid_inert",
+      "parent": "b1",
+      "arm": "paid_inert",
+      "future": 128,
+      "clock": 384,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b1--paid_inert/fields384.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b1--paid_inert/receipt384.npz"
+    },
+    {
+      "id": "b1--paid_recycle",
+      "parent": "b1",
+      "arm": "paid_recycle",
+      "future": 1,
+      "clock": 257,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b1--paid_recycle/fields257.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b1--paid_recycle/receipt257.npz"
+    },
+    {
+      "id": "b1--paid_recycle",
+      "parent": "b1",
+      "arm": "paid_recycle",
+      "future": 8,
+      "clock": 264,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b1--paid_recycle/fields264.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b1--paid_recycle/receipt264.npz"
+    },
+    {
+      "id": "b1--paid_recycle",
+      "parent": "b1",
+      "arm": "paid_recycle",
+      "future": 32,
+      "clock": 288,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b1--paid_recycle/fields288.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b1--paid_recycle/receipt288.npz"
+    },
+    {
+      "id": "b1--paid_recycle",
+      "parent": "b1",
+      "arm": "paid_recycle",
+      "future": 64,
+      "clock": 320,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b1--paid_recycle/fields320.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b1--paid_recycle/receipt320.npz"
+    },
+    {
+      "id": "b1--paid_recycle",
+      "parent": "b1",
+      "arm": "paid_recycle",
+      "future": 128,
+      "clock": 384,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b1--paid_recycle/fields384.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b1--paid_recycle/receipt384.npz"
+    },
+    {
+      "id": "b2--none",
+      "parent": "b2",
+      "arm": "none",
+      "future": 1,
+      "clock": 257,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b2--none/fields257.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b2--none/receipt257.npz"
+    },
+    {
+      "id": "b2--none",
+      "parent": "b2",
+      "arm": "none",
+      "future": 8,
+      "clock": 264,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b2--none/fields264.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b2--none/receipt264.npz"
+    },
+    {
+      "id": "b2--none",
+      "parent": "b2",
+      "arm": "none",
+      "future": 32,
+      "clock": 288,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b2--none/fields288.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b2--none/receipt288.npz"
+    },
+    {
+      "id": "b2--none",
+      "parent": "b2",
+      "arm": "none",
+      "future": 64,
+      "clock": 320,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b2--none/fields320.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b2--none/receipt320.npz"
+    },
+    {
+      "id": "b2--none",
+      "parent": "b2",
+      "arm": "none",
+      "future": 128,
+      "clock": 384,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b2--none/fields384.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b2--none/receipt384.npz"
+    },
+    {
+      "id": "b2--paid_inert",
+      "parent": "b2",
+      "arm": "paid_inert",
+      "future": 1,
+      "clock": 257,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b2--paid_inert/fields257.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b2--paid_inert/receipt257.npz"
+    },
+    {
+      "id": "b2--paid_inert",
+      "parent": "b2",
+      "arm": "paid_inert",
+      "future": 8,
+      "clock": 264,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b2--paid_inert/fields264.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b2--paid_inert/receipt264.npz"
+    },
+    {
+      "id": "b2--paid_inert",
+      "parent": "b2",
+      "arm": "paid_inert",
+      "future": 32,
+      "clock": 288,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b2--paid_inert/fields288.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b2--paid_inert/receipt288.npz"
+    },
+    {
+      "id": "b2--paid_inert",
+      "parent": "b2",
+      "arm": "paid_inert",
+      "future": 64,
+      "clock": 320,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b2--paid_inert/fields320.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b2--paid_inert/receipt320.npz"
+    },
+    {
+      "id": "b2--paid_inert",
+      "parent": "b2",
+      "arm": "paid_inert",
+      "future": 128,
+      "clock": 384,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b2--paid_inert/fields384.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b2--paid_inert/receipt384.npz"
+    },
+    {
+      "id": "b2--paid_recycle",
+      "parent": "b2",
+      "arm": "paid_recycle",
+      "future": 1,
+      "clock": 257,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b2--paid_recycle/fields257.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b2--paid_recycle/receipt257.npz"
+    },
+    {
+      "id": "b2--paid_recycle",
+      "parent": "b2",
+      "arm": "paid_recycle",
+      "future": 8,
+      "clock": 264,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b2--paid_recycle/fields264.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b2--paid_recycle/receipt264.npz"
+    },
+    {
+      "id": "b2--paid_recycle",
+      "parent": "b2",
+      "arm": "paid_recycle",
+      "future": 32,
+      "clock": 288,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b2--paid_recycle/fields288.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b2--paid_recycle/receipt288.npz"
+    },
+    {
+      "id": "b2--paid_recycle",
+      "parent": "b2",
+      "arm": "paid_recycle",
+      "future": 64,
+      "clock": 320,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b2--paid_recycle/fields320.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b2--paid_recycle/receipt320.npz"
+    },
+    {
+      "id": "b2--paid_recycle",
+      "parent": "b2",
+      "arm": "paid_recycle",
+      "future": 128,
+      "clock": 384,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b2--paid_recycle/fields384.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b2--paid_recycle/receipt384.npz"
+    },
+    {
+      "id": "b3--none",
+      "parent": "b3",
+      "arm": "none",
+      "future": 1,
+      "clock": 257,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b3--none/fields257.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b3--none/receipt257.npz"
+    },
+    {
+      "id": "b3--none",
+      "parent": "b3",
+      "arm": "none",
+      "future": 8,
+      "clock": 264,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b3--none/fields264.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b3--none/receipt264.npz"
+    },
+    {
+      "id": "b3--none",
+      "parent": "b3",
+      "arm": "none",
+      "future": 32,
+      "clock": 288,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b3--none/fields288.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b3--none/receipt288.npz"
+    },
+    {
+      "id": "b3--none",
+      "parent": "b3",
+      "arm": "none",
+      "future": 64,
+      "clock": 320,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b3--none/fields320.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b3--none/receipt320.npz"
+    },
+    {
+      "id": "b3--none",
+      "parent": "b3",
+      "arm": "none",
+      "future": 128,
+      "clock": 384,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b3--none/fields384.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b3--none/receipt384.npz"
+    },
+    {
+      "id": "b3--paid_inert",
+      "parent": "b3",
+      "arm": "paid_inert",
+      "future": 1,
+      "clock": 257,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b3--paid_inert/fields257.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b3--paid_inert/receipt257.npz"
+    },
+    {
+      "id": "b3--paid_inert",
+      "parent": "b3",
+      "arm": "paid_inert",
+      "future": 8,
+      "clock": 264,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b3--paid_inert/fields264.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b3--paid_inert/receipt264.npz"
+    },
+    {
+      "id": "b3--paid_inert",
+      "parent": "b3",
+      "arm": "paid_inert",
+      "future": 32,
+      "clock": 288,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b3--paid_inert/fields288.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b3--paid_inert/receipt288.npz"
+    },
+    {
+      "id": "b3--paid_inert",
+      "parent": "b3",
+      "arm": "paid_inert",
+      "future": 64,
+      "clock": 320,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b3--paid_inert/fields320.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b3--paid_inert/receipt320.npz"
+    },
+    {
+      "id": "b3--paid_inert",
+      "parent": "b3",
+      "arm": "paid_inert",
+      "future": 128,
+      "clock": 384,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b3--paid_inert/fields384.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b3--paid_inert/receipt384.npz"
+    },
+    {
+      "id": "b3--paid_recycle",
+      "parent": "b3",
+      "arm": "paid_recycle",
+      "future": 1,
+      "clock": 257,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b3--paid_recycle/fields257.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b3--paid_recycle/receipt257.npz"
+    },
+    {
+      "id": "b3--paid_recycle",
+      "parent": "b3",
+      "arm": "paid_recycle",
+      "future": 8,
+      "clock": 264,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b3--paid_recycle/fields264.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b3--paid_recycle/receipt264.npz"
+    },
+    {
+      "id": "b3--paid_recycle",
+      "parent": "b3",
+      "arm": "paid_recycle",
+      "future": 32,
+      "clock": 288,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b3--paid_recycle/fields288.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b3--paid_recycle/receipt288.npz"
+    },
+    {
+      "id": "b3--paid_recycle",
+      "parent": "b3",
+      "arm": "paid_recycle",
+      "future": 64,
+      "clock": 320,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b3--paid_recycle/fields320.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b3--paid_recycle/receipt320.npz"
+    },
+    {
+      "id": "b3--paid_recycle",
+      "parent": "b3",
+      "arm": "paid_recycle",
+      "future": 128,
+      "clock": 384,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b3--paid_recycle/fields384.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b3--paid_recycle/receipt384.npz"
+    },
+    {
+      "id": "b4--none",
+      "parent": "b4",
+      "arm": "none",
+      "future": 1,
+      "clock": 257,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b4--none/fields257.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b4--none/receipt257.npz"
+    },
+    {
+      "id": "b4--none",
+      "parent": "b4",
+      "arm": "none",
+      "future": 8,
+      "clock": 264,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b4--none/fields264.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b4--none/receipt264.npz"
+    },
+    {
+      "id": "b4--none",
+      "parent": "b4",
+      "arm": "none",
+      "future": 32,
+      "clock": 288,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b4--none/fields288.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b4--none/receipt288.npz"
+    },
+    {
+      "id": "b4--none",
+      "parent": "b4",
+      "arm": "none",
+      "future": 64,
+      "clock": 320,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b4--none/fields320.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b4--none/receipt320.npz"
+    },
+    {
+      "id": "b4--none",
+      "parent": "b4",
+      "arm": "none",
+      "future": 128,
+      "clock": 384,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b4--none/fields384.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b4--none/receipt384.npz"
+    },
+    {
+      "id": "b4--paid_inert",
+      "parent": "b4",
+      "arm": "paid_inert",
+      "future": 1,
+      "clock": 257,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b4--paid_inert/fields257.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b4--paid_inert/receipt257.npz"
+    },
+    {
+      "id": "b4--paid_inert",
+      "parent": "b4",
+      "arm": "paid_inert",
+      "future": 8,
+      "clock": 264,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b4--paid_inert/fields264.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b4--paid_inert/receipt264.npz"
+    },
+    {
+      "id": "b4--paid_inert",
+      "parent": "b4",
+      "arm": "paid_inert",
+      "future": 32,
+      "clock": 288,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b4--paid_inert/fields288.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b4--paid_inert/receipt288.npz"
+    },
+    {
+      "id": "b4--paid_inert",
+      "parent": "b4",
+      "arm": "paid_inert",
+      "future": 64,
+      "clock": 320,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b4--paid_inert/fields320.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b4--paid_inert/receipt320.npz"
+    },
+    {
+      "id": "b4--paid_inert",
+      "parent": "b4",
+      "arm": "paid_inert",
+      "future": 128,
+      "clock": 384,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b4--paid_inert/fields384.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b4--paid_inert/receipt384.npz"
+    },
+    {
+      "id": "b4--paid_recycle",
+      "parent": "b4",
+      "arm": "paid_recycle",
+      "future": 1,
+      "clock": 257,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b4--paid_recycle/fields257.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b4--paid_recycle/receipt257.npz"
+    },
+    {
+      "id": "b4--paid_recycle",
+      "parent": "b4",
+      "arm": "paid_recycle",
+      "future": 8,
+      "clock": 264,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b4--paid_recycle/fields264.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b4--paid_recycle/receipt264.npz"
+    },
+    {
+      "id": "b4--paid_recycle",
+      "parent": "b4",
+      "arm": "paid_recycle",
+      "future": 32,
+      "clock": 288,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b4--paid_recycle/fields288.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b4--paid_recycle/receipt288.npz"
+    },
+    {
+      "id": "b4--paid_recycle",
+      "parent": "b4",
+      "arm": "paid_recycle",
+      "future": 64,
+      "clock": 320,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b4--paid_recycle/fields320.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b4--paid_recycle/receipt320.npz"
+    },
+    {
+      "id": "b4--paid_recycle",
+      "parent": "b4",
+      "arm": "paid_recycle",
+      "future": 128,
+      "clock": 384,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b4--paid_recycle/fields384.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b4--paid_recycle/receipt384.npz"
+    },
+    {
+      "id": "b5--none",
+      "parent": "b5",
+      "arm": "none",
+      "future": 1,
+      "clock": 257,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b5--none/fields257.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b5--none/receipt257.npz"
+    },
+    {
+      "id": "b5--none",
+      "parent": "b5",
+      "arm": "none",
+      "future": 8,
+      "clock": 264,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b5--none/fields264.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b5--none/receipt264.npz"
+    },
+    {
+      "id": "b5--none",
+      "parent": "b5",
+      "arm": "none",
+      "future": 32,
+      "clock": 288,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b5--none/fields288.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b5--none/receipt288.npz"
+    },
+    {
+      "id": "b5--none",
+      "parent": "b5",
+      "arm": "none",
+      "future": 64,
+      "clock": 320,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b5--none/fields320.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b5--none/receipt320.npz"
+    },
+    {
+      "id": "b5--none",
+      "parent": "b5",
+      "arm": "none",
+      "future": 128,
+      "clock": 384,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b5--none/fields384.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b5--none/receipt384.npz"
+    },
+    {
+      "id": "b5--paid_inert",
+      "parent": "b5",
+      "arm": "paid_inert",
+      "future": 1,
+      "clock": 257,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b5--paid_inert/fields257.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b5--paid_inert/receipt257.npz"
+    },
+    {
+      "id": "b5--paid_inert",
+      "parent": "b5",
+      "arm": "paid_inert",
+      "future": 8,
+      "clock": 264,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b5--paid_inert/fields264.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b5--paid_inert/receipt264.npz"
+    },
+    {
+      "id": "b5--paid_inert",
+      "parent": "b5",
+      "arm": "paid_inert",
+      "future": 32,
+      "clock": 288,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b5--paid_inert/fields288.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b5--paid_inert/receipt288.npz"
+    },
+    {
+      "id": "b5--paid_inert",
+      "parent": "b5",
+      "arm": "paid_inert",
+      "future": 64,
+      "clock": 320,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b5--paid_inert/fields320.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b5--paid_inert/receipt320.npz"
+    },
+    {
+      "id": "b5--paid_inert",
+      "parent": "b5",
+      "arm": "paid_inert",
+      "future": 128,
+      "clock": 384,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b5--paid_inert/fields384.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b5--paid_inert/receipt384.npz"
+    },
+    {
+      "id": "b5--paid_recycle",
+      "parent": "b5",
+      "arm": "paid_recycle",
+      "future": 1,
+      "clock": 257,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b5--paid_recycle/fields257.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b5--paid_recycle/receipt257.npz"
+    },
+    {
+      "id": "b5--paid_recycle",
+      "parent": "b5",
+      "arm": "paid_recycle",
+      "future": 8,
+      "clock": 264,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b5--paid_recycle/fields264.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b5--paid_recycle/receipt264.npz"
+    },
+    {
+      "id": "b5--paid_recycle",
+      "parent": "b5",
+      "arm": "paid_recycle",
+      "future": 32,
+      "clock": 288,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b5--paid_recycle/fields288.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b5--paid_recycle/receipt288.npz"
+    },
+    {
+      "id": "b5--paid_recycle",
+      "parent": "b5",
+      "arm": "paid_recycle",
+      "future": 64,
+      "clock": 320,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b5--paid_recycle/fields320.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b5--paid_recycle/receipt320.npz"
+    },
+    {
+      "id": "b5--paid_recycle",
+      "parent": "b5",
+      "arm": "paid_recycle",
+      "future": 128,
+      "clock": 384,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b5--paid_recycle/fields384.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b5--paid_recycle/receipt384.npz"
+    },
+    {
+      "id": "b6--none",
+      "parent": "b6",
+      "arm": "none",
+      "future": 1,
+      "clock": 257,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b6--none/fields257.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b6--none/receipt257.npz"
+    },
+    {
+      "id": "b6--none",
+      "parent": "b6",
+      "arm": "none",
+      "future": 8,
+      "clock": 264,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b6--none/fields264.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b6--none/receipt264.npz"
+    },
+    {
+      "id": "b6--none",
+      "parent": "b6",
+      "arm": "none",
+      "future": 32,
+      "clock": 288,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b6--none/fields288.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b6--none/receipt288.npz"
+    },
+    {
+      "id": "b6--none",
+      "parent": "b6",
+      "arm": "none",
+      "future": 64,
+      "clock": 320,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b6--none/fields320.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b6--none/receipt320.npz"
+    },
+    {
+      "id": "b6--none",
+      "parent": "b6",
+      "arm": "none",
+      "future": 128,
+      "clock": 384,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b6--none/fields384.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b6--none/receipt384.npz"
+    },
+    {
+      "id": "b6--paid_inert",
+      "parent": "b6",
+      "arm": "paid_inert",
+      "future": 1,
+      "clock": 257,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b6--paid_inert/fields257.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b6--paid_inert/receipt257.npz"
+    },
+    {
+      "id": "b6--paid_inert",
+      "parent": "b6",
+      "arm": "paid_inert",
+      "future": 8,
+      "clock": 264,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b6--paid_inert/fields264.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b6--paid_inert/receipt264.npz"
+    },
+    {
+      "id": "b6--paid_inert",
+      "parent": "b6",
+      "arm": "paid_inert",
+      "future": 32,
+      "clock": 288,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b6--paid_inert/fields288.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b6--paid_inert/receipt288.npz"
+    },
+    {
+      "id": "b6--paid_inert",
+      "parent": "b6",
+      "arm": "paid_inert",
+      "future": 64,
+      "clock": 320,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b6--paid_inert/fields320.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b6--paid_inert/receipt320.npz"
+    },
+    {
+      "id": "b6--paid_inert",
+      "parent": "b6",
+      "arm": "paid_inert",
+      "future": 128,
+      "clock": 384,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b6--paid_inert/fields384.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b6--paid_inert/receipt384.npz"
+    },
+    {
+      "id": "b6--paid_recycle",
+      "parent": "b6",
+      "arm": "paid_recycle",
+      "future": 1,
+      "clock": 257,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b6--paid_recycle/fields257.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b6--paid_recycle/receipt257.npz"
+    },
+    {
+      "id": "b6--paid_recycle",
+      "parent": "b6",
+      "arm": "paid_recycle",
+      "future": 8,
+      "clock": 264,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b6--paid_recycle/fields264.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b6--paid_recycle/receipt264.npz"
+    },
+    {
+      "id": "b6--paid_recycle",
+      "parent": "b6",
+      "arm": "paid_recycle",
+      "future": 32,
+      "clock": 288,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b6--paid_recycle/fields288.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b6--paid_recycle/receipt288.npz"
+    },
+    {
+      "id": "b6--paid_recycle",
+      "parent": "b6",
+      "arm": "paid_recycle",
+      "future": 64,
+      "clock": 320,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b6--paid_recycle/fields320.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b6--paid_recycle/receipt320.npz"
+    },
+    {
+      "id": "b6--paid_recycle",
+      "parent": "b6",
+      "arm": "paid_recycle",
+      "future": 128,
+      "clock": 384,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b6--paid_recycle/fields384.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b6--paid_recycle/receipt384.npz"
+    },
+    {
+      "id": "b7--none",
+      "parent": "b7",
+      "arm": "none",
+      "future": 1,
+      "clock": 257,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b7--none/fields257.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b7--none/receipt257.npz"
+    },
+    {
+      "id": "b7--none",
+      "parent": "b7",
+      "arm": "none",
+      "future": 8,
+      "clock": 264,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b7--none/fields264.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b7--none/receipt264.npz"
+    },
+    {
+      "id": "b7--none",
+      "parent": "b7",
+      "arm": "none",
+      "future": 32,
+      "clock": 288,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b7--none/fields288.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b7--none/receipt288.npz"
+    },
+    {
+      "id": "b7--none",
+      "parent": "b7",
+      "arm": "none",
+      "future": 64,
+      "clock": 320,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b7--none/fields320.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b7--none/receipt320.npz"
+    },
+    {
+      "id": "b7--none",
+      "parent": "b7",
+      "arm": "none",
+      "future": 128,
+      "clock": 384,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b7--none/fields384.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b7--none/receipt384.npz"
+    },
+    {
+      "id": "b7--paid_inert",
+      "parent": "b7",
+      "arm": "paid_inert",
+      "future": 1,
+      "clock": 257,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b7--paid_inert/fields257.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b7--paid_inert/receipt257.npz"
+    },
+    {
+      "id": "b7--paid_inert",
+      "parent": "b7",
+      "arm": "paid_inert",
+      "future": 8,
+      "clock": 264,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b7--paid_inert/fields264.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b7--paid_inert/receipt264.npz"
+    },
+    {
+      "id": "b7--paid_inert",
+      "parent": "b7",
+      "arm": "paid_inert",
+      "future": 32,
+      "clock": 288,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b7--paid_inert/fields288.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b7--paid_inert/receipt288.npz"
+    },
+    {
+      "id": "b7--paid_inert",
+      "parent": "b7",
+      "arm": "paid_inert",
+      "future": 64,
+      "clock": 320,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b7--paid_inert/fields320.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b7--paid_inert/receipt320.npz"
+    },
+    {
+      "id": "b7--paid_inert",
+      "parent": "b7",
+      "arm": "paid_inert",
+      "future": 128,
+      "clock": 384,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b7--paid_inert/fields384.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b7--paid_inert/receipt384.npz"
+    },
+    {
+      "id": "b7--paid_recycle",
+      "parent": "b7",
+      "arm": "paid_recycle",
+      "future": 1,
+      "clock": 257,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b7--paid_recycle/fields257.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b7--paid_recycle/receipt257.npz"
+    },
+    {
+      "id": "b7--paid_recycle",
+      "parent": "b7",
+      "arm": "paid_recycle",
+      "future": 8,
+      "clock": 264,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b7--paid_recycle/fields264.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b7--paid_recycle/receipt264.npz"
+    },
+    {
+      "id": "b7--paid_recycle",
+      "parent": "b7",
+      "arm": "paid_recycle",
+      "future": 32,
+      "clock": 288,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b7--paid_recycle/fields288.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b7--paid_recycle/receipt288.npz"
+    },
+    {
+      "id": "b7--paid_recycle",
+      "parent": "b7",
+      "arm": "paid_recycle",
+      "future": 64,
+      "clock": 320,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b7--paid_recycle/fields320.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b7--paid_recycle/receipt320.npz"
+    },
+    {
+      "id": "b7--paid_recycle",
+      "parent": "b7",
+      "arm": "paid_recycle",
+      "future": 128,
+      "clock": 384,
+      "state": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b7--paid_recycle/fields384.npz",
+      "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b7--paid_recycle/receipt384.npz"
+    }
+  ]
+}

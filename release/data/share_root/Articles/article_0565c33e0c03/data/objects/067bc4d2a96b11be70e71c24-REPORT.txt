@@ -1,0 +1,90 @@
+material_action_response_20261018 — completed first native action-response pilot
+
+Outcome
+Two actual native formation128 bodies respond differently to the same bounded
+local two-axis actuator. All eight256-step paths retain living material. Different
+action layouts change actual paid face flux, organization and later uptake after
+the driver is withdrawn. A useful control opportunity exists in the four-lobe
+body; it is not a general benefit across bodies and no learner was run here.
+
+Relative to no active drive, for the four-lobe6bd body:
+  gradient: total uptake+326.383407, withdrawal-window uptake+240.864923,
+            final E+76.978582, final M+62.730239, body-time-12.166910.
+  shear_x:  total uptake+356.893880, withdrawal-window uptake+250.629837,
+            final E+124.164715, final M+56.811767, body-time+755.124573.
+  shear_y:  total uptake-77.014972, withdrawal-window uptake-82.845237,
+            final E-74.643615, final M-62.262912, body-time-267.318460.
+For porous0ac, gradient increases uptake367.024634 but final E falls4.963150,
+mass falls41.283178 and body-time falls358.232120. Both shears also reduce final
+energy despite higher uptake. These negative outcomes remain in all tables.
+Actual motor costs differ substantially: e.g. four-lobe none/gradient/shear_x/
+shear_y pay108.197398/221.285170/231.584806/211.920271. They share an action upper
+bound, not equal realized movement or fees. Basal deficits are not all zero;
+per-path totals range from numerical roundoff to0.121643 on porous shear_y.
+
+What changed
+The isolated VectorAdapter replaces the previous run-scaled polarity drive with
+two signed local channels. It invokes the unchanged MaterialBody and
+RegenerativeBody integrators. No shared E, global mass target, global action
+sum, rigid-body roll or artificial two-leaf substrate is used. Native dual-kernel
+generation, old-donor motor budget, local uptake, precursor-limited births,
+death and heat are preserved. Existing stocks and all actual formation128 fields
+are loaded unchanged. Old controller and polarity contents are carried, but the
+old run/brake policy does not act or learn in this extension. This is explicitly
+extended Lenia generation coupled to conservative active material, not original
+unmodified Lenia and not already a new learning method.
+
+Experiment frozen before execution
+Two preferred complete source packets; four modes each;256 new steps, first128
+active and final128 no-drive. Finite Gaussian fuel/precursor inputs and symmetric
+permeability barrier are in frozen core/plan_v2. All four arms of each body start
+with identical complete state including stocks, kernels and controller contents;
+same_initial_checks.json verifies every saved field/metadata. No formation
+prefix was replayed. Native clock initial128, first returned129, withdrawal256,
+final384. The gradient is a current local-resource baseline; shears are fixed
+coordinate layouts. No hidden action mapping or unobserved task label is used.
+
+The final no-drive window preserves both changed tissue and changed local stocks/
+energy. Its outcome is a delayed action consequence, not an isolated causal
+effect of morphology alone. More uptake can accompany high turnover and losses.
+Four-lobe descendants expand into multiple structures even with no drive; initial
+shape preservation, connectedness and autonomous locomotion are not established.
+The actual_bodies figure shows initial and actual final fields for every arm;
+actual_dynamics shows all scalar M/E/U traces and the fixed withdrawal time.
+Both figures were visually inspected. There are two bodies in one deterministic
+environment, not eight independent environmental repeats. Finite-window survival
+with inherited stock and finite input is not infinite maintenance.
+
+Execution and failure
+First job412202f2-441d-4f09-9129-da3e579bf00c executed one native boundary call then
+failed an overstrong assertion demanding K=0 even on empty donor cells. Empty
+cells can carry nonzero dimensionless weights but zero mass. That first receipt
+was not saved; it is not reconstructed. The attempt and its2.747884 worker seconds
+remain charged. Only the assertion was corrected to actual outgoing mass flux;
+core physical bytes did not change. Old plan and pilot source retained.
+Second job0eb661f2-b286-43c6-b27e-ee8f3f2da135 completed2050/2050 rc0, including two
+zero-old-energy boundary calls. These have zero actual outgoing mass and motor
+payment despite current fuel. Eight full trajectories account for2048 calls.
+Total2051 calls/109.358436 runner worker seconds, within ce2 limits3072/180.
+Raw229447635 bytes; max conservation/reconstruction discrepancy1.8189894e-12.
+CPU2/GPU0, serial physics, control read running/started before both submissions.
+No old allowance used. d3 allocation remains9216 steps/420worker seconds. ce2
+unused1021/70.641564 is not automatically transferred to d3.
+
+Evidence and continuation
+All scalar steps,112 declared full trajectory receipts, complete initial/
+withdrawal/final states and two saved boundary receipts are hashed in raw_manifest.
+The first failed receipt is unavailable. Intermediate unsaved arrays are unknown.
+API.txt describes exact source/destination clocks and local versus evaluator
+permissions. K is sparse source weights+stay; cohort payload follows K then
+destination survival, with no newborn history. The host is deterministic; an
+external learner must separately checkpoint its own state/RNG. Compute/storage
+of that learner are unpriced here; physical motor/basal/synthesis costs remain.
+
+Proceed with a small delayed-response controller on this frozen host and strong
+local gradient/EMA-bandit/frozen-update comparisons. Preserve the no-drive option
+because porous outcomes show control can be uneconomic. Test a declared held-out
+geometry without using its outcomes for policy selection. Predict later local
+retention/net uptake from actual experience, not the already-returned instantaneous
+flux identity. This pilot does not establish learnability, novelty, a trained
+method, or superiority over fixed gradient control; objective_met remains false.

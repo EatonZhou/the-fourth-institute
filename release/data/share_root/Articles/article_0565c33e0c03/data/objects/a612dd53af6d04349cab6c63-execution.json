@@ -1,0 +1,20 @@
+{
+  "task": "complementary_cargo_exchange_20261019",
+  "status": "completed",
+  "owner": "resident_ce2a5ab005bc",
+  "job_id": "34419402-e7f8-4984-aa85-241e6fcc8819",
+  "complete_paths": 16,
+  "science_native": 3072,
+  "partial_paths": 0,
+  "missing_paths": 0,
+  "actual_worker_seconds": 181.354156,
+  "objective_met": false,
+  "learning_objective_met": false,
+  "finite192_maintenance_pass_count": 0,
+  "independent_transport_enables_birth_in_separated_conditions": true,
+  "unused_sealed": [
+    32,
+    718.645844
+  ],
+  "next": "PI scientific choice from completed fixed-physiology results; no training or extra native submission authorized by this package"
+}

@@ -1,0 +1,4298 @@
+[
+  {
+    "formed_by": "g1_f2_c0",
+    "apply_rule": "g2_p0_c0",
+    "shape": "compact",
+    "condition": "colocated",
+    "locked_before_sha": "e8e9b1539f1d88089482052d81280176392cee84313f82d335ddd4fab1a0a483",
+    "locked_after_sha": "e8e9b1539f1d88089482052d81280176392cee84313f82d335ddd4fab1a0a483",
+    "exact": true,
+    "target_rule_sha": "49dc4c5f9528b21b65bd4f8b0838e5100f534c517527d534feac395d96c226c1",
+    "target_kernel_sha": "bf6b12c622fe17517f52b75e1b9a2e820bc91874d646f6398e7c3c691ad74bf6",
+    "changed": [
+      "model.config.body_rule",
+      "model.kernels",
+      "derived_model.engine_and_FFT",
+      "rule_sha",
+      "kernel_sha"
+    ],
+    "preserved": {
+      "wrapper": {
+        "map_A": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "85aa4e590102d6eccc00150786a3619a967168f8297056d3772543e2cd391f2b"
+        },
+        "map_B": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "399a3cfd901cf147dc4857e11e3ecf566269f58e6377411e9e07046890ca2ad6"
+        },
+        "record": {
+          "id": "g1_f2_c0",
+          "generation": 1,
+          "family": "double_lobe",
+          "genome": {
+            "schema": "experience-adaptation-genome.v1",
+            "id": "genome_d02e7f60565f83066e5d",
+            "family": "double_lobe",
+            "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/compact_ring_core_outer--bridged_longbody.npz",
+            "source_sha256": "eb468b8e2c146e7383b379c0c51fac7cf84edcac524e43726276e8880ce854c8",
+            "genes": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "parent_id": null,
+            "generation": 0,
+            "mutation_seed": null,
+            "named_genes": {
+              "log_mu1": 0.0,
+              "log_mu2": 0.0,
+              "log_sigma1": 0.0,
+              "log_sigma2": 0.0,
+              "weight_shift": 0.0,
+              "kernel_radial1": 0.0,
+              "kernel_radial2": 0.0,
+              "kernel_crossmix": 0.0,
+              "log_stretch_y": 0.0,
+              "log_stretch_x": 0.0,
+              "neck_density": 0.0
+            },
+            "lifetime_rule": "fixed; only outer generations mutate"
+          },
+          "parent_candidate": null,
+          "kernel_log_scales": [
+            -0.06,
+            0.06
+          ],
+          "legal": true
+        },
+        "shape": "compact",
+        "condition": "colocated",
+        "policy": "pump",
+        "phase": "ready",
+        "pending": null,
+        "pump_total": 11.09014157496591,
+        "pump_heat": 0.887211325997273
+      },
+      "exchange": {
+        "ecology": "static",
+        "base_fuel": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "8357f0d33f882349e036372f43afaa854e2a2d77b9d5d385038f0c61ac54ab46"
+        },
+        "base_precursor": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "c287cb58d0c319f45d5c28f5d808f1dbb3eb5aad3b63e574d1be5dcab85d6263"
+        },
+        "material_sink": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "296d254398a3d536f349bc1b2aa17c7afa532b395261d682d60a5aeadf332015"
+        },
+        "energy_sink": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "7d258b0036ec4417fbfb4481f56cb110b90fde4c7eb71e76dec05e8cc7718972"
+        },
+        "ready": true,
+        "fixed_P": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "fb37855e51a0c051ef77051f5178654da2f1284c5a15cc3850512617c19bded2"
+        },
+        "fixed_F": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "4555ca73c37b06996d4738aa5f1bd46d66263d06b98ff4227ba224b2a0c7eb3f"
+        }
+      },
+      "body": {
+        "world": {
+          "face_permeability": {
+            "dtype": "<f8",
+            "shape": [
+              4,
+              96,
+              96
+            ],
+            "sha256": "d238a4cc98758792517be55650d2e2c7ec41e14f98f855d395179202d14cea27"
+          },
+          "fuel_input": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "4555ca73c37b06996d4738aa5f1bd46d66263d06b98ff4227ba224b2a0c7eb3f"
+          },
+          "precursor_input": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "fb37855e51a0c051ef77051f5178654da2f1284c5a15cc3850512617c19bded2"
+          },
+          "hazard": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+          }
+        },
+        "adapter": {
+          "class": "environment_evolution.material_action_response.core.VectorAdapter",
+          "fields": {
+            "plant": {
+              "class": "environment_evolution.material_action_response.core.VectorPlant",
+              "fields": {
+                "rule": {
+                  "class": "local_learning.material_transport.Rule",
+                  "fields": {
+                    "transport_scheme": "face_potential",
+                    "dt": 0.05,
+                    "mobility": 1.0,
+                    "cohesion": 3.0,
+                    "pressure": 1.5,
+                    "interaction_sigma": 1.4,
+                    "cue_gain": 0.0,
+                    "learning_rate": 1.0,
+                    "eligibility_time": 0.8,
+                    "memory_time": 200.0,
+                    "uptake_rate": 0.2,
+                    "energy_capacity": 2.0,
+                    "basal_cost": 0.012,
+                    "movement_cost": 0.08,
+                    "starvation_rate": 0.15,
+                    "starvation_energy": 0.08,
+                    "food_sensor_scale": 5.0,
+                    "injury_sensor_scale": 25.0,
+                    "action_budget": "donor_energy",
+                    "polarity_gain": 0.5,
+                    "polarity_turn_rate": 0.04,
+                    "polarity_relaxation_rate": 0.5,
+                    "polarity_energy_gate": "none",
+                    "energy_transfer_conductivity": 0.0,
+                    "energy_transfer_loss": 0.01
+                  }
+                },
+                "permeability": {
+                  "dtype": "<f8",
+                  "shape": [
+                    4,
+                    96,
+                    96
+                  ],
+                  "sha256": "d238a4cc98758792517be55650d2e2c7ec41e14f98f855d395179202d14cea27"
+                },
+                "action": {
+                  "dtype": "<f8",
+                  "shape": [
+                    2,
+                    96,
+                    96
+                  ],
+                  "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+                },
+                "raw_rates": {
+                  "dtype": "<f8",
+                  "shape": [
+                    4,
+                    96,
+                    96
+                  ],
+                  "sha256": "e8a0a3381911a2b8adc61e4728c820c5a73ae437fccce1b64e66d0f8dec80441"
+                },
+                "blocked_rates": {
+                  "dtype": "<f8",
+                  "shape": [
+                    4,
+                    96,
+                    96
+                  ],
+                  "sha256": "4a1db6208c2b6a50dba1c131b6abdc475141a751915a1d1777ba4a075eebd78c"
+                }
+              }
+            }
+          }
+        },
+        "state": {
+          "body": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "06a166f5bc0da98507c8455350d00d0bcee33c4cac2dba094dc8759e889217b9"
+          },
+          "energy": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "7139e5c981bc88ca951df7b9ddcd442498e6c6dde07c52c71a1c6283ef928f31"
+          },
+          "memory": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "eligibility": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "polarity": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "precursor": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "6139ffb4ffb1ecd3ceb68c01365320963a7dabd4a9ec2f3b285c996f474ebd4a"
+          },
+          "fuel": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "3403fa2c53579f149e9975938370b0f79c0aa381b1fa4378935884016cbda58d"
+          },
+          "waste": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "7fc23e23a66abef40cd7bb433ca220ce4cdd61deb1cf492d5e2db7ad1cde53b7"
+          },
+          "heat": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "55296a7d47d0e4ff6a5748bd10d555295319075475c0202008ffd888a69d03a3"
+          },
+          "dead_energy": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "9392f98b2385b7cc4b0cad21cfb8644e4ce6ed5da6d3f78503717202286843a1"
+          },
+          "founder_mass": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "e27767b07d50cc022203adc8cf3c2cd10687f5c44e483d7a62290f30cba5cc9a"
+          },
+          "c_theta": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "c_value": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "c_trace": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "c_food": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+          },
+          "c_run": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+          },
+          "c_remaining": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+          }
+        },
+        "source": {
+          "candidate": {
+            "id": "g1_f2_c0",
+            "generation": 1,
+            "family": "compact",
+            "genome": {
+              "schema": "experience-adaptation-genome.v1",
+              "id": "genome_d02e7f60565f83066e5d",
+              "family": "double_lobe",
+              "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/compact_ring_core_outer--bridged_longbody.npz",
+              "source_sha256": "eb468b8e2c146e7383b379c0c51fac7cf84edcac524e43726276e8880ce854c8",
+              "genes": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "parent_id": null,
+              "generation": 0,
+              "mutation_seed": null,
+              "named_genes": {
+                "log_mu1": 0.0,
+                "log_mu2": 0.0,
+                "log_sigma1": 0.0,
+                "log_sigma2": 0.0,
+                "weight_shift": 0.0,
+                "kernel_radial1": 0.0,
+                "kernel_radial2": 0.0,
+                "kernel_crossmix": 0.0,
+                "log_stretch_y": 0.0,
+                "log_stretch_x": 0.0,
+                "neck_density": 0.0
+              },
+              "lifetime_rule": "fixed; only outer generations mutate"
+            },
+            "parent_candidate": null,
+            "kernel_log_scales": [
+              -0.06,
+              0.06
+            ],
+            "legal": true
+          },
+          "life0_endowment": {
+            "M": 64.0,
+            "E": 64.0,
+            "P": 0.0,
+            "F": 0.0
+          },
+          "rule_sha256": "ee3ad30c1410a112def5496e7fd291fbd8da4d3531101ff02cf13e74d24016e2"
+        },
+        "clock": 128,
+        "elapsed": 128,
+        "supply_steps": 384,
+        "input_material": 25.634519193445186,
+        "input_energy": 102.53807677378074
+      },
+      "model_nonrule": {
+        "conversion": {
+          "density_capacity": 1.0,
+          "endowment": 0.2,
+          "synthesis_heat": 0.2,
+          "template_heat": 0.02
+        },
+        "physical_rule": {
+          "transport_scheme": "face_potential",
+          "dt": 0.05,
+          "mobility": 1.0,
+          "cohesion": 3.0,
+          "pressure": 1.5,
+          "interaction_sigma": 1.4,
+          "cue_gain": 0.0,
+          "learning_rate": 1.0,
+          "eligibility_time": 0.8,
+          "memory_time": 200.0,
+          "uptake_rate": 0.2,
+          "energy_capacity": 2.0,
+          "basal_cost": 0.012,
+          "movement_cost": 0.08,
+          "starvation_rate": 0.15,
+          "starvation_energy": 0.08,
+          "food_sensor_scale": 5.0,
+          "injury_sensor_scale": 25.0,
+          "action_budget": "donor_energy",
+          "polarity_gain": 0.5,
+          "polarity_turn_rate": 0.04,
+          "polarity_relaxation_rate": 0.5,
+          "polarity_energy_gate": "none",
+          "energy_transfer_conductivity": 0.0,
+          "energy_transfer_loss": 0.01
+        },
+        "learning_rule": {
+          "hold_time": 0.8,
+          "food_time": 0.8,
+          "discount_time": 6.4,
+          "trace_time": 3.2,
+          "actor_rate": 0.1,
+          "critic_rate": 0.1,
+          "reward_scale": 0.02,
+          "loss_price": 0.08,
+          "theta_bound": 3.0,
+          "value_bound": 2.0
+        },
+        "generation_enabled": true
+      },
+      "model_dt": 0.05,
+      "model_conversion": {
+        "class": "environment_evolution.regenerative_actor.conversion.Conversion",
+        "fields": {
+          "density_capacity": 1.0,
+          "endowment": 0.2,
+          "synthesis_heat": 0.2,
+          "template_heat": 0.02
+        }
+      }
+    },
+    "model_actor_is_original_adapter": true
+  },
+  {
+    "formed_by": "g2_p0_c0",
+    "apply_rule": "g1_f2_c0",
+    "shape": "compact",
+    "condition": "colocated",
+    "locked_before_sha": "dd770fce7c50771cbd3c5bc29aab288271a11ced6f02ef726ec9e3f63ed88d03",
+    "locked_after_sha": "dd770fce7c50771cbd3c5bc29aab288271a11ced6f02ef726ec9e3f63ed88d03",
+    "exact": true,
+    "target_rule_sha": "ee3ad30c1410a112def5496e7fd291fbd8da4d3531101ff02cf13e74d24016e2",
+    "target_kernel_sha": "f7a36c39a1ca3d0ba5a08a555adce6a9c25f33a2d47d5c933eb2657192bb0fb4",
+    "changed": [
+      "model.config.body_rule",
+      "model.kernels",
+      "derived_model.engine_and_FFT",
+      "rule_sha",
+      "kernel_sha"
+    ],
+    "preserved": {
+      "wrapper": {
+        "map_A": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "85aa4e590102d6eccc00150786a3619a967168f8297056d3772543e2cd391f2b"
+        },
+        "map_B": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "399a3cfd901cf147dc4857e11e3ecf566269f58e6377411e9e07046890ca2ad6"
+        },
+        "record": {
+          "id": "g2_p0_c0",
+          "generation": 2,
+          "family": "double_lobe",
+          "genome": {
+            "schema": "experience-adaptation-genome.v1",
+            "id": "genome_bd818f3cd82ee24316f5",
+            "family": "double_lobe",
+            "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/compact_ring_core_outer--bridged_longbody.npz",
+            "source_sha256": "eb468b8e2c146e7383b379c0c51fac7cf84edcac524e43726276e8880ce854c8",
+            "genes": [
+              0.03805112412521015,
+              0.0018895267609443866,
+              -0.05434230796821879,
+              0.03500208173589314,
+              -0.005742716135906684,
+              -0.014487744102262416,
+              0.11184272048007587,
+              0.021018927058154033,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "parent_id": "genome_d02e7f60565f83066e5d",
+            "generation": 1,
+            "mutation_seed": 202610193001,
+            "named_genes": {
+              "log_mu1": 0.03805112412521015,
+              "log_mu2": 0.0018895267609443866,
+              "log_sigma1": -0.05434230796821879,
+              "log_sigma2": 0.03500208173589314,
+              "weight_shift": -0.005742716135906684,
+              "kernel_radial1": -0.014487744102262416,
+              "kernel_radial2": 0.11184272048007587,
+              "kernel_crossmix": 0.021018927058154033,
+              "log_stretch_y": 0.0,
+              "log_stretch_x": 0.0,
+              "neck_density": 0.0
+            },
+            "lifetime_rule": "fixed; only outer generations mutate"
+          },
+          "parent_candidate": "g1_f2_c0",
+          "kernel_log_scales": [
+            -0.06,
+            0.06
+          ],
+          "legal": true,
+          "mutation_seed": 202610193001,
+          "proposed_genes": [
+            0.03805112412521015,
+            0.0018895267609443866,
+            -0.05434230796821879,
+            0.03500208173589314,
+            -0.005742716135906684,
+            -0.014487744102262416,
+            0.11184272048007587,
+            0.021018927058154033,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "shape": "compact",
+        "condition": "colocated",
+        "policy": "pump",
+        "phase": "ready",
+        "pending": null,
+        "pump_total": 10.39137635407832,
+        "pump_heat": 0.8313101083262654
+      },
+      "exchange": {
+        "ecology": "static",
+        "base_fuel": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "8357f0d33f882349e036372f43afaa854e2a2d77b9d5d385038f0c61ac54ab46"
+        },
+        "base_precursor": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "c287cb58d0c319f45d5c28f5d808f1dbb3eb5aad3b63e574d1be5dcab85d6263"
+        },
+        "material_sink": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "cf0de0dee0b2b926f5e4dac731cbeeda6523667f082c7b55a5b80df923d1a339"
+        },
+        "energy_sink": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "3593e08a87c8207794493cc542435bc4c537713fbd24d8c620e3f32680fd10b5"
+        },
+        "ready": true,
+        "fixed_P": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "fb37855e51a0c051ef77051f5178654da2f1284c5a15cc3850512617c19bded2"
+        },
+        "fixed_F": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "4555ca73c37b06996d4738aa5f1bd46d66263d06b98ff4227ba224b2a0c7eb3f"
+        }
+      },
+      "body": {
+        "world": {
+          "face_permeability": {
+            "dtype": "<f8",
+            "shape": [
+              4,
+              96,
+              96
+            ],
+            "sha256": "d238a4cc98758792517be55650d2e2c7ec41e14f98f855d395179202d14cea27"
+          },
+          "fuel_input": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "4555ca73c37b06996d4738aa5f1bd46d66263d06b98ff4227ba224b2a0c7eb3f"
+          },
+          "precursor_input": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "fb37855e51a0c051ef77051f5178654da2f1284c5a15cc3850512617c19bded2"
+          },
+          "hazard": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+          }
+        },
+        "adapter": {
+          "class": "environment_evolution.material_action_response.core.VectorAdapter",
+          "fields": {
+            "plant": {
+              "class": "environment_evolution.material_action_response.core.VectorPlant",
+              "fields": {
+                "rule": {
+                  "class": "local_learning.material_transport.Rule",
+                  "fields": {
+                    "transport_scheme": "face_potential",
+                    "dt": 0.05,
+                    "mobility": 1.0,
+                    "cohesion": 3.0,
+                    "pressure": 1.5,
+                    "interaction_sigma": 1.4,
+                    "cue_gain": 0.0,
+                    "learning_rate": 1.0,
+                    "eligibility_time": 0.8,
+                    "memory_time": 200.0,
+                    "uptake_rate": 0.2,
+                    "energy_capacity": 2.0,
+                    "basal_cost": 0.012,
+                    "movement_cost": 0.08,
+                    "starvation_rate": 0.15,
+                    "starvation_energy": 0.08,
+                    "food_sensor_scale": 5.0,
+                    "injury_sensor_scale": 25.0,
+                    "action_budget": "donor_energy",
+                    "polarity_gain": 0.5,
+                    "polarity_turn_rate": 0.04,
+                    "polarity_relaxation_rate": 0.5,
+                    "polarity_energy_gate": "none",
+                    "energy_transfer_conductivity": 0.0,
+                    "energy_transfer_loss": 0.01
+                  }
+                },
+                "permeability": {
+                  "dtype": "<f8",
+                  "shape": [
+                    4,
+                    96,
+                    96
+                  ],
+                  "sha256": "d238a4cc98758792517be55650d2e2c7ec41e14f98f855d395179202d14cea27"
+                },
+                "action": {
+                  "dtype": "<f8",
+                  "shape": [
+                    2,
+                    96,
+                    96
+                  ],
+                  "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+                },
+                "raw_rates": {
+                  "dtype": "<f8",
+                  "shape": [
+                    4,
+                    96,
+                    96
+                  ],
+                  "sha256": "07522102052a73857c25fcdde107f87b5ec47794ac88262e458555f7bcd31c95"
+                },
+                "blocked_rates": {
+                  "dtype": "<f8",
+                  "shape": [
+                    4,
+                    96,
+                    96
+                  ],
+                  "sha256": "d7f750fdfb2dcda4a21caa4d1559824f2c2980b0289acfb1679bf0debc5805c4"
+                }
+              }
+            }
+          }
+        },
+        "state": {
+          "body": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "4c9a5512118ce3847b6a94c1988ecbd630648ee97b4f1c9d621fe5aa2275b789"
+          },
+          "energy": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "2f0ebdae7d37df674f6071dc4e068e3e5673d6f3af1357c1d6940092d95a08f9"
+          },
+          "memory": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "eligibility": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "polarity": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "precursor": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "cd3bc778164b5e9a0cbe929572a3b2b8db857f1eabdb3bc6804590e1fa63193f"
+          },
+          "fuel": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "3576d072bc6aa394bc652cfe4572e4f712c00c8a098641cb0b575f71c01dc50c"
+          },
+          "waste": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "f6708dd467b70af2e40d4b275484b25810b43fb31c4cf0bdffa6ba17a48c64c2"
+          },
+          "heat": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "b90149ab9fc5623d2be47bdfae4e0cc8bb6ac457e09e6ef90e2828b3eb756be3"
+          },
+          "dead_energy": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "746386ff5564ec63a908d9043e81527855663a8d1f54136a8dbc76e58ba64002"
+          },
+          "founder_mass": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "349dbdb4822cc2aacb439a392b545d95f048989bd6d59a7362ae487f5d2294cb"
+          },
+          "c_theta": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "c_value": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "c_trace": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "c_food": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+          },
+          "c_run": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+          },
+          "c_remaining": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+          }
+        },
+        "source": {
+          "candidate": {
+            "id": "g2_p0_c0",
+            "generation": 2,
+            "family": "compact",
+            "genome": {
+              "schema": "experience-adaptation-genome.v1",
+              "id": "genome_bd818f3cd82ee24316f5",
+              "family": "double_lobe",
+              "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/compact_ring_core_outer--bridged_longbody.npz",
+              "source_sha256": "eb468b8e2c146e7383b379c0c51fac7cf84edcac524e43726276e8880ce854c8",
+              "genes": [
+                0.03805112412521015,
+                0.0018895267609443866,
+                -0.05434230796821879,
+                0.03500208173589314,
+                -0.005742716135906684,
+                -0.014487744102262416,
+                0.11184272048007587,
+                0.021018927058154033,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "parent_id": "genome_d02e7f60565f83066e5d",
+              "generation": 1,
+              "mutation_seed": 202610193001,
+              "named_genes": {
+                "log_mu1": 0.03805112412521015,
+                "log_mu2": 0.0018895267609443866,
+                "log_sigma1": -0.05434230796821879,
+                "log_sigma2": 0.03500208173589314,
+                "weight_shift": -0.005742716135906684,
+                "kernel_radial1": -0.014487744102262416,
+                "kernel_radial2": 0.11184272048007587,
+                "kernel_crossmix": 0.021018927058154033,
+                "log_stretch_y": 0.0,
+                "log_stretch_x": 0.0,
+                "neck_density": 0.0
+              },
+              "lifetime_rule": "fixed; only outer generations mutate"
+            },
+            "parent_candidate": "g1_f2_c0",
+            "kernel_log_scales": [
+              -0.06,
+              0.06
+            ],
+            "legal": true,
+            "mutation_seed": 202610193001,
+            "proposed_genes": [
+              0.03805112412521015,
+              0.0018895267609443866,
+              -0.05434230796821879,
+              0.03500208173589314,
+              -0.005742716135906684,
+              -0.014487744102262416,
+              0.11184272048007587,
+              0.021018927058154033,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "life0_endowment": {
+            "M": 64.0,
+            "E": 64.0,
+            "P": 0.0,
+            "F": 0.0
+          },
+          "rule_sha256": "49dc4c5f9528b21b65bd4f8b0838e5100f534c517527d534feac395d96c226c1"
+        },
+        "clock": 128,
+        "elapsed": 128,
+        "supply_steps": 384,
+        "input_material": 25.634519193445186,
+        "input_energy": 102.53807677378074
+      },
+      "model_nonrule": {
+        "conversion": {
+          "density_capacity": 1.0,
+          "endowment": 0.2,
+          "synthesis_heat": 0.2,
+          "template_heat": 0.02
+        },
+        "physical_rule": {
+          "transport_scheme": "face_potential",
+          "dt": 0.05,
+          "mobility": 1.0,
+          "cohesion": 3.0,
+          "pressure": 1.5,
+          "interaction_sigma": 1.4,
+          "cue_gain": 0.0,
+          "learning_rate": 1.0,
+          "eligibility_time": 0.8,
+          "memory_time": 200.0,
+          "uptake_rate": 0.2,
+          "energy_capacity": 2.0,
+          "basal_cost": 0.012,
+          "movement_cost": 0.08,
+          "starvation_rate": 0.15,
+          "starvation_energy": 0.08,
+          "food_sensor_scale": 5.0,
+          "injury_sensor_scale": 25.0,
+          "action_budget": "donor_energy",
+          "polarity_gain": 0.5,
+          "polarity_turn_rate": 0.04,
+          "polarity_relaxation_rate": 0.5,
+          "polarity_energy_gate": "none",
+          "energy_transfer_conductivity": 0.0,
+          "energy_transfer_loss": 0.01
+        },
+        "learning_rule": {
+          "hold_time": 0.8,
+          "food_time": 0.8,
+          "discount_time": 6.4,
+          "trace_time": 3.2,
+          "actor_rate": 0.1,
+          "critic_rate": 0.1,
+          "reward_scale": 0.02,
+          "loss_price": 0.08,
+          "theta_bound": 3.0,
+          "value_bound": 2.0
+        },
+        "generation_enabled": true
+      },
+      "model_dt": 0.05,
+      "model_conversion": {
+        "class": "environment_evolution.regenerative_actor.conversion.Conversion",
+        "fields": {
+          "density_capacity": 1.0,
+          "endowment": 0.2,
+          "synthesis_heat": 0.2,
+          "template_heat": 0.02
+        }
+      }
+    },
+    "model_actor_is_original_adapter": true
+  },
+  {
+    "formed_by": "g1_f2_c0",
+    "apply_rule": "g2_p0_c0",
+    "shape": "compact",
+    "condition": "separated",
+    "locked_before_sha": "2145f1b5eb947791a423cd082888d89ccc1641c538c1f729174b3e430bc3724d",
+    "locked_after_sha": "2145f1b5eb947791a423cd082888d89ccc1641c538c1f729174b3e430bc3724d",
+    "exact": true,
+    "target_rule_sha": "49dc4c5f9528b21b65bd4f8b0838e5100f534c517527d534feac395d96c226c1",
+    "target_kernel_sha": "bf6b12c622fe17517f52b75e1b9a2e820bc91874d646f6398e7c3c691ad74bf6",
+    "changed": [
+      "model.config.body_rule",
+      "model.kernels",
+      "derived_model.engine_and_FFT",
+      "rule_sha",
+      "kernel_sha"
+    ],
+    "preserved": {
+      "wrapper": {
+        "map_A": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "85aa4e590102d6eccc00150786a3619a967168f8297056d3772543e2cd391f2b"
+        },
+        "map_B": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "399a3cfd901cf147dc4857e11e3ecf566269f58e6377411e9e07046890ca2ad6"
+        },
+        "record": {
+          "id": "g1_f2_c0",
+          "generation": 1,
+          "family": "double_lobe",
+          "genome": {
+            "schema": "experience-adaptation-genome.v1",
+            "id": "genome_d02e7f60565f83066e5d",
+            "family": "double_lobe",
+            "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/compact_ring_core_outer--bridged_longbody.npz",
+            "source_sha256": "eb468b8e2c146e7383b379c0c51fac7cf84edcac524e43726276e8880ce854c8",
+            "genes": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "parent_id": null,
+            "generation": 0,
+            "mutation_seed": null,
+            "named_genes": {
+              "log_mu1": 0.0,
+              "log_mu2": 0.0,
+              "log_sigma1": 0.0,
+              "log_sigma2": 0.0,
+              "weight_shift": 0.0,
+              "kernel_radial1": 0.0,
+              "kernel_radial2": 0.0,
+              "kernel_crossmix": 0.0,
+              "log_stretch_y": 0.0,
+              "log_stretch_x": 0.0,
+              "neck_density": 0.0
+            },
+            "lifetime_rule": "fixed; only outer generations mutate"
+          },
+          "parent_candidate": null,
+          "kernel_log_scales": [
+            -0.06,
+            0.06
+          ],
+          "legal": true
+        },
+        "shape": "compact",
+        "condition": "separated",
+        "policy": "pump",
+        "phase": "ready",
+        "pending": null,
+        "pump_total": 17.253096017512224,
+        "pump_heat": 1.3802476814009776
+      },
+      "exchange": {
+        "ecology": "static",
+        "base_fuel": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "8357f0d33f882349e036372f43afaa854e2a2d77b9d5d385038f0c61ac54ab46"
+        },
+        "base_precursor": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "c287cb58d0c319f45d5c28f5d808f1dbb3eb5aad3b63e574d1be5dcab85d6263"
+        },
+        "material_sink": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "a7a236b0ab32030fdc55a0e678b44b2b8e9829b104f5a0d43e617b998fb9ad58"
+        },
+        "energy_sink": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "e69fdad81f60f72cb7433cfeb00014892f6016fec71dccca9cb1db7d76a8fa05"
+        },
+        "ready": true,
+        "fixed_P": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "fb37855e51a0c051ef77051f5178654da2f1284c5a15cc3850512617c19bded2"
+        },
+        "fixed_F": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "c48a1c0a38dc7962299482092178b7dffbd012dd0853031dfb3214627fefabb8"
+        }
+      },
+      "body": {
+        "world": {
+          "face_permeability": {
+            "dtype": "<f8",
+            "shape": [
+              4,
+              96,
+              96
+            ],
+            "sha256": "d238a4cc98758792517be55650d2e2c7ec41e14f98f855d395179202d14cea27"
+          },
+          "fuel_input": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "c48a1c0a38dc7962299482092178b7dffbd012dd0853031dfb3214627fefabb8"
+          },
+          "precursor_input": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "fb37855e51a0c051ef77051f5178654da2f1284c5a15cc3850512617c19bded2"
+          },
+          "hazard": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+          }
+        },
+        "adapter": {
+          "class": "environment_evolution.material_action_response.core.VectorAdapter",
+          "fields": {
+            "plant": {
+              "class": "environment_evolution.material_action_response.core.VectorPlant",
+              "fields": {
+                "rule": {
+                  "class": "local_learning.material_transport.Rule",
+                  "fields": {
+                    "transport_scheme": "face_potential",
+                    "dt": 0.05,
+                    "mobility": 1.0,
+                    "cohesion": 3.0,
+                    "pressure": 1.5,
+                    "interaction_sigma": 1.4,
+                    "cue_gain": 0.0,
+                    "learning_rate": 1.0,
+                    "eligibility_time": 0.8,
+                    "memory_time": 200.0,
+                    "uptake_rate": 0.2,
+                    "energy_capacity": 2.0,
+                    "basal_cost": 0.012,
+                    "movement_cost": 0.08,
+                    "starvation_rate": 0.15,
+                    "starvation_energy": 0.08,
+                    "food_sensor_scale": 5.0,
+                    "injury_sensor_scale": 25.0,
+                    "action_budget": "donor_energy",
+                    "polarity_gain": 0.5,
+                    "polarity_turn_rate": 0.04,
+                    "polarity_relaxation_rate": 0.5,
+                    "polarity_energy_gate": "none",
+                    "energy_transfer_conductivity": 0.0,
+                    "energy_transfer_loss": 0.01
+                  }
+                },
+                "permeability": {
+                  "dtype": "<f8",
+                  "shape": [
+                    4,
+                    96,
+                    96
+                  ],
+                  "sha256": "d238a4cc98758792517be55650d2e2c7ec41e14f98f855d395179202d14cea27"
+                },
+                "action": {
+                  "dtype": "<f8",
+                  "shape": [
+                    2,
+                    96,
+                    96
+                  ],
+                  "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+                },
+                "raw_rates": {
+                  "dtype": "<f8",
+                  "shape": [
+                    4,
+                    96,
+                    96
+                  ],
+                  "sha256": "5b6374b5a76c33ea5b1ce2061d70cb39ceab2c660dc1a86f5b755281d6209ad9"
+                },
+                "blocked_rates": {
+                  "dtype": "<f8",
+                  "shape": [
+                    4,
+                    96,
+                    96
+                  ],
+                  "sha256": "8a34a74813520be0b58d4478dcd55afa9d12e4f6dbb60061ebc5d83f0b0cb55e"
+                }
+              }
+            }
+          }
+        },
+        "state": {
+          "body": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "968c6a737f017b6498501e671a849277062d400b5e49777eee354a47b96e8edb"
+          },
+          "energy": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "2ba7d39e1ff8f6da09b6bc039d239760d09c2c694f554dbdc0ad775a2791ce62"
+          },
+          "memory": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "eligibility": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "polarity": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "precursor": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "eb73a1d8962d7f1619669634786ba540e970f39baf0918d4bfe7603cb038813f"
+          },
+          "fuel": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "1ca0f7d4a0ec54ebaaaa461975514d1942b91e1bb77361f046c480bf0438b07a"
+          },
+          "waste": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "1206fe3aa097dd2cdd6bbe26cab5d1c1b66c0629b453a91eb50c43e367bac96c"
+          },
+          "heat": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "b79e5e97beaa3e927351887a0f5f4c15fe4c6fa0a728fbe7ef9daa3e20d9b20e"
+          },
+          "dead_energy": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "acefd9be4e2c3f9e6d391769dee5aa99232b3c3a6275cfd531012199ccac52be"
+          },
+          "founder_mass": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "bfee514a2ecfd602ac3b28cf3746d3ae8381d3f83daec9054ace6f6f7dd8925c"
+          },
+          "c_theta": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "c_value": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "c_trace": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "c_food": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+          },
+          "c_run": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+          },
+          "c_remaining": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+          }
+        },
+        "source": {
+          "candidate": {
+            "id": "g1_f2_c0",
+            "generation": 1,
+            "family": "compact",
+            "genome": {
+              "schema": "experience-adaptation-genome.v1",
+              "id": "genome_d02e7f60565f83066e5d",
+              "family": "double_lobe",
+              "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/compact_ring_core_outer--bridged_longbody.npz",
+              "source_sha256": "eb468b8e2c146e7383b379c0c51fac7cf84edcac524e43726276e8880ce854c8",
+              "genes": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "parent_id": null,
+              "generation": 0,
+              "mutation_seed": null,
+              "named_genes": {
+                "log_mu1": 0.0,
+                "log_mu2": 0.0,
+                "log_sigma1": 0.0,
+                "log_sigma2": 0.0,
+                "weight_shift": 0.0,
+                "kernel_radial1": 0.0,
+                "kernel_radial2": 0.0,
+                "kernel_crossmix": 0.0,
+                "log_stretch_y": 0.0,
+                "log_stretch_x": 0.0,
+                "neck_density": 0.0
+              },
+              "lifetime_rule": "fixed; only outer generations mutate"
+            },
+            "parent_candidate": null,
+            "kernel_log_scales": [
+              -0.06,
+              0.06
+            ],
+            "legal": true
+          },
+          "life0_endowment": {
+            "M": 64.0,
+            "E": 64.0,
+            "P": 0.0,
+            "F": 0.0
+          },
+          "rule_sha256": "ee3ad30c1410a112def5496e7fd291fbd8da4d3531101ff02cf13e74d24016e2"
+        },
+        "clock": 128,
+        "elapsed": 128,
+        "supply_steps": 384,
+        "input_material": 25.634519193445186,
+        "input_energy": 102.53807677378074
+      },
+      "model_nonrule": {
+        "conversion": {
+          "density_capacity": 1.0,
+          "endowment": 0.2,
+          "synthesis_heat": 0.2,
+          "template_heat": 0.02
+        },
+        "physical_rule": {
+          "transport_scheme": "face_potential",
+          "dt": 0.05,
+          "mobility": 1.0,
+          "cohesion": 3.0,
+          "pressure": 1.5,
+          "interaction_sigma": 1.4,
+          "cue_gain": 0.0,
+          "learning_rate": 1.0,
+          "eligibility_time": 0.8,
+          "memory_time": 200.0,
+          "uptake_rate": 0.2,
+          "energy_capacity": 2.0,
+          "basal_cost": 0.012,
+          "movement_cost": 0.08,
+          "starvation_rate": 0.15,
+          "starvation_energy": 0.08,
+          "food_sensor_scale": 5.0,
+          "injury_sensor_scale": 25.0,
+          "action_budget": "donor_energy",
+          "polarity_gain": 0.5,
+          "polarity_turn_rate": 0.04,
+          "polarity_relaxation_rate": 0.5,
+          "polarity_energy_gate": "none",
+          "energy_transfer_conductivity": 0.0,
+          "energy_transfer_loss": 0.01
+        },
+        "learning_rule": {
+          "hold_time": 0.8,
+          "food_time": 0.8,
+          "discount_time": 6.4,
+          "trace_time": 3.2,
+          "actor_rate": 0.1,
+          "critic_rate": 0.1,
+          "reward_scale": 0.02,
+          "loss_price": 0.08,
+          "theta_bound": 3.0,
+          "value_bound": 2.0
+        },
+        "generation_enabled": true
+      },
+      "model_dt": 0.05,
+      "model_conversion": {
+        "class": "environment_evolution.regenerative_actor.conversion.Conversion",
+        "fields": {
+          "density_capacity": 1.0,
+          "endowment": 0.2,
+          "synthesis_heat": 0.2,
+          "template_heat": 0.02
+        }
+      }
+    },
+    "model_actor_is_original_adapter": true
+  },
+  {
+    "formed_by": "g2_p0_c0",
+    "apply_rule": "g1_f2_c0",
+    "shape": "compact",
+    "condition": "separated",
+    "locked_before_sha": "7ed1ec59c42c210ae72c0bb857c7ac381f9c23471b083c65efe3666bcb8dc05f",
+    "locked_after_sha": "7ed1ec59c42c210ae72c0bb857c7ac381f9c23471b083c65efe3666bcb8dc05f",
+    "exact": true,
+    "target_rule_sha": "ee3ad30c1410a112def5496e7fd291fbd8da4d3531101ff02cf13e74d24016e2",
+    "target_kernel_sha": "f7a36c39a1ca3d0ba5a08a555adce6a9c25f33a2d47d5c933eb2657192bb0fb4",
+    "changed": [
+      "model.config.body_rule",
+      "model.kernels",
+      "derived_model.engine_and_FFT",
+      "rule_sha",
+      "kernel_sha"
+    ],
+    "preserved": {
+      "wrapper": {
+        "map_A": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "85aa4e590102d6eccc00150786a3619a967168f8297056d3772543e2cd391f2b"
+        },
+        "map_B": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "399a3cfd901cf147dc4857e11e3ecf566269f58e6377411e9e07046890ca2ad6"
+        },
+        "record": {
+          "id": "g2_p0_c0",
+          "generation": 2,
+          "family": "double_lobe",
+          "genome": {
+            "schema": "experience-adaptation-genome.v1",
+            "id": "genome_bd818f3cd82ee24316f5",
+            "family": "double_lobe",
+            "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/compact_ring_core_outer--bridged_longbody.npz",
+            "source_sha256": "eb468b8e2c146e7383b379c0c51fac7cf84edcac524e43726276e8880ce854c8",
+            "genes": [
+              0.03805112412521015,
+              0.0018895267609443866,
+              -0.05434230796821879,
+              0.03500208173589314,
+              -0.005742716135906684,
+              -0.014487744102262416,
+              0.11184272048007587,
+              0.021018927058154033,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "parent_id": "genome_d02e7f60565f83066e5d",
+            "generation": 1,
+            "mutation_seed": 202610193001,
+            "named_genes": {
+              "log_mu1": 0.03805112412521015,
+              "log_mu2": 0.0018895267609443866,
+              "log_sigma1": -0.05434230796821879,
+              "log_sigma2": 0.03500208173589314,
+              "weight_shift": -0.005742716135906684,
+              "kernel_radial1": -0.014487744102262416,
+              "kernel_radial2": 0.11184272048007587,
+              "kernel_crossmix": 0.021018927058154033,
+              "log_stretch_y": 0.0,
+              "log_stretch_x": 0.0,
+              "neck_density": 0.0
+            },
+            "lifetime_rule": "fixed; only outer generations mutate"
+          },
+          "parent_candidate": "g1_f2_c0",
+          "kernel_log_scales": [
+            -0.06,
+            0.06
+          ],
+          "legal": true,
+          "mutation_seed": 202610193001,
+          "proposed_genes": [
+            0.03805112412521015,
+            0.0018895267609443866,
+            -0.05434230796821879,
+            0.03500208173589314,
+            -0.005742716135906684,
+            -0.014487744102262416,
+            0.11184272048007587,
+            0.021018927058154033,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "shape": "compact",
+        "condition": "separated",
+        "policy": "pump",
+        "phase": "ready",
+        "pending": null,
+        "pump_total": 20.233697343733326,
+        "pump_heat": 1.618695787498666
+      },
+      "exchange": {
+        "ecology": "static",
+        "base_fuel": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "8357f0d33f882349e036372f43afaa854e2a2d77b9d5d385038f0c61ac54ab46"
+        },
+        "base_precursor": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "c287cb58d0c319f45d5c28f5d808f1dbb3eb5aad3b63e574d1be5dcab85d6263"
+        },
+        "material_sink": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "31b17ccbf03f099b7ec36fb560be89f971fa1f576a40179200d5140af3b6dbb9"
+        },
+        "energy_sink": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "9a5878c18df2d9e489c861da281f8ede9bfe72370b4c1d801c5f895f19dd6588"
+        },
+        "ready": true,
+        "fixed_P": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "fb37855e51a0c051ef77051f5178654da2f1284c5a15cc3850512617c19bded2"
+        },
+        "fixed_F": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "c48a1c0a38dc7962299482092178b7dffbd012dd0853031dfb3214627fefabb8"
+        }
+      },
+      "body": {
+        "world": {
+          "face_permeability": {
+            "dtype": "<f8",
+            "shape": [
+              4,
+              96,
+              96
+            ],
+            "sha256": "d238a4cc98758792517be55650d2e2c7ec41e14f98f855d395179202d14cea27"
+          },
+          "fuel_input": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "c48a1c0a38dc7962299482092178b7dffbd012dd0853031dfb3214627fefabb8"
+          },
+          "precursor_input": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "fb37855e51a0c051ef77051f5178654da2f1284c5a15cc3850512617c19bded2"
+          },
+          "hazard": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+          }
+        },
+        "adapter": {
+          "class": "environment_evolution.material_action_response.core.VectorAdapter",
+          "fields": {
+            "plant": {
+              "class": "environment_evolution.material_action_response.core.VectorPlant",
+              "fields": {
+                "rule": {
+                  "class": "local_learning.material_transport.Rule",
+                  "fields": {
+                    "transport_scheme": "face_potential",
+                    "dt": 0.05,
+                    "mobility": 1.0,
+                    "cohesion": 3.0,
+                    "pressure": 1.5,
+                    "interaction_sigma": 1.4,
+                    "cue_gain": 0.0,
+                    "learning_rate": 1.0,
+                    "eligibility_time": 0.8,
+                    "memory_time": 200.0,
+                    "uptake_rate": 0.2,
+                    "energy_capacity": 2.0,
+                    "basal_cost": 0.012,
+                    "movement_cost": 0.08,
+                    "starvation_rate": 0.15,
+                    "starvation_energy": 0.08,
+                    "food_sensor_scale": 5.0,
+                    "injury_sensor_scale": 25.0,
+                    "action_budget": "donor_energy",
+                    "polarity_gain": 0.5,
+                    "polarity_turn_rate": 0.04,
+                    "polarity_relaxation_rate": 0.5,
+                    "polarity_energy_gate": "none",
+                    "energy_transfer_conductivity": 0.0,
+                    "energy_transfer_loss": 0.01
+                  }
+                },
+                "permeability": {
+                  "dtype": "<f8",
+                  "shape": [
+                    4,
+                    96,
+                    96
+                  ],
+                  "sha256": "d238a4cc98758792517be55650d2e2c7ec41e14f98f855d395179202d14cea27"
+                },
+                "action": {
+                  "dtype": "<f8",
+                  "shape": [
+                    2,
+                    96,
+                    96
+                  ],
+                  "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+                },
+                "raw_rates": {
+                  "dtype": "<f8",
+                  "shape": [
+                    4,
+                    96,
+                    96
+                  ],
+                  "sha256": "cb1e074aaa18c310f0dfe2427518b5d181f22ce5a1453b1fc18709f9ad12918a"
+                },
+                "blocked_rates": {
+                  "dtype": "<f8",
+                  "shape": [
+                    4,
+                    96,
+                    96
+                  ],
+                  "sha256": "15002d5513938fc0a461d0cd4ec5485106d8294895214d39e61d3243b10f70f3"
+                }
+              }
+            }
+          }
+        },
+        "state": {
+          "body": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "528868816d4c6213bf55f5148d77159e25014abd5f5ee3dfaef2788d23c12b63"
+          },
+          "energy": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "34d989fdd1a7f8d230385719c0c50a2ccf3faa52a81623f41be3d3e0904c0fad"
+          },
+          "memory": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "eligibility": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "polarity": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "precursor": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "fd7e9930ee84ffa2aedfc3f688496bd527da1d221223d943c541d0e3be767cef"
+          },
+          "fuel": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "984f3cff677824b0c29084f6d4b479078344e164de117a5165eb8352e7690c52"
+          },
+          "waste": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "002e5849264daf4fd711ce208bbaf50d7f63c06983e892c12932f040cbe78035"
+          },
+          "heat": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "7a263e355e9b31466d8968686e38832bbf78de4f51ea3a3e2b037276c63cb2e6"
+          },
+          "dead_energy": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "f2486765585677ce5de88479d0acaab867b0456b66302ab81938cad367773710"
+          },
+          "founder_mass": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "b1cb5af15f1dad720e410c8bddd61f1db6c3446811c9ae9bc4a0ce005ce252a5"
+          },
+          "c_theta": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "c_value": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "c_trace": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "c_food": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+          },
+          "c_run": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+          },
+          "c_remaining": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+          }
+        },
+        "source": {
+          "candidate": {
+            "id": "g2_p0_c0",
+            "generation": 2,
+            "family": "compact",
+            "genome": {
+              "schema": "experience-adaptation-genome.v1",
+              "id": "genome_bd818f3cd82ee24316f5",
+              "family": "double_lobe",
+              "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/compact_ring_core_outer--bridged_longbody.npz",
+              "source_sha256": "eb468b8e2c146e7383b379c0c51fac7cf84edcac524e43726276e8880ce854c8",
+              "genes": [
+                0.03805112412521015,
+                0.0018895267609443866,
+                -0.05434230796821879,
+                0.03500208173589314,
+                -0.005742716135906684,
+                -0.014487744102262416,
+                0.11184272048007587,
+                0.021018927058154033,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "parent_id": "genome_d02e7f60565f83066e5d",
+              "generation": 1,
+              "mutation_seed": 202610193001,
+              "named_genes": {
+                "log_mu1": 0.03805112412521015,
+                "log_mu2": 0.0018895267609443866,
+                "log_sigma1": -0.05434230796821879,
+                "log_sigma2": 0.03500208173589314,
+                "weight_shift": -0.005742716135906684,
+                "kernel_radial1": -0.014487744102262416,
+                "kernel_radial2": 0.11184272048007587,
+                "kernel_crossmix": 0.021018927058154033,
+                "log_stretch_y": 0.0,
+                "log_stretch_x": 0.0,
+                "neck_density": 0.0
+              },
+              "lifetime_rule": "fixed; only outer generations mutate"
+            },
+            "parent_candidate": "g1_f2_c0",
+            "kernel_log_scales": [
+              -0.06,
+              0.06
+            ],
+            "legal": true,
+            "mutation_seed": 202610193001,
+            "proposed_genes": [
+              0.03805112412521015,
+              0.0018895267609443866,
+              -0.05434230796821879,
+              0.03500208173589314,
+              -0.005742716135906684,
+              -0.014487744102262416,
+              0.11184272048007587,
+              0.021018927058154033,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "life0_endowment": {
+            "M": 64.0,
+            "E": 64.0,
+            "P": 0.0,
+            "F": 0.0
+          },
+          "rule_sha256": "49dc4c5f9528b21b65bd4f8b0838e5100f534c517527d534feac395d96c226c1"
+        },
+        "clock": 128,
+        "elapsed": 128,
+        "supply_steps": 384,
+        "input_material": 25.634519193445186,
+        "input_energy": 102.53807677378074
+      },
+      "model_nonrule": {
+        "conversion": {
+          "density_capacity": 1.0,
+          "endowment": 0.2,
+          "synthesis_heat": 0.2,
+          "template_heat": 0.02
+        },
+        "physical_rule": {
+          "transport_scheme": "face_potential",
+          "dt": 0.05,
+          "mobility": 1.0,
+          "cohesion": 3.0,
+          "pressure": 1.5,
+          "interaction_sigma": 1.4,
+          "cue_gain": 0.0,
+          "learning_rate": 1.0,
+          "eligibility_time": 0.8,
+          "memory_time": 200.0,
+          "uptake_rate": 0.2,
+          "energy_capacity": 2.0,
+          "basal_cost": 0.012,
+          "movement_cost": 0.08,
+          "starvation_rate": 0.15,
+          "starvation_energy": 0.08,
+          "food_sensor_scale": 5.0,
+          "injury_sensor_scale": 25.0,
+          "action_budget": "donor_energy",
+          "polarity_gain": 0.5,
+          "polarity_turn_rate": 0.04,
+          "polarity_relaxation_rate": 0.5,
+          "polarity_energy_gate": "none",
+          "energy_transfer_conductivity": 0.0,
+          "energy_transfer_loss": 0.01
+        },
+        "learning_rule": {
+          "hold_time": 0.8,
+          "food_time": 0.8,
+          "discount_time": 6.4,
+          "trace_time": 3.2,
+          "actor_rate": 0.1,
+          "critic_rate": 0.1,
+          "reward_scale": 0.02,
+          "loss_price": 0.08,
+          "theta_bound": 3.0,
+          "value_bound": 2.0
+        },
+        "generation_enabled": true
+      },
+      "model_dt": 0.05,
+      "model_conversion": {
+        "class": "environment_evolution.regenerative_actor.conversion.Conversion",
+        "fields": {
+          "density_capacity": 1.0,
+          "endowment": 0.2,
+          "synthesis_heat": 0.2,
+          "template_heat": 0.02
+        }
+      }
+    },
+    "model_actor_is_original_adapter": true
+  },
+  {
+    "formed_by": "g1_f2_c0",
+    "apply_rule": "g2_p0_c0",
+    "shape": "double_lobe",
+    "condition": "colocated",
+    "locked_before_sha": "d7edbd8d5dd8070644852e83e9dd3907474db41804a297babd17ccccfa2a76e9",
+    "locked_after_sha": "d7edbd8d5dd8070644852e83e9dd3907474db41804a297babd17ccccfa2a76e9",
+    "exact": true,
+    "target_rule_sha": "49dc4c5f9528b21b65bd4f8b0838e5100f534c517527d534feac395d96c226c1",
+    "target_kernel_sha": "bf6b12c622fe17517f52b75e1b9a2e820bc91874d646f6398e7c3c691ad74bf6",
+    "changed": [
+      "model.config.body_rule",
+      "model.kernels",
+      "derived_model.engine_and_FFT",
+      "rule_sha",
+      "kernel_sha"
+    ],
+    "preserved": {
+      "wrapper": {
+        "map_A": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "5945b268a355b9f47f9000ac29a38b9b6f7afd5d32e05923f3eb5a99848e6cb2"
+        },
+        "map_B": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "b524ceda7c2290ea5e90a9939cea94834cd1696e3c610920b6a14aae55d98aac"
+        },
+        "record": {
+          "id": "g1_f2_c0",
+          "generation": 1,
+          "family": "double_lobe",
+          "genome": {
+            "schema": "experience-adaptation-genome.v1",
+            "id": "genome_d02e7f60565f83066e5d",
+            "family": "double_lobe",
+            "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/compact_ring_core_outer--bridged_longbody.npz",
+            "source_sha256": "eb468b8e2c146e7383b379c0c51fac7cf84edcac524e43726276e8880ce854c8",
+            "genes": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "parent_id": null,
+            "generation": 0,
+            "mutation_seed": null,
+            "named_genes": {
+              "log_mu1": 0.0,
+              "log_mu2": 0.0,
+              "log_sigma1": 0.0,
+              "log_sigma2": 0.0,
+              "weight_shift": 0.0,
+              "kernel_radial1": 0.0,
+              "kernel_radial2": 0.0,
+              "kernel_crossmix": 0.0,
+              "log_stretch_y": 0.0,
+              "log_stretch_x": 0.0,
+              "neck_density": 0.0
+            },
+            "lifetime_rule": "fixed; only outer generations mutate"
+          },
+          "parent_candidate": null,
+          "kernel_log_scales": [
+            -0.06,
+            0.06
+          ],
+          "legal": true
+        },
+        "shape": "double_lobe",
+        "condition": "colocated",
+        "policy": "pump",
+        "phase": "ready",
+        "pending": null,
+        "pump_total": 30.501152648385293,
+        "pump_heat": 2.4400922118708226
+      },
+      "exchange": {
+        "ecology": "static",
+        "base_fuel": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "8357f0d33f882349e036372f43afaa854e2a2d77b9d5d385038f0c61ac54ab46"
+        },
+        "base_precursor": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "c287cb58d0c319f45d5c28f5d808f1dbb3eb5aad3b63e574d1be5dcab85d6263"
+        },
+        "material_sink": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "e72aafa66384afa53a58f750a4c0d446aecc35613ef2fa438d3f6bb6ca295838"
+        },
+        "energy_sink": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "72b3a7279d9cc6b48fb1d77ccd4cbff54a0f2e74f285aa7075e149678e66a83a"
+        },
+        "ready": true,
+        "fixed_P": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "85d6cd6e1e8a099897e79117febd97befb43617a0f6ac7a6522acf67384ef3ca"
+        },
+        "fixed_F": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "a68e47db1d0c855d0f14c465972a1969e578d45a153398493089f1afeb4640f5"
+        }
+      },
+      "body": {
+        "world": {
+          "face_permeability": {
+            "dtype": "<f8",
+            "shape": [
+              4,
+              96,
+              96
+            ],
+            "sha256": "d238a4cc98758792517be55650d2e2c7ec41e14f98f855d395179202d14cea27"
+          },
+          "fuel_input": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "a68e47db1d0c855d0f14c465972a1969e578d45a153398493089f1afeb4640f5"
+          },
+          "precursor_input": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "85d6cd6e1e8a099897e79117febd97befb43617a0f6ac7a6522acf67384ef3ca"
+          },
+          "hazard": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+          }
+        },
+        "adapter": {
+          "class": "environment_evolution.material_action_response.core.VectorAdapter",
+          "fields": {
+            "plant": {
+              "class": "environment_evolution.material_action_response.core.VectorPlant",
+              "fields": {
+                "rule": {
+                  "class": "local_learning.material_transport.Rule",
+                  "fields": {
+                    "transport_scheme": "face_potential",
+                    "dt": 0.05,
+                    "mobility": 1.0,
+                    "cohesion": 3.0,
+                    "pressure": 1.5,
+                    "interaction_sigma": 1.4,
+                    "cue_gain": 0.0,
+                    "learning_rate": 1.0,
+                    "eligibility_time": 0.8,
+                    "memory_time": 200.0,
+                    "uptake_rate": 0.2,
+                    "energy_capacity": 2.0,
+                    "basal_cost": 0.012,
+                    "movement_cost": 0.08,
+                    "starvation_rate": 0.15,
+                    "starvation_energy": 0.08,
+                    "food_sensor_scale": 5.0,
+                    "injury_sensor_scale": 25.0,
+                    "action_budget": "donor_energy",
+                    "polarity_gain": 0.5,
+                    "polarity_turn_rate": 0.04,
+                    "polarity_relaxation_rate": 0.5,
+                    "polarity_energy_gate": "none",
+                    "energy_transfer_conductivity": 0.0,
+                    "energy_transfer_loss": 0.01
+                  }
+                },
+                "permeability": {
+                  "dtype": "<f8",
+                  "shape": [
+                    4,
+                    96,
+                    96
+                  ],
+                  "sha256": "d238a4cc98758792517be55650d2e2c7ec41e14f98f855d395179202d14cea27"
+                },
+                "action": {
+                  "dtype": "<f8",
+                  "shape": [
+                    2,
+                    96,
+                    96
+                  ],
+                  "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+                },
+                "raw_rates": {
+                  "dtype": "<f8",
+                  "shape": [
+                    4,
+                    96,
+                    96
+                  ],
+                  "sha256": "e01835576e76bd0afb061159c8e3a607fb02adc00256b14067674b34db7779a9"
+                },
+                "blocked_rates": {
+                  "dtype": "<f8",
+                  "shape": [
+                    4,
+                    96,
+                    96
+                  ],
+                  "sha256": "7ed318b879dc1842c78530759790ed2d9690544056dfbd37105e8902cc9c4589"
+                }
+              }
+            }
+          }
+        },
+        "state": {
+          "body": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "498685e1fdbe7acb5f7bb362028702daba9fbea9b978cb3d35bf23590b99d68c"
+          },
+          "energy": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "2efd7fc056fd51d62d5ca9225d8cdef574f46d1af7bef8012d13ab370948eee7"
+          },
+          "memory": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "eligibility": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "polarity": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "precursor": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "0ba0d2adf4f67c552d1f3f598cff5477bc633321c076a75a3582bcbed9812410"
+          },
+          "fuel": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "632266837be8b1b7dfd012143014051163146917d2e7d7e271c16c00630e413a"
+          },
+          "waste": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "126cdcdcd6652325e0452910bda3bc6aca1ab538b765ab1115d7971369ffa476"
+          },
+          "heat": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "d820cf6ad92e032a05d8b6dfbc4920af7d9e29d020bf705269e16f72ac7a88da"
+          },
+          "dead_energy": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "5ff14db811091e783abd1de8fe50290bd8cc7ab146931079d20473fdf246a44d"
+          },
+          "founder_mass": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "1cb729668f0bc898b749247591acfb1bff38cb7b576e7bb585ff2f82f698e1f4"
+          },
+          "c_theta": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "c_value": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "c_trace": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "c_food": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+          },
+          "c_run": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+          },
+          "c_remaining": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+          }
+        },
+        "source": {
+          "candidate": {
+            "id": "g1_f2_c0",
+            "generation": 1,
+            "family": "double_lobe",
+            "genome": {
+              "schema": "experience-adaptation-genome.v1",
+              "id": "genome_d02e7f60565f83066e5d",
+              "family": "double_lobe",
+              "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/compact_ring_core_outer--bridged_longbody.npz",
+              "source_sha256": "eb468b8e2c146e7383b379c0c51fac7cf84edcac524e43726276e8880ce854c8",
+              "genes": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "parent_id": null,
+              "generation": 0,
+              "mutation_seed": null,
+              "named_genes": {
+                "log_mu1": 0.0,
+                "log_mu2": 0.0,
+                "log_sigma1": 0.0,
+                "log_sigma2": 0.0,
+                "weight_shift": 0.0,
+                "kernel_radial1": 0.0,
+                "kernel_radial2": 0.0,
+                "kernel_crossmix": 0.0,
+                "log_stretch_y": 0.0,
+                "log_stretch_x": 0.0,
+                "neck_density": 0.0
+              },
+              "lifetime_rule": "fixed; only outer generations mutate"
+            },
+            "parent_candidate": null,
+            "kernel_log_scales": [
+              -0.06,
+              0.06
+            ],
+            "legal": true
+          },
+          "life0_endowment": {
+            "M": 64.0,
+            "E": 64.0,
+            "P": 0.0,
+            "F": 0.0
+          },
+          "rule_sha256": "ee3ad30c1410a112def5496e7fd291fbd8da4d3531101ff02cf13e74d24016e2"
+        },
+        "clock": 128,
+        "elapsed": 128,
+        "supply_steps": 384,
+        "input_material": 25.634519193445186,
+        "input_energy": 102.53807677378074
+      },
+      "model_nonrule": {
+        "conversion": {
+          "density_capacity": 1.0,
+          "endowment": 0.2,
+          "synthesis_heat": 0.2,
+          "template_heat": 0.02
+        },
+        "physical_rule": {
+          "transport_scheme": "face_potential",
+          "dt": 0.05,
+          "mobility": 1.0,
+          "cohesion": 3.0,
+          "pressure": 1.5,
+          "interaction_sigma": 1.4,
+          "cue_gain": 0.0,
+          "learning_rate": 1.0,
+          "eligibility_time": 0.8,
+          "memory_time": 200.0,
+          "uptake_rate": 0.2,
+          "energy_capacity": 2.0,
+          "basal_cost": 0.012,
+          "movement_cost": 0.08,
+          "starvation_rate": 0.15,
+          "starvation_energy": 0.08,
+          "food_sensor_scale": 5.0,
+          "injury_sensor_scale": 25.0,
+          "action_budget": "donor_energy",
+          "polarity_gain": 0.5,
+          "polarity_turn_rate": 0.04,
+          "polarity_relaxation_rate": 0.5,
+          "polarity_energy_gate": "none",
+          "energy_transfer_conductivity": 0.0,
+          "energy_transfer_loss": 0.01
+        },
+        "learning_rule": {
+          "hold_time": 0.8,
+          "food_time": 0.8,
+          "discount_time": 6.4,
+          "trace_time": 3.2,
+          "actor_rate": 0.1,
+          "critic_rate": 0.1,
+          "reward_scale": 0.02,
+          "loss_price": 0.08,
+          "theta_bound": 3.0,
+          "value_bound": 2.0
+        },
+        "generation_enabled": true
+      },
+      "model_dt": 0.05,
+      "model_conversion": {
+        "class": "environment_evolution.regenerative_actor.conversion.Conversion",
+        "fields": {
+          "density_capacity": 1.0,
+          "endowment": 0.2,
+          "synthesis_heat": 0.2,
+          "template_heat": 0.02
+        }
+      }
+    },
+    "model_actor_is_original_adapter": true
+  },
+  {
+    "formed_by": "g2_p0_c0",
+    "apply_rule": "g1_f2_c0",
+    "shape": "double_lobe",
+    "condition": "colocated",
+    "locked_before_sha": "a8a5d3c2ccfc04a97b8f3463b6acee3e29dcb86f8cd92c127bffc5977c12c0bf",
+    "locked_after_sha": "a8a5d3c2ccfc04a97b8f3463b6acee3e29dcb86f8cd92c127bffc5977c12c0bf",
+    "exact": true,
+    "target_rule_sha": "ee3ad30c1410a112def5496e7fd291fbd8da4d3531101ff02cf13e74d24016e2",
+    "target_kernel_sha": "f7a36c39a1ca3d0ba5a08a555adce6a9c25f33a2d47d5c933eb2657192bb0fb4",
+    "changed": [
+      "model.config.body_rule",
+      "model.kernels",
+      "derived_model.engine_and_FFT",
+      "rule_sha",
+      "kernel_sha"
+    ],
+    "preserved": {
+      "wrapper": {
+        "map_A": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "5945b268a355b9f47f9000ac29a38b9b6f7afd5d32e05923f3eb5a99848e6cb2"
+        },
+        "map_B": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "b524ceda7c2290ea5e90a9939cea94834cd1696e3c610920b6a14aae55d98aac"
+        },
+        "record": {
+          "id": "g2_p0_c0",
+          "generation": 2,
+          "family": "double_lobe",
+          "genome": {
+            "schema": "experience-adaptation-genome.v1",
+            "id": "genome_bd818f3cd82ee24316f5",
+            "family": "double_lobe",
+            "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/compact_ring_core_outer--bridged_longbody.npz",
+            "source_sha256": "eb468b8e2c146e7383b379c0c51fac7cf84edcac524e43726276e8880ce854c8",
+            "genes": [
+              0.03805112412521015,
+              0.0018895267609443866,
+              -0.05434230796821879,
+              0.03500208173589314,
+              -0.005742716135906684,
+              -0.014487744102262416,
+              0.11184272048007587,
+              0.021018927058154033,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "parent_id": "genome_d02e7f60565f83066e5d",
+            "generation": 1,
+            "mutation_seed": 202610193001,
+            "named_genes": {
+              "log_mu1": 0.03805112412521015,
+              "log_mu2": 0.0018895267609443866,
+              "log_sigma1": -0.05434230796821879,
+              "log_sigma2": 0.03500208173589314,
+              "weight_shift": -0.005742716135906684,
+              "kernel_radial1": -0.014487744102262416,
+              "kernel_radial2": 0.11184272048007587,
+              "kernel_crossmix": 0.021018927058154033,
+              "log_stretch_y": 0.0,
+              "log_stretch_x": 0.0,
+              "neck_density": 0.0
+            },
+            "lifetime_rule": "fixed; only outer generations mutate"
+          },
+          "parent_candidate": "g1_f2_c0",
+          "kernel_log_scales": [
+            -0.06,
+            0.06
+          ],
+          "legal": true,
+          "mutation_seed": 202610193001,
+          "proposed_genes": [
+            0.03805112412521015,
+            0.0018895267609443866,
+            -0.05434230796821879,
+            0.03500208173589314,
+            -0.005742716135906684,
+            -0.014487744102262416,
+            0.11184272048007587,
+            0.021018927058154033,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "shape": "double_lobe",
+        "condition": "colocated",
+        "policy": "pump",
+        "phase": "ready",
+        "pending": null,
+        "pump_total": 28.771008283680253,
+        "pump_heat": 2.3016806626944195
+      },
+      "exchange": {
+        "ecology": "static",
+        "base_fuel": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "8357f0d33f882349e036372f43afaa854e2a2d77b9d5d385038f0c61ac54ab46"
+        },
+        "base_precursor": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "c287cb58d0c319f45d5c28f5d808f1dbb3eb5aad3b63e574d1be5dcab85d6263"
+        },
+        "material_sink": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "f5757a13b4ed9d5cb21d8913fcaafdf30382890c9e82335f819a92f7c40b6a85"
+        },
+        "energy_sink": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "8df87c63446d912fd5e3a0a33e471cd1ae790414e67a3b44916e605c5699e0d4"
+        },
+        "ready": true,
+        "fixed_P": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "85d6cd6e1e8a099897e79117febd97befb43617a0f6ac7a6522acf67384ef3ca"
+        },
+        "fixed_F": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "a68e47db1d0c855d0f14c465972a1969e578d45a153398493089f1afeb4640f5"
+        }
+      },
+      "body": {
+        "world": {
+          "face_permeability": {
+            "dtype": "<f8",
+            "shape": [
+              4,
+              96,
+              96
+            ],
+            "sha256": "d238a4cc98758792517be55650d2e2c7ec41e14f98f855d395179202d14cea27"
+          },
+          "fuel_input": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "a68e47db1d0c855d0f14c465972a1969e578d45a153398493089f1afeb4640f5"
+          },
+          "precursor_input": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "85d6cd6e1e8a099897e79117febd97befb43617a0f6ac7a6522acf67384ef3ca"
+          },
+          "hazard": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+          }
+        },
+        "adapter": {
+          "class": "environment_evolution.material_action_response.core.VectorAdapter",
+          "fields": {
+            "plant": {
+              "class": "environment_evolution.material_action_response.core.VectorPlant",
+              "fields": {
+                "rule": {
+                  "class": "local_learning.material_transport.Rule",
+                  "fields": {
+                    "transport_scheme": "face_potential",
+                    "dt": 0.05,
+                    "mobility": 1.0,
+                    "cohesion": 3.0,
+                    "pressure": 1.5,
+                    "interaction_sigma": 1.4,
+                    "cue_gain": 0.0,
+                    "learning_rate": 1.0,
+                    "eligibility_time": 0.8,
+                    "memory_time": 200.0,
+                    "uptake_rate": 0.2,
+                    "energy_capacity": 2.0,
+                    "basal_cost": 0.012,
+                    "movement_cost": 0.08,
+                    "starvation_rate": 0.15,
+                    "starvation_energy": 0.08,
+                    "food_sensor_scale": 5.0,
+                    "injury_sensor_scale": 25.0,
+                    "action_budget": "donor_energy",
+                    "polarity_gain": 0.5,
+                    "polarity_turn_rate": 0.04,
+                    "polarity_relaxation_rate": 0.5,
+                    "polarity_energy_gate": "none",
+                    "energy_transfer_conductivity": 0.0,
+                    "energy_transfer_loss": 0.01
+                  }
+                },
+                "permeability": {
+                  "dtype": "<f8",
+                  "shape": [
+                    4,
+                    96,
+                    96
+                  ],
+                  "sha256": "d238a4cc98758792517be55650d2e2c7ec41e14f98f855d395179202d14cea27"
+                },
+                "action": {
+                  "dtype": "<f8",
+                  "shape": [
+                    2,
+                    96,
+                    96
+                  ],
+                  "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+                },
+                "raw_rates": {
+                  "dtype": "<f8",
+                  "shape": [
+                    4,
+                    96,
+                    96
+                  ],
+                  "sha256": "a09d466e107271d7d8bdb387869b4ad4c0ad34bb91d605aa36da336bf2ebf652"
+                },
+                "blocked_rates": {
+                  "dtype": "<f8",
+                  "shape": [
+                    4,
+                    96,
+                    96
+                  ],
+                  "sha256": "1d1e9991b5fcdf35c3f3e024ee2033a7c6ce75b90183937d193779765516f1cf"
+                }
+              }
+            }
+          }
+        },
+        "state": {
+          "body": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "208c8bbaaa78de0dc33d3cec1715d4c2a3ac8d631c9e06528a3abef2b1a7ab7d"
+          },
+          "energy": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "e456eab5691578be93d5dac82a05d8c55c0b1d1c7588961734bfa35063900f32"
+          },
+          "memory": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "eligibility": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "polarity": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "precursor": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "98903a6b97a07439520aa8e2561c5f103940ffe7cee164a6dc1f3ab91270a7be"
+          },
+          "fuel": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "2336f22a6a8a44375aa0ea6ae9b41c270d964ca8f2a19df5ab3ed4cbd185db41"
+          },
+          "waste": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "556bbcf220ba6dbe6ea358d97a45e8778a89e62671231fc5f84ef72e367afafa"
+          },
+          "heat": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "0b6859cfd16ce69e8f60ea70dd473db936234532fc5d72f8a5761a00dba0f4c5"
+          },
+          "dead_energy": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "2acd2ca1675e24cd070a4c7f857e9c16a488a935eae1333285650aaacf71e25f"
+          },
+          "founder_mass": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "e6c6608bb907946c038a50e3eb5b54ff8863c09bf69774d20585b747ae54a280"
+          },
+          "c_theta": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "c_value": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "c_trace": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "c_food": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+          },
+          "c_run": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+          },
+          "c_remaining": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+          }
+        },
+        "source": {
+          "candidate": {
+            "id": "g2_p0_c0",
+            "generation": 2,
+            "family": "double_lobe",
+            "genome": {
+              "schema": "experience-adaptation-genome.v1",
+              "id": "genome_bd818f3cd82ee24316f5",
+              "family": "double_lobe",
+              "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/compact_ring_core_outer--bridged_longbody.npz",
+              "source_sha256": "eb468b8e2c146e7383b379c0c51fac7cf84edcac524e43726276e8880ce854c8",
+              "genes": [
+                0.03805112412521015,
+                0.0018895267609443866,
+                -0.05434230796821879,
+                0.03500208173589314,
+                -0.005742716135906684,
+                -0.014487744102262416,
+                0.11184272048007587,
+                0.021018927058154033,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "parent_id": "genome_d02e7f60565f83066e5d",
+              "generation": 1,
+              "mutation_seed": 202610193001,
+              "named_genes": {
+                "log_mu1": 0.03805112412521015,
+                "log_mu2": 0.0018895267609443866,
+                "log_sigma1": -0.05434230796821879,
+                "log_sigma2": 0.03500208173589314,
+                "weight_shift": -0.005742716135906684,
+                "kernel_radial1": -0.014487744102262416,
+                "kernel_radial2": 0.11184272048007587,
+                "kernel_crossmix": 0.021018927058154033,
+                "log_stretch_y": 0.0,
+                "log_stretch_x": 0.0,
+                "neck_density": 0.0
+              },
+              "lifetime_rule": "fixed; only outer generations mutate"
+            },
+            "parent_candidate": "g1_f2_c0",
+            "kernel_log_scales": [
+              -0.06,
+              0.06
+            ],
+            "legal": true,
+            "mutation_seed": 202610193001,
+            "proposed_genes": [
+              0.03805112412521015,
+              0.0018895267609443866,
+              -0.05434230796821879,
+              0.03500208173589314,
+              -0.005742716135906684,
+              -0.014487744102262416,
+              0.11184272048007587,
+              0.021018927058154033,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "life0_endowment": {
+            "M": 64.0,
+            "E": 64.0,
+            "P": 0.0,
+            "F": 0.0
+          },
+          "rule_sha256": "49dc4c5f9528b21b65bd4f8b0838e5100f534c517527d534feac395d96c226c1"
+        },
+        "clock": 128,
+        "elapsed": 128,
+        "supply_steps": 384,
+        "input_material": 25.634519193445186,
+        "input_energy": 102.53807677378074
+      },
+      "model_nonrule": {
+        "conversion": {
+          "density_capacity": 1.0,
+          "endowment": 0.2,
+          "synthesis_heat": 0.2,
+          "template_heat": 0.02
+        },
+        "physical_rule": {
+          "transport_scheme": "face_potential",
+          "dt": 0.05,
+          "mobility": 1.0,
+          "cohesion": 3.0,
+          "pressure": 1.5,
+          "interaction_sigma": 1.4,
+          "cue_gain": 0.0,
+          "learning_rate": 1.0,
+          "eligibility_time": 0.8,
+          "memory_time": 200.0,
+          "uptake_rate": 0.2,
+          "energy_capacity": 2.0,
+          "basal_cost": 0.012,
+          "movement_cost": 0.08,
+          "starvation_rate": 0.15,
+          "starvation_energy": 0.08,
+          "food_sensor_scale": 5.0,
+          "injury_sensor_scale": 25.0,
+          "action_budget": "donor_energy",
+          "polarity_gain": 0.5,
+          "polarity_turn_rate": 0.04,
+          "polarity_relaxation_rate": 0.5,
+          "polarity_energy_gate": "none",
+          "energy_transfer_conductivity": 0.0,
+          "energy_transfer_loss": 0.01
+        },
+        "learning_rule": {
+          "hold_time": 0.8,
+          "food_time": 0.8,
+          "discount_time": 6.4,
+          "trace_time": 3.2,
+          "actor_rate": 0.1,
+          "critic_rate": 0.1,
+          "reward_scale": 0.02,
+          "loss_price": 0.08,
+          "theta_bound": 3.0,
+          "value_bound": 2.0
+        },
+        "generation_enabled": true
+      },
+      "model_dt": 0.05,
+      "model_conversion": {
+        "class": "environment_evolution.regenerative_actor.conversion.Conversion",
+        "fields": {
+          "density_capacity": 1.0,
+          "endowment": 0.2,
+          "synthesis_heat": 0.2,
+          "template_heat": 0.02
+        }
+      }
+    },
+    "model_actor_is_original_adapter": true
+  },
+  {
+    "formed_by": "g1_f2_c0",
+    "apply_rule": "g2_p0_c0",
+    "shape": "double_lobe",
+    "condition": "separated",
+    "locked_before_sha": "49eb9c69ac24f36890b904606352ffd458d16945f0ed7d6d1851d79a34b8c877",
+    "locked_after_sha": "49eb9c69ac24f36890b904606352ffd458d16945f0ed7d6d1851d79a34b8c877",
+    "exact": true,
+    "target_rule_sha": "49dc4c5f9528b21b65bd4f8b0838e5100f534c517527d534feac395d96c226c1",
+    "target_kernel_sha": "bf6b12c622fe17517f52b75e1b9a2e820bc91874d646f6398e7c3c691ad74bf6",
+    "changed": [
+      "model.config.body_rule",
+      "model.kernels",
+      "derived_model.engine_and_FFT",
+      "rule_sha",
+      "kernel_sha"
+    ],
+    "preserved": {
+      "wrapper": {
+        "map_A": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "5945b268a355b9f47f9000ac29a38b9b6f7afd5d32e05923f3eb5a99848e6cb2"
+        },
+        "map_B": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "b524ceda7c2290ea5e90a9939cea94834cd1696e3c610920b6a14aae55d98aac"
+        },
+        "record": {
+          "id": "g1_f2_c0",
+          "generation": 1,
+          "family": "double_lobe",
+          "genome": {
+            "schema": "experience-adaptation-genome.v1",
+            "id": "genome_d02e7f60565f83066e5d",
+            "family": "double_lobe",
+            "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/compact_ring_core_outer--bridged_longbody.npz",
+            "source_sha256": "eb468b8e2c146e7383b379c0c51fac7cf84edcac524e43726276e8880ce854c8",
+            "genes": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "parent_id": null,
+            "generation": 0,
+            "mutation_seed": null,
+            "named_genes": {
+              "log_mu1": 0.0,
+              "log_mu2": 0.0,
+              "log_sigma1": 0.0,
+              "log_sigma2": 0.0,
+              "weight_shift": 0.0,
+              "kernel_radial1": 0.0,
+              "kernel_radial2": 0.0,
+              "kernel_crossmix": 0.0,
+              "log_stretch_y": 0.0,
+              "log_stretch_x": 0.0,
+              "neck_density": 0.0
+            },
+            "lifetime_rule": "fixed; only outer generations mutate"
+          },
+          "parent_candidate": null,
+          "kernel_log_scales": [
+            -0.06,
+            0.06
+          ],
+          "legal": true
+        },
+        "shape": "double_lobe",
+        "condition": "separated",
+        "policy": "pump",
+        "phase": "ready",
+        "pending": null,
+        "pump_total": 44.565761264586634,
+        "pump_heat": 3.565260901166926
+      },
+      "exchange": {
+        "ecology": "static",
+        "base_fuel": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "8357f0d33f882349e036372f43afaa854e2a2d77b9d5d385038f0c61ac54ab46"
+        },
+        "base_precursor": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "c287cb58d0c319f45d5c28f5d808f1dbb3eb5aad3b63e574d1be5dcab85d6263"
+        },
+        "material_sink": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "62048e77ac4661907cd820dd8a720a2159bedfa10334dd56608d81b416170134"
+        },
+        "energy_sink": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "8bea56ce1d56349c9fb627573e084788d54b22e47bc526528ff1cf8e3af31678"
+        },
+        "ready": true,
+        "fixed_P": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "85d6cd6e1e8a099897e79117febd97befb43617a0f6ac7a6522acf67384ef3ca"
+        },
+        "fixed_F": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "e5773678f9a16e9e2d403e5b6f4804f8cd57eba7473af59c6c1113d9d5b121fc"
+        }
+      },
+      "body": {
+        "world": {
+          "face_permeability": {
+            "dtype": "<f8",
+            "shape": [
+              4,
+              96,
+              96
+            ],
+            "sha256": "d238a4cc98758792517be55650d2e2c7ec41e14f98f855d395179202d14cea27"
+          },
+          "fuel_input": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "e5773678f9a16e9e2d403e5b6f4804f8cd57eba7473af59c6c1113d9d5b121fc"
+          },
+          "precursor_input": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "85d6cd6e1e8a099897e79117febd97befb43617a0f6ac7a6522acf67384ef3ca"
+          },
+          "hazard": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+          }
+        },
+        "adapter": {
+          "class": "environment_evolution.material_action_response.core.VectorAdapter",
+          "fields": {
+            "plant": {
+              "class": "environment_evolution.material_action_response.core.VectorPlant",
+              "fields": {
+                "rule": {
+                  "class": "local_learning.material_transport.Rule",
+                  "fields": {
+                    "transport_scheme": "face_potential",
+                    "dt": 0.05,
+                    "mobility": 1.0,
+                    "cohesion": 3.0,
+                    "pressure": 1.5,
+                    "interaction_sigma": 1.4,
+                    "cue_gain": 0.0,
+                    "learning_rate": 1.0,
+                    "eligibility_time": 0.8,
+                    "memory_time": 200.0,
+                    "uptake_rate": 0.2,
+                    "energy_capacity": 2.0,
+                    "basal_cost": 0.012,
+                    "movement_cost": 0.08,
+                    "starvation_rate": 0.15,
+                    "starvation_energy": 0.08,
+                    "food_sensor_scale": 5.0,
+                    "injury_sensor_scale": 25.0,
+                    "action_budget": "donor_energy",
+                    "polarity_gain": 0.5,
+                    "polarity_turn_rate": 0.04,
+                    "polarity_relaxation_rate": 0.5,
+                    "polarity_energy_gate": "none",
+                    "energy_transfer_conductivity": 0.0,
+                    "energy_transfer_loss": 0.01
+                  }
+                },
+                "permeability": {
+                  "dtype": "<f8",
+                  "shape": [
+                    4,
+                    96,
+                    96
+                  ],
+                  "sha256": "d238a4cc98758792517be55650d2e2c7ec41e14f98f855d395179202d14cea27"
+                },
+                "action": {
+                  "dtype": "<f8",
+                  "shape": [
+                    2,
+                    96,
+                    96
+                  ],
+                  "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+                },
+                "raw_rates": {
+                  "dtype": "<f8",
+                  "shape": [
+                    4,
+                    96,
+                    96
+                  ],
+                  "sha256": "77d33077227f44e7ebfcca5a4327e1efbcc5eb15799564e7a4afa6d9649d5934"
+                },
+                "blocked_rates": {
+                  "dtype": "<f8",
+                  "shape": [
+                    4,
+                    96,
+                    96
+                  ],
+                  "sha256": "07449aa9afc89aa722a2e46248a8fede77210475549879d16cdb36a4cebe6f3b"
+                }
+              }
+            }
+          }
+        },
+        "state": {
+          "body": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "ee9c5dc7bb86195b3871a9c7853c7401786962c5eddb7134eab7290ca71d8ba4"
+          },
+          "energy": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "486a827e877fecbf6ca2170ef3c2d5a064fae46c698b18393c028fb603551f7e"
+          },
+          "memory": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "eligibility": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "polarity": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "precursor": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "b6ff442e1844fddd6164f9e45ee3955d0dca2ab098211b9b7c7050702d50b582"
+          },
+          "fuel": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "13d2a20a6725c94cee47461f07c9fccfbffabc68adc902eb84f95cb882d389d9"
+          },
+          "waste": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "89d7b905563efa5599c302c8d3a9b0c145977b6da3c336152dd065461106217a"
+          },
+          "heat": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "090e6d2ada5ca67976c8e9a0098da78e68756b48afd6a2709f251ce6c4607b7b"
+          },
+          "dead_energy": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "5ff7f4a750dbf8158178acd256cc5075b3157aad20a809c0d2fec80309eff660"
+          },
+          "founder_mass": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "393e66462b4ba026681787da0d103c0ccbc726078e4655886541f1e2493fff4f"
+          },
+          "c_theta": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "c_value": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "c_trace": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "c_food": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+          },
+          "c_run": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+          },
+          "c_remaining": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+          }
+        },
+        "source": {
+          "candidate": {
+            "id": "g1_f2_c0",
+            "generation": 1,
+            "family": "double_lobe",
+            "genome": {
+              "schema": "experience-adaptation-genome.v1",
+              "id": "genome_d02e7f60565f83066e5d",
+              "family": "double_lobe",
+              "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/compact_ring_core_outer--bridged_longbody.npz",
+              "source_sha256": "eb468b8e2c146e7383b379c0c51fac7cf84edcac524e43726276e8880ce854c8",
+              "genes": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "parent_id": null,
+              "generation": 0,
+              "mutation_seed": null,
+              "named_genes": {
+                "log_mu1": 0.0,
+                "log_mu2": 0.0,
+                "log_sigma1": 0.0,
+                "log_sigma2": 0.0,
+                "weight_shift": 0.0,
+                "kernel_radial1": 0.0,
+                "kernel_radial2": 0.0,
+                "kernel_crossmix": 0.0,
+                "log_stretch_y": 0.0,
+                "log_stretch_x": 0.0,
+                "neck_density": 0.0
+              },
+              "lifetime_rule": "fixed; only outer generations mutate"
+            },
+            "parent_candidate": null,
+            "kernel_log_scales": [
+              -0.06,
+              0.06
+            ],
+            "legal": true
+          },
+          "life0_endowment": {
+            "M": 64.0,
+            "E": 64.0,
+            "P": 0.0,
+            "F": 0.0
+          },
+          "rule_sha256": "ee3ad30c1410a112def5496e7fd291fbd8da4d3531101ff02cf13e74d24016e2"
+        },
+        "clock": 128,
+        "elapsed": 128,
+        "supply_steps": 384,
+        "input_material": 25.634519193445186,
+        "input_energy": 102.53807677378074
+      },
+      "model_nonrule": {
+        "conversion": {
+          "density_capacity": 1.0,
+          "endowment": 0.2,
+          "synthesis_heat": 0.2,
+          "template_heat": 0.02
+        },
+        "physical_rule": {
+          "transport_scheme": "face_potential",
+          "dt": 0.05,
+          "mobility": 1.0,
+          "cohesion": 3.0,
+          "pressure": 1.5,
+          "interaction_sigma": 1.4,
+          "cue_gain": 0.0,
+          "learning_rate": 1.0,
+          "eligibility_time": 0.8,
+          "memory_time": 200.0,
+          "uptake_rate": 0.2,
+          "energy_capacity": 2.0,
+          "basal_cost": 0.012,
+          "movement_cost": 0.08,
+          "starvation_rate": 0.15,
+          "starvation_energy": 0.08,
+          "food_sensor_scale": 5.0,
+          "injury_sensor_scale": 25.0,
+          "action_budget": "donor_energy",
+          "polarity_gain": 0.5,
+          "polarity_turn_rate": 0.04,
+          "polarity_relaxation_rate": 0.5,
+          "polarity_energy_gate": "none",
+          "energy_transfer_conductivity": 0.0,
+          "energy_transfer_loss": 0.01
+        },
+        "learning_rule": {
+          "hold_time": 0.8,
+          "food_time": 0.8,
+          "discount_time": 6.4,
+          "trace_time": 3.2,
+          "actor_rate": 0.1,
+          "critic_rate": 0.1,
+          "reward_scale": 0.02,
+          "loss_price": 0.08,
+          "theta_bound": 3.0,
+          "value_bound": 2.0
+        },
+        "generation_enabled": true
+      },
+      "model_dt": 0.05,
+      "model_conversion": {
+        "class": "environment_evolution.regenerative_actor.conversion.Conversion",
+        "fields": {
+          "density_capacity": 1.0,
+          "endowment": 0.2,
+          "synthesis_heat": 0.2,
+          "template_heat": 0.02
+        }
+      }
+    },
+    "model_actor_is_original_adapter": true
+  },
+  {
+    "formed_by": "g2_p0_c0",
+    "apply_rule": "g1_f2_c0",
+    "shape": "double_lobe",
+    "condition": "separated",
+    "locked_before_sha": "b1323c108fe60658f3f279f80ecc673ed52e104855de6b4faf2953a87f464a15",
+    "locked_after_sha": "b1323c108fe60658f3f279f80ecc673ed52e104855de6b4faf2953a87f464a15",
+    "exact": true,
+    "target_rule_sha": "ee3ad30c1410a112def5496e7fd291fbd8da4d3531101ff02cf13e74d24016e2",
+    "target_kernel_sha": "f7a36c39a1ca3d0ba5a08a555adce6a9c25f33a2d47d5c933eb2657192bb0fb4",
+    "changed": [
+      "model.config.body_rule",
+      "model.kernels",
+      "derived_model.engine_and_FFT",
+      "rule_sha",
+      "kernel_sha"
+    ],
+    "preserved": {
+      "wrapper": {
+        "map_A": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "5945b268a355b9f47f9000ac29a38b9b6f7afd5d32e05923f3eb5a99848e6cb2"
+        },
+        "map_B": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "b524ceda7c2290ea5e90a9939cea94834cd1696e3c610920b6a14aae55d98aac"
+        },
+        "record": {
+          "id": "g2_p0_c0",
+          "generation": 2,
+          "family": "double_lobe",
+          "genome": {
+            "schema": "experience-adaptation-genome.v1",
+            "id": "genome_bd818f3cd82ee24316f5",
+            "family": "double_lobe",
+            "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/compact_ring_core_outer--bridged_longbody.npz",
+            "source_sha256": "eb468b8e2c146e7383b379c0c51fac7cf84edcac524e43726276e8880ce854c8",
+            "genes": [
+              0.03805112412521015,
+              0.0018895267609443866,
+              -0.05434230796821879,
+              0.03500208173589314,
+              -0.005742716135906684,
+              -0.014487744102262416,
+              0.11184272048007587,
+              0.021018927058154033,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "parent_id": "genome_d02e7f60565f83066e5d",
+            "generation": 1,
+            "mutation_seed": 202610193001,
+            "named_genes": {
+              "log_mu1": 0.03805112412521015,
+              "log_mu2": 0.0018895267609443866,
+              "log_sigma1": -0.05434230796821879,
+              "log_sigma2": 0.03500208173589314,
+              "weight_shift": -0.005742716135906684,
+              "kernel_radial1": -0.014487744102262416,
+              "kernel_radial2": 0.11184272048007587,
+              "kernel_crossmix": 0.021018927058154033,
+              "log_stretch_y": 0.0,
+              "log_stretch_x": 0.0,
+              "neck_density": 0.0
+            },
+            "lifetime_rule": "fixed; only outer generations mutate"
+          },
+          "parent_candidate": "g1_f2_c0",
+          "kernel_log_scales": [
+            -0.06,
+            0.06
+          ],
+          "legal": true,
+          "mutation_seed": 202610193001,
+          "proposed_genes": [
+            0.03805112412521015,
+            0.0018895267609443866,
+            -0.05434230796821879,
+            0.03500208173589314,
+            -0.005742716135906684,
+            -0.014487744102262416,
+            0.11184272048007587,
+            0.021018927058154033,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "shape": "double_lobe",
+        "condition": "separated",
+        "policy": "pump",
+        "phase": "ready",
+        "pending": null,
+        "pump_total": 38.03804803023737,
+        "pump_heat": 3.043043842418989
+      },
+      "exchange": {
+        "ecology": "static",
+        "base_fuel": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "8357f0d33f882349e036372f43afaa854e2a2d77b9d5d385038f0c61ac54ab46"
+        },
+        "base_precursor": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "c287cb58d0c319f45d5c28f5d808f1dbb3eb5aad3b63e574d1be5dcab85d6263"
+        },
+        "material_sink": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "76c387de26dc7740de7b031e025d458b9a806413b78974a453a89ca1eee9ce98"
+        },
+        "energy_sink": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "5fd440828351a3892c91d0a513c660fab2722c9e5768f1075bb55a7c82336232"
+        },
+        "ready": true,
+        "fixed_P": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "85d6cd6e1e8a099897e79117febd97befb43617a0f6ac7a6522acf67384ef3ca"
+        },
+        "fixed_F": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "e5773678f9a16e9e2d403e5b6f4804f8cd57eba7473af59c6c1113d9d5b121fc"
+        }
+      },
+      "body": {
+        "world": {
+          "face_permeability": {
+            "dtype": "<f8",
+            "shape": [
+              4,
+              96,
+              96
+            ],
+            "sha256": "d238a4cc98758792517be55650d2e2c7ec41e14f98f855d395179202d14cea27"
+          },
+          "fuel_input": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "e5773678f9a16e9e2d403e5b6f4804f8cd57eba7473af59c6c1113d9d5b121fc"
+          },
+          "precursor_input": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "85d6cd6e1e8a099897e79117febd97befb43617a0f6ac7a6522acf67384ef3ca"
+          },
+          "hazard": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+          }
+        },
+        "adapter": {
+          "class": "environment_evolution.material_action_response.core.VectorAdapter",
+          "fields": {
+            "plant": {
+              "class": "environment_evolution.material_action_response.core.VectorPlant",
+              "fields": {
+                "rule": {
+                  "class": "local_learning.material_transport.Rule",
+                  "fields": {
+                    "transport_scheme": "face_potential",
+                    "dt": 0.05,
+                    "mobility": 1.0,
+                    "cohesion": 3.0,
+                    "pressure": 1.5,
+                    "interaction_sigma": 1.4,
+                    "cue_gain": 0.0,
+                    "learning_rate": 1.0,
+                    "eligibility_time": 0.8,
+                    "memory_time": 200.0,
+                    "uptake_rate": 0.2,
+                    "energy_capacity": 2.0,
+                    "basal_cost": 0.012,
+                    "movement_cost": 0.08,
+                    "starvation_rate": 0.15,
+                    "starvation_energy": 0.08,
+                    "food_sensor_scale": 5.0,
+                    "injury_sensor_scale": 25.0,
+                    "action_budget": "donor_energy",
+                    "polarity_gain": 0.5,
+                    "polarity_turn_rate": 0.04,
+                    "polarity_relaxation_rate": 0.5,
+                    "polarity_energy_gate": "none",
+                    "energy_transfer_conductivity": 0.0,
+                    "energy_transfer_loss": 0.01
+                  }
+                },
+                "permeability": {
+                  "dtype": "<f8",
+                  "shape": [
+                    4,
+                    96,
+                    96
+                  ],
+                  "sha256": "d238a4cc98758792517be55650d2e2c7ec41e14f98f855d395179202d14cea27"
+                },
+                "action": {
+                  "dtype": "<f8",
+                  "shape": [
+                    2,
+                    96,
+                    96
+                  ],
+                  "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+                },
+                "raw_rates": {
+                  "dtype": "<f8",
+                  "shape": [
+                    4,
+                    96,
+                    96
+                  ],
+                  "sha256": "f7f7fa3ca98722fdb10d127ac1a6e3522ec0ef443aa81a79728644fc9b225cb7"
+                },
+                "blocked_rates": {
+                  "dtype": "<f8",
+                  "shape": [
+                    4,
+                    96,
+                    96
+                  ],
+                  "sha256": "69b4c30e8107d588eb1c53f7455d88323c192049cf33592e3ca5851458ec2902"
+                }
+              }
+            }
+          }
+        },
+        "state": {
+          "body": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "62e5be725d4bfb47c55a4424d4f30abb760fc86679286554fcbe4ab795db44c9"
+          },
+          "energy": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "9455dd0f682babf67c83130904204a32f12e37e4621c66098ed43e3aae6a2415"
+          },
+          "memory": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "eligibility": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "polarity": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "precursor": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "8fdf59c53162de0bfd000646adefff0a54ad223ca5906fe32da60bfe4281b45b"
+          },
+          "fuel": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "887b5f51bc8bc3ff751b385b85123740ac2b21ebd80292a479c4b417d6f3e5ec"
+          },
+          "waste": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "4d1b5f144a4c5719af82e05c1a917c48f4fca072561aef4a2f37be5526730568"
+          },
+          "heat": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "b12b1a733b4f9b9cd3924811138d89722c93b4f026de9c888c1ac38413a27534"
+          },
+          "dead_energy": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "2ab733b35f3bd3830c4332efb0f49521b6a863fbea570225da87215c9cdfcb5d"
+          },
+          "founder_mass": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "504a0b77043ec4100f28e3f2560dfc89a350400f8a99794cdbae6f36bf360c08"
+          },
+          "c_theta": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "c_value": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "c_trace": {
+            "dtype": "<f8",
+            "shape": [
+              2,
+              96,
+              96
+            ],
+            "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+          },
+          "c_food": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+          },
+          "c_run": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+          },
+          "c_remaining": {
+            "dtype": "<f8",
+            "shape": [
+              96,
+              96
+            ],
+            "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+          }
+        },
+        "source": {
+          "candidate": {
+            "id": "g2_p0_c0",
+            "generation": 2,
+            "family": "double_lobe",
+            "genome": {
+              "schema": "experience-adaptation-genome.v1",
+              "id": "genome_bd818f3cd82ee24316f5",
+              "family": "double_lobe",
+              "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/compact_ring_core_outer--bridged_longbody.npz",
+              "source_sha256": "eb468b8e2c146e7383b379c0c51fac7cf84edcac524e43726276e8880ce854c8",
+              "genes": [
+                0.03805112412521015,
+                0.0018895267609443866,
+                -0.05434230796821879,
+                0.03500208173589314,
+                -0.005742716135906684,
+                -0.014487744102262416,
+                0.11184272048007587,
+                0.021018927058154033,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "parent_id": "genome_d02e7f60565f83066e5d",
+              "generation": 1,
+              "mutation_seed": 202610193001,
+              "named_genes": {
+                "log_mu1": 0.03805112412521015,
+                "log_mu2": 0.0018895267609443866,
+                "log_sigma1": -0.05434230796821879,
+                "log_sigma2": 0.03500208173589314,
+                "weight_shift": -0.005742716135906684,
+                "kernel_radial1": -0.014487744102262416,
+                "kernel_radial2": 0.11184272048007587,
+                "kernel_crossmix": 0.021018927058154033,
+                "log_stretch_y": 0.0,
+                "log_stretch_x": 0.0,
+                "neck_density": 0.0
+              },
+              "lifetime_rule": "fixed; only outer generations mutate"
+            },
+            "parent_candidate": "g1_f2_c0",
+            "kernel_log_scales": [
+              -0.06,
+              0.06
+            ],
+            "legal": true,
+            "mutation_seed": 202610193001,
+            "proposed_genes": [
+              0.03805112412521015,
+              0.0018895267609443866,
+              -0.05434230796821879,
+              0.03500208173589314,
+              -0.005742716135906684,
+              -0.014487744102262416,
+              0.11184272048007587,
+              0.021018927058154033,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "life0_endowment": {
+            "M": 64.0,
+            "E": 64.0,
+            "P": 0.0,
+            "F": 0.0
+          },
+          "rule_sha256": "49dc4c5f9528b21b65bd4f8b0838e5100f534c517527d534feac395d96c226c1"
+        },
+        "clock": 128,
+        "elapsed": 128,
+        "supply_steps": 384,
+        "input_material": 25.634519193445186,
+        "input_energy": 102.53807677378074
+      },
+      "model_nonrule": {
+        "conversion": {
+          "density_capacity": 1.0,
+          "endowment": 0.2,
+          "synthesis_heat": 0.2,
+          "template_heat": 0.02
+        },
+        "physical_rule": {
+          "transport_scheme": "face_potential",
+          "dt": 0.05,
+          "mobility": 1.0,
+          "cohesion": 3.0,
+          "pressure": 1.5,
+          "interaction_sigma": 1.4,
+          "cue_gain": 0.0,
+          "learning_rate": 1.0,
+          "eligibility_time": 0.8,
+          "memory_time": 200.0,
+          "uptake_rate": 0.2,
+          "energy_capacity": 2.0,
+          "basal_cost": 0.012,
+          "movement_cost": 0.08,
+          "starvation_rate": 0.15,
+          "starvation_energy": 0.08,
+          "food_sensor_scale": 5.0,
+          "injury_sensor_scale": 25.0,
+          "action_budget": "donor_energy",
+          "polarity_gain": 0.5,
+          "polarity_turn_rate": 0.04,
+          "polarity_relaxation_rate": 0.5,
+          "polarity_energy_gate": "none",
+          "energy_transfer_conductivity": 0.0,
+          "energy_transfer_loss": 0.01
+        },
+        "learning_rule": {
+          "hold_time": 0.8,
+          "food_time": 0.8,
+          "discount_time": 6.4,
+          "trace_time": 3.2,
+          "actor_rate": 0.1,
+          "critic_rate": 0.1,
+          "reward_scale": 0.02,
+          "loss_price": 0.08,
+          "theta_bound": 3.0,
+          "value_bound": 2.0
+        },
+        "generation_enabled": true
+      },
+      "model_dt": 0.05,
+      "model_conversion": {
+        "class": "environment_evolution.regenerative_actor.conversion.Conversion",
+        "fields": {
+          "density_capacity": 1.0,
+          "endowment": 0.2,
+          "synthesis_heat": 0.2,
+          "template_heat": 0.02
+        }
+      }
+    },
+    "model_actor_is_original_adapter": true
+  }
+]

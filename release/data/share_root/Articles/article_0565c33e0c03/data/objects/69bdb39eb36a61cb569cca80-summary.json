@@ -1,0 +1,300 @@
+{
+  "status": "completed_readonly_analysis",
+  "objective_met": false,
+  "contexts": 1,
+  "completed_futures": 5,
+  "survival": [
+    {
+      "label": "b1_recent",
+      "alive": true
+    },
+    {
+      "label": "b1_ignore",
+      "alive": true
+    },
+    {
+      "label": "b1_frozen",
+      "alive": true
+    },
+    {
+      "label": "b1_euler",
+      "alive": true
+    },
+    {
+      "label": "b1_none",
+      "alive": true
+    }
+  ],
+  "pairs": [
+    {
+      "body": 1,
+      "comparison": "recent-minus-ignore",
+      "M": -2.9896324234072154,
+      "E": -3.4337565177255556,
+      "U": -5.842640738106297,
+      "body_time": -19.79758704692358,
+      "movement": 0.6608405418884473,
+      "communication": -0.05240320000000054,
+      "basal": -0.23582352140573448,
+      "death": -7.910592770282733,
+      "born": -10.900225193689721
+    },
+    {
+      "body": 1,
+      "comparison": "recent-minus-frozen",
+      "M": -12.543717838052544,
+      "E": -2.914290115683457,
+      "U": -4.724262487405099,
+      "body_time": -18.5102443055639,
+      "movement": -3.5415631121078803,
+      "communication": -0.020608000000003734,
+      "basal": -0.21460495316897976,
+      "death": -4.398409293410168,
+      "born": -16.942127131462485
+    },
+    {
+      "body": 1,
+      "comparison": "recent-minus-euler",
+      "M": -35.1654140885729,
+      "E": 2.3244979091509776,
+      "U": -30.035132701877274,
+      "body_time": -82.92325874213202,
+      "movement": -38.43237213799921,
+      "communication": -0.7353344000000028,
+      "basal": -0.9725676378456001,
+      "death": -26.338904583524936,
+      "born": -61.504318672098066
+    },
+    {
+      "body": 1,
+      "comparison": "recent-minus-none",
+      "M": 23.987197136553277,
+      "E": 17.851370675517387,
+      "U": 51.13554513032659,
+      "body_time": 79.85136250810228,
+      "movement": 23.89887884295384,
+      "communication": 0.2570239999999977,
+      "basal": 0.9438293873452821,
+      "death": 50.35516379708315,
+      "born": 74.34236093363643
+    }
+  ],
+  "decision_differences": [
+    {
+      "body": 1,
+      "unit": 0,
+      "other": "ignore",
+      "clock": 192,
+      "current_body_exact": true,
+      "different_grid_cells": 394,
+      "different_current_mass": 136.4387052027173,
+      "first_recent_frozen_codes_exact": null
+    },
+    {
+      "body": 1,
+      "unit": 0,
+      "other": "frozen",
+      "clock": 192,
+      "current_body_exact": true,
+      "different_grid_cells": 0,
+      "different_current_mass": 0.0,
+      "first_recent_frozen_codes_exact": true
+    },
+    {
+      "body": 1,
+      "unit": 1,
+      "other": "ignore",
+      "clock": 256,
+      "current_body_exact": false,
+      "different_grid_cells": 542,
+      "different_current_mass": 185.4867502137925,
+      "first_recent_frozen_codes_exact": null
+    },
+    {
+      "body": 1,
+      "unit": 1,
+      "other": "frozen",
+      "clock": 256,
+      "current_body_exact": true,
+      "different_grid_cells": 1094,
+      "different_current_mass": 424.4465265949442,
+      "first_recent_frozen_codes_exact": null
+    }
+  ],
+  "target": "legally received descriptive net contact-minus-motor-minus-basal per exposure; not causal return",
+  "scope": "6bd completion after viewing 0ac, same known rotated layout; no independent-world or confirmatory claim",
+  "shared_complete_starts": [
+    {
+      "body": 1,
+      "arm": "recent",
+      "exact_physical_and_records": true,
+      "parent": "/data/dataset/lenia-research/lineage_75e3399f4877/local_terminal_feedback_learning_20261018/c21fd89a-f2ec-483c-b6b2-289375575b3d/b1_prefix_unit0_complete",
+      "exact_metadata": true,
+      "exact_learner": true,
+      "clock": 192,
+      "elapsed": 64,
+      "common_rng": {
+        "bit_generator": "PCG64",
+        "state": {
+          "state": 200225771815313691197677538917579327271,
+          "inc": 109837144191872202687217998512609544813
+        },
+        "has_uint32": 0,
+        "uinteger": 884835163
+      },
+      "restored": {
+        "body": "/data/dataset/lenia-research/lineage_75e3399f4877/local_terminal_feedback_6bd_completion_20261018/f906304e-b82b-4111-858b-a0fafb3aca0c/b1_recent_restored_start",
+        "learner": {
+          "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_terminal_feedback_6bd_completion_20261018/f906304e-b82b-4111-858b-a0fafb3aca0c/b1_recent_restored_start_learner.npz",
+          "sha256": "dfb31caf635b1e5c3d8900673d7253c9e44ec8401fef1374de43fc3ecc7df381"
+        }
+      }
+    },
+    {
+      "body": 1,
+      "arm": "ignore",
+      "exact_physical_and_records": true,
+      "parent": "/data/dataset/lenia-research/lineage_75e3399f4877/local_terminal_feedback_learning_20261018/c21fd89a-f2ec-483c-b6b2-289375575b3d/b1_prefix_unit0_complete",
+      "exact_metadata": true,
+      "exact_learner": true,
+      "clock": 192,
+      "elapsed": 64,
+      "common_rng": {
+        "bit_generator": "PCG64",
+        "state": {
+          "state": 200225771815313691197677538917579327271,
+          "inc": 109837144191872202687217998512609544813
+        },
+        "has_uint32": 0,
+        "uinteger": 884835163
+      },
+      "restored": {
+        "body": "/data/dataset/lenia-research/lineage_75e3399f4877/local_terminal_feedback_6bd_completion_20261018/f906304e-b82b-4111-858b-a0fafb3aca0c/b1_ignore_restored_start",
+        "learner": {
+          "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_terminal_feedback_6bd_completion_20261018/f906304e-b82b-4111-858b-a0fafb3aca0c/b1_ignore_restored_start_learner.npz",
+          "sha256": "dfb31caf635b1e5c3d8900673d7253c9e44ec8401fef1374de43fc3ecc7df381"
+        }
+      }
+    },
+    {
+      "body": 1,
+      "arm": "frozen",
+      "exact_physical_and_records": true,
+      "parent": "/data/dataset/lenia-research/lineage_75e3399f4877/local_terminal_feedback_learning_20261018/c21fd89a-f2ec-483c-b6b2-289375575b3d/b1_prefix_unit0_complete",
+      "exact_metadata": true,
+      "exact_learner": true,
+      "clock": 192,
+      "elapsed": 64,
+      "common_rng": {
+        "bit_generator": "PCG64",
+        "state": {
+          "state": 200225771815313691197677538917579327271,
+          "inc": 109837144191872202687217998512609544813
+        },
+        "has_uint32": 0,
+        "uinteger": 884835163
+      },
+      "restored": {
+        "body": "/data/dataset/lenia-research/lineage_75e3399f4877/local_terminal_feedback_6bd_completion_20261018/f906304e-b82b-4111-858b-a0fafb3aca0c/b1_frozen_restored_start",
+        "learner": {
+          "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_terminal_feedback_6bd_completion_20261018/f906304e-b82b-4111-858b-a0fafb3aca0c/b1_frozen_restored_start_learner.npz",
+          "sha256": "dfb31caf635b1e5c3d8900673d7253c9e44ec8401fef1374de43fc3ecc7df381"
+        }
+      }
+    },
+    {
+      "body": 1,
+      "arm": "euler",
+      "exact_physical_and_records": true,
+      "parent": "/data/dataset/lenia-research/lineage_75e3399f4877/local_terminal_feedback_learning_20261018/c21fd89a-f2ec-483c-b6b2-289375575b3d/b1_prefix_unit0_complete",
+      "exact_metadata": true,
+      "exact_learner": true,
+      "clock": 192,
+      "elapsed": 64,
+      "common_rng": {
+        "bit_generator": "PCG64",
+        "state": {
+          "state": 200225771815313691197677538917579327271,
+          "inc": 109837144191872202687217998512609544813
+        },
+        "has_uint32": 0,
+        "uinteger": 884835163
+      },
+      "restored": {
+        "body": "/data/dataset/lenia-research/lineage_75e3399f4877/local_terminal_feedback_6bd_completion_20261018/f906304e-b82b-4111-858b-a0fafb3aca0c/b1_euler_restored_start",
+        "learner": {
+          "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_terminal_feedback_6bd_completion_20261018/f906304e-b82b-4111-858b-a0fafb3aca0c/b1_euler_restored_start_learner.npz",
+          "sha256": "dfb31caf635b1e5c3d8900673d7253c9e44ec8401fef1374de43fc3ecc7df381"
+        }
+      }
+    },
+    {
+      "body": 1,
+      "arm": "none",
+      "exact_physical_and_records": true,
+      "parent": "/data/dataset/lenia-research/lineage_75e3399f4877/local_terminal_feedback_learning_20261018/c21fd89a-f2ec-483c-b6b2-289375575b3d/b1_prefix_unit0_complete",
+      "exact_metadata": true,
+      "exact_learner": true,
+      "clock": 192,
+      "elapsed": 64,
+      "common_rng": {
+        "bit_generator": "PCG64",
+        "state": {
+          "state": 200225771815313691197677538917579327271,
+          "inc": 109837144191872202687217998512609544813
+        },
+        "has_uint32": 0,
+        "uinteger": 884835163
+      },
+      "restored": {
+        "body": "/data/dataset/lenia-research/lineage_75e3399f4877/local_terminal_feedback_6bd_completion_20261018/f906304e-b82b-4111-858b-a0fafb3aca0c/b1_none_restored_start",
+        "learner": {
+          "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_terminal_feedback_6bd_completion_20261018/f906304e-b82b-4111-858b-a0fafb3aca0c/b1_none_restored_start_learner.npz",
+          "sha256": "dfb31caf635b1e5c3d8900673d7253c9e44ec8401fef1374de43fc3ecc7df381"
+        }
+      }
+    }
+  ],
+  "usage": {
+    "job": "f906304e-b82b-4111-858b-a0fafb3aca0c",
+    "runner_status": "completed",
+    "returncode": 0,
+    "attempted": 640,
+    "committed": 640,
+    "failed_attempts": 0,
+    "runner_worker_seconds": 87.957026,
+    "script_wall_seconds": 42.99972523399629,
+    "cap_steps": 640,
+    "cap_worker_seconds": 480,
+    "unused_steps": 0,
+    "unused_worker_seconds": 392.042974,
+    "raw_cap_bytes": 1073741824,
+    "raw_bytes": 148349661,
+    "old_budget_used": 0,
+    "previous_partial_frozen": {
+      "combined_steps": 1667,
+      "combined_worker_seconds": 571.783956,
+      "d3_unused_steps": 3968,
+      "d3_unused_worker_seconds": 22.72408,
+      "ce2_unused_steps": 509,
+      "ce2_unused_worker_seconds": 5.491964
+    },
+    "no_prefix_replay": true,
+    "no_ce2_replay": true,
+    "no_0ac_replay": true
+  },
+  "sparse_arrays": "unit pre/complete feedback + offsets1,32,64 maps; all-step scalar costs. Intermediate arrays not reconstructed.",
+  "planned_futures": 5,
+  "not_run_futures": [],
+  "complete_comparison_contexts": 1,
+  "task_complete": true,
+  "scientific_objective_met": false,
+  "finding": "消息和更新已影响实际动作，但6bd未胜ignore/frozen；对none四项提升，对Euler有指标取舍；不能一般化0ac更新收益。",
+  "previous_reference": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/local_terminal_feedback_6bd_completion/previous_0ac_reference.json",
+  "report": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/local_terminal_feedback_6bd_completion/REPORT.txt",
+  "old_status_unchanged": true,
+  "actual_viewed": [
+    "actual_process.png",
+    "actual_bodies_actions.png"
+  ]
+}

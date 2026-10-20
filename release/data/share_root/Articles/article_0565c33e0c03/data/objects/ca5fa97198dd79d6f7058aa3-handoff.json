@@ -1,0 +1,26 @@
+{
+  "schema": "anticipatory-information-audit-d3-addendum.v1",
+  "status": "completed_readonly",
+  "resident_id": "resident_33af539c4a17",
+  "task": "anticipatory_material_allocation_20261018",
+  "source_job": "3786e0f1-73a7-4da8-9bdb-ae8fff7fb44e",
+  "files": {
+    "input_scope.json": "917faa5e66347bae83a05520886c5a3b1e81a1e01a34cf8991fd639f52b6cff5",
+    "consumption.json": "cabbf0dbbbbcdada061ea48aebb9eb0b6ccf32117d5b8d06bbfd8442a962d853",
+    "REPORT.txt": "496eaeb2039f36e6262d723cb6b0e80debe178aca23a13b981e36f4079ca1910"
+  },
+  "parent_handoff": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/anticipatory_information_audit_20261018/handoff.json",
+    "sha256": "08c69b6a3d225ddfd99d6cec3ce1613a41a67754dcb4089a6eea6c5de8908345"
+  },
+  "literature_positions": "${share_root}/Projects/元胞自动机研究/src/research/results/anticipatory_information_audit_20261018/literature_positions.json",
+  "audit_api": "${share_root}/Projects/元胞自动机研究/src/research/results/anticipatory_information_audit_20261018/API.txt",
+  "own_usage": {
+    "new_host_steps": 0,
+    "new_training_calls": 0,
+    "new_controller_calls": 0,
+    "runner_submissions": 0,
+    "cap0_synthetic_retests": 0
+  },
+  "conclusion": "Learned U_phi does not beat fixed last on intake or recovery lag; full native information partitions remain incomplete; no body replay."
+}

@@ -1,0 +1,12 @@
+{
+  "viewed": [
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_birth_request_coordination_20261019/body_outcomes.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_birth_request_coordination_20261019/morphology_202610195401_compact.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_birth_request_coordination_20261019/morphology_202610195401_double_lobe.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_birth_request_coordination_20261019/morphology_202610195402_compact.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_birth_request_coordination_20261019/morphology_202610195402_double_lobe.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_birth_request_coordination_20261019/requests_tissue_compact.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_birth_request_coordination_20261019/requests_tissue_double_lobe.png"
+  ],
+  "notes": "全四context序列及首seed两形态请求/旧新组织已目视；宏观形态同族，局部请求与密度差不称新形态；bodytime与末组织/旧体分列。"
+}

@@ -1,0 +1,83 @@
+{
+  "status": "completed",
+  "job_id": "bb9a8a4e-24eb-4cf9-a4ce-55362fa82764",
+  "output": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_local_plasticity",
+  "elapsed_seconds": 20.338831613073125,
+  "usage": {
+    "prototype_rollouts": 2084,
+    "world_ticks": 165786,
+    "local_contact_decisions": 2126720,
+    "body_steps": 0,
+    "independent_physical_energy_steps": 0,
+    "prepare_calls": 0
+  },
+  "scope": "spatial controller prototype only",
+  "opposite_history": {
+    "scope": "same present cue and world visible inputs; only legitimate past contacts differ",
+    "histories": [
+      {
+        "intake": 483.0,
+        "actions": 512,
+        "hit_rate": 0.943359375,
+        "latent_direction_accuracy": 0.943359375,
+        "write_cost": 0.7783641548538492,
+        "exchange_cost": 0.07427098151345363,
+        "movement_cost": 20.48,
+        "net_tokens": 461.66736486363266,
+        "net_per_action": 0.9016940719992825,
+        "per_seed": [
+          {
+            "seed": 202610180901,
+            "intake": 483.0,
+            "actions": 512,
+            "hit_rate": 0.943359375,
+            "latent_direction_accuracy": 0.943359375,
+            "write_cost": 0.7783641548538492,
+            "exchange_cost": 0.07427098151345363,
+            "movement_cost": 20.48,
+            "net_tokens": 461.66736486363266,
+            "net_per_action": 0.9016940719992825
+          }
+        ]
+      },
+      {
+        "intake": 477.0,
+        "actions": 512,
+        "hit_rate": 0.931640625,
+        "latent_direction_accuracy": 0.931640625,
+        "write_cost": 0.7783641548538492,
+        "exchange_cost": 0.07427098151345363,
+        "movement_cost": 20.48,
+        "net_tokens": 455.66736486363266,
+        "net_per_action": 0.8899753219992825,
+        "per_seed": [
+          {
+            "seed": 202610180901,
+            "intake": 477.0,
+            "actions": 512,
+            "hit_rate": 0.931640625,
+            "latent_direction_accuracy": 0.931640625,
+            "write_cost": 0.7783641548538492,
+            "exchange_cost": 0.07427098151345363,
+            "movement_cost": 20.48,
+            "net_tokens": 455.66736486363266,
+            "net_per_action": 0.8899753219992825
+          }
+        ]
+      }
+    ],
+    "mean_p_right_history_positive": 0.9999999977411624,
+    "mean_p_right_history_negative": 2.2588374820798865e-09,
+    "expected_useful_action_positive": 0.9999999977411624,
+    "expected_useful_action_negative": 0.9999999977411625,
+    "same_draw_half_action_disagreement": 1.0,
+    "probe_draw": 0.51,
+    "actual_probe_resource_tokens": [
+      64.0,
+      64.0
+    ],
+    "probe_contacts_per_history": 64,
+    "erased_probability_max_difference": 0.0,
+    "body_steps": 0
+  }
+}

@@ -1,0 +1,3138 @@
+[
+  {
+    "branch": "202610184001__compact__same__791__ema_uniform__ema",
+    "seed": 202610184001,
+    "morphology": "compact",
+    "scenario": "same",
+    "pair": "ema_uniform",
+    "placement": "ema",
+    "pulse_cycle": 24,
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse": {
+      "placement": "ema",
+      "pair": "ema_uniform",
+      "space": 0.003999999999997783,
+      "Q": 0.010724973679668601,
+      "Q_ema": 0.00984112192485383,
+      "Q_instant": 0.007804036170774038,
+      "B": 0.003999999999997783,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 20.0,
+    "pulse_E": 32.0,
+    "M_end": 19.872440705997093,
+    "E_end": 30.361299120106956,
+    "cohort_mass_end": 0.003898889623903789,
+    "metrics": {
+      "uptake": 17.546325627548658,
+      "body_time": 2548.3890485251864,
+      "cohort_attributed_uptake": 0.010597515503088004,
+      "cohort_body_time": 0.5055518804700276,
+      "movement_paid": 1.1118734542274613,
+      "memory_paid": 0.14337002355073272,
+      "basal_paid": 5.606455906755412,
+      "basal_unpaid": 0.0,
+      "heat": 19.185026507441556,
+      "rejected_material": 1.723440559603768,
+      "death": 0.5096778097050373
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__791__ema_uniform__ema__pulse.npz",
+      "sha256": "bb35da59f3f6a614347bad4a4f2d794a0fb7f8d7e999e2b31c5bdef970d865af"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__791__ema_uniform__ema__final.npz",
+      "sha256": "148ae3db8530f516e40fbb6f2644f63181f9679cabdbbfc269df53a5dabbaf56"
+    }
+  },
+  {
+    "branch": "202610184001__compact__same__791__ema_uniform__uniform",
+    "seed": 202610184001,
+    "morphology": "compact",
+    "scenario": "same",
+    "pair": "ema_uniform",
+    "placement": "uniform",
+    "pulse_cycle": 24,
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse": {
+      "placement": "uniform",
+      "pair": "ema_uniform",
+      "space": 0.003999999999997783,
+      "Q": 0.010724973679668601,
+      "Q_ema": 0.00984112192485383,
+      "Q_instant": 0.007804036170774038,
+      "B": 0.003999999999997783,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 20.0,
+    "pulse_E": 32.0,
+    "M_end": 19.87244085630177,
+    "E_end": 30.361299986181812,
+    "cohort_mass_end": 0.0038988896239037884,
+    "metrics": {
+      "uptake": 17.54631874043552,
+      "body_time": 2548.3890626372554,
+      "cohort_attributed_uptake": 0.010570373521905147,
+      "cohort_body_time": 0.5055518804700276,
+      "movement_paid": 1.1118737897298376,
+      "memory_paid": 0.14337002434753732,
+      "basal_paid": 5.606455937801957,
+      "basal_unpaid": 0.0,
+      "heat": 19.185018754253672,
+      "rejected_material": 1.7234395800230946,
+      "death": 0.5096778125274511
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__791__ema_uniform__uniform__pulse.npz",
+      "sha256": "00c7474dbdd0a24a7d95ac16b83d59cb09072e4b3e94255e1a33dae01d2bb0c9"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__791__ema_uniform__uniform__final.npz",
+      "sha256": "522a9b0da4c797b28b9861ce052fcacd50336303b67c12f4bc199f187a739863"
+    }
+  },
+  {
+    "branch": "202610184001__compact__same__791__ema_instant__ema",
+    "seed": 202610184001,
+    "morphology": "compact",
+    "scenario": "same",
+    "pair": "ema_instant",
+    "placement": "ema",
+    "pulse_cycle": 24,
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse": {
+      "placement": "ema",
+      "pair": "ema_instant",
+      "space": 0.003999999999997783,
+      "Q": 0.010724973679668601,
+      "Q_ema": 0.00984112192485383,
+      "Q_instant": 0.007804036170774038,
+      "B": 0.003999999999997783,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 20.0,
+    "pulse_E": 32.0,
+    "M_end": 19.872440705997093,
+    "E_end": 30.361299120106956,
+    "cohort_mass_end": 0.003898889623903789,
+    "metrics": {
+      "uptake": 17.546325627548658,
+      "body_time": 2548.3890485251864,
+      "cohort_attributed_uptake": 0.010597515503088004,
+      "cohort_body_time": 0.5055518804700276,
+      "movement_paid": 1.1118734542274613,
+      "memory_paid": 0.14337002355073272,
+      "basal_paid": 5.606455906755412,
+      "basal_unpaid": 0.0,
+      "heat": 19.185026507441556,
+      "rejected_material": 1.723440559603768,
+      "death": 0.5096778097050373
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__791__ema_instant__ema__pulse.npz",
+      "sha256": "14a930d4b434bf62b2ace03a984f13404c9c05cb4ba5ba7036c0f2117aa521c2"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__791__ema_instant__ema__final.npz",
+      "sha256": "148ae3db8530f516e40fbb6f2644f63181f9679cabdbbfc269df53a5dabbaf56"
+    }
+  },
+  {
+    "branch": "202610184001__compact__same__791__ema_instant__instant",
+    "seed": 202610184001,
+    "morphology": "compact",
+    "scenario": "same",
+    "pair": "ema_instant",
+    "placement": "instant",
+    "pulse_cycle": 24,
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse": {
+      "placement": "instant",
+      "pair": "ema_instant",
+      "space": 0.003999999999997783,
+      "Q": 0.010724973679668601,
+      "Q_ema": 0.00984112192485383,
+      "Q_instant": 0.007804036170774038,
+      "B": 0.003999999999997783,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 20.0,
+    "pulse_E": 32.0,
+    "M_end": 19.87243929969196,
+    "E_end": 30.36129101773819,
+    "cohort_mass_end": 0.0038988896239037893,
+    "metrics": {
+      "uptake": 17.546400332411192,
+      "body_time": 2548.388915355014,
+      "cohort_attributed_uptake": 0.010920661074503365,
+      "cohort_body_time": 0.5055518804700277,
+      "movement_paid": 1.1118692414198998,
+      "memory_paid": 0.14337001603156604,
+      "basal_paid": 5.60645561378103,
+      "basal_unpaid": 0.0,
+      "heat": 19.185109314672932,
+      "rejected_material": 1.7234509571264363,
+      "death": 0.5096777830710032
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__791__ema_instant__instant__pulse.npz",
+      "sha256": "f6ca0287146309b9f3a615dd3040744bea32a9b70d49abd26bded7d0da59b58e"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__791__ema_instant__instant__final.npz",
+      "sha256": "14d37a2933822872eae637244c165baafb0c5bd9c6070910f50faf695b314113"
+    }
+  },
+  {
+    "branch": "202610184001__compact__same__823__ema_uniform__ema",
+    "seed": 202610184001,
+    "morphology": "compact",
+    "scenario": "same",
+    "pair": "ema_uniform",
+    "placement": "ema",
+    "pulse_cycle": 25,
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse": {
+      "placement": "ema",
+      "pair": "ema_uniform",
+      "space": 0.0040000000000048885,
+      "Q": 0.010469515406119088,
+      "Q_ema": 0.009677186078186892,
+      "Q_instant": 0.007585446376041359,
+      "B": 0.0040000000000048885,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 20.0,
+    "pulse_E": 32.0,
+    "M_end": 20.0,
+    "E_end": 32.0,
+    "cohort_mass_end": 0.003898889623910714,
+    "metrics": {
+      "uptake": 16.838784364635874,
+      "body_time": 2544.444793371468,
+      "cohort_attributed_uptake": 0.009475937774582319,
+      "cohort_body_time": 0.5055518804709254,
+      "movement_paid": 1.6662794820914384,
+      "memory_paid": 0.14314732544827366,
+      "basal_paid": 5.597778545417233,
+      "basal_unpaid": 0.0,
+      "heat": 16.838784364635814,
+      "rejected_material": 1.5117651650820656,
+      "death": 0.5088889586742937
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__823__ema_uniform__ema__pulse.npz",
+      "sha256": "87c520697c7a484c8bfee71703f4e1adef319f519eefce81848e4076c90cbda8"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__823__ema_uniform__ema__final.npz",
+      "sha256": "4b2dc59b753052504db90a45f5c44e6edb2ab4d3ae019c84cbf105101d4425a8"
+    }
+  },
+  {
+    "branch": "202610184001__compact__same__823__ema_uniform__uniform",
+    "seed": 202610184001,
+    "morphology": "compact",
+    "scenario": "same",
+    "pair": "ema_uniform",
+    "placement": "uniform",
+    "pulse_cycle": 25,
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse": {
+      "placement": "uniform",
+      "pair": "ema_uniform",
+      "space": 0.0040000000000048885,
+      "Q": 0.010469515406119088,
+      "Q_ema": 0.009677186078186892,
+      "Q_instant": 0.007585446376041359,
+      "B": 0.0040000000000048885,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 20.0,
+    "pulse_E": 32.0,
+    "M_end": 19.999999999999996,
+    "E_end": 31.999999999999996,
+    "cohort_mass_end": 0.0038988896239107156,
+    "metrics": {
+      "uptake": 16.83878211872783,
+      "body_time": 2544.4448025127485,
+      "cohort_attributed_uptake": 0.00946351785904553,
+      "cohort_body_time": 0.5055518804709256,
+      "movement_paid": 1.6662799222414326,
+      "memory_paid": 0.14314732596442428,
+      "basal_paid": 5.597778565528051,
+      "basal_unpaid": 0.0,
+      "heat": 16.838782118727917,
+      "rejected_material": 1.5117648937448445,
+      "death": 0.50888896050255
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__823__ema_uniform__uniform__pulse.npz",
+      "sha256": "7dbe38a8458ef1d935a77383215b0fc646718bc7042c9f40eebca778fbe2d5a4"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__823__ema_uniform__uniform__final.npz",
+      "sha256": "c327de20201f00dca1db6a4ea2164236d5d8c258d97ede01abc73c05e8593638"
+    }
+  },
+  {
+    "branch": "202610184001__compact__same__823__ema_instant__ema",
+    "seed": 202610184001,
+    "morphology": "compact",
+    "scenario": "same",
+    "pair": "ema_instant",
+    "placement": "ema",
+    "pulse_cycle": 25,
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse": {
+      "placement": "ema",
+      "pair": "ema_instant",
+      "space": 0.0040000000000048885,
+      "Q": 0.010469515406119088,
+      "Q_ema": 0.009677186078186892,
+      "Q_instant": 0.007585446376041359,
+      "B": 0.0040000000000048885,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 20.0,
+    "pulse_E": 32.0,
+    "M_end": 20.0,
+    "E_end": 32.0,
+    "cohort_mass_end": 0.003898889623910714,
+    "metrics": {
+      "uptake": 16.838784364635874,
+      "body_time": 2544.444793371468,
+      "cohort_attributed_uptake": 0.009475937774582319,
+      "cohort_body_time": 0.5055518804709254,
+      "movement_paid": 1.6662794820914384,
+      "memory_paid": 0.14314732544827366,
+      "basal_paid": 5.597778545417233,
+      "basal_unpaid": 0.0,
+      "heat": 16.838784364635814,
+      "rejected_material": 1.5117651650820656,
+      "death": 0.5088889586742937
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__823__ema_instant__ema__pulse.npz",
+      "sha256": "90888b956a9da9605731b375eb87584447a505406c6f9406228413027ab52e1b"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__823__ema_instant__ema__final.npz",
+      "sha256": "4b2dc59b753052504db90a45f5c44e6edb2ab4d3ae019c84cbf105101d4425a8"
+    }
+  },
+  {
+    "branch": "202610184001__compact__same__823__ema_instant__instant",
+    "seed": 202610184001,
+    "morphology": "compact",
+    "scenario": "same",
+    "pair": "ema_instant",
+    "placement": "instant",
+    "pulse_cycle": 25,
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse": {
+      "placement": "instant",
+      "pair": "ema_instant",
+      "space": 0.0040000000000048885,
+      "Q": 0.010469515406119088,
+      "Q_ema": 0.009677186078186892,
+      "Q_instant": 0.007585446376041359,
+      "B": 0.0040000000000048885,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 20.000000000000004,
+    "pulse_E": 32.0,
+    "M_end": 20.0,
+    "E_end": 32.0,
+    "cohort_mass_end": 0.003898889623910714,
+    "metrics": {
+      "uptake": 16.838808438309275,
+      "body_time": 2544.4446959290267,
+      "cohort_attributed_uptake": 0.00964208925260181,
+      "cohort_body_time": 0.5055518804709254,
+      "movement_paid": 1.6662733003265855,
+      "memory_paid": 0.14314731994626,
+      "basal_paid": 5.597778331043859,
+      "basal_unpaid": 0.0,
+      "heat": 16.838808438309208,
+      "rejected_material": 1.5117680734113632,
+      "death": 0.5088889391858052
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__823__ema_instant__instant__pulse.npz",
+      "sha256": "0d8d64fd1a72d1b89930667d2630ff60142ae592b73ed78ea05eb7ce694206bd"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__823__ema_instant__instant__final.npz",
+      "sha256": "a8e72df88aea2c2795d94087b758d57929980bef820052ab7ce607b941cdfe19"
+    }
+  },
+  {
+    "branch": "202610184001__compact__port_swap__791__ema_uniform__ema",
+    "seed": 202610184001,
+    "morphology": "compact",
+    "scenario": "port_swap",
+    "pair": "ema_uniform",
+    "placement": "ema",
+    "pulse_cycle": 24,
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse": {
+      "placement": "ema",
+      "pair": "ema_uniform",
+      "space": 0.003999999999997783,
+      "Q": 0.010724973679668601,
+      "Q_ema": 0.00984112192485383,
+      "Q_instant": 0.007804036170774038,
+      "B": 0.003999999999997783,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 20.0,
+    "pulse_E": 32.0,
+    "M_end": 20.0,
+    "E_end": 30.600712949629035,
+    "cohort_mass_end": 0.003898889623903789,
+    "metrics": {
+      "uptake": 8.762435396650433,
+      "body_time": 2528.2698380406728,
+      "cohort_attributed_uptake": 0.005255253943314867,
+      "cohort_body_time": 0.5055518804700276,
+      "movement_paid": 1.1047811900398596,
+      "memory_paid": 0.14223731750430593,
+      "basal_paid": 5.562193643689485,
+      "basal_unpaid": 0.0,
+      "heat": 10.161722447021319,
+      "rejected_material": 0.5458382799899737,
+      "death": 0.5056539676081345
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__port_swap__791__ema_uniform__ema__pulse.npz",
+      "sha256": "bb35da59f3f6a614347bad4a4f2d794a0fb7f8d7e999e2b31c5bdef970d865af"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__port_swap__791__ema_uniform__ema__final.npz",
+      "sha256": "3dcce81aa85a02e955b92e57e83caf881e89a09bc38117611831ffe47d59fb1d"
+    }
+  },
+  {
+    "branch": "202610184001__compact__port_swap__791__ema_uniform__uniform",
+    "seed": 202610184001,
+    "morphology": "compact",
+    "scenario": "port_swap",
+    "pair": "ema_uniform",
+    "placement": "uniform",
+    "pulse_cycle": 24,
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse": {
+      "placement": "uniform",
+      "pair": "ema_uniform",
+      "space": 0.003999999999997783,
+      "Q": 0.010724973679668601,
+      "Q_ema": 0.00984112192485383,
+      "Q_instant": 0.007804036170774038,
+      "B": 0.003999999999997783,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 20.0,
+    "pulse_E": 32.0,
+    "M_end": 20.0,
+    "E_end": 30.600709353034826,
+    "cohort_mass_end": 0.0038988896239037884,
+    "metrics": {
+      "uptake": 8.762430718018013,
+      "body_time": 2528.269837293978,
+      "cohort_attributed_uptake": 0.005241726754117398,
+      "cohort_body_time": 0.5055518804700276,
+      "movement_paid": 1.104781518015908,
+      "memory_paid": 0.1422373174622289,
+      "basal_paid": 5.56219364204675,
+      "basal_unpaid": 0.0,
+      "heat": 10.16172136498308,
+      "rejected_material": 0.5458377187034202,
+      "death": 0.5056539674587958
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__port_swap__791__ema_uniform__uniform__pulse.npz",
+      "sha256": "00c7474dbdd0a24a7d95ac16b83d59cb09072e4b3e94255e1a33dae01d2bb0c9"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__port_swap__791__ema_uniform__uniform__final.npz",
+      "sha256": "4361fba1a0d5e9499580362151683670421534fa34b0d824d002fa13824ca9a4"
+    }
+  },
+  {
+    "branch": "202610184001__compact__port_swap__791__ema_instant__ema",
+    "seed": 202610184001,
+    "morphology": "compact",
+    "scenario": "port_swap",
+    "pair": "ema_instant",
+    "placement": "ema",
+    "pulse_cycle": 24,
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse": {
+      "placement": "ema",
+      "pair": "ema_instant",
+      "space": 0.003999999999997783,
+      "Q": 0.010724973679668601,
+      "Q_ema": 0.00984112192485383,
+      "Q_instant": 0.007804036170774038,
+      "B": 0.003999999999997783,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 20.0,
+    "pulse_E": 32.0,
+    "M_end": 20.0,
+    "E_end": 30.600712949629035,
+    "cohort_mass_end": 0.003898889623903789,
+    "metrics": {
+      "uptake": 8.762435396650433,
+      "body_time": 2528.2698380406728,
+      "cohort_attributed_uptake": 0.005255253943314867,
+      "cohort_body_time": 0.5055518804700276,
+      "movement_paid": 1.1047811900398596,
+      "memory_paid": 0.14223731750430593,
+      "basal_paid": 5.562193643689485,
+      "basal_unpaid": 0.0,
+      "heat": 10.161722447021319,
+      "rejected_material": 0.5458382799899737,
+      "death": 0.5056539676081345
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__port_swap__791__ema_instant__ema__pulse.npz",
+      "sha256": "14a930d4b434bf62b2ace03a984f13404c9c05cb4ba5ba7036c0f2117aa521c2"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__port_swap__791__ema_instant__ema__final.npz",
+      "sha256": "3dcce81aa85a02e955b92e57e83caf881e89a09bc38117611831ffe47d59fb1d"
+    }
+  },
+  {
+    "branch": "202610184001__compact__port_swap__791__ema_instant__instant",
+    "seed": 202610184001,
+    "morphology": "compact",
+    "scenario": "port_swap",
+    "pair": "ema_instant",
+    "placement": "instant",
+    "pulse_cycle": 24,
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse": {
+      "placement": "instant",
+      "pair": "ema_instant",
+      "space": 0.003999999999997783,
+      "Q": 0.010724973679668601,
+      "Q_ema": 0.00984112192485383,
+      "Q_instant": 0.007804036170774038,
+      "B": 0.003999999999997783,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 20.0,
+    "pulse_E": 32.0,
+    "M_end": 20.0,
+    "E_end": 30.600748257792816,
+    "cohort_mass_end": 0.0038988896239037893,
+    "metrics": {
+      "uptake": 8.762480048219278,
+      "body_time": 2528.269848786177,
+      "cohort_attributed_uptake": 0.005416486219147586,
+      "cohort_body_time": 0.5055518804700277,
+      "movement_paid": 1.1047770523751417,
+      "memory_paid": 0.14223731811005008,
+      "basal_paid": 5.562193667329594,
+      "basal_unpaid": 0.0,
+      "heat": 10.161731790426458,
+      "rejected_material": 0.5458436360291307,
+      "death": 0.5056539697572355
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__port_swap__791__ema_instant__instant__pulse.npz",
+      "sha256": "f6ca0287146309b9f3a615dd3040744bea32a9b70d49abd26bded7d0da59b58e"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__port_swap__791__ema_instant__instant__final.npz",
+      "sha256": "c05db337713e329376bff1f0261ccbfec0db11139808f92fe9a907a4e9d7b929"
+    }
+  },
+  {
+    "branch": "202610184001__compact__port_swap__823__ema_uniform__ema",
+    "seed": 202610184001,
+    "morphology": "compact",
+    "scenario": "port_swap",
+    "pair": "ema_uniform",
+    "placement": "ema",
+    "pulse_cycle": 25,
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse": {
+      "placement": "ema",
+      "pair": "ema_uniform",
+      "space": 0.1275395780688484,
+      "Q": 3.5169712109018715e-06,
+      "Q_ema": 3.318236676070791e-06,
+      "Q_instant": 3.2577520175638943e-06,
+      "B": 3.318236676070791e-06,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 19.872463740167824,
+    "pulse_E": 30.36143330183873,
+    "M_end": 19.87246177814549,
+    "E_end": 28.414629408142694,
+    "cohort_mass_end": 3.234359636499145e-06,
+    "metrics": {
+      "uptake": 8.76241142091525,
+      "body_time": 2528.2693369828708,
+      "cohort_attributed_uptake": 1.3182662768149412e-05,
+      "cohort_body_time": 0.0004193851978582828,
+      "movement_paid": 1.662474065971057,
+      "memory_paid": 0.1422372891127378,
+      "basal_paid": 5.562192541362316,
+      "basal_unpaid": 0.0,
+      "heat": 10.709215314611413,
+      "rejected_material": 0.5458374651356384,
+      "death": 0.5056538673965739
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__port_swap__823__ema_uniform__ema__pulse.npz",
+      "sha256": "32646518cdc9352063dc49fe6d96e3a95983b486455c0e2a9ae61a5e37d020ec"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__port_swap__823__ema_uniform__ema__final.npz",
+      "sha256": "07fcb0e116169ad3dfe7ad557e0e2041489086b054122bafa18d77a12ce318b2"
+    }
+  },
+  {
+    "branch": "202610184001__compact__port_swap__823__ema_uniform__uniform",
+    "seed": 202610184001,
+    "morphology": "compact",
+    "scenario": "port_swap",
+    "pair": "ema_uniform",
+    "placement": "uniform",
+    "pulse_cycle": 25,
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse": {
+      "placement": "uniform",
+      "pair": "ema_uniform",
+      "space": 0.1275395780688484,
+      "Q": 3.5169712109018715e-06,
+      "Q_ema": 3.318236676070791e-06,
+      "Q_instant": 3.2577520175638943e-06,
+      "B": 3.318236676070791e-06,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 19.872463740167824,
+    "pulse_E": 30.36143330183873,
+    "M_end": 19.872461778185027,
+    "E_end": 28.414629390841636,
+    "cohort_mass_end": 3.2343596364991434e-06,
+    "metrics": {
+      "uptake": 8.762411395252398,
+      "body_time": 2528.2693368259916,
+      "cohort_attributed_uptake": 1.3166470474550054e-05,
+      "cohort_body_time": 0.0004193851978582826,
+      "movement_paid": 1.6624740659584119,
+      "memory_paid": 0.14223728910385183,
+      "basal_paid": 5.562192541017187,
+      "basal_unpaid": 0.0,
+      "heat": 10.70921530624949,
+      "rejected_material": 0.5458374620479416,
+      "death": 0.5056538673651988
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__port_swap__823__ema_uniform__uniform__pulse.npz",
+      "sha256": "3bcb34dc05eefbf940b178d4735766dbfc2eb395fa541912cd2204ca274fc521"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__port_swap__823__ema_uniform__uniform__final.npz",
+      "sha256": "717dbc2a2a840999dea785010603c9644b9bd8e08fc8d2694a659228fbd3623c"
+    }
+  },
+  {
+    "branch": "202610184001__compact__port_swap__823__ema_instant__ema",
+    "seed": 202610184001,
+    "morphology": "compact",
+    "scenario": "port_swap",
+    "pair": "ema_instant",
+    "placement": "ema",
+    "pulse_cycle": 25,
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse": {
+      "placement": "ema",
+      "pair": "ema_instant",
+      "space": 0.1275395780688484,
+      "Q": 3.5169712109018715e-06,
+      "Q_ema": 3.318236676070791e-06,
+      "Q_instant": 3.2577520175638943e-06,
+      "B": 3.2577520175638943e-06,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 19.872463679683168,
+    "pulse_E": 30.36143330183873,
+    "M_end": 19.8724617781634,
+    "E_end": 28.414629316399726,
+    "cohort_mass_end": 3.1754038846346367e-06,
+    "metrics": {
+      "uptake": 8.762411263273854,
+      "body_time": 2528.2693307308577,
+      "cohort_attributed_uptake": 1.2952490904555628e-05,
+      "cohort_body_time": 0.00041174066464634134,
+      "movement_paid": 1.6624740625654155,
+      "memory_paid": 0.1422372887605062,
+      "basal_paid": 5.5621925276078885,
+      "basal_unpaid": 0.0,
+      "heat": 10.709215248712823,
+      "rejected_material": 0.5458373869665167,
+      "death": 0.5056538661461718
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__port_swap__823__ema_instant__ema__pulse.npz",
+      "sha256": "e884695725683e88ebb5bcd137aa55a5dff794aa975941ba5a7092c501753e16"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__port_swap__823__ema_instant__ema__final.npz",
+      "sha256": "3b4dc212417d578626cf3ef3677c5273b02858db4c6be276fd96574f4113abad"
+    }
+  },
+  {
+    "branch": "202610184001__compact__port_swap__823__ema_instant__instant",
+    "seed": 202610184001,
+    "morphology": "compact",
+    "scenario": "port_swap",
+    "pair": "ema_instant",
+    "placement": "instant",
+    "pulse_cycle": 25,
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse": {
+      "placement": "instant",
+      "pair": "ema_instant",
+      "space": 0.1275395780688484,
+      "Q": 3.5169712109018715e-06,
+      "Q_ema": 3.318236676070791e-06,
+      "Q_instant": 3.2577520175638943e-06,
+      "B": 3.2577520175638943e-06,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 19.87246367968317,
+    "pulse_E": 30.36143330183873,
+    "M_end": 19.872461778229823,
+    "E_end": 28.41462948199938,
+    "cohort_mass_end": 3.1754038846346363e-06,
+    "metrics": {
+      "uptake": 8.762411508798067,
+      "body_time": 2528.2693321878946,
+      "cohort_attributed_uptake": 1.3094856414387243e-05,
+      "cohort_body_time": 0.0004117406646463413,
+      "movement_paid": 1.6624740627774888,
+      "memory_paid": 0.142237288842984,
+      "basal_paid": 5.562192530813367,
+      "basal_unpaid": 0.0,
+      "heat": 10.709215328637526,
+      "rejected_material": 0.5458374160715858,
+      "death": 0.5056538664375785
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__port_swap__823__ema_instant__instant__pulse.npz",
+      "sha256": "e2f48ab0db166f683bc4d98c7653eb7194504d8cc9230ba3e99a2df960bce2fc"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__port_swap__823__ema_instant__instant__final.npz",
+      "sha256": "adcc8bb9e122d0b9db29aa5204896cf0ef3d904d280807ecead1545d81820dbb"
+    }
+  },
+  {
+    "branch": "202610184001__double_lobe__same__791__ema_uniform__ema",
+    "seed": 202610184001,
+    "morphology": "double_lobe",
+    "scenario": "same",
+    "pair": "ema_uniform",
+    "placement": "ema",
+    "pulse_cycle": 24,
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse": {
+      "placement": "ema",
+      "pair": "ema_uniform",
+      "space": 0.004000000000001336,
+      "Q": 0.08537657238122803,
+      "Q_ema": 0.07977294450291789,
+      "Q_instant": 0.07420689900403313,
+      "B": 0.004000000000001336,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 20.0,
+    "pulse_E": 23.085553001946035,
+    "M_end": 19.87718663472394,
+    "E_end": 23.022136456041046,
+    "cohort_mass_end": 0.0038988896239072527,
+    "metrics": {
+      "uptake": 10.567671930516454,
+      "body_time": 2548.9749280822894,
+      "cohort_attributed_uptake": 0.015634466035354153,
+      "cohort_body_time": 0.5055518804704767,
+      "movement_paid": 1.1120070295022388,
+      "memory_paid": 0.14340315219544564,
+      "basal_paid": 5.607744841781036,
+      "basal_unpaid": 0.0,
+      "heat": 10.63108847642139,
+      "rejected_material": 0.8811390113216345,
+      "death": 0.5097949856164578
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__same__791__ema_uniform__ema__pulse.npz",
+      "sha256": "bee8a90045940e3d44f7fcf1725f56fc8a885096dd7f7d5d47e79c97a5c92ed2"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__same__791__ema_uniform__ema__final.npz",
+      "sha256": "b0a1916c060761d968972f5781b07d90211c51325748ef9db402c3e6b6e5703f"
+    }
+  },
+  {
+    "branch": "202610184001__double_lobe__same__791__ema_uniform__uniform",
+    "seed": 202610184001,
+    "morphology": "double_lobe",
+    "scenario": "same",
+    "pair": "ema_uniform",
+    "placement": "uniform",
+    "pulse_cycle": 24,
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse": {
+      "placement": "uniform",
+      "pair": "ema_uniform",
+      "space": 0.004000000000001336,
+      "Q": 0.08537657238122803,
+      "Q_ema": 0.07977294450291789,
+      "Q_instant": 0.07420689900403313,
+      "B": 0.004000000000001336,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 20.0,
+    "pulse_E": 23.085553001946035,
+    "M_end": 19.877186747242288,
+    "E_end": 23.022091727034763,
+    "cohort_mass_end": 0.0038988896239072523,
+    "metrics": {
+      "uptake": 10.567607250364432,
+      "body_time": 2548.974938320417,
+      "cohort_attributed_uptake": 0.015545684008745292,
+      "cohort_body_time": 0.5055518804704767,
+      "movement_paid": 1.1120070132172561,
+      "memory_paid": 0.14340315277566099,
+      "basal_paid": 5.607744864304914,
+      "basal_unpaid": 0.0,
+      "heat": 10.63106852527553,
+      "rejected_material": 0.8811311351374189,
+      "death": 0.5097949876640832
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__same__791__ema_uniform__uniform__pulse.npz",
+      "sha256": "ffda6330c3a8c1014f2f7f5f1a2568569640866ce4470764987799278afdeec2"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__same__791__ema_uniform__uniform__final.npz",
+      "sha256": "be71c962ca7da2476c5cfc700c704abaf376f38f80a510a45e4184a6086f3128"
+    }
+  },
+  {
+    "branch": "202610184001__double_lobe__same__791__ema_instant__ema",
+    "seed": 202610184001,
+    "morphology": "double_lobe",
+    "scenario": "same",
+    "pair": "ema_instant",
+    "placement": "ema",
+    "pulse_cycle": 24,
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse": {
+      "placement": "ema",
+      "pair": "ema_instant",
+      "space": 0.004000000000001336,
+      "Q": 0.08537657238122803,
+      "Q_ema": 0.07977294450291789,
+      "Q_instant": 0.07420689900403313,
+      "B": 0.004000000000001336,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 20.0,
+    "pulse_E": 23.085553001946035,
+    "M_end": 19.87718663472394,
+    "E_end": 23.022136456041046,
+    "cohort_mass_end": 0.0038988896239072527,
+    "metrics": {
+      "uptake": 10.567671930516454,
+      "body_time": 2548.9749280822894,
+      "cohort_attributed_uptake": 0.015634466035354153,
+      "cohort_body_time": 0.5055518804704767,
+      "movement_paid": 1.1120070295022388,
+      "memory_paid": 0.14340315219544564,
+      "basal_paid": 5.607744841781036,
+      "basal_unpaid": 0.0,
+      "heat": 10.63108847642139,
+      "rejected_material": 0.8811390113216345,
+      "death": 0.5097949856164578
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__same__791__ema_instant__ema__pulse.npz",
+      "sha256": "3f536f4e61de9f7e1dfc594c295dec4587c2dbdda480f7adbe5a792e5ff16bfa"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__same__791__ema_instant__ema__final.npz",
+      "sha256": "b0a1916c060761d968972f5781b07d90211c51325748ef9db402c3e6b6e5703f"
+    }
+  },
+  {
+    "branch": "202610184001__double_lobe__same__791__ema_instant__instant",
+    "seed": 202610184001,
+    "morphology": "double_lobe",
+    "scenario": "same",
+    "pair": "ema_instant",
+    "placement": "instant",
+    "pulse_cycle": 24,
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse": {
+      "placement": "instant",
+      "pair": "ema_instant",
+      "space": 0.004000000000001336,
+      "Q": 0.08537657238122803,
+      "Q_ema": 0.07977294450291789,
+      "Q_instant": 0.07420689900403313,
+      "B": 0.004000000000001336,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 20.0,
+    "pulse_E": 23.085553001946035,
+    "M_end": 19.877186155191307,
+    "E_end": 23.022377050796695,
+    "cohort_mass_end": 0.0038988896239072514,
+    "metrics": {
+      "uptake": 10.568020386500043,
+      "body_time": 2548.974884431158,
+      "cohort_attributed_uptake": 0.016111891061484983,
+      "cohort_body_time": 0.5055518804704765,
+      "movement_paid": 1.1120073625780662,
+      "memory_paid": 0.1434031497216417,
+      "basal_paid": 5.607744745748547,
+      "basal_unpaid": 0.0,
+      "heat": 10.631196337649364,
+      "rejected_material": 0.881181314302523,
+      "death": 0.5097949768862318
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__same__791__ema_instant__instant__pulse.npz",
+      "sha256": "8b38b6349735f2f5406c4c73a52f6d3f18326a42cabcf6a64653728b0238609b"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__same__791__ema_instant__instant__final.npz",
+      "sha256": "1cfd56c52424a30ca0d192a729df2800ceffce75395834c5f0544251848bb50a"
+    }
+  },
+  {
+    "branch": "202610184001__double_lobe__same__823__ema_uniform__ema",
+    "seed": 202610184001,
+    "morphology": "double_lobe",
+    "scenario": "same",
+    "pair": "ema_uniform",
+    "placement": "ema",
+    "pulse_cycle": 25,
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse": {
+      "placement": "ema",
+      "pair": "ema_uniform",
+      "space": 0.004000000000001336,
+      "Q": 0.08580772709489692,
+      "Q_ema": 0.0808180523480541,
+      "Q_instant": 0.07487961134900925,
+      "B": 0.004000000000001336,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 20.000000000000007,
+    "pulse_E": 25.515248602954124,
+    "M_end": 20.0,
+    "E_end": 23.929924601820325,
+    "cohort_mass_end": 0.0038988896239072514,
+    "metrics": {
+      "uptake": 9.138704333688189,
+      "body_time": 2545.0335644038937,
+      "cohort_attributed_uptake": 0.01148680003359741,
+      "cohort_body_time": 0.5055518804704765,
+      "movement_paid": 1.6445751627289957,
+      "memory_paid": 0.14318057986870059,
+      "basal_paid": 5.599073841688565,
+      "basal_unpaid": 0.0,
+      "heat": 10.724028334822137,
+      "rejected_material": 0.5876378071618621,
+      "death": 0.5090067128807786
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__same__823__ema_uniform__ema__pulse.npz",
+      "sha256": "2591fea4a87547c781e8a0b951b38a9123bf830c7c0b875b3bb480605e59471f"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__same__823__ema_uniform__ema__final.npz",
+      "sha256": "5d82744739ce0a29b4dcfe7c492a735ebdcda46c32ca03dceea6fb4faa073385"
+    }
+  },
+  {
+    "branch": "202610184001__double_lobe__same__823__ema_uniform__uniform",
+    "seed": 202610184001,
+    "morphology": "double_lobe",
+    "scenario": "same",
+    "pair": "ema_uniform",
+    "placement": "uniform",
+    "pulse_cycle": 25,
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse": {
+      "placement": "uniform",
+      "pair": "ema_uniform",
+      "space": 0.004000000000001336,
+      "Q": 0.08580772709489692,
+      "Q_ema": 0.0808180523480541,
+      "Q_instant": 0.07487961134900925,
+      "B": 0.004000000000001336,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 20.000000000000004,
+    "pulse_E": 25.515248602954124,
+    "M_end": 20.0,
+    "E_end": 23.929908666385586,
+    "cohort_mass_end": 0.003898889623907252,
+    "metrics": {
+      "uptake": 9.138681172990092,
+      "body_time": 2545.0335736660704,
+      "cohort_attributed_uptake": 0.011446546084275273,
+      "cohort_body_time": 0.5055518804704767,
+      "movement_paid": 1.6445751332642247,
+      "memory_paid": 0.14318058039273263,
+      "basal_paid": 5.599073862065355,
+      "basal_unpaid": 0.0,
+      "heat": 10.724021109558436,
+      "rejected_material": 0.5876350260256545,
+      "death": 0.5090067147332141
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__same__823__ema_uniform__uniform__pulse.npz",
+      "sha256": "e393bbf08e88e248cc27dfd65af635ba92a757ced874e9fac8e3e18b65f3a1c9"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__same__823__ema_uniform__uniform__final.npz",
+      "sha256": "14d087d36009c47ccacc01d74acc8023a89ab7c5115eed05592c995b63f6d017"
+    }
+  },
+  {
+    "branch": "202610184001__double_lobe__same__823__ema_instant__ema",
+    "seed": 202610184001,
+    "morphology": "double_lobe",
+    "scenario": "same",
+    "pair": "ema_instant",
+    "placement": "ema",
+    "pulse_cycle": 25,
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse": {
+      "placement": "ema",
+      "pair": "ema_instant",
+      "space": 0.004000000000001336,
+      "Q": 0.08580772709489692,
+      "Q_ema": 0.0808180523480541,
+      "Q_instant": 0.07487961134900925,
+      "B": 0.004000000000001336,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 20.000000000000007,
+    "pulse_E": 25.515248602954124,
+    "M_end": 20.0,
+    "E_end": 23.929924601820325,
+    "cohort_mass_end": 0.0038988896239072514,
+    "metrics": {
+      "uptake": 9.138704333688189,
+      "body_time": 2545.0335644038937,
+      "cohort_attributed_uptake": 0.01148680003359741,
+      "cohort_body_time": 0.5055518804704765,
+      "movement_paid": 1.6445751627289957,
+      "memory_paid": 0.14318057986870059,
+      "basal_paid": 5.599073841688565,
+      "basal_unpaid": 0.0,
+      "heat": 10.724028334822137,
+      "rejected_material": 0.5876378071618621,
+      "death": 0.5090067128807786
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__same__823__ema_instant__ema__pulse.npz",
+      "sha256": "db1bf752c5d79ea8da89a596d8e2ec18bf5d23c5b223851e2e84ad935a2e05d6"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__same__823__ema_instant__ema__final.npz",
+      "sha256": "5d82744739ce0a29b4dcfe7c492a735ebdcda46c32ca03dceea6fb4faa073385"
+    }
+  },
+  {
+    "branch": "202610184001__double_lobe__same__823__ema_instant__instant",
+    "seed": 202610184001,
+    "morphology": "double_lobe",
+    "scenario": "same",
+    "pair": "ema_instant",
+    "placement": "instant",
+    "pulse_cycle": 25,
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse": {
+      "placement": "instant",
+      "pair": "ema_instant",
+      "space": 0.004000000000001336,
+      "Q": 0.08580772709489692,
+      "Q_ema": 0.0808180523480541,
+      "Q_instant": 0.07487961134900925,
+      "B": 0.004000000000001336,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 20.0,
+    "pulse_E": 25.515248602954124,
+    "M_end": 20.0,
+    "E_end": 23.930080499324202,
+    "cohort_mass_end": 0.003898889623907252,
+    "metrics": {
+      "uptake": 9.138930010438546,
+      "body_time": 2545.033517778573,
+      "cohort_attributed_uptake": 0.011808286448728172,
+      "cohort_body_time": 0.5055518804704766,
+      "movement_paid": 1.6445756044076922,
+      "memory_paid": 0.1431805772307574,
+      "basal_paid": 5.599073739112862,
+      "basal_unpaid": 0.0,
+      "heat": 10.72409811406854,
+      "rejected_material": 0.5876648976969714,
+      "death": 0.5090067035557146
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__same__823__ema_instant__instant__pulse.npz",
+      "sha256": "6f2b2357c8e4c4034066408badfbd257e76f2b15216f8969a1dd12c76f700608"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__same__823__ema_instant__instant__final.npz",
+      "sha256": "aea2bc35118f776f90cd4d27165dca6c54d27b82123b2dbdceb55691c5e2e974"
+    }
+  },
+  {
+    "branch": "202610184001__double_lobe__port_swap__791__ema_uniform__ema",
+    "seed": 202610184001,
+    "morphology": "double_lobe",
+    "scenario": "port_swap",
+    "pair": "ema_uniform",
+    "placement": "ema",
+    "pulse_cycle": 24,
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse": {
+      "placement": "ema",
+      "pair": "ema_uniform",
+      "space": 0.004000000000001336,
+      "Q": 0.08537657238122803,
+      "Q_ema": 0.07977294450291789,
+      "Q_instant": 0.07420689900403313,
+      "B": 0.004000000000001336,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 20.0,
+    "pulse_E": 23.085553001946035,
+    "M_end": 20.0,
+    "E_end": 19.77847954193857,
+    "cohort_mass_end": 0.0038988896239072527,
+    "metrics": {
+      "uptake": 5.719533409660148,
+      "body_time": 2528.870593199366,
+      "cohort_attributed_uptake": 0.007499553521090652,
+      "cohort_body_time": 0.5055518804704767,
+      "movement_paid": 1.1048195734781154,
+      "memory_paid": 0.1422711817277106,
+      "basal_paid": 5.563515305038605,
+      "basal_unpaid": 0.0,
+      "heat": 9.026606869667482,
+      "rejected_material": 0.18056989051940225,
+      "death": 0.5057741186398731
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__port_swap__791__ema_uniform__ema__pulse.npz",
+      "sha256": "bee8a90045940e3d44f7fcf1725f56fc8a885096dd7f7d5d47e79c97a5c92ed2"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__port_swap__791__ema_uniform__ema__final.npz",
+      "sha256": "45dcd6c5d484662d13217619e7779ee74f3bfb30b88dfd39a81315d569457bf0"
+    }
+  },
+  {
+    "branch": "202610184001__double_lobe__port_swap__791__ema_uniform__uniform",
+    "seed": 202610184001,
+    "morphology": "double_lobe",
+    "scenario": "port_swap",
+    "pair": "ema_uniform",
+    "placement": "uniform",
+    "pulse_cycle": 24,
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse": {
+      "placement": "uniform",
+      "pair": "ema_uniform",
+      "space": 0.004000000000001336,
+      "Q": 0.08537657238122803,
+      "Q_ema": 0.07977294450291789,
+      "Q_instant": 0.07420689900403313,
+      "B": 0.004000000000001336,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 20.0,
+    "pulse_E": 23.085553001946035,
+    "M_end": 20.0,
+    "E_end": 19.77845584532398,
+    "cohort_mass_end": 0.0038988896239072523,
+    "metrics": {
+      "uptake": 5.719499500589314,
+      "body_time": 2528.870599773653,
+      "cohort_attributed_uptake": 0.007464692890113106,
+      "cohort_body_time": 0.5055518804704767,
+      "movement_paid": 1.1048195556952178,
+      "memory_paid": 0.14227118209863224,
+      "basal_paid": 5.563515319502034,
+      "basal_unpaid": 0.0,
+      "heat": 9.026596657211293,
+      "rejected_material": 0.1805658201160455,
+      "death": 0.50577411995473
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__port_swap__791__ema_uniform__uniform__pulse.npz",
+      "sha256": "ffda6330c3a8c1014f2f7f5f1a2568569640866ce4470764987799278afdeec2"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__port_swap__791__ema_uniform__uniform__final.npz",
+      "sha256": "c4134538e6c4b9eb330e963ee1d46a8ca8f414665a92446cbb57fa0adbd4e2bf"
+    }
+  },
+  {
+    "branch": "202610184001__double_lobe__port_swap__791__ema_instant__ema",
+    "seed": 202610184001,
+    "morphology": "double_lobe",
+    "scenario": "port_swap",
+    "pair": "ema_instant",
+    "placement": "ema",
+    "pulse_cycle": 24,
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse": {
+      "placement": "ema",
+      "pair": "ema_instant",
+      "space": 0.004000000000001336,
+      "Q": 0.08537657238122803,
+      "Q_ema": 0.07977294450291789,
+      "Q_instant": 0.07420689900403313,
+      "B": 0.004000000000001336,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 20.0,
+    "pulse_E": 23.085553001946035,
+    "M_end": 20.0,
+    "E_end": 19.77847954193857,
+    "cohort_mass_end": 0.0038988896239072527,
+    "metrics": {
+      "uptake": 5.719533409660148,
+      "body_time": 2528.870593199366,
+      "cohort_attributed_uptake": 0.007499553521090652,
+      "cohort_body_time": 0.5055518804704767,
+      "movement_paid": 1.1048195734781154,
+      "memory_paid": 0.1422711817277106,
+      "basal_paid": 5.563515305038605,
+      "basal_unpaid": 0.0,
+      "heat": 9.026606869667482,
+      "rejected_material": 0.18056989051940225,
+      "death": 0.5057741186398731
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__port_swap__791__ema_instant__ema__pulse.npz",
+      "sha256": "3f536f4e61de9f7e1dfc594c295dec4587c2dbdda480f7adbe5a792e5ff16bfa"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__port_swap__791__ema_instant__ema__final.npz",
+      "sha256": "45dcd6c5d484662d13217619e7779ee74f3bfb30b88dfd39a81315d569457bf0"
+    }
+  },
+  {
+    "branch": "202610184001__double_lobe__port_swap__791__ema_instant__instant",
+    "seed": 202610184001,
+    "morphology": "double_lobe",
+    "scenario": "port_swap",
+    "pair": "ema_instant",
+    "placement": "instant",
+    "pulse_cycle": 24,
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse": {
+      "placement": "instant",
+      "pair": "ema_instant",
+      "space": 0.004000000000001336,
+      "Q": 0.08537657238122803,
+      "Q_ema": 0.07977294450291789,
+      "Q_instant": 0.07420689900403313,
+      "B": 0.004000000000001336,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 20.0,
+    "pulse_E": 23.085553001946035,
+    "M_end": 19.999999999999996,
+    "E_end": 19.778612517431092,
+    "cohort_mass_end": 0.0038988896239072514,
+    "metrics": {
+      "uptake": 5.719723978696984,
+      "body_time": 2528.8705655218146,
+      "cohort_attributed_uptake": 0.0077141468834251315,
+      "cohort_body_time": 0.5055518804704765,
+      "movement_paid": 1.1048199058612067,
+      "memory_paid": 0.14227118016609028,
+      "basal_paid": 5.563515244147991,
+      "basal_unpaid": 0.0,
+      "heat": 9.026664463211624,
+      "rejected_material": 0.18059276433933213,
+      "death": 0.5057741131043632
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__port_swap__791__ema_instant__instant__pulse.npz",
+      "sha256": "8b38b6349735f2f5406c4c73a52f6d3f18326a42cabcf6a64653728b0238609b"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__port_swap__791__ema_instant__instant__final.npz",
+      "sha256": "a0d21842aaf98d572e067a0efb9d8c826dfc3bd2b97583dc5c62377cc6400d45"
+    }
+  },
+  {
+    "branch": "202610184001__double_lobe__port_swap__823__ema_uniform__ema",
+    "seed": 202610184001,
+    "morphology": "double_lobe",
+    "scenario": "port_swap",
+    "pair": "ema_uniform",
+    "placement": "ema",
+    "pulse_cycle": 25,
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse": {
+      "placement": "ema",
+      "pair": "ema_uniform",
+      "space": 0.12273345277535341,
+      "Q": 1.046817945570686e-06,
+      "Q_ema": 9.906325078132096e-07,
+      "Q_instant": 1.0159264537775612e-06,
+      "B": 9.906325078132096e-07,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 19.877267537857158,
+    "pulse_E": 21.57290087520251,
+    "M_end": 19.87721002491948,
+    "E_end": 17.747131850097947,
+    "cohort_mass_end": 9.655917014542131e-07,
+    "metrics": {
+      "uptake": 5.713053978710101,
+      "body_time": 2528.8682221275308,
+      "cohort_attributed_uptake": 4.672532868398586e-06,
+      "cohort_body_time": 0.00012520403179499629,
+      "movement_paid": 1.641132128177955,
+      "memory_paid": 0.14227104705086366,
+      "basal_paid": 5.563510088680567,
+      "basal_unpaid": 0.0,
+      "heat": 9.538823003814684,
+      "rejected_material": 0.1798503459574339,
+      "death": 0.5057736444255061
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__port_swap__823__ema_uniform__ema__pulse.npz",
+      "sha256": "172ad42ea4afd747246d40b4cf18c24c7e4d927d4a2e6ff35235bf61ab971b46"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__port_swap__823__ema_uniform__ema__final.npz",
+      "sha256": "ae88851e5069803952d10b2a383ef179c342f5e68b24006870a72f01aefad451"
+    }
+  },
+  {
+    "branch": "202610184001__double_lobe__port_swap__823__ema_uniform__uniform",
+    "seed": 202610184001,
+    "morphology": "double_lobe",
+    "scenario": "port_swap",
+    "pair": "ema_uniform",
+    "placement": "uniform",
+    "pulse_cycle": 25,
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse": {
+      "placement": "uniform",
+      "pair": "ema_uniform",
+      "space": 0.12273345277535341,
+      "Q": 1.046817945570686e-06,
+      "Q_ema": 9.906325078132096e-07,
+      "Q_instant": 1.0159264537775612e-06,
+      "B": 9.906325078132096e-07,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 19.877267537857158,
+    "pulse_E": 21.57290087520251,
+    "M_end": 19.877210025002928,
+    "E_end": 17.747131839976014,
+    "cohort_mass_end": 9.65591701454213e-07,
+    "metrics": {
+      "uptake": 5.713053963583764,
+      "body_time": 2528.868222056036,
+      "cohort_attributed_uptake": 4.659273483238274e-06,
+      "cohort_body_time": 0.00012520403179499623,
+      "movement_paid": 1.641132128023323,
+      "memory_paid": 0.1422710470468229,
+      "basal_paid": 5.563510088523276,
+      "basal_unpaid": 0.0,
+      "heat": 9.538822998810318,
+      "rejected_material": 0.17985034407312794,
+      "death": 0.5057736444112071
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__port_swap__823__ema_uniform__uniform__pulse.npz",
+      "sha256": "9ea379fc09c1e2588ec0479bfc92672568ee57b2ce0444e7dd279f80748bb7f3"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__port_swap__823__ema_uniform__uniform__final.npz",
+      "sha256": "6913310ed29dc8b3a4cc25384b0c115a0b7981904c211172b746ebdbca88323e"
+    }
+  },
+  {
+    "branch": "202610184001__double_lobe__port_swap__823__ema_instant__ema",
+    "seed": 202610184001,
+    "morphology": "double_lobe",
+    "scenario": "port_swap",
+    "pair": "ema_instant",
+    "placement": "ema",
+    "pulse_cycle": 25,
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse": {
+      "placement": "ema",
+      "pair": "ema_instant",
+      "space": 0.12273345277535341,
+      "Q": 1.046817945570686e-06,
+      "Q_ema": 9.906325078132096e-07,
+      "Q_instant": 1.0159264537775612e-06,
+      "B": 9.906325078132096e-07,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 19.877267537857158,
+    "pulse_E": 21.57290087520251,
+    "M_end": 19.87721002491948,
+    "E_end": 17.747131850097947,
+    "cohort_mass_end": 9.655917014542131e-07,
+    "metrics": {
+      "uptake": 5.713053978710101,
+      "body_time": 2528.8682221275308,
+      "cohort_attributed_uptake": 4.672532868398586e-06,
+      "cohort_body_time": 0.00012520403179499629,
+      "movement_paid": 1.641132128177955,
+      "memory_paid": 0.14227104705086366,
+      "basal_paid": 5.563510088680567,
+      "basal_unpaid": 0.0,
+      "heat": 9.538823003814684,
+      "rejected_material": 0.1798503459574339,
+      "death": 0.5057736444255061
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__port_swap__823__ema_instant__ema__pulse.npz",
+      "sha256": "77993cb59e4763c08dcfbf7ee52b1caf30a50419ed56a311e9842ee19057ea2a"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__port_swap__823__ema_instant__ema__final.npz",
+      "sha256": "ae88851e5069803952d10b2a383ef179c342f5e68b24006870a72f01aefad451"
+    }
+  },
+  {
+    "branch": "202610184001__double_lobe__port_swap__823__ema_instant__instant",
+    "seed": 202610184001,
+    "morphology": "double_lobe",
+    "scenario": "port_swap",
+    "pair": "ema_instant",
+    "placement": "instant",
+    "pulse_cycle": 25,
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse": {
+      "placement": "instant",
+      "pair": "ema_instant",
+      "space": 0.12273345277535341,
+      "Q": 1.046817945570686e-06,
+      "Q_ema": 9.906325078132096e-07,
+      "Q_instant": 1.0159264537775612e-06,
+      "B": 9.906325078132096e-07,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 19.877267537857158,
+    "pulse_E": 21.57290087520251,
+    "M_end": 19.877210024866823,
+    "E_end": 17.747131867738315,
+    "cohort_mass_end": 9.655917014542138e-07,
+    "metrics": {
+      "uptake": 5.713054004993172,
+      "body_time": 2528.8682222591533,
+      "cohort_attributed_uptake": 4.6907267141125656e-06,
+      "cohort_body_time": 0.00012520403179499629,
+      "movement_paid": 1.6411321283702507,
+      "memory_paid": 0.14227104705831534,
+      "basal_paid": 5.563510088970137,
+      "basal_unpaid": 0.0,
+      "heat": 9.538823012457328,
+      "rejected_material": 0.1798503491377366,
+      "death": 0.5057736444518309
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__port_swap__823__ema_instant__instant__pulse.npz",
+      "sha256": "1a2ca5ced59e33cb45945175eb4741a37f29931df9fe8f1f49097f72002ca86f"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__port_swap__823__ema_instant__instant__final.npz",
+      "sha256": "96bf2b9dc1741d4682e2c5dc4e949ad2f8bad9f8417163667e2313c58ae01599"
+    }
+  },
+  {
+    "branch": "202610184002__compact__same__791__ema_uniform__ema",
+    "seed": 202610184002,
+    "morphology": "compact",
+    "scenario": "same",
+    "pair": "ema_uniform",
+    "placement": "ema",
+    "pulse_cycle": 24,
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse": {
+      "placement": "ema",
+      "pair": "ema_uniform",
+      "space": 0.003999999999997783,
+      "Q": 0.011227405339041863,
+      "Q_ema": 0.010192630780673059,
+      "Q_instant": 0.008255199197841104,
+      "B": 0.003999999999997783,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 19.999999999999996,
+    "pulse_E": 31.999999999999996,
+    "M_end": 19.999999999999993,
+    "E_end": 29.528661408380124,
+    "cohort_mass_end": 0.003898889623903787,
+    "metrics": {
+      "uptake": 8.011317650199329,
+      "body_time": 2528.27750945,
+      "cohort_attributed_uptake": 0.004510559355943709,
+      "cohort_body_time": 0.5055518804700275,
+      "movement_paid": 1.6523999719701383,
+      "memory_paid": 0.1422377497593512,
+      "basal_paid": 5.562210520789999,
+      "basal_unpaid": 0.0,
+      "heat": 10.482656241819,
+      "rejected_material": 0.45570261613398294,
+      "death": 0.5056555018899999
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__same__791__ema_uniform__ema__pulse.npz",
+      "sha256": "192c28ee900aadecaeb93e0bb2c0ebdd80f6bec9e301167dcfb2cfc340288b8b"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__same__791__ema_uniform__ema__final.npz",
+      "sha256": "7f1b0dc66ada9d920e718a4f22ca7f8811411a1f588683102ee1736cf9c48d79"
+    }
+  },
+  {
+    "branch": "202610184002__compact__same__791__ema_uniform__uniform",
+    "seed": 202610184002,
+    "morphology": "compact",
+    "scenario": "same",
+    "pair": "ema_uniform",
+    "placement": "uniform",
+    "pulse_cycle": 24,
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse": {
+      "placement": "uniform",
+      "pair": "ema_uniform",
+      "space": 0.003999999999997783,
+      "Q": 0.011227405339041863,
+      "Q_ema": 0.010192630780673059,
+      "Q_instant": 0.008255199197841104,
+      "B": 0.003999999999997783,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 19.999999999999996,
+    "pulse_E": 31.999999999999996,
+    "M_end": 19.999999999999993,
+    "E_end": 29.528661246213048,
+    "cohort_mass_end": 0.0038988896239037893,
+    "metrics": {
+      "uptake": 8.0113182845071,
+      "body_time": 2528.2775075718573,
+      "cohort_attributed_uptake": 0.004508603521559873,
+      "cohort_body_time": 0.5055518804700277,
+      "movement_paid": 1.6524005898418863,
+      "memory_paid": 0.14223774965350033,
+      "basal_paid": 5.562210516658087,
+      "basal_unpaid": 0.0,
+      "heat": 10.482657038293965,
+      "rejected_material": 0.4557026926265425,
+      "death": 0.5056555015143717
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__same__791__ema_uniform__uniform__pulse.npz",
+      "sha256": "93f43f69c9e0601af65b7122c6f1f1784939cbd73f21a2d9bbd5e1f89cb18e05"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__same__791__ema_uniform__uniform__final.npz",
+      "sha256": "fbc95a5ce6a4ce2504ff5a8bee134a3737bd497a5d4beb76440495cb8e905ea1"
+    }
+  },
+  {
+    "branch": "202610184002__compact__same__791__ema_instant__ema",
+    "seed": 202610184002,
+    "morphology": "compact",
+    "scenario": "same",
+    "pair": "ema_instant",
+    "placement": "ema",
+    "pulse_cycle": 24,
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse": {
+      "placement": "ema",
+      "pair": "ema_instant",
+      "space": 0.003999999999997783,
+      "Q": 0.011227405339041863,
+      "Q_ema": 0.010192630780673059,
+      "Q_instant": 0.008255199197841104,
+      "B": 0.003999999999997783,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 19.999999999999996,
+    "pulse_E": 31.999999999999996,
+    "M_end": 19.999999999999993,
+    "E_end": 29.528661408380124,
+    "cohort_mass_end": 0.003898889623903787,
+    "metrics": {
+      "uptake": 8.011317650199329,
+      "body_time": 2528.27750945,
+      "cohort_attributed_uptake": 0.004510559355943709,
+      "cohort_body_time": 0.5055518804700275,
+      "movement_paid": 1.6523999719701383,
+      "memory_paid": 0.1422377497593512,
+      "basal_paid": 5.562210520789999,
+      "basal_unpaid": 0.0,
+      "heat": 10.482656241819,
+      "rejected_material": 0.45570261613398294,
+      "death": 0.5056555018899999
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__same__791__ema_instant__ema__pulse.npz",
+      "sha256": "76f646e6c67745d2d9aec07d8e60c887ef524a635ca420025f211760f0a72112"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__same__791__ema_instant__ema__final.npz",
+      "sha256": "7f1b0dc66ada9d920e718a4f22ca7f8811411a1f588683102ee1736cf9c48d79"
+    }
+  },
+  {
+    "branch": "202610184002__compact__same__791__ema_instant__instant",
+    "seed": 202610184002,
+    "morphology": "compact",
+    "scenario": "same",
+    "pair": "ema_instant",
+    "placement": "instant",
+    "pulse_cycle": 24,
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse": {
+      "placement": "instant",
+      "pair": "ema_instant",
+      "space": 0.003999999999997783,
+      "Q": 0.011227405339041863,
+      "Q_ema": 0.010192630780673059,
+      "Q_instant": 0.008255199197841104,
+      "B": 0.003999999999997783,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 20.0,
+    "pulse_E": 31.999999999999996,
+    "M_end": 20.0,
+    "E_end": 29.528705840287078,
+    "cohort_mass_end": 0.003898889623903789,
+    "metrics": {
+      "uptake": 8.011372230097534,
+      "body_time": 2528.277522625231,
+      "cohort_attributed_uptake": 0.004549182641049155,
+      "cohort_body_time": 0.5055518804700276,
+      "movement_paid": 1.6523936454749046,
+      "memory_paid": 0.14223775050198734,
+      "basal_paid": 5.562210549775507,
+      "basal_unpaid": 0.0,
+      "heat": 10.482666389810532,
+      "rejected_material": 0.4557091630867181,
+      "death": 0.5056555045250462
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__same__791__ema_instant__instant__pulse.npz",
+      "sha256": "95e5c90526e515523770c0a8d955cc8e180b0e240639bd83cc08c43ed3d265fb"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__same__791__ema_instant__instant__final.npz",
+      "sha256": "74a83ffcc2a388598e038c40e5b6a477aa196d5ae1fb8f37c347a5d1af9fb764"
+    }
+  },
+  {
+    "branch": "202610184002__compact__same__823__ema_uniform__ema",
+    "seed": 202610184002,
+    "morphology": "compact",
+    "scenario": "same",
+    "pair": "ema_uniform",
+    "placement": "ema",
+    "pulse_cycle": 25,
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse": {
+      "placement": "ema",
+      "pair": "ema_uniform",
+      "space": 0.12749472361808145,
+      "Q": 4.63410864471162e-06,
+      "Q_ema": 4.26766063287832e-06,
+      "Q_instant": 4.147259386001096e-06,
+      "B": 4.26766063287832e-06,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 19.87250954404255,
+    "pulse_E": 30.361699361977323,
+    "M_end": 19.999999999999996,
+    "E_end": 31.999999999999996,
+    "cohort_mass_end": 4.159784439970295e-06,
+    "metrics": {
+      "uptake": 16.092676356723317,
+      "body_time": 2528.455363371351,
+      "cohort_attributed_uptake": 2.5504893718313197e-05,
+      "cohort_body_time": 0.0005393809645401846,
+      "movement_paid": 1.6525844935857446,
+      "memory_paid": 0.14224700548730007,
+      "basal_paid": 5.562601799416969,
+      "basal_unpaid": 0.0,
+      "heat": 14.454375718700629,
+      "rejected_material": 1.2979396341751408,
+      "death": 0.5056910726742703
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__same__823__ema_uniform__ema__pulse.npz",
+      "sha256": "56852ba6cd9138fd5ea85d0a246b710c48ed63d73c8863119aac97126f295469"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__same__823__ema_uniform__ema__final.npz",
+      "sha256": "eebf07117f5ebc90df1c7642752954bbe29a844717d5adc8b7b747e098507045"
+    }
+  },
+  {
+    "branch": "202610184002__compact__same__823__ema_uniform__uniform",
+    "seed": 202610184002,
+    "morphology": "compact",
+    "scenario": "same",
+    "pair": "ema_uniform",
+    "placement": "uniform",
+    "pulse_cycle": 25,
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse": {
+      "placement": "uniform",
+      "pair": "ema_uniform",
+      "space": 0.12749472361808145,
+      "Q": 4.63410864471162e-06,
+      "Q_ema": 4.26766063287832e-06,
+      "Q_instant": 4.147259386001096e-06,
+      "B": 4.26766063287832e-06,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 19.87250954404255,
+    "pulse_E": 30.361699361977323,
+    "M_end": 20.000000000000004,
+    "E_end": 32.00000000000001,
+    "cohort_mass_end": 4.159784439970295e-06,
+    "metrics": {
+      "uptake": 16.09267648883804,
+      "body_time": 2528.455364099775,
+      "cohort_attributed_uptake": 2.5543257316576635e-05,
+      "cohort_body_time": 0.0005393809645401846,
+      "movement_paid": 1.6525844942718344,
+      "memory_paid": 0.14224700552850986,
+      "basal_paid": 5.562601801019508,
+      "basal_unpaid": 0.0,
+      "heat": 14.45437585081531,
+      "rejected_material": 1.2979396498832183,
+      "death": 0.5056910728199552
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__same__823__ema_uniform__uniform__pulse.npz",
+      "sha256": "f87e5282b1f916b33d17387ffde21cc79d74f79595149a21c230ec6e48be310c"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__same__823__ema_uniform__uniform__final.npz",
+      "sha256": "7323d50237f8137d24a4ee527a0258cdb17bc7c192fb502d58730aee6f556f2b"
+    }
+  },
+  {
+    "branch": "202610184002__compact__same__823__ema_instant__ema",
+    "seed": 202610184002,
+    "morphology": "compact",
+    "scenario": "same",
+    "pair": "ema_instant",
+    "placement": "ema",
+    "pulse_cycle": 25,
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse": {
+      "placement": "ema",
+      "pair": "ema_instant",
+      "space": 0.12749472361808145,
+      "Q": 4.63410864471162e-06,
+      "Q_ema": 4.26766063287832e-06,
+      "Q_instant": 4.147259386001096e-06,
+      "B": 4.147259386001096e-06,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 19.872509423641304,
+    "pulse_E": 30.361699361977323,
+    "M_end": 19.999999999999996,
+    "E_end": 31.999999999999996,
+    "cohort_mass_end": 4.0424266469315574e-06,
+    "metrics": {
+      "uptake": 16.092675540227937,
+      "body_time": 2528.455349790664,
+      "cohort_attributed_uptake": 2.4792095634887524e-05,
+      "cohort_body_time": 0.0005241636953477468,
+      "movement_paid": 1.6525844821876179,
+      "memory_paid": 0.14224700472199298,
+      "basal_paid": 5.562601769539456,
+      "basal_unpaid": 0.0,
+      "heat": 14.454374902205132,
+      "rejected_material": 1.2979394185105828,
+      "death": 0.505691069958133
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__same__823__ema_instant__ema__pulse.npz",
+      "sha256": "35cd53d22846707a0709826fddff709eca412847027fcf932321a8e9400c774a"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__same__823__ema_instant__ema__final.npz",
+      "sha256": "7d7d951cb8fb64d933a781246c3758bddd727e45625e3aaec3ce0540ca8c0b18"
+    }
+  },
+  {
+    "branch": "202610184002__compact__same__823__ema_instant__instant",
+    "seed": 202610184002,
+    "morphology": "compact",
+    "scenario": "same",
+    "pair": "ema_instant",
+    "placement": "instant",
+    "pulse_cycle": 25,
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse": {
+      "placement": "instant",
+      "pair": "ema_instant",
+      "space": 0.12749472361808145,
+      "Q": 4.63410864471162e-06,
+      "Q_ema": 4.26766063287832e-06,
+      "Q_instant": 4.147259386001096e-06,
+      "B": 4.147259386001096e-06,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 19.872509423641304,
+    "pulse_E": 30.361699361977323,
+    "M_end": 20.000000000000004,
+    "E_end": 32.00000000000001,
+    "cohort_mass_end": 4.042426646931559e-06,
+    "metrics": {
+      "uptake": 16.092676600470604,
+      "body_time": 2528.455358341511,
+      "cohort_attributed_uptake": 2.523842783802189e-05,
+      "cohort_body_time": 0.0005241636953477468,
+      "movement_paid": 1.652584489487646,
+      "memory_paid": 0.14224700520499256,
+      "basal_paid": 5.5626017883513255,
+      "basal_unpaid": 0.0,
+      "heat": 14.45437596244794,
+      "rejected_material": 1.2979395440295323,
+      "death": 0.5056910716683023
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__same__823__ema_instant__instant__pulse.npz",
+      "sha256": "afec4c8d91dbf38707238dc2bb1778bd217090bf7ca351e299a58f43aec026b8"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__same__823__ema_instant__instant__final.npz",
+      "sha256": "1545753f641857d59d242185241d2a08e0e60ee45042141021c3595edc243d23"
+    }
+  },
+  {
+    "branch": "202610184002__compact__port_swap__791__ema_uniform__ema",
+    "seed": 202610184002,
+    "morphology": "compact",
+    "scenario": "port_swap",
+    "pair": "ema_uniform",
+    "placement": "ema",
+    "pulse_cycle": 24,
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse": {
+      "placement": "ema",
+      "pair": "ema_uniform",
+      "space": 0.12543381338783632,
+      "Q": 4.677714439897163e-06,
+      "Q_ema": 4.3416310647968895e-06,
+      "Q_instant": 4.19884597087198e-06,
+      "B": 4.3416310647968895e-06,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 19.87457052824323,
+    "pulse_E": 29.817051080335727,
+    "M_end": 20.000000000000004,
+    "E_end": 32.00000000000001,
+    "cohort_mass_end": 4.231885077341083e-06,
+    "metrics": {
+      "uptake": 24.83453923020203,
+      "body_time": 2544.7531484289107,
+      "cohort_attributed_uptake": 2.8639651405415358e-05,
+      "cohort_body_time": 0.0005487299372790929,
+      "movement_paid": 1.6701182003458073,
+      "memory_paid": 0.14316393778546066,
+      "basal_paid": 5.598456926543605,
+      "basal_unpaid": 0.0,
+      "heat": 22.651590310537618,
+      "rejected_material": 2.3457646061817385,
+      "death": 0.5089506296857824
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__port_swap__791__ema_uniform__ema__pulse.npz",
+      "sha256": "4f60f7d1eb0e62c8b5c424dcc21df9982a3f04fd03032e787b9c508db5358b63"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__port_swap__791__ema_uniform__ema__final.npz",
+      "sha256": "efc9aec710577d43ff1a10965a158613efcb721a426c12694b30a6210517e09b"
+    }
+  },
+  {
+    "branch": "202610184002__compact__port_swap__791__ema_uniform__uniform",
+    "seed": 202610184002,
+    "morphology": "compact",
+    "scenario": "port_swap",
+    "pair": "ema_uniform",
+    "placement": "uniform",
+    "pulse_cycle": 24,
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse": {
+      "placement": "uniform",
+      "pair": "ema_uniform",
+      "space": 0.12543381338783632,
+      "Q": 4.677714439897163e-06,
+      "Q_ema": 4.3416310647968895e-06,
+      "Q_instant": 4.19884597087198e-06,
+      "B": 4.3416310647968895e-06,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 19.874570528243225,
+    "pulse_E": 29.817051080335727,
+    "M_end": 20.0,
+    "E_end": 32.0,
+    "cohort_mass_end": 4.2318850773410824e-06,
+    "metrics": {
+      "uptake": 24.834539201638837,
+      "body_time": 2544.7531483315975,
+      "cohort_attributed_uptake": 2.8632157649981543e-05,
+      "cohort_body_time": 0.0005487299372790927,
+      "movement_paid": 1.6701182004874642,
+      "memory_paid": 0.14316393777978376,
+      "basal_paid": 5.5984569263295105,
+      "basal_unpaid": 0.0,
+      "heat": 22.65159028197447,
+      "rejected_material": 2.3457646027736274,
+      "death": 0.5089506296663193
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__port_swap__791__ema_uniform__uniform__pulse.npz",
+      "sha256": "5424e1d8f1c979c2f0b4d93770d58f84c08dbe05fc9a9e6f20ecbc3241506e18"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__port_swap__791__ema_uniform__uniform__final.npz",
+      "sha256": "f7bcc6a21533b42d6ff7dc4c13afde75926259044f012bbb2205ddd466b6766b"
+    }
+  },
+  {
+    "branch": "202610184002__compact__port_swap__791__ema_instant__ema",
+    "seed": 202610184002,
+    "morphology": "compact",
+    "scenario": "port_swap",
+    "pair": "ema_instant",
+    "placement": "ema",
+    "pulse_cycle": 24,
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse": {
+      "placement": "ema",
+      "pair": "ema_instant",
+      "space": 0.12543381338783632,
+      "Q": 4.677714439897163e-06,
+      "Q_ema": 4.3416310647968895e-06,
+      "Q_instant": 4.19884597087198e-06,
+      "B": 4.19884597087198e-06,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 19.874570385458135,
+    "pulse_E": 29.817051080335727,
+    "M_end": 20.0,
+    "E_end": 32.0,
+    "cohort_mass_end": 4.092709247053016e-06,
+    "metrics": {
+      "uptake": 24.834538386694646,
+      "body_time": 2544.753143156464,
+      "cohort_attributed_uptake": 2.7709196837517492e-05,
+      "cohort_body_time": 0.0005306836190948757,
+      "movement_paid": 1.670118200295817,
+      "memory_paid": 0.1431639374874593,
+      "basal_paid": 5.598456914944222,
+      "basal_unpaid": 0.0,
+      "heat": 22.65158946703044,
+      "rejected_material": 2.345764363230254,
+      "death": 0.5089506286312926
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__port_swap__791__ema_instant__ema__pulse.npz",
+      "sha256": "9216b4dadd70f155c8deaa558129b53a85d96fc6c4106cbbb91c33fe7743824a"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__port_swap__791__ema_instant__ema__final.npz",
+      "sha256": "6425612940e09af18bbfe70895248327a5cec3442bd6ae8757873bf2605bb5dd"
+    }
+  },
+  {
+    "branch": "202610184002__compact__port_swap__791__ema_instant__instant",
+    "seed": 202610184002,
+    "morphology": "compact",
+    "scenario": "port_swap",
+    "pair": "ema_instant",
+    "placement": "instant",
+    "pulse_cycle": 24,
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse": {
+      "placement": "instant",
+      "pair": "ema_instant",
+      "space": 0.12543381338783632,
+      "Q": 4.677714439897163e-06,
+      "Q_ema": 4.3416310647968895e-06,
+      "Q_instant": 4.19884597087198e-06,
+      "B": 4.19884597087198e-06,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 19.87457038545814,
+    "pulse_E": 29.817051080335727,
+    "M_end": 20.000000000000004,
+    "E_end": 32.00000000000001,
+    "cohort_mass_end": 4.092709247053016e-06,
+    "metrics": {
+      "uptake": 24.834538585534613,
+      "body_time": 2544.753143635715,
+      "cohort_attributed_uptake": 2.7763509568696617e-05,
+      "cohort_body_time": 0.0005306836190948757,
+      "movement_paid": 1.6701181987365377,
+      "memory_paid": 0.14316393751550396,
+      "basal_paid": 5.598456915998573,
+      "basal_unpaid": 0.0,
+      "heat": 22.651589665870418,
+      "rejected_material": 2.3457643869952003,
+      "death": 0.5089506287271431
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__port_swap__791__ema_instant__instant__pulse.npz",
+      "sha256": "8c2949d7beac74455b1ce54a2d3fb55d57c83b327c6ee2a18e956a8ad7201ea0"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__port_swap__791__ema_instant__instant__final.npz",
+      "sha256": "384ff3399b0bf408ffaff4355337f7080e85fd1c887c374b427fe3e8d6f04c1e"
+    }
+  },
+  {
+    "branch": "202610184002__compact__port_swap__823__ema_uniform__ema",
+    "seed": 202610184002,
+    "morphology": "compact",
+    "scenario": "port_swap",
+    "pair": "ema_uniform",
+    "placement": "ema",
+    "pulse_cycle": 25,
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse": {
+      "placement": "ema",
+      "pair": "ema_uniform",
+      "space": 0.003999999999997783,
+      "Q": 0.011372413479182752,
+      "Q_ema": 0.0097227465011356,
+      "Q_instant": 0.008333988120680631,
+      "B": 0.003999999999997783,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 19.999999999999996,
+    "pulse_E": 31.999999999999996,
+    "M_end": 20.0,
+    "E_end": 32.0,
+    "cohort_mass_end": 0.003898889623903788,
+    "metrics": {
+      "uptake": 24.175052364811798,
+      "body_time": 2548.6827849704337,
+      "cohort_attributed_uptake": 0.013846768776149505,
+      "cohort_body_time": 0.5055518804700275,
+      "movement_paid": 1.670279497766205,
+      "memory_paid": 0.1433858216495946,
+      "basal_paid": 5.607102126934955,
+      "basal_unpaid": 0.0,
+      "heat": 24.175052364811926,
+      "rejected_material": 2.3912697267833836,
+      "death": 0.5097365569940872
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__port_swap__823__ema_uniform__ema__pulse.npz",
+      "sha256": "b9d887df40234112fd384e6887626ef44e9abbba6cac0ef9ac8f56ed60a9fdc5"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__port_swap__823__ema_uniform__ema__final.npz",
+      "sha256": "74dd55f66ab3185eccaa78d3d040a35ea57536470cd19d15b2411bb23b567189"
+    }
+  },
+  {
+    "branch": "202610184002__compact__port_swap__823__ema_uniform__uniform",
+    "seed": 202610184002,
+    "morphology": "compact",
+    "scenario": "port_swap",
+    "pair": "ema_uniform",
+    "placement": "uniform",
+    "pulse_cycle": 25,
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse": {
+      "placement": "uniform",
+      "pair": "ema_uniform",
+      "space": 0.003999999999997783,
+      "Q": 0.011372413479182752,
+      "Q_ema": 0.0097227465011356,
+      "Q_instant": 0.008333988120680631,
+      "B": 0.003999999999997783,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 20.0,
+    "pulse_E": 32.0,
+    "M_end": 20.0,
+    "E_end": 32.0,
+    "cohort_mass_end": 0.0038988896239037897,
+    "metrics": {
+      "uptake": 24.175058354142347,
+      "body_time": 2548.682772199813,
+      "cohort_attributed_uptake": 0.013838387921460213,
+      "cohort_body_time": 0.5055518804700277,
+      "movement_paid": 1.6702804787395023,
+      "memory_paid": 0.14338582092811591,
+      "basal_paid": 5.607102098839585,
+      "basal_unpaid": 0.0,
+      "heat": 24.175058354142273,
+      "rejected_material": 2.391270448057177,
+      "death": 0.5097365544399626
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__port_swap__823__ema_uniform__uniform__pulse.npz",
+      "sha256": "576f4dcbebb9d700e1b21e1ed2b0eb49bfe98bc1fcb3038e0dfeb6e9c42195c2"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__port_swap__823__ema_uniform__uniform__final.npz",
+      "sha256": "e5d2b598035862524be093c72d9807fbf460943c3ebe58220a32e22f568bad3e"
+    }
+  },
+  {
+    "branch": "202610184002__compact__port_swap__823__ema_instant__ema",
+    "seed": 202610184002,
+    "morphology": "compact",
+    "scenario": "port_swap",
+    "pair": "ema_instant",
+    "placement": "ema",
+    "pulse_cycle": 25,
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse": {
+      "placement": "ema",
+      "pair": "ema_instant",
+      "space": 0.003999999999997783,
+      "Q": 0.011372413479182752,
+      "Q_ema": 0.0097227465011356,
+      "Q_instant": 0.008333988120680631,
+      "B": 0.003999999999997783,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 19.999999999999996,
+    "pulse_E": 31.999999999999996,
+    "M_end": 20.0,
+    "E_end": 32.0,
+    "cohort_mass_end": 0.003898889623903788,
+    "metrics": {
+      "uptake": 24.175052364811798,
+      "body_time": 2548.6827849704337,
+      "cohort_attributed_uptake": 0.013846768776149505,
+      "cohort_body_time": 0.5055518804700275,
+      "movement_paid": 1.670279497766205,
+      "memory_paid": 0.1433858216495946,
+      "basal_paid": 5.607102126934955,
+      "basal_unpaid": 0.0,
+      "heat": 24.175052364811926,
+      "rejected_material": 2.3912697267833836,
+      "death": 0.5097365569940872
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__port_swap__823__ema_instant__ema__pulse.npz",
+      "sha256": "d2fb2d8798b49f98856e4fc9d66f7ef8c6e0908358ec6fb3d3173166a1e4da2f"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__port_swap__823__ema_instant__ema__final.npz",
+      "sha256": "74dd55f66ab3185eccaa78d3d040a35ea57536470cd19d15b2411bb23b567189"
+    }
+  },
+  {
+    "branch": "202610184002__compact__port_swap__823__ema_instant__instant",
+    "seed": 202610184002,
+    "morphology": "compact",
+    "scenario": "port_swap",
+    "pair": "ema_instant",
+    "placement": "instant",
+    "pulse_cycle": 25,
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse": {
+      "placement": "instant",
+      "pair": "ema_instant",
+      "space": 0.003999999999997783,
+      "Q": 0.011372413479182752,
+      "Q_ema": 0.0097227465011356,
+      "Q_instant": 0.008333988120680631,
+      "B": 0.003999999999997783,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 19.999999999999996,
+    "pulse_E": 31.999999999999996,
+    "M_end": 20.0,
+    "E_end": 32.0,
+    "cohort_mass_end": 0.003898889623903789,
+    "metrics": {
+      "uptake": 24.175163184292003,
+      "body_time": 2548.6827049245476,
+      "cohort_attributed_uptake": 0.014005137088327669,
+      "cohort_body_time": 0.5055518804700277,
+      "movement_paid": 1.6702731630535574,
+      "memory_paid": 0.14338581712098078,
+      "basal_paid": 5.6071019508340045,
+      "basal_unpaid": 0.0,
+      "heat": 24.175163184291925,
+      "rejected_material": 2.3912830411301855,
+      "death": 0.5097365409849097
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__port_swap__823__ema_instant__instant__pulse.npz",
+      "sha256": "401c5949a2cfc9b2d114da1beae8d2d6879ef91e95760a851988ccaa9b9b669e"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__port_swap__823__ema_instant__instant__final.npz",
+      "sha256": "ba7117dad88c85e4dfb62ea225de4c4e175c588ad4c118db0916f6def8344e05"
+    }
+  },
+  {
+    "branch": "202610184002__double_lobe__same__791__ema_uniform__ema",
+    "seed": 202610184002,
+    "morphology": "double_lobe",
+    "scenario": "same",
+    "pair": "ema_uniform",
+    "placement": "ema",
+    "pulse_cycle": 24,
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse": {
+      "placement": "ema",
+      "pair": "ema_uniform",
+      "space": 0.004000000000001336,
+      "Q": 0.11722408196445092,
+      "Q_ema": 0.1061313524723464,
+      "Q_instant": 0.07822371289474511,
+      "B": 0.004000000000001336,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 20.0,
+    "pulse_E": 17.354223771111418,
+    "M_end": 20.0,
+    "E_end": 12.767178443197293,
+    "cohort_mass_end": 0.00389888962390725,
+    "metrics": {
+      "uptake": 4.465206656778037,
+      "body_time": 2528.852372691798,
+      "cohort_attributed_uptake": 0.003133404644624447,
+      "cohort_body_time": 0.5055518804704766,
+      "movement_paid": 1.6531530862162045,
+      "memory_paid": 0.14227077058513665,
+      "basal_paid": 5.563475219921951,
+      "basal_unpaid": 0.0,
+      "heat": 9.052251984692113,
+      "rejected_material": 0.030054324275055933,
+      "death": 0.5057704745383594
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__same__791__ema_uniform__ema__pulse.npz",
+      "sha256": "7b81a68f759e4c2ff498e6af52db2e9a7bd307a1f6265a50e99ccfbf5f81e022"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__same__791__ema_uniform__ema__final.npz",
+      "sha256": "58813fee7048f7a669a96321dc00d5c864d15710660c4b02eb7359ec203d3e0e"
+    }
+  },
+  {
+    "branch": "202610184002__double_lobe__same__791__ema_uniform__uniform",
+    "seed": 202610184002,
+    "morphology": "double_lobe",
+    "scenario": "same",
+    "pair": "ema_uniform",
+    "placement": "uniform",
+    "pulse_cycle": 24,
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse": {
+      "placement": "uniform",
+      "pair": "ema_uniform",
+      "space": 0.004000000000001336,
+      "Q": 0.11722408196445092,
+      "Q_ema": 0.1061313524723464,
+      "Q_instant": 0.07822371289474511,
+      "B": 0.004000000000001336,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 20.0,
+    "pulse_E": 17.354223771111418,
+    "M_end": 19.999999999999996,
+    "E_end": 12.767155580284758,
+    "cohort_mass_end": 0.0038988896239072523,
+    "metrics": {
+      "uptake": 4.465172659735116,
+      "body_time": 2528.852407402781,
+      "cohort_attributed_uptake": 0.0030565576360027627,
+      "cohort_body_time": 0.5055518804704766,
+      "movement_paid": 1.6531522258511178,
+      "memory_paid": 0.14227077256316484,
+      "basal_paid": 5.56347529628612,
+      "basal_unpaid": 0.0,
+      "heat": 9.052240850561994,
+      "rejected_material": 0.03005023768771472,
+      "death": 0.5057704814805564
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__same__791__ema_uniform__uniform__pulse.npz",
+      "sha256": "fe4c179b33b392acdb33f65d1cc49245b9c07130ca5ac364986c9ebfb1357853"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__same__791__ema_uniform__uniform__final.npz",
+      "sha256": "809de08ca01a962a7a2cafbf78ee1bacfccc191e2c9b1b250332770ed7537781"
+    }
+  },
+  {
+    "branch": "202610184002__double_lobe__same__791__ema_instant__ema",
+    "seed": 202610184002,
+    "morphology": "double_lobe",
+    "scenario": "same",
+    "pair": "ema_instant",
+    "placement": "ema",
+    "pulse_cycle": 24,
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse": {
+      "placement": "ema",
+      "pair": "ema_instant",
+      "space": 0.004000000000001336,
+      "Q": 0.11722408196445092,
+      "Q_ema": 0.1061313524723464,
+      "Q_instant": 0.07822371289474511,
+      "B": 0.004000000000001336,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 20.0,
+    "pulse_E": 17.354223771111418,
+    "M_end": 20.0,
+    "E_end": 12.767178443197293,
+    "cohort_mass_end": 0.00389888962390725,
+    "metrics": {
+      "uptake": 4.465206656778037,
+      "body_time": 2528.852372691798,
+      "cohort_attributed_uptake": 0.003133404644624447,
+      "cohort_body_time": 0.5055518804704766,
+      "movement_paid": 1.6531530862162045,
+      "memory_paid": 0.14227077058513665,
+      "basal_paid": 5.563475219921951,
+      "basal_unpaid": 0.0,
+      "heat": 9.052251984692113,
+      "rejected_material": 0.030054324275055933,
+      "death": 0.5057704745383594
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__same__791__ema_instant__ema__pulse.npz",
+      "sha256": "2fe13632e7e920774e5f8bbf989e625cc31177d5809d2bd1389e81fa8ce7a1c2"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__same__791__ema_instant__ema__final.npz",
+      "sha256": "58813fee7048f7a669a96321dc00d5c864d15710660c4b02eb7359ec203d3e0e"
+    }
+  },
+  {
+    "branch": "202610184002__double_lobe__same__791__ema_instant__instant",
+    "seed": 202610184002,
+    "morphology": "double_lobe",
+    "scenario": "same",
+    "pair": "ema_instant",
+    "placement": "instant",
+    "pulse_cycle": 24,
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse": {
+      "placement": "instant",
+      "pair": "ema_instant",
+      "space": 0.004000000000001336,
+      "Q": 0.11722408196445092,
+      "Q_ema": 0.1061313524723464,
+      "Q_instant": 0.07822371289474511,
+      "B": 0.004000000000001336,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 20.0,
+    "pulse_E": 17.354223771111418,
+    "M_end": 20.0,
+    "E_end": 12.767252989771247,
+    "cohort_mass_end": 0.003898889623907252,
+    "metrics": {
+      "uptake": 4.465317698500847,
+      "body_time": 2528.8520710722996,
+      "cohort_attributed_uptake": 0.003502574384752169,
+      "cohort_body_time": 0.5055518804704766,
+      "movement_paid": 1.653155680930933,
+      "memory_paid": 0.14227075347562126,
+      "basal_paid": 5.563474556359057,
+      "basal_unpaid": 0.0,
+      "heat": 9.052288479840989,
+      "rejected_material": 0.030067709605693823,
+      "death": 0.5057704142144601
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__same__791__ema_instant__instant__pulse.npz",
+      "sha256": "a53cd58d8964fe7651a13ad9855b6cb6ff87dbe5a7ce770ae18cd574a5b0396f"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__same__791__ema_instant__instant__final.npz",
+      "sha256": "b33391c3b89949b1933d956be5cd60a4c62d8ba2be344680149f863bcaaed2e7"
+    }
+  },
+  {
+    "branch": "202610184002__double_lobe__same__823__ema_uniform__ema",
+    "seed": 202610184002,
+    "morphology": "double_lobe",
+    "scenario": "same",
+    "pair": "ema_uniform",
+    "placement": "ema",
+    "pulse_cycle": 25,
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse": {
+      "placement": "ema",
+      "pair": "ema_uniform",
+      "space": 0.12211354233677696,
+      "Q": 2.892083967456818e-06,
+      "Q_ema": 2.5843509337654747e-06,
+      "Q_instant": 2.743045235555888e-06,
+      "B": 2.5843509337654747e-06,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 19.87788904201416,
+    "pulse_E": 15.867777530561881,
+    "M_end": 19.999999999999996,
+    "E_end": 15.280319680394847,
+    "cohort_mass_end": 2.5190247600474656e-06,
+    "metrics": {
+      "uptake": 10.136695261353294,
+      "body_time": 2528.9655482388384,
+      "cohort_attributed_uptake": 2.0419126957991045e-05,
+      "cohort_body_time": 0.00032663086859008273,
+      "movement_paid": 1.651910726960356,
+      "memory_paid": 0.1422763951994632,
+      "basal_paid": 5.563724206125443,
+      "basal_unpaid": 0.0,
+      "heat": 10.724153111520316,
+      "rejected_material": 0.5884993637288412,
+      "death": 0.5057931096477676
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__same__823__ema_uniform__ema__pulse.npz",
+      "sha256": "50db71d91eed07431b7b7a21909831baf101268e2daa86240549d4508851abe4"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__same__823__ema_uniform__ema__final.npz",
+      "sha256": "8ea4fcf713feb32f1b0c00d5a8f7e3d5f2c8a1c6424faf8a07779c20b4da3b1e"
+    }
+  },
+  {
+    "branch": "202610184002__double_lobe__same__823__ema_uniform__uniform",
+    "seed": 202610184002,
+    "morphology": "double_lobe",
+    "scenario": "same",
+    "pair": "ema_uniform",
+    "placement": "uniform",
+    "pulse_cycle": 25,
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse": {
+      "placement": "uniform",
+      "pair": "ema_uniform",
+      "space": 0.12211354233677696,
+      "Q": 2.892083967456818e-06,
+      "Q_ema": 2.5843509337654747e-06,
+      "Q_instant": 2.743045235555888e-06,
+      "B": 2.5843509337654747e-06,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 19.877889042014157,
+    "pulse_E": 15.867777530561881,
+    "M_end": 20.0,
+    "E_end": 15.280319667042942,
+    "cohort_mass_end": 2.519024760047467e-06,
+    "metrics": {
+      "uptake": 10.136695240796513,
+      "body_time": 2528.965548093822,
+      "cohort_attributed_uptake": 2.038843755119302e-05,
+      "cohort_body_time": 0.0003266308685900828,
+      "movement_paid": 1.6519107264849382,
+      "memory_paid": 0.1422763951912772,
+      "basal_paid": 5.563724205806408,
+      "basal_unpaid": 0.0,
+      "heat": 10.724153104315455,
+      "rejected_material": 0.5884993612910296,
+      "death": 0.5057931096187644
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__same__823__ema_uniform__uniform__pulse.npz",
+      "sha256": "e8620123373fec1b8da2db122d2d8c0ff57ddccea41d28f3ecbfa9318640f8fe"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__same__823__ema_uniform__uniform__final.npz",
+      "sha256": "7c6144b4ce2fdd9d3758ef80c88f196e476cbdb8533c342f517d66af94bd9f69"
+    }
+  },
+  {
+    "branch": "202610184002__double_lobe__same__823__ema_instant__ema",
+    "seed": 202610184002,
+    "morphology": "double_lobe",
+    "scenario": "same",
+    "pair": "ema_instant",
+    "placement": "ema",
+    "pulse_cycle": 25,
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse": {
+      "placement": "ema",
+      "pair": "ema_instant",
+      "space": 0.12211354233677696,
+      "Q": 2.892083967456818e-06,
+      "Q_ema": 2.5843509337654747e-06,
+      "Q_instant": 2.743045235555888e-06,
+      "B": 2.5843509337654747e-06,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 19.87788904201416,
+    "pulse_E": 15.867777530561881,
+    "M_end": 19.999999999999996,
+    "E_end": 15.280319680394847,
+    "cohort_mass_end": 2.5190247600474656e-06,
+    "metrics": {
+      "uptake": 10.136695261353294,
+      "body_time": 2528.9655482388384,
+      "cohort_attributed_uptake": 2.0419126957991045e-05,
+      "cohort_body_time": 0.00032663086859008273,
+      "movement_paid": 1.651910726960356,
+      "memory_paid": 0.1422763951994632,
+      "basal_paid": 5.563724206125443,
+      "basal_unpaid": 0.0,
+      "heat": 10.724153111520316,
+      "rejected_material": 0.5884993637288412,
+      "death": 0.5057931096477676
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__same__823__ema_instant__ema__pulse.npz",
+      "sha256": "d404e16b9c3555944e8190779e77dc1f68399353d0cc62f53e6e9275db4b9b0d"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__same__823__ema_instant__ema__final.npz",
+      "sha256": "8ea4fcf713feb32f1b0c00d5a8f7e3d5f2c8a1c6424faf8a07779c20b4da3b1e"
+    }
+  },
+  {
+    "branch": "202610184002__double_lobe__same__823__ema_instant__instant",
+    "seed": 202610184002,
+    "morphology": "double_lobe",
+    "scenario": "same",
+    "pair": "ema_instant",
+    "placement": "instant",
+    "pulse_cycle": 25,
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse": {
+      "placement": "instant",
+      "pair": "ema_instant",
+      "space": 0.12211354233677696,
+      "Q": 2.892083967456818e-06,
+      "Q_ema": 2.5843509337654747e-06,
+      "Q_instant": 2.743045235555888e-06,
+      "B": 2.5843509337654747e-06,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 19.877889042014157,
+    "pulse_E": 15.867777530561881,
+    "M_end": 20.0,
+    "E_end": 15.28031973752061,
+    "cohort_mass_end": 2.5190247600474647e-06,
+    "metrics": {
+      "uptake": 10.136695348120009,
+      "body_time": 2528.965548943482,
+      "cohort_attributed_uptake": 2.0472471308902052e-05,
+      "cohort_body_time": 0.00032663086859008273,
+      "movement_paid": 1.6519107277925593,
+      "memory_paid": 0.1422763952391514,
+      "basal_paid": 5.56372420767566,
+      "basal_unpaid": 0.0,
+      "heat": 10.724153141161189,
+      "rejected_material": 0.5884993739999187,
+      "death": 0.5057931097886966
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__same__823__ema_instant__instant__pulse.npz",
+      "sha256": "bb71ef2058d2b9ba0542e57853044950e078c5a7e9812e8d198f6a5c11691fa5"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__same__823__ema_instant__instant__final.npz",
+      "sha256": "ebd7fbaae31cfec29320106b1ef8599fb2ca0b06c4cb9c44bbb5d6cfecee8c7f"
+    }
+  },
+  {
+    "branch": "202610184002__double_lobe__port_swap__791__ema_uniform__ema",
+    "seed": 202610184002,
+    "morphology": "double_lobe",
+    "scenario": "port_swap",
+    "pair": "ema_uniform",
+    "placement": "ema",
+    "pulse_cycle": 24,
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse": {
+      "placement": "ema",
+      "pair": "ema_uniform",
+      "space": 0.12188090416697861,
+      "Q": 8.876647557237119e-07,
+      "Q_ema": 8.30957907455705e-07,
+      "Q_instant": 8.86977787755443e-07,
+      "B": 8.30957907455705e-07,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 19.87811992679093,
+    "pulse_E": 14.277855402593586,
+    "M_end": 20.0,
+    "E_end": 16.608837211675635,
+    "cohort_mass_end": 8.099532908204122e-07,
+    "metrics": {
+      "uptake": 14.47759017483733,
+      "body_time": 2545.242430058548,
+      "cohort_attributed_uptake": 8.037619766330085e-06,
+      "cohort_body_time": 0.0001050230831764759,
+      "movement_paid": 1.6718392309492378,
+      "memory_paid": 0.1431916184492963,
+      "basal_paid": 5.599533346128804,
+      "basal_unpaid": 0.0,
+      "heat": 12.14660836575532,
+      "rejected_material": 1.1063822617597552,
+      "death": 0.5090484860117096
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__port_swap__791__ema_uniform__ema__pulse.npz",
+      "sha256": "0d924fa706a6e29b6d4a9e1c39411de0ad83c67c7a245a0f998d7e011806de80"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__port_swap__791__ema_uniform__ema__final.npz",
+      "sha256": "cb6dc7c5043764afcf8a618ffb02a8ffb7d28246abe9943c9d2e157f57404bd0"
+    }
+  },
+  {
+    "branch": "202610184002__double_lobe__port_swap__791__ema_uniform__uniform",
+    "seed": 202610184002,
+    "morphology": "double_lobe",
+    "scenario": "port_swap",
+    "pair": "ema_uniform",
+    "placement": "uniform",
+    "pulse_cycle": 24,
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse": {
+      "placement": "uniform",
+      "pair": "ema_uniform",
+      "space": 0.12188090416697861,
+      "Q": 8.876647557237119e-07,
+      "Q_ema": 8.30957907455705e-07,
+      "Q_instant": 8.86977787755443e-07,
+      "B": 8.30957907455705e-07,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 19.878119926790927,
+    "pulse_E": 14.277855402593586,
+    "M_end": 20.0,
+    "E_end": 16.608837210634604,
+    "cohort_mass_end": 8.099532908204121e-07,
+    "metrics": {
+      "uptake": 14.477590173308428,
+      "body_time": 2545.242430054774,
+      "cohort_attributed_uptake": 8.0370346609595e-06,
+      "cohort_body_time": 0.00010502308317647588,
+      "movement_paid": 1.671839230947395,
+      "memory_paid": 0.14319161844907638,
+      "basal_paid": 5.599533346120499,
+      "basal_unpaid": 0.0,
+      "heat": 12.146608365267547,
+      "rejected_material": 1.1063822615770393,
+      "death": 0.5090484860109543
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__port_swap__791__ema_uniform__uniform__pulse.npz",
+      "sha256": "79e3841ed53ae1c8591ba0593c7f7a9eb40065c07f605655b691796a7a333f61"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__port_swap__791__ema_uniform__uniform__final.npz",
+      "sha256": "91c85ad4c8282748e3c424927115738bcf9e5c9cf3980315ca95279db9f59649"
+    }
+  },
+  {
+    "branch": "202610184002__double_lobe__port_swap__791__ema_instant__ema",
+    "seed": 202610184002,
+    "morphology": "double_lobe",
+    "scenario": "port_swap",
+    "pair": "ema_instant",
+    "placement": "ema",
+    "pulse_cycle": 24,
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse": {
+      "placement": "ema",
+      "pair": "ema_instant",
+      "space": 0.12188090416697861,
+      "Q": 8.876647557237119e-07,
+      "Q_ema": 8.30957907455705e-07,
+      "Q_instant": 8.86977787755443e-07,
+      "B": 8.30957907455705e-07,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 19.87811992679093,
+    "pulse_E": 14.277855402593586,
+    "M_end": 20.0,
+    "E_end": 16.608837211675635,
+    "cohort_mass_end": 8.099532908204122e-07,
+    "metrics": {
+      "uptake": 14.47759017483733,
+      "body_time": 2545.242430058548,
+      "cohort_attributed_uptake": 8.037619766330085e-06,
+      "cohort_body_time": 0.0001050230831764759,
+      "movement_paid": 1.6718392309492378,
+      "memory_paid": 0.1431916184492963,
+      "basal_paid": 5.599533346128804,
+      "basal_unpaid": 0.0,
+      "heat": 12.14660836575532,
+      "rejected_material": 1.1063822617597552,
+      "death": 0.5090484860117096
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__port_swap__791__ema_instant__ema__pulse.npz",
+      "sha256": "918936fab964732240bf3d604c7811a92f1caac33e8e45b8d2b96341a1ee5ce0"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__port_swap__791__ema_instant__ema__final.npz",
+      "sha256": "cb6dc7c5043764afcf8a618ffb02a8ffb7d28246abe9943c9d2e157f57404bd0"
+    }
+  },
+  {
+    "branch": "202610184002__double_lobe__port_swap__791__ema_instant__instant",
+    "seed": 202610184002,
+    "morphology": "double_lobe",
+    "scenario": "port_swap",
+    "pair": "ema_instant",
+    "placement": "instant",
+    "pulse_cycle": 24,
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse": {
+      "placement": "instant",
+      "pair": "ema_instant",
+      "space": 0.12188090416697861,
+      "Q": 8.876647557237119e-07,
+      "Q_ema": 8.30957907455705e-07,
+      "Q_instant": 8.86977787755443e-07,
+      "B": 8.30957907455705e-07,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 19.878119926790927,
+    "pulse_E": 14.277855402593586,
+    "M_end": 20.0,
+    "E_end": 16.608837211506376,
+    "cohort_mass_end": 8.099532908204121e-07,
+    "metrics": {
+      "uptake": 14.477590174584403,
+      "body_time": 2545.2424300588846,
+      "cohort_attributed_uptake": 8.037432427837415e-06,
+      "cohort_body_time": 0.00010502308317647588,
+      "movement_paid": 1.671839230943396,
+      "memory_paid": 0.1431916184493103,
+      "basal_paid": 5.599533346129551,
+      "basal_unpaid": 0.0,
+      "heat": 12.146608365671632,
+      "rejected_material": 1.1063822617293342,
+      "death": 0.509048486011777
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__port_swap__791__ema_instant__instant__pulse.npz",
+      "sha256": "bfbce99b931d595cf1e66ddc660f756dac77ba68313f3986914056aca05e8379"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__port_swap__791__ema_instant__instant__final.npz",
+      "sha256": "0ad6639f8bca04031d63a90a026f04fa513a11095e032e86e90772d7106f2def"
+    }
+  },
+  {
+    "branch": "202610184002__double_lobe__port_swap__823__ema_uniform__ema",
+    "seed": 202610184002,
+    "morphology": "double_lobe",
+    "scenario": "port_swap",
+    "pair": "ema_uniform",
+    "placement": "ema",
+    "pulse_cycle": 25,
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse": {
+      "placement": "ema",
+      "pair": "ema_uniform",
+      "space": 0.003999999999997783,
+      "Q": 0.07945619169110509,
+      "Q_ema": 0.07023399039167685,
+      "Q_instant": 0.06906113062381376,
+      "B": 0.003999999999997783,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 20.0,
+    "pulse_E": 16.56042269009393,
+    "M_end": 20.0,
+    "E_end": 19.421304519327723,
+    "cohort_mass_end": 0.003898889623903789,
+    "metrics": {
+      "uptake": 15.266167452532855,
+      "body_time": 2549.1675978767385,
+      "cohort_attributed_uptake": 0.015231394369128487,
+      "cohort_body_time": 0.5055518804700276,
+      "movement_paid": 1.6696481453912932,
+      "memory_paid": 0.14341328242164314,
+      "basal_paid": 5.6081687153288255,
+      "basal_unpaid": 0.0,
+      "heat": 12.405285623299093,
+      "rejected_material": 1.3221065747286538,
+      "death": 0.5098335195753481
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__port_swap__823__ema_uniform__ema__pulse.npz",
+      "sha256": "ee4c4db7479d412c6c1f6a4dcee6094d1ac3c43240d426f2fffc3d3ceb3fe056"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__port_swap__823__ema_uniform__ema__final.npz",
+      "sha256": "2a6e216c2bc96b801d8bdf7056ebc93a42dfda8c18b6f94ec86741627d6c9891"
+    }
+  },
+  {
+    "branch": "202610184002__double_lobe__port_swap__823__ema_uniform__uniform",
+    "seed": 202610184002,
+    "morphology": "double_lobe",
+    "scenario": "port_swap",
+    "pair": "ema_uniform",
+    "placement": "uniform",
+    "pulse_cycle": 25,
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse": {
+      "placement": "uniform",
+      "pair": "ema_uniform",
+      "space": 0.003999999999997783,
+      "Q": 0.07945619169110509,
+      "Q_ema": 0.07023399039167685,
+      "Q_instant": 0.06906113062381376,
+      "B": 0.003999999999997783,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 20.0,
+    "pulse_E": 16.56042269009393,
+    "M_end": 19.999999999999996,
+    "E_end": 19.42129333852961,
+    "cohort_mass_end": 0.003898889623903788,
+    "metrics": {
+      "uptake": 15.266151456944424,
+      "body_time": 2549.167592044294,
+      "cohort_attributed_uptake": 0.015191478190684747,
+      "cohort_body_time": 0.5055518804700275,
+      "movement_paid": 1.6696480702108556,
+      "memory_paid": 0.14341328209351775,
+      "basal_paid": 5.608168702497447,
+      "basal_unpaid": 0.0,
+      "heat": 12.405280808508607,
+      "rejected_material": 1.3221046564245333,
+      "death": 0.5098335184088589
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__port_swap__823__ema_uniform__uniform__pulse.npz",
+      "sha256": "3b17407eeeee55de97628e5253aeae79c0c9c3e9c1acd8b38436e032b9f967ea"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__port_swap__823__ema_uniform__uniform__final.npz",
+      "sha256": "ffb991824faf307b1c916696d7f9acb1cacdb4e7b45771b087160cf814b01485"
+    }
+  },
+  {
+    "branch": "202610184002__double_lobe__port_swap__823__ema_instant__ema",
+    "seed": 202610184002,
+    "morphology": "double_lobe",
+    "scenario": "port_swap",
+    "pair": "ema_instant",
+    "placement": "ema",
+    "pulse_cycle": 25,
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse": {
+      "placement": "ema",
+      "pair": "ema_instant",
+      "space": 0.003999999999997783,
+      "Q": 0.07945619169110509,
+      "Q_ema": 0.07023399039167685,
+      "Q_instant": 0.06906113062381376,
+      "B": 0.003999999999997783,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 20.0,
+    "pulse_E": 16.56042269009393,
+    "M_end": 20.0,
+    "E_end": 19.421304519327723,
+    "cohort_mass_end": 0.003898889623903789,
+    "metrics": {
+      "uptake": 15.266167452532855,
+      "body_time": 2549.1675978767385,
+      "cohort_attributed_uptake": 0.015231394369128487,
+      "cohort_body_time": 0.5055518804700276,
+      "movement_paid": 1.6696481453912932,
+      "memory_paid": 0.14341328242164314,
+      "basal_paid": 5.6081687153288255,
+      "basal_unpaid": 0.0,
+      "heat": 12.405285623299093,
+      "rejected_material": 1.3221065747286538,
+      "death": 0.5098335195753481
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__port_swap__823__ema_instant__ema__pulse.npz",
+      "sha256": "e65417832a228052352a1d83a9e4553a0b8e68747507608f25a14eb3ed33c95d"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__port_swap__823__ema_instant__ema__final.npz",
+      "sha256": "2a6e216c2bc96b801d8bdf7056ebc93a42dfda8c18b6f94ec86741627d6c9891"
+    }
+  },
+  {
+    "branch": "202610184002__double_lobe__port_swap__823__ema_instant__instant",
+    "seed": 202610184002,
+    "morphology": "double_lobe",
+    "scenario": "port_swap",
+    "pair": "ema_instant",
+    "placement": "instant",
+    "pulse_cycle": 25,
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse": {
+      "placement": "instant",
+      "pair": "ema_instant",
+      "space": 0.003999999999997783,
+      "Q": 0.07945619169110509,
+      "Q_ema": 0.07023399039167685,
+      "Q_instant": 0.06906113062381376,
+      "B": 0.003999999999997783,
+      "zero_Q": false,
+      "zero_B": false
+    },
+    "pulse_M": 20.0,
+    "pulse_E": 16.56042269009393,
+    "M_end": 20.0,
+    "E_end": 19.421533526034306,
+    "cohort_mass_end": 0.003898889623903789,
+    "metrics": {
+      "uptake": 15.266497422739542,
+      "body_time": 2549.1675473340597,
+      "cohort_attributed_uptake": 0.015648147858041025,
+      "cohort_body_time": 0.5055518804700275,
+      "movement_paid": 1.6696487701596876,
+      "memory_paid": 0.1434132795507377,
+      "basal_paid": 5.608168604134933,
+      "basal_unpaid": 0.0,
+      "heat": 12.405386586799139,
+      "rejected_material": 1.322146181261995,
+      "death": 0.5098335094668122
+    },
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__port_swap__823__ema_instant__instant__pulse.npz",
+      "sha256": "0f8ccfdfd97cd79fadda71d6fcb9e70c00fa627f7ba95e48350e62e251d285b5"
+    },
+    "final": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__port_swap__823__ema_instant__instant__final.npz",
+      "sha256": "35fb6f078e4478f4be89bab457ac9fc6f11604571ebffebdba388d07ed7f0c31"
+    }
+  }
+]

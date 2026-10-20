@@ -1,0 +1,62 @@
+{
+  "schema": "tfi.architecture-component-relations-manifest.v1",
+  "revision": 2,
+  "immutable": true,
+  "created_on": "2026-10-15T08:02:32.371038+00:00",
+  "owner": "resident_60ae6d0cdf74",
+  "artifact": {
+    "address": "workspace_13209cb6666b/file/architecture-evidence/objects/component-relations-0135651cfb42fa18854b7ba35f35973c1970c2be77d0b42a9c98bcd54f0f04dd.json",
+    "sha256": "0135651cfb42fa18854b7ba35f35973c1970c2be77d0b42a9c98bcd54f0f04dd",
+    "size": 138084
+  },
+  "base_manifest": {
+    "address": "workspace_13209cb6666b/file/architecture-evidence/objects/manifest-fa5bba171eedccad1820ce10a53c10713f97dfc9e26b8c2856ae6a637490cc45.json",
+    "sha256": "fa5bba171eedccad1820ce10a53c10713f97dfc9e26b8c2856ae6a637490cc45",
+    "size": 160886
+  },
+  "consumer_contract": {
+    "address": "workspace_13209cb6666b/file/architecture-evidence/objects/consumer-contract-d1f751c4f0426819e41fcfb6146a76391c8c9bc3d105b8764ce3ccbf758d1031.json",
+    "sha256": "d1f751c4f0426819e41fcfb6146a76391c8c9bc3d105b8764ce3ccbf758d1031",
+    "size": 302180
+  },
+  "map": {
+    "status": "available",
+    "address": "workspace_13209cb6666b/file/architecture-evidence/commits/d4f9b6202c631c8f11027ee8c2eeecd499278fa1/architecture/modules.yaml",
+    "sha256": "e96421eef799499d406502da20b44d39e9bc037c588bac0684dd582319ed6b49",
+    "size": 48777
+  },
+  "binding": {
+    "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1",
+    "map_sha256": "e96421eef799499d406502da20b44d39e9bc037c588bac0684dd582319ed6b49",
+    "evolution_sha256": "6bc275ee5a2b8ce003e1563064654fb22d1e7468aaddc670fa23bb645003adc7"
+  },
+  "counts": {
+    "relations": 13,
+    "component_ids": 11,
+    "scopes": 4,
+    "reused_scenarios": 4,
+    "new_scenarios": 2,
+    "new_modules": 0,
+    "new_protocols": 0
+  },
+  "loading": "Pin this manifest plus the exact base_manifest. Validate hash/size and matching binding before enabling relations; a mismatch leaves the supplement unavailable and keeps the selected base batch.",
+  "scope": "Independent formally versioned component relation and simulated-scene supplement; no frontend deployment or map mutation.",
+  "mutation_policy": "Append a new manifest version for future changes. Never overwrite this manifest, its artifact, the bound base batch, or a historical scene.",
+  "fields": [
+    "artifact.consumer_fields",
+    "artifact.rendering",
+    "artifact.scopes",
+    "artifact.components",
+    "artifact.relations",
+    "artifact.missing",
+    "artifact.scenario_catalog",
+    "artifact.scenario_reuse",
+    "artifact.design_versions",
+    "artifact.code_evidence"
+  ],
+  "previous_manifest": {
+    "address": "workspace_13209cb6666b/file/architecture-evidence/component-relations/manifest-v1.json",
+    "sha256": "c4c9eec57855d6c5e132a5b9d8ec240bc71851a424f6447156fb7b393520993f",
+    "size": 2469
+  }
+}

@@ -1,0 +1,88 @@
+    <!-- The Notice Board on Home (web.home_panel): Home inserts this before its own script. -->
+    <link rel="stylesheet" href="/static/notice_board_home.css" />
+    <div hidden>
+            <section class="home-overview-section" data-home-component="notice-board">
+              <div class="value" data-notice-board><!--portal-i18n:"正在读取公告…"-->正在读取公告…</div>
+            </section>
+    </div>
+
+    <div class="portalDetailOverlay" data-portal-detail-overlay id="noticeBoardDetailOverlay" hidden>
+      <section class="portalDetailSurface notice-board-surface" data-portal-detail-surface role="dialog" aria-modal="true" aria-labelledby="noticeBoardDetailTitle">
+        <header class="portalDetailHeader" data-portal-detail-header>
+          <div>
+            <div class="portalDetailEyebrow"><!--portal-i18n:"Notice Board"-->Notice Board</div>
+            <h2 id="noticeBoardDetailTitle"><!--portal-i18n:"帖子"-->帖子</h2>
+          </div>
+          <div class="notice-board-detail-actions">
+            <button class="portalButton is-compact" id="noticeBoardPinBtn" type="button"><!--portal-i18n:"置顶"-->置顶</button>
+            <button class="portalButton is-compact" id="noticeBoardFeaturedBtn" type="button"><!--portal-i18n:"设为精华"-->设为精华</button>
+            <button class="portalButton is-icon is-quiet" id="noticeBoardEditPostBtn" type="button" hidden aria-label="编辑帖子" title="编辑帖子" data-portal-icon="edit" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;编辑帖子&quot;, &quot;title&quot;: &quot;编辑帖子&quot;}"></button>
+            <button class="portalButton is-icon is-quiet notice-board-delete-action" id="noticeBoardDeletePostBtn" type="button" hidden aria-label="删除帖子" title="删除帖子" data-portal-icon="trash" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;删除帖子&quot;, &quot;title&quot;: &quot;删除帖子&quot;}"></button>
+            <button class="portalDetailClose" data-portal-detail-close id="noticeBoardDetailClose" type="button" aria-label="关闭帖子" data-portal-icon="close" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;关闭帖子&quot;}"></button>
+          </div>
+        </header>
+        <div class="portalDetailBody notice-board-detail-body" id="noticeBoardDetailBody" data-portal-detail-body>
+          <div class="notice-board-loading"><!--portal-i18n:"正在读取帖子…"-->正在读取帖子…</div>
+        </div>
+        <footer class="portalDetailFooter notice-board-reply-footer" data-portal-detail-footer>
+          <form class="notice-board-reply-form" id="noticeBoardReplyForm">
+            <div class="notice-board-reply-composer">
+              <div class="composerImageTray notice-board-compose-image-tray" id="noticeBoardReplyImageTray" aria-label="回复附件" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;回复附件&quot;}"></div>
+              <div class="composerInput composerRichInput notice-board-reply-input" id="noticeBoardReplyInput" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="回复这条帖子" aria-label="回复内容" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;回复内容&quot;}"></div>
+              <div class="notice-board-mention-menu" id="noticeBoardReplyMentionMenu" aria-label="选择要提及的用户" hidden data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;选择要提及的用户&quot;}"></div>
+              <div class="notice-board-attachment-actions">
+                <span class="notice-board-compose-upload-status" id="noticeBoardReplyUploadStatus" aria-live="polite"></span>
+                <input id="noticeBoardReplyFileInput" type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple hidden />
+                <span>
+                  <button class="portalButton is-compact is-quiet" id="noticeBoardReplyMention" type="button" aria-label="提及用户" title="提及用户" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;提及用户&quot;, &quot;title&quot;: &quot;提及用户&quot;}">@</button>
+                  <button class="portalButton is-icon is-quiet is-compact" id="noticeBoardReplyAttach" type="button" aria-label="添加图片" title="添加图片" data-portal-icon="plus" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;添加图片&quot;, &quot;title&quot;: &quot;添加图片&quot;}"></button>
+                </span>
+              </div>
+            </div>
+            <button class="portalButton is-primary" id="noticeBoardReplySubmit" type="submit"><!--portal-i18n:"回复"-->回复</button>
+          </form>
+        </footer>
+      </section>
+    </div>
+
+    <div class="portalDetailOverlay" data-portal-detail-overlay id="noticeBoardComposeOverlay" hidden>
+      <form class="portalDetailSurface notice-board-compose-form" data-portal-detail-surface id="noticeBoardComposeForm" role="dialog" aria-modal="true" aria-labelledby="noticeBoardComposeTitle">
+        <header class="portalDetailHeader" data-portal-detail-header>
+          <div>
+            <div class="portalDetailEyebrow"><!--portal-i18n:"Notice Board"-->Notice Board</div>
+            <h2 id="noticeBoardComposeTitle"><!--portal-i18n:"发布新帖"-->发布新帖</h2>
+          </div>
+          <button class="portalDetailClose" data-portal-detail-close id="noticeBoardComposeClose" type="button" aria-label="关闭发帖窗口" data-portal-icon="close" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;关闭发帖窗口&quot;}"></button>
+        </header>
+        <div class="portalDetailBody notice-board-compose-fields" data-portal-detail-body>
+          <label for="noticeBoardComposeTitleInput"><!--portal-i18n:"标题\n            "-->标题
+            <input class="notice-board-compose-input" id="noticeBoardComposeTitleInput" maxlength="120" required autocomplete="off" />
+          </label>
+          <label for="noticeBoardComposeCategoryInput"><!--portal-i18n:"分类\n            "-->分类
+            <select class="notice-board-compose-input" id="noticeBoardComposeCategoryInput" required></select>
+          </label>
+          <label for="noticeBoardComposeContentInput"><!--portal-i18n:"正文\n            "-->正文
+            <div class="composerInput composerRichInput notice-board-compose-textarea" id="noticeBoardComposeContentInput" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="正文支持 Markdown" aria-label="帖子正文" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;帖子正文&quot;}"></div>
+            <div class="notice-board-mention-menu" id="noticeBoardComposeMentionMenu" aria-label="选择要提及的用户" hidden data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;选择要提及的用户&quot;}"></div>
+            <span class="composerImageTray notice-board-compose-image-tray" id="noticeBoardComposeImageTray" aria-label="帖子图片" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;帖子图片&quot;}"></span>
+            <span class="notice-board-compose-helper">
+              <span><!--portal-i18n:"支持 Markdown，可直接粘贴 PNG、JPEG、GIF 或 WebP 图片（每张不超过 12 MB）"-->支持 Markdown，可直接粘贴 PNG、JPEG、GIF 或 WebP 图片（每张不超过 12 MB）</span>
+              <span class="notice-board-attachment-actions">
+                <span class="notice-board-compose-upload-status" id="noticeBoardComposeUploadStatus" aria-live="polite"></span>
+                <input id="noticeBoardComposeFileInput" type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple hidden />
+                <span>
+                  <button class="portalButton is-compact is-quiet" id="noticeBoardComposeMention" type="button" aria-label="提及用户" title="提及用户" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;提及用户&quot;, &quot;title&quot;: &quot;提及用户&quot;}">@</button>
+                  <button class="portalButton is-icon is-quiet is-compact" id="noticeBoardComposeAttach" type="button" aria-label="添加图片" title="添加图片" data-portal-icon="plus" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;添加图片&quot;, &quot;title&quot;: &quot;添加图片&quot;}"></button>
+                </span>
+              </span>
+            </span>
+          </label>
+        </div>
+        <footer class="portalDetailFooter" data-portal-detail-footer>
+          <button class="portalButton" id="noticeBoardComposeCancel" type="button"><!--portal-i18n:"取消"-->取消</button>
+          <button class="portalButton is-primary" id="noticeBoardComposeSubmit" type="submit"><!--portal-i18n:"发布"-->发布</button>
+        </footer>
+      </form>
+    </div>
+
+    <script src="/static/notice_board_home.js"></script>

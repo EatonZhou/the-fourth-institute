@@ -1,0 +1,106 @@
+{
+  "task": "spatial_coverage_acquired_body_20261019",
+  "executor": "resident_d3ccfa2d95b7",
+  "status": "completed",
+  "scientific_core_goal_complete": false,
+  "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/REPORT.txt",
+  "method": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/METHOD.txt",
+  "manifest": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/manifest.json",
+  "manifest_sha256": "fb2704cf5102601046babbacbcce1c4800eadad5045e10314bddb6c31403f9ee",
+  "attachment_count": 106,
+  "budget": {
+    "native": 3584,
+    "science": 3584,
+    "boundaries": 0,
+    "worker_seconds": 186.76506,
+    "unused_native": 0,
+    "unused_worker_seconds": 713.23494,
+    "attempts": 1,
+    "raw_bytes": 82326113,
+    "old_history_replay": 0,
+    "old_future_replay": 0,
+    "old_native_readonly": 1024,
+    "old_budget_used": 0
+  },
+  "job_id": "981ed2bf-6b89-4f95-bdf5-5c92a4755d9f",
+  "decision_sha256": "27618c056cc09765bcc13fa188ebcb01ac228d438918cb3de66f444a521d705d",
+  "plan_sha256": "b2190e0e5cf64d4877b695a8812addb6277c7b6cc6903f57147ac8f1ea4b5d03",
+  "new_histories": 4,
+  "new_futures": 24,
+  "readonly_HC_futures": 8,
+  "shape_guards": [
+    {
+      "shape": "ring",
+      "history": "H_U",
+      "passed": 1,
+      "total": 4,
+      "both_seed_directions": false,
+      "both_zero": false
+    },
+    {
+      "shape": "ring",
+      "history": "H_D",
+      "passed": 1,
+      "total": 4,
+      "both_seed_directions": false,
+      "both_zero": false
+    },
+    {
+      "shape": "ring",
+      "history": "H_B",
+      "passed": 1,
+      "total": 4,
+      "both_seed_directions": false,
+      "both_zero": false
+    },
+    {
+      "shape": "separate_seeds",
+      "history": "H_U",
+      "passed": 4,
+      "total": 4,
+      "both_seed_directions": true,
+      "both_zero": true
+    },
+    {
+      "shape": "separate_seeds",
+      "history": "H_D",
+      "passed": 4,
+      "total": 4,
+      "both_seed_directions": true,
+      "both_zero": true
+    },
+    {
+      "shape": "separate_seeds",
+      "history": "H_B",
+      "passed": 4,
+      "total": 4,
+      "both_seed_directions": true,
+      "both_zero": true
+    }
+  ],
+  "maintenance": {
+    "new_probe": 24,
+    "new_probe_total": 24,
+    "combined_probe": 28,
+    "combined_zero": 28,
+    "combined_total": 32,
+    "HB_history": 2,
+    "HB_history_zero": 2,
+    "HB_total": 4,
+    "failures": [
+      "202610195601_separate_seeds_BH_C_RH_C_U",
+      "202610195601_separate_seeds_BH_C_RH_C_D",
+      "202610195602_separate_seeds_BH_C_RH_C_U",
+      "202610195602_separate_seeds_BH_C_RH_C_D"
+    ]
+  },
+  "max_residual": 1.1368683772161603e-13,
+  "unknown": 0,
+  "raw_manifest": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/raw_manifest.json",
+  "new_raw_files": 513,
+  "new_actual_fields": 184,
+  "new_complete_states": 88,
+  "result": "H_B固定同时覆盖在分离体4/4共同HC库存条件有净身体状态优势；环体1/4，普遍优势关闭。完整身体含胞内E；非学习、非几何单因、非顺序精确等价。",
+  "next_request": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/scientific_next_request.json",
+  "no_automatic_continuation": true
+}

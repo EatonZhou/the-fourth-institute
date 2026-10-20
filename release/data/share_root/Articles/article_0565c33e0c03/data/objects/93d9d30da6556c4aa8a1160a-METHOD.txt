@@ -1,0 +1,8 @@
+本批为新life0形成期固定删除布局适用性试验；无搜索、训练或在线学习。
+四初形compact/ring/double_lobe/separate_seeds，两新固定输入tape202610195601/5602，同一个既选g2_p0_c0核/规则与ready态greedy。每个配对只构造一个完整life0并分别恢复两臂，M/E64、P/F0、无取得历史。life0赠予如实记入，不能叫形成所得。两tape与四初形构成相关context，不当八独立生态重复。
+先从ready库存选择greedy混合，再外排/输入/native；不偷读本步afteractor/出生。固定colocated输入图依每64步绝对位移，P/F同gross、库存不滚动，half-life64与原有限供给不变，256结束。全部主动运动命令0，原birth-only joint-demand有价分货泵仍执行。
+原生afteractor h产生D0之后，在旧survivor/死能/模板/admit之前复用原冻结route_deletion。源D0；目标v=where(h<0,rho-D0,0)；mass与uniform两候选各一次同步接收投影，再逐源min匹配，只执行uniform。baseline off-hook已通过预算内原native对照。每actual state sumDnew=sumD0且0<=Dnew<=rho；原正R、核、价格和所有后续物理保留。跨分化轨迹累计死亡/死能/出生/泵费用允许不同，不宣称跨轨总删除相同。
+life0两分区founder与真实later-born沿实际K、actor存活比例、rule存活比例推进；born仅进入新生分区，实际死亡分别累计。128完成时登记L128=rho与post128=0，之后相同推进。原宿主founder与GrowthBody L128分别交叉对照。128前L128字段null不是0；标签只在观察器，永不喂给规则。未运行的未来无标签，实际全轨未知0不表示未付费信息可用。
+每步全物能、输入/出口、生成请求/逐序拒绝、motor/basal/synthesis/template及pump等费、实际出生死亡与标签账保存CSV；指定时点完整maps/全部请求/两候选/真实D和w/h保存，0/128/256全态joint。非指定中间完整K未保存，不补造。
+四固定64窗原联合门born-death>=-1e-8、deltaE>=-1e-8、minM>=32；同时给零容差。全部四窗与后两窗分列，不用M128或保旧体代持续替代。共同收益要求八配对M/E/体时/post128全不劣且每对至少一项>1e-8。
+额外卷积、greedy纯计算、删除布局与观察器计算/存储未物理定价，原全部实际费用不减。固定外部生成语义，非新算法、寿命内经验记忆、稳态或充分成本实现。

@@ -1,0 +1,862 @@
+{
+  "task": "affine_actuator_relearning_20261019",
+  "status": "complete",
+  "accounting": {
+    "native": 1792,
+    "attempted": 1792,
+    "unknown": 0,
+    "job": "7d06698d-ddf2-4608-adc5-4570bf8e4e65",
+    "worker_seconds": 19.031046,
+    "raw_bytes": 12805684,
+    "old_replay": 0,
+    "plan_sha256": "2ca2edac55ddd1923746701fd3bac22607320834e3e6719212c523a606d73a43",
+    "result_sha256": "d0c2f20ac895f3bc577e49092315703beb15634be0a66e9fb3d4208b9f0e39cc"
+  },
+  "paths": [
+    {
+      "condition": 0,
+      "arm": "nlms_write",
+      "alive": true,
+      "start_clock": 320,
+      "end_clock": 768,
+      "opportunity64": {
+        "paid_steps": 64,
+        "completed_motion_steps": 64,
+        "displacement_2d": 0.3787749293108047
+      },
+      "first_postchange_paid": 321,
+      "first_postchange_motion_feedback": 321,
+      "unidentifiable_wait": 0,
+      "first32_good": 352,
+      "feedback_to_first32_good": 31,
+      "final_energy": 180.74584590367166,
+      "movement": 2.5777768739237352,
+      "gain": 36.88781070796666,
+      "loss": 3.118465636687667e-05,
+      "unpaid": 0.0,
+      "min_mass": 23.999999999999982,
+      "balance_max": 8.794354133812021e-14,
+      "phases": {
+        "change": {
+          "score": 0.963171703373697,
+          "positive_fraction": 0.9996021233039711,
+          "gate": true,
+          "first_feedback": 321,
+          "first_map_sample": 321,
+          "final": {
+            "t": 640,
+            "phase": "change",
+            "mass": 23.99999999999999,
+            "energy": 185.19126313395967,
+            "connected": 0.9993317181145286,
+            "field_score": 0.96290178142439,
+            "positive_mass": 23.990631767153523,
+            "strong_mass": 23.987630685684906,
+            "dy": 0.597241840228314,
+            "dx": 0.17228867986025165,
+            "mean_y": -0.00599415836892916,
+            "mean_x": 0.10396795688304519,
+            "response_alignment": 0.028989616695273196,
+            "movement": 0.005381251245421668,
+            "unpaid": 0.0,
+            "basal": 0.028799999999999996,
+            "death": 0.0,
+            "gain": 0.11556645253287592,
+            "loss": 5.586466525074926e-07,
+            "paid_mass": 23.986993919520266,
+            "map_sample_mass": 23.987074327846738,
+            "map_writes": true,
+            "gradient_observed_mass": 23.986784488501655,
+            "balance": -1.683330842457072e-14
+          },
+          "gain": 36.88781070796666,
+          "loss": 3.118465636687666e-05,
+          "movement": 1.8187596436357414
+        },
+        "retention": {
+          "score": 0.962457838048031,
+          "positive_fraction": 0.9996381081733721,
+          "gate": true,
+          "first_feedback": null,
+          "first_map_sample": 641,
+          "final": {
+            "t": 768,
+            "phase": "retention",
+            "mass": 23.999999999999982,
+            "energy": 180.74584590367166,
+            "connected": 0.9993604750701081,
+            "field_score": 0.9611346135204083,
+            "positive_mass": 23.991670169462296,
+            "strong_mass": 23.988407710945488,
+            "dy": 0.9713517326356218,
+            "dx": 0.4962691673768411,
+            "mean_y": -0.02256567033399504,
+            "mean_x": 0.22012276064937195,
+            "response_alignment": 0.034341013552526944,
+            "movement": 0.005992072705647425,
+            "unpaid": 0.0,
+            "basal": 0.028799999999999982,
+            "death": 0.0,
+            "gain": 0.0,
+            "loss": 0.0,
+            "paid_mass": 0.0,
+            "map_sample_mass": 23.987612737293166,
+            "map_writes": false,
+            "gradient_observed_mass": 0.0,
+            "balance": -2.2898349882893854e-14
+          },
+          "gain": 0.0,
+          "loss": 0.0,
+          "movement": 0.7590172302879936
+        }
+      },
+      "maps": [
+        {
+          "t": 320,
+          "mean_J": [
+            [
+              0.002027964609595311,
+              -0.06520360582896069
+            ],
+            [
+              0.06447656693018856,
+              0.0022504245366811305
+            ]
+          ],
+          "massweighted_orientation": 0.9903527755145981,
+          "occupied_J_norm": 0.09262613203731654
+        },
+        {
+          "t": 640,
+          "mean_J": [
+            [
+              0.0449268742034678,
+              0.04058247189616181
+            ],
+            [
+              -0.041059845462368766,
+              0.039854811701722406
+            ]
+          ],
+          "massweighted_orientation": 0.985330618296756,
+          "occupied_J_norm": 0.08446365129447932
+        },
+        {
+          "t": 768,
+          "mean_J": [
+            [
+              0.0449268742034678,
+              0.04058247189616183
+            ],
+            [
+              -0.04105984546236879,
+              0.039854811701722406
+            ]
+          ],
+          "massweighted_orientation": 0.9981797106099212,
+          "occupied_J_norm": 0.08335778645162562
+        }
+      ],
+      "coverage": {
+        "change": {
+          "mass_time": 7675.100743816059,
+          "completed_steps": 320,
+          "u_covariance": [
+            [
+              0.24251459320624852,
+              -0.013914397716666015
+            ],
+            [
+              -0.013914397716666015,
+              0.2506278290759715
+            ]
+          ],
+          "u_eigenvalues": [
+            0.23207753621419788,
+            0.2610648860680221
+          ],
+          "eps_covariance": [
+            [
+              0.9871615727551525,
+              0.00924758930471213
+            ],
+            [
+              0.00924758930471213,
+              1.0180575714711702
+            ]
+          ],
+          "eps_eigenvalues": [
+            0.9846051673156216,
+            1.020613976910701
+          ]
+        },
+        "retention": {
+          "mass_time": 3070.353180730606,
+          "completed_steps": 128,
+          "u_covariance": [
+            [
+              0.2488579629063436,
+              -0.007704760131327742
+            ],
+            [
+              -0.007704760131327742,
+              0.2474217812225535
+            ]
+          ],
+          "u_eigenvalues": [
+            0.24040172091972992,
+            0.2558780232091672
+          ],
+          "eps_covariance": [
+            [
+              0.9856118647210109,
+              -0.019107815744734774
+            ],
+            [
+              -0.019107815744734774,
+              1.008936921992755
+            ]
+          ],
+          "eps_eigenvalues": [
+            0.9748886122287367,
+            1.0196601744850293
+          ]
+        }
+      }
+    },
+    {
+      "condition": 0,
+      "arm": "nlms_frozen",
+      "alive": true,
+      "start_clock": 320,
+      "end_clock": 768,
+      "opportunity64": {
+        "paid_steps": 64,
+        "completed_motion_steps": 64,
+        "displacement_2d": 0.6418474018535021
+      },
+      "first_postchange_paid": 321,
+      "first_postchange_motion_feedback": 321,
+      "unidentifiable_wait": 0,
+      "first32_good": 352,
+      "feedback_to_first32_good": 31,
+      "final_energy": 165.22992999172138,
+      "movement": 1.5296989380732553,
+      "gain": 21.147698683128283,
+      "loss": 0.8239130076185937,
+      "unpaid": 0.0,
+      "min_mass": 23.99999999999999,
+      "balance_max": 6.66159688455259e-14,
+      "phases": {
+        "change": {
+          "score": 0.09399022116103817,
+          "positive_fraction": 0.6400473167308067,
+          "gate": false,
+          "first_feedback": 321,
+          "first_map_sample": 321,
+          "final": {
+            "t": 640,
+            "phase": "change",
+            "mass": 24.0,
+            "energy": 169.36338017596808,
+            "connected": 0.9999240456055946,
+            "field_score": -0.01785310142072734,
+            "positive_mass": 11.794718695762091,
+            "strong_mass": 0.9321152422813874,
+            "dy": 11.627094066449214,
+            "dx": -7.147191848770181,
+            "mean_y": 0.215135282369366,
+            "mean_x": 0.10486367455800553,
+            "response_alignment": -0.03277036579051098,
+            "movement": 0.0035077677355026854,
+            "unpaid": 0.0,
+            "basal": 0.0288,
+            "death": 0.0,
+            "gain": 0.013375310333089894,
+            "loss": 0.015520434803469109,
+            "paid_mass": 23.96767307645461,
+            "map_sample_mass": 23.99940055140577,
+            "map_writes": false,
+            "gradient_observed_mass": 23.96767307645461,
+            "balance": 4.796510411075872e-15
+          },
+          "gain": 21.147698683128283,
+          "loss": 0.8239130076185937,
+          "movement": 1.0826487538265501
+        },
+        "retention": {
+          "score": -0.29498796481993916,
+          "positive_fraction": 0.16208299657733197,
+          "gate": false,
+          "first_feedback": null,
+          "first_map_sample": 641,
+          "final": {
+            "t": 768,
+            "phase": "retention",
+            "mass": 23.999999999999993,
+            "energy": 165.22992999172138,
+            "connected": 0.9998045335003033,
+            "field_score": -0.3529496031339589,
+            "positive_mass": 2.7753470853543263,
+            "strong_mass": 0.031774290563745124,
+            "dy": 16.633965064969246,
+            "dx": -13.343471551841787,
+            "mean_y": 0.22242168445948698,
+            "mean_x": 0.10733115296390217,
+            "response_alignment": -0.03232745389913165,
+            "movement": 0.00349484831809993,
+            "unpaid": 0.0,
+            "basal": 0.028799999999999996,
+            "death": 0.0,
+            "gain": 0.0,
+            "loss": 0.0,
+            "paid_mass": 0.0,
+            "map_sample_mass": 23.99737865011167,
+            "map_writes": false,
+            "gradient_observed_mass": 0.0,
+            "balance": 1.1886325257393082e-14
+          },
+          "gain": 0.0,
+          "loss": 0.0,
+          "movement": 0.4470501842467053
+        }
+      },
+      "maps": [
+        {
+          "t": 320,
+          "mean_J": [
+            [
+              0.002027964609595311,
+              -0.06520360582896069
+            ],
+            [
+              0.06447656693018856,
+              0.0022504245366811305
+            ]
+          ],
+          "massweighted_orientation": 0.9903527755145981,
+          "occupied_J_norm": 0.09262613203731654
+        },
+        {
+          "t": 640,
+          "mean_J": [
+            [
+              0.0020279646095953106,
+              -0.06520360582896069
+            ],
+            [
+              0.06447656693018856,
+              0.0022504245366811297
+            ]
+          ],
+          "massweighted_orientation": -0.6828336138288401,
+          "occupied_J_norm": 0.09182989350043018
+        },
+        {
+          "t": 768,
+          "mean_J": [
+            [
+              0.0020279646095953115,
+              -0.06520360582896072
+            ],
+            [
+              0.06447656693018858,
+              0.0022504245366811305
+            ]
+          ],
+          "massweighted_orientation": -0.6830238302213965,
+          "occupied_J_norm": 0.09180322074835093
+        }
+      ],
+      "coverage": {
+        "change": {
+          "mass_time": 7678.147343781466,
+          "completed_steps": 320,
+          "u_covariance": [
+            [
+              0.2638074340935446,
+              0.0288250399928403
+            ],
+            [
+              0.0288250399928403,
+              0.22021687837141446
+            ]
+          ],
+          "u_eigenvalues": [
+            0.20587468167171535,
+            0.27814963079324373
+          ],
+          "eps_covariance": [
+            [
+              0.9852754830127136,
+              0.0024773465986310285
+            ],
+            [
+              0.0024773465986310285,
+              0.9994242677062032
+            ]
+          ],
+          "eps_eigenvalues": [
+            0.9848542584238467,
+            0.9998454922950701
+          ]
+        },
+        "retention": {
+          "mass_time": 3071.8102549474825,
+          "completed_steps": 128,
+          "u_covariance": [
+            [
+              0.27651714063302235,
+              0.0426702654460157
+            ],
+            [
+              0.0426702654460157,
+              0.20704831074656302
+            ]
+          ],
+          "u_eigenvalues": [
+            0.18676244638586784,
+            0.29680300499371753
+          ],
+          "eps_covariance": [
+            [
+              0.9965108902074906,
+              -0.004089957352999104
+            ],
+            [
+              -0.004089957352999104,
+              1.0009366835786735
+            ]
+          ],
+          "eps_eigenvalues": [
+            0.9940735543300319,
+            1.0033740194561322
+          ]
+        }
+      }
+    },
+    {
+      "condition": 1,
+      "arm": "nlms_write",
+      "alive": true,
+      "start_clock": 320,
+      "end_clock": 768,
+      "opportunity64": {
+        "paid_steps": 64,
+        "completed_motion_steps": 64,
+        "displacement_2d": 0.3579911595473649
+      },
+      "first_postchange_paid": 321,
+      "first_postchange_motion_feedback": 321,
+      "unidentifiable_wait": 0,
+      "first32_good": 352,
+      "feedback_to_first32_good": 31,
+      "final_energy": 180.6449557697653,
+      "movement": 2.5951000464122265,
+      "gain": 36.87400313326948,
+      "loss": 4.586522856083263e-06,
+      "unpaid": 0.0,
+      "min_mass": 23.999999999999993,
+      "balance_max": 7.722352626545746e-14,
+      "phases": {
+        "change": {
+          "score": 0.9635194087337925,
+          "positive_fraction": 0.9996452617646399,
+          "gate": true,
+          "first_feedback": 321,
+          "first_map_sample": 321,
+          "final": {
+            "t": 640,
+            "phase": "change",
+            "mass": 24.0,
+            "energy": 185.0972202919113,
+            "connected": 0.9993778117674714,
+            "field_score": 0.9632450434639505,
+            "positive_mass": 23.991597444749342,
+            "strong_mass": 23.988438711861377,
+            "dy": -0.6040419649716178,
+            "dx": -0.3077626510732614,
+            "mean_y": -0.02321329072716419,
+            "mean_x": 0.012120531560860402,
+            "response_alignment": 0.034057295088490654,
+            "movement": 0.006020123023377788,
+            "unpaid": 0.0,
+            "basal": 0.028800000000000003,
+            "death": 0.0,
+            "gain": 0.1156014097859944,
+            "loss": 0.0,
+            "paid_mass": 23.986819191194094,
+            "map_sample_mass": 23.98680081602585,
+            "map_writes": true,
+            "gradient_observed_mass": 23.986819191194094,
+            "balance": 1.3031242751537775e-14
+          },
+          "gain": 36.87400313326949,
+          "loss": 4.586522856083264e-06,
+          "movement": 1.8292355242662452
+        },
+        "retention": {
+          "score": 0.9632820847573398,
+          "positive_fraction": 0.9996688274980611,
+          "gate": true,
+          "first_feedback": null,
+          "first_map_sample": 641,
+          "final": {
+            "t": 768,
+            "phase": "retention",
+            "mass": 23.999999999999996,
+            "energy": 180.6449557697653,
+            "connected": 0.9993304930832255,
+            "field_score": 0.9629614137227688,
+            "positive_mass": 23.992305106577845,
+            "strong_mass": 23.98851959289339,
+            "dy": -0.9097340076528155,
+            "dx": -0.36785234522227483,
+            "mean_y": -0.16167629071036702,
+            "mean_x": 0.08519084810016343,
+            "response_alignment": 0.031842676980348296,
+            "movement": 0.006072427409771767,
+            "unpaid": 0.0,
+            "basal": 0.028799999999999996,
+            "death": 0.0,
+            "gain": 0.0,
+            "loss": 0.0,
+            "paid_mass": 0.0,
+            "map_sample_mass": 23.98746121167184,
+            "map_writes": false,
+            "gradient_observed_mass": 0.0,
+            "balance": 5.509481759702339e-15
+          },
+          "gain": 0.0,
+          "loss": 0.0,
+          "movement": 0.7658645221459808
+        }
+      },
+      "maps": [
+        {
+          "t": 320,
+          "mean_J": [
+            [
+              -0.002182937480801208,
+              0.06548892515322051
+            ],
+            [
+              -0.06569950946197757,
+              0.00145611339140569
+            ]
+          ],
+          "massweighted_orientation": 0.9902035669768957,
+          "occupied_J_norm": 0.09373896965420576
+        },
+        {
+          "t": 640,
+          "mean_J": [
+            [
+              0.04177637355599948,
+              -0.04208013222724751
+            ],
+            [
+              0.039419111728286625,
+              0.040013623898162626
+            ]
+          ],
+          "massweighted_orientation": 0.9860996970322109,
+          "occupied_J_norm": 0.08282008070384755
+        },
+        {
+          "t": 768,
+          "mean_J": [
+            [
+              0.04177637355599949,
+              -0.04208013222724752
+            ],
+            [
+              0.039419111728286625,
+              0.04001362389816265
+            ]
+          ],
+          "massweighted_orientation": 0.9989238309653653,
+          "occupied_J_norm": 0.08172871464897544
+        }
+      ],
+      "coverage": {
+        "change": {
+          "mass_time": 7675.048325506261,
+          "completed_steps": 320,
+          "u_covariance": [
+            [
+              0.2469675388906884,
+              0.015576588664152078
+            ],
+            [
+              0.015576588664152078,
+              0.2475863304701709
+            ]
+          ],
+          "u_eigenvalues": [
+            0.23169727357477973,
+            0.26285659578607956
+          ],
+          "eps_covariance": [
+            [
+              1.0157459817758223,
+              -0.004476140022174801
+            ],
+            [
+              -0.004476140022174801,
+              0.9941638526973106
+            ]
+          ],
+          "eps_eigenvalues": [
+            0.9932723274813581,
+            1.0166375069917748
+          ]
+        },
+        "retention": {
+          "mass_time": 3070.354870953911,
+          "completed_steps": 128,
+          "u_covariance": [
+            [
+              0.2521229550271475,
+              0.009678315179626428
+            ],
+            [
+              0.009678315179626428,
+              0.2489227348076676
+            ]
+          ],
+          "u_eigenvalues": [
+            0.24071314884263137,
+            0.2603325409921837
+          ],
+          "eps_covariance": [
+            [
+              1.002007437887751,
+              0.004571417433552309
+            ],
+            [
+              0.004571417433552309,
+              1.0470696845612135
+            ]
+          ],
+          "eps_eigenvalues": [
+            1.0015483594818535,
+            1.047528762967111
+          ]
+        }
+      }
+    },
+    {
+      "condition": 1,
+      "arm": "nlms_frozen",
+      "alive": true,
+      "start_clock": 320,
+      "end_clock": 768,
+      "opportunity64": {
+        "paid_steps": 64,
+        "completed_motion_steps": 64,
+        "displacement_2d": 0.6581502141290835
+      },
+      "first_postchange_paid": 321,
+      "first_postchange_motion_feedback": 321,
+      "unidentifiable_wait": 0,
+      "first32_good": 352,
+      "feedback_to_first32_good": 31,
+      "final_energy": 164.24527626727112,
+      "movement": 1.5302099191724796,
+      "gain": 20.445273134283298,
+      "loss": 1.0358442172705695,
+      "unpaid": 0.0,
+      "min_mass": 23.999999999999996,
+      "balance_max": 5.80937208061183e-14,
+      "phases": {
+        "change": {
+          "score": 0.04317482652275112,
+          "positive_fraction": 0.5767324206799875,
+          "gate": false,
+          "first_feedback": 321,
+          "first_map_sample": 321,
+          "final": {
+            "t": 640,
+            "phase": "change",
+            "mass": 24.0,
+            "energy": 168.37946566521344,
+            "connected": 0.9999537939485245,
+            "field_score": -0.07602339062004011,
+            "positive_mass": 9.975923030474693,
+            "strong_mass": 0.6401473947450034,
+            "dy": 13.136591948831148,
+            "dx": -10.718357772988938,
+            "mean_y": -0.1351151635302302,
+            "mean_x": -0.0382717556256417,
+            "response_alignment": -0.033940961086846,
+            "movement": 0.003484681539229581,
+            "unpaid": 0.0,
+            "basal": 0.028800000000000006,
+            "death": 0.0,
+            "gain": 0.010477666838062954,
+            "loss": 0.01960364789900631,
+            "paid_mass": 23.952807391082,
+            "map_sample_mass": 23.999305623643835,
+            "map_writes": false,
+            "gradient_observed_mass": 23.952807391082,
+            "balance": -1.239286451237831e-14
+          },
+          "gain": 20.4452731342833,
+          "loss": 1.0358442172705695,
+          "movement": 1.082420521230164
+        },
+        "retention": {
+          "score": -0.3611176689215878,
+          "positive_fraction": 0.11634546700117644,
+          "gate": false,
+          "first_feedback": null,
+          "first_map_sample": 641,
+          "final": {
+            "t": 768,
+            "phase": "retention",
+            "mass": 24.0,
+            "energy": 164.24527626727112,
+            "connected": 0.9998282811397489,
+            "field_score": -0.4184179956827742,
+            "positive_mass": 1.8383891918518764,
+            "strong_mass": 0.018431393283205498,
+            "dy": 15.35541396320505,
+            "dx": -15.905169287464833,
+            "mean_y": -0.15210369932838552,
+            "mean_x": -0.040046348886174754,
+            "response_alignment": -0.036055970440773175,
+            "movement": 0.0034839788330604127,
+            "unpaid": 0.0,
+            "basal": 0.028800000000000006,
+            "death": 0.0,
+            "gain": 0.0,
+            "loss": 0.0,
+            "paid_mass": 0.0,
+            "map_sample_mass": 23.997107728744187,
+            "map_writes": false,
+            "gradient_observed_mass": 0.0,
+            "balance": -1.7791323969618134e-14
+          },
+          "gain": 0.0,
+          "loss": 0.0,
+          "movement": 0.44778939794231565
+        }
+      },
+      "maps": [
+        {
+          "t": 320,
+          "mean_J": [
+            [
+              -0.002182937480801208,
+              0.06548892515322051
+            ],
+            [
+              -0.06569950946197757,
+              0.00145611339140569
+            ]
+          ],
+          "massweighted_orientation": 0.9902035669768957,
+          "occupied_J_norm": 0.09373896965420576
+        },
+        {
+          "t": 640,
+          "mean_J": [
+            [
+              -0.0021829374808012077,
+              0.06548892515322051
+            ],
+            [
+              -0.06569950946197757,
+              0.00145611339140569
+            ]
+          ],
+          "massweighted_orientation": -0.7099172380813675,
+          "occupied_J_norm": 0.09288066371495375
+        },
+        {
+          "t": 768,
+          "mean_J": [
+            [
+              -0.0021829374808012077,
+              0.06548892515322051
+            ],
+            [
+              -0.06569950946197758,
+              0.00145611339140569
+            ]
+          ],
+          "massweighted_orientation": -0.7101367695420396,
+          "occupied_J_norm": 0.09285674958685253
+        }
+      ],
+      "coverage": {
+        "change": {
+          "mass_time": 7677.583401939435,
+          "completed_steps": 320,
+          "u_covariance": [
+            [
+              0.2744812617231663,
+              -0.019854024259478215
+            ],
+            [
+              -0.019854024259478215,
+              0.2153062462024496
+            ]
+          ],
+          "u_eigenvalues": [
+            0.20926226655679003,
+            0.28052524136882584
+          ],
+          "eps_covariance": [
+            [
+              0.9958390719237733,
+              -0.0019405896034553304
+            ],
+            [
+              -0.0019405896034553304,
+              1.0100415395292444
+            ]
+          ],
+          "eps_eigenvalues": [
+            0.9955786884089521,
+            1.0103019230440655
+          ]
+        },
+        "retention": {
+          "mass_time": 3071.7613182913865,
+          "completed_steps": 128,
+          "u_covariance": [
+            [
+              0.28132424179076015,
+              -0.028895062500091186
+            ],
+            [
+              -0.028895062500091186,
+              0.21126245662214643
+            ]
+          ],
+          "u_eigenvalues": [
+            0.20088312929796331,
+            0.2917035691149433
+          ],
+          "eps_covariance": [
+            [
+              0.9975287082029054,
+              0.005135942635673186
+            ],
+            [
+              0.005135942635673186,
+              1.002284456807413
+            ]
+          ],
+          "eps_eigenvalues": [
+            0.9942468834889352,
+            1.005566281521383
+          ]
+        }
+      }
+    }
+  ],
+  "animation": "Actual stored density frames every16; no interpolation. Blank panels indicate fork not yet begun. Substrate background is evaluation only, not a policy input."
+}

@@ -1,0 +1,20 @@
+{
+  "schema": "contextual-terminal-readonly-archive-v1",
+  "job": "71d32015-92aa-404e-8032-4ac39cbb8ebb",
+  "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/contextual_terminal_records_learning_20261018/71d32015-92aa-404e-8032-4ac39cbb8ebb",
+  "raw_manifest": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/contextual_terminal_records/raw_manifest.json",
+    "sha256": "4512252cdfaee744d00a5ff4df10d514c3d7896846a5b242c54998a30f2c062a",
+    "file_count": 251
+  },
+  "stages": "/data/dataset/lenia-research/lineage_75e3399f4877/contextual_terminal_records_learning_20261018/71d32015-92aa-404e-8032-4ac39cbb8ebb/stages.json",
+  "captures": "/data/dataset/lenia-research/lineage_75e3399f4877/contextual_terminal_records_learning_20261018/71d32015-92aa-404e-8032-4ac39cbb8ebb/captures.json",
+  "common_start_checks": "/data/dataset/lenia-research/lineage_75e3399f4877/contextual_terminal_records_learning_20261018/71d32015-92aa-404e-8032-4ac39cbb8ebb/common_start_checks.json",
+  "source_refs": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/contextual_terminal_records/source_refs.json",
+    "sha256": "1a8d056aaae1fd2f0423b8f544dcb2977d60d43cd481188204b0a33203a23825"
+  },
+  "physics_calls_in_analysis": 0,
+  "controller_calls_in_analysis": 0,
+  "missing_history_reconstructed": false
+}

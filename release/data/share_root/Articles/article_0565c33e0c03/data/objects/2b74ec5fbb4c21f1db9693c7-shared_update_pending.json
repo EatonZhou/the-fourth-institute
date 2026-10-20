@@ -1,0 +1,17 @@
+{
+  "key": "research.active_observation_commitment_20261018",
+  "under": "resource_conditioned_growth_rule_20261019.next",
+  "reason": "Graph State total size cannot exceed 512 KiB",
+  "old_shared_mutated": false,
+  "task": "spatial_birth_request_coordination_20261019",
+  "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_birth_request_coordination_20261019/handoff.json",
+  "status": "completed_maintenance_negative",
+  "used": [
+    3076,
+    310.395638
+  ],
+  "unused_sealed": [
+    4,
+    589.604362
+  ]
+}

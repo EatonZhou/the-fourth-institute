@@ -1,0 +1,47 @@
+{
+  "native": 5965,
+  "runner_worker_seconds": 8.514272,
+  "jobs": [
+    {
+      "job": "c56106bd-4b45-4095-a0d1-38907b321671",
+      "status": "failed",
+      "returncode": 1,
+      "native": 0,
+      "runner_slot_seconds": 0.283686,
+      "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/c56106bd-4b45-4095-a0d1-38907b321671"
+    },
+    {
+      "job": "9dc7df4e-900c-442e-bc3d-ac8ce3af8afa",
+      "status": "failed",
+      "returncode": 1,
+      "native": 0,
+      "runner_slot_seconds": 0.310222,
+      "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9dc7df4e-900c-442e-bc3d-ac8ce3af8afa"
+    },
+    {
+      "job": "35f4c51b-c2b7-4d4d-964d-5224b097c803",
+      "status": "completed",
+      "returncode": 0,
+      "native": 368,
+      "runner_slot_seconds": 0.8154,
+      "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/35f4c51b-c2b7-4d4d-964d-5224b097c803"
+    },
+    {
+      "job": "30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c",
+      "status": "completed",
+      "returncode": 0,
+      "native": 5445,
+      "runner_slot_seconds": 6.276672,
+      "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c"
+    },
+    {
+      "job": "296b6e82-917a-4b8c-8086-6c0db235d33e",
+      "status": "completed",
+      "returncode": 0,
+      "native": 152,
+      "runner_slot_seconds": 0.828292,
+      "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/296b6e82-917a-4b8c-8086-6c0db235d33e"
+    }
+  ],
+  "note": "Runner occupied elapsed seconds, not CPU-time or2x thread count. Two zero-native engineering failures included."
+}

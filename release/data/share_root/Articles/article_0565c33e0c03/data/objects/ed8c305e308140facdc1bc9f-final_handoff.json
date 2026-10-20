@@ -1,0 +1,142 @@
+{
+  "task": "young_regenerative_learning_opportunity_20261019",
+  "owner": "resident_ce2a5ab005bc",
+  "status": "six_independent_actual_batches_completed_or_stopped_as_recorded",
+  "created_at": "2026-10-19T09:34:09.090092+00:00",
+  "total_native": 21723,
+  "total_runner_worker_seconds": 490.17036800000005,
+  "unknown": 0,
+  "old_native_replay": 0,
+  "runs": [
+    {
+      "task": "young_regenerative_learning_opportunity_20261019",
+      "job": "ef9f113a-16db-45fd-861a-1111d2a7a7df",
+      "native": 2011,
+      "native_cap": 8192,
+      "runner_worker_seconds": 50.976446,
+      "worker_cap": 240,
+      "raw_bytes_as_recorded": 21086208,
+      "raw_cap": 134217728,
+      "unknown": 0,
+      "plan_sha256": "b4b0909620e9934163c2afdbf416daf85e1ecf074414c689b07fe0c298bf0851",
+      "execution_sha256": "627f177e41f5ed016f9d0fcef572e09af18ac5004120f3a3ee34c165cae7b214",
+      "complete": 0,
+      "branches": 8
+    },
+    {
+      "task": "young_bounded_habitat_learning_20261019",
+      "job": "af553308-1a19-4abb-a0e2-4f4256b8d564",
+      "native": 6144,
+      "native_cap": 8192,
+      "runner_worker_seconds": 115.981384,
+      "worker_cap": 240,
+      "raw_bytes_as_recorded": 38460641,
+      "raw_cap": 134217728,
+      "unknown": 0,
+      "plan_sha256": "014139d72e3e0233e51ba6cf320fe3bb8d65c0ad17842f179fb1161a9c76ccef",
+      "execution_sha256": "0bcea469b4c91f36699768619b4fbc3aba225238e45f3ab4542f2cd550f05bdb",
+      "complete": 12,
+      "branches": 12
+    },
+    {
+      "task": "homeostatic_regenerative_learning_20261019",
+      "job": "725c41a5-f2e1-4ab6-9490-c1dfe7c68c06",
+      "native": 6144,
+      "native_cap": 8192,
+      "runner_worker_seconds": 134.179728,
+      "worker_cap": 240,
+      "raw_bytes_as_recorded": 134393851,
+      "raw_cap": 134217728,
+      "unknown": 0,
+      "plan_sha256": "d0c968fe2027b03f13edce58da2391bf7cfe9081dff60e6860dda77b08c6abe0",
+      "execution_sha256": "5502d77c30b60db04958e51e8456e10e4077c07f790d529446c2f889fb58feb4",
+      "complete": 12,
+      "branches": 12
+    },
+    {
+      "task": "homeostatic_content_reset_20261019",
+      "job": "3d9d173f-aff7-4878-acce-220e83d22729",
+      "native": 1024,
+      "native_cap": 1024,
+      "runner_worker_seconds": 20.911196,
+      "worker_cap": 90,
+      "raw_bytes_as_recorded": 18769995,
+      "raw_cap": 67108864,
+      "unknown": 0,
+      "plan_sha256": "9efd5521d5fea6f0e978eeb754c9795bd4db4a20ef229be6102bac388cb1b0fa",
+      "execution_sha256": "6930b6ecdcd18167a7970ad9a59c904c7c7647023a31fbcccc778464c9d3cbff",
+      "complete": 4,
+      "branches": 4
+    },
+    {
+      "task": "energetic_cue_regenerative_learning_20261019",
+      "job": "498fb0c9-b161-4a00-83c1-d520800ec135",
+      "native": 5632,
+      "native_cap": 8192,
+      "runner_worker_seconds": 151.45059,
+      "worker_cap": 240,
+      "raw_bytes_as_recorded": 139087277,
+      "raw_cap": 134217728,
+      "unknown": 0,
+      "plan_sha256": "0ea6da1e1e9df70a8e8c36099dde4da0743030e99f7e307aef6984f438c35a49",
+      "execution_sha256": "9c97d56babc6912640cff4fe9e38633cd20dc0e96cdae41055ece3891d517265",
+      "complete": 8,
+      "branches": 12
+    },
+    {
+      "task": "energetic_newborn_content_20261019",
+      "job": "4f881fe2-fc3e-4c44-819d-2a9d7492b358",
+      "native": 768,
+      "native_cap": 1024,
+      "runner_worker_seconds": 16.671024,
+      "worker_cap": 90,
+      "raw_bytes_as_recorded": 29703879,
+      "raw_cap": 100663296,
+      "unknown": 0,
+      "plan_sha256": "9c8f14ebb56e218974c154f67f14907c9d5e83c9c6cbaf6d4aaa7222bbf92652",
+      "execution_sha256": "04244f0d03a25102fba7c93b768eb59f2e0dedf7f9e69445c3ade40252a4833f",
+      "complete": 6,
+      "branches": 6
+    }
+  ],
+  "findings": [
+    "young opportunity achieved; uniform-bath expansion stopped",
+    "bounded habitat sustains turnover without full behavioral gate",
+    "direct injury contact can be achieved without association writes; stale-content reset reproduces much updating benefit",
+    "new energetic-outcome task: compact2/2 acquisition vs frozen0/2; alternative initial shape0/2; full reversal gate not passed",
+    "actual newborn payload intervention with ~60% replacement: correct local copy unnecessary in this finite stop-writing expression window"
+  ],
+  "limitations": [
+    "new density-regulated generator, not old Lenia ability",
+    "explicit external bath and unpriced central compute/supply infrastructure",
+    "opposite meanings and initial geometries are correlated conditions, not independent replicates",
+    "one raw peak cap violation retained; longbody512 missing not resumed",
+    "no new algorithm or full unified capability claim"
+  ],
+  "artifacts": {
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/young_regenerative_learning_opportunity_20261019/synthesis/newborn_content_final.png": "b2af03fcabc2a234e1beef8e44038a9b47796fb4708bd387e1bfce61233d9af7",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/young_regenerative_learning_opportunity_20261019/synthesis/REPORT.txt": "311887aaafed3b71f2182085cec73f51240908ddfea386f2036aadce604ac513",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/young_regenerative_learning_opportunity_20261019/synthesis/newborn_content_actual.gif": "899f37c41ed1c8dba5aba5335a010794635a116337becafb57fb58e55da7786c",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/young_regenerative_learning_opportunity_20261019/synthesis/discussion_insert.tex": "6d4e36cb730da883438ea0747a4e29074446f5627e261d807a2fbc470c226fc1",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/young_regenerative_learning_opportunity_20261019/synthesis/accounting_and_balances.json": "3e9102f68a12b02f6926278a10dce72e9ac52c8a67e1805c883451b198d8fc0a",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/young_regenerative_learning_opportunity_20261019/synthesis/energetic_task_actual.png": "9f706dffc5091522b1a9681418b574d4556a56d654a232f9f4cb517ab48974a2",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/young_regenerative_learning_opportunity_20261019/synthesis/raw_manifest.json": "de32112e2a8f62853637476e6c469724302b33d462ce8d5a943e8f07397c08a0"
+  },
+  "energy_results": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/energetic_cue_regenerative_learning_20261019/analysis/results.json",
+  "newborn_results": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/energetic_newborn_content_20261019/probe_results.json",
+  "storage_violation": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/energetic_cue_regenerative_learning_20261019/postrun_storage.json",
+  "source_roots": [
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/young_regenerative_learning_opportunity_20261019/source",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/young_bounded_habitat_learning_20261019/source",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/homeostatic_regenerative_learning_20261019/source",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/homeostatic_content_reset_20261019/source",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/energetic_cue_regenerative_learning_20261019/source",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/energetic_newborn_content_20261019/source"
+  ],
+  "scientific_choice": {
+    "requires_pi_choice": true,
+    "scope": "cross-direction shared-host and paper claim, not permission for own next batch",
+    "question": "是否把该明示外供、密度约束真实周转宿主采用为d3/33/环境线的共同能力基线，并将复制继承降为固定生理对照；还是共同主张仍必须限定原Lenia形态发生？原Lenia生长/接触阳性不能与此替代宿主的标准fast取得阳性拼接。两种方案影响其他组宿主和论文能力边界，需要统一取舍。",
+    "local_decision": "已关闭当前128保持窗正确新生内容复制的必要性主张；保标准fast条件取得，不延窗/扫率救继承，原反转门和长体反例保留。"
+  }
+}

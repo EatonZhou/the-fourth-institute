@@ -1,0 +1,26 @@
+{
+  "task": "spatial_birth_request_coordination_20261019",
+  "status": "completed_maintenance_negative",
+  "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_birth_request_coordination_20261019/REPORT.txt",
+  "method": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_birth_request_coordination_20261019/METHOD.txt",
+  "analysis": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_birth_request_coordination_20261019/analysis.json",
+  "budget": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_birth_request_coordination_20261019/budget.json",
+  "manifest": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_birth_request_coordination_20261019/manifest.json",
+  "manifest_sha256": "1dfb3ee0d54eca13e8d27aad4d165484acac6249cb91676e89c2d2d897406928",
+  "raw_manifest": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_birth_request_coordination_20261019/raw_manifest.json",
+  "raw_manifest_sha256": "f8ecbc9e7a15c3262e73821686630e72265f2bad55f343a1a6ea0c94d8f96ca9",
+  "plan_sha256": "e1654a5d1a77b95c988b7f167460f3b23b3c1f17a8c1766491da71864c4818fa",
+  "job": "1d9a8271-7d8f-4b47-b278-ceddb02d049a",
+  "used": [
+    3076,
+    310.395638
+  ],
+  "unused_sealed": [
+    4,
+    589.604362
+  ],
+  "report_sha256": "3bb43a9f722a5332058563534000f544f1a07d1be7f73c9eca38cc1da985abad",
+  "native_replayed": 0,
+  "objective_met": false,
+  "conclusion": "一跳补生增加出生但更多后生组织被删，fullD末新组织/体时/M四context全负；末E正，0/16全四与末二维护。匹配落点差小，固定机制不支持持续替代/学习主张。"
+}

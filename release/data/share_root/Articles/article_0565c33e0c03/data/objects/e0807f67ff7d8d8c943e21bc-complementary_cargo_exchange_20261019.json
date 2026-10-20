@@ -1,0 +1,134 @@
+{
+  "task": "complementary_cargo_exchange_20261019",
+  "owner": "resident_ce2a5ab005bc",
+  "status": "authorized_for_implementation_and_native_experiment",
+  "objective_met": false,
+  "question": "在P与F空间分离、原载量与当地能量收费下，允许分货交换能否扩大实际可补体的组织条件？固定当地规则是否已经足够？",
+  "choice": "关闭消费min/EMA路由候选，不继续遗忘率、标签或时窗扫描。下一步检验长期固定的PF捆绑动作限制，先取得真实物理能力证据，不预设记忆必要，不训练writer。",
+  "controls": {
+    "desired_state": "running",
+    "started": true,
+    "checked_this_turn": true,
+    "recheck_before_native": true,
+    "no_timer_or_start_reset": true
+  },
+  "completed": {
+    "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/handoff.json",
+    "sha256": "fc2cd49b5d86ab1c3a8f77218209c3aedae9017af336ee34f3dd0850f1788acb",
+    "status": "closed_no_strong_baseline_advantage",
+    "actual_native": 5186,
+    "runner_worker_seconds": 508.249628,
+    "unused_sealed": [
+      958,
+      691.750372
+    ],
+    "selected": "simple EMA; min candidate rejected, duplicate EMA merged; no outer training",
+    "finding": "EMA比即时需求四对体时增加但末E全低；对冻写微差混合。真实消费→方向→身体接口成立，不证明新增历史控制优势。",
+    "failure_scope": "日志失败后的已提交385全态续接，0native重演/失败；一开发步标量及细收据缺失，未补造。"
+  },
+  "method_support": {
+    "entry": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/consumption_qualified_transport_method_20261019/handoff.json",
+    "finding": "比例混合同格单事件C_e/L_e=C_total/X_total，入边标签不产生来源优劣信息；该等式不否认不同时间经历可能有用。",
+    "timing": "专项支持在前批留出冻结时未被消费；本轮PI实读后才用于新取舍，不倒称前批已使用。"
+  },
+  "algebraic_motivation": {
+    "status": "pure_arithmetic_not_native_evidence",
+    "stocks_before": {
+      "A": {
+        "P": 1,
+        "F": 0,
+        "old_rho": 0.5,
+        "old_E": 1
+      },
+      "B": {
+        "P": 0,
+        "F": 0.42,
+        "old_rho": 0.5,
+        "old_E": 1
+      }
+    },
+    "old_bundle_stock_caps": [
+      0,
+      0
+    ],
+    "hypothetical_moves": [
+      {
+        "from": "A",
+        "to": "B",
+        "P": 0.025,
+        "F": 0,
+        "q": 0.025,
+        "fee": 0.002
+      },
+      {
+        "from": "B",
+        "to": "A",
+        "P": 0,
+        "F": 0.0105,
+        "q": 0.025,
+        "fee": 0.002
+      }
+    ],
+    "stocks_after": {
+      "A": {
+        "P": 0.975,
+        "F": 0.0105
+      },
+      "B": {
+        "P": 0.025,
+        "F": 0.4095
+      }
+    },
+    "total_carrier_fee": 0.004,
+    "local_stoichiometric_joint_stock_after": [
+      0.025,
+      0.025
+    ],
+    "limitation": "只说明原捆绑可行域存在盲点，未运行body step；出生还受真实请求/密度/支持/当地E限制，不能将此算例记为新生或维护收益。"
+  },
+  "action_extension": {
+    "cargo": "每条已有合法邻边分别执行p>=0与f>=0，承运量q=max(p,f/.42)。原p=q,f=.42q时精确还原原PF捆绑。",
+    "donor_constraints": "sum(q)<=.05*old_survivor，sum(p)<=当前P，sum(f)<=当前F，.08*sum(q)<=原旧供体E扣原基础reserve后的可付额。原face/目标支持/邻接集合不扩展，不借同一步未来摄取或新生E。",
+    "costs": "仍按每个实际承运量q付.08；空载槽不能退款，P-only或F-only不免费。原捆绑调用原冻结函数；新独立方案是显式新增动作集合与费用延拓假设，不冒称实测完整运输物理。",
+    "bookkeeping": "P/F分别守恒，供体当地E实际扣款、热增加；对并发库存/面/支付拒绝有明确顺序，不在拒绝后偷偷重分配。没有同一步多跳，不借他格预算。新源隔离，旧native/泵/价格/核/所有原结果保持原字节。",
+    "memory": "本批策略只读合法当下当地及原一跳字段；不含消费EMA/模型拟合/隐藏未来时钟/资源地图/全身体收益。可用固定规则得到的能力就记固定规则。"
+  },
+  "experiment": {
+    "parents": "从fa8c0606维护批真实f1/f2 clock384完整父取得，各自只读一次，不重演形成。两个已知规则，不是两个独立世界。",
+    "finite_challenge": "显式外源资源位置干预后，从同一完整条件起点分四臂；两条件是共定位与分离。保身体/E/核/规则/时钟，只改变胞外P/F位置。原P/F各自总库存精确保留：实验设置将库存重排到预冻结地图，不能称原完整父未经干预或身体自行搬运。记录重排前/后数组及外部配置工作未定价；不产生净物质/化学能。",
+    "maps": "以该真实384身体3×3支持为共同支持，按固定x方向分为两非空半区并各自归一（中线/离散格归属实施前冻结）；共定位P/F均放A区，分离P放A、F放B。P位置保持，共改变F位置；无结果后旋转/换几何。若无法得到非空合法半区，报告设计不适用，不换图找通过。",
+    "input": "随后新增P/F沿同一条件固定图，gross沿原每步输入、半衰64及原有限供给；库存不再随身体搬家。不同条件/轨迹的实际出口及接触可不同，不声称同空间供给或闭合生态。",
+    "arms": [
+      "original_bundle_diffusion",
+      "independent_current_gradient",
+      "independent_joint_current_demand",
+      "no_pump"
+    ],
+    "policies": "两个独立货物固定当地规则由ce2在新native前给出唯一公式与共同可行执行映射。gradient对P与F各自当前梯度分配；demand用当前真实已完成native后可合法读的缺口/支持/共同因子，不能偷跑native获得未来请求。无选价/折扣/阈值。",
+    "schedule": "2父×2条件×4臂×192步=3072科学native；绝对384→576，三预定64窗，晚两窗449–512/513–576。无取得重演，无事后延窗或改末钟。",
+    "diagnostics": "每条件四臂共享完全相同的干预后身体/库存/核/时钟/world/标签起点。原384旧材料标签随真实K/存活删失，后来born不继承；分别报真实新组织留存、累计born/death、M/E/U/体时、逐货物流与carrier量、费用/热/输入/外排/欠付。",
+    "claims": "逐rule/条件报告独立运输相对原bundle和none的完整取舍。晚两窗born>=death且E不降/M>=32仅是本192协议的有限补体证据，不能代替原512维护验证。若只是更多摄取或末E增加，不称补体能力；若固定规则胜出，不称学习或历史价值。",
+    "visuals": "每条件共同起点及预定64/128/192真实P/F/身体/旧材/新组织场；代表性实际过程及所有终点。地图干预必须在图中可见；两旧体不说新形态。"
+  },
+  "budget": {
+    "native_cap": 3104,
+    "science_native": 3072,
+    "affected_boundary_max": 32,
+    "runner_worker_seconds_cap": 900,
+    "cpu_threads": 2,
+    "gpu": 0,
+    "raw_bytes_cap": 1073741824,
+    "finalization_reserve_worker_seconds": 90,
+    "owner_unique_submit": true,
+    "all_attempts_count": true,
+    "old_balances_used": 0,
+    "unused_sealed": true
+  },
+  "execution": "请ce2实际实现并唯一提交，不停在方案/归档。不要求再逐项审批；先读科研控制。可自行做必要纯函数核对，只有受改动原生边界进32额度；无重复旧检查。断点不每步重复全包，保存预定真实场与完整可续态，失败只明确恢复不重演。",
+  "next_after": "本批不开学习矩阵。若新增动作由固定当前规则解释，明确该基础能力及局限，再依据真实身体能力选择后续形态/规则与学习问题；若无能力，关闭此可行域候选而保坏例。需要跨组接续时一次直接可唤醒交接，日常仅共享状态；不得用余量偷偷扫几何/价格。",
+  "source_maintenance": {
+    "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/metabolic_maintenance_withdrawal_20261018/handoff.json",
+    "sha256": "fa8c06064d97a71f8d7e9ffbdcb17bb6a1d896bbd409384d1bb1d3b5eac0f6a2"
+  },
+  "primary_scope": "新生理动作机制的探索；不是新学习方法完成，也不是已证明原EMA失败由动作限制导致。"
+}

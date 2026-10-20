@@ -1,0 +1,8 @@
+{
+  "task": "paid_local_turnover_recycling_20261019",
+  "existing_paper_projection_threads_only": true,
+  "broadcast_sent": false,
+  "report": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/paid_local_turnover_recycling_20261019/REPORT.txt",
+  "figure_sources": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/paid_local_turnover_recycling_20261019/figure_sources.json",
+  "finding": "固定有价回收8/8提高后生留存、L256全部更低；子史双叶共定位唯一两窗有限维护通过，末E仍低于none；整体学习未完成。"
+}

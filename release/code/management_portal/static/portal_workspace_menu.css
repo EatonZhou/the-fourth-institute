@@ -1,0 +1,42 @@
+.workspaceMenuSurface .workspaceMenuPortrait {
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+}
+.workspaceMenuSurface.nodeSettingsSurface .nodeSettingsBody { grid-template-columns: minmax(0, 1fr); }
+.workspaceMenuSurface.nodeSettingsSurface::before { display: none; }
+.workspaceMenuPortrait > svg { width: 44px; height: 44px; }
+.workspaceMenuSurface .nodeSettingsForm { display: grid; gap: 18px; }
+.workspaceMenuSurface .portalField input,
+.workspaceMenuSurface .portalField textarea {
+  min-width: 0;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+}
+.workspaceMenuSurface .portalField textarea { resize: vertical; line-height: 1.5; }
+.workspaceMenuSurface code { overflow-wrap: anywhere; white-space: normal; }
+.workspaceMenuReadout { display: grid; gap: 6px; font-size: 12px; }
+.workspaceMenuReadoutValue { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.workspaceMenuReadoutValue code { flex: 1; min-width: 0; }
+.workspaceMenuReadoutValue .portalButton { flex: none; }
+.workspaceMenuReadout > span, .workspaceMenuMembers h3 { color: var(--muted); font-size: 12px; font-weight: 500; }
+.workspaceMenuReadout strong { font-size: 13px; font-weight: 600; }
+.workspaceMenuReadout strong[data-state="available"] { color: var(--success, #237a4b); }
+.workspaceMenuReadout strong[data-state="missing"],
+.workspaceMenuReadout strong[data-state="not_directory"],
+.workspaceMenuReadout strong[data-state="unavailable"] { color: var(--danger); }
+.workspaceMenuMembers { display: grid; gap: 7px; }
+.workspaceMenuMembers h3, .workspaceMenuMembers p { margin: 0; }
+.workspaceMenuMembers p { color: var(--muted); font-size: 12px; line-height: 1.5; }
+.workspaceMenuMembers ul { display: grid; gap: 10px; padding: 0; margin: 0; list-style: none; }
+.workspaceMenuMembers li { display: grid; gap: 4px; min-width: 0; overflow-wrap: anywhere; }
+.workspaceMenuMembers li code { color: var(--muted); font-size: 11px; }
+.workspaceMenuStatus { min-width: 0; margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.workspaceMenuStatus.is-error { color: var(--danger); }
+.workspaceMenuSurface .nodeSettingsFooter { display: flex; justify-content: flex-end; gap: 8px; }
+.workspaceMenuSurface [hidden] { display: none; }

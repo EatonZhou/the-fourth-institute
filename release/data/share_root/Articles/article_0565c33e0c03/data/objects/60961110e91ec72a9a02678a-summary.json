@@ -1,0 +1,86 @@
+{
+  "task": "self_generated_recontact_learning_20261019",
+  "status": "complete",
+  "native": 4520,
+  "unknown": 0,
+  "worker_seconds": 33.495392,
+  "raw_bytes": 22941438,
+  "paths": 16,
+  "alive": 8,
+  "continuity_all": true,
+  "max_energy_error": 1.4474532683550478e-14,
+  "groups": {
+    "original_write": {
+      "n": 4,
+      "feedback_last64_pass": 0,
+      "aftermath_last64_pass": 0,
+      "meaningful_positive_any": 0,
+      "positive_updates": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "meaningful_positive_updates": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "original_freeze": {
+      "n": 4,
+      "feedback_last64_pass": 0,
+      "aftermath_last64_pass": 0,
+      "meaningful_positive_any": 0,
+      "positive_updates": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "meaningful_positive_updates": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "turn_once_write": {
+      "n": 4,
+      "feedback_last64_pass": 0,
+      "aftermath_last64_pass": 0,
+      "meaningful_positive_any": 0,
+      "positive_updates": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "meaningful_positive_updates": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "turn_once_freeze": {
+      "n": 4,
+      "feedback_last64_pass": 0,
+      "aftermath_last64_pass": 0,
+      "meaningful_positive_any": 0,
+      "positive_updates": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "meaningful_positive_updates": [
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  }
+}

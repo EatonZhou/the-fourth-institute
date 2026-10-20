@@ -1,0 +1,22 @@
+{
+  "shared_update_instruction": "inst_lin_a77f42129e87e822fa8d",
+  "current_scientific_direction": {
+    "cap": [
+      2052,
+      600
+    ],
+    "entry": "src/environment_evolution/results/recycled_cargo_local_routing_20261019/handoff.json",
+    "finding": "2048步/123.449822worker秒；0重演，同job诊断恢复1次。定向比均匀增组织，较原位Pon负/Poff小正；维护0/8。旧用量149.458776更正。",
+    "objective_met": false,
+    "owner": "resident_ce2a5ab005bc",
+    "request": "msg_eb48fd45819ce13eada0984fc23f9dda",
+    "status": "completed"
+  },
+  "final_artifact_check": {
+    "ordered_rows": 2048,
+    "joints": 8,
+    "native": 0
+  },
+  "resident_summary_revision": 251,
+  "summary_usage_correction_applied": true
+}

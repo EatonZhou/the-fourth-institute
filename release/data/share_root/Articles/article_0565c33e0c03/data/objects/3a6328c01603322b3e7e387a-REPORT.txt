@@ -1,0 +1,41 @@
+Equal-birth placement: completed controlled-density intervention
+
+Job fece0fb5-f2db-465d-9cc3-373933d3f727; 9728 actual host steps; 8.789298/300 worker-seconds.
+
+Four stored physical parents at clock768 carry their original EMA checkpoint (.4, threshold .10). No conversion of adaptive history.
+
+Eight all-open references advance to clock952 once, with snapshots before791/823 and one common requested action tape per parent/future.
+
+Each snapshot branches into EMA/uniform and EMA/instant pairs. Both pairs may use different B; each EMA arm is executed separately.
+
+Pulse phase23 finishes at792/824. The following128 steps are all-open, ending920/952. Instant uses current pre-action inventory only.
+
+The host obtains q from one executed all-open step and reassigns at most its admitted mass. B=min(S,sum(q*gEMA)) or min(S,sum(q*gEMA),sum(q*gInstant)).
+
+No q is exposed to the policy. Pair pulse M/E, actual birth total, uptake, fees, survivors and raw q are matched; later fees may differ as outcomes.
+
+Pulse uptake precedes birth: tag credit is zero on the pulse, actual born initializes the tag after return. Subsequent shift/keep and tag/survivor apportion observed uptake. Later births do not receive this tag.
+
+All64 branches retained and alive; zero-B pairs 0; B range [8.30957907455705e-07, 0.0040000000000048885]; maximum pulse mismatch 7.1054274e-15; ledger residual 5.1159077e-13.
+
+Results (EMA minus comparator; eight dependent pairs per row, two independent environment seeds):
+
+ema_uniform / same: uptake +1.627813106e-05, tagged intake +3.092413018e-05, final E +1.035459971e-05, body-time -9.521237757e-06; uptake negative count 2/8.
+
+ema_instant / same: uptake -0.0001049599875, tagged intake -0.0002120626491, final E -6.342818718e-05, body-time +7.500973032e-05; uptake negative count 8/8.
+
+ema_uniform / port_swap: uptake +6.083105302e-06, tagged intake +1.209029798e-05, final E +4.812808868e-06, body-time +1.638116771e-06; uptake negative count 1/8.
+
+ema_instant / port_swap: uptake -8.456008586e-05, tagged intake -0.0001188952655, final E -4.968417921e-05, body-time +1.818154561e-05; uptake negative count 7/8.
+
+Interpretation: under equal birth quantity and common requested movement, the current old-carrier EMA history does not outperform the instantaneous local-inventory gate. Small gains versus uniform do not establish a maintenance advantage.
+
+Placement is mechanically nonidentical, but admitted mass is at most .004 and many pulses are much smaller. M20 remains imposed; this finite narrow intervention does not rule out useful experience under other genuine growth opportunities.
+
+The two clocks, futures and body shapes share parents and environment seeds. They are dependent development comparisons, not independent confirmation replicates.
+
+The tags measure descriptive contact attribution, not a separate energy flow or causal mediation proof. Uniform survival makes tagged mass retention essentially equal between placements.
+
+No new learned update rule, autonomous movement or Lenia mechanism is established. Keep the frozen evidence and stop expanding this EMA birth-value target through parameter scans.
+
+All old packages and unused223 are unchanged. This analysis invokes no host step.

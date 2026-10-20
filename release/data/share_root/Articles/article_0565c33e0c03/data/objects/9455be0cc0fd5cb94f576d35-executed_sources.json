@@ -1,0 +1,22 @@
+{
+  "core": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/local_metabolic_translocation/core.py",
+    "sha256": "14917689b4a891b8ed27a1574630331b56a64d1538cf785e505b5a8fab3e393e",
+    "bytes": 8342
+  },
+  "runner": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/local_metabolic_translocation/run.py",
+    "sha256": "ea3e60da9d111cb393582aa6ddb39eea991e186d12ea6b40c79b7df35f1ed06f",
+    "bytes": 16792
+  },
+  "original_plan": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/local_metabolic_translocation_20261018/plan.json",
+    "sha256": "e505768cafa945417800921fb687aa39e7945b85f8a4669330c3de15c5e97039",
+    "bytes": 18529
+  },
+  "resume": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/local_metabolic_translocation_20261018/resume_amendment.json",
+    "sha256": "3987e2dae53ef47a489a50c1eca5156e3184009197e79a88d6a2c73ad7adc3ad",
+    "bytes": 2625
+  }
+}

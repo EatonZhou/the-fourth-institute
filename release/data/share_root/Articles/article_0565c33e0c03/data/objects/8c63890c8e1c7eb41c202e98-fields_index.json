@@ -1,0 +1,58 @@
+[
+  {
+    "parent_id": "202610195601_ring_birth_gain_only",
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/paired_policy_material_fate_20261019/fields/202610195601_ring_birth_gain_only.npz",
+    "sha256": "d2fc9d86814004bc91178599b65e540888a26920b5cb52755e1b2476e7d818a1",
+    "survival_fields": 4,
+    "unoccupied": "NaN; not an initial material source"
+  },
+  {
+    "parent_id": "202610195601_ring_both",
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/paired_policy_material_fate_20261019/fields/202610195601_ring_both.npz",
+    "sha256": "4506350a21c996dd4c4342027a670a726b4d87284123acca3038822e512e8a48",
+    "survival_fields": 4,
+    "unoccupied": "NaN; not an initial material source"
+  },
+  {
+    "parent_id": "202610195601_separate_seeds_birth_gain_only",
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/paired_policy_material_fate_20261019/fields/202610195601_separate_seeds_birth_gain_only.npz",
+    "sha256": "315c23a22732c825691909e16be3f776c08957ad9db9554d02ef869512799df2",
+    "survival_fields": 4,
+    "unoccupied": "NaN; not an initial material source"
+  },
+  {
+    "parent_id": "202610195601_separate_seeds_both",
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/paired_policy_material_fate_20261019/fields/202610195601_separate_seeds_both.npz",
+    "sha256": "706cba55a7867abf9b798508a2f7b277036655ba36762cd15397df905cf68b26",
+    "survival_fields": 4,
+    "unoccupied": "NaN; not an initial material source"
+  },
+  {
+    "parent_id": "202610195602_ring_birth_gain_only",
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/paired_policy_material_fate_20261019/fields/202610195602_ring_birth_gain_only.npz",
+    "sha256": "652a4267b6f0875e010858d89bb4ca15cf7f91e99d052291da3296a66e0e50ee",
+    "survival_fields": 4,
+    "unoccupied": "NaN; not an initial material source"
+  },
+  {
+    "parent_id": "202610195602_ring_both",
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/paired_policy_material_fate_20261019/fields/202610195602_ring_both.npz",
+    "sha256": "28ada5ce99d663f0ea65d2fd17bd1df36de7a7ca5d34b7942fa010dc3a63a5a6",
+    "survival_fields": 4,
+    "unoccupied": "NaN; not an initial material source"
+  },
+  {
+    "parent_id": "202610195602_separate_seeds_birth_gain_only",
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/paired_policy_material_fate_20261019/fields/202610195602_separate_seeds_birth_gain_only.npz",
+    "sha256": "4e98dc0fb9b0379b10eab23fdadcf68618ea50dcbd5b4507f0e5d4045b7cea07",
+    "survival_fields": 4,
+    "unoccupied": "NaN; not an initial material source"
+  },
+  {
+    "parent_id": "202610195602_separate_seeds_both",
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/paired_policy_material_fate_20261019/fields/202610195602_separate_seeds_both.npz",
+    "sha256": "228305950891aaa63e48cdbacfc481e28d1eb7151b2dabe9b3e5c526672366ef",
+    "survival_fields": 4,
+    "unoccupied": "NaN; not an initial material source"
+  }
+]

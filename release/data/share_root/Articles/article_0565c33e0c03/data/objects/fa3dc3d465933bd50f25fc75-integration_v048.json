@@ -1,0 +1,161 @@
+{
+  "version": "0.48",
+  "article_id": "article_0565c33e0c03",
+  "status": "Published to the same Article and default preview",
+  "scope": "Same full manuscript, seven main figures; primary strict scalar evidence and strong controls replace the previous information-rich emphasis",
+  "sources": {
+    "scalar_action": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/scalar_actuator_relearning_20261019/direction_handoff.json",
+      "sha256": "052eda8a60632e75a8d650a0de46bf0380bd63a2e5345f3b407c22308cf1dcab",
+      "role": "Primary information-restricted action evidence",
+      "source_native_steps": 10880,
+      "source_worker_seconds": 35.827098,
+      "integration_new_physics": 0
+    },
+    "motion_observing_action": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_coupling_transport_20261019/direction_handoff.json",
+      "sha256": "8f9a29cb21d93006f86c00127cfb3911ef1c39d017415eb0fb9ece8fbb0c9185",
+      "role": "Richer-information comparison only",
+      "source_native_steps": 16831,
+      "source_worker_seconds": 52.962982,
+      "integration_new_physics": 0
+    },
+    "affine_action": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/affine_actuator_relearning_20261019/direction_handoff.json",
+      "sha256": "bbd69fa27d420b4ca24c0bb1bb261b079f70c3c35b30e21e832ad52219184f04",
+      "role": "Richer-information standard-control comparison only",
+      "source_native_steps": 7936,
+      "source_worker_seconds": 46.702418,
+      "integration_new_physics": 0
+    },
+    "selected_history": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/temporal_history_selected_action_20261019/handoff.json",
+      "sha256": "fa2bc1c08e56cadf2fa9c24f0f8af47a04fdc819b37f0c92e9040fa1585c4ce9",
+      "role": "Complete-history and filtered-table strong controls",
+      "source_native_steps": 7236,
+      "source_worker_seconds": 10.552385,
+      "integration_new_physics": 0
+    },
+    "predictive_maintenance": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/predictive_tissue_maintenance_20261019/final_handoff.json",
+      "sha256": "fad231bf27578e5720f88a29717009d0c1a42542894a75441aae62fb7a41b14a",
+      "role": "Equal-purchase finite content effect, incomplete tail retained",
+      "source_native_steps": 7488,
+      "source_worker_seconds": 165.220128,
+      "integration_new_physics": 0
+    },
+    "strong_physiology": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/predictive_strong_physiology_20261019/final_handoff.json",
+      "sha256": "fa00d49673e97f020a0359ce3caca369d70a750faef5b7cc4ec448db4234f880",
+      "role": "No general net superiority; stable-relation timing benefit",
+      "source_native_steps": 3072,
+      "source_worker_seconds": 103.915548,
+      "integration_new_physics": 0
+    },
+    "material_carried_history": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_dynamics_20261019/handoff.json",
+      "sha256": "2547e980a19f2f1cc19146210edfa392cdc16e2b66a734d621cf7802e25f379a",
+      "source_native_steps": 23491,
+      "source_worker_seconds": 32.21922,
+      "integration_new_physics": 0,
+      "role": "Fixed local event memory plus delta is sufficient; tested adaptive recurrent gain gives no added value"
+    },
+    "physical_response_state": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/physical_experience_state_20261019/handoff.json",
+      "sha256": "b1119cd365f82b0614fc7169d2edd4b13314864583232be5ee14c990819a05ef",
+      "source_native_steps": 5965,
+      "source_occupied_worker_seconds": 8.514272,
+      "integration_new_physics": 0,
+      "role": "Richer local motion interface: learned compliance is exactly matched by a fixed-material online readout"
+    }
+  },
+  "source_rows": "${share_root}/Articles/article_0565c33e0c03/work/longform_v047/data/evidence_source_rows_v048.json",
+  "source_rows_sha256": "787694f2ae58734e01fde8164e8b4cbe0eb05d1c6b511b8bc1e182c8dd75e13d",
+  "actual_animation_sources": {
+    "scalar_acquisition_and_reward_reversal": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/scalar_response_estimation_20261019/actual_sequence.gif",
+    "scalar_execution_change_comparisons": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/scalar_actuator_relearning_20261019/actual_sequence.gif",
+    "scalar_all_methods": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/scalar_actuator_relearning_20261019/all_methods_actual.gif",
+    "selected_action_history": "${share_root}/Projects/元胞自动机研究/src/research/results/temporal_history_selected_action_20261019/continuous_body.gif",
+    "strong_maintenance": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/predictive_strong_physiology_20261019/actual_continuous.gif",
+    "material_carried_history": "${share_root}/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_balanced_20261019/continuous_body_state.gif",
+    "physical_response_state": "${share_root}/Projects/元胞自动机研究/src/research/results/physical_experience_comparison_20261019/continuous_response.gif"
+  },
+  "new_simulation_steps": 0,
+  "new_fits": 0,
+  "prior_archive": "${share_root}/Articles/article_0565c33e0c03/work/longform_v047/revisions/v0476",
+  "scientific_review_request": "msg_31b6e53e6e1414bd2e86983d1189710f",
+  "scalar_visual_fix_request": "msg_e468f5f80a84c9b8fa9857e971d7e18d",
+  "unverified_successors": "Heterogeneous-body coordination and renewal-sensitive successor mechanisms only; no success prewritten. Local recurrent-gain candidate now has a completed negative extra-value result.",
+  "stated_capabilities": [
+    "Strict scalar local experience: acquired action2/2, reward reversal1/2, aftereffect2/2; clear1/2 and rotate0/2",
+    "Execution-only change: continued estimation and initialized fixed run/tumble2/2, frozen0/2; fixed control uses less movement energy",
+    "Literal and filtered history tables match retained and relearned choices; no new representation advantage",
+    "Equal protection purchases expose limited content effects; strong immediate physiology defeats a general superiority claim",
+    "Original Lenia generation, conservative motor body and externally supplied density-regulated material CA remain distinct",
+    "Fixed body-carried six-event history with local delta matches central table in unfamiliar-gap and post-retraining tests; adaptive gain gives no extra value",
+    "Learned compliance changes actual mechanics but a fixed-material local readout reproduces three body/energy/action paths within4.27e-14; no extra material capability established"
+  ],
+  "local_history_source_rows": "${share_root}/Articles/article_0565c33e0c03/work/longform_v047/data/local_history_source_rows_v048.json",
+  "local_history_source_rows_sha256": "74ad5e6acac93efacb61abc61f9bbaa77bb515a4d1768c23759672cd47db8a66",
+  "scientific_review": {
+    "first_message": "msg_918eb461c4d9ba1b87385b2ad58b0985",
+    "reviewer": "resident_0b7dc096e3c9",
+    "scope": "Five original new sections, abstract/introduction/discussion claims,23table blocks769rows5997cells and9 source hashes; not GUI or composedPDF",
+    "necessary_corrections_applied": [
+      "0.27985 corrected to0.27984",
+      "Initial jittered22–27 schedule separated from follow-up fixed24 spacing and4-contact windows"
+    ],
+    "new_local_history_addendum_request": "msg_b12693558cfe85271c4fc5285bb5a326",
+    "local_history_message": "msg_8d098801cd48d89c44773b2a283c79f2",
+    "local_history_scope": "9 table blocks,221 rows,1813 cells and8 input hashes; no necessary corrections; not PDF or GUI",
+    "physical_state_message": "msg_9362398bbc2c441766fb1f95884fe0a7",
+    "physical_state_scope": "6 table blocks,134 rows,1057 cells,22 input hashes and15 ledgers; no necessary corrections; not PDF or GUI",
+    "review_files": [
+      "${share_root}/Agents/lineage_75e3399f4877/residents/resident_0b7dc096e3c9/workspace/review_v048_findings.json",
+      "${share_root}/Agents/lineage_75e3399f4877/residents/resident_0b7dc096e3c9/workspace/review_v048_table_audit.json",
+      "${share_root}/Agents/lineage_75e3399f4877/residents/resident_0b7dc096e3c9/workspace/review_v048_local_history_findings.json",
+      "${share_root}/Agents/lineage_75e3399f4877/residents/resident_0b7dc096e3c9/workspace/review_v048_local_history_audit.json",
+      "${share_root}/Agents/lineage_75e3399f4877/residents/resident_0b7dc096e3c9/workspace/review_v048_physical_state_findings.json",
+      "${share_root}/Agents/lineage_75e3399f4877/residents/resident_0b7dc096e3c9/workspace/review_v048_physical_state_audit.json"
+    ]
+  },
+  "physical_state_source_rows": "${share_root}/Articles/article_0565c33e0c03/work/longform_v047/data/physical_state_source_rows_v048.json",
+  "physical_state_source_rows_sha256": "056197949cbf4d4b4badadcb5e9075330ceabaab01b6fc3aef7b98309ec62c48",
+  "gui_deliveries": {
+    "scalar": "msg_a2a42f30f84359dcfc12e3942b9b83b7",
+    "maintenance": "msg_e213cfa3b726c7239a934505c8eb7972",
+    "scalar_correction": "Five separator lines removed in visible Impress; response C1 values and all scores visible at paper size"
+  },
+  "author_review": {
+    "earlier_all_main_figures_viewed_together": true,
+    "final_176_page_pdf_pages_viewed": [
+      6,
+      13,
+      14,
+      15,
+      34,
+      53,
+      54,
+      173,
+      174,
+      175,
+      176
+    ],
+    "scope_note": "Specific final pages and earlier complete main-figure group; not a new exhaustive whole-SI or browser-UI review",
+    "official_default_pages_viewed": [
+      6,
+      14,
+      34,
+      175
+    ]
+  },
+  "publication_record": "${share_root}/Articles/article_0565c33e0c03/work/longform_v047/data/publication_record.json",
+  "published_at": "2026-10-19T13:52:56Z",
+  "default_pdf_sha256": "fcb9dc96f0af90869515862bc0dc6ab5fd464a2ca6a4376d12dfbacf69a20369",
+  "freeze_manifest": "${share_root}/Articles/article_0565c33e0c03/work/longform_v047/data/default_preview_freeze_v048.json",
+  "main_figures": 7,
+  "main_tables": 5,
+  "total_pages": 176,
+  "supplementary_tables": 79,
+  "supplementary_figures": 11
+}

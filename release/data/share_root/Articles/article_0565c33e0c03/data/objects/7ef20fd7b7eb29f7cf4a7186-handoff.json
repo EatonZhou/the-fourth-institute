@@ -1,0 +1,37 @@
+{
+  "status": "completed_exploratory_pilot",
+  "resident_id": "resident_ce2a5ab005bc",
+  "jobs": [
+    {
+      "job_id": "69288aa8-ecae-4fe6-8f45-36cd8e06f3fc",
+      "actual_steps": 294912,
+      "runs": 96
+    },
+    {
+      "job_id": "9e27d7ea-84ca-4c2a-96e8-03de7319ccfe",
+      "actual_steps": 49152,
+      "runs": 24
+    }
+  ],
+  "steps": 344064,
+  "report": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_independent_ports_20261018/REPORT.txt",
+  "manifest": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_independent_ports_20261018/manifest.json",
+    "bytes": 9307,
+    "sha256": "24b2507ecc08f832751685458a745f56c585813a9ccc49b047d83733378a2835"
+  },
+  "raw_manifest": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_independent_ports_20261018/raw_manifest.json",
+    "bytes": 59773,
+    "sha256": "296936dcca61c9bdb04c7c8dfe7cd52de6d5278b6a215d57fab8c005040c2ce4"
+  },
+  "delivery_files": 36,
+  "raw_files": 210,
+  "raw_bytes": 4745948,
+  "prior": {
+    "easy_task": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/method_renewal_ecology_behavior_20261018/handoff.json",
+    "easy_sha256": "42a3e245a4f7fb028da1d527db75449e56ba1713f9ecb7f36bf9b27087b9e1c0"
+  },
+  "old_budgets_unchanged": true,
+  "published": false
+}

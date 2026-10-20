@@ -1,0 +1,20 @@
+{
+  "id": "259719af-bea7-461a-bfd3-10fae2c7fd7d",
+  "name": "d3 acquired gain spatial content 1792",
+  "command": [
+    "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+    "-m",
+    "local_learning.acquired_gain_content.run",
+    "run"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "d3-acquired-gain-content-20261019-v1",
+  "status": "running",
+  "created_at": "2026-10-19T10:09:38.789406+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/259719af-bea7-461a-bfd3-10fae2c7fd7d",
+  "pid": 3050565,
+  "manual_pause": false,
+  "create_time": 1792404578.3,
+  "started_at": "2026-10-19T10:09:38.918861+00:00"
+}

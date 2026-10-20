@@ -1,0 +1,6 @@
+{
+  "animation": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5f08b6b0-ceb7-4dc1-a70e-ee5d0052e9aa/raw/202610199741_adaptive_gain/animation.npz",
+  "stride": 3,
+  "frames_saved": "every native step, float16 display arrays; exact64-bit states at action and feedback",
+  "panels": "left actual rho; right sign of carried q weighted by rho; color is not extra tissue"
+}

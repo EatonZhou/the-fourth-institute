@@ -1,0 +1,16 @@
+本包为已完成的固定驻点补充，不提供重新提交指令。
+
+科研执行入口：src/research/feedback_acquisition_camp.py，SHA见plan.sources。
+唯一job及新步数：result.json/completed_job.json；147456上限已完整用完，不重投。
+共同环境：environment_evolution.renewable_allocation_ecology.interface.AllocationEcologyV2。
+固定控制：phase<6 -> 0，否则clip((9 if camp_left else 23)-obs['x'],-1,1)。
+environment.step(action, phase, arrivals=host-held_saved_tape_at_phase22, memory_fee=0.)。
+没有complete_observation调用，未接任何反馈/历史/隐态/seed/资源字段；无控制器随机数。
+策略静态side与公共身体checkpoint保存在各-final.npz，完整环境tape指针/游标绑定在metadata，非未知inflight恢复承诺。
+
+只读分析入口：同目录analyze.py（已经执行一次，不需再运行）；仅加载原120和本48outcomes/steps/tape，不导入环境/控制器、不生成K或前向。
+统计：world_summary/seed_means/global_policy_summary；配对差为旧学习策略减驻点。4 seed独立，2形态同带。
+privileged_per_seed_side.csv为事后按摄取择侧，不可在线部署。
+endpoint_mass_addendum.json是原exact-zero字段的说明性增补，未改轨迹。
+raw_manifest给新原始文件路径/字节/SHA；manifest给交付文本/表/图/冻结源码SHA。
+handoff链接旧五策略和ce2共用版本，不复制或改写旧包。

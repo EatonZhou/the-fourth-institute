@@ -1,0 +1,29 @@
+[Unit]
+Description=TFI Portal Release
+After=network-online.target @PORTAL_POSTGRES_UNIT@ portal-release-nats.service portal-release-resource-service.service portal-release-execution-service.service portal-release-society-service.service
+Wants=network-online.target @PORTAL_POSTGRES_UNIT@ portal-release-nats.service portal-release-resource-service.service portal-release-execution-service.service portal-release-society-service.service
+
+[Service]
+# Portal's request path runs ahead of agent commands and tests under CPU contention.
+CPUWeight=1000
+Type=simple
+UMask=0002
+Environment=PORTAL_INSTANCE=release
+Environment=PORTAL_ISA_ROUTING=socket
+EnvironmentFile=-@PORTAL_POSTGRES_ENV_FILE@
+Environment=PORTAL_NATS_URL=nats://127.0.0.1:4224
+Environment=PORTAL_EXECUTION_SERVICE_SOCKET=@PORTAL_INSTANCES_ROOT@/release/execution-service.sock
+Environment=PORTAL_RESOURCE_SERVICE_MODE=client
+Environment=PORTAL_RESOURCE_SERVICE_SOCKET=@PORTAL_INSTANCES_ROOT@/release/resource-service.sock
+Environment=PORTAL_SOCIETY_SERVICE_MODE=client
+Environment=PORTAL_SOCIETY_SERVICE_SOCKET=@PORTAL_INSTANCES_ROOT@/release/society-service.sock
+Environment=PORTAL_SERVICE_NAME=management-portal-release.service
+Environment=PORTAL_RESTART_NOTICE_PATH=@PORTAL_INSTANCES_ROOT@/release/restart_notice.json
+WorkingDirectory=@PORTAL_RELEASE_ROOT@
+ExecStart=@PORTAL_GROUP_COMMAND@@PORTAL_INSTANCES_ROOT@/release/runtime-venv/bin/python -m uvicorn management_portal.asgi:app --host 127.0.0.1 --port 18085 --workers 1 --no-access-log --timeout-graceful-shutdown 15
+Restart=on-failure
+RestartSec=2
+TimeoutStopSec=15
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,2 @@
+id,family,delta_M,delta_E,delta_U,delta_bodytime,delta_actor_movement_paid,delta_actor_basal_paid,delta_birth_fuel,delta_synthesis_heat,delta_template_heat,delta_external_energy_out,delta_born,delta_death,passed
+g1_f2_c1,double_lobe,-0.8411040717259688,-1.899069346940415,5.597175557199741,30.348490249618465,1.7650626108541667,0.364686545438456,1.2502561357453112,0.5953600646406243,0.0595360064640624,-5.3921794468442386,2.976800323203121,3.81790439492908,False

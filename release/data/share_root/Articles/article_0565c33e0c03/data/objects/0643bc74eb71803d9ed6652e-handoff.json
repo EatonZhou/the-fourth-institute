@@ -1,0 +1,140 @@
+{
+  "task": "local_signal_action_coordination_20261019",
+  "status": "complete",
+  "actual": {
+    "task": "local_signal_action_coordination_20261019",
+    "native": 8192,
+    "unknown": 0,
+    "worker_seconds": 25.863066,
+    "raw_bytes": 50230069,
+    "status": "complete",
+    "paths": 16,
+    "survived": 16,
+    "max_energy_error": 4.059361354002977e-14,
+    "old_replay": 0,
+    "source_unchanged": true,
+    "groups": {
+      "original": {
+        "n": 4,
+        "alive": 4,
+        "old_last64_choice_pass": 4,
+        "old_last64_substantive": 4,
+        "reversal_last64_choice_pass": 2,
+        "reversal_last64_substantive": 2,
+        "any_reversal_meaningful_contact": 4
+      },
+      "temporal": {
+        "n": 4,
+        "alive": 4,
+        "old_last64_choice_pass": 4,
+        "old_last64_substantive": 4,
+        "reversal_last64_choice_pass": 2,
+        "reversal_last64_substantive": 2,
+        "any_reversal_meaningful_contact": 4
+      },
+      "neighbor": {
+        "n": 4,
+        "alive": 4,
+        "old_last64_choice_pass": 4,
+        "old_last64_substantive": 4,
+        "reversal_last64_choice_pass": 2,
+        "reversal_last64_substantive": 2,
+        "any_reversal_meaningful_contact": 4
+      },
+      "pooled": {
+        "n": 4,
+        "alive": 4,
+        "old_last64_choice_pass": 4,
+        "old_last64_substantive": 4,
+        "reversal_last64_choice_pass": 4,
+        "reversal_last64_substantive": 4,
+        "any_reversal_meaningful_contact": 4
+      }
+    }
+  },
+  "artifacts": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/local_signal_action_coordination_20261019/REPORT.txt",
+      "sha256": "57174daa218d68859393a50409fa184a79e8327715946198d2b6910d46371f7a",
+      "bytes": 4515
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/local_signal_action_coordination_20261019/plan.json",
+      "sha256": "5096ec95980af652d1c68989e6e02a01766ad8e3a752592467ba8fa1ded94ff0",
+      "bytes": 7728
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/local_signal_action_coordination_20261019/result.json",
+      "sha256": "d0fd07a3e41522eb400ce8887d777d0c3bbd93424ca73add4c59039f24aaf1ab",
+      "bytes": 414
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/local_signal_action_coordination_20261019/summary.json",
+      "sha256": "1cd8064849d7bb318c15a30fc065391581c29295eec05538067b7d2d5cb970ab",
+      "bytes": 1313
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/local_signal_action_coordination_20261019/all_branches.csv",
+      "sha256": "0d36001463fd052eda54a20cb8c6b8b3a165ee79f993b3d9d5cacebd5c697a93",
+      "bytes": 13684
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/local_signal_action_coordination_20261019/blocks.csv",
+      "sha256": "c5923f9c961f7578bde18d71f1a9f145daec48918962c6d7e67ccfc1551de26c",
+      "bytes": 38778
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/local_signal_action_coordination_20261019/actual_sequence.png",
+      "sha256": "04a5e14d9bb7cd4ee011833dd478d6cc756f0da880a4a7b4dc8314fa83d70462",
+      "bytes": 82528
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/local_signal_action_coordination_20261019/raw_manifest.json",
+      "sha256": "3a085609d9ababb2c4c09d3b474b01b6e36326d21b020f5a8a3eada409016097",
+      "bytes": 68943
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/local_signal_action_coordination_20261019/paired_differences.csv",
+      "sha256": "b5e1c34871ee54388446db8dd3854b6bb0a0bb8ded4957412bda687a93a2d380",
+      "bytes": 3275
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/local_signal_action_coordination_20261019/continuity_checks.json",
+      "sha256": "b29d5d3380505aabf2c3eaf75d65984aa90444c2a3117179ac0655a9102386db",
+      "bytes": 2739
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/local_signal_action_coordination_20261019/behavior_cost_feedback.png",
+      "sha256": "42c47c0b57c10c7259090f66f72833bffc59c3bbe4e8bb48a05d267ad8a3d35f",
+      "bytes": 541414
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/local_signal_action_coordination_20261019/actual_coordination.gif",
+      "sha256": "ce13ba89a09e124645c8f8f4d804739b81f524b969ea31ed14a9be9232e006f8",
+      "bytes": 2475685
+    }
+  ],
+  "analysis_source": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/local_signal_action_coordination/analyze.py",
+      "sha256": "6826ca44ca02194fd9170db2bd55abc7048685b2810d478625c52254b1aadaa8",
+      "bytes": 10110
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/local_signal_action_coordination/run.py",
+      "sha256": "a33c65dd432c53995b31aaf00accc275788e5f27726cab10a76d38beef8fea30",
+      "bytes": 12300
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/local_signal_action_coordination/core.py",
+      "sha256": "f1e34b36cf6ddddee348b0938446bccfb6fe78e81cc517c691e9ee5483f03005",
+      "bytes": 2280
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/local_signal_action_coordination/__init__.py",
+      "sha256": "0fe7deeadeba66ba25af8235b727fa57e5edd3e5117563271da115b51e3abd95",
+      "bytes": 75
+    }
+  ],
+  "scope": "Original frozen sources unchanged; passive reports never advance physics; failures and costs retained."
+}

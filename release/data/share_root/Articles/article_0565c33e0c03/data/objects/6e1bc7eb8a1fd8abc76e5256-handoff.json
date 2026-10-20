@@ -1,0 +1,57 @@
+{
+  "task": "resource_timing_goal_mismatch_20261019",
+  "status": "complete",
+  "owner": "resident_ce2a5ab005bc",
+  "objective_met": false,
+  "claim": "预置16目标在food16的实际U为0/4改善；soft省能取舍保留；不认定学习时滞。",
+  "accounting": {
+    "status": "complete",
+    "job_id": "8f4f9edf-2180-48cc-a19a-9450ff128fe5",
+    "native_attempted": 4096,
+    "native_returned": 4096,
+    "unknown_native": 0,
+    "old_replayed_native": 0,
+    "completed_paths": 16,
+    "worker_seconds": 24.723164818016812,
+    "raw_bytes": 27973493,
+    "runner_worker_seconds": 27.265008,
+    "native_remaining_sealed": 128,
+    "worker_remaining_sealed": 92.734992,
+    "analysis_native": 0,
+    "raw_bytes_after_analysis": 35544360
+  },
+  "assets": {
+    "plan.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_timing_goal_mismatch_20261019/plan.json",
+      "sha256": "6542b44cda384d0ee54cddaea01966a1acf03e449d1a92cc6972b4d8f536fb94"
+    },
+    "execution.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_timing_goal_mismatch_20261019/execution.json",
+      "sha256": "f1f0f943b876d778349f3dfd354d4105298b25b4c7ed3203f859c93e2656698e"
+    },
+    "analysis/REPORT.txt": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_timing_goal_mismatch_20261019/analysis/REPORT.txt",
+      "sha256": "a8cf10608592a51697df076da2d434decbfd9bd27168aaa347fd25f7b5e0031b"
+    },
+    "analysis/accounting.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_timing_goal_mismatch_20261019/analysis/accounting.json",
+      "sha256": "e5cf6ceac6eb93213b611df7086d312a2748610c732abd9c333715d31ecfb4eb"
+    },
+    "analysis/validation.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_timing_goal_mismatch_20261019/analysis/validation.json",
+      "sha256": "4ff2a1691239fab05fd84d0cf1ebc1baa7c6581a4cacf592b40ee1e3ace393d7"
+    },
+    "analysis/all_conditions.png": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_timing_goal_mismatch_20261019/analysis/all_conditions.png",
+      "sha256": "18031a63675f8bfdb1f3563bcc6845f7cd6bf830f2acbb975777c0ff77c5ccce"
+    },
+    "analysis/replay.html": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_timing_goal_mismatch_20261019/analysis/replay.html",
+      "sha256": "9e5f5ace45407473709381a904b70a66eaf918647a013935c3ab21fbe310fa38"
+    }
+  },
+  "all_originals_unchanged": true,
+  "old_replay_native": 0,
+  "followup_question": "身体分布式实际获取如何在空间供给变化下指导条件行为；固定能力与经验内容分开，保强简单对照。",
+  "independent_continuation": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_geometry_uptake_20261019/analysis/handoff.json"
+}

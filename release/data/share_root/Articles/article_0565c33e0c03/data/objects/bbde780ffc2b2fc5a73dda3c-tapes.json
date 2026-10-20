@@ -1,0 +1,110 @@
+[
+  {
+    "world": "stable",
+    "seed": 6201,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/feedback_acquisition_20261018/77dc63dd-23e2-4637-bb2e-d9e35a164a21/tape-stable-6201.npz",
+    "sha256": "a810f3c2a394840ccf4278be2b96a56f6fd5ea929d5a54f99751b6f0cf46827b",
+    "state_switches": 0,
+    "both_arrive": 71,
+    "neither_arrive": 3
+  },
+  {
+    "world": "stable",
+    "seed": 6202,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/feedback_acquisition_20261018/77dc63dd-23e2-4637-bb2e-d9e35a164a21/tape-stable-6202.npz",
+    "sha256": "cf909dd0d451f8466ec85f6c53763b8881fa74e75e2cae6ce3d7b8896811139e",
+    "state_switches": 0,
+    "both_arrive": 0,
+    "neither_arrive": 70
+  },
+  {
+    "world": "stable",
+    "seed": 6203,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/feedback_acquisition_20261018/77dc63dd-23e2-4637-bb2e-d9e35a164a21/tape-stable-6203.npz",
+    "sha256": "d11e225e2d59091926c429c6c9cd2636376bea96902c503b6feab41e9645e44f",
+    "state_switches": 0,
+    "both_arrive": 59,
+    "neither_arrive": 4
+  },
+  {
+    "world": "stable",
+    "seed": 6204,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/feedback_acquisition_20261018/77dc63dd-23e2-4637-bb2e-d9e35a164a21/tape-stable-6204.npz",
+    "sha256": "5b6340726f1dfae6f197db37a4bf941b9e00f207be6e5555678745396f76db5f",
+    "state_switches": 0,
+    "both_arrive": 8,
+    "neither_arrive": 17
+  },
+  {
+    "world": "persistent",
+    "seed": 6201,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/feedback_acquisition_20261018/77dc63dd-23e2-4637-bb2e-d9e35a164a21/tape-persistent-6201.npz",
+    "sha256": "c4ba81b40e573f4db03a28510acaeccb95f251a567a106b9050a82f11b187b42",
+    "state_switches": 3,
+    "both_arrive": 25,
+    "neither_arrive": 10
+  },
+  {
+    "world": "persistent",
+    "seed": 6202,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/feedback_acquisition_20261018/77dc63dd-23e2-4637-bb2e-d9e35a164a21/tape-persistent-6202.npz",
+    "sha256": "ccce4fe0b3d6fa418ef7659a5b10dd8874fe0f9556cd825e0cfcb308a1d1448c",
+    "state_switches": 12,
+    "both_arrive": 22,
+    "neither_arrive": 37
+  },
+  {
+    "world": "persistent",
+    "seed": 6203,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/feedback_acquisition_20261018/77dc63dd-23e2-4637-bb2e-d9e35a164a21/tape-persistent-6203.npz",
+    "sha256": "c0f4cf2f79c6d89a05beb4baf06bd58f8f1fbe5c137bae79859bfa97d1c9c6c4",
+    "state_switches": 5,
+    "both_arrive": 31,
+    "neither_arrive": 10
+  },
+  {
+    "world": "persistent",
+    "seed": 6204,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/feedback_acquisition_20261018/77dc63dd-23e2-4637-bb2e-d9e35a164a21/tape-persistent-6204.npz",
+    "sha256": "52e58e6590b69d1baa20db891656c84a52fa65e417f47eae16f449f64d4ee5c6",
+    "state_switches": 4,
+    "both_arrive": 10,
+    "neither_arrive": 19
+  },
+  {
+    "world": "iid",
+    "seed": 6201,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/feedback_acquisition_20261018/77dc63dd-23e2-4637-bb2e-d9e35a164a21/tape-iid-6201.npz",
+    "sha256": "26fa3acb58720239d621ab6b9a3f05419fcf43263d49b979fdebf20a63322ad9",
+    "state_switches": 66,
+    "both_arrive": 31,
+    "neither_arrive": 17
+  },
+  {
+    "world": "iid",
+    "seed": 6202,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/feedback_acquisition_20261018/77dc63dd-23e2-4637-bb2e-d9e35a164a21/tape-iid-6202.npz",
+    "sha256": "11a6a212d84c4352b94cd66518477f4983c9ef4662c2d2aaa28a3de2e83c939d",
+    "state_switches": 68,
+    "both_arrive": 17,
+    "neither_arrive": 22
+  },
+  {
+    "world": "iid",
+    "seed": 6203,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/feedback_acquisition_20261018/77dc63dd-23e2-4637-bb2e-d9e35a164a21/tape-iid-6203.npz",
+    "sha256": "c864ebeb36744c8079c3d71fde4df0ad2eb4250c20525818ab6b9d3b0b5ef89f",
+    "state_switches": 76,
+    "both_arrive": 29,
+    "neither_arrive": 20
+  },
+  {
+    "world": "iid",
+    "seed": 6204,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/feedback_acquisition_20261018/77dc63dd-23e2-4637-bb2e-d9e35a164a21/tape-iid-6204.npz",
+    "sha256": "86d1102b8cfc283d0b56f51cc8e9dfe4b70fe75571f9869151e463656a58ebb3",
+    "state_switches": 69,
+    "both_arrive": 20,
+    "neither_arrive": 24
+  }
+]

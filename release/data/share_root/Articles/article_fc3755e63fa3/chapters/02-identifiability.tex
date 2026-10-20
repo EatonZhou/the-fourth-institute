@@ -1,0 +1,61 @@
+\chapter{共同错误的不可辨别类}
+\label{ch:identifiability}
+\chapterguide{永久盲点由实验分布决定。调度与协作不能消除全部允许操作共同保留的混淆。}
+
+\section{把全部操作一起比较}
+定义等价关系
+\[
+ \theta\sim\theta'\quad\Longleftrightarrow\quad
+ K_a(\cdot\mid\theta)=K_a(\cdot\mid\theta')\quad\text{对每个 }a.
+\]
+它把$\Theta$划分为不可辨别类。类内情境的解释可以不同，但全部允许观察的分布相同。
+
+\begin{theorem}[任意组织的不变盲点]
+\label{thm:blind}
+若$\theta\sim\theta'$，任意有限预算自适应组织在两种情境下产生相同的完整记录分布。消息、压缩和最终输出也具有相同分布。
+\end{theorem}
+\begin{proof}
+初始材料和策略随机性的分布相同。假设此前记录的分布相同，在同一记录上下一实验的选择概率就相同；给定实验，输出核又相同。因此扩展后记录的分布相同。归纳完成。对相同分布进行同样的后处理仍得到相同分布。
+\end{proof}
+
+\begin{theorem}[不可辨别类的精确渐近误差]
+\label{thm:floor}
+给定先验$p_\theta$，最优Bayes错误率随预算趋于无穷时的极限为
+\[
+ R_\infty(p)=\sum_{C\in\Theta/{\sim}}
+ \left[p(C)-\max_y\sum_{\theta\in C:\,g(\theta)=y}p_\theta\right].
+\]
+\end{theorem}
+\begin{proof}
+即使额外告知类$C$，类内情境的记录似然仍相同，后验比保持先验比。输出类内先验质量最大的目标，得到所写下界。
+
+为达到它，轮流重复每种实验。各经验分布几乎必然收敛到真实分布。不同类的完整概率表不同，且候选有限；不同表之间的最小正距离为正。用经验表最近的类作估计，误分到其他类的概率趋于零。然后输出类内先验最优目标，由损失有界得到极限。
+\end{proof}
+
+\begin{corollary}[目标可辨别性的充要条件]
+\label{cor:identifiability}
+对每个$\delta>0$都存在有限预算使最坏错误率不超过$\delta$，当且仅当$g$在每个不可辨别类上为常数。
+\end{corollary}
+\begin{proof}
+若某类含不同目标，取两个冲突情境的等先验，错误率至少为$1/2$。反之，前述类识别过程在每个情境下错误趋于零；有限多个情境的最大错误也趋于零。
+\end{proof}
+
+\section{重复确认的极限}
+只观察$Y\oplus B$，四个情境先验均匀。类为$\{(0,0),(1,1)\}$与$\{(0,1),(1,0)\}$，每类的两种目标各占一半，故$R_\infty=1/2$。重复可以可靠识别$Y\oplus B$；将其错误地解释成对$Y$的证据，会使系统对未被识别的目标越来越自信。
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}
+\node[unit] (first) {$(0,0)$\quad$(1,1)$\\共同观察中心：0};
+\node[unit,right=12mm of first] (second) {$(0,1)$\quad$(1,0)$\\共同观察中心：1};
+\node[below=8mm of first,align=center,font=\small] {目标分别为0和1\\重复不能分开};
+\node[below=8mm of second,align=center,font=\small] {目标分别为0和1\\重复不能分开};
+\end{tikzpicture}
+\caption{未校准的共同偏差形成两个不可辨别类。括号依次记录目标与偏差。}
+\end{figure}
+
+\section{关系与边界}
+比较观察机制允许哪些决策，是统计实验比较的基本路线\citep{blackwell1953}。这里先处理完全等同的实验分布，后续再衡量区别的强弱。条件可从给定概率表有限检查；取得或识别这份概率表本身仍需要资源。
+
+\begin{exercise}三个类的先验质量为$0.4,0.3,0.3$，类内目标0的条件概率为$1,1/2,1/3$。计算渐近最优错误率。\end{exercise}
+\begin{exercise}扩大允许实验集合后，不可辨别类如何变化？证明渐近最优错误率不会增大。\end{exercise}

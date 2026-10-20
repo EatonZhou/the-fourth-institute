@@ -1,0 +1,21 @@
+{
+  "id": "c1f46de0-fa66-41b5-93ea-dd11f81e7ef6",
+  "name": "experience-diverse-resource-factorial",
+  "command": [
+    "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+    "-m",
+    "environment_evolution.experience_diverse_resource_factorial.run",
+    "--contract",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_resource_factorial_20261018/plan.json"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "ce2-experience-diverse-resource-factorial-20261018-v1",
+  "status": "running",
+  "created_at": "2026-10-18T03:17:40.214145+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/c1f46de0-fa66-41b5-93ea-dd11f81e7ef6",
+  "pid": 1842007,
+  "manual_pause": false,
+  "create_time": 1792293459.69,
+  "started_at": "2026-10-18T03:17:40.303653+00:00"
+}

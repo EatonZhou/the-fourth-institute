@@ -1,0 +1,54 @@
+{
+  "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/birth_placement_value/REPORT.txt": {
+    "sha256": "4eaafe22083621f754329ea3e9e0e009993d86ad537dd4cfad062a83c9d041c2",
+    "bytes": 3983
+  },
+  "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/birth_placement_value/actual_pulse_atlas.png": {
+    "sha256": "2943693f11c5d5a243576424f6e1b4cbc397582f5e3ad81e6fa35dc34580df43",
+    "bytes": 128013
+  },
+  "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/birth_placement_value/checks.json": {
+    "sha256": "e2462ceafb3894b833e19eff176aee61527966152acd26eaa1230d15dddf5e6e",
+    "bytes": 404
+  },
+  "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/birth_placement_value/diagnostic_archive.json": {
+    "sha256": "75ff0b4075c44cd813907754fc0c97d5c674a3018743529e6403b23936c20341",
+    "bytes": 210036
+  },
+  "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/birth_placement_value/evaluation_spec.json": {
+    "sha256": "938efe82b82810e5a71286fe1125bc99545660b2fd5496abb6b3c3af33022783",
+    "bytes": 2498
+  },
+  "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/birth_placement_value/final_source_receipt.json": {
+    "sha256": "71a5470e6cf6e55c4f75c769567006f83af2d94ff9a87899d8da00aa644ae739",
+    "bytes": 784
+  },
+  "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/birth_placement_value/implementation.json": {
+    "sha256": "e97450fabb39ad568e722864b2fb264579c42d09601f9ff9a4bc8226282016c2",
+    "bytes": 256
+  },
+  "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/birth_placement_value/paired_effects.png": {
+    "sha256": "de7e7ce63ba788522146f645e2aec7e0c84646f597f7af44c48cf1eb5317f59b",
+    "bytes": 89263
+  },
+  "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/birth_placement_value/paired_vectors.csv": {
+    "sha256": "d3525b572c2f1aed32a9cb71b7decb949dc1bc006de452313ba200e8883b6b96",
+    "bytes": 12343
+  },
+  "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/birth_placement_value/source_evidence.json": {
+    "sha256": "e6eacd27a46ee04fa75cf0c8a2a1b6797a218c4c5bfcc764a462bff8535c4dab",
+    "bytes": 44616
+  },
+  "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/birth_placement_value/strategy_binding.json": {
+    "sha256": "6419753d43d5be9cbdd733f8d40771c201b98e8dd0f7c88bd444f0f8e4c4c5e6",
+    "bytes": 6716
+  },
+  "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/birth_placement_value/summary.json": {
+    "sha256": "f7712af14552bb6adff6993e04f520f17a142b02b7b172495053875bb99e3a72",
+    "bytes": 13929
+  },
+  "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/birth_placement_value/usage.json": {
+    "sha256": "a97cd571764fea41d56774f349a38e294a3230d88914dd352b7ed6737dd4c44c",
+    "bytes": 344
+  }
+}

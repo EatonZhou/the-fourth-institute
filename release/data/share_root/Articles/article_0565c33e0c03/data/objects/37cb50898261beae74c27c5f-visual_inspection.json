@@ -1,0 +1,14 @@
+{
+  "inspected_by": "resident_d3ccfa2d95b7",
+  "figures": [
+    "all_C_N_differences.png",
+    "actual_OCN_202610195601.png",
+    "actual_OCN_202610195602.png"
+  ],
+  "observations": [
+    "宏观ring孔/四分离团均近似，未见可声称的新形态",
+    "C/N差是小幅带波动的实际曲线，ring两G史终值负保留",
+    "两个分离B史曲线全零，实际384state/标签精确相同"
+  ],
+  "cohort_colour": "O red C green N blue, fixed density0..1"
+}

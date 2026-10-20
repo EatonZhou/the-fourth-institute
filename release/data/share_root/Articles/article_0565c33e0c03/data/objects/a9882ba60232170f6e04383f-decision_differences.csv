@@ -1,0 +1,5 @@
+body,unit,other,clock,current_body_exact,different_grid_cells,different_current_mass,first_recent_frozen_codes_exact
+1,0,ignore,192,True,394,136.4387052027173,
+1,0,frozen,192,True,0,0.0,True
+1,1,ignore,256,False,542,185.4867502137925,
+1,1,frozen,256,True,1094,424.4465265949442,

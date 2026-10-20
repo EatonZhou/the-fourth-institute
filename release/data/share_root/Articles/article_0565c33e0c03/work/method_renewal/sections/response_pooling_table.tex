@@ -1,0 +1,28 @@
+\begin{table}[!htbp]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lrrrrr}
+\toprule
+Condition & $\Delta C_{384}$ & $\Delta T_C^{\rm early}$ & $\Delta T_C^{\rm late}$ & $\Delta N_{384}$ & $\Delta T_N^{\rm late}$ \\
+\midrule
+5601 ring & $-0.1232$ & $+0.4487$ & $-0.0563$ & $+0.5328$ & $+1.3444$ \\
+5601 separated & $-5.6019$ & $-8.4626$ & $-15.8664$ & $+0.1712$ & $-0.2118$ \\
+5602 ring & $-0.1407$ & $+0.1558$ & $-0.4354$ & $+0.4537$ & $+0.9659$ \\
+5602 separated & $-4.4220$ & $-7.1595$ & $-12.4853$ & $+1.2245$ & $+2.0951$ \\
+\bottomrule
+\end{tabular}
+\par\medskip
+\begin{tabular}{lrrrrrrrc}
+\toprule
+Condition & $\Delta M$ & $\Delta E$ & $\Delta T$ & Pump & Synthesis & Template & Movement & Windows \\
+\midrule
+5601 ring & $+0.1654$ & $-0.0591$ & $+2.7821$ & $-0.1081$ & $+0.1295$ & $+0.0130$ & $+0.0763$ & P/P \\
+5601 separated & $-12.6680$ & $-28.5038$ & $-54.9158$ & $-0.3228$ & $+0.1234$ & $+0.0123$ & $+2.3555$ & F/P \\
+5602 ring & $+0.1984$ & $+0.4306$ & $+0.7756$ & $-0.9546$ & $+0.0795$ & $+0.0079$ & $+0.1128$ & P/P \\
+5602 separated & $-9.7788$ & $-22.1930$ & $-45.6399$ & $-0.3019$ & $+0.2818$ & $+0.0282$ & $+2.0789$ & F/P \\
+\bottomrule
+\end{tabular}
+\caption{\textbf{Averaging after response raises endpoint new tissue while losing existing tissue.} All differences are the average-of-responses alternative minus the fixed both-class reference. The early and late windows are steps 257--320 and 321--384; $T$ is full 128-step body-time and $T_C,T_N$ are cohort body-times. At registration $O=L_{128}$, $C=\mathrm{post128}(256)$ and $N=0$; only actual subsequent birth enters $N$. These labels differ from the earlier step-320 cohorts. Cost columns are differences in actual pump and movement payments and synthesis/template energy charges, not total costs or equal-cost controls. P/F records maintenance pass/fail in the two fixed windows; both tolerances agree. All four joint-benefit tests fail, including the two rings that pass maintenance. Complete costs, small unpaid amounts, rejection fields and all old reference windows remain in the source tables. The four parents are related development conditions.}
+\label{tab:response-pooling}
+\end{table}

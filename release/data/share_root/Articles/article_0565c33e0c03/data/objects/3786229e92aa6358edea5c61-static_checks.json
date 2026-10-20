@@ -1,0 +1,706 @@
+{
+  "status": "passed",
+  "candidates": [
+    {
+      "candidate": "reference_anisotropic--connected_trilobe",
+      "source": {
+        "candidate": "reference_anisotropic--connected_trilobe",
+        "packet": "/data/lenia-research/lineage_75e3399f4877/regenerative_morphology_transport_search_20261018/stage1/245af1cf-0152-4891-af62-25b20a1eb2eb/reference_anisotropic--connected_trilobe/transactions/000128.npz",
+        "sha256": "f27aa67dfd5708d094ce979c9157d7dbbd6066aac745e0ab5baf9f55cfa0669d"
+      },
+      "fields": [
+        {
+          "field": "body",
+          "central_bytes_equal": true,
+          "outer_zero": true,
+          "source_sum": 45.062648776984034,
+          "target_sum": 45.062648776984034
+        },
+        {
+          "field": "energy",
+          "central_bytes_equal": true,
+          "outer_zero": true,
+          "source_sum": 28.57233869785294,
+          "target_sum": 28.57233869785294
+        },
+        {
+          "field": "memory",
+          "central_bytes_equal": true,
+          "outer_zero": true,
+          "source_sum": 0.0,
+          "target_sum": 0.0
+        },
+        {
+          "field": "eligibility",
+          "central_bytes_equal": true,
+          "outer_zero": true,
+          "source_sum": 0.0,
+          "target_sum": 0.0
+        },
+        {
+          "field": "polarity",
+          "central_bytes_equal": true,
+          "outer_zero": true,
+          "source_sum": 63.56358825514071,
+          "target_sum": 63.56358825514071
+        },
+        {
+          "field": "precursor",
+          "central_bytes_equal": true,
+          "outer_zero": true,
+          "source_sum": 4014.961657128755,
+          "target_sum": 4014.9616571287547
+        },
+        {
+          "field": "fuel",
+          "central_bytes_equal": true,
+          "outer_zero": true,
+          "source_sum": 4010.975590885134,
+          "target_sum": 4010.975590885134
+        },
+        {
+          "field": "waste",
+          "central_bytes_equal": true,
+          "outer_zero": true,
+          "source_sum": 107.22430453083689,
+          "target_sum": 107.22430453083689
+        },
+        {
+          "field": "heat",
+          "central_bytes_equal": true,
+          "outer_zero": true,
+          "source_sum": 27.679682300672237,
+          "target_sum": 27.679682300672237
+        },
+        {
+          "field": "dead_energy",
+          "central_bytes_equal": true,
+          "outer_zero": true,
+          "source_sum": 85.77127646560163,
+          "target_sum": 85.77127646560163
+        },
+        {
+          "field": "founder_mass",
+          "central_bytes_equal": true,
+          "outer_zero": true,
+          "source_sum": 5.234404779640518,
+          "target_sum": 5.234404779640518
+        },
+        {
+          "field": "c_theta",
+          "central_bytes_equal": true,
+          "outer_zero": true,
+          "source_sum": 0.0,
+          "target_sum": 0.0
+        },
+        {
+          "field": "c_value",
+          "central_bytes_equal": true,
+          "outer_zero": true,
+          "source_sum": 3.0501606035294904,
+          "target_sum": 3.0501606035294904
+        },
+        {
+          "field": "c_trace",
+          "central_bytes_equal": true,
+          "outer_zero": true,
+          "source_sum": -96.0347679859078,
+          "target_sum": -96.03476798590779
+        },
+        {
+          "field": "c_food",
+          "central_bytes_equal": true,
+          "outer_zero": true,
+          "source_sum": 45.41085146761406,
+          "target_sum": 45.41085146761406
+        },
+        {
+          "field": "c_run",
+          "central_bytes_equal": true,
+          "outer_zero": true,
+          "source_sum": 0.0,
+          "target_sum": 0.0
+        },
+        {
+          "field": "c_remaining",
+          "central_bytes_equal": true,
+          "outer_zero": true,
+          "source_sum": 30.832578341933498,
+          "target_sum": 30.832578341933498
+        },
+        {
+          "field": "kernels",
+          "central_bytes_equal": true,
+          "outer_zero": true,
+          "source_sum": 1.9999999999999998,
+          "target_sum": 1.9999999999999998
+        }
+      ],
+      "kernel_support": [
+        {
+          "kernel": 0,
+          "dy": [
+            -10,
+            10
+          ],
+          "dx": [
+            -10,
+            10
+          ],
+          "nonzero": 372,
+          "renormalized": false
+        },
+        {
+          "kernel": 1,
+          "dy": [
+            -19,
+            19
+          ],
+          "dx": [
+            -19,
+            19
+          ],
+          "nonzero": 1228,
+          "renormalized": false
+        }
+      ],
+      "physical_rule": {
+        "transport_scheme": "face_potential",
+        "dt": 0.05,
+        "mobility": 1.0,
+        "cohesion": 3.0,
+        "pressure": 1.5,
+        "interaction_sigma": 1.4,
+        "cue_gain": 0.0,
+        "learning_rate": 1.0,
+        "eligibility_time": 0.8,
+        "memory_time": 200.0,
+        "uptake_rate": 0.2,
+        "energy_capacity": 2.0,
+        "basal_cost": 0.012,
+        "movement_cost": 0.08,
+        "starvation_rate": 0.15,
+        "starvation_energy": 0.08,
+        "food_sensor_scale": 5.0,
+        "injury_sensor_scale": 25.0,
+        "action_budget": "donor_energy",
+        "polarity_gain": 0.5,
+        "polarity_turn_rate": 0.04,
+        "polarity_relaxation_rate": 0.5,
+        "polarity_energy_gate": "none",
+        "energy_transfer_conductivity": 0.0,
+        "energy_transfer_loss": 0.01
+      },
+      "source_config": {
+        "body_rule": {
+          "schema": "lenia.fixed-dual-response.v1",
+          "configs": [
+            {
+              "size": 64,
+              "radius": 11,
+              "mu": 0.145,
+              "sigma": 0.02,
+              "dt": 0.05,
+              "dtype": "float64"
+            },
+            {
+              "size": 64,
+              "radius": 19.8,
+              "mu": 0.040641070137555205,
+              "sigma": 0.006166231331215273,
+              "dt": 0.05,
+              "dtype": "float64"
+            }
+          ],
+          "weight_second": 0.5,
+          "kernel_definition": "source K * exp(.25*(dy^2-dx^2)/(dy^2+dx^2)), separately normalized; fixed lifetime anisotropy",
+          "growth_definition": "G_i(u)=2*max(0,1-(u-mu_i)^2/(9*sigma_i^2))^4-1",
+          "update": "BudgetedMorphogenesis admission and paid tissue production; no free clipping growth",
+          "time_rule": "fixed dt=.05, original polynomial responses; paid birth/death executor"
+        },
+        "conversion": {
+          "density_capacity": 1.0,
+          "endowment": 0.2,
+          "synthesis_heat": 0.2,
+          "template_heat": 0.02
+        },
+        "physical_rule": {
+          "transport_scheme": "face_potential",
+          "dt": 0.05,
+          "mobility": 1.0,
+          "cohesion": 3.0,
+          "pressure": 1.5,
+          "interaction_sigma": 1.4,
+          "cue_gain": 0.0,
+          "learning_rate": 1.0,
+          "eligibility_time": 0.8,
+          "memory_time": 200.0,
+          "uptake_rate": 0.2,
+          "energy_capacity": 2.0,
+          "basal_cost": 0.012,
+          "movement_cost": 0.08,
+          "starvation_rate": 0.15,
+          "starvation_energy": 0.08,
+          "food_sensor_scale": 5.0,
+          "injury_sensor_scale": 25.0,
+          "action_budget": "donor_energy",
+          "polarity_gain": 0.5,
+          "polarity_turn_rate": 0.04,
+          "polarity_relaxation_rate": 0.5,
+          "polarity_energy_gate": "none",
+          "energy_transfer_conductivity": 0.0,
+          "energy_transfer_loss": 0.01
+        },
+        "learning_rule": {
+          "hold_time": 0.8,
+          "food_time": 0.8,
+          "discount_time": 6.4,
+          "trace_time": 3.2,
+          "actor_rate": 0.1,
+          "critic_rate": 0.1,
+          "reward_scale": 0.02,
+          "loss_price": 0.08,
+          "theta_bound": 3.0,
+          "value_bound": 2.0
+        },
+        "generation_enabled": true
+      },
+      "target_config": {
+        "body_rule": {
+          "schema": "lenia.fixed-dual-response.v1",
+          "configs": [
+            {
+              "size": 96,
+              "radius": 11,
+              "mu": 0.145,
+              "sigma": 0.02,
+              "dt": 0.05,
+              "dtype": "float64"
+            },
+            {
+              "size": 96,
+              "radius": 19.8,
+              "mu": 0.040641070137555205,
+              "sigma": 0.006166231331215273,
+              "dt": 0.05,
+              "dtype": "float64"
+            }
+          ],
+          "weight_second": 0.5,
+          "kernel_definition": "source K * exp(.25*(dy^2-dx^2)/(dy^2+dx^2)), separately normalized; fixed lifetime anisotropy",
+          "growth_definition": "G_i(u)=2*max(0,1-(u-mu_i)^2/(9*sigma_i^2))^4-1",
+          "update": "BudgetedMorphogenesis admission and paid tissue production; no free clipping growth",
+          "time_rule": "fixed dt=.05, original polynomial responses; paid birth/death executor"
+        },
+        "conversion": {
+          "density_capacity": 1.0,
+          "endowment": 0.2,
+          "synthesis_heat": 0.2,
+          "template_heat": 0.02
+        },
+        "physical_rule": {
+          "transport_scheme": "face_potential",
+          "dt": 0.05,
+          "mobility": 1.0,
+          "cohesion": 3.0,
+          "pressure": 1.5,
+          "interaction_sigma": 1.4,
+          "cue_gain": 0.0,
+          "learning_rate": 1.0,
+          "eligibility_time": 0.8,
+          "memory_time": 200.0,
+          "uptake_rate": 0.2,
+          "energy_capacity": 2.0,
+          "basal_cost": 0.012,
+          "movement_cost": 0.08,
+          "starvation_rate": 0.15,
+          "starvation_energy": 0.08,
+          "food_sensor_scale": 5.0,
+          "injury_sensor_scale": 25.0,
+          "action_budget": "donor_energy",
+          "polarity_gain": 0.5,
+          "polarity_turn_rate": 0.04,
+          "polarity_relaxation_rate": 0.5,
+          "polarity_energy_gate": "none",
+          "energy_transfer_conductivity": 0.0,
+          "energy_transfer_loss": 0.01
+        },
+        "learning_rule": {
+          "hold_time": 0.8,
+          "food_time": 0.8,
+          "discount_time": 6.4,
+          "trace_time": 3.2,
+          "actor_rate": 0.1,
+          "critic_rate": 0.1,
+          "reward_scale": 0.02,
+          "loss_price": 0.08,
+          "theta_bound": 3.0,
+          "value_bound": 2.0
+        },
+        "generation_enabled": true
+      },
+      "changed_config_fields": [
+        "body_rule.configs[0].size",
+        "body_rule.configs[1].size"
+      ],
+      "M": 45.062648776984034,
+      "E": 28.57233869785294
+    },
+    {
+      "candidate": "compact_ring_core_outer--bridged_longbody",
+      "source": {
+        "candidate": "compact_ring_core_outer--bridged_longbody",
+        "packet": "/data/lenia-research/lineage_75e3399f4877/regenerative_morphology_transport_search_20261018/stage1/245af1cf-0152-4891-af62-25b20a1eb2eb/compact_ring_core_outer--bridged_longbody/transactions/000128.npz",
+        "sha256": "0b4f5fc7e90411f5e6ae5c15b1d51a94ef8aeb0a6cac5401fd2f86928ffc5b98"
+      },
+      "fields": [
+        {
+          "field": "body",
+          "central_bytes_equal": true,
+          "outer_zero": true,
+          "source_sum": 340.5431416939581,
+          "target_sum": 340.5431416939581
+        },
+        {
+          "field": "energy",
+          "central_bytes_equal": true,
+          "outer_zero": true,
+          "source_sum": 160.04724342554755,
+          "target_sum": 160.04724342554755
+        },
+        {
+          "field": "memory",
+          "central_bytes_equal": true,
+          "outer_zero": true,
+          "source_sum": 0.0,
+          "target_sum": 0.0
+        },
+        {
+          "field": "eligibility",
+          "central_bytes_equal": true,
+          "outer_zero": true,
+          "source_sum": 0.0,
+          "target_sum": 0.0
+        },
+        {
+          "field": "polarity",
+          "central_bytes_equal": true,
+          "outer_zero": true,
+          "source_sum": 1042.7285264326451,
+          "target_sum": 1042.7285264326451
+        },
+        {
+          "field": "precursor",
+          "central_bytes_equal": true,
+          "outer_zero": true,
+          "source_sum": 3542.781837958305,
+          "target_sum": 3542.781837958305
+        },
+        {
+          "field": "fuel",
+          "central_bytes_equal": true,
+          "outer_zero": true,
+          "source_sum": 3639.2893779534256,
+          "target_sum": 3639.289377953426
+        },
+        {
+          "field": "waste",
+          "central_bytes_equal": true,
+          "outer_zero": true,
+          "source_sum": 283.9236307843129,
+          "target_sum": 283.9236307843129
+        },
+        {
+          "field": "heat",
+          "central_bytes_equal": true,
+          "outer_zero": true,
+          "source_sum": 148.89696691665745,
+          "target_sum": 148.89696691665745
+        },
+        {
+          "field": "dead_energy",
+          "central_bytes_equal": true,
+          "outer_zero": true,
+          "source_sum": 204.76530005362974,
+          "target_sum": 204.76530005362974
+        },
+        {
+          "field": "founder_mass",
+          "central_bytes_equal": true,
+          "outer_zero": true,
+          "source_sum": 0.1163776378333854,
+          "target_sum": 0.11637763783338538
+        },
+        {
+          "field": "c_theta",
+          "central_bytes_equal": true,
+          "outer_zero": true,
+          "source_sum": 0.0,
+          "target_sum": 0.0
+        },
+        {
+          "field": "c_value",
+          "central_bytes_equal": true,
+          "outer_zero": true,
+          "source_sum": 34.54943133768004,
+          "target_sum": 34.54943133768003
+        },
+        {
+          "field": "c_trace",
+          "central_bytes_equal": true,
+          "outer_zero": true,
+          "source_sum": -1085.7197844413968,
+          "target_sum": -1085.7197844413968
+        },
+        {
+          "field": "c_food",
+          "central_bytes_equal": true,
+          "outer_zero": true,
+          "source_sum": 845.381051576324,
+          "target_sum": 845.3810515763241
+        },
+        {
+          "field": "c_run",
+          "central_bytes_equal": true,
+          "outer_zero": true,
+          "source_sum": 0.0,
+          "target_sum": 0.0
+        },
+        {
+          "field": "c_remaining",
+          "central_bytes_equal": true,
+          "outer_zero": true,
+          "source_sum": 471.48628191166705,
+          "target_sum": 471.4862819116671
+        },
+        {
+          "field": "kernels",
+          "central_bytes_equal": true,
+          "outer_zero": true,
+          "source_sum": 2.0,
+          "target_sum": 2.0
+        }
+      ],
+      "kernel_support": [
+        {
+          "kernel": 0,
+          "dy": [
+            -5,
+            5
+          ],
+          "dx": [
+            -5,
+            5
+          ],
+          "nonzero": 60,
+          "renormalized": false
+        },
+        {
+          "kernel": 1,
+          "dy": [
+            -10,
+            10
+          ],
+          "dx": [
+            -10,
+            10
+          ],
+          "nonzero": 217,
+          "renormalized": false
+        }
+      ],
+      "physical_rule": {
+        "transport_scheme": "face_potential",
+        "dt": 0.05,
+        "mobility": 1.0,
+        "cohesion": 3.0,
+        "pressure": 1.5,
+        "interaction_sigma": 1.4,
+        "cue_gain": 0.0,
+        "learning_rate": 1.0,
+        "eligibility_time": 0.8,
+        "memory_time": 200.0,
+        "uptake_rate": 0.2,
+        "energy_capacity": 2.0,
+        "basal_cost": 0.012,
+        "movement_cost": 0.08,
+        "starvation_rate": 0.15,
+        "starvation_energy": 0.08,
+        "food_sensor_scale": 5.0,
+        "injury_sensor_scale": 25.0,
+        "action_budget": "donor_energy",
+        "polarity_gain": 0.5,
+        "polarity_turn_rate": 0.04,
+        "polarity_relaxation_rate": 0.5,
+        "polarity_energy_gate": "none",
+        "energy_transfer_conductivity": 0.0,
+        "energy_transfer_loss": 0.01
+      },
+      "source_config": {
+        "body_rule": {
+          "schema": "lenia.fixed-dual-response.v1",
+          "configs": [
+            {
+              "size": 64,
+              "radius": 7,
+              "mu": 0.24,
+              "sigma": 0.055,
+              "dt": 0.05,
+              "dtype": "float64"
+            },
+            {
+              "size": 64,
+              "radius": 11,
+              "mu": 0.11,
+              "sigma": 0.035,
+              "dt": 0.05,
+              "dtype": "float64"
+            }
+          ],
+          "weight_second": 0.55,
+          "kernel_definition": "Compact annular K1 coupled to center plus outer ring K2; a different combination of near/far support.",
+          "growth_definition": "G_i(u)=2*max(0,1-(u-mu_i)^2/(9*sigma_i^2))^4-1",
+          "update": "BudgetedMorphogenesis admission and paid tissue production; no free clipping growth",
+          "time_rule": "fixed dt=.05, original polynomial responses; paid birth/death executor"
+        },
+        "conversion": {
+          "density_capacity": 1.0,
+          "endowment": 0.2,
+          "synthesis_heat": 0.2,
+          "template_heat": 0.02
+        },
+        "physical_rule": {
+          "transport_scheme": "face_potential",
+          "dt": 0.05,
+          "mobility": 1.0,
+          "cohesion": 3.0,
+          "pressure": 1.5,
+          "interaction_sigma": 1.4,
+          "cue_gain": 0.0,
+          "learning_rate": 1.0,
+          "eligibility_time": 0.8,
+          "memory_time": 200.0,
+          "uptake_rate": 0.2,
+          "energy_capacity": 2.0,
+          "basal_cost": 0.012,
+          "movement_cost": 0.08,
+          "starvation_rate": 0.15,
+          "starvation_energy": 0.08,
+          "food_sensor_scale": 5.0,
+          "injury_sensor_scale": 25.0,
+          "action_budget": "donor_energy",
+          "polarity_gain": 0.5,
+          "polarity_turn_rate": 0.04,
+          "polarity_relaxation_rate": 0.5,
+          "polarity_energy_gate": "none",
+          "energy_transfer_conductivity": 0.0,
+          "energy_transfer_loss": 0.01
+        },
+        "learning_rule": {
+          "hold_time": 0.8,
+          "food_time": 0.8,
+          "discount_time": 6.4,
+          "trace_time": 3.2,
+          "actor_rate": 0.1,
+          "critic_rate": 0.1,
+          "reward_scale": 0.02,
+          "loss_price": 0.08,
+          "theta_bound": 3.0,
+          "value_bound": 2.0
+        },
+        "generation_enabled": true
+      },
+      "target_config": {
+        "body_rule": {
+          "schema": "lenia.fixed-dual-response.v1",
+          "configs": [
+            {
+              "size": 96,
+              "radius": 7,
+              "mu": 0.24,
+              "sigma": 0.055,
+              "dt": 0.05,
+              "dtype": "float64"
+            },
+            {
+              "size": 96,
+              "radius": 11,
+              "mu": 0.11,
+              "sigma": 0.035,
+              "dt": 0.05,
+              "dtype": "float64"
+            }
+          ],
+          "weight_second": 0.55,
+          "kernel_definition": "Compact annular K1 coupled to center plus outer ring K2; a different combination of near/far support.",
+          "growth_definition": "G_i(u)=2*max(0,1-(u-mu_i)^2/(9*sigma_i^2))^4-1",
+          "update": "BudgetedMorphogenesis admission and paid tissue production; no free clipping growth",
+          "time_rule": "fixed dt=.05, original polynomial responses; paid birth/death executor"
+        },
+        "conversion": {
+          "density_capacity": 1.0,
+          "endowment": 0.2,
+          "synthesis_heat": 0.2,
+          "template_heat": 0.02
+        },
+        "physical_rule": {
+          "transport_scheme": "face_potential",
+          "dt": 0.05,
+          "mobility": 1.0,
+          "cohesion": 3.0,
+          "pressure": 1.5,
+          "interaction_sigma": 1.4,
+          "cue_gain": 0.0,
+          "learning_rate": 1.0,
+          "eligibility_time": 0.8,
+          "memory_time": 200.0,
+          "uptake_rate": 0.2,
+          "energy_capacity": 2.0,
+          "basal_cost": 0.012,
+          "movement_cost": 0.08,
+          "starvation_rate": 0.15,
+          "starvation_energy": 0.08,
+          "food_sensor_scale": 5.0,
+          "injury_sensor_scale": 25.0,
+          "action_budget": "donor_energy",
+          "polarity_gain": 0.5,
+          "polarity_turn_rate": 0.04,
+          "polarity_relaxation_rate": 0.5,
+          "polarity_energy_gate": "none",
+          "energy_transfer_conductivity": 0.0,
+          "energy_transfer_loss": 0.01
+        },
+        "learning_rule": {
+          "hold_time": 0.8,
+          "food_time": 0.8,
+          "discount_time": 6.4,
+          "trace_time": 3.2,
+          "actor_rate": 0.1,
+          "critic_rate": 0.1,
+          "reward_scale": 0.02,
+          "loss_price": 0.08,
+          "theta_bound": 3.0,
+          "value_bound": 2.0
+        },
+        "generation_enabled": true
+      },
+      "changed_config_fields": [
+        "body_rule.configs[0].size",
+        "body_rule.configs[1].size"
+      ],
+      "M": 340.5431416939581,
+      "E": 160.04724342554755
+    }
+  ],
+  "tape_central_exact": true,
+  "outer_stimuli_zero": true,
+  "initials": 2,
+  "arm_ready_restores": 6,
+  "policy_evaluations": 0,
+  "transport_evaluations": 0,
+  "body": 0,
+  "physical_energy": 0,
+  "prepare": 0,
+  "generation": 0,
+  "old_checks_repeated": false
+}

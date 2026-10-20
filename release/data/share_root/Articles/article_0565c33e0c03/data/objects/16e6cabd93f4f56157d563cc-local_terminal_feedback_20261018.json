@@ -1,0 +1,82 @@
+{
+  "task": "local_terminal_feedback_20261018",
+  "created_at": "2026-10-18T10:37:10.114473+00:00",
+  "status": "authorized_new_mechanism",
+  "objective_met": false,
+  "decision": "停止将幸存载荷的H后均值作为完整组织投资目标；新分支研究有价局部终末消息能否让固定近期控制器利用原本丢失的已完成动作记录。只声明可收到的描述性动作后果学习；全组织M/E/U/体时是独立有效性检验，非给每个活格的监督标签。",
+  "sources": {
+    "physical_handoff": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/native_investment_action_20261018/handoff.json",
+    "physical_sha256": "44afec3f92a82c7b95042117817ee48e3f8e569ffd22f22a10965af6a1621ff0",
+    "feedback_handoff": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/native_investment_action_feedback/handoff.json",
+    "feedback_sha256": "5079817398db785093088f40ff689c64e8dad7f0865a89bdb880887741d497e6",
+    "mechanism_request_sha256": "4a681a69a248ebb84539893e5744b25f19a6ed0149798fa5f8cd2b4aae433d86"
+  },
+  "closed_prior": {
+    "new_body_steps": 4192,
+    "worker_seconds": 266.97525,
+    "read_only_reused_steps": 1536,
+    "ce2_unused_steps": 416,
+    "ce2_unused_worker_seconds": 163.02475,
+    "d3_unused_steps": 1536,
+    "d3_unused_worker_seconds": 170,
+    "unused_not_transferred": true
+  },
+  "scientific_basis": [
+    "6bd两布局material长驱动对none末E+108.114315/+185.692903，Euler收益更高但material省motor；8步未回本，0ac长窗负例保留。",
+    "6bd末初始登记材料仅7.0794%/10.2976%；被动派生收据L末保16.2177%/19.1715%。这是实际保存场上的指定编码记账，不是一般信息上界或前批模型失败的已证原因。",
+    "终末接触/死亡记录只能改善某些可见记录；新生、邻居及后来组织的收益没有因此获得祖先因果归属。"
+  ],
+  "new_budget": {
+    "native_body_step_cap": 6144,
+    "worker_seconds_cap": 600,
+    "ce2": {
+      "steps": 1280,
+      "worker_seconds": 180
+    },
+    "d3": {
+      "steps": 4864,
+      "worker_seconds": 420
+    },
+    "cpu_threads": 2,
+    "gpu": 0,
+    "serial_physical": true,
+    "raw_bytes_cap": 4294967296,
+    "all_boundary_and_failed_native_calls_count": true,
+    "old_budget_used": 0
+  },
+  "owners": {
+    "host_and_first_physical_batch": "resident_ce2a5ab005bc",
+    "controller_and_conditional_use_test": "resident_d3ccfa2d95b7"
+  },
+  "registered_target": {
+    "unit": "实际动作前登记的旧材料和预声明动作单元/时钟；opaque ID只作配对与去重，不作为位置/世界/未来特征。",
+    "allowed_record": "已发生且当地可算的接触、明确阶段的终末登记质量、可实际归属的当地付款；保分量及单位。质量份额分摊是描述性规则，不称因果净能量。",
+    "denominator": "初始承诺量/已收到质量/缺测分别保留，不能把survivor或消息条数当总登记量或独立样本数。",
+    "message_semantics": "接收的是他者的完成记录，direct/message状态分开；新生不自动继承祖先意图或亲历。未收到、未完成、无支付、无接收者不补0。",
+    "objective_limit": "不得宣称优化全组织投资因果回报；不得将原全局死亡账/最终M或E塞入学习器。若更新目标仍只能靠这些量定义，则不训练并实际交PI具体缺口。"
+  },
+  "host_contract": [
+    "隔离新增wrapper/模块；原15691ada及281cdf53、旧结果字节保持。使用同两真实形成128态、两既有几何、原补给/价格/生成/运输规则；新递送成本是显式新增物理干预。",
+    "捕获actor删除与rule删除各自发生前的已完成本地记录，两个阶段互斥分账；不能在生命结束后替它生成未来标签。",
+    "本轮采用单跳四邻域、确定局部顺序或守恒拆分。只能送实际存活的旧接收材料；只具新生的格不作本轮接收者。进入独立message储存后不继续转发，之后接收者再死的丢失照实保留。",
+    "ce2在任何新前向前冻结有限字段/载荷大小、每单位载荷与一格距离的价格、付款时序及旧接收者E来源；实际扣当地E并入热。不得动用新生能量，欠付不递送、不借未来收入，不扫价。",
+    "收据生成量=递送量+未递送量；拆分不复制独立证据，不给多格全额标签。sent/received/applied事件原子记账，完整恢复不二次扣费或重复消费；存储算术未完整计价须明示。",
+    "每条消息时钟早于使用它的下一决策；支付/资格/收件者来自实际场，不靠metadata标记代替闭合。"
+  ],
+  "ce2_initial_experiment": {
+    "design": "2真实身体×2既有几何×有价递送256步=1024新步；固定material shear_x先128驱动后128撤驱。精确复用44afec3f四条无通信material长轨1024旧步作为身体/实际费用参照；新最多256步受影响边界，总ce2≤1280/180。",
+    "readouts": "逐步全身体M/E/U/体时/实际费用/热/死亡/出生；全登记材料终末/存留/unknown；生成、成功送达、即时消费可用及接收者后来死亡的覆盖分开；direct与message的各动作统计。",
+    "required_negative_cases": "无活旧接收者、欠费、两个死亡阶段、拆分与恢复重复边界，只测新责任接口；真实物理边界计入256余额。",
+    "scope": "只检测覆盖及成本，既不是信息等费效应也不是学习效果，不以覆盖率改善宣告方法成功。",
+    "reference_scope": "复用前核现成source/初态/物理/几何/输入/动作规则一致。旧无通信轨没有新收据通道字段，视为未安装而非伪造逐消息0标签；其缺失死亡阶段字段保持缺失。若不能精确匹配，明确缩减比较或只报新覆盖/成本，不默许重演旧矩阵。"
+  },
+  "d3_conditional_execution": {
+    "work": "消费ce2实际接口与结果一次，先定义固定近期估计器的合法有限动作记录和更新时钟；不用大网络、岭回归或率/价扫描。已有同事项请求合并。",
+    "comparisons": "同真实完整取得态与已付收件历史出发：direct+message近期更新、同通信/付款但消息内容不进估计器、同通信付费但冻结内容；保固定Euler与无主动同行（旧轨仅在完全同物理/输入/时钟时可精确引用）。实际行动分化后费用/反馈并不相等。",
+    "target_and_go": "消息确实给下一决策提供先前不可见的已完成动作分量、记录归属合法时，按预先冻结的小试在4864步/420秒内立即运行；最小实验的留出几何、动作期限、输入期限及单位先固定。若还需未来global回报才能比较，不能以消息覆盖代替。",
+    "no_silent_horizon_change": "不得因获取期用尽256步补给就暗中延长；确需不同有限输入期时须在唯一实验计划中明确为新条件、全部同行一致，并不得与旧256末态作处理效应。",
+    "stop": "若接收机制只提高审计覆盖，或有效消息/决定无差、或简单Euler/none更好，保失败并收束；不通过重调价格/超预算扩大。"
+  },
+  "handoff": "ce2完成真实结果后只向d3一次enqueue_and_trigger并给精确源与剩余量；条件成立d3自主唯一提交，不待二次审批。不可执行则向PI一次带具体机制缺口的enqueue请求。论文/投影只在实际结果可接续时交直接承担者，不广播，不用timer。",
+  "runtime_control": "新科研/作业前读running/started；遵守暂停/停止，统一runner，不重置总启动，无定时触发。"
+}

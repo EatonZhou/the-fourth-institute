@@ -1,0 +1,78 @@
+.portalSectionShell {
+  position: relative;
+}
+
+.portalSectionViewport {
+  width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.portalSectionRow {
+  display: flex;
+  width: max-content;
+  min-width: 100%;
+  align-items: center;
+  gap: 14px;
+}
+
+.portalSectionTabs {
+  box-sizing: border-box;
+  display: inline-flex;
+  width: fit-content;
+  height: 38px;
+  min-width: 0;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 3px;
+  border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--panel-2) 76%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--panel) 70%, transparent);
+}
+
+.portalSectionLink {
+  appearance: none;
+  box-sizing: border-box;
+  position: relative;
+  flex: 0 0 auto;
+  height: 31px;
+  min-height: 31px;
+  padding: 6px 13px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font: 650 12px/1.35 ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.portalSectionLink:hover {
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+  background: color-mix(in srgb, var(--accent) 7%, var(--panel));
+  color: var(--text);
+}
+
+.portalSectionLink.active,
+.portalSectionLink[aria-current="page"] {
+  border-color: color-mix(in srgb, var(--accent) 72%, var(--border));
+  background: var(--panel);
+  color: var(--accent);
+  box-shadow:
+    0 1px 3px color-mix(in srgb, var(--text) 8%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.portalSectionLink:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 720px) {
+  .portalSectionLink {
+    padding-inline: 11px;
+  }
+}

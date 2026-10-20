@@ -1,0 +1,28 @@
+{
+  "actual_preparation": [
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/anticipatory_material_allocation_20261018/5063bd49-7b65-4ec3-9338-92f5bd855747/history_probe_-1_-1.npz",
+      "sha256": "c5c0314016e42a29bf697cd7022c29dd406d8ab39e51409836559109a42584e5"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/anticipatory_material_allocation_20261018/5063bd49-7b65-4ec3-9338-92f5bd855747/history_probe_-1_1.npz",
+      "sha256": "76ab3454938345d41a4befdeddc6f4a4b5ad4976bd053267582b81e8178d8874"
+    }
+  ],
+  "reversal_baselines": [
+    "/data/dataset/lenia-research/lineage_75e3399f4877/anticipatory_material_allocation_20261018/5063bd49-7b65-4ec3-9338-92f5bd855747/reversal_202610188101_uniform-steps.json",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/anticipatory_material_allocation_20261018/5063bd49-7b65-4ec3-9338-92f5bd855747/reversal_202610188101_cue_plus-steps.json",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/anticipatory_material_allocation_20261018/5063bd49-7b65-4ec3-9338-92f5bd855747/reversal_202610188101_cue_minus-steps.json",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/anticipatory_material_allocation_20261018/5063bd49-7b65-4ec3-9338-92f5bd855747/reversal_202610188101_last-steps.json",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/anticipatory_material_allocation_20261018/5063bd49-7b65-4ec3-9338-92f5bd855747/reversal_202610188101_ema-steps.json",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/anticipatory_material_allocation_20261018/5063bd49-7b65-4ec3-9338-92f5bd855747/reversal_202610188101_freeze-steps.json",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/anticipatory_material_allocation_20261018/5063bd49-7b65-4ec3-9338-92f5bd855747/reversal_202610188102_uniform-steps.json",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/anticipatory_material_allocation_20261018/5063bd49-7b65-4ec3-9338-92f5bd855747/reversal_202610188102_cue_plus-steps.json",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/anticipatory_material_allocation_20261018/5063bd49-7b65-4ec3-9338-92f5bd855747/reversal_202610188102_cue_minus-steps.json",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/anticipatory_material_allocation_20261018/5063bd49-7b65-4ec3-9338-92f5bd855747/reversal_202610188102_last-steps.json",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/anticipatory_material_allocation_20261018/5063bd49-7b65-4ec3-9338-92f5bd855747/reversal_202610188102_ema-steps.json",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/anticipatory_material_allocation_20261018/5063bd49-7b65-4ec3-9338-92f5bd855747/reversal_202610188102_freeze-steps.json"
+  ],
+  "fields_are_post_step": true,
+  "interpolation": false
+}

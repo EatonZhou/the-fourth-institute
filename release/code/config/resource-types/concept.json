@@ -1,0 +1,16 @@
+{
+  "type": "concept",
+  "category": "knowledge_entry",
+  "description": "A knowledge-base concept entry.",
+  "title": {
+    "zh": "概念",
+    "en": "Concept"
+  },
+  "provider": "management_portal.resources.providers.knowledge:install_resolver",
+  "catalog_section": "knowledge",
+  "catalog_order": 10,
+  "registerable": true,
+  "scope": "project",
+  "unit": "core",
+  "enabled_by_default": true
+}

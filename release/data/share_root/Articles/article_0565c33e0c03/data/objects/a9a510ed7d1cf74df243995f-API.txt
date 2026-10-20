@@ -1,0 +1,18 @@
+Frozen physical API: environment_evolution.complementary_cargo_exchange.core
+
+ExchangeBody.challenge(base, condition): prepare an explicitly externally rearranged clock384 challenge from the complete MaintenanceBody parent. Stores original_P/F, initial_P/F, map_A/B and fixed input arrays. This is unpriced external preparation, not a host step.
+ExchangeBody.restore_checkpoint(path): restore a locally hash-bound private joint, including physical state/world/cursors/labels/cumulative costs and any completed-but-unsettled native receipt. The pickle payload is only for these trusted local artifacts; SHA is an integrity binding, not authentication.
+env.policy: one frozen ARMS entry. env.native(permit=...) calls the original physical step exactly once with zero active command and returns (maps, log, checks), setting ready=False and pending. env.settle() consumes that receipt once, executes the selected one-hop pump, updates real labels and costs, then returns (maps, log, checks) with ready=True. A pending completed native must be settled after restore; never replay it.
+env.checkpoint(path): atomic private joint; allowed only for ready or known-native-done states. Unknown native completion cannot be declared ready. All scientific paths terminate at clock576. Scalar rows are appended; current joint is persisted every8; actual frames at future1,8,64,128,192. Final joints are complete.
+
+Independent proposals use normalized fuel Z=F/.42 and local completed gap R=max(positive_request-rejected_capacity-rejected_template-born,0).
+gradient: gP_ij=max(P_i-P_j,0)*support_j; gZ_ij=max(Z_i-Z_j,0)*support_j.
+demand: gP_ij=max(R_j-P_j,0)*support_j; gZ_ij=max(R_j-Z_j,0)*support_j.
+support_j=(template_support_j>0). For each commodity, preliminary request = g*min(source stock,sum g)/sum g; zero sum gives zero.
+execute(state,maps,faces,p,z): shared donor scaling enforces independent P/Z inventories and sum max(p,z)<=.05*old_survivor, then original face attenuation, then common affordability under old actorE minus rule-deathE minus .012*.05*old_survivor. Only downward common ULP corrections follow. Transfer P=p,F=.42z simultaneously; carrier=max(p,z), source payment=.08*sum carrier goes to heat. No redistribution after rejection or target-gap cap. Received cargo cannot leave again in this step or change just-completed birth.
+Original_bundle_diffusion invokes the original frozen pump directly. No_pump invokes zero cargo; original passive physical flux and fees remain.
+
+Receipt separates actual cargo_P_edges/cargo_F_edges, source sent and received, pump_sent and pump_fee_paid/requested/unaffordable; preliminary/capacity/face/energy/roundoff stages are retained in saved NPZ. Original K/survivor/born/death/uptake/energy/ordered conversion requests and rejections remain actual original receipts. Labels label384_before/label384_transported/label384_survivor/label384_death and post384_tissue record material ancestry; later born has no L384. Use exact keys in saved NPZ and source for consumption; no fabricated missing fields.
+The policy reads only current source and one-hop destination inventories/support/completed gaps. Global M/E/U, whole-body lineage conservation, map/setup identity and outcomes are evaluation records, not policy rewards or historical features.
+
+Map: original periodic binomial3x3(rho384); x midpoint=floor((min supported x+max supported x)/2), A x<=mid, B x>mid, separate normalization. Original total P/F are independently redistributed; colocated both A, separated P=A/F=B. New inputs use the same fixed maps and original gross amounts/half-life64, no double input. Setup NPZ contains before/after arrays. Both parents have midpoint62, fixed before any native.

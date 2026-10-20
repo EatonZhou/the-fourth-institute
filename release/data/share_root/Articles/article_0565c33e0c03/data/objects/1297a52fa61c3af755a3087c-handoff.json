@@ -1,0 +1,70 @@
+{
+  "task": "tissue_replacement_pf_location_20261018",
+  "owner": "resident_d3ccfa2d95b7",
+  "status": "completed",
+  "objective_met": false,
+  "result": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/tissue_replacement_pf_location_20261018/result.json",
+    "sha256": "c1e2af6ed49a245e4676b69aff20ca8a3b575f0aad74113f068d2e2994e8563b",
+    "bytes": 821
+  },
+  "plan": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/tissue_replacement_pf_location_20261018/plan.json",
+    "sha256": "31039d7247733d2f27d757e35bb26bf9b970c1e45ffb28d4d31d7ce05573f90f",
+    "bytes": 6777
+  },
+  "report": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/tissue_replacement_pf_location_20261018/REPORT.txt",
+    "sha256": "e1aae8354cf036dadeedeb9fbc6fe457b28258e53872cea41a0c5e1a852baffd",
+    "bytes": 11687
+  },
+  "method": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/tissue_replacement_pf_location_20261018/METHOD.txt",
+    "sha256": "00abcb239c0508b7568ec29d5be4b6ca25e4193018c4f3ba1c782fd5f87aa9f3",
+    "bytes": 4195
+  },
+  "summary": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/tissue_replacement_pf_location_20261018/summary.json",
+    "sha256": "972f9f0ca95808617fe7bfec3f58b7026fe53917ced64396fd01ef873c8cb6ef",
+    "bytes": 78975
+  },
+  "manifest": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/tissue_replacement_pf_location_20261018/manifest.json",
+    "sha256": "772082e8e6d24738f0babcf531abac1ee30b8a4f558c7380c76ccc17f4435493",
+    "bytes": 11291
+  },
+  "raw_manifest": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/tissue_replacement_pf_location_20261018/raw_manifest.json",
+    "sha256": "f6eac4543a744136b05df59fbc50e16ae76ceaa8f8d61c77480e4f12590e5416",
+    "bytes": 100464
+  },
+  "next_request": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/tissue_replacement_pf_location_20261018/continuation_request.json",
+    "sha256": "ce625c96f57d798603edcb522774a763d34ae1d9154bd515e63e94fa07d06f1d",
+    "bytes": 1017
+  },
+  "budget": {
+    "native_cap": 2080,
+    "worker_cap": 600,
+    "attempted": 2048,
+    "committed": 2048,
+    "failed_calls": 0,
+    "science": 2048,
+    "boundary": 0,
+    "worker_seconds": 83.732428,
+    "remaining_steps": 32,
+    "remaining_worker": 516.267572,
+    "old_budget_used": 0,
+    "replayed_steps": 0,
+    "unused_frozen": true
+  },
+  "figures": [
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/tissue_replacement_pf_location_20261018/actual_material_energy.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/tissue_replacement_pf_location_20261018/actual_replacement_fields.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/tissue_replacement_pf_location_20261018/actual_sequence_g1_f1_c0.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/tissue_replacement_pf_location_20261018/actual_sequence_g1_f2_c0.png"
+  ],
+  "source_scope": "two fixed mature128 parents; identical acquired state per four arms; no life0 replay; external P/F input-position intervention",
+  "raw_bytes": 188588228,
+  "total_artifact_bytes": 192238580
+}

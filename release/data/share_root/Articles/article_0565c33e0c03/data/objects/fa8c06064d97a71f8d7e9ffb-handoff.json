@@ -1,0 +1,71 @@
+{
+  "task": "metabolic_maintenance_withdrawal_20261018",
+  "status": "completed",
+  "report": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/metabolic_maintenance_withdrawal_20261018/REPORT.txt",
+    "sha256": "ae684bf922b66465052027a4d5ee8321cd7648c73d80c8dc37e55d9d71ccb136",
+    "bytes": 6016
+  },
+  "summary": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/metabolic_maintenance_withdrawal_20261018/summary.json",
+    "sha256": "43e26d1ae667e1db7ff01fcb1a9178d246be8e53e6e1f298e7f5d5aa225ae9de",
+    "bytes": 28263
+  },
+  "interpretation": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/metabolic_maintenance_withdrawal_20261018/INTERPRETATION.txt",
+    "sha256": "c0af680b0987dc650468cea88455a75ad9d77a7a3e23d0c65c1e985ba5455838",
+    "bytes": 4806
+  },
+  "api": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/metabolic_maintenance_withdrawal_20261018/API.txt",
+    "sha256": "176df3532b4f20a5cc7ae7a1003c4b3fc14e18d015bb70f61553bba685b42d6f",
+    "bytes": 1005
+  },
+  "plan": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/metabolic_maintenance_withdrawal_20261018/plan.json",
+    "sha256": "cd9087fc54cea553716f0dc54514b8994a4995217794f89b47b3dc7fd4e77630",
+    "bytes": 10863
+  },
+  "result": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/metabolic_maintenance_withdrawal_20261018/result.json",
+    "sha256": "64c5f6781bcd261e37a433a2cdbd21d7eb1d30396c7d466b16582a05ca16bc3f",
+    "bytes": 720
+  },
+  "budget": {
+    "actual_native": 2821,
+    "committed": 2821,
+    "science": 2816,
+    "boundary": 5,
+    "cap": 2848,
+    "unused_native": 27,
+    "worker_seconds": 314.814888,
+    "worker_cap": 600,
+    "unused_worker": 285.185112,
+    "unique_job": "6e9a666a-8353-4033-89a9-ecc1cdbb4824",
+    "cpu_threads": 2,
+    "gpu": 0,
+    "raw_bytes": 403700404,
+    "old_budget_used": 0,
+    "old_prefix_replayed": 0,
+    "display_path_steps": 3072,
+    "shared_prefix_in_display": 256,
+    "shared_prefix_actual": 256,
+    "unused_nontransferable": true
+  },
+  "manifest": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/metabolic_maintenance_withdrawal_20261018/manifest.json",
+    "sha256": "4ee9d96bd88230d107d7eed47383a46212075b31d5ce311527a9468eee97ddf0",
+    "bytes": 11403
+  },
+  "raw_manifest": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/metabolic_maintenance_withdrawal_20261018/raw_manifest.json",
+    "sha256": "e231adc127c14a1aff68ec4a74b18426078a24e227b2d39ea4703aebaba82afb",
+    "bytes": 967380
+  },
+  "figure_sources": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/metabolic_maintenance_withdrawal_20261018/figure_sources.json",
+    "sha256": "e8612a44765e1941abbe8b897d2cebfa707a27c656dd65ffefc53e3e6d69e110",
+    "bytes": 4913
+  },
+  "scope": "fixed paid pump continuation/withdrawal/restart; no learning or infinite stability"
+}

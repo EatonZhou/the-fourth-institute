@@ -1,0 +1,13 @@
+{
+  "source_job": "5c0cbcd4-0be6-486a-ab56-35b3ed084979",
+  "review_job": "2c6c263d-681b-4dc5-8f45-24929cf3e82b",
+  "candidates_screened": 168,
+  "short_screen_active": 76,
+  "long_observation_candidates": 12,
+  "long_observation_steps": 4096,
+  "confirmed_new_species_count": null,
+  "interpretation": "Visual review distinguishes moving localized Orbium-related candidates and distributed ring/stripe field patterns. Most retained candidates are distributed, often near-static patterns; retention count is not a count of new organisms.",
+  "followup": "Keep separate archive space for localized active bodies, field patterns and transients. Broaden kernels/channels/initial generators instead of letting large mass or distributed texture dominate one score.",
+  "descriptors": "Radial non-DC power is invariant to integer translations and quarter-turns (error <=3.89e-16); it is not a complete shape invariant. Late registered changes are relative L1 per 16 recorded updates, not physical speed or fitness.",
+  "projection_manifest": "${share_root}/Projects/元胞自动机研究/src/analysis/runs/morphology_review_20261016_v1/sources.json"
+}

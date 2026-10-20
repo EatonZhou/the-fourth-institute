@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600" viewBox="0 0 1200 600">
+<rect width="1200" height="600" fill="white"/>
+<text x="28" y="41.56" text-anchor="start" font-family="Noto Sans CJK SC" font-size="26" font-weight="700" fill="#275D85">团队结构与软件结构：相关但分别建模</text>
+<polyline points="28,62 1172,62" fill="none" stroke="#91A2AE" stroke-width="1.7"/>
+<text x="30" y="583.0300000000001" text-anchor="start" font-family="Noto Sans CJK SC" font-size="13" font-weight="400" fill="#61717E">设计示意 · 实线：工作或依赖关系；虚线：反馈或关联；不表示实验测量</text>
+<rect x="35" y="90" width="1130" height="190" fill="#FFFFFF" stroke="#91A2AE" stroke-width="1.5"/>
+<text x="600.0" y="190.89000000000001" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#91A2AE"></text>
+<text x="43" y="115.7" text-anchor="start" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">组织关系：长期职责与临时协调</text>
+<rect x="65" y="145" width="205" height="95" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="167.5" y="171.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">Leader</text>
+<text x="167.5" y="213.77" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">目标／偏好／承诺</text>
+<rect x="330" y="145" width="230" height="95" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="445.0" y="171.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">任务负责人</text>
+<text x="445.0" y="213.77" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">跨模块方案与交付</text>
+<rect x="620" y="145" width="230" height="95" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="735.0" y="171.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">模块成员 A</text>
+<text x="735.0" y="213.77" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">执行器长期经验</text>
+<rect x="910" y="145" width="230" height="95" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="1025.0" y="171.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">模块成员 B</text>
+<text x="1025.0" y="213.77" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">任务状态长期经验</text>
+<polyline points="270,193 330,193" fill="none" stroke="#275D85" stroke-width="1.7"/>
+<polygon points="330,193 321.6420182798114,196.33828422471686 321.6420182798114,189.66171577528314" fill="#275D85"/>
+<polyline points="560,193 620,193" fill="none" stroke="#275D85" stroke-width="1.7"/>
+<polygon points="620,193 611.6420182798114,196.33828422471686 611.6420182798114,189.66171577528314" fill="#275D85"/>
+<polyline points="445,240 445,260 1025,260 1025,240" fill="none" stroke="#275D85" stroke-width="1.7"/>
+<polygon points="1025,240 1028.3382842247167,248.3579817201886 1021.6617157752831,248.3579817201886" fill="#275D85"/>
+<rect x="35" y="350" width="1130" height="185" fill="#FFFFFF" stroke="#91A2AE" stroke-width="1.5"/>
+<text x="600.0" y="448.39000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#91A2AE"></text>
+<text x="43" y="375.7" text-anchor="start" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">软件关系：服务职责与运行协议</text>
+<rect x="65" y="410" width="220" height="85" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="175.0" y="436.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">用户界面</text>
+<text x="175.0" y="473.77000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">操作与反馈</text>
+<rect x="390" y="410" width="290" height="85" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="535.0" y="436.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">任务状态服务</text>
+<text x="535.0" y="473.77000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">请求记录与状态查询</text>
+<rect x="840" y="410" width="290" height="85" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="985.0" y="436.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">执行器</text>
+<text x="985.0" y="473.77000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">实际停止与资源释放</text>
+<polyline points="285,453 390,453" fill="none" stroke="#275D85" stroke-width="1.7"/>
+<polygon points="390,453 381.6420182798114,456.33828422471686 381.6420182798114,449.66171577528314" fill="#275D85"/>
+<polyline points="680,453 840,453" fill="none" stroke="#275D85" stroke-width="1.7"/>
+<polygon points="840,453 831.6420182798114,456.33828422471686 831.6420182798114,449.66171577528314" fill="#275D85"/>
+<polyline points="735,240 735,320 985,320 985,410" fill="none" stroke="#26756C" stroke-width="1.7" stroke-dasharray="7 5"/>
+<polyline points="1025,240 1155,240 1155,330 535,330 535,410" fill="none" stroke="#26756C" stroke-width="1.7" stroke-dasharray="7 5"/>
+<text x="300.0" y="314.96" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="16" font-weight="400" fill="#26756C">虚线关联：谁维护什么；一项工作可跨多个模块</text>
+</svg>

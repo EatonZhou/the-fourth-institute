@@ -1,0 +1,102 @@
+\chapter{覆盖率的操作性含义}
+\label{ch:operational}
+\chapterguide{把独立定义的结构量同时连接到可实现构造和任意组织的下界，才得到关于组织能力的可操作结论。}
+
+\section{同一个量何时控制两端}
+假设存在$M\ge1$，对所有实验、片段和情境对，
+\begin{equation}
+ M^{-1}\le\frac{K_a(v\mid\theta)}{K_a(v\mid\theta')}\le M.
+ \label{eq:ratio}
+\end{equation}
+有限严格正表总存在某个$M$；比较一族实例的数量级时，必须要求它们共享同一个上界，不能把随规模爆炸的$M$当作常数。
+
+\begin{lemma}[KL与Hellinger区别的比较]
+\label{lem:comparison}
+满足式\eqref{eq:ratio}时，
+\[
+ D_a(\theta\Vert\theta')\le C_Mh_a(\theta,\theta'),
+ \qquad C_M=2(\sqrt M+1)^2.
+\]
+\end{lemma}
+\begin{proof}
+由$\ln x\le x-1$，$\KL(P\Vert Q)\le\sum_v(P-Q)^2/Q$。而
+\[
+ \frac{(P-Q)^2}{Q}=(\sqrt P-\sqrt Q)^2(\sqrt{P/Q}+1)^2
+ \le(\sqrt M+1)^2(\sqrt P-\sqrt Q)^2.
+\]
+求和，并使用平方根距离等于$2h$。
+\end{proof}
+
+\begin{proposition}[局部分配到全局分配]
+\label{prop:local-global}
+情境数为$d$时，$\kapK\le dC_M\kap$。
+\end{proposition}
+\begin{proof}
+为每个$\theta$取达到$\kappa_{\mathrm K}(\theta)$的分配$w^\theta$。其对每个目标冲突情境的平均Hellinger区别至少为$\kapK/C_M$。将这$d$份分配等权混合。任意冲突对至少从其中与其一个端点对应的分配获得$\kapK/(dC_M)$，故全局最优覆盖率不小于此值。
+\end{proof}
+
+\begin{theorem}[有限诊断组织的操作性界]
+\label{thm:main}
+对已知有限实验表、至少两个目标、有界似然比和单位调用成本，若$\kap>0$，则
+\begin{equation}
+ \frac{\kl(1-\delta,\delta)}{dC_M\kap}
+ \le n^*(\delta)
+ \le\left\lceil\frac{\ln(m/\delta)}{\kap}\right\rceil.
+ \label{eq:main}
+\end{equation}
+若$\kap=0$，则任意$\delta<1/2$都不能得到最坏情境保证。固定$d,M$并令$0<\delta\le1/4$时，可辨别实例满足
+\[
+ n^*(\delta)=\Theta_{d,M}\!\left(\kap^{-1}\ln(1/\delta)\right).
+\]
+\end{theorem}
+\begin{proof}
+下界连接定理\ref{thm:adaptive-lower}与命题\ref{prop:local-global}，上界来自定理\ref{thm:upper}。零覆盖率情形来自不可辨别性。对$\delta\le1/4$，$\kl(1-\delta,\delta)$与$\ln(1/\delta)$之比有统一正下界；又有$m\le d-1$。上界的取整可吸收到常数中，因$\kap\le1$且$\ln(1/\delta)\ge\ln4$。
+\end{proof}
+
+\section{这个结论实际解释什么}
+覆盖率从各实验产生的分布计算，它并未把最优求解成本写进定义。主定理说明，在固定有限情境与似然比条件下，它的倒数给出降低错误所需调用数的尺度。组织的作用是将基本操作中分散的区别转化为统一的任务可靠性。
+
+这里的比较方包含任意自适应调度、任意中间表示和任意计算能力的控制者。所证明的下界不依赖把对手限制为整条重试；所构造的上界也不要求检查器在每次历史下预先保有可靠余量。
+
+代价同样清楚：主定理只控制固定有限任务模型的统计调用复杂度。$d$增长时，下界损失一个显式$d$因子；上界可能为辨认无关的情境细节多付出$\ln m$。因此覆盖率尚未独自完成大规模任务的最优复杂度刻画。
+
+\section{不能从覆盖率中消去任务规模}
+令$\theta\in\mathbb F_2^r$，目标是恢复整个$\theta$。只有一种实验：每次独立产生均匀随机向量$U\in\mathbb F_2^r$，返回片段$(U,U^\top\theta\oplus E)$，其中$E\sim\Bern(\eta)$，固定$0<\eta<1/2$。向量$U$是实验输出的一部分，控制者不能免费选择它。
+
+\begin{theorem}[相同覆盖率下的规模增长]
+\label{thm:dimension}
+该实例族对所有$r\ge1$都具有
+\[
+ \kap=\tfrac12\bigl(1-2\sqrt{\eta(1-\eta)}\bigr),
+ \qquad M=(1-\eta)/\eta.
+\]
+二者均与$r$无关。但任何最坏错误不超过$\delta$的组织仍需
+\[
+ n\ge\frac{(1-\delta)r-h_2(\delta)}{1-h_2(\eta)}.
+\]
+固定$\eta$、$0<\delta\le1/4$时，调用复杂度为
+$n^*(\delta)=\Theta_\eta(r+\ln(1/\delta))$。
+\end{theorem}
+\begin{proof}
+任意非零情境差$z$满足$U^\top z=1$的概率为$1/2$。在另一半输出向量上，两种bit分布相同；在这一半上它们互换。因此平均区别为$h_\eta/2$，概率比始终位于$[M^{-1},M]$。
+
+对均匀情境先验，目标熵为$r$ bit。每次的新$U$独立于情境与历史；给定$U$后，带噪bit对情境的条件互信息至多$1-h_2(\eta)$，因为其熵至多1，而条件于情境的噪声熵为$h_2(\eta)$。信息链式法则和Fano界给出所写下界。
+
+当$r\ge2$，$\delta\le1/4$时分子至少$r/4$。另一方面，任意情境对的单次KL均为$d_\eta/2$，定理\ref{thm:adaptive-lower}再给出关于$\ln(1/\delta)$的下界；这也覆盖$r=1$。两个下界的最大值至少为其和的一半。上界由$m=2^r-1$和定理\ref{thm:upper}得到。
+\end{proof}
+
+这个例子同时说明覆盖强度与需要恢复的区别数量各有作用。没有发生模型失配或似然比爆炸，单独知道覆盖率仍无法控制增长任务族的预算。实验输出长度为$r+1$ bit，其传输与读取成本还应另外计入。
+
+\section{完整执行账本}
+一个直接实现先计算概率表中的区别量与覆盖分配，再运行$n$次调用，在线累计$d$个候选的对数似然。若单次调用成本为$c_F$、一个数值更新成本为$c_{\mathrm{num}}$，则可写成
+\[
+ C_{\mathrm{total}}=C_{\mathrm{table}}+C_{\mathrm{design}}
+       +nc_F+O(nd)c_{\mathrm{num}}+C_{\mathrm{communication}}.
+\]
+数值项计入实际精度下的加法与查表费用。概率表描述长度、求解规划以及控制精度都进入前置费用；表规模指数大时，这种实现可能不经济。
+
+\section{一个充分结果怎样变成研究工具}
+可以用主定理检查组织建议。若建议只复制完全相同的实验分布，它不会创造新的可辨别对。若建议引入能打破旧混淆类的操作，可先检查覆盖率是否从零变正。若各实验原本都可用，建议只是调整频率，则可比较分配的最差覆盖值。后两种改变分别涉及允许能力的改变与固定能力内的组织改进，报告时需要区分。
+
+\begin{exercise}说明为什么$M$在每个有限实例中存在，不足以证明一族规模增长实例具有统一常数的复杂度界。\end{exercise}
+\begin{exercise}若已找到覆盖率$u>0$的分配，但不知道最优值，仍能作出哪些可验证的可靠性与成本承诺？\end{exercise}

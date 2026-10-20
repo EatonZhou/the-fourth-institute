@@ -1,0 +1,3708 @@
+{
+  "inputs": {
+    "/share/Projects/元胞自动机研究/knowledge_base/research/experience_learning/embodied_adaptive_memory_dynamics_20261019.json": {
+      "bytes": 15640,
+      "sha256": "521380513cc47e48dd547629e6a2c7eeff104a505740413f00161de9ba1754d7"
+    },
+    "/share/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_dynamics_20261019/handoff.json": {
+      "bytes": 2541,
+      "sha256": "2547e980a19f2f1cc19146210edfa392cdc16e2b66a734d621cf7802e25f379a"
+    },
+    "/share/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_comparison_20261019/analysis.json": {
+      "bytes": 20146,
+      "sha256": "e2e4a894808693ce36a523fbd7fe258ce588390e4cffc3c5902d94e7f30f7be6"
+    },
+    "/share/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_return_join_20261019/analysis.json": {
+      "bytes": 16604,
+      "sha256": "819c076d3b977c3995f4e1e6d1829f308ddcddd61358d0a20e340390ebc4e2a4"
+    },
+    "/share/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_balanced_20261019/analysis.json": {
+      "bytes": 12496,
+      "sha256": "bc4e5c0f14d7eef5743009c1e15a82de2dc95837a8613b3b8259a358f41d7f53"
+    },
+    "/share/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_probe_20261019/analysis.json": {
+      "bytes": 1461,
+      "sha256": "c1150fad299c0d4cc7b880da0f24ff6dafed2bf2df1b157426aea5b1f2d7f4fb"
+    },
+    "/share/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_probe_20261019/outcomes.json": {
+      "bytes": 35130,
+      "sha256": "7ae53939439e2237e68f84eed7c073492292847db51c53f81aae79a4ca59e242"
+    },
+    "/share/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_opportunity_20261019/recovered_opportunity.json": {
+      "bytes": 5058,
+      "sha256": "8ef72ca092ae9eeb33829770b4e444fdc4cb53f9cc0705a1c3387dcfba1293f3"
+    }
+  },
+  "handoff": {
+    "task": "embodied_adaptive_memory_dynamics_20261019",
+    "owner": "resident_33af539c4a17",
+    "status": "scalar_gain_candidate_closed_actual_local_history_capability_retained",
+    "report": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/embodied_adaptive_memory_dynamics_20261019.json",
+    "report_sha": "521380513cc47e48dd547629e6a2c7eeff104a505740413f00161de9ba1754d7",
+    "native": 23491,
+    "worker_seconds": 32.21922,
+    "usage": "${share_root}/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_dynamics_20261019/usage.json",
+    "directories": {
+      "opportunity": "${share_root}/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_opportunity_20261019",
+      "comparison": "${share_root}/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_comparison_20261019",
+      "paid_return": "${share_root}/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_return_join_20261019",
+      "causal": "${share_root}/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_probe_20261019",
+      "balanced": "${share_root}/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_balanced_20261019"
+    },
+    "primary_figures": [
+      "${share_root}/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_comparison_20261019/comparison.png",
+      "${share_root}/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_return_join_20261019/comparison.png",
+      "${share_root}/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_balanced_20261019/comparison.png"
+    ],
+    "animations": [
+      "${share_root}/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_comparison_20261019/continuous_body_state.gif",
+      "${share_root}/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_return_join_20261019/continuous_body_state.gif",
+      "${share_root}/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_balanced_20261019/continuous_body_state.gif"
+    ],
+    "causal": "${share_root}/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_probe_20261019/analysis.json",
+    "limits": "14 local fields adaptive/bank vs22 fixed-delay implementation; central6-event/128-entry Q table. Same local sensory/upkeep package, true movement/basal/assay costs; arithmetic, retention and central communication incompletely priced. No equal-bit or efficiency claim. Fixed delay has larger explicit capacity and is intentionally strong."
+  },
+  "stages": [
+    {
+      "seed": 202610199741,
+      "arm": "adaptive_gain",
+      "stage": "acquire",
+      "n": 32,
+      "correct": 5,
+      "full_six_contacts": 12,
+      "go_completed": 12,
+      "feedback_completed": 11,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 58.55595247098621,
+      "gain_mean": 0.6723577131857993,
+      "gain_range": [
+        0.45884166384045877,
+        0.7999999358516104
+      ],
+      "_id": "U/0"
+    },
+    {
+      "seed": 202610199741,
+      "arm": "adaptive_gain",
+      "stage": "unseen_gap",
+      "n": 8,
+      "correct": 0,
+      "full_six_contacts": 0,
+      "go_completed": 0,
+      "feedback_completed": 0,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 53.96764383530149,
+      "gain_mean": 0.6723577131857995,
+      "gain_range": [
+        0.45924921564274035,
+        0.7999999356513846
+      ],
+      "_id": "U/0"
+    },
+    {
+      "seed": 202610199741,
+      "arm": "adaptive_gain",
+      "stage": "reverse",
+      "n": 16,
+      "correct": 0,
+      "full_six_contacts": 0,
+      "go_completed": 0,
+      "feedback_completed": 0,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 48.06126804466763,
+      "gain_mean": 0.6723577131857993,
+      "gain_range": [
+        0.460008557875502,
+        0.7999999353957212
+      ],
+      "_id": "U/0"
+    },
+    {
+      "seed": 202610199741,
+      "arm": "adaptive_gain",
+      "stage": "retained_gap",
+      "n": 8,
+      "correct": 0,
+      "full_six_contacts": 0,
+      "go_completed": 0,
+      "feedback_completed": 0,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 43.4339120283081,
+      "gain_mean": 0.6723577131857993,
+      "gain_range": [
+        0.46056421690122723,
+        0.7999999352037084
+      ],
+      "_id": "U/0"
+    },
+    {
+      "seed": 202610199741,
+      "arm": "fixed_tick",
+      "stage": "acquire",
+      "n": 32,
+      "correct": 4,
+      "full_six_contacts": 10,
+      "go_completed": 10,
+      "feedback_completed": 9,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 59.114751314976004,
+      "gain_mean": 0.79999999999997,
+      "gain_range": [
+        0.7999993853906783,
+        0.8000000000000049
+      ],
+      "_id": "U/0"
+    },
+    {
+      "seed": 202610199741,
+      "arm": "fixed_tick",
+      "stage": "unseen_gap",
+      "n": 8,
+      "correct": 0,
+      "full_six_contacts": 0,
+      "go_completed": 0,
+      "feedback_completed": 0,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 54.526193186355684,
+      "gain_mean": 0.79999999999997,
+      "gain_range": [
+        0.7999993847755801,
+        0.8000000000000047
+      ],
+      "_id": "U/0"
+    },
+    {
+      "seed": 202610199741,
+      "arm": "fixed_tick",
+      "stage": "reverse",
+      "n": 16,
+      "correct": 0,
+      "full_six_contacts": 0,
+      "go_completed": 0,
+      "feedback_completed": 0,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 48.6277107188489,
+      "gain_mean": 0.7999999999999695,
+      "gain_range": [
+        0.7999997126412813,
+        0.8000000000000054
+      ],
+      "_id": "U/0"
+    },
+    {
+      "seed": 202610199741,
+      "arm": "fixed_tick",
+      "stage": "retained_gap",
+      "n": 8,
+      "correct": 0,
+      "full_six_contacts": 0,
+      "go_completed": 0,
+      "feedback_completed": 0,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 44.002152945991185,
+      "gain_mean": 0.7999999999999697,
+      "gain_range": [
+        0.7999997124683509,
+        0.8000000000000071
+      ],
+      "_id": "U/0"
+    },
+    {
+      "seed": 202610199741,
+      "arm": "fixed_event",
+      "stage": "acquire",
+      "n": 32,
+      "correct": 5,
+      "full_six_contacts": 12,
+      "go_completed": 12,
+      "feedback_completed": 11,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 58.55595247098621,
+      "gain_mean": 0.7999999999999693,
+      "gain_range": [
+        0.7999995512197969,
+        0.800000000000005
+      ],
+      "_id": "U/0"
+    },
+    {
+      "seed": 202610199741,
+      "arm": "fixed_event",
+      "stage": "unseen_gap",
+      "n": 8,
+      "correct": 0,
+      "full_six_contacts": 0,
+      "go_completed": 0,
+      "feedback_completed": 0,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 53.96764383530149,
+      "gain_mean": 0.7999999999999695,
+      "gain_range": [
+        0.799999550724753,
+        0.8000000000000054
+      ],
+      "_id": "U/0"
+    },
+    {
+      "seed": 202610199741,
+      "arm": "fixed_event",
+      "stage": "reverse",
+      "n": 16,
+      "correct": 0,
+      "full_six_contacts": 0,
+      "go_completed": 0,
+      "feedback_completed": 0,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 48.06126804466763,
+      "gain_mean": 0.7999999999999693,
+      "gain_range": [
+        0.7999995501766274,
+        0.8000000000000066
+      ],
+      "_id": "U/0"
+    },
+    {
+      "seed": 202610199741,
+      "arm": "fixed_event",
+      "stage": "retained_gap",
+      "n": 8,
+      "correct": 0,
+      "full_six_contacts": 0,
+      "go_completed": 0,
+      "feedback_completed": 0,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 43.4339120283081,
+      "gain_mean": 0.7999999999999694,
+      "gain_range": [
+        0.7999995498033481,
+        0.8000000000000057
+      ],
+      "_id": "U/0"
+    },
+    {
+      "seed": 202610199741,
+      "arm": "history_table",
+      "stage": "acquire",
+      "n": 32,
+      "correct": 28,
+      "full_six_contacts": 32,
+      "go_completed": 32,
+      "feedback_completed": 32,
+      "minimum_feedback_mass": 4.330239198060094,
+      "E_end": 60.00002483462589,
+      "gain_mean": 0.7999999999999579,
+      "gain_range": [
+        0.7999993273720422,
+        0.8000000000000033
+      ],
+      "_id": "U/0"
+    },
+    {
+      "seed": 202610199741,
+      "arm": "history_table",
+      "stage": "unseen_gap",
+      "n": 8,
+      "correct": 8,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 4.507980136845346,
+      "E_end": 55.54024112406273,
+      "gain_mean": 0.7999999999999539,
+      "gain_range": [
+        0.7999996263646141,
+        0.8000000000000043
+      ],
+      "_id": "U/0"
+    },
+    {
+      "seed": 202610199741,
+      "arm": "history_table",
+      "stage": "reverse",
+      "n": 16,
+      "correct": 8,
+      "full_six_contacts": 16,
+      "go_completed": 16,
+      "feedback_completed": 16,
+      "minimum_feedback_mass": 8.336651416246447,
+      "E_end": 48.636170315845675,
+      "gain_mean": 0.7999999999999504,
+      "gain_range": [
+        0.7999993575147765,
+        0.8000000000000054
+      ],
+      "_id": "U/0"
+    },
+    {
+      "seed": 202610199741,
+      "arm": "history_table",
+      "stage": "retained_gap",
+      "n": 8,
+      "correct": 8,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 6.741824334934181,
+      "E_end": 44.242920926861245,
+      "gain_mean": 0.7999999999999493,
+      "gain_range": [
+        0.7999996357490162,
+        0.800000000000006
+      ],
+      "_id": "U/0"
+    },
+    {
+      "seed": 202610199742,
+      "arm": "adaptive_gain",
+      "stage": "acquire",
+      "n": 32,
+      "correct": 22,
+      "full_six_contacts": 32,
+      "go_completed": 32,
+      "feedback_completed": 32,
+      "minimum_feedback_mass": 12.337988964195494,
+      "E_end": 59.68483295405813,
+      "gain_mean": 1.2189214416694516,
+      "gain_range": [
+        0.7997561859856575,
+        1.3
+      ],
+      "_id": "U/1"
+    },
+    {
+      "seed": 202610199742,
+      "arm": "adaptive_gain",
+      "stage": "unseen_gap",
+      "n": 8,
+      "correct": 4,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 3.0420764060836953,
+      "E_end": 54.6516095120221,
+      "gain_mean": 1.218921441669447,
+      "gain_range": [
+        0.7998402451164207,
+        1.282672564153269
+      ],
+      "_id": "U/1"
+    },
+    {
+      "seed": 202610199742,
+      "arm": "adaptive_gain",
+      "stage": "reverse",
+      "n": 16,
+      "correct": 2,
+      "full_six_contacts": 3,
+      "go_completed": 3,
+      "feedback_completed": 2,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 48.497844415201314,
+      "gain_mean": 1.2141954794258445,
+      "gain_range": [
+        0.7998449956669885,
+        1.2580719211288434
+      ],
+      "_id": "U/1"
+    },
+    {
+      "seed": 202610199742,
+      "arm": "adaptive_gain",
+      "stage": "retained_gap",
+      "n": 8,
+      "correct": 0,
+      "full_six_contacts": 0,
+      "go_completed": 0,
+      "feedback_completed": 0,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 43.910510124739744,
+      "gain_mean": 1.2141954794258445,
+      "gain_range": [
+        0.7998450080484582,
+        1.2580674854396035
+      ],
+      "_id": "U/1"
+    },
+    {
+      "seed": 202610199742,
+      "arm": "fixed_tick",
+      "stage": "acquire",
+      "n": 32,
+      "correct": 9,
+      "full_six_contacts": 13,
+      "go_completed": 13,
+      "feedback_completed": 12,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 59.58689525266311,
+      "gain_mean": 0.7999999999999698,
+      "gain_range": [
+        0.7999995682192659,
+        0.8000000000000037
+      ],
+      "_id": "U/1"
+    },
+    {
+      "seed": 202610199742,
+      "arm": "fixed_tick",
+      "stage": "unseen_gap",
+      "n": 8,
+      "correct": 0,
+      "full_six_contacts": 0,
+      "go_completed": 0,
+      "feedback_completed": 0,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 54.99965349281289,
+      "gain_mean": 0.7999999999999698,
+      "gain_range": [
+        0.7999995677571193,
+        0.8000000000000047
+      ],
+      "_id": "U/1"
+    },
+    {
+      "seed": 202610199742,
+      "arm": "fixed_tick",
+      "stage": "reverse",
+      "n": 16,
+      "correct": 0,
+      "full_six_contacts": 0,
+      "go_completed": 0,
+      "feedback_completed": 0,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 48.969042604750626,
+      "gain_mean": 0.7999999999999694,
+      "gain_range": [
+        0.7999995672345852,
+        0.8000000000000065
+      ],
+      "_id": "U/1"
+    },
+    {
+      "seed": 202610199742,
+      "arm": "fixed_tick",
+      "stage": "retained_gap",
+      "n": 8,
+      "correct": 0,
+      "full_six_contacts": 0,
+      "go_completed": 0,
+      "feedback_completed": 0,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 44.39957578246856,
+      "gain_mean": 0.7999999999999694,
+      "gain_range": [
+        0.7999995668898371,
+        0.8000000000000063
+      ],
+      "_id": "U/1"
+    },
+    {
+      "seed": 202610199742,
+      "arm": "fixed_event",
+      "stage": "acquire",
+      "n": 32,
+      "correct": 10,
+      "full_six_contacts": 16,
+      "go_completed": 16,
+      "feedback_completed": 15,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 59.697147289380055,
+      "gain_mean": 0.7999999999999675,
+      "gain_range": [
+        0.799999474246633,
+        0.8000000000000045
+      ],
+      "_id": "U/1"
+    },
+    {
+      "seed": 202610199742,
+      "arm": "fixed_event",
+      "stage": "unseen_gap",
+      "n": 8,
+      "correct": 0,
+      "full_six_contacts": 0,
+      "go_completed": 0,
+      "feedback_completed": 0,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 55.10880274029313,
+      "gain_mean": 0.7999999999999673,
+      "gain_range": [
+        0.7999994737050091,
+        0.8000000000000063
+      ],
+      "_id": "U/1"
+    },
+    {
+      "seed": 202610199742,
+      "arm": "fixed_event",
+      "stage": "reverse",
+      "n": 16,
+      "correct": 0,
+      "full_six_contacts": 0,
+      "go_completed": 0,
+      "feedback_completed": 0,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 49.07168313203326,
+      "gain_mean": 0.7999999999999677,
+      "gain_range": [
+        0.7999994730992741,
+        0.800000000000008
+      ],
+      "_id": "U/1"
+    },
+    {
+      "seed": 202610199742,
+      "arm": "fixed_event",
+      "stage": "retained_gap",
+      "n": 8,
+      "correct": 0,
+      "full_six_contacts": 0,
+      "go_completed": 0,
+      "feedback_completed": 0,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 44.49605984086821,
+      "gain_mean": 0.7999999999999676,
+      "gain_range": [
+        0.7999994727019775,
+        0.8000000000000078
+      ],
+      "_id": "U/1"
+    },
+    {
+      "seed": 202610199742,
+      "arm": "history_table",
+      "stage": "acquire",
+      "n": 32,
+      "correct": 28,
+      "full_six_contacts": 32,
+      "go_completed": 32,
+      "feedback_completed": 32,
+      "minimum_feedback_mass": 5.4542981741788426,
+      "E_end": 60.31942214617644,
+      "gain_mean": 0.7999999999999577,
+      "gain_range": [
+        0.7999994029110586,
+        0.800000000000004
+      ],
+      "_id": "U/1"
+    },
+    {
+      "seed": 202610199742,
+      "arm": "history_table",
+      "stage": "unseen_gap",
+      "n": 8,
+      "correct": 8,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 7.231299601897519,
+      "E_end": 56.0571901096818,
+      "gain_mean": 0.7999999999999544,
+      "gain_range": [
+        0.7999993704762796,
+        0.8000000000000057
+      ],
+      "_id": "U/1"
+    },
+    {
+      "seed": 202610199742,
+      "arm": "history_table",
+      "stage": "reverse",
+      "n": 16,
+      "correct": 8,
+      "full_six_contacts": 16,
+      "go_completed": 16,
+      "feedback_completed": 16,
+      "minimum_feedback_mass": 6.078366988233849,
+      "E_end": 49.17324059204299,
+      "gain_mean": 0.7999999999999508,
+      "gain_range": [
+        0.799999474713914,
+        0.8000000000000046
+      ],
+      "_id": "U/1"
+    },
+    {
+      "seed": 202610199742,
+      "arm": "history_table",
+      "stage": "retained_gap",
+      "n": 8,
+      "correct": 8,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 5.433650617720926,
+      "E_end": 44.818330719318226,
+      "gain_mean": 0.7999999999999496,
+      "gain_range": [
+        0.7999994671637924,
+        0.8000000000000044
+      ],
+      "_id": "U/1"
+    },
+    {
+      "seed": 202610199751,
+      "arm": "adaptive_gain",
+      "stage": "acquire",
+      "n": 24,
+      "correct": 15,
+      "full_six_contacts": 24,
+      "go_completed": 24,
+      "feedback_completed": 24,
+      "minimum_feedback_mass": 15.097429233099618,
+      "_id": "R/0"
+    },
+    {
+      "seed": 202610199751,
+      "arm": "adaptive_gain",
+      "stage": "unseen_gap",
+      "n": 8,
+      "correct": 6,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 16.90764593814051,
+      "_id": "R/0"
+    },
+    {
+      "seed": 202610199751,
+      "arm": "adaptive_gain",
+      "stage": "reverse",
+      "n": 8,
+      "correct": 1,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 16.988468987554977,
+      "_id": "R/0"
+    },
+    {
+      "seed": 202610199751,
+      "arm": "adaptive_gain",
+      "stage": "retained_gap",
+      "n": 8,
+      "correct": 3,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 16.852688279383447,
+      "_id": "R/0"
+    },
+    {
+      "seed": 202610199751,
+      "arm": "fixed_event",
+      "stage": "acquire",
+      "n": 24,
+      "correct": 15,
+      "full_six_contacts": 24,
+      "go_completed": 24,
+      "feedback_completed": 24,
+      "minimum_feedback_mass": 15.097429233099618,
+      "_id": "R/0"
+    },
+    {
+      "seed": 202610199751,
+      "arm": "fixed_event",
+      "stage": "unseen_gap",
+      "n": 8,
+      "correct": 7,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 16.90764593814051,
+      "_id": "R/0"
+    },
+    {
+      "seed": 202610199751,
+      "arm": "fixed_event",
+      "stage": "reverse",
+      "n": 8,
+      "correct": 2,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 16.80167512893,
+      "_id": "R/0"
+    },
+    {
+      "seed": 202610199751,
+      "arm": "fixed_event",
+      "stage": "retained_gap",
+      "n": 8,
+      "correct": 0,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 17.224104054831443,
+      "_id": "R/0"
+    },
+    {
+      "seed": 202610199751,
+      "arm": "local_delay",
+      "stage": "acquire",
+      "n": 24,
+      "correct": 24,
+      "full_six_contacts": 24,
+      "go_completed": 24,
+      "feedback_completed": 24,
+      "minimum_feedback_mass": 13.693782658777026,
+      "_id": "R/0"
+    },
+    {
+      "seed": 202610199751,
+      "arm": "local_delay",
+      "stage": "unseen_gap",
+      "n": 8,
+      "correct": 8,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 17.113880584556068,
+      "_id": "R/0"
+    },
+    {
+      "seed": 202610199751,
+      "arm": "local_delay",
+      "stage": "reverse",
+      "n": 8,
+      "correct": 0,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 15.54240297078255,
+      "_id": "R/0"
+    },
+    {
+      "seed": 202610199751,
+      "arm": "local_delay",
+      "stage": "retained_gap",
+      "n": 8,
+      "correct": 4,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 18.202095597726128,
+      "_id": "R/0"
+    },
+    {
+      "seed": 202610199751,
+      "arm": "history_table",
+      "stage": "acquire",
+      "n": 24,
+      "correct": 20,
+      "full_six_contacts": 24,
+      "go_completed": 24,
+      "feedback_completed": 24,
+      "minimum_feedback_mass": 16.070825808938736,
+      "_id": "R/0"
+    },
+    {
+      "seed": 202610199751,
+      "arm": "history_table",
+      "stage": "unseen_gap",
+      "n": 8,
+      "correct": 8,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 17.03969678007128,
+      "_id": "R/0"
+    },
+    {
+      "seed": 202610199751,
+      "arm": "history_table",
+      "stage": "reverse",
+      "n": 8,
+      "correct": 0,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 15.504595920906251,
+      "_id": "R/0"
+    },
+    {
+      "seed": 202610199751,
+      "arm": "history_table",
+      "stage": "retained_gap",
+      "n": 8,
+      "correct": 8,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 16.834156064548225,
+      "_id": "R/0"
+    },
+    {
+      "seed": 202610199752,
+      "arm": "adaptive_gain",
+      "stage": "acquire",
+      "n": 24,
+      "correct": 16,
+      "full_six_contacts": 24,
+      "go_completed": 24,
+      "feedback_completed": 24,
+      "minimum_feedback_mass": 13.647412632738117,
+      "_id": "R/1"
+    },
+    {
+      "seed": 202610199752,
+      "arm": "adaptive_gain",
+      "stage": "unseen_gap",
+      "n": 8,
+      "correct": 6,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 16.80958235015923,
+      "_id": "R/1"
+    },
+    {
+      "seed": 202610199752,
+      "arm": "adaptive_gain",
+      "stage": "reverse",
+      "n": 8,
+      "correct": 2,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 16.007213326172955,
+      "_id": "R/1"
+    },
+    {
+      "seed": 202610199752,
+      "arm": "adaptive_gain",
+      "stage": "retained_gap",
+      "n": 8,
+      "correct": 3,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 16.73549516534588,
+      "_id": "R/1"
+    },
+    {
+      "seed": 202610199752,
+      "arm": "fixed_event",
+      "stage": "acquire",
+      "n": 24,
+      "correct": 16,
+      "full_six_contacts": 24,
+      "go_completed": 24,
+      "feedback_completed": 24,
+      "minimum_feedback_mass": 13.647412632738117,
+      "_id": "R/1"
+    },
+    {
+      "seed": 202610199752,
+      "arm": "fixed_event",
+      "stage": "unseen_gap",
+      "n": 8,
+      "correct": 7,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 16.655577997296916,
+      "_id": "R/1"
+    },
+    {
+      "seed": 202610199752,
+      "arm": "fixed_event",
+      "stage": "reverse",
+      "n": 8,
+      "correct": 0,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 15.86807950365595,
+      "_id": "R/1"
+    },
+    {
+      "seed": 202610199752,
+      "arm": "fixed_event",
+      "stage": "retained_gap",
+      "n": 8,
+      "correct": 3,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 15.179510262755707,
+      "_id": "R/1"
+    },
+    {
+      "seed": 202610199752,
+      "arm": "local_delay",
+      "stage": "acquire",
+      "n": 24,
+      "correct": 24,
+      "full_six_contacts": 24,
+      "go_completed": 24,
+      "feedback_completed": 24,
+      "minimum_feedback_mass": 14.026476219422673,
+      "_id": "R/1"
+    },
+    {
+      "seed": 202610199752,
+      "arm": "local_delay",
+      "stage": "unseen_gap",
+      "n": 8,
+      "correct": 8,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 17.299912812689723,
+      "_id": "R/1"
+    },
+    {
+      "seed": 202610199752,
+      "arm": "local_delay",
+      "stage": "reverse",
+      "n": 8,
+      "correct": 0,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 16.904274667158937,
+      "_id": "R/1"
+    },
+    {
+      "seed": 202610199752,
+      "arm": "local_delay",
+      "stage": "retained_gap",
+      "n": 8,
+      "correct": 4,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 17.46665613883993,
+      "_id": "R/1"
+    },
+    {
+      "seed": 202610199752,
+      "arm": "history_table",
+      "stage": "acquire",
+      "n": 24,
+      "correct": 20,
+      "full_six_contacts": 24,
+      "go_completed": 24,
+      "feedback_completed": 24,
+      "minimum_feedback_mass": 16.68752823688804,
+      "_id": "R/1"
+    },
+    {
+      "seed": 202610199752,
+      "arm": "history_table",
+      "stage": "unseen_gap",
+      "n": 8,
+      "correct": 8,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 17.22792111406826,
+      "_id": "R/1"
+    },
+    {
+      "seed": 202610199752,
+      "arm": "history_table",
+      "stage": "reverse",
+      "n": 8,
+      "correct": 0,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 17.08781240944786,
+      "_id": "R/1"
+    },
+    {
+      "seed": 202610199752,
+      "arm": "history_table",
+      "stage": "retained_gap",
+      "n": 8,
+      "correct": 8,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 16.828763554067308,
+      "_id": "R/1"
+    },
+    {
+      "seed": 202610199761,
+      "arm": "adaptive_gain",
+      "stage": "acquire",
+      "n": 32,
+      "correct": 12,
+      "full_six_contacts": 32,
+      "go_completed": 32,
+      "feedback_completed": 32,
+      "minimum_feedback_mass": 14.360141476913451,
+      "_id": "B/0"
+    },
+    {
+      "seed": 202610199761,
+      "arm": "adaptive_gain",
+      "stage": "unseen_gap",
+      "n": 8,
+      "correct": 4,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 15.21331618664145,
+      "_id": "B/0"
+    },
+    {
+      "seed": 202610199761,
+      "arm": "adaptive_gain",
+      "stage": "reverse",
+      "n": 16,
+      "correct": 4,
+      "full_six_contacts": 16,
+      "go_completed": 16,
+      "feedback_completed": 16,
+      "minimum_feedback_mass": 13.697940240353066,
+      "_id": "B/0"
+    },
+    {
+      "seed": 202610199761,
+      "arm": "adaptive_gain",
+      "stage": "retained_gap",
+      "n": 8,
+      "correct": 4,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 14.354342638944566,
+      "_id": "B/0"
+    },
+    {
+      "seed": 202610199761,
+      "arm": "local_delay",
+      "stage": "acquire",
+      "n": 32,
+      "correct": 28,
+      "full_six_contacts": 32,
+      "go_completed": 32,
+      "feedback_completed": 32,
+      "minimum_feedback_mass": 15.613621691152249,
+      "_id": "B/0"
+    },
+    {
+      "seed": 202610199761,
+      "arm": "local_delay",
+      "stage": "unseen_gap",
+      "n": 8,
+      "correct": 8,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 16.009017082290576,
+      "_id": "B/0"
+    },
+    {
+      "seed": 202610199761,
+      "arm": "local_delay",
+      "stage": "reverse",
+      "n": 16,
+      "correct": 7,
+      "full_six_contacts": 16,
+      "go_completed": 16,
+      "feedback_completed": 16,
+      "minimum_feedback_mass": 17.148445141719932,
+      "_id": "B/0"
+    },
+    {
+      "seed": 202610199761,
+      "arm": "local_delay",
+      "stage": "retained_gap",
+      "n": 8,
+      "correct": 8,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 16.96462354555717,
+      "_id": "B/0"
+    },
+    {
+      "seed": 202610199761,
+      "arm": "history_table",
+      "stage": "acquire",
+      "n": 32,
+      "correct": 28,
+      "full_six_contacts": 32,
+      "go_completed": 32,
+      "feedback_completed": 32,
+      "minimum_feedback_mass": 15.997374797581491,
+      "_id": "B/0"
+    },
+    {
+      "seed": 202610199761,
+      "arm": "history_table",
+      "stage": "unseen_gap",
+      "n": 8,
+      "correct": 8,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 16.043253720195423,
+      "_id": "B/0"
+    },
+    {
+      "seed": 202610199761,
+      "arm": "history_table",
+      "stage": "reverse",
+      "n": 16,
+      "correct": 8,
+      "full_six_contacts": 16,
+      "go_completed": 16,
+      "feedback_completed": 16,
+      "minimum_feedback_mass": 17.14895405661055,
+      "_id": "B/0"
+    },
+    {
+      "seed": 202610199761,
+      "arm": "history_table",
+      "stage": "retained_gap",
+      "n": 8,
+      "correct": 8,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 16.894463801879763,
+      "_id": "B/0"
+    },
+    {
+      "seed": 202610199762,
+      "arm": "adaptive_gain",
+      "stage": "acquire",
+      "n": 32,
+      "correct": 18,
+      "full_six_contacts": 32,
+      "go_completed": 32,
+      "feedback_completed": 32,
+      "minimum_feedback_mass": 14.870554124011955,
+      "_id": "B/1"
+    },
+    {
+      "seed": 202610199762,
+      "arm": "adaptive_gain",
+      "stage": "unseen_gap",
+      "n": 8,
+      "correct": 6,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 17.377663330894446,
+      "_id": "B/1"
+    },
+    {
+      "seed": 202610199762,
+      "arm": "adaptive_gain",
+      "stage": "reverse",
+      "n": 16,
+      "correct": 5,
+      "full_six_contacts": 16,
+      "go_completed": 16,
+      "feedback_completed": 16,
+      "minimum_feedback_mass": 14.994507645384733,
+      "_id": "B/1"
+    },
+    {
+      "seed": 202610199762,
+      "arm": "adaptive_gain",
+      "stage": "retained_gap",
+      "n": 8,
+      "correct": 4,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 15.196373857078,
+      "_id": "B/1"
+    },
+    {
+      "seed": 202610199762,
+      "arm": "local_delay",
+      "stage": "acquire",
+      "n": 32,
+      "correct": 32,
+      "full_six_contacts": 32,
+      "go_completed": 32,
+      "feedback_completed": 32,
+      "minimum_feedback_mass": 14.499981107478554,
+      "_id": "B/1"
+    },
+    {
+      "seed": 202610199762,
+      "arm": "local_delay",
+      "stage": "unseen_gap",
+      "n": 8,
+      "correct": 8,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 16.270169925581172,
+      "_id": "B/1"
+    },
+    {
+      "seed": 202610199762,
+      "arm": "local_delay",
+      "stage": "reverse",
+      "n": 16,
+      "correct": 6,
+      "full_six_contacts": 16,
+      "go_completed": 16,
+      "feedback_completed": 16,
+      "minimum_feedback_mass": 15.409851880173743,
+      "_id": "B/1"
+    },
+    {
+      "seed": 202610199762,
+      "arm": "local_delay",
+      "stage": "retained_gap",
+      "n": 8,
+      "correct": 8,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 15.819282401825882,
+      "_id": "B/1"
+    },
+    {
+      "seed": 202610199762,
+      "arm": "history_table",
+      "stage": "acquire",
+      "n": 32,
+      "correct": 28,
+      "full_six_contacts": 32,
+      "go_completed": 32,
+      "feedback_completed": 32,
+      "minimum_feedback_mass": 16.31030073613649,
+      "_id": "B/1"
+    },
+    {
+      "seed": 202610199762,
+      "arm": "history_table",
+      "stage": "unseen_gap",
+      "n": 8,
+      "correct": 8,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 16.228752695058702,
+      "_id": "B/1"
+    },
+    {
+      "seed": 202610199762,
+      "arm": "history_table",
+      "stage": "reverse",
+      "n": 16,
+      "correct": 8,
+      "full_six_contacts": 16,
+      "go_completed": 16,
+      "feedback_completed": 16,
+      "minimum_feedback_mass": 16.120287913063326,
+      "_id": "B/1"
+    },
+    {
+      "seed": 202610199762,
+      "arm": "history_table",
+      "stage": "retained_gap",
+      "n": 8,
+      "correct": 8,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 15.934207455606032,
+      "_id": "B/1"
+    }
+  ],
+  "paths": [
+    {
+      "seed": 202610199741,
+      "arm": "adaptive_gain",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5f08b6b0-ceb7-4dc1-a70e-ee5d0052e9aa/raw/202610199741_adaptive_gain",
+      "native": 902,
+      "failed": false,
+      "events": 64,
+      "M": 23.999999999999996,
+      "E": 43.4339120283081,
+      "costs": {
+        "sensor": 0.1802810576800697,
+        "sensor_unpaid": 0.0,
+        "internal": 1.0824,
+        "internal_unpaid": 0.0,
+        "movement": 0.6589869250628194,
+        "basal": 25.977600000000002,
+        "basal_unpaid": 4.6311227348060147e-17,
+        "fee": 0.11095427600574254,
+        "gain": 0.373195656229804,
+        "loss": 0.9290613691730358
+      },
+      "minimum_mass": 23.999999999999996,
+      "minimum_energy": 43.4339120283081,
+      "residual": 2.22218077272629e-14,
+      "_id": "U/0"
+    },
+    {
+      "seed": 202610199741,
+      "arm": "fixed_tick",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5f08b6b0-ceb7-4dc1-a70e-ee5d0052e9aa/raw/202610199741_fixed_tick",
+      "native": 902,
+      "failed": false,
+      "events": 64,
+      "M": 24.000000000000007,
+      "E": 44.002152945991185,
+      "costs": {
+        "sensor": 0.13775078144283548,
+        "sensor_unpaid": 0.0,
+        "internal": 1.0824,
+        "internal_unpaid": 0.0,
+        "movement": 0.5678649842168991,
+        "basal": 25.977600000000006,
+        "basal_unpaid": 4.257619284448501e-17,
+        "fee": 0.08089305372274012,
+        "gain": 0.391985865277081,
+        "loss": 0.5433240999034034
+      },
+      "minimum_mass": 23.999999999999993,
+      "minimum_energy": 44.002152945991185,
+      "residual": 2.8048093361765503e-14,
+      "_id": "U/0"
+    },
+    {
+      "seed": 202610199741,
+      "arm": "fixed_event",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5f08b6b0-ceb7-4dc1-a70e-ee5d0052e9aa/raw/202610199741_fixed_event",
+      "native": 902,
+      "failed": false,
+      "events": 64,
+      "M": 23.999999999999996,
+      "E": 43.4339120283081,
+      "costs": {
+        "sensor": 0.1802810576800697,
+        "sensor_unpaid": 0.0,
+        "internal": 1.0824,
+        "internal_unpaid": 0.0,
+        "movement": 0.6589869250628194,
+        "basal": 25.977600000000002,
+        "basal_unpaid": 4.6311227348060147e-17,
+        "fee": 0.11095427600574254,
+        "gain": 0.373195656229804,
+        "loss": 0.9290613691730358
+      },
+      "minimum_mass": 23.999999999999996,
+      "minimum_energy": 43.4339120283081,
+      "residual": 2.22218077272629e-14,
+      "_id": "U/0"
+    },
+    {
+      "seed": 202610199741,
+      "arm": "history_table",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5f08b6b0-ceb7-4dc1-a70e-ee5d0052e9aa/raw/202610199741_history_table",
+      "native": 902,
+      "failed": false,
+      "events": 64,
+      "M": 24.0,
+      "E": 44.242920926861245,
+      "costs": {
+        "sensor": 0.7920897298145819,
+        "sensor_unpaid": 0.0,
+        "internal": 1.0823999999999998,
+        "internal_unpaid": 0.0,
+        "movement": 2.863601660750184,
+        "basal": 25.9776,
+        "basal_unpaid": 2.0539337379470894e-16,
+        "fee": 0.5575236731205285,
+        "gain": 5.103210033996449,
+        "loss": 1.5870740434498924
+      },
+      "minimum_mass": 23.999999999999986,
+      "minimum_energy": 44.18004527602143,
+      "residual": 2.4085984942634475e-14,
+      "_id": "U/0"
+    },
+    {
+      "seed": 202610199742,
+      "arm": "adaptive_gain",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5f08b6b0-ceb7-4dc1-a70e-ee5d0052e9aa/raw/202610199742_adaptive_gain",
+      "native": 900,
+      "failed": false,
+      "events": 64,
+      "M": 24.00000000000001,
+      "E": 43.910510124739744,
+      "costs": {
+        "sensor": 0.8545229503054568,
+        "sensor_unpaid": 0.0,
+        "internal": 1.08,
+        "internal_unpaid": 0.0,
+        "movement": 2.0258971372979957,
+        "basal": 25.92,
+        "basal_unpaid": 1.4387813539179573e-16,
+        "fee": 0.5855478261929127,
+        "gain": 4.692931021635177,
+        "loss": 2.3164529830990137
+      },
+      "minimum_mass": 23.99999999999999,
+      "minimum_energy": 43.910510124739744,
+      "residual": 3.2837014357633976e-14,
+      "_id": "U/1"
+    },
+    {
+      "seed": 202610199742,
+      "arm": "fixed_tick",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5f08b6b0-ceb7-4dc1-a70e-ee5d0052e9aa/raw/202610199742_fixed_tick",
+      "native": 900,
+      "failed": false,
+      "events": 64,
+      "M": 24.000000000000014,
+      "E": 44.39957578246856,
+      "costs": {
+        "sensor": 0.22022979341609727,
+        "sensor_unpaid": 0.0,
+        "internal": 1.08,
+        "internal_unpaid": 0.0,
+        "movement": 0.7057416832715421,
+        "basal": 25.920000000000005,
+        "basal_unpaid": 5.0475512981136574e-17,
+        "fee": 0.13933076223610952,
+        "gain": 1.0496957982449715,
+        "loss": 0.5848177768527109
+      },
+      "minimum_mass": 23.999999999999993,
+      "minimum_energy": 44.39957578246856,
+      "residual": 3.2837014357633976e-14,
+      "_id": "U/1"
+    },
+    {
+      "seed": 202610199742,
+      "arm": "fixed_event",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5f08b6b0-ceb7-4dc1-a70e-ee5d0052e9aa/raw/202610199742_fixed_event",
+      "native": 900,
+      "failed": false,
+      "events": 64,
+      "M": 23.99999999999998,
+      "E": 44.49605984086821,
+      "costs": {
+        "sensor": 0.24520032852489926,
+        "sensor_unpaid": 0.0,
+        "internal": 1.0799999999999996,
+        "internal_unpaid": 0.0,
+        "movement": 0.839670107689076,
+        "basal": 25.919999999999995,
+        "basal_unpaid": 5.837929369011979e-17,
+        "fee": 0.1569030088970395,
+        "gain": 1.2967751297786143,
+        "loss": 0.5589418437993777
+      },
+      "minimum_mass": 23.99999999999998,
+      "minimum_energy": 44.49605984086821,
+      "residual": 3.2837014357633976e-14,
+      "_id": "U/1"
+    },
+    {
+      "seed": 202610199742,
+      "arm": "history_table",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5f08b6b0-ceb7-4dc1-a70e-ee5d0052e9aa/raw/202610199742_history_table",
+      "native": 900,
+      "failed": false,
+      "events": 64,
+      "M": 24.0,
+      "E": 44.818330719318226,
+      "costs": {
+        "sensor": 0.8235997170231341,
+        "sensor_unpaid": 0.0,
+        "internal": 1.08,
+        "internal_unpaid": 0.0,
+        "movement": 2.871341763381733,
+        "basal": 25.920000000000005,
+        "basal_unpaid": 2.034454229303991e-16,
+        "fee": 0.579432141996367,
+        "gain": 5.522945022837933,
+        "loss": 1.4302406811184705
+      },
+      "minimum_mass": 23.999999999999993,
+      "minimum_energy": 44.756903870766195,
+      "residual": 2.9766770645589524e-14,
+      "_id": "U/1"
+    },
+    {
+      "seed": 202610199751,
+      "arm": "adaptive_gain",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_adaptive_gain",
+      "native": 992,
+      "failed": false,
+      "events": 48,
+      "M": 23.999999999999982,
+      "E": 36.77851452710415,
+      "minimum_mass": 23.99999999999998,
+      "minimum_energy": 36.77851452710415,
+      "residual": 2.876171523169546e-14,
+      "costs": {
+        "sensor": 1.3165554443559768,
+        "sensor_unpaid": 0.0,
+        "internal": 1.1903999999999995,
+        "internal_unpaid": 0.0,
+        "movement": 3.6597430025511324,
+        "basal": 28.56959999999999,
+        "basal_unpaid": 2.7574389512177006e-16,
+        "fee": 0.8827827112989507,
+        "gain": 5.495494110448816,
+        "loss": 5.097898425138593
+      },
+      "homing_costs": {
+        "movement": 1.5032166882439257,
+        "basal": 8.294399999999998,
+        "internal": 0.34559999999999985
+      },
+      "_id": "R/0"
+    },
+    {
+      "seed": 202610199751,
+      "arm": "fixed_event",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_fixed_event",
+      "native": 992,
+      "failed": false,
+      "events": 48,
+      "M": 23.999999999999993,
+      "E": 36.36259768951987,
+      "minimum_mass": 23.99999999999998,
+      "minimum_energy": 36.36259768951987,
+      "residual": 2.876171523169546e-14,
+      "costs": {
+        "sensor": 1.325641276661903,
+        "sensor_unpaid": 0.0,
+        "internal": 1.1903999999999997,
+        "internal_unpaid": 0.0,
+        "movement": 3.6039422987420022,
+        "basal": 28.56959999999999,
+        "basal_unpaid": 2.65028764790253e-16,
+        "fee": 0.8938298636122571,
+        "gain": 5.335984745941583,
+        "loss": 5.389973617405503
+      },
+      "homing_costs": {
+        "movement": 1.477866098515966,
+        "basal": 8.294399999999998,
+        "internal": 0.3455999999999999
+      },
+      "_id": "R/0"
+    },
+    {
+      "seed": 202610199751,
+      "arm": "local_delay",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_local_delay",
+      "native": 992,
+      "failed": false,
+      "events": 48,
+      "M": 24.00000000000002,
+      "E": 41.62026861924414,
+      "minimum_mass": 23.999999999999993,
+      "minimum_energy": 41.62026861924414,
+      "residual": 3.511882624984697e-14,
+      "costs": {
+        "sensor": 1.3096676311525604,
+        "sensor_unpaid": 0.0,
+        "internal": 1.1904000000000003,
+        "internal_unpaid": 0.0,
+        "movement": 3.6440697195004343,
+        "basal": 28.569600000000012,
+        "basal_unpaid": 2.781052463855268e-16,
+        "fee": 0.8798845845678895,
+        "gain": 7.8862527846398445,
+        "loss": 2.672362230174829
+      },
+      "homing_costs": {
+        "movement": 1.4990183011684937,
+        "basal": 8.294400000000003,
+        "internal": 0.34560000000000013
+      },
+      "_id": "R/0"
+    },
+    {
+      "seed": 202610199751,
+      "arm": "history_table",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_history_table",
+      "native": 992,
+      "failed": false,
+      "events": 48,
+      "M": 23.99999999999997,
+      "E": 41.96348829549577,
+      "minimum_mass": 23.99999999999997,
+      "minimum_energy": 41.96348829549577,
+      "residual": 2.781108676686017e-14,
+      "costs": {
+        "sensor": 1.338789398528379,
+        "sensor_unpaid": 0.0,
+        "internal": 1.1903999999999992,
+        "internal_unpaid": 0.0,
+        "movement": 3.5692230240020697,
+        "basal": 28.56959999999998,
+        "basal_unpaid": 2.596712127796355e-16,
+        "fee": 0.9073503316502977,
+        "gain": 8.213527514740068,
+        "loss": 2.674676465063504
+      },
+      "homing_costs": {
+        "movement": 1.4704924316717976,
+        "basal": 8.294399999999994,
+        "internal": 0.34559999999999974
+      },
+      "_id": "R/0"
+    },
+    {
+      "seed": 202610199752,
+      "arm": "adaptive_gain",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199752_adaptive_gain",
+      "native": 990,
+      "failed": false,
+      "events": 48,
+      "M": 24.000000000000007,
+      "E": 37.72307178280286,
+      "minimum_mass": 23.999999999999996,
+      "minimum_energy": 37.72307178280286,
+      "residual": 3.3347890421309145e-14,
+      "costs": {
+        "sensor": 1.3070580238509109,
+        "sensor_unpaid": 0.0,
+        "internal": 1.1880000000000002,
+        "internal_unpaid": 0.0,
+        "movement": 3.6692683870633047,
+        "basal": 28.512000000000004,
+        "basal_unpaid": 2.7022101392939727e-16,
+        "fee": 0.874874687511025,
+        "gain": 5.886384565680207,
+        "loss": 4.612111684452094
+      },
+      "homing_costs": {
+        "movement": 1.5165895235153404,
+        "basal": 8.294400000000001,
+        "internal": 0.3456
+      },
+      "_id": "R/1"
+    },
+    {
+      "seed": 202610199752,
+      "arm": "fixed_event",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199752_fixed_event",
+      "native": 990,
+      "failed": false,
+      "events": 48,
+      "M": 24.000000000000007,
+      "E": 37.31103135006106,
+      "minimum_mass": 23.999999999999993,
+      "minimum_energy": 37.31103135006106,
+      "residual": 3.3347890421309145e-14,
+      "costs": {
+        "sensor": 1.2862047192857953,
+        "sensor_unpaid": 0.0,
+        "internal": 1.1880000000000002,
+        "internal_unpaid": 0.0,
+        "movement": 3.736674110349448,
+        "basal": 28.512000000000004,
+        "basal_unpaid": 2.71186804515246e-16,
+        "fee": 0.8542430502245024,
+        "gain": 5.569534916307431,
+        "loss": 4.681381686386599
+      },
+      "homing_costs": {
+        "movement": 1.5513041170653958,
+        "basal": 8.294400000000001,
+        "internal": 0.3456
+      },
+      "_id": "R/1"
+    },
+    {
+      "seed": 202610199752,
+      "arm": "local_delay",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199752_local_delay",
+      "native": 990,
+      "failed": false,
+      "events": 48,
+      "M": 23.999999999999993,
+      "E": 41.66525097879946,
+      "minimum_mass": 23.999999999999993,
+      "minimum_energy": 41.66525097879946,
+      "residual": 3.3347890421309145e-14,
+      "costs": {
+        "sensor": 1.32102449653608,
+        "sensor_unpaid": 0.0,
+        "internal": 1.1880000000000002,
+        "internal_unpaid": 0.0,
+        "movement": 3.6217381616752737,
+        "basal": 28.512000000000008,
+        "basal_unpaid": 2.6726345065264573e-16,
+        "fee": 0.8884238144445773,
+        "gain": 7.928761612395163,
+        "loss": 2.7323241609397657
+      },
+      "homing_costs": {
+        "movement": 1.4826682447212878,
+        "basal": 8.294400000000001,
+        "internal": 0.3456000000000001
+      },
+      "_id": "R/1"
+    },
+    {
+      "seed": 202610199752,
+      "arm": "history_table",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/fecb9eed-feb6-4c29-a883-2d0a7f462286/raw/202610199752_history_table",
+      "native": 990,
+      "failed": false,
+      "events": 48,
+      "M": 23.99999999999999,
+      "E": 41.97581355380045,
+      "minimum_mass": 23.999999999999986,
+      "minimum_energy": 41.97581355380045,
+      "residual": 3.1898312116696026e-14,
+      "costs": {
+        "sensor": 1.347536221564391,
+        "sensor_unpaid": 0.0,
+        "internal": 1.188,
+        "internal_unpaid": 0.0,
+        "movement": 3.5512690455521376,
+        "basal": 28.512,
+        "basal_unpaid": 2.692310591545465e-16,
+        "fee": 0.9143386200472121,
+        "gain": 8.230510440765388,
+        "loss": 2.741552999801157
+      },
+      "homing_costs": {
+        "movement": 1.4554957532744353,
+        "basal": 8.2944,
+        "internal": 0.34559999999999996
+      },
+      "_id": "R/1"
+    },
+    {
+      "seed": 202610199761,
+      "arm": "adaptive_gain",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/a2c32928-b2b8-4ee0-9096-c006ee1efbf1/raw/202610199761_adaptive_gain",
+      "native": 1298,
+      "failed": false,
+      "events": 64,
+      "M": 23.999999999999993,
+      "E": 21.984105440345274,
+      "minimum_mass": 23.999999999999986,
+      "minimum_energy": 21.984105440345274,
+      "residual": 2.8913937216712426e-14,
+      "costs": {
+        "sensor": 1.6457718130367842,
+        "sensor_unpaid": 0.0,
+        "internal": 1.5575999999999999,
+        "internal_unpaid": 0.0,
+        "movement": 5.1166645325176985,
+        "basal": 37.3824,
+        "basal_unpaid": 3.4291820656011067e-16,
+        "fee": 1.072666793611014,
+        "gain": 4.815605051421491,
+        "loss": 8.056396471910675
+      },
+      "homing_costs": {
+        "movement": 2.153017520836771,
+        "basal": 11.059199999999999,
+        "internal": 0.46079999999999993
+      },
+      "_id": "B/0"
+    },
+    {
+      "seed": 202610199761,
+      "arm": "local_delay",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/a2c32928-b2b8-4ee0-9096-c006ee1efbf1/raw/202610199761_local_delay",
+      "native": 1298,
+      "failed": false,
+      "events": 64,
+      "M": 24.000000000000018,
+      "E": 33.77542679394017,
+      "minimum_mass": 23.999999999999996,
+      "minimum_energy": 33.77542679394017,
+      "residual": 3.203427106912571e-14,
+      "costs": {
+        "sensor": 1.76852139480549,
+        "sensor_unpaid": 0.0,
+        "internal": 1.5576000000000008,
+        "internal_unpaid": 0.0,
+        "movement": 4.814236186444302,
+        "basal": 37.382400000000025,
+        "basal_unpaid": 3.6613539126321876e-16,
+        "fee": 1.1917848948675587,
+        "gain": 11.39569400423413,
+        "loss": 2.9057247341765735
+      },
+      "homing_costs": {
+        "movement": 1.9810433826812794,
+        "basal": 11.059200000000006,
+        "internal": 0.46080000000000026
+      },
+      "_id": "B/0"
+    },
+    {
+      "seed": 202610199761,
+      "arm": "history_table",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/a2c32928-b2b8-4ee0-9096-c006ee1efbf1/raw/202610199761_history_table",
+      "native": 1298,
+      "failed": false,
+      "events": 64,
+      "M": 23.999999999999986,
+      "E": 34.33190971789019,
+      "minimum_mass": 23.99999999999998,
+      "minimum_energy": 34.33190971789019,
+      "residual": 2.6368230515716462e-14,
+      "costs": {
+        "sensor": 1.785934919417554,
+        "sensor_unpaid": 0.0,
+        "internal": 1.5575999999999997,
+        "internal_unpaid": 0.0,
+        "movement": 4.7526260317044695,
+        "basal": 37.38239999999999,
+        "basal_unpaid": 3.52418614019846e-16,
+        "fee": 1.2089253857107365,
+        "gain": 11.763250341625888,
+        "loss": 2.7438542869029487
+      },
+      "homing_costs": {
+        "movement": 1.9521575282700467,
+        "basal": 11.059199999999997,
+        "internal": 0.4607999999999999
+      },
+      "_id": "B/0"
+    },
+    {
+      "seed": 202610199762,
+      "arm": "adaptive_gain",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/a2c32928-b2b8-4ee0-9096-c006ee1efbf1/raw/202610199762_adaptive_gain",
+      "native": 1284,
+      "failed": false,
+      "events": 64,
+      "M": 24.000000000000007,
+      "E": 26.253174335615846,
+      "minimum_mass": 23.99999999999999,
+      "minimum_energy": 26.253174335615846,
+      "residual": 2.3951543873246273e-14,
+      "costs": {
+        "sensor": 1.7477753573148564,
+        "sensor_unpaid": 0.0,
+        "internal": 1.5408000000000002,
+        "internal_unpaid": 0.0,
+        "movement": 4.86978393769491,
+        "basal": 36.979200000000006,
+        "basal_unpaid": 3.4953806949598977e-16,
+        "fee": 1.168108371750476,
+        "gain": 7.288071231690907,
+        "loss": 6.7292292293148055
+      },
+      "homing_costs": {
+        "movement": 2.021359721081262,
+        "basal": 11.059200000000002,
+        "internal": 0.46080000000000004
+      },
+      "_id": "B/1"
+    },
+    {
+      "seed": 202610199762,
+      "arm": "local_delay",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/a2c32928-b2b8-4ee0-9096-c006ee1efbf1/raw/202610199762_local_delay",
+      "native": 1284,
+      "failed": false,
+      "events": 64,
+      "M": 24.0,
+      "E": 35.487346121189944,
+      "minimum_mass": 23.999999999999986,
+      "minimum_energy": 35.487346121189944,
+      "residual": 3.033012209441299e-14,
+      "costs": {
+        "sensor": 1.7514725493175687,
+        "sensor_unpaid": 0.0,
+        "internal": 1.5408,
+        "internal_unpaid": 0.0,
+        "movement": 4.813780644858153,
+        "basal": 36.979200000000006,
+        "basal_unpaid": 3.5942645018594497e-16,
+        "fee": 1.1763760599736857,
+        "gain": 11.932744047511786,
+        "loss": 2.18376867217244
+      },
+      "homing_costs": {
+        "movement": 1.972187611672733,
+        "basal": 11.0592,
+        "internal": 0.46080000000000004
+      },
+      "_id": "B/1"
+    },
+    {
+      "seed": 202610199762,
+      "arm": "history_table",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/a2c32928-b2b8-4ee0-9096-c006ee1efbf1/raw/202610199762_history_table",
+      "native": 1284,
+      "failed": false,
+      "events": 64,
+      "M": 23.999999999999996,
+      "E": 34.68080220956628,
+      "minimum_mass": 23.999999999999986,
+      "minimum_energy": 34.68080220956628,
+      "residual": 3.050316076114168e-14,
+      "costs": {
+        "sensor": 1.7753830958924013,
+        "sensor_unpaid": 0.0,
+        "internal": 1.5408,
+        "internal_unpaid": 0.0,
+        "movement": 4.76759738867227,
+        "basal": 36.9792,
+        "basal_unpaid": 3.600714705205134e-16,
+        "fee": 1.2000043195414791,
+        "gain": 11.671919424085052,
+        "loss": 2.728132410412697
+      },
+      "homing_costs": {
+        "movement": 1.9693348441536274,
+        "basal": 11.059199999999999,
+        "internal": 0.4608
+      },
+      "_id": "B/1"
+    }
+  ],
+  "probes": [
+    {
+      "seed": 202610199751,
+      "arm": "adaptive_gain",
+      "trial": 24,
+      "trial_spec": {
+        "stage": "unseen_gap",
+        "events": [
+          -1,
+          -1,
+          -1,
+          -1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          -1,
+          2
+        ],
+        "steps": 20,
+        "target": -1,
+        "writer": false,
+        "early": -1,
+        "tail": [
+          1,
+          -1
+        ],
+        "gap": 8
+      },
+      "parent": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_adaptive_gain/encoded_024.npz",
+      "parent_sha": "abd9a6b18bf80ef6a16b5355e03ef76ccfa2ccc155c77f5233cba2dfcb449096",
+      "treatment": "negate_content",
+      "steps": 16,
+      "factual_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_adaptive_gain",
+      "changed_scalars": 896,
+      "command": 1,
+      "prediction": [
+        0.6138359756609795
+      ],
+      "result": {
+        "dx": 0.5205301367620798,
+        "actual": 1,
+        "correct": false,
+        "completed_mass": 20.167069377258894,
+        "update": {
+          "written": 0
+        },
+        "M": 23.999999999999986,
+        "E": 56.159532251954175,
+        "fee": 0.020167069377258894,
+        "gain": 0.0,
+        "loss": 0.24200483252710672
+      },
+      "factual": {
+        "correct": true,
+        "actual": -1,
+        "command": -1,
+        "completed_mass": 17.595067164990503,
+        "M": 23.999999999999986,
+        "E": 56.60251258405863
+      },
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw/00_adaptive_gain_negate_content",
+      "native": 16
+    },
+    {
+      "seed": 202610199751,
+      "arm": "adaptive_gain",
+      "trial": 24,
+      "trial_spec": {
+        "stage": "unseen_gap",
+        "events": [
+          -1,
+          -1,
+          -1,
+          -1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          -1,
+          2
+        ],
+        "steps": 20,
+        "target": -1,
+        "writer": false,
+        "early": -1,
+        "tail": [
+          1,
+          -1
+        ],
+        "gap": 8
+      },
+      "parent": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_adaptive_gain/encoded_024.npz",
+      "parent_sha": "abd9a6b18bf80ef6a16b5355e03ef76ccfa2ccc155c77f5233cba2dfcb449096",
+      "treatment": "reset_gain",
+      "steps": 16,
+      "factual_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_adaptive_gain",
+      "changed_scalars": 896,
+      "command": -1,
+      "prediction": [
+        -0.03902485916721198
+      ],
+      "result": {
+        "dx": -0.5483457057153434,
+        "actual": -1,
+        "correct": true,
+        "completed_mass": 17.595067164990503,
+        "update": {
+          "written": 0
+        },
+        "M": 23.999999999999986,
+        "E": 56.60251258405863,
+        "fee": 0.017595067164990503,
+        "gain": 0.21114080597988602,
+        "loss": 0.0
+      },
+      "factual": {
+        "correct": true,
+        "actual": -1,
+        "command": -1,
+        "completed_mass": 17.595067164990503,
+        "M": 23.999999999999986,
+        "E": 56.60251258405863
+      },
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw/01_adaptive_gain_reset_gain",
+      "native": 16
+    },
+    {
+      "seed": 202610199751,
+      "arm": "adaptive_gain",
+      "trial": 24,
+      "trial_spec": {
+        "stage": "unseen_gap",
+        "events": [
+          -1,
+          -1,
+          -1,
+          -1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          -1,
+          2
+        ],
+        "steps": 20,
+        "target": -1,
+        "writer": false,
+        "early": -1,
+        "tail": [
+          1,
+          -1
+        ],
+        "gap": 8
+      },
+      "parent": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_adaptive_gain/encoded_024.npz",
+      "parent_sha": "abd9a6b18bf80ef6a16b5355e03ef76ccfa2ccc155c77f5233cba2dfcb449096",
+      "treatment": "sham",
+      "steps": 16,
+      "factual_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_adaptive_gain",
+      "changed_scalars": 0,
+      "command": -1,
+      "prediction": [
+        -0.5501723283150133
+      ],
+      "result": {
+        "dx": -0.5483457057153434,
+        "actual": -1,
+        "correct": true,
+        "completed_mass": 17.595067164990503,
+        "update": {
+          "written": 0
+        },
+        "M": 23.999999999999986,
+        "E": 56.60251258405863,
+        "fee": 0.017595067164990503,
+        "gain": 0.21114080597988602,
+        "loss": 0.0
+      },
+      "factual": {
+        "correct": true,
+        "actual": -1,
+        "command": -1,
+        "completed_mass": 17.595067164990503,
+        "M": 23.999999999999986,
+        "E": 56.60251258405863
+      },
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw/02_adaptive_gain_sham",
+      "native": 16,
+      "sham_max_abs": 0.0
+    },
+    {
+      "seed": 202610199751,
+      "arm": "adaptive_gain",
+      "trial": 40,
+      "trial_spec": {
+        "stage": "retained_gap",
+        "events": [
+          -1,
+          -1,
+          -1,
+          -1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          -1,
+          2
+        ],
+        "steps": 18,
+        "target": 1,
+        "writer": false,
+        "early": -1,
+        "tail": [
+          1,
+          -1
+        ],
+        "gap": 6
+      },
+      "parent": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_adaptive_gain/encoded_040.npz",
+      "parent_sha": "978c58b43379073e53093613235c6b859339b0c3310def311694fc4c02e499fa",
+      "treatment": "negate_content",
+      "steps": 14,
+      "factual_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_adaptive_gain",
+      "changed_scalars": 912,
+      "command": -1,
+      "prediction": [
+        -0.07465150166395837
+      ],
+      "result": {
+        "dx": -0.5485234424719732,
+        "actual": -1,
+        "correct": false,
+        "completed_mass": 18.10705946386163,
+        "update": {
+          "written": 0
+        },
+        "M": 23.999999999999993,
+        "E": 43.29693251198019,
+        "fee": 0.01810705946386163,
+        "gain": 0.0,
+        "loss": 0.2172847135663396
+      },
+      "factual": {
+        "correct": false,
+        "actual": -1,
+        "command": -1,
+        "completed_mass": 18.10705946386163,
+        "M": 23.999999999999993,
+        "E": 43.29693251198019
+      },
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw/03_adaptive_gain_negate_content",
+      "native": 14
+    },
+    {
+      "seed": 202610199751,
+      "arm": "adaptive_gain",
+      "trial": 40,
+      "trial_spec": {
+        "stage": "retained_gap",
+        "events": [
+          -1,
+          -1,
+          -1,
+          -1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          -1,
+          2
+        ],
+        "steps": 18,
+        "target": 1,
+        "writer": false,
+        "early": -1,
+        "tail": [
+          1,
+          -1
+        ],
+        "gap": 6
+      },
+      "parent": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_adaptive_gain/encoded_040.npz",
+      "parent_sha": "978c58b43379073e53093613235c6b859339b0c3310def311694fc4c02e499fa",
+      "treatment": "reset_gain",
+      "steps": 14,
+      "factual_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_adaptive_gain",
+      "changed_scalars": 912,
+      "command": -1,
+      "prediction": [
+        -0.27042481582118233
+      ],
+      "result": {
+        "dx": -0.5485234424719732,
+        "actual": -1,
+        "correct": false,
+        "completed_mass": 18.10705946386163,
+        "update": {
+          "written": 0
+        },
+        "M": 23.999999999999993,
+        "E": 43.29693251198019,
+        "fee": 0.01810705946386163,
+        "gain": 0.0,
+        "loss": 0.2172847135663396
+      },
+      "factual": {
+        "correct": false,
+        "actual": -1,
+        "command": -1,
+        "completed_mass": 18.10705946386163,
+        "M": 23.999999999999993,
+        "E": 43.29693251198019
+      },
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw/04_adaptive_gain_reset_gain",
+      "native": 14
+    },
+    {
+      "seed": 202610199751,
+      "arm": "fixed_event",
+      "trial": 24,
+      "trial_spec": {
+        "stage": "unseen_gap",
+        "events": [
+          -1,
+          -1,
+          -1,
+          -1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          -1,
+          2
+        ],
+        "steps": 20,
+        "target": -1,
+        "writer": false,
+        "early": -1,
+        "tail": [
+          1,
+          -1
+        ],
+        "gap": 8
+      },
+      "parent": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_fixed_event/encoded_024.npz",
+      "parent_sha": "b9f98ccf958cf936eff154bc47dcf09e03187ee80d03a52e7d0269046f4df230",
+      "treatment": "negate_content",
+      "steps": 16,
+      "factual_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_fixed_event",
+      "changed_scalars": 2688,
+      "command": 1,
+      "prediction": [
+        0.590462424032008
+      ],
+      "result": {
+        "dx": 0.5205301367620798,
+        "actual": 1,
+        "correct": false,
+        "completed_mass": 20.167069377258894,
+        "update": {
+          "written": 0
+        },
+        "M": 23.999999999999986,
+        "E": 56.159532251954175,
+        "fee": 0.020167069377258894,
+        "gain": 0.0,
+        "loss": 0.24200483252710672
+      },
+      "factual": {
+        "correct": true,
+        "actual": -1,
+        "command": -1,
+        "completed_mass": 17.595067164990503,
+        "M": 23.999999999999986,
+        "E": 56.60251258405863
+      },
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw/05_fixed_event_negate_content",
+      "native": 16
+    },
+    {
+      "seed": 202610199751,
+      "arm": "fixed_event",
+      "trial": 40,
+      "trial_spec": {
+        "stage": "retained_gap",
+        "events": [
+          -1,
+          -1,
+          -1,
+          -1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          -1,
+          2
+        ],
+        "steps": 18,
+        "target": 1,
+        "writer": false,
+        "early": -1,
+        "tail": [
+          1,
+          -1
+        ],
+        "gap": 6
+      },
+      "parent": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_fixed_event/encoded_040.npz",
+      "parent_sha": "6126b1cddbd7fd99f159e62176cdb794194777d1d8e2a7810872485c8ea706fd",
+      "treatment": "negate_content",
+      "steps": 14,
+      "factual_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_fixed_event",
+      "changed_scalars": 2724,
+      "command": 1,
+      "prediction": [
+        0.3236482664856177
+      ],
+      "result": {
+        "dx": 0.5189315480387151,
+        "actual": 1,
+        "correct": true,
+        "completed_mass": 20.672987357173074,
+        "update": {
+          "written": 0
+        },
+        "M": 23.999999999999993,
+        "E": 44.71513176769321,
+        "fee": 0.020672987357173076,
+        "gain": 0.2480758482860769,
+        "loss": 0.0
+      },
+      "factual": {
+        "correct": false,
+        "actual": -1,
+        "command": -1,
+        "completed_mass": 18.210132544763113,
+        "M": 23.999999999999993,
+        "E": 44.23624511871368
+      },
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw/06_fixed_event_negate_content",
+      "native": 14
+    },
+    {
+      "seed": 202610199751,
+      "arm": "local_delay",
+      "trial": 24,
+      "trial_spec": {
+        "stage": "unseen_gap",
+        "events": [
+          -1,
+          -1,
+          -1,
+          -1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          -1,
+          2
+        ],
+        "steps": 20,
+        "target": -1,
+        "writer": false,
+        "early": -1,
+        "tail": [
+          1,
+          -1
+        ],
+        "gap": 8
+      },
+      "parent": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_local_delay/encoded_024.npz",
+      "parent_sha": "edd52aef1e1a67115d9f4208998a39ee0fd4897cb85ceebcec070f6b7ac8ffd1",
+      "treatment": "negate_content",
+      "steps": 16,
+      "factual_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_local_delay",
+      "changed_scalars": 5370,
+      "command": 1,
+      "prediction": [
+        0.789760889689859
+      ],
+      "result": {
+        "dx": 0.5210170872440969,
+        "actual": 1,
+        "correct": false,
+        "completed_mass": 20.476738305302987,
+        "update": {
+          "written": 0
+        },
+        "M": 24.000000000000007,
+        "E": 59.950598177246235,
+        "fee": 0.020476738305302992,
+        "gain": 0.0,
+        "loss": 0.24572085966363585
+      },
+      "factual": {
+        "correct": true,
+        "actual": -1,
+        "command": -1,
+        "completed_mass": 17.89113514330347,
+        "M": 24.000000000000007,
+        "E": 60.400216609982735
+      },
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw/07_local_delay_negate_content",
+      "native": 16
+    },
+    {
+      "seed": 202610199751,
+      "arm": "local_delay",
+      "trial": 40,
+      "trial_spec": {
+        "stage": "retained_gap",
+        "events": [
+          -1,
+          -1,
+          -1,
+          -1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          -1,
+          2
+        ],
+        "steps": 18,
+        "target": 1,
+        "writer": false,
+        "early": -1,
+        "tail": [
+          1,
+          -1
+        ],
+        "gap": 6
+      },
+      "parent": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_local_delay/encoded_040.npz",
+      "parent_sha": "4e1f0e71477ef306e3b473aba278ce6690c42b36c164f3b0952c58d2712983b6",
+      "treatment": "negate_content",
+      "steps": 14,
+      "factual_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_local_delay",
+      "changed_scalars": 5484,
+      "command": -1,
+      "prediction": [
+        -0.031479643523964145
+      ],
+      "result": {
+        "dx": -0.5488286909936555,
+        "actual": -1,
+        "correct": false,
+        "completed_mass": 18.029860602310215,
+        "update": {
+          "written": 0
+        },
+        "M": 24.000000000000014,
+        "E": 47.641915351062934,
+        "fee": 0.018029860602310214,
+        "gain": 0.0,
+        "loss": 0.21635832722772255
+      },
+      "factual": {
+        "correct": true,
+        "actual": 1,
+        "command": 1,
+        "completed_mass": 20.558290707523614,
+        "M": 24.00000000000001,
+        "E": 48.11655925020929
+      },
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw/08_local_delay_negate_content",
+      "native": 14
+    },
+    {
+      "seed": 202610199751,
+      "arm": "history_table",
+      "trial": 24,
+      "trial_spec": {
+        "stage": "unseen_gap",
+        "events": [
+          -1,
+          -1,
+          -1,
+          -1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          -1,
+          2
+        ],
+        "steps": 20,
+        "target": -1,
+        "writer": false,
+        "early": -1,
+        "tail": [
+          1,
+          -1
+        ],
+        "gap": 8
+      },
+      "parent": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_history_table/encoded_024.npz",
+      "parent_sha": "11306396a473f45578bdbc9f3ed03072a229de879f8e1445e952b42ce420a8bf",
+      "treatment": "negate_content",
+      "steps": 16,
+      "factual_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_history_table",
+      "changed_scalars": 4,
+      "command": 1,
+      "prediction": [
+        1.0,
+        1.0
+      ],
+      "result": {
+        "dx": 0.5206641784556538,
+        "actual": 1,
+        "correct": false,
+        "completed_mass": 20.38146852080563,
+        "update": {
+          "written": 0
+        },
+        "M": 23.99999999999998,
+        "E": 58.465781519828674,
+        "fee": 0.020381468520805628,
+        "gain": 0.0,
+        "loss": 0.24457762224966756
+      },
+      "factual": {
+        "correct": true,
+        "actual": -1,
+        "command": -1,
+        "completed_mass": 18.00085441990108,
+        "M": 23.99999999999998,
+        "E": 58.915313866372856
+      },
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw/09_history_table_negate_content",
+      "native": 16
+    },
+    {
+      "seed": 202610199751,
+      "arm": "history_table",
+      "trial": 40,
+      "trial_spec": {
+        "stage": "retained_gap",
+        "events": [
+          -1,
+          -1,
+          -1,
+          -1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          -1,
+          2
+        ],
+        "steps": 18,
+        "target": 1,
+        "writer": false,
+        "early": -1,
+        "tail": [
+          1,
+          -1
+        ],
+        "gap": 6
+      },
+      "parent": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_history_table/encoded_040.npz",
+      "parent_sha": "b6750f159f18e909b77492a8d19b666ca6aad978a86c84580b177d9f01f28fa0",
+      "treatment": "negate_content",
+      "steps": 14,
+      "factual_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_history_table",
+      "changed_scalars": 4,
+      "command": -1,
+      "prediction": [
+        1.0,
+        -1.0
+      ],
+      "result": {
+        "dx": -0.5483444316725343,
+        "actual": -1,
+        "correct": false,
+        "completed_mass": 17.9737075640925,
+        "update": {
+          "written": 0
+        },
+        "M": 23.99999999999997,
+        "E": 46.15813939603662,
+        "fee": 0.0179737075640925,
+        "gain": 0.0,
+        "loss": 0.21568449076910995
+      },
+      "factual": {
+        "correct": true,
+        "actual": 1,
+        "command": 1,
+        "completed_mass": 20.597707980527282,
+        "M": 23.99999999999997,
+        "E": 46.63250278054171
+      },
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw/10_history_table_negate_content",
+      "native": 14
+    },
+    {
+      "seed": 202610199752,
+      "arm": "adaptive_gain",
+      "trial": 24,
+      "trial_spec": {
+        "stage": "unseen_gap",
+        "events": [
+          1,
+          1,
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          -1,
+          1,
+          2
+        ],
+        "steps": 18,
+        "target": 1,
+        "writer": false,
+        "early": 1,
+        "tail": [
+          -1,
+          1
+        ],
+        "gap": 6
+      },
+      "parent": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199752_adaptive_gain/encoded_024.npz",
+      "parent_sha": "eacae95ed83d23910693503870524a7f7bc012e1e74544f7ac4f50993f346d62",
+      "treatment": "negate_content",
+      "steps": 14,
+      "factual_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199752_adaptive_gain",
+      "changed_scalars": 894,
+      "command": -1,
+      "prediction": [
+        -0.28620802923907657
+      ],
+      "result": {
+        "dx": -0.5433201147131346,
+        "actual": -1,
+        "correct": false,
+        "completed_mass": 16.332839626768067,
+        "update": {
+          "written": 0
+        },
+        "M": 24.0,
+        "E": 56.67843850705136,
+        "fee": 0.016332839626768063,
+        "gain": 0.0,
+        "loss": 0.19599407552121678
+      },
+      "factual": {
+        "correct": true,
+        "actual": 1,
+        "command": 1,
+        "completed_mass": 19.57192554225294,
+        "M": 24.0,
+        "E": 57.11707173422327
+      },
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw/11_adaptive_gain_negate_content",
+      "native": 14
+    },
+    {
+      "seed": 202610199752,
+      "arm": "adaptive_gain",
+      "trial": 24,
+      "trial_spec": {
+        "stage": "unseen_gap",
+        "events": [
+          1,
+          1,
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          -1,
+          1,
+          2
+        ],
+        "steps": 18,
+        "target": 1,
+        "writer": false,
+        "early": 1,
+        "tail": [
+          -1,
+          1
+        ],
+        "gap": 6
+      },
+      "parent": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199752_adaptive_gain/encoded_024.npz",
+      "parent_sha": "eacae95ed83d23910693503870524a7f7bc012e1e74544f7ac4f50993f346d62",
+      "treatment": "reset_gain",
+      "steps": 14,
+      "factual_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199752_adaptive_gain",
+      "changed_scalars": 894,
+      "command": 1,
+      "prediction": [
+        0.29837892717033926
+      ],
+      "result": {
+        "dx": 0.5132058293465889,
+        "actual": 1,
+        "correct": true,
+        "completed_mass": 19.57192554225294,
+        "update": {
+          "written": 0
+        },
+        "M": 24.0,
+        "E": 57.11707173422327,
+        "fee": 0.019571925542252944,
+        "gain": 0.2348631065070353,
+        "loss": 0.0
+      },
+      "factual": {
+        "correct": true,
+        "actual": 1,
+        "command": 1,
+        "completed_mass": 19.57192554225294,
+        "M": 24.0,
+        "E": 57.11707173422327
+      },
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw/12_adaptive_gain_reset_gain",
+      "native": 14
+    },
+    {
+      "seed": 202610199752,
+      "arm": "adaptive_gain",
+      "trial": 40,
+      "trial_spec": {
+        "stage": "retained_gap",
+        "events": [
+          -1,
+          -1,
+          -1,
+          -1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          -1,
+          -1,
+          2
+        ],
+        "steps": 19,
+        "target": 1,
+        "writer": false,
+        "early": -1,
+        "tail": [
+          -1,
+          -1
+        ],
+        "gap": 7
+      },
+      "parent": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199752_adaptive_gain/encoded_040.npz",
+      "parent_sha": "aa47ea540c28e1daeb180e1ebcf32f29b030c0b5cdf8cecb91045a0b89e8713e",
+      "treatment": "negate_content",
+      "steps": 15,
+      "factual_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199752_adaptive_gain",
+      "changed_scalars": 912,
+      "command": -1,
+      "prediction": [
+        -0.3870219891164957
+      ],
+      "result": {
+        "dx": -0.5501211667055195,
+        "actual": -1,
+        "correct": false,
+        "completed_mass": 17.902037857066432,
+        "update": {
+          "written": 0
+        },
+        "M": 24.000000000000004,
+        "E": 44.273515630832755,
+        "fee": 0.01790203785706643,
+        "gain": 0.0,
+        "loss": 0.21482445428479718
+      },
+      "factual": {
+        "correct": false,
+        "actual": -1,
+        "command": -1,
+        "completed_mass": 17.902037857066432,
+        "M": 24.000000000000004,
+        "E": 44.273515630832755
+      },
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw/13_adaptive_gain_negate_content",
+      "native": 15
+    },
+    {
+      "seed": 202610199752,
+      "arm": "adaptive_gain",
+      "trial": 40,
+      "trial_spec": {
+        "stage": "retained_gap",
+        "events": [
+          -1,
+          -1,
+          -1,
+          -1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          -1,
+          -1,
+          2
+        ],
+        "steps": 19,
+        "target": 1,
+        "writer": false,
+        "early": -1,
+        "tail": [
+          -1,
+          -1
+        ],
+        "gap": 7
+      },
+      "parent": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199752_adaptive_gain/encoded_040.npz",
+      "parent_sha": "aa47ea540c28e1daeb180e1ebcf32f29b030c0b5cdf8cecb91045a0b89e8713e",
+      "treatment": "reset_gain",
+      "steps": 15,
+      "factual_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199752_adaptive_gain",
+      "changed_scalars": 912,
+      "command": -1,
+      "prediction": [
+        -0.4051767878424826
+      ],
+      "result": {
+        "dx": -0.5501211667055195,
+        "actual": -1,
+        "correct": false,
+        "completed_mass": 17.902037857066432,
+        "update": {
+          "written": 0
+        },
+        "M": 24.000000000000004,
+        "E": 44.273515630832755,
+        "fee": 0.01790203785706643,
+        "gain": 0.0,
+        "loss": 0.21482445428479718
+      },
+      "factual": {
+        "correct": false,
+        "actual": -1,
+        "command": -1,
+        "completed_mass": 17.902037857066432,
+        "M": 24.000000000000004,
+        "E": 44.273515630832755
+      },
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw/14_adaptive_gain_reset_gain",
+      "native": 15
+    },
+    {
+      "seed": 202610199752,
+      "arm": "fixed_event",
+      "trial": 24,
+      "trial_spec": {
+        "stage": "unseen_gap",
+        "events": [
+          1,
+          1,
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          -1,
+          1,
+          2
+        ],
+        "steps": 18,
+        "target": 1,
+        "writer": false,
+        "early": 1,
+        "tail": [
+          -1,
+          1
+        ],
+        "gap": 6
+      },
+      "parent": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199752_fixed_event/encoded_024.npz",
+      "parent_sha": "b55f1c64c6b687166005c1c53a5fb4b6eaed57aaaadf74a48aa15af691aa2f56",
+      "treatment": "negate_content",
+      "steps": 14,
+      "factual_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199752_fixed_event",
+      "changed_scalars": 2682,
+      "command": -1,
+      "prediction": [
+        -0.446020747081646
+      ],
+      "result": {
+        "dx": -0.5433201147131346,
+        "actual": -1,
+        "correct": false,
+        "completed_mass": 16.332839626768067,
+        "update": {
+          "written": 0
+        },
+        "M": 24.0,
+        "E": 56.67843850705136,
+        "fee": 0.016332839626768063,
+        "gain": 0.0,
+        "loss": 0.19599407552121678
+      },
+      "factual": {
+        "correct": true,
+        "actual": 1,
+        "command": 1,
+        "completed_mass": 19.57192554225294,
+        "M": 24.0,
+        "E": 57.11707173422327
+      },
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw/15_fixed_event_negate_content",
+      "native": 14
+    },
+    {
+      "seed": 202610199752,
+      "arm": "fixed_event",
+      "trial": 40,
+      "trial_spec": {
+        "stage": "retained_gap",
+        "events": [
+          -1,
+          -1,
+          -1,
+          -1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          -1,
+          -1,
+          2
+        ],
+        "steps": 19,
+        "target": 1,
+        "writer": false,
+        "early": -1,
+        "tail": [
+          -1,
+          -1
+        ],
+        "gap": 7
+      },
+      "parent": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199752_fixed_event/encoded_040.npz",
+      "parent_sha": "1255491c9615ce22cf11fc3cc8b464d93bebb4164230c08fadde553ec5ff84f6",
+      "treatment": "negate_content",
+      "steps": 15,
+      "factual_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199752_fixed_event",
+      "changed_scalars": 2736,
+      "command": -1,
+      "prediction": [
+        -0.1065243321600371
+      ],
+      "result": {
+        "dx": -0.5497438708061075,
+        "actual": -1,
+        "correct": false,
+        "completed_mass": 17.837550158993245,
+        "update": {
+          "written": 0
+        },
+        "M": 24.0,
+        "E": 43.82078195037066,
+        "fee": 0.017837550158993246,
+        "gain": 0.0,
+        "loss": 0.21405060190791894
+      },
+      "factual": {
+        "correct": false,
+        "actual": -1,
+        "command": -1,
+        "completed_mass": 17.837550158993245,
+        "M": 24.0,
+        "E": 43.82078195037066
+      },
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw/16_fixed_event_negate_content",
+      "native": 15
+    },
+    {
+      "seed": 202610199752,
+      "arm": "local_delay",
+      "trial": 24,
+      "trial_spec": {
+        "stage": "unseen_gap",
+        "events": [
+          1,
+          1,
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          -1,
+          1,
+          2
+        ],
+        "steps": 18,
+        "target": 1,
+        "writer": false,
+        "early": 1,
+        "tail": [
+          -1,
+          1
+        ],
+        "gap": 6
+      },
+      "parent": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199752_local_delay/encoded_024.npz",
+      "parent_sha": "1c823d470fea6e99182ce656290fdc377398f565017e429ab3ebfa8174effca3",
+      "treatment": "negate_content",
+      "steps": 14,
+      "factual_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199752_local_delay",
+      "changed_scalars": 5364,
+      "command": -1,
+      "prediction": [
+        -0.5274897937231201
+      ],
+      "result": {
+        "dx": -0.5432107085852742,
+        "actual": -1,
+        "correct": false,
+        "completed_mass": 16.243338985816543,
+        "update": {
+          "written": 0
+        },
+        "M": 24.000000000000007,
+        "E": 60.181562194030775,
+        "fee": 0.016243338985816543,
+        "gain": 0.0,
+        "loss": 0.19492006782979854
+      },
+      "factual": {
+        "correct": true,
+        "actual": 1,
+        "command": 1,
+        "completed_mass": 19.49281667432585,
+        "M": 24.000000000000004,
+        "E": 60.61802750186845
+      },
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw/17_local_delay_negate_content",
+      "native": 14
+    },
+    {
+      "seed": 202610199752,
+      "arm": "local_delay",
+      "trial": 40,
+      "trial_spec": {
+        "stage": "retained_gap",
+        "events": [
+          -1,
+          -1,
+          -1,
+          -1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          -1,
+          -1,
+          2
+        ],
+        "steps": 19,
+        "target": 1,
+        "writer": false,
+        "early": -1,
+        "tail": [
+          -1,
+          -1
+        ],
+        "gap": 7
+      },
+      "parent": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199752_local_delay/encoded_040.npz",
+      "parent_sha": "75932d5d7a34dc3cdffb80cc6e6e8ef20154e5327fe13b2357e82e591e9251c6",
+      "treatment": "negate_content",
+      "steps": 15,
+      "factual_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199752_local_delay",
+      "changed_scalars": 5472,
+      "command": -1,
+      "prediction": [
+        -0.25794460022853904
+      ],
+      "result": {
+        "dx": -0.5504173162439425,
+        "actual": -1,
+        "correct": false,
+        "completed_mass": 17.861471749958344,
+        "update": {
+          "written": 0
+        },
+        "M": 24.000000000000007,
+        "E": 47.738646311246754,
+        "fee": 0.017861471749958342,
+        "gain": 0.0,
+        "loss": 0.2143376609995001
+      },
+      "factual": {
+        "correct": false,
+        "actual": -1,
+        "command": -1,
+        "completed_mass": 17.861471749958344,
+        "M": 24.000000000000007,
+        "E": 47.738646311246754
+      },
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw/18_local_delay_negate_content",
+      "native": 15
+    },
+    {
+      "seed": 202610199752,
+      "arm": "history_table",
+      "trial": 24,
+      "trial_spec": {
+        "stage": "unseen_gap",
+        "events": [
+          1,
+          1,
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          -1,
+          1,
+          2
+        ],
+        "steps": 18,
+        "target": 1,
+        "writer": false,
+        "early": 1,
+        "tail": [
+          -1,
+          1
+        ],
+        "gap": 6
+      },
+      "parent": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/fecb9eed-feb6-4c29-a883-2d0a7f462286/raw/202610199752_history_table/encoded_024.npz",
+      "parent_sha": "10507a7f0ea572873d78703ca0496fd2cedc10008d32ce8f016ab1ff784cb74b",
+      "treatment": "negate_content",
+      "steps": 14,
+      "factual_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/fecb9eed-feb6-4c29-a883-2d0a7f462286/raw/202610199752_history_table",
+      "changed_scalars": 4,
+      "command": -1,
+      "prediction": [
+        1.0,
+        -1.0
+      ],
+      "result": {
+        "dx": -0.5433787719804997,
+        "actual": -1,
+        "correct": false,
+        "completed_mass": 16.249120902403202,
+        "update": {
+          "written": 0
+        },
+        "M": 23.999999999999996,
+        "E": 58.65071636457037,
+        "fee": 0.016249120902403207,
+        "gain": 0.0,
+        "loss": 0.19498945082883845
+      },
+      "factual": {
+        "correct": true,
+        "actual": 1,
+        "command": 1,
+        "completed_mass": 19.533646978124082,
+        "M": 23.999999999999996,
+        "E": 59.08773060309521
+      },
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw/19_history_table_negate_content",
+      "native": 14
+    },
+    {
+      "seed": 202610199752,
+      "arm": "history_table",
+      "trial": 40,
+      "trial_spec": {
+        "stage": "retained_gap",
+        "events": [
+          -1,
+          -1,
+          -1,
+          -1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          -1,
+          -1,
+          2
+        ],
+        "steps": 19,
+        "target": 1,
+        "writer": false,
+        "early": -1,
+        "tail": [
+          -1,
+          -1
+        ],
+        "gap": 7
+      },
+      "parent": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/fecb9eed-feb6-4c29-a883-2d0a7f462286/raw/202610199752_history_table/encoded_040.npz",
+      "parent_sha": "942a69beba4b6fe576eb77eb3755b8c37229c05dd231e8de939d7133c26dbbd7",
+      "treatment": "negate_content",
+      "steps": 15,
+      "factual_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/fecb9eed-feb6-4c29-a883-2d0a7f462286/raw/202610199752_history_table",
+      "changed_scalars": 4,
+      "command": -1,
+      "prediction": [
+        1.0,
+        -1.0
+      ],
+      "result": {
+        "dx": -0.5498203336505032,
+        "actual": -1,
+        "correct": false,
+        "completed_mass": 17.828967328125046,
+        "update": {
+          "written": 0
+        },
+        "M": 23.999999999999996,
+        "E": 46.208438062280166,
+        "fee": 0.017828967328125046,
+        "gain": 0.0,
+        "loss": 0.21394760793750053
+      },
+      "factual": {
+        "correct": true,
+        "actual": 1,
+        "command": 1,
+        "completed_mass": 20.481024543284818,
+        "M": 23.999999999999993,
+        "E": 46.678564679785396
+      },
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw/20_history_table_negate_content",
+      "native": 15
+    }
+  ],
+  "groups": {
+    "groups": [
+      {
+        "arm": "adaptive_gain",
+        "treatment": "negate_content",
+        "n": 4,
+        "factual_correct": 2,
+        "intervened_correct": 0,
+        "commands_changed": 2,
+        "nonzero_interventions": 4
+      },
+      {
+        "arm": "adaptive_gain",
+        "treatment": "reset_gain",
+        "n": 4,
+        "factual_correct": 2,
+        "intervened_correct": 2,
+        "commands_changed": 0,
+        "nonzero_interventions": 4
+      },
+      {
+        "arm": "adaptive_gain",
+        "treatment": "sham",
+        "n": 1,
+        "factual_correct": 1,
+        "intervened_correct": 1,
+        "commands_changed": 0,
+        "nonzero_interventions": 0
+      },
+      {
+        "arm": "fixed_event",
+        "treatment": "negate_content",
+        "n": 4,
+        "factual_correct": 2,
+        "intervened_correct": 1,
+        "commands_changed": 3,
+        "nonzero_interventions": 4
+      },
+      {
+        "arm": "local_delay",
+        "treatment": "negate_content",
+        "n": 4,
+        "factual_correct": 3,
+        "intervened_correct": 0,
+        "commands_changed": 3,
+        "nonzero_interventions": 4
+      },
+      {
+        "arm": "history_table",
+        "treatment": "negate_content",
+        "n": 4,
+        "factual_correct": 4,
+        "intervened_correct": 0,
+        "commands_changed": 4,
+        "nonzero_interventions": 4
+      }
+    ],
+    "sham_full_state_max_abs": 0.0,
+    "independence": "Same-parent interventions, not independent life histories. Predetermined parents retained regardless of success."
+  },
+  "opportunity": {
+    "status": "first_path_physical_complete_json_packaging_failed",
+    "job": "a22f87e4-c19d-4b3c-bb63-848d5eff4173",
+    "native": 298,
+    "planned": 596,
+    "unexecuted_arm": "fixed_event",
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/a22f87e4-c19d-4b3c-bb63-848d5eff4173/raw/202610199731_history_table",
+    "rows": [
+      {
+        "trial": 0,
+        "stage": "acquire",
+        "correct": true,
+        "actual": 1,
+        "command": 1,
+        "feedback_mass": 17.710114991766027,
+        "dx": 0.4953358114605706
+      },
+      {
+        "trial": 1,
+        "stage": "acquire",
+        "correct": false,
+        "actual": 1,
+        "command": 1,
+        "feedback_mass": 17.62167172802788,
+        "dx": 0.5032906022186694
+      },
+      {
+        "trial": 2,
+        "stage": "acquire",
+        "correct": true,
+        "actual": 1,
+        "command": 1,
+        "feedback_mass": 16.61858167809037,
+        "dx": 0.5167986325582739
+      },
+      {
+        "trial": 3,
+        "stage": "acquire",
+        "correct": false,
+        "actual": 1,
+        "command": 1,
+        "feedback_mass": 15.086579574018947,
+        "dx": 0.5162874987247541
+      },
+      {
+        "trial": 4,
+        "stage": "acquire",
+        "correct": false,
+        "actual": 1,
+        "command": 1,
+        "feedback_mass": 13.34617511705592,
+        "dx": 0.5232471540179198
+      },
+      {
+        "trial": 5,
+        "stage": "acquire",
+        "correct": true,
+        "actual": 1,
+        "command": 1,
+        "feedback_mass": 11.51042854899782,
+        "dx": 0.5206192487697372
+      },
+      {
+        "trial": 6,
+        "stage": "acquire",
+        "correct": true,
+        "actual": 1,
+        "command": 1,
+        "feedback_mass": 9.725149152456572,
+        "dx": 0.5233218582492611
+      },
+      {
+        "trial": 7,
+        "stage": "acquire",
+        "correct": false,
+        "actual": 1,
+        "command": 1,
+        "feedback_mass": 8.04278359185492,
+        "dx": 0.5223400572663088
+      },
+      {
+        "trial": 8,
+        "stage": "acquire",
+        "correct": true,
+        "actual": -1,
+        "command": -1,
+        "feedback_mass": 9.215170777507907,
+        "dx": -0.5542562304471517
+      },
+      {
+        "trial": 9,
+        "stage": "acquire",
+        "correct": true,
+        "actual": -1,
+        "command": -1,
+        "feedback_mass": 10.320038250709189,
+        "dx": -0.5420584770143861
+      },
+      {
+        "trial": 10,
+        "stage": "acquire",
+        "correct": true,
+        "actual": -1,
+        "command": -1,
+        "feedback_mass": 11.167564024539393,
+        "dx": -0.5281066057371113
+      },
+      {
+        "trial": 11,
+        "stage": "acquire",
+        "correct": true,
+        "actual": 1,
+        "command": 1,
+        "feedback_mass": 10.614338470388946,
+        "dx": 0.4868081180948778
+      },
+      {
+        "trial": 12,
+        "stage": "acquire",
+        "correct": true,
+        "actual": 1,
+        "command": 1,
+        "feedback_mass": 9.498718713409442,
+        "dx": 0.49721058610102276
+      },
+      {
+        "trial": 13,
+        "stage": "acquire",
+        "correct": true,
+        "actual": -1,
+        "command": -1,
+        "feedback_mass": 10.44625348880852,
+        "dx": -0.5441352215557629
+      },
+      {
+        "trial": 14,
+        "stage": "acquire",
+        "correct": true,
+        "actual": 1,
+        "command": 1,
+        "feedback_mass": 9.504085880060018,
+        "dx": 0.4962286749596103
+      },
+      {
+        "trial": 15,
+        "stage": "acquire",
+        "correct": true,
+        "actual": 1,
+        "command": 1,
+        "feedback_mass": 8.173927397137868,
+        "dx": 0.5099793174022054
+      },
+      {
+        "trial": 16,
+        "stage": "retention",
+        "correct": true,
+        "actual": 1,
+        "command": 1,
+        "feedback_mass": 6.767844110567403,
+        "dx": 0.5191737496821069
+      },
+      {
+        "trial": 17,
+        "stage": "retention",
+        "correct": true,
+        "actual": -1,
+        "command": -1,
+        "feedback_mass": 7.953410816505723,
+        "dx": -0.5551979332824786
+      },
+      {
+        "trial": 18,
+        "stage": "retention",
+        "correct": true,
+        "actual": -1,
+        "command": -1,
+        "feedback_mass": 9.055728790932708,
+        "dx": -0.5414173593812954
+      },
+      {
+        "trial": 19,
+        "stage": "retention",
+        "correct": true,
+        "actual": 1,
+        "command": 1,
+        "feedback_mass": 8.12208150917678,
+        "dx": 0.49498581446339784
+      },
+      {
+        "trial": 20,
+        "stage": "retention",
+        "correct": true,
+        "actual": -1,
+        "command": -1,
+        "feedback_mass": 9.150505860392188,
+        "dx": -0.5424487453045792
+      },
+      {
+        "trial": 21,
+        "stage": "retention",
+        "correct": true,
+        "actual": 1,
+        "command": 1,
+        "feedback_mass": 8.202564833913673,
+        "dx": 0.49654675424136485
+      },
+      {
+        "trial": 22,
+        "stage": "retention",
+        "correct": true,
+        "actual": -1,
+        "command": -1,
+        "feedback_mass": 9.224084377287285,
+        "dx": -0.5430235604038245
+      },
+      {
+        "trial": 23,
+        "stage": "retention",
+        "correct": true,
+        "actual": 1,
+        "command": 1,
+        "feedback_mass": 8.274426673592854,
+        "dx": 0.49704279107013605
+      }
+    ],
+    "raw_bytes": 2246722,
+    "recovery_native": 0
+  },
+  "job_usage": [
+    {
+      "job": "a22f87e4-c19d-4b3c-bb63-848d5eff4173",
+      "native": 298,
+      "status": "failed",
+      "returncode": 1,
+      "worker_seconds": 0.560162,
+      "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/a22f87e4-c19d-4b3c-bb63-848d5eff4173"
+    },
+    {
+      "job": "5f08b6b0-ceb7-4dc1-a70e-ee5d0052e9aa",
+      "native": 7208,
+      "status": "completed",
+      "returncode": 0,
+      "worker_seconds": 9.323677,
+      "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5f08b6b0-ceb7-4dc1-a70e-ee5d0052e9aa"
+    },
+    {
+      "job": "88cfadaf-41a4-4ab2-9536-86902869abfe",
+      "native": 6938,
+      "status": "failed",
+      "returncode": 1,
+      "worker_seconds": 10.231565,
+      "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe"
+    },
+    {
+      "job": "fecb9eed-feb6-4c29-a883-2d0a7f462286",
+      "native": 990,
+      "status": "completed",
+      "returncode": 0,
+      "worker_seconds": 1.263846,
+      "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/fecb9eed-feb6-4c29-a883-2d0a7f462286"
+    },
+    {
+      "job": "423c1c64-adb8-4ebe-a860-54a07ee35416",
+      "native": 311,
+      "status": "completed",
+      "returncode": 0,
+      "worker_seconds": 1.499996,
+      "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416"
+    },
+    {
+      "job": "a2c32928-b2b8-4ee0-9096-c006ee1efbf1",
+      "native": 7746,
+      "status": "completed",
+      "returncode": 0,
+      "worker_seconds": 9.339974,
+      "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/a2c32928-b2b8-4ee0-9096-c006ee1efbf1"
+    }
+  ],
+  "new_model_steps": 0
+}

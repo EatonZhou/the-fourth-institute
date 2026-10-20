@@ -1,0 +1,149 @@
+{
+  "task": "coordinated_feedback_retention_20261019",
+  "status": "complete",
+  "actual": {
+    "task": "coordinated_feedback_retention_20261019",
+    "status": "complete",
+    "native": 2048,
+    "known_readonly": 1024,
+    "old_replay": 0,
+    "unknown": 0,
+    "worker_seconds": 18.960042,
+    "raw_bytes": 13837533,
+    "paths": 8,
+    "survivors": 8,
+    "groups": {
+      "freeze": {
+        "n": 4,
+        "reversal_substantive": 2,
+        "retention_first64_substantive": 2,
+        "retention_last64_substantive": 2,
+        "retention_last64_good_mass": [
+          0.03894109974000331,
+          8.722349986473768,
+          0.04103691726156004,
+          8.715983468868007
+        ],
+        "retention_last64_choice": [
+          0.06967062589993164,
+          0.9145506801684263,
+          0.07448595683148737,
+          0.9144138627710102
+        ]
+      },
+      "write": {
+        "n": 4,
+        "reversal_substantive": 4,
+        "retention_first64_substantive": 4,
+        "retention_last64_substantive": 2,
+        "retention_last64_good_mass": [
+          4.072498030975426,
+          0.6707879637957664,
+          3.7031275434597277,
+          0.6701747998666989
+        ],
+        "retention_last64_choice": [
+          0.8373444608067129,
+          0.1529377972043015,
+          0.7926487230851015,
+          0.1528163442519617
+        ]
+      }
+    }
+  },
+  "artifacts": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/coordinated_feedback_retention_20261019/REPORT.txt",
+      "sha256": "cfba464263fec01e4cacf2af7c85eb5757ed5ddb34035c87e4d126b5f73b0442",
+      "bytes": 4499
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/coordinated_feedback_retention_20261019/plan.json",
+      "sha256": "b710dbc49aaa94e3d521b6ddd7956ebe3fee20c9c707a3828015989ff9703ba6",
+      "bytes": 12939
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/coordinated_feedback_retention_20261019/result.json",
+      "sha256": "d1cf7b3e29e73329a5d6661175eb9ec3c8e7ae296ece77c7da17c118cb145d10",
+      "bytes": 436
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/coordinated_feedback_retention_20261019/summary.json",
+      "sha256": "8ef5e9b3cec5a0ff7308f4444497af1cd45f41cb540146919d9bfc51dcdb8348",
+      "bytes": 1195
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/coordinated_feedback_retention_20261019/all_branches.csv",
+      "sha256": "8e1415b46ea3783b56928c1222b1d0c08e606ee401bf13f4bc2aaf2902b274b6",
+      "bytes": 7953
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/coordinated_feedback_retention_20261019/blocks.csv",
+      "sha256": "55660e6646ff5679257b5140f31a9cfb74c86a93cecab6d927762bc025c21cd6",
+      "bytes": 12314
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/coordinated_feedback_retention_20261019/actual_sequence.png",
+      "sha256": "eaf1a8343d8b99d1e2f96d4df44ec699f3ebe315f99097953a9d9a446fec8fff",
+      "bytes": 52568
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/coordinated_feedback_retention_20261019/raw_manifest.json",
+      "sha256": "0e0ddfdb83ff2c59dcf8081346085c9a7ae3d712d100a7788a47701c2ee8fb9b",
+      "bytes": 24287
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/coordinated_feedback_retention_20261019/write_minus_freeze.csv",
+      "sha256": "2c1facc2995cabb071eecd3fef406da5bacbb5544a56ecf59f348ff4165a00be",
+      "bytes": 945
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/coordinated_feedback_retention_20261019/continuity_and_freeze.json",
+      "sha256": "43b4aa7590af598a8644bbfd0fb3730da7a4af6965d7c1916c8e89017ffac6ea",
+      "bytes": 1813
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/coordinated_feedback_retention_20261019/passive_expression.json",
+      "sha256": "47ae19e7df405d0bc8e68d772ce30af4be3965b53038be50ce0e8b29bdf44e58",
+      "bytes": 12982
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/coordinated_feedback_retention_20261019/passive_expression_definition.json",
+      "sha256": "d72ef115f31af4e4b498e077e18110e614a6791d8b48b2ee70e04406eebc2438",
+      "bytes": 359
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/coordinated_feedback_retention_20261019/writing_retention.png",
+      "sha256": "c31d7fd32bb5c229aec81251002ebf0da165e241384387b7d31656215f62b1be",
+      "bytes": 355860
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/coordinated_feedback_retention_20261019/actual_write_freeze_retention.gif",
+      "sha256": "cbe1f9e13257990b18c97286ec820f95a41a81c9ae57669b2316087863dfc9f5",
+      "bytes": 1169763
+    }
+  ],
+  "analysis_source": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/coordinated_feedback_retention/analyze.py",
+      "sha256": "d55af992de2dbf773c1d7cd25bd7dda4244e12d891d28bf3b3df66612db22ce7",
+      "bytes": 7310
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/coordinated_feedback_retention/run.py",
+      "sha256": "acc77c27f967e8f69f379a96c83139e62ed8085822ab6f5641c067c145a2d0a2",
+      "bytes": 9030
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/coordinated_feedback_retention/passive_expression.py",
+      "sha256": "94f764df7a778e112c62ae2470a49dd08718d3f0fefd2a60a4afda5344d96e92",
+      "bytes": 1795
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/coordinated_feedback_retention/__init__.py",
+      "sha256": "95cc56fceb3200720b62c80d6f2d8d78f14b9d735acfe4d2af4e8e78be6e6692",
+      "bytes": 89
+    }
+  ],
+  "scope": "Original frozen sources unchanged; passive reports never advance physics; failures and costs retained."
+}

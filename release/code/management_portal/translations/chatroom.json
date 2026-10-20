@@ -1,0 +1,50 @@
+{
+  "Chatroom message was not displayed": {
+    "en": "Chatroom message was not displayed",
+    "zh-CN": "聊天室消息未显示"
+  },
+  "chatroom_id 必须是 chatroom_ 加 12 位小写十六进制码": {
+    "en": "chatroom_id must be chatroom_ plus 12 lowercase hex characters",
+    "zh-CN": "chatroom_id 必须是 chatroom_ 加 12 位小写十六进制码"
+  },
+  "content_parts 的每一项必须是对象": {
+    "en": "each item of content_parts must be an object",
+    "zh-CN": "content_parts 的每一项必须是对象"
+  },
+  "quote.message_id 需要指向这个聊天室中的另一条消息": {
+    "en": "quote.message_id must point to another message in this chat room",
+    "zh-CN": "quote.message_id 需要指向这个聊天室中的另一条消息"
+  },
+  "through 必须是这个聊天室已存在的消息位置": {
+    "en": "through must be a message position that already exists in this chat room",
+    "zh-CN": "through 必须是这个聊天室已存在的消息位置"
+  },
+  "只有聊天室成员可以设置自己的消息免打扰，muted 必须是布尔值": {
+    "en": "Only chat room members can set their own message mute; muted must be a boolean",
+    "zh-CN": "只有聊天室成员可以设置自己的消息免打扰，muted 必须是布尔值"
+  },
+  "引用 Resident 后的消息超过字数上限": {
+    "en": "Message after quoting Resident exceeds the character limit",
+    "zh-CN": "引用 Resident 后的消息超过字数上限"
+  },
+  "消息不能为空": {
+    "en": "Message cannot be empty",
+    "zh-CN": "消息不能为空"
+  },
+  "聊天室不存在": {
+    "en": "Chat room does not exist",
+    "zh-CN": "聊天室不存在"
+  },
+  "聊天室成员只能是用户；在消息中 @ Resident 即可召唤它": {
+    "en": "Chat room members can only be users; mention @ Resident in a message to summon it",
+    "zh-CN": "聊天室成员只能是用户；在消息中 @ Resident 即可召唤它"
+  },
+  "附件必须先通过 CreateUpload 上传": {
+    "en": "Attachments must first be uploaded via CreateUpload",
+    "zh-CN": "附件必须先通过 CreateUpload 上传"
+  },
+  "需要经过认证的调用者": {
+    "en": "Requires an authenticated caller",
+    "zh-CN": "需要经过认证的调用者"
+  }
+}

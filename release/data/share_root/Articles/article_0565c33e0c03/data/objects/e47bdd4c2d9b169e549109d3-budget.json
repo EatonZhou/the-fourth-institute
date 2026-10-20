@@ -1,0 +1,21 @@
+{
+  "actual_native": 2821,
+  "committed": 2821,
+  "science": 2816,
+  "boundary": 5,
+  "cap": 2848,
+  "unused_native": 27,
+  "worker_seconds": 314.814888,
+  "worker_cap": 600,
+  "unused_worker": 285.185112,
+  "unique_job": "6e9a666a-8353-4033-89a9-ecc1cdbb4824",
+  "cpu_threads": 2,
+  "gpu": 0,
+  "raw_bytes": 403700404,
+  "old_budget_used": 0,
+  "old_prefix_replayed": 0,
+  "display_path_steps": 3072,
+  "shared_prefix_in_display": 256,
+  "shared_prefix_actual": 256,
+  "unused_nontransferable": true
+}

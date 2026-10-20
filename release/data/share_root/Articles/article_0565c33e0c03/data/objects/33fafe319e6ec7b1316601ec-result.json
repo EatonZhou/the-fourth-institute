@@ -1,0 +1,19 @@
+{
+  "task": "resource_conditioned_growth_rule_20261019",
+  "status": "completed",
+  "job": "43568f01-955a-4ddc-ba37-62903b18f278",
+  "attempted": 5828,
+  "committed": 5828,
+  "settled": 5828,
+  "science_native": 5824,
+  "boundary_native": 4,
+  "wall_seconds": 133.01994667795952,
+  "failure": null,
+  "actual_paths": 46,
+  "alias_roles": 18,
+  "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278",
+  "raw_bytes": 96247580,
+  "objective_met": false,
+  "old_prefix_replayed": 0,
+  "old_budget_used": 0
+}

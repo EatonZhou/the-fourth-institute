@@ -1,0 +1,19 @@
+{
+  "task": "deletion_layout_life0_formation_20261019",
+  "status": "completed",
+  "job": "985493ed-7d71-4b49-9edb-42390c6cf545",
+  "attempted": 4104,
+  "committed": 4104,
+  "settled": 4104,
+  "science_native": 4096,
+  "boundary_native": 8,
+  "wall_seconds": 98.9280381250428,
+  "failure": null,
+  "actual_paths": 16,
+  "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/deletion_layout_life0_formation_20261019/985493ed-7d71-4b49-9edb-42390c6cf545",
+  "raw_bytes": 58355311,
+  "old_budget_used": 0,
+  "old_acquisition_replayed": 0,
+  "old_future_replayed": 0,
+  "objective_met": false
+}

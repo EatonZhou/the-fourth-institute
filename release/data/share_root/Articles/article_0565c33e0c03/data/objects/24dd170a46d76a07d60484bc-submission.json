@@ -1,0 +1,21 @@
+{
+  "id": "ace081b7-fcbb-4ec8-85c5-3b1663ee0660",
+  "name": "experience-adaptation-outer-search-native",
+  "command": [
+    "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+    "-m",
+    "environment_evolution.experience_adaptation_outer_search_native.run",
+    "--contract",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/plan.json"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "ce2-experience-adaptation-outer-search-native-20261018-v1",
+  "status": "running",
+  "created_at": "2026-10-18T01:08:48.230255+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/ace081b7-fcbb-4ec8-85c5-3b1663ee0660",
+  "pid": 1221061,
+  "manual_pause": false,
+  "create_time": 1792285727.68,
+  "started_at": "2026-10-18T01:08:48.297966+00:00"
+}

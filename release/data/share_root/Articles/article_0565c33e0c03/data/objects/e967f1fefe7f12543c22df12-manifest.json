@@ -1,0 +1,82 @@
+[
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/active_observation_commitment_20261018/API.txt",
+    "sha256": "9614104a9cd9504396a3c6c0c44413b29e5b4e7a61fab6b096b17c4dbffa3e80",
+    "bytes": 4455
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/active_observation_commitment_20261018/REPORT.txt",
+    "sha256": "68b934d53b333a60a3ee314d6b144c138c3d80443a890d6e01e0c070910b92a4",
+    "bytes": 2573
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/active_observation_commitment_20261018/actual_preparation.png",
+    "sha256": "f6ced47f0631c9e051d3e02befff5be57b862dcbfd4f6c12c6f9e9a058863026",
+    "bytes": 65471
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/active_observation_commitment_20261018/completed_job.json",
+    "sha256": "530d29aca36ffa5298127e72182b5bfda96dce6e5103fbbe0ae63886e4e4c2f7",
+    "bytes": 739
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/active_observation_commitment_20261018/figure_sources.json",
+    "sha256": "85289b655e3df21d6e5c3766451cb07a7dee049c79d263a9946f6e92dee5efab",
+    "bytes": 3125
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/active_observation_commitment_20261018/outcomes.csv",
+    "sha256": "b72fe7a361f08c6c134ea1ad240e0d2ffd9ca575fbd502c856375902af537b78",
+    "bytes": 11010
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/active_observation_commitment_20261018/paired.csv",
+    "sha256": "6aec61a0484e162502196aa50e37eea866bb45dda5cc86c68bfe5c70054c91ed",
+    "bytes": 4735
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/active_observation_commitment_20261018/plan.json",
+    "sha256": "2d8d93628c01d1993316fae19a4557ba3f57432d401341d5b077a02b8ba4d6d4",
+    "bytes": 3641
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/active_observation_commitment_20261018/raw_manifest.json",
+    "sha256": "c1c250deb598874a898f164580033d15fe1d4b6d34c17844e8ee44adaf0792a5",
+    "bytes": 20429
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/active_observation_commitment_20261018/result.json",
+    "sha256": "0f4a505dd7450b1315c9f3cc3ec0593940a6f67a9c1c628f09225e4cae058d27",
+    "bytes": 35785
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/active_observation_commitment_20261018/summary.json",
+    "sha256": "ab87f955fc228ccbacab89ca07bc6b4ae16cdd50200c6abae33bdabb2468cb93",
+    "bytes": 13732
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/active_observation_commitment_20261018/tape_202610189101_informative.npz",
+    "sha256": "9b1e6cfced6d92cdef1de821652d18bf5ef94bfb68282d3281663b74f939e9e3",
+    "bytes": 2426
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/active_observation_commitment_20261018/tape_202610189101_uninformative.npz",
+    "sha256": "d2db28dd35f879a59521027fc96eafb4881f97a43eacf2ab45d9f275e731ca31",
+    "bytes": 2404
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/active_observation_commitment_20261018/tape_202610189102_informative.npz",
+    "sha256": "bc932c07a513ec59c786472b4f1b0db2dfb4945eb97d310b53cf11742f56a9fc",
+    "bytes": 2419
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/active_observation_commitment_20261018/tape_202610189102_uninformative.npz",
+    "sha256": "c71baadbf498ecd78a9d886089ff1de3b66f6a74c419bb86992b34e5a6a4cfc6",
+    "bytes": 2402
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/active_observation_commitment_20261018/trajectories.png",
+    "sha256": "f19d68a8cb2f8fb7395adb27c7072a800f0d6c2b16be0bada0cac43ae06d851d",
+    "bytes": 344003
+  }
+]

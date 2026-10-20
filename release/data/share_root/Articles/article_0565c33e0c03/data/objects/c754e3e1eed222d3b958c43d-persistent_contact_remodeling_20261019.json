@@ -1,0 +1,498 @@
+{
+  "task": "persistent_contact_remodeling_20261019",
+  "owner": "resident_33af539c4a17",
+  "status": "completed_standard_plasticity_small_content_effect_extra_value_closed",
+  "objective_met": false,
+  "usage": {
+    "native": 11112,
+    "runner_worker_seconds": 3.403083,
+    "raw_bytes": 30865906,
+    "jobs": [
+      {
+        "batch": "opportunity",
+        "id": "f1875722-4dd2-4d02-8507-3177f4bc8a0a",
+        "status": "completed",
+        "native": 912,
+        "runner_worker_seconds": 0.339834,
+        "raw_bytes": 2589296
+      },
+      {
+        "batch": "comparison",
+        "id": "637b27a6-59dc-4a48-b0be-50b5fd7fce18",
+        "status": "completed",
+        "native": 6840,
+        "runner_worker_seconds": 1.781069,
+        "raw_bytes": 18786884
+      },
+      {
+        "batch": "content_control",
+        "id": "b680f7d4-d600-46cd-a8d8-77276aceeb42",
+        "status": "completed",
+        "native": 2736,
+        "runner_worker_seconds": 0.818623,
+        "raw_bytes": 7756798
+      },
+      {
+        "batch": "content_probe",
+        "id": "0292fd76-0510-44b6-a285-bf4c6d16767a",
+        "status": "completed",
+        "native": 624,
+        "runner_worker_seconds": 0.463557,
+        "raw_bytes": 1732928
+      }
+    ]
+  },
+  "independent_main_histories": 3,
+  "independent_followup_histories": 3,
+  "pilot_histories": 1,
+  "continuous_paths": 23,
+  "causal_parents": 6,
+  "causal_branches": 13,
+  "evidence": {
+    "REPORT.txt": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/persistent_contact_remodeling_20261019/REPORT.txt",
+      "sha256": "9f9fc68b4b251e7e8ecef9956af38e644f613e08cb977a2efdc5b962fd73e249"
+    },
+    "usage.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/persistent_contact_remodeling_20261019/usage.json",
+      "sha256": "8b053820a3f550b569ab176e47b72d537f25b060c6a16b421cd967400eec8150"
+    },
+    "means.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/persistent_contact_remodeling_20261019/means.json",
+      "sha256": "e1429ccfb55ef28920a2603aeed364917bff59e7a6017cfe80f9ffa94c24eecc"
+    },
+    "seed_stage_metrics.csv": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/persistent_contact_remodeling_20261019/seed_stage_metrics.csv",
+      "sha256": "d7c496197a263b97265ca74f9fedd68751d375608703e3eea439361cd3e39fed"
+    },
+    "feedback_content_pairs.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/persistent_contact_remodeling_20261019/feedback_content_pairs.json",
+      "sha256": "48fee4ca33add3c331080c57924dcda658875bd605eacbbd4ca298cf39edef6a"
+    },
+    "causal_results.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/persistent_contact_remodeling_20261019/causal_results.json",
+      "sha256": "00c26a5cfc6e2156a32eceee64e8946671b801f06ef2ec0ad9025a1168113e65"
+    },
+    "null_and_contact_checks.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/persistent_contact_remodeling_20261019/null_and_contact_checks.json",
+      "sha256": "fff99f0a028b4a9b8d11a2bec411c19ca35ea16e847b09d8e3b33ae52f4d694e"
+    },
+    "raw_manifest.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/persistent_contact_remodeling_20261019/raw_manifest.json",
+      "sha256": "9a222c6c2479329a5e0722d14b70942e31a792d3c691f65275f5b48fdd57eeaa"
+    },
+    "figure_sources.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/persistent_contact_remodeling_20261019/figure_sources.json",
+      "sha256": "3b7472e5ba03071e8db3b9281cb71b57bb524b31b790618e7de42c936f9f7fb4"
+    },
+    "comparison.png": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/persistent_contact_remodeling_20261019/comparison.png",
+      "sha256": "6d77cfad1a9fb028a94ea36043b33dd371120e96d2219685a1ab203b4c7f79ad"
+    },
+    "causal.png": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/persistent_contact_remodeling_20261019/causal.png",
+      "sha256": "8f2f4210d9f915ee1064dba3c0810fcc8980ef71bd0c80e1a2c481f63d34b68e"
+    },
+    "continuous_contacts.gif": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/persistent_contact_remodeling_20261019/continuous_contacts.gif",
+      "sha256": "6b6eca2c76d5a23fb60db262811e0b7fc9a6a20863136ad2fb60aabc79a5a8be"
+    },
+    "actual_final_contacts.png": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/persistent_contact_remodeling_20261019/actual_final_contacts.png",
+      "sha256": "04ce14fa84a2231488728f10177ca6813a193e0a3d18512435c86eb0ca5f5899"
+    }
+  },
+  "means": {
+    "opportunity": {
+      "fixed_readout": {
+        "acquire": {
+          "uptake": 3.3682820802190268,
+          "E": 55.78514098983115,
+          "M": 15.0,
+          "remodel_paid": 6.733189148883996,
+          "movement": 0.039951941503351546,
+          "rest_mean": 1.0303633868452584,
+          "right_x": 5.243079653867262,
+          "broken": 0.0
+        },
+        "hold": {
+          "uptake": 2.4091509666807855,
+          "E": 57.975368796901016,
+          "M": 15.0,
+          "remodel_paid": 0.0,
+          "movement": 0.0029231596107835668,
+          "rest_mean": 1.0303633868452584,
+          "right_x": 5.387765461225679,
+          "broken": 0.0
+        },
+        "reverse": {
+          "uptake": 2.4693013247681708,
+          "E": 50.22604735449393,
+          "M": 15.0,
+          "remodel_paid": 9.375195022745395,
+          "movement": 0.0334277444293451,
+          "rest_mean": 1.0184794129662593,
+          "right_x": 5.360332665484641,
+          "broken": 0.0
+        },
+        "retain_revision": {
+          "uptake": 0.669088093596621,
+          "E": 50.67702102987053,
+          "M": 15.0,
+          "remodel_paid": 0.0,
+          "movement": 0.0021144182198888006,
+          "rest_mean": 1.0184794129662593,
+          "right_x": 5.37040033547643,
+          "broken": 0.0
+        }
+      },
+      "plastic": {
+        "acquire": {
+          "uptake": 3.3682820802190268,
+          "E": 55.78514098983115,
+          "M": 15.0,
+          "remodel_paid": 6.733189148883996,
+          "movement": 0.039951941503351546,
+          "rest_mean": 1.0303633868452584,
+          "right_x": 5.243079653867262,
+          "broken": 0.0
+        },
+        "hold": {
+          "uptake": 2.4091509666807855,
+          "E": 57.975368796901016,
+          "M": 15.0,
+          "remodel_paid": 0.0,
+          "movement": 0.0029231596107835668,
+          "rest_mean": 1.0303633868452584,
+          "right_x": 5.387765461225679,
+          "broken": 0.0
+        },
+        "reverse": {
+          "uptake": 2.4693013247681708,
+          "E": 50.22604735449393,
+          "M": 15.0,
+          "remodel_paid": 9.375195022745395,
+          "movement": 0.0334277444293451,
+          "rest_mean": 1.0184794129662593,
+          "right_x": 5.360332665484641,
+          "broken": 0.0
+        },
+        "retain_revision": {
+          "uptake": 0.6690880935966222,
+          "E": 50.67702102987053,
+          "M": 15.0,
+          "remodel_paid": 0.0,
+          "movement": 0.002114418219888798,
+          "rest_mean": 1.0184794129662593,
+          "right_x": 5.370400335476432,
+          "broken": 0.0
+        }
+      }
+    },
+    "comparison": {
+      "fixed": {
+        "acquire": {
+          "uptake": 3.1192437702601548,
+          "E": 62.28924376947969,
+          "M": 15.0,
+          "remodel_paid": 0.0,
+          "movement": 0.02000000077996042,
+          "rest_mean": 1.0033567356289355,
+          "right_x": 5.180696631372673,
+          "broken": 0.0
+        },
+        "hold": {
+          "uptake": 2.098227541100862,
+          "E": 64.16943356827669,
+          "M": 15.0,
+          "remodel_paid": 0.0,
+          "movement": 0.0020377423037220375,
+          "rest_mean": 1.0033567356289355,
+          "right_x": 5.242937676072693,
+          "broken": 0.0
+        },
+        "reverse": {
+          "uptake": 1.9671507993083406,
+          "E": 65.32022174426058,
+          "M": 15.0,
+          "remodel_paid": 0.0,
+          "movement": 0.0063626233239298105,
+          "rest_mean": 1.0033567356289355,
+          "right_x": 5.273541143494647,
+          "broken": 0.0
+        },
+        "retain_revision": {
+          "uptake": 0.2975823189897509,
+          "E": 65.4001524276086,
+          "M": 15.0,
+          "remodel_paid": 0.0,
+          "movement": 0.0016516356415955686,
+          "rest_mean": 1.0033567356289355,
+          "right_x": 5.278217427249047,
+          "broken": 0.0
+        }
+      },
+      "fixed_readout": {
+        "acquire": {
+          "uptake": 3.344997166526005,
+          "E": 55.56049426193249,
+          "M": 15.0,
+          "remodel_paid": 6.93431510675726,
+          "movement": 0.040187797835734146,
+          "rest_mean": 1.0066613788642795,
+          "right_x": 5.230750657385241,
+          "broken": 0.0
+        },
+        "hold": {
+          "uptake": 2.2740438506640226,
+          "E": 57.61609555884561,
+          "M": 15.0,
+          "remodel_paid": 0.0,
+          "movement": 0.0024425537507614626,
+          "rest_mean": 1.0066613788642795,
+          "right_x": 5.311574743005611,
+          "broken": 0.0
+        },
+        "reverse": {
+          "uptake": 2.60886009734825,
+          "E": 49.8900226238026,
+          "M": 15.0,
+          "remodel_paid": 9.49116956565525,
+          "movement": 0.03376346673546967,
+          "rest_mean": 0.9996096908087115,
+          "right_x": 5.294403619119373,
+          "broken": 0.0
+        },
+        "retain_revision": {
+          "uptake": 0.7503352148086132,
+          "E": 50.4223188684835,
+          "M": 15.0,
+          "remodel_paid": 0.0,
+          "movement": 0.002038970127606314,
+          "rest_mean": 0.9996096908087115,
+          "right_x": 5.2989528060328555,
+          "broken": 0.0
+        }
+      },
+      "passive": {
+        "acquire": {
+          "uptake": 4.623142635725984,
+          "E": 63.779031979722326,
+          "M": 15.0,
+          "remodel_paid": 0.006860128200741664,
+          "movement": 0.02725052780243413,
+          "rest_mean": 1.126416399699465,
+          "right_x": 6.046946257156679,
+          "broken": 2.3333333333333335
+        },
+        "hold": {
+          "uptake": 0.06947455152446738,
+          "E": 63.61965068063901,
+          "M": 15.0,
+          "remodel_paid": 0.0,
+          "movement": 0.012855850607641559,
+          "rest_mean": 1.1164691101363007,
+          "right_x": 7.59449183217544,
+          "broken": 0.6666666666666666
+        },
+        "reverse": {
+          "uptake": 0.21331349861763996,
+          "E": 62.98408078965179,
+          "M": 15.0,
+          "remodel_paid": 0.0003990882277203501,
+          "movement": 0.03848430137662037,
+          "rest_mean": 1.1267578244543133,
+          "right_x": 13.66284070420891,
+          "broken": 0.0
+        },
+        "retain_revision": {
+          "uptake": 0.0436488552207172,
+          "E": 62.801921578332724,
+          "M": 15.0,
+          "remodel_paid": 0.0,
+          "movement": 0.009808066539638834,
+          "rest_mean": 1.1267578244543133,
+          "right_x": 15.294840704208916,
+          "broken": 0.0
+        }
+      },
+      "plastic": {
+        "acquire": {
+          "uptake": 3.344997166526005,
+          "E": 55.56049426193249,
+          "M": 15.0,
+          "remodel_paid": 6.93431510675726,
+          "movement": 0.040187797835734146,
+          "rest_mean": 1.0066613788642795,
+          "right_x": 5.230750657385241,
+          "broken": 0.0
+        },
+        "hold": {
+          "uptake": 2.2740438506640226,
+          "E": 57.61609555884561,
+          "M": 15.0,
+          "remodel_paid": 0.0,
+          "movement": 0.002442553750761463,
+          "rest_mean": 1.0066613788642795,
+          "right_x": 5.311574743005611,
+          "broken": 0.0
+        },
+        "reverse": {
+          "uptake": 2.60886009734825,
+          "E": 49.8900226238026,
+          "M": 15.0,
+          "remodel_paid": 9.49116956565525,
+          "movement": 0.03376346673546967,
+          "rest_mean": 0.9996096908087115,
+          "right_x": 5.294403619119373,
+          "broken": 0.0
+        },
+        "retain_revision": {
+          "uptake": 0.7503352148086132,
+          "E": 50.4223188684835,
+          "M": 15.0,
+          "remodel_paid": 0.0,
+          "movement": 0.002038970127606315,
+          "rest_mean": 0.9996096908087115,
+          "right_x": 5.2989528060328555,
+          "broken": 0.0
+        }
+      },
+      "plastic_sign": {
+        "acquire": {
+          "uptake": 3.520373597197169,
+          "E": 56.77198252813772,
+          "M": 15.0,
+          "remodel_paid": 5.900331264034578,
+          "movement": 0.03805980502439534,
+          "rest_mean": 1.020961205533899,
+          "right_x": 5.4329172148635605,
+          "broken": 0.6666666666666666
+        },
+        "hold": {
+          "uptake": 1.784143048663533,
+          "E": 58.33612590208815,
+          "M": 15.0,
+          "remodel_paid": 0.0,
+          "movement": 0.003999674712952557,
+          "rest_mean": 1.0252626158360671,
+          "right_x": 5.6744249916859,
+          "broken": 0.0
+        },
+        "reverse": {
+          "uptake": 3.9685067295774643,
+          "E": 51.71876915876296,
+          "M": 15.0,
+          "remodel_paid": 9.74075263211885,
+          "movement": 0.03511084078334558,
+          "rest_mean": 1.046993227258509,
+          "right_x": 6.058579506919483,
+          "broken": 1.0
+        },
+        "retain_revision": {
+          "uptake": 1.478994763840067,
+          "E": 52.97646919928701,
+          "M": 15.0,
+          "remodel_paid": 0.0,
+          "movement": 0.00529472331587327,
+          "rest_mean": 1.0322345624020501,
+          "right_x": 6.326106739162893,
+          "broken": 1.0
+        }
+      }
+    },
+    "content_control": {
+      "perturb_only": {
+        "acquire": {
+          "uptake": 3.0931953998093333,
+          "E": 54.959116847944266,
+          "M": 15.0,
+          "remodel_paid": 7.283104425097394,
+          "movement": 0.040974126767162396,
+          "rest_mean": 0.9888289184494727,
+          "right_x": 5.164030575519502,
+          "broken": 0.0
+        },
+        "hold": {
+          "uptake": 2.002750769159366,
+          "E": 56.74354823570894,
+          "M": 15.0,
+          "remodel_paid": 0.0,
+          "movement": 0.00231938139453743,
+          "rest_mean": 0.9888289184494727,
+          "right_x": 5.225574606235946,
+          "broken": 0.0
+        },
+        "reverse": {
+          "uptake": 3.008481125095999,
+          "E": 49.61824930556789,
+          "M": 15.0,
+          "remodel_paid": 9.290467107691775,
+          "movement": 0.03331294754476353,
+          "rest_mean": 1.0057986154191696,
+          "right_x": 5.229386095367813,
+          "broken": 0.0
+        },
+        "retain_revision": {
+          "uptake": 0.8831665735497518,
+          "E": 50.28336988928799,
+          "M": 15.0,
+          "remodel_paid": 0.0,
+          "movement": 0.0020459898295239524,
+          "rest_mean": 1.0057986154191696,
+          "right_x": 5.232250606312743,
+          "broken": 0.0
+        }
+      },
+      "plastic": {
+        "acquire": {
+          "uptake": 3.2262983693136653,
+          "E": 55.249598803527626,
+          "M": 15.0,
+          "remodel_paid": 7.126074527345495,
+          "movement": 0.040625038440033956,
+          "rest_mean": 0.9934171601851837,
+          "right_x": 5.190266085199721,
+          "broken": 0.0
+        },
+        "hold": {
+          "uptake": 2.105684081124123,
+          "E": 57.13693689232499,
+          "M": 15.0,
+          "remodel_paid": 0.0,
+          "movement": 0.002345992326620074,
+          "rest_mean": 0.9934171601851837,
+          "right_x": 5.255836386681337,
+          "broken": 0.0
+        },
+        "reverse": {
+          "uptake": 2.8535425902254654,
+          "E": 49.64956275605848,
+          "M": 15.0,
+          "remodel_paid": 9.497389273477891,
+          "movement": 0.03352745301357179,
+          "rest_mean": 1.0051028288916808,
+          "right_x": 5.235497606788591,
+          "broken": 0.0
+        },
+        "retain_revision": {
+          "uptake": 0.8968838359267854,
+          "E": 50.32839619884097,
+          "M": 15.0,
+          "remodel_paid": 0.0,
+          "movement": 0.002050393144171273,
+          "rest_mean": 1.0051028288916808,
+          "right_x": 5.237351492099475,
+          "broken": 0.0
+        }
+      }
+    }
+  },
+  "null_max": 8.881784197001252e-16,
+  "boundary": "Moving-node local material network; not native Eulerian CA/Lenia. No birth; external support/loading; partial energetics. No new topology learned by primary candidate.",
+  "scientific_choice": {
+    "requires_pi_choice": true,
+    "question": "四批真实运行支持普通局部后果能在接触静息长度中留下小幅有用状态，但固定材料+同局部补偿力再次逐轨等价；改学内容对照仅2/3，主候选没有产生新连接/断联，静息长度额外方法价值关闭，不换参数求胜。当前真正缺口是资源利用在远端、可改连接在近端时，什么合法局部信号能让近端从后果学习；这涉及沿真实接触网络传递利用后果的范围/延迟，也与d3标量后果信用相邻。建议若保持33独立，收窄为接触网络对反馈可达性和可修订性的物理限制；否则将该信用问题合并d3，33另选机制。请作一次方向边界取舍。未实现/未运行新信号宿主，不把补偿成本改价或限制其动作当解法。",
+    "next_not_running": true
+  }
+}

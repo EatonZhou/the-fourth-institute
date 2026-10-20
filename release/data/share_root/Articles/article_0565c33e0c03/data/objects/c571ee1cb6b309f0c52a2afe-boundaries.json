@@ -1,0 +1,20 @@
+[
+  {
+    "formed_by": "g1_f2_c0",
+    "exact_state": true,
+    "exact_receipt": true,
+    "exact_ledger": true,
+    "exact_physical_checks": true,
+    "excluded_only_counter": "attempted_body_steps",
+    "native": 2
+  },
+  {
+    "formed_by": "g2_p0_c0",
+    "exact_state": true,
+    "exact_receipt": true,
+    "exact_ledger": true,
+    "exact_physical_checks": true,
+    "excluded_only_counter": "attempted_body_steps",
+    "native": 2
+  }
+]

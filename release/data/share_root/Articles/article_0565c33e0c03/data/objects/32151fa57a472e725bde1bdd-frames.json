@@ -1,0 +1,546 @@
+[
+  {
+    "parent": "g1_f1_c0--compact--supported",
+    "segment": "always",
+    "schedule": "always",
+    "clock": 384,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--always/state384",
+    "receipt": null
+  },
+  {
+    "parent": "g1_f1_c0--compact--supported",
+    "segment": "always",
+    "schedule": "always",
+    "clock": 385,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--always/state385",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--always/receipt385.npz"
+  },
+  {
+    "parent": "g1_f1_c0--compact--supported",
+    "segment": "always",
+    "schedule": "always",
+    "clock": 448,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--always/state448",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--always/receipt448.npz"
+  },
+  {
+    "parent": "g1_f1_c0--compact--supported",
+    "segment": "always",
+    "schedule": "always",
+    "clock": 512,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--always/state512",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--always/receipt512.npz"
+  },
+  {
+    "parent": "g1_f1_c0--compact--supported",
+    "segment": "always",
+    "schedule": "always",
+    "clock": 513,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--always/state513",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--always/receipt513.npz"
+  },
+  {
+    "parent": "g1_f1_c0--compact--supported",
+    "segment": "always",
+    "schedule": "always",
+    "clock": 514,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--always/state514",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--always/receipt514.npz"
+  },
+  {
+    "parent": "g1_f1_c0--compact--supported",
+    "segment": "always",
+    "schedule": "always",
+    "clock": 576,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--always/state576",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--always/receipt576.npz"
+  },
+  {
+    "parent": "g1_f1_c0--compact--supported",
+    "segment": "always",
+    "schedule": "always",
+    "clock": 640,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--always/state640",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--always/receipt640.npz"
+  },
+  {
+    "parent": "g1_f1_c0--compact--supported",
+    "segment": "always",
+    "schedule": "always",
+    "clock": 704,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--always/state704",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--always/receipt704.npz"
+  },
+  {
+    "parent": "g1_f1_c0--compact--supported",
+    "segment": "always",
+    "schedule": "always",
+    "clock": 768,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--always/state768",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--always/receipt768.npz"
+  },
+  {
+    "parent": "g1_f1_c0--compact--supported",
+    "segment": "always",
+    "schedule": "always",
+    "clock": 832,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--always/state832",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--always/receipt832.npz"
+  },
+  {
+    "parent": "g1_f1_c0--compact--supported",
+    "segment": "always",
+    "schedule": "always",
+    "clock": 896,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--always/state896",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--always/receipt896.npz"
+  },
+  {
+    "parent": "g1_f1_c0--compact--supported",
+    "segment": "off_prefix",
+    "schedule": "off",
+    "clock": 384,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--off_prefix/state384",
+    "receipt": null
+  },
+  {
+    "parent": "g1_f1_c0--compact--supported",
+    "segment": "off_prefix",
+    "schedule": "off",
+    "clock": 385,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--off_prefix/state385",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--off_prefix/receipt385.npz"
+  },
+  {
+    "parent": "g1_f1_c0--compact--supported",
+    "segment": "off_prefix",
+    "schedule": "off",
+    "clock": 448,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--off_prefix/state448",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--off_prefix/receipt448.npz"
+  },
+  {
+    "parent": "g1_f1_c0--compact--supported",
+    "segment": "off_prefix",
+    "schedule": "off",
+    "clock": 512,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--off_prefix/state512",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--off_prefix/receipt512.npz"
+  },
+  {
+    "parent": "g1_f1_c0--compact--supported",
+    "segment": "off",
+    "schedule": "off",
+    "clock": 512,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--off/state512",
+    "receipt": null
+  },
+  {
+    "parent": "g1_f1_c0--compact--supported",
+    "segment": "off",
+    "schedule": "off",
+    "clock": 513,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--off/state513",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--off/receipt513.npz"
+  },
+  {
+    "parent": "g1_f1_c0--compact--supported",
+    "segment": "off",
+    "schedule": "off",
+    "clock": 514,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--off/state514",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--off/receipt514.npz"
+  },
+  {
+    "parent": "g1_f1_c0--compact--supported",
+    "segment": "off",
+    "schedule": "off",
+    "clock": 576,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--off/state576",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--off/receipt576.npz"
+  },
+  {
+    "parent": "g1_f1_c0--compact--supported",
+    "segment": "off",
+    "schedule": "off",
+    "clock": 640,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--off/state640",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--off/receipt640.npz"
+  },
+  {
+    "parent": "g1_f1_c0--compact--supported",
+    "segment": "off",
+    "schedule": "off",
+    "clock": 704,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--off/state704",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--off/receipt704.npz"
+  },
+  {
+    "parent": "g1_f1_c0--compact--supported",
+    "segment": "off",
+    "schedule": "off",
+    "clock": 768,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--off/state768",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--off/receipt768.npz"
+  },
+  {
+    "parent": "g1_f1_c0--compact--supported",
+    "segment": "off",
+    "schedule": "off",
+    "clock": 832,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--off/state832",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--off/receipt832.npz"
+  },
+  {
+    "parent": "g1_f1_c0--compact--supported",
+    "segment": "off",
+    "schedule": "off",
+    "clock": 896,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--off/state896",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--off/receipt896.npz"
+  },
+  {
+    "parent": "g1_f1_c0--compact--supported",
+    "segment": "restart",
+    "schedule": "restart",
+    "clock": 512,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--restart/state512",
+    "receipt": null
+  },
+  {
+    "parent": "g1_f1_c0--compact--supported",
+    "segment": "restart",
+    "schedule": "restart",
+    "clock": 513,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--restart/state513",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--restart/receipt513.npz"
+  },
+  {
+    "parent": "g1_f1_c0--compact--supported",
+    "segment": "restart",
+    "schedule": "restart",
+    "clock": 514,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--restart/state514",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--restart/receipt514.npz"
+  },
+  {
+    "parent": "g1_f1_c0--compact--supported",
+    "segment": "restart",
+    "schedule": "restart",
+    "clock": 576,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--restart/state576",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--restart/receipt576.npz"
+  },
+  {
+    "parent": "g1_f1_c0--compact--supported",
+    "segment": "restart",
+    "schedule": "restart",
+    "clock": 640,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--restart/state640",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--restart/receipt640.npz"
+  },
+  {
+    "parent": "g1_f1_c0--compact--supported",
+    "segment": "restart",
+    "schedule": "restart",
+    "clock": 704,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--restart/state704",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--restart/receipt704.npz"
+  },
+  {
+    "parent": "g1_f1_c0--compact--supported",
+    "segment": "restart",
+    "schedule": "restart",
+    "clock": 768,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--restart/state768",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--restart/receipt768.npz"
+  },
+  {
+    "parent": "g1_f1_c0--compact--supported",
+    "segment": "restart",
+    "schedule": "restart",
+    "clock": 832,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--restart/state832",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--restart/receipt832.npz"
+  },
+  {
+    "parent": "g1_f1_c0--compact--supported",
+    "segment": "restart",
+    "schedule": "restart",
+    "clock": 896,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--restart/state896",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--restart/receipt896.npz"
+  },
+  {
+    "parent": "g1_f2_c0--compact--supported",
+    "segment": "always",
+    "schedule": "always",
+    "clock": 384,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--always/state384",
+    "receipt": null
+  },
+  {
+    "parent": "g1_f2_c0--compact--supported",
+    "segment": "always",
+    "schedule": "always",
+    "clock": 385,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--always/state385",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--always/receipt385.npz"
+  },
+  {
+    "parent": "g1_f2_c0--compact--supported",
+    "segment": "always",
+    "schedule": "always",
+    "clock": 448,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--always/state448",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--always/receipt448.npz"
+  },
+  {
+    "parent": "g1_f2_c0--compact--supported",
+    "segment": "always",
+    "schedule": "always",
+    "clock": 512,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--always/state512",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--always/receipt512.npz"
+  },
+  {
+    "parent": "g1_f2_c0--compact--supported",
+    "segment": "always",
+    "schedule": "always",
+    "clock": 513,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--always/state513",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--always/receipt513.npz"
+  },
+  {
+    "parent": "g1_f2_c0--compact--supported",
+    "segment": "always",
+    "schedule": "always",
+    "clock": 514,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--always/state514",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--always/receipt514.npz"
+  },
+  {
+    "parent": "g1_f2_c0--compact--supported",
+    "segment": "always",
+    "schedule": "always",
+    "clock": 576,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--always/state576",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--always/receipt576.npz"
+  },
+  {
+    "parent": "g1_f2_c0--compact--supported",
+    "segment": "always",
+    "schedule": "always",
+    "clock": 640,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--always/state640",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--always/receipt640.npz"
+  },
+  {
+    "parent": "g1_f2_c0--compact--supported",
+    "segment": "always",
+    "schedule": "always",
+    "clock": 704,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--always/state704",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--always/receipt704.npz"
+  },
+  {
+    "parent": "g1_f2_c0--compact--supported",
+    "segment": "always",
+    "schedule": "always",
+    "clock": 768,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--always/state768",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--always/receipt768.npz"
+  },
+  {
+    "parent": "g1_f2_c0--compact--supported",
+    "segment": "always",
+    "schedule": "always",
+    "clock": 832,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--always/state832",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--always/receipt832.npz"
+  },
+  {
+    "parent": "g1_f2_c0--compact--supported",
+    "segment": "always",
+    "schedule": "always",
+    "clock": 896,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--always/state896",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--always/receipt896.npz"
+  },
+  {
+    "parent": "g1_f2_c0--compact--supported",
+    "segment": "off_prefix",
+    "schedule": "off",
+    "clock": 384,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--off_prefix/state384",
+    "receipt": null
+  },
+  {
+    "parent": "g1_f2_c0--compact--supported",
+    "segment": "off_prefix",
+    "schedule": "off",
+    "clock": 385,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--off_prefix/state385",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--off_prefix/receipt385.npz"
+  },
+  {
+    "parent": "g1_f2_c0--compact--supported",
+    "segment": "off_prefix",
+    "schedule": "off",
+    "clock": 448,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--off_prefix/state448",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--off_prefix/receipt448.npz"
+  },
+  {
+    "parent": "g1_f2_c0--compact--supported",
+    "segment": "off_prefix",
+    "schedule": "off",
+    "clock": 512,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--off_prefix/state512",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--off_prefix/receipt512.npz"
+  },
+  {
+    "parent": "g1_f2_c0--compact--supported",
+    "segment": "off",
+    "schedule": "off",
+    "clock": 512,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--off/state512",
+    "receipt": null
+  },
+  {
+    "parent": "g1_f2_c0--compact--supported",
+    "segment": "off",
+    "schedule": "off",
+    "clock": 513,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--off/state513",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--off/receipt513.npz"
+  },
+  {
+    "parent": "g1_f2_c0--compact--supported",
+    "segment": "off",
+    "schedule": "off",
+    "clock": 514,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--off/state514",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--off/receipt514.npz"
+  },
+  {
+    "parent": "g1_f2_c0--compact--supported",
+    "segment": "off",
+    "schedule": "off",
+    "clock": 576,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--off/state576",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--off/receipt576.npz"
+  },
+  {
+    "parent": "g1_f2_c0--compact--supported",
+    "segment": "off",
+    "schedule": "off",
+    "clock": 640,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--off/state640",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--off/receipt640.npz"
+  },
+  {
+    "parent": "g1_f2_c0--compact--supported",
+    "segment": "off",
+    "schedule": "off",
+    "clock": 704,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--off/state704",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--off/receipt704.npz"
+  },
+  {
+    "parent": "g1_f2_c0--compact--supported",
+    "segment": "off",
+    "schedule": "off",
+    "clock": 768,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--off/state768",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--off/receipt768.npz"
+  },
+  {
+    "parent": "g1_f2_c0--compact--supported",
+    "segment": "off",
+    "schedule": "off",
+    "clock": 832,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--off/state832",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--off/receipt832.npz"
+  },
+  {
+    "parent": "g1_f2_c0--compact--supported",
+    "segment": "off",
+    "schedule": "off",
+    "clock": 896,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--off/state896",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--off/receipt896.npz"
+  },
+  {
+    "parent": "g1_f2_c0--compact--supported",
+    "segment": "restart",
+    "schedule": "restart",
+    "clock": 512,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--restart/state512",
+    "receipt": null
+  },
+  {
+    "parent": "g1_f2_c0--compact--supported",
+    "segment": "restart",
+    "schedule": "restart",
+    "clock": 513,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--restart/state513",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--restart/receipt513.npz"
+  },
+  {
+    "parent": "g1_f2_c0--compact--supported",
+    "segment": "restart",
+    "schedule": "restart",
+    "clock": 514,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--restart/state514",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--restart/receipt514.npz"
+  },
+  {
+    "parent": "g1_f2_c0--compact--supported",
+    "segment": "restart",
+    "schedule": "restart",
+    "clock": 576,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--restart/state576",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--restart/receipt576.npz"
+  },
+  {
+    "parent": "g1_f2_c0--compact--supported",
+    "segment": "restart",
+    "schedule": "restart",
+    "clock": 640,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--restart/state640",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--restart/receipt640.npz"
+  },
+  {
+    "parent": "g1_f2_c0--compact--supported",
+    "segment": "restart",
+    "schedule": "restart",
+    "clock": 704,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--restart/state704",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--restart/receipt704.npz"
+  },
+  {
+    "parent": "g1_f2_c0--compact--supported",
+    "segment": "restart",
+    "schedule": "restart",
+    "clock": 768,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--restart/state768",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--restart/receipt768.npz"
+  },
+  {
+    "parent": "g1_f2_c0--compact--supported",
+    "segment": "restart",
+    "schedule": "restart",
+    "clock": 832,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--restart/state832",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--restart/receipt832.npz"
+  },
+  {
+    "parent": "g1_f2_c0--compact--supported",
+    "segment": "restart",
+    "schedule": "restart",
+    "clock": 896,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--restart/state896",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--restart/receipt896.npz"
+  }
+]

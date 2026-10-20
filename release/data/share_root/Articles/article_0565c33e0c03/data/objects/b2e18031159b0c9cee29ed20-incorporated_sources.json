@@ -1,0 +1,157 @@
+{
+  "lifetime": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/lifetime_cue_reversal_20261019/handoff.json",
+    "sha256": "d0ca1aa9384085b1ba4a20ba8176617adf171cc35f2cf18b7a18294907e738a8",
+    "previous_read_sha256": "7477b13e0695a97aa97323a26607595b51e133eb32e3af26cc30a40dfc3c7e38"
+  },
+  "finite_replacement": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/deletion_layout_life0_formation_20261019/handoff.json",
+    "sha256": "70910cb085dee351e4a2aab3fbc80a478b5fd98dbad07c25ace79e69f8f12c37"
+  },
+  "embodied_prediction": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/embodied_prediction_synthesis_20261019/handoff.json",
+    "sha256": "642f3c7736a647b242174d71bcf0e23a243bbd2a3a9d3fbe13d4bba61803fbf3"
+  },
+  "primary_comparison": {
+    "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/method_renewal/lifetime_plasticity_v12_20261019/v047_integration/handoff.json",
+    "sha256": "290f1d4da682485f0e235c3147b1f51655ca5a9714f4eeee7be4a5062d8479c7"
+  },
+  "temporal_credit": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/temporal_credit_reassignment_20261019/direction_handoff.json",
+    "sha256": "198fec5851ab7573f47032718db08effe9f2404f14acdb065cd224812a53ca59",
+    "previous_read_sha256": "282f0b29648ed353714f7c63c24a6b3d92de5ffc28a4f82b09600aaa7bb6aad3"
+  },
+  "self_generated_contact": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_contact_reversal_20261019/direction_handoff.json",
+    "sha256": "ff376791a07f78cb8757dee19de2d0bc0deac707de03cde43c4b6957312d80ef"
+  },
+  "association_readout_recontact": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/association_readout_recontact_20261019/direction_handoff.json",
+    "sha256": "edbc6aed09e09caafbb45eaddb5f6628627d1b9753c7806431f7ae0317995bdc"
+  },
+  "coordinated_feedback_retention": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/coordinated_feedback_retention_20261019/direction_handoff.json",
+    "sha256": "fb1b4f86fbdcf731c919e03661c0b06c67c332d44ea47f4bf312494a804b7540"
+  },
+  "propulsion_expression_and_braking": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/value_conditioned_propulsion_brake_20261019/direction_handoff.json",
+    "sha256": "14dc780b6b3637d6e2e000e5d2c1af76850bd1504a862d84529f7b0e67329ac9"
+  },
+  "fixed_effort_opportunity": {
+    "handoff": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/analysis/handoff.json",
+    "sha256": "15b6177c0a64eb371c2725f1207abaa8de5b0861774995fd5604b7001c96194b",
+    "readout": "physical trade-offs only; no learned width/effort policy",
+    "source_native": 2048,
+    "integration_native": 0
+  },
+  "local_motor_content": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/local_motor_expression_20261019/direction_handoff.json",
+    "sha256": "c5f6ce24a7e2fdc7f76a352ffcd84d69be9bbff6e1cb96665eb39c71a5a1d299",
+    "editable_source": "${share_root}/Articles/article_0565c33e0c03/work/longform_v047/data/editable_source_overrides.json",
+    "editable_provenance": "Reviewed GUI reconstruction accepted as editable counterpart; unavailable original bytes not recovered; original SI9 export unchanged."
+  },
+  "central_joint_regenerative_architecture": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/joint_behavior_actual_renewal_20261019/analysis/handoff.json",
+    "sha256": "dcca0357477ab758ac21a36b52c1ffae3742b5901a4445082b90e95331a2867c",
+    "scope": "implementation comparison and failed complete behaviour; no pooled learning evidence"
+  },
+  "young_density_regulated_host": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/young_regenerative_learning_opportunity_20261019/synthesis/final_handoff.json",
+    "sha256": "062a874bd3108aa9bdce0c6d736cd92e7b39ff836f405fcdfc42b8e6a6fa8b35",
+    "storage_correction_source": "knowledge_base/research/experience_learning/young_turnover_host_scientific_choice_20261019.json"
+  },
+  "acquired_response_gain": {
+    "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/acquired_gain_content_20261019/direction_handoff.json",
+    "sha256": "5045d64975466cb11c69e28f332fdccba2962188385fbbe62a2141b4324c087a",
+    "native_original": 18816,
+    "worker_seconds": 118.121236,
+    "native_integration": 0,
+    "source_rows": "data/acquired_gain_source_rows_v0476.json",
+    "stage": "Retained in v0.48 as richer-information comparison and Supplementary Figure S10; does not enlarge primary scalar-only capability",
+    "scope": "Acquired preset response gain; fixed-gain strong control; frozen writing reverses; erasure fails and homogenization succeeds; no new optimizer or necessity of relearning."
+  },
+  "scalar_action": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/scalar_actuator_relearning_20261019/direction_handoff.json",
+    "sha256": "052eda8a60632e75a8d650a0de46bf0380bd63a2e5345f3b407c22308cf1dcab",
+    "role": "Primary information-restricted action evidence",
+    "source_native_steps": 10880,
+    "source_worker_seconds": 35.827098,
+    "integration_new_physics": 0,
+    "stage": "Integrated in full v0.48 with actual outcomes, strong controls, source tables and official default"
+  },
+  "motion_observing_action": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_coupling_transport_20261019/direction_handoff.json",
+    "sha256": "8f9a29cb21d93006f86c00127cfb3911ef1c39d017415eb0fb9ece8fbb0c9185",
+    "role": "Richer-information comparison only",
+    "source_native_steps": 16831,
+    "source_worker_seconds": 52.962982,
+    "integration_new_physics": 0,
+    "stage": "Integrated in full v0.48 with actual outcomes, strong controls, source tables and official default"
+  },
+  "affine_action": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/affine_actuator_relearning_20261019/direction_handoff.json",
+    "sha256": "bbd69fa27d420b4ca24c0bb1bb261b079f70c3c35b30e21e832ad52219184f04",
+    "role": "Richer-information standard-control comparison only",
+    "source_native_steps": 7936,
+    "source_worker_seconds": 46.702418,
+    "integration_new_physics": 0,
+    "stage": "Integrated in full v0.48 with actual outcomes, strong controls, source tables and official default"
+  },
+  "selected_history": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/temporal_history_selected_action_20261019/handoff.json",
+    "sha256": "fa2bc1c08e56cadf2fa9c24f0f8af47a04fdc819b37f0c92e9040fa1585c4ce9",
+    "role": "Complete-history and filtered-table strong controls",
+    "source_native_steps": 7236,
+    "source_worker_seconds": 10.552385,
+    "integration_new_physics": 0,
+    "stage": "Integrated in full v0.48 with actual outcomes, strong controls, source tables and official default"
+  },
+  "predictive_maintenance": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/predictive_tissue_maintenance_20261019/final_handoff.json",
+    "sha256": "fad231bf27578e5720f88a29717009d0c1a42542894a75441aae62fb7a41b14a",
+    "role": "Equal-purchase finite content effect, incomplete tail retained",
+    "source_native_steps": 7488,
+    "source_worker_seconds": 165.220128,
+    "integration_new_physics": 0,
+    "stage": "Integrated in full v0.48 with actual outcomes, strong controls, source tables and official default"
+  },
+  "strong_physiology": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/predictive_strong_physiology_20261019/final_handoff.json",
+    "sha256": "fa00d49673e97f020a0359ce3caca369d70a750faef5b7cc4ec448db4234f880",
+    "role": "No general net superiority; stable-relation timing benefit",
+    "source_native_steps": 3072,
+    "source_worker_seconds": 103.915548,
+    "integration_new_physics": 0,
+    "stage": "Integrated in full v0.48 with actual outcomes, strong controls, source tables and official default"
+  },
+  "material_carried_history": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_dynamics_20261019/handoff.json",
+    "sha256": "2547e980a19f2f1cc19146210edfa392cdc16e2b66a734d621cf7802e25f379a",
+    "source_native_steps": 23491,
+    "source_worker_seconds": 32.21922,
+    "integration_new_physics": 0,
+    "role": "Fixed local event memory plus delta is sufficient; tested adaptive recurrent gain gives no added value",
+    "stage": "Integrated in full v0.48 with actual outcomes, strong controls, source tables and official default"
+  },
+  "physical_response_state": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/physical_experience_state_20261019/handoff.json",
+    "sha256": "b1119cd365f82b0614fc7169d2edd4b13314864583232be5ee14c990819a05ef",
+    "source_native_steps": 5965,
+    "source_occupied_worker_seconds": 8.514272,
+    "integration_new_physics": 0,
+    "role": "Richer local motion interface: learned compliance is exactly matched by a fixed-material online readout",
+    "stage": "Integrated in full v0.48 with actual outcomes, strong controls, source tables and official default"
+  },
+  "persistent_contact_network": {
+    "source": "${share_root}/Projects/元胞自动机研究/src/research/results/persistent_contact_remodeling_20261019/handoff.json",
+    "sha256": "081fb5cbda0e28d733c3d5b66807eede9f5fbedf053ec524b75b8bc0b0451051",
+    "stage": "Published in same full v0.48.1 with complete data and force-equivalent null; independent non-CA host",
+    "new_physics": 0
+  },
+  "contact_feedback_reachability": {
+    "source": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_reachability_20261019/handoff.json",
+    "sha256": "4cf3862fb7c28ce2a53b564a25568d348b3166a42d8de26366bfe304cd4093fb",
+    "stage": "Published in same full v0.48.2; reachable information distinguished from failed utilization, separate non-CA host",
+    "new_physics": 0
+  }
+}

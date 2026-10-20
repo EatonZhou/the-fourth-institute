@@ -1,0 +1,337 @@
+{
+  "root": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/birth_clock_retention_accounting_20261019",
+  "count": 66,
+  "bytes": 18195573,
+  "files": [
+    {
+      "path": "202610195601_ring_birth_gain_only__future_birth_gain_only.csv",
+      "bytes": 498194,
+      "sha256": "0fb0a50591ab3321334d5cae106167119bb11ff8db544a22f4c4710433db0f83"
+    },
+    {
+      "path": "202610195601_ring_birth_gain_only__future_birth_gain_only_scalar_stats.npz",
+      "bytes": 80514,
+      "sha256": "de0a813605c134a080943239591bfff23de31b684bf4e531981e209cd660c14b"
+    },
+    {
+      "path": "202610195601_ring_birth_gain_only__future_both.csv",
+      "bytes": 452438,
+      "sha256": "d834a3a6124204667c3f51b4dde881911cf346305430bb50715fd01e84baa905"
+    },
+    {
+      "path": "202610195601_ring_birth_gain_only__future_both_scalar_stats.npz",
+      "bytes": 80449,
+      "sha256": "6f4b72c761ca1b0f35c062f334964bd09e55db944a8267610ee94d13575dc057"
+    },
+    {
+      "path": "202610195601_ring_both__future_birth_gain_only.csv",
+      "bytes": 452875,
+      "sha256": "f40e074b4c0ec26c68a24652264a860837c27ca9c50f37606c7ef6e8010a94f7"
+    },
+    {
+      "path": "202610195601_ring_both__future_birth_gain_only_scalar_stats.npz",
+      "bytes": 80342,
+      "sha256": "3c620c12c6322c823fdc057795dc62945fe9679bf3bd72b602ddc5effc9eed18"
+    },
+    {
+      "path": "202610195601_ring_both__future_both.csv",
+      "bytes": 407471,
+      "sha256": "f6622723aaa644ff7bc9e364f849154ce91e0429754c87e01586f84beb71c76c"
+    },
+    {
+      "path": "202610195601_ring_both__future_both_scalar_stats.npz",
+      "bytes": 80381,
+      "sha256": "a5fc8649357b2633a7e15d929e4af61303c4a705a53606f8a46796158ebe0e4e"
+    },
+    {
+      "path": "202610195601_separate_seeds_birth_gain_only__future_birth_gain_only.csv",
+      "bytes": 539525,
+      "sha256": "74e0f49255ef6b2976b97e8f4d6400f89778d1e7c2a6f9cd12b1fe1dd8203f00"
+    },
+    {
+      "path": "202610195601_separate_seeds_birth_gain_only__future_birth_gain_only_scalar_stats.npz",
+      "bytes": 80719,
+      "sha256": "30e276a486904b9992a25283984d614868973b92506539d8be15e5572af1e81f"
+    },
+    {
+      "path": "202610195601_separate_seeds_birth_gain_only__future_both.csv",
+      "bytes": 482693,
+      "sha256": "264bd966d2cd0703b410650afbb08464c77da77466cff2ba9a8395cb1cf93682"
+    },
+    {
+      "path": "202610195601_separate_seeds_birth_gain_only__future_both_scalar_stats.npz",
+      "bytes": 47214,
+      "sha256": "307dbeb644f69fdb8594d838e1b54df5a13c51a7c334d1e884b3257c98d7235f"
+    },
+    {
+      "path": "202610195601_separate_seeds_both__future_birth_gain_only.csv",
+      "bytes": 483781,
+      "sha256": "c039df64e7ab635055e519a0d8e9bd9335dde9abe56e39ff0ba0f84e7c9d4583"
+    },
+    {
+      "path": "202610195601_separate_seeds_both__future_birth_gain_only_scalar_stats.npz",
+      "bytes": 68586,
+      "sha256": "39c24e19b8c21d158b930a598c76a96097147275b8c0dc25c38d925b8da84b27"
+    },
+    {
+      "path": "202610195601_separate_seeds_both__future_both.csv",
+      "bytes": 423155,
+      "sha256": "3dca5878864f0ce9f8db147b280bc7ef1d400cb3e5de7896191f526ab23516d1"
+    },
+    {
+      "path": "202610195601_separate_seeds_both__future_both_scalar_stats.npz",
+      "bytes": 64739,
+      "sha256": "2ecbe283331ef06845eddb3cef67e9d2f689e783b85be507e3be5c2967da82ae"
+    },
+    {
+      "path": "202610195602_ring_birth_gain_only__future_birth_gain_only.csv",
+      "bytes": 473121,
+      "sha256": "10d7420edc9d8b84900180092b9734a197253ca4b8cf296e64bf2b458ea34257"
+    },
+    {
+      "path": "202610195602_ring_birth_gain_only__future_birth_gain_only_scalar_stats.npz",
+      "bytes": 66754,
+      "sha256": "f4b6fd0d7ba18d4bee31eb15b87eba2c5c378bd468eeed0abc5eded86415d246"
+    },
+    {
+      "path": "202610195602_ring_birth_gain_only__future_both.csv",
+      "bytes": 428536,
+      "sha256": "34aa5c3263ad83bf891e3b57937eb788d620eef7da4f4c464bbb535e35fee5fc"
+    },
+    {
+      "path": "202610195602_ring_birth_gain_only__future_both_scalar_stats.npz",
+      "bytes": 66864,
+      "sha256": "4a92456b013b604fb40038c0f1358902be6391af546ce3ff2c464722d17bbae3"
+    },
+    {
+      "path": "202610195602_ring_both__future_birth_gain_only.csv",
+      "bytes": 451602,
+      "sha256": "b8c01a540a67d2cef12de0e929dff2d37fed411203219863cbb7e91a04a95420"
+    },
+    {
+      "path": "202610195602_ring_both__future_birth_gain_only_scalar_stats.npz",
+      "bytes": 75966,
+      "sha256": "75f0a3bf8ac91b043eb6bae7e69b42c2a6a8e52d81c174cb5262d1ffb3d14422"
+    },
+    {
+      "path": "202610195602_ring_both__future_both.csv",
+      "bytes": 407569,
+      "sha256": "dd6cda455c0b209fd221d6a1c09417aad75b1cd7d7a39e077f05507934a3e8af"
+    },
+    {
+      "path": "202610195602_ring_both__future_both_scalar_stats.npz",
+      "bytes": 80425,
+      "sha256": "89ec655cfd4d42c74d6190b0ae3d5a87a513fa53676d39446383f70ddff9dc52"
+    },
+    {
+      "path": "202610195602_separate_seeds_birth_gain_only__future_birth_gain_only.csv",
+      "bytes": 502559,
+      "sha256": "208c7da4fd8f77528598fcce33828a9981a2c64c5996aa75e5080a8e4babf644"
+    },
+    {
+      "path": "202610195602_separate_seeds_birth_gain_only__future_birth_gain_only_scalar_stats.npz",
+      "bytes": 65547,
+      "sha256": "7246c38d850facf868188b340002639083273353305cdac68f55cf179e17fc5e"
+    },
+    {
+      "path": "202610195602_separate_seeds_birth_gain_only__future_both.csv",
+      "bytes": 448461,
+      "sha256": "f3c83127ab650be54cd05599712ecc9783a047ef989ff3fe8c0a9bfcdeac01cb"
+    },
+    {
+      "path": "202610195602_separate_seeds_birth_gain_only__future_both_scalar_stats.npz",
+      "bytes": 50405,
+      "sha256": "1ed774127f3ca428192ee91a525d54beca6077a85568541bd2ed69397a482b24"
+    },
+    {
+      "path": "202610195602_separate_seeds_both__future_birth_gain_only.csv",
+      "bytes": 457480,
+      "sha256": "3877aae6de3fcbb02a8346a7e525c616ac0be774a519bc54759bf5d9ae8f67f8"
+    },
+    {
+      "path": "202610195602_separate_seeds_both__future_birth_gain_only_scalar_stats.npz",
+      "bytes": 65514,
+      "sha256": "a971e13d5b07e8f54f225314b22af5460bfc4aa739ae83041e80c763849ca838"
+    },
+    {
+      "path": "202610195602_separate_seeds_both__future_both.csv",
+      "bytes": 412080,
+      "sha256": "7ffec7ce3b5cbce6678572914d036bc8c3f9982464b5a637a695fff90b2171b8"
+    },
+    {
+      "path": "202610195602_separate_seeds_both__future_both_scalar_stats.npz",
+      "bytes": 65204,
+      "sha256": "559d3c34249a7f26bf708923a41781348bba453e7ebd3f6015d637026d6d2153"
+    },
+    {
+      "path": "METHOD.txt",
+      "bytes": 2203,
+      "sha256": "5b5a0ec67ae978e0506377df0c9eb129f975845258098241773bacc23ef863d7"
+    },
+    {
+      "path": "REPORT.txt",
+      "bytes": 5923,
+      "sha256": "ee75294c7ca5044ba04837e4fc233e6f83d5e31c63dc137d9967d67c7511aab8"
+    },
+    {
+      "path": "age_support_and_weights.csv",
+      "bytes": 22438,
+      "sha256": "7a7233d4dac056d92f34aea5044dfa50cbb39415dcaed6889129c21b5ec91db5"
+    },
+    {
+      "path": "all_birth_clock_curves.csv",
+      "bytes": 7319830,
+      "sha256": "a6e0d6d641af6986faacc9d939660098fe84ecd83e63fa4489e57418453a1e35"
+    },
+    {
+      "path": "analysis.json",
+      "bytes": 74580,
+      "sha256": "b89beb17a6af43d2cd93ee2fe55ddf97d39889ff33538974aaba0e6e37e4ac03"
+    },
+    {
+      "path": "budget.json",
+      "bytes": 1280,
+      "sha256": "6ed031a7278b64e5c5f06b242d3861b1f7ca3824d1b590e5514ca18dfe37aea1"
+    },
+    {
+      "path": "checks.json",
+      "bytes": 1457,
+      "sha256": "37aac44d4c48a90fb2422dd7a58c5fbfc51410e0522fcfc5638e88c319ccae13"
+    },
+    {
+      "path": "closure_result.json",
+      "bytes": 118,
+      "sha256": "710143c001a8a48cb126baf66fa8f89e2a328b6d30f3e835cfad062d46604a9b"
+    },
+    {
+      "path": "closure_source.py",
+      "bytes": 13317,
+      "sha256": "5f0a081871dbe9036e8721d2218d7d4d2520ff65f2426da6488c4e6305f7951b"
+    },
+    {
+      "path": "combined_C_O_N_body_costs.csv",
+      "bytes": 5290,
+      "sha256": "88d915a25e373c87b4af68f7a9bfc326411716e5749081338fbf98c861d0eefc"
+    },
+    {
+      "path": "control.json",
+      "bytes": 117,
+      "sha256": "13028cab6ae3436d4bedfa03b6caaa0a5fffb3c6d156806033a5a6b54ca3c1ab"
+    },
+    {
+      "path": "eight_time_spatial_diagnostics.csv",
+      "bytes": 23205,
+      "sha256": "1616c3218d686abfb9f012bab802e65e64049846b3bfd116d2560c58fca3a1ff"
+    },
+    {
+      "path": "endpoint_birth_clock_identity.csv",
+      "bytes": 145371,
+      "sha256": "4355c267c9a9ba03e6f4c6beb05f4c01a132cafa82f9011c97b8beb54517d791"
+    },
+    {
+      "path": "endpoint_paired_accounting.csv",
+      "bytes": 2192,
+      "sha256": "a6cbe6ff21c01fe220fb92c60a9e00fafa37cc331c20430694b7a2732a37d85f"
+    },
+    {
+      "path": "figures/all_birth_clock_signs.png",
+      "bytes": 471305,
+      "sha256": "ce0bd2eaf2627b41b90776f14d532c7fde72f804f3c86c5a302ec96ef3087b83"
+    },
+    {
+      "path": "figures/endpoint_accounting.png",
+      "bytes": 67156,
+      "sha256": "472ff0396edf46c9c4a1e9e849a4fe2cf1361bb335047b36bc0935be69b31f04"
+    },
+    {
+      "path": "figures/same_age_all_pairs.png",
+      "bytes": 231637,
+      "sha256": "348764fdc822d93277d246c301f7045c01ba5a39981a637dc9751b73cb4d2fe0"
+    },
+    {
+      "path": "input_manifest.json",
+      "bytes": 366693,
+      "sha256": "b663a9288af538d6e94748d401e784490fa83afa4f829cd73641de19ac6c114c"
+    },
+    {
+      "path": "offline_stdout.log",
+      "bytes": 2216,
+      "sha256": "e7bff65edbb3a95ca1babc8796a94dc658112072480ada506e0dff39f8b34580"
+    },
+    {
+      "path": "ordered_request_ledger.csv",
+      "bytes": 178046,
+      "sha256": "6b5f464a5001aa4d99323f3070c72bf3bcaee2febd4c8d32565a27b4b22e3531"
+    },
+    {
+      "path": "original_guards.csv",
+      "bytes": 2059,
+      "sha256": "f5c2d9ffccd3ce11728f6765eb237ff05d3e5c705185db09e2dddabc400ea4fa"
+    },
+    {
+      "path": "original_outcomes.csv",
+      "bytes": 28678,
+      "sha256": "72d0bd13745748f9165ad614bd293cdcffb7c1f5dca4c340f6c0e70842c94ffd"
+    },
+    {
+      "path": "original_outcomes.json",
+      "bytes": 203891,
+      "sha256": "021523dacdacc4a90bef38108295553c47701802f744698c8fe4335da6353450"
+    },
+    {
+      "path": "original_paired_effects.csv",
+      "bytes": 16210,
+      "sha256": "5619f9f4cd532296e86b0b998554aad33a391c11f7e3eaf5bb0910fe7ad19706"
+    },
+    {
+      "path": "path_reconstruction.csv",
+      "bytes": 2399,
+      "sha256": "c94d8876699bf4002b0e2d65cd0ec8456ff0b989a939a7987bc7bc2bd5b3163b"
+    },
+    {
+      "path": "plan.json",
+      "bytes": 3656,
+      "sha256": "216f695489308b27402625b56a3d66011a2059e86b5790c2dc5809c419e1f9c5"
+    },
+    {
+      "path": "progress.json",
+      "bytes": 1019,
+      "sha256": "aa9410b537b80ca0a8378b344e2fec3b5f54a7f6342f05260599c824e0f201bc"
+    },
+    {
+      "path": "pure_checks.json",
+      "bytes": 179,
+      "sha256": "92f59cca5c8e9af1d0a5c56cb86f04165219fad6f577309cc1b396de80eda972"
+    },
+    {
+      "path": "result.json",
+      "bytes": 1812,
+      "sha256": "1489b0e45268d369dd3f10581b551020e71673814b7652758598b83ca8626d64"
+    },
+    {
+      "path": "same_birth_clock_age_pairs.csv",
+      "bytes": 540289,
+      "sha256": "58a455bfcc085ea31b9a9734ea70aafd85513c8805f900867e370cf9156fb31f"
+    },
+    {
+      "path": "scientific_next_request.json",
+      "bytes": 1773,
+      "sha256": "f599b35d67730a23e98bf3aa377d4a3632ef66f4cbb16ac666a482184421c3ca"
+    },
+    {
+      "path": "source.py",
+      "bytes": 17432,
+      "sha256": "cebd2f0aa297c3d8843c1e70d5691f603e4fca9fa6531427713d8af74f6f7bc8"
+    },
+    {
+      "path": "visual_inspection.json",
+      "bytes": 416,
+      "sha256": "133ed1cabe74301c982dbfc3b11147734e234d4c534d8abc639c5bc1d92f0b1d"
+    },
+    {
+      "path": "zero_birth_clocks.csv",
+      "bytes": 223,
+      "sha256": "e10fa895015ad098c50f887417150a030a99fb30c5ad930bdd2b30237666e9f2"
+    }
+  ]
+}

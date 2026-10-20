@@ -1,0 +1,110 @@
+{
+  "edition": 3,
+  "status": "passed",
+  "coverage_and_span": {
+    "exact_primal_dual_and_span_instances": 463,
+    "calibration_mu": "1/2",
+    "basis_sizes": 4
+  },
+  "adaptive_ledger": {
+    "policies": 129,
+    "kl_chain_equalities": 1548,
+    "adaptive_count_checks": 1029,
+    "persistent_bias_risk": "1/2"
+  },
+  "dimension_and_comparison": {
+    "dimension_pair_checks": 155,
+    "dimension_examples": [
+      {
+        "hidden_bits": 1,
+        "coverage": 0.09999999999999998,
+        "one_call_information_bits": 0.13903595255631895
+      },
+      {
+        "hidden_bits": 2,
+        "coverage": 0.09999999999999998,
+        "one_call_information_bits": 0.20855392883447843
+      },
+      {
+        "hidden_bits": 3,
+        "coverage": 0.09999999999999998,
+        "one_call_information_bits": 0.24331291697355795
+      },
+      {
+        "hidden_bits": 4,
+        "coverage": 0.09999999999999998,
+        "one_call_information_bits": 0.26069241104309704
+      }
+    ],
+    "kl_hellinger_comparisons": 200
+  },
+  "communication": {
+    "garbling_checks": 600,
+    "lossless_partition": "passed",
+    "raw_records": 256,
+    "sufficient_count_messages": 35
+  },
+  "robust_decoder": [
+    {
+      "calls": 4,
+      "worst_mismatched_decoder_risk": 0.47050000000000014,
+      "proved_upper_bound": 1
+    },
+    {
+      "calls": 10,
+      "worst_mismatched_decoder_risk": 0.20424587050000004,
+      "proved_upper_bound": 1
+    },
+    {
+      "calls": 20,
+      "worst_mismatched_decoder_risk": 0.05694342028828119,
+      "proved_upper_bound": 0.6451581172485876
+    },
+    {
+      "calls": 40,
+      "worst_mismatched_decoder_risk": 0.005216279075472662,
+      "proved_upper_bound": 0.20811449812587113
+    }
+  ],
+  "sequential_stopping": [
+    {
+      "truth": 0,
+      "horizon": 60,
+      "wrong_stopping_probability": 0.01538461537584371,
+      "remaining_probability": 5.701588684667868e-10
+    },
+    {
+      "truth": 1,
+      "horizon": 60,
+      "wrong_stopping_probability": 0.01538461537584371,
+      "remaining_probability": 5.701588684667868e-10
+    }
+  ],
+  "calibration_table": [
+    [
+      0.1,
+      0.19999999999999996,
+      4,
+      19
+    ],
+    [
+      0.2,
+      0.09999999999999998,
+      7,
+      37
+    ],
+    [
+      0.3,
+      0.041742430504416006,
+      16,
+      89
+    ],
+    [
+      0.4,
+      0.010102051443364402,
+      66,
+      366
+    ]
+  ],
+  "targeted_followup": "Rechecked adaptive KL and complete-count sufficiency after strengthening the communication proposition; other unchanged checks retained."
+}

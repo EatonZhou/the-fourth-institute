@@ -1,0 +1,320 @@
+@import url("/static/portal_section_nav.css");
+
+/*
+ * Resource section navigation composes the shared section-nav protocol.
+ * Consumers provide one frame and one marked header; this component owns
+ * their spacing, responsive layout, and section navigation dependency.
+ */
+
+header.resourceSectionPageHeader {
+  position: sticky;
+  top: 0;
+  z-index: var(--portal-layer-sticky, 20);
+  border-bottom: 1px solid var(--border);
+  background: var(--header-bg);
+  backdrop-filter: blur(10px);
+}
+
+.resourceSectionFrame {
+  box-sizing: border-box;
+}
+
+[data-resource-section-header] {
+  width: 100%;
+  min-width: 0;
+}
+
+.resourceCategoryExtra {
+  display: flex;
+  min-width: 0;
+  margin-left: auto;
+}
+
+.resourceKnowledgeMatrixPopover {
+  position: absolute;
+  width: min(1080px, calc(100vw - 36px));
+  max-width: calc(100vw - 24px);
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border));
+  border-radius: 12px;
+  background: var(--panel);
+  box-shadow: 0 18px 48px color-mix(in srgb, var(--text) 18%, transparent);
+  color: var(--text);
+}
+
+.resourceKnowledgeMatrixPopover[hidden] { display: none; }
+
+.resourceKnowledgeMatrixHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 48px;
+  padding: 9px 11px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel-2);
+}
+
+.resourceKnowledgeMatrixHeading > div {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.resourceKnowledgeMatrixHeading strong {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.resourceKnowledgeMatrixHeading > div > span {
+  color: var(--muted);
+  font-size: 10.5px;
+}
+
+.resourceKnowledgeMatrixHeadingActions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 7px;
+}
+
+.resourceKnowledgeMatrixHeading .resourceKnowledgeMatrixTotal {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  color: var(--muted);
+  font-size: 10.5px;
+  white-space: nowrap;
+}
+
+.resourceKnowledgeMatrixTotal > span {
+  color: var(--text);
+  font: 650 10.5px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.resourceKnowledgeMatrixScroller {
+  max-height: min(520px, calc(100vh - 190px));
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.resourceKnowledgeMatrix {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--panel);
+  font-size: 11px;
+}
+
+.resourceKnowledgeMatrix th,
+.resourceKnowledgeMatrix td {
+  min-width: 94px;
+  padding: 0;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+  text-align: center;
+}
+
+.resourceKnowledgeMatrix tr:last-child > * { border-bottom: 0; }
+.resourceKnowledgeMatrix tr > *:last-child { border-right: 0; }
+
+.resourceKnowledgeMatrix thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--panel-2);
+}
+
+.resourceKnowledgeMatrix tbody th {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  min-width: 128px;
+  background: var(--panel-2);
+}
+
+.resourceKnowledgeMatrixCorner {
+  left: 0;
+  z-index: 4 !important;
+  min-width: 128px !important;
+  padding: 8px 10px !important;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  text-align: left !important;
+  white-space: nowrap;
+}
+
+.resourceKnowledgeMatrixButton {
+  appearance: none;
+  display: flex;
+  width: 100%;
+  min-height: 38px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 7px;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.resourceKnowledgeMatrixButton:hover {
+  background: color-mix(in srgb, var(--accent) 8%, var(--panel));
+  color: var(--accent);
+}
+
+.resourceKnowledgeMatrixButton:focus-visible {
+  position: relative;
+  z-index: 5;
+  outline: 2px solid color-mix(in srgb, var(--accent) 62%, transparent);
+  outline-offset: -2px;
+}
+
+.resourceKnowledgeMatrixButton.is-active {
+  background: color-mix(in srgb, var(--accent) 13%, var(--panel));
+  color: var(--accent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 44%, transparent);
+}
+
+.resourceKnowledgeMatrixButton.is-empty {
+  color: color-mix(in srgb, var(--muted) 60%, transparent);
+}
+
+.resourceKnowledgeMatrixButton.is-empty .resourceKnowledgeMatrixCount {
+  opacity: 0.46;
+}
+
+.resourceKnowledgeMatrixLabel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resourceKnowledgeMatrixCount {
+  display: inline-flex;
+  flex: 0 0 auto;
+  min-width: 20px;
+  min-height: 19px;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 5px;
+  border: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--muted);
+  font: 650 9.5px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.resourceKnowledgeCellButton {
+  justify-content: center;
+  min-height: 36px;
+  padding-inline: 8px;
+  text-align: center;
+}
+
+.resourceKnowledgeCellButton .resourceKnowledgeMatrixLabel { display: none; }
+
+.resourceKnowledgeCellButton .resourceKnowledgeMatrixCount {
+  border-color: transparent;
+  background: transparent;
+}
+
+.resourceKnowledgeProjectButton {
+  min-width: 108px;
+  min-height: 36px;
+  font-weight: 650;
+}
+
+.resourceKnowledgeTypeButton {
+  min-width: 94px;
+  min-height: 43px;
+}
+
+.resourceKnowledgeAllButton {
+  --portal-control-height-compact: 28px;
+  width: auto;
+  min-width: 0;
+  min-height: 28px;
+  padding-inline: 8px;
+  border-radius: 7px;
+  font-size: 10.5px;
+}
+
+.resourceKnowledgeAllButton:hover {
+  background: var(--panel);
+  color: var(--text);
+}
+
+.resourceKnowledgeMatrixStatus {
+  display: flex;
+  min-height: 86px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 18px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.resourceKnowledgeMatrixError { color: var(--danger); }
+
+.resourceKnowledgeMatrixStatus button {
+  min-height: 30px;
+  padding: 5px 9px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--panel-2);
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+}
+
+@media (max-width: 720px) {
+  .resourceCategoryShell {
+    padding: 8px 12px 0;
+  }
+
+  .resourceCategoryTabs {
+    min-width: 0;
+  }
+
+  .resourceCategoryRow {
+    min-width: max-content;
+  }
+
+  .resourceCategoryExtra {
+    margin-left: 0;
+  }
+
+  .resourceCategoryLink {
+    padding-inline: 11px;
+  }
+
+  .resourceKnowledgeMatrixPopover {
+    width: calc(100vw - 24px);
+    max-width: calc(100vw - 24px);
+  }
+
+  .resourceKnowledgeMatrixHeading {
+    align-items: flex-start;
+  }
+
+  .resourceKnowledgeMatrixHeading > div {
+    display: grid;
+    gap: 1px;
+  }
+
+  .resourceKnowledgeMatrixHeadingActions {
+    display: flex;
+  }
+}

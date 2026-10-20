@@ -1,0 +1,18 @@
+{
+  "id": "4b335786-1c56-4b78-b6a4-388d5fd82edd",
+  "name": "feedback-fixed-camp-supplement",
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "33-feedback-acquisition-fixed-camps-20261018-v1",
+  "status": "completed",
+  "created_at": "2026-10-18T06:35:11.601251+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/4b335786-1c56-4b78-b6a4-388d5fd82edd",
+  "pid": 3734464,
+  "manual_pause": false,
+  "started_at": "2026-10-18T06:35:11.689322+00:00",
+  "returncode": 0,
+  "finished_at": "2026-10-18T06:35:50.192039+00:00",
+  "result": {
+    "ref": "${share_root}/Projects/元胞自动机研究/src/research/results/feedback_acquisition_camp_20261018/result.json"
+  }
+}

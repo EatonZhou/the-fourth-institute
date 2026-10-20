@@ -1,0 +1,26 @@
+{
+  "task": "tissue_replacement_pf_location_20261018",
+  "status": "completed",
+  "job_id": "dcb51b4d-8c47-4300-9ffe-d31b932e675a",
+  "attempted": 2048,
+  "committed": 2048,
+  "failed_calls": 0,
+  "boundary_native": 0,
+  "science_native": 2048,
+  "outcomes": 8,
+  "failure": null,
+  "last": {
+    "id": "g1_f2_c0--compact--supported--P1F1",
+    "parent": "g1_f2_c0--compact--supported",
+    "rule": "g1_f2_c0",
+    "arm": "P1F1",
+    "preclock": 383,
+    "offset": 256
+  },
+  "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/tissue_replacement_pf_location_20261018/dcb51b4d-8c47-4300-9ffe-d31b932e675a",
+  "raw_bytes": 188588228,
+  "script_seconds": 41.35215239797253,
+  "plan_sha256": "31039d7247733d2f27d757e35bb26bf9b970c1e45ffb28d4d31d7ce05573f90f",
+  "old_budget_used": 0,
+  "replayed_steps": 0
+}

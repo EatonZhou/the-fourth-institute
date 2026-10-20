@@ -1,0 +1,17 @@
+{
+  "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/active_observation_commitment_20261018/7fb4625f-3e22-4549-ab77-bb9bfca395d8",
+  "files": {
+    "/data/dataset/lenia-research/lineage_75e3399f4877/active_observation_commitment_20261018/7fb4625f-3e22-4549-ab77-bb9bfca395d8/stages.json": "66e202d523664c28cdcce94c02848e921649aef8b87fe242a25ebe926ea3ce4c",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/active_observation_commitment_20261018/7fb4625f-3e22-4549-ab77-bb9bfca395d8/cycles.json": "9e2e1f8d8affc1773dc0a712bca6a7cbe7f69211e83c7be99fe622b805f463c9",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/active_observation_commitment_20261018/7fb4625f-3e22-4549-ab77-bb9bfca395d8/per_step.jsonl": "989108c2934a824fb0c3b865810f3b69f433fa18881194615d20f1395346dfd3",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/active_observation_commitment_20261018/7fb4625f-3e22-4549-ab77-bb9bfca395d8/audit_index.json": "4b416a1f5ce02892a287667ba636eecf65bb8b2dbd9b605bbaac12272b2497df",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/active_observation_commitment_20261018/7fb4625f-3e22-4549-ab77-bb9bfca395d8/final_index.json": "0806914d133316df11ab9427e97c741a82645501ea38ef6891a3f068a6a9bcde",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/active_observation_commitment_20261018/7fb4625f-3e22-4549-ab77-bb9bfca395d8/tape_index.json": "6c6536163ae4762b6018cd5e58dc1582affffa5edd0bf9c9a202b80cfbefec90",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/active_observation_commitment_20261018/7fb4625f-3e22-4549-ab77-bb9bfca395d8/training.json": "c4b18151a22a3bf9b7ce31b06f57676b3b957109607566f1203a4131193e0049",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/active_observation_commitment_20261018/7fb4625f-3e22-4549-ab77-bb9bfca395d8/frozen_policy.json": "0809c8748e01b59565e4c5005dd8b2ed7766077b57864c84ca922fd261501372"
+  },
+  "result": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/7fb4625f-3e22-4549-ab77-bb9bfca395d8/result.json",
+    "sha256": "74364a474fbeb7fee8685b555dba39d59bcb0639be71a79e1bbab86a2ab1727c"
+  }
+}

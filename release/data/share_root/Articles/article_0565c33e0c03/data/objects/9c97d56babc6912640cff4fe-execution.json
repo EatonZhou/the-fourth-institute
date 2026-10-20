@@ -1,0 +1,144 @@
+{
+  "job_id": "498fb0c9-b161-4a00-83c1-d520800ec135",
+  "status": "finished_with_all_stops_preserved",
+  "native": 5632,
+  "committed": 5632,
+  "unknown": 0,
+  "old_native_replay": 0,
+  "branches": {
+    "i0_g0_fast": {
+      "status": "complete",
+      "steps": 640,
+      "t": 640,
+      "M": 138.06054009904602,
+      "centroid_y": 31.792699045966238,
+      "centroid_x": 33.5793706943864,
+      "largest_component": 0.9759770097907325,
+      "components": 1,
+      "edge_fraction": 1.935311508993095e-08
+    },
+    "i0_g0_frozen": {
+      "status": "complete",
+      "steps": 640,
+      "t": 640,
+      "M": 132.89223813442487,
+      "centroid_y": 31.792821299596092,
+      "centroid_x": 35.333602026342156,
+      "largest_component": 0.9739176871127508,
+      "components": 1,
+      "edge_fraction": 3.2827280620209e-07
+    },
+    "i0_g1_fast": {
+      "status": "complete",
+      "steps": 640,
+      "t": 640,
+      "M": 151.67152883275807,
+      "centroid_y": 32.303603013080924,
+      "centroid_x": 28.634129542663896,
+      "largest_component": 0.9781992788775682,
+      "components": 1,
+      "edge_fraction": 2.3564965804898325e-07
+    },
+    "i0_g1_frozen": {
+      "status": "complete",
+      "steps": 640,
+      "t": 640,
+      "M": 135.30660380067263,
+      "centroid_y": 32.46562429134561,
+      "centroid_x": 29.39901308352501,
+      "largest_component": 0.9763783085420283,
+      "components": 1,
+      "edge_fraction": 5.8688002463650605e-08
+    },
+    "i1_g0_fast": {
+      "status": "raw_partial",
+      "steps": 512,
+      "t": 512,
+      "M": 116.04940871679904,
+      "centroid_y": 32.615198393807894,
+      "centroid_x": 34.01130626432772,
+      "largest_component": 0.9728545409787535,
+      "components": 1,
+      "edge_fraction": 1.2941565253952304e-06
+    },
+    "i1_g0_frozen": {
+      "status": "raw_partial",
+      "steps": 512,
+      "t": 512,
+      "M": 105.99139069957374,
+      "centroid_y": 32.2927462040477,
+      "centroid_x": 35.8527616686026,
+      "largest_component": 0.9735103380230293,
+      "components": 1,
+      "edge_fraction": 3.1443042861875117e-07
+    },
+    "i1_g1_fast": {
+      "status": "raw_partial",
+      "steps": 512,
+      "t": 512,
+      "M": 104.55449438452936,
+      "centroid_y": 31.38959406672459,
+      "centroid_x": 32.12592979612328,
+      "largest_component": 0.9708528526204186,
+      "components": 1,
+      "edge_fraction": 4.158550223771561e-06
+    },
+    "i1_g1_frozen": {
+      "status": "raw_partial",
+      "steps": 512,
+      "t": 512,
+      "M": 101.13336892315598,
+      "centroid_y": 31.392274233322226,
+      "centroid_x": 26.50361847828349,
+      "largest_component": 0.9709095817537217,
+      "components": 1,
+      "edge_fraction": 1.6916661289215666e-05
+    },
+    "i0_g0_fast_freeze_reversal": {
+      "status": "complete",
+      "steps": 256,
+      "t": 512,
+      "M": 98.33800819592969,
+      "centroid_y": 31.22636634753521,
+      "centroid_x": 27.694483103475566,
+      "largest_component": 0.9741077427319553,
+      "components": 1,
+      "edge_fraction": 2.038741286002715e-07
+    },
+    "i0_g1_fast_freeze_reversal": {
+      "status": "complete",
+      "steps": 256,
+      "t": 512,
+      "M": 105.13613249199153,
+      "centroid_y": 31.51817794961324,
+      "centroid_x": 37.81151990757906,
+      "largest_component": 0.9738015928129768,
+      "components": 1,
+      "edge_fraction": 3.242707449884704e-05
+    },
+    "i1_g0_fast_freeze_reversal": {
+      "status": "complete",
+      "steps": 256,
+      "t": 512,
+      "M": 116.01006881609624,
+      "centroid_y": 32.301200058867884,
+      "centroid_x": 32.59520820772019,
+      "largest_component": 0.9738233605154288,
+      "components": 1,
+      "edge_fraction": 1.431445254827083e-06
+    },
+    "i1_g1_fast_freeze_reversal": {
+      "status": "complete",
+      "steps": 256,
+      "t": 512,
+      "M": 104.18542716981908,
+      "centroid_y": 31.39549021388561,
+      "centroid_x": 26.74741918183349,
+      "largest_component": 0.971432877082405,
+      "components": 1,
+      "edge_fraction": 2.04645950288477e-05
+    }
+  },
+  "science_wall": 75.26444374700077,
+  "raw_bytes": 139087277
+}

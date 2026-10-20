@@ -1,0 +1,14 @@
+{
+  "status": "completed",
+  "job_id": "a8ace198-bb5f-4dd2-a836-f659d641cc07",
+  "attempted_host_steps": 2464,
+  "committed_host_steps": 2464,
+  "script_seconds": 118.7191547889961,
+  "raw_bytes": 594047797,
+  "raw_cap_ok": true,
+  "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_learning_20261018/a8ace198-bb5f-4dd2-a836-f659d641cc07",
+  "plan_sha256": "e0a6338d96fbd48c4b7f65e977969f95c0a56d8a13e9c3b24ce89c07f005735c",
+  "failure": null,
+  "completed_stages": 30,
+  "total_stages": 30
+}

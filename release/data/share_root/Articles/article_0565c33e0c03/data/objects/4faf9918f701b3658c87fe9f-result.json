@@ -1,0 +1,25 @@
+{
+  "task": "local_metabolic_translocation_20261018",
+  "status": "completed",
+  "job_id": "39f866d1-9576-42d7-8e8a-9014b210c7b3",
+  "attempted": 1029,
+  "committed": 1029,
+  "counts": {
+    "boundary": 5,
+    "science": 1024
+  },
+  "failed_native_calls": 0,
+  "outcomes": 4,
+  "failure": null,
+  "last": {
+    "stage": "science",
+    "clock": 383,
+    "mode": "diffusion"
+  },
+  "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3",
+  "raw_bytes": 138279043,
+  "script_seconds": 29.041653112042695,
+  "plan_sha256": "e505768cafa945417800921fb687aa39e7945b85f8a4669330c3de15c5e97039",
+  "old_budget_used": 0,
+  "reference_physical_calls": 0
+}

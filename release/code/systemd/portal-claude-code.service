@@ -1,0 +1,19 @@
+[Unit]
+Description=TFI Claude app-server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+UMask=0077
+WorkingDirectory=@PORTAL_CLAUDE_SOURCE_ROOT@
+EnvironmentFile=-@PORTAL_POSTGRES_ENV_FILE@
+EnvironmentFile=@PORTAL_RENDERED_CONFIG_ROOT@/portal-claude-code.env
+ExecStartPre=/usr/bin/rm -f @PORTAL_STAGING_ROOT@/portal_locks/claude-code-daemon.sock
+ExecStart=@PORTAL_PROVIDER_RUNTIME_ROOT@/claude-agent-sdk-current/bin/python -m management_portal.claude_code_daemon
+Restart=always
+RestartSec=2
+TimeoutStopSec=30
+
+[Install]
+WantedBy=default.target

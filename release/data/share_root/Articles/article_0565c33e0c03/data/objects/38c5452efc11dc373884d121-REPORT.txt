@@ -1,0 +1,28 @@
+本批实际终版：收束本次材料携带选择固定构造的共同有用更新/部署主张；0/8过完整门(1e-8及0相同)。保8/8单64窗维护、3/8末N增加及其O/C/E/体时代价。fixed midpoint both继续强同行；不续扫权重/时点，不把未定价控制分量搬运当学习。
+
+最接近阳性：5601 ring/G，ΔN=+0.07555947、ΔM=+0.13648588、ΔE=+0.06769978、Δ体时=+0.30310933，但ΔC=-0.00270396，仍明确失败。5602 ring/both虽O/C/N末值皆增，E、总体时及N体时下降。四separate末O/C/N/M/E均下降，5602 separate/G的体时微升不救末态。
+
+已亲看8父320/352/384的实际密度与O/C/N同尺度场及全部逐钟曲线。四个ring仍保持偏亮一侧的环状形态，四个separate仍为四分离团块、两侧质量不同。新旧政策宏观形态近似，细小组织/付款差异以逐钟账为准，不称新形态。O/C缓慢流失而N增长，在同尺度图中N与旧体共存；图像近似不能推断逐材料等价。
+
+Finite actual material-carried choice comparison
+
+{"parents": 8, "useful_update_tol": 0, "useful_update_zero": 0, "M_increased": 4, "E_increased": 3, "bodytime_increased": 4, "O_live_increased": 3, "C_live_increased": 1, "N_live_increased": 3, "maintenance": 8, "maintenance_zero": 8}
+
+parent | dO | dC | dN | dM | dE | dBodytime | complete gate (1e-8 / zero)
+202610195601_ring_birth_gain_only | +0.063630373 | -0.0027039606 | +0.075559472 | +0.13648588 | +0.06769978 | +0.30310933 | False/False
+202610195601_ring_both | -4.1886113e-05 | -3.0711799e-05 | +0.00081251101 | +0.0007399131 | +0.006369846 | +0.0013794753 | False/False
+202610195601_separate_seeds_birth_gain_only | -0.00012714284 | -4.0030302e-05 | -4.3781753e-05 | -0.00021095489 | -0.0015675992 | -0.00076133145 | False/False
+202610195601_separate_seeds_both | -0.01145886 | -0.0054793638 | -0.0068903722 | -0.023828596 | -0.047636765 | -0.038877262 | False/False
+202610195602_ring_birth_gain_only | +0.061157703 | -0.0079195721 | -0.013426988 | +0.039811143 | +0.023418921 | +0.023612169 | False/False
+202610195602_ring_both | +0.00018880322 | +5.9991953e-05 | +0.0028428975 | +0.0030916927 | -0.030443395 | -3.8314065e-05 | False/False
+202610195602_separate_seeds_birth_gain_only | -0.020448706 | -0.00010049953 | -0.00014678199 | -0.020695987 | -0.019128465 | +0.056767384 | False/False
+202610195602_separate_seeds_both | -0.010288451 | -0.0083968861 | -0.024905613 | -0.043590951 | -0.060786073 | -0.067761805 | False/False
+
+All source histories are related known bodies. One64 window cannot establish two-window maintenance or steady state.
+O=L256 at320; C=post256 alive320; N=321+ actual born. No labels enter policy. No prior history replay.
+Material association and convex response mixing change together; this does not isolate a reference-frame cause.
+Extra arithmetic/control-channel transport is not physically priced. Original actor/pump/conversion prices remain.
+Current task is a fixed same-step construction, not individual learning. No extension, threshold scan or writer authorized.
+Coverage: original321 receipt arrays/scalars exact; original321 missing full joint fields remain unverified.
+
+预算：唯一job 6a572590-d816-4d2c-9fc7-b146411e0a3e，单attempt，512科学+8disabled=520native，unknown=0。runner分配CPU2×实际active wall 23.320976s=46.641952 worker秒，余403.358048封存。离线实测进程CPU=4.920822s，另计保守杂项3s，共7.920822s，余52.079178封存。无旧取得/尾窗重演。raw=110906639 bytes。

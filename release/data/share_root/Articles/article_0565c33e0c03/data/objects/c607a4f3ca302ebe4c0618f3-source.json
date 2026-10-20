@@ -1,0 +1,50 @@
+{
+  "schema": "resource-constraint-unmasking-source.v1",
+  "source_handoff": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_resource_factorial_20261018/handoff.json",
+  "sha256": "af9dfade6ee4e091169b169557c1821061253922bc0a7caf770dbdc1509d70ee",
+  "source_new_updates": 384,
+  "source_reused_unique_updates": 640,
+  "new_forward_for_figure": 0,
+  "field_assets": "data/field_assets.json",
+  "curves": "data/curves.json",
+  "methods": "data/METHOD.txt",
+  "scope": "Two bodies, four capability-and-fee policies each; fixed rules and learning off; no experienced branch; adaptation score/eligible null. T00/T11 reused; T10/T01 new in source.",
+  "timing": "Actual129 fields; common 0..128 formation prefix; continuation129..224.",
+  "first_event": "Within each body K/q/capacity/template/support/L identical across arms. T00/T10 actual F and F affordability exactly equal.",
+  "limits": [
+    "Sequential F refusal differs from independent F deficit; independent P/F gaps overlap and cannot be added.",
+    "Later q masks belong to evolving different bodies and are not fixed tissue mediation.",
+    "0ac true starvation T00 1.096875e-7 M; T10 4.290262e-10 M; other arms zero.",
+    "96 periodic domain; crop12..83 both axes is fixed original position, y up; no recentering or deformation."
+  ],
+  "used_file_sha256": {
+    "${share_root}/Articles/article_0565c33e0c03/figures/resource_constraint_unmasking_candidate/data/INTERPRETATION.txt": "aa3ee5a4f012ede51690a68f903bc3e41ffe5fc058d3b44ae55522d1942e5202",
+    "${share_root}/Articles/article_0565c33e0c03/figures/resource_constraint_unmasking_candidate/data/METHOD.txt": "3e36eff794bfa462d7f6f839b8434cc583ba6ebf308c58a67eb98c0941abe50b",
+    "${share_root}/Articles/article_0565c33e0c03/figures/resource_constraint_unmasking_candidate/data/absolute_negative_intervals.json": "fd0976b2372529b72774b002459340072bb6633c077a01d5418b9c5344068842",
+    "${share_root}/Articles/article_0565c33e0c03/figures/resource_constraint_unmasking_candidate/data/admission_diagnostic_steps.csv": "5929418459801700f545534868092052a3ff8f5539e78bdf2f4fd26acab6888f",
+    "${share_root}/Articles/article_0565c33e0c03/figures/resource_constraint_unmasking_candidate/data/admission_diagnostic_summary.json": "04e1d34cf128f8982276e475875870fd0b0c8c02bbbbdbeeef5aeba57944f709",
+    "${share_root}/Articles/article_0565c33e0c03/figures/resource_constraint_unmasking_candidate/data/curves.json": "158da42c37d56e3b03b3bc234745b9fbc7af0e1a89c4c30fa4b84b93b399a864",
+    "${share_root}/Articles/article_0565c33e0c03/figures/resource_constraint_unmasking_candidate/data/effect_signs.json": "868083ab41c438ff9c87ef19c00311893029b30c78ce74f3b94315621800a571",
+    "${share_root}/Articles/article_0565c33e0c03/figures/resource_constraint_unmasking_candidate/data/effect_steps.csv": "23c26013a45dd02881b0bc26402c6f6a397cbc42e9ddf692a568b968b22c08d4",
+    "${share_root}/Articles/article_0565c33e0c03/figures/resource_constraint_unmasking_candidate/data/effects.csv": "f4295a8b7b412b2af6bca01aefd65c115087266db84ad6eb4c11a9d7ceab0bc3",
+    "${share_root}/Articles/article_0565c33e0c03/figures/resource_constraint_unmasking_candidate/data/field_assets.json": "363dad9a5717330077c981678f1339ffe6f135fdf6c00f875322f991372735b8",
+    "${share_root}/Articles/article_0565c33e0c03/figures/resource_constraint_unmasking_candidate/data/first129_matching.json": "5aa4805b4044303c51eb8522b72986a61518c57f219abdd92821bb35ebca7252",
+    "${share_root}/Articles/article_0565c33e0c03/figures/resource_constraint_unmasking_candidate/data/handoff.json": "af9dfade6ee4e091169b169557c1821061253922bc0a7caf770dbdc1509d70ee",
+    "${share_root}/Articles/article_0565c33e0c03/figures/resource_constraint_unmasking_candidate/data/outcomes.csv": "967ac13e1a72bbb6a253b5a92464c32aa9ec252018212f13f4553a83a0755984",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_resource_factorial_20261018/genome_0ac80448a534dc953505-first129-fields.npz": "24e9447cba45b35f2575abf3666daa1eb351a8b3eb138474e159b1462b719462",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_resource_factorial_20261018/genome_6bd5bfd2f629f9414376-first129-fields.npz": "07d50fb5891d9c2db93064732bc2aa30b6dbf66c24d78b91f799db013239fdb8"
+  },
+  "asset_sha256": {
+    "6bd_L.png": "619c29ce364c66080cc90af4e7fd7d57712f65c25ce04da92396f99c1d8f74f0",
+    "0ac_L.png": "2e0528c1e2ca7ed8137be424d09f107f076d5622033e7e8be4cc360e93159acb",
+    "6bd_P00.png": "f1a4454d1a02b8119f6e967c86f9784b0e116cd61ded745dd27074d53c3bce70",
+    "6bd_F.png": "5e11c0bdf7c6ad96520334201145a0e9a95e531a73cba01f0427f225f1208095",
+    "0ac_P10.png": "9b79fad4cd01c7099df12bad27a0c829bfa488fc3316a12aacdf3ca66a70f8c5",
+    "6bd_P10.png": "e8b69705fe2d4e6093e1acb3393a171165d5a37072d8cd65b6197b5de23a4793",
+    "0ac_P00.png": "25890cd44473b8b2ccbf9e46a456a674136bb9304de139b631ba4572e945c0b6",
+    "0ac_F.png": "dd6ea75d37fc942fbdf25bab8ce724913ae5b80c9d211bbb7ca4a927cb15c604",
+    "0ac_body.png": "5d2dd7fd59782fdd473904f7dfa8391d9c77a5987188e2c429c022c5c706193d",
+    "6bd_body.png": "51b50615293b8044d691ee090c16aee42019fb9814a89c8160e7c72e84f44012"
+  },
+  "resource_transport_cost": "0.02 EU per transported unit-edge for each resource; P=precursor, F=fuel"
+}

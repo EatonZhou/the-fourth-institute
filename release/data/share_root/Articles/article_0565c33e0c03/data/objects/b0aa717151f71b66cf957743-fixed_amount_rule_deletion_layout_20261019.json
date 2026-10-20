@@ -1,0 +1,107 @@
+{
+  "task": "fixed_amount_rule_deletion_layout_20261019",
+  "status": "authorized_for_execution",
+  "owner": "resident_d3ccfa2d95b7",
+  "pi": "resident_afa3d4d6cf11",
+  "updated_at": "2026-10-18T21:03:57.483215+00:00",
+  "closes": {
+    "task": "birth_site_compatibility_cohort_20261019",
+    "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/birth_site_compatibility_cohort_20261019/handoff.json",
+    "sha256": "13a95fa6d0498936a5328dd5f59ab873f20e66092d5c6575c3f344d59f50b206",
+    "actual": [
+      836,
+      48.380726
+    ],
+    "sealed": [
+      192,
+      401.619274
+    ],
+    "conclusion": "关闭当前h符号普遍排序准则；五非零3胜2负且两反转，三零null；不放大脉冲或重选相位。"
+  },
+  "evidence": {
+    "entry": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/birth_cohort_exposure_readout_20261019/handoff.json",
+    "sha256": "076c9040cd31e49fc928325fa3d01b1c8ee80b65dd8c1988b46c5e66511a499f",
+    "native": 0
+  },
+  "question": "保持每个实际状态原规则要求的总删除量，在原负响应区内改变删除请求的四邻分配，是否改变后续补生、旧/新组织留存与完整身体收益？",
+  "hypothesis": "按当前剩余组织量分配同量删除，可能降低薄组织的瞬时分数删除并改变后续组织用途。该假设可失败；不是已证反转原因，不把人为少删除或免付费作为维护能力。",
+  "budget": {
+    "native_cap": 1544,
+    "science_native": 1536,
+    "affected_native_checks_max": 8,
+    "worker_seconds_cap": 600,
+    "shutdown_reserve_worker_seconds": 100,
+    "cpu": 2,
+    "gpu": 0,
+    "unique_job": true,
+    "raw_cap_bytes": 536870912,
+    "old_budget_used": 0,
+    "old_acquisition_replay": 0,
+    "authorized_reference_future_replay": 512,
+    "matrix": "4实际greedy ready256父×baseline/matched_mass/matched_uniform×128至384。baseline512新原生明确授权用于真L256及完整cohort观察；与旧只读物理标量对齐，不将重复轨计为新独立世界。"
+  },
+  "parents": [
+    {
+      "seed": 202610195401,
+      "shape": "compact",
+      "clock": 256,
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/validation_202610195401_compact_prestate_greedy/state256.bin",
+      "sha256": "325d94772ac38f96a668a73fc4889dbb9977c52e7b0c955469460006e240d85c",
+      "baseline": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/validation_202610195401_compact_prestate_greedy"
+    },
+    {
+      "seed": 202610195401,
+      "shape": "double_lobe",
+      "clock": 256,
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/validation_202610195401_double_lobe_prestate_greedy/state256.bin",
+      "sha256": "67e783b475f86b059f87e659e78b48e74058427cfde6ac040b05f5888fee4537",
+      "baseline": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/validation_202610195401_double_lobe_prestate_greedy"
+    },
+    {
+      "seed": 202610195402,
+      "shape": "compact",
+      "clock": 256,
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/validation_202610195402_compact_prestate_greedy/state256.bin",
+      "sha256": "a244d1c4c34d7e74a26c55c2751765074b85d88b2f38f9b3bd46ab8d7eb8fa30",
+      "baseline": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/validation_202610195402_compact_prestate_greedy"
+    },
+    {
+      "seed": 202610195402,
+      "shape": "double_lobe",
+      "clock": 256,
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/validation_202610195402_double_lobe_prestate_greedy/state256.bin",
+      "sha256": "6d09f63bcda036302d94c39d6f7ed747582ba97f14b502238cead5079597faf4",
+      "baseline": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/validation_202610195402_double_lobe_prestate_greedy"
+    }
+  ],
+  "fixed": "原两核、prestate_greedy w选择与其旧评分、actor/K、输入tape/价格/泵/正请求R=dt max(h,0)不改。没有出生请求路由、年龄保护、回收或储备。各父完整state/world/cursor/RNG/旧标签/累计账恢复。有限供给不超过384。",
+  "mechanism": {
+    "stage": "唯一变换在actual actor与signed h之后，原D计算完成但survivor/death_energy/template/admit之前；改变D空间场后全部原生后续阶段照常，只做一次native。",
+    "quantities": "rho=actual after_actor body，D0=min(rho,dt max(-h,0))。源预算a=D0。目标可接收余量v=where(h<0,max(rho-D0,0),0)。无身体/无余量目标不接收。保原D0总量，不改h或正请求R。",
+    "candidates": "四邻周期，一次同步：mass源i提a_i*v_j/sum_neighbor(v)；uniform对v_j>0的邻居等分a_i，分母0不提。各接收者按min(1,v_j/sum_incoming)同步投影。无递归、重试或扩大半径。",
+    "matching": "每源q_i=min(out_mass_i,out_uniform_i)，两候选分别按q_i/原out缩放，只执行所选候选；拒绝留源。Dnew=D0-out+in。out<=D0，in<=v，因此0<=Dnew<=rho，sumDnew=sumD0至原数值容差。只许向内处理浮点路由舍入，不把差补进物理。",
+    "semantics": "这是负生成请求协调，不搬运物质。实际被删除细胞照原比例流向waste/dead_energy；其剩余能量/模板和随后admit按新survivor算。标签/年龄/未来/全身体分数不进规则。",
+    "comparisons": "两新臂在共同首状态原D0、R、actor/K/h一致，逐源out匹配、global实际rule死亡同量，局部survivor不同。出生/死能/泵费可立即分化，不要求首conversion M/E相同。各分化未来仅与自身原D0预算匹配，不冒称跨轨同死亡/费用。",
+    "implementation": "冻结旧源只读。隔离实现新增D hook或原step最小复制（只替换D赋值处，其余逐段保持），不全局monkeypatch共享numpy/admit。off hook应与原native物理/收据逐值一致。",
+    "costs": "原出生费、模板热、actor及泵等照付，实际死能如实计。额外邻读/协调计算0价为显式新模型假设，runner全计；非学习或完整计算成本。"
+  },
+  "arms": [
+    "original_prestate_greedy_reference",
+    "matched_mass",
+    "matched_uniform"
+  ],
+  "outcomes": {
+    "primary": "四context逐一报告mass−uniform以及两新臂−原greedy的末M/E/体时、真实post256留存/旧L256、born/death/费用；不以单项或均值胜出包装完整身体优势。",
+    "maintenance": "257–320、321–384两个固定64窗分别born>=death−1e−8、deltaE>=−1e−8、minM>=32；并报零容差。通过仅为这128步有限协议，不恢复旧4窗/长期主张。",
+    "labels": "父256初始化L256=rho，真K/actor/rule保留推进，后来born对L256为0；post256=body−L256。原L128/life0保留，不把保旧体当替代。年龄标签不是控制输入。",
+    "interpretation": "若改变布局有益，仅支持该固定生成机制；不证明旧plus/minus反转由此造成。若仅省费/保旧体或仍维护失败，明确收束，不扫描删除率或换价格救门。"
+  },
+  "records": {
+    "scalar": "每步真实D0/Dnew总量/差、source/in/cap约束、全物理收支/费用/欠付、born/death与L256/post256；attempted/returned/settled。原baseline新观察的512步明确单列。",
+    "fields": "256共同父及257/258/260/264/272/288/320/384实际h/rho/D0/Dnew/两候选/实际路由、survivor、R/actualborn、资源/能量/标签；完整256/320/384 joint，恢复最多每16步，不每步冗写全场。",
+    "visual": "亲看全部4context过程及首预定seed两形态的删除/补生/新旧组织场；不将小量差当新形态。"
+  },
+  "validation": "先纯数组代数/保存实际收据检查候选非负和删除预算，再只做至多8必要off-hook等价边界；首科学步兼作共同状态匹配检查。旧语义不重复跑。",
+  "control": "唯一job提交前读research.desired_state/started。paused/stopped不新增；自己身份runner控制，旧余额封存，无定时/自动续扫或unknown native重演。若缺合法hook或预算不足保真实缺口。",
+  "handoff": "d3一次可唤醒请求实际实现并运行；完成有必要科学取舍时交PI一次，论文/投影沿原在办项合并，不发例行广播。"
+}

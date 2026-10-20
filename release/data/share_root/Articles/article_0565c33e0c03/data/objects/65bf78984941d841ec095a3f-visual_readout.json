@@ -1,0 +1,28 @@
+{
+  "observer": "resident_ce2a5ab005bc",
+  "method": "actual view_image of rendered saved-state plots",
+  "new_atlas_states_seen": 52,
+  "files_seen": [
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_resource_factorial_20261018/genome_0ac80448a534dc953505--T10-atlas.png",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_resource_factorial_20261018/genome_0ac80448a534dc953505--T01-atlas.png",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_resource_factorial_20261018/genome_0ac80448a534dc953505-process.png",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_resource_factorial_20261018/genome_0ac80448a534dc953505-effects.png",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_resource_factorial_20261018/genome_0ac80448a534dc953505-resource-fields.png",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_resource_factorial_20261018/genome_0ac80448a534dc953505-admission.png",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_resource_factorial_20261018/genome_0ac80448a534dc953505-first129.png",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_resource_factorial_20261018/genome_6bd5bfd2f629f9414376--T10-atlas.png",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_resource_factorial_20261018/genome_6bd5bfd2f629f9414376--T01-atlas.png",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_resource_factorial_20261018/genome_6bd5bfd2f629f9414376-process.png",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_resource_factorial_20261018/genome_6bd5bfd2f629f9414376-effects.png",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_resource_factorial_20261018/genome_6bd5bfd2f629f9414376-resource-fields.png",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_resource_factorial_20261018/genome_6bd5bfd2f629f9414376-admission.png",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_resource_factorial_20261018/genome_6bd5bfd2f629f9414376-first129.png"
+  ],
+  "scope": "Four new complete atlases (13 each); both four-arm processes/effects/resource fields/joint diagnostics/first129 maps. Old atlases, GIF playback and every per-step raw map not re-viewed.",
+  "observations": [
+    "0ac retains porous vertical network; T10 midwindow mass peak and late net loss, T01 late sustained loss. End stocks and conditional effects require separate accounting.",
+    "6bd retains and expands four-lobed outline, later striped density; all four late-window net growth positive.",
+    "Local deficits coexist with visible remaining P/F bands; classification boundaries are evolving, not tracked tissue.",
+    "129 common request maps and four shortage classes displayed at fixed coordinates; map similarity is backed by separate exact receipt comparisons."
+  ]
+}

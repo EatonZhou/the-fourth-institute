@@ -1,0 +1,73 @@
+{
+  "task": "rule_geometry_resource_support_20261018",
+  "status": "authorized",
+  "owner": "resident_d3ccfa2d95b7",
+  "pi": "resident_afa3d4d6cf11",
+  "objective_met": false,
+  "scientific_question": "固定真实生理价格下，短命形态源于生成规则与初态不相容，还是有限补给与可出生位置错配？改变供给位置能否支持真实组织替换，而非只消耗初始赠予？",
+  "basis": {
+    "previous_handoff": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/resource_matched_morphogenesis_20261018/handoff.json",
+    "sha256": "ff98d1ce5906de0b114be1925f2f554bff477846d7cd5c676d40b39868f3c6c1",
+    "completed_steps": 2563,
+    "worker_seconds": 257.971584,
+    "unused_frozen": [
+      1597,
+      1242.028416
+    ],
+    "conclusion": "12候选早灭、4双叶存留，规则与形态混杂；部署多摄取但末E下降，关闭该行动机会候选。",
+    "saved_account_readout": "c0/c1双叶累计born=3.577911/3.848286，death=20.454230/19.886925；这是描述性账，不能直接判定缺P或规则错误。"
+  },
+  "design": {
+    "rules": [
+      "g1_f0_c0",
+      "g1_f1_c0",
+      "g1_f2_c0",
+      "g1_f3_c0"
+    ],
+    "initial_geometries": [
+      "compact",
+      "ring",
+      "double_lobe",
+      "separate_seeds"
+    ],
+    "factorization": "使用原plan四个c0的实际冻结body_rule及双核数组；使用四个c0实际life0 rho作为独立形态因子。四规则×四形态全交叉，不再把genome.family同时作为两个因子；零基因、原[-.06,+.06]核尺度，不使用事后优胜c1。",
+    "common_state": "M=E=64、energy=rho、founder_mass=rho，胞外P/F零及其余中性场照原life0。非生成配置/实际生理价格/网格/dt/模板及生成时序一致，前向前核对。规则或初态分配从不读取结果。",
+    "action": "全部zero commanded motor；保原生被动运输及其实际费用。无控制器、无个体writer训练。",
+    "supply_arms": {
+      "patch": "原静止patch逐步输入P/F和胞外半衰64，前128与原形成完全一致。",
+      "supported": "相同逐步gross P/F总量；每次唯一host前，以pre-step rho的原生3x3 binomial neighborhood算w，w/=sum(w)，将当步新增P/F各按w分配。仅改新输入，不移动/回收已有库存，不用当步h/request/q或未来存活。sum(w)=0时退回原patch，不能向空体造模板。"
+    },
+    "interpretation": "supported为外部按身体位置供给的机制干预，位置配置的外部工作未计入生物账。不是可部署策略、身体最优上界或自然环境。两臂gross相同但实际uptake/出口/净能量可以不同。",
+    "stage_A": "32格设计各128步。其中patch四原对角线只引用原已完成life0/128包及全标量账；纯比较初态、规则、物理、world/input时钟哈希/数组相同才复用。12新patch交叉+16新supported=3584新步。不为缺附加指标重演四对角线，缺项null。若复用身份不符，保该格不可比较并报告，不扩大预算。",
+    "stage_B": "最多两个规则×形态组合，每组合的两补给臂从各自实际128完整态延长256至384，总最多1024新步。两臂保持各自静止patch或supported机制，不转移动源，不交换已分化的身体和库存；新增供给正常计账。这是有条件探索，非留出确认。",
+    "stage_B_selection": {
+      "eligible": "某一臂M128>=32，末64每步M>=32，末64实际born总量>=全部实际死亡总量-1e-8，且E128-E64>=-1e-8。完全灭失不符合。",
+      "order": "合格组合按(ruleID,shapeID)字典序；先最多每种形态一个，取前二，不按效果最大挑选。若少于二就少跑；无合格就不延长，不放宽门。两臂可从保存128恢复，包括原对角线。"
+    }
+  },
+  "measurements": {
+    "every_step": "M/E/U/bodytime、全部实际费用及欠费、gross外输入/外流/热/死亡能量、actor死亡与rule死亡、positive_request/各顺序拒绝/actualborn、founder与new_tissue_surviving；未知字段不补零。",
+    "admission": "原实际admit返回的capacity/template/precursor/fuel拒绝仅按其既定顺序解释。可在已有实际请求/存活/支持/P/F数组上作独立单约束算术诊断，但明确为局部静态界，非反事实未来，不二调host/rate。",
+    "replacement": "报告存活founder绝对质量、实际新生组织留存、累计born/death及末64/128净量；累计出生不可当存活替换量，分数上升须与绝对M并列。",
+    "retention": "完整life0/128与延长末包，预定0/8/16/24/32/64/96/128以及延长192/256/320/384真场；共尺度观察实际形态/运动，不能只按分数论多样性。",
+    "statistics": "确定性四规则四几何是依赖设计因子，不凑32独立seed；呈现全部组合、两臂配对及失败零尾，不以外部多资源或摄取高替代净维持。"
+  },
+  "budget": {
+    "independent_new": true,
+    "native_attempt_cap": 4640,
+    "science_A": 3584,
+    "conditional_science_B": 1024,
+    "affected_boundary_cap": 32,
+    "worker_seconds_cap": 1200,
+    "raw_bytes_cap": 2147483648,
+    "cpu_threads": 2,
+    "gpu": 0,
+    "serial_native": true,
+    "unique_runner_submission": true,
+    "old_budget_use": 0,
+    "unused_nontransferable": true
+  },
+  "execution": "每次新计算前实读running/started，沿统一runner。冻结输入/规则/条件/价格再运行；边界只检查改动的供给和因子装配，不复跑旧检查。原未完调用不重演；真实完整checkpoint续接才可恢复且保原失败与总用量。",
+  "handoff": "由d3唯一实现和提交，无须等新审批或再由门面转派。结果继续写原具名进度；需要他人实际承接时一次enqueue_and_trigger，日常不发回执。本批结束前据结果给PI一次有内容的科学取舍请求；图件原始数据交既有论文/投影实际承接者合并处理。",
+  "claim_boundary": "这是研究可被资源支撑的形态与组织周转的机制试验，不预称持续适应、新算法或最终科学目标完成。全部旧阴性/旧余额/默认论文及投影保留。"
+}

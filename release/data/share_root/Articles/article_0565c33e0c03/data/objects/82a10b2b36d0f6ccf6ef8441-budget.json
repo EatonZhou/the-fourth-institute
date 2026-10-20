@@ -1,0 +1,19 @@
+{
+  "native_cap": 1028,
+  "worker_cap": 450,
+  "attempted": 836,
+  "committed": 836,
+  "settled": 836,
+  "science_native": 832,
+  "boundary_native": 4,
+  "runner_worker_seconds": 48.380726,
+  "unused_native_sealed": 192,
+  "unused_worker_seconds_sealed": 401.619274,
+  "old_budget_used": 0,
+  "old_acquisition_replayed": 0,
+  "baseline_replayed": 0,
+  "zero_aliases": 3,
+  "actual_paths": 13,
+  "logical_paths": 16,
+  "prelaunch_discovery_errors_native": 0
+}

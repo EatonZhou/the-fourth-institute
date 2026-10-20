@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title data-portal-site-title="[&quot;Repo — Resource&quot;]">Repo — Resource</title>
+    <link rel="stylesheet" href="/static/portal_components.css" />
+    <link rel="stylesheet" href="/static/portal_collection_board.css" />
+    <link rel="stylesheet" href="/static/portal_workbench.css" />
+    <link rel="stylesheet" href="/static/portal_image_editor.css" />
+    <link rel="stylesheet" href="/static/resource_tabs.css" />
+    <link rel="stylesheet" href="/static/repo_workspace.css" />
+    <link rel="stylesheet" href="/static/portal_design_system.css" data-portal-skin="default" />
+    <link rel="stylesheet" href="/static/portal_themes.css" data-portal-skin-provider="themes" />
+    <link rel="stylesheet" href="/static/portal_board_toolbar.css" />
+    <script src="/static/portal_state.js"></script>
+    <script src="/static/portal_text.js"></script>
+    <script src="/static/portal_translations.js"></script>
+    <script src="/static/portal_i18n.js"></script>
+    <script src="/static/portal_theme.js"></script>
+    <script src="/static/portal_api.js"></script>
+    <script src="/static/portal_instruction_client.js"></script>
+    <script src="/static/portal_resident_service.js"></script>
+    <script src="/static/portal_resource_registration_service.js"></script>
+    <script src="/static/portal_passkeys.js"></script>
+    <script src="/static/portal_identity.js"></script>
+    <script src="/static/portal_overlay.js"></script>
+    <script src="/static/portal_events.js"></script>
+    <script src="/static/portal_refresh_coordinator.js"></script>
+    <script src="/static/resident_protocol.js"></script>
+    <script src="/static/portal_conversation_store.js"></script>
+    <script src="/static/portal_ui_primitives.js"></script>
+    <script src="/static/portal_nav.js"></script>
+    <script src="/static/portal_ui.js"></script>
+    <script src="/static/portal_editor_open_service.js"></script>
+    <script src="/static/portal_command_registry.js"></script>
+    <script src="/static/portal_workbench_context.js"></script>
+    <script src="/static/portal_workbench.js"></script>
+    <script src="/static/portal_document_statistics.js"></script>
+    <script src="/static/portal_workspace_surface.js"></script>
+    <script src="/static/portal_form_controls.js"></script>
+    <script src="/static/portal_button_tooltips.js"></script>
+    <script src="/static/portal_toolbar.js"></script>
+    <script src="/static/portal_board_toolbar.js"></script>
+    <script src="/static/portal_detail_surface.js"></script>
+    <script src="/static/portal_component_recovery.js"></script>
+    <script src="/static/portal_resource_header.js"></script>
+    <script src="/static/portal_resource_routes.js"></script>
+    <script src="/static/portal_resource_detail.js"></script>
+    <script src="/static/portal_semantic_search.js"></script>
+    <script src="/static/portal_command_palette.js"></script>
+    <script src="/static/resource_tabs.js"></script>
+    <script src="/static/portal_preview_contract.js"></script>
+    <script src="/static/portal_resource_chips.js"></script>
+    <script src="/static/portal_preview_runtime.js"></script>
+    <script src="/static/portal_pdf_preview.js"></script>
+    <script src="/static/portal_image_editor.js"></script>
+    <script src="/static/portal_preview_renderers.js"></script>
+    <script src="/static/markdown.js"></script>
+    <script src="/static/repo_workspace.js" defer></script>
+  </head>
+  <body class="portalBoardShell" data-resource-category="repo">
+    <header class="resourceSectionPageHeader">
+      <div class="portalSiteHeader" data-portal-site-header data-portal-nav-active="resource"></div>
+      <div class="resourceSectionFrame portalPageHeaderFrame">
+        <div class="portalBoardHeader" data-resource-section-header>
+          <div data-resource-tabs data-resource-category="repo"></div>
+          <div data-portal-board-toolbar aria-label="Repo Resource filters" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Repo Resource filters&quot;}">
+            <div data-portal-board-search>
+              <label for="resourceQuery"><!--portal-i18n:"搜索 Repo"-->搜索 Repo</label>
+              <input data-portal-board-search-input id="resourceQuery" type="search" autocomplete="off" placeholder="Repo 标题 / 路径 / ID"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;Repo 标题 / 路径 / ID&quot;}"/>
+              <button data-portal-board-semantic id="resourceSemanticButton" type="button" aria-label="根据输入内容发起 Repo 语义检索" title="根据输入内容发起语义检索" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;根据输入内容发起 Repo 语义检索&quot;, &quot;title&quot;: &quot;根据输入内容发起语义检索&quot;}">
+                <span data-semantic-label><!--portal-i18n:"语义检索"-->语义检索</span>
+              </button>
+            </div>
+            <div data-portal-board-actions>
+              <div data-portal-board-filter data-portal-toolbar-item data-portal-toolbar-priority="normal">
+                <button
+                  data-portal-board-action="filter"
+                  id="resourceFilterToggle"
+                  type="button"
+                  aria-expanded="false"
+                  aria-controls="resourceFilterPanel"
+                ><span><!--portal-i18n:"筛选"-->筛选</span></button>
+                <div class="portalCollectionFilterPanel" id="resourceFilterPanel" hidden>
+                  <div class="portalCollectionFilterLabel"><!--portal-i18n:"Projects"-->Projects</div>
+                  <div class="portalCollectionFilterOptions" id="resourceProjectOptions"></div>
+                </div>
+              </div>
+              <button data-portal-board-action="refresh" data-portal-toolbar-item data-portal-toolbar-priority="low" id="resourceReload" type="button" aria-label="刷新 Repo" title="刷新" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;刷新 Repo&quot;, &quot;title&quot;: &quot;刷新&quot;}"></button>
+              <button class="repoToolButton" data-portal-icon="repository-sparkles" data-portal-toolbar-item data-portal-toolbar-priority="high" id="repoAutoCommitAll" type="button" aria-label="让 AI 为所有有变更的 Repo 生成原因并提交" title="有 remote 的 Repo 会在提交后继续 push" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;让 AI 为所有有变更的 Repo 生成原因并提交&quot;, &quot;title&quot;: &quot;有 remote 的 Repo 会在提交后继续 push&quot;}">
+                <span><!--portal-i18n:"AI 提交全部"-->AI 提交全部</span>
+                <small id="repoAutoCommitCount" hidden></small>
+              </button>
+              <span class="repoToolbarModeDivider" data-portal-toolbar-item data-portal-toolbar-priority="normal" aria-hidden="true"></span>
+              <div class="repoModeActions" data-portal-toolbar-item data-portal-toolbar-priority="critical" role="tablist" aria-label="Repo 视图" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Repo 视图&quot;}">
+                <button class="repoModeTab active" data-portal-icon="list" id="repoBoardMode" type="button" data-repo-mode="board" role="tab" aria-label="打开 Repo 卡片列表" aria-selected="true" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;打开 Repo 卡片列表&quot;}">
+                  <span><!--portal-i18n:"Board"-->Board</span>
+                </button>
+                <button class="repoModeTab" data-portal-icon="code" id="repoWorkspaceMode" type="button" data-repo-mode="workspace" role="tab" aria-label="打开 Repo 工作台" aria-selected="false" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;打开 Repo 工作台&quot;}">
+                  <span><!--portal-i18n:"Workspace"-->Workspace</span>
+                </button>
+              </div>
+              <button class="portalButton is-compact is-primary" data-portal-toolbar-item data-portal-toolbar-priority="critical" id="repoRegisterOpen" type="button"><!--portal-i18n:"注册新 Repo"-->注册新 Repo</button>
+            </div>
+            <span data-portal-board-meta id="resourceCount" aria-live="polite"><!--portal-i18n:"正在加载…"-->正在加载…</span>
+          </div>
+          <div data-portal-board-slot="filter-summary" class="portalCollectionFilterSummary" id="resourceFilterSummary"></div>
+          <div data-portal-board-slot="semantic" class="portalSemanticPanel resourceSemanticPanel" id="resourceSemanticPanel" aria-label="Repo 语义检索任务" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Repo 语义检索任务&quot;}"></div>
+        </div>
+      </div>
+    </header>
+
+    <main class="repoPage portalPageFrame">
+      <div class="portalSemanticIdentity" id="repoSemanticIdentity" hidden></div>
+      <section id="repoWorkspace" aria-live="polite">
+        <div class="portalAsyncState" data-state="loading" data-density="panel" role="status">
+          <span class="portalAsyncStateIcon" aria-hidden="true"></span>
+          <span class="portalAsyncStateMessage"><!--portal-i18n:"正在打开 Repo 工作台。"-->正在打开 Repo 工作台。</span>
+        </div>
+      </section>
+    </main>
+
+    <div class="portalDetailOverlay" data-portal-detail-overlay data-portal-overlay-layer="dialog" id="repoRegisterModal" aria-hidden="true" hidden>
+      <form
+        class="portalDetailSurface portalRegistrySurface"
+        data-portal-detail-surface
+        id="repoRegisterForm"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="repoRegisterTitle"
+      >
+        <header class="portalDetailHeader">
+          <div>
+            <div class="portalRegistryEyebrow"><!--portal-i18n:"REGISTER CHECKOUT"-->REGISTER CHECKOUT</div>
+            <h2 id="repoRegisterTitle"><!--portal-i18n:"注册 Repo"-->注册 Repo</h2>
+          </div>
+          <button class="portalDetailClose" data-portal-detail-close id="repoRegisterClose" type="button" aria-label="关闭 Repo 注册" data-portal-icon="close" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;关闭 Repo 注册&quot;}"></button>
+        </header>
+        <div class="portalDetailBody portalRegistryBody">
+          <p><!--portal-i18n:"输入 Portal host 上的 Git checkout 根目录。系统会识别 Git 顶层目录、remote 和提交历史，并复用匹配的 Repo ID。"-->输入 Portal host 上的 Git checkout 根目录。系统会识别 Git 顶层目录、remote 和提交历史，并复用匹配的 Repo ID。</p>
+          <label class="portalField">
+            <span><!--portal-i18n:"Checkout 路径"-->Checkout 路径</span>
+            <input id="repoRegisterPath" name="path" required placeholder="/share/Projects/Example/src/repo" autocomplete="off"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;/share/Projects/Example/src/repo&quot;}"/>
+          </label>
+          <label class="portalField">
+            <span><!--portal-i18n:"位置"-->位置</span>
+            <select id="repoRegisterPlacement" name="placement">
+              <option value="project"><!--portal-i18n:"放在 Project 下"-->放在 Project 下</option>
+              <option value="public"><!--portal-i18n:"公共内容（不属于任何 Project）"-->公共内容（不属于任何 Project）</option>
+            </select>
+          </label>
+          <label class="portalField">
+            <span><!--portal-i18n:"Project（逗号分隔）"-->Project（逗号分隔）</span>
+            <input id="repoRegisterProjects" name="project_ids" required placeholder="ExampleProject" autocomplete="off"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;ExampleProject&quot;}"/>
+          </label>
+        </div>
+        <footer class="portalDetailFooter">
+          <button class="portalButton" id="repoRegisterCancel" type="button"><!--portal-i18n:"取消"-->取消</button>
+          <button class="portalButton is-primary" type="submit"><!--portal-i18n:"注册 Repo"-->注册 Repo</button>
+        </footer>
+      </form>
+    </div>
+
+    <div class="portalDetailOverlay" data-portal-detail-overlay data-portal-overlay-layer="dialog" id="repoEditorOverlay" aria-hidden="true" hidden>
+      <section class="portalDetailSurface repoEditorDialog" data-portal-detail-surface data-portal-detail-size="workbench" role="dialog" aria-modal="true" aria-labelledby="repoEditorTitle">
+        <header class="portalDetailHeader">
+          <div class="repoDialogHeading">
+            <span class="portalDetailEyebrow" id="repoEditorEyebrow"><!--portal-i18n:"编辑文件"-->编辑文件</span>
+            <h2 id="repoEditorTitle"><!--portal-i18n:"File"-->File</h2>
+          </div>
+          <button class="portalDetailClose" data-portal-detail-close data-portal-icon="close" id="repoEditorClose" type="button" aria-label="关闭编辑器" title="关闭" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;关闭编辑器&quot;, &quot;title&quot;: &quot;关闭&quot;}"></button>
+        </header>
+        <div class="repoEditorTabs" role="tablist">
+          <button class="repoEditorTab active" type="button" role="tab" data-editor-mode="edit" aria-selected="true"><!--portal-i18n:"编辑"-->编辑</button>
+          <button class="repoEditorTab" type="button" role="tab" data-editor-mode="preview" aria-selected="false"><!--portal-i18n:"预览"-->预览</button>
+          <span class="repoEditorStatus" id="repoEditorStatus"><!--portal-i18n:"保存后进入 Changes，可与其他改动一起提交。"-->保存后进入 Changes，可与其他改动一起提交。</span>
+        </div>
+        <div class="portalDetailBody repoEditorBody">
+          <label class="portalField repoPathEditor">
+            <span><!--portal-i18n:"文件路径"-->文件路径</span>
+            <input id="repoEditorPath" autocomplete="off" spellcheck="false" />
+          </label>
+          <textarea id="repoEditorSource" spellcheck="false" aria-label="文件内容"></textarea>
+          <article class="repoMarkdown repoEditorPreview" id="repoEditorPreview" hidden></article>
+        </div>
+        <footer class="portalDetailFooter">
+          <button class="portalButton" id="repoEditorCancel" type="button"><!--portal-i18n:"取消"-->取消</button>
+          <button class="portalButton is-primary" id="repoEditorSave" type="button"><!--portal-i18n:"保存到 Changes"-->保存到 Changes</button>
+        </footer>
+      </section>
+    </div>
+
+    <div class="portalDetailOverlay" data-portal-detail-overlay data-portal-overlay-layer="dialog" id="repoBranchOverlay" aria-hidden="true" hidden>
+      <form class="portalDetailSurface repoSmallDialog" data-portal-detail-surface id="repoBranchForm" role="dialog" aria-modal="true" aria-labelledby="repoBranchTitle">
+        <header class="portalDetailHeader">
+          <div class="repoDialogHeading">
+            <span class="portalDetailEyebrow"><!--portal-i18n:"BRANCH"-->BRANCH</span>
+            <h2 id="repoBranchTitle"><!--portal-i18n:"创建新分支"-->创建新分支</h2>
+          </div>
+          <button class="portalDetailClose" data-portal-detail-close data-portal-icon="close" id="repoBranchClose" type="button" aria-label="关闭分支对话框" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;关闭分支对话框&quot;}"></button>
+        </header>
+        <div class="portalDetailBody repoSmallDialogBody">
+          <label class="portalField">
+            <span><!--portal-i18n:"分支名称"-->分支名称</span>
+            <input id="repoBranchName" name="name" required placeholder="feature/new-workspace" autocomplete="off" spellcheck="false"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;feature/new-workspace&quot;}"/>
+          </label>
+          <label class="portalField">
+            <span><!--portal-i18n:"起点"-->起点</span>
+            <input id="repoBranchStart" name="start_point" value="HEAD" required autocomplete="off" spellcheck="false" />
+          </label>
+          <p><!--portal-i18n:"创建成功后会切换到新分支。存在未提交改动时，Portal 会阻止切换。"-->创建成功后会切换到新分支。存在未提交改动时，Portal 会阻止切换。</p>
+        </div>
+        <footer class="portalDetailFooter">
+          <button class="portalButton" id="repoBranchCancel" type="button"><!--portal-i18n:"取消"-->取消</button>
+          <button class="portalButton is-primary" type="submit"><!--portal-i18n:"创建并切换"-->创建并切换</button>
+        </footer>
+      </form>
+    </div>
+
+    <div class="portalDetailOverlay" data-portal-detail-overlay data-portal-overlay-layer="dialog" id="repoAutomationOverlay" aria-hidden="true" hidden>
+      <section class="portalDetailSurface repoAutomationDialog" data-portal-detail-surface role="dialog" aria-modal="true" aria-labelledby="repoAutomationTitle">
+        <header class="portalDetailHeader">
+          <div class="repoDialogHeading">
+            <span class="portalDetailEyebrow"><!--portal-i18n:"AI · GIT AUTOMATION"-->AI · GIT AUTOMATION</span>
+            <h2 id="repoAutomationTitle"><!--portal-i18n:"AI 提交"-->AI 提交</h2>
+          </div>
+          <button class="portalDetailClose" data-portal-detail-close data-portal-icon="close" id="repoAutomationClose" type="button" aria-label="隐藏 AI 提交进度" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;隐藏 AI 提交进度&quot;}"></button>
+        </header>
+        <div class="portalDetailBody repoAutomationBody">
+          <div class="repoAutomationSummary">
+            <div>
+              <strong id="repoAutomationStatus"><!--portal-i18n:"准备读取变更…"-->准备读取变更…</strong>
+              <span id="repoAutomationSub"><!--portal-i18n:"由 AI 生成 commit 标题和原因"-->由 AI 生成 commit 标题和原因</span>
+            </div>
+            <span class="repoAutomationProvider"><!--portal-i18n:"AI"-->AI</span>
+          </div>
+          <div class="repoAutomationProgress" role="progressbar" aria-label="AI 提交进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;AI 提交进度&quot;}">
+            <span id="repoAutomationProgressBar"></span>
+          </div>
+          <div class="repoAutomationResults" id="repoAutomationResults" aria-live="polite"></div>
+        </div>
+        <footer class="portalDetailFooter">
+          <button class="portalButton is-danger" id="repoAutomationStop" type="button" hidden><!--portal-i18n:"停止后续仓库"-->停止后续仓库</button>
+          <button class="portalButton" id="repoAutomationDone" type="button"><!--portal-i18n:"隐藏"-->隐藏</button>
+        </footer>
+      </section>
+    </div>
+
+    <div class="portalDetailOverlay" data-portal-detail-overlay data-portal-overlay-layer="dialog" id="repoCredentialOverlay" aria-hidden="true" hidden>
+      <form class="portalDetailSurface repoCredentialDialog" data-portal-detail-surface id="repoCredentialForm" role="dialog" aria-modal="true" aria-labelledby="repoCredentialTitle">
+        <header class="portalDetailHeader">
+          <div class="repoDialogHeading">
+            <span class="portalDetailEyebrow"><!--portal-i18n:"SECURE GIT AUTHENTICATION"-->SECURE GIT AUTHENTICATION</span>
+            <h2 id="repoCredentialTitle"><!--portal-i18n:"连接 Git remote"-->连接 Git remote</h2>
+          </div>
+          <button class="portalDetailClose" data-portal-detail-close data-portal-icon="close" id="repoCredentialClose" type="button" aria-label="取消 Git 认证" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;取消 Git 认证&quot;}"></button>
+        </header>
+        <div class="portalDetailBody repoCredentialBody">
+          <section class="repoCredentialRemote" aria-label="待认证的 Git remote" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;待认证的 Git remote&quot;}">
+            <span class="repoCredentialRemoteIcon" data-portal-icon="plus" aria-hidden="true"></span>
+            <div>
+              <strong id="repoCredentialHost"><!--portal-i18n:"Git remote"-->Git remote</strong>
+              <span id="repoCredentialPath"></span>
+            </div>
+            <em id="repoCredentialProtocol"><!--portal-i18n:"HTTPS"-->HTTPS</em>
+          </section>
+          <p class="repoCredentialReason" id="repoCredentialReason" hidden></p>
+          <label class="repoCredentialField" id="repoCredentialUsernameRow">
+            <span><!--portal-i18n:"用户名"-->用户名</span>
+            <input id="repoCredentialUsername" name="username" autocomplete="username" spellcheck="false" />
+          </label>
+          <label class="repoCredentialField">
+            <span id="repoCredentialSecretLabel"><!--portal-i18n:"访问令牌或密码"-->访问令牌或密码</span>
+            <input id="repoCredentialSecret" name="secret" type="password" required autocomplete="new-password" />
+          </label>
+          <p class="repoCredentialHelp" id="repoCredentialHelp"></p>
+          <label class="repoCredentialRemember">
+            <input id="repoCredentialRemember" name="remember" type="checkbox" checked />
+            <span>
+              <strong><!--portal-i18n:"安全保存到我的 Portal 账号"-->安全保存到我的 Portal 账号</strong>
+              <small><!--portal-i18n:"凭据按当前用户和 Git 主机隔离；取消勾选后只用于本次重试。"-->凭据按当前用户和 Git 主机隔离；取消勾选后只用于本次重试。</small>
+            </span>
+          </label>
+          <p class="repoCredentialError" id="repoCredentialError" role="alert" hidden></p>
+        </div>
+        <footer class="portalDetailFooter">
+          <button class="portalButton" id="repoCredentialCancel" type="button"><!--portal-i18n:"取消"-->取消</button>
+          <button class="portalButton is-primary" id="repoCredentialSubmit" type="submit"><!--portal-i18n:"验证并重试"-->验证并重试</button>
+        </footer>
+      </form>
+    </div>
+
+    <div class="portalDetailOverlay" data-portal-detail-overlay data-portal-overlay-layer="dialog" id="repoShortcutOverlay" aria-hidden="true" hidden>
+      <section class="portalDetailSurface" data-portal-detail-surface data-portal-detail-size="compact" role="dialog" aria-modal="true" aria-labelledby="repoShortcutHelpTitle">
+        <header class="portalDetailHeader">
+          <div>
+            <span class="portalDetailEyebrow"><!--portal-i18n:"KEYBOARD"-->KEYBOARD</span>
+            <h2 id="repoShortcutHelpTitle"><!--portal-i18n:"Repo 快捷键"-->Repo 快捷键</h2>
+          </div>
+          <button class="portalDetailClose" data-portal-detail-close data-portal-icon="close" id="repoShortcutClose" type="button" aria-label="关闭快捷键帮助" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;关闭快捷键帮助&quot;}"></button>
+        </header>
+        <div class="portalDetailBody">
+          <dl class="repoShortcutList">
+            <div><dt><kbd>t</kbd></dt><dd><!--portal-i18n:"查找文件"-->查找文件</dd></div>
+            <div><dt><kbd>w</kbd></dt><dd><!--portal-i18n:"切换分支"-->切换分支</dd></div>
+            <div><dt><kbd>b</kbd></dt><dd><!--portal-i18n:"查看当前文件 Blame"-->查看当前文件 Blame</dd></div>
+            <div><dt><kbd>l</kbd></dt><dd><!--portal-i18n:"跳转到当前文件行号"-->跳转到当前文件行号</dd></div>
+            <div><dt><kbd>⇧ t</kbd></dt><dd><!--portal-i18n:"筛选 Changes"-->筛选 Changes</dd></div>
+            <div><dt><kbd>?</kbd></dt><dd><!--portal-i18n:"打开或关闭此帮助"-->打开或关闭此帮助</dd></div>
+          </dl>
+        </div>
+      </section>
+    </div>
+
+  </body>
+</html>

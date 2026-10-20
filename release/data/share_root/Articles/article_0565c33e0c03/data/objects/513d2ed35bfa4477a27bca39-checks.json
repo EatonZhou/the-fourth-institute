@@ -1,0 +1,87 @@
+{
+  "status": "completed_readonly_packaging",
+  "native_steps_added_by_analysis": 0,
+  "source_bindings": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/material_action_response/experiment.py",
+      "expected": "b3d0385fd48b692202eef8a3d9f954bf1f47955949a859170ebc7b72dd369439",
+      "actual": "b3d0385fd48b692202eef8a3d9f954bf1f47955949a859170ebc7b72dd369439"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/material_action_response/core.py",
+      "expected": "4b733b162b1eac6ab484cbb44ab4b292724d9575f9640aaa0dbcfd404efba881",
+      "actual": "4b733b162b1eac6ab484cbb44ab4b292724d9575f9640aaa0dbcfd404efba881"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/material_action_response/core.py",
+      "expected": "15691ada9fd805c076f7c5770ba955dbf6cc454ea3af129b1ba03fe958467b5b",
+      "actual": "15691ada9fd805c076f7c5770ba955dbf6cc454ea3af129b1ba03fe958467b5b"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/regenerative_actor/model.py",
+      "expected": "3941450e97d2311f833d1c9c8964f348218467d4cd8d41a68b6584b72b24b5b0",
+      "actual": "3941450e97d2311f833d1c9c8964f348218467d4cd8d41a68b6584b72b24b5b0"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/regenerative_actor/conversion.py",
+      "expected": "d2b73ccf44d6720e01e2166c055f9a427406dc483b21746476b9f8cc5f95189a",
+      "actual": "d2b73ccf44d6720e01e2166c055f9a427406dc483b21746476b9f8cc5f95189a"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/material_transport.py",
+      "expected": "dd5622a2df6a5d50642a31ad586215d5e30e33929cf8f57ee9efff36fdef08d5",
+      "actual": "dd5622a2df6a5d50642a31ad586215d5e30e33929cf8f57ee9efff36fdef08d5"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/morphology_evolution/dual_kernel.py",
+      "expected": "529d42e50876a68bce54a512f8a9cafd48a8f68276cf8507a0e2243b3f450d6e",
+      "actual": "529d42e50876a68bce54a512f8a9cafd48a8f68276cf8507a0e2243b3f450d6e"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/simulation/snapshot.py",
+      "expected": "e99d3eccee47ded2abe1518e3fb80d2d630a8ff21a2a339ff6723c2878dfc382",
+      "actual": "e99d3eccee47ded2abe1518e3fb80d2d630a8ff21a2a339ff6723c2878dfc382"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/active_observation_commitment/io.py",
+      "expected": "7431902820c71eda7c5b8d6c7c8e24557713c8c96ff28a9f95870e88a6539130",
+      "actual": "7431902820c71eda7c5b8d6c7c8e24557713c8c96ff28a9f95870e88a6539130"
+    }
+  ],
+  "host_handoff_sha_ok": true,
+  "raw_file_count": 204,
+  "raw_index_sha_checks": 90,
+  "actual_saved_blocks": 90,
+  "full_stage_initial_body_packets": 30,
+  "full_stage_final_body_packets": 30,
+  "matched_futures": 20,
+  "scalar_count": 2464,
+  "scalar_reconstruction_max_error": 4.547473508864641e-13,
+  "max_native_residual": 1.8189894035458565e-12,
+  "basal_unpaid_total": 0.007528626236253829,
+  "unknown_mass_total": 0,
+  "all20_futures_alive": true,
+  "raw_bytes": 594047797,
+  "joint_raw_bytes": 823495432,
+  "joint_cap_bytes": 4294967296,
+  "controls": "running/started was checked before the sole scientific submission; source and plan were frozen",
+  "analysis_history": [
+    "An initial read-only analyze attempt before result.json existed stopped at FileNotFoundError; no body call and no successful output.",
+    "One complete read-only analysis after job completion.",
+    "Final table repair nulls uncollected cohort counters and drops comparisons against unobserved cohorts; native result/packets and physical comparisons unchanged."
+  ],
+  "scope_gaps": [
+    "Only3 predetermined saved blocks per stage, last native receipt of each block; intermediate8-step K/fields not retained.",
+    "All-step scalar fees retain movement/basal; synthesis/template are actually charged by native host but not separately accumulated in this worker scalar ledger. Sampled receipts and full energy/heat/death accounting do not replace missing full-horizon subfee series.",
+    "No same-target common offline forecast panel; model/recent/frozen RMSE compares their own changing trajectories.",
+    "Local learner targets condition on surviving readable carriers; lost-mass/whole-body outcome auditing does not remove survivor bias.",
+    "No capacity-matched global or position-locked memory arm; no claim of material-specific storage superiority."
+  ],
+  "visual_inspection": {
+    "files": [
+      "actual_bodies.png",
+      "actual_process.png"
+    ],
+    "scope": "Both bodies, first rotated context:10 actual final fields and all96 scalar steps for5 arms; not all raw saved arrays or full animations."
+  }
+}

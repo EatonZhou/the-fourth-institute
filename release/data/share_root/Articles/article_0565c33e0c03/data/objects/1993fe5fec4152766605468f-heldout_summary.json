@@ -1,0 +1,2002 @@
+[
+  {
+    "test_set": "development_reuse",
+    "scenario": "stable",
+    "method": "separated_evolved",
+    "intake": 12127.0,
+    "actions": 15343,
+    "hit_rate": 0.7903930131004366,
+    "latent_direction_accuracy": 0.9234830215733559,
+    "write_cost": 8.43852354957391,
+    "exchange_cost": 13.559203449941217,
+    "movement_cost": 613.72,
+    "net_tokens": 11491.282273000486,
+    "net_per_action": 0.7489592826044768,
+    "windows": {
+      "first8": 0.6315396113602392,
+      "prechange_last16": 0.7974633372968688,
+      "postchange_first8": 0.8287781350482315,
+      "late16": 0.8187203791469194
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "stable",
+    "method": "separated_no_exchange",
+    "intake": 12024.0,
+    "actions": 15343,
+    "hit_rate": 0.7836798540050838,
+    "latent_direction_accuracy": 0.9141628104021378,
+    "write_cost": 8.43852354957391,
+    "exchange_cost": 0.0,
+    "movement_cost": 613.72,
+    "net_tokens": 11401.841476450427,
+    "net_per_action": 0.7431298622466549,
+    "windows": {
+      "first8": 0.6076233183856502,
+      "prechange_last16": 0.7915180340864051,
+      "postchange_first8": 0.8255627009646302,
+      "late16": 0.815955766192733
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "stable",
+    "method": "separated_no_arbitration",
+    "intake": 12232.0,
+    "actions": 15343,
+    "hit_rate": 0.7972365247995828,
+    "latent_direction_accuracy": 0.9325425275369875,
+    "write_cost": 8.43852354957391,
+    "exchange_cost": 13.559203449941217,
+    "movement_cost": 613.72,
+    "net_tokens": 11596.282273000486,
+    "net_per_action": 0.755802794303623,
+    "windows": {
+      "first8": 0.6315396113602392,
+      "prechange_last16": 0.8065794688862465,
+      "postchange_first8": 0.8336012861736335,
+      "late16": 0.8262243285939969
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "stable",
+    "method": "separated_unretuned",
+    "intake": 11169.0,
+    "actions": 15343,
+    "hit_rate": 0.7279541158834648,
+    "latent_direction_accuracy": 0.8328879619370397,
+    "write_cost": 16.029866635616955,
+    "exchange_cost": 17.37704924308078,
+    "movement_cost": 613.72,
+    "net_tokens": 10521.873084121302,
+    "net_per_action": 0.6857767766487194,
+    "windows": {
+      "first8": 0.633034379671151,
+      "prechange_last16": 0.7344431232659532,
+      "postchange_first8": 0.7427652733118971,
+      "late16": 0.7397314375987362
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "stable",
+    "method": "original_spatial",
+    "intake": 11651.0,
+    "actions": 15343,
+    "hit_rate": 0.7593690933976406,
+    "latent_direction_accuracy": 0.8757739685850224,
+    "write_cost": 27.68002900830097,
+    "exchange_cost": 3.5441692754493435,
+    "movement_cost": 613.72,
+    "net_tokens": 11006.055801716251,
+    "net_per_action": 0.7173340156238187,
+    "windows": {
+      "first8": 0.6278026905829597,
+      "prechange_last16": 0.7756638921918351,
+      "postchange_first8": 0.7805466237942122,
+      "late16": 0.7657977883096366
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "stable",
+    "method": "original_no_exchange",
+    "intake": 11127.0,
+    "actions": 15343,
+    "hit_rate": 0.7252167112038063,
+    "latent_direction_accuracy": 0.8297594994460015,
+    "write_cost": 16.029866635616955,
+    "exchange_cost": 0.0,
+    "movement_cost": 613.72,
+    "net_tokens": 10497.250133364383,
+    "net_per_action": 0.6841719437766006,
+    "windows": {
+      "first8": 0.6076233183856502,
+      "prechange_last16": 0.7344431232659532,
+      "postchange_first8": 0.7427652733118971,
+      "late16": 0.7397314375987362
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "stable",
+    "method": "tuned_local_ema",
+    "intake": 12264.0,
+    "actions": 15343,
+    "hit_rate": 0.7993221664602751,
+    "latent_direction_accuracy": 0.935801342631819,
+    "write_cost": 6.253783629658997,
+    "exchange_cost": 0.0,
+    "movement_cost": 613.72,
+    "net_tokens": 11644.026216370341,
+    "net_per_action": 0.7589145679704322,
+    "windows": {
+      "first8": 0.6068759342301944,
+      "prechange_last16": 0.8149028933808957,
+      "postchange_first8": 0.8416398713826366,
+      "late16": 0.8325434439178515
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "stable",
+    "method": "last_contact",
+    "intake": 11127.0,
+    "actions": 15343,
+    "hit_rate": 0.7252167112038063,
+    "latent_direction_accuracy": 0.8297594994460015,
+    "write_cost": 18.332000000000015,
+    "exchange_cost": 0.0,
+    "movement_cost": 613.72,
+    "net_tokens": 10494.948,
+    "net_per_action": 0.6840218992374373,
+    "windows": {
+      "first8": 0.6076233183856502,
+      "prechange_last16": 0.7344431232659532,
+      "postchange_first8": 0.7427652733118971,
+      "late16": 0.7397314375987362
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "stable",
+    "method": "erased_memory",
+    "intake": 7672.0,
+    "actions": 15343,
+    "hit_rate": 0.5000325881509483,
+    "latent_direction_accuracy": 0.4974255360750831,
+    "write_cost": 0.0,
+    "exchange_cost": 0.0,
+    "movement_cost": 613.72,
+    "net_tokens": 7058.28,
+    "net_per_action": 0.4600325881509483,
+    "windows": {
+      "first8": 0.5029895366218237,
+      "prechange_last16": 0.4950455806579469,
+      "postchange_first8": 0.49115755627009644,
+      "late16": 0.5039494470774092
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "stable",
+    "method": "best_instant",
+    "intake": 7318.0,
+    "actions": 15343,
+    "hit_rate": 0.47696017727954115,
+    "latent_direction_accuracy": 0.46509809033435445,
+    "write_cost": 0.0,
+    "exchange_cost": 0.0,
+    "movement_cost": 613.72,
+    "net_tokens": 6704.28,
+    "net_per_action": 0.4369601772795411,
+    "windows": {
+      "first8": 0.4693572496263079,
+      "prechange_last16": 0.4700753071739992,
+      "postchange_first8": 0.4734726688102894,
+      "late16": 0.48696682464454977
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "reversal",
+    "method": "separated_evolved",
+    "intake": 10950.0,
+    "actions": 15343,
+    "hit_rate": 0.7136805057681027,
+    "latent_direction_accuracy": 0.8152251841230529,
+    "write_cost": 9.13248667309904,
+    "exchange_cost": 12.715823699642966,
+    "movement_cost": 613.72,
+    "net_tokens": 10314.431689627258,
+    "net_per_action": 0.6722565136953176,
+    "windows": {
+      "first8": 0.6315396113602392,
+      "prechange_last16": 0.7217598097502973,
+      "postchange_first8": 0.319935691318328,
+      "late16": 0.8131911532385466
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "reversal",
+    "method": "separated_no_exchange",
+    "intake": 10908.0,
+    "actions": 15343,
+    "hit_rate": 0.7109431010884443,
+    "latent_direction_accuracy": 0.8115753112168416,
+    "write_cost": 9.13248667309904,
+    "exchange_cost": 0.0,
+    "movement_cost": 613.72,
+    "net_tokens": 10285.147513326901,
+    "net_per_action": 0.6703478793799714,
+    "windows": {
+      "first8": 0.6076233183856502,
+      "prechange_last16": 0.7205707491082045,
+      "postchange_first8": 0.32636655948553056,
+      "late16": 0.8127962085308057
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "reversal",
+    "method": "separated_no_arbitration",
+    "intake": 10913.0,
+    "actions": 15343,
+    "hit_rate": 0.7112689825979274,
+    "latent_direction_accuracy": 0.8124226031414977,
+    "write_cost": 9.13248667309904,
+    "exchange_cost": 12.715823699642966,
+    "movement_cost": 613.72,
+    "net_tokens": 10277.431689627258,
+    "net_per_action": 0.6698449905251422,
+    "windows": {
+      "first8": 0.6315396113602392,
+      "prechange_last16": 0.729290527150218,
+      "postchange_first8": 0.27893890675241156,
+      "late16": 0.8151658767772512
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "reversal",
+    "method": "separated_unretuned",
+    "intake": 10824.0,
+    "actions": 15343,
+    "hit_rate": 0.7054682917291273,
+    "latent_direction_accuracy": 0.8003649872906211,
+    "write_cost": 16.8506545012915,
+    "exchange_cost": 17.36406894080313,
+    "movement_cost": 613.72,
+    "net_tokens": 10176.065276557905,
+    "net_per_action": 0.6632383025847556,
+    "windows": {
+      "first8": 0.633034379671151,
+      "prechange_last16": 0.6761791518034086,
+      "postchange_first8": 0.5844051446945338,
+      "late16": 0.7401263823064771
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "reversal",
+    "method": "original_spatial",
+    "intake": 10911.0,
+    "actions": 15343,
+    "hit_rate": 0.7111386299941341,
+    "latent_direction_accuracy": 0.8081209672163201,
+    "write_cost": 28.03722308306856,
+    "exchange_cost": 3.5320140437310927,
+    "movement_cost": 613.72,
+    "net_tokens": 10265.710762873201,
+    "net_per_action": 0.6690810638645116,
+    "windows": {
+      "first8": 0.6278026905829597,
+      "prechange_last16": 0.711850971066191,
+      "postchange_first8": 0.44614147909967844,
+      "late16": 0.759478672985782
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "reversal",
+    "method": "original_no_exchange",
+    "intake": 10782.0,
+    "actions": 15343,
+    "hit_rate": 0.7027308870494688,
+    "latent_direction_accuracy": 0.7972365247995828,
+    "write_cost": 16.8506545012915,
+    "exchange_cost": 0.0,
+    "movement_cost": 613.72,
+    "net_tokens": 10151.42934549871,
+    "net_per_action": 0.6616326237045369,
+    "windows": {
+      "first8": 0.6076233183856502,
+      "prechange_last16": 0.6761791518034086,
+      "postchange_first8": 0.5844051446945338,
+      "late16": 0.7401263823064771
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "reversal",
+    "method": "tuned_local_ema",
+    "intake": 10687.0,
+    "actions": 15343,
+    "hit_rate": 0.6965391383692889,
+    "latent_direction_accuracy": 0.7896108974776771,
+    "write_cost": 7.546679140208321,
+    "exchange_cost": 0.0,
+    "movement_cost": 613.72,
+    "net_tokens": 10065.733320859792,
+    "net_per_action": 0.6560472737313298,
+    "windows": {
+      "first8": 0.6068759342301944,
+      "prechange_last16": 0.7328577090764963,
+      "postchange_first8": 0.24356913183279744,
+      "late16": 0.8135860979462876
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "reversal",
+    "method": "last_contact",
+    "intake": 10781.0,
+    "actions": 15343,
+    "hit_rate": 0.7026657107475722,
+    "latent_direction_accuracy": 0.7971713484976862,
+    "write_cost": 19.716000000000015,
+    "exchange_cost": 0.0,
+    "movement_cost": 613.72,
+    "net_tokens": 10147.564,
+    "net_per_action": 0.6613806947793782,
+    "windows": {
+      "first8": 0.6076233183856502,
+      "prechange_last16": 0.6761791518034086,
+      "postchange_first8": 0.5844051446945338,
+      "late16": 0.7397314375987362
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "reversal",
+    "method": "erased_memory",
+    "intake": 7657.0,
+    "actions": 15343,
+    "hit_rate": 0.49905494362249886,
+    "latent_direction_accuracy": 0.5029655217362967,
+    "write_cost": 0.0,
+    "exchange_cost": 0.0,
+    "movement_cost": 613.72,
+    "net_tokens": 7043.28,
+    "net_per_action": 0.4590549436224988,
+    "windows": {
+      "first8": 0.5029895366218237,
+      "prechange_last16": 0.48910027744748313,
+      "postchange_first8": 0.5088424437299035,
+      "late16": 0.4960505529225908
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "reversal",
+    "method": "best_instant",
+    "intake": 7687.0,
+    "actions": 15343,
+    "hit_rate": 0.5010102326793978,
+    "latent_direction_accuracy": 0.4987942384149123,
+    "write_cost": 0.0,
+    "exchange_cost": 0.0,
+    "movement_cost": 613.72,
+    "net_tokens": 7073.28,
+    "net_per_action": 0.4610102326793978,
+    "windows": {
+      "first8": 0.4693572496263079,
+      "prechange_last16": 0.46730083234244946,
+      "postchange_first8": 0.5265273311897106,
+      "late16": 0.5130331753554502
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "unseen_checker",
+    "method": "separated_evolved",
+    "intake": 10811.0,
+    "actions": 15345,
+    "hit_rate": 0.7045291625936787,
+    "latent_direction_accuracy": 0.7998696643857934,
+    "write_cost": 9.135861424089057,
+    "exchange_cost": 13.23220473422291,
+    "movement_cost": 613.8000000000001,
+    "net_tokens": 10174.83193384169,
+    "net_per_action": 0.6630714847730003,
+    "windows": {
+      "first8": 0.5749440715883669,
+      "prechange_last16": 0.7178472497032053,
+      "postchange_first8": 0.34430176565008025,
+      "late16": 0.803006329113924
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "unseen_checker",
+    "method": "separated_no_exchange",
+    "intake": 10914.0,
+    "actions": 15345,
+    "hit_rate": 0.7112414467253176,
+    "latent_direction_accuracy": 0.8087976539589443,
+    "write_cost": 9.135861424089057,
+    "exchange_cost": 0.0,
+    "movement_cost": 613.8000000000001,
+    "net_tokens": 10291.064138575912,
+    "net_per_action": 0.6706460826703103,
+    "windows": {
+      "first8": 0.609992542878449,
+      "prechange_last16": 0.7198258804907004,
+      "postchange_first8": 0.33386837881219905,
+      "late16": 0.810126582278481
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "unseen_checker",
+    "method": "separated_no_arbitration",
+    "intake": 10768.0,
+    "actions": 15345,
+    "hit_rate": 0.7017269468882372,
+    "latent_direction_accuracy": 0.793287715868361,
+    "write_cost": 9.135861424089057,
+    "exchange_cost": 13.23220473422291,
+    "movement_cost": 613.8000000000001,
+    "net_tokens": 10131.83193384169,
+    "net_per_action": 0.6602692690675588,
+    "windows": {
+      "first8": 0.5741983594332588,
+      "prechange_last16": 0.7142857142857143,
+      "postchange_first8": 0.34590690208667735,
+      "late16": 0.7970727848101266
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "unseen_checker",
+    "method": "separated_unretuned",
+    "intake": 10728.0,
+    "actions": 15345,
+    "hit_rate": 0.6991202346041056,
+    "latent_direction_accuracy": 0.7906810035842294,
+    "write_cost": 16.85692608846792,
+    "exchange_cost": 18.097260308145497,
+    "movement_cost": 613.8000000000001,
+    "net_tokens": 10079.245813603386,
+    "net_per_action": 0.6568423469275585,
+    "windows": {
+      "first8": 0.575689783743475,
+      "prechange_last16": 0.6762960031658093,
+      "postchange_first8": 0.5882825040128411,
+      "late16": 0.7373417721518988
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "unseen_checker",
+    "method": "original_spatial",
+    "intake": 9308.0,
+    "actions": 15345,
+    "hit_rate": 0.6065819485174324,
+    "latent_direction_accuracy": 0.6539589442815249,
+    "write_cost": 29.033093377186635,
+    "exchange_cost": 3.5000367294909753,
+    "movement_cost": 613.8000000000001,
+    "net_tokens": 8661.666869893323,
+    "net_per_action": 0.5644618357701742,
+    "windows": {
+      "first8": 0.5622669649515287,
+      "prechange_last16": 0.592402057776019,
+      "postchange_first8": 0.5561797752808989,
+      "late16": 0.6107594936708861
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "unseen_checker",
+    "method": "original_no_exchange",
+    "intake": 10785.0,
+    "actions": 15345,
+    "hit_rate": 0.7028347996089932,
+    "latent_direction_accuracy": 0.7958292603453894,
+    "write_cost": 16.85692608846792,
+    "exchange_cost": 0.0,
+    "movement_cost": 613.8000000000001,
+    "net_tokens": 10154.343073911532,
+    "net_per_action": 0.6617362707013055,
+    "windows": {
+      "first8": 0.609992542878449,
+      "prechange_last16": 0.6762960031658093,
+      "postchange_first8": 0.5882825040128411,
+      "late16": 0.7373417721518988
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "unseen_checker",
+    "method": "tuned_local_ema",
+    "intake": 10684.0,
+    "actions": 15345,
+    "hit_rate": 0.6962528510915608,
+    "latent_direction_accuracy": 0.7878136200716845,
+    "write_cost": 7.550555644995363,
+    "exchange_cost": 0.0,
+    "movement_cost": 613.8000000000001,
+    "net_tokens": 10062.649444355005,
+    "net_per_action": 0.6557607979377651,
+    "windows": {
+      "first8": 0.6092468307233407,
+      "prechange_last16": 0.7332805698456668,
+      "postchange_first8": 0.24959871589085073,
+      "late16": 0.8144778481012658
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "unseen_checker",
+    "method": "last_contact",
+    "intake": 10785.0,
+    "actions": 15345,
+    "hit_rate": 0.7028347996089932,
+    "latent_direction_accuracy": 0.7958292603453894,
+    "write_cost": 19.728000000000012,
+    "exchange_cost": 0.0,
+    "movement_cost": 613.8000000000001,
+    "net_tokens": 10151.472000000002,
+    "net_per_action": 0.6615491691104596,
+    "windows": {
+      "first8": 0.609992542878449,
+      "prechange_last16": 0.6762960031658093,
+      "postchange_first8": 0.5882825040128411,
+      "late16": 0.7373417721518988
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "unseen_checker",
+    "method": "erased_memory",
+    "intake": 7704.0,
+    "actions": 15345,
+    "hit_rate": 0.5020527859237537,
+    "latent_direction_accuracy": 0.5019876181166504,
+    "write_cost": 0.0,
+    "exchange_cost": 0.0,
+    "movement_cost": 613.8000000000001,
+    "net_tokens": 7090.2,
+    "net_per_action": 0.46205278592375365,
+    "windows": {
+      "first8": 0.49589858314690527,
+      "prechange_last16": 0.5136525524337159,
+      "postchange_first8": 0.48073836276083465,
+      "late16": 0.49802215189873417
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "unseen_checker",
+    "method": "best_instant",
+    "intake": 7706.0,
+    "actions": 15345,
+    "hit_rate": 0.5021831215379603,
+    "latent_direction_accuracy": 0.49846855653307265,
+    "write_cost": 0.0,
+    "exchange_cost": 0.0,
+    "movement_cost": 613.8000000000001,
+    "net_tokens": 7092.2,
+    "net_per_action": 0.46218312153796026,
+    "windows": {
+      "first8": 0.5026099925428784,
+      "prechange_last16": 0.5073209339137317,
+      "postchange_first8": 0.5088282504012841,
+      "late16": 0.49723101265822783
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "unseen_sequence",
+    "method": "separated_evolved",
+    "intake": 10054.0,
+    "actions": 15343,
+    "hit_rate": 0.6552825392687219,
+    "latent_direction_accuracy": 0.7298442286384671,
+    "write_cost": 9.59826064671008,
+    "exchange_cost": 12.130942962768247,
+    "movement_cost": 613.72,
+    "net_tokens": 9418.550796390522,
+    "net_per_action": 0.6138663101342972,
+    "windows": {
+      "first8": 0.6278026905829597,
+      "prechange_last16": 0.7249306381292112,
+      "postchange_first8": 0.3247588424437299,
+      "late16": 0.7164296998420221
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "unseen_sequence",
+    "method": "separated_no_exchange",
+    "intake": 10043.0,
+    "actions": 15343,
+    "hit_rate": 0.654565599947859,
+    "latent_direction_accuracy": 0.7291272893176041,
+    "write_cost": 9.59826064671008,
+    "exchange_cost": 0.0,
+    "movement_cost": 613.72,
+    "net_tokens": 9419.681739353291,
+    "net_per_action": 0.6139400208142665,
+    "windows": {
+      "first8": 0.6023916292974589,
+      "prechange_last16": 0.72294887039239,
+      "postchange_first8": 0.3279742765273312,
+      "late16": 0.721958925750395
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "unseen_sequence",
+    "method": "separated_no_arbitration",
+    "intake": 9977.0,
+    "actions": 15343,
+    "hit_rate": 0.6502639640226814,
+    "latent_direction_accuracy": 0.723522127354494,
+    "write_cost": 9.59826064671008,
+    "exchange_cost": 12.130942962768247,
+    "movement_cost": 613.72,
+    "net_tokens": 9341.550796390522,
+    "net_per_action": 0.6088477348882567,
+    "windows": {
+      "first8": 0.6278026905829597,
+      "prechange_last16": 0.7304795877923107,
+      "postchange_first8": 0.2869774919614148,
+      "late16": 0.7085308056872038
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "unseen_sequence",
+    "method": "separated_unretuned",
+    "intake": 10469.0,
+    "actions": 15343,
+    "hit_rate": 0.6823307045558235,
+    "latent_direction_accuracy": 0.7669295444176497,
+    "write_cost": 17.636167311698916,
+    "exchange_cost": 17.323053510502497,
+    "movement_cost": 613.72,
+    "net_tokens": 9820.320779177799,
+    "net_per_action": 0.6400521918254447,
+    "windows": {
+      "first8": 0.6300448430493274,
+      "prechange_last16": 0.6761791518034086,
+      "postchange_first8": 0.5844051446945338,
+      "late16": 0.7342022116903634
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "unseen_sequence",
+    "method": "original_spatial",
+    "intake": 10284.0,
+    "actions": 15343,
+    "hit_rate": 0.6702730887049468,
+    "latent_direction_accuracy": 0.7487453561884899,
+    "write_cost": 28.273223962095845,
+    "exchange_cost": 3.5191728439214702,
+    "movement_cost": 613.72,
+    "net_tokens": 9638.487603193982,
+    "net_per_action": 0.6282009778527003,
+    "windows": {
+      "first8": 0.624813153961136,
+      "prechange_last16": 0.7078874355925485,
+      "postchange_first8": 0.44855305466237944,
+      "late16": 0.726303317535545
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "unseen_sequence",
+    "method": "original_no_exchange",
+    "intake": 10429.0,
+    "actions": 15343,
+    "hit_rate": 0.6797236524799583,
+    "latent_direction_accuracy": 0.7634100241152317,
+    "write_cost": 17.636167311698916,
+    "exchange_cost": 0.0,
+    "movement_cost": 613.72,
+    "net_tokens": 9797.643832688302,
+    "net_per_action": 0.6385741923149516,
+    "windows": {
+      "first8": 0.6031390134529148,
+      "prechange_last16": 0.6761791518034086,
+      "postchange_first8": 0.5844051446945338,
+      "late16": 0.7342022116903634
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "unseen_sequence",
+    "method": "tuned_local_ema",
+    "intake": 9781.0,
+    "actions": 15343,
+    "hit_rate": 0.6374894088509419,
+    "latent_direction_accuracy": 0.7044906472006779,
+    "write_cost": 8.113592660035266,
+    "exchange_cost": 0.0,
+    "movement_cost": 613.72,
+    "net_tokens": 9159.166407339966,
+    "net_per_action": 0.5969605948862652,
+    "windows": {
+      "first8": 0.6023916292974589,
+      "prechange_last16": 0.7332540626238605,
+      "postchange_first8": 0.25482315112540194,
+      "late16": 0.6958925750394944
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "unseen_sequence",
+    "method": "last_contact",
+    "intake": 10431.0,
+    "actions": 15343,
+    "hit_rate": 0.6798540050837516,
+    "latent_direction_accuracy": 0.763540376719025,
+    "write_cost": 21.10000000000002,
+    "exchange_cost": 0.0,
+    "movement_cost": 613.72,
+    "net_tokens": 9796.18,
+    "net_per_action": 0.6384787851137327,
+    "windows": {
+      "first8": 0.6031390134529148,
+      "prechange_last16": 0.6761791518034086,
+      "postchange_first8": 0.5844051446945338,
+      "late16": 0.7345971563981043
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "unseen_sequence",
+    "method": "erased_memory",
+    "intake": 7772.0,
+    "actions": 15343,
+    "hit_rate": 0.5065502183406113,
+    "latent_direction_accuracy": 0.5031610506419866,
+    "write_cost": 0.0,
+    "exchange_cost": 0.0,
+    "movement_cost": 613.72,
+    "net_tokens": 7158.28,
+    "net_per_action": 0.46655021834061133,
+    "windows": {
+      "first8": 0.49850523168908817,
+      "prechange_last16": 0.5045580657946889,
+      "postchange_first8": 0.5088424437299035,
+      "late16": 0.5039494470774092
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "unseen_sequence",
+    "method": "best_instant",
+    "intake": 7506.0,
+    "actions": 15343,
+    "hit_rate": 0.4892133220361077,
+    "latent_direction_accuracy": 0.4811314606009255,
+    "write_cost": 0.0,
+    "exchange_cost": 0.0,
+    "movement_cost": 613.72,
+    "net_tokens": 6892.28,
+    "net_per_action": 0.44921332203610764,
+    "windows": {
+      "first8": 0.4693572496263079,
+      "prechange_last16": 0.46730083234244946,
+      "postchange_first8": 0.5265273311897106,
+      "late16": 0.48696682464454977
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "long_delay",
+    "method": "separated_evolved",
+    "intake": 6185.0,
+    "actions": 9572,
+    "hit_rate": 0.6461554534057669,
+    "latent_direction_accuracy": 0.7150020894274969,
+    "write_cost": 4.006150567754886,
+    "exchange_cost": 6.470143728109366,
+    "movement_cost": 382.88,
+    "net_tokens": 5791.643705704136,
+    "net_per_action": 0.605060980537415,
+    "windows": {
+      "first8": 0.5420660276890309,
+      "prechange_last16": 0.6266066838046273,
+      "postchange_first8": 0.23157894736842105,
+      "late16": 0.7747920665387076
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "long_delay",
+    "method": "separated_no_exchange",
+    "intake": 6212.0,
+    "actions": 9572,
+    "hit_rate": 0.6489761805265357,
+    "latent_direction_accuracy": 0.719703301295445,
+    "write_cost": 4.006150567754886,
+    "exchange_cost": 0.0,
+    "movement_cost": 382.88,
+    "net_tokens": 5825.113849432245,
+    "net_per_action": 0.6085576524688932,
+    "windows": {
+      "first8": 0.5356762513312034,
+      "prechange_last16": 0.6208226221079691,
+      "postchange_first8": 0.25921052631578945,
+      "late16": 0.7703134996801023
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "long_delay",
+    "method": "separated_no_arbitration",
+    "intake": 6165.0,
+    "actions": 9572,
+    "hit_rate": 0.6440660259089009,
+    "latent_direction_accuracy": 0.7081069786878396,
+    "write_cost": 4.006150567754886,
+    "exchange_cost": 6.470143728109366,
+    "movement_cost": 382.88,
+    "net_tokens": 5771.643705704136,
+    "net_per_action": 0.6029715530405491,
+    "windows": {
+      "first8": 0.5420660276890309,
+      "prechange_last16": 0.6298200514138818,
+      "postchange_first8": 0.20789473684210527,
+      "late16": 0.7792706333973128
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "long_delay",
+    "method": "separated_unretuned",
+    "intake": 6475.0,
+    "actions": 9572,
+    "hit_rate": 0.6764521521103217,
+    "latent_direction_accuracy": 0.7630589218554116,
+    "write_cost": 9.53168850475238,
+    "exchange_cost": 12.114979601980043,
+    "movement_cost": 382.88,
+    "net_tokens": 6070.473331893268,
+    "net_per_action": 0.634190694932435,
+    "windows": {
+      "first8": 0.5431309904153354,
+      "prechange_last16": 0.5957583547557841,
+      "postchange_first8": 0.5473684210526316,
+      "late16": 0.72552783109405
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "long_delay",
+    "method": "original_spatial",
+    "intake": 6427.0,
+    "actions": 9572,
+    "hit_rate": 0.6714375261178437,
+    "latent_direction_accuracy": 0.7574174676138739,
+    "write_cost": 13.113563950755815,
+    "exchange_cost": 1.7862511216868229,
+    "movement_cost": 382.88,
+    "net_tokens": 6029.220184927557,
+    "net_per_action": 0.6298809219523148,
+    "windows": {
+      "first8": 0.5420660276890309,
+      "prechange_last16": 0.6041131105398457,
+      "postchange_first8": 0.45921052631578946,
+      "late16": 0.7408829174664108
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "long_delay",
+    "method": "original_no_exchange",
+    "intake": 6462.0,
+    "actions": 9572,
+    "hit_rate": 0.675094024237359,
+    "latent_direction_accuracy": 0.7614918512327622,
+    "write_cost": 9.53168850475238,
+    "exchange_cost": 0.0,
+    "movement_cost": 382.88,
+    "net_tokens": 6069.588311495248,
+    "net_per_action": 0.6340982356346895,
+    "windows": {
+      "first8": 0.5356762513312034,
+      "prechange_last16": 0.5957583547557841,
+      "postchange_first8": 0.5486842105263158,
+      "late16": 0.72552783109405
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "long_delay",
+    "method": "tuned_local_ema",
+    "intake": 6077.0,
+    "actions": 9572,
+    "hit_rate": 0.6348725449226912,
+    "latent_direction_accuracy": 0.6961972419557041,
+    "write_cost": 5.702903492055834,
+    "exchange_cost": 0.0,
+    "movement_cost": 382.88,
+    "net_tokens": 5688.417096507944,
+    "net_per_action": 0.5942767547542774,
+    "windows": {
+      "first8": 0.5356762513312034,
+      "prechange_last16": 0.6266066838046273,
+      "postchange_first8": 0.21842105263157896,
+      "late16": 0.7600767754318618
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "long_delay",
+    "method": "last_contact",
+    "intake": 6458.0,
+    "actions": 9572,
+    "hit_rate": 0.6746761387379858,
+    "latent_direction_accuracy": 0.7612829084830757,
+    "write_cost": 13.92400000000001,
+    "exchange_cost": 0.0,
+    "movement_cost": 382.88,
+    "net_tokens": 6061.196,
+    "net_per_action": 0.6332214793146678,
+    "windows": {
+      "first8": 0.5356762513312034,
+      "prechange_last16": 0.5951156812339332,
+      "postchange_first8": 0.5486842105263158,
+      "late16": 0.7248880358285349
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "long_delay",
+    "method": "erased_memory",
+    "intake": 4767.0,
+    "actions": 9572,
+    "hit_rate": 0.49801504387797746,
+    "latent_direction_accuracy": 0.49958211450062684,
+    "write_cost": 0.0,
+    "exchange_cost": 0.0,
+    "movement_cost": 382.88,
+    "net_tokens": 4384.12,
+    "net_per_action": 0.4580150438779774,
+    "windows": {
+      "first8": 0.4845580404685836,
+      "prechange_last16": 0.4755784061696658,
+      "postchange_first8": 0.5105263157894737,
+      "late16": 0.48240563019833654
+    }
+  },
+  {
+    "test_set": "development_reuse",
+    "scenario": "long_delay",
+    "method": "best_instant",
+    "intake": 4816.0,
+    "actions": 9572,
+    "hit_rate": 0.5031341412452988,
+    "latent_direction_accuracy": 0.5001044713748433,
+    "write_cost": 0.0,
+    "exchange_cost": 0.0,
+    "movement_cost": 382.88,
+    "net_tokens": 4433.12,
+    "net_per_action": 0.4631341412452988,
+    "windows": {
+      "first8": 0.4739084132055378,
+      "prechange_last16": 0.4736503856041131,
+      "postchange_first8": 0.5118421052631579,
+      "late16": 0.5079974408189379
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "stable",
+    "method": "separated_evolved",
+    "intake": 12257.0,
+    "actions": 15244,
+    "hit_rate": 0.8040540540540541,
+    "latent_direction_accuracy": 0.9237732878509578,
+    "write_cost": 8.272730952485889,
+    "exchange_cost": 13.649433435102305,
+    "movement_cost": 609.76,
+    "net_tokens": 11625.317835612412,
+    "net_per_action": 0.7626159692739709,
+    "windows": {
+      "first8": 0.6282335550628233,
+      "prechange_last16": 0.847808764940239,
+      "postchange_first8": 0.836335160532498,
+      "late16": 0.8313679245283019
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "stable",
+    "method": "separated_no_exchange",
+    "intake": 12187.0,
+    "actions": 15244,
+    "hit_rate": 0.799462083442666,
+    "latent_direction_accuracy": 0.9170821306743637,
+    "write_cost": 8.272730952485889,
+    "exchange_cost": 0.0,
+    "movement_cost": 609.76,
+    "net_tokens": 11568.967269047514,
+    "net_per_action": 0.758919395765384,
+    "windows": {
+      "first8": 0.6104951958610495,
+      "prechange_last16": 0.8442231075697211,
+      "postchange_first8": 0.8300704776820673,
+      "late16": 0.8309748427672956
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "stable",
+    "method": "separated_no_arbitration",
+    "intake": 12340.0,
+    "actions": 15244,
+    "hit_rate": 0.8094988192075571,
+    "latent_direction_accuracy": 0.932104434531619,
+    "write_cost": 8.272730952485889,
+    "exchange_cost": 13.649433435102305,
+    "movement_cost": 609.76,
+    "net_tokens": 11708.317835612412,
+    "net_per_action": 0.7680607344274739,
+    "windows": {
+      "first8": 0.6282335550628233,
+      "prechange_last16": 0.8553784860557769,
+      "postchange_first8": 0.8394675019577134,
+      "late16": 0.8419811320754716
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "stable",
+    "method": "separated_unretuned",
+    "intake": 11325.0,
+    "actions": 15244,
+    "hit_rate": 0.7429152453424298,
+    "latent_direction_accuracy": 0.8408554185253214,
+    "write_cost": 15.610605038263966,
+    "exchange_cost": 17.37030029058328,
+    "movement_cost": 609.76,
+    "net_tokens": 10682.259094671152,
+    "net_per_action": 0.700751711799472,
+    "windows": {
+      "first8": 0.6260162601626016,
+      "prechange_last16": 0.7836653386454183,
+      "postchange_first8": 0.7674236491777604,
+      "late16": 0.7503930817610063
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "stable",
+    "method": "original_spatial",
+    "intake": 11713.0,
+    "actions": 15244,
+    "hit_rate": 0.7683678824455523,
+    "latent_direction_accuracy": 0.8757543951718709,
+    "write_cost": 27.478894442889256,
+    "exchange_cost": 3.527366244960724,
+    "movement_cost": 609.76,
+    "net_tokens": 11072.23373931215,
+    "net_per_action": 0.7263338847620147,
+    "windows": {
+      "first8": 0.6289726533628973,
+      "prechange_last16": 0.80199203187251,
+      "postchange_first8": 0.7846515270164448,
+      "late16": 0.7873427672955975
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "stable",
+    "method": "original_no_exchange",
+    "intake": 11300.0,
+    "actions": 15244,
+    "hit_rate": 0.7412752558383626,
+    "latent_direction_accuracy": 0.8382970348989767,
+    "write_cost": 15.610605038263966,
+    "exchange_cost": 0.0,
+    "movement_cost": 609.76,
+    "net_tokens": 10674.629394961736,
+    "net_per_action": 0.700251206701767,
+    "windows": {
+      "first8": 0.6104951958610495,
+      "prechange_last16": 0.7836653386454183,
+      "postchange_first8": 0.7674236491777604,
+      "late16": 0.7503930817610063
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "stable",
+    "method": "tuned_local_ema",
+    "intake": 12342.0,
+    "actions": 15244,
+    "hit_rate": 0.8096300183678824,
+    "latent_direction_accuracy": 0.9332852269745474,
+    "write_cost": 6.044317926835495,
+    "exchange_cost": 0.0,
+    "movement_cost": 609.76,
+    "net_tokens": 11726.195682073165,
+    "net_per_action": 0.7692335136495122,
+    "windows": {
+      "first8": 0.6112342941611234,
+      "prechange_last16": 0.8541832669322709,
+      "postchange_first8": 0.8418167580266249,
+      "late16": 0.847877358490566
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "stable",
+    "method": "last_contact",
+    "intake": 11301.0,
+    "actions": 15244,
+    "hit_rate": 0.7413408554185253,
+    "latent_direction_accuracy": 0.8383626344791393,
+    "write_cost": 17.328000000000014,
+    "exchange_cost": 0.0,
+    "movement_cost": 609.76,
+    "net_tokens": 10673.912,
+    "net_per_action": 0.7002041458934662,
+    "windows": {
+      "first8": 0.6104951958610495,
+      "prechange_last16": 0.7836653386454183,
+      "postchange_first8": 0.7674236491777604,
+      "late16": 0.7503930817610063
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "stable",
+    "method": "erased_memory",
+    "intake": 7530.0,
+    "actions": 15244,
+    "hit_rate": 0.4939648386250328,
+    "latent_direction_accuracy": 0.4978352138546313,
+    "write_cost": 0.0,
+    "exchange_cost": 0.0,
+    "movement_cost": 609.76,
+    "net_tokens": 6920.24,
+    "net_per_action": 0.4539648386250328,
+    "windows": {
+      "first8": 0.5025868440502587,
+      "prechange_last16": 0.500398406374502,
+      "postchange_first8": 0.48472983555207516,
+      "late16": 0.4960691823899371
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "stable",
+    "method": "best_instant",
+    "intake": 7317.0,
+    "actions": 15244,
+    "hit_rate": 0.4799921280503805,
+    "latent_direction_accuracy": 0.4734977696142745,
+    "write_cost": 0.0,
+    "exchange_cost": 0.0,
+    "movement_cost": 609.76,
+    "net_tokens": 6707.24,
+    "net_per_action": 0.43999212805038046,
+    "windows": {
+      "first8": 0.4878048780487805,
+      "prechange_last16": 0.48047808764940236,
+      "postchange_first8": 0.4643696162881754,
+      "late16": 0.4854559748427673
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "reversal",
+    "method": "separated_evolved",
+    "intake": 11014.0,
+    "actions": 15244,
+    "hit_rate": 0.7225137759118342,
+    "latent_direction_accuracy": 0.8115324061926004,
+    "write_cost": 9.046274742889619,
+    "exchange_cost": 12.737112219335632,
+    "movement_cost": 609.76,
+    "net_tokens": 10382.456613037773,
+    "net_per_action": 0.6810847948725908,
+    "windows": {
+      "first8": 0.6282335550628233,
+      "prechange_last16": 0.7641434262948207,
+      "postchange_first8": 0.303054032889585,
+      "late16": 0.8290094339622641
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "reversal",
+    "method": "separated_no_exchange",
+    "intake": 10952.0,
+    "actions": 15244,
+    "hit_rate": 0.7184466019417476,
+    "latent_direction_accuracy": 0.8052348464969824,
+    "write_cost": 9.046274742889619,
+    "exchange_cost": 0.0,
+    "movement_cost": 609.76,
+    "net_tokens": 10333.19372525711,
+    "net_per_action": 0.6778531701165776,
+    "windows": {
+      "first8": 0.6104951958610495,
+      "prechange_last16": 0.7613545816733067,
+      "postchange_first8": 0.307752545027408,
+      "late16": 0.8223270440251572
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "reversal",
+    "method": "separated_no_arbitration",
+    "intake": 10968.0,
+    "actions": 15244,
+    "hit_rate": 0.7194961952243506,
+    "latent_direction_accuracy": 0.8075964313828391,
+    "write_cost": 9.046274742889619,
+    "exchange_cost": 12.737112219335632,
+    "movement_cost": 609.76,
+    "net_tokens": 10336.456613037773,
+    "net_per_action": 0.6780672141851072,
+    "windows": {
+      "first8": 0.6282335550628233,
+      "prechange_last16": 0.7693227091633467,
+      "postchange_first8": 0.27721221613155833,
+      "late16": 0.8352987421383647
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "reversal",
+    "method": "separated_unretuned",
+    "intake": 10874.0,
+    "actions": 15244,
+    "hit_rate": 0.713329834689058,
+    "latent_direction_accuracy": 0.8012988716872212,
+    "write_cost": 16.586628461001542,
+    "exchange_cost": 17.363107697864994,
+    "movement_cost": 609.76,
+    "net_tokens": 10230.290263841132,
+    "net_per_action": 0.6711027462504023,
+    "windows": {
+      "first8": 0.6260162601626016,
+      "prechange_last16": 0.7119521912350597,
+      "postchange_first8": 0.5559906029757243,
+      "late16": 0.7503930817610063
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "reversal",
+    "method": "original_spatial",
+    "intake": 10961.0,
+    "actions": 15244,
+    "hit_rate": 0.7190369981632118,
+    "latent_direction_accuracy": 0.808449225924954,
+    "write_cost": 27.879171409785314,
+    "exchange_cost": 3.5173946536860816,
+    "movement_cost": 609.76,
+    "net_tokens": 10319.843433936529,
+    "net_per_action": 0.676977396610898,
+    "windows": {
+      "first8": 0.6289726533628973,
+      "prechange_last16": 0.7286852589641434,
+      "postchange_first8": 0.4220830070477682,
+      "late16": 0.7955974842767296
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "reversal",
+    "method": "original_no_exchange",
+    "intake": 10849.0,
+    "actions": 15244,
+    "hit_rate": 0.7116898451849908,
+    "latent_direction_accuracy": 0.7987404880608764,
+    "write_cost": 16.586628461001542,
+    "exchange_cost": 0.0,
+    "movement_cost": 609.76,
+    "net_tokens": 10222.653371538998,
+    "net_per_action": 0.6706017693216346,
+    "windows": {
+      "first8": 0.6104951958610495,
+      "prechange_last16": 0.7119521912350597,
+      "postchange_first8": 0.5559906029757243,
+      "late16": 0.7503930817610063
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "reversal",
+    "method": "tuned_local_ema",
+    "intake": 10686.0,
+    "actions": 15244,
+    "hit_rate": 0.7009971136184728,
+    "latent_direction_accuracy": 0.7816189976384151,
+    "write_cost": 7.465116193921094,
+    "exchange_cost": 0.0,
+    "movement_cost": 609.76,
+    "net_tokens": 10068.774883806078,
+    "net_per_action": 0.6605074051302858,
+    "windows": {
+      "first8": 0.6112342941611234,
+      "prechange_last16": 0.7681274900398406,
+      "postchange_first8": 0.2364917776037588,
+      "late16": 0.8325471698113207
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "reversal",
+    "method": "last_contact",
+    "intake": 10849.0,
+    "actions": 15244,
+    "hit_rate": 0.7116898451849908,
+    "latent_direction_accuracy": 0.7987404880608764,
+    "write_cost": 19.136000000000013,
+    "exchange_cost": 0.0,
+    "movement_cost": 609.76,
+    "net_tokens": 10220.104,
+    "net_per_action": 0.6704345316189976,
+    "windows": {
+      "first8": 0.6104951958610495,
+      "prechange_last16": 0.7119521912350597,
+      "postchange_first8": 0.5559906029757243,
+      "late16": 0.7503930817610063
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "reversal",
+    "method": "erased_memory",
+    "intake": 7650.0,
+    "actions": 15244,
+    "hit_rate": 0.5018367882445552,
+    "latent_direction_accuracy": 0.5017711886643925,
+    "write_cost": 0.0,
+    "exchange_cost": 0.0,
+    "movement_cost": 609.76,
+    "net_tokens": 7040.24,
+    "net_per_action": 0.4618367882445552,
+    "windows": {
+      "first8": 0.5025868440502587,
+      "prechange_last16": 0.5075697211155379,
+      "postchange_first8": 0.5152701644479248,
+      "late16": 0.5039308176100629
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "reversal",
+    "method": "best_instant",
+    "intake": 7615.0,
+    "actions": 15244,
+    "hit_rate": 0.4995408029388612,
+    "latent_direction_accuracy": 0.5003935974809761,
+    "write_cost": 0.0,
+    "exchange_cost": 0.0,
+    "movement_cost": 609.76,
+    "net_tokens": 7005.24,
+    "net_per_action": 0.4595408029388612,
+    "windows": {
+      "first8": 0.4878048780487805,
+      "prechange_last16": 0.47808764940239046,
+      "postchange_first8": 0.5356303837118246,
+      "late16": 0.5145440251572327
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "unseen_checker",
+    "method": "separated_evolved",
+    "intake": 10869.0,
+    "actions": 15240,
+    "hit_rate": 0.7131889763779528,
+    "latent_direction_accuracy": 0.7965223097112861,
+    "write_cost": 9.041960380762514,
+    "exchange_cost": 13.281321233401052,
+    "movement_cost": 609.6,
+    "net_tokens": 10237.076718385837,
+    "net_per_action": 0.6717241941198056,
+    "windows": {
+      "first8": 0.5803108808290155,
+      "prechange_last16": 0.7610866959648422,
+      "postchange_first8": 0.3177570093457944,
+      "late16": 0.8229495268138801
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "unseen_checker",
+    "method": "separated_no_exchange",
+    "intake": 10948.0,
+    "actions": 15240,
+    "hit_rate": 0.7183727034120735,
+    "latent_direction_accuracy": 0.8043307086614173,
+    "write_cost": 9.041960380762514,
+    "exchange_cost": 0.0,
+    "movement_cost": 609.6,
+    "net_tokens": 10329.358039619237,
+    "net_per_action": 0.6777793989251468,
+    "windows": {
+      "first8": 0.612139156180607,
+      "prechange_last16": 0.7614862165401518,
+      "postchange_first8": 0.3130841121495327,
+      "late16": 0.8257097791798107
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "unseen_checker",
+    "method": "separated_no_arbitration",
+    "intake": 10794.0,
+    "actions": 15240,
+    "hit_rate": 0.7082677165354331,
+    "latent_direction_accuracy": 0.7892388451443569,
+    "write_cost": 9.041960380762514,
+    "exchange_cost": 13.281321233401052,
+    "movement_cost": 609.6,
+    "net_tokens": 10162.076718385837,
+    "net_per_action": 0.6668029342772859,
+    "windows": {
+      "first8": 0.5803108808290155,
+      "prechange_last16": 0.7534958050339593,
+      "postchange_first8": 0.32087227414330216,
+      "late16": 0.8158517350157729
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "unseen_checker",
+    "method": "separated_unretuned",
+    "intake": 10792.0,
+    "actions": 15240,
+    "hit_rate": 0.7081364829396325,
+    "latent_direction_accuracy": 0.7929133858267716,
+    "write_cost": 16.579345959705957,
+    "exchange_cost": 18.13605681279195,
+    "movement_cost": 609.6,
+    "net_tokens": 10147.684597227502,
+    "net_per_action": 0.6658585693718834,
+    "windows": {
+      "first8": 0.5810510732790526,
+      "prechange_last16": 0.7099480623252098,
+      "postchange_first8": 0.5584112149532711,
+      "late16": 0.7496056782334385
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "unseen_checker",
+    "method": "original_spatial",
+    "intake": 9350.0,
+    "actions": 15240,
+    "hit_rate": 0.613517060367454,
+    "latent_direction_accuracy": 0.6602362204724409,
+    "write_cost": 28.83304699615561,
+    "exchange_cost": 3.481807606177062,
+    "movement_cost": 609.6,
+    "net_tokens": 8708.085145397668,
+    "net_per_action": 0.5713966630838365,
+    "windows": {
+      "first8": 0.5721687638786085,
+      "prechange_last16": 0.606472233320016,
+      "postchange_first8": 0.573208722741433,
+      "late16": 0.6210567823343849
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "unseen_checker",
+    "method": "original_no_exchange",
+    "intake": 10841.0,
+    "actions": 15240,
+    "hit_rate": 0.7113517060367454,
+    "latent_direction_accuracy": 0.7978346456692913,
+    "write_cost": 16.579345959705957,
+    "exchange_cost": 0.0,
+    "movement_cost": 609.6,
+    "net_tokens": 10214.820654040293,
+    "net_per_action": 0.6702638224435888,
+    "windows": {
+      "first8": 0.612139156180607,
+      "prechange_last16": 0.7099480623252098,
+      "postchange_first8": 0.5584112149532711,
+      "late16": 0.7496056782334385
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "unseen_checker",
+    "method": "tuned_local_ema",
+    "intake": 10675.0,
+    "actions": 15240,
+    "hit_rate": 0.7004593175853019,
+    "latent_direction_accuracy": 0.780511811023622,
+    "write_cost": 7.461170254786563,
+    "exchange_cost": 0.0,
+    "movement_cost": 609.6,
+    "net_tokens": 10057.938829745213,
+    "net_per_action": 0.659969739484594,
+    "windows": {
+      "first8": 0.612139156180607,
+      "prechange_last16": 0.7702756691969637,
+      "postchange_first8": 0.2336448598130841,
+      "late16": 0.8308359621451105
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "unseen_checker",
+    "method": "last_contact",
+    "intake": 10841.0,
+    "actions": 15240,
+    "hit_rate": 0.7113517060367454,
+    "latent_direction_accuracy": 0.7978346456692913,
+    "write_cost": 19.132000000000016,
+    "exchange_cost": 0.0,
+    "movement_cost": 609.6,
+    "net_tokens": 10212.268,
+    "net_per_action": 0.6700963254593176,
+    "windows": {
+      "first8": 0.612139156180607,
+      "prechange_last16": 0.7099480623252098,
+      "postchange_first8": 0.5584112149532711,
+      "late16": 0.7496056782334385
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "unseen_checker",
+    "method": "erased_memory",
+    "intake": 7613.0,
+    "actions": 15240,
+    "hit_rate": 0.4995406824146982,
+    "latent_direction_accuracy": 0.504002624671916,
+    "write_cost": 0.0,
+    "exchange_cost": 0.0,
+    "movement_cost": 609.6,
+    "net_tokens": 7003.4,
+    "net_per_action": 0.45954068241469814,
+    "windows": {
+      "first8": 0.4914877868245744,
+      "prechange_last16": 0.5145825009988014,
+      "postchange_first8": 0.48909657320872274,
+      "late16": 0.5118296529968455
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "unseen_checker",
+    "method": "best_instant",
+    "intake": 7515.0,
+    "actions": 15240,
+    "hit_rate": 0.49311023622047245,
+    "latent_direction_accuracy": 0.49796587926509184,
+    "write_cost": 0.0,
+    "exchange_cost": 0.0,
+    "movement_cost": 609.6,
+    "net_tokens": 6905.4,
+    "net_per_action": 0.4531102362204724,
+    "windows": {
+      "first8": 0.48334566987416727,
+      "prechange_last16": 0.49340791050739113,
+      "postchange_first8": 0.5046728971962616,
+      "late16": 0.48974763406940064
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "unseen_sequence",
+    "method": "separated_evolved",
+    "intake": 10038.0,
+    "actions": 15244,
+    "hit_rate": 0.6584885856730517,
+    "latent_direction_accuracy": 0.7206113880871162,
+    "write_cost": 9.55214586654726,
+    "exchange_cost": 12.120344443200082,
+    "movement_cost": 609.76,
+    "net_tokens": 9406.567509690252,
+    "net_per_action": 0.6170668794076524,
+    "windows": {
+      "first8": 0.6371027346637103,
+      "prechange_last16": 0.7661354581673306,
+      "postchange_first8": 0.29678935003915424,
+      "late16": 0.7303459119496856
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "unseen_sequence",
+    "method": "separated_no_exchange",
+    "intake": 10036.0,
+    "actions": 15244,
+    "hit_rate": 0.6583573865127264,
+    "latent_direction_accuracy": 0.7196929939648387,
+    "write_cost": 9.55214586654726,
+    "exchange_cost": 0.0,
+    "movement_cost": 609.76,
+    "net_tokens": 9416.687854133452,
+    "net_per_action": 0.617730769754228,
+    "windows": {
+      "first8": 0.6134515890613451,
+      "prechange_last16": 0.7645418326693227,
+      "postchange_first8": 0.3069694596711042,
+      "late16": 0.7342767295597484
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "unseen_sequence",
+    "method": "separated_no_arbitration",
+    "intake": 9959.0,
+    "actions": 15244,
+    "hit_rate": 0.6533062188401995,
+    "latent_direction_accuracy": 0.713329834689058,
+    "write_cost": 9.55214586654726,
+    "exchange_cost": 12.120344443200082,
+    "movement_cost": 609.76,
+    "net_tokens": 9327.567509690252,
+    "net_per_action": 0.6118845125748,
+    "windows": {
+      "first8": 0.6371027346637103,
+      "prechange_last16": 0.7701195219123506,
+      "postchange_first8": 0.2725137039937353,
+      "late16": 0.7279874213836478
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "unseen_sequence",
+    "method": "separated_unretuned",
+    "intake": 10495.0,
+    "actions": 15244,
+    "hit_rate": 0.6884675938073996,
+    "latent_direction_accuracy": 0.7639727105746523,
+    "write_cost": 17.464707446590236,
+    "exchange_cost": 17.322016284992674,
+    "movement_cost": 609.76,
+    "net_tokens": 9850.453276268418,
+    "net_per_action": 0.6461855993353725,
+    "windows": {
+      "first8": 0.6363636363636364,
+      "prechange_last16": 0.7119521912350597,
+      "postchange_first8": 0.5559906029757243,
+      "late16": 0.7464622641509434
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "unseen_sequence",
+    "method": "original_spatial",
+    "intake": 10322.0,
+    "actions": 15244,
+    "hit_rate": 0.6771188664392548,
+    "latent_direction_accuracy": 0.7473760167934925,
+    "write_cost": 28.12899316947134,
+    "exchange_cost": 3.5055878671258327,
+    "movement_cost": 609.76,
+    "net_tokens": 9680.605418963401,
+    "net_per_action": 0.6350436512046315,
+    "windows": {
+      "first8": 0.6378418329637842,
+      "prechange_last16": 0.7338645418326694,
+      "postchange_first8": 0.4220830070477682,
+      "late16": 0.7539308176100629
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "unseen_sequence",
+    "method": "original_no_exchange",
+    "intake": 10459.0,
+    "actions": 15244,
+    "hit_rate": 0.6861060089215429,
+    "latent_direction_accuracy": 0.7608239307268434,
+    "write_cost": 17.464707446590236,
+    "exchange_cost": 0.0,
+    "movement_cost": 609.76,
+    "net_tokens": 9831.77529255341,
+    "net_per_action": 0.6449603314453825,
+    "windows": {
+      "first8": 0.6134515890613451,
+      "prechange_last16": 0.7119521912350597,
+      "postchange_first8": 0.5559906029757243,
+      "late16": 0.7464622641509434
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "unseen_sequence",
+    "method": "tuned_local_ema",
+    "intake": 9742.0,
+    "actions": 15244,
+    "hit_rate": 0.6390711099448964,
+    "latent_direction_accuracy": 0.6941091577013907,
+    "write_cost": 8.078555166674803,
+    "exchange_cost": 0.0,
+    "movement_cost": 609.76,
+    "net_tokens": 9124.161444833326,
+    "net_per_action": 0.5985411601176415,
+    "windows": {
+      "first8": 0.6134515890613451,
+      "prechange_last16": 0.7701195219123506,
+      "postchange_first8": 0.23257635082223962,
+      "late16": 0.7248427672955975
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "unseen_sequence",
+    "method": "last_contact",
+    "intake": 10458.0,
+    "actions": 15244,
+    "hit_rate": 0.6860404093413802,
+    "latent_direction_accuracy": 0.7607583311466807,
+    "write_cost": 20.720000000000017,
+    "exchange_cost": 0.0,
+    "movement_cost": 609.76,
+    "net_tokens": 9827.52,
+    "net_per_action": 0.6446811860404094,
+    "windows": {
+      "first8": 0.6134515890613451,
+      "prechange_last16": 0.7119521912350597,
+      "postchange_first8": 0.5559906029757243,
+      "late16": 0.7464622641509434
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "unseen_sequence",
+    "method": "erased_memory",
+    "intake": 7683.0,
+    "actions": 15244,
+    "hit_rate": 0.5040015743899239,
+    "latent_direction_accuracy": 0.5014431907635791,
+    "write_cost": 0.0,
+    "exchange_cost": 0.0,
+    "movement_cost": 609.76,
+    "net_tokens": 7073.24,
+    "net_per_action": 0.4640015743899239,
+    "windows": {
+      "first8": 0.500369549150037,
+      "prechange_last16": 0.49760956175298804,
+      "postchange_first8": 0.5199686765857479,
+      "late16": 0.5003930817610063
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "unseen_sequence",
+    "method": "best_instant",
+    "intake": 7468.0,
+    "actions": 15244,
+    "hit_rate": 0.4898976646549462,
+    "latent_direction_accuracy": 0.4844528995014432,
+    "write_cost": 0.0,
+    "exchange_cost": 0.0,
+    "movement_cost": 609.76,
+    "net_tokens": 6858.24,
+    "net_per_action": 0.4498976646549462,
+    "windows": {
+      "first8": 0.4878048780487805,
+      "prechange_last16": 0.47808764940239046,
+      "postchange_first8": 0.5356303837118246,
+      "late16": 0.4854559748427673
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "long_delay",
+    "method": "separated_evolved",
+    "intake": 6267.0,
+    "actions": 9579,
+    "hit_rate": 0.6542436580018791,
+    "latent_direction_accuracy": 0.7188641820649337,
+    "write_cost": 3.999021280041346,
+    "exchange_cost": 6.49285521107433,
+    "movement_cost": 383.16,
+    "net_tokens": 5873.348123508885,
+    "net_per_action": 0.6131483582324757,
+    "windows": {
+      "first8": 0.5570680628272251,
+      "prechange_last16": 0.6237113402061856,
+      "postchange_first8": 0.2358974358974359,
+      "late16": 0.813018506700702
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "long_delay",
+    "method": "separated_no_exchange",
+    "intake": 6320.0,
+    "actions": 9579,
+    "hit_rate": 0.6597765946340954,
+    "latent_direction_accuracy": 0.7231443783275916,
+    "write_cost": 3.999021280041346,
+    "exchange_cost": 0.0,
+    "movement_cost": 383.16,
+    "net_tokens": 5932.840978719959,
+    "net_per_action": 0.6193591166844096,
+    "windows": {
+      "first8": 0.5602094240837696,
+      "prechange_last16": 0.6204896907216495,
+      "postchange_first8": 0.2551282051282051,
+      "late16": 0.8136566687938737
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "long_delay",
+    "method": "separated_no_arbitration",
+    "intake": 6242.0,
+    "actions": 9579,
+    "hit_rate": 0.6516337822319658,
+    "latent_direction_accuracy": 0.7141664056790896,
+    "write_cost": 3.999021280041346,
+    "exchange_cost": 6.49285521107433,
+    "movement_cost": 383.16,
+    "net_tokens": 5848.348123508885,
+    "net_per_action": 0.6105384824625624,
+    "windows": {
+      "first8": 0.5570680628272251,
+      "prechange_last16": 0.6256443298969072,
+      "postchange_first8": 0.22692307692307692,
+      "late16": 0.8142948308870454
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "long_delay",
+    "method": "separated_unretuned",
+    "intake": 6639.0,
+    "actions": 9579,
+    "hit_rate": 0.6930786094581898,
+    "latent_direction_accuracy": 0.7714792775863869,
+    "write_cost": 9.42545228210598,
+    "exchange_cost": 12.163879175569908,
+    "movement_cost": 383.16,
+    "net_tokens": 6234.250668542325,
+    "net_per_action": 0.6508247905357892,
+    "windows": {
+      "first8": 0.5581151832460733,
+      "prechange_last16": 0.5972938144329897,
+      "postchange_first8": 0.573076923076923,
+      "late16": 0.772814294830887
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "long_delay",
+    "method": "original_spatial",
+    "intake": 6644.0,
+    "actions": 9579,
+    "hit_rate": 0.6936005846121724,
+    "latent_direction_accuracy": 0.7701221421860319,
+    "write_cost": 13.110595691203875,
+    "exchange_cost": 1.7848130238867836,
+    "movement_cost": 383.16,
+    "net_tokens": 6245.944591284909,
+    "net_per_action": 0.6520455779606336,
+    "windows": {
+      "first8": 0.5581151832460733,
+      "prechange_last16": 0.6069587628865979,
+      "postchange_first8": 0.4987179487179487,
+      "late16": 0.7906828334396937
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "long_delay",
+    "method": "original_no_exchange",
+    "intake": 6636.0,
+    "actions": 9579,
+    "hit_rate": 0.6927654243658002,
+    "latent_direction_accuracy": 0.770330932247625,
+    "write_cost": 9.42545228210598,
+    "exchange_cost": 0.0,
+    "movement_cost": 383.16,
+    "net_tokens": 6243.4145477178945,
+    "net_per_action": 0.6517814539845386,
+    "windows": {
+      "first8": 0.5602094240837696,
+      "prechange_last16": 0.5972938144329897,
+      "postchange_first8": 0.5743589743589743,
+      "late16": 0.7715379706445438
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "long_delay",
+    "method": "tuned_local_ema",
+    "intake": 6131.0,
+    "actions": 9579,
+    "hit_rate": 0.6400459338135505,
+    "latent_direction_accuracy": 0.6998642864599645,
+    "write_cost": 5.675490794822574,
+    "exchange_cost": 0.0,
+    "movement_cost": 383.16,
+    "net_tokens": 5742.164509205178,
+    "net_per_action": 0.5994534407772395,
+    "windows": {
+      "first8": 0.5602094240837696,
+      "prechange_last16": 0.6230670103092784,
+      "postchange_first8": 0.22435897435897437,
+      "late16": 0.803446075303127
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "long_delay",
+    "method": "last_contact",
+    "intake": 6635.0,
+    "actions": 9579,
+    "hit_rate": 0.6926610293350036,
+    "latent_direction_accuracy": 0.7702265372168284,
+    "write_cost": 13.33200000000001,
+    "exchange_cost": 0.0,
+    "movement_cost": 383.16,
+    "net_tokens": 6238.508,
+    "net_per_action": 0.6512692347844242,
+    "windows": {
+      "first8": 0.5602094240837696,
+      "prechange_last16": 0.5960051546391752,
+      "postchange_first8": 0.5769230769230769,
+      "late16": 0.7708998085513721
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "long_delay",
+    "method": "erased_memory",
+    "intake": 4830.0,
+    "actions": 9579,
+    "hit_rate": 0.5042279987472597,
+    "latent_direction_accuracy": 0.50391481365487,
+    "write_cost": 0.0,
+    "exchange_cost": 0.0,
+    "movement_cost": 383.16,
+    "net_tokens": 4446.84,
+    "net_per_action": 0.4642279987472596,
+    "windows": {
+      "first8": 0.5005235602094241,
+      "prechange_last16": 0.5045103092783505,
+      "postchange_first8": 0.5089743589743589,
+      "late16": 0.5162731333758774
+    }
+  },
+  {
+    "test_set": "fresh_confirmation",
+    "scenario": "long_delay",
+    "method": "best_instant",
+    "intake": 4857.0,
+    "actions": 9579,
+    "hit_rate": 0.507046664578766,
+    "latent_direction_accuracy": 0.5017225180081428,
+    "write_cost": 0.0,
+    "exchange_cost": 0.0,
+    "movement_cost": 383.16,
+    "net_tokens": 4473.84,
+    "net_per_action": 0.4670466645787661,
+    "windows": {
+      "first8": 0.4942408376963351,
+      "prechange_last16": 0.4896907216494845,
+      "postchange_first8": 0.5371794871794872,
+      "late16": 0.5143586470963625
+    }
+  }
+]

@@ -1,0 +1,9 @@
+接口与更新：core.Rule.choose仅得到当前±1线索和本地状态；write仅得到原位置的接触mask、保留的cue×action资格、实际选中端口是否取得资源及延迟。World独占隐藏空间映射、噪声和反转。每次任务两端口恰一有token，外部激活35%，busy约束阻止同一单位行程重叠；局部载荷实际到达后才结算。
+
+signed evidence n / confidence z：m=n/(z+epsilon)，label=(cue×action)(2hit−1)；alpha=clip(a+b|label−m|/2,0,1)exp(−delay/tau)，n←(1−alpha)n+alpha label，z←(1−alpha)z+alpha。固定参数规定遗忘率、四邻四微步交换率、冲突门、读出增益与延迟尺度。原版n/z对称扩散；新版direct n/z仅由本地接触和显式遗忘改变，另两通道消息从direct复制后扩散，不记作独立观测数。读出消息权重 w=borrow exp(−priority z |m_direct−m_message|)，合成(n+w bn)/(z+w bz+epsilon)并按当前cue产生概率。消息场会混合自身发出的信息，未证明消除了所有回声/相关性。
+
+外层PCG64 CEM，首轮16×12个8维提议、次轮20×16个10维提议；训练只4种子×stable/reversal×72决定。选优只用实际取得token减费用后每行动净收益。每代保精英并存checkpoint，死亡/身体机制未建。内层theta只读，测试开始前落盘冻结参数。第二轮新增参数及结构来自首轮失败，不包装为全程预注册。fresh测试12世界×5条件×10方法，旧12世界相同矩阵只作development。共享任务带、cue和外部激活匹配；不同策略的实际接触/反馈/费用可不同，未假装逐条等反馈值。
+
+费用：movement=.04×actions；write=.002×本地n/z变动L1；exchange=.0001×消息复制/通量L1。显式遗忘没有单独收费，没有固定持有费。全量成本分项与net_tokens保存在每世界CSV，不能相加重复。第一轮另有能看未来选中资源的oracle，仅作额外信息上界。记忆无关即时表在训练四种映射中选择，不能知道隐映射；强记忆EMA从alpha=.1/.25/.5/.8选择，last-contact另列。没有对RNN或贝叶斯变点模型做全面比较。
+
+证据与观看：图全部来自真实保存的状态和行动，而非形态生成。fresh_world_comparison、reversal_and_checker、spatial_reversal_atlas三PNG已作者实际查看；GIF为第一fresh世界96决定每2步一帧共48帧，不声明观看全动态所有轨迹。正/负/退步条件全保。分析脚本第一次因括号SyntaxError在执行前停止，修正后只读取同源结果并成功一次；无新环境调用/身体步。运行源快照分别在两批source，分析脚本另存report/source，旧快照不覆盖。

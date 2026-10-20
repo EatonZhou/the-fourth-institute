@@ -1,0 +1,121 @@
+[
+  {
+    "body": 0,
+    "arm": "recent",
+    "exact_physical_and_records": true,
+    "parent": "/data/dataset/lenia-research/lineage_75e3399f4877/local_terminal_feedback_learning_20261018/c21fd89a-f2ec-483c-b6b2-289375575b3d/b0_prefix_unit0_complete",
+    "exact_learner": true,
+    "clock": 192,
+    "common_rng": {
+      "bit_generator": "PCG64",
+      "state": {
+        "state": 199160415152895933591209969603847976726,
+        "inc": 223008453313334544184450020728309026981
+      },
+      "has_uint32": 0,
+      "uinteger": 1236040126
+    }
+  },
+  {
+    "body": 0,
+    "arm": "ignore",
+    "exact_physical_and_records": true,
+    "parent": "/data/dataset/lenia-research/lineage_75e3399f4877/local_terminal_feedback_learning_20261018/c21fd89a-f2ec-483c-b6b2-289375575b3d/b0_prefix_unit0_complete",
+    "exact_learner": true,
+    "clock": 192,
+    "common_rng": {
+      "bit_generator": "PCG64",
+      "state": {
+        "state": 199160415152895933591209969603847976726,
+        "inc": 223008453313334544184450020728309026981
+      },
+      "has_uint32": 0,
+      "uinteger": 1236040126
+    }
+  },
+  {
+    "body": 0,
+    "arm": "frozen",
+    "exact_physical_and_records": true,
+    "parent": "/data/dataset/lenia-research/lineage_75e3399f4877/local_terminal_feedback_learning_20261018/c21fd89a-f2ec-483c-b6b2-289375575b3d/b0_prefix_unit0_complete",
+    "exact_learner": true,
+    "clock": 192,
+    "common_rng": {
+      "bit_generator": "PCG64",
+      "state": {
+        "state": 199160415152895933591209969603847976726,
+        "inc": 223008453313334544184450020728309026981
+      },
+      "has_uint32": 0,
+      "uinteger": 1236040126
+    }
+  },
+  {
+    "body": 0,
+    "arm": "euler_unit",
+    "exact_physical_and_records": true,
+    "parent": "/data/dataset/lenia-research/lineage_75e3399f4877/local_terminal_feedback_learning_20261018/c21fd89a-f2ec-483c-b6b2-289375575b3d/b0_prefix_unit0_complete",
+    "exact_learner": true,
+    "clock": 192,
+    "common_rng": {
+      "bit_generator": "PCG64",
+      "state": {
+        "state": 199160415152895933591209969603847976726,
+        "inc": 223008453313334544184450020728309026981
+      },
+      "has_uint32": 0,
+      "uinteger": 1236040126
+    }
+  },
+  {
+    "body": 0,
+    "arm": "euler",
+    "exact_physical_and_records": true,
+    "parent": "/data/dataset/lenia-research/lineage_75e3399f4877/local_terminal_feedback_learning_20261018/c21fd89a-f2ec-483c-b6b2-289375575b3d/b0_prefix_unit0_complete",
+    "exact_learner": true,
+    "clock": 192,
+    "common_rng": {
+      "bit_generator": "PCG64",
+      "state": {
+        "state": 199160415152895933591209969603847976726,
+        "inc": 223008453313334544184450020728309026981
+      },
+      "has_uint32": 0,
+      "uinteger": 1236040126
+    }
+  },
+  {
+    "body": 0,
+    "arm": "none",
+    "exact_physical_and_records": true,
+    "parent": "/data/dataset/lenia-research/lineage_75e3399f4877/local_terminal_feedback_learning_20261018/c21fd89a-f2ec-483c-b6b2-289375575b3d/b0_prefix_unit0_complete",
+    "exact_learner": true,
+    "clock": 192,
+    "common_rng": {
+      "bit_generator": "PCG64",
+      "state": {
+        "state": 199160415152895933591209969603847976726,
+        "inc": 223008453313334544184450020728309026981
+      },
+      "has_uint32": 0,
+      "uinteger": 1236040126
+    }
+  },
+  {
+    "body": 1,
+    "arm": "recent",
+    "exact_physical_and_records": true,
+    "parent": "/data/dataset/lenia-research/lineage_75e3399f4877/local_terminal_feedback_learning_20261018/c21fd89a-f2ec-483c-b6b2-289375575b3d/b1_prefix_unit0_complete",
+    "exact_learner": true,
+    "clock": 192,
+    "common_rng": {
+      "bit_generator": "PCG64",
+      "state": {
+        "state": 200225771815313691197677538917579327271,
+        "inc": 109837144191872202687217998512609544813
+      },
+      "has_uint32": 0,
+      "uinteger": 884835163
+    }
+  }
+]

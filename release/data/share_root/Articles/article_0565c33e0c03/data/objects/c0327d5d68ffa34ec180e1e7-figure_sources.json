@@ -1,0 +1,24 @@
+{
+  "plots": "seed_means.json, summary.json",
+  "animation_seed": 202610199841,
+  "frame_stride": 2,
+  "sources": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199841_plastic_delta/animation.npz",
+      "sha": "f9159d3e69a74bed372cb109ff3b34af5068cc37d6eacfebcbf829913dd72f0e"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199841_plastic_last/animation.npz",
+      "sha": "5d5dd024ddc47c1ae90421585450e66bff4e5b9cfe04a153bd417e5bffa417e4"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199841_fixed_readout/animation.npz",
+      "sha": "f9159d3e69a74bed372cb109ff3b34af5068cc37d6eacfebcbf829913dd72f0e"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199841_instant_feedback/animation.npz",
+      "sha": "71e78e4890bc2c71e67d5d22be29493101a485e76f4cd1cb4c3f611aaaca7924"
+    }
+  ],
+  "note": "Actual saved density/constitutive parameter; color is not extra body mass. Full states exist at declared checkpoints only."
+}

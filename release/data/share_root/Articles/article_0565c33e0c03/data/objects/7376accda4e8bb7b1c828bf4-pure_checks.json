@@ -1,0 +1,32 @@
+{
+  "native": 0,
+  "test_double_not_body": true,
+  "FIFO_None_and_delay": true,
+  "food_gross": true,
+  "parents": [
+    {
+      "context": "compact_p512",
+      "original_angle": "plus",
+      "actual_angle": "minus",
+      "old_entry_same_current_zero_lag": true
+    },
+    {
+      "context": "compact_p512",
+      "original_angle": "minus",
+      "actual_angle": "plus",
+      "old_entry_same_current_zero_lag": true
+    },
+    {
+      "context": "soft_p512",
+      "original_angle": "plus",
+      "actual_angle": "minus",
+      "old_entry_same_current_zero_lag": true
+    },
+    {
+      "context": "soft_p512",
+      "original_angle": "minus",
+      "actual_angle": "plus",
+      "old_entry_same_current_zero_lag": true
+    }
+  ]
+}

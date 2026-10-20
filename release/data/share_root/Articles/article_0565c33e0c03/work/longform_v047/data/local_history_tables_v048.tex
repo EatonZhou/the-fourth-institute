@@ -1,0 +1,318 @@
+\subsection*{Material-carried history and the recurrent-gain candidate}
+The frozen synthesis is \path{embodied_adaptive_memory_dynamics_20261019/handoff.json}. Six comparative seed histories and one opportunity history underlie 23 continuous strategy paths and 21 dependent probes. Unknown local feedback is not zero reward. The first return seeds both draw positive mappings; the separately frozen balanced comparison supplies negative-mapping acquisition evidence. All original unsuccessful outcomes and both failed jobs are retained. Source hashes and full-precision records are in \path{work/longform_v047/data/local_history_source_rows_v048.json}.
+\begingroup\scriptsize\setlength{\tabcolsep}{3pt}
+\begin{longtable}{lllllllll}
+\caption{All 88 recorded memory-assay stages, including lost-contact failures. U: unreturned comparison (seeds 741/742); R: paid return (751/752); B: balanced mapping (761/762), each with prefix 202610199. Seed 0/1 indexes the two histories within its batch. A/G/R/HG retain their main-table meaning. The number of complete six-event contacts, completed GO and feedback episodes makes missing evidence explicit.}\label{tab:local-history-stages}\\
+\toprule
+B/seed & Rule & Stage & Correct & Trials & Six cues & GO & Feedback & Min. fb mass \\
+\midrule
+\endfirsthead
+\toprule
+B/seed & Rule & Stage & Correct & Trials & Six cues & GO & Feedback & Min. fb mass \\
+\midrule
+\endhead
+U/0 & Gain & A & 5 & 32 & 12 & 12 & 11 & 0.00000 \\
+U/0 & Gain & G & 0 & 8 & 0 & 0 & 0 & 0.00000 \\
+U/0 & Gain & R & 0 & 16 & 0 & 0 & 0 & 0.00000 \\
+U/0 & Gain & HG & 0 & 8 & 0 & 0 & 0 & 0.00000 \\
+U/0 & Tick & A & 4 & 32 & 10 & 10 & 9 & 0.00000 \\
+U/0 & Tick & G & 0 & 8 & 0 & 0 & 0 & 0.00000 \\
+U/0 & Tick & R & 0 & 16 & 0 & 0 & 0 & 0.00000 \\
+U/0 & Tick & HG & 0 & 8 & 0 & 0 & 0 & 0.00000 \\
+U/0 & Event & A & 5 & 32 & 12 & 12 & 11 & 0.00000 \\
+U/0 & Event & G & 0 & 8 & 0 & 0 & 0 & 0.00000 \\
+U/0 & Event & R & 0 & 16 & 0 & 0 & 0 & 0.00000 \\
+U/0 & Event & HG & 0 & 8 & 0 & 0 & 0 & 0.00000 \\
+U/0 & Table & A & 28 & 32 & 32 & 32 & 32 & 4.33024 \\
+U/0 & Table & G & 8 & 8 & 8 & 8 & 8 & 4.50798 \\
+U/0 & Table & R & 8 & 16 & 16 & 16 & 16 & 8.33665 \\
+U/0 & Table & HG & 8 & 8 & 8 & 8 & 8 & 6.74182 \\
+U/1 & Gain & A & 22 & 32 & 32 & 32 & 32 & 12.33799 \\
+U/1 & Gain & G & 4 & 8 & 8 & 8 & 8 & 3.04208 \\
+U/1 & Gain & R & 2 & 16 & 3 & 3 & 2 & 0.00000 \\
+U/1 & Gain & HG & 0 & 8 & 0 & 0 & 0 & 0.00000 \\
+U/1 & Tick & A & 9 & 32 & 13 & 13 & 12 & 0.00000 \\
+U/1 & Tick & G & 0 & 8 & 0 & 0 & 0 & 0.00000 \\
+U/1 & Tick & R & 0 & 16 & 0 & 0 & 0 & 0.00000 \\
+U/1 & Tick & HG & 0 & 8 & 0 & 0 & 0 & 0.00000 \\
+U/1 & Event & A & 10 & 32 & 16 & 16 & 15 & 0.00000 \\
+U/1 & Event & G & 0 & 8 & 0 & 0 & 0 & 0.00000 \\
+U/1 & Event & R & 0 & 16 & 0 & 0 & 0 & 0.00000 \\
+U/1 & Event & HG & 0 & 8 & 0 & 0 & 0 & 0.00000 \\
+U/1 & Table & A & 28 & 32 & 32 & 32 & 32 & 5.45430 \\
+U/1 & Table & G & 8 & 8 & 8 & 8 & 8 & 7.23130 \\
+U/1 & Table & R & 8 & 16 & 16 & 16 & 16 & 6.07837 \\
+U/1 & Table & HG & 8 & 8 & 8 & 8 & 8 & 5.43365 \\
+R/0 & Gain & A & 15 & 24 & 24 & 24 & 24 & 15.09743 \\
+R/0 & Gain & G & 6 & 8 & 8 & 8 & 8 & 16.90765 \\
+R/0 & Gain & R & 1 & 8 & 8 & 8 & 8 & 16.98847 \\
+R/0 & Gain & HG & 3 & 8 & 8 & 8 & 8 & 16.85269 \\
+R/0 & Event & A & 15 & 24 & 24 & 24 & 24 & 15.09743 \\
+R/0 & Event & G & 7 & 8 & 8 & 8 & 8 & 16.90765 \\
+R/0 & Event & R & 2 & 8 & 8 & 8 & 8 & 16.80168 \\
+R/0 & Event & HG & 0 & 8 & 8 & 8 & 8 & 17.22410 \\
+R/0 & Delay & A & 24 & 24 & 24 & 24 & 24 & 13.69378 \\
+R/0 & Delay & G & 8 & 8 & 8 & 8 & 8 & 17.11388 \\
+R/0 & Delay & R & 0 & 8 & 8 & 8 & 8 & 15.54240 \\
+R/0 & Delay & HG & 4 & 8 & 8 & 8 & 8 & 18.20210 \\
+R/0 & Table & A & 20 & 24 & 24 & 24 & 24 & 16.07083 \\
+R/0 & Table & G & 8 & 8 & 8 & 8 & 8 & 17.03970 \\
+R/0 & Table & R & 0 & 8 & 8 & 8 & 8 & 15.50460 \\
+R/0 & Table & HG & 8 & 8 & 8 & 8 & 8 & 16.83416 \\
+R/1 & Gain & A & 16 & 24 & 24 & 24 & 24 & 13.64741 \\
+R/1 & Gain & G & 6 & 8 & 8 & 8 & 8 & 16.80958 \\
+R/1 & Gain & R & 2 & 8 & 8 & 8 & 8 & 16.00721 \\
+R/1 & Gain & HG & 3 & 8 & 8 & 8 & 8 & 16.73550 \\
+R/1 & Event & A & 16 & 24 & 24 & 24 & 24 & 13.64741 \\
+R/1 & Event & G & 7 & 8 & 8 & 8 & 8 & 16.65558 \\
+R/1 & Event & R & 0 & 8 & 8 & 8 & 8 & 15.86808 \\
+R/1 & Event & HG & 3 & 8 & 8 & 8 & 8 & 15.17951 \\
+R/1 & Delay & A & 24 & 24 & 24 & 24 & 24 & 14.02648 \\
+R/1 & Delay & G & 8 & 8 & 8 & 8 & 8 & 17.29991 \\
+R/1 & Delay & R & 0 & 8 & 8 & 8 & 8 & 16.90427 \\
+R/1 & Delay & HG & 4 & 8 & 8 & 8 & 8 & 17.46666 \\
+R/1 & Table & A & 20 & 24 & 24 & 24 & 24 & 16.68753 \\
+R/1 & Table & G & 8 & 8 & 8 & 8 & 8 & 17.22792 \\
+R/1 & Table & R & 0 & 8 & 8 & 8 & 8 & 17.08781 \\
+R/1 & Table & HG & 8 & 8 & 8 & 8 & 8 & 16.82876 \\
+B/0 & Gain & A & 12 & 32 & 32 & 32 & 32 & 14.36014 \\
+B/0 & Gain & G & 4 & 8 & 8 & 8 & 8 & 15.21332 \\
+B/0 & Gain & R & 4 & 16 & 16 & 16 & 16 & 13.69794 \\
+B/0 & Gain & HG & 4 & 8 & 8 & 8 & 8 & 14.35434 \\
+B/0 & Delay & A & 28 & 32 & 32 & 32 & 32 & 15.61362 \\
+B/0 & Delay & G & 8 & 8 & 8 & 8 & 8 & 16.00902 \\
+B/0 & Delay & R & 7 & 16 & 16 & 16 & 16 & 17.14845 \\
+B/0 & Delay & HG & 8 & 8 & 8 & 8 & 8 & 16.96462 \\
+B/0 & Table & A & 28 & 32 & 32 & 32 & 32 & 15.99737 \\
+B/0 & Table & G & 8 & 8 & 8 & 8 & 8 & 16.04325 \\
+B/0 & Table & R & 8 & 16 & 16 & 16 & 16 & 17.14895 \\
+B/0 & Table & HG & 8 & 8 & 8 & 8 & 8 & 16.89446 \\
+B/1 & Gain & A & 18 & 32 & 32 & 32 & 32 & 14.87055 \\
+B/1 & Gain & G & 6 & 8 & 8 & 8 & 8 & 17.37766 \\
+B/1 & Gain & R & 5 & 16 & 16 & 16 & 16 & 14.99451 \\
+B/1 & Gain & HG & 4 & 8 & 8 & 8 & 8 & 15.19637 \\
+B/1 & Delay & A & 32 & 32 & 32 & 32 & 32 & 14.49998 \\
+B/1 & Delay & G & 8 & 8 & 8 & 8 & 8 & 16.27017 \\
+B/1 & Delay & R & 6 & 16 & 16 & 16 & 16 & 15.40985 \\
+B/1 & Delay & HG & 8 & 8 & 8 & 8 & 8 & 15.81928 \\
+B/1 & Table & A & 28 & 32 & 32 & 32 & 32 & 16.31030 \\
+B/1 & Table & G & 8 & 8 & 8 & 8 & 8 & 16.22875 \\
+B/1 & Table & R & 8 & 16 & 16 & 16 & 16 & 16.12029 \\
+B/1 & Table & HG & 8 & 8 & 8 & 8 & 8 & 15.93421 \\
+\bottomrule
+\end{longtable}
+\begin{longtable}{lllllllll}
+\caption{All 22 comparative continuous paths: actual expenses and final state. The separate 298-step opportunity path is documented below, not silently inserted as a complete comparative life. Motor totals already include paid return where applied. Gain/loss are actual energy outcomes.}\label{tab:local-history-costs}\\
+\toprule
+B/seed & Rule & Steps & $M$ & $E$ & Motor & Basal & Gain & Loss \\
+\midrule
+\endfirsthead
+\toprule
+B/seed & Rule & Steps & $M$ & $E$ & Motor & Basal & Gain & Loss \\
+\midrule
+\endhead
+U/0 & Gain & 902 & 24.00000 & 43.43391 & 0.65899 & 25.97760 & 0.37320 & 0.92906 \\
+U/0 & Tick & 902 & 24.00000 & 44.00215 & 0.56786 & 25.97760 & 0.39199 & 0.54332 \\
+U/0 & Event & 902 & 24.00000 & 43.43391 & 0.65899 & 25.97760 & 0.37320 & 0.92906 \\
+U/0 & Table & 902 & 24.00000 & 44.24292 & 2.86360 & 25.97760 & 5.10321 & 1.58707 \\
+U/1 & Gain & 900 & 24.00000 & 43.91051 & 2.02590 & 25.92000 & 4.69293 & 2.31645 \\
+U/1 & Tick & 900 & 24.00000 & 44.39958 & 0.70574 & 25.92000 & 1.04970 & 0.58482 \\
+U/1 & Event & 900 & 24.00000 & 44.49606 & 0.83967 & 25.92000 & 1.29678 & 0.55894 \\
+U/1 & Table & 900 & 24.00000 & 44.81833 & 2.87134 & 25.92000 & 5.52295 & 1.43024 \\
+R/0 & Gain & 992 & 24.00000 & 36.77851 & 3.65974 & 28.56960 & 5.49549 & 5.09790 \\
+R/0 & Event & 992 & 24.00000 & 36.36260 & 3.60394 & 28.56960 & 5.33598 & 5.38997 \\
+R/0 & Delay & 992 & 24.00000 & 41.62027 & 3.64407 & 28.56960 & 7.88625 & 2.67236 \\
+R/0 & Table & 992 & 24.00000 & 41.96349 & 3.56922 & 28.56960 & 8.21353 & 2.67468 \\
+R/1 & Gain & 990 & 24.00000 & 37.72307 & 3.66927 & 28.51200 & 5.88638 & 4.61211 \\
+R/1 & Event & 990 & 24.00000 & 37.31103 & 3.73667 & 28.51200 & 5.56953 & 4.68138 \\
+R/1 & Delay & 990 & 24.00000 & 41.66525 & 3.62174 & 28.51200 & 7.92876 & 2.73232 \\
+R/1 & Table & 990 & 24.00000 & 41.97581 & 3.55127 & 28.51200 & 8.23051 & 2.74155 \\
+B/0 & Gain & 1298 & 24.00000 & 21.98411 & 5.11666 & 37.38240 & 4.81561 & 8.05640 \\
+B/0 & Delay & 1298 & 24.00000 & 33.77543 & 4.81424 & 37.38240 & 11.39569 & 2.90572 \\
+B/0 & Table & 1298 & 24.00000 & 34.33191 & 4.75263 & 37.38240 & 11.76325 & 2.74385 \\
+B/1 & Gain & 1284 & 24.00000 & 26.25317 & 4.86978 & 36.97920 & 7.28807 & 6.72923 \\
+B/1 & Delay & 1284 & 24.00000 & 35.48735 & 4.81378 & 36.97920 & 11.93274 & 2.18377 \\
+B/1 & Table & 1284 & 24.00000 & 34.68080 & 4.76760 & 36.97920 & 11.67192 & 2.72813 \\
+\bottomrule
+\end{longtable}
+\begin{longtable}{llllllll}
+\caption{Additional actual local charges and unpaid amounts for all 22 paths. Shared package tariffs do not establish equal memory capacity or fully priced computation.}\label{tab:local-history-other-costs}\\
+\toprule
+B/seed & Rule & Sensor & Internal & Assay fee & Sensor denied & Internal denied & Basal denied \\
+\midrule
+\endfirsthead
+\toprule
+B/seed & Rule & Sensor & Internal & Assay fee & Sensor denied & Internal denied & Basal denied \\
+\midrule
+\endhead
+U/0 & Gain & 0.18028 & 1.08240 & 0.11095 & 0.00000 & 0.00000 & 0.00000 \\
+U/0 & Tick & 0.13775 & 1.08240 & 0.08089 & 0.00000 & 0.00000 & 0.00000 \\
+U/0 & Event & 0.18028 & 1.08240 & 0.11095 & 0.00000 & 0.00000 & 0.00000 \\
+U/0 & Table & 0.79209 & 1.08240 & 0.55752 & 0.00000 & 0.00000 & 0.00000 \\
+U/1 & Gain & 0.85452 & 1.08000 & 0.58555 & 0.00000 & 0.00000 & 0.00000 \\
+U/1 & Tick & 0.22023 & 1.08000 & 0.13933 & 0.00000 & 0.00000 & 0.00000 \\
+U/1 & Event & 0.24520 & 1.08000 & 0.15690 & 0.00000 & 0.00000 & 0.00000 \\
+U/1 & Table & 0.82360 & 1.08000 & 0.57943 & 0.00000 & 0.00000 & 0.00000 \\
+R/0 & Gain & 1.31656 & 1.19040 & 0.88278 & 0.00000 & 0.00000 & 0.00000 \\
+R/0 & Event & 1.32564 & 1.19040 & 0.89383 & 0.00000 & 0.00000 & 0.00000 \\
+R/0 & Delay & 1.30967 & 1.19040 & 0.87988 & 0.00000 & 0.00000 & 0.00000 \\
+R/0 & Table & 1.33879 & 1.19040 & 0.90735 & 0.00000 & 0.00000 & 0.00000 \\
+R/1 & Gain & 1.30706 & 1.18800 & 0.87487 & 0.00000 & 0.00000 & 0.00000 \\
+R/1 & Event & 1.28620 & 1.18800 & 0.85424 & 0.00000 & 0.00000 & 0.00000 \\
+R/1 & Delay & 1.32102 & 1.18800 & 0.88842 & 0.00000 & 0.00000 & 0.00000 \\
+R/1 & Table & 1.34754 & 1.18800 & 0.91434 & 0.00000 & 0.00000 & 0.00000 \\
+B/0 & Gain & 1.64577 & 1.55760 & 1.07267 & 0.00000 & 0.00000 & 0.00000 \\
+B/0 & Delay & 1.76852 & 1.55760 & 1.19178 & 0.00000 & 0.00000 & 0.00000 \\
+B/0 & Table & 1.78593 & 1.55760 & 1.20893 & 0.00000 & 0.00000 & 0.00000 \\
+B/1 & Gain & 1.74778 & 1.54080 & 1.16811 & 0.00000 & 0.00000 & 0.00000 \\
+B/1 & Delay & 1.75147 & 1.54080 & 1.17638 & 0.00000 & 0.00000 & 0.00000 \\
+B/1 & Table & 1.77538 & 1.54080 & 1.20000 & 0.00000 & 0.00000 & 0.00000 \\
+\bottomrule
+\end{longtable}
+\begin{longtable}{lllllll}
+\caption{Paid return components for all 14 paths that receive the six-update servo. These are subsets of whole-path expenses, not additional charges to sum again. Body, energy and history are not reset.}\label{tab:local-history-return-costs}\\
+\toprule
+B/seed & Rule & Return motor & Return basal & Return internal & Min. $M$ & Min. $E$ \\
+\midrule
+\endfirsthead
+\toprule
+B/seed & Rule & Return motor & Return basal & Return internal & Min. $M$ & Min. $E$ \\
+\midrule
+\endhead
+R/0 & Gain & 1.50322 & 8.29440 & 0.34560 & 24.00000 & 36.77851 \\
+R/0 & Event & 1.47787 & 8.29440 & 0.34560 & 24.00000 & 36.36260 \\
+R/0 & Delay & 1.49902 & 8.29440 & 0.34560 & 24.00000 & 41.62027 \\
+R/0 & Table & 1.47049 & 8.29440 & 0.34560 & 24.00000 & 41.96349 \\
+R/1 & Gain & 1.51659 & 8.29440 & 0.34560 & 24.00000 & 37.72307 \\
+R/1 & Event & 1.55130 & 8.29440 & 0.34560 & 24.00000 & 37.31103 \\
+R/1 & Delay & 1.48267 & 8.29440 & 0.34560 & 24.00000 & 41.66525 \\
+R/1 & Table & 1.45550 & 8.29440 & 0.34560 & 24.00000 & 41.97581 \\
+B/0 & Gain & 2.15302 & 11.05920 & 0.46080 & 24.00000 & 21.98411 \\
+B/0 & Delay & 1.98104 & 11.05920 & 0.46080 & 24.00000 & 33.77543 \\
+B/0 & Table & 1.95216 & 11.05920 & 0.46080 & 24.00000 & 34.33191 \\
+B/1 & Gain & 2.02136 & 11.05920 & 0.46080 & 24.00000 & 26.25317 \\
+B/1 & Delay & 1.97219 & 11.05920 & 0.46080 & 24.00000 & 35.48735 \\
+B/1 & Table & 1.96933 & 11.05920 & 0.46080 & 24.00000 & 34.68080 \\
+\bottomrule
+\end{longtable}
+\begin{longtable}{llllllll}
+\caption{All 21 prespecified complete-parent probes. Parent identity is seed suffix/trial. Negate changes selected history content; reset restores gain 0.8; sham preserves it. Factual values are recorded parental-path references, not replayed futures. Correctness 0/1 is evaluated for the actual physical action.}\label{tab:local-history-probes}\\
+\toprule
+Parent & Rule & Treatment & Old cmd & New cmd & Old correct & New correct & Steps \\
+\midrule
+\endfirsthead
+\toprule
+Parent & Rule & Treatment & Old cmd & New cmd & Old correct & New correct & Steps \\
+\midrule
+\endhead
+751/24 & Gain & Negate & -1 & 1 & 1 & 0 & 16 \\
+751/24 & Gain & Reset gain & -1 & -1 & 1 & 1 & 16 \\
+751/24 & Gain & Sham & -1 & -1 & 1 & 1 & 16 \\
+751/40 & Gain & Negate & -1 & -1 & 0 & 0 & 14 \\
+751/40 & Gain & Reset gain & -1 & -1 & 0 & 0 & 14 \\
+751/24 & Event & Negate & -1 & 1 & 1 & 0 & 16 \\
+751/40 & Event & Negate & -1 & 1 & 0 & 1 & 14 \\
+751/24 & Delay & Negate & -1 & 1 & 1 & 0 & 16 \\
+751/40 & Delay & Negate & 1 & -1 & 1 & 0 & 14 \\
+751/24 & Table & Negate & -1 & 1 & 1 & 0 & 16 \\
+751/40 & Table & Negate & 1 & -1 & 1 & 0 & 14 \\
+752/24 & Gain & Negate & 1 & -1 & 1 & 0 & 14 \\
+752/24 & Gain & Reset gain & 1 & 1 & 1 & 1 & 14 \\
+752/40 & Gain & Negate & -1 & -1 & 0 & 0 & 15 \\
+752/40 & Gain & Reset gain & -1 & -1 & 0 & 0 & 15 \\
+752/24 & Event & Negate & 1 & -1 & 1 & 0 & 14 \\
+752/40 & Event & Negate & -1 & -1 & 0 & 0 & 15 \\
+752/24 & Delay & Negate & 1 & -1 & 1 & 0 & 14 \\
+752/40 & Delay & Negate & -1 & -1 & 0 & 0 & 15 \\
+752/24 & Table & Negate & 1 & -1 & 1 & 0 & 14 \\
+752/40 & Table & Negate & 1 & -1 & 1 & 0 & 15 \\
+\bottomrule
+\end{longtable}
+\begin{longtable}{llllllll}
+\caption{Physical probe endpoints and actual local consequences. These branch-specific values are not independent acquisition outcomes; the complete source rows preserve each actual parent hash.}\label{tab:local-history-probe-costs}\\
+\toprule
+Parent & Rule & Treatment & $M$ & $E$ & Fee & Gain & Loss \\
+\midrule
+\endfirsthead
+\toprule
+Parent & Rule & Treatment & $M$ & $E$ & Fee & Gain & Loss \\
+\midrule
+\endhead
+751/24 & Gain & Negate & 24.00000 & 56.15953 & 0.02017 & 0.00000 & 0.24200 \\
+751/24 & Gain & Reset gain & 24.00000 & 56.60251 & 0.01760 & 0.21114 & 0.00000 \\
+751/24 & Gain & Sham & 24.00000 & 56.60251 & 0.01760 & 0.21114 & 0.00000 \\
+751/40 & Gain & Negate & 24.00000 & 43.29693 & 0.01811 & 0.00000 & 0.21728 \\
+751/40 & Gain & Reset gain & 24.00000 & 43.29693 & 0.01811 & 0.00000 & 0.21728 \\
+751/24 & Event & Negate & 24.00000 & 56.15953 & 0.02017 & 0.00000 & 0.24200 \\
+751/40 & Event & Negate & 24.00000 & 44.71513 & 0.02067 & 0.24808 & 0.00000 \\
+751/24 & Delay & Negate & 24.00000 & 59.95060 & 0.02048 & 0.00000 & 0.24572 \\
+751/40 & Delay & Negate & 24.00000 & 47.64192 & 0.01803 & 0.00000 & 0.21636 \\
+751/24 & Table & Negate & 24.00000 & 58.46578 & 0.02038 & 0.00000 & 0.24458 \\
+751/40 & Table & Negate & 24.00000 & 46.15814 & 0.01797 & 0.00000 & 0.21568 \\
+752/24 & Gain & Negate & 24.00000 & 56.67844 & 0.01633 & 0.00000 & 0.19599 \\
+752/24 & Gain & Reset gain & 24.00000 & 57.11707 & 0.01957 & 0.23486 & 0.00000 \\
+752/40 & Gain & Negate & 24.00000 & 44.27352 & 0.01790 & 0.00000 & 0.21482 \\
+752/40 & Gain & Reset gain & 24.00000 & 44.27352 & 0.01790 & 0.00000 & 0.21482 \\
+752/24 & Event & Negate & 24.00000 & 56.67844 & 0.01633 & 0.00000 & 0.19599 \\
+752/40 & Event & Negate & 24.00000 & 43.82078 & 0.01784 & 0.00000 & 0.21405 \\
+752/24 & Delay & Negate & 24.00000 & 60.18156 & 0.01624 & 0.00000 & 0.19492 \\
+752/40 & Delay & Negate & 24.00000 & 47.73865 & 0.01786 & 0.00000 & 0.21434 \\
+752/24 & Table & Negate & 24.00000 & 58.65072 & 0.01625 & 0.00000 & 0.19499 \\
+752/40 & Table & Negate & 24.00000 & 46.20844 & 0.01783 & 0.00000 & 0.21395 \\
+\bottomrule
+\end{longtable}
+\begin{longtable}{lllllll}
+\caption{Recovered opportunity path: all 24 physically completed trials before serialization failure. Its unstarted fixed-event comparison is absent, not scored. Retention follows the pilot protocol rather than the later balanced design.}\label{tab:local-history-pilot}\\
+\toprule
+Trial & Phase & Command & Actual & Correct & Feedback mass & $\Delta x$ \\
+\midrule
+\endfirsthead
+\toprule
+Trial & Phase & Command & Actual & Correct & Feedback mass & $\Delta x$ \\
+\midrule
+\endhead
+0 & acquire & 1 & 1 & 1 & 17.71011 & 0.49534 \\
+1 & acquire & 1 & 1 & 0 & 17.62167 & 0.50329 \\
+2 & acquire & 1 & 1 & 1 & 16.61858 & 0.51680 \\
+3 & acquire & 1 & 1 & 0 & 15.08658 & 0.51629 \\
+4 & acquire & 1 & 1 & 0 & 13.34618 & 0.52325 \\
+5 & acquire & 1 & 1 & 1 & 11.51043 & 0.52062 \\
+6 & acquire & 1 & 1 & 1 & 9.72515 & 0.52332 \\
+7 & acquire & 1 & 1 & 0 & 8.04278 & 0.52234 \\
+8 & acquire & -1 & -1 & 1 & 9.21517 & -0.55426 \\
+9 & acquire & -1 & -1 & 1 & 10.32004 & -0.54206 \\
+10 & acquire & -1 & -1 & 1 & 11.16756 & -0.52811 \\
+11 & acquire & 1 & 1 & 1 & 10.61434 & 0.48681 \\
+12 & acquire & 1 & 1 & 1 & 9.49872 & 0.49721 \\
+13 & acquire & -1 & -1 & 1 & 10.44625 & -0.54414 \\
+14 & acquire & 1 & 1 & 1 & 9.50409 & 0.49623 \\
+15 & acquire & 1 & 1 & 1 & 8.17393 & 0.50998 \\
+16 & retention & 1 & 1 & 1 & 6.76784 & 0.51917 \\
+17 & retention & -1 & -1 & 1 & 7.95341 & -0.55520 \\
+18 & retention & -1 & -1 & 1 & 9.05573 & -0.54142 \\
+19 & retention & 1 & 1 & 1 & 8.12208 & 0.49499 \\
+20 & retention & -1 & -1 & 1 & 9.15051 & -0.54245 \\
+21 & retention & 1 & 1 & 1 & 8.20256 & 0.49655 \\
+22 & retention & -1 & -1 & 1 & 9.22408 & -0.54302 \\
+23 & retention & 1 & 1 & 1 & 8.27443 & 0.49704 \\
+\bottomrule
+\end{longtable}
+\begin{longtable}{lllll}
+\caption{All original execution outcomes. Native updates are actual, including work completed before packaging or operating-reserve failure. Only the never-started return path was run afterwards; no completed trajectory was replayed. Total 23,491 updates and 32.219220 worker seconds. All runs use two CPU threads and no GPU.}\label{tab:local-history-jobs}\\
+\toprule
+Job role & Updates & Worker s & Job status & Exit \\
+\midrule
+\endfirsthead
+\toprule
+Job role & Updates & Worker s & Job status & Exit \\
+\midrule
+\endhead
+Opportunity & 298 & 0.56016 & failed & 1 \\
+Unreturned & 7208 & 9.32368 & completed & 0 \\
+Return first & 6938 & 10.23156 & failed & 1 \\
+Return remainder & 990 & 1.26385 & completed & 0 \\
+Parent probes & 311 & 1.50000 & completed & 0 \\
+Balanced & 7746 & 9.33997 & completed & 0 \\
+\bottomrule
+\end{longtable}
+\endgroup

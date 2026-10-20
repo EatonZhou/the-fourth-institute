@@ -1,0 +1,16 @@
+{
+  "type": "experiment",
+  "category": "knowledge_entry",
+  "description": "A durable experiment entry whose internal hierarchy uses nested addresses; participating Residents retain their own IDs.",
+  "title": {
+    "zh": "实验",
+    "en": "Experiment"
+  },
+  "provider": "management_portal.resources.providers.experiment:install_mutation_provider",
+  "catalog_section": "experiment",
+  "catalog_order": 50,
+  "registerable": true,
+  "scope": "project",
+  "unit": "core",
+  "enabled_by_default": true
+}

@@ -1,0 +1,44 @@
+{
+  "task": "local_terminal_feedback_20261018",
+  "status": "incomplete",
+  "job_id": "b63cdc7c-3f38-4a43-af6e-9c481c419fa9",
+  "attempted_steps": 771,
+  "committed_steps": 771,
+  "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/local_terminal_feedback_20261018/b63cdc7c-3f38-4a43-af6e-9c481c419fa9",
+  "raw_bytes": 719432132,
+  "script_seconds": 86.53853253694251,
+  "plan_sha256": "8e3989db095940688e0b59a397bea4613228927b7b93c6d8f1360665c832fcf8",
+  "boundaries": [
+    {
+      "source": "genome_0ac80448a534dc953505",
+      "check": "no current intake/newborn can fund terminal channel",
+      "generated_mass": 16.766455947885966,
+      "paid": 0.0,
+      "material_error": -9.094947017729282e-13,
+      "energy_error": 0.0,
+      "max_density": 1.0450827434908987,
+      "attempted_body_steps": 1,
+      "reconstruction_error": 5.551115123125783e-17,
+      "K_column_error": 0.0,
+      "transport_error": 0.0,
+      "communication_energy_error": 0.0,
+      "terminal_balance_error": 2.7755575615628914e-17
+    },
+    {
+      "source": "genome_6bd5bfd2f629f9414376",
+      "check": "no current intake/newborn can fund terminal channel",
+      "generated_mass": 6.401290821173474,
+      "paid": 0.0,
+      "material_error": 0.0,
+      "energy_error": 0.0,
+      "max_density": 0.6108092771146555,
+      "attempted_body_steps": 2,
+      "reconstruction_error": 5.551115123125783e-17,
+      "K_column_error": 0.0,
+      "transport_error": 0.0,
+      "communication_energy_error": 0.0,
+      "terminal_balance_error": 6.938893903907228e-18
+    }
+  ],
+  "outcomes": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/local_terminal_feedback_20261018/outcomes.json"
+}

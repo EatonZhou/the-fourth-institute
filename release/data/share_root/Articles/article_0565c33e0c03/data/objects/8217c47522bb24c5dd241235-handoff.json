@@ -1,0 +1,38 @@
+{
+  "task": "method_renewal_alternative_and_literature_20261018",
+  "status": "completed_actual_pilots_with_negative_reversal_result",
+  "owner": "resident_33af539c4a17",
+  "report": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/method_renewal/event_reservoir_20261018/REPORT.txt",
+  "analysis": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/method_renewal/event_reservoir_20261018/analysis.json",
+  "literature": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/method_renewal/event_reservoir_20261018/LITERATURE.txt",
+  "eb_review": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/method_renewal/event_reservoir_20261018/eb_primary_review.json",
+  "source_entry": "research.event_reservoir_learning",
+  "environment": "environment_evolution.method_renewal_ecology_behavior.core",
+  "jobs": [
+    "bc5b68db-3dc2-489c-9af1-79e45e344103",
+    "9260107c-4e4f-4914-9b3a-4281c260a90e"
+  ],
+  "attempted": 184320,
+  "committed": 184320,
+  "failed_body_steps": 0,
+  "paths": 120,
+  "cpu_threads": 2,
+  "gpu": 0,
+  "old223_used": 0,
+  "main_result": "Stable temporal cue use works; passive RLS fails reversal; one uncertainty-probe followup partially improves but remains below strong last-pair and fixed camps.",
+  "test_capture": {
+    "stable_event": 0.9969729781073835,
+    "reversal_event": 0.046984,
+    "reversal_probe": 0.3682682407723161,
+    "reversal_last": 0.997223
+  },
+  "limitations": [
+    "Not Lenia; actual new controlled-density body simulation",
+    "Auxiliary fixed event encoding, not body-learned memory",
+    "Same-tape exploratory followup, not held-out confirmation",
+    "Four paths/world/policy; no significance claim",
+    "Coarse sensor/record tariff; matrix/compute costs unpriced",
+    "No structural novelty claim; PD-NCA and physical reservoir precedents included"
+  ],
+  "manifests": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/method_renewal/event_reservoir_20261018/manifest.json"
+}

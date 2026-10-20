@@ -1,0 +1,86 @@
+{
+  "task": "association_readout_recontact_20261019",
+  "status": "complete",
+  "native": 8192,
+  "unknown": 0,
+  "worker_seconds": 51.468148,
+  "raw_bytes": 43654859,
+  "paths": 16,
+  "alive": 16,
+  "continuity_all": true,
+  "max_energy_error": 7.667477763817487e-15,
+  "groups": {
+    "original_write": {
+      "n": 4,
+      "feedback_last64_pass": 0,
+      "aftermath_last64_pass": 0,
+      "meaningful_positive_any": 0,
+      "positive_updates": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "meaningful_positive_updates": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "original_freeze": {
+      "n": 4,
+      "feedback_last64_pass": 0,
+      "aftermath_last64_pass": 0,
+      "meaningful_positive_any": 0,
+      "positive_updates": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "meaningful_positive_updates": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "readout_pause_write": {
+      "n": 4,
+      "feedback_last64_pass": 0,
+      "aftermath_last64_pass": 0,
+      "meaningful_positive_any": 0,
+      "positive_updates": [
+        382,
+        381,
+        382,
+        381
+      ],
+      "meaningful_positive_updates": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "readout_pause_freeze": {
+      "n": 4,
+      "feedback_last64_pass": 0,
+      "aftermath_last64_pass": 0,
+      "meaningful_positive_any": 0,
+      "positive_updates": [
+        382,
+        381,
+        382,
+        381
+      ],
+      "meaningful_positive_updates": [
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "schema": "experience-adaptation-native-archive-link.v1",
+  "status": "linked_verified_read_only_archive_update",
+  "native_job_id": "ace081b7-fcbb-4ec8-85c5-3b1663ee0660",
+  "native_handoff": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/handoff.json",
+    "sha256": "b167d527f0ba7ee39d4730221ee805d1b0212ff4a61767dd25d6bbe020cf00ee",
+    "frozen_manifest_unchanged": true
+  },
+  "archive_handoff": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search_native_archive/handoff.json",
+    "sha256": "2fc04c868862f646a648c6c97e1de60bea932c8c33fc14a8fcd1ad8482ff5941",
+    "owner": "resident_d3ccfa2d95b7"
+  },
+  "link_scope": "冻结原生交付的追加索引；原handoff及412项附件清单保持原字节。本文件不计为新的科学执行或原冻结清单附件。",
+  "source_binding": "消费者接收时原总包尚在包装，实际以已完成job、plan、outcomes、两cycle表、analysis与四个真实形成帧文件的精确SHA建源。本次核对其全部16条source_evidence仍与现有原件一致，补连最终原生handoff，不改写消费者接收时序。",
+  "verification": {
+    "archive_manifest_files_sha256_and_size": 19,
+    "source_evidence_sha256_matches": 16,
+    "native_and_archive_handoff_sha256_match": true,
+    "archives_read_without_reexecution": true,
+    "selection_function_reexecuted": false,
+    "reported_cycle_reconstruction_error": 4.547473508864641e-13,
+    "reconstruction_error_independently_recomputed_here": false
+  },
+  "selection": {
+    "0..224": {
+      "evaluated_candidates": 4,
+      "eligible": 0
+    },
+    "128..224": {
+      "evaluated_candidates": 4,
+      "eligible": 0
+    },
+    "source_stages": 40,
+    "dependent_paths_per_window": 24,
+    "all_failures_retained": true,
+    "historical_704_448_archive_pooled": false
+  },
+  "interpretation": "冻结经历适应选择式下两窗均零入选，四候选保作已评价探索记录。紧凑子代相对母体的耐伤改善与其自身经历代价分列；多环子代的正交互未抵完整经历损失。T00是完整策略对照，两窗及依赖未来不充作独立重复。",
+  "new_body_steps": 0,
+  "new_energy_steps": 0,
+  "new_operator_calls": 0,
+  "new_runner_jobs": 0,
+  "scientific_published": false
+}

@@ -1,0 +1,94 @@
+{
+  "status": "passed",
+  "cases": [
+    {
+      "stage_id": "genome_0ac80448a534dc953505/T10",
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_generation_screen_20261018/780163bf-a09a-488b-a297-5e0f4261d7b5/genome_0ac80448a534dc953505--formation/transactions/000128.npz",
+      "source_sha256": "670dc066addc49b41e0574aa0a03f89cacd1c9797df80027d7e8bd2ef4030af8",
+      "initial_M": 981.5779761248489,
+      "initial_E": 444.4763946626209,
+      "complete_fields_exact": true,
+      "config_exact": true,
+      "ledger_exact": true,
+      "ready_restore_exact": true,
+      "switch_only": [
+        "P_enabled",
+        "F_enabled"
+      ],
+      "checked_packet": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_resource_factorial_20261018/component_checks/genome_0ac80448a534dc953505--T10-ready128.npz",
+      "sha256": "85aa91e9e6982d4181d74ee00a568eb2ed186512f8f53a16d317fd60e068aa8a"
+    },
+    {
+      "stage_id": "genome_0ac80448a534dc953505/T01",
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_generation_screen_20261018/780163bf-a09a-488b-a297-5e0f4261d7b5/genome_0ac80448a534dc953505--formation/transactions/000128.npz",
+      "source_sha256": "670dc066addc49b41e0574aa0a03f89cacd1c9797df80027d7e8bd2ef4030af8",
+      "initial_M": 981.5779761248489,
+      "initial_E": 444.4763946626209,
+      "complete_fields_exact": true,
+      "config_exact": true,
+      "ledger_exact": true,
+      "ready_restore_exact": true,
+      "switch_only": [
+        "P_enabled",
+        "F_enabled"
+      ],
+      "checked_packet": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_resource_factorial_20261018/component_checks/genome_0ac80448a534dc953505--T01-ready128.npz",
+      "sha256": "ba497a7f8070c4362fdc40b9922326e0a126f8a89528ceb4534823788fa1e691"
+    },
+    {
+      "stage_id": "genome_6bd5bfd2f629f9414376/T10",
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_generation_screen_20261018/780163bf-a09a-488b-a297-5e0f4261d7b5/genome_6bd5bfd2f629f9414376--formation/transactions/000128.npz",
+      "source_sha256": "1df02c60d6bda5dfeaaad9ee213ee089fc0fa8ababaedb2cf1d2446ee51a5fe5",
+      "initial_M": 484.49521966831077,
+      "initial_E": 247.80043873632522,
+      "complete_fields_exact": true,
+      "config_exact": true,
+      "ledger_exact": true,
+      "ready_restore_exact": true,
+      "switch_only": [
+        "P_enabled",
+        "F_enabled"
+      ],
+      "checked_packet": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_resource_factorial_20261018/component_checks/genome_6bd5bfd2f629f9414376--T10-ready128.npz",
+      "sha256": "9bbee3f6e37d5e23f12062b168a2b32fd6bcb57addaaf7301b5848f800d22ae4"
+    },
+    {
+      "stage_id": "genome_6bd5bfd2f629f9414376/T01",
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_generation_screen_20261018/780163bf-a09a-488b-a297-5e0f4261d7b5/genome_6bd5bfd2f629f9414376--formation/transactions/000128.npz",
+      "source_sha256": "1df02c60d6bda5dfeaaad9ee213ee089fc0fa8ababaedb2cf1d2446ee51a5fe5",
+      "initial_M": 484.49521966831077,
+      "initial_E": 247.80043873632522,
+      "complete_fields_exact": true,
+      "config_exact": true,
+      "ledger_exact": true,
+      "ready_restore_exact": true,
+      "switch_only": [
+        "P_enabled",
+        "F_enabled"
+      ],
+      "checked_packet": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_resource_factorial_20261018/component_checks/genome_6bd5bfd2f629f9414376--T01-ready128.npz",
+      "sha256": "7276a0bb14b20635033b564bf892c6e592d9da6bc63d67407481c2002af4b7e7"
+    }
+  ],
+  "fee_cases": [
+    {
+      "flag": "T10",
+      "paid": 0.00011,
+      "requested": 0.004920000000000001,
+      "inactive_exact": true,
+      "common_wallet_factor": true
+    },
+    {
+      "flag": "T01",
+      "paid": 0.00010999999999999999,
+      "requested": 0.004920000000000001,
+      "inactive_exact": true,
+      "common_wallet_factor": true
+    }
+  ],
+  "native_body_steps": 0,
+  "energy_steps": 0,
+  "old_suites_repeated": false,
+  "source_roundtrip_only": true,
+  "unknown_inflight": "unchanged original rejection"
+}

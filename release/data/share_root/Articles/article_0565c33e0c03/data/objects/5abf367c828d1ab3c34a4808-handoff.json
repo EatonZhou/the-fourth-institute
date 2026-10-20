@@ -1,0 +1,46 @@
+{
+  "task": "paid_material_precursor_reserve_20261019",
+  "status": "completed_fixed_reserve_candidate_failed_maintenance",
+  "owner": "resident_ce2a5ab005bc",
+  "objective_met": false,
+  "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/paid_material_precursor_reserve_20261019/REPORT.txt",
+  "summary": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/paid_material_precursor_reserve_20261019/summary.json",
+  "execution": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/paid_material_precursor_reserve_20261019/execution.json",
+  "audit": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/paid_material_precursor_reserve_20261019/audit.json",
+  "plan": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/paid_material_precursor_reserve_20261019/plan.json",
+  "plan_sha256": "963c6cd92331d796ca7e2fc7b52bfdd0b298f2c521fa4a5f25a2c5956b46ad54",
+  "source_sha256": {
+    "/share/Projects/元胞自动机研究/src/environment_evolution/paid_material_precursor_reserve/core.py": "be0f923bb72fb050a6c08679bbf6085ffd31afb220deabecf7d30323c9b0fe3d",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/paid_material_precursor_reserve/run.py": "113a96cdb5dbef846341910f2bedfcaa133b10f16563691b07b8c12f45ecf38a"
+  },
+  "native": 2048,
+  "runner_worker_seconds": 103.700166,
+  "job_id": "440ea9a4-ed51-45bf-8650-823d4e3abd1c",
+  "single_job_attempts": 1,
+  "native_replayed": 0,
+  "raw_bytes": 237146030,
+  "complete_paths": 8,
+  "maintenance": {
+    "gate_all4": 0,
+    "gate_last2": 0,
+    "gate_all4_zero": 0,
+    "gate_last2_zero": 0
+  },
+  "window_pass": 0,
+  "finding": "protected比leaky四context增M/新组织/体时但E更低；两储备相对local全部M/新组织/体时为负。全窗/末两窗0/8、32窗0通过，关闭固定储备维护候选。",
+  "artifacts": {
+    "scalar": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/paid_material_precursor_reserve_20261019/all_steps.csv",
+    "windows": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/paid_material_precursor_reserve_20261019/windows.csv",
+    "contrasts": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/paid_material_precursor_reserve_20261019/contrasts.csv",
+    "checkpoints": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/paid_material_precursor_reserve_20261019/checkpoint_index.json",
+    "frames": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/paid_material_precursor_reserve_20261019/frames.json",
+    "visual_sources": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/paid_material_precursor_reserve_20261019/visual_sources.json",
+    "raw_manifest": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/paid_material_precursor_reserve_20261019/raw_manifest.json",
+    "downstream_merge": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/paid_material_precursor_reserve_20261019/downstream_merge.json"
+  },
+  "manifest": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/paid_material_precursor_reserve_20261019/manifest.json",
+  "manifest_sha256": "6c677efebab0ac7e9d9b39f2896656269c5a2769ac8b8033b86b806d1ff15b6c",
+  "old_balances_used": 0,
+  "unused_native_sealed": 4,
+  "unused_worker_seconds_sealed": 496.29983400000003
+}

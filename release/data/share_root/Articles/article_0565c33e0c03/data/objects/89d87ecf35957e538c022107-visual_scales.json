@@ -1,0 +1,82 @@
+[
+  {
+    "seed": 202610195401,
+    "shape": "compact",
+    "fixed_crop": [
+      [
+        34,
+        48
+      ],
+      [
+        63,
+        75
+      ]
+    ],
+    "threshold_for_crop_only": 1e-05,
+    "density_scale": [
+      0,
+      1
+    ],
+    "interpolation": "nearest"
+  },
+  {
+    "seed": 202610195401,
+    "shape": "double_lobe",
+    "fixed_crop": [
+      [
+        37,
+        47
+      ],
+      [
+        61,
+        75
+      ]
+    ],
+    "threshold_for_crop_only": 1e-05,
+    "density_scale": [
+      0,
+      1
+    ],
+    "interpolation": "nearest"
+  },
+  {
+    "seed": 202610195402,
+    "shape": "compact",
+    "fixed_crop": [
+      [
+        34,
+        48
+      ],
+      [
+        63,
+        75
+      ]
+    ],
+    "threshold_for_crop_only": 1e-05,
+    "density_scale": [
+      0,
+      1
+    ],
+    "interpolation": "nearest"
+  },
+  {
+    "seed": 202610195402,
+    "shape": "double_lobe",
+    "fixed_crop": [
+      [
+        36,
+        47
+      ],
+      [
+        61,
+        76
+      ]
+    ],
+    "threshold_for_crop_only": 1e-05,
+    "density_scale": [
+      0,
+      1
+    ],
+    "interpolation": "nearest"
+  }
+]

@@ -1,0 +1,1410 @@
+[
+  {
+    "seed": 202610199751,
+    "arm": "adaptive_gain",
+    "trial": 24,
+    "trial_spec": {
+      "stage": "unseen_gap",
+      "events": [
+        -1,
+        -1,
+        -1,
+        -1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        -1,
+        2
+      ],
+      "steps": 20,
+      "target": -1,
+      "writer": false,
+      "early": -1,
+      "tail": [
+        1,
+        -1
+      ],
+      "gap": 8
+    },
+    "parent": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_adaptive_gain/encoded_024.npz",
+    "parent_sha": "abd9a6b18bf80ef6a16b5355e03ef76ccfa2ccc155c77f5233cba2dfcb449096",
+    "treatment": "negate_content",
+    "steps": 16,
+    "factual_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_adaptive_gain",
+    "changed_scalars": 896,
+    "command": 1,
+    "prediction": [
+      0.6138359756609795
+    ],
+    "result": {
+      "dx": 0.5205301367620798,
+      "actual": 1,
+      "correct": false,
+      "completed_mass": 20.167069377258894,
+      "update": {
+        "written": 0
+      },
+      "M": 23.999999999999986,
+      "E": 56.159532251954175,
+      "fee": 0.020167069377258894,
+      "gain": 0.0,
+      "loss": 0.24200483252710672
+    },
+    "factual": {
+      "correct": true,
+      "actual": -1,
+      "command": -1,
+      "completed_mass": 17.595067164990503,
+      "M": 23.999999999999986,
+      "E": 56.60251258405863
+    },
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw/00_adaptive_gain_negate_content",
+    "native": 16
+  },
+  {
+    "seed": 202610199751,
+    "arm": "adaptive_gain",
+    "trial": 24,
+    "trial_spec": {
+      "stage": "unseen_gap",
+      "events": [
+        -1,
+        -1,
+        -1,
+        -1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        -1,
+        2
+      ],
+      "steps": 20,
+      "target": -1,
+      "writer": false,
+      "early": -1,
+      "tail": [
+        1,
+        -1
+      ],
+      "gap": 8
+    },
+    "parent": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_adaptive_gain/encoded_024.npz",
+    "parent_sha": "abd9a6b18bf80ef6a16b5355e03ef76ccfa2ccc155c77f5233cba2dfcb449096",
+    "treatment": "reset_gain",
+    "steps": 16,
+    "factual_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_adaptive_gain",
+    "changed_scalars": 896,
+    "command": -1,
+    "prediction": [
+      -0.03902485916721198
+    ],
+    "result": {
+      "dx": -0.5483457057153434,
+      "actual": -1,
+      "correct": true,
+      "completed_mass": 17.595067164990503,
+      "update": {
+        "written": 0
+      },
+      "M": 23.999999999999986,
+      "E": 56.60251258405863,
+      "fee": 0.017595067164990503,
+      "gain": 0.21114080597988602,
+      "loss": 0.0
+    },
+    "factual": {
+      "correct": true,
+      "actual": -1,
+      "command": -1,
+      "completed_mass": 17.595067164990503,
+      "M": 23.999999999999986,
+      "E": 56.60251258405863
+    },
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw/01_adaptive_gain_reset_gain",
+    "native": 16
+  },
+  {
+    "seed": 202610199751,
+    "arm": "adaptive_gain",
+    "trial": 24,
+    "trial_spec": {
+      "stage": "unseen_gap",
+      "events": [
+        -1,
+        -1,
+        -1,
+        -1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        -1,
+        2
+      ],
+      "steps": 20,
+      "target": -1,
+      "writer": false,
+      "early": -1,
+      "tail": [
+        1,
+        -1
+      ],
+      "gap": 8
+    },
+    "parent": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_adaptive_gain/encoded_024.npz",
+    "parent_sha": "abd9a6b18bf80ef6a16b5355e03ef76ccfa2ccc155c77f5233cba2dfcb449096",
+    "treatment": "sham",
+    "steps": 16,
+    "factual_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_adaptive_gain",
+    "changed_scalars": 0,
+    "command": -1,
+    "prediction": [
+      -0.5501723283150133
+    ],
+    "result": {
+      "dx": -0.5483457057153434,
+      "actual": -1,
+      "correct": true,
+      "completed_mass": 17.595067164990503,
+      "update": {
+        "written": 0
+      },
+      "M": 23.999999999999986,
+      "E": 56.60251258405863,
+      "fee": 0.017595067164990503,
+      "gain": 0.21114080597988602,
+      "loss": 0.0
+    },
+    "factual": {
+      "correct": true,
+      "actual": -1,
+      "command": -1,
+      "completed_mass": 17.595067164990503,
+      "M": 23.999999999999986,
+      "E": 56.60251258405863
+    },
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw/02_adaptive_gain_sham",
+    "native": 16,
+    "sham_max_abs": 0.0
+  },
+  {
+    "seed": 202610199751,
+    "arm": "adaptive_gain",
+    "trial": 40,
+    "trial_spec": {
+      "stage": "retained_gap",
+      "events": [
+        -1,
+        -1,
+        -1,
+        -1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        -1,
+        2
+      ],
+      "steps": 18,
+      "target": 1,
+      "writer": false,
+      "early": -1,
+      "tail": [
+        1,
+        -1
+      ],
+      "gap": 6
+    },
+    "parent": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_adaptive_gain/encoded_040.npz",
+    "parent_sha": "978c58b43379073e53093613235c6b859339b0c3310def311694fc4c02e499fa",
+    "treatment": "negate_content",
+    "steps": 14,
+    "factual_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_adaptive_gain",
+    "changed_scalars": 912,
+    "command": -1,
+    "prediction": [
+      -0.07465150166395837
+    ],
+    "result": {
+      "dx": -0.5485234424719732,
+      "actual": -1,
+      "correct": false,
+      "completed_mass": 18.10705946386163,
+      "update": {
+        "written": 0
+      },
+      "M": 23.999999999999993,
+      "E": 43.29693251198019,
+      "fee": 0.01810705946386163,
+      "gain": 0.0,
+      "loss": 0.2172847135663396
+    },
+    "factual": {
+      "correct": false,
+      "actual": -1,
+      "command": -1,
+      "completed_mass": 18.10705946386163,
+      "M": 23.999999999999993,
+      "E": 43.29693251198019
+    },
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw/03_adaptive_gain_negate_content",
+    "native": 14
+  },
+  {
+    "seed": 202610199751,
+    "arm": "adaptive_gain",
+    "trial": 40,
+    "trial_spec": {
+      "stage": "retained_gap",
+      "events": [
+        -1,
+        -1,
+        -1,
+        -1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        -1,
+        2
+      ],
+      "steps": 18,
+      "target": 1,
+      "writer": false,
+      "early": -1,
+      "tail": [
+        1,
+        -1
+      ],
+      "gap": 6
+    },
+    "parent": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_adaptive_gain/encoded_040.npz",
+    "parent_sha": "978c58b43379073e53093613235c6b859339b0c3310def311694fc4c02e499fa",
+    "treatment": "reset_gain",
+    "steps": 14,
+    "factual_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_adaptive_gain",
+    "changed_scalars": 912,
+    "command": -1,
+    "prediction": [
+      -0.27042481582118233
+    ],
+    "result": {
+      "dx": -0.5485234424719732,
+      "actual": -1,
+      "correct": false,
+      "completed_mass": 18.10705946386163,
+      "update": {
+        "written": 0
+      },
+      "M": 23.999999999999993,
+      "E": 43.29693251198019,
+      "fee": 0.01810705946386163,
+      "gain": 0.0,
+      "loss": 0.2172847135663396
+    },
+    "factual": {
+      "correct": false,
+      "actual": -1,
+      "command": -1,
+      "completed_mass": 18.10705946386163,
+      "M": 23.999999999999993,
+      "E": 43.29693251198019
+    },
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw/04_adaptive_gain_reset_gain",
+    "native": 14
+  },
+  {
+    "seed": 202610199751,
+    "arm": "fixed_event",
+    "trial": 24,
+    "trial_spec": {
+      "stage": "unseen_gap",
+      "events": [
+        -1,
+        -1,
+        -1,
+        -1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        -1,
+        2
+      ],
+      "steps": 20,
+      "target": -1,
+      "writer": false,
+      "early": -1,
+      "tail": [
+        1,
+        -1
+      ],
+      "gap": 8
+    },
+    "parent": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_fixed_event/encoded_024.npz",
+    "parent_sha": "b9f98ccf958cf936eff154bc47dcf09e03187ee80d03a52e7d0269046f4df230",
+    "treatment": "negate_content",
+    "steps": 16,
+    "factual_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_fixed_event",
+    "changed_scalars": 2688,
+    "command": 1,
+    "prediction": [
+      0.590462424032008
+    ],
+    "result": {
+      "dx": 0.5205301367620798,
+      "actual": 1,
+      "correct": false,
+      "completed_mass": 20.167069377258894,
+      "update": {
+        "written": 0
+      },
+      "M": 23.999999999999986,
+      "E": 56.159532251954175,
+      "fee": 0.020167069377258894,
+      "gain": 0.0,
+      "loss": 0.24200483252710672
+    },
+    "factual": {
+      "correct": true,
+      "actual": -1,
+      "command": -1,
+      "completed_mass": 17.595067164990503,
+      "M": 23.999999999999986,
+      "E": 56.60251258405863
+    },
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw/05_fixed_event_negate_content",
+    "native": 16
+  },
+  {
+    "seed": 202610199751,
+    "arm": "fixed_event",
+    "trial": 40,
+    "trial_spec": {
+      "stage": "retained_gap",
+      "events": [
+        -1,
+        -1,
+        -1,
+        -1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        -1,
+        2
+      ],
+      "steps": 18,
+      "target": 1,
+      "writer": false,
+      "early": -1,
+      "tail": [
+        1,
+        -1
+      ],
+      "gap": 6
+    },
+    "parent": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_fixed_event/encoded_040.npz",
+    "parent_sha": "6126b1cddbd7fd99f159e62176cdb794194777d1d8e2a7810872485c8ea706fd",
+    "treatment": "negate_content",
+    "steps": 14,
+    "factual_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_fixed_event",
+    "changed_scalars": 2724,
+    "command": 1,
+    "prediction": [
+      0.3236482664856177
+    ],
+    "result": {
+      "dx": 0.5189315480387151,
+      "actual": 1,
+      "correct": true,
+      "completed_mass": 20.672987357173074,
+      "update": {
+        "written": 0
+      },
+      "M": 23.999999999999993,
+      "E": 44.71513176769321,
+      "fee": 0.020672987357173076,
+      "gain": 0.2480758482860769,
+      "loss": 0.0
+    },
+    "factual": {
+      "correct": false,
+      "actual": -1,
+      "command": -1,
+      "completed_mass": 18.210132544763113,
+      "M": 23.999999999999993,
+      "E": 44.23624511871368
+    },
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw/06_fixed_event_negate_content",
+    "native": 14
+  },
+  {
+    "seed": 202610199751,
+    "arm": "local_delay",
+    "trial": 24,
+    "trial_spec": {
+      "stage": "unseen_gap",
+      "events": [
+        -1,
+        -1,
+        -1,
+        -1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        -1,
+        2
+      ],
+      "steps": 20,
+      "target": -1,
+      "writer": false,
+      "early": -1,
+      "tail": [
+        1,
+        -1
+      ],
+      "gap": 8
+    },
+    "parent": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_local_delay/encoded_024.npz",
+    "parent_sha": "edd52aef1e1a67115d9f4208998a39ee0fd4897cb85ceebcec070f6b7ac8ffd1",
+    "treatment": "negate_content",
+    "steps": 16,
+    "factual_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_local_delay",
+    "changed_scalars": 5370,
+    "command": 1,
+    "prediction": [
+      0.789760889689859
+    ],
+    "result": {
+      "dx": 0.5210170872440969,
+      "actual": 1,
+      "correct": false,
+      "completed_mass": 20.476738305302987,
+      "update": {
+        "written": 0
+      },
+      "M": 24.000000000000007,
+      "E": 59.950598177246235,
+      "fee": 0.020476738305302992,
+      "gain": 0.0,
+      "loss": 0.24572085966363585
+    },
+    "factual": {
+      "correct": true,
+      "actual": -1,
+      "command": -1,
+      "completed_mass": 17.89113514330347,
+      "M": 24.000000000000007,
+      "E": 60.400216609982735
+    },
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw/07_local_delay_negate_content",
+    "native": 16
+  },
+  {
+    "seed": 202610199751,
+    "arm": "local_delay",
+    "trial": 40,
+    "trial_spec": {
+      "stage": "retained_gap",
+      "events": [
+        -1,
+        -1,
+        -1,
+        -1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        -1,
+        2
+      ],
+      "steps": 18,
+      "target": 1,
+      "writer": false,
+      "early": -1,
+      "tail": [
+        1,
+        -1
+      ],
+      "gap": 6
+    },
+    "parent": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_local_delay/encoded_040.npz",
+    "parent_sha": "4e1f0e71477ef306e3b473aba278ce6690c42b36c164f3b0952c58d2712983b6",
+    "treatment": "negate_content",
+    "steps": 14,
+    "factual_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_local_delay",
+    "changed_scalars": 5484,
+    "command": -1,
+    "prediction": [
+      -0.031479643523964145
+    ],
+    "result": {
+      "dx": -0.5488286909936555,
+      "actual": -1,
+      "correct": false,
+      "completed_mass": 18.029860602310215,
+      "update": {
+        "written": 0
+      },
+      "M": 24.000000000000014,
+      "E": 47.641915351062934,
+      "fee": 0.018029860602310214,
+      "gain": 0.0,
+      "loss": 0.21635832722772255
+    },
+    "factual": {
+      "correct": true,
+      "actual": 1,
+      "command": 1,
+      "completed_mass": 20.558290707523614,
+      "M": 24.00000000000001,
+      "E": 48.11655925020929
+    },
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw/08_local_delay_negate_content",
+    "native": 14
+  },
+  {
+    "seed": 202610199751,
+    "arm": "history_table",
+    "trial": 24,
+    "trial_spec": {
+      "stage": "unseen_gap",
+      "events": [
+        -1,
+        -1,
+        -1,
+        -1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        -1,
+        2
+      ],
+      "steps": 20,
+      "target": -1,
+      "writer": false,
+      "early": -1,
+      "tail": [
+        1,
+        -1
+      ],
+      "gap": 8
+    },
+    "parent": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_history_table/encoded_024.npz",
+    "parent_sha": "11306396a473f45578bdbc9f3ed03072a229de879f8e1445e952b42ce420a8bf",
+    "treatment": "negate_content",
+    "steps": 16,
+    "factual_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_history_table",
+    "changed_scalars": 4,
+    "command": 1,
+    "prediction": [
+      1.0,
+      1.0
+    ],
+    "result": {
+      "dx": 0.5206641784556538,
+      "actual": 1,
+      "correct": false,
+      "completed_mass": 20.38146852080563,
+      "update": {
+        "written": 0
+      },
+      "M": 23.99999999999998,
+      "E": 58.465781519828674,
+      "fee": 0.020381468520805628,
+      "gain": 0.0,
+      "loss": 0.24457762224966756
+    },
+    "factual": {
+      "correct": true,
+      "actual": -1,
+      "command": -1,
+      "completed_mass": 18.00085441990108,
+      "M": 23.99999999999998,
+      "E": 58.915313866372856
+    },
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw/09_history_table_negate_content",
+    "native": 16
+  },
+  {
+    "seed": 202610199751,
+    "arm": "history_table",
+    "trial": 40,
+    "trial_spec": {
+      "stage": "retained_gap",
+      "events": [
+        -1,
+        -1,
+        -1,
+        -1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        -1,
+        2
+      ],
+      "steps": 18,
+      "target": 1,
+      "writer": false,
+      "early": -1,
+      "tail": [
+        1,
+        -1
+      ],
+      "gap": 6
+    },
+    "parent": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_history_table/encoded_040.npz",
+    "parent_sha": "b6750f159f18e909b77492a8d19b666ca6aad978a86c84580b177d9f01f28fa0",
+    "treatment": "negate_content",
+    "steps": 14,
+    "factual_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_history_table",
+    "changed_scalars": 4,
+    "command": -1,
+    "prediction": [
+      1.0,
+      -1.0
+    ],
+    "result": {
+      "dx": -0.5483444316725343,
+      "actual": -1,
+      "correct": false,
+      "completed_mass": 17.9737075640925,
+      "update": {
+        "written": 0
+      },
+      "M": 23.99999999999997,
+      "E": 46.15813939603662,
+      "fee": 0.0179737075640925,
+      "gain": 0.0,
+      "loss": 0.21568449076910995
+    },
+    "factual": {
+      "correct": true,
+      "actual": 1,
+      "command": 1,
+      "completed_mass": 20.597707980527282,
+      "M": 23.99999999999997,
+      "E": 46.63250278054171
+    },
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw/10_history_table_negate_content",
+    "native": 14
+  },
+  {
+    "seed": 202610199752,
+    "arm": "adaptive_gain",
+    "trial": 24,
+    "trial_spec": {
+      "stage": "unseen_gap",
+      "events": [
+        1,
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        1,
+        2
+      ],
+      "steps": 18,
+      "target": 1,
+      "writer": false,
+      "early": 1,
+      "tail": [
+        -1,
+        1
+      ],
+      "gap": 6
+    },
+    "parent": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199752_adaptive_gain/encoded_024.npz",
+    "parent_sha": "eacae95ed83d23910693503870524a7f7bc012e1e74544f7ac4f50993f346d62",
+    "treatment": "negate_content",
+    "steps": 14,
+    "factual_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199752_adaptive_gain",
+    "changed_scalars": 894,
+    "command": -1,
+    "prediction": [
+      -0.28620802923907657
+    ],
+    "result": {
+      "dx": -0.5433201147131346,
+      "actual": -1,
+      "correct": false,
+      "completed_mass": 16.332839626768067,
+      "update": {
+        "written": 0
+      },
+      "M": 24.0,
+      "E": 56.67843850705136,
+      "fee": 0.016332839626768063,
+      "gain": 0.0,
+      "loss": 0.19599407552121678
+    },
+    "factual": {
+      "correct": true,
+      "actual": 1,
+      "command": 1,
+      "completed_mass": 19.57192554225294,
+      "M": 24.0,
+      "E": 57.11707173422327
+    },
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw/11_adaptive_gain_negate_content",
+    "native": 14
+  },
+  {
+    "seed": 202610199752,
+    "arm": "adaptive_gain",
+    "trial": 24,
+    "trial_spec": {
+      "stage": "unseen_gap",
+      "events": [
+        1,
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        1,
+        2
+      ],
+      "steps": 18,
+      "target": 1,
+      "writer": false,
+      "early": 1,
+      "tail": [
+        -1,
+        1
+      ],
+      "gap": 6
+    },
+    "parent": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199752_adaptive_gain/encoded_024.npz",
+    "parent_sha": "eacae95ed83d23910693503870524a7f7bc012e1e74544f7ac4f50993f346d62",
+    "treatment": "reset_gain",
+    "steps": 14,
+    "factual_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199752_adaptive_gain",
+    "changed_scalars": 894,
+    "command": 1,
+    "prediction": [
+      0.29837892717033926
+    ],
+    "result": {
+      "dx": 0.5132058293465889,
+      "actual": 1,
+      "correct": true,
+      "completed_mass": 19.57192554225294,
+      "update": {
+        "written": 0
+      },
+      "M": 24.0,
+      "E": 57.11707173422327,
+      "fee": 0.019571925542252944,
+      "gain": 0.2348631065070353,
+      "loss": 0.0
+    },
+    "factual": {
+      "correct": true,
+      "actual": 1,
+      "command": 1,
+      "completed_mass": 19.57192554225294,
+      "M": 24.0,
+      "E": 57.11707173422327
+    },
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw/12_adaptive_gain_reset_gain",
+    "native": 14
+  },
+  {
+    "seed": 202610199752,
+    "arm": "adaptive_gain",
+    "trial": 40,
+    "trial_spec": {
+      "stage": "retained_gap",
+      "events": [
+        -1,
+        -1,
+        -1,
+        -1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        -1,
+        2
+      ],
+      "steps": 19,
+      "target": 1,
+      "writer": false,
+      "early": -1,
+      "tail": [
+        -1,
+        -1
+      ],
+      "gap": 7
+    },
+    "parent": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199752_adaptive_gain/encoded_040.npz",
+    "parent_sha": "aa47ea540c28e1daeb180e1ebcf32f29b030c0b5cdf8cecb91045a0b89e8713e",
+    "treatment": "negate_content",
+    "steps": 15,
+    "factual_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199752_adaptive_gain",
+    "changed_scalars": 912,
+    "command": -1,
+    "prediction": [
+      -0.3870219891164957
+    ],
+    "result": {
+      "dx": -0.5501211667055195,
+      "actual": -1,
+      "correct": false,
+      "completed_mass": 17.902037857066432,
+      "update": {
+        "written": 0
+      },
+      "M": 24.000000000000004,
+      "E": 44.273515630832755,
+      "fee": 0.01790203785706643,
+      "gain": 0.0,
+      "loss": 0.21482445428479718
+    },
+    "factual": {
+      "correct": false,
+      "actual": -1,
+      "command": -1,
+      "completed_mass": 17.902037857066432,
+      "M": 24.000000000000004,
+      "E": 44.273515630832755
+    },
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw/13_adaptive_gain_negate_content",
+    "native": 15
+  },
+  {
+    "seed": 202610199752,
+    "arm": "adaptive_gain",
+    "trial": 40,
+    "trial_spec": {
+      "stage": "retained_gap",
+      "events": [
+        -1,
+        -1,
+        -1,
+        -1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        -1,
+        2
+      ],
+      "steps": 19,
+      "target": 1,
+      "writer": false,
+      "early": -1,
+      "tail": [
+        -1,
+        -1
+      ],
+      "gap": 7
+    },
+    "parent": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199752_adaptive_gain/encoded_040.npz",
+    "parent_sha": "aa47ea540c28e1daeb180e1ebcf32f29b030c0b5cdf8cecb91045a0b89e8713e",
+    "treatment": "reset_gain",
+    "steps": 15,
+    "factual_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199752_adaptive_gain",
+    "changed_scalars": 912,
+    "command": -1,
+    "prediction": [
+      -0.4051767878424826
+    ],
+    "result": {
+      "dx": -0.5501211667055195,
+      "actual": -1,
+      "correct": false,
+      "completed_mass": 17.902037857066432,
+      "update": {
+        "written": 0
+      },
+      "M": 24.000000000000004,
+      "E": 44.273515630832755,
+      "fee": 0.01790203785706643,
+      "gain": 0.0,
+      "loss": 0.21482445428479718
+    },
+    "factual": {
+      "correct": false,
+      "actual": -1,
+      "command": -1,
+      "completed_mass": 17.902037857066432,
+      "M": 24.000000000000004,
+      "E": 44.273515630832755
+    },
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw/14_adaptive_gain_reset_gain",
+    "native": 15
+  },
+  {
+    "seed": 202610199752,
+    "arm": "fixed_event",
+    "trial": 24,
+    "trial_spec": {
+      "stage": "unseen_gap",
+      "events": [
+        1,
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        1,
+        2
+      ],
+      "steps": 18,
+      "target": 1,
+      "writer": false,
+      "early": 1,
+      "tail": [
+        -1,
+        1
+      ],
+      "gap": 6
+    },
+    "parent": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199752_fixed_event/encoded_024.npz",
+    "parent_sha": "b55f1c64c6b687166005c1c53a5fb4b6eaed57aaaadf74a48aa15af691aa2f56",
+    "treatment": "negate_content",
+    "steps": 14,
+    "factual_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199752_fixed_event",
+    "changed_scalars": 2682,
+    "command": -1,
+    "prediction": [
+      -0.446020747081646
+    ],
+    "result": {
+      "dx": -0.5433201147131346,
+      "actual": -1,
+      "correct": false,
+      "completed_mass": 16.332839626768067,
+      "update": {
+        "written": 0
+      },
+      "M": 24.0,
+      "E": 56.67843850705136,
+      "fee": 0.016332839626768063,
+      "gain": 0.0,
+      "loss": 0.19599407552121678
+    },
+    "factual": {
+      "correct": true,
+      "actual": 1,
+      "command": 1,
+      "completed_mass": 19.57192554225294,
+      "M": 24.0,
+      "E": 57.11707173422327
+    },
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw/15_fixed_event_negate_content",
+    "native": 14
+  },
+  {
+    "seed": 202610199752,
+    "arm": "fixed_event",
+    "trial": 40,
+    "trial_spec": {
+      "stage": "retained_gap",
+      "events": [
+        -1,
+        -1,
+        -1,
+        -1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        -1,
+        2
+      ],
+      "steps": 19,
+      "target": 1,
+      "writer": false,
+      "early": -1,
+      "tail": [
+        -1,
+        -1
+      ],
+      "gap": 7
+    },
+    "parent": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199752_fixed_event/encoded_040.npz",
+    "parent_sha": "1255491c9615ce22cf11fc3cc8b464d93bebb4164230c08fadde553ec5ff84f6",
+    "treatment": "negate_content",
+    "steps": 15,
+    "factual_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199752_fixed_event",
+    "changed_scalars": 2736,
+    "command": -1,
+    "prediction": [
+      -0.1065243321600371
+    ],
+    "result": {
+      "dx": -0.5497438708061075,
+      "actual": -1,
+      "correct": false,
+      "completed_mass": 17.837550158993245,
+      "update": {
+        "written": 0
+      },
+      "M": 24.0,
+      "E": 43.82078195037066,
+      "fee": 0.017837550158993246,
+      "gain": 0.0,
+      "loss": 0.21405060190791894
+    },
+    "factual": {
+      "correct": false,
+      "actual": -1,
+      "command": -1,
+      "completed_mass": 17.837550158993245,
+      "M": 24.0,
+      "E": 43.82078195037066
+    },
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw/16_fixed_event_negate_content",
+    "native": 15
+  },
+  {
+    "seed": 202610199752,
+    "arm": "local_delay",
+    "trial": 24,
+    "trial_spec": {
+      "stage": "unseen_gap",
+      "events": [
+        1,
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        1,
+        2
+      ],
+      "steps": 18,
+      "target": 1,
+      "writer": false,
+      "early": 1,
+      "tail": [
+        -1,
+        1
+      ],
+      "gap": 6
+    },
+    "parent": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199752_local_delay/encoded_024.npz",
+    "parent_sha": "1c823d470fea6e99182ce656290fdc377398f565017e429ab3ebfa8174effca3",
+    "treatment": "negate_content",
+    "steps": 14,
+    "factual_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199752_local_delay",
+    "changed_scalars": 5364,
+    "command": -1,
+    "prediction": [
+      -0.5274897937231201
+    ],
+    "result": {
+      "dx": -0.5432107085852742,
+      "actual": -1,
+      "correct": false,
+      "completed_mass": 16.243338985816543,
+      "update": {
+        "written": 0
+      },
+      "M": 24.000000000000007,
+      "E": 60.181562194030775,
+      "fee": 0.016243338985816543,
+      "gain": 0.0,
+      "loss": 0.19492006782979854
+    },
+    "factual": {
+      "correct": true,
+      "actual": 1,
+      "command": 1,
+      "completed_mass": 19.49281667432585,
+      "M": 24.000000000000004,
+      "E": 60.61802750186845
+    },
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw/17_local_delay_negate_content",
+    "native": 14
+  },
+  {
+    "seed": 202610199752,
+    "arm": "local_delay",
+    "trial": 40,
+    "trial_spec": {
+      "stage": "retained_gap",
+      "events": [
+        -1,
+        -1,
+        -1,
+        -1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        -1,
+        2
+      ],
+      "steps": 19,
+      "target": 1,
+      "writer": false,
+      "early": -1,
+      "tail": [
+        -1,
+        -1
+      ],
+      "gap": 7
+    },
+    "parent": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199752_local_delay/encoded_040.npz",
+    "parent_sha": "75932d5d7a34dc3cdffb80cc6e6e8ef20154e5327fe13b2357e82e591e9251c6",
+    "treatment": "negate_content",
+    "steps": 15,
+    "factual_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199752_local_delay",
+    "changed_scalars": 5472,
+    "command": -1,
+    "prediction": [
+      -0.25794460022853904
+    ],
+    "result": {
+      "dx": -0.5504173162439425,
+      "actual": -1,
+      "correct": false,
+      "completed_mass": 17.861471749958344,
+      "update": {
+        "written": 0
+      },
+      "M": 24.000000000000007,
+      "E": 47.738646311246754,
+      "fee": 0.017861471749958342,
+      "gain": 0.0,
+      "loss": 0.2143376609995001
+    },
+    "factual": {
+      "correct": false,
+      "actual": -1,
+      "command": -1,
+      "completed_mass": 17.861471749958344,
+      "M": 24.000000000000007,
+      "E": 47.738646311246754
+    },
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw/18_local_delay_negate_content",
+    "native": 15
+  },
+  {
+    "seed": 202610199752,
+    "arm": "history_table",
+    "trial": 24,
+    "trial_spec": {
+      "stage": "unseen_gap",
+      "events": [
+        1,
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        1,
+        2
+      ],
+      "steps": 18,
+      "target": 1,
+      "writer": false,
+      "early": 1,
+      "tail": [
+        -1,
+        1
+      ],
+      "gap": 6
+    },
+    "parent": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/fecb9eed-feb6-4c29-a883-2d0a7f462286/raw/202610199752_history_table/encoded_024.npz",
+    "parent_sha": "10507a7f0ea572873d78703ca0496fd2cedc10008d32ce8f016ab1ff784cb74b",
+    "treatment": "negate_content",
+    "steps": 14,
+    "factual_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/fecb9eed-feb6-4c29-a883-2d0a7f462286/raw/202610199752_history_table",
+    "changed_scalars": 4,
+    "command": -1,
+    "prediction": [
+      1.0,
+      -1.0
+    ],
+    "result": {
+      "dx": -0.5433787719804997,
+      "actual": -1,
+      "correct": false,
+      "completed_mass": 16.249120902403202,
+      "update": {
+        "written": 0
+      },
+      "M": 23.999999999999996,
+      "E": 58.65071636457037,
+      "fee": 0.016249120902403207,
+      "gain": 0.0,
+      "loss": 0.19498945082883845
+    },
+    "factual": {
+      "correct": true,
+      "actual": 1,
+      "command": 1,
+      "completed_mass": 19.533646978124082,
+      "M": 23.999999999999996,
+      "E": 59.08773060309521
+    },
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw/19_history_table_negate_content",
+    "native": 14
+  },
+  {
+    "seed": 202610199752,
+    "arm": "history_table",
+    "trial": 40,
+    "trial_spec": {
+      "stage": "retained_gap",
+      "events": [
+        -1,
+        -1,
+        -1,
+        -1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        -1,
+        2
+      ],
+      "steps": 19,
+      "target": 1,
+      "writer": false,
+      "early": -1,
+      "tail": [
+        -1,
+        -1
+      ],
+      "gap": 7
+    },
+    "parent": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/fecb9eed-feb6-4c29-a883-2d0a7f462286/raw/202610199752_history_table/encoded_040.npz",
+    "parent_sha": "942a69beba4b6fe576eb77eb3755b8c37229c05dd231e8de939d7133c26dbbd7",
+    "treatment": "negate_content",
+    "steps": 15,
+    "factual_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/fecb9eed-feb6-4c29-a883-2d0a7f462286/raw/202610199752_history_table",
+    "changed_scalars": 4,
+    "command": -1,
+    "prediction": [
+      1.0,
+      -1.0
+    ],
+    "result": {
+      "dx": -0.5498203336505032,
+      "actual": -1,
+      "correct": false,
+      "completed_mass": 17.828967328125046,
+      "update": {
+        "written": 0
+      },
+      "M": 23.999999999999996,
+      "E": 46.208438062280166,
+      "fee": 0.017828967328125046,
+      "gain": 0.0,
+      "loss": 0.21394760793750053
+    },
+    "factual": {
+      "correct": true,
+      "actual": 1,
+      "command": 1,
+      "completed_mass": 20.481024543284818,
+      "M": 23.999999999999993,
+      "E": 46.678564679785396
+    },
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw/20_history_table_negate_content",
+    "native": 15
+  }
+]

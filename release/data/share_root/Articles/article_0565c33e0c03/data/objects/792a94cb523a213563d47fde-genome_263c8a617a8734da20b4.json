@@ -1,0 +1,37 @@
+{
+  "schema": "experience-adaptation-genome.v1",
+  "id": "genome_263c8a617a8734da20b4",
+  "family": "reference_anisotropic",
+  "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/reference_anisotropic--bridged_longbody.npz",
+  "source_sha256": "b5f72ba5a169cf646907a88541e8aae7449fc519fae939b9164d3ee9576c278e",
+  "genes": [
+    0.07176672818309565,
+    0.07053773348718866,
+    0.04906981391742597,
+    0.057344937557714915,
+    0.06724215347278435,
+    -0.04150572375844298,
+    0.14966416982220532,
+    0.06183270984872204,
+    0.07507951378717476,
+    0.06544690857586707,
+    0.07374062677040459
+  ],
+  "parent_id": "genome_7c66315c6cfca2ea70fe",
+  "generation": 1,
+  "mutation_seed": 202610180502,
+  "named_genes": {
+    "log_mu1": 0.07176672818309565,
+    "log_mu2": 0.07053773348718866,
+    "log_sigma1": 0.04906981391742597,
+    "log_sigma2": 0.057344937557714915,
+    "weight_shift": 0.06724215347278435,
+    "kernel_radial1": -0.04150572375844298,
+    "kernel_radial2": 0.14966416982220532,
+    "kernel_crossmix": 0.06183270984872204,
+    "log_stretch_y": 0.07507951378717476,
+    "log_stretch_x": 0.06544690857586707,
+    "neck_density": 0.07374062677040459
+  },
+  "lifetime_rule": "fixed; only outer generations mutate"
+}

@@ -1,0 +1,62 @@
+{
+  "native": 0,
+  "old_step_AST_only_horizon": true,
+  "parents": [
+    {
+      "parent": "b2--paid_recycle",
+      "arm": "P_on_recycle_on",
+      "full_inheritance_exact": true,
+      "inputs_exact": true,
+      "checkpoint_exact": true
+    },
+    {
+      "parent": "b2--paid_recycle",
+      "arm": "P_on_recycle_off",
+      "full_inheritance_exact": true,
+      "inputs_exact": true,
+      "checkpoint_exact": true
+    },
+    {
+      "parent": "b2--paid_recycle",
+      "arm": "P_off_recycle_on",
+      "full_inheritance_exact": true,
+      "inputs_exact": true,
+      "checkpoint_exact": true
+    },
+    {
+      "parent": "b2--paid_recycle",
+      "arm": "P_off_recycle_off",
+      "full_inheritance_exact": true,
+      "inputs_exact": true,
+      "checkpoint_exact": true
+    },
+    {
+      "parent": "b6--paid_recycle",
+      "arm": "P_on_recycle_on",
+      "full_inheritance_exact": true,
+      "inputs_exact": true,
+      "checkpoint_exact": true
+    },
+    {
+      "parent": "b6--paid_recycle",
+      "arm": "P_on_recycle_off",
+      "full_inheritance_exact": true,
+      "inputs_exact": true,
+      "checkpoint_exact": true
+    },
+    {
+      "parent": "b6--paid_recycle",
+      "arm": "P_off_recycle_on",
+      "full_inheritance_exact": true,
+      "inputs_exact": true,
+      "checkpoint_exact": true
+    },
+    {
+      "parent": "b6--paid_recycle",
+      "arm": "P_off_recycle_off",
+      "full_inheritance_exact": true,
+      "inputs_exact": true,
+      "checkpoint_exact": true
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "status": "stage_qualification_addendum",
+  "native": 0,
+  "original_unchanged": true,
+  "original_handoff_sha256": "076c9040cd31e49fc928325fa3d01b1c8ee80b65dd8c1988b46c5e66511a499f",
+  "qualified_csv": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/birth_cohort_exposure_readout_20261019/exposures_stage_qualified.csv",
+  "qualified_sha256": "59daf187061d93fbf09b38e6562f62b798c86a1b240e5d10892d15812aff8207",
+  "scope": "offset1是出生后位置：h符号仍可定位，但该步删除在出生之前，不能把先前D/rho称新生危险；旧after_actor rho也不是出生后体量分母。五个字段在规范表的10个offset1记录均置空，原观察账保留。offset2..64的pre-rule cohort加权量、两反转末帧比较、资源反例及下一实验决定均不变。"
+}

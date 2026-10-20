@@ -1,0 +1,212 @@
+{
+  "decisions": [
+    {
+      "decision_id": "a",
+      "decision_order": 20,
+      "phase": "before_choice",
+      "decision_receipt_digest": "5b88ba133ce239f644acc505516bbf053b557b3dd10fba34c99daedbbd5b8b24",
+      "support_digest": "4523045657466bc85b50c4260a809a444f42c89580cf8916c5038147e2954286",
+      "comparison_context_digest": "1c033dbf4d0fb7ef3c899d6af993655b256cdda87b089395adc6c91d59a4ef97",
+      "public": {
+        "cue": 1,
+        "rho": 1.0,
+        "energy": 2.0,
+        "resource": 0.0
+      },
+      "phenotype": {
+        "mature": 0.0
+      },
+      "pending": {
+        "queue": [
+          0.8
+        ]
+      },
+      "history": [
+        {
+          "event_id": "92a72ae8fe30276e8c527c1fc63ed62f37bd2c32f30b974ef3cca5bbfd95890d",
+          "cue": 1,
+          "action": 0,
+          "selected_channel": 0,
+          "label": 1,
+          "cue_order": 0,
+          "payment_order": 0,
+          "opened_order": 1,
+          "completed_order": 3,
+          "paid": true,
+          "complete": true,
+          "observed": true,
+          "covered": true,
+          "legal_carrier": true,
+          "receipt_digest": "bb2efc7f44268ec264e75e923b1ede362bc14e3b35818a9687b18e615087b60b"
+        },
+        {
+          "event_id": "135f17a475a61afdeeaf3759ad2e45ad1c7abb192395abe47e41fc8e395dc1a9",
+          "cue": 1,
+          "action": 0,
+          "selected_channel": 0,
+          "label": 1,
+          "cue_order": 4,
+          "payment_order": 4,
+          "opened_order": 5,
+          "completed_order": 7,
+          "paid": true,
+          "complete": true,
+          "observed": true,
+          "covered": true,
+          "legal_carrier": true,
+          "receipt_digest": "b3f7420fd5e0ef9a7f7abc9f3017bd05808d2e166ad3d13e8ab3daf1a57a03f1"
+        },
+        {
+          "event_id": "a5b8338b45ff4de091fba872f3d9f7bfb12cd617d8140449d6eb25666e748312",
+          "cue": 1,
+          "action": 0,
+          "selected_channel": 0,
+          "label": 0,
+          "cue_order": 8,
+          "payment_order": 8,
+          "opened_order": 9,
+          "completed_order": 11,
+          "paid": true,
+          "complete": true,
+          "observed": true,
+          "covered": true,
+          "legal_carrier": true,
+          "receipt_digest": "4cbc92e050eeb8ccf6b830bfd0d44867d252a68acd7dfb4de3faa3f277df81fd"
+        }
+      ]
+    },
+    {
+      "decision_id": "b",
+      "decision_order": 20,
+      "phase": "before_choice",
+      "decision_receipt_digest": "33db9773e736c03b47101c57a15b7c1a0b6e4910a8c52619a99e555b3dc7d927",
+      "support_digest": "4523045657466bc85b50c4260a809a444f42c89580cf8916c5038147e2954286",
+      "comparison_context_digest": "1c033dbf4d0fb7ef3c899d6af993655b256cdda87b089395adc6c91d59a4ef97",
+      "public": {
+        "cue": 1,
+        "rho": 1.0,
+        "energy": 2.0,
+        "resource": 0.0
+      },
+      "phenotype": {
+        "mature": 0.0
+      },
+      "pending": {
+        "queue": [
+          0.2
+        ]
+      },
+      "history": [
+        {
+          "event_id": "244c0bb5a9f5a0bc7140f577285af331a46773a810e635972497277ab37d240c",
+          "cue": 1,
+          "action": 0,
+          "selected_channel": 0,
+          "label": 0,
+          "cue_order": 0,
+          "payment_order": 0,
+          "opened_order": 1,
+          "completed_order": 3,
+          "paid": true,
+          "complete": true,
+          "observed": true,
+          "covered": true,
+          "legal_carrier": true,
+          "receipt_digest": "a239abf56e4ac41d94cc9fccc108fc566149193668d60cae2b6534e5fc1e73a9"
+        },
+        {
+          "event_id": "37a681c087f45d465f731fc63d813bc38bd3745774c482628d995bc54d08bf7d",
+          "cue": 1,
+          "action": 0,
+          "selected_channel": 0,
+          "label": 0,
+          "cue_order": 4,
+          "payment_order": 4,
+          "opened_order": 5,
+          "completed_order": 7,
+          "paid": true,
+          "complete": true,
+          "observed": true,
+          "covered": true,
+          "legal_carrier": true,
+          "receipt_digest": "07aa66f6a71ffe1312f949782d9d072cd72d40bade07e4c5d74a82efd891cb7b"
+        },
+        {
+          "event_id": "4f131028fafec4e844279fbd96f1b18e035b1a1795911d7c6cf0595ec38b47d7",
+          "cue": 1,
+          "action": 0,
+          "selected_channel": 0,
+          "label": 0,
+          "cue_order": 8,
+          "payment_order": 8,
+          "opened_order": 9,
+          "completed_order": 11,
+          "paid": true,
+          "complete": true,
+          "observed": true,
+          "covered": true,
+          "legal_carrier": true,
+          "receipt_digest": "1e318208f4a54c982b70b8c00fe8621da905f7a30087c6a07cec372f96fd0fa2"
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    {
+      "decision_id": "a",
+      "completed_order": 30,
+      "label": 1,
+      "complete": true,
+      "observed": true,
+      "available_to_policy_at_choice": false,
+      "receipt_digest": "ab9a000bc7e346e4d236f6395c5ad9ae62e268cd1b525f1733ff310942599823"
+    },
+    {
+      "decision_id": "b",
+      "completed_order": 30,
+      "label": 0,
+      "complete": true,
+      "observed": true,
+      "available_to_policy_at_choice": false,
+      "receipt_digest": "33d240c273b88abf9c8944190bb831baac8344e15d44e2b9be09e1bd5e9b4da0"
+    }
+  ],
+  "contract": {
+    "schema": "anticipatory-information-audit.v1",
+    "host_contract_digest": "adf4bd2f57f8054ffe2466f40d15d7d07db06f07dc9376b2e029189023ffc7af",
+    "opportunity_semantics": "completed_local_opportunity",
+    "target_domain": "binary",
+    "public_fields": [
+      "cue",
+      "rho",
+      "energy",
+      "resource"
+    ],
+    "phenotype_fields": [
+      "mature"
+    ],
+    "pending_fields": [
+      "queue"
+    ],
+    "complete_public_input_declared": true,
+    "complete_phenotype_pending_declared": true
+  },
+  "assessments": [
+    {
+      "decision_id": "a",
+      "kind": "conditional_binary_probability",
+      "value": 0.8,
+      "evaluator_only": true,
+      "provenance_digest": "200b8624de6499576e9fb4244a06500f08c8128e5fa9a835af6ad78dbec8abbb",
+      "comparison_context_digest": "1c033dbf4d0fb7ef3c899d6af993655b256cdda87b089395adc6c91d59a4ef97"
+    },
+    {
+      "decision_id": "b",
+      "kind": "conditional_binary_probability",
+      "value": 0.2,
+      "evaluator_only": true,
+      "provenance_digest": "82f0067be8f706f8134c7b386411ede342b7f640fcc194416c8f9e330b70574f",
+      "comparison_context_digest": "1c033dbf4d0fb7ef3c899d6af993655b256cdda87b089395adc6c91d59a4ef97"
+    }
+  ]
+}

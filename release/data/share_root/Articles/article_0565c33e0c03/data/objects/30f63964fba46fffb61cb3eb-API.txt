@@ -1,0 +1,24 @@
+唯一冻结入口
+from environment_evolution.anticipatory_material_allocation.core import Config, AnticipatoryEcology, make_tape
+env=AnticipatoryEcology(Config())
+tape=make_tape(seed,cycles=24,world='reversal',change_points=(12,)) # host私有
+obs=env.observe(phase, int(tape['cue'][cycle]))
+row,receipt=env.step(action,phase,commit=weights_or_None,
+    resource_input=6*tape['arrivals'][cycle] if phase==12 else None,
+    memory_fee=fee,detect=(phase==12))
+state=env.checkpoint(); child=AnticipatoryEcology.restore(state)
+
+commit: 动作前32² [0,1]权重，勿预乘rho；phase4之外不执行，row标记outside_window。
+resource_input: host两端实际资源总量，非标签；默认输入每端6。
+memory_fee: 非负有限实际请求费；若未全付，承诺不执行。phase与step_index%32严格一致。
+observe: phase/cue(0..4)/rho/resource/Energy键energy/active/pending/pending_due/step/subcell_x。
+row: step为返回后钟；phase为本次动作前钟；M/E/uptake/input/热/出口/死亡/born/rejected；
+      basal/move/memory/commit/detect价格实付；active/pending总量及三种守恒残差。
+receipt: rho_before/shift/keep/survivor/uptake/proposed_born/born/rejected_material，
+         active/pending/pending_due/matured/commit_target/commit_accepted，
+         completed_mask/local_label(未知−1)。数组由唯一实际step返回，不重复forward。
+active、pending、matured已经位移并乘keep；newborn不继承能力或历史。
+能力总量为6，功能量建造由E支付；初始化6为共同出生禀赋。没有额外运行维护费。
+环境和反转/未来tape只留host，局部学习器仅可见obs与合法receipt字段。
+正常pre-action库存为0：资源脉冲在phase12 step内到达并摄取/流出，完成反馈在post13取得。
+phase4成功承诺post5：active0/pending>0；phase12 step入口成熟；post13反馈。

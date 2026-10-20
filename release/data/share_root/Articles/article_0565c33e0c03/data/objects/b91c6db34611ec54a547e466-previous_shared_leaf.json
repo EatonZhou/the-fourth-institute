@@ -1,0 +1,22 @@
+{
+  "cap": [
+    9312,
+    1800
+  ],
+  "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/handoff.json",
+  "job": "43568f01-955a-4ddc-ba37-62903b18f278",
+  "next_request": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/scientific_next_request.json",
+  "objective_met": false,
+  "result": "theta0 retained;0/10 nonzero eligible;greedy beats w0 M/E/bodytime/new tissue in4 related contexts;0/8 last-two-window maintenance",
+  "sha256": "557f7c82043c06ce9db8edeb67ac042ff04cec6db991c98506aa1ac88778d2e2",
+  "status": "completed_candidate_closed",
+  "task": "resource_conditioned_growth_rule_20261019",
+  "unused_sealed": [
+    3484,
+    1533.025286
+  ],
+  "used": [
+    5828,
+    266.974714
+  ]
+}

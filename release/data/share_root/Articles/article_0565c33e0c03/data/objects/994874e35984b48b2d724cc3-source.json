@@ -1,0 +1,626 @@
+{
+  "sources": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--naive--x-frames.npz",
+      "sha256": "eec570e5ba00eacfeed692a2d17cf947ccc7bdf2049649c546e5ddda75ebd614"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_93e6148d32bbb0862163--naive--x/pulse_after_161.npz",
+      "sha256": "e09bd3617384f1478f88012b2a150f5541827a058fd41ee7ee7b47a7e45f0a07"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--experienced--x-frames.npz",
+      "sha256": "b5f7bf959be18649d418d606511345b549dfda1fe53c80976da3673cb0f01f98"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_93e6148d32bbb0862163--experienced--x/pulse_after_161.npz",
+      "sha256": "f1b2d679cc1336e910d583124f24ed27f63cf46913475733f983566ff8969a21"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--naive--x-frames.npz",
+      "sha256": "940fdd0bda1454ee7c186f3672a697df3db10d8f4a24e11b2fc74d6a63036bda"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_8d60f7d250e8e9f2a25b--naive--x/pulse_after_161.npz",
+      "sha256": "1d93760c5f4757975cac6888e3758f274a0ef42aa3a5eebc2f56a3485e2e5f90"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--experienced--x-frames.npz",
+      "sha256": "c7cc956eb44d164da0f4b95d363a80fddc6e34a50d6fcf0142d80fef891c7b59"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_8d60f7d250e8e9f2a25b--experienced--x/pulse_after_161.npz",
+      "sha256": "71b1fdf6908fdc1ac117835bac705a856398a7df64d0cc174ea8b6ca02f80c9b"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--naive--x-frames.npz",
+      "sha256": "f2797d70fe5bb006418af7555fbba91731d9b54a1a6e90cf53bde7f18cc2b5cd"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--experienced--x-frames.npz",
+      "sha256": "9dd541ed0002c3beeaceb0865c45fb1f915472e21fe75338b8f532a34a1813c0"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--naive--x-frames.npz",
+      "sha256": "11c9334a6c807bc1b0c946e8d6ec305fc50e6c1a9cbbca48535fd08a5662396b"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--experienced--x-frames.npz",
+      "sha256": "538af594fc08346374b27705da721cb635b707d4d399f555a4d1f5c97c735381"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/compact_ring_core_outer--bridged_longbody--excised-frames.npz",
+      "sha256": "ec40033b34680960c344f5ab51f74be13e7e664845bc0e2ac70596190d653a34"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/compact_ring_core_outer--bridged_longbody--uninjured-frames.npz",
+      "sha256": "c4e6c1b7703215e7449bf3aed5ded5f84ba3908b93bd6ba263f28db8ae9d9713"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/handoff.json",
+      "sha256": "b167d527f0ba7ee39d4730221ee805d1b0212ff4a61767dd25d6bbe020cf00ee"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/METHOD.txt",
+      "sha256": "1ba57c6b6dcefaa40f742229bee52a6f95234f1773910f596e64852f77973bb8"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/INTERPRETATION.txt",
+      "sha256": "704472dd345573cd9d31b60f6118c79ea6e386632fa12e2f80346ff8313145db"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/full_cycle.csv",
+      "sha256": "f03fe9075fe1d2a40525c3cbbf9d471b4c4c76621aa8057431c1b61348604134"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/full_cycle_differences.csv",
+      "sha256": "f021ce78aff6b356109cab7780100a774d7aac80aefb03a5ea17761fefbb5395"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/pulses.csv",
+      "sha256": "cf1819715e1f9987553a5f7e0df8c2bc8357158aa9c92ed12aa84ca36c9919bc"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/per_step.csv",
+      "sha256": "f414a8094396e3850b89ada21c8f76236f6c75782f0d86e945c73f1dbc3fab59"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/full_cycle_effect_steps.csv",
+      "sha256": "466c312b16969fc0bbfbd2eede52f0863536427173558785e49f98c0f5c561ee"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/outcomes.csv",
+      "sha256": "f8c7717f22ecd3545851992444f912eda86a699eb5053416e397ea9fa975d12e"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/handoff.json",
+      "sha256": "094c89add9710116803189a51297fba991c1e328ade5e2d24e6f9a1d4251130f"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/METHOD.txt",
+      "sha256": "a8c08efcfeea83af3e48a60a8a4e741e2675ec016785bb1130828b8c37dfad39"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/REPORT.txt",
+      "sha256": "d1fa6c95a5bba87eed4a05e41d6b0386cfb25c9169917a6f21b55b2d1d1472be"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/per_step.csv",
+      "sha256": "f3940b9734a7240abd9de32ad96fa0c04bfd38ab9bb281c315c20a3e4b3220cc"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/outcomes.csv",
+      "sha256": "11a2c69f397997c0092ac705b716ac6bebe5cfa101703c25c7f5e23e61260aad"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/shape_comparison.csv",
+      "sha256": "d519c195419fca2767f8b2072b3e88a439d672a6f9d3aacaf335b5346a64d7ce"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_rule_initial_factorial_20261018/handoff.json",
+      "sha256": "504eb3bfec241d1a8072d19d462bab27decfe3b88564f6fe2c6bfe11ebd665ea",
+      "local_copy": "data/factorial_source/handoff.json"
+    },
+    {
+      "path": "${share_root}/Articles/article_0565c33e0c03/research/experience_value_mechanism_20261017/rule_initial_factorial_source_data/METHOD.txt",
+      "sha256": "4dffbf76ea65a62684d9ca723cf7e0cb14a96986b9f5f283e58c19b1f7fa82fe",
+      "local_copy": "data/factorial_source/METHOD.txt"
+    },
+    {
+      "path": "${share_root}/Articles/article_0565c33e0c03/research/experience_value_mechanism_20261017/rule_initial_factorial_source_data/REPORT.txt",
+      "sha256": "11a9ef814919c39d3e4525df03d5428b8738adc5aebc6a54f947703980b002ba",
+      "local_copy": "data/factorial_source/REPORT.txt"
+    },
+    {
+      "path": "${share_root}/Articles/article_0565c33e0c03/research/experience_value_mechanism_20261017/rule_initial_factorial_source_data/full_cycle.csv",
+      "sha256": "8a2ae582497a1f92edf6cc01e4bcdbd04a574112d9511450664c272d53b00326",
+      "local_copy": "data/factorial_source/full_cycle.csv"
+    },
+    {
+      "path": "${share_root}/Articles/article_0565c33e0c03/research/experience_value_mechanism_20261017/rule_initial_factorial_source_data/full_cycle_differences.csv",
+      "sha256": "4ca7d0faa50b817424c1ad0fcee467c75093265306d3741b52d3fc582d6060ca",
+      "local_copy": "data/factorial_source/full_cycle_differences.csv"
+    },
+    {
+      "path": "${share_root}/Articles/article_0565c33e0c03/research/experience_value_mechanism_20261017/rule_initial_factorial_source_data/outcomes.csv",
+      "sha256": "fc95f964959fd76b05f02589f2e322812918649da4a580400d317580d2b61714",
+      "local_copy": "data/factorial_source/outcomes.csv"
+    }
+  ],
+  "assets": [
+    {
+      "file": "cp_N_160.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--naive--x-frames.npz",
+      "step": 160,
+      "crop_inclusive_xy": [
+        28,
+        67,
+        28,
+        63
+      ],
+      "orientation": "y up, fixed original coordinates",
+      "field": "rho",
+      "scale": [
+        0,
+        1
+      ],
+      "units": "M/cell"
+    },
+    {
+      "file": "cp_N_184.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--naive--x-frames.npz",
+      "step": 184,
+      "crop_inclusive_xy": [
+        28,
+        67,
+        28,
+        63
+      ],
+      "orientation": "y up, fixed original coordinates",
+      "field": "rho",
+      "scale": [
+        0,
+        1
+      ],
+      "units": "M/cell"
+    },
+    {
+      "file": "cp_N_224.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--naive--x-frames.npz",
+      "step": 224,
+      "crop_inclusive_xy": [
+        28,
+        67,
+        28,
+        63
+      ],
+      "orientation": "y up, fixed original coordinates",
+      "field": "rho",
+      "scale": [
+        0,
+        1
+      ],
+      "units": "M/cell"
+    },
+    {
+      "file": "cp_N_cut.png",
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_93e6148d32bbb0862163--naive--x/pulse_after_161.npz",
+      "step": "after cut, before update161",
+      "crop_inclusive_xy": [
+        28,
+        67,
+        28,
+        63
+      ],
+      "orientation": "y up, fixed original coordinates",
+      "field": "rho",
+      "scale": [
+        0,
+        1
+      ],
+      "units": "M/cell"
+    },
+    {
+      "file": "cp_C_160.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--experienced--x-frames.npz",
+      "step": 160,
+      "crop_inclusive_xy": [
+        28,
+        67,
+        28,
+        63
+      ],
+      "orientation": "y up, fixed original coordinates",
+      "field": "rho",
+      "scale": [
+        0,
+        1
+      ],
+      "units": "M/cell"
+    },
+    {
+      "file": "cp_C_184.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--experienced--x-frames.npz",
+      "step": 184,
+      "crop_inclusive_xy": [
+        28,
+        67,
+        28,
+        63
+      ],
+      "orientation": "y up, fixed original coordinates",
+      "field": "rho",
+      "scale": [
+        0,
+        1
+      ],
+      "units": "M/cell"
+    },
+    {
+      "file": "cp_C_224.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_93e6148d32bbb0862163--experienced--x-frames.npz",
+      "step": 224,
+      "crop_inclusive_xy": [
+        28,
+        67,
+        28,
+        63
+      ],
+      "orientation": "y up, fixed original coordinates",
+      "field": "rho",
+      "scale": [
+        0,
+        1
+      ],
+      "units": "M/cell"
+    },
+    {
+      "file": "cp_C_cut.png",
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_93e6148d32bbb0862163--experienced--x/pulse_after_161.npz",
+      "step": "after cut, before update161",
+      "crop_inclusive_xy": [
+        28,
+        67,
+        28,
+        63
+      ],
+      "orientation": "y up, fixed original coordinates",
+      "field": "rho",
+      "scale": [
+        0,
+        1
+      ],
+      "units": "M/cell"
+    },
+    {
+      "file": "cc_N_160.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--naive--x-frames.npz",
+      "step": 160,
+      "crop_inclusive_xy": [
+        28,
+        67,
+        28,
+        63
+      ],
+      "orientation": "y up, fixed original coordinates",
+      "field": "rho",
+      "scale": [
+        0,
+        1
+      ],
+      "units": "M/cell"
+    },
+    {
+      "file": "cc_N_184.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--naive--x-frames.npz",
+      "step": 184,
+      "crop_inclusive_xy": [
+        28,
+        67,
+        28,
+        63
+      ],
+      "orientation": "y up, fixed original coordinates",
+      "field": "rho",
+      "scale": [
+        0,
+        1
+      ],
+      "units": "M/cell"
+    },
+    {
+      "file": "cc_N_224.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--naive--x-frames.npz",
+      "step": 224,
+      "crop_inclusive_xy": [
+        28,
+        67,
+        28,
+        63
+      ],
+      "orientation": "y up, fixed original coordinates",
+      "field": "rho",
+      "scale": [
+        0,
+        1
+      ],
+      "units": "M/cell"
+    },
+    {
+      "file": "cc_N_cut.png",
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_8d60f7d250e8e9f2a25b--naive--x/pulse_after_161.npz",
+      "step": "after cut, before update161",
+      "crop_inclusive_xy": [
+        28,
+        67,
+        28,
+        63
+      ],
+      "orientation": "y up, fixed original coordinates",
+      "field": "rho",
+      "scale": [
+        0,
+        1
+      ],
+      "units": "M/cell"
+    },
+    {
+      "file": "cc_C_160.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--experienced--x-frames.npz",
+      "step": 160,
+      "crop_inclusive_xy": [
+        28,
+        67,
+        28,
+        63
+      ],
+      "orientation": "y up, fixed original coordinates",
+      "field": "rho",
+      "scale": [
+        0,
+        1
+      ],
+      "units": "M/cell"
+    },
+    {
+      "file": "cc_C_184.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--experienced--x-frames.npz",
+      "step": 184,
+      "crop_inclusive_xy": [
+        28,
+        67,
+        28,
+        63
+      ],
+      "orientation": "y up, fixed original coordinates",
+      "field": "rho",
+      "scale": [
+        0,
+        1
+      ],
+      "units": "M/cell"
+    },
+    {
+      "file": "cc_C_224.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_8d60f7d250e8e9f2a25b--experienced--x-frames.npz",
+      "step": 224,
+      "crop_inclusive_xy": [
+        28,
+        67,
+        28,
+        63
+      ],
+      "orientation": "y up, fixed original coordinates",
+      "field": "rho",
+      "scale": [
+        0,
+        1
+      ],
+      "units": "M/cell"
+    },
+    {
+      "file": "cc_C_cut.png",
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_8d60f7d250e8e9f2a25b--experienced--x/pulse_after_161.npz",
+      "step": "after cut, before update161",
+      "crop_inclusive_xy": [
+        28,
+        67,
+        28,
+        63
+      ],
+      "orientation": "y up, fixed original coordinates",
+      "field": "rho",
+      "scale": [
+        0,
+        1
+      ],
+      "units": "M/cell"
+    },
+    {
+      "file": "mp_N_160.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--naive--x-frames.npz",
+      "step": 160,
+      "crop_inclusive_xy": [
+        14,
+        81,
+        14,
+        77
+      ],
+      "orientation": "y up, fixed original coordinates",
+      "field": "rho",
+      "scale": [
+        0,
+        1
+      ],
+      "units": "M/cell"
+    },
+    {
+      "file": "mp_N_224.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--naive--x-frames.npz",
+      "step": 224,
+      "crop_inclusive_xy": [
+        14,
+        81,
+        14,
+        77
+      ],
+      "orientation": "y up, fixed original coordinates",
+      "field": "rho",
+      "scale": [
+        0,
+        1
+      ],
+      "units": "M/cell"
+    },
+    {
+      "file": "mp_C_160.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--experienced--x-frames.npz",
+      "step": 160,
+      "crop_inclusive_xy": [
+        14,
+        81,
+        14,
+        77
+      ],
+      "orientation": "y up, fixed original coordinates",
+      "field": "rho",
+      "scale": [
+        0,
+        1
+      ],
+      "units": "M/cell"
+    },
+    {
+      "file": "mp_C_224.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_d02e7f60565f83066e5d--experienced--x-frames.npz",
+      "step": 224,
+      "crop_inclusive_xy": [
+        14,
+        81,
+        14,
+        77
+      ],
+      "orientation": "y up, fixed original coordinates",
+      "field": "rho",
+      "scale": [
+        0,
+        1
+      ],
+      "units": "M/cell"
+    },
+    {
+      "file": "mc_N_160.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--naive--x-frames.npz",
+      "step": 160,
+      "crop_inclusive_xy": [
+        14,
+        81,
+        14,
+        77
+      ],
+      "orientation": "y up, fixed original coordinates",
+      "field": "rho",
+      "scale": [
+        0,
+        1
+      ],
+      "units": "M/cell"
+    },
+    {
+      "file": "mc_N_224.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--naive--x-frames.npz",
+      "step": 224,
+      "crop_inclusive_xy": [
+        14,
+        81,
+        14,
+        77
+      ],
+      "orientation": "y up, fixed original coordinates",
+      "field": "rho",
+      "scale": [
+        0,
+        1
+      ],
+      "units": "M/cell"
+    },
+    {
+      "file": "mc_C_160.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--experienced--x-frames.npz",
+      "step": 160,
+      "crop_inclusive_xy": [
+        14,
+        81,
+        14,
+        77
+      ],
+      "orientation": "y up, fixed original coordinates",
+      "field": "rho",
+      "scale": [
+        0,
+        1
+      ],
+      "units": "M/cell"
+    },
+    {
+      "file": "mc_C_224.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/genome_a6a821dffd4f4046c97a--experienced--x-frames.npz",
+      "step": 224,
+      "crop_inclusive_xy": [
+        14,
+        81,
+        14,
+        77
+      ],
+      "orientation": "y up, fixed original coordinates",
+      "field": "rho",
+      "scale": [
+        0,
+        1
+      ],
+      "units": "M/cell"
+    },
+    {
+      "file": "excision_cut_384.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/compact_ring_core_outer--bridged_longbody--excised-frames.npz",
+      "step": 384,
+      "crop_inclusive_xy": [
+        10,
+        85,
+        10,
+        85
+      ],
+      "orientation": "y up, fixed original coordinates",
+      "field": "rho",
+      "scale": [
+        0,
+        1
+      ],
+      "units": "M/cell"
+    },
+    {
+      "file": "excision_ref_384.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/compact_ring_core_outer--bridged_longbody--uninjured-frames.npz",
+      "step": 384,
+      "crop_inclusive_xy": [
+        10,
+        85,
+        10,
+        85
+      ],
+      "orientation": "y up, fixed original coordinates",
+      "field": "rho",
+      "scale": [
+        0,
+        1
+      ],
+      "units": "M/cell"
+    }
+  ],
+  "new_forward_updates": 0,
+  "outer_scope": "2432 unique original updates;24 full dependent paths; shared prefixes displayed once per full path, not rerun",
+  "excision_scope": "Separate state256 protocol;256 new original updates plus256 unique old reference packets; no replay",
+  "coordinate_scope": "All96 periodic domains; group crops differ but fixed within each group; density scale0–1 M/cell",
+  "factorial_scope": "Separate completed 1792-update package (4 new R/I combinations); 1792 unique old steps from the original 2432 package are read-only references, not additional executions. Matrix and scope text added; no new fields or curves.",
+  "parent_candidate": "${share_root}/Articles/article_0565c33e0c03/figures/regenerative_inheritance_recovery_candidate"
+}

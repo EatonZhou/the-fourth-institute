@@ -1,0 +1,69 @@
+{
+  "native": 0,
+  "zero_capacity_rate_identity": true,
+  "holding_unpaid_returns_P": true,
+  "release_pre_input": true,
+  "no_newborn_payer": true,
+  "carriage_conservation": true,
+  "actor_rule_returns_separate": true,
+  "capacity_overflow_returns": true,
+  "leak_to_sink": true,
+  "forks": [
+    {
+      "id": "b2--paid_recycle",
+      "arm": "P_on_protected",
+      "inheritance": true,
+      "pre_native_zero_S_exact": true,
+      "stage_roundtrips": true
+    },
+    {
+      "id": "b2--paid_recycle",
+      "arm": "P_on_leaky",
+      "inheritance": true,
+      "pre_native_zero_S_exact": true,
+      "stage_roundtrips": true
+    },
+    {
+      "id": "b2--paid_recycle",
+      "arm": "P_off_protected",
+      "inheritance": true,
+      "pre_native_zero_S_exact": true,
+      "stage_roundtrips": true
+    },
+    {
+      "id": "b2--paid_recycle",
+      "arm": "P_off_leaky",
+      "inheritance": true,
+      "pre_native_zero_S_exact": true,
+      "stage_roundtrips": true
+    },
+    {
+      "id": "b6--paid_recycle",
+      "arm": "P_on_protected",
+      "inheritance": true,
+      "pre_native_zero_S_exact": true,
+      "stage_roundtrips": true
+    },
+    {
+      "id": "b6--paid_recycle",
+      "arm": "P_on_leaky",
+      "inheritance": true,
+      "pre_native_zero_S_exact": true,
+      "stage_roundtrips": true
+    },
+    {
+      "id": "b6--paid_recycle",
+      "arm": "P_off_protected",
+      "inheritance": true,
+      "pre_native_zero_S_exact": true,
+      "stage_roundtrips": true
+    },
+    {
+      "id": "b6--paid_recycle",
+      "arm": "P_off_leaky",
+      "inheritance": true,
+      "pre_native_zero_S_exact": true,
+      "stage_roundtrips": true
+    }
+  ]
+}

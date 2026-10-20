@@ -1,0 +1,854 @@
+{
+  "schema": "tfi.architecture-component-relations.v1",
+  "revision": 1,
+  "owner": "resident_60ae6d0cdf74",
+  "status": "evidence_supplement",
+  "created_on": "2026-10-15",
+  "purpose": "为 scopeRoot 的直接组件视图补充有依据的实际协作关系；独立于地图、演化绑定和场景播放器。",
+  "binding": {
+    "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1",
+    "base_manifest": {
+      "address": "workspace_13209cb6666b/file/architecture-evidence/objects/manifest-fa5bba171eedccad1820ce10a53c10713f97dfc9e26b8c2856ae6a637490cc45.json",
+      "sha256": "fa5bba171eedccad1820ce10a53c10713f97dfc9e26b8c2856ae6a637490cc45",
+      "size": 160886
+    },
+    "consumer_contract": {
+      "address": "workspace_13209cb6666b/file/architecture-evidence/objects/consumer-contract-d1f751c4f0426819e41fcfb6146a76391c8c9bc3d105b8764ce3ccbf758d1031.json",
+      "sha256": "d1f751c4f0426819e41fcfb6146a76391c8c9bc3d105b8764ce3ccbf758d1031",
+      "size": 302180
+    },
+    "map": {
+      "status": "available",
+      "address": "workspace_13209cb6666b/file/architecture-evidence/commits/d4f9b6202c631c8f11027ee8c2eeecd499278fa1/architecture/modules.yaml",
+      "sha256": "e96421eef799499d406502da20b44d39e9bc037c588bac0684dd582319ed6b49",
+      "size": 48777
+    },
+    "evolution_sha256": "6bc275ee5a2b8ce003e1563064654fb22d1e7468aaddc670fa23bb645003adc7",
+    "compatibility": "exact_base_manifest_and_map_hash",
+    "on_mismatch": "Keep the selected base batch; mark supplement unavailable. Do not silently transplant onto another batch."
+  },
+  "semantics": {
+    "fact_type": "design_and_code_grounded_architecture",
+    "execution_trace": false,
+    "global_order": null,
+    "complete_dependency_graph": false,
+    "new_modules": [],
+    "new_protocols": [],
+    "new_scenarios": [],
+    "modifies_design_ownership": false,
+    "temporal_scope": {
+      "code": "at_exact_bound_git_commit",
+      "design": "previously_observed_frozen_versions_not_a_historical_commit_snapshot"
+    },
+    "design_roles": "source_basis cites normative evidence, not Design ownership; ownership remains base consumer design_assignments.",
+    "endpoint_roles": "module_id is a real map ID; role explains the participating responsibility. boundary_role with component_id=null is not a new module.",
+    "protocol_roles": "protocol_id identifies the limited protocol facet explained by the relation. related_protocol_ids are contextual links only; neither changes parent protocol endpoints.",
+    "order": "relations is an unordered set. Conditions explain local code branches only; do not derive a total event order or an execution trace."
+  },
+  "consumer_fields": {
+    "module_catalog": "base consumer_contract.modules[]",
+    "direct_children": "modules.filter(m => m.parent === scopeRoot)",
+    "relations": "relations.filter(r => r.scope_roots.includes(scopeRoot))",
+    "endpoint": "relations[].endpoints[]: {id,module_id,component_id,role,kind}",
+    "kind": "relations[].kind governs whether a line represents a call, callback, lease control, shared transaction or content write",
+    "evidence": "relations[].source_basis[] and code_evidence_ids -> code_evidence[]",
+    "missing": "missing[]: unavailable semantics, not proof that an interaction never exists",
+    "scenario_roles": "scenario_reuse.provider.participant_mapping_source; reuse participants[].module_id without deriving edges"
+  },
+  "rendering": {
+    "direct_children_only": true,
+    "parent_protocols": "Keep all base protocols incident to a root on that root boundary; do not inherit or multiply them onto its child components.",
+    "relation_policy": "Use only the explicitly authored endpoints of each relation. These relations are additional detail, not replacements for root-level protocol buses.",
+    "endpoints": [
+      {
+        "condition": "endpoint module.parent === scopeRoot",
+        "display": "direct_component",
+        "display_module": "endpoint.module_id"
+      },
+      {
+        "condition": "endpoint.module_id === scopeRoot",
+        "display": "root_boundary_role",
+        "display_module": "scopeRoot"
+      },
+      {
+        "condition": "endpoint belongs to another root and deployed_in contains scopeRoot",
+        "display": "shared_component_boundary",
+        "display_module": "endpoint.module_id",
+        "note": "Label owner parent and deployed_in; do not add to direct children."
+      },
+      {
+        "condition": "endpoint belongs to another root",
+        "display": "external_root_boundary",
+        "display_module": "endpoint ancestor runtime ID",
+        "note": "Keep actual endpoint.module_id as metadata/label; do not show its children as local children."
+      }
+    ],
+    "root_protocol_direction": "unchanged_unspecified",
+    "relation_ordered": false,
+    "shared_transaction_style": "undirected_consistency",
+    "role_node_invention": false
+  },
+  "components": [
+    {
+      "module_id": "execution.scheduling",
+      "parent": "execution",
+      "level": "component",
+      "title": "持久调度、账号与用量",
+      "deployed_in": null,
+      "source": {
+        "status": "available",
+        "address": "workspace_13209cb6666b/file/architecture-evidence/commits/d4f9b6202c631c8f11027ee8c2eeecd499278fa1/architecture/modules.yaml",
+        "sha256": "e96421eef799499d406502da20b44d39e9bc037c588bac0684dd582319ed6b49",
+        "size": 48777,
+        "line": 496,
+        "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1"
+      }
+    },
+    {
+      "module_id": "execution.providers",
+      "parent": "worker",
+      "level": "component",
+      "title": "会话管理与 Provider Adapter",
+      "deployed_in": null,
+      "source": {
+        "status": "available",
+        "address": "workspace_13209cb6666b/file/architecture-evidence/commits/d4f9b6202c631c8f11027ee8c2eeecd499278fa1/architecture/modules.yaml",
+        "sha256": "e96421eef799499d406502da20b44d39e9bc037c588bac0684dd582319ed6b49",
+        "size": 48777,
+        "line": 521,
+        "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1"
+      }
+    },
+    {
+      "module_id": "execution.agent-data",
+      "parent": "execution",
+      "level": "component",
+      "title": "AgentData 与对话投影",
+      "deployed_in": [
+        "execution",
+        "worker"
+      ],
+      "source": {
+        "status": "available",
+        "address": "workspace_13209cb6666b/file/architecture-evidence/commits/d4f9b6202c631c8f11027ee8c2eeecd499278fa1/architecture/modules.yaml",
+        "sha256": "e96421eef799499d406502da20b44d39e9bc037c588bac0684dd582319ed6b49",
+        "size": 48777,
+        "line": 814,
+        "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1"
+      }
+    },
+    {
+      "module_id": "worker.harness",
+      "parent": "worker",
+      "level": "component",
+      "title": "Agent Harness",
+      "deployed_in": null,
+      "source": {
+        "status": "available",
+        "address": "workspace_13209cb6666b/file/architecture-evidence/commits/d4f9b6202c631c8f11027ee8c2eeecd499278fa1/architecture/modules.yaml",
+        "sha256": "e96421eef799499d406502da20b44d39e9bc037c588bac0684dd582319ed6b49",
+        "size": 48777,
+        "line": 833,
+        "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1"
+      }
+    }
+  ],
+  "relations": [
+    {
+      "id": "worker-lease-control",
+      "title": "Worker 控制循环与 Scheduler 的领取及终态提交",
+      "kind": "lease_control",
+      "protocol_id": "worker-lease",
+      "related_protocol_ids": [],
+      "scope_roots": [
+        "execution",
+        "worker"
+      ],
+      "endpoints": [
+        {
+          "id": "execution.scheduling",
+          "module_id": "execution.scheduling",
+          "component_id": "execution.scheduling",
+          "role": "Scheduler：领取资格、租约、取消意图与权威终态",
+          "kind": "component"
+        },
+        {
+          "id": "worker",
+          "module_id": "worker",
+          "component_id": null,
+          "role": "ExecutionWorker：领取、心跳、控制循环与 finish 提交",
+          "kind": "boundary_role"
+        }
+      ],
+      "interaction": {
+        "direction": "request_response",
+        "initiator_module_id": "worker",
+        "responder_module_id": "execution.scheduling",
+        "operations": [
+          "领取请求并取得 claim token/lease",
+          "以当前资格报告心跳和处理控制",
+          "finish(result, claim_token) 提交结果"
+        ],
+        "conditions": [
+          "Worker 激活且具备所需能力才可领取",
+          "终态提交必须持有当前领取资格；资格丢失返回 claim_lost"
+        ],
+        "result": "Scheduler 校验领取资格并确定终态；Worker 提交结果不等于 Provider 原生返回。",
+        "transport": "not_asserted_by_this_supplement",
+        "ordered": false
+      },
+      "source_basis": [
+        {
+          "design_id": "decision_25eb93d803a4",
+          "version": "18",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf.md",
+            "sha256": "8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf",
+            "size": 27358
+          },
+          "line_start": 111,
+          "line_end": 113,
+          "section": "组件及其责任",
+          "line_numbering": "1-based inclusive in frozen UTF-8 body"
+        },
+        {
+          "design_id": "decision_25eb93d803a4",
+          "version": "18",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf.md",
+            "sha256": "8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf",
+            "size": 27358
+          },
+          "line_start": 155,
+          "line_end": 159,
+          "section": "一次工作怎样流过系统",
+          "line_numbering": "1-based inclusive in frozen UTF-8 body"
+        },
+        {
+          "design_id": "decision_425e428410e0",
+          "version": "38",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-a959010fc9b01df5e147557b43c47d9b144f90433ce88c39a11b6e5141a85dbe.md",
+            "sha256": "a959010fc9b01df5e147557b43c47d9b144f90433ce88c39a11b6e5141a85dbe",
+            "size": 43455
+          },
+          "line_start": 108,
+          "line_end": 114,
+          "section": "一次调用怎样流动",
+          "line_numbering": "1-based inclusive in frozen UTF-8 body"
+        }
+      ],
+      "code_evidence_ids": [
+        "worker-finish"
+      ],
+      "boundary": "Worker 控制循环没有独立组件 ID；worker 是角色所在边界，不把协议分摊给 execution.providers 或 worker.harness。"
+    },
+    {
+      "id": "runtime-session-adapter-call",
+      "title": "ExecutionRuntime 调用会话服务与 Adapter",
+      "kind": "in_process_call",
+      "protocol_id": "provider-capabilities",
+      "related_protocol_ids": [],
+      "scope_roots": [
+        "worker"
+      ],
+      "endpoints": [
+        {
+          "id": "worker",
+          "module_id": "worker",
+          "component_id": null,
+          "role": "ExecutionRuntime：构造 invocation/context、调用与收尾",
+          "kind": "boundary_role"
+        },
+        {
+          "id": "execution.providers",
+          "module_id": "execution.providers",
+          "component_id": "execution.providers",
+          "role": "AgentSessionService 与 Provider Adapter：会话/选项准备、原生调用与结果适配",
+          "kind": "component"
+        }
+      ],
+      "interaction": {
+        "direction": "request_response",
+        "initiator_module_id": "worker",
+        "responder_module_id": "execution.providers",
+        "operations": [
+          "service.execute(invocation, BackendContext)",
+          "Adapter.execute(invocation, context) 返回 BackendResult",
+          "经运行中控制请求 Adapter.interrupt"
+        ],
+        "conditions": [
+          "运行选项和能力支持满足调用前置条件",
+          "Runtime 在调用前后检查取消；调用期间 interrupt 仅尽力尝试"
+        ],
+        "result": "返回规范结果；Runtime 保存 Provider 已完成恢复点并处理内容/会话，Worker 另行提交 Scheduler 终态。",
+        "transport": "in_process",
+        "ordered": false
+      },
+      "source_basis": [
+        {
+          "design_id": "decision_425e428410e0",
+          "version": "38",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-a959010fc9b01df5e147557b43c47d9b144f90433ce88c39a11b6e5141a85dbe.md",
+            "sha256": "a959010fc9b01df5e147557b43c47d9b144f90433ce88c39a11b6e5141a85dbe",
+            "size": 43455
+          },
+          "line_start": 81,
+          "line_end": 89,
+          "section": "组件责任",
+          "line_numbering": "1-based inclusive in frozen UTF-8 body"
+        },
+        {
+          "design_id": "decision_425e428410e0",
+          "version": "38",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-a959010fc9b01df5e147557b43c47d9b144f90433ce88c39a11b6e5141a85dbe.md",
+            "sha256": "a959010fc9b01df5e147557b43c47d9b144f90433ce88c39a11b6e5141a85dbe",
+            "size": 43455
+          },
+          "line_start": 91,
+          "line_end": 125,
+          "section": "一次调用怎样流动 / Adapter 接口",
+          "line_numbering": "1-based inclusive in frozen UTF-8 body"
+        },
+        {
+          "design_id": "decision_25eb93d803a4",
+          "version": "18",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf.md",
+            "sha256": "8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf",
+            "size": 27358
+          },
+          "line_start": 155,
+          "line_end": 159,
+          "section": "一次工作怎样流过系统",
+          "line_numbering": "1-based inclusive in frozen UTF-8 body"
+        }
+      ],
+      "code_evidence_ids": [
+        "runtime-call",
+        "runtime-content"
+      ],
+      "boundary": "Runtime 属于 worker 边界，当前地图没有 Runtime 独立组件；不把它替换成 worker.harness，也不把全部 Provider 协议参与者展开成连线。"
+    },
+    {
+      "id": "session-harness-governance",
+      "title": "会话服务与 Harness 的可选治理及执行回调",
+      "kind": "in_process_call_with_callback",
+      "protocol_id": "provider-capabilities",
+      "related_protocol_ids": [],
+      "scope_roots": [
+        "worker"
+      ],
+      "endpoints": [
+        {
+          "id": "execution.providers",
+          "module_id": "execution.providers",
+          "component_id": "execution.providers",
+          "role": "AgentSessionService：应用选项、选择 Provider、提供执行回调",
+          "kind": "component"
+        },
+        {
+          "id": "worker.harness",
+          "module_id": "worker.harness",
+          "component_id": "worker.harness",
+          "role": "Agent Harness：准备本轮工具/上下文并按条件治理执行",
+          "kind": "component"
+        }
+      ],
+      "interaction": {
+        "direction": "call_with_callback",
+        "initiator_module_id": "execution.providers",
+        "responder_module_id": "worker.harness",
+        "operations": [
+          "harness.prepare_invocation(invocation, provider)",
+          "harness.should_run(invocation)",
+          "条件成立时 harness.execute(..., execute=execute_with_context_seed)"
+        ],
+        "conditions": [
+          "prepare_invocation 发生于 should_run 判定之前",
+          "should_run 为 false 时直接调用 Provider 执行回调；为 true 时将回调交给 Harness"
+        ],
+        "result": "治理后的执行结果回到 AgentSessionService；回调内调用 Provider Adapter。",
+        "transport": "in_process",
+        "ordered": false
+      },
+      "source_basis": [
+        {
+          "design_id": "decision_425e428410e0",
+          "version": "38",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-a959010fc9b01df5e147557b43c47d9b144f90433ce88c39a11b6e5141a85dbe.md",
+            "sha256": "a959010fc9b01df5e147557b43c47d9b144f90433ce88c39a11b6e5141a85dbe",
+            "size": 43455
+          },
+          "line_start": 97,
+          "line_end": 105,
+          "section": "一次调用怎样流动",
+          "line_numbering": "1-based inclusive in frozen UTF-8 body"
+        },
+        {
+          "design_id": "decision_25eb93d803a4",
+          "version": "18",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf.md",
+            "sha256": "8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf",
+            "size": 27358
+          },
+          "line_start": 117,
+          "line_end": 118,
+          "section": "组件及其责任",
+          "line_numbering": "1-based inclusive in frozen UTF-8 body"
+        },
+        {
+          "design_id": "decision_25eb93d803a4",
+          "version": "18",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf.md",
+            "sha256": "8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf",
+            "size": 27358
+          },
+          "line_start": 157,
+          "line_end": 157,
+          "section": "一次工作怎样流过系统",
+          "line_numbering": "1-based inclusive in frozen UTF-8 body"
+        }
+      ],
+      "code_evidence_ids": [
+        "session-harness"
+      ],
+      "boundary": "这是一次 Provider 调用内的治理协作；不代表所有执行必经 Harness.execute，也不代表 Harness 参与 worker-lease。"
+    },
+    {
+      "id": "scheduler-agentdata-lifecycle-transaction",
+      "title": "Scheduler 与 AgentData 生命周期的同事务一致性",
+      "kind": "shared_transaction",
+      "protocol_id": null,
+      "related_protocol_ids": [
+        "database-schema"
+      ],
+      "scope_roots": [
+        "execution"
+      ],
+      "endpoints": [
+        {
+          "id": "execution.scheduling",
+          "module_id": "execution.scheduling",
+          "component_id": "execution.scheduling",
+          "role": "Scheduler：维护队列状态并提交生命周期转移",
+          "kind": "component"
+        },
+        {
+          "id": "execution.agent-data",
+          "module_id": "execution.agent-data",
+          "component_id": "execution.agent-data",
+          "role": "AgentData：保存同一 execution_id 的生命周期记录",
+          "kind": "component"
+        }
+      ],
+      "interaction": {
+        "direction": "undirected_consistency",
+        "operations": [
+          "scheduler_transition 使用调用者 connection",
+          "队列状态与 agent.executions 生命周期状态在同一数据库事务提交"
+        ],
+        "conditions": [
+          "同一 execution_id 与不可变身份对应",
+          "Scheduler 已提交的状态必须与目标终态一致；不替换已有不同终态"
+        ],
+        "result": "调度队列与持久执行生命周期一致。AgentData 的内容投影不独立判定终态。",
+        "transport": "shared_postgresql_transaction",
+        "ordered": false
+      },
+      "source_basis": [
+        {
+          "design_id": "decision_25eb93d803a4",
+          "version": "18",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf.md",
+            "sha256": "8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf",
+            "size": 27358
+          },
+          "line_start": 97,
+          "line_end": 99,
+          "section": "持久事实与临时协调",
+          "line_numbering": "1-based inclusive in frozen UTF-8 body"
+        },
+        {
+          "design_id": "decision_25eb93d803a4",
+          "version": "18",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf.md",
+            "sha256": "8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf",
+            "size": 27358
+          },
+          "line_start": 111,
+          "line_end": 119,
+          "section": "组件及其责任",
+          "line_numbering": "1-based inclusive in frozen UTF-8 body"
+        }
+      ],
+      "code_evidence_ids": [
+        "scheduler-lifecycle",
+        "lifecycle-transaction"
+      ],
+      "boundary": "一致性关系，不画成两个独立服务之间的 RPC；database-schema 仅为关联协议，不新增或改写地图协议端点。"
+    },
+    {
+      "id": "runtime-agentdata-content",
+      "title": "Runtime 将执行内容交给 AgentDataProjector",
+      "kind": "in_process_content_write",
+      "protocol_id": null,
+      "related_protocol_ids": [
+        "provider-capabilities"
+      ],
+      "scope_roots": [
+        "worker"
+      ],
+      "endpoints": [
+        {
+          "id": "worker",
+          "module_id": "worker",
+          "component_id": null,
+          "role": "ExecutionRuntime：管理输入/结果投影及恢复",
+          "kind": "boundary_role"
+        },
+        {
+          "id": "execution.agent-data",
+          "module_id": "execution.agent-data",
+          "component_id": "execution.agent-data",
+          "role": "AgentDataProjector：输入、输出、Provider 观察和用量内容",
+          "kind": "component"
+        }
+      ],
+      "interaction": {
+        "direction": "call",
+        "initiator_module_id": "worker",
+        "responder_module_id": "execution.agent-data",
+        "operations": [
+          "记录本次输入",
+          "Provider 返回后保存已完成恢复点",
+          "agent_data_projector.complete 写入执行内容"
+        ],
+        "conditions": [
+          "已取消的执行可在调用 Provider 前结束",
+          "恢复点声明 Provider 已完成时可跳过再次调用而补写内容",
+          "内容完成与会话更新后仍由 Worker 单独提交 Scheduler 终态"
+        ],
+        "result": "保存内容轨迹并支持恢复；内容落盘不是 Scheduler 终态。",
+        "transport": "in_process",
+        "ordered": false
+      },
+      "source_basis": [
+        {
+          "design_id": "decision_25eb93d803a4",
+          "version": "18",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf.md",
+            "sha256": "8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf",
+            "size": 27358
+          },
+          "line_start": 115,
+          "line_end": 119,
+          "section": "组件及其责任",
+          "line_numbering": "1-based inclusive in frozen UTF-8 body"
+        },
+        {
+          "design_id": "decision_25eb93d803a4",
+          "version": "18",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf.md",
+            "sha256": "8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf",
+            "size": 27358
+          },
+          "line_start": 156,
+          "line_end": 162,
+          "section": "一次工作怎样流过系统",
+          "line_numbering": "1-based inclusive in frozen UTF-8 body"
+        },
+        {
+          "design_id": "decision_425e428410e0",
+          "version": "38",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-a959010fc9b01df5e147557b43c47d9b144f90433ce88c39a11b6e5141a85dbe.md",
+            "sha256": "a959010fc9b01df5e147557b43c47d9b144f90433ce88c39a11b6e5141a85dbe",
+            "size": 43455
+          },
+          "line_start": 108,
+          "line_end": 111,
+          "section": "一次调用怎样流动",
+          "line_numbering": "1-based inclusive in frozen UTF-8 body"
+        }
+      ],
+      "code_evidence_ids": [
+        "runtime-content"
+      ],
+      "boundary": "execution.agent-data 的归属 parent 仍为 execution，但 deployed_in 包含 worker；在 Worker 局部图按共享组件边界显示，不新增为 Worker 直接子组件。"
+    }
+  ],
+  "missing": [
+    {
+      "id": "worker-runtime-component-id",
+      "status": "missing",
+      "scope_roots": [
+        "worker"
+      ],
+      "subject": "ExecutionRuntime",
+      "reason": "Current map assigns runtime.py to worker root; no independently named Runtime component.",
+      "display": "worker boundary role; component_id=null"
+    },
+    {
+      "id": "worker-control-component-id",
+      "status": "missing",
+      "scope_roots": [
+        "worker",
+        "execution"
+      ],
+      "subject": "ExecutionWorker control loop",
+      "reason": "Current map assigns worker.py to worker root; no independent controller component.",
+      "display": "worker boundary role; component_id=null"
+    },
+    {
+      "id": "preparation-component-id",
+      "status": "missing",
+      "scope_roots": [
+        "execution"
+      ],
+      "subject": "ExecutionPreparation capability validation",
+      "reason": "Existing Provider scenario maps preparation to execution root; no component endpoint established here.",
+      "display": "execution boundary; do not map to scheduling by guess"
+    },
+    {
+      "id": "harness-worker-lease-endpoint",
+      "status": "not_established",
+      "scope_roots": [
+        "worker"
+      ],
+      "subject": "worker.harness under worker-lease",
+      "reason": "Frozen responsibilities and cited code do not establish Harness as a lease-control endpoint.",
+      "display": "root worker-lease boundary only"
+    },
+    {
+      "id": "scheduler-provider-direct-call",
+      "status": "not_established",
+      "scope_roots": [
+        "execution",
+        "worker"
+      ],
+      "subject": "scheduling directly invokes providers or harness",
+      "reason": "Selected evidence establishes Worker/Runtime control and invocation roles, not these direct component calls.",
+      "display": "no inferred component edge"
+    },
+    {
+      "id": "worker-lease-player",
+      "status": "evidence_missing",
+      "scope_roots": [
+        "execution",
+        "worker"
+      ],
+      "subject": "worker-lease frozen scenario",
+      "reason": "Bound consumer has no authored scenario_pairs for worker-lease.",
+      "display": "Existing missing state; this supplement creates no player scenario"
+    }
+  ],
+  "scenario_reuse": {
+    "policy": "Reuse the four frozen scenes in the bound base batch byte-for-byte; this supplement adds no scenario.",
+    "already_selected": [
+      {
+        "protocol_id": "resource-access",
+        "source": "base consumer.protocols[id=resource-access].scenario_pairs",
+        "purpose": "正文读取正常/异常解释"
+      },
+      {
+        "protocol_id": "projection-family",
+        "source": "base consumer.protocols[id=projection-family].scenario_pairs",
+        "purpose": "既有焦点乱序固定场景；按 scenario_id 选择"
+      }
+    ],
+    "provider": {
+      "protocol_id": "provider-capabilities",
+      "scenario_id": "resident-reply-provider-lifecycle",
+      "status": "simulated",
+      "artifact": {
+        "address": "workspace_13209cb6666b/file/architecture-evidence/objects/protocol-scenario-9c5293de820e6ac8a6681fbda50698630edac530737eb778d395505fbb982da5.json",
+        "sha256": "9c5293de820e6ac8a6681fbda50698630edac530737eb778d395505fbb982da5",
+        "size": 186335
+      },
+      "consumer_selector": "protocols[id=provider-capabilities].scenario_pairs[scenario_id=resident-reply-provider-lifecycle].artifact",
+      "participant_mapping_source": "artifact.participants[].{id,module_id,role}",
+      "participant_mappings": [
+        {
+          "id": "resident",
+          "module_id": "lineage.conversation",
+          "role": "Lineage中的Resident业务调用方"
+        },
+        {
+          "id": "preparation",
+          "module_id": "execution",
+          "role": "Execution请求准备与能力校验"
+        },
+        {
+          "id": "scheduler",
+          "module_id": "execution.scheduling",
+          "role": "Scheduler：领取资格、取消意图和权威终态"
+        },
+        {
+          "id": "worker",
+          "module_id": "worker",
+          "role": "ExecutionWorker：控制循环及finish提交"
+        },
+        {
+          "id": "runtime",
+          "module_id": "worker",
+          "role": "Worker内ExecutionRuntime及SessionManager"
+        },
+        {
+          "id": "adapter",
+          "module_id": "execution.providers",
+          "role": "Worker内Provider Adapter"
+        },
+        {
+          "id": "provider",
+          "module_id": "providers",
+          "role": "Provider原生运行时"
+        },
+        {
+          "id": "agentdata",
+          "module_id": "execution.agent-data",
+          "role": "AgentData执行内容存储"
+        }
+      ],
+      "read_only_reuse": true,
+      "limitations": [
+        "Eight roles are not eight distinct modules: worker and runtime both map to worker.",
+        "No worker.harness participant exists in this scene; do not add one.",
+        "preparation maps to execution root; adapter maps to execution.providers whose parent is worker.",
+        "Participant membership alone gives no directed relation, concurrency schedule or total order."
+      ]
+    }
+  },
+  "design_versions": [
+    {
+      "design_id": "decision_425e428410e0",
+      "version": "38",
+      "observed_at": "2026-10-15 03:39:36 UTC",
+      "temporal_scope": "observed_now_not_commit_snapshot",
+      "body": {
+        "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-a959010fc9b01df5e147557b43c47d9b144f90433ce88c39a11b6e5141a85dbe.md",
+        "sha256": "a959010fc9b01df5e147557b43c47d9b144f90433ce88c39a11b6e5141a85dbe",
+        "size": 43455
+      }
+    },
+    {
+      "design_id": "decision_25eb93d803a4",
+      "version": "18",
+      "observed_at": "2026-10-15 03:39:36 UTC",
+      "temporal_scope": "observed_now_not_commit_snapshot",
+      "body": {
+        "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf.md",
+        "sha256": "8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf",
+        "size": 27358
+      }
+    }
+  ],
+  "code_evidence": [
+    {
+      "id": "session-harness",
+      "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1",
+      "path": "management_portal/execution/backends.py",
+      "git_blob": "5de7bafad0b17770a02d666279185c065bbd3808",
+      "sha256": "b56a7bb3e9e7cef5f816ce17f54298f3217efb639b09178eab7093be651ce124",
+      "size": 171655,
+      "line_start": 3971,
+      "line_end": 4001,
+      "excerpt": "    def execute(\n        self,\n        invocation: BackendInvocation,\n        context: BackendContext,\n    ) -> BackendResult:\n        try:\n            provider = self.providers[invocation.request.provider]\n        except KeyError as exc:\n            raise ValueError(\n                \"unsupported Agent Backend Provider: \"\n                f\"{invocation.request.provider}\"\n            ) from exc\n        from .native_options import prepare_invocation\n        invocation = prepare_invocation(invocation)\n        invocation = self.harness.prepare_invocation(invocation, provider)\n        def execute_with_context_seed(\n            prepared: BackendInvocation,\n            backend_context: BackendContext,\n        ) -> BackendResult:\n            return provider.execute(\n                prepare_backend_context_seed(provider, prepared),\n                backend_context,\n            )\n        if not self.harness.should_run(invocation):\n            return execute_with_context_seed(invocation, context)\n        return self.harness.execute(\n            provider=provider,\n            invocation=invocation,\n            context=context,\n            execute=execute_with_context_seed,\n        )\n",
+      "excerpt_sha256": "287e32658420445b6ee9e00b479cada01931eb3de4f1e9c5d03d3f6848bb4739",
+      "content_address": null,
+      "excerpt_normalization": "UTF-8 source splitlines, selected inclusive line range joined with LF and one final LF",
+      "historical_content_status": "content_address_missing; this package freezes only the quoted excerpt and whole-file hash/git blob, not a source body service"
+    },
+    {
+      "id": "scheduler-lifecycle",
+      "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1",
+      "path": "management_portal/execution/scheduler.py",
+      "git_blob": "6517c28a81a6cfd41f57d38d6451a2a224b46d6e",
+      "sha256": "48ecd9885d360e9c7beb4fd6756c3060748a9fd2c54bba78eab2a1e8806a3ea7",
+      "size": 181834,
+      "line_start": 1182,
+      "line_end": 1193,
+      "excerpt": "        )\n        event = {\n            \"execution_id\": execution_id,\n            \"sequence\": self._event_sequence,\n            \"type\": str(event_type or \"\"),\n            \"created_at\": execution_timestamp(),\n            \"details\": dict(details or {}),\n        }\n        from .execution_lifecycle import scheduler_transition\n        scheduler_transition(connection, execution_id, event_type, event[\"created_at\"])\n        if event_type == \"started\":\n            connection.execute(\n",
+      "excerpt_sha256": "0a3302bc6ba3be20854f1be72873b96d0ee65acd65e130aae8655fe2e9b85b9c",
+      "content_address": null,
+      "excerpt_normalization": "UTF-8 source splitlines, selected inclusive line range joined with LF and one final LF",
+      "historical_content_status": "content_address_missing; this package freezes only the quoted excerpt and whole-file hash/git blob, not a source body service"
+    },
+    {
+      "id": "lifecycle-transaction",
+      "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1",
+      "path": "management_portal/execution/execution_lifecycle.py",
+      "git_blob": "277595ad43ccbcfc04f5f57ebd0eeb5644d8f8ca",
+      "sha256": "f6499adf50c51d674f8c05fd0ec4bffeef06715029eff58a02a1fde5fefe1b28",
+      "size": 4509,
+      "line_start": 38,
+      "line_end": 82,
+      "excerpt": "def scheduler_transition(connection: Any, execution_id: str, event_type: str, at: str) -> None:\n    if event_type not in {\"queued\", \"completed\", \"failed\", \"cancelled\"}:\n        return\n    # Initialization is strict/versioned and cached by the domain owner.\n    from .agent_data_store import get_agent_data_store\n    get_agent_data_store()\n    table = '\"' + _database_schema(\"agent\") + '\".executions'\n    row = connection.execute(\n        \"SELECT request_json,status,created_at,result_json FROM executions WHERE execution_id=%s\",\n        (execution_id,),\n    ).fetchone()\n    if row is None:\n        raise KeyError(execution_id)\n    request = json.loads(row[\"request_json\"])\n    identity = (str(request[\"agent_id\"]), str(request[\"actor\"]), str(request[\"provider\"]))\n    connection.execute(\n        f\"INSERT INTO {table}(execution_id,agent_id,actor_ref,provider,provider_turn_id,created_at,\"\n        \"started_at,finished_at,status,usage_json) VALUES(%s,%s,%s,%s,'',%s,NULL,NULL,'preparing','{}') \"\n        \"ON CONFLICT(execution_id) DO NOTHING\",\n        (execution_id, *identity, row[\"created_at\"]),\n    )\n    current = connection.execute(f\"SELECT * FROM {table} WHERE execution_id=%s FOR UPDATE\", (execution_id,)).fetchone()\n    if (current[\"agent_id\"], current[\"actor_ref\"], current[\"provider\"]) != identity:\n        raise ValueError(\"Execution identity refers to different immutable provenance\")\n    if event_type == \"queued\":\n        if current[\"status\"] == \"preparing\":\n            connection.execute(f\"UPDATE {table} SET status='queued' WHERE execution_id=%s\", (execution_id,))\n        return\n    if row[\"status\"] != event_type:\n        raise ValueError(\"Scheduler outcome does not match its committed state\")\n    if current[\"status\"] in {\"completed\", \"failed\", \"cancelled\"}:\n        if current[\"status\"] != event_type:\n            raise ValueError(\"Scheduler cannot replace a terminal Execution outcome\")\n        return\n    result = json.loads(row[\"result_json\"] or \"{}\")\n    store = get_agent_data_store()\n    prior_path = connection.execute(\"SELECT current_setting('search_path')\").fetchone()[0]\n    try:\n        with connection.raw.transaction():\n            connection.execute(\"SELECT set_config('search_path',%s,true)\", ('\"' + _database_schema(\"agent\") + '\"',))\n            store.finish_execution_in(_AgentTransaction(connection.raw), execution_id, status=event_type,\n                                      finished_at=result.get(\"finished_at\") or at,\n                                      usage=result.get(\"usage\") or json.loads(current[\"usage_json\"] or \"{}\"))\n    finally:\n        connection.execute(\"SELECT set_config('search_path',%s,true)\", (prior_path,))\n",
+      "excerpt_sha256": "db4536a75be97acdeeaa9d031a091d586427b75d8e5053d144e909714fc9d5c2",
+      "content_address": null,
+      "excerpt_normalization": "UTF-8 source splitlines, selected inclusive line range joined with LF and one final LF",
+      "historical_content_status": "content_address_missing; this package freezes only the quoted excerpt and whole-file hash/git blob, not a source body service"
+    },
+    {
+      "id": "worker-finish",
+      "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1",
+      "path": "management_portal/execution/worker.py",
+      "git_blob": "b4bccfe9213086adc0dbcefa2fb5c4a47cb2d2f6",
+      "sha256": "14ed38d469ab45e1ccc5f624912eec379d1f96998946defb42af7632a764759f",
+      "size": 28633,
+      "line_start": 406,
+      "line_end": 427,
+      "excerpt": "            }\n        if deferred_reason:\n            heartbeat.join(timeout=2)\n            return {\n                \"execution_id\": execution_id,\n                \"status\": \"requeued\",\n                \"reason\": deferred_reason,\n            }\n        if result is None:\n            heartbeat.join(timeout=2)\n            raise RuntimeError(\"execution produced no terminal result\")\n        try:\n            snapshot = self.scheduler.finish(result, claim_token)\n        except ExecutionClaimOwnershipLost:\n            return {\n                \"execution_id\": execution_id,\n                \"status\": \"claim_lost\",\n                \"reason\": \"execution claim ownership changed\",\n            }\n        finally:\n            # Publishing the terminal state wakes the blocking control wait,\n            # so the heartbeat can be reclaimed without paying its join\n",
+      "excerpt_sha256": "c0e8806790956286586619bea6379b986793b5504112c21c1b1c4c9dfc8d469a",
+      "content_address": null,
+      "excerpt_normalization": "UTF-8 source splitlines, selected inclusive line range joined with LF and one final LF",
+      "historical_content_status": "content_address_missing; this package freezes only the quoted excerpt and whole-file hash/git blob, not a source body service"
+    },
+    {
+      "id": "runtime-call",
+      "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1",
+      "path": "management_portal/execution/runtime.py",
+      "git_blob": "679ce6a639ef3c909968ab4948d7bfe1750b6313",
+      "sha256": "b1484ec7694088c6fb531bb631b14d6f63d9c7d50b2b7d9a22fd3e3fab4400cf",
+      "size": 38577,
+      "line_start": 551,
+      "line_end": 573,
+      "excerpt": "                        ),\n                    },\n                )\n            else:\n                result = service.execute(\n                    invocation,\n                    BackendContext(\n                        emit_event=emit,\n                        execution_started_at=runtime_context.accepted_at,\n                        turn_start_reason=turn_start_reason,\n                        turn_start_reason_changed=set_turn_start_reason,\n                        cancellation_requested=runtime_context.is_cancelled,\n                        handover_requested=runtime_context.is_handover,\n                        set_interrupt_target=set_interrupt_target,\n                        reassign_backend_route=(\n                            runtime_context.reassign_backend_route\n                        ),\n                        update_context_usage=update_context_usage,\n                        set_provider_recovery_state=(\n                            set_provider_recovery_state\n                        ),\n                        harness_plan_observer=set_harness_plan,\n                        turn_control_provider=(\n",
+      "excerpt_sha256": "1707c361cd422a271a2e5d92fa1f648ec823092caa92c3007035339c98bfd086",
+      "content_address": null,
+      "excerpt_normalization": "UTF-8 source splitlines, selected inclusive line range joined with LF and one final LF",
+      "historical_content_status": "content_address_missing; this package freezes only the quoted excerpt and whole-file hash/git blob, not a source body service"
+    },
+    {
+      "id": "runtime-content",
+      "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1",
+      "path": "management_portal/execution/runtime.py",
+      "git_blob": "679ce6a639ef3c909968ab4948d7bfe1750b6313",
+      "sha256": "b1484ec7694088c6fb531bb631b14d6f63d9c7d50b2b7d9a22fd3e3fab4400cf",
+      "size": 38577,
+      "line_start": 630,
+      "line_end": 710,
+      "excerpt": "                            recovery_checkpoint.get(\n                                \"context_attached\"\n                            )\n                        )\n                    ),\n                    \"context_fingerprint\": (\n                        instructions_fingerprint\n                        if context_attached_now\n                        else str(\n                            recovery_checkpoint.get(\n                                \"context_fingerprint\"\n                            )\n                            or session.context_fingerprint\n                        )\n                    ),\n                    \"resumable\": True,\n                    \"provider_completed\": True,\n                    \"output\": dict(result.output),\n                    \"usage\": dict(result.usage),\n                    \"available_harness_tool_names\": sorted(\n                        result.available_harness_tool_names\n                    ),\n                }\n                if live_context_usage:\n                    completed_checkpoint[\"context_usage\"] = (\n                        live_context_usage\n                    )\n                    completed_checkpoint[\"context_usage_at\"] = (\n                        live_context_usage_at\n                    )\n                if live_context_window:\n                    completed_checkpoint[\"model_context_window\"] = (\n                        live_context_window\n                    )\n                runtime_context.checkpoint(completed_checkpoint)\n            if runtime_context.is_handover():\n                raise ExecutionRecoveryDeferred(\n                    \"worker handover deferred terminal reconciliation\"\n                )\n            self.agent_data_projector.complete(\n                execution_id=request.execution_id,\n                backend_route_id=result.backend_route_id,\n                backend_session_id=result.backend_session_id,\n                turn_id=str(\n                    result.output.get(\"turn_id\")\n                    or recovery_checkpoint.get(\"turn_id\")\n                    or \"\"\n                ),\n                response=str(result.output.get(\"message\") or \"\"),\n                usage=result.usage,\n            )\n            if runtime_context.is_cancelled():\n                raise ExecutionCancelled(\"execution cancelled during Backend call\")\n            self.sessions.complete(\n                request,\n                session,\n                result.backend_session_id,\n                backend_route_id=result.backend_route_id,\n                context_fingerprint=(\n                    instructions_fingerprint\n                    or str(\n                        recovery_checkpoint.get(\n                            \"context_fingerprint\"\n                        )\n                        or \"\"\n                    )\n                ),\n                context_attached=(\n                    context_attached_now\n                    or bool(\n                        recovery_checkpoint.get(\"context_attached\")\n                    )\n                ),\n                context_injected_at=injection_at,\n                harness_tool_names=(\n                    result.available_harness_tool_names\n                ),\n            )\n            emit(\n                \"service_completed\",\n                {\n",
+      "excerpt_sha256": "7f166cbb5574809ac5f39daba79fc5ddca7824daeb95ee7270b1d2ce16c43383",
+      "content_address": null,
+      "excerpt_normalization": "UTF-8 source splitlines, selected inclusive line range joined with LF and one final LF",
+      "historical_content_status": "content_address_missing; this package freezes only the quoted excerpt and whole-file hash/git blob, not a source body service"
+    }
+  ],
+  "verification_contract": [
+    "Hash/size validate base manifest, consumer, map, frozen Design bodies and scenario artifact.",
+    "All module/protocol IDs must resolve in the exact bound consumer; parent and deployed_in remain unchanged.",
+    "Every relation has fixed Design lines and code excerpt provenance; code must match the exact bound commit.",
+    "Provider participant_mappings must equal the existing scene participants projection.",
+    "No rewrite of discovery, main manifest, modules bytes, evolution, historical snapshots or old scenarios."
+  ]
+}

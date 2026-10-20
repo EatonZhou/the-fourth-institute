@@ -1,0 +1,15 @@
+{
+  "status": "completed",
+  "job_id": "4b335786-1c56-4b78-b6a4-388d5fd82edd",
+  "paths": 48,
+  "attempted": 147456,
+  "committed": 147456,
+  "failed": 0,
+  "elapsed_seconds": 38.37723596498836,
+  "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/feedback_acquisition_camp_20261018/4b335786-1c56-4b78-b6a4-388d5fd82edd",
+  "max_material_energy_residual": 6.366462912410498e-12,
+  "plan_sha256": "cf42fc1b700739813099a16062d03beed1fed0b5f2b8a677f9e7f93fcc40aa9c",
+  "memory_fee_total": 0.0,
+  "parent_paths_read_only": 120,
+  "old_budget_223_used": 0
+}

@@ -1,0 +1,17 @@
+parent_id,history,tolerance,normalized_tolerance,C_mass_strict,C_fraction_strict,M_non_decreasing,E_non_decreasing,bodytime_non_decreasing,N_non_decreasing,minM_ge32,window_born_ge_death,window_E_non_decreasing,useful_renewal
+202610195601_ring_both,both,1e-08,8.974526366769492e-10,True,True,True,True,True,False,True,True,True,False
+202610195601_ring_both,both,0.0,0.0,True,True,True,True,True,False,True,True,True,False
+202610195601_ring_birth_gain_only,birth_gain_only,1e-08,8.863577371792359e-10,True,True,True,True,True,False,True,True,True,False
+202610195601_ring_birth_gain_only,birth_gain_only,0.0,0.0,True,True,True,True,True,False,True,True,True,False
+202610195601_separate_seeds_both,both,1e-08,8.169771299324797e-10,True,True,True,True,True,False,True,True,True,False
+202610195601_separate_seeds_both,both,0.0,0.0,True,True,True,True,True,False,True,True,True,False
+202610195601_separate_seeds_birth_gain_only,birth_gain_only,1e-08,9.344700905706338e-10,True,True,True,True,True,True,True,True,True,True
+202610195601_separate_seeds_birth_gain_only,birth_gain_only,0.0,0.0,True,True,True,True,True,True,True,True,True,True
+202610195602_ring_both,both,1e-08,8.733754973546106e-10,True,True,True,True,True,False,True,True,True,False
+202610195602_ring_both,both,0.0,0.0,True,True,True,True,True,False,True,True,True,False
+202610195602_ring_birth_gain_only,birth_gain_only,1e-08,8.701053340462022e-10,True,True,True,True,True,False,True,True,True,False
+202610195602_ring_birth_gain_only,birth_gain_only,0.0,0.0,True,True,True,True,True,False,True,True,True,False
+202610195602_separate_seeds_both,both,1e-08,8.320323507096186e-10,True,True,True,True,True,False,True,True,True,False
+202610195602_separate_seeds_both,both,0.0,0.0,True,True,True,True,True,False,True,True,True,False
+202610195602_separate_seeds_birth_gain_only,birth_gain_only,1e-08,9.038588162360823e-10,True,True,True,True,True,True,True,True,True,True
+202610195602_separate_seeds_birth_gain_only,birth_gain_only,0.0,0.0,True,True,True,True,True,True,True,True,True,True

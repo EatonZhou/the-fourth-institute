@@ -1,0 +1,27 @@
+{
+  "task": "consumption_qualified_transport_20261019",
+  "status": "completed_candidate_closed",
+  "core_objective_met": false,
+  "operational_chain": [
+    "restored actual384 parent",
+    "actual local P/F completed consumption",
+    "one-hop last-edge Euler statistics",
+    "paid direction redistribution",
+    "actual later tissue/energy"
+  ],
+  "development_candidate": "min(P use fraction,F total use fraction)",
+  "development_decision": "rejected; predetermined fallback is the simple EMA baseline, not a new algorithm",
+  "keep": [
+    "Conservative last-edge resource attribution and complete-future paid routing interface.",
+    "Finite-window cost/tissue tradeoffs and all negative comparator results."
+  ],
+  "reject": [
+    "Claim of strong-baseline body-benefit superiority.",
+    "Claim that online updating is beneficial from direction differences alone.",
+    "Claim of material memory or isolated causal credit."
+  ],
+  "statistics_scope": "two known rule parents x paired deterministic spatial schedules; no independent population inference",
+  "next_choice_request": "Close this rule. Before any new native branch specify additional local information and actions that make future tissue use distinguishable from present need/flow; no extra authorization assumed.",
+  "no_new_native_after_completion": true,
+  "unused_budget_sealed": true
+}

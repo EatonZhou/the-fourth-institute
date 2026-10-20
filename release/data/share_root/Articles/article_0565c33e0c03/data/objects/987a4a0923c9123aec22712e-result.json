@@ -1,0 +1,153 @@
+{
+  "task": "local_motor_expression_20261019",
+  "status": "complete",
+  "job": "943b4cc6-3967-4f91-9961-e2f784231d3c",
+  "attempted": 768,
+  "returned": 768,
+  "unknown": 0,
+  "old_replay": 0,
+  "paths": [
+    {
+      "condition": 0,
+      "arm": "retain",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_motor_expression_20261019/943b4cc6-3967-4f91-9961-e2f784231d3c/c0_retain",
+      "steps": 128,
+      "final": {
+        "t": 128,
+        "mass": 24.0,
+        "energy": 141.9548927945158,
+        "connected": 0.993873501638625,
+        "good_mass": 23.736741629392306,
+        "strong_good_mass": 22.60204773624215,
+        "field_score": 0.8201320175448098,
+        "signed_dx": 4.307122578384504,
+        "movement": 0.0032346380028394246,
+        "gain": 0.0,
+        "loss": 0.0,
+        "balance": 2.6721680423946736e-14
+      },
+      "mean_good_mass": 23.770621136189533,
+      "mean_strong_good_mass": 23.15074635762065,
+      "movement": 0.41465814061856077
+    },
+    {
+      "condition": 0,
+      "arm": "zero",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_motor_expression_20261019/943b4cc6-3967-4f91-9961-e2f784231d3c/c0_zero",
+      "steps": 128,
+      "final": {
+        "t": 128,
+        "mass": 24.0,
+        "energy": 142.01552787781068,
+        "connected": 0.9943863561494175,
+        "good_mass": 23.567094382913538,
+        "strong_good_mass": 22.6630290225431,
+        "field_score": 0.8269744109309567,
+        "signed_dx": -0.001815303704976401,
+        "movement": 0.0026933018027702027,
+        "gain": 0.0,
+        "loss": 0.0,
+        "balance": -1.27675647831893e-14
+      },
+      "mean_good_mass": 23.58081484136042,
+      "mean_strong_good_mass": 22.497685419910276,
+      "movement": 0.3540230573236736
+    },
+    {
+      "condition": 0,
+      "arm": "negate",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_motor_expression_20261019/943b4cc6-3967-4f91-9961-e2f784231d3c/c0_negate",
+      "steps": 128,
+      "final": {
+        "t": 128,
+        "mass": 24.000000000000004,
+        "energy": 141.9557357642525,
+        "connected": 0.9952813763043445,
+        "good_mass": 15.47160003447443,
+        "strong_good_mass": 7.875165247611569,
+        "field_score": 0.24378682411791594,
+        "signed_dx": -4.42415750165425,
+        "movement": 0.0029844843607162437,
+        "gain": 0.0,
+        "loss": 0.0,
+        "balance": -2.5521251778570786e-14
+      },
+      "mean_good_mass": 20.960448135319254,
+      "mean_strong_good_mass": 15.856719950147447,
+      "movement": 0.41381517088188374
+    },
+    {
+      "condition": 1,
+      "arm": "retain",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_motor_expression_20261019/943b4cc6-3967-4f91-9961-e2f784231d3c/c1_retain",
+      "steps": 128,
+      "final": {
+        "t": 128,
+        "mass": 24.0,
+        "energy": 142.5143256074354,
+        "connected": 0.9941029835275659,
+        "good_mass": 23.858145677270677,
+        "strong_good_mass": 22.672973122182842,
+        "field_score": 0.8210234621740118,
+        "signed_dx": 4.184210274912038,
+        "movement": 0.0032350087467536625,
+        "gain": 0.0,
+        "loss": 0.0,
+        "balance": -3.499978085130806e-14
+      },
+      "mean_good_mass": 23.807299537021425,
+      "mean_strong_good_mass": 23.240004651233114,
+      "movement": 0.41277790302946316
+    },
+    {
+      "condition": 1,
+      "arm": "zero",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_motor_expression_20261019/943b4cc6-3967-4f91-9961-e2f784231d3c/c1_zero",
+      "steps": 128,
+      "final": {
+        "t": 128,
+        "mass": 24.0,
+        "energy": 142.57567242802023,
+        "connected": 0.9945877699756847,
+        "good_mass": 23.586628950766173,
+        "strong_good_mass": 22.796434236520142,
+        "field_score": 0.8387309962366073,
+        "signed_dx": -0.0016689020326552395,
+        "movement": 0.002708680167222683,
+        "gain": 0.0,
+        "loss": 0.0,
+        "balance": -1.2385925618474403e-14
+      },
+      "mean_good_mass": 23.60145873177749,
+      "mean_strong_good_mass": 22.58284306627487,
+      "movement": 0.35143108244463983
+    },
+    {
+      "condition": 1,
+      "arm": "negate",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_motor_expression_20261019/943b4cc6-3967-4f91-9961-e2f784231d3c/c1_negate",
+      "steps": 128,
+      "final": {
+        "t": 128,
+        "mass": 23.999999999999993,
+        "energy": 142.51331424907363,
+        "connected": 0.9952215337989245,
+        "good_mass": 16.52471470469907,
+        "strong_good_mass": 9.145219793115373,
+        "field_score": 0.2926347642633127,
+        "signed_dx": -4.300463020794972,
+        "movement": 0.00314810541343322,
+        "gain": 0.0,
+        "loss": 0.0,
+        "balance": -1.5279444376403717e-14
+      },
+      "mean_good_mass": 21.351046838902292,
+      "mean_strong_good_mass": 16.60725796539321,
+      "movement": 0.41378926139120187
+    }
+  ],
+  "error": null,
+  "wall_seconds": 0.8859783650841564,
+  "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/local_motor_expression_20261019/943b4cc6-3967-4f91-9961-e2f784231d3c",
+  "raw_bytes": 4496777
+}

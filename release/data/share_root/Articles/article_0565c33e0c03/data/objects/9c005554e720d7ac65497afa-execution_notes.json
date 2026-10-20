@@ -1,0 +1,12 @@
+{
+  "setup_failures": [
+    {
+      "stage": "submission_preparation",
+      "error": "default python3 imported scientific control wrapper but scipy unavailable; no submit/native occurred",
+      "native": 0,
+      "resolution": "use literal src/.venv/bin/python"
+    }
+  ],
+  "coordination": "ce2 job594521aa observed active; no submission until shared slot idle. d3 supervisor confirmed; one request to ce2, no duplicate runner.",
+  "pilot_frozen_plan_sha": "0ba21fa2e8ed3edcb75c9c19f647c1324f3122e478d6cac75db88f6dd0061e58"
+}

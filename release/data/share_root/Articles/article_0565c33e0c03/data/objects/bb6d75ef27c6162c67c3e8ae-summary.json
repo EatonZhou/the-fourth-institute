@@ -1,0 +1,1732 @@
+{
+  "job": "bb737931-b8ac-4671-864e-1b04060e5f87",
+  "steps": 76800,
+  "worker_seconds": 81.702378,
+  "combined_host_steps": 196256,
+  "combined_worker_seconds": 124.684368,
+  "unused_host_steps": 3744,
+  "unused_worker_seconds": 475.315632,
+  "means": {
+    "accumulation": {
+      "learned": {
+        "uptake": 119.52392322623695,
+        "M_end": 19.924136645083962,
+        "E_end": 29.74936442709456,
+        "body_time": 20364.979242464942,
+        "total_paid": 52.82845950668153,
+        "commit_paid": 7.7713041300811785,
+        "memory_paid": 0.1905986456558386,
+        "detect_paid": 0.06343549814082611,
+        "heat": 113.77455879914231,
+        "spill": 19.29352791651514,
+        "post_prefix_uptake": 90.68367108710805,
+        "post_prefix_cost": 39.86238697600333,
+        "post_prefix_body_time": 15268.45929011838
+      },
+      "last_local": {
+        "uptake": 120.83787392104463,
+        "M_end": 19.923986036214444,
+        "E_end": 30.21370770518923,
+        "body_time": 20379.108048490267,
+        "total_paid": 52.92955994395323,
+        "commit_paid": 7.841144594577172,
+        "memory_paid": 0.19073089747044905,
+        "detect_paid": 0.06347951450679229,
+        "heat": 114.62416621585535,
+        "spill": 19.580133776395378,
+        "post_prefix_uptake": 89.99496464318516,
+        "post_prefix_cost": 39.921727678176076,
+        "post_prefix_body_time": 15281.855177457453
+      },
+      "last_pair": {
+        "uptake": 125.3023532974411,
+        "M_end": 19.924136645083962,
+        "E_end": 30.622791556066876,
+        "body_time": 20356.41398735359,
+        "total_paid": 53.25723310732312,
+        "commit_paid": 8.219028127571057,
+        "memory_paid": 0.1905184882369249,
+        "detect_paid": 0.06340881995651387,
+        "heat": 118.67956174137427,
+        "spill": 22.029413590129316,
+        "post_prefix_uptake": 94.45212684649434,
+        "post_prefix_cost": 40.12960407962687,
+        "post_prefix_body_time": 15260.611734655276
+      },
+      "baseline": {
+        "uptake": 123.37614694791854,
+        "M_end": 19.924136645083962,
+        "E_end": 30.575644346532734,
+        "body_time": 20379.839191128707,
+        "total_paid": 52.463525094788835,
+        "commit_paid": 7.373492480947974,
+        "memory_paid": 0.19073771158144012,
+        "detect_paid": 0.0634817823955468,
+        "heat": 116.80050260138572,
+        "spill": 21.455247769399232,
+        "post_prefix_uptake": 95.87824965311555,
+        "post_prefix_cost": 39.658415038050585,
+        "post_prefix_body_time": 15284.23186935906
+      },
+      "bayes": {
+        "uptake": 124.65368309622205,
+        "M_end": 19.924136645083962,
+        "E_end": 30.56986584630723,
+        "body_time": 20380.58169759717,
+        "total_paid": 52.46862430909023,
+        "commit_paid": 7.376948919633604,
+        "memory_paid": 0.1907446602830567,
+        "detect_paid": 0.0634840950790759,
+        "heat": 118.0838172499147,
+        "spill": 22.33505923849643,
+        "post_prefix_uptake": 97.15578580141906,
+        "post_prefix_cost": 39.66351425235197,
+        "post_prefix_body_time": 15284.974375827522
+      },
+      "uniform": {
+        "uptake": 107.35672263819922,
+        "M_end": 19.924136645083966,
+        "E_end": 30.006203571116618,
+        "body_time": 20398.420891012836,
+        "total_paid": 49.0096450102248,
+        "commit_paid": 3.8785008845444993,
+        "memory_paid": 0.1909116072894341,
+        "detect_paid": 0.06353965878193556,
+        "heat": 101.3505190670824,
+        "spill": 14.171275383253008,
+        "post_prefix_uptake": 81.88566048064033,
+        "post_prefix_cost": 36.75675570376045,
+        "post_prefix_body_time": 15298.24464846243
+      },
+      "frozen": {
+        "uptake": 119.18878290585914,
+        "M_end": 19.924136645083966,
+        "E_end": 29.710903311185618,
+        "body_time": 20363.50420108483,
+        "total_paid": 52.86925272475578,
+        "commit_paid": 7.815360837585391,
+        "memory_paid": 0.19058484157081323,
+        "detect_paid": 0.06343090383215749,
+        "heat": 113.4778795946734,
+        "spill": 19.067089319086342,
+        "post_prefix_uptake": 90.34853076673022,
+        "post_prefix_cost": 39.903180194077585,
+        "post_prefix_body_time": 15266.984248738263
+      }
+    },
+    "local_override": {
+      "learned": {
+        "uptake": 126.8798462907314,
+        "M_end": 19.924136645083966,
+        "E_end": 30.544277266076442,
+        "body_time": 20383.994186503987,
+        "total_paid": 53.34580991581764,
+        "commit_paid": 8.246584486323195,
+        "memory_paid": 0.1907765958529009,
+        "detect_paid": 0.06349472395198581,
+        "heat": 120.33556902465503,
+        "spill": 23.004225615626694,
+        "post_prefix_uptake": 96.2685210009369,
+        "post_prefix_cost": 39.93161325147781,
+        "post_prefix_body_time": 15285.474196889405
+      },
+      "last_local": {
+        "uptake": 126.0978568345303,
+        "M_end": 19.92413664508397,
+        "E_end": 30.834822742134357,
+        "body_time": 20389.786711913875,
+        "total_paid": 53.75807334675794,
+        "commit_paid": 8.646032110396952,
+        "memory_paid": 0.19083080484957535,
+        "detect_paid": 0.06351276592020613,
+        "heat": 119.26303409239594,
+        "spill": 21.722638921988096,
+        "post_prefix_uptake": 96.84506979002106,
+        "post_prefix_cost": 40.22464912817312,
+        "post_prefix_body_time": 15292.18236281547
+      },
+      "last_pair": {
+        "uptake": 132.9497659059674,
+        "M_end": 19.900864365450623,
+        "E_end": 30.585128050629848,
+        "body_time": 20379.380739290096,
+        "total_paid": 53.54962878692422,
+        "commit_paid": 8.460553469833036,
+        "memory_paid": 0.19073778531976546,
+        "detect_paid": 0.06348180693731298,
+        "heat": 126.36463785533748,
+        "spill": 26.99072319159285,
+        "post_prefix_uptake": 102.34027163794525,
+        "post_prefix_cost": 40.102102260904374,
+        "post_prefix_body_time": 15284.32567119787
+      },
+      "baseline": {
+        "uptake": 122.2456391979604,
+        "M_end": 19.92413664508397,
+        "E_end": 30.574557316794987,
+        "body_time": 20379.4221333564,
+        "total_paid": 52.74354326039636,
+        "commit_paid": 7.654433375673441,
+        "memory_paid": 0.1907338085716487,
+        "detect_paid": 0.0634804833864719,
+        "heat": 115.67108188116535,
+        "spill": 20.366423499159986,
+        "post_prefix_uptake": 92.99346537618447,
+        "post_prefix_cost": 39.57303396007558,
+        "post_prefix_body_time": 15282.349162384147
+      },
+      "bayes": {
+        "uptake": 126.0978568345303,
+        "M_end": 19.92413664508397,
+        "E_end": 30.834822742134357,
+        "body_time": 20389.786711913875,
+        "total_paid": 53.75807334675794,
+        "commit_paid": 8.646032110396952,
+        "memory_paid": 0.19083080484957535,
+        "detect_paid": 0.06351276592020613,
+        "heat": 119.26303409239594,
+        "spill": 21.722638921988096,
+        "post_prefix_uptake": 96.84506979002106,
+        "post_prefix_cost": 40.22464912817312,
+        "post_prefix_body_time": 15292.18236281547
+      },
+      "uniform": {
+        "uptake": 103.20150535996129,
+        "M_end": 19.924136645083962,
+        "E_end": 30.985312354322453,
+        "body_time": 20402.113735671286,
+        "total_paid": 49.01779782981314,
+        "commit_paid": 3.878483384525719,
+        "memory_paid": 0.19094616655152516,
+        "detect_paid": 0.06355116087838845,
+        "heat": 96.21619300563873,
+        "spill": 10.353319951958046,
+        "post_prefix_uptake": 80.01362206641983,
+        "post_prefix_cost": 36.765048069601264,
+        "post_prefix_body_time": 15302.130830872427
+      },
+      "frozen": {
+        "uptake": 105.96646379539195,
+        "M_end": 19.787879422310098,
+        "E_end": 26.7000364213491,
+        "body_time": 20339.604234853752,
+        "total_paid": 53.3812172953312,
+        "commit_paid": 8.379869619765293,
+        "memory_paid": 0.1903867268131443,
+        "detect_paid": 0.06336496680359921,
+        "heat": 103.26642737404273,
+        "spill": 12.565507732607903,
+        "post_prefix_uptake": 75.35513850559744,
+        "post_prefix_cost": 39.96702063099134,
+        "post_prefix_body_time": 15241.084245239166
+      }
+    }
+  },
+  "paired": {
+    "accumulation": {
+      "learned-last_local": {
+        "uptake": {
+          "mean": -1.31395069480768,
+          "positive": 2,
+          "negative": 2,
+          "n": 4
+        },
+        "M_end": {
+          "mean": 0.00015060886951800967,
+          "positive": 1,
+          "negative": 0,
+          "n": 4
+        },
+        "E_end": {
+          "mean": -0.46434327809467124,
+          "positive": 1,
+          "negative": 2,
+          "n": 4
+        },
+        "body_time": {
+          "mean": -14.128806025321865,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "total_paid": {
+          "mean": -0.10110043727169682,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "commit_paid": {
+          "mean": -0.06984046449599446,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "memory_paid": {
+          "mean": -0.0001322518146104762,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "detect_paid": {
+          "mean": -4.40163659661888e-05,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "heat": {
+          "mean": -0.8496074167130452,
+          "positive": 2,
+          "negative": 2,
+          "n": 4
+        },
+        "spill": {
+          "mean": -0.2866058598802388,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        },
+        "post_prefix_uptake": {
+          "mean": 0.6887064439228965,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        },
+        "post_prefix_cost": {
+          "mean": -0.05934070217274545,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "post_prefix_body_time": {
+          "mean": -13.395887339072033,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        }
+      },
+      "learned-last_pair": {
+        "uptake": {
+          "mean": -5.778430071204134,
+          "positive": 0,
+          "negative": 4,
+          "n": 4
+        },
+        "M_end": {
+          "mean": -8.881784197001252e-16,
+          "positive": 0,
+          "negative": 0,
+          "n": 4
+        },
+        "E_end": {
+          "mean": -0.8734271289723168,
+          "positive": 0,
+          "negative": 3,
+          "n": 4
+        },
+        "body_time": {
+          "mean": 8.565255111354418,
+          "positive": 4,
+          "negative": 0,
+          "n": 4
+        },
+        "total_paid": {
+          "mean": -0.4287736006415823,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "commit_paid": {
+          "mean": -0.4477239974898801,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "memory_paid": {
+          "mean": 8.015741891367889e-05,
+          "positive": 4,
+          "negative": 0,
+          "n": 4
+        },
+        "detect_paid": {
+          "mean": 2.6678184312227404e-05,
+          "positive": 4,
+          "negative": 0,
+          "n": 4
+        },
+        "heat": {
+          "mean": -4.90500294223196,
+          "positive": 0,
+          "negative": 4,
+          "n": 4
+        },
+        "spill": {
+          "mean": -2.7358856736141783,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "post_prefix_uptake": {
+          "mean": -3.7684557593862777,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "post_prefix_cost": {
+          "mean": -0.26721710362354223,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "post_prefix_body_time": {
+          "mean": 7.847555463103163,
+          "positive": 4,
+          "negative": 0,
+          "n": 4
+        }
+      },
+      "learned-baseline": {
+        "uptake": {
+          "mean": -3.852223721681593,
+          "positive": 2,
+          "negative": 2,
+          "n": 4
+        },
+        "M_end": {
+          "mean": 8.881784197001252e-16,
+          "positive": 0,
+          "negative": 0,
+          "n": 4
+        },
+        "E_end": {
+          "mean": -0.8262799194381696,
+          "positive": 0,
+          "negative": 3,
+          "n": 4
+        },
+        "body_time": {
+          "mean": -14.859948663764044,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "total_paid": {
+          "mean": 0.3649344118926905,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        },
+        "commit_paid": {
+          "mean": 0.39781164913320377,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        },
+        "memory_paid": {
+          "mean": -0.00013906592560154057,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "detect_paid": {
+          "mean": -4.6284254720703466e-05,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "heat": {
+          "mean": -3.025943802243404,
+          "positive": 2,
+          "negative": 2,
+          "n": 4
+        },
+        "spill": {
+          "mean": -2.1617198528840955,
+          "positive": 2,
+          "negative": 2,
+          "n": 4
+        },
+        "post_prefix_uptake": {
+          "mean": -5.194578566007497,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "post_prefix_cost": {
+          "mean": 0.20397193795274582,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        },
+        "post_prefix_body_time": {
+          "mean": -15.772579240682717,
+          "positive": 0,
+          "negative": 4,
+          "n": 4
+        }
+      },
+      "learned-bayes": {
+        "uptake": {
+          "mean": -5.129759869985097,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "M_end": {
+          "mean": 0.0,
+          "positive": 0,
+          "negative": 0,
+          "n": 4
+        },
+        "E_end": {
+          "mean": -0.8205014192126727,
+          "positive": 0,
+          "negative": 3,
+          "n": 4
+        },
+        "body_time": {
+          "mean": -15.60245513222435,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "total_paid": {
+          "mean": 0.3598351975913019,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        },
+        "commit_paid": {
+          "mean": 0.3943552104475734,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        },
+        "memory_paid": {
+          "mean": -0.00014601462721811065,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "detect_paid": {
+          "mean": -4.8596938249798743e-05,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "heat": {
+          "mean": -4.309258450772386,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "spill": {
+          "mean": -3.0415313219812923,
+          "positive": 2,
+          "negative": 2,
+          "n": 4
+        },
+        "post_prefix_uptake": {
+          "mean": -6.4721147143110045,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "post_prefix_cost": {
+          "mean": 0.19887272365135544,
+          "positive": 2,
+          "negative": 2,
+          "n": 4
+        },
+        "post_prefix_body_time": {
+          "mean": -16.515085709143023,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        }
+      },
+      "learned-uniform": {
+        "uptake": {
+          "mean": 12.167200588037755,
+          "positive": 4,
+          "negative": 0,
+          "n": 4
+        },
+        "M_end": {
+          "mean": -3.552713678800501e-15,
+          "positive": 0,
+          "negative": 0,
+          "n": 4
+        },
+        "E_end": {
+          "mean": -0.2568391440220603,
+          "positive": 1,
+          "negative": 2,
+          "n": 4
+        },
+        "body_time": {
+          "mean": -33.44164854789233,
+          "positive": 0,
+          "negative": 4,
+          "n": 4
+        },
+        "total_paid": {
+          "mean": 3.8188144964567314,
+          "positive": 4,
+          "negative": 0,
+          "n": 4
+        },
+        "commit_paid": {
+          "mean": 3.892803245536678,
+          "positive": 4,
+          "negative": 0,
+          "n": 4
+        },
+        "memory_paid": {
+          "mean": -0.0003129616335955168,
+          "positive": 0,
+          "negative": 4,
+          "n": 4
+        },
+        "detect_paid": {
+          "mean": -0.00010416064110945616,
+          "positive": 0,
+          "negative": 4,
+          "n": 4
+        },
+        "heat": {
+          "mean": 12.424039732059907,
+          "positive": 4,
+          "negative": 0,
+          "n": 4
+        },
+        "spill": {
+          "mean": 5.122252533262131,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        },
+        "post_prefix_uptake": {
+          "mean": 8.798010606467724,
+          "positive": 4,
+          "negative": 0,
+          "n": 4
+        },
+        "post_prefix_cost": {
+          "mean": 3.1056312722428814,
+          "positive": 4,
+          "negative": 0,
+          "n": 4
+        },
+        "post_prefix_body_time": {
+          "mean": -29.785358344050564,
+          "positive": 0,
+          "negative": 4,
+          "n": 4
+        }
+      },
+      "learned-frozen": {
+        "uptake": {
+          "mean": 0.33514032037782826,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "M_end": {
+          "mean": -2.6645352591003757e-15,
+          "positive": 0,
+          "negative": 0,
+          "n": 4
+        },
+        "E_end": {
+          "mean": 0.038461115908942745,
+          "positive": 2,
+          "negative": 1,
+          "n": 4
+        },
+        "body_time": {
+          "mean": 1.475041380116636,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        },
+        "total_paid": {
+          "mean": -0.04079321807425451,
+          "positive": 2,
+          "negative": 2,
+          "n": 4
+        },
+        "commit_paid": {
+          "mean": -0.04405670750421353,
+          "positive": 2,
+          "negative": 2,
+          "n": 4
+        },
+        "memory_paid": {
+          "mean": 1.3804085025354018e-05,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        },
+        "detect_paid": {
+          "mean": 4.594308668604691e-06,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        },
+        "heat": {
+          "mean": 0.29667920446891927,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "spill": {
+          "mean": 0.22643859742879702,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "post_prefix_uptake": {
+          "mean": 0.33514032037782826,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "post_prefix_cost": {
+          "mean": -0.040793218074258064,
+          "positive": 2,
+          "negative": 2,
+          "n": 4
+        },
+        "post_prefix_body_time": {
+          "mean": 1.4750413801189097,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        }
+      },
+      "bayes-last_local": {
+        "uptake": {
+          "mean": 3.8158091751774172,
+          "positive": 2,
+          "negative": 2,
+          "n": 4
+        },
+        "M_end": {
+          "mean": 0.00015060886951800967,
+          "positive": 1,
+          "negative": 0,
+          "n": 4
+        },
+        "E_end": {
+          "mean": 0.3561581411180015,
+          "positive": 2,
+          "negative": 1,
+          "n": 4
+        },
+        "body_time": {
+          "mean": 1.473649106902485,
+          "positive": 2,
+          "negative": 2,
+          "n": 4
+        },
+        "total_paid": {
+          "mean": -0.4609356348629987,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "commit_paid": {
+          "mean": -0.46419567494356784,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "memory_paid": {
+          "mean": 1.3762812607634456e-05,
+          "positive": 2,
+          "negative": 2,
+          "n": 4
+        },
+        "detect_paid": {
+          "mean": 4.580572283609946e-06,
+          "positive": 2,
+          "negative": 2,
+          "n": 4
+        },
+        "heat": {
+          "mean": 3.459651034059341,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        },
+        "spill": {
+          "mean": 2.7549254621010535,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        },
+        "post_prefix_uptake": {
+          "mean": 7.160821158233901,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        },
+        "post_prefix_cost": {
+          "mean": -0.2582134258241009,
+          "positive": 2,
+          "negative": 2,
+          "n": 4
+        },
+        "post_prefix_body_time": {
+          "mean": 3.1191983700709898,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        }
+      },
+      "bayes-last_pair": {
+        "uptake": {
+          "mean": -0.6486702012190371,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "M_end": {
+          "mean": -8.881784197001252e-16,
+          "positive": 0,
+          "negative": 0,
+          "n": 4
+        },
+        "E_end": {
+          "mean": -0.05292570975964406,
+          "positive": 1,
+          "negative": 2,
+          "n": 4
+        },
+        "body_time": {
+          "mean": 24.167710243578767,
+          "positive": 4,
+          "negative": 0,
+          "n": 4
+        },
+        "total_paid": {
+          "mean": -0.7886087982328842,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "commit_paid": {
+          "mean": -0.8420792079374535,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "memory_paid": {
+          "mean": 0.00022617204613178954,
+          "positive": 4,
+          "negative": 0,
+          "n": 4
+        },
+        "detect_paid": {
+          "mean": 7.527512256202615e-05,
+          "positive": 4,
+          "negative": 0,
+          "n": 4
+        },
+        "heat": {
+          "mean": -0.5957444914595733,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "spill": {
+          "mean": 0.30564564836711394,
+          "positive": 2,
+          "negative": 2,
+          "n": 4
+        },
+        "post_prefix_uptake": {
+          "mean": 2.7036589549247267,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        },
+        "post_prefix_cost": {
+          "mean": -0.4660898272748977,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "post_prefix_body_time": {
+          "mean": 24.362641172246185,
+          "positive": 4,
+          "negative": 0,
+          "n": 4
+        }
+      },
+      "baseline-last_local": {
+        "uptake": {
+          "mean": 2.538273026873913,
+          "positive": 2,
+          "negative": 2,
+          "n": 4
+        },
+        "M_end": {
+          "mean": 0.0001506088695171215,
+          "positive": 1,
+          "negative": 0,
+          "n": 4
+        },
+        "E_end": {
+          "mean": 0.36193664134349834,
+          "positive": 2,
+          "negative": 1,
+          "n": 4
+        },
+        "body_time": {
+          "mean": 0.7311426384421793,
+          "positive": 2,
+          "negative": 2,
+          "n": 4
+        },
+        "total_paid": {
+          "mean": -0.4660348491643873,
+          "positive": 0,
+          "negative": 4,
+          "n": 4
+        },
+        "commit_paid": {
+          "mean": -0.46765211362919823,
+          "positive": 0,
+          "negative": 4,
+          "n": 4
+        },
+        "memory_paid": {
+          "mean": 6.8141109910643816e-06,
+          "positive": 2,
+          "negative": 2,
+          "n": 4
+        },
+        "detect_paid": {
+          "mean": 2.2678887545146686e-06,
+          "positive": 2,
+          "negative": 2,
+          "n": 4
+        },
+        "heat": {
+          "mean": 2.176336385530359,
+          "positive": 2,
+          "negative": 2,
+          "n": 4
+        },
+        "spill": {
+          "mean": 1.8751139930038567,
+          "positive": 2,
+          "negative": 2,
+          "n": 4
+        },
+        "post_prefix_uptake": {
+          "mean": 5.883285009930393,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        },
+        "post_prefix_cost": {
+          "mean": -0.26331264012549127,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "post_prefix_body_time": {
+          "mean": 2.376691901610684,
+          "positive": 2,
+          "negative": 2,
+          "n": 4
+        }
+      }
+    },
+    "local_override": {
+      "learned-last_local": {
+        "uptake": {
+          "mean": 0.7819894562010852,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        },
+        "M_end": {
+          "mean": -2.6645352591003757e-15,
+          "positive": 0,
+          "negative": 0,
+          "n": 4
+        },
+        "E_end": {
+          "mean": -0.2905454760579165,
+          "positive": 1,
+          "negative": 1,
+          "n": 4
+        },
+        "body_time": {
+          "mean": -5.792525409889095,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "total_paid": {
+          "mean": -0.4122634309402997,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "commit_paid": {
+          "mean": -0.399447624073757,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "memory_paid": {
+          "mean": -5.420899667442358e-05,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "detect_paid": {
+          "mean": -1.8041968220316312e-05,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "heat": {
+          "mean": 1.0725349322590887,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        },
+        "spill": {
+          "mean": 1.2815866936385971,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        },
+        "post_prefix_uptake": {
+          "mean": -0.5765487890841499,
+          "positive": 2,
+          "negative": 2,
+          "n": 4
+        },
+        "post_prefix_cost": {
+          "mean": -0.29303587669530984,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "post_prefix_body_time": {
+          "mean": -6.708165926065703,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        }
+      },
+      "learned-last_pair": {
+        "uptake": {
+          "mean": -6.069919615236035,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "M_end": {
+          "mean": 0.023272279633341775,
+          "positive": 1,
+          "negative": 0,
+          "n": 4
+        },
+        "E_end": {
+          "mean": -0.04085078455340696,
+          "positive": 1,
+          "negative": 1,
+          "n": 4
+        },
+        "body_time": {
+          "mean": 4.613447213886502,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        },
+        "total_paid": {
+          "mean": -0.20381887110658248,
+          "positive": 2,
+          "negative": 2,
+          "n": 4
+        },
+        "commit_paid": {
+          "mean": -0.21396898350983995,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "memory_paid": {
+          "mean": 3.88105331354735e-05,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        },
+        "detect_paid": {
+          "mean": 1.2917014672826632e-05,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        },
+        "heat": {
+          "mean": -6.029068830682441,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "spill": {
+          "mean": -3.9864975759661583,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "post_prefix_uptake": {
+          "mean": -6.071750637008336,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "post_prefix_cost": {
+          "mean": -0.17048900942656786,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "post_prefix_body_time": {
+          "mean": 1.1485256915334503,
+          "positive": 2,
+          "negative": 2,
+          "n": 4
+        }
+      },
+      "learned-baseline": {
+        "uptake": {
+          "mean": 4.634207092770978,
+          "positive": 4,
+          "negative": 0,
+          "n": 4
+        },
+        "M_end": {
+          "mean": -8.881784197001252e-16,
+          "positive": 0,
+          "negative": 0,
+          "n": 4
+        },
+        "E_end": {
+          "mean": -0.030280050718546114,
+          "positive": 1,
+          "negative": 1,
+          "n": 4
+        },
+        "body_time": {
+          "mean": 4.572053147585393,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        },
+        "total_paid": {
+          "mean": 0.6022666554212819,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        },
+        "commit_paid": {
+          "mean": 0.5921511106497546,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        },
+        "memory_paid": {
+          "mean": 4.278728125221842e-05,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        },
+        "detect_paid": {
+          "mean": 1.4240565513912173e-05,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        },
+        "heat": {
+          "mean": 4.66448714348968,
+          "positive": 4,
+          "negative": 0,
+          "n": 4
+        },
+        "spill": {
+          "mean": 2.637802116466707,
+          "positive": 4,
+          "negative": 0,
+          "n": 4
+        },
+        "post_prefix_uptake": {
+          "mean": 3.275055624752426,
+          "positive": 4,
+          "negative": 0,
+          "n": 4
+        },
+        "post_prefix_cost": {
+          "mean": 0.3585792914022381,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        },
+        "post_prefix_body_time": {
+          "mean": 3.125034505257645,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        }
+      },
+      "learned-bayes": {
+        "uptake": {
+          "mean": 0.7819894562010852,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        },
+        "M_end": {
+          "mean": -2.6645352591003757e-15,
+          "positive": 0,
+          "negative": 0,
+          "n": 4
+        },
+        "E_end": {
+          "mean": -0.2905454760579165,
+          "positive": 1,
+          "negative": 1,
+          "n": 4
+        },
+        "body_time": {
+          "mean": -5.792525409889095,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "total_paid": {
+          "mean": -0.4122634309402997,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "commit_paid": {
+          "mean": -0.399447624073757,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "memory_paid": {
+          "mean": -5.420899667442358e-05,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "detect_paid": {
+          "mean": -1.8041968220316312e-05,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "heat": {
+          "mean": 1.0725349322590887,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        },
+        "spill": {
+          "mean": 1.2815866936385971,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        },
+        "post_prefix_uptake": {
+          "mean": -0.5765487890841499,
+          "positive": 2,
+          "negative": 2,
+          "n": 4
+        },
+        "post_prefix_cost": {
+          "mean": -0.29303587669530984,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "post_prefix_body_time": {
+          "mean": -6.708165926065703,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        }
+      },
+      "learned-uniform": {
+        "uptake": {
+          "mean": 23.67834093077011,
+          "positive": 4,
+          "negative": 0,
+          "n": 4
+        },
+        "M_end": {
+          "mean": 2.6645352591003757e-15,
+          "positive": 0,
+          "negative": 0,
+          "n": 4
+        },
+        "E_end": {
+          "mean": -0.4410350882460117,
+          "positive": 0,
+          "negative": 2,
+          "n": 4
+        },
+        "body_time": {
+          "mean": -18.119549167303376,
+          "positive": 0,
+          "negative": 4,
+          "n": 4
+        },
+        "total_paid": {
+          "mean": 4.328012086004495,
+          "positive": 4,
+          "negative": 0,
+          "n": 4
+        },
+        "commit_paid": {
+          "mean": 4.3681011017974765,
+          "positive": 4,
+          "negative": 0,
+          "n": 4
+        },
+        "memory_paid": {
+          "mean": -0.00016957069862421487,
+          "positive": 0,
+          "negative": 4,
+          "n": 4
+        },
+        "detect_paid": {
+          "mean": -5.6436926402638615e-05,
+          "positive": 0,
+          "negative": 4,
+          "n": 4
+        },
+        "heat": {
+          "mean": 24.11937601901631,
+          "positive": 4,
+          "negative": 0,
+          "n": 4
+        },
+        "spill": {
+          "mean": 12.650905663668649,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        },
+        "post_prefix_uptake": {
+          "mean": 16.254898934517062,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        },
+        "post_prefix_cost": {
+          "mean": 3.1665651818765426,
+          "positive": 4,
+          "negative": 0,
+          "n": 4
+        },
+        "post_prefix_body_time": {
+          "mean": -16.656633983023312,
+          "positive": 0,
+          "negative": 4,
+          "n": 4
+        }
+      },
+      "learned-frozen": {
+        "uptake": {
+          "mean": 20.91338249533946,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        },
+        "M_end": {
+          "mean": 0.13625722277386565,
+          "positive": 2,
+          "negative": 0,
+          "n": 4
+        },
+        "E_end": {
+          "mean": 3.8442408447273415,
+          "positive": 3,
+          "negative": 0,
+          "n": 4
+        },
+        "body_time": {
+          "mean": 44.38995165023425,
+          "positive": 4,
+          "negative": 0,
+          "n": 4
+        },
+        "total_paid": {
+          "mean": -0.035407379513559434,
+          "positive": 2,
+          "negative": 2,
+          "n": 4
+        },
+        "commit_paid": {
+          "mean": -0.13328513344209703,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "memory_paid": {
+          "mean": 0.00038986903975662957,
+          "positive": 4,
+          "negative": 0,
+          "n": 4
+        },
+        "detect_paid": {
+          "mean": 0.00012975714838659586,
+          "positive": 4,
+          "negative": 0,
+          "n": 4
+        },
+        "heat": {
+          "mean": 17.069141650612288,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        },
+        "spill": {
+          "mean": 10.438717883018791,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        },
+        "post_prefix_uptake": {
+          "mean": 20.91338249533946,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        },
+        "post_prefix_cost": {
+          "mean": -0.03540737951353279,
+          "positive": 2,
+          "negative": 2,
+          "n": 4
+        },
+        "post_prefix_body_time": {
+          "mean": 44.389951650237435,
+          "positive": 4,
+          "negative": 0,
+          "n": 4
+        }
+      },
+      "bayes-last_local": {
+        "uptake": {
+          "mean": 0.0,
+          "positive": 0,
+          "negative": 0,
+          "n": 4
+        },
+        "M_end": {
+          "mean": 0.0,
+          "positive": 0,
+          "negative": 0,
+          "n": 4
+        },
+        "E_end": {
+          "mean": 0.0,
+          "positive": 0,
+          "negative": 0,
+          "n": 4
+        },
+        "body_time": {
+          "mean": 0.0,
+          "positive": 0,
+          "negative": 0,
+          "n": 4
+        },
+        "total_paid": {
+          "mean": 0.0,
+          "positive": 0,
+          "negative": 0,
+          "n": 4
+        },
+        "commit_paid": {
+          "mean": 0.0,
+          "positive": 0,
+          "negative": 0,
+          "n": 4
+        },
+        "memory_paid": {
+          "mean": 0.0,
+          "positive": 0,
+          "negative": 0,
+          "n": 4
+        },
+        "detect_paid": {
+          "mean": 0.0,
+          "positive": 0,
+          "negative": 0,
+          "n": 4
+        },
+        "heat": {
+          "mean": 0.0,
+          "positive": 0,
+          "negative": 0,
+          "n": 4
+        },
+        "spill": {
+          "mean": 0.0,
+          "positive": 0,
+          "negative": 0,
+          "n": 4
+        },
+        "post_prefix_uptake": {
+          "mean": 0.0,
+          "positive": 0,
+          "negative": 0,
+          "n": 4
+        },
+        "post_prefix_cost": {
+          "mean": 0.0,
+          "positive": 0,
+          "negative": 0,
+          "n": 4
+        },
+        "post_prefix_body_time": {
+          "mean": 0.0,
+          "positive": 0,
+          "negative": 0,
+          "n": 4
+        }
+      },
+      "bayes-last_pair": {
+        "uptake": {
+          "mean": -6.85190907143712,
+          "positive": 0,
+          "negative": 4,
+          "n": 4
+        },
+        "M_end": {
+          "mean": 0.02327227963334444,
+          "positive": 1,
+          "negative": 0,
+          "n": 4
+        },
+        "E_end": {
+          "mean": 0.24969469150450951,
+          "positive": 1,
+          "negative": 0,
+          "n": 4
+        },
+        "body_time": {
+          "mean": 10.405972623775597,
+          "positive": 4,
+          "negative": 0,
+          "n": 4
+        },
+        "total_paid": {
+          "mean": 0.20844455983371724,
+          "positive": 4,
+          "negative": 0,
+          "n": 4
+        },
+        "commit_paid": {
+          "mean": 0.18547864056391705,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        },
+        "memory_paid": {
+          "mean": 9.301952980989708e-05,
+          "positive": 4,
+          "negative": 0,
+          "n": 4
+        },
+        "detect_paid": {
+          "mean": 3.0958982893142944e-05,
+          "positive": 4,
+          "negative": 0,
+          "n": 4
+        },
+        "heat": {
+          "mean": -7.101603762941529,
+          "positive": 0,
+          "negative": 4,
+          "n": 4
+        },
+        "spill": {
+          "mean": -5.268084269604755,
+          "positive": 0,
+          "negative": 4,
+          "n": 4
+        },
+        "post_prefix_uptake": {
+          "mean": -5.495201847924186,
+          "positive": 0,
+          "negative": 4,
+          "n": 4
+        },
+        "post_prefix_cost": {
+          "mean": 0.12254686726874198,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        },
+        "post_prefix_body_time": {
+          "mean": 7.856691617599154,
+          "positive": 3,
+          "negative": 1,
+          "n": 4
+        }
+      },
+      "baseline-last_local": {
+        "uptake": {
+          "mean": -3.8522176365698932,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "M_end": {
+          "mean": -1.7763568394002505e-15,
+          "positive": 0,
+          "negative": 0,
+          "n": 4
+        },
+        "E_end": {
+          "mean": -0.26026542533937036,
+          "positive": 1,
+          "negative": 1,
+          "n": 4
+        },
+        "body_time": {
+          "mean": -10.364578557474488,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "total_paid": {
+          "mean": -1.0145300863615816,
+          "positive": 0,
+          "negative": 4,
+          "n": 4
+        },
+        "commit_paid": {
+          "mean": -0.9915987347235116,
+          "positive": 0,
+          "negative": 4,
+          "n": 4
+        },
+        "memory_paid": {
+          "mean": -9.6996277926642e-05,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "detect_paid": {
+          "mean": -3.2282533734228486e-05,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "heat": {
+          "mean": -3.5919522112305913,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "spill": {
+          "mean": -1.35621542282811,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        },
+        "post_prefix_uptake": {
+          "mean": -3.8516044138365757,
+          "positive": 2,
+          "negative": 2,
+          "n": 4
+        },
+        "post_prefix_cost": {
+          "mean": -0.6516151680975479,
+          "positive": 0,
+          "negative": 4,
+          "n": 4
+        },
+        "post_prefix_body_time": {
+          "mean": -9.833200431323348,
+          "positive": 1,
+          "negative": 3,
+          "n": 4
+        }
+      }
+    }
+  },
+  "selected": {
+    "phi": [
+      2.5297485029615707,
+      0.23850724616226343,
+      -1.519213367721888,
+      0.16771260449470715,
+      0.023570832467794012,
+      1.341032186936432
+    ],
+    "baseline": {
+      "family": "count",
+      "value": 0.8
+    },
+    "training_best": {
+      "generation": 0,
+      "index": 2,
+      "phi": [
+        2.5297485029615707,
+        0.23850724616226343,
+        -1.519213367721888,
+        0.16771260449470715,
+        0.023570832467794012,
+        1.341032186936432
+      ],
+      "scores": [
+        53.06708010578507,
+        45.1730477383038
+      ],
+      "mean_score": 49.12006392204444
+    },
+    "plan_sha256": "24dc1b9f70adc22be81329f595e05414cbb4756a0da9ccc4a251f815b8b38bbf",
+    "policy_source_sha256": "c3a2e47e9680de6699bda6d95f41eacca60a1e754c4ce899c0095c788a7033ce",
+    "host_steps_before_heldout": 21504
+  },
+  "event_counts": {
+    "accumulation": {
+      "both": 32,
+      "neither": 17,
+      "exclusive": 79
+    },
+    "local_override": {
+      "both": 24,
+      "neither": 14,
+      "exclusive": 90
+    }
+  },
+  "failure_paths": 0,
+  "heldout_paths": 56,
+  "max_residual": 4.654054919228656e-13,
+  "physical_stage_steps": 76800,
+  "caveats": [
+    "4 worlds per condition; repeated arms/events are dependent, cells are not independent replicates",
+    "Bayes known parameters privileged model, not bodily upper bound",
+    "Pair-last integrates paid two-port receipts, local candidate/Bayes cannot: extra integration reference",
+    "Common sign readout; predictions differ but no readout/price search",
+    "Freeze shares acquisition; simple baselines have independent actual acquisitions from common initial body",
+    "Handmade two-leaf material, stationary action0, global E and imposed M20; not Lenia",
+    "All prechoice public stored; policy consumes narrower rho/clock and cue memory. Pipeline itself can carry history"
+  ],
+  "candidate_status": "closed_not_better_than_strong_simple_inference",
+  "method_objective_met": false
+}

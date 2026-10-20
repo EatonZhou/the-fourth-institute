@@ -1,0 +1,273 @@
+#!/usr/bin/env python3
+"""Install and diagnose Portal's declared dependency profiles.
+
+Run with ``python3.12 scripts/bootstrap_portal`` (or ``py -3.12`` on Windows).
+This prepares dependencies; it does not initialize databases or start services.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+from pathlib import Path
+import platform
+import shutil
+import subprocess
+import sys
+import venv
+
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+from management_common.embedding_feature import platform_issue as embeddings_platform_issue  # noqa: E402
+from management_common.process_runtime import run_process  # noqa: E402
+
+PROFILES = ("core", "test", "tau", "provider", "article", "embeddings")
+DSH_PACKAGE = ROOT / "management_portal" / "dsh_runtime"
+TAU_PACKAGE = ROOT / "management_portal" / "test_framework" / "tau_runtime"
+
+
+def selected_profiles(values: list[str]) -> list[str]:
+    chosen = set(values or ["core"])
+    chosen.add("core")
+    return [profile for profile in PROFILES if profile in chosen]
+
+
+def venv_python(directory: Path) -> Path:
+    if os.name == "nt":
+        return directory / "Scripts" / "python.exe"
+    return directory / "bin" / "python"
+
+
+def declared_requirements(path: Path) -> dict[str, str | None]:
+    """Read direct requirements and optional lower bounds, including nested files."""
+    import re
+    result = {}
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.split("#", 1)[0].strip()
+        if not line:
+            continue
+        if line.startswith("-r "):
+            result.update(declared_requirements(path.parent / line[3:].strip()))
+            continue
+        match = re.fullmatch(r"([A-Za-z0-9_.-]+)(?:\s*>=\s*([A-Za-z0-9_.+-]+))?", line)
+        if not match:
+            raise ValueError(f"Unsupported requirement in {path}: {line}")
+        result[match[1].lower().replace("_", "-")] = match[2]
+    return result
+
+
+def satisfies_minimum(actual: str | None, minimum: str | None) -> bool:
+    if actual is None:
+        return False
+    if minimum is None:
+        return True
+    try:
+        from packaging.version import Version
+    except ImportError:
+        from pip._vendor.packaging.version import Version
+    return Version(actual) >= Version(minimum)
+
+
+def installed_versions(python: Path) -> dict[str, str]:
+    output = subprocess.check_output(
+        [str(python), "-m", "pip", "list", "--format=json"],
+        text=True,
+        stderr=subprocess.PIPE,
+    )
+    return {item["name"].lower().replace("_", "-"): item["version"]
+            for item in json.loads(output)}
+
+
+def interpreter_version(python: Path) -> tuple[int, int, int]:
+    output = subprocess.check_output(
+        [str(python), "-c", "import sys; print(*sys.version_info[:3], sep='.')"],
+        text=True, stderr=subprocess.PIPE,
+    )
+    return tuple(map(int, output.strip().split(".")))
+
+
+def node_major() -> int | None:
+    node = shutil.which("node")
+    if not node:
+        return None
+    try:
+        return int(subprocess.check_output([node, "--version"], text=True).strip().lstrip("v").split(".")[0])
+    except (ValueError, OSError, subprocess.CalledProcessError):
+        return None
+
+
+def run(command: list[str], *, cwd: Path = ROOT, dry_run: bool = False) -> None:
+    print(f"[{cwd}] {' '.join(command)}", flush=True)
+    if not dry_run:
+        run_process(command, cwd=cwd, check=True)
+
+
+def pip_install_command(python: Path, requirements: str, *, only_binary: bool) -> list[str]:
+    command = [str(python), "-m", "pip", "install", "--disable-pip-version-check"]
+    if only_binary:
+        command.append("--only-binary=:all:")
+    return [*command, "-r", str(ROOT / requirements)]
+
+
+def install(args: argparse.Namespace) -> int:
+    profiles = selected_profiles(args.profiles)
+    directory = args.venv.resolve()
+    python = venv_python(directory)
+    version = interpreter_version(python) if python.is_file() else sys.version_info[:3]
+    if version[:2] != (3, 12):
+        raise RuntimeError("Portal currently requires Python 3.12")
+    if "embeddings" in profiles:
+        issue = embeddings_platform_issue()
+        if issue:
+            raise RuntimeError(issue)
+    if ("test" in profiles or "tau" in profiles or "provider" in profiles) and not args.dry_run:
+        major = node_major()
+        if major is None or major < 20 or not shutil.which("npm"):
+            raise RuntimeError("Node.js >= 20 and npm are required for test/tau/provider profiles")
+    if not python.is_file():
+        run([sys.executable, "-m", "venv", str(directory)], dry_run=args.dry_run)
+    only_binary = platform.system() in {"Windows", "Darwin"} and not args.allow_source_builds
+    run(pip_install_command(python, "requirements.txt", only_binary=only_binary),
+        dry_run=args.dry_run)
+
+    if "test" in profiles:
+        run(pip_install_command(python, "requirements-test.txt", only_binary=only_binary),
+            dry_run=args.dry_run)
+        npm = shutil.which("npm") or "npm"
+        run([npm, "run", "setup:js"], dry_run=args.dry_run)
+
+    if "tau" in profiles:
+        npm = shutil.which("npm") or "npm"
+        node = shutil.which("node") or "node"
+        run([npm, "install", "--package-lock=false", "--no-audit", "--no-fund"], cwd=TAU_PACKAGE,
+            dry_run=args.dry_run)
+        run([node, str(TAU_PACKAGE / "node_modules" / "playwright" / "cli.js"),
+             "install", "chromium"], cwd=TAU_PACKAGE, dry_run=args.dry_run)
+        print("TAU browser installed; provision the test-operator storage state and restart Portal services before running a campaign.")
+
+    if "provider" in profiles:
+        # This script owns the DSH runtime's initial link. Other provider
+        # versions and switches remain with the existing runtime updater.
+        run([str(python), str(ROOT / "scripts" / "prepare_agent_runtimes.py")],
+            dry_run=args.dry_run)
+
+    if "article" in profiles:
+        run([str(python), str(ROOT / "scripts" / "install_article_tooling.py")],
+            dry_run=args.dry_run)
+
+    if "embeddings" in profiles:
+        run(pip_install_command(python, "requirements-society-service.txt",
+                                only_binary=only_binary), dry_run=args.dry_run)
+        run([str(python), str(ROOT / "scripts" / "install_portal_embedding_model.py")],
+            dry_run=args.dry_run)
+        print("Embedding packages and model are ready; enable the feature in Portal Management.")
+
+    return 0
+
+
+def doctor(args: argparse.Namespace) -> int:
+    profiles = selected_profiles(args.profiles)
+    python = venv_python(args.venv.resolve())
+    checks: list[dict[str, object]] = []
+
+    def check(name: str, good: bool, detail: str = "") -> None:
+        checks.append({"name": name, "ok": good, "detail": detail})
+
+    check("Portal virtual environment", python.is_file(), str(python))
+    if python.is_file():
+        try:
+            version = interpreter_version(python)
+            check("Portal Python 3.12", version[:2] == (3, 12), ".".join(map(str, version)))
+        except (OSError, subprocess.CalledProcessError, ValueError) as exc:
+            check("Portal Python 3.12", False, str(exc))
+        try:
+            installed = installed_versions(python)
+        except (OSError, subprocess.CalledProcessError, ValueError, KeyError) as exc:
+            check("pip package inventory", False, str(exc))
+            installed = {}
+        for filename in ("requirements.txt", "requirements-test.txt", "requirements-society-service.txt"):
+            profile = {"requirements.txt": "core", "requirements-test.txt": "test",
+                       "requirements-society-service.txt": "embeddings"}[filename]
+            if profile not in profiles:
+                continue
+            for name, minimum in declared_requirements(ROOT / filename).items():
+                actual = installed.get(name)
+                check(f"{profile}: {name}", satisfies_minimum(actual, minimum),
+                      f"minimum {minimum or 'unspecified'}; installed {actual or 'missing'}")
+
+    if "test" in profiles or "tau" in profiles or "provider" in profiles:
+        major = node_major()
+        check("Node.js >= 20", major is not None and major >= 20,
+              str(major) if major is not None else "missing")
+        check("npm", bool(shutil.which("npm")))
+    if "test" in profiles:
+        for package in ("jsdom", "@babel/parser", "@babel/traverse"):
+            check(f"JavaScript test tooling: {package}", (ROOT / "node_modules" / package).is_dir())
+    if "tau" in profiles:
+        from management_portal.test_framework.tau import TauConfig, browser_runtime_issue, executor_runtime_issue
+        issue = browser_runtime_issue()
+        check("TAU Playwright and Chromium", not issue, issue)
+        issue = executor_runtime_issue()
+        check("TAU executor", not issue, issue)
+        if not getattr(args, 'tools_only', False):
+            readiness = TauConfig.from_environment().unavailable_reason()
+            check("TAU test-operator session and DEV target", not readiness, readiness)
+    if "provider" in profiles:
+        packages = all((DSH_PACKAGE / "node_modules" / "@deepseek-ai" / name / "package.json").is_file()
+                       for name in ("dsh", "cordis", "dsh-llm"))
+        check("DSH npm packages", packages)
+        try:
+            from management_portal.execution.provider_updates import DshRuntime
+            link = DshRuntime().link()
+            check("provider runtime integration", link.exists() and link.is_dir(), str(link))
+        except (ImportError, OSError, ValueError) as exc:
+            check("provider runtime integration", False, f"{type(exc).__name__}: {exc}")
+    if "article" in profiles:
+        from scripts.article_dependencies import inventory
+        checks.extend(inventory())
+    if "embeddings" in profiles:
+        issue = embeddings_platform_issue()
+        check("embedding platform", issue is None, issue or "available")
+        sys.path.insert(0, str(ROOT))
+        from management_common.embedding_feature import model_directory
+        model = model_directory()
+        for filename in ("model_optimized.onnx", "tokenizer.json", "config.json", "tokenizer_config.json", "special_tokens_map.json"):
+            check(f"embedding model: {filename}", (model / filename).is_file(), str(model))
+
+    if args.json:
+        print(json.dumps(checks, indent=2))
+    else:
+        for item in checks:
+            status = "OK" if item["ok"] else "MISSING"
+            print(f"{status:7} {item['name']}: {item['detail']}")
+    return 0 if all(item["ok"] for item in checks) else 1
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    subparsers = parser.add_subparsers(dest="command", required=True)
+    for command in ("install", "doctor"):
+        sub = subparsers.add_parser(command)
+        sub.add_argument("profiles", nargs="*", choices=PROFILES,
+                         help="Profiles to prepare/check; core is always included")
+        sub.add_argument("--venv", type=Path, default=ROOT / ".venv")
+        if command == "install":
+            sub.add_argument("--dry-run", action="store_true")
+            sub.add_argument("--allow-source-builds", action="store_true",
+                             help="Allow compiling Python dependencies from source on Windows/macOS")
+        else:
+            sub.add_argument("--json", action="store_true")
+            sub.add_argument("--tools-only", action="store_true",
+                             help="Check installed tools; account/session configuration is checked at feature initialization")
+    args = parser.parse_args(argv)
+    try:
+        return install(args) if args.command == "install" else doctor(args)
+    except (OSError, subprocess.CalledProcessError, RuntimeError, ValueError) as exc:
+        print(f"bootstrap_portal: {exc}", file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

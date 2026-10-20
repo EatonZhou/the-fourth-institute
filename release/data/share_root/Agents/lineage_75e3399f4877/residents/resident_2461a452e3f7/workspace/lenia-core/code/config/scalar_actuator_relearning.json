@@ -1,0 +1,64 @@
+{
+  "task": "scalar_actuator_relearning_20261019",
+  "owner": "resident_d3ccfa2d95b7",
+  "seeds": [
+    202610199431,
+    202610199432
+  ],
+  "coupling_signs": [
+    1,
+    -1
+  ],
+  "arms": [
+    "continue",
+    "frozen",
+    "run_tumble"
+  ],
+  "parents": {
+    "0": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_response_estimation_20261019/7c0a58b9-0d08-4afa-8fa0-16ea61ef2114/c0_spsa/state_0320.npz",
+      "sha256": "f463877f7f1de6a9d229f63f2cbce057812515bd26c029255c47e6333ac94264"
+    },
+    "1": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_response_estimation_20261019/7c0a58b9-0d08-4afa-8fa0-16ea61ef2114/c1_spsa/state_0320.npz",
+      "sha256": "9d3ea1d7ccf16901357d44a2dee3df49031d30ff283153d712b5e83f1ac9ab98"
+    }
+  },
+  "planned_native": 2688,
+  "native_cap": 3072,
+  "worker_cap": 120,
+  "cpu": 2,
+  "gpu": 0,
+  "science_wall": 48,
+  "raw_cap": 67108864,
+  "sources": {
+    "/share/Projects/元胞自动机研究/src/local_learning/scalar_actuator_relearning/run.py": "4bf68feed20c394e28d3bf6f5e98c02b58f8ad96f1c10b27ad6c30e66401e6c0",
+    "/share/Projects/元胞自动机研究/src/local_learning/scalar_response_estimation/run.py": "ae993fd3df0df5e86379923272617d819e2576cd274749131a6ff1b2f3297258",
+    "/share/Projects/元胞自动机研究/src/local_learning/scalar_response_estimation/core.py": "02729d9344ad7327a0a19b8a43458333b1b5199985e0de69d6ff1b51d4906433",
+    "/share/Projects/元胞自动机研究/src/local_learning/scalar_outcome_motor_learning/run.py": "a411e71aa8065a7407a1dd8feea020b7fc1702f61a271f9d98a8d39e653fd6cb",
+    "/share/Projects/元胞自动机研究/src/local_learning/scalar_outcome_motor_learning/core.py": "dddde23a0abae7cf49d98272e42c5eeada29c8044837175461257b4f19834123",
+    "/share/Projects/元胞自动机研究/src/local_learning/affine_motor_baseline/run.py": "deefcf2ea0ba22a2020d77f822d4920986d6c4d1606644c96f8c8f0a3e50c72b",
+    "/share/Projects/元胞自动机研究/src/local_learning/affine_motor_baseline/core.py": "f1c0f1cdb083cd0f8748e32f06e11466418c09ed74210072726c195ceb53d5c7",
+    "/share/Projects/元胞自动机研究/src/local_learning/material_coupling_transport/run.py": "3493ea67f1cad0efabe304c090ed42d2c91d853c2bb66074d77df2c7d7294186",
+    "/share/Projects/元胞自动机研究/src/local_learning/material_coupling_transport/core.py": "f7164caa07b7df75f358424afb0cade51492e13f0ff73d20b9a268161dfc181f",
+    "/share/Projects/元胞自动机研究/src/local_learning/material_action_map/run.py": "61d055e66d3d75869560b5687ff7c93e873c75147131f13b456659fbc3858cea",
+    "/share/Projects/元胞自动机研究/src/local_learning/material_action_map/core.py": "0a8be35e36423435c34933b29b645380199c543d6bacb3e96f7c1c48799a53a1",
+    "/share/Projects/元胞自动机研究/src/local_learning/state_gated_motor_gain/run.py": "22e636e6cce1ddffe096bed89df227c1c17f6e1cd9fb78a6ef9f47b564da6fe3",
+    "/share/Projects/元胞自动机研究/src/local_learning/state_gated_motor_gain/core.py": "327a49e02d8057790dfc34e3b06961afa91d1cf435db24455d0402a8dc33ebb2",
+    "/share/Projects/元胞自动机研究/src/local_learning/state_conditioned_local_motor/run.py": "48feb2f969ea8d7bc79c96d00ca4322308b70dac8927d19078c5e1a8d3c70986",
+    "/share/Projects/元胞自动机研究/src/local_learning/state_conditioned_local_motor/core.py": "2b058f3d2d64e661d62de3fad0e13b1c9714117156ade7424225a1fc368adc03",
+    "/share/Projects/元胞自动机研究/src/local_learning/material_transport.py": "dd5622a2df6a5d50642a31ad586215d5e30e33929cf8f57ee9efff36fdef08d5",
+    "/share/Projects/元胞自动机研究/src/local_learning/embodied_action_learning/core.py": "bb519a2ca973ca40228041f47b44887b118bd192597f24759b47b21a252226cf",
+    "/share/Projects/元胞自动机研究/src/local_learning/material_action_credit/core.py": "d725f553863e95a58d3de157926fa02818f7e6bd7f07440e33cc742054dfe422",
+    "/share/Projects/元胞自动机研究/src/local_learning/paid_gradient_motor_control/core.py": "44a96511b8d125eb38f4904aae19e18f1b77008705aeadc1211cb5dd0716e91f",
+    "/share/Projects/元胞自动机研究/src/local_learning/lifetime_cue_reversal/core.py": "3b1baedbb0f1f402526eb8b7478fbc2c4dd226a5fcbf88725073126ef0541406"
+  },
+  "hypothesis": "Can scalar-only response learning adapt to a changed hidden actuator while reward meaning stays fixed? Separate actuator adaptation from the preceding reward reversal. Fixed scalar run/tumble receives the same acquired direction at the same actual parent as a strong simple adaptation control.",
+  "schedule": "Two actualspsa320 parents, allbody/E/sensory/RNG/g identical; original+/-90 physicalmap changes at321 toopposite45, terrain sign+ unchanged. 320paid future+128no newpayments/writes. continue updatesg; frozen onlystops gupdate; runtumble initializes heading=unit(g), uses same pastscalarblockdelta and exactsame Gaussianinnovation/heading randomness, no map/coordinates/clock flag. Allfullstate branches ready320, no oldtail replay. This initialization gives fixedcontroller acquired directional prior, deliberately strong; not independent life0 learning.",
+  "comparisons": "Same gates/costs/no-selected-parent as before. Firstgood cannot be read as relearning because acquiredparents already useful. Fixedsimplecontrol gets sameinput/actions but uses feedback through fixedrule not gupdate. This tests adaptive availability of scalar consequences, not a newalgorithm.",
+  "policy": "Fixed beta1/8 per completed8-step action block. g <- (1-beta)g+beta*(transported Gaussian score)*(actualpaid_y minus transported block-start paid_y) on valid receipt only. Mean=unit(g), then same .8tanh(mean+.6epsilon). g and receipts follow actual material; no displacement/K/space/reward-gradient inputs. Zero initialg. A standard online random-perturbation scalar response estimate, not paired simultaneous counterfactual SPSA or exact global derivative. Beta fixed as8 completed blocks before first native; no scan.",
+  "information": "Policy choose/observe never receives K, displacement, coordinates, field, reward gradient, correct action or change clock. ActualK used only by transport; it is not a sensing input. Scalars are actual energy gained/lost divided by fixedPAY*rho, not divided by field amplitude. No payment means missing, not negative. Four-neighbor or Gaussian body forces are original preset physics; no reward spatial comparison. Internal8-clock action timer is not a reversal cue.",
+  "gate": "Perlife perphase: alive(M>=12 and largestcomponent>=.75),last64mean field>.25,positive mass/M>=.6. No crosslife mean rescue. Motion/energy/basal/deletion/bodytime alongside. No feedback window uses cached own receipt and continued noise, not motion freeze.",
+  "boundaries": "No birth; local continuous CA material deforms, not rigid point. Unknown coupling physical adapter hidden. Forward transport mixes action/score/receipts so score-weighted local update is not claimed unbiased whole-body REINFORCE. Standard run/tumble and score rules not novel. Extra memory/arithmetic unpriced. Main representation differs6 contextual vs2 active constant weights, disclose capacity.",
+  "old_replay": 0
+}

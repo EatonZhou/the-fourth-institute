@@ -1,0 +1,931 @@
+{
+  "type": "object",
+  "required": [
+    "schema",
+    "ref",
+    "generated_at",
+    "start_at",
+    "end_at",
+    "title",
+    "headlines",
+    "modules"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "tfi.portal-stage-report.v1"
+    },
+    "ref": {
+      "type": "string"
+    },
+    "generated_at": {
+      "type": "string"
+    },
+    "start_at": {
+      "type": "string"
+    },
+    "end_at": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "headlines": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "title",
+          "effect",
+          "entry"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "effect": {
+            "type": "string"
+          },
+          "entry": {
+            "type": "object",
+            "required": [
+              "label",
+              "url"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string"
+              }
+            }
+          },
+          "improvement_ref": {
+            "$ref": "#/$defs/improvementRef"
+          }
+        }
+      }
+    },
+    "modules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "improvements"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "improvements": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "title",
+                "effect",
+                "entry",
+                "steps",
+                "details"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "effect": {
+                  "type": "string"
+                },
+                "entry": {
+                  "type": "object",
+                  "required": [
+                    "label",
+                    "url"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "label": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "steps": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "details": {
+                  "type": "object",
+                  "required": [
+                    "commits",
+                    "designs"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "commits": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "designs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "ref",
+                          "version",
+                          "summary"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "ref": {
+                            "type": "string"
+                          },
+                          "version": {
+                            "type": "string"
+                          },
+                          "summary": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "commit_sources": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/commitSource"
+                      }
+                    },
+                    "design_sources": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/designSource"
+                      }
+                    }
+                  }
+                },
+                "media": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/media"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "period_note": {
+      "type": "string"
+    },
+    "previous_report_ref": {
+      "type": "string"
+    },
+    "recent_experiences": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "title",
+          "effect",
+          "entry"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "effect": {
+            "type": "string"
+          },
+          "entry": {
+            "type": "object",
+            "required": [
+              "label",
+              "url"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string"
+              }
+            }
+          },
+          "improvement_ref": {
+            "$ref": "#/$defs/improvementRef"
+          }
+        }
+      },
+      "description": "最近已汇报成果的体验入口；不计为本时段新增改进。"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Portal阶段成果报告",
+  "$defs": {
+    "improvementRef": {
+      "type": "object",
+      "properties": {
+        "report_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "module_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "improvement_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "json_pointer": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ref": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "report_ref",
+        "module_id",
+        "improvement_id",
+        "json_pointer",
+        "ref"
+      ],
+      "additionalProperties": false,
+      "description": "成果身份是(report_ref,module_id,improvement_id)；ref是原报告改进id的真实行锚。json_pointer与ID必须同时匹配。不同报告同名或同id不合并。 同报告内联关联直接对同一已读取报告字节校验，不依赖content.report_sources登记；外部补充关联必须核对report_sources。模块展示归属修正不改变此身份。"
+    },
+    "media": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "screenshot",
+            "video"
+          ]
+        },
+        "read_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "mime_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "caption": {
+          "type": "string",
+          "minLength": 1
+        },
+        "alt": {
+          "type": "string",
+          "minLength": 1
+        },
+        "context": {
+          "type": "object",
+          "properties": {
+            "environment": {
+              "type": "string",
+              "minLength": 1
+            },
+            "workbench_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "application_revision": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "application_commit": {
+              "type": "string",
+              "minLength": 1
+            },
+            "capture_session": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "environment",
+            "workbench_id",
+            "application_revision",
+            "application_commit",
+            "capture_session"
+          ],
+          "additionalProperties": false
+        },
+        "placement": {
+          "enum": [
+            "detail",
+            "headline"
+          ]
+        },
+        "duration_seconds": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      },
+      "required": [
+        "kind",
+        "read_ref",
+        "sha256",
+        "mime_type",
+        "bytes",
+        "width",
+        "height",
+        "caption",
+        "alt",
+        "context",
+        "placement"
+      ],
+      "additionalProperties": false
+    },
+    "commitSource": {
+      "type": "object",
+      "properties": {
+        "commit": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "read_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "kind": {
+          "const": "git_commit_metadata"
+        },
+        "scope": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "commit",
+        "read_ref",
+        "sha256",
+        "bytes",
+        "kind",
+        "scope"
+      ],
+      "additionalProperties": false
+    },
+    "designSource": {
+      "type": "object",
+      "properties": {
+        "ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "recorded_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "live_read_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "live_version_observed": {
+          "type": "string",
+          "minLength": 1
+        },
+        "observed_at": {
+          "type": "string",
+          "minLength": 1
+        },
+        "recorded_body": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "read_ref": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "version": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "bytes": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "required": [
+                "read_ref",
+                "version",
+                "sha256",
+                "bytes"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recorded_excerpt_ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "comparison": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "before": {
+                  "type": "object",
+                  "properties": {
+                    "read_ref": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "version": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "bytes": {
+                      "type": "integer",
+                      "minimum": 1
+                    }
+                  },
+                  "required": [
+                    "read_ref",
+                    "version",
+                    "sha256",
+                    "bytes"
+                  ],
+                  "additionalProperties": false
+                },
+                "after": {
+                  "type": "object",
+                  "properties": {
+                    "read_ref": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "version": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "bytes": {
+                      "type": "integer",
+                      "minimum": 1
+                    }
+                  },
+                  "required": [
+                    "read_ref",
+                    "version",
+                    "sha256",
+                    "bytes"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "before",
+                "after"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "availability_note": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "ref",
+        "recorded_version",
+        "live_read_ref",
+        "live_version_observed",
+        "observed_at",
+        "recorded_body",
+        "recorded_excerpt_ref",
+        "comparison",
+        "availability_note"
+      ],
+      "additionalProperties": false
+    },
+    "stageContent": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "tfi.portal-stage-content.v1"
+        },
+        "generated_at": {
+          "type": "string",
+          "minLength": 1
+        },
+        "report_sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "report_ref": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            },
+            "required": [
+              "report_ref",
+              "sha256"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "item_links": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "source": {
+                "type": "object",
+                "properties": {
+                  "report_ref": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "json_pointer": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "report_ref",
+                  "json_pointer"
+                ],
+                "additionalProperties": false
+              },
+              "target": {
+                "$ref": "#/$defs/improvementRef"
+              }
+            },
+            "required": [
+              "source",
+              "target"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "improvement_details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "target": {
+                "$ref": "#/$defs/improvementRef"
+              },
+              "media": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/media"
+                }
+              },
+              "media_availability": {
+                "type": "object",
+                "properties": {
+                  "screenshots": {
+                    "enum": [
+                      "available",
+                      "not_provided"
+                    ]
+                  },
+                  "video": {
+                    "enum": [
+                      "available",
+                      "not_provided"
+                    ]
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "screenshots",
+                  "video",
+                  "note"
+                ],
+                "additionalProperties": false
+              },
+              "commit_sources": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/commitSource"
+                }
+              },
+              "design_sources": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/designSource"
+                }
+              }
+            },
+            "required": [
+              "target",
+              "media",
+              "media_availability",
+              "commit_sources",
+              "design_sources"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "experience_targets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "target",
+              "entry"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "target": {
+                "$ref": "#/$defs/improvementRef"
+              },
+              "entry": {
+                "$ref": "#/$defs/experienceEntry"
+              }
+            }
+          },
+          "description": "按完整成果身份声明实际体验入口。先验证report_sources哈希、pointer、module/id和行锚，匹配后用entry覆盖原报告entry的导航用途。每个成果最多一条；头条/最近体验先解析到同一成果再取此入口。原报告与反馈ref不变。"
+        },
+        "module_attributions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/moduleAttribution"
+          },
+          "description": "每个完整原成果最多一条。先核对report_sources原报告哈希、target全部字段和行锚，再读取固定map_ref核对hash、pointer、模块id/title/ref。错误或不可读时不应用覆盖；不得按标题补配或链式映射。"
+        }
+      },
+      "required": [
+        "schema",
+        "report_sources",
+        "item_links",
+        "improvement_details"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "report_sources"
+            ],
+            "properties": {
+              "report_sources": {
+                "minItems": 1
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "generated_at"
+            ]
+          }
+        }
+      ]
+    },
+    "stageIndex": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "schema_ref",
+        "report_refs"
+      ],
+      "properties": {
+        "schema": {
+          "const": "tfi.portal-stage-index.v1"
+        },
+        "schema_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "content_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "generated_at": {
+          "type": "string",
+          "minLength": 1
+        },
+        "coverage_start_at": {
+          "type": "string",
+          "minLength": 1
+        },
+        "latest_report_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "report_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "new_report_directory": {
+          "type": "string",
+          "minLength": 1
+        },
+        "historical_report_refs_preserved": {
+          "type": "boolean"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "report_refs"
+            ],
+            "properties": {
+              "report_refs": {
+                "minItems": 1
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "generated_at",
+              "coverage_start_at",
+              "latest_report_ref"
+            ]
+          }
+        }
+      ]
+    },
+    "experienceEntry": {
+      "type": "object",
+      "required": [
+        "label",
+        "url"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "url": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096,
+          "pattern": "^/(?!/)[^\\s\\\\]*$"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "url": {
+                "pattern": "^/workbenches/view(?:\\?|$)"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "url": {
+                "pattern": "^/workbenches/view\\?id=workbench_[a-f0-9]{12}&region=[A-Za-z0-9_-]+$"
+              }
+            }
+          }
+        }
+      ],
+      "description": "根相对Portal页面入口，交Projection.openPage。工作台必须显式给出id和region；region来自真实sidebar或已装配facade，不由标题推导。Schema不取代目标页面鉴权或宿主路由检查。"
+    },
+    "moduleAttribution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "target",
+        "module",
+        "reason"
+      ],
+      "properties": {
+        "target": {
+          "$ref": "#/$defs/improvementRef"
+        },
+        "module": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "title",
+            "ref",
+            "map_ref",
+            "map_sha256",
+            "json_pointer"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1
+            },
+            "ref": {
+              "type": "string",
+              "pattern": "^repo_[a-f0-9]{12}/commit/[a-f0-9]{40}/file/architecture/modules\\.yaml#L[1-9][0-9]*$"
+            },
+            "map_ref": {
+              "type": "string",
+              "pattern": "^repo_[a-f0-9]{12}/commit/[a-f0-9]{40}/file/architecture/modules\\.yaml$"
+            },
+            "map_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "json_pointer": {
+              "type": "string",
+              "pattern": "^/modules/[0-9]+$"
+            }
+          }
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "description": "数据owner声明的成果模块归属修正。target永远是原报告成果身份；module来自固定地图，用于展示分组、筛选、返回架构和模块联动。不得重写target、反馈ref、成果去重键、时间或原报告字节。reason为按需解释，不要求在成果首屏展示。"
+    }
+  },
+  "x-contract-revision": 4,
+  "$comment": "唯一Schema入口由stage-index.schema_ref给出。冻结报告的关联与详情由stage-index.content_ref补充，按本Schema的#/$defs/stageContent校验。所有引用须重新鉴权，不按标题推导关系。 索引自身按#/$defs/stageIndex校验。 体验入口补充表experience_targets只覆盖导航入口，不改变成果或反馈身份；按原报告哈希及完整成果引用关联。 revision4增加stageContent.module_attributions，纠正展示归属而保留原成果身份。同报告内联关联不依赖补充表登记。"
+}

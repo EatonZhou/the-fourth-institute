@@ -1,0 +1,151 @@
+{
+  "schema": "anticipatory-saved-audit-contract-v1",
+  "scope": "Read-only binding to completed records; no physical execution or missing-state reconstruction",
+  "core": {
+    "path": "src/environment_evolution/anticipatory_material_allocation/core.py",
+    "sha256": "4ea2ebf8f3ec025624b30688122dbb3ea7f5717606f9eccb1ea5c4765b726817",
+    "class": "AnticipatoryEcology",
+    "observe": "observe(phase, cue) -> dict",
+    "step": "step(action, phase, *, commit=None, resource_input=None, memory_fee=0., detect=False) -> row, receipt",
+    "restore": "AnticipatoryEcology.restore(env.checkpoint())"
+  },
+  "public_before_choice": [
+    "phase",
+    "cue",
+    "rho",
+    "resource",
+    "energy",
+    "active",
+    "pending",
+    "pending_due",
+    "step",
+    "subcell_x"
+  ],
+  "d3_actual_prepare_arguments": [
+    "rho",
+    "resource",
+    "cue",
+    "phase",
+    "energy"
+  ],
+  "public_scope_note": "Host exposes active and pending configuration even though d3 prepare passes a narrower view. Empty current resource does not make complete public inputs history-free.",
+  "physical_order": [
+    "Before-step observation, weights and memory fee requested",
+    "At due clock: pending matures into active",
+    "Memory fee paid",
+    "At phase4: target from old rho times commit weights once; affordable commitment retires old ability and creates pending due eight steps later",
+    "Basal and requested movement paid; actual integer shift and keep applied to old tissue and ability",
+    "At phase12: detection requested and paid on eligible mature old support",
+    "Host current resource_input injected",
+    "Local labels on completed mask and actual uptake generated",
+    "Born allocated to M20; rejected material, spill and remaining resource exit booked; newborn ability zero",
+    "Host returns row/receipt at post-step clock; controller transports and may update memory"
+  ],
+  "clock": {
+    "commit_pre_phase": 4,
+    "commit_return_phase_clock": 5,
+    "maturity_delay": 8,
+    "arrival_and_feedback_pre_phase": 12,
+    "feedback_return_phase_clock": 13,
+    "row_step": "post-step absolute clock",
+    "row_phase": "pre-step phase, equal to (row.step-1)%32",
+    "normal_pre_action_resource": "empty; pulse enters and exits within phase12 step"
+  },
+  "valid_local_observation": {
+    "fields": [
+      "completed_mask",
+      "local_label",
+      "active",
+      "survivor",
+      "uptake"
+    ],
+    "conditions": "phase12, detect requested, port cell, survivor>1e-12, active>=.02*survivor, detect_paid>=detect_requested",
+    "unknown_label": -1,
+    "writer_separate_conditions": "d3 also requires previously paid cue support and memory_unpaid==0 to update. Writer refusal does not invalidate an otherwise paid detection.",
+    "no_global_substitution": "Total uptake, another location, or private tape cannot create a missing local observation"
+  },
+  "live_receipt_fields": [
+    "shift",
+    "keep",
+    "rho_before",
+    "survivor",
+    "uptake",
+    "born",
+    "proposed_born",
+    "rejected_material",
+    "active",
+    "pending",
+    "pending_due",
+    "matured",
+    "commit_target",
+    "commit_accepted",
+    "completed_mask",
+    "local_label"
+  ],
+  "fees_in_row": [
+    "memory_paid",
+    "memory_unpaid",
+    "commit_requested",
+    "commit_paid",
+    "commit_unpaid",
+    "detect_requested",
+    "detect_paid",
+    "basal_paid",
+    "basal_unpaid",
+    "movement_paid"
+  ],
+  "private_evaluator_only": [
+    "seed",
+    "world",
+    "mapping",
+    "arrivals tape",
+    "change_points",
+    "future outcomes"
+  ],
+  "existing_records": {
+    "ce2": {
+      "entry": "src/environment_evolution/results/anticipatory_material_allocation_20261018/handoff.json",
+      "result": "src/environment_evolution/results/anticipatory_material_allocation_20261018/result.json",
+      "raw_root": "/data/dataset/lenia-research/lineage_75e3399f4877/anticipatory_material_allocation_20261018/5063bd49-7b65-4ec3-9338-92f5bd855747",
+      "coverage": "Per-step scalar rows; selected post-phase4/12 body, policy and real full receipt arrays; history probe common full checkpoint, exact imported policy and post-commit/post-arrival snapshots",
+      "missing": "Full every-decision pre-choice public/history stream was not saved. Common checkpoint equality and saved receipt checks are narrower than a complete information-partition audit."
+    },
+    "d3": {
+      "index": "src/local_learning/results_20261018/anticipatory_material_allocation/frames.json",
+      "stages": "src/local_learning/results_20261018/anticipatory_material_allocation/stages.json",
+      "raw_root": "/data/dataset/lenia-research/lineage_75e3399f4877/anticipatory_material_allocation_20261018/3786e0f1-73a7-4da8-9bdb-ae8fff7fb44e",
+      "scalar_log": "per_step.jsonl",
+      "sampled_frames": "First heldout seed 202610187201, changed condition, phases0/4/12/31; 832 saved frames",
+      "frame_fields": [
+        "rho",
+        "resource",
+        "active",
+        "pending",
+        "uptake",
+        "survivor",
+        "born",
+        "completed_mask",
+        "local_label",
+        "prediction",
+        "requested",
+        "metadata"
+      ],
+      "frame_timing": "After host step AND controller.settle; prediction is post-update. phase4 requested is the actual commitment weight, other phases carry last_requested.",
+      "scalar_metadata": "stage/kind/arm/seed/condition/cycle/cue/phase/action plus full row and update.updated_sites/write_l1",
+      "complete_checkpoints": "Stage final packets contain env.checkpoint and controller.checkpoint; source stage paths and hashes in stages.json",
+      "missing_in_sampled_frame": [
+        "full pre-choice observation",
+        "pending_due",
+        "subcell_x",
+        "actual shift",
+        "actual keep",
+        "rho_before",
+        "full controller state before and after write"
+      ],
+      "restriction": "Do not infer missing arrays by inverting body state, actual_v or frozen equations. No extra rerun requested."
+    }
+  },
+  "opaque_ids": "No opaque decision_id/event_id was emitted by host. Read-only adapter may hash source-file SHA plus stored stage/clock/cell as a provenance join key. This is an index, not a new observed event or new clock measurement.",
+  "ordinal_order": "Source-derived within-step ordinals may document payment/open/completion order; they are not recorded wall-clock timestamps.",
+  "new_host_steps": 0
+}

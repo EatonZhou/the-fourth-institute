@@ -1,0 +1,17 @@
+外层规则/初态搜索已实现；本件仅静态构造与旧记录离线更新，0身体/能量/预览/runner。
+两个原生母体分别为紧凑开口动态与多环扩展动态；每体一个可复现子代。子代改双核空间权重/交叉混合、mu/sigma与双响应权重及非刚性初态形状，个体内固定；保初M/E、库存/物理/费用，非换色或旋转。
+704/448来源合并去除16条重复引用，保24唯一路径与18条取得+未来全程；旧1152新步及192更早引用均无重演。8个取得史×方向配对观察全部进入证据账。
+适应档案入选0，探索母体保留2；探索保留不是适应赢家。
+保守准入要求活取得/无再伤存留/受挑战末存留、全程体时正差、末M/E不恶化及none全程体时/M/E不恶化。随后以同形态/周转niche内向量Pareto保留，不用I/S排序。阈值是实现选择，未称适应的必要理论条件；权衡/失败不删除。
+不同大小的绝对取得/未来体时、M/E、实际外伤M/E及逐项EU/F费用保全；不归一化抹去取得代价，不将外伤量差当纯信息效应。
+两种源基因/动态为探索参考，旧数据选择不验证新子代。标准变异和Pareto档案本身不是独立方法贡献。
+每候选拟形成128+3取得×32+6未来×64=608；4候选2432为草案而非授权。形成T00共享；主取得/未来T11，另T00无记录低费fresh-brake比较。固定一个+x轻伤/后测情景，不救援旧两体方向/剂量/窗口。实际host与runner均归ce2。
+
+compact_ring_core_outer--bridged_longbody/conditioned/x: full_BT=-244.504631839, full_E=-41.346453345, I=-120.442743691, failures=['no_positive_full_cycle_body_time_gain', 'endpoint_tradeoff_not_certified_adaptation', 'uninjured_baseline_harmed']
+compact_ring_core_outer--bridged_longbody/conditioned/y: full_BT=-88.974154313, full_E=-12.461232686, I=35.087733835, failures=['no_positive_full_cycle_body_time_gain', 'endpoint_tradeoff_not_certified_adaptation', 'uninjured_baseline_harmed']
+compact_ring_core_outer--bridged_longbody/conditioned_y/x: full_BT=-250.631813579, full_E=-47.599226524, I=-8.882414479, failures=['no_positive_full_cycle_body_time_gain', 'endpoint_tradeoff_not_certified_adaptation', 'uninjured_baseline_harmed']
+compact_ring_core_outer--bridged_longbody/conditioned_y/y: full_BT=-141.915964091, full_E=-18.741697792, I=99.833435010, failures=['no_positive_full_cycle_body_time_gain', 'endpoint_tradeoff_not_certified_adaptation', 'uninjured_baseline_harmed']
+reference_anisotropic--connected_trilobe/conditioned/x: full_BT=5.915480975, full_E=0.000000000, I=7.686230154, failures=['challenged_future_extinct', 'uninjured_baseline_harmed']
+reference_anisotropic--connected_trilobe/conditioned/y: full_BT=-5.161798986, full_E=0.000000000, I=-3.391049808, failures=['challenged_future_extinct', 'no_positive_full_cycle_body_time_gain', 'uninjured_baseline_harmed']
+reference_anisotropic--connected_trilobe/conditioned_y/x: full_BT=-56.004282631, full_E=0.000000000, I=124.999500084, failures=['acquisition_dead_no_living_recipient', 'no_reinjury_survival_missing', 'challenged_future_extinct', 'no_positive_full_cycle_body_time_gain', 'uninjured_baseline_harmed']
+reference_anisotropic--connected_trilobe/conditioned_y/y: full_BT=-54.398911304, full_E=0.000000000, I=126.604871411, failures=['acquisition_dead_no_living_recipient', 'no_reinjury_survival_missing', 'challenged_future_extinct', 'no_positive_full_cycle_body_time_gain', 'uninjured_baseline_harmed']

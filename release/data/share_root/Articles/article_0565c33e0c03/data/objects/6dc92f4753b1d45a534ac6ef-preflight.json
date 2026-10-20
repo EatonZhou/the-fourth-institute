@@ -1,0 +1,7 @@
+{
+  "native": 0,
+  "adjoint_error": 3.552713678800501e-15,
+  "no_feedback_zero": true,
+  "coverage_constant_one": true,
+  "prior_control": "running started; recheck before submit"
+}

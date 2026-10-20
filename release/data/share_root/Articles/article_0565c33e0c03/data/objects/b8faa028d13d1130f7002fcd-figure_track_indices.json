@@ -1,0 +1,24 @@
+{
+  "heldout_seed": [
+    "202610195602_ring_birth_gain_only__future_both",
+    "202610195602_ring_both__future_both",
+    "202610195602_separate_seeds_birth_gain_only__future_both",
+    "202610195602_separate_seeds_both__future_both"
+  ],
+  "mechanism_shift_G": [
+    "202610195601_ring_birth_gain_only__future_birth_gain_only",
+    "202610195601_ring_both__future_birth_gain_only",
+    "202610195601_separate_seeds_birth_gain_only__future_birth_gain_only",
+    "202610195601_separate_seeds_both__future_birth_gain_only",
+    "202610195602_ring_birth_gain_only__future_birth_gain_only",
+    "202610195602_ring_both__future_birth_gain_only",
+    "202610195602_separate_seeds_birth_gain_only__future_birth_gain_only",
+    "202610195602_separate_seeds_both__future_birth_gain_only"
+  ],
+  "mechanism_shift_pooling": [
+    "202610195601_ring_both__pooling",
+    "202610195601_separate_seeds_both__pooling",
+    "202610195602_ring_both__pooling",
+    "202610195602_separate_seeds_both__pooling"
+  ]
+}

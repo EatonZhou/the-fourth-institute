@@ -1,0 +1,23 @@
+{
+  "task": "consumption_qualified_transport_20261019",
+  "status": "completed",
+  "job": "3aaf67a7-25b8-4230-b8a6-d0eb3703d83e",
+  "attempted": 5183,
+  "committed": 5183,
+  "failed_native": 0,
+  "prior_attempted": 3,
+  "prior_committed": 3,
+  "combined_attempted": 5186,
+  "counts": {
+    "boundary": 0,
+    "development": 1215,
+    "heldout": 3968
+  },
+  "selected": "ema",
+  "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/consumption_qualified_transport_20261019/3aaf67a7-25b8-4230-b8a6-d0eb3703d83e",
+  "raw_bytes": 810460385,
+  "script_wall_seconds": 248.44610843400005,
+  "segments": 40,
+  "failure": null,
+  "old_prefix_replayed": 0
+}

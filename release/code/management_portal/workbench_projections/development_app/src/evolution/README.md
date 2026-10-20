@@ -1,0 +1,14 @@
+# Future experience gallery
+
+Approved PF-E2 plus the chair's evolution-design-approval.json governs this replacement of the old Plan ordering view. Direction copy and storyboard content come from evolution.v2; code-native city, command table and laboratory booking scenes provide local interactions. No scene operation creates a real booking, Resident, workflow, Plan or execution.
+
+- data.js owns paired YAML/text byte integrity, direct direction module range, independently authorized attached Plan bodies and five-field semantic objects. Current module-map address, schema and model version must match the owner's binding before navigation. Description edits do not invalidate unchanged IDs. A binding mismatch preserves readable narratives and shows the current source; it never reads historical maps, even if an old declaration contains revision/commit/snapshot_ref.
+- model.js owns only local scene changes; session.js owns readable source snapshots, generation races, freeze/restart and authorization purge.
+- scenes.js and view.js render local interactions and sourced narrative; index.js owns playback, host focus, watches, per-direction drafts, visibility and feedback confirmation cancellation.
+- style.css uses host theme variables through region-local fallbacks and responsive containers; reduced motion suppresses animation.
+
+Source changes freeze old scenes. Explicit re-read starts fresh. Denial or unknown authorization clears old documents, scenes and drafts. Hidden views stop playback; showing them revalidates sources and remains paused. Feedback re-reads sources, guards the local epoch and cancels obsolete host confirmations. Feedback always refers to a real proposed direction, with a simulated scene containing source hashes, current map version, frame, playback position, local inputs and results. Retired direction IDs show the owner's retirement reason; no inferred successor.
+
+The region uses no direct resource navigation outside the SDK. Source drawers display the current direction's sourced fields and storyboard, the current map and readable Plan sections with their actual body versions. A Plan contributes only what direction.plan_contributions says; its modules never expand the direction's range. Missing module IDs and needs_review mappings cannot navigate. Plan reads are declared by directions[status=proposed].plans[] joined to plans[].id in architecture/evolution.yaml; free text is never a dependency source. The architecture association loader also resolves every plans[].id in that file.
+
+Validation: node --test tests/evolution-*.test.mjs tests/test_tfi_projection_format_compatibility_evolution.mjs from the app root. Exercise the actual published /development page for source drawers, module navigation and network reads. Loading and module focus require no feedback send or business mutation. Source-site verification does not substitute for target installation acceptance.

@@ -1,0 +1,95 @@
+{
+  "task": "affine_motor_baseline_and_relearning_20261019",
+  "owner": "resident_d3ccfa2d95b7",
+  "status": "two_actual_batches_complete",
+  "native": 7936,
+  "worker_seconds": 46.702418,
+  "unknown": 0,
+  "old_replay": 0,
+  "conclusion": "标准随材料运输的仿射NLMS复现IV取得/后效及继续重标定作用；无IV额外价值。四反转窗均失败，保全部费用和边界。",
+  "main": {
+    "iv_gate_counts": [
+      4,
+      0,
+      4
+    ],
+    "nlms_gate_counts": [
+      4,
+      0,
+      4
+    ],
+    "contexts": 4,
+    "noise_seeds": 2
+  },
+  "causal_followup": {
+    "continued_gate": 2,
+    "frozen_gate": 0,
+    "parents": 2,
+    "native": 1792
+  },
+  "prior_handoff": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_coupling_transport_20261019/direction_handoff.json",
+  "batches": [
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/affine_motor_baseline_20261019",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/affine_actuator_relearning_20261019"
+  ],
+  "files": {
+    "REPORT.txt": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/affine_actuator_relearning_20261019/REPORT.txt",
+      "sha256": "4bb2f7aef59925394d0b318d212f9dbc8aea1d28d0040dee55bd0203c09ab601"
+    },
+    "all_phase_costs.csv": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/affine_actuator_relearning_20261019/all_phase_costs.csv",
+      "sha256": "fe3a29b8ffedbe18086b97e45c4e19657e2de3ca07ce267bb66c11c0c160b36a"
+    },
+    "action_coverage.csv": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/affine_actuator_relearning_20261019/action_coverage.csv",
+      "sha256": "a8ab760368c5f2e2d675fea3832f4eca9e95c97c34c3d8868e7d67793c2ed56c"
+    },
+    "read_only_checks.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/affine_actuator_relearning_20261019/read_only_checks.json",
+      "sha256": "d14f818ca48ad3fd67bb407a43f1ab69e77682b0cd800ca2af1aff417dcbda31"
+    },
+    "full_state_index.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/affine_actuator_relearning_20261019/full_state_index.json",
+      "sha256": "8ea74c2f76c1679faf3330f4a1d16c1e23826f1ddbe50bb6d097b8ef4969c6d6"
+    },
+    "combined_accounting.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/affine_actuator_relearning_20261019/combined_accounting.json",
+      "sha256": "dd4d55841b1570e0a86328718aa1f5c071b4dbff3e58bb86eeb379f0b67b101e"
+    },
+    "actual_sequence.gif": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/affine_actuator_relearning_20261019/actual_sequence.gif",
+      "sha256": "9ccd0e7495baed5c75c8c889fd6e91f866ee3e3b1ef0770beb708e398b2e3084"
+    },
+    "actual_contact_sheet.png": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/affine_actuator_relearning_20261019/actual_contact_sheet.png",
+      "sha256": "2d9faa718394ee168e810a570ba7d1783a9c5c73c9feaca0421a96e0620b34ea"
+    },
+    "curves.png": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/affine_actuator_relearning_20261019/curves.png",
+      "sha256": "d8241922f43ecbdcb78a8fe10884c257f41effd39e015d1e9f7a56c18079dc43"
+    },
+    "analysis.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/affine_actuator_relearning_20261019/analysis.json",
+      "sha256": "8e3dfcea621eb496d0f17c9749a38d7dfed06849c0e23e116854483c06a8b4f5"
+    },
+    "plan.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/affine_actuator_relearning_20261019/plan.json",
+      "sha256": "2ca2edac55ddd1923746701fd3bac22607320834e3e6719212c523a606d73a43"
+    },
+    "result.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/affine_actuator_relearning_20261019/result.json",
+      "sha256": "d0c2f20ac895f3bc577e49092315703beb15634be0a66e9fb3d4208b9f0e39cc"
+    }
+  },
+  "next_scientific_question": "真实身体周转/局部执行关系改变后的标准J重标定；本批不声称已整合再生、不要求ce重复已有作业。",
+  "boundaries": [
+    "no birth",
+    "same paid K source registration",
+    "NLMS intercept not full state-conditioned causal identification",
+    "no extra IV algorithm value",
+    "no threshold or rate scan",
+    "retention cached sensory state not blank sensor",
+    "two actual related parents, not independent generalization"
+  ]
+}

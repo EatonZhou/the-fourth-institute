@@ -1,0 +1,602 @@
+[
+  {
+    "id": "g2_p1_c0--compact--colocated--G2_completion--pump",
+    "clock": 0,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--compact--colocated--G2_completion--pump/fields000.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--compact--colocated--G2_completion--pump/state000.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 0,
+      "elongation": 1.0,
+      "radius": 4.750048281377317,
+      "mass": 63.999999999999986,
+      "maximum": 0.534739936498156
+    }
+  },
+  {
+    "id": "g2_p1_c0--compact--colocated--G2_completion--pump",
+    "clock": 32,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--compact--colocated--G2_completion--pump/fields032.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--compact--colocated--G2_completion--pump/state032.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.0093514763927918,
+      "radius": 4.651771153792835,
+      "mass": 62.91208680880763,
+      "maximum": 0.6241110490307511
+    }
+  },
+  {
+    "id": "g2_p1_c0--compact--colocated--G2_completion--pump",
+    "clock": 64,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--compact--colocated--G2_completion--pump/fields064.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--compact--colocated--G2_completion--pump/state064.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.0194649196150758,
+      "radius": 4.596569710742846,
+      "mass": 63.13755419191687,
+      "maximum": 0.6873970859099048
+    }
+  },
+  {
+    "id": "g2_p1_c0--compact--colocated--G2_completion--pump",
+    "clock": 96,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--compact--colocated--G2_completion--pump/fields096.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--compact--colocated--G2_completion--pump/state096.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.0358826370345022,
+      "radius": 4.552178031376786,
+      "mass": 62.47049469621053,
+      "maximum": 0.6949969320329645
+    }
+  },
+  {
+    "id": "g2_p1_c0--compact--colocated--G2_completion--pump",
+    "clock": 128,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--compact--colocated--G2_completion--pump/fields128.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--compact--colocated--G2_completion--pump/state128.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 3,
+      "elongation": 1.0441464259453328,
+      "radius": 4.538216958372374,
+      "mass": 62.22879315672218,
+      "maximum": 0.709225514126927
+    }
+  },
+  {
+    "id": "g2_p1_c0--compact--separated--G2_completion--pump",
+    "clock": 0,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--compact--separated--G2_completion--pump/fields000.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--compact--separated--G2_completion--pump/state000.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 0,
+      "elongation": 1.0,
+      "radius": 4.750048281377317,
+      "mass": 63.999999999999986,
+      "maximum": 0.534739936498156
+    }
+  },
+  {
+    "id": "g2_p1_c0--compact--separated--G2_completion--pump",
+    "clock": 32,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--compact--separated--G2_completion--pump/fields032.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--compact--separated--G2_completion--pump/state032.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.0356394462150933,
+      "radius": 4.602821295568623,
+      "mass": 59.91202117645418,
+      "maximum": 0.6118291548727612
+    }
+  },
+  {
+    "id": "g2_p1_c0--compact--separated--G2_completion--pump",
+    "clock": 64,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--compact--separated--G2_completion--pump/fields064.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--compact--separated--G2_completion--pump/state064.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.0764466758153317,
+      "radius": 4.495007542059111,
+      "mass": 58.74616786278848,
+      "maximum": 0.7033950302413282
+    }
+  },
+  {
+    "id": "g2_p1_c0--compact--separated--G2_completion--pump",
+    "clock": 96,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--compact--separated--G2_completion--pump/fields096.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--compact--separated--G2_completion--pump/state096.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.1217524949080881,
+      "radius": 4.426358245411271,
+      "mass": 57.36835376094268,
+      "maximum": 0.7352963282219417
+    }
+  },
+  {
+    "id": "g2_p1_c0--compact--separated--G2_completion--pump",
+    "clock": 128,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--compact--separated--G2_completion--pump/fields128.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--compact--separated--G2_completion--pump/state128.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.1577642297874378,
+      "radius": 4.392259324626686,
+      "mass": 56.33530131825147,
+      "maximum": 0.7495446282033424
+    }
+  },
+  {
+    "id": "g2_p1_c0--double_lobe--colocated--G2_completion--pump",
+    "clock": 0,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--double_lobe--colocated--G2_completion--pump/fields000.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--double_lobe--colocated--G2_completion--pump/state000.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 0,
+      "elongation": 2.2830070547681656,
+      "radius": 5.0848653724416195,
+      "mass": 64.0,
+      "maximum": 0.5765765765765766
+    }
+  },
+  {
+    "id": "g2_p1_c0--double_lobe--colocated--G2_completion--pump",
+    "clock": 32,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--double_lobe--colocated--G2_completion--pump/fields032.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--double_lobe--colocated--G2_completion--pump/state032.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 2.1850319641877536,
+      "radius": 4.964125953653324,
+      "mass": 53.03776387619313,
+      "maximum": 0.6713313752164307
+    }
+  },
+  {
+    "id": "g2_p1_c0--double_lobe--colocated--G2_completion--pump",
+    "clock": 64,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--double_lobe--colocated--G2_completion--pump/fields064.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--double_lobe--colocated--G2_completion--pump/state064.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 2.0587011874449366,
+      "radius": 4.624694596065339,
+      "mass": 47.93670303079495,
+      "maximum": 0.6855922291744534
+    }
+  },
+  {
+    "id": "g2_p1_c0--double_lobe--colocated--G2_completion--pump",
+    "clock": 96,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--double_lobe--colocated--G2_completion--pump/fields096.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--double_lobe--colocated--G2_completion--pump/state096.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.7889380405942872,
+      "radius": 4.165389514137351,
+      "mass": 42.31396215826214,
+      "maximum": 0.6908167020675402
+    }
+  },
+  {
+    "id": "g2_p1_c0--double_lobe--colocated--G2_completion--pump",
+    "clock": 128,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--double_lobe--colocated--G2_completion--pump/fields128.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--double_lobe--colocated--G2_completion--pump/state128.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.564003773231689,
+      "radius": 3.866315022141825,
+      "mass": 39.16023305312836,
+      "maximum": 0.6990142545563639
+    }
+  },
+  {
+    "id": "g2_p1_c0--double_lobe--separated--G2_completion--pump",
+    "clock": 0,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--double_lobe--separated--G2_completion--pump/fields000.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--double_lobe--separated--G2_completion--pump/state000.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 0,
+      "elongation": 2.2830070547681656,
+      "radius": 5.0848653724416195,
+      "mass": 64.0,
+      "maximum": 0.5765765765765766
+    }
+  },
+  {
+    "id": "g2_p1_c0--double_lobe--separated--G2_completion--pump",
+    "clock": 32,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--double_lobe--separated--G2_completion--pump/fields032.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--double_lobe--separated--G2_completion--pump/state032.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 0,
+      "elongation": 2.173257123488714,
+      "radius": 4.812751239705462,
+      "mass": 49.48299328969871,
+      "maximum": 0.5969106221997607
+    }
+  },
+  {
+    "id": "g2_p1_c0--double_lobe--separated--G2_completion--pump",
+    "clock": 64,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--double_lobe--separated--G2_completion--pump/fields064.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--double_lobe--separated--G2_completion--pump/state064.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 0,
+      "elongation": 2.037842367068423,
+      "radius": 4.14960956905011,
+      "mass": 38.489553872278364,
+      "maximum": 0.613374485581457
+    }
+  },
+  {
+    "id": "g2_p1_c0--double_lobe--separated--G2_completion--pump",
+    "clock": 96,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--double_lobe--separated--G2_completion--pump/fields096.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--double_lobe--separated--G2_completion--pump/state096.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 0,
+      "elongation": 1.8227480580611624,
+      "radius": 3.0541695023912077,
+      "mass": 23.201281915317864,
+      "maximum": 0.6004168412869693
+    }
+  },
+  {
+    "id": "g2_p1_c0--double_lobe--separated--G2_completion--pump",
+    "clock": 128,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--double_lobe--separated--G2_completion--pump/fields128.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--double_lobe--separated--G2_completion--pump/state128.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 0,
+      "elongation": 1.2493721314782162,
+      "radius": 1.192347581362284,
+      "mass": 2.922811376532982,
+      "maximum": 0.4152671730680367
+    }
+  },
+  {
+    "id": "g2_p1_c1--compact--colocated--G2_completion--pump",
+    "clock": 0,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--compact--colocated--G2_completion--pump/fields000.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--compact--colocated--G2_completion--pump/state000.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 0,
+      "elongation": 1.0,
+      "radius": 4.750048281377317,
+      "mass": 63.999999999999986,
+      "maximum": 0.534739936498156
+    }
+  },
+  {
+    "id": "g2_p1_c1--compact--colocated--G2_completion--pump",
+    "clock": 32,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--compact--colocated--G2_completion--pump/fields032.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--compact--colocated--G2_completion--pump/state032.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.0094837069174158,
+      "radius": 4.670780456760112,
+      "mass": 64.4601084727742,
+      "maximum": 0.6289636974143032
+    }
+  },
+  {
+    "id": "g2_p1_c1--compact--colocated--G2_completion--pump",
+    "clock": 64,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--compact--colocated--G2_completion--pump/fields064.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--compact--colocated--G2_completion--pump/state064.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.0154748861553233,
+      "radius": 4.618077814600463,
+      "mass": 65.0920327931509,
+      "maximum": 0.7105640155679576
+    }
+  },
+  {
+    "id": "g2_p1_c1--compact--colocated--G2_completion--pump",
+    "clock": 96,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--compact--colocated--G2_completion--pump/fields096.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--compact--colocated--G2_completion--pump/state096.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.0180220032670062,
+      "radius": 4.602046434263406,
+      "mass": 65.07151550671183,
+      "maximum": 0.7185334088826708
+    }
+  },
+  {
+    "id": "g2_p1_c1--compact--colocated--G2_completion--pump",
+    "clock": 128,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--compact--colocated--G2_completion--pump/fields128.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--compact--colocated--G2_completion--pump/state128.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.024912763552889,
+      "radius": 4.578876659586835,
+      "mass": 64.69398962816219,
+      "maximum": 0.7288038338263167
+    }
+  },
+  {
+    "id": "g2_p1_c1--compact--separated--G2_completion--pump",
+    "clock": 0,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--compact--separated--G2_completion--pump/fields000.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--compact--separated--G2_completion--pump/state000.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 0,
+      "elongation": 1.0,
+      "radius": 4.750048281377317,
+      "mass": 63.999999999999986,
+      "maximum": 0.534739936498156
+    }
+  },
+  {
+    "id": "g2_p1_c1--compact--separated--G2_completion--pump",
+    "clock": 32,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--compact--separated--G2_completion--pump/fields032.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--compact--separated--G2_completion--pump/state032.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.0374427908595747,
+      "radius": 4.636984551183538,
+      "mass": 61.59138343758046,
+      "maximum": 0.6199952557252635
+    }
+  },
+  {
+    "id": "g2_p1_c1--compact--separated--G2_completion--pump",
+    "clock": 64,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--compact--separated--G2_completion--pump/fields064.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--compact--separated--G2_completion--pump/state064.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.0869302429954915,
+      "radius": 4.532126589825534,
+      "mass": 61.027396301933216,
+      "maximum": 0.7270731968508373
+    }
+  },
+  {
+    "id": "g2_p1_c1--compact--separated--G2_completion--pump",
+    "clock": 96,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--compact--separated--G2_completion--pump/fields096.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--compact--separated--G2_completion--pump/state096.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.121129724758135,
+      "radius": 4.4814751406612165,
+      "mass": 60.84817305092606,
+      "maximum": 0.7670739498562933
+    }
+  },
+  {
+    "id": "g2_p1_c1--compact--separated--G2_completion--pump",
+    "clock": 128,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--compact--separated--G2_completion--pump/fields128.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--compact--separated--G2_completion--pump/state128.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.1509084830041032,
+      "radius": 4.4476257444160785,
+      "mass": 60.23156761648662,
+      "maximum": 0.7795827035475636
+    }
+  },
+  {
+    "id": "g2_p1_c1--double_lobe--colocated--G2_completion--pump",
+    "clock": 0,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--double_lobe--colocated--G2_completion--pump/fields000.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--double_lobe--colocated--G2_completion--pump/state000.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 0,
+      "elongation": 2.2830070547681656,
+      "radius": 5.0848653724416195,
+      "mass": 64.0,
+      "maximum": 0.5765765765765766
+    }
+  },
+  {
+    "id": "g2_p1_c1--double_lobe--colocated--G2_completion--pump",
+    "clock": 32,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--double_lobe--colocated--G2_completion--pump/fields032.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--double_lobe--colocated--G2_completion--pump/state032.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 2.2254734489286387,
+      "radius": 5.019391771797436,
+      "mass": 56.18048084234057,
+      "maximum": 0.685388738845238
+    }
+  },
+  {
+    "id": "g2_p1_c1--double_lobe--colocated--G2_completion--pump",
+    "clock": 64,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--double_lobe--colocated--G2_completion--pump/fields064.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--double_lobe--colocated--G2_completion--pump/state064.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 2.166412611040918,
+      "radius": 4.789362187852517,
+      "mass": 52.53531440375184,
+      "maximum": 0.705511441506943
+    }
+  },
+  {
+    "id": "g2_p1_c1--double_lobe--colocated--G2_completion--pump",
+    "clock": 96,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--double_lobe--colocated--G2_completion--pump/fields096.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--double_lobe--colocated--G2_completion--pump/state096.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 2.0064066478516263,
+      "radius": 4.507365384360715,
+      "mass": 48.63883462565286,
+      "maximum": 0.7113941524748029
+    }
+  },
+  {
+    "id": "g2_p1_c1--double_lobe--colocated--G2_completion--pump",
+    "clock": 128,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--double_lobe--colocated--G2_completion--pump/fields128.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--double_lobe--colocated--G2_completion--pump/state128.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.814682065352255,
+      "radius": 4.252289763065671,
+      "mass": 45.87140796741332,
+      "maximum": 0.756249980185244
+    }
+  },
+  {
+    "id": "g2_p1_c1--double_lobe--separated--G2_completion--pump",
+    "clock": 0,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--double_lobe--separated--G2_completion--pump/fields000.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--double_lobe--separated--G2_completion--pump/state000.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 0,
+      "elongation": 2.2830070547681656,
+      "radius": 5.0848653724416195,
+      "mass": 64.0,
+      "maximum": 0.5765765765765766
+    }
+  },
+  {
+    "id": "g2_p1_c1--double_lobe--separated--G2_completion--pump",
+    "clock": 32,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--double_lobe--separated--G2_completion--pump/fields032.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--double_lobe--separated--G2_completion--pump/state032.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 0,
+      "elongation": 2.22593270974015,
+      "radius": 4.91782776149552,
+      "mass": 53.26397080397225,
+      "maximum": 0.6255604601435841
+    }
+  },
+  {
+    "id": "g2_p1_c1--double_lobe--separated--G2_completion--pump",
+    "clock": 64,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--double_lobe--separated--G2_completion--pump/fields064.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--double_lobe--separated--G2_completion--pump/state064.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 0,
+      "elongation": 2.1768866244829836,
+      "radius": 4.455959863898521,
+      "mass": 44.77584843178967,
+      "maximum": 0.6424726527637381
+    }
+  },
+  {
+    "id": "g2_p1_c1--double_lobe--separated--G2_completion--pump",
+    "clock": 96,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--double_lobe--separated--G2_completion--pump/fields096.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--double_lobe--separated--G2_completion--pump/state096.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 0,
+      "elongation": 1.9616885980270908,
+      "radius": 3.8253159401344137,
+      "mass": 35.50442329098337,
+      "maximum": 0.683378496079542
+    }
+  },
+  {
+    "id": "g2_p1_c1--double_lobe--separated--G2_completion--pump",
+    "clock": 128,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--double_lobe--separated--G2_completion--pump/fields128.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--double_lobe--separated--G2_completion--pump/state128.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 0,
+      "elongation": 1.9982035476001976,
+      "radius": 2.950190062337703,
+      "mass": 22.700358708030794,
+      "maximum": 0.6879853689599191
+    }
+  }
+]

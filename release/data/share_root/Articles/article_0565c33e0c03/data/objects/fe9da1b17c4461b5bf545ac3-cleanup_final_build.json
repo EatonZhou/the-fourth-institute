@@ -1,0 +1,47 @@
+{
+  "time": "2026-10-19T02:53:00.924140+00:00",
+  "reason": "Real seven-figure build replaces internal placeholder layout preflight; only generated preflight files removed, original scientific evidence retained",
+  "files": [
+    {
+      "path": "work/longform_v047/preview/text_preflight.log",
+      "bytes": 30555,
+      "sha256": "2e2b881001e53d9cc441e40380b85bb897e93629755a9532cac1ba55370d9ea3"
+    },
+    {
+      "path": "work/longform_v047/preview/text_preflight.console.log",
+      "bytes": 40877,
+      "sha256": "fac70776df08897a359d54a10aac2e62f13ffaca564008f4d30f90a765fb3efb"
+    },
+    {
+      "path": "work/longform_v047/preview/text_preflight.fls",
+      "bytes": 26688,
+      "sha256": "eaf2a214daa931657cd29499328f201940225057aafe7321315d2b9fda3e84aa"
+    },
+    {
+      "path": "work/longform_v047/preview/text_preflight.out",
+      "bytes": 1348,
+      "sha256": "222ac91377bb7a3c45565b37d657e65432ff2554535d7ac6a41ee9b938cfd3ac"
+    },
+    {
+      "path": "work/longform_v047/preview/text_preflight.fdb_latexmk",
+      "bytes": 21927,
+      "sha256": "4d119e75120b0f47091dbed358edba066083a1db028ed63385b9514b0ef2732b"
+    },
+    {
+      "path": "work/longform_v047/preview/text_preflight.aux",
+      "bytes": 65297,
+      "sha256": "86e3978a18c3f85d4601daaecf57d4d35788c2808a37cadd9aeb3105be40dba3"
+    },
+    {
+      "path": "work/longform_v047/preview/text_preflight.pdf",
+      "bytes": 2199138,
+      "sha256": "7eab5cde54c6c9b35dc71c499bd25555f38d63c55c149482ee87737147f49767"
+    },
+    {
+      "path": "work/longform_v047/preview/text_preflight.tex",
+      "bytes": 3718,
+      "sha256": "bb710e8e0029eb8407a2d0b041fbab90d25d23934374a5aef5273ebc3be664be"
+    }
+  ],
+  "bytes_removed": 2389548
+}

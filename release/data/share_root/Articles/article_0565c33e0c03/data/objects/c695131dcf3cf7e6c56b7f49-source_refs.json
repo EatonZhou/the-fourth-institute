@@ -1,0 +1,111 @@
+{
+  "decision": {
+    "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/turnover_second_parent_completion_20261019.json",
+    "sha256": "06dae607292d982abb0cfad93a7e07b9ed6bac47a223c7c5df799f65d7a80aee",
+    "bytes": 8835
+  },
+  "old_unchanged": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/handoff.json",
+      "sha256": "1d1e19754d61c77ea7b4275d24c6baafbb8430db354346a27e3640924b50bb8a",
+      "bytes": 5626
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/plan.json",
+      "sha256": "9e3f2ef30481af0ec50631d7b0de21d6597ddb892a211e764f3b16d6d6fafa88",
+      "bytes": 64284
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/protocol_deviation.json",
+      "sha256": "babf354f55fc6078d560ce9136e85cce05867ef46f5924ebff92b5078aece3eb",
+      "bytes": 5488
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/selection.json",
+      "sha256": "94984296984b03b86a9463334133e4fb4e31014ac67c0e3adbeea78ac97d2181",
+      "bytes": 6865
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/outcomes.json",
+      "sha256": "e31dfa0a4642910cb8d665b8fde536f6eae0f6f98de09ea2cbac2703c07092f6",
+      "bytes": 168759
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/summary.json",
+      "sha256": "3203e15b08149b3e9944f676654bfcb213b131e752b2c0acf53f4d8cd7c82d15",
+      "bytes": 16035
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/REPORT.txt",
+      "sha256": "0e65eecabac7bea0cc4728a3bd072ed3d33a5c1e9b36ac5479ea09b20dbceaa4",
+      "bytes": 6209
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/METHOD.txt",
+      "sha256": "4831043876d6d99cff158192f346e5f73d0212f9339617022a813943f7e1e55b",
+      "bytes": 3582
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g1_f1_c0--compact--colocated--G1--pump/steps.csv",
+      "sha256": "d08b93eb65d7de027a11b056e4e5a4a4fe538a093011c744d65fc08b058ef157",
+      "bytes": 166544
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g1_f1_c0--compact--separated--G1--pump/steps.csv",
+      "sha256": "3c4d3eafa7033895dabe077d5effb5b80495a36e01dda620a5b48e6330db3dca",
+      "bytes": 165837
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g1_f1_c0--double_lobe--colocated--G1--pump/steps.csv",
+      "sha256": "26d4a47346349e3f2dfc2744c9b7d63b74e4dc1176b10bad623545d69d1ec6a0",
+      "bytes": 165441
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g1_f1_c0--double_lobe--separated--G1--pump/steps.csv",
+      "sha256": "638221facd8b2e58b00befbf9f0564fbd8ec98e98a45d7c512bd21f837d934a4",
+      "bytes": 162981
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g2_p0_c0--compact--colocated--G2--pump/steps.csv",
+      "sha256": "c032d487acc1d9c7887a9741db9d9c973f9d980be0130214e98b4818480521bd",
+      "bytes": 170179
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g2_p0_c0--compact--separated--G2--pump/steps.csv",
+      "sha256": "596f65058ba769931336362df6d23c8383bdf434df68725c02692d470f6cdcc8",
+      "bytes": 169499
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g2_p0_c0--double_lobe--colocated--G2--pump/steps.csv",
+      "sha256": "d4dc98d7876d30b22f5a4bc7fbab0f7d369d7e420bdd4104ccf3db5fc4d96c2c",
+      "bytes": 166956
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g2_p0_c0--double_lobe--separated--G2--pump/steps.csv",
+      "sha256": "304594f5673877a1ce10b512b8ba88a717ecedd9bdeb67a13a22bd38ffc8adb0",
+      "bytes": 174856
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g2_p0_c1--compact--colocated--G2--pump/steps.csv",
+      "sha256": "ac91bd7ecca670dbf8635603be0e51c021325e0933c25edad35051859bef7bb5",
+      "bytes": 167855
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g2_p0_c1--compact--separated--G2--pump/steps.csv",
+      "sha256": "1857390311358909958f2d4070e9dd9d70ce5a460c39e0c5e352fcc59e120abb",
+      "bytes": 167706
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g2_p0_c1--double_lobe--colocated--G2--pump/steps.csv",
+      "sha256": "5866e463a67c6ef76db77cd1984fe10be6d6eaa643e97f74d95b56df65af9526",
+      "bytes": 167261
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g2_p0_c1--double_lobe--separated--G2--pump/steps.csv",
+      "sha256": "b49166a5a265b8b01afe3ae99897f10923b0e5b026be954f9a9893d0da1f9c0d",
+      "bytes": 176463
+    }
+  ],
+  "read_only_old_paths": 20,
+  "native_replayed": 0
+}

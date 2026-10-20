@@ -1,0 +1,267 @@
+{
+  "author": "resident_a388058f90eb",
+  "job": "8ad62a77-1850-48a4-bb18-2cf1df9c3440",
+  "sources": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling_report/handoff.json",
+      "copy": "source/handoff.json",
+      "sha256": "7f62a85ac064cbced6885b3427b9027b0375aefbd32ab9752da68a9db3eba1f8"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling_report/METHOD_AND_LIMITS.txt",
+      "copy": "source/METHOD_AND_LIMITS.txt",
+      "sha256": "221c284ea0cfa58db5aec9b1e4e7136c4085d4a04f9bedd77b4ae2d373ef1919"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling_report/paired_effects.csv",
+      "copy": "source/paired_effects.csv",
+      "sha256": "2b9a33e23246c01eaab7a5adc14b74a0dfb57c54a69f97cf46ec7fde40fce1a0"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling_report/all_outcomes.csv",
+      "copy": "source/all_outcomes.csv",
+      "sha256": "d96c16dd7aca3e2f3e264998ff28604d6c3050eaa21115ce50f31e0ab518d303"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling_report/aggregate.csv",
+      "copy": "source/aggregate.csv",
+      "sha256": "2dbda6511fbd6c7d521edda529d22dfc9c67b4317e5c285587aa9d5b86397006"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling_report/first_divergences.json",
+      "copy": "source/first_divergences.json",
+      "sha256": "8b8eda609cc1136fcb05afbc6f8850d52e6771036a8c9e92197af55a504d6d0f"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling/cycles.csv",
+      "copy": "source/cycles.csv",
+      "sha256": "084d0a9874727f2f50a730e310de6bd2ce115da7665a6e14843ebb115a2e6fd1"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling/source/ecology_local.py",
+      "copy": "source/ecology_local.py",
+      "sha256": "5d34a57e970caa4243189b76981ceb1727df0eb705677aa53696ac8709dad0a2"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling/source/ecology_experiment.py",
+      "copy": "source/ecology_experiment.py",
+      "sha256": "f5c7eff06faa9fb7183701ab0c6c73443fa7621d35dc3f2ab29de24ae69febff"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling/frames/compact--202610182101--a0.4--reversal--update.npz",
+      "copy": "source/compact--202610182101--a0.4--reversal--update.npz",
+      "sha256": "e848b569a1e27099ac5fe1c87aad016e3017976ce2beeb92313ec6362f626983"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling/frames/compact--202610182101--a0.4--reversal--freeze_paid.npz",
+      "copy": "source/compact--202610182101--a0.4--reversal--freeze_paid.npz",
+      "sha256": "2a7b4940684259ce5fd235230e2a368a73aabe76ca41bf23caf7bb8c585344a4"
+    }
+  ],
+  "assets": [
+    {
+      "asset": "assets/update_1056_rho.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling/frames/compact--202610182101--a0.4--reversal--update.npz",
+      "field_index": 2,
+      "cycle_zero_based": 32,
+      "phase": 31,
+      "absolute_step": 1056,
+      "channel": 0,
+      "coordinates": "original 32x32; origin lower; no crop or recenter",
+      "scale": [
+        0,
+        2
+      ],
+      "mask": null
+    },
+    {
+      "asset": "assets/update_1056_q.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling/frames/compact--202610182101--a0.4--reversal--update.npz",
+      "field_index": 2,
+      "cycle_zero_based": 32,
+      "phase": 31,
+      "absolute_step": 1056,
+      "channel": 2,
+      "coordinates": "original 32x32; origin lower; no crop or recenter",
+      "scale": [
+        -0.5,
+        0.5
+      ],
+      "mask": "same-frame rho < 0.001; not a d-support estimate"
+    },
+    {
+      "asset": "assets/update_1201_rho.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling/frames/compact--202610182101--a0.4--reversal--update.npz",
+      "field_index": 16,
+      "cycle_zero_based": 37,
+      "phase": 16,
+      "absolute_step": 1201,
+      "channel": 0,
+      "coordinates": "original 32x32; origin lower; no crop or recenter",
+      "scale": [
+        0,
+        2
+      ],
+      "mask": null
+    },
+    {
+      "asset": "assets/update_1201_q.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling/frames/compact--202610182101--a0.4--reversal--update.npz",
+      "field_index": 16,
+      "cycle_zero_based": 37,
+      "phase": 16,
+      "absolute_step": 1201,
+      "channel": 2,
+      "coordinates": "original 32x32; origin lower; no crop or recenter",
+      "scale": [
+        -0.5,
+        0.5
+      ],
+      "mask": "same-frame rho < 0.001; not a d-support estimate"
+    },
+    {
+      "asset": "assets/update_1521_rho.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling/frames/compact--202610182101--a0.4--reversal--update.npz",
+      "field_index": 46,
+      "cycle_zero_based": 47,
+      "phase": 16,
+      "absolute_step": 1521,
+      "channel": 0,
+      "coordinates": "original 32x32; origin lower; no crop or recenter",
+      "scale": [
+        0,
+        2
+      ],
+      "mask": null
+    },
+    {
+      "asset": "assets/update_1521_q.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling/frames/compact--202610182101--a0.4--reversal--update.npz",
+      "field_index": 46,
+      "cycle_zero_based": 47,
+      "phase": 16,
+      "absolute_step": 1521,
+      "channel": 2,
+      "coordinates": "original 32x32; origin lower; no crop or recenter",
+      "scale": [
+        -0.5,
+        0.5
+      ],
+      "mask": "same-frame rho < 0.001; not a d-support estimate"
+    },
+    {
+      "asset": "assets/freeze_paid_1056_rho.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling/frames/compact--202610182101--a0.4--reversal--freeze_paid.npz",
+      "field_index": 2,
+      "cycle_zero_based": 32,
+      "phase": 31,
+      "absolute_step": 1056,
+      "channel": 0,
+      "coordinates": "original 32x32; origin lower; no crop or recenter",
+      "scale": [
+        0,
+        2
+      ],
+      "mask": null
+    },
+    {
+      "asset": "assets/freeze_paid_1056_q.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling/frames/compact--202610182101--a0.4--reversal--freeze_paid.npz",
+      "field_index": 2,
+      "cycle_zero_based": 32,
+      "phase": 31,
+      "absolute_step": 1056,
+      "channel": 2,
+      "coordinates": "original 32x32; origin lower; no crop or recenter",
+      "scale": [
+        -0.5,
+        0.5
+      ],
+      "mask": "same-frame rho < 0.001; not a d-support estimate"
+    },
+    {
+      "asset": "assets/freeze_paid_1201_rho.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling/frames/compact--202610182101--a0.4--reversal--freeze_paid.npz",
+      "field_index": 16,
+      "cycle_zero_based": 37,
+      "phase": 16,
+      "absolute_step": 1201,
+      "channel": 0,
+      "coordinates": "original 32x32; origin lower; no crop or recenter",
+      "scale": [
+        0,
+        2
+      ],
+      "mask": null
+    },
+    {
+      "asset": "assets/freeze_paid_1201_q.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling/frames/compact--202610182101--a0.4--reversal--freeze_paid.npz",
+      "field_index": 16,
+      "cycle_zero_based": 37,
+      "phase": 16,
+      "absolute_step": 1201,
+      "channel": 2,
+      "coordinates": "original 32x32; origin lower; no crop or recenter",
+      "scale": [
+        -0.5,
+        0.5
+      ],
+      "mask": "same-frame rho < 0.001; not a d-support estimate"
+    },
+    {
+      "asset": "assets/freeze_paid_1521_rho.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling/frames/compact--202610182101--a0.4--reversal--freeze_paid.npz",
+      "field_index": 46,
+      "cycle_zero_based": 47,
+      "phase": 16,
+      "absolute_step": 1521,
+      "channel": 0,
+      "coordinates": "original 32x32; origin lower; no crop or recenter",
+      "scale": [
+        0,
+        2
+      ],
+      "mask": null
+    },
+    {
+      "asset": "assets/freeze_paid_1521_q.png",
+      "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling/frames/compact--202610182101--a0.4--reversal--freeze_paid.npz",
+      "field_index": 46,
+      "cycle_zero_based": 47,
+      "phase": 16,
+      "absolute_step": 1521,
+      "channel": 2,
+      "coordinates": "original 32x32; origin lower; no crop or recenter",
+      "scale": [
+        -0.5,
+        0.5
+      ],
+      "mask": "same-frame rho < 0.001; not a d-support estimate"
+    }
+  ],
+  "new_forward_updates": 0,
+  "method": "Only saved-field colormap rasterization and CSV selection/means. No environment, rollout or model functions called. All final figure structure, labels, curves and comparisons are native GUI objects.",
+  "scope": "Translated-density host with shared energy/global action; not Lenia. Q ratio does not depict body mass. Per-frame rho masking removes unsupported-looking ratio tails but does not reconstruct missing d arrays.",
+  "cue_channel_annotation": {
+    "1056": {
+      "cycle": 32,
+      "cue": -1,
+      "target": "R",
+      "first_write_channel": "negative cue",
+      "displayed_Q": "positive-cue contrast; may remain equal"
+    },
+    "1201": {
+      "cycle": 37,
+      "cue": 1,
+      "target": "L",
+      "update_choice": "L",
+      "freeze_choice": "R"
+    },
+    "1521": {
+      "cycle": 47,
+      "cue": 1
+    },
+    "source": "Saved cycles.csv and source/ecology_experiment.py; user/main-author read-only confirmation 2026-10-18"
+  }
+}

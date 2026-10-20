@@ -1,0 +1,5 @@
+{
+  "schema": "local-metabolic-translocation-v1",
+  "clock": 384,
+  "mode": "diffusion"
+}

@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600" viewBox="0 0 1200 600">
+<rect width="1200" height="600" fill="white"/>
+<text x="28" y="41.56" text-anchor="start" font-family="Noto Sans CJK SC" font-size="26" font-weight="700" fill="#275D85">验证证据的局部有效性</text>
+<polyline points="28,62 1172,62" fill="none" stroke="#91A2AE" stroke-width="1.7"/>
+<text x="30" y="583.0300000000001" text-anchor="start" font-family="Noto Sans CJK SC" font-size="13" font-weight="400" fill="#61717E">设计示意 · 实线：工作或依赖关系；虚线：反馈或关联；不表示实验测量</text>
+<rect x="35" y="95" width="230" height="60" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="150.0" y="130.89000000000001" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#275D85">检查对象</text>
+<rect x="285" y="95" width="205" height="60" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="387.5" y="130.89000000000001" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#275D85">任务服务</text>
+<rect x="510" y="95" width="205" height="60" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="612.5" y="130.89000000000001" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#275D85">执行器</text>
+<rect x="735" y="95" width="205" height="60" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="837.5" y="130.89000000000001" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#275D85">当前变化</text>
+<rect x="960" y="95" width="205" height="60" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="1062.5" y="130.89000000000001" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#275D85">下一步</text>
+<rect x="35" y="180" width="230" height="62" fill="#FFFFFF" stroke="#263442" stroke-width="1.5"/>
+<text x="150.0" y="216.89" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#263442">请求幂等性</text>
+<rect x="285" y="180" width="205" height="62" fill="#FFFFFF" stroke="#263442" stroke-width="1.5"/>
+<text x="387.5" y="216.89" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#263442">已验证</text>
+<rect x="510" y="180" width="205" height="62" fill="#FFFFFF" stroke="#263442" stroke-width="1.5"/>
+<text x="612.5" y="216.89" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#263442">无关</text>
+<rect x="735" y="180" width="205" height="62" fill="#FFFFFF" stroke="#263442" stroke-width="1.5"/>
+<text x="837.5" y="216.89" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#263442">未涉及</text>
+<rect x="960" y="180" width="205" height="62" fill="#EDF5F1" stroke="#26756C" stroke-width="1.5"/>
+<text x="1062.5" y="216.89" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#26756C">复用证据</text>
+<rect x="35" y="258" width="230" height="62" fill="#FFFFFF" stroke="#263442" stroke-width="1.5"/>
+<text x="150.0" y="294.89000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#263442">停止确认</text>
+<rect x="285" y="258" width="205" height="62" fill="#FFFFFF" stroke="#263442" stroke-width="1.5"/>
+<text x="387.5" y="294.89000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#263442">依赖执行器</text>
+<rect x="510" y="258" width="205" height="62" fill="#FFFFFF" stroke="#263442" stroke-width="1.5"/>
+<text x="612.5" y="294.89000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#263442">已验证</text>
+<rect x="735" y="258" width="205" height="62" fill="#FFFFFF" stroke="#263442" stroke-width="1.5"/>
+<text x="837.5" y="294.89000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#263442">执行器修改</text>
+<rect x="960" y="258" width="205" height="62" fill="#FAF3E7" stroke="#263442" stroke-width="1.5"/>
+<text x="1062.5" y="294.89000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#263442">重查受影响项</text>
+<rect x="35" y="336" width="230" height="62" fill="#FFFFFF" stroke="#263442" stroke-width="1.5"/>
+<text x="150.0" y="372.89000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#263442">用户取消旅程</text>
+<rect x="285" y="336" width="205" height="62" fill="#FFFFFF" stroke="#263442" stroke-width="1.5"/>
+<text x="387.5" y="372.89000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#263442">已验证</text>
+<rect x="510" y="336" width="205" height="62" fill="#FFFFFF" stroke="#263442" stroke-width="1.5"/>
+<text x="612.5" y="372.89000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#263442">已验证</text>
+<rect x="735" y="336" width="205" height="62" fill="#FFFFFF" stroke="#263442" stroke-width="1.5"/>
+<text x="837.5" y="372.89000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#263442">多模块组合</text>
+<rect x="960" y="336" width="205" height="62" fill="#FAF3E7" stroke="#263442" stroke-width="1.5"/>
+<text x="1062.5" y="372.89000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#263442">运行定向 TAU</text>
+<rect x="35" y="414" width="230" height="62" fill="#FFFFFF" stroke="#263442" stroke-width="1.5"/>
+<text x="150.0" y="450.89000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#263442">无关导出任务</text>
+<rect x="285" y="414" width="205" height="62" fill="#FFFFFF" stroke="#263442" stroke-width="1.5"/>
+<text x="387.5" y="450.89000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#263442">已验证</text>
+<rect x="510" y="414" width="205" height="62" fill="#FFFFFF" stroke="#263442" stroke-width="1.5"/>
+<text x="612.5" y="450.89000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#263442">无关</text>
+<rect x="735" y="414" width="205" height="62" fill="#FFFFFF" stroke="#263442" stroke-width="1.5"/>
+<text x="837.5" y="450.89000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#263442">未涉及</text>
+<rect x="960" y="414" width="205" height="62" fill="#EDF5F1" stroke="#26756C" stroke-width="1.5"/>
+<text x="1062.5" y="450.89000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#26756C">保留原结论</text>
+<text x="597.5" y="531.51" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="21" font-weight="700" fill="#263442">证据 = 任务／契约 + 实际内容与环境 + 观察结果 + 适用条件</text>
+</svg>

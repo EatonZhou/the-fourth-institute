@@ -1,0 +1,1713 @@
+{
+  "selection": "first matching successful before/after example per site; post-hoc illustration, not independent trials or causal proof",
+  "pairs": [
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 25,
+        "arrival_clock": 27,
+        "site": 0,
+        "y": 2,
+        "x": 2,
+        "cue": 1.0,
+        "p_right": 2.818182102806849e-10,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 72,
+        "arrival_clock": 74,
+        "site": 0,
+        "y": 2,
+        "x": 2,
+        "cue": 1.0,
+        "p_right": 0.9643718745699055,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 32,
+        "arrival_clock": 34,
+        "site": 1,
+        "y": 2,
+        "x": 6,
+        "cue": -1.0,
+        "p_right": 0.9682579454184559,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 74,
+        "arrival_clock": 76,
+        "site": 1,
+        "y": 2,
+        "x": 6,
+        "cue": -1.0,
+        "p_right": 0.0013109121814598621,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 23,
+        "arrival_clock": 25,
+        "site": 2,
+        "y": 2,
+        "x": 10,
+        "cue": 1.0,
+        "p_right": 0.9999999987583941,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 76,
+        "arrival_clock": 78,
+        "site": 2,
+        "y": 2,
+        "x": 10,
+        "cue": 1.0,
+        "p_right": 1.4670418019416995e-08,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 27,
+        "arrival_clock": 29,
+        "site": 3,
+        "y": 2,
+        "x": 14,
+        "cue": 1.0,
+        "p_right": 0.999999999747504,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 73,
+        "arrival_clock": 75,
+        "site": 3,
+        "y": 2,
+        "x": 14,
+        "cue": 1.0,
+        "p_right": 0.6082385505070573,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 27,
+        "arrival_clock": 29,
+        "site": 4,
+        "y": 2,
+        "x": 18,
+        "cue": -1.0,
+        "p_right": 0.2944055292694834,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 72,
+        "arrival_clock": 74,
+        "site": 4,
+        "y": 2,
+        "x": 18,
+        "cue": -1.0,
+        "p_right": 0.997335427097137,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 25,
+        "arrival_clock": 27,
+        "site": 5,
+        "y": 2,
+        "x": 22,
+        "cue": -1.0,
+        "p_right": 2.5581538054429533e-06,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 90,
+        "arrival_clock": 92,
+        "site": 5,
+        "y": 2,
+        "x": 22,
+        "cue": -1.0,
+        "p_right": 0.9906476096815842,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 27,
+        "arrival_clock": 29,
+        "site": 6,
+        "y": 2,
+        "x": 26,
+        "cue": -1.0,
+        "p_right": 0.8948251930855556,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 71,
+        "arrival_clock": 73,
+        "site": 6,
+        "y": 2,
+        "x": 26,
+        "cue": -1.0,
+        "p_right": 4.7305859457348727e-07,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 23,
+        "arrival_clock": 25,
+        "site": 7,
+        "y": 2,
+        "x": 30,
+        "cue": 1.0,
+        "p_right": 3.0193873932444823e-10,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 91,
+        "arrival_clock": 93,
+        "site": 7,
+        "y": 2,
+        "x": 30,
+        "cue": 1.0,
+        "p_right": 0.9999999617310756,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 23,
+        "arrival_clock": 25,
+        "site": 8,
+        "y": 6,
+        "x": 2,
+        "cue": 1.0,
+        "p_right": 0.006980441658606109,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 77,
+        "arrival_clock": 79,
+        "site": 8,
+        "y": 6,
+        "x": 2,
+        "cue": 1.0,
+        "p_right": 0.9999998978215852,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 24,
+        "arrival_clock": 26,
+        "site": 9,
+        "y": 6,
+        "x": 6,
+        "cue": -1.0,
+        "p_right": 0.9958400607184317,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 73,
+        "arrival_clock": 75,
+        "site": 9,
+        "y": 6,
+        "x": 6,
+        "cue": -1.0,
+        "p_right": 0.29125180672276635,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 40,
+        "arrival_clock": 42,
+        "site": 10,
+        "y": 6,
+        "x": 10,
+        "cue": -1.0,
+        "p_right": 0.029607437386297585,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 74,
+        "arrival_clock": 76,
+        "site": 10,
+        "y": 6,
+        "x": 10,
+        "cue": -1.0,
+        "p_right": 0.9999999709112226,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 24,
+        "arrival_clock": 26,
+        "site": 11,
+        "y": 6,
+        "x": 14,
+        "cue": -1.0,
+        "p_right": 0.009398798718428067,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 81,
+        "arrival_clock": 83,
+        "site": 11,
+        "y": 6,
+        "x": 14,
+        "cue": -1.0,
+        "p_right": 0.9999999956327981,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 30,
+        "arrival_clock": 32,
+        "site": 12,
+        "y": 6,
+        "x": 18,
+        "cue": 1.0,
+        "p_right": 0.9955501158214446,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 70,
+        "arrival_clock": 72,
+        "site": 12,
+        "y": 6,
+        "x": 18,
+        "cue": 1.0,
+        "p_right": 0.001025362392020951,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 22,
+        "arrival_clock": 24,
+        "site": 13,
+        "y": 6,
+        "x": 22,
+        "cue": -1.0,
+        "p_right": 2.3044751208407973e-10,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 78,
+        "arrival_clock": 80,
+        "site": 13,
+        "y": 6,
+        "x": 22,
+        "cue": -1.0,
+        "p_right": 0.9704154285323006,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 26,
+        "arrival_clock": 28,
+        "site": 14,
+        "y": 6,
+        "x": 26,
+        "cue": 1.0,
+        "p_right": 1.6034764583111166e-10,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 78,
+        "arrival_clock": 80,
+        "site": 14,
+        "y": 6,
+        "x": 26,
+        "cue": 1.0,
+        "p_right": 0.7582477669670005,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 30,
+        "arrival_clock": 32,
+        "site": 16,
+        "y": 10,
+        "x": 2,
+        "cue": 1.0,
+        "p_right": 1.769589991195128e-10,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 77,
+        "arrival_clock": 79,
+        "site": 16,
+        "y": 10,
+        "x": 2,
+        "cue": 1.0,
+        "p_right": 0.09854998259909702,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 32,
+        "arrival_clock": 34,
+        "site": 17,
+        "y": 10,
+        "x": 6,
+        "cue": 1.0,
+        "p_right": 0.015076698217309092,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 76,
+        "arrival_clock": 78,
+        "site": 17,
+        "y": 10,
+        "x": 6,
+        "cue": 1.0,
+        "p_right": 0.9929167889067414,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 23,
+        "arrival_clock": 25,
+        "site": 18,
+        "y": 10,
+        "x": 10,
+        "cue": 1.0,
+        "p_right": 0.9999999994947188,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 80,
+        "arrival_clock": 82,
+        "site": 18,
+        "y": 10,
+        "x": 10,
+        "cue": 1.0,
+        "p_right": 1.3327822136538613e-06,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 23,
+        "arrival_clock": 25,
+        "site": 19,
+        "y": 10,
+        "x": 14,
+        "cue": 1.0,
+        "p_right": 0.9999999997982298,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 70,
+        "arrival_clock": 72,
+        "site": 19,
+        "y": 10,
+        "x": 14,
+        "cue": 1.0,
+        "p_right": 0.046494948191232406,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 27,
+        "arrival_clock": 29,
+        "site": 20,
+        "y": 10,
+        "x": 18,
+        "cue": 1.0,
+        "p_right": 0.9999654919743477,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 76,
+        "arrival_clock": 78,
+        "site": 20,
+        "y": 10,
+        "x": 18,
+        "cue": 1.0,
+        "p_right": 3.1487332357644015e-06,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 29,
+        "arrival_clock": 31,
+        "site": 21,
+        "y": 10,
+        "x": 22,
+        "cue": -1.0,
+        "p_right": 0.011853081699324999,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 79,
+        "arrival_clock": 81,
+        "site": 21,
+        "y": 10,
+        "x": 22,
+        "cue": -1.0,
+        "p_right": 0.9999999820391036,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 23,
+        "arrival_clock": 25,
+        "site": 22,
+        "y": 10,
+        "x": 26,
+        "cue": 1.0,
+        "p_right": 0.9999998851828057,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 71,
+        "arrival_clock": 73,
+        "site": 22,
+        "y": 10,
+        "x": 26,
+        "cue": 1.0,
+        "p_right": 2.340732599542007e-08,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 24,
+        "arrival_clock": 26,
+        "site": 23,
+        "y": 10,
+        "x": 30,
+        "cue": 1.0,
+        "p_right": 0.9999999996845919,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 77,
+        "arrival_clock": 79,
+        "site": 23,
+        "y": 10,
+        "x": 30,
+        "cue": 1.0,
+        "p_right": 1.949871745856812e-08,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 22,
+        "arrival_clock": 24,
+        "site": 24,
+        "y": 14,
+        "x": 2,
+        "cue": -1.0,
+        "p_right": 0.9999999997986389,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 84,
+        "arrival_clock": 86,
+        "site": 24,
+        "y": 14,
+        "x": 2,
+        "cue": -1.0,
+        "p_right": 4.963242657183699e-06,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 22,
+        "arrival_clock": 24,
+        "site": 25,
+        "y": 14,
+        "x": 6,
+        "cue": 1.0,
+        "p_right": 1.1972915276718765e-08,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 77,
+        "arrival_clock": 79,
+        "site": 25,
+        "y": 14,
+        "x": 6,
+        "cue": 1.0,
+        "p_right": 0.9983644520424101,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 22,
+        "arrival_clock": 24,
+        "site": 26,
+        "y": 14,
+        "x": 10,
+        "cue": -1.0,
+        "p_right": 1.948036378221026e-10,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 83,
+        "arrival_clock": 85,
+        "site": 26,
+        "y": 14,
+        "x": 10,
+        "cue": -1.0,
+        "p_right": 0.9999999796615302,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 30,
+        "arrival_clock": 32,
+        "site": 27,
+        "y": 14,
+        "x": 14,
+        "cue": -1.0,
+        "p_right": 2.465279582821714e-10,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 85,
+        "arrival_clock": 87,
+        "site": 27,
+        "y": 14,
+        "x": 14,
+        "cue": -1.0,
+        "p_right": 0.9586159235109559,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 32,
+        "arrival_clock": 34,
+        "site": 28,
+        "y": 14,
+        "x": 18,
+        "cue": 1.0,
+        "p_right": 0.9896877365000258,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 82,
+        "arrival_clock": 84,
+        "site": 28,
+        "y": 14,
+        "x": 18,
+        "cue": 1.0,
+        "p_right": 0.005720216100166419,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 23,
+        "arrival_clock": 25,
+        "site": 29,
+        "y": 14,
+        "x": 22,
+        "cue": 1.0,
+        "p_right": 0.9972563299870877,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 70,
+        "arrival_clock": 72,
+        "site": 29,
+        "y": 14,
+        "x": 22,
+        "cue": 1.0,
+        "p_right": 7.34182089012785e-07,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 22,
+        "arrival_clock": 24,
+        "site": 31,
+        "y": 14,
+        "x": 30,
+        "cue": -1.0,
+        "p_right": 1.0790455131472694e-06,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 77,
+        "arrival_clock": 79,
+        "site": 31,
+        "y": 14,
+        "x": 30,
+        "cue": -1.0,
+        "p_right": 0.9999999959059729,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 24,
+        "arrival_clock": 26,
+        "site": 32,
+        "y": 18,
+        "x": 2,
+        "cue": -1.0,
+        "p_right": 3.0379602331505806e-10,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 81,
+        "arrival_clock": 83,
+        "site": 32,
+        "y": 18,
+        "x": 2,
+        "cue": -1.0,
+        "p_right": 0.99999600906566,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 23,
+        "arrival_clock": 25,
+        "site": 33,
+        "y": 18,
+        "x": 6,
+        "cue": 1.0,
+        "p_right": 0.9999999859815445,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 84,
+        "arrival_clock": 86,
+        "site": 33,
+        "y": 18,
+        "x": 6,
+        "cue": 1.0,
+        "p_right": 1.0942544229610047e-07,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 27,
+        "arrival_clock": 29,
+        "site": 34,
+        "y": 18,
+        "x": 10,
+        "cue": 1.0,
+        "p_right": 0.9999635614063799,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 75,
+        "arrival_clock": 77,
+        "site": 34,
+        "y": 18,
+        "x": 10,
+        "cue": 1.0,
+        "p_right": 0.006353395781536418,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 25,
+        "arrival_clock": 27,
+        "site": 35,
+        "y": 18,
+        "x": 14,
+        "cue": -1.0,
+        "p_right": 0.09760391641166893,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 83,
+        "arrival_clock": 85,
+        "site": 35,
+        "y": 18,
+        "x": 14,
+        "cue": -1.0,
+        "p_right": 0.920495252217796,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 23,
+        "arrival_clock": 25,
+        "site": 36,
+        "y": 18,
+        "x": 18,
+        "cue": -1.0,
+        "p_right": 0.9999999998193361,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 76,
+        "arrival_clock": 78,
+        "site": 36,
+        "y": 18,
+        "x": 18,
+        "cue": -1.0,
+        "p_right": 8.924901450531142e-09,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 25,
+        "arrival_clock": 27,
+        "site": 37,
+        "y": 18,
+        "x": 22,
+        "cue": 1.0,
+        "p_right": 2.74918812352879e-10,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 87,
+        "arrival_clock": 89,
+        "site": 37,
+        "y": 18,
+        "x": 22,
+        "cue": 1.0,
+        "p_right": 0.9999962099076677,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 30,
+        "arrival_clock": 32,
+        "site": 38,
+        "y": 18,
+        "x": 26,
+        "cue": -1.0,
+        "p_right": 1.6500239058645308e-06,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 73,
+        "arrival_clock": 75,
+        "site": 38,
+        "y": 18,
+        "x": 26,
+        "cue": -1.0,
+        "p_right": 0.9999890300651014,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 38,
+        "arrival_clock": 40,
+        "site": 39,
+        "y": 18,
+        "x": 30,
+        "cue": 1.0,
+        "p_right": 0.997662250085991,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 70,
+        "arrival_clock": 72,
+        "site": 39,
+        "y": 18,
+        "x": 30,
+        "cue": 1.0,
+        "p_right": 0.03148499137573597,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 27,
+        "arrival_clock": 29,
+        "site": 40,
+        "y": 22,
+        "x": 2,
+        "cue": -1.0,
+        "p_right": 0.011432379248108358,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 85,
+        "arrival_clock": 87,
+        "site": 40,
+        "y": 22,
+        "x": 2,
+        "cue": -1.0,
+        "p_right": 0.9584379236634443,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 23,
+        "arrival_clock": 25,
+        "site": 41,
+        "y": 22,
+        "x": 6,
+        "cue": -1.0,
+        "p_right": 2.5446071973945374e-10,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 73,
+        "arrival_clock": 75,
+        "site": 41,
+        "y": 22,
+        "x": 6,
+        "cue": -1.0,
+        "p_right": 0.9999975869030041,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 25,
+        "arrival_clock": 27,
+        "site": 42,
+        "y": 22,
+        "x": 10,
+        "cue": -1.0,
+        "p_right": 2.7765895807998757e-10,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 83,
+        "arrival_clock": 85,
+        "site": 42,
+        "y": 22,
+        "x": 10,
+        "cue": -1.0,
+        "p_right": 0.999999892773076,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 22,
+        "arrival_clock": 24,
+        "site": 43,
+        "y": 22,
+        "x": 14,
+        "cue": 1.0,
+        "p_right": 0.9999999994465356,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 70,
+        "arrival_clock": 72,
+        "site": 43,
+        "y": 22,
+        "x": 14,
+        "cue": 1.0,
+        "p_right": 2.8069755487927244e-06,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 24,
+        "arrival_clock": 26,
+        "site": 44,
+        "y": 22,
+        "x": 18,
+        "cue": 1.0,
+        "p_right": 9.202387525155328e-09,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 70,
+        "arrival_clock": 72,
+        "site": 44,
+        "y": 22,
+        "x": 18,
+        "cue": 1.0,
+        "p_right": 0.9999999670495081,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 27,
+        "arrival_clock": 29,
+        "site": 45,
+        "y": 22,
+        "x": 22,
+        "cue": -1.0,
+        "p_right": 0.9979267920600766,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 77,
+        "arrival_clock": 79,
+        "site": 45,
+        "y": 22,
+        "x": 22,
+        "cue": -1.0,
+        "p_right": 1.6411095111063627e-05,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 24,
+        "arrival_clock": 26,
+        "site": 46,
+        "y": 22,
+        "x": 26,
+        "cue": 1.0,
+        "p_right": 0.9999999998299212,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 75,
+        "arrival_clock": 77,
+        "site": 46,
+        "y": 22,
+        "x": 26,
+        "cue": 1.0,
+        "p_right": 1.2633273482116582e-06,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 24,
+        "arrival_clock": 26,
+        "site": 48,
+        "y": 26,
+        "x": 2,
+        "cue": 1.0,
+        "p_right": 0.9999487873364132,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 95,
+        "arrival_clock": 97,
+        "site": 48,
+        "y": 26,
+        "x": 2,
+        "cue": 1.0,
+        "p_right": 0.00015288872173465948,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 23,
+        "arrival_clock": 25,
+        "site": 49,
+        "y": 26,
+        "x": 6,
+        "cue": 1.0,
+        "p_right": 0.9999999997040643,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 75,
+        "arrival_clock": 77,
+        "site": 49,
+        "y": 26,
+        "x": 6,
+        "cue": 1.0,
+        "p_right": 0.0005790218021286421,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 22,
+        "arrival_clock": 24,
+        "site": 50,
+        "y": 26,
+        "x": 10,
+        "cue": 1.0,
+        "p_right": 0.9999999997833482,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 70,
+        "arrival_clock": 72,
+        "site": 50,
+        "y": 26,
+        "x": 10,
+        "cue": 1.0,
+        "p_right": 1.4707264021036373e-07,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 23,
+        "arrival_clock": 25,
+        "site": 51,
+        "y": 26,
+        "x": 14,
+        "cue": -1.0,
+        "p_right": 2.1368518102017761e-10,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 73,
+        "arrival_clock": 75,
+        "site": 51,
+        "y": 26,
+        "x": 14,
+        "cue": -1.0,
+        "p_right": 0.9999998430381896,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 30,
+        "arrival_clock": 32,
+        "site": 52,
+        "y": 26,
+        "x": 18,
+        "cue": 1.0,
+        "p_right": 6.994278185924179e-10,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 70,
+        "arrival_clock": 72,
+        "site": 52,
+        "y": 26,
+        "x": 18,
+        "cue": 1.0,
+        "p_right": 0.9999999038971793,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 30,
+        "arrival_clock": 32,
+        "site": 53,
+        "y": 26,
+        "x": 22,
+        "cue": 1.0,
+        "p_right": 0.017369319168284398,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 77,
+        "arrival_clock": 79,
+        "site": 53,
+        "y": 26,
+        "x": 22,
+        "cue": 1.0,
+        "p_right": 0.9999999759440493,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 25,
+        "arrival_clock": 27,
+        "site": 54,
+        "y": 26,
+        "x": 26,
+        "cue": -1.0,
+        "p_right": 0.9999999997607778,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 80,
+        "arrival_clock": 82,
+        "site": 54,
+        "y": 26,
+        "x": 26,
+        "cue": -1.0,
+        "p_right": 3.580387722213938e-09,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 35,
+        "arrival_clock": 37,
+        "site": 55,
+        "y": 26,
+        "x": 30,
+        "cue": -1.0,
+        "p_right": 0.9965270351735164,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 80,
+        "arrival_clock": 82,
+        "site": 55,
+        "y": 26,
+        "x": 30,
+        "cue": -1.0,
+        "p_right": 0.062454112540713196,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 27,
+        "arrival_clock": 29,
+        "site": 56,
+        "y": 30,
+        "x": 2,
+        "cue": 1.0,
+        "p_right": 0.9917599839473967,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 70,
+        "arrival_clock": 72,
+        "site": 56,
+        "y": 30,
+        "x": 2,
+        "cue": 1.0,
+        "p_right": 0.0001795389766420422,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 23,
+        "arrival_clock": 25,
+        "site": 57,
+        "y": 30,
+        "x": 6,
+        "cue": 1.0,
+        "p_right": 0.9999965730295526,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 72,
+        "arrival_clock": 74,
+        "site": 57,
+        "y": 30,
+        "x": 6,
+        "cue": 1.0,
+        "p_right": 0.002489169714922463,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 27,
+        "arrival_clock": 29,
+        "site": 58,
+        "y": 30,
+        "x": 10,
+        "cue": -1.0,
+        "p_right": 0.09332486320076805,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 74,
+        "arrival_clock": 76,
+        "site": 58,
+        "y": 30,
+        "x": 10,
+        "cue": -1.0,
+        "p_right": 0.999999974140823,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 27,
+        "arrival_clock": 29,
+        "site": 59,
+        "y": 30,
+        "x": 14,
+        "cue": -1.0,
+        "p_right": 0.05767273733504822,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 71,
+        "arrival_clock": 73,
+        "site": 59,
+        "y": 30,
+        "x": 14,
+        "cue": -1.0,
+        "p_right": 0.9999994194347535,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 30,
+        "arrival_clock": 32,
+        "site": 60,
+        "y": 30,
+        "x": 18,
+        "cue": 1.0,
+        "p_right": 0.013821569095931616,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 75,
+        "arrival_clock": 77,
+        "site": 60,
+        "y": 30,
+        "x": 18,
+        "cue": 1.0,
+        "p_right": 0.9999999515486954,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 28,
+        "arrival_clock": 30,
+        "site": 61,
+        "y": 30,
+        "x": 22,
+        "cue": -1.0,
+        "p_right": 0.9785084161011548,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 72,
+        "arrival_clock": 74,
+        "site": 61,
+        "y": 30,
+        "x": 22,
+        "cue": -1.0,
+        "p_right": 1.650762174764737e-08,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 25,
+        "arrival_clock": 27,
+        "site": 62,
+        "y": 30,
+        "x": 26,
+        "cue": 1.0,
+        "p_right": 3.369367856045905e-10,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 81,
+        "arrival_clock": 83,
+        "site": 62,
+        "y": 30,
+        "x": 26,
+        "cue": 1.0,
+        "p_right": 0.999999533753718,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      }
+    },
+    {
+      "before": {
+        "seed": 202610181101,
+        "decision_clock": 34,
+        "arrival_clock": 36,
+        "site": 63,
+        "y": 30,
+        "x": 30,
+        "cue": 1.0,
+        "p_right": 0.010821862123923628,
+        "action": -1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": -1
+      },
+      "after": {
+        "seed": 202610181101,
+        "decision_clock": 70,
+        "arrival_clock": 72,
+        "site": 63,
+        "y": 30,
+        "x": 30,
+        "cue": 1.0,
+        "p_right": 0.9999999910302849,
+        "action": 1,
+        "actual_contact_token": 1.0,
+        "hidden_mapping_for_audit_only": 1
+      }
+    }
+  ]
+}

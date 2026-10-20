@@ -1,0 +1,1936 @@
+{
+  "schema": "diverse-generation-proposals.v1",
+  "candidates": [
+    {
+      "source_index": 0,
+      "source_candidate": "reference_anisotropic--connected_trilobe",
+      "family": "reference_anisotropic",
+      "geometry": "connected_trilobe",
+      "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/reference_anisotropic--connected_trilobe.npz",
+      "source_sha256": "c73aa228328b141bf094093030fcd8c82fa49f7b022d5e3f4bffe171b29d300a",
+      "parent_id": "genome_93e6148d32bbb0862163",
+      "generation": 1,
+      "mutation_seed": 202610180501,
+      "proposal": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/proposals/00.json",
+      "proposal_sha256": "5ff202ac824adaf06aa481f1e4ae106cbe76057265247e0bc227b2f4e8e57827",
+      "assigned_attempt_cap": 128,
+      "evaluation_status": "unexecuted",
+      "adaptation_status": "not_applicable",
+      "resampled": false,
+      "id": "genome_8a9ce6d23c3acf3e2fce",
+      "candidate_id": "genome_8a9ce6d23c3acf3e2fce",
+      "genome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/genomes/genome_8a9ce6d23c3acf3e2fce.json",
+      "genome_sha256": "84c4653867de1a72cebda7ad33fb17094e7e7286403add0266ac76a6860fc3b3",
+      "proposal_status": "valid_unexecuted",
+      "native_attempt_cap": 128,
+      "unused_steps": 0,
+      "snapshot": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/candidates/genome_8a9ce6d23c3acf3e2fce.npz",
+      "snapshot_sha256": "67497e5fa07f8de4e2d927d10c73899ab9188176eeb4b549f19991d7eba91c43",
+      "reference96": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/references/genome_93e6148d32bbb0862163-embedded96-life0.npz",
+      "reference96_sha256": "8af7aee6540397637c00cefdf11bf57695976928c8b4090c539e0f874174e972",
+      "body_rule": {
+        "schema": "lenia.fixed-dual-response.v1",
+        "configs": [
+          {
+            "size": 96,
+            "radius": 11,
+            "mu": 0.15004668816928948,
+            "sigma": 0.02023146395031721,
+            "dt": 0.05,
+            "dtype": "float64"
+          },
+          {
+            "size": 96,
+            "radius": 19.8,
+            "mu": 0.04403883898381473,
+            "sigma": 0.006502145198889834,
+            "dt": 0.05,
+            "dtype": "float64"
+          }
+        ],
+        "weight_second": 0.4859260138302633,
+        "kernel_definition": "Frozen inherited arrays with radial reweighting and convex cross-kernel mixing; arrays are authoritative, radius remains inherited metadata.",
+        "growth_definition": "G_i(u)=2*max(0,1-(u-mu_i)^2/(9*sigma_i^2))^4-1",
+        "update": "BudgetedMorphogenesis admission and paid tissue production; no free clipping growth",
+        "time_rule": "fixed dt=.05, original polynomial responses; paid birth/death executor"
+      },
+      "body_rule_sha256": "909ca8747427a5cf5f6afdd0a7af2924ee2e248b5d4899afd8e22791f56d78a0",
+      "fields": {
+        "body": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "1e2b8b290db64c4063f065d9ff6667935a232fda2caf115b070fd032147b345c"
+        },
+        "energy": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "ed7e540a63091930de531b0bdd3e79b758877c7ea061e56a5e86a22ee615f635"
+        },
+        "precursor": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "4a01c370130680954159350c86b836bd964ad2285725b38482308a4e82173be0"
+        },
+        "fuel": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "4a01c370130680954159350c86b836bd964ad2285725b38482308a4e82173be0"
+        },
+        "waste": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "heat": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "dead_energy": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "founder_mass": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "1e2b8b290db64c4063f065d9ff6667935a232fda2caf115b070fd032147b345c"
+        },
+        "memory": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "eligibility": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "polarity": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "49a46d05d457cf307b679173bfc0bcaaa2102a614396c9cd62b8cd7ddd7518ea"
+        },
+        "c_theta": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "c_value": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "c_trace": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "c_food": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "c_run": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "c_remaining": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "kernels": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8cc1f2b871f96fff7820e369f0c94e0ab69278c1c762906e9dc2224b2363a7fb"
+        }
+      },
+      "lineage": {
+        "source_id": "reference_anisotropic--connected_trilobe",
+        "source_sha256": "c73aa228328b141bf094093030fcd8c82fa49f7b022d5e3f4bffe171b29d300a",
+        "parent_id": "genome_93e6148d32bbb0862163",
+        "parents": [
+          "genome_93e6148d32bbb0862163"
+        ],
+        "generation": 1,
+        "mutation_seed": 202610180501,
+        "genome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/genomes/genome_8a9ce6d23c3acf3e2fce.json",
+        "genome_sha256": "84c4653867de1a72cebda7ad33fb17094e7e7286403add0266ac76a6860fc3b3",
+        "proposal_sha256": "5ff202ac824adaf06aa481f1e4ae106cbe76057265247e0bc227b2f4e8e57827",
+        "scope": "outer hereditary mutation; fixed individual rule; no acquired state inheritance"
+      },
+      "initial_M": 71.24861043657577,
+      "initial_E": 56.99888834926062,
+      "static_shape": {
+        "alive": true,
+        "components": 1,
+        "holes": 0,
+        "elongation": 1.006820665966275,
+        "radius": 6.092290314740224,
+        "mass": 71.24861043657577,
+        "maximum": 0.5591288711476374
+      },
+      "static_shape_is_not_formed_diversity": true,
+      "loader": "environment_evolution.experience_adaptation_host.open_life0",
+      "shape": [
+        96,
+        96
+      ],
+      "state_time": 0
+    },
+    {
+      "source_index": 1,
+      "source_candidate": "reference_anisotropic--bridged_longbody",
+      "family": "reference_anisotropic",
+      "geometry": "bridged_longbody",
+      "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/reference_anisotropic--bridged_longbody.npz",
+      "source_sha256": "b5f72ba5a169cf646907a88541e8aae7449fc519fae939b9164d3ee9576c278e",
+      "parent_id": "genome_7c66315c6cfca2ea70fe",
+      "generation": 1,
+      "mutation_seed": 202610180502,
+      "proposal": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/proposals/01.json",
+      "proposal_sha256": "a985ff3b5442a08c62330d2054006b566702e67eec38983a2890425e7e0717fb",
+      "assigned_attempt_cap": 128,
+      "evaluation_status": "unexecuted",
+      "adaptation_status": "not_applicable",
+      "resampled": false,
+      "id": "genome_263c8a617a8734da20b4",
+      "candidate_id": "genome_263c8a617a8734da20b4",
+      "genome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/genomes/genome_263c8a617a8734da20b4.json",
+      "genome_sha256": "792a94cb523a213563d47fde6dbaf78cd974030569d406d0068eb0d5d27675f3",
+      "proposal_status": "valid_unexecuted",
+      "native_attempt_cap": 128,
+      "unused_steps": 0,
+      "snapshot": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/candidates/genome_263c8a617a8734da20b4.npz",
+      "snapshot_sha256": "a643da5ee367986c87ac92c033511582f170af91b2a07344759622b8b394e7cc",
+      "reference96": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/references/genome_7c66315c6cfca2ea70fe-embedded96-life0.npz",
+      "reference96_sha256": "6a6dc895df92deb604a595881a5c30973ef43d803b0d9b0e85a02b6c3c442a31",
+      "body_rule": {
+        "schema": "lenia.fixed-dual-response.v1",
+        "configs": [
+          {
+            "size": 96,
+            "radius": 11,
+            "mu": 0.1557886795419153,
+            "sigma": 0.02100587346592623,
+            "dt": 0.05,
+            "dtype": "float64"
+          },
+          {
+            "size": 96,
+            "radius": 19.8,
+            "mu": 0.04361132518328956,
+            "sigma": 0.0065301687390488024,
+            "dt": 0.05,
+            "dtype": "float64"
+          }
+        ],
+        "weight_second": 0.5672421534727844,
+        "kernel_definition": "Frozen inherited arrays with radial reweighting and convex cross-kernel mixing; arrays are authoritative, radius remains inherited metadata.",
+        "growth_definition": "G_i(u)=2*max(0,1-(u-mu_i)^2/(9*sigma_i^2))^4-1",
+        "update": "BudgetedMorphogenesis admission and paid tissue production; no free clipping growth",
+        "time_rule": "fixed dt=.05, original polynomial responses; paid birth/death executor"
+      },
+      "body_rule_sha256": "f6b55920bf4130c17adfb23c19852c267ed0b733638a3c2c366b7b5aced04846",
+      "fields": {
+        "body": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "84ee14122592836aa76729c60c74b9088adf8801bb2c1d80a7082613e4781218"
+        },
+        "energy": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "2d0414289923c3481d124254ac4934850074a98115987f179d27cf95bf8c7367"
+        },
+        "precursor": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "4a01c370130680954159350c86b836bd964ad2285725b38482308a4e82173be0"
+        },
+        "fuel": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "4a01c370130680954159350c86b836bd964ad2285725b38482308a4e82173be0"
+        },
+        "waste": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "heat": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "dead_energy": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "founder_mass": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "84ee14122592836aa76729c60c74b9088adf8801bb2c1d80a7082613e4781218"
+        },
+        "memory": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "eligibility": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "polarity": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "fdd490412a067ca7b2cf6d9c12cb42874aba659c77104d41c9cff1d65fb9fbf1"
+        },
+        "c_theta": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "c_value": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "c_trace": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "c_food": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "c_run": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "c_remaining": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "kernels": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "5154e78d3b8fdddcf492d139f709273c8e55b1f0eaf8fb68334c72cc1d760c84"
+        }
+      },
+      "lineage": {
+        "source_id": "reference_anisotropic--bridged_longbody",
+        "source_sha256": "b5f72ba5a169cf646907a88541e8aae7449fc519fae939b9164d3ee9576c278e",
+        "parent_id": "genome_7c66315c6cfca2ea70fe",
+        "parents": [
+          "genome_7c66315c6cfca2ea70fe"
+        ],
+        "generation": 1,
+        "mutation_seed": 202610180502,
+        "genome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/genomes/genome_263c8a617a8734da20b4.json",
+        "genome_sha256": "792a94cb523a213563d47fde6dbaf78cd974030569d406d0068eb0d5d27675f3",
+        "proposal_sha256": "a985ff3b5442a08c62330d2054006b566702e67eec38983a2890425e7e0717fb",
+        "scope": "outer hereditary mutation; fixed individual rule; no acquired state inheritance"
+      },
+      "initial_M": 71.24861043657577,
+      "initial_E": 56.99888834926064,
+      "static_shape": {
+        "alive": true,
+        "components": 1,
+        "holes": 0,
+        "elongation": 4.127928953440061,
+        "radius": 8.690894872138289,
+        "mass": 71.24861043657577,
+        "maximum": 0.766826503066372
+      },
+      "static_shape_is_not_formed_diversity": true,
+      "loader": "environment_evolution.experience_adaptation_host.open_life0",
+      "shape": [
+        96,
+        96
+      ],
+      "state_time": 0
+    },
+    {
+      "source_index": 2,
+      "source_candidate": "core_ring--connected_trilobe",
+      "family": "core_ring",
+      "geometry": "connected_trilobe",
+      "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/core_ring--connected_trilobe.npz",
+      "source_sha256": "a878d57858176d7701fc00bc8b7e6e2fa6139a6c2e73047b5f69b7c9c0ea99cd",
+      "parent_id": "genome_68dc2655fca077092477",
+      "generation": 1,
+      "mutation_seed": 202610180503,
+      "proposal": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/proposals/02.json",
+      "proposal_sha256": "2cba8573cf23fcdbd461d1debec01c3a4c0bc318a386c0e9c8fbea7ab00a3b71",
+      "assigned_attempt_cap": 128,
+      "evaluation_status": "unexecuted",
+      "adaptation_status": "not_applicable",
+      "resampled": false,
+      "id": "genome_009dfb62455ffa95b7af",
+      "candidate_id": "genome_009dfb62455ffa95b7af",
+      "genome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/genomes/genome_009dfb62455ffa95b7af.json",
+      "genome_sha256": "a642398f6a6b9d8485e74819532665b72fbecb4af54fea80ac74de85f6d55843",
+      "proposal_status": "valid_unexecuted",
+      "native_attempt_cap": 128,
+      "unused_steps": 0,
+      "snapshot": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/candidates/genome_009dfb62455ffa95b7af.npz",
+      "snapshot_sha256": "a9c1023fac8c1b36fb9ba3eac44361f58cdf5c4c5ce237971696b1441e5c86ef",
+      "reference96": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/references/genome_68dc2655fca077092477-embedded96-life0.npz",
+      "reference96_sha256": "26626be0063c126c9f967bada640c0ac0306e307e2d5cb24050fd59bdb469593",
+      "body_rule": {
+        "schema": "lenia.fixed-dual-response.v1",
+        "configs": [
+          {
+            "size": 96,
+            "radius": 6,
+            "mu": 0.307949424321771,
+            "sigma": 0.08394811775434009,
+            "dt": 0.05,
+            "dtype": "float64"
+          },
+          {
+            "size": 96,
+            "radius": 10,
+            "mu": 0.1506318780362116,
+            "sigma": 0.0381338027242743,
+            "dt": 0.05,
+            "dtype": "float64"
+          }
+        ],
+        "weight_second": 0.3016876664709743,
+        "kernel_definition": "Frozen inherited arrays with radial reweighting and convex cross-kernel mixing; arrays are authoritative, radius remains inherited metadata.",
+        "growth_definition": "G_i(u)=2*max(0,1-(u-mu_i)^2/(9*sigma_i^2))^4-1",
+        "update": "BudgetedMorphogenesis admission and paid tissue production; no free clipping growth",
+        "time_rule": "fixed dt=.05, original polynomial responses; paid birth/death executor"
+      },
+      "body_rule_sha256": "49de3def8aab5bf9d406eccf346b50f1b09631ee82d233eb6e0231960563b716",
+      "fields": {
+        "body": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "e7f897db207fa0f64ecd00be53a08cc5dd7f65f0c79cc12d36beba09799cf1c9"
+        },
+        "energy": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "0e628d2e20f4538c04a3a90a6698d876ae09a71ea6ac6e317d737cdc72271ab3"
+        },
+        "precursor": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "4a01c370130680954159350c86b836bd964ad2285725b38482308a4e82173be0"
+        },
+        "fuel": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "4a01c370130680954159350c86b836bd964ad2285725b38482308a4e82173be0"
+        },
+        "waste": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "heat": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "dead_energy": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "founder_mass": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "e7f897db207fa0f64ecd00be53a08cc5dd7f65f0c79cc12d36beba09799cf1c9"
+        },
+        "memory": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "eligibility": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "polarity": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "0efd581fcb4416720f8505f89606f3f8e281f93c8bfd24ffa50f99b9562df441"
+        },
+        "c_theta": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "c_value": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "c_trace": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "c_food": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "c_run": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "c_remaining": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "kernels": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "78d48c16bc810008ab45746d86596eb27d8f8601e1b4bc28ad2ba62a7e79b284"
+        }
+      },
+      "lineage": {
+        "source_id": "core_ring--connected_trilobe",
+        "source_sha256": "a878d57858176d7701fc00bc8b7e6e2fa6139a6c2e73047b5f69b7c9c0ea99cd",
+        "parent_id": "genome_68dc2655fca077092477",
+        "parents": [
+          "genome_68dc2655fca077092477"
+        ],
+        "generation": 1,
+        "mutation_seed": 202610180503,
+        "genome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/genomes/genome_009dfb62455ffa95b7af.json",
+        "genome_sha256": "a642398f6a6b9d8485e74819532665b72fbecb4af54fea80ac74de85f6d55843",
+        "proposal_sha256": "2cba8573cf23fcdbd461d1debec01c3a4c0bc318a386c0e9c8fbea7ab00a3b71",
+        "scope": "outer hereditary mutation; fixed individual rule; no acquired state inheritance"
+      },
+      "initial_M": 71.24861043657577,
+      "initial_E": 56.998888349260625,
+      "static_shape": {
+        "alive": true,
+        "components": 1,
+        "holes": 0,
+        "elongation": 1.009846531401456,
+        "radius": 5.863493412009791,
+        "mass": 71.24861043657577,
+        "maximum": 0.6123991143626965
+      },
+      "static_shape_is_not_formed_diversity": true,
+      "loader": "environment_evolution.experience_adaptation_host.open_life0",
+      "shape": [
+        96,
+        96
+      ],
+      "state_time": 0
+    },
+    {
+      "source_index": 3,
+      "source_candidate": "core_ring--bridged_longbody",
+      "family": "core_ring",
+      "geometry": "bridged_longbody",
+      "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/core_ring--bridged_longbody.npz",
+      "source_sha256": "2d2674a2dcedfc93c000bb21956b749258883348c9aaff52fc0c1c2e1279ab35",
+      "parent_id": "genome_b8b7238fbe8f002cc488",
+      "generation": 1,
+      "mutation_seed": 202610180504,
+      "proposal": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/proposals/03.json",
+      "proposal_sha256": "c3179224d786851b46b55a03a02426c1ee86e214d998b23aad9bd83b308b2ae2",
+      "assigned_attempt_cap": 128,
+      "evaluation_status": "unexecuted",
+      "adaptation_status": "not_applicable",
+      "resampled": false,
+      "id": "genome_31f3a3913b57bc13b2c0",
+      "candidate_id": "genome_31f3a3913b57bc13b2c0",
+      "genome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/genomes/genome_31f3a3913b57bc13b2c0.json",
+      "genome_sha256": "b68f497d4405c9268dfbd431537f09b3958f810828f2885d7712acc7d945ce8e",
+      "proposal_status": "valid_unexecuted",
+      "native_attempt_cap": 128,
+      "unused_steps": 0,
+      "snapshot": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/candidates/genome_31f3a3913b57bc13b2c0.npz",
+      "snapshot_sha256": "0c440aa24b0e752f456127b4a328980a844f67ea2573cde695292cc256f7d7cb",
+      "reference96": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/references/genome_b8b7238fbe8f002cc488-embedded96-life0.npz",
+      "reference96_sha256": "9c7fd3bf3d655cf23c5086956c0f8fe041659d1338c60b008a93c9246257f98b",
+      "body_rule": {
+        "schema": "lenia.fixed-dual-response.v1",
+        "configs": [
+          {
+            "size": 96,
+            "radius": 6,
+            "mu": 0.3081346640298574,
+            "sigma": 0.08389949987664608,
+            "dt": 0.05,
+            "dtype": "float64"
+          },
+          {
+            "size": 96,
+            "radius": 10,
+            "mu": 0.15216034946834195,
+            "sigma": 0.05269562117748787,
+            "dt": 0.05,
+            "dtype": "float64"
+          }
+        ],
+        "weight_second": 0.3251315451307534,
+        "kernel_definition": "Frozen inherited arrays with radial reweighting and convex cross-kernel mixing; arrays are authoritative, radius remains inherited metadata.",
+        "growth_definition": "G_i(u)=2*max(0,1-(u-mu_i)^2/(9*sigma_i^2))^4-1",
+        "update": "BudgetedMorphogenesis admission and paid tissue production; no free clipping growth",
+        "time_rule": "fixed dt=.05, original polynomial responses; paid birth/death executor"
+      },
+      "body_rule_sha256": "dd2a491e1ee5693e3438a419cc14eb0abe5458ec55fbc4db32f3e80f7c48828d",
+      "fields": {
+        "body": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "68ffe241e811eb191125ccec9f318614d82576f581e8148023b515c22da9647c"
+        },
+        "energy": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "26b2fc0473ad42e644ed59c09046a5a1fb7d2e8d5b5cfbaa8df6dcd167ed817e"
+        },
+        "precursor": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "4a01c370130680954159350c86b836bd964ad2285725b38482308a4e82173be0"
+        },
+        "fuel": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "4a01c370130680954159350c86b836bd964ad2285725b38482308a4e82173be0"
+        },
+        "waste": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "heat": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "dead_energy": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "founder_mass": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "68ffe241e811eb191125ccec9f318614d82576f581e8148023b515c22da9647c"
+        },
+        "memory": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "eligibility": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "polarity": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "fc6f682a0f1c31e6452870135150e5475b9447f272b9df748489c543e48e91d8"
+        },
+        "c_theta": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "c_value": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "c_trace": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "c_food": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "c_run": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "c_remaining": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "kernels": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "cbf8d466bfe05325e907beddc1d74c1fad7a83da49b690c699ce9fb37ebc349e"
+        }
+      },
+      "lineage": {
+        "source_id": "core_ring--bridged_longbody",
+        "source_sha256": "2d2674a2dcedfc93c000bb21956b749258883348c9aaff52fc0c1c2e1279ab35",
+        "parent_id": "genome_b8b7238fbe8f002cc488",
+        "parents": [
+          "genome_b8b7238fbe8f002cc488"
+        ],
+        "generation": 1,
+        "mutation_seed": 202610180504,
+        "genome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/genomes/genome_31f3a3913b57bc13b2c0.json",
+        "genome_sha256": "b68f497d4405c9268dfbd431537f09b3958f810828f2885d7712acc7d945ce8e",
+        "proposal_sha256": "c3179224d786851b46b55a03a02426c1ee86e214d998b23aad9bd83b308b2ae2",
+        "scope": "outer hereditary mutation; fixed individual rule; no acquired state inheritance"
+      },
+      "initial_M": 71.24861043657576,
+      "initial_E": 56.99888834926061,
+      "static_shape": {
+        "alive": true,
+        "components": 1,
+        "holes": 0,
+        "elongation": 4.504115526608009,
+        "radius": 8.549739854242196,
+        "mass": 71.24861043657576,
+        "maximum": 0.8245680078693226
+      },
+      "static_shape_is_not_formed_diversity": true,
+      "loader": "environment_evolution.experience_adaptation_host.open_life0",
+      "shape": [
+        96,
+        96
+      ],
+      "state_time": 0
+    },
+    {
+      "source_index": 4,
+      "source_candidate": "double_shell_far_ring--connected_trilobe",
+      "family": "double_shell_far_ring",
+      "geometry": "connected_trilobe",
+      "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/double_shell_far_ring--connected_trilobe.npz",
+      "source_sha256": "dce0153ef2359470adf9b323df81a102be690bb2e5ae53afe8121a8456baec5c",
+      "parent_id": "genome_2df26fd01fa2ae48e2a7",
+      "generation": 1,
+      "mutation_seed": 202610180505,
+      "proposal": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/proposals/04.json",
+      "proposal_sha256": "221079a1f2eefcfdcf347b0a2936aeabd0fe23b015dd6d02ca20e57a7cb59ac1",
+      "assigned_attempt_cap": 128,
+      "evaluation_status": "unexecuted",
+      "adaptation_status": "not_applicable",
+      "resampled": false,
+      "id": "genome_fa17a0d7ba9d7e8045f4",
+      "candidate_id": "genome_fa17a0d7ba9d7e8045f4",
+      "genome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/genomes/genome_fa17a0d7ba9d7e8045f4.json",
+      "genome_sha256": "867823c3e6eea0f312104b8eb05b8975820edc54540b04c089ef14d665d0f3d5",
+      "proposal_status": "valid_unexecuted",
+      "native_attempt_cap": 128,
+      "unused_steps": 0,
+      "snapshot": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/candidates/genome_fa17a0d7ba9d7e8045f4.npz",
+      "snapshot_sha256": "25c766017949cb3eee5f18ed2f78b5adcba2b35ad7d4352caa2259b500bd329e",
+      "reference96": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/references/genome_2df26fd01fa2ae48e2a7-embedded96-life0.npz",
+      "reference96_sha256": "07da4c04a2166de40157d8a81d9ade482621b89d5750cb689db88c190bfd4882",
+      "body_rule": {
+        "schema": "lenia.fixed-dual-response.v1",
+        "configs": [
+          {
+            "size": 96,
+            "radius": 10,
+            "mu": 0.17244645803330239,
+            "sigma": 0.033357089192711034,
+            "dt": 0.05,
+            "dtype": "float64"
+          },
+          {
+            "size": 96,
+            "radius": 14,
+            "mu": 0.06967511014824715,
+            "sigma": 0.019556302507361175,
+            "dt": 0.05,
+            "dtype": "float64"
+          }
+        ],
+        "weight_second": 0.2628567308345939,
+        "kernel_definition": "Frozen inherited arrays with radial reweighting and convex cross-kernel mixing; arrays are authoritative, radius remains inherited metadata.",
+        "growth_definition": "G_i(u)=2*max(0,1-(u-mu_i)^2/(9*sigma_i^2))^4-1",
+        "update": "BudgetedMorphogenesis admission and paid tissue production; no free clipping growth",
+        "time_rule": "fixed dt=.05, original polynomial responses; paid birth/death executor"
+      },
+      "body_rule_sha256": "00029b683cf97cfb8b4b71edbd46ed1f53d56fbe2ec43616d7c15dfe60fb7a18",
+      "fields": {
+        "body": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "145cab3e0a31f3e8495ebabb6d0e96fb6e7cc54ed88047a578e0d017fe588e10"
+        },
+        "energy": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "904a4865ab57244a38fa57aaba909a5babd563b8cea419e3742e7e87509337bc"
+        },
+        "precursor": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "4a01c370130680954159350c86b836bd964ad2285725b38482308a4e82173be0"
+        },
+        "fuel": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "4a01c370130680954159350c86b836bd964ad2285725b38482308a4e82173be0"
+        },
+        "waste": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "heat": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "dead_energy": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "founder_mass": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "145cab3e0a31f3e8495ebabb6d0e96fb6e7cc54ed88047a578e0d017fe588e10"
+        },
+        "memory": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "eligibility": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "polarity": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "3c0c69a817dc0a525dfb6701f882ea5dfe74bec5fef40e5f51f034ecfcd4a178"
+        },
+        "c_theta": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "c_value": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "c_trace": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "c_food": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "c_run": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "c_remaining": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "kernels": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "9bc15f18380adc6533f9b362e15237b0a413bf655e4ba1b59415a3a30f396c73"
+        }
+      },
+      "lineage": {
+        "source_id": "double_shell_far_ring--connected_trilobe",
+        "source_sha256": "dce0153ef2359470adf9b323df81a102be690bb2e5ae53afe8121a8456baec5c",
+        "parent_id": "genome_2df26fd01fa2ae48e2a7",
+        "parents": [
+          "genome_2df26fd01fa2ae48e2a7"
+        ],
+        "generation": 1,
+        "mutation_seed": 202610180505,
+        "genome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/genomes/genome_fa17a0d7ba9d7e8045f4.json",
+        "genome_sha256": "867823c3e6eea0f312104b8eb05b8975820edc54540b04c089ef14d665d0f3d5",
+        "proposal_sha256": "221079a1f2eefcfdcf347b0a2936aeabd0fe23b015dd6d02ca20e57a7cb59ac1",
+        "scope": "outer hereditary mutation; fixed individual rule; no acquired state inheritance"
+      },
+      "initial_M": 71.24861043657576,
+      "initial_E": 56.99888834926062,
+      "static_shape": {
+        "alive": true,
+        "components": 1,
+        "holes": 0,
+        "elongation": 1.0080465357074893,
+        "radius": 5.39119404843594,
+        "mass": 71.24861043657576,
+        "maximum": 0.7388700572872895
+      },
+      "static_shape_is_not_formed_diversity": true,
+      "loader": "environment_evolution.experience_adaptation_host.open_life0",
+      "shape": [
+        96,
+        96
+      ],
+      "state_time": 0
+    },
+    {
+      "source_index": 5,
+      "source_candidate": "double_shell_far_ring--bridged_longbody",
+      "family": "double_shell_far_ring",
+      "geometry": "bridged_longbody",
+      "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/double_shell_far_ring--bridged_longbody.npz",
+      "source_sha256": "55543f1b6810aad3806cf862ceb822faafac506690e2979db116df47afb8bdb1",
+      "parent_id": "genome_6dd0970ae1c018b8d2de",
+      "generation": 1,
+      "mutation_seed": 202610180506,
+      "proposal": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/proposals/05.json",
+      "proposal_sha256": "a941e01faf504919ec72e7fe47052484d1c85b1f5574279e42a3f504f2efa34c",
+      "assigned_attempt_cap": 128,
+      "evaluation_status": "unexecuted",
+      "adaptation_status": "not_applicable",
+      "resampled": false,
+      "id": "genome_0ac80448a534dc953505",
+      "candidate_id": "genome_0ac80448a534dc953505",
+      "genome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/genomes/genome_0ac80448a534dc953505.json",
+      "genome_sha256": "39d52d7be0c7d88568f7b05be033f3fa87fe2b0c840d161c3ae2a43462f8ec95",
+      "proposal_status": "valid_unexecuted",
+      "native_attempt_cap": 128,
+      "unused_steps": 0,
+      "snapshot": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/candidates/genome_0ac80448a534dc953505.npz",
+      "snapshot_sha256": "b0bf15994957e305a0bca99337d7447dfd6c0ad366a490f04c4985314f8aee05",
+      "reference96": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/references/genome_6dd0970ae1c018b8d2de-embedded96-life0.npz",
+      "reference96_sha256": "f41e997c6b44feb5e8e89186d73ff30424c427d59eb3032eee43ec3f951e61ce",
+      "body_rule": {
+        "schema": "lenia.fixed-dual-response.v1",
+        "configs": [
+          {
+            "size": 96,
+            "radius": 10,
+            "mu": 0.1545124555025581,
+            "sigma": 0.03785100878964918,
+            "dt": 0.05,
+            "dtype": "float64"
+          },
+          {
+            "size": 96,
+            "radius": 14,
+            "mu": 0.07774464271064895,
+            "sigma": 0.020139812553827657,
+            "dt": 0.05,
+            "dtype": "float64"
+          }
+        ],
+        "weight_second": 0.34553126319160665,
+        "kernel_definition": "Frozen inherited arrays with radial reweighting and convex cross-kernel mixing; arrays are authoritative, radius remains inherited metadata.",
+        "growth_definition": "G_i(u)=2*max(0,1-(u-mu_i)^2/(9*sigma_i^2))^4-1",
+        "update": "BudgetedMorphogenesis admission and paid tissue production; no free clipping growth",
+        "time_rule": "fixed dt=.05, original polynomial responses; paid birth/death executor"
+      },
+      "body_rule_sha256": "d202b8cf4b8bae275ff0ea970bae9b6ba7a688abc07926bbe5ba0b4de20b6938",
+      "fields": {
+        "body": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "9340ea898e125d5947f1dbd0eb9c0b6354dcca1b069c83e61c496f0af5d5a9da"
+        },
+        "energy": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "65709f97016fce91697f124eb0dc1cfce67ef4b72c158164401e74894201fd3c"
+        },
+        "precursor": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "4a01c370130680954159350c86b836bd964ad2285725b38482308a4e82173be0"
+        },
+        "fuel": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "4a01c370130680954159350c86b836bd964ad2285725b38482308a4e82173be0"
+        },
+        "waste": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "heat": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "dead_energy": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "founder_mass": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "9340ea898e125d5947f1dbd0eb9c0b6354dcca1b069c83e61c496f0af5d5a9da"
+        },
+        "memory": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "eligibility": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "polarity": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "fc6f682a0f1c31e6452870135150e5475b9447f272b9df748489c543e48e91d8"
+        },
+        "c_theta": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "c_value": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "c_trace": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "c_food": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "c_run": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "c_remaining": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "kernels": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "4fcdb7cc7d144ffa800ff505af6fec15b73932caa0119480360ba78f73572728"
+        }
+      },
+      "lineage": {
+        "source_id": "double_shell_far_ring--bridged_longbody",
+        "source_sha256": "55543f1b6810aad3806cf862ceb822faafac506690e2979db116df47afb8bdb1",
+        "parent_id": "genome_6dd0970ae1c018b8d2de",
+        "parents": [
+          "genome_6dd0970ae1c018b8d2de"
+        ],
+        "generation": 1,
+        "mutation_seed": 202610180506,
+        "genome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/genomes/genome_0ac80448a534dc953505.json",
+        "genome_sha256": "39d52d7be0c7d88568f7b05be033f3fa87fe2b0c840d161c3ae2a43462f8ec95",
+        "proposal_sha256": "a941e01faf504919ec72e7fe47052484d1c85b1f5574279e42a3f504f2efa34c",
+        "scope": "outer hereditary mutation; fixed individual rule; no acquired state inheritance"
+      },
+      "initial_M": 71.24861043657577,
+      "initial_E": 56.998888349260625,
+      "static_shape": {
+        "alive": true,
+        "components": 1,
+        "holes": 0,
+        "elongation": 3.8595991957991984,
+        "radius": 8.202474613373422,
+        "mass": 71.24861043657577,
+        "maximum": 0.8158853950302211
+      },
+      "static_shape_is_not_formed_diversity": true,
+      "loader": "environment_evolution.experience_adaptation_host.open_life0",
+      "shape": [
+        96,
+        96
+      ],
+      "state_time": 0
+    },
+    {
+      "source_index": 6,
+      "source_candidate": "compact_ring_core_outer--connected_trilobe",
+      "family": "compact_ring_core_outer",
+      "geometry": "connected_trilobe",
+      "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/compact_ring_core_outer--connected_trilobe.npz",
+      "source_sha256": "f580f0e32d439787b9e05dca7d9466368a7c5e4551ac4a77e74e16627653d23a",
+      "parent_id": "genome_f3d8a14ea45758fc6aa1",
+      "generation": 1,
+      "mutation_seed": 202610180507,
+      "proposal": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/proposals/06.json",
+      "proposal_sha256": "6de93ad2118d632b0236c6c43f297ee008bc19fdef0d47c7eb7fbafcf80d3173",
+      "assigned_attempt_cap": 128,
+      "evaluation_status": "unexecuted",
+      "adaptation_status": "not_applicable",
+      "resampled": false,
+      "id": "genome_6bd5bfd2f629f9414376",
+      "candidate_id": "genome_6bd5bfd2f629f9414376",
+      "genome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/genomes/genome_6bd5bfd2f629f9414376.json",
+      "genome_sha256": "6dc3d25b8814e6f3609216adf5f791f77fd13b10e51e5a33c2e01df2e204d721",
+      "proposal_status": "valid_unexecuted",
+      "native_attempt_cap": 128,
+      "unused_steps": 0,
+      "snapshot": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/candidates/genome_6bd5bfd2f629f9414376.npz",
+      "snapshot_sha256": "079d54186b3ebec24985575bf55489035c4b739d1cbe5afa5a1b31c8b14fe261",
+      "reference96": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/references/genome_f3d8a14ea45758fc6aa1-embedded96-life0.npz",
+      "reference96_sha256": "9bd72271fffa767c414f423c1055b63812f512e1800db1fcd5ba3c8e46c66f26",
+      "body_rule": {
+        "schema": "lenia.fixed-dual-response.v1",
+        "configs": [
+          {
+            "size": 96,
+            "radius": 7,
+            "mu": 0.24312978038465136,
+            "sigma": 0.06560133433486416,
+            "dt": 0.05,
+            "dtype": "float64"
+          },
+          {
+            "size": 96,
+            "radius": 11,
+            "mu": 0.11252659168607741,
+            "sigma": 0.03709016707542604,
+            "dt": 0.05,
+            "dtype": "float64"
+          }
+        ],
+        "weight_second": 0.4773956423885047,
+        "kernel_definition": "Frozen inherited arrays with radial reweighting and convex cross-kernel mixing; arrays are authoritative, radius remains inherited metadata.",
+        "growth_definition": "G_i(u)=2*max(0,1-(u-mu_i)^2/(9*sigma_i^2))^4-1",
+        "update": "BudgetedMorphogenesis admission and paid tissue production; no free clipping growth",
+        "time_rule": "fixed dt=.05, original polynomial responses; paid birth/death executor"
+      },
+      "body_rule_sha256": "f2ca03dde04021b042255641cc299d8c6a8807712a530b0204d4805c3136d90a",
+      "fields": {
+        "body": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8aea977c9f8121e6413fbc058bb38f21dcb93da506028a1154f0a5b725e14e7a"
+        },
+        "energy": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "55c8da8ac109f19dfb951fc7319c8534631a6d57d620bf69bbbb35ced5bee5f0"
+        },
+        "precursor": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "4a01c370130680954159350c86b836bd964ad2285725b38482308a4e82173be0"
+        },
+        "fuel": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "4a01c370130680954159350c86b836bd964ad2285725b38482308a4e82173be0"
+        },
+        "waste": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "heat": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "dead_energy": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "founder_mass": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8aea977c9f8121e6413fbc058bb38f21dcb93da506028a1154f0a5b725e14e7a"
+        },
+        "memory": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "eligibility": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "polarity": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "179c33cd174dd97138e2d7c079d7a41e318382a4d32ea54ef9bb3ca7934b5ffa"
+        },
+        "c_theta": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "c_value": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "c_trace": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "c_food": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "c_run": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "c_remaining": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "kernels": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "c288f84a8b3629ba8b35e456981c2299547f517f586897b964af555361f96231"
+        }
+      },
+      "lineage": {
+        "source_id": "compact_ring_core_outer--connected_trilobe",
+        "source_sha256": "f580f0e32d439787b9e05dca7d9466368a7c5e4551ac4a77e74e16627653d23a",
+        "parent_id": "genome_f3d8a14ea45758fc6aa1",
+        "parents": [
+          "genome_f3d8a14ea45758fc6aa1"
+        ],
+        "generation": 1,
+        "mutation_seed": 202610180507,
+        "genome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/genomes/genome_6bd5bfd2f629f9414376.json",
+        "genome_sha256": "6dc3d25b8814e6f3609216adf5f791f77fd13b10e51e5a33c2e01df2e204d721",
+        "proposal_sha256": "6de93ad2118d632b0236c6c43f297ee008bc19fdef0d47c7eb7fbafcf80d3173",
+        "scope": "outer hereditary mutation; fixed individual rule; no acquired state inheritance"
+      },
+      "initial_M": 71.24861043657577,
+      "initial_E": 56.998888349260625,
+      "static_shape": {
+        "alive": true,
+        "components": 1,
+        "holes": 0,
+        "elongation": 1.249701504648402,
+        "radius": 5.621742969685926,
+        "mass": 71.24861043657577,
+        "maximum": 0.6467426780730975
+      },
+      "static_shape_is_not_formed_diversity": true,
+      "loader": "environment_evolution.experience_adaptation_host.open_life0",
+      "shape": [
+        96,
+        96
+      ],
+      "state_time": 0
+    },
+    {
+      "source_index": 7,
+      "source_candidate": "compact_ring_core_outer--bridged_longbody",
+      "family": "compact_ring_core_outer",
+      "geometry": "bridged_longbody",
+      "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/compact_ring_core_outer--bridged_longbody.npz",
+      "source_sha256": "eb468b8e2c146e7383b379c0c51fac7cf84edcac524e43726276e8880ce854c8",
+      "parent_id": "genome_d02e7f60565f83066e5d",
+      "generation": 1,
+      "mutation_seed": 202610180508,
+      "proposal": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/proposals/07.json",
+      "proposal_sha256": "d434ae58343c54d588b47777739c5e41639ae05f3f85cbcfcf57ae1273ee2310",
+      "assigned_attempt_cap": 128,
+      "evaluation_status": "unexecuted",
+      "adaptation_status": "not_applicable",
+      "resampled": false,
+      "id": "genome_85dffefe3eb5bacdfbf5",
+      "candidate_id": "genome_85dffefe3eb5bacdfbf5",
+      "genome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/genomes/genome_85dffefe3eb5bacdfbf5.json",
+      "genome_sha256": "f2bfb1c756b99f978681748a84921ab95b3a1f044df6c93bdc78fe92a85b6f62",
+      "proposal_status": "valid_unexecuted",
+      "native_attempt_cap": 128,
+      "unused_steps": 0,
+      "snapshot": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/candidates/genome_85dffefe3eb5bacdfbf5.npz",
+      "snapshot_sha256": "785cac8d298f43b912d54657de86ff39747e3a7856fa195dba7f8a3298cf874c",
+      "reference96": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/references/genome_d02e7f60565f83066e5d-embedded96-life0.npz",
+      "reference96_sha256": "cd1918132c7d77eced419677f43fc90e086c6757246bd0969470696ada054966",
+      "body_rule": {
+        "schema": "lenia.fixed-dual-response.v1",
+        "configs": [
+          {
+            "size": 96,
+            "radius": 7,
+            "mu": 0.2539189354318546,
+            "sigma": 0.05515806153461037,
+            "dt": 0.05,
+            "dtype": "float64"
+          },
+          {
+            "size": 96,
+            "radius": 11,
+            "mu": 0.1157063689388534,
+            "sigma": 0.031889292116080985,
+            "dt": 0.05,
+            "dtype": "float64"
+          }
+        ],
+        "weight_second": 0.525212329930228,
+        "kernel_definition": "Frozen inherited arrays with radial reweighting and convex cross-kernel mixing; arrays are authoritative, radius remains inherited metadata.",
+        "growth_definition": "G_i(u)=2*max(0,1-(u-mu_i)^2/(9*sigma_i^2))^4-1",
+        "update": "BudgetedMorphogenesis admission and paid tissue production; no free clipping growth",
+        "time_rule": "fixed dt=.05, original polynomial responses; paid birth/death executor"
+      },
+      "body_rule_sha256": "6db559edccb678a1e277932a58cb265272c4744d5c1638088a0871ba44bf1c66",
+      "fields": {
+        "body": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "dd8d2504eb3f21da559bb3cd068ed878463f1c75258d9821db28bc3f5c93aee0"
+        },
+        "energy": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "20b5342c41e5e48b2e723d878d4446aecf8ab96f9a75ac24f2f160ee7e48fbf6"
+        },
+        "precursor": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "4a01c370130680954159350c86b836bd964ad2285725b38482308a4e82173be0"
+        },
+        "fuel": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "4a01c370130680954159350c86b836bd964ad2285725b38482308a4e82173be0"
+        },
+        "waste": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "heat": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "dead_energy": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "founder_mass": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "dd8d2504eb3f21da559bb3cd068ed878463f1c75258d9821db28bc3f5c93aee0"
+        },
+        "memory": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "eligibility": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "polarity": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "fc6f682a0f1c31e6452870135150e5475b9447f272b9df748489c543e48e91d8"
+        },
+        "c_theta": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "c_value": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "c_trace": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+        },
+        "c_food": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "c_run": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "c_remaining": {
+          "shape": [
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+        },
+        "kernels": {
+          "shape": [
+            2,
+            96,
+            96
+          ],
+          "dtype": "<f8",
+          "payload_sha256": "54e8b53aea87af903c6b62e28065aa3fe5eb0beee21d6a1f55ac35a3ca1f5dba"
+        }
+      },
+      "lineage": {
+        "source_id": "compact_ring_core_outer--bridged_longbody",
+        "source_sha256": "eb468b8e2c146e7383b379c0c51fac7cf84edcac524e43726276e8880ce854c8",
+        "parent_id": "genome_d02e7f60565f83066e5d",
+        "parents": [
+          "genome_d02e7f60565f83066e5d"
+        ],
+        "generation": 1,
+        "mutation_seed": 202610180508,
+        "genome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/genomes/genome_85dffefe3eb5bacdfbf5.json",
+        "genome_sha256": "f2bfb1c756b99f978681748a84921ab95b3a1f044df6c93bdc78fe92a85b6f62",
+        "proposal_sha256": "d434ae58343c54d588b47777739c5e41639ae05f3f85cbcfcf57ae1273ee2310",
+        "scope": "outer hereditary mutation; fixed individual rule; no acquired state inheritance"
+      },
+      "initial_M": 71.24861043657577,
+      "initial_E": 56.99888834926063,
+      "static_shape": {
+        "alive": true,
+        "components": 1,
+        "holes": 0,
+        "elongation": 4.536960710767737,
+        "radius": 8.608436541823355,
+        "mass": 71.24861043657577,
+        "maximum": 0.8283190889429661
+      },
+      "static_shape_is_not_formed_diversity": true,
+      "loader": "environment_evolution.experience_adaptation_host.open_life0",
+      "shape": [
+        96,
+        96
+      ],
+      "state_time": 0
+    }
+  ],
+  "proposal_count": 8,
+  "valid_count": 8,
+  "invalid_count": 0,
+  "native_owner": "resident_ce2a5ab005bc",
+  "body_steps": 0,
+  "energy_steps": 0,
+  "prepares": 0,
+  "potential_evaluations": 0,
+  "preview_steps": 0,
+  "permit_consumptions": 0,
+  "runner_jobs": 0
+}

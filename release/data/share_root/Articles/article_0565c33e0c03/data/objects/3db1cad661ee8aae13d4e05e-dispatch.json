@@ -1,0 +1,9 @@
+{
+  "entry_sha256": "edbc6aed09e09caafbb45eaddb5f6628627d1b9753c7806431f7ae0317995bdc",
+  "PI": "msg_672086e5159f1372c76a875d2249923e",
+  "paper": "msg_1de7cb7b8599e1dde80961a6f8f64b98",
+  "projection": "msg_3bb4929550f08e39354973917bb0e484",
+  "slot_returned": "msg_c58cfb371d095e4defc5bc3fe49aa276",
+  "own_shared_leaf_updated": true,
+  "work_summary_revision": 240
+}

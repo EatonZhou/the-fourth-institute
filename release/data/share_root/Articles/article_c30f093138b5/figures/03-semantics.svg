@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600" viewBox="0 0 1200 600">
+<rect width="1200" height="600" fill="white"/>
+<text x="28" y="41.56" text-anchor="start" font-family="Noto Sans CJK SC" font-size="26" font-weight="700" fill="#275D85">语义约束：从目标到可检查的结果</text>
+<polyline points="28,62 1172,62" fill="none" stroke="#91A2AE" stroke-width="1.7"/>
+<text x="30" y="583.0300000000001" text-anchor="start" font-family="Noto Sans CJK SC" font-size="13" font-weight="400" fill="#61717E">设计示意 · 实线：工作或依赖关系；虚线：反馈或关联；不表示实验测量</text>
+<rect x="35" y="105" width="210" height="130" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="140.0" y="131.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">目标</text>
+<text x="140.0" y="191.27" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">取消后可确认任务停止</text>
+<polyline points="245,170 265,170" fill="none" stroke="#275D85" stroke-width="1.7"/>
+<polygon points="265,170 256.6420182798114,173.33828422471686 256.6420182798114,166.66171577528314" fill="#275D85"/>
+<rect x="265" y="105" width="210" height="130" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="370.0" y="131.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">场景</text>
+<text x="370.0" y="191.27" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">运行中取消／重复取消</text>
+<polyline points="475,170 495,170" fill="none" stroke="#275D85" stroke-width="1.7"/>
+<polygon points="495,170 486.6420182798114,173.33828422471686 486.6420182798114,166.66171577528314" fill="#275D85"/>
+<rect x="495" y="105" width="210" height="130" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="600.0" y="131.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">契约</text>
+<text x="600.0" y="191.27" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">请求已收／停止已证实</text>
+<polyline points="705,170 725,170" fill="none" stroke="#275D85" stroke-width="1.7"/>
+<polygon points="725,170 716.6420182798114,173.33828422471686 716.6420182798114,166.66171577528314" fill="#275D85"/>
+<rect x="725" y="105" width="210" height="130" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="830.0" y="131.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">实现</text>
+<text x="830.0" y="191.27" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">前端／调度／执行器</text>
+<polyline points="935,170 955,170" fill="none" stroke="#275D85" stroke-width="1.7"/>
+<polygon points="955,170 946.6420182798114,173.33828422471686 946.6420182798114,166.66171577528314" fill="#275D85"/>
+<rect x="955" y="105" width="210" height="130" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="1060.0" y="131.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">证据</text>
+<text x="1060.0" y="191.27" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">状态、资源、用户体验</text>
+<rect x="35" y="295" width="540" height="235" fill="#FFFFFF" stroke="#91A2AE" stroke-width="1.5"/>
+<text x="305.0" y="418.39000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#91A2AE"></text>
+<text x="43" y="320.7" text-anchor="start" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">遇到冲突时追查假设</text>
+<rect x="55" y="350" width="150" height="75" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="130.0" y="393.39000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#275D85">规范意图</text>
+<rect x="230" y="350" width="150" height="75" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="305.0" y="393.39000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#275D85">当前行为</text>
+<rect x="405" y="350" width="150" height="75" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="480.0" y="393.39000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#275D85">测试断言</text>
+<text x="305.0" y="472.18" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="400" fill="#263442">依据当前认可目标和具体证据判断</text>
+<text x="305.0" y="494.6" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="400" fill="#263442">修改其中过时或错误的部分</text>
+<rect x="610" y="295" width="555" height="235" fill="#FFFFFF" stroke="#91A2AE" stroke-width="1.5"/>
+<text x="887.5" y="418.39000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#91A2AE"></text>
+<text x="618" y="320.7" text-anchor="start" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">每次变化保存足够的联系</text>
+<text x="630" y="395.8" text-anchor="start" font-family="Noto Sans CJK SC" font-size="20" font-weight="400" fill="#263442">对象：改的是哪个行为或契约</text>
+<text x="630" y="419.40000000000003" text-anchor="start" font-family="Noto Sans CJK SC" font-size="20" font-weight="400" fill="#263442">依据：目标、实例与适用条件</text>
+<text x="630" y="443.0" text-anchor="start" font-family="Noto Sans CJK SC" font-size="20" font-weight="400" fill="#263442">状态：拟议／实现／已验证</text>
+<text x="630" y="466.6" text-anchor="start" font-family="Noto Sans CJK SC" font-size="20" font-weight="400" fill="#263442">影响：责任模块及需更新的检查</text>
+</svg>

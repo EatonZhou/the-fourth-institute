@@ -1,0 +1,15 @@
+唯一变化是恢复/运行编排，未修改原宿主、规则、动作价格、材料意图或32+32协议。
+
+completion.py的rollout函数在冻结前与原experiment.py逐字比较相同。新入口直接读取PI冻结的四件完整clock192父包，五次恢复同物理/库存/有限输入cursor/records/unread/消费钟/学习状态/RNG。无前向预览、无重新取得、无新种子或几何选择。原source SHA全绑定到新plan。
+
+仍使用RecentRecords固定discount=.5：每个64步完成单元消费一次自身累计direct和新未读已付message，分别累计(contact−motor−basal)与exposure；实际K后乘旧keep搬运、死亡删除，新生无祖先记录。只有真实旧存活接收者和合法非空完成量可更新；没有全体死亡/E标签广播，没有额外未付学习mask。这个分摊率是收到的描述性记录，不是全组织或原登记全部材料的因果回报。
+
+recent使用direct+message并更新；ignore仍承担真实通信但忽略message读出和后续消息内容更新；frozen保持取得内容停止更新，运输/死亡/通信照常。所有臂恢复同取得状态，ignore的“同态”不等于决定时采用同一信息。
+
+代码0/1/2/3分别none/current local gradient/Euler shear/material shear。每单元按当前体登记动作，前三种按旧登记比例读出，material向量按实际K/keep随体迁移。混合/出生稀释保留，不归一化恢复幅度。32步后请求置零但真实被动运输继续。强Euler按每步全当前体固定剪切（包括新材料），故不是单纯存储对照。none没有主动请求但仍有原生被动运输和费用。
+
+每臂128步至clock320，elapsed192小于原256有限输入。全步保存原始M/E/摄取/热/损失/生成/实际各价目及通信生成/送达/后丢标量。单元决策前完整public/writer/codes，完成后原反馈与writer，以及offset1/32/64真实请求/maps/receipt保存。每臂起点和两个单元末保存全物理/记录/learner/RNG。未保存的中间K不重建。
+
+只读分析不导入/运行控制器进行新的选择，不执行宿主步；实际动作差来自保存请求。compare读取所有真实帧/账即可，不把独立执行顺序中的permit全局计数当物理差异。原0ac仅引用既有CSV及其SHA，不复算身体。
+
+预算与控制：新640步/480worker秒、CPU2/GPU0、原始新数据上限1GiB；脚本220秒wall gate，为单job停止保护而非定时任务。统一runner唯一key d3-local-terminal-feedback-6bd-completion-20261018-v1；提交前及脚本物理首步前读running/started。640全部提交，87.957026 runner worker秒；不用旧余额、不自动续跑。任务完成不等于科学优越性目标成立。

@@ -1,0 +1,85 @@
+{
+  "task": "turnover_compatible_morphogenesis_20261019",
+  "owner": "resident_d3ccfa2d95b7",
+  "status": "authorized_for_actual_outer_search",
+  "objective_met": false,
+  "question": "在有限互补资源与既定分货成本下，生成规则能否演化出更兼容实际补体的组织更新和不同形态？相对遗传父规则的收益是否依赖持续运输？",
+  "scientific_choice": "停止对两条成熟身体继续加大需求/修改泵价/微调删除率。本轮改变生命期固定的双核生成规则，实际完成小群体两代遗传搜索；不将外层遗传或简单选择称为个体学习/算法创新。",
+  "controls": {
+    "desired_state": "running",
+    "started": true,
+    "recheck_before_native": true,
+    "no_timers": true,
+    "no_start_reset": true
+  },
+  "previous_completion": {
+    "status": "completed_conditional_destination_effect_no_joint_net_gain",
+    "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/maintenance_aware_cargo_20261019/handoff.json",
+    "sha256": "55ad59c578bdf26260fac695c284d997c63a17ccb1c72e517d4ad107e3031be1",
+    "job": "c62b044b-ee58-42e0-aee3-999b3a7e3055",
+    "actual": [
+      1536,
+      129.57481
+    ],
+    "unused_sealed": [
+      32,
+      470.42519
+    ],
+    "finding": "分离target比uniform两规则M/E/体时/新组织均正；比birth-only只有f1净益，f2旧体损失抵消新增。8新轨16晚窗全部出生不足/E降。",
+    "native_failures": 0,
+    "setup_failures": "两次pre-job启动故障未形成job/占槽，隔离控制绑定修正后科学唯一提交。"
+  },
+  "stage_diagnosis": {
+    "path": "${share_root}/Agents/lineage_75e3399f4877/residents/resident_afa3d4d6cf11/workspace/research/maintenance_turnover_readout_20261019.json",
+    "sha256": "17ae383b07e800c46a0b0932cf8b8e2e247054a2726f674a7834b206dcb72966",
+    "native_steps": 0
+  },
+  "frozen_physics": {
+    "host": "MaterialActionBody及既有完整原生物理、局部E、转换、半衰64、输入总量不改；仅body_rule的双核/响应参数允许遗传变化。单个life0到末态规则字节固定。",
+    "transport": "全程固定complementary_cargo_exchange.independent_joint_current_demand及原execute：分货、原.05survivor载量/.08q/face/旧E reserve；不用未胜出的maintenance代理，不加writer/全局回报/能量借贷。",
+    "founding": "每个新life0实际rho总64/E64，P=F=0，其余库存、热、废料、死能、记忆/控制/极性为0；founder_mass=rho。不是恢复384成熟体，不赠予旧学习状态。",
+    "environment": "两环境colocated/separated；固定maps384(rho_life0)算法在新life0算A/B一次，中心沿原(y48,x62)。共定位P/F=A，分离P=A/F=B；初P/F0。原gross每步P=.20026968119879088/F=.8010787247951635，以原输入数组总和为权威，不截断到此小数；半衰64，静态地图至预定life384，库存不搬图，外部配置工作未定价。",
+    "source_reuse": "初形构造复用resource_matched_morphogenesis，但新隔离wrapper明确0..384静态供给并接单次原生/单次分货；不修改旧模块或旧source。环境执行直接复用ce2代码，无需另造宿主。"
+  },
+  "search": {
+    "geometries": [
+      "compact",
+      "double_lobe"
+    ],
+    "crossing": "每个基因完整交叉2初形×2资源环境；两个初形均使用基因8..10=0的原固定构造，初质量/能量相同。规则不与初形绑定。",
+    "generation1": "rule_geometry_resource_support_20261018 plan所绑定四冻结双核规则/来源作为四founder。读取原生成record重建规则，不读取其旧形成身体或库存；继承各规则既有kernel_log_scales。4×2×2×128=2048步。",
+    "selection": "仅在完整结果上选择两不同规则父。基因级聚合四context的最差晚64平均M、最差晚64净出生、最差晚64DeltaE及最差实际新组织留存作Pareto；优先四context末M及晚64均M>=32的可繁殖组，否则明确fallback按最差体时/末M仅为下一代提议。非支配层与ID确定序，不把资格当维护成功。",
+    "generation2": "各选中父产生两个独立子，共4子；沿既有GENES前8维/已有变异幅度与LIMITS，后3初形基因固定0，不改价格/死亡总倍率。PCG64种子202610193001..3004预先冻结。非法、重复提议原样记，不重采样救活。所有子也完整交叉2初形×2环境×128，最多2048新步。",
+    "heritability": "mu/sigma、两核相对权重、径向重权/交叉核混合可变；正负响应的原公式不改，不只削死亡，旧生成核/价格对照保持。新增代数/继承规则不称原创。"
+  },
+  "continuation": {
+    "choice": "从第二代中按上述基因级规则选一合格子；无合格子则保全搜索阴性、不强延续。该子与其直接遗传父的四个实际128完整状态都已在前两代获得，只读恢复，不重演。",
+    "arms": "每个几何×环境：子继续固定joint-demand、同一子128全态fork为no_pump、遗传父继续同joint-demand。共最多12×256=3072步；总科学上限7168。",
+    "interpretation": "子/父从相同life0捐赠起但128组织不同，是实际形成+继续的遗传比较，不称同128纯因果；子pump/no_pump才是同实际128全态分叉。保全部0..384完整累积和128后窗，不把好前缀隐去。",
+    "criterion": "晚128的两个64窗逐窗born>=death-1e-8且DeltaE>=-1e-8，末M>=32；同时逐项报告零容差及新组织实际留存/旧体损失/体时/成本。维护条件仅此384有限协议，不代原512证明，更非无限稳态。",
+    "strong_comparison": "遗传收益须分别对父比M/E/体时/真实新组织与全部成本；持续运输价值由同子128的none分叉衡量。未胜父、靠更少更新/冻结组织或以E夹顶遮蔽损失均明确，不用单一分数宣布成功。"
+  },
+  "morphology": {
+    "retain": "全部规则/失败/初形记录保留；至少0/32/64/96/128和续接192/256/320/384真状态。查看实际序列，记录连通分量/孔/伸长率/质心和真实新组织留存，不以换色、旋转、相似帧计多样性。",
+    "delivery": "有意义形态和失败实际轨迹一并给原投影在办项；论文以真实探索分支整合，不凑三贡献。"
+  },
+  "budget": {
+    "native_cap": 7200,
+    "science_cap": 7168,
+    "boundary_cap": 32,
+    "runner_worker_seconds": 1800,
+    "cpu_threads": 2,
+    "gpu": 0,
+    "raw_cap_bytes": 1073741824,
+    "shutdown_reserve_worker_seconds": 120,
+    "old_balances_transfer": 0,
+    "unused_sealed": true
+  },
+  "execution": {
+    "owner": "tfi-exported-user",
+    "control": "以d3自己的Resident检查控制；不要沿ce2特定身份的启动控制适配器借身份，需运行工程协助时仅一次直接具体请求。暂停停止尊重。",
+    "storage": "完整/pending-native事务可恢复断点，稀疏场；逐步标量和全部费用/生死/创始体/新组织/输入出口全留，I/O计时。各尝试累计worker秒，收尾预留120；不自动重投或用旧余额。",
+    "handoff": "实际实施、科学选择与新实验均由你承接，无需逐批批准。具名事项共享短索引记录，必要结果仅向直接接续者一次enqueue，原论文/投影事项合并。"
+  },
+  "limits": "本轮恢复身体生成/遗传探索，不证明寿命内学习。两已知初形×确定性环境为开发条件，格/种子/两形态不当独立生态重复。现阶段成功也是方法与学习问题的可用基础，核心科学目标保持未完成。"
+}

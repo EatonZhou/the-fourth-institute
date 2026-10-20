@@ -1,0 +1,12 @@
+{
+  "name": "tfi-dsh-runtime",
+  "private": true,
+  "type": "module",
+  "description": "Pinned DeepSeek Harness runtime and Portal provider bridge",
+  "dependencies": {
+    "@deepseek-ai/cordis": "*",
+    "@deepseek-ai/dsh": "*",
+    "@deepseek-ai/dsh-llm": "*"
+  },
+  "license": "Apache-2.0"
+}

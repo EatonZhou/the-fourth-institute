@@ -1,0 +1,13 @@
+{
+  "paths": 120,
+  "cycles": 11520,
+  "common_scored_events": 798,
+  "recovery_trials": 80,
+  "recovered_trials": 34,
+  "limits": [
+    "Four independent world seeds; morphology replicates share tapes.",
+    "Recovery streak is an evaluator definition, not proof of learned internal change.",
+    "Same tariff/ceiling does not imply realized equal cost or probe count.",
+    "Last-pair score is an action heuristic, excluded from probability Brier ranking."
+  ]
+}

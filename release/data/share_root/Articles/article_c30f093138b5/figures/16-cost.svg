@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600" viewBox="0 0 1200 600">
+<rect width="1200" height="600" fill="white"/>
+<text x="28" y="41.56" text-anchor="start" font-family="Noto Sans CJK SC" font-size="26" font-weight="700" fill="#275D85">表达投入的价值：资源分配与可观察收益</text>
+<polyline points="28,62 1172,62" fill="none" stroke="#91A2AE" stroke-width="1.7"/>
+<text x="30" y="583.0300000000001" text-anchor="start" font-family="Noto Sans CJK SC" font-size="13" font-weight="400" fill="#61717E">设计示意 · 实线：工作或依赖关系；虚线：反馈或关联；不表示实验测量</text>
+<rect x="35" y="105" width="315" height="165" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="192.5" y="131.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">资源投入</text>
+<text x="192.5" y="188.71" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">代码实现与修复</text>
+<text x="192.5" y="208.77" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">验证、协调与记忆</text>
+<text x="192.5" y="228.83" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">面向人的表达与交互</text>
+<rect x="440" y="105" width="315" height="165" fill="#EDF5F1" stroke="#26756C" stroke-width="1.5"/>
+<text x="597.5" y="131.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#26756C">可能产生的收益</text>
+<text x="597.5" y="188.71" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">更快建立理解</text>
+<text x="597.5" y="208.77" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">更准确表达偏好</text>
+<text x="597.5" y="228.83" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">更早发现方向偏差</text>
+<rect x="845" y="105" width="320" height="165" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="1005.0" y="131.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">需要共同观察</text>
+<text x="1005.0" y="188.71" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">人的时间与任务正确性</text>
+<text x="1005.0" y="208.77" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">后续误解与返工</text>
+<text x="1005.0" y="228.83" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">总费用与交付时间</text>
+<polyline points="350,188 440,188" fill="none" stroke="#275D85" stroke-width="1.7"/>
+<polygon points="440,188 431.6420182798114,191.33828422471686 431.6420182798114,184.66171577528314" fill="#275D85"/>
+<polyline points="755,188 845,188" fill="none" stroke="#275D85" stroke-width="1.7"/>
+<polygon points="845,188 836.6420182798114,191.33828422471686 836.6420182798114,184.66171577528314" fill="#275D85"/>
+<rect x="35" y="340" width="1130" height="190" fill="#FFFFFF" stroke="#91A2AE" stroke-width="1.5"/>
+<text x="600.0" y="440.89000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#91A2AE"></text>
+<text x="43" y="365.7" text-anchor="start" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">研究假设与判定条件</text>
+<text x="600.0" y="425.86" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="22" font-weight="400" fill="#263442">展示与交互的 token 消耗可能接近代码生成；比例需随任务观察。</text>
+<text x="600.0" y="451.82" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="22" font-weight="400" fill="#263442">投入增加是否值得，取决于人的理解、控制质量与后续工程结果。</text>
+<text x="600.0" y="477.78000000000003" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="22" font-weight="400" fill="#263442">复用模板、局部更新与按需生成可改变成本，不设置固定预算比例。</text>
+</svg>

@@ -1,0 +1,37 @@
+{
+  "native": 0,
+  "checks": [
+    {
+      "id": "202610197503_0_0_fast_delta_life",
+      "same_initial_fields": true,
+      "rotation_norm_error": 0.0,
+      "M": 24.000000000000004,
+      "E": 33.815885114708806,
+      "largest": 0.999469178438086
+    },
+    {
+      "id": "202610197503_0_0_joint_delta_life",
+      "same_initial_fields": true,
+      "rotation_norm_error": 0.0,
+      "M": 24.0,
+      "E": 34.00926794743749,
+      "largest": 0.9994367695624186
+    },
+    {
+      "id": "202610197504_1_0_fast_delta_life",
+      "same_initial_fields": true,
+      "rotation_norm_error": 0.0,
+      "M": 24.000000000000014,
+      "E": 33.82710666096329,
+      "largest": 0.9994699891442459
+    },
+    {
+      "id": "202610197504_1_0_joint_delta_life",
+      "same_initial_fields": true,
+      "rotation_norm_error": 0.0,
+      "M": 24.0,
+      "E": 34.02812025546496,
+      "largest": 0.9994396026750679
+    }
+  ]
+}

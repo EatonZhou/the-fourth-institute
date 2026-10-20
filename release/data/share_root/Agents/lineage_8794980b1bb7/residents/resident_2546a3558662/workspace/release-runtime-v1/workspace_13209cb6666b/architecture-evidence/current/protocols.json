@@ -1,0 +1,1304 @@
+{
+  "schema": "tfi.portal-protocol-text.v1",
+  "protocols": [
+    {
+      "id": "http-interface",
+      "title": "浏览器 HTTP、WebSocket 与 SSE",
+      "modules": [
+        "interface",
+        "router",
+        "web"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_0820081083f5",
+        "decision_ecf0f2b2de28",
+        "decision_daba6706a788",
+        "decision_f25266e5a0e7",
+        "decision_0571f3741e23",
+        "decision_1a2730dcd3d1",
+        "decision_2f67ed28db67",
+        "decision_30528aff7035",
+        "decision_3286d4167180",
+        "decision_4dea0db1f45a",
+        "decision_58db6282c244",
+        "decision_5bc3fdfc7eec",
+        "decision_5d2bf4a72f09",
+        "decision_626fb02b3894",
+        "decision_6c3d74a9bc9d",
+        "decision_a144bf700017",
+        "decision_ad7bdfde49ef",
+        "decision_b06ae321a668",
+        "decision_bd179998ba08",
+        "decision_bd5217d08c09",
+        "decision_f22e45dfd382",
+        "decision_fc26f883773d",
+        "decision_fd9851ae01c0",
+        "decision_46c37026e8ea",
+        "decision_605810a1292b",
+        "decision_f2a6a5dd4646",
+        "decision_4666241592d4",
+        "decision_ce44377c3257",
+        "decision_f560803947c6",
+        "decision_18abbdef3da3",
+        "decision_481dc4e6292c",
+        "decision_152d5c046a23"
+      ],
+      "description": "浏览器通过统一用户入口访问 Web；认证后的读取与指令请求返回结构化结果，SSE/WebSocket 提供持续流。",
+      "example": "浏览器打开工作台 → 用户路由选择 Release → Web 校验会话并返回页面；后续资源调用沿相同入口到达 Web。"
+    },
+    {
+      "id": "hatg-isa",
+      "title": "HATG 指令集与 owner 派发协议",
+      "modules": [
+        "interface",
+        "web",
+        "resources",
+        "lineage",
+        "execution",
+        "worker",
+        "engineering",
+        "delivery"
+      ],
+      "designs": [
+        "decision_898b8911a2ff",
+        "decision_aa4fdbac8364",
+        "decision_4527448ad07f"
+      ],
+      "related_designs": [
+        "decision_b77fde81e7a0",
+        "decision_c54e68a82d7a",
+        "decision_cc96fce57ab6",
+        "decision_daba6706a788",
+        "decision_ad3e21094f14",
+        "decision_d19b9909a674",
+        "decision_4637ca4a69e2",
+        "decision_b0997bc3a922",
+        "decision_0f57656a2acd",
+        "decision_1b2bdf5c33d6",
+        "decision_4648f7fa3295",
+        "decision_46c37026e8ea",
+        "decision_4adcc1ff2f2c",
+        "decision_4bc03b20c30f",
+        "decision_4dea0db1f45a",
+        "decision_5b5653c3eaa5",
+        "decision_5bf5bfbd52cb",
+        "decision_6fc653d55c79",
+        "decision_7ef392b5f60d",
+        "decision_865ac8ebef25",
+        "decision_8b2fa224616b",
+        "decision_9b94f218a188",
+        "decision_a6bebf4ac283",
+        "decision_c47a13e8b962",
+        "decision_ed57c4ad1001",
+        "decision_5ff0cb51ed84",
+        "decision_3286d4167180",
+        "decision_f2a6a5dd4646",
+        "decision_956154cd02f6",
+        "decision_692a484e9bea"
+      ],
+      "description": "指令目录声明参数、保护策略与唯一 owner；入口验证调用身份后将指令送往 owner，权限按当前主体核验。",
+      "example": "浏览器调用 GetResident：Web 入口读取指令 schema 和 owner=lineage → SocietyService 查询 Resident → 将结果沿请求链返回。"
+    },
+    {
+      "id": "signed-rpc",
+      "title": "服务间签名 RPC 与错误协议",
+      "modules": [
+        "web",
+        "resources",
+        "lineage",
+        "execution",
+        "worker"
+      ],
+      "designs": [
+        "decision_96a887d83e8a"
+      ],
+      "related_designs": [
+        "decision_f1331d57be89"
+      ],
+      "description": "Linux/macOS 用 Unix socket、Windows 用按实例与服务区分的本机回环端点承载 JSON RPC；逻辑路径仍定位签名密钥。签名信封绑定原调用主体，服务校验身份与参数，返回统一错误分类。",
+      "example": "Web 携带用户操作身份向 ResourceService 发出 resource.read；签名或权限失效返回明确错误，调用者不更换身份重试。"
+    },
+    {
+      "id": "resource-access",
+      "title": "ResourceService 调用协议",
+      "modules": [
+        "interface",
+        "web",
+        "resources",
+        "lineage",
+        "execution",
+        "worker",
+        "lineage.definition",
+        "resources.access"
+      ],
+      "designs": [
+        "decision_b6e74d78f7b6"
+      ],
+      "related_designs": [
+        "decision_355ed742bca5",
+        "decision_4a9ba5dfada6",
+        "decision_8dc6b3d03ca7",
+        "decision_eb066fbea4ed",
+        "decision_36f46b395d8e",
+        "decision_a4e5f03c8b9b",
+        "decision_0820081083f5",
+        "decision_4648f7fa3295",
+        "decision_6476c69b33da",
+        "decision_956154cd02f6",
+        "decision_9ef033d79173",
+        "decision_f48c2514bf33",
+        "decision_c616d197abbb",
+        "decision_5bc3fdfc7eec",
+        "decision_8838269736d3",
+        "decision_1e2eb869bc10",
+        "decision_528bf9985705",
+        "decision_3ece26686464"
+      ],
+      "description": "按统一资源地址提供 resolve、read、query 与 action；类型适配器解释地址，权限和可读性检查由 ResourceService 执行。 Lineage resource_client 通过 WorkspaceStore 在传入的数据库连接内查路径、登记并校验绑定；该共享事务调用不能描述成一律在 Lineage 提交后同步。",
+      "example": "投影调用 Projection.resource('read', {address}) → Web 代理资源请求 → ResourceService 解析 Workspace 文件并通过权限端口检查当前 actor → 返回内容或明确不可读原因。"
+    },
+    {
+      "id": "resource-authorization",
+      "title": "身份认证与 PAR 授权协议",
+      "modules": [
+        "web",
+        "resources",
+        "lineage",
+        "execution",
+        "worker"
+      ],
+      "designs": [
+        "decision_3fe3cca8fd95"
+      ],
+      "related_designs": [
+        "decision_b820faf42218",
+        "decision_22227d0ad075",
+        "decision_fb910c43ab07"
+      ],
+      "description": "入口认证真实 actor，业务层经统一权限端口提交执行者、动作、资源请求，并在对象变更时同步领域事实；端口按开关选择开放或 PAR 模板判定。ResourceService 维护权限实例与模板，Lineage 开启权限前请求其重建；个人 AMA 私有性和领域业务规则在关闭权限时仍保留。",
+      "example": "管理员调用 UpdateExecutionSettings 开启权限 → Lineage 经受认证的 permission.rebuild RPC 要求 ResourceService 按当前模板和现有对象重建 → 成功后保存开关 → 各进程重新读取模式并使用 PAR 实例判定。"
+    },
+    {
+      "id": "operation-identity",
+      "title": "操作身份与来源协议",
+      "modules": [
+        "interface",
+        "web",
+        "resources",
+        "lineage",
+        "execution",
+        "worker"
+      ],
+      "designs": [
+        "decision_ae422b92c6f3"
+      ],
+      "related_designs": [
+        "decision_c524c775e0be"
+      ],
+      "description": "principal 表示实际授权主体，initiated_by 保留发起人，producer 标记记录生产方；在事件、请求与消息中跨服务携带。",
+      "example": "定时源按 Lineage 的 run_as_principal 激活，事件记录 User operator 与 producer=portal；Effect 和 Resident 输入继续保留该发起身份。"
+    },
+    {
+      "id": "society-service",
+      "title": "SocietyService 领域调用协议",
+      "modules": [
+        "web",
+        "resources",
+        "lineage",
+        "execution"
+      ],
+      "designs": [
+        "decision_d918ebebc062"
+      ],
+      "related_designs": [
+        "decision_6fc653d55c79",
+        "decision_721c64f9bdcc",
+        "decision_3e07c6d35cac",
+        "decision_8fe87d812a4c",
+        "decision_4dea0db1f45a",
+        "decision_15f7df737ed5"
+      ],
+      "description": "团队定义、图和输入状态由 SocietyService 负责；客户端通过领域调用与只读投影访问，变更使用版本条件。",
+      "example": "Web 更新团队定义并携带 expected_version → SocietyService 校验版本及不变量 → 保存状态并发布变更提示 → 客户端重读。"
+    },
+    {
+      "id": "resident-execution",
+      "title": "Resident 与 Execution 请求协议",
+      "modules": [
+        "lineage",
+        "execution",
+        "worker",
+        "web"
+      ],
+      "designs": [
+        "decision_6ad0384e020d"
+      ],
+      "related_designs": [
+        "decision_edc470e09f5a",
+        "decision_c616d197abbb",
+        "decision_5bf5bfbd52cb",
+        "decision_c47a13e8b962",
+        "decision_1e2eb869bc10",
+        "decision_3dd52c0692c1"
+      ],
+      "description": "Lineage 负责业务输入与轮次，Execution 负责请求、租约、模型执行及恢复；稳定关联键连接两侧状态。",
+      "example": "Resident 输入被领取 → Lineage 提交执行请求 → Scheduler 持久化并分配 Worker → Worker 上报终态 → Lineage 将回复归入原轮次。"
+    },
+    {
+      "id": "worker-lease",
+      "title": "Worker 领取与持久租约协议",
+      "modules": [
+        "execution",
+        "worker"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_25eb93d803a4",
+        "decision_8ac0b5a6c0e5",
+        "decision_d40f59f5508f"
+      ],
+      "description": "Scheduler 通过请求状态和租约限制并发，Worker 报告心跳、恢复信息和终态；服务与 Worker 可独立换代。",
+      "example": "Worker 领取排队请求并续租；进程退出后恢复逻辑依据请求与租约决定接管，不能因 Web 重启重复执行。"
+    },
+    {
+      "id": "provider-capabilities",
+      "title": "Provider 能力协议",
+      "modules": [
+        "lineage",
+        "execution",
+        "worker",
+        "providers",
+        "worker.harness",
+        "execution.providers"
+      ],
+      "designs": [
+        "decision_425e428410e0"
+      ],
+      "related_designs": [
+        "decision_91eb3626d323",
+        "decision_075f66430606",
+        "decision_ef1d6c925955",
+        "decision_3dd52c0692c1",
+        "decision_5c62deb8253a",
+        "decision_8b2fa224616b",
+        "decision_276105b5d67b"
+      ],
+      "description": "能力声明决定持续会话的 create/turn/fork/compact/release、图片、运行中输入和子 agent 支持；Adapter 统一调用、事件、结果与中断语义。 Harness 包装 invocation 后调用 Backend.execute；Adapter 提供工具/事件回调，TurnInputPump 在接受原生 turn 后绑定并转发输入，中断按原调用传播。能力校验与原生传输各保留边界。",
+      "example": "Lineage 请求 Fork → 执行层先校验 Provider 声明支持 fork → Worker Adapter 调原生服务 → 返回会话标识；不支持时在调用前失败。"
+    },
+    {
+      "id": "provider-native",
+      "title": "Provider 原生会话与事件协议",
+      "modules": [
+        "worker",
+        "providers"
+      ],
+      "designs": [
+        "decision_3e8c2a7f91d4",
+        "decision_6b9e42f1c8a7",
+        "decision_3948ce9b9443",
+        "decision_276105b5d67b"
+      ],
+      "related_designs": [
+        "decision_e587fe1c472e",
+        "decision_5c62deb8253a"
+      ],
+      "description": "Codex App Server、Claude daemon、Kimi Server 与 DSH/OpenCode bridge 各自拥有原生会话；Adapter 将各自事件归一为 Portal 执行事件。",
+      "example": "Codex Adapter 向 App Server 发起 turn → 原生线程返回增量和工具事件 → Runtime 写入运行记录；取消时使用该轮原生标识。"
+    },
+    {
+      "id": "model-api",
+      "title": "模型 API 与 VM 代理协议",
+      "modules": [
+        "execution",
+        "worker",
+        "providers",
+        "model-services"
+      ],
+      "designs": [
+        "decision_6c2f91a7d84e",
+        "decision_c604274e21dd"
+      ],
+      "related_designs": [],
+      "description": "普通生成使用登记模型 API；原生运行时使用对应供应商端点，VM 经 AI Socket Relay 进入受控 host 通道。",
+      "example": "CompleteChat 根据登记接口选择协议与密钥引用 → 调用模型端点 → 汇总结果与用量；不把密钥正文放入调用记录。"
+    },
+    {
+      "id": "projection-family",
+      "title": "投影协议与 Family 反馈",
+      "modules": [
+        "interface",
+        "web",
+        "lineage",
+        "resources",
+        "engineering"
+      ],
+      "designs": [
+        "decision_7a5ae487e2e9",
+        "decision_f67ae5e70793"
+      ],
+      "related_designs": [
+        "decision_13e1a748cf04",
+        "decision_78134209e5c9",
+        "decision_538e155e1102",
+        "decision_4348ed990621",
+        "decision_4bc03b20c30f"
+      ],
+      "description": "投影应用通过宿主资源与五字段 focus 合同访问事实；反馈进入真实 Family 对话，修订号保证晚到响应不能覆盖新焦点。",
+      "example": "用户选当前模块 → 宿主发布五字段焦点 → 反馈附对象上下文进入 Family 门面 → 架构成员解释 → 门面回复；revision 较旧的响应丢弃。"
+    },
+    {
+      "id": "lineage-events-effects",
+      "title": "Lineage 事件、Packet 与 Effect 协议",
+      "modules": [
+        "lineage",
+        "web",
+        "engineering",
+        "delivery"
+      ],
+      "designs": [
+        "decision_4adcc1ff2f2c"
+      ],
+      "related_designs": [
+        "decision_8b510cbd9c58",
+        "decision_5ff0cb51ed84",
+        "decision_68215b3a825b",
+        "decision_865ac8ebef25",
+        "decision_13e1a748cf04",
+        "decision_15aab18c0ab3"
+      ],
+      "description": "事件源生成 Packet，显式连线与操作符控制传播；Effect 使用显式 run_as 身份执行指令，并记录恢复、幂等和终态。Portal 管理开关以本站配置映射到真实组件，读写 component_runtime.paused；发行消费纯定义映射，缺失或冲突不得视为已关闭。",
+      "example": "portal.release_published 进入事件源 → Effect 调 RunScript → script.finished 包含报告与状态 → Filter 将偏离交给架构成员。"
+    },
+    {
+      "id": "database-schema",
+      "title": "数据库 schema 与领域事务协议",
+      "modules": [
+        "postgres",
+        "web",
+        "resources",
+        "lineage",
+        "execution",
+        "worker",
+        "delivery"
+      ],
+      "designs": [
+        "decision_86aed2f0e8c7",
+        "decision_71aa039e3211"
+      ],
+      "related_designs": [
+        "decision_b1ab45c4b3ec",
+        "decision_25eb93d803a4",
+        "decision_cf27d39e39cd"
+      ],
+      "description": "PostgreSQL 是业务与运行真值；领域拥有独立 schema 和事务边界，跨领域靠接口、关联 ID 与待发件箱协作。",
+      "example": "Lineage 保存输入和待执行工作，Execution 保存执行请求与租约；双方用关联 ID 对账，各自修改自己的表。"
+    },
+    {
+      "id": "file-storage",
+      "title": "共享文件锁与原子替换协议",
+      "modules": [
+        "storage",
+        "web",
+        "resources",
+        "lineage",
+        "worker",
+        "delivery",
+        "router"
+      ],
+      "designs": [
+        "decision_0e043d5f81be"
+      ],
+      "related_designs": [
+        "decision_3ece26686464",
+        "decision_99bb5dc0f96b",
+        "decision_850e6248d680"
+      ],
+      "description": "正文和产物使用文件存储，单文件更新由锁与原子替换保护；数据库事务不自动覆盖文件操作。",
+      "example": "更新 Workspace JSON → 持有作用域文件锁 → 写临时文件并原子替换 → 释放锁后通知读取者；读取者仍通过资源权限入口。"
+    },
+    {
+      "id": "change-refresh",
+      "title": "NATS 变化通知与重读协议",
+      "modules": [
+        "notifications",
+        "resources",
+        "lineage",
+        "execution",
+        "web",
+        "interface"
+      ],
+      "designs": [
+        "decision_abaedeefca6f",
+        "decision_f55bac7fc199"
+      ],
+      "related_designs": [
+        "decision_6e230393221c",
+        "decision_ecf0f2b2de28"
+      ],
+      "description": "领域提交真值后发轻量通知；订阅者失效缓存并重读，通知总线与 SSE 都不作为可靠状态账本。",
+      "example": "资源写入完成 → ResourceService 发变化 subject → Web 转 SSE → 浏览器合并刷新并重新读取资源；断线恢复后重读真值。"
+    },
+    {
+      "id": "deployment-control",
+      "title": "部署选择与平滑换代协议",
+      "modules": [
+        "delivery",
+        "router",
+        "web",
+        "resources",
+        "lineage",
+        "execution",
+        "worker",
+        "providers"
+      ],
+      "designs": [
+        "decision_850e6248d680"
+      ],
+      "related_designs": [
+        "decision_08bb2d9141f9",
+        "decision_99bb5dc0f96b",
+        "decision_37f98f8fcb4b",
+        "decision_85222f2d316b",
+        "decision_30528aff7035",
+        "decision_25eb93d803a4",
+        "decision_c604274e21dd",
+        "decision_e587fe1c472e",
+        "decision_ecf0f2b2de28"
+      ],
+      "description": "发布与重启请求由部署控制面持久化，按服务能力排空或换代；路由入口按用户部署选择转发。管理员网络接口调用部署层 portal_network 读写站点配置，保存按原始文件版本校验；网段在下次连接生效，代理由新进程读取，保存不自动重启服务。",
+      "example": "发布确认提交与双远端 push → 控制面切 Release 代码并激活服务 → 健康通过后产生一条发布事实。"
+    },
+    {
+      "id": "release-events",
+      "title": "发布事实与架构核对订阅",
+      "modules": [
+        "delivery",
+        "lineage",
+        "engineering"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_13e1a748cf04",
+        "decision_4adcc1ff2f2c",
+        "decision_8b510cbd9c58"
+      ],
+      "description": "发布事实携带 publication_id、完整 commit、previous_commit 与 source；事件源使用游标消费，核对报告绑定对应提交。",
+      "example": "发布提交 C 完成 → Lineage 从事实游标读到 C → RunScript 用 --commit C 核对冻结地图 → 报告列出 Design、路径及协议偏离。"
+    },
+    {
+      "id": "application-target",
+      "title": "应用目标配置与 TAU 接收协议",
+      "modules": [
+        "web",
+        "lineage",
+        "engineering"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_6591e7793116",
+        "decision_c953eab654cd",
+        "decision_725dedbe89b2"
+      ],
+      "description": "主机维护脚本 scripts/application_target.py 读取和修改应用配置，没有对应指令；切换通过冻结与版本比较，新 TAU 接收与配置更新使用同一配置行的共享/排他锁。",
+      "example": "脚本冻结接收 → 维护者迁移并按 expected_revision 切换 Lineage → show 回读配置 → 脚本恢复接收；既有任务恢复不经过新接收门。"
+    },
+    {
+      "id": "browser-document-preview",
+      "title": "浏览器文档预览与编辑适配",
+      "modules": [
+        "interface.content",
+        "interface.conversation",
+        "interface.workbenches"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_61e50306cc79",
+        "decision_769a35d6b5c7",
+        "decision_dca903d71575"
+      ],
+      "description": "调用PortalPreview.request/load/save；会话/工作台注册source并提交规范化文档，内容层选Renderer。",
+      "example": "会话打开一个文件引用：对话组件提交规范化文档给 PortalPreview，内容组件选择 Renderer；编辑器保存仍经注册 source 的 save 接口。"
+    },
+    {
+      "id": "browser-client-context",
+      "title": "浏览器身份、请求与共享读取接口",
+      "modules": [
+        "interface.shell",
+        "interface.home",
+        "interface.workbenches",
+        "interface.conversation",
+        "interface.content"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_00546e28e1e0",
+        "decision_152d5c046a23",
+        "decision_18abbdef3da3",
+        "decision_61e50306cc79",
+        "decision_8b2fa224616b",
+        "decision_fd9851ae01c0"
+      ],
+      "description": "共享客户端createClient/execute/get与身份、目录和刷新协调器提供一致读取上下文。",
+      "example": "Home 读取可见 Resident：共享客户端带当前身份取得目录并复用本轮读取；收到变更提示后失效目录，再由页面重新读取。"
+    },
+    {
+      "id": "browser-workbench-panels",
+      "title": "工作台面板挂载与可见性接口",
+      "modules": [
+        "interface.workbenches",
+        "interface.home",
+        "interface.conversation",
+        "interface.content"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_00546e28e1e0",
+        "decision_152d5c046a23",
+        "decision_769a35d6b5c7",
+        "decision_ce44377c3257",
+        "decision_e30897dd3dc3",
+        "decision_ed57c4ad1001",
+        "decision_fc26f883773d"
+      ],
+      "description": "PortalWorkbench将panel package描述转为descriptor/context，按布局协调面板可见性与DOM挂载。",
+      "example": "工作台切换当前面板：布局协调器按 package 描述传入 context 并挂载所选 DOM，面板失活后按生命周期清理。"
+    },
+    {
+      "id": "browser-ui-lifecycle",
+      "title": "浏览器公共控件、命令与生命周期",
+      "modules": [
+        "interface.shell",
+        "interface.workbenches",
+        "interface.content",
+        "interface.conversation"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_741b04821171",
+        "decision_769a35d6b5c7",
+        "decision_ce44377c3257",
+        "decision_dca903d71575",
+        "decision_e5f66e2f6a5e"
+      ],
+      "description": "UI primitives/Toolbar/导航为画布、内容和会话提供DOM挂载、命令、焦点与dispose。",
+      "example": "内容页装配工具栏：页面注册命令，公共 Toolbar 处理焦点与溢出；页面销毁时调用 dispose 清理监听。"
+    },
+    {
+      "id": "execution-usage-ledger",
+      "title": "Execution增量用量归因与执行账本",
+      "modules": [
+        "execution",
+        "execution.scheduling",
+        "execution.agent-data",
+        "execution.providers",
+        "worker"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_f1331d57be89"
+      ],
+      "description": "ExecutionService分派token_usage查询/增量，Scheduler按execution关联归因，AgentData登记执行输出和已计费用量。",
+      "example": "读取一个执行的用量：ExecutionService 接收查询，Scheduler 按 execution 关联账号，AgentData 提供已登记用量；页面展示不另记一次账。"
+    },
+    {
+      "id": "lineage-definition-event-reconcile",
+      "title": "定义快照与事件对账端口",
+      "modules": [
+        "lineage.definition",
+        "lineage.automation"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_7ef392b5f60d"
+      ],
+      "description": "Lineage定义侧提供EventReconcilePorts，对固定图状态调用reconcile_lineage_program_system_events。",
+      "example": "保存图定义后，定义域通过 EventReconcilePorts 把已校验图交给系统事件协调器；事件运行状态仍由自动化域维护。"
+    },
+    {
+      "id": "family-template-assembly",
+      "title": "Family 角色工作流与模板装配",
+      "modules": [
+        "lineage.family",
+        "lineage.definition"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_89b9df038a95",
+        "decision_328fb2548b8f"
+      ],
+      "description": "Family 提供角色事件、Effect 脚本与场景任务默认值；Familize 模板按名册装配 Function Block，通过定义域提交图变更，并保留已保存的指南和任务编辑。私人助手调用同一 Familize 入口完成初始化。",
+      "example": "Familize 装配 route 时调用 family_tasks.defaults，再用 saved_fields 合并用户编辑，写入 invoke_profiles 的 family_tasks 参数；图保存后由 Family 运行域按 trigger 派发任务。"
+    },
+    {
+      "id": "family-runtime-context",
+      "title": "Family路由Effect身份与成员摘要准入",
+      "modules": [
+        "lineage.family",
+        "lineage.automation",
+        "lineage.conversation"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_44cf587c1721"
+      ],
+      "description": "Family Router Effect按角色/目标限定facade执行上下文；成员摘要由Family准入策略排除全局重复领取。",
+      "example": "门面处理一个成员请求：Family Router Effect 按角色限定门面执行上下文，成员摘要领取同时检查 Family 准入，避免与全局领取重复。"
+    },
+    {
+      "id": "resident-definition-runtime-projection",
+      "title": "Resident定义记录与运行/目录投影",
+      "modules": [
+        "lineage.definition",
+        "lineage.conversation"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_0f57656a2acd",
+        "decision_8838269736d3",
+        "decision_ccb99a00eebd",
+        "decision_8b2fa224616b"
+      ],
+      "description": "Resident配置/Workspace绑定为运行上下文提供规范身份、cwd和只读目录投影；运行字段不反写定义域。",
+      "example": "Resident 开始组装上下文时读取定义域的 Workspace 绑定与 cwd；会话域读取运行投影，不把执行状态反写为绑定定义。"
+    },
+    {
+      "id": "resident-session-control-entry",
+      "title": "Resident会话控制ISA适配",
+      "modules": [
+        "lineage.definition",
+        "lineage.conversation"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_c47a13e8b962"
+      ],
+      "description": "residents ISA入口将RestartSession/ClearContext控制参数交给Resident会话实现。",
+      "example": "RestartSession 从 residents ISA 入口带当前 caller 和控制参数进入会话实现；执行中的输入仍受原会话控制条件约束。"
+    },
+    {
+      "id": "resident-terminal-notification",
+      "title": "Resident终态与Mailbox/Family外发通知",
+      "modules": [
+        "lineage.automation",
+        "lineage.family",
+        "lineage.conversation"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_15f7df737ed5"
+      ],
+      "description": "Runtime消费ResidentTerminalFact并派发终态观察；失败通知和对外消息沿真实Family speaking身份写Mailbox。",
+      "example": "一个 Resident 进入终态：Runtime 消费 ResidentTerminalFact，通知经 Family speaking 身份进入实际 Mailbox。"
+    },
+    {
+      "id": "resource-type-registration",
+      "title": "资源类型适配、登记与索引接口",
+      "modules": [
+        "resources.types",
+        "resources.access"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_355ed742bca5",
+        "decision_6476c69b33da",
+        "decision_956154cd02f6",
+        "decision_f48c2514bf33",
+        "decision_36f46b395d8e",
+        "decision_8dc6b3d03ca7"
+      ],
+      "description": "类型声明提供统一身份、类别与安装状态，类型provider注册resolver/mutation provider，通用登记/扫描/index使用规范resource record和类型操作。Article通过resource.article_registration贡献目录发现、分类与登记校验，通过resource.registry_projection贡献登记摘要；共享层按安装状态加载，领域存储和摘要规则由类型适配器拥有。",
+      "example": "Article已安装时，自动登记使用其发现与分类结果，索引使用其登记投影；未安装时Repo继续独立工作。模块内部依赖损坏保留原错误，索引写入仍遵守自身持久化边界。"
+    },
+    {
+      "id": "resource-view-projection",
+      "title": "资源查询到Knowledge/Paper/Project只读视图",
+      "modules": [
+        "resources.access",
+        "resources.types",
+        "web.workflows",
+        "web.community",
+        "interface.content",
+        "web"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_3ece26686464",
+        "decision_528bf9985705",
+        "decision_4648f7fa3295",
+        "decision_6476c69b33da",
+        "decision_956154cd02f6",
+        "decision_9ef033d79173",
+        "decision_f48c2514bf33"
+      ],
+      "description": "resource_views通过service.query/get读取正式资源，构建Knowledge/Paper/Project业务视图；ProjectsHttp调用其project_index。 类型页面通过各自接口读取业务视图：Paper 仍走 /paper/api/papers/detail（id、sections），其他页面按已声明资源接口读取；不将所有页面描述成直接 ISA。",
+      "example": "打开 Project 目录：resource_views 使用当前 actor 分页查询正式资源，再投影目录字段；页面状态不能增加资源可见性。"
+    },
+    {
+      "id": "web-http-handler-binding",
+      "title": "Web路由与领域HTTP处理器接口",
+      "modules": [
+        "web",
+        "web.identity",
+        "web.community",
+        "web.projections",
+        "web.workflows",
+        "delivery.backup"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_1a2730dcd3d1",
+        "decision_30528aff7035",
+        "decision_34158fdd4078",
+        "decision_3bce8b455a3c",
+        "decision_4648f7fa3295",
+        "decision_4666241592d4",
+        "decision_58db6282c244",
+        "decision_5d2bf4a72f09",
+        "decision_626fb02b3894",
+        "decision_692a484e9bea",
+        "decision_6c3d74a9bc9d",
+        "decision_ad7bdfde49ef",
+        "decision_b06ae321a668",
+        "decision_bd179998ba08",
+        "decision_bd5217d08c09",
+        "decision_e37f240e186d"
+      ],
+      "description": "主Web组装HTTP handlers并注入respond/read_json/session/业务ports，路由传入request/parsed/actor。",
+      "example": "一个已认证的 Project 请求进入 Web 路由：组装层把路径、actor、payload 与业务 ports 交给 Projects handler，再返回响应或领域错误。"
+    },
+    {
+      "id": "web-isa-owner-binding",
+      "title": "Web领域指令声明与本地owner绑定",
+      "modules": [
+        "kernel.isa",
+        "web",
+        "web.identity",
+        "web.community",
+        "web.workflows"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_30528aff7035",
+        "decision_34158fdd4078",
+        "decision_3e063aac15b3",
+        "decision_4648f7fa3295",
+        "decision_58db6282c244",
+        "decision_5bc3fdfc7eec",
+        "decision_6eac174d85bf",
+        "decision_865ac8ebef25"
+      ],
+      "description": "目录声明参数/owner/保护策略，InstructionKernel使用OwnerBinding把Invocation交给Web领域handler。",
+      "example": "CreateProject 经指令目录验证和授权后，由 OwnerBinding 把同一 Invocation.caller 交给 Web handler，权限失败不进入项目变更。"
+    },
+    {
+      "id": "watchboard-application-extension",
+      "title": "Watchboard 应用投影与安装计划",
+      "modules": [
+        "web.projections",
+        "web.community",
+        "interface.workbenches",
+        "lineage.conversation",
+        "lineage.definition",
+        "lineage"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_692a484e9bea",
+        "decision_0571f3741e23"
+      ],
+      "description": "Lineage 提供 Resident Watchboard 配置及能力投影；Web 应用按 resident_id、actor、application_id 返回内容和可操作项。安装计划包含 lineage_id、revision、files、install/remove，由浏览器执行既有 ISA；应用操作以同一 actor 进入应用处理器。该契约不创设新的 RPC 传输。",
+      "example": "Watchboard 浏览器调用 watchboardApplication(application_id=telepus,operation=save/delete) → Web ApplicationContext 校验应用 → 读取/更新联系配置并返回投影；安装时读取 installation_plan 后分别调用 UpdateWorkspaceFile 与 ApplyLineageChanges。"
+    },
+    {
+      "id": "discussion-resident-binding",
+      "title": "资源私有会话 Resident 关联",
+      "modules": [
+        "web.workflows",
+        "web.community"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_58db6282c244"
+      ],
+      "description": "资源私有会话后端通过 discussion_residents.resolve，按 actor、资源身份键和 resource-chat 职责解析 Resident 绑定。读取只查找已有绑定；非空发送的 prepare 才创建 Resident，并返回统一 Chat 发送所需的目标与初始上下文。",
+      "example": "用户在资源 Chat 中发送非空消息 → prepare 以当前 actor 重新读取资源 → discussion_residents.resolve 找到或创建该用户与该资源的 Resident → 统一 Chat 通过 DeliverMessage 发送。"
+    },
+    {
+      "id": "workflow-ui-association",
+      "title": "AMA入口与用户UI关联存储",
+      "modules": [
+        "web.workflows",
+        "web.projections"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_bd5217d08c09"
+      ],
+      "description": "AMA业务按当前actor读取/维护稳定UI Association目标，存储层拥有关联版本和用户作用域。",
+      "example": "用户进入 AMA：业务按当前 actor 读取稳定 UI Association，再解析目标 Resident；缺少关联不会借用其他用户的目标。"
+    },
+    {
+      "id": "conversation-read-model",
+      "title": "会话读取与轮次产物投影",
+      "modules": [
+        "lineage.conversation",
+        "execution.agent-data",
+        "web.projections",
+        "interface.conversation",
+        "interface.home",
+        "resources"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_15f7df737ed5",
+        "decision_18abbdef3da3",
+        "decision_1e2eb869bc10",
+        "decision_ce44377c3257",
+        "decision_f560803947c6",
+        "decision_5bf5bfbd52cb"
+      ],
+      "description": "Lineage 以当前调用者读取消息、输入状态及关联执行；Execution 按稳定 Segment/operation 身份返回内容和轮次产物，Web 组合会话与观看者投影，浏览器按同一身份显示。内容、执行状态和观看者状态各保留自己的权威来源；本协议是读模型/内容数据契约，传输沿既有 Lineage 服务和 HTTP 接口。 ResourceService 的 execution_content_changes 是资源修改产物的来源；Lineage 归入原 execution 的内容，观看者完成标记另属 Web 投影。 规范消息与问题先持久化后投影；完整问题集合接受回答后才关闭。消息和事件各用自己的游标，权限失败不能伪装为空资源修改。",
+      "example": "聊天读取一页历史：Lineage 按 Segment ID 取得原生轮次产物 → Web 组合会话/观看者字段 → Chat 显示 Diff 卡片；恢复读取仍引用同一 Segment，不从活动事件编造正文。"
+    },
+    {
+      "id": "resident-user-input",
+      "title": "原生交互问题与回答关联",
+      "modules": [
+        "execution.providers",
+        "execution.agent-data",
+        "lineage.conversation",
+        "interface.conversation"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_1e2eb869bc10"
+      ],
+      "description": "Adapter 将原生提问/批准请求归一为可关联的内容项；Lineage 保存问题与来源消息，回答必须引用同一来源及当前可回答项，再交回对应执行。浏览器是问题/回答数据消费者，不直接充当 Provider socket 客户端。",
+      "example": "原生 requestApproval/userInput → Adapter 内容项 → Lineage 问题消息 → prepare_question_answer(source_message_id,entries) → 原执行的回答入口 → 观察已关闭问题。"
+    },
+    {
+      "id": "mailbox-viewer-state",
+      "title": "Mailbox 主体视图与待办操作",
+      "modules": [
+        "interface.conversation",
+        "kernel.isa",
+        "web.community",
+        "web.projections",
+        "lineage.conversation"
+      ],
+      "designs": [
+        "decision_c54e68a82d7a"
+      ],
+      "related_designs": [
+        "decision_15f7df737ed5"
+      ],
+      "description": "主体 kind/id 区分用户与 Resident Mailbox；消息及输入状态由 Lineage 提供，用户待办、pin/read 等观看者数据由 Web 按用户持久化。ISA 列表与浏览器操作共同采用稳定 item/todo ID，变更后重读对应主体视图。",
+      "example": "portal_mailbox_todos.execute(List/Create/Update/Delete/MoveMailboxTodo) → 目录 owner 派发 → mailbox_todos.owner(caller) 的数据库事务 → 返回条目；消息来源通过 principal.mailbox_origin 规范化。"
+    },
+    {
+      "id": "business-resident-invocation",
+      "title": "业务目录、Resident 调用与接受回执",
+      "modules": [
+        "web.workflows",
+        "web.community",
+        "lineage.conversation",
+        "resources.types",
+        "lineage.automation",
+        "resources.access"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_1a2730dcd3d1",
+        "decision_3ece26686464",
+        "decision_528bf9985705",
+        "decision_58db6282c244",
+        "decision_725dedbe89b2"
+      ],
+      "description": "业务页面先按 actor 取得资源/搜索目录，再由应用目标配置选择业务 Resident。Lineage 维护 invocation 与 message_id 的稳定关联；业务 job 保存提交回执并按原调用恢复。Paper、资源私聊和 WALL 搜索复用这套调用责任，排序目录与业务输出仍由各业务适配器解释。 service_invocation 以稳定 batch/message 身份登记，再提交、观察或取消 Resident 输入；取消和接纳遵守原调用身份。",
+      "example": "WALL search_catalog(job) 读取创建者可见条目 → search_binding 选择应用 Resident → service_invocation 持久提交 → shared_search_invocation/paper_projection 按同一 handle 读取；资源讨论转私聊经 resource_lineages 与 resident_handoff 选择真实目标。"
+    },
+    {
+      "id": "principal-domain-access",
+      "title": "Principal 与领域访问约束",
+      "modules": [
+        "web.identity",
+        "lineage.definition",
+        "lineage.conversation",
+        "resources.access",
+        "resources.permissions",
+        "kernel.isa",
+        "lineage"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_34158fdd4078"
+      ],
+      "description": "Web/ISA 携带规范 Principal 进入 Lineage 领域；业务层通过权限端口检查当前 actor 的能力，再检查领域约束。主体类型准入、身份完整性和工作流角色属于业务边界，不以 owner/created_by 替代 actor，也不因权限系统关闭而消失。",
+      "example": "Lineage 领域收到当前 actor → lineage_access_policy 经 permission_system 检查资源等级 → 领域事务检查成员与对象关系并提交；对象归属变化同步到权限实例。"
+    },
+    {
+      "id": "principal-hierarchy",
+      "title": "主体层级与专属 AMA 归属",
+      "modules": [
+        "web.community",
+        "web.workflows",
+        "lineage.definition",
+        "lineage.conversation",
+        "interface.workbenches",
+        "lineage",
+        "interface.shell"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_3e07c6d35cac",
+        "decision_bd5217d08c09"
+      ],
+      "description": "Lineage 维护 lineage_scope 与 Resident assignment 的 level/category/scope_ids 数据约束；Web 和浏览器按该层级投影项目与主体。ensure_personal_ama 以用户名作用域锁查找或登记专属 Resident，返回实际 lineage_id/resident_id/created。",
+      "example": "项目创建/导航读取层级 → principal_hierarchy 校验范围与唯一性 → principal_hierarchy_domain.ensure_project/ensure_personal_ama 串行查重登记 → 页面使用返回 ID。"
+    },
+    {
+      "id": "resident-runtime-settings",
+      "title": "Resident 运行设置与账号路由准备",
+      "modules": [
+        "interface.conversation",
+        "interface.shell",
+        "interface.home",
+        "lineage.conversation",
+        "execution.scheduling",
+        "execution.providers",
+        "lineage.definition"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_3dd52c0692c1",
+        "decision_8b2fa224616b"
+      ],
+      "description": "Resident execution_settings/harness_config 是 Lineage 配置真值；执行准备通过 Provider 声明和账号 runtime_catalog 验证 model/effort/tier/options，再解析已绑定会话路由。四个原生入口（Family chat、Family menu/settings、Resident menu/settings、Resident composer）以选中成员 resident_id 绑定 interface.conversation 的 ResidentRuntimeController；控制器统一 settings/catalog、权限、差量保存、过期目标与缓存失效。interface.shell 的 PortalResidentService 独占 ISA/HTTP 及既有重启幂等、pending receipt、取消与观察；视图仅适配挂载、焦点和刷新，不另造运行状态机。",
+      "example": "四视图 → ResidentRuntimeController → PortalResidentService → Get/UpdateResidentSettings 或 RestartSession/CancelSessionRestart → split_runtime_settings → resident_storage/state_store 提交 → codex_runtime_settings/native_options 对照账号目录 → BackendInvocation；已有 binding 继续解释实际运行账号。"
+    },
+    {
+      "id": "execution-account-observation",
+      "title": "执行账号额度与用量观察",
+      "modules": [
+        "execution.providers",
+        "execution.scheduling",
+        "lineage.conversation",
+        "interface.home",
+        "interface.conversation",
+        "interface.shell",
+        "web",
+        "web.projections"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_4dea0db1f45a",
+        "decision_f1331d57be89",
+        "decision_fc26f883773d",
+        "decision_3dd52c0692c1"
+      ],
+      "description": "Provider Adapter 产生原生调用用量及额度/余额观察；Execution 按账号、稳定调用标识、观察时间聚合，Lineage 投影 Resident 用量，Home 显示账号资源。原生 turn 用量、上下文用量、订阅窗口额度与货币余额保持不同字段和来源。 BillingObservations 按 account 锁与缓存采样；失败保留最后成功样本并标 stale/error，不填零。日用量与逐轮小时账本分开，模型目录不在该观察输出内。resident_execution_gate 根据当前 Session binding 批量读取 Scheduler quota_states，投影 open/closed/unknown 及保护原因和已确认豁免；人工 intake 和工作状态独立，查询失败不视为放行。原生状态视图消费同一保护事实和 send_hint，缺字段的工作事件不清空保护；正式批量读取刷新，不以 Conversation cursor 充当额度版本。",
+      "example": "Codex/Claude/native request 观察 → provider_turn_usage/account_monitor → account_resources 按汇率快照换算展示 → resident_usage_projection/Home 重读。"
+    },
+    {
+      "id": "project-lifecycle",
+      "title": "项目登记、生命周期与目录投影",
+      "modules": [
+        "web.community",
+        "lineage.definition",
+        "resources.types",
+        "interface.workbenches",
+        "interface.content"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_4648f7fa3295"
+      ],
+      "description": "浏览器项目创建以正式 Project ID 登记；Lineage project_domain 对删除和关联 Lineage 执行业务约束；ResourceService/项目目录投影返回项目根与可见条目。项目实体、关系与资源目录各保留自己的存储 owner。",
+      "example": "CreateProject/项目登记 → project_domain → 注册表；project_index 分页读取 ResourceService → 浏览器项目页；删除先检查仍活动的 Lineage。"
+    },
+    {
+      "id": "project-state-read",
+      "title": "Project State 读取契约",
+      "modules": [
+        "web.community",
+        "resources.types",
+        "interface.content"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_46c37026e8ea",
+        "decision_9b94f218a188"
+      ],
+      "description": "project_state.load_project_state 读取项目状态文件并形成规范响应；Project resource 的 read_state 动作复用该读模型，浏览器展示返回状态与诊断。项目目录接口另属 http-interface，不把它声称为 read_state。",
+      "example": "项目页/Resource action read_state → project provider.project_state → load_project_state(project_id,resolved_root) → canonical_record → Overview。"
+    },
+    {
+      "id": "resource-page-view",
+      "title": "资源页面地址、引用与正文呈现",
+      "modules": [
+        "resources.types",
+        "resources.access",
+        "web",
+        "web.community",
+        "interface.content"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_2f67ed28db67",
+        "decision_3ece26686464",
+        "decision_528bf9985705",
+        "decision_6476c69b33da",
+        "decision_956154cd02f6",
+        "decision_9ef033d79173",
+        "decision_d397f2d99f89",
+        "decision_e5f66e2f6a5e",
+        "decision_f48c2514bf33"
+      ],
+      "description": "资源类型与正式 ID 决定 portal_url/页面种类；Web handler 通过资源/业务接口取正文与可用操作，页面渲染器和 Workspace/Preview 消费该结果。共享 chip 只携带资源引用，打开时仍经当前 actor 解析。Test 是其中一种正式资源引用，不把测试执行搬进页面组件。",
+      "example": "resource_refs/portal_url_for_resource 生成引用 → Article/Repo/Knowledge/Paper/Skill/Experiment/Device 路由 → Web 读取资源 → page_renderers/HTML/Preview 展示；Test 结果链接复用同一正式资源地址。"
+    },
+    {
+      "id": "resource-upload-media",
+      "title": "上传句柄、媒体校验与受控字节读取",
+      "modules": [
+        "kernel.isa",
+        "resources.access",
+        "resources.types",
+        "lineage.definition",
+        "interface.content",
+        "web",
+        "web.community",
+        "lineage",
+        "resources"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_605810a1292b",
+        "decision_61e50306cc79",
+        "decision_dca903d71575"
+      ],
+      "description": "CreateUpload 返回上传 ID、用途、过期时间与字节通道；服务按 purpose 校验大小、真实媒体类型和归属。Workspace 图片入口另经 workspace_contracts 校验后保存文件；读取端用已授权文件描述与范围参数返回字节。Notice Board 图片复用 purpose=post_image，不另造上传库。",
+      "example": "CreateUpload(purpose,target,metadata/source_address) → resources.isa 创建句柄 → 上传/校验 → Resource/Workspace 读取；ASGI download → workspace provider.read_content_range → 单一 Range 响应。"
+    },
+    {
+      "id": "home-directory-view",
+      "title": "Home 目录、公开摘要与运行观察",
+      "modules": [
+        "interface.home",
+        "interface.workbenches",
+        "web.community",
+        "web",
+        "lineage.conversation",
+        "lineage"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_5d2bf4a72f09",
+        "decision_605810a1292b",
+        "decision_e30897dd3dc3",
+        "decision_865ac8ebef25"
+      ],
+      "description": "Home 装配独立业务目录：Notice Board 公开摘要、Daily News 和 active Resident 观察。页面组件消费各目录返回的正式 ID/内容与运行投影；发布摘要是内容副本，active 读模型来自 Lineage/Execution 观察。",
+      "example": "Home 可见时装配目录 → Web 公告/运行投影接口 → active_agent_projection 合并现有状态或读取公开摘要 → 返回 Home 卡片及稳定链接。"
+    },
+    {
+      "id": "resident-discovery",
+      "title": "Resident 发现与上下文检索",
+      "modules": [
+        "interface.home",
+        "interface.workbenches",
+        "web.workflows",
+        "lineage.conversation",
+        "kernel.isa",
+        "interface.shell"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_8fe87d812a4c",
+        "decision_152d5c046a23"
+      ],
+      "description": "浏览器/业务入口提交正式 Resident 搜索；Lineage 上下文目录保存摘要证据、嵌入和版本，SearchResidents 以当前主体过滤结果。嵌入器加载固定本地模型，是目录检索组件，和运行账号模型目录无关。",
+      "example": "portal_resident_discovery_service/SearchResidents → Lineage context.store → evidence 有界摘要 + embedder → 结果 ID/摘要/关联范围 → Home/工作台选择。"
+    },
+    {
+      "id": "site-configuration-read",
+      "title": "站点配置读取与公开名称投影",
+      "modules": [
+        "delivery.services",
+        "web",
+        "web.identity",
+        "interface",
+        "interface.shell"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_15aab18c0ab3"
+      ],
+      "description": "部署拥有站点配置；调用方每次读取当前文件，缺省名称为 TFI Portal。环境变量只读取规范名称，显式空值不回退；格式标记仅接受精确的规范名称与版本，不读取旧环境别名或历史格式映射。deployment.compatibility.domain_values 仅保留显式本站部署参数，不启用旧名称兼容。Web 仅投影 site_name、公开 paths 和固定为空的 format_namespaces、browser_identifiers，私有部署值不进入页面；邮件和认证展示使用同源名称，认证身份不随显示名变化。",
+      "example": "PORTAL_SITE_CONFIG 或安装目录 config/site.json → management_common.site_config → 页面 bootstrap、邮件正文与认证展示。"
+    },
+    {
+      "id": "component-status-read",
+      "title": "Component 恢复状态读取",
+      "modules": [
+        "delivery.services",
+        "web",
+        "interface"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_99bb5dc0f96b"
+      ],
+      "description": "component_recovery 读取独立服务状态端点和当前应用端点；服务换代状态由 Lifecycle/控制面拥有，浏览器只据返回状态提供恢复操作与等待提示。",
+      "example": "requestStatus(independentStatusEndpoint) → 控制面快照；requestStatus(endpoint) → 应用可达性；组件比较响应后继续等待或恢复页面。"
+    },
+    {
+      "id": "lineage-template-view",
+      "title": "Lineage 模板目录与实例化输入",
+      "modules": [
+        "interface.workbenches",
+        "lineage.definition",
+        "kernel.isa"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_b04cac4188bb"
+      ],
+      "description": "模板目录声明获取/应用模板的 ISA 参数，浏览器模板图按正式模板内容产生实例化输入；Lineage 校验并建立新图对象。预览中的局部图 ID 不替代实例化后的正式资源身份。",
+      "example": "模板列表/详情 → lineage_templates/lineage_template_graph 预览 → ApplyTemplate 参数 → Lineage 返回正式图及对象 ID。"
+    },
+    {
+      "id": "lineage-editor-metadata",
+      "title": "图编辑器原语目录与展示元数据",
+      "modules": [
+        "interface.workbenches",
+        "lineage"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_4adcc1ff2f2c"
+      ],
+      "description": "lineage_primitive_definitions.json 为浏览器组件库提供静态展示元数据，HTML/CSS 负责图控件呈现；执行计划及可执行指令由 Lineage 的运行定义验证。Lineage 在本契约中是图编译入口，不宣称编辑器直连其每个内部组件。",
+      "example": "静态 primitive 定义 → 浏览器原语库/配置表单 → 提交组件配置 → Lineage 编译与指令目录验证。"
+    },
+    {
+      "id": "resident-workspace-view",
+      "title": "Resident 工作区视图",
+      "modules": [
+        "interface.workbenches",
+        "web",
+        "lineage.definition"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_ccb99a00eebd"
+      ],
+      "description": "工作台以当前 actor 和 Resident ID 请求 agent-workbench 视图，Web 读取正式 Resident/Workspace/Lineage 绑定后返回界面需要的项目与导航数据；浏览器不从目录名推断主体权限。",
+      "example": "lineage_workbench → http_agent_workbench → Resident session/workspace 读取 → 界面更新绑定导航。"
+    },
+    {
+      "id": "test-catalog-binding",
+      "title": "测试目录资源与 WALL 绑定",
+      "modules": [
+        "engineering.validation",
+        "resources.types",
+        "web",
+        "web.workflows",
+        "resources.access",
+        "interface.workbenches"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_8273271b67b1",
+        "decision_f2a6a5dd4646",
+        "decision_8dc6b3d03ca7"
+      ],
+      "description": "测试框架 CatalogRepository 拥有测试定义；ResourceService 的 test provider 将 case.public 投影为正式资源。Test 功能通过 resource.index_adapters 提供 TestCatalogAdapter，索引刷新调用 CatalogRepository.projection 生成摘要并保留逐项错误。Web 测试接口读取目录/执行接口，WALL 保存条目与测试绑定。绑定的测试 ID 不复制测试定义。",
+      "example": "资源索引刷新 → TestCatalogAdapter.scan → catalog_repository().projection → Test 摘要与资源级错误；test provider → CatalogRepository.get → canonical Test resource；test_framework.web 查询/执行框架 API；wall.test_binding/point_test_binding 关联项目条目。"
+    },
+    {
+      "id": "test-workbench-composition",
+      "title": "测试工作台与通用浏览器组件组合",
+      "modules": [
+        "engineering.validation",
+        "interface.workbenches",
+        "interface.shell",
+        "interface.conversation",
+        "interface.content",
+        "interface"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_f2a6a5dd4646"
+      ],
+      "description": "测试工作台组合资源 chip、Chat、命令注册、上下文、演示播放器和导览组件。测试页面通过它们的浏览器 API 传递正式测试/Run 引用和局部交互状态；测试执行真值仍在框架。这里描述组合 API 和数据引用，不建立从 engineering 服务到 CSS/DOM 的网络连接。",
+      "example": "WALL/test 页面选测试或 Run → Workbench context/command registry 注册操作 → chips/Chat/演示/导览组件呈现并路由动作 → 测试框架接口返回真实 Run。"
+    },
+    {
+      "id": "knowledge-archive-http",
+      "title": "知识归档任务与草稿委托",
+      "modules": [
+        "web.workflows",
+        "resources.types",
+        "knowledge-archive-service"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_3ece26686464",
+        "decision_4666241592d4"
+      ],
+      "description": "Knowledge 资源界面把 actor、archive_id 和候选/草稿传给 Web 归档客户端；客户端调用外部 /api/archive/* HTTP API，返回结构化 job/draft/result。资源类型提供界面与引用，外部归档服务拥有任务处理；此边界不证明其内部正文更新方式。",
+      "example": "用户提交归档草稿：Web 客户端发送 actor、archive_id、draft_ids 到 /api/archive/apply；503/连接失败报告服务不可用，400/403/404按原错误分类返回。"
+    },
+    {
+      "id": "execution-usage-query",
+      "title": "Execution用量账本查询与Resident归因投影",
+      "modules": [
+        "execution",
+        "execution.scheduling",
+        "lineage.conversation"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_f1331d57be89",
+        "decision_fc26f883773d"
+      ],
+      "description": "Lineage按时间窗口读取Execution小时账本，按可读Resident根和当前归属投影，保留每次观察时间和匿名量。 查询保留逐窗口观察起止时间和权限范围，不声称跨窗口原子快照。",
+      "example": "collect调用token_usage(start_hour,end_hour,provider=\"*\",include_accounts=True)后组织Lineage/Resident统计。"
+    },
+    {
+      "id": "lineage-fragment-content",
+      "title": "Society 页面碎片正文保存",
+      "modules": [
+        "interface.workbenches",
+        "web",
+        "lineage"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_4adcc1ff2f2c"
+      ],
+      "description": "碎片编辑器以 Markdown 和附件引用产生页面笔记数组；Web 页面接口携 actor 交 Lineage owner 校验，在作用域内规范化持久化并返回新视图。该页面数据合同不参与 Packet/Effect 执行，也不经 ISA。",
+      "example": "碎片 DOM 序列化为 content/attachments → POST /lineage/api/fragments → update_lineage_fragments 校验 owner 并保存 → 回读 Lineage；失败后重读或恢复旧页面。"
+    },
+    {
+      "id": "execution-account-registration",
+      "title": "AI Backend 账号登记与 Provider 登录接口",
+      "modules": [
+        "execution.scheduling",
+        "execution.providers",
+        "interface.shell",
+        "interface.home",
+        "web.identity"
+      ],
+      "designs": [],
+      "related_designs": [
+        "decision_7956d7cb4bde"
+      ],
+      "description": "Execution 拥有账号登记、启停、登录会话和 Backend 角色映射；账号适配器按 Provider 能力与模型 API 条目派生执行账号，Provider 登录工具维护各自的认证目录。Web 会话接口提供指令权限摘要，管理页据此呈现入口，并经指令读取和修改登记。Home 账号详情中的 AI Backend 入口定位当前账号的管理页，重新登录复用管理页的登录组件；凭据正文不进入返回值，页面权限摘要不替代指令执行时的授权。",
+      "example": "Home 显示账号登录已过期 → 用户打开共享登录组件 → 组件经指令请求 Execution 打开登录会话并轮询状态 → Provider 完成认证后返回登录状态；账号登记与额度调度观察仍各自由原 owner 维护。"
+    }
+  ]
+}

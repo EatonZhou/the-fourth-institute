@@ -1,0 +1,76 @@
+{
+  "task": "local_motor_expression_20261019",
+  "status": "complete",
+  "native": 768,
+  "unknown": 0,
+  "worker_seconds": 3.079438,
+  "raw_bytes": 4496777,
+  "rows": [
+    {
+      "condition": 0,
+      "arm": "retain",
+      "steps": 128,
+      "signed_dx": 4.307122578384504,
+      "mean_strong_good_mass": 23.15074635762065,
+      "mean_good_mass": 23.770621136189533,
+      "end_energy": 141.9548927945158,
+      "end_mass": 24.0,
+      "movement": 0.41465814061856077
+    },
+    {
+      "condition": 0,
+      "arm": "zero",
+      "steps": 128,
+      "signed_dx": -0.001815303704976401,
+      "mean_strong_good_mass": 22.497685419910276,
+      "mean_good_mass": 23.58081484136042,
+      "end_energy": 142.01552787781068,
+      "end_mass": 24.0,
+      "movement": 0.3540230573236736
+    },
+    {
+      "condition": 0,
+      "arm": "negate",
+      "steps": 128,
+      "signed_dx": -4.42415750165425,
+      "mean_strong_good_mass": 15.856719950147447,
+      "mean_good_mass": 20.960448135319254,
+      "end_energy": 141.9557357642525,
+      "end_mass": 24.000000000000004,
+      "movement": 0.41381517088188374
+    },
+    {
+      "condition": 1,
+      "arm": "retain",
+      "steps": 128,
+      "signed_dx": 4.184210274912038,
+      "mean_strong_good_mass": 23.240004651233114,
+      "mean_good_mass": 23.807299537021425,
+      "end_energy": 142.5143256074354,
+      "end_mass": 24.0,
+      "movement": 0.41277790302946316
+    },
+    {
+      "condition": 1,
+      "arm": "zero",
+      "steps": 128,
+      "signed_dx": -0.0016689020326552395,
+      "mean_strong_good_mass": 22.58284306627487,
+      "mean_good_mass": 23.60145873177749,
+      "end_energy": 142.57567242802023,
+      "end_mass": 24.0,
+      "movement": 0.35143108244463983
+    },
+    {
+      "condition": 1,
+      "arm": "negate",
+      "steps": 128,
+      "signed_dx": -4.300463020794972,
+      "mean_strong_good_mass": 16.60725796539321,
+      "mean_good_mass": 21.351046838902292,
+      "end_energy": 142.51331424907363,
+      "end_mass": 23.999999999999993,
+      "movement": 0.41378926139120187
+    }
+  ]
+}

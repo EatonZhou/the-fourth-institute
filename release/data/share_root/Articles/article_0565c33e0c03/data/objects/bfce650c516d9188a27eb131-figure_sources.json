@@ -1,0 +1,27 @@
+{
+  "curves": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/native_investment_action_20261018/relative_curves.csv",
+  "atlas": [
+    "/data/dataset/lenia-research/lineage_75e3399f4877/native_investment_action_20261018/ae909c85-6b64-4528-870c-66b8794c3c54/genome_0ac80448a534dc953505--development--shear_x--material--128/initial128.npz",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018/0eb661f2-b286-43c6-b27e-ee8f3f2da135/genome_0ac80448a534dc953505--none/final384.npz",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018/0eb661f2-b286-43c6-b27e-ee8f3f2da135/genome_0ac80448a534dc953505--shear_x/final384.npz",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/native_investment_action_20261018/ae909c85-6b64-4528-870c-66b8794c3c54/genome_0ac80448a534dc953505--development--shear_x--material--128/last_state.npz",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/native_investment_action_20261018/ae909c85-6b64-4528-870c-66b8794c3c54/genome_0ac80448a534dc953505--development--shear_x--material--128/intent_000256.npz",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/native_investment_action_20261018/ae909c85-6b64-4528-870c-66b8794c3c54/genome_0ac80448a534dc953505--heldout_rotated--shear_x--material--128/initial128.npz",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/native_investment_action_20261018/ae909c85-6b64-4528-870c-66b8794c3c54/genome_0ac80448a534dc953505--heldout_rotated--none--euler--0/last_state.npz",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/native_investment_action_20261018/ae909c85-6b64-4528-870c-66b8794c3c54/genome_0ac80448a534dc953505--heldout_rotated--shear_x--euler--128/last_state.npz",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/native_investment_action_20261018/ae909c85-6b64-4528-870c-66b8794c3c54/genome_0ac80448a534dc953505--heldout_rotated--shear_x--material--128/last_state.npz",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/native_investment_action_20261018/ae909c85-6b64-4528-870c-66b8794c3c54/genome_0ac80448a534dc953505--heldout_rotated--shear_x--material--128/intent_000256.npz",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/native_investment_action_20261018/ae909c85-6b64-4528-870c-66b8794c3c54/genome_6bd5bfd2f629f9414376--development--shear_x--material--128/initial128.npz",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018/0eb661f2-b286-43c6-b27e-ee8f3f2da135/genome_6bd5bfd2f629f9414376--none/final384.npz",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018/0eb661f2-b286-43c6-b27e-ee8f3f2da135/genome_6bd5bfd2f629f9414376--shear_x/final384.npz",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/native_investment_action_20261018/ae909c85-6b64-4528-870c-66b8794c3c54/genome_6bd5bfd2f629f9414376--development--shear_x--material--128/last_state.npz",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/native_investment_action_20261018/ae909c85-6b64-4528-870c-66b8794c3c54/genome_6bd5bfd2f629f9414376--development--shear_x--material--128/intent_000256.npz",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/native_investment_action_20261018/ae909c85-6b64-4528-870c-66b8794c3c54/genome_6bd5bfd2f629f9414376--heldout_rotated--shear_x--material--128/initial128.npz",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/native_investment_action_20261018/ae909c85-6b64-4528-870c-66b8794c3c54/genome_6bd5bfd2f629f9414376--heldout_rotated--none--euler--0/last_state.npz",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/native_investment_action_20261018/ae909c85-6b64-4528-870c-66b8794c3c54/genome_6bd5bfd2f629f9414376--heldout_rotated--shear_x--euler--128/last_state.npz",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/native_investment_action_20261018/ae909c85-6b64-4528-870c-66b8794c3c54/genome_6bd5bfd2f629f9414376--heldout_rotated--shear_x--material--128/last_state.npz",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/native_investment_action_20261018/ae909c85-6b64-4528-870c-66b8794c3c54/genome_6bd5bfd2f629f9414376--heldout_rotated--shear_x--material--128/intent_000256.npz"
+  ],
+  "selection": "all four contexts; fixed long shear arms; original lab coordinates, same density scale; no re-simulation",
+  "amplitude": "carried intention norm / final total mass; not executed paid flux"
+}

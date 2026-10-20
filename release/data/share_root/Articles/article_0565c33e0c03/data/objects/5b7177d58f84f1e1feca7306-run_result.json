@@ -1,0 +1,15 @@
+{
+  "status": "completed",
+  "job_id": "c60df766-a2b8-47b8-8ea0-7feba3f64912",
+  "elapsed_seconds": 47.453443911042996,
+  "usage": {
+    "prototype_rollouts": 3764,
+    "world_ticks": 307818,
+    "local_contact_decisions": 3908922,
+    "body_steps": 0,
+    "independent_physical_energy_steps": 0,
+    "prepare_calls": 0
+  },
+  "output": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_local_plasticity_separated",
+  "scope": "controller contact prototype only; two disjoint evidence fields"
+}

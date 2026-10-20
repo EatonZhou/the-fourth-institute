@@ -1,0 +1,165 @@
+{
+  "schema": "anticipatory-information-audit.v1",
+  "decisions": 2,
+  "completed_targets": 2,
+  "missing_targets": [],
+  "decision_diagnostics": [
+    {
+      "decision_id": "a",
+      "decision_order": 20,
+      "history_digest": "47d88bd03e729098af5734311750f0fa4d3dfe8c3c9d111b083735881efe9b7f",
+      "last_pair": {
+        "cue": 1,
+        "action": 0,
+        "channel": 0,
+        "label": 0
+      },
+      "legal_history_events": 3,
+      "censored_history_ids": [],
+      "public_key": "d5bc85842648062ae971d36d92cbebf16a65d736f05deb8bab936c2b4bde3356",
+      "body_key": "6a06a3054e2447408572e0a0d1506214897423c54f8d5a0afb4678aefd31bdd7",
+      "last_key": "eea1eaf7061128f5bbd6d18a2ea8b09564517d9e7cc0babae2959ab0e107ec70",
+      "channel_last_key": "9848ff1cd85f59dc8ef0d53e3597fa5df0b540800382e8f681d5e91325f5498b",
+      "full_history_key": "1a6301565fb950ba98d31badb5246a528f74127e8817ad49bb939f5b3beec5e6"
+    },
+    {
+      "decision_id": "b",
+      "decision_order": 20,
+      "history_digest": "e7639295d6d0ffafed2cba9af7540ed4b0b4ddba07391716349967ef73109d72",
+      "last_pair": {
+        "cue": 1,
+        "action": 0,
+        "channel": 0,
+        "label": 0
+      },
+      "legal_history_events": 3,
+      "censored_history_ids": [],
+      "public_key": "d5bc85842648062ae971d36d92cbebf16a65d736f05deb8bab936c2b4bde3356",
+      "body_key": "246a7e05c4f0e3ff0fbb44690713305306593c200ea6678cca5592bd96c4aa3d",
+      "last_key": "8c0cbeb5694c6e371975a4481b9989dc6c1e1c7dd0a0290b9e909bd3d6c9f216",
+      "channel_last_key": "70857760670e82179395e832b0b333def840ea52c0bfcbfc6a06dd32935ff649",
+      "full_history_key": "884195262cb7c8ed41e64e4a334d23eff0bf823a5901859b9f032c811a05f032"
+    }
+  ],
+  "realized_outcomes": {
+    "public_key": {
+      "matched_groups": [
+        {
+          "condition_digest": "d5bc85842648062ae971d36d92cbebf16a65d736f05deb8bab936c2b4bde3356",
+          "decision_ids": [
+            "a",
+            "b"
+          ],
+          "distinct_histories": 2,
+          "distinct_targets": 2
+        }
+      ],
+      "history_target_contrasts": [
+        {
+          "condition_digest": "d5bc85842648062ae971d36d92cbebf16a65d736f05deb8bab936c2b4bde3356",
+          "decision_ids": [
+            "a",
+            "b"
+          ],
+          "distinct_histories": 2,
+          "distinct_targets": 2
+        }
+      ],
+      "matched_decisions": 2
+    },
+    "body_key": {
+      "matched_groups": [],
+      "history_target_contrasts": [],
+      "matched_decisions": 0
+    },
+    "last_key": {
+      "matched_groups": [],
+      "history_target_contrasts": [],
+      "matched_decisions": 0
+    },
+    "channel_last_key": {
+      "matched_groups": [],
+      "history_target_contrasts": [],
+      "matched_decisions": 0
+    },
+    "full_history_key": {
+      "matched_groups": [],
+      "history_target_contrasts": [],
+      "matched_decisions": 0
+    }
+  },
+  "owner_model_assessments": {
+    "public_key": {
+      "matched_groups": [
+        {
+          "condition_digest": "d5bc85842648062ae971d36d92cbebf16a65d736f05deb8bab936c2b4bde3356",
+          "decision_ids": [
+            "a",
+            "b"
+          ],
+          "distinct_histories": 2,
+          "distinct_targets": 2
+        }
+      ],
+      "history_target_contrasts": [
+        {
+          "condition_digest": "d5bc85842648062ae971d36d92cbebf16a65d736f05deb8bab936c2b4bde3356",
+          "decision_ids": [
+            "a",
+            "b"
+          ],
+          "distinct_histories": 2,
+          "distinct_targets": 2
+        }
+      ],
+      "matched_decisions": 2
+    },
+    "body_key": {
+      "matched_groups": [],
+      "history_target_contrasts": [],
+      "matched_decisions": 0
+    },
+    "last_key": {
+      "matched_groups": [],
+      "history_target_contrasts": [],
+      "matched_decisions": 0
+    },
+    "channel_last_key": {
+      "matched_groups": [],
+      "history_target_contrasts": [],
+      "matched_decisions": 0
+    },
+    "full_history_key": {
+      "matched_groups": [],
+      "history_target_contrasts": [],
+      "matched_decisions": 0
+    }
+  },
+  "current_body_explains_public_only_contrasts_in_this_design": true,
+  "last_pair_explains_body_matched_contrasts_in_this_design": false,
+  "residual_history_information_candidates": [],
+  "completeness_declared": true,
+  "receipt_references": [
+    "07aa66f6a71ffe1312f949782d9d072cd72d40bade07e4c5d74a82efd891cb7b",
+    "1e318208f4a54c982b70b8c00fe8621da905f7a30087c6a07cec372f96fd0fa2",
+    "4cbc92e050eeb8ccf6b830bfd0d44867d252a68acd7dfb4de3faa3f277df81fd",
+    "a239abf56e4ac41d94cc9fccc108fc566149193668d60cae2b6534e5fc1e73a9",
+    "b3f7420fd5e0ef9a7f7abc9f3017bd05808d2e166ad3d13e8ab3daf1a57a03f1",
+    "bb2efc7f44268ec264e75e923b1ede362bc14e3b35818a9687b18e615087b60b"
+  ],
+  "assessment_references": [
+    "200b8624de6499576e9fb4244a06500f08c8128e5fa9a835af6ad78dbec8abbb",
+    "82f0067be8f706f8134c7b386411ede342b7f640fcc194416c8f9e330b70574f"
+  ],
+  "accounting": [],
+  "frozen_prediction_scores": {},
+  "limits": [
+    "Host declarations and digests identify evidence; this module does not certify physical receipt truth.",
+    "Different random realized outcomes do not prove historical information or different opportunity laws.",
+    "Exact input/body/support matching is used; unmatched finite samples give no no-information conclusion.",
+    "Last sufficiency is only within these records; no trained update-rule advantage follows.",
+    "A precompiled history rule can exploit the same information; information does not establish learned-rule novelty.",
+    "Known target law is a prediction reference, never a physical reward/viability upper bound.",
+    "Synthetic records and pure enumeration are not body learning results."
+  ]
+}

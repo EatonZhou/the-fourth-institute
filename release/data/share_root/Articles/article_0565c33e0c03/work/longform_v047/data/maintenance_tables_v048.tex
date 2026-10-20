@@ -1,0 +1,336 @@
+\subsection*{Conditional maintenance and strong physiological controls}
+The first three batches record 7,488 actual updates and 165.220128 worker seconds. Strong physiology and contact timing add 3,072 actual updates and 103.915548 worker seconds. The latter futures derive from complete actual parents; they do not constitute independent reacquisitions. Full-precision source rows accompany these tables. The original missing tail and the unequal initial purchase control are retained.
+\begingroup\scriptsize\setlength{\tabcolsep}{3pt}\setlength{\LTpre}{6pt}\setlength{\LTpost}{6pt}
+\begin{longtable}{lllllll}
+\caption{Equal realized purchase: all six 96-step continuations from two actual acquired parents. Injury is removed mass, uptake is completed resource intake, and reserve is synthesized protective material. Equal synthesis does not imply equal holding, copying, movement or birth costs.}\label{tab:maintenance-equal}\\
+\toprule
+Parent & Content & Injury & Uptake & Reserve & $M$ & $E$ \\
+\midrule
+\endfirsthead
+\toprule
+Parent & Content & Injury & Uptake & Reserve & $M$ & $E$ \\
+\midrule
+\endhead
+g0 & keep & 4.53509 & 82.84023 & 12.16053 & 89.56978 & 90.61563 \\
+g0 & pooled & 5.43517 & 82.29240 & 12.16053 & 88.75063 & 90.73901 \\
+g0 & swapped & 6.69137 & 81.85874 & 12.16053 & 87.65766 & 90.02519 \\
+g1 & keep & 6.74210 & 78.68940 & 12.03115 & 84.13334 & 75.94514 \\
+g1 & pooled & 7.10679 & 78.53484 & 12.03115 & 84.00890 & 75.74520 \\
+g1 & swapped & 7.71390 & 78.35946 & 12.03115 & 83.79114 & 75.19868 \\
+\bottomrule
+\end{longtable}
+\begin{longtable}{llllllll}
+\caption{Equal-purchase costs and material flows. Holding/copy columns denote predictor expenses, distinct from reserve fees. These are original measured aggregates.}\label{tab:maintenance-equal-costs}\\
+\toprule
+Parent & Content & Reserve fee & Pred. hold & Pred. copy & Motor & Birth & Rule death \\
+\midrule
+\endfirsthead
+\toprule
+Parent & Content & Reserve fee & Pred. hold & Pred. copy & Motor & Birth & Rule death \\
+\midrule
+\endhead
+g0 & keep & 3.75679 & 0.83068 & 0.08970 & 12.94637 & 63.05454 & 41.47442 \\
+g0 & pooled & 3.78205 & 0.82498 & 0.08973 & 13.27291 & 62.16752 & 41.19263 \\
+g0 & swapped & 3.80556 & 0.82056 & 0.08962 & 13.24408 & 61.71989 & 40.97393 \\
+g1 & keep & 3.72657 & 0.78835 & 0.08113 & 9.69968 & 62.93503 & 39.33621 \\
+g1 & pooled & 3.73579 & 0.78674 & 0.08100 & 9.67248 & 62.99200 & 39.25602 \\
+g1 & swapped & 3.74658 & 0.78492 & 0.08077 & 9.50865 & 63.22519 & 39.16573 \\
+\bottomrule
+\end{longtable}
+\begin{longtable}{lllllll}
+\caption{All strong-physiology policies and their stable, changed and whole-path windows. Each of two actual acquired parents supplies six dependent futures. Stable/changed last 96 updates each; all is their 192-step union, not an additional execution. Fixed0 and fixed1 are both retained.}\label{tab:maintenance-strong}\\
+\toprule
+Parent/policy & Window & Injury & Absorbed & Uptake & $M$ & $E$ \\
+\midrule
+\endfirsthead
+\toprule
+Parent/policy & Window & Injury & Absorbed & Uptake & $M$ & $E$ \\
+\midrule
+\endhead
+g0\_fixed0 & stable & 5.97504 & 7.22144 & 81.89108 & 88.75891 & 87.97480 \\
+g0\_fixed0 & changed & 9.45809 & 5.16395 & 87.27516 & 95.84890 & 98.53594 \\
+g0\_fixed0 & all & 15.43313 & 12.38539 & 169.16624 & 95.84890 & 98.53594 \\
+g0\_fixed1 & stable & 8.58496 & 4.48099 & 80.96021 & 86.77463 & 85.17765 \\
+g0\_fixed1 & changed & 6.26300 & 8.20761 & 87.50260 & 97.55240 & 98.97246 \\
+g0\_fixed1 & all & 14.84796 & 12.68860 & 168.46282 & 97.55240 & 98.97246 \\
+g0\_freeze & stable & 6.25389 & 6.91630 & 81.85457 & 88.46722 & 87.93198 \\
+g0\_freeze & changed & 8.97688 & 5.64393 & 87.36183 & 95.87069 & 99.53592 \\
+g0\_freeze & all & 15.23077 & 12.56023 & 169.21640 & 95.87069 & 99.53592 \\
+g0\_instant & stable & 7.01137 & 6.12868 & 81.55667 & 87.88274 & 86.96201 \\
+g0\_instant & changed & 7.58385 & 7.05982 & 87.54656 & 96.71483 & 99.96344 \\
+g0\_instant & all & 14.59523 & 13.18849 & 169.10323 & 96.71483 & 99.96344 \\
+g0\_keep & stable & 6.25562 & 6.91849 & 81.83199 & 88.48415 & 87.86142 \\
+g0\_keep & changed & 8.15371 & 6.33816 & 87.65532 & 97.05454 & 99.24553 \\
+g0\_keep & all & 14.40933 & 13.25665 & 169.48731 & 97.05454 & 99.24553 \\
+g0\_uniform & stable & 7.37265 & 5.75410 & 81.44143 & 87.57006 & 86.64445 \\
+g0\_uniform & changed & 7.78928 & 6.80877 & 87.26786 & 96.27281 & 99.58626 \\
+g0\_uniform & all & 15.16193 & 12.56287 & 168.70928 & 96.27281 & 99.58626 \\
+g1\_fixed0 & stable & 11.31653 & 6.27311 & 77.96146 & 80.69748 & 71.16066 \\
+g1\_fixed0 & changed & 4.44658 & 6.35885 & 81.81355 & 91.36277 & 84.22828 \\
+g1\_fixed0 & all & 15.76311 & 12.63197 & 159.77501 & 91.36277 & 84.22828 \\
+g1\_fixed1 & stable & 9.82195 & 7.94023 & 78.42042 & 81.11200 & 72.12991 \\
+g1\_fixed1 & changed & 5.86574 & 4.82013 & 81.20158 & 89.87750 & 84.07458 \\
+g1\_fixed1 & all & 15.68769 & 12.76036 & 159.62200 & 89.87750 & 84.07458 \\
+g1\_freeze & stable & 9.81973 & 7.91896 & 78.39173 & 81.19518 & 72.43121 \\
+g1\_freeze & changed & 5.80319 & 4.90911 & 81.41061 & 90.06211 & 85.04418 \\
+g1\_freeze & all & 15.62292 & 12.82807 & 159.80234 & 90.06211 & 85.04418 \\
+g1\_instant & stable & 10.16683 & 7.52077 & 78.27369 & 81.06627 & 71.89835 \\
+g1\_instant & changed & 4.96924 & 5.80546 & 81.70056 & 90.81861 & 84.57819 \\
+g1\_instant & all & 15.13606 & 13.32623 & 159.97425 & 90.81861 & 84.57819 \\
+g1\_keep & stable & 9.89309 & 7.86485 & 78.38047 & 81.02309 & 72.25131 \\
+g1\_keep & changed & 5.20909 & 5.49655 & 81.31226 & 90.56080 & 84.82832 \\
+g1\_keep & all & 15.10218 & 13.36140 & 159.69273 & 90.56080 & 84.82832 \\
+g1\_uniform & stable & 10.38074 & 7.29315 & 78.19443 & 80.96239 & 71.79534 \\
+g1\_uniform & changed & 5.19949 & 5.56322 & 81.58187 & 90.58478 & 84.42760 \\
+g1\_uniform & all & 15.58023 & 12.85637 & 159.77630 & 90.58478 & 84.42760 \\
+\bottomrule
+\end{longtable}
+\begin{longtable}{lllllll}
+\caption{Strong-control actual expenses. All arms carry the same predictor capacity even where the control does not need it. Reserve fees and predictor holding/copy costs remain separate; these do not constitute a complete physical price of sensors or computation.}\label{tab:maintenance-costs}\\
+\toprule
+Parent/policy & Window & Synth. & Res. fee & Pred. hold & Pred. copy & Motor \\
+\midrule
+\endfirsthead
+\toprule
+Parent/policy & Window & Synth. & Res. fee & Pred. hold & Pred. copy & Motor \\
+\midrule
+\endhead
+g0\_fixed0 & stable & 12.16053 & 3.76086 & 0.81989 & 0.09038 & 12.64199 \\
+g0\_fixed0 & changed & 12.16053 & 3.80799 & 0.87554 & 0.10776 & 9.53375 \\
+g0\_fixed0 & all & 24.32106 & 7.56884 & 1.69543 & 0.19814 & 22.17573 \\
+g0\_fixed1 & stable & 12.16053 & 3.80682 & 0.81039 & 0.09017 & 12.32891 \\
+g0\_fixed1 & changed & 12.16053 & 3.77485 & 0.87705 & 0.10852 & 11.30465 \\
+g0\_fixed1 & all & 24.32106 & 7.58167 & 1.68744 & 0.19869 & 23.63355 \\
+g0\_freeze & stable & 12.16053 & 3.76446 & 0.81952 & 0.09044 & 12.82654 \\
+g0\_freeze & changed & 12.16053 & 3.80264 & 0.87655 & 0.10828 & 9.76756 \\
+g0\_freeze & all & 24.32106 & 7.56710 & 1.69607 & 0.19872 & 22.59410 \\
+g0\_instant & stable & 12.16053 & 3.77791 & 0.81647 & 0.09042 & 12.60572 \\
+g0\_instant & changed & 12.16053 & 3.78352 & 0.87840 & 0.10829 & 9.75406 \\
+g0\_instant & all & 24.32106 & 7.56143 & 1.69486 & 0.19871 & 22.35978 \\
+g0\_keep & stable & 12.16053 & 3.76509 & 0.81929 & 0.09044 & 12.72841 \\
+g0\_keep & changed & 12.16053 & 3.79526 & 0.87876 & 0.10881 & 11.37359 \\
+g0\_keep & all & 24.32106 & 7.56034 & 1.69805 & 0.19924 & 24.10201 \\
+g0\_uniform & stable & 12.16053 & 3.78365 & 0.81529 & 0.09041 & 12.58809 \\
+g0\_uniform & changed & 12.16053 & 3.79065 & 0.87550 & 0.10826 & 9.74953 \\
+g0\_uniform & all & 24.32106 & 7.57430 & 1.69079 & 0.19867 & 22.33762 \\
+g1\_fixed0 & stable & 12.03115 & 3.75183 & 0.78080 & 0.08058 & 9.28679 \\
+g1\_fixed0 & changed & 12.03115 & 3.74504 & 0.81970 & 0.09535 & 9.67409 \\
+g1\_fixed0 & all & 24.06230 & 7.49687 & 1.60050 & 0.17593 & 18.96088 \\
+g1\_fixed1 & stable & 12.03115 & 3.71990 & 0.78551 & 0.08079 & 9.54224 \\
+g1\_fixed1 & changed & 12.03115 & 3.76615 & 0.81402 & 0.09479 & 10.10564 \\
+g1\_fixed1 & all & 24.06230 & 7.48605 & 1.59953 & 0.17559 & 19.64788 \\
+g1\_freeze & stable & 12.03115 & 3.72363 & 0.78524 & 0.08112 & 9.68539 \\
+g1\_freeze & changed & 12.03115 & 3.76288 & 0.81610 & 0.09546 & 10.30330 \\
+g1\_freeze & all & 24.06230 & 7.48652 & 1.60134 & 0.17657 & 19.98869 \\
+g1\_instant & stable & 12.03115 & 3.72958 & 0.78404 & 0.08094 & 9.46434 \\
+g1\_instant & changed & 12.03115 & 3.74857 & 0.81890 & 0.09542 & 9.91850 \\
+g1\_instant & all & 24.06230 & 7.47815 & 1.60294 & 0.17636 & 19.38284 \\
+g1\_keep & stable & 12.03115 & 3.72240 & 0.78510 & 0.08082 & 9.60956 \\
+g1\_keep & changed & 12.03115 & 3.75942 & 0.81518 & 0.09529 & 9.92226 \\
+g1\_keep & all & 24.06230 & 7.48182 & 1.60028 & 0.17611 & 19.53182 \\
+g1\_uniform & stable & 12.03115 & 3.73432 & 0.78322 & 0.08089 & 9.44845 \\
+g1\_uniform & changed & 12.03115 & 3.75324 & 0.81764 & 0.09537 & 9.94192 \\
+g1\_uniform & all & 24.06230 & 7.48756 & 1.60085 & 0.17625 & 19.39037 \\
+\bottomrule
+\end{longtable}
+\begin{longtable}{llllllll}
+\caption{Old-cohort stocks and tissue flows in the strong controls. Old live and cumulative old dead refer to the registered parent cohort; new live is retained later-born mass. Birth and rule/starvation removal are window flows. They cannot be equated to one-to-one replacement.}\label{tab:maintenance-cohorts}\\
+\toprule
+Parent/policy & Window & Old live & Old dead & New live & Birth & Rule loss & Starved \\
+\midrule
+\endfirsthead
+\toprule
+Parent/policy & Window & Old live & Old dead & New live & Birth & Rule loss & Starved \\
+\midrule
+\endhead
+g0\_fixed0 & stable & 42.76506 & 41.68308 & 45.99385 & 63.31112 & 40.93422 & 12.09109 \\
+g0\_fixed0 & changed & 22.13157 & 62.31656 & 73.71733 & 69.98461 & 43.72837 & 9.70816 \\
+g0\_fixed0 & all & 22.13157 & 62.31656 & 73.71733 & 133.29573 & 84.66259 & 21.79924 \\
+g0\_fixed1 & stable & 41.19739 & 43.25074 & 45.57723 & 63.92235 & 40.45662 & 12.55429 \\
+g0\_fixed1 & changed & 22.18807 & 62.26006 & 75.36433 & 69.95254 & 43.80719 & 9.10457 \\
+g0\_fixed1 & all & 22.18807 & 62.26006 & 75.36433 & 133.87490 & 84.26381 & 21.65885 \\
+g0\_freeze & stable & 42.71064 & 41.73749 & 45.75658 & 63.18968 & 40.91593 & 12.00077 \\
+g0\_freeze & changed & 22.37758 & 62.07055 & 73.49311 & 69.26775 & 43.78211 & 9.10529 \\
+g0\_freeze & all & 22.37758 & 62.07055 & 73.49311 & 132.45743 & 84.69804 & 21.10607 \\
+g0\_instant & stable & 42.16424 & 42.28389 & 45.71850 & 63.45054 & 40.76208 & 12.24247 \\
+g0\_instant & changed & 22.38499 & 62.06315 & 74.32984 & 69.46170 & 43.87390 & 9.17186 \\
+g0\_instant & all & 22.38499 & 62.06315 & 74.32984 & 132.91224 & 84.63598 & 21.41434 \\
+g0\_keep & stable & 42.67051 & 41.77762 & 45.81364 & 63.24034 & 40.90441 & 12.04429 \\
+g0\_keep & changed & 22.49396 & 61.95418 & 74.56059 & 69.80151 & 43.89211 & 9.18529 \\
+g0\_keep & all & 22.49396 & 61.95418 & 74.56059 & 133.04185 & 84.79652 & 21.22958 \\
+g0\_uniform & stable & 41.97110 & 42.47703 & 45.59896 & 63.47589 & 40.70295 & 12.27836 \\
+g0\_uniform & changed & 22.24967 & 62.19846 & 74.02314 & 69.32545 & 43.72950 & 9.10393 \\
+g0\_uniform & all & 22.24967 & 62.19846 & 74.02314 & 132.80135 & 84.43245 & 21.38230 \\
+g1\_fixed0 & stable & 37.18106 & 46.36859 & 43.51642 & 63.52428 & 38.95961 & 16.10031 \\
+g1\_fixed0 & changed & 19.37075 & 64.17890 & 71.99202 & 68.88256 & 40.92079 & 12.84990 \\
+g1\_fixed0 & all & 19.37075 & 64.17890 & 71.99202 & 132.40684 & 79.88040 & 28.95021 \\
+g1\_fixed1 & stable & 37.73870 & 45.81095 & 43.37330 & 62.95955 & 39.19336 & 16.38188 \\
+g1\_fixed1 & changed & 19.36295 & 64.18670 & 70.51455 & 67.94875 & 40.63773 & 12.67978 \\
+g1\_fixed1 & all & 19.36295 & 64.18670 & 70.51455 & 130.90829 & 79.83109 & 29.06167 \\
+g1\_freeze & stable & 37.82324 & 45.72641 & 43.37194 & 62.89857 & 39.18072 & 16.25260 \\
+g1\_freeze & changed & 19.54709 & 64.00256 & 70.51502 & 67.66338 & 40.74386 & 12.24941 \\
+g1\_freeze & all & 19.54709 & 64.00256 & 70.51502 & 130.56195 & 79.92457 & 28.50200 \\
+g1\_instant & stable & 37.60298 & 45.94667 & 43.46329 & 63.11988 & 39.12034 & 16.31610 \\
+g1\_instant & changed & 19.45749 & 64.09216 & 71.36112 & 68.39613 & 40.88115 & 12.79340 \\
+g1\_instant & all & 19.45749 & 64.09216 & 71.36112 & 131.51601 & 80.00149 & 29.10950 \\
+g1\_keep & stable & 37.75116 & 45.79849 & 43.27193 & 62.85452 & 39.17333 & 16.31466 \\
+g1\_keep & changed & 19.51121 & 64.03844 & 71.04959 & 67.97175 & 40.69659 & 12.52837 \\
+g1\_keep & all & 19.51121 & 64.03844 & 71.04959 & 130.82627 & 79.86992 & 28.84303 \\
+g1\_uniform & stable & 37.53265 & 46.01700 & 43.42974 & 63.13625 & 39.07952 & 16.26325 \\
+g1\_uniform & changed & 19.40589 & 64.14377 & 71.17889 & 68.33822 & 40.81829 & 12.69805 \\
+g1\_uniform & all & 19.40589 & 64.14377 & 71.17889 & 131.47447 & 79.89782 & 28.96130 \\
+\bottomrule
+\end{longtable}
+\begin{longtable}{lllllll}
+\caption{Remaining strong-control resource and energy transactions. External P/F supply and birth-fuel consumption are distinct from uptake. Actor energy spent is its reported aggregate; tax and motor columns are components, not extra additive totals.}\label{tab:maintenance-resource}\\
+\toprule
+Parent/policy & Window & $P_{in}$ & $F_{in}$ & Birth fuel & Actor $E$ & Actor tax \\
+\midrule
+\endfirsthead
+\toprule
+Parent/policy & Window & $P_{in}$ & $F_{in}$ & Birth fuel & Actor $E$ & Actor tax \\
+\midrule
+\endhead
+g0\_fixed0 & stable & 75.27294 & 108.40605 & 26.59067 & 35.98693 & 18.42559 \\
+g0\_fixed0 & changed & 82.08291 & 116.57090 & 29.39354 & 30.78670 & 15.99972 \\
+g0\_fixed0 & all & 157.35584 & 224.97695 & 55.98421 & 66.77363 & 34.42531 \\
+g0\_fixed1 & stable & 75.88455 & 107.75090 & 26.84739 & 36.35049 & 19.15926 \\
+g0\_fixed1 & changed & 82.04062 & 116.74476 & 29.38007 & 31.48118 & 14.91421 \\
+g0\_fixed1 & all & 157.92517 & 224.49566 & 56.22746 & 67.83167 & 34.07347 \\
+g0\_freeze & stable & 75.15651 & 108.32360 & 26.53967 & 36.06421 & 18.32056 \\
+g0\_freeze & changed & 81.37078 & 116.35527 & 29.09246 & 30.32014 & 15.29326 \\
+g0\_freeze & all & 156.52728 & 224.67887 & 55.63212 & 66.38435 & 33.61382 \\
+g0\_instant & stable & 75.41465 & 108.13911 & 26.64923 & 36.17276 & 18.66825 \\
+g0\_instant & changed & 81.56229 & 116.60835 & 29.17391 & 30.34237 & 15.31794 \\
+g0\_instant & all & 156.97694 & 224.74747 & 55.82314 & 66.51513 & 33.98618 \\
+g0\_keep & stable & 75.20518 & 108.32097 & 26.56094 & 36.01373 & 18.36956 \\
+g0\_keep & changed & 81.89210 & 116.85646 & 29.31663 & 31.62067 & 14.97451 \\
+g0\_keep & all & 157.09728 & 225.17743 & 55.87758 & 67.63439 & 33.34407 \\
+g0\_uniform & stable & 75.44129 & 108.03813 & 26.65987 & 36.20935 & 18.72954 \\
+g0\_uniform & changed & 81.42718 & 116.27390 & 29.11669 & 30.22423 & 15.22169 \\
+g0\_uniform & all & 156.86847 & 224.31203 & 55.77657 & 66.43358 & 33.95123 \\
+g1\_fixed0 & stable & 75.41221 & 104.64249 & 26.68020 & 38.62142 & 24.64982 \\
+g1\_fixed0 & changed & 80.85156 & 110.60965 & 28.93068 & 35.64770 & 21.05540 \\
+g1\_fixed0 & all & 156.26377 & 215.25213 & 55.61087 & 74.26912 & 45.70522 \\
+g1\_fixed1 & stable & 74.85371 & 104.86301 & 26.44301 & 39.46459 & 25.20931 \\
+g1\_fixed1 & changed & 79.92557 & 109.62749 & 28.53847 & 35.57727 & 20.58750 \\
+g1\_fixed1 & all & 154.77928 & 214.49050 & 54.98148 & 75.04186 & 45.79681 \\
+g1\_freeze & stable & 74.79528 & 104.80904 & 26.41740 & 39.44895 & 25.05212 \\
+g1\_freeze & changed & 79.64440 & 109.71740 & 28.41862 & 35.37348 & 20.17357 \\
+g1\_freeze & all & 154.43968 & 214.52644 & 54.83602 & 74.82242 & 45.22569 \\
+g1\_instant & stable & 75.01241 & 104.78341 & 26.51035 & 39.24015 & 25.07159 \\
+g1\_instant & changed & 80.36842 & 110.30266 & 28.72637 & 35.73244 & 20.90052 \\
+g1\_instant & all & 155.38083 & 215.08607 & 55.23672 & 74.97259 & 45.97211 \\
+g1\_keep & stable & 74.75087 & 104.78079 & 26.39890 & 39.44991 & 25.12975 \\
+g1\_keep & changed & 79.94384 & 109.73824 & 28.54814 & 35.13914 & 20.32578 \\
+g1\_keep & all & 154.69471 & 214.51904 & 54.94703 & 74.58905 & 45.45553 \\
+g1\_uniform & stable & 75.02895 & 104.71210 & 26.51722 & 39.13617 & 24.98842 \\
+g1\_uniform & changed & 80.31197 & 110.16157 & 28.70205 & 35.70398 & 20.85624 \\
+g1\_uniform & all & 155.34092 & 214.87368 & 55.21928 & 74.84015 & 45.84466 \\
+\bottomrule
+\end{longtable}
+\begin{longtable}{llllll}
+\caption{All eight contact-timescale paths. Each actual parent supplies block/impulse contact with acquired/instantaneous readout. All last 96 updates with writes frozen and the learned relation unchanged. Matching external strain integrals does not match realized bodily demand.}\label{tab:maintenance-timing}\\
+\toprule
+Parent/contact/readout & Injury & Demand & Uptake & $M$ & $E$ \\
+\midrule
+\endfirsthead
+\toprule
+Parent/contact/readout & Injury & Demand & Uptake & $M$ & $E$ \\
+\midrule
+\endhead
+g0\_block\_instant & 5.86577 & 11.69542 & 84.92328 & 94.84058 & 97.21561 \\
+g0\_block\_keep & 5.54774 & 11.73469 & 84.98503 & 94.98059 & 99.03279 \\
+g0\_impulse\_instant & 6.77875 & 11.77352 & 84.39595 & 94.14788 & 96.54978 \\
+g0\_impulse\_keep & 6.18977 & 11.79992 & 84.53919 & 94.54019 & 98.46859 \\
+g1\_block\_instant & 2.73436 & 9.58831 & 82.29861 & 90.78449 & 84.57897 \\
+g1\_block\_keep & 2.55637 & 9.59223 & 82.46122 & 91.08614 & 85.09947 \\
+g1\_impulse\_instant & 3.43611 & 9.55584 & 81.94508 & 90.28252 & 84.04949 \\
+g1\_impulse\_keep & 3.23053 & 9.55449 & 82.10340 & 90.59253 & 84.54166 \\
+\bottomrule
+\end{longtable}
+\begin{longtable}{lllllll}
+\caption{Contact-timescale expenses and old-cohort outcomes. Synthesized protection and fees are shown alongside the state-dependent motor expense.}\label{tab:maintenance-timing-costs}\\
+\toprule
+Parent/contact/readout & Synth. & Res. fee & Pred. hold & Pred. copy & Motor & Old dead \\
+\midrule
+\endfirsthead
+\toprule
+Parent/contact/readout & Synth. & Res. fee & Pred. hold & Pred. copy & Motor & Old dead \\
+\midrule
+\endhead
+g0\_block\_instant & 12.28663 & 3.83975 & 0.85092 & 0.10332 & 10.56345 & 40.67702 \\
+g0\_block\_keep & 12.28663 & 3.83321 & 0.85216 & 0.10309 & 8.76934 & 40.51884 \\
+g0\_impulse\_instant & 12.28663 & 3.85557 & 0.84551 & 0.10326 & 10.53519 & 41.11727 \\
+g0\_impulse\_keep & 12.28663 & 3.84491 & 0.84755 & 0.10304 & 8.71891 & 40.86373 \\
+g1\_block\_instant & 11.82468 & 3.67027 & 0.82613 & 0.09088 & 9.71584 & 39.79037 \\
+g1\_block\_keep & 11.82468 & 3.66599 & 0.82747 & 0.09150 & 9.71393 & 39.62077 \\
+g1\_impulse\_instant & 11.82468 & 3.68351 & 0.82237 & 0.09085 & 9.69851 & 40.13236 \\
+g1\_impulse\_keep & 11.82468 & 3.67924 & 0.82370 & 0.09147 & 9.67077 & 39.96385 \\
+\bottomrule
+\end{longtable}
+\begin{longtable}{lllllll}
+\caption{All initial maintenance paths, including the incomplete risk arm. Whole aggregates cover only recorded updates; the missing 128-step tail is not a zero outcome. Parent-condition labels refer to designed cue relationships and seeds.}\label{tab:maintenance-initial}\\
+\toprule
+Condition/policy & Status & Steps & Injury & Synth. & $M$ & $E$ \\
+\midrule
+\endfirsthead
+\toprule
+Condition/policy & Status & Steps & Injury & Synth. & $M$ & $E$ \\
+\midrule
+\endhead
+independent\_g0\_delta & complete & 192 & 6.94244 & 29.30489 & 87.59730 & 86.13203 \\
+independent\_g0\_full & complete & 192 & 2.76590 & 58.90066 & 90.08316 & 83.89908 \\
+independent\_g0\_instant & complete & 192 & 15.02938 & 9.41526 & 83.00322 & 84.52743 \\
+independent\_g0\_risk & complete & 192 & 5.76698 & 34.44294 & 88.30652 & 85.32044 \\
+independent\_g0\_uniform & complete & 192 & 6.44631 & 38.33360 & 87.97248 & 85.00946 \\
+independent\_g1\_delta & complete & 192 & 7.32650 & 27.63961 & 83.64382 & 72.73470 \\
+independent\_g1\_full & complete & 192 & 2.27853 & 58.60501 & 87.39226 & 72.43591 \\
+independent\_g1\_instant & complete & 192 & 14.53923 & 9.38608 & 79.90269 & 74.14560 \\
+independent\_g1\_risk & complete & 192 & 6.70308 & 31.82200 & 84.16814 & 71.53893 \\
+independent\_g1\_uniform & complete & 192 & 6.50294 & 38.06713 & 84.74135 & 73.21876 \\
+related\_g0\_delta & complete & 384 & 16.30614 & 46.75932 & 108.46321 & 116.65898 \\
+related\_g0\_full & complete & 384 & 4.58619 & 131.06371 & 115.12940 & 118.40758 \\
+related\_g0\_instant & complete & 384 & 29.01441 & 19.28605 & 101.24395 & 116.39677 \\
+related\_g0\_risk & complete & 384 & 13.18968 & 58.18711 & 110.36988 & 118.18603 \\
+related\_g0\_uniform & complete & 384 & 11.33988 & 82.67383 & 112.13664 & 120.40352 \\
+related\_g1\_delta & complete & 384 & 15.78245 & 57.10194 & 102.39303 & 103.53045 \\
+related\_g1\_full & complete & 384 & 5.58071 & 126.56578 & 106.82011 & 101.28238 \\
+related\_g1\_instant & complete & 384 & 34.08637 & 18.24445 & 93.35203 & 95.02895 \\
+related\_g1\_risk & storage\_partial & 256 & 10.83560 & 45.02726 & 87.87114 & 77.16088 \\
+related\_g1\_uniform & complete & 384 & 13.80768 & 81.86311 & 102.70183 & 100.85917 \\
+\bottomrule
+\end{longtable}
+\begin{longtable}{llllllll}
+\caption{Earlier content and alarm continuations before exact-quota matching. The locally constrained yoked rule does not realize an equal purchase; denied amounts remain explicit. The invalid moved-mass diagnostic is excluded.}\label{tab:maintenance-earlier-content}\\
+\toprule
+Parent & Window & Readout & Injury & Synth. & Denied & $M$ & $E$ \\
+\midrule
+\endfirsthead
+\toprule
+Parent & Window & Readout & Injury & Synth. & Denied & $M$ & $E$ \\
+\midrule
+\endhead
+g0 & stable & keep & 0.31714 & 12.35560 & 0.87081 & 89.24228 & 88.29880 \\
+g0 & stable & pooled & 0.44388 & 13.04797 & 0.74300 & 89.13765 & 88.00157 \\
+g0 & stable & swapped & 3.67742 & 9.68978 & 2.14167 & 86.52201 & 84.74097 \\
+g0 & stable & yoked\_uniform & 0.44366 & 11.77183 & 0.58084 & 89.22773 & 88.32449 \\
+g0 & stable & freeze & 0.31714 & 12.35560 & 0.87081 & 89.24228 & 88.29880 \\
+g0 & changed & keep & 7.56877 & 12.02915 & 1.02193 & 90.99300 & 90.87147 \\
+g0 & changed & pooled & 5.61588 & 13.62981 & 0.37141 & 92.45350 & 92.67815 \\
+g0 & changed & swapped & 4.23384 & 13.98035 & 0.00281 & 91.67564 & 91.35141 \\
+g0 & changed & yoked\_uniform & 8.31826 & 11.85598 & 0.15279 & 90.30130 & 89.89634 \\
+g0 & changed & freeze & 10.94569 & 5.13050 & 0.99020 & 87.88748 & 88.34207 \\
+g1 & stable & keep & 1.52153 & 7.00709 & 2.85447 & 85.43839 & 76.93067 \\
+g1 & stable & pooled & 2.22243 & 7.85183 & 1.98740 & 84.70661 & 76.03530 \\
+g1 & stable & swapped & 3.30285 & 7.90588 & 1.72573 & 83.74740 & 74.96548 \\
+g1 & stable & yoked\_uniform & 2.01491 & 6.65504 & 0.35205 & 84.96570 & 76.74201 \\
+g1 & stable & freeze & 1.52153 & 7.00709 & 2.85447 & 85.43839 & 76.93067 \\
+g1 & changed & keep & 1.69375 & 5.42071 & 1.70692 & 90.56991 & 86.86800 \\
+g1 & changed & pooled & 1.62092 & 4.13143 & 1.38048 & 89.97331 & 86.26378 \\
+g1 & changed & swapped & 1.54882 & 2.80051 & 1.34302 & 89.30121 & 85.55459 \\
+g1 & changed & yoked\_uniform & 2.14095 & 5.31650 & 0.10330 & 89.74186 & 86.35960 \\
+g1 & changed & freeze & 2.39948 & 6.45185 & 0.30980 & 89.87077 & 86.23446 \\
+\bottomrule
+\end{longtable}
+\endgroup

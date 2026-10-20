@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600" viewBox="0 0 1200 600">
+<rect width="1200" height="600" fill="white"/>
+<text x="28" y="41.56" text-anchor="start" font-family="Noto Sans CJK SC" font-size="26" font-weight="700" fill="#275D85">上下文与经验：选择、使用、提炼与恢复</text>
+<polyline points="28,62 1172,62" fill="none" stroke="#91A2AE" stroke-width="1.7"/>
+<text x="30" y="583.0300000000001" text-anchor="start" font-family="Noto Sans CJK SC" font-size="13" font-weight="400" fill="#61717E">设计示意 · 实线：工作或依赖关系；虚线：反馈或关联；不表示实验测量</text>
+<rect x="35" y="105" width="270" height="175" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="170.0" y="131.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">持久材料</text>
+<text x="170.0" y="193.71" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">规范与模块契约</text>
+<text x="170.0" y="213.77" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">历史判断与证据</text>
+<text x="170.0" y="233.83" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">未完任务与入口</text>
+<rect x="395" y="105" width="330" height="175" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="560.0" y="131.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">当前任务上下文</text>
+<text x="560.0" y="193.71" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">目标＋必要依赖</text>
+<text x="560.0" y="213.77" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">相关经验＋当前差异</text>
+<text x="560.0" y="233.83" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">工具结果的局部证据</text>
+<rect x="815" y="105" width="350" height="175" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="990.0" y="131.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">执行与核对</text>
+<text x="990.0" y="193.71" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">采取行动／观察结果</text>
+<text x="990.0" y="213.77" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">解释失败／修正假设</text>
+<text x="990.0" y="233.83" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">完成或交接未完工作</text>
+<polyline points="305,193 395,193" fill="none" stroke="#275D85" stroke-width="1.7"/>
+<polygon points="395,193 386.6420182798114,196.33828422471686 386.6420182798114,189.66171577528314" fill="#275D85"/>
+<polyline points="725,193 815,193" fill="none" stroke="#275D85" stroke-width="1.7"/>
+<polygon points="815,193 806.6420182798114,196.33828422471686 806.6420182798114,189.66171577528314" fill="#275D85"/>
+<rect x="395" y="365" width="330" height="155" fill="#EDF5F1" stroke="#26756C" stroke-width="1.5"/>
+<text x="560.0" y="391.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#26756C">整理后的经验</text>
+<text x="560.0" y="443.71000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">适用条件／反例</text>
+<text x="560.0" y="463.77000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">可复用步骤／核对方法</text>
+<text x="560.0" y="483.83000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">关联原始证据</text>
+<polyline points="990,280 990,442 725,442" fill="none" stroke="#26756C" stroke-width="1.7"/>
+<polygon points="725,442 733.3579817201886,438.66171577528314 733.3579817201886,445.33828422471686" fill="#26756C"/>
+<polyline points="395,442 170,442 170,280" fill="none" stroke="#26756C" stroke-width="1.7" stroke-dasharray="7 5"/>
+<polygon points="170,280 173.33828422471683,288.3579817201886 166.66171577528317,288.3579817201886" fill="#26756C"/>
+<text x="202.5" y="330.27000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">按任务检索，避免全部注入</text>
+<text x="985.0" y="392.46" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="18" font-weight="400" fill="#263442">恢复时保留：</text>
+<text x="985.0" y="413.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="18" font-weight="400" fill="#263442">职责、承诺、关键决定、工作入口</text>
+</svg>

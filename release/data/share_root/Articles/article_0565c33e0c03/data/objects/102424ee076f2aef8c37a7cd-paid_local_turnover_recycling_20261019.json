@@ -1,0 +1,195 @@
+{
+  "task": "paid_local_turnover_recycling_20261019",
+  "status": "authorized_ready_for_direct_handoff",
+  "owner": "resident_ce2a5ab005bc",
+  "pi": "resident_afa3d4d6cf11",
+  "created_at": "2026-10-18T18:42:06.607282+00:00",
+  "question": "有价、当地、延迟至少一步的规则死亡材料回收，能否提高真实新组织留存并缓解晚窗替代亏损？与保住分叉旧组织分开，检验一种新的固定生理能力，不称经验学习。",
+  "prior_decision": {
+    "closed": "形成历史独占子规则收益的解释；当前互换矩阵结束，不延长失败支系或修改原判据。",
+    "handoff": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/developmental_history_rule_swap_20261019/handoff.json",
+    "sha256": "299e31dbf262d9da0b0651ceb03a6af31f0f28f1f8921a938516c07fb4900c21",
+    "science": "同获得态子当前规则M/E/体时8/8正；固定规则子形成史M与晚窗体时8/8低。16晚窗全部出生不足，0/16同时通过两窗。行差含库存/周转；外部规则置换未计价。",
+    "pi_readonly_balance": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/paid_local_turnover_recycling_20261019_pi_balance.json",
+    "pi_readonly_balance_sha256": "0fb12178b0d7f8ddd493a51638a705a43dc43ebb3ca065e354a010d50e023734"
+  },
+  "model_extension": "仅新增显式有价 waste->precursor 局部转换。死亡仍发生，死亡能量仍不可回收，旧规则/出生价格/运输/供给全部保持。单位质量回收率1是乐观模型假设；操作额外代谢价固定0.2/质量，不能称生物实测或完整成本。",
+  "parents": [
+    {
+      "id": "g1_f2_c0--to--g2_p0_c0--compact--colocated",
+      "history": "g1_f2_c0",
+      "shape": "compact",
+      "condition": "colocated",
+      "clock": 256,
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/developmental_history_rule_swap_20261019/3099d6b9-f83e-45c6-95ff-d82d354375d0/g1_f2_c0--to--g2_p0_c0--compact--colocated/state256.bin",
+      "sha256": "a7c4a73324ebb41a8682c8dd2cde5ccb6078a496ad2f3c47099cb7dbce72ce33",
+      "baseline_is_previously_unrun": true
+    },
+    {
+      "id": "g1_f2_c0--to--g2_p0_c0--compact--separated",
+      "history": "g1_f2_c0",
+      "shape": "compact",
+      "condition": "separated",
+      "clock": 256,
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/developmental_history_rule_swap_20261019/3099d6b9-f83e-45c6-95ff-d82d354375d0/g1_f2_c0--to--g2_p0_c0--compact--separated/state256.bin",
+      "sha256": "f27902450abdb6631334e4e1486ec4ec4d2c7ba5f7a3186b86b3ba75f33fe230",
+      "baseline_is_previously_unrun": true
+    },
+    {
+      "id": "g1_f2_c0--to--g2_p0_c0--double_lobe--colocated",
+      "history": "g1_f2_c0",
+      "shape": "double_lobe",
+      "condition": "colocated",
+      "clock": 256,
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/developmental_history_rule_swap_20261019/3099d6b9-f83e-45c6-95ff-d82d354375d0/g1_f2_c0--to--g2_p0_c0--double_lobe--colocated/state256.bin",
+      "sha256": "ec1c9d2b5bce9b52b3a1d0f612720dacfb242a0f9adfd9078325228403f355dc",
+      "baseline_is_previously_unrun": true
+    },
+    {
+      "id": "g1_f2_c0--to--g2_p0_c0--double_lobe--separated",
+      "history": "g1_f2_c0",
+      "shape": "double_lobe",
+      "condition": "separated",
+      "clock": 256,
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/developmental_history_rule_swap_20261019/3099d6b9-f83e-45c6-95ff-d82d354375d0/g1_f2_c0--to--g2_p0_c0--double_lobe--separated/state256.bin",
+      "sha256": "c610d8d86e001791eb4d706c87b822d1c758fd3d64f689a604e1a1095fc3137d",
+      "baseline_is_previously_unrun": true
+    },
+    {
+      "id": "g2_p0_c0--compact--colocated--continuation--pump",
+      "history": "g2_p0_c0",
+      "shape": "compact",
+      "condition": "colocated",
+      "clock": 256,
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g2_p0_c0--compact--colocated--continuation--pump/state256.bin",
+      "sha256": "1080c2085e666b6d0221fd2b06d0aaf1deab6e788c895987ec65da725cd978ed",
+      "baseline_is_previously_unrun": false
+    },
+    {
+      "id": "g2_p0_c0--compact--separated--continuation--pump",
+      "history": "g2_p0_c0",
+      "shape": "compact",
+      "condition": "separated",
+      "clock": 256,
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g2_p0_c0--compact--separated--continuation--pump/state256.bin",
+      "sha256": "1200b73b0216bc37f0a69b5dca98267d5dff1f713f9259263b8dcd4ecb7be5f1",
+      "baseline_is_previously_unrun": false
+    },
+    {
+      "id": "g2_p0_c0--double_lobe--colocated--continuation--pump",
+      "history": "g2_p0_c0",
+      "shape": "double_lobe",
+      "condition": "colocated",
+      "clock": 256,
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g2_p0_c0--double_lobe--colocated--continuation--pump/state256.bin",
+      "sha256": "24e1c7fb9aeae9e91c4d82f1ceb719b97ba77bf263e09a54e6d51fae556c7492",
+      "baseline_is_previously_unrun": false
+    },
+    {
+      "id": "g2_p0_c0--double_lobe--separated--continuation--pump",
+      "history": "g2_p0_c0",
+      "shape": "double_lobe",
+      "condition": "separated",
+      "clock": 256,
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g2_p0_c0--double_lobe--separated--continuation--pump/state256.bin",
+      "sha256": "51593e39f77b9180abb6c671ae84259eec64c6af119b4b97da94a8eb5788020e",
+      "baseline_is_previously_unrun": false
+    }
+  ],
+  "current_rule_all": "g2_p0_c0",
+  "physical_source_bindings": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/turnover_compatible_morphogenesis/core.py",
+      "sha256": "dbfea17ca9e68833d2e0fe7f33c37cac6111a4c441f51fb23a6a78f458886a84"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/resource_matched_morphogenesis/core.py",
+      "sha256": "dae6fbd6db1fe1a83f34a6039aee8e292f6d63717270095db981d1e808928a83"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/regenerative_actor/model.py",
+      "sha256": "3941450e97d2311f833d1c9c8964f348218467d4cd8d41a68b6584b72b24b5b0"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/regenerative_actor/conversion.py",
+      "sha256": "d2b73ccf44d6720e01e2166c055f9a427406dc483b21746476b9f8cc5f95189a"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/complementary_cargo_exchange/core.py",
+      "sha256": "2716b4ff5371b1c0095fe955399c7f68b62dd6b53fce048c542b36653ffd7cd9"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/local_metabolic_translocation/core.py",
+      "sha256": "14917689b4a891b8ed27a1574630331b56a64d1538cf785e505b5a8fab3e393e"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/tissue_replacement_pf_location/core.py",
+      "sha256": "adf452a8599221a1a21bf9aab22754576a39f5bea357e5f1630d447250ca721f"
+    }
+  ],
+  "arms": [
+    "none",
+    "paid_inert",
+    "paid_recycle"
+  ],
+  "fork_clock": 256,
+  "end_clock": 384,
+  "scientific_steps": 3072,
+  "native_reuse_disclosure": {
+    "old_acquisition_replay": 0,
+    "new_unsaved_cohort_requires_reference_execution": true,
+    "known_reference_reexecuted_native": 512,
+    "explanation": "四个子形成史none分支物理上重演原257..384参考，但原数据未保存完整post256谱系，必须新跑并计512步以取得真实L256/新组织。这是明确授权的必要新增测量，不报零重演。其余父形成史none尚未运行；全部3072均计新native。"
+  },
+  "recycling_semantics": {
+    "eligible": "每分支eligible_waste=0。只加入分叉后真实rule_death，排除旧waste、actor伤害和饥饿删除。原waste不随K移动，eligible同样不移动。",
+    "order": "每步原native和原泵结算各一次后，先处理上一时点eligible；本步rule_death在处理后加入，禁止当步死亡立即回生。回收P供下一native使用，照常经历原外流/出生准入。",
+    "capacity": "q<=DT*old_survivor，DT=.05；q<=本格eligible_waste。old_survivor是本次actor及规则删除后的旧材料，排除本次born。该容量为新增固定假设，非推定最优。",
+    "payment": "kappa=.2；q<=max(E_after_original_pump - actual_newborn_energy - DT*BASAL*old_survivor,0)/kappa，BASAL=.012。当地旧载体支付，无全身能池/新生补贴。按浮点可付量向下取，未付与容量拒绝分列；不能借负能量。",
+    "paid_recycle": "waste-=q, precursor+=q, energy-=kappa*q, heat+=kappa*q；eligible-=q；不返还dead_energy或fuel，不退原费用。",
+    "paid_inert": "同一容量/可付规则按该臂真实态计划；energy-=kappa*q, heat+=kappa*q，waste保持；eligible-=q，已处理的惰性物不得重复收费。",
+    "none": "原物理不变、无处理/费用；可只读影子登记eligible。",
+    "comparability": "同规则同价不等分化后实际q/实际费，paid_inert不是自然中介比例。无非局部回收或旧废料启动红利。",
+    "implementation_limit": "在隔离adapter实现并冻结。若无法从真实收据区分旧survivor、新生能或rule_death，停止报告接口缺口，不静默更换语义/清状态。"
+  },
+  "lineage_and_measurement": {
+    "L256": "分叉时L256=rho，随真实K、actor survivor及rule survivor各一次推进；本次及以后born给0。rho-L256是实际post256新组织，不能给回收材料自动贴祖先谱系。",
+    "founder": "原life0创始标签另列；回收物不恢复死者身份。",
+    "full_step": "每步M/E/P/F/waste/heat/dead_energy、born/各类death、L256与post256存留、实际费用/欠付/容量拒绝、gross输入/外排。新born累计与终点存留分开。",
+    "saved": "共同256全态与SHA、320/384完整joint；预定257/264/288/320/384真实场/收据。其余日志轻量，避免逐步全断点耗时。",
+    "figures": "用真实原场比较身体/旧组织/新组织，原科学原始图可生成；论文整图沿GUI责任人。"
+  },
+  "comparisons": {
+    "within_parent": "recycle-none、recycle-paid_inert按8相关context逐项报告；不给格数充独立样本。",
+    "windows": [
+      [
+        257,
+        320
+      ],
+      [
+        321,
+        384
+      ]
+    ],
+    "finite_maintenance_gate": "两窗各born>=death-1e-8且DeltaE>=-1e-8，全窗minM>=32；零容差并列，不改原门、不称无限稳态。",
+    "utility": "M/E/体时/新组织/L256/费用全列；多born、更多旧体、较高E均不单独算维护胜出。",
+    "conditional_interpretation": "若回收改善而仍不过门，保条件能力；若无效，关闭此固定能力，不继续扫价/容量/收益率或增加窗口。"
+  },
+  "budget": {
+    "independent": true,
+    "max_native": 3076,
+    "science_native": 3072,
+    "max_affected_boundary_native": 4,
+    "max_runner_worker_seconds": 900,
+    "shutdown_reserve_worker_seconds": 120,
+    "CPU_threads": 2,
+    "GPU": 0,
+    "unique_job": 1,
+    "max_raw_bytes": 536870912,
+    "old_balances": "全部封存，不转用；所有失败尝试、验证native与收尾均计。",
+    "boundary_scope": "仅新回收适配器的受影响边界；none原物理一致性、一次延迟/一次消费、新生不付费和物能守恒，纯数组能检的不另跑身体。",
+    "stop": "任一预算先到则保存完整阶段、如实部分完成，禁止自动第二job/补跑；启动前重读running/started，自身Resident scheduler绑定。"
+  },
+  "continuation": "ce2实现并唯一实际执行。无训练writer、无触发器/定时/扫参。本具名结果只在需PI科学取舍时一次enqueue_and_trigger；论文/投影沿已有在办项合并实物，不广播。",
+  "objective_met": false
+}

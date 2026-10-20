@@ -1,0 +1,9 @@
+{
+  "status": "completed",
+  "native": 6912,
+  "job": "b7032a3a-31c6-4965-a20d-b1e0aa4a9c87",
+  "raw": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b7032a3a-31c6-4965-a20d-b1e0aa4a9c87/raw",
+  "elapsed": 6.847774390946142,
+  "paths": 12,
+  "raw_bytes": 30436027
+}

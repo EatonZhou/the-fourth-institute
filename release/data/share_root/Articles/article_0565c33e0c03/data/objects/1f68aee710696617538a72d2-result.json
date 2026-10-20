@@ -1,0 +1,23 @@
+{
+  "task": "fixed_amount_rule_deletion_layout_20261019",
+  "status": "completed",
+  "job": "0b471f2a-d4d9-4469-94e5-6ab4d5a1540a",
+  "attempted": 1540,
+  "committed": 1540,
+  "settled": 1540,
+  "science_native": 1536,
+  "boundary_native": 4,
+  "wall_seconds": 29.457774957991205,
+  "failure": null,
+  "actual_paths": 12,
+  "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/fixed_amount_rule_deletion_layout_20261019/0b471f2a-d4d9-4469-94e5-6ab4d5a1540a",
+  "raw_bytes": 47476794,
+  "old_budget_used": 0,
+  "old_acquisition_replayed": 0,
+  "authorized_reference_future_native": 512,
+  "objective_met": false,
+  "same_job_recovery": true,
+  "prior_attempt_native": 388,
+  "new_attempt_native": 1152,
+  "prior_attempt_runner_wall_seconds": 9.82927
+}

@@ -1,0 +1,72 @@
+\chapter{诊断覆盖率与可靠构造}
+\label{ch:coverage}
+\chapterguide{覆盖规划分配取得不同证据的机会，同时照顾所有需要不同答案的情境对。}
+
+\section{一次观察提供多少区别}
+对两个分布定义
+\[
+ \Aff(P,Q)=\sum_v\sqrt{P(v)Q(v)},\qquad h(P,Q)=1-\Aff(P,Q).
+\]
+Cauchy--Schwarz给出$0\le h\le1$，$h=0$恰当$P=Q$；又有$\sum_v(\sqrt P-\sqrt Q)^2=2h$。记$h_a(\theta,\theta')=h(K_a(\cdot\mid\theta),K_a(\cdot\mid\theta'))$。只要求区分目标不同的情境，令
+\[
+\begin{aligned}
+ \mathcal E&=\{\{\theta,\theta'\}:g(\theta)\ne g(\theta')\},\\
+ \Alt(\theta)&=\{\theta':g(\theta')\ne g(\theta)\},\\
+ m&=\max_\theta|\Alt(\theta)|.
+\end{aligned}
+\]
+\begin{definition}[诊断覆盖率]
+设$\Delta(\calA)$为实验分配概率集合，定义
+\begin{equation}
+ \kap=\max_{w\in\Delta(\calA)}\min_{\{\theta,\theta'\}\in\mathcal E}
+                  \sum_aw_ah_a(\theta,\theta').
+ \label{eq:coverage-rate}
+\end{equation}
+\end{definition}
+$w$规定每次调用各种实验的频率，内层最小值关注最难照顾的目标冲突对。它由基本概率表和目标定义，无需先知道最优组织。
+
+\begin{proposition}[正覆盖率的精确条件]
+\label{prop:positive}
+$\kap>0$当且仅当$g$在不可辨别类上为常数。
+\end{proposition}
+\begin{proof}
+目标冲突的不可辨别对具有全零区别量。反之，每个冲突对至少有一个正区别量；对所有实验用严格正的权重，每对加权和都正，有限多对的最小值仍正。
+\end{proof}
+
+\section{覆盖规划与反方证据}
+最大化$u$，约束$w_a\ge0$、$\sum_aw_a=1$、每个冲突对满足$\sum_aw_ah_a\ge u$，便得到一份线性规划。其对偶形式为
+\begin{equation}
+ \kap=\min_{\lambda\in\Delta(\mathcal E)}\max_a
+        \sum_{\{\theta,\theta'\}\in\mathcal E}\lambda_{\theta\theta'}h_a(\theta,\theta').
+ \label{eq:dual}
+\end{equation}
+有限线性规划对偶在附录\ref{app:tools}说明。给出$w$可以证明覆盖率的下界；给出冲突对分配$\lambda$可以证明上界。二者相等时，最优值获得双向证据。
+
+两种实验若分别只区分两类冲突，且正区别量都为$h_0$，则$w=(1/2,1/2)$给出$h_0/2$；反方等概率选择这两类冲突，也给出上界$h_0/2$。增加某一实验的比例会让另一类冲突成为瓶颈。
+
+\section{一个无需知道真实情境的组织}
+每步独立按固定$w$选择实验，保存$(a,v)$。计算
+\[
+ L_n(\vartheta)=\prod_{t=1}^nK_{A_t}(V_t\mid\vartheta),
+\]
+选择似然最大情境$\widehat\theta$，输出$g(\widehat\theta)$，平局按固定顺序处理。实验选择概率与$\vartheta$无关，在似然比较中消去。
+
+\begin{theorem}[覆盖率的可靠性保证]
+\label{thm:upper}
+若$w$使每个冲突对的平均区别量至少为$u$，则
+\[
+ \max_\theta\PP_\theta(g(\widehat\theta)\ne g(\theta))
+ \le\min\{1,m(1-u)^n\}\le\min\{1,me^{-nu}\}.
+\]
+$\kap>0$时，$n=\lceil\ln(m/\delta)/\kap\rceil$足够。
+\end{theorem}
+\begin{proof}
+单步联合分布$P_\theta(a,v)=w_aK_a(v\mid\theta)$。两个情境的亲和度为$1-\sum_aw_ah_a\le1-u$，独立乘积的亲和度相乘。事件$L_n(\theta')\ge L_n(\theta)$上，真实记录概率不超过两个记录概率的几何平均，因此该事件概率至多$(1-u)^n$，零概率存在时也成立。输出错误必有一个$\theta'\in\Alt(\theta)$的似然不小于真值。对至多$m$个情境相加即得。
+\end{proof}
+
+\section{实现与近似}
+分配从概率表求得，观测前无需知道真实情境。概率表尺寸为$|\calA|d|\VV|$；规划有$|\calA|+1$个变量与至多$d(d-1)/2$个冲突约束。在线对数似然更新每次需要$O(d)$次表读取和加法。
+
+若只算出经核对的分配，覆盖率$u\ge\kap-\varepsilon>0$，使用$u$即可，无需把数值最优误认成精确最优。表的生成、规划求解与有限精度计算应与调用数一起报告。
+\begin{exercise}两个冲突对在两个实验上的区别量为$(a,0)$与$(0,b)$，$a,b>0$。求最优分配与覆盖率。\end{exercise}
+\begin{exercise}目标为$g(\theta)$时，为何可以用完整情境似然比较证明风险上界？这种分析可能多付出什么因子？\end{exercise}

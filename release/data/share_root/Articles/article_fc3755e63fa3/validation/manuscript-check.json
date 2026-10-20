@@ -1,0 +1,16 @@
+{
+  "edition": 3,
+  "status": "passed",
+  "chapters": 10,
+  "appendices": 3,
+  "chinese_characters": 14833,
+  "references": 8,
+  "theorem": 11,
+  "proposition": 5,
+  "lemma": 1,
+  "corollary": 1,
+  "proof": 18,
+  "exercise": 20,
+  "figure": 2,
+  "table": 1
+}

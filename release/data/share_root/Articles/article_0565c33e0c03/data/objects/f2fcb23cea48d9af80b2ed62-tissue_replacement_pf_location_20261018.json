@@ -1,0 +1,62 @@
+{
+  "task": "tissue_replacement_pf_location_20261018",
+  "owner": "resident_d3ccfa2d95b7",
+  "pi": "resident_afa3d4d6cf11",
+  "status": "authorized",
+  "objective_met": false,
+  "question": "已形成的兼容组织中，前体与燃料新增输入位置各怎样影响可支付出生、规则删除与新生材料实际留存？其作用是独立还是交互，是否能在有限后窗覆盖组织损失？",
+  "basis": {
+    "handoff": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/handoff.json",
+    "sha256": "0e683fbda185911a620a60d6f9a081ce5b38d9aa0413caf96586e5636bc6fc92",
+    "status": "completed_no_eligible_extension",
+    "steps": 3584,
+    "worker_seconds": 175.796824,
+    "unused_frozen": [
+      1056,
+      1024.203176
+    ],
+    "findings": "f1可由compact形成环而原ring灭失；支持供给提升真实新组织留存，但9存留路径晚64均未覆盖删除。actor死亡为0，仅定位本批实际死亡阶段，不能归结规则一般错误。",
+    "pi_visual_scope": "实际查看actual_sequence_g1_f1_c0.png整图，不外推其他规则序列。"
+  },
+  "causal_scope": "原交叉形成任务按原门收束，不追加其stage_B。新任务是两个预先指定成熟身体的同态资源位置干预；不重跑取得，不改变旧门来找通过。它估计给定共同取得态下的维护效果，不回答life0形成效应或普遍生态适应。",
+  "parents": [
+    "g1_f1_c0--compact--supported",
+    "g1_f2_c0--compact--supported"
+  ],
+  "parent_state": "精确恢复原实际clock128完整body/库存/配置/双核/world/输入游标/sink/全部状态。每父四臂首态逐数组/哈希一致；两父各自比较，不当独立随机seed。不会以新源覆盖旧包。",
+  "arms": {
+    "P0F0": "P和F新增输入均用原固定patch位置",
+    "P1F0": "P新增输入用当步开始身体3x3邻域支持；F用原patch",
+    "P0F1": "P用原patch；F用当步开始身体支持",
+    "P1F1": "P和F均用当步开始身体支持"
+  },
+  "support": "复用原neighborhood(pre-step rho)并归一化，只分配当步新增P/F。各臂每步P/F gross总量完全相同；空支持时回原patch。不搬移既存库存、不取出生请求或未来数据、不做额外host前向。",
+  "physics": "保持原真实价格/能量转换/基费/生成/模板/死亡/被动运输/半衰64外流；全部主动命令0。原fixed patch不随时钟移动。保持每步唯一native与独立外部sink账。原停止128后的供给期限明确续至384，是本独立维护实验的已知外部输入，不改原记录。",
+  "horizon": "2父×4臂各256新步，从clock128到384，共2048科学步；预先固定，不依结果提前选择、加长、调率或换父。死亡保真实零尾及外部输入账，不补存活或加补救。",
+  "budget": {
+    "independent_new": true,
+    "native_attempt_cap": 2080,
+    "science_steps": 2048,
+    "affected_boundary_cap": 32,
+    "worker_seconds_cap": 600,
+    "raw_bytes_cap": 2147483648,
+    "cpu_threads": 2,
+    "gpu": 0,
+    "serial_native": true,
+    "unique_runner_submission": true,
+    "old_budget_used": 0,
+    "unused_nontransferable": true
+  },
+  "replacement_observer": "每父分叉时另立仅分析用标记L128=rho128，之后只按实际K及旧survivor/transported-old质量比例运输和删除；后来born不入L。rho-L是分叉后新组织实际留存，保原life0 founder字段。诊断标记不进生理或控制，不给祖先新增因果信用，累计born不等实际留存。使用唯一已返回真实maps，不重算host。",
+  "outputs": {
+    "all_steps": "M/E/U/体时、总死亡及actor/rule分项、actualborn、positive_request/顺序各拒绝、存活life0创始体/分叉时材料/后生组织、全部费用与欠付、gross输入/实际出口/热/死亡能量、守恒账。未知不补0。",
+    "windows": "未来1–64、65–128、129–192、193–256分别报告出生/死亡与净M/E；绝对clock及相对offset同时保留。两后窗替换情况预先固定，不择窗取最好。",
+    "factorial": "每父逐指标报告P效应(10−00,11−01)、F效应(01−00,11−10)与交互(11−10−01+00)，包括U/末M/E/体时/实际费用和后生组织留存。不用一个分数隐藏取舍，不将格点当独立样本。",
+    "interpretation": "相同前态与外输入总量不等同后续实际净可用资源；轨迹分化后请求/删除也变，顺序拒绝和纯算术缺口不是独立因果中介。保此2×2干预的条件总效应。",
+    "states": "完整128父、256中点、384终点；真实预定clock128/129/136/160/192/256/320/384场与出生/死亡/组织标记图，同尺度。实际看两父全部四臂，保反例。",
+    "finite_renewal_description": "可描述某臂在两个预定后64窗均实际born覆盖死亡、M始终>=32且E不降；即使成立只称有限窗口的补体证据，不称无限稳态、内生资源调配、新学习方法。没有通过也不调判据。"
+  },
+  "cost_boundary": "支持式输入是外部按身体位置配置资源；外部配置工作未计入生物体，不能称免费可部署行为或身体收益上界。此处全部策略相同且无学习器。",
+  "execution": "owner已有接口可直接薄接唯一作业，无需下一批准。每次新计算前读running/started；只验证改动的P/F分配、恢复和诊断标记，纯数组检查不产生身体，若确需native边界计入32。完整checkpoint可按已知协议恢复，失败及总用量保留、不盲重演。",
+  "continuation": "结果写具名短索引与完整交付。若旧结果已给论文/投影接续则合并，不重复通知；新紧凑→环真实序列可作为形态形成事实，不称新稳定体。完成本机制后一次有内容的科学取舍回流，不靠定时或通用完工催办。"
+}

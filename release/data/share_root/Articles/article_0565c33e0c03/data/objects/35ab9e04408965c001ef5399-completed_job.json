@@ -1,0 +1,34 @@
+{
+  "id": "fece0fb5-f2db-465d-9cc3-373933d3f727",
+  "name": "birth-placement-value",
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "ce2-birth-placement-value-20261018-v1",
+  "status": "completed",
+  "created_at": "2026-10-18T07:19:41.196294+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/fece0fb5-f2db-465d-9cc3-373933d3f727",
+  "pid": 4149471,
+  "manual_pause": false,
+  "started_at": "2026-10-18T07:19:41.318985+00:00",
+  "returncode": 0,
+  "finished_at": "2026-10-18T07:19:45.713634+00:00",
+  "result": {
+    "status": "completed",
+    "job_id": "fece0fb5-f2db-465d-9cc3-373933d3f727",
+    "counts": {
+      "attempted": 9728,
+      "committed": 9728,
+      "reference": 1472,
+      "branches": 8256,
+      "body_failed": 0
+    },
+    "elapsed_seconds": 4.13718057400547,
+    "cpu_seconds": 4.206197161,
+    "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727",
+    "outcomes": 64,
+    "pairs": 32,
+    "max_ledger_residual": 5.115907697472721e-13,
+    "plan_sha256": "2112bf697779cf474e9ed5060a3e9ece3a0ce91473473b455d6e6cbff9dcc3fa",
+    "old_prefix_replay": 0
+  }
+}

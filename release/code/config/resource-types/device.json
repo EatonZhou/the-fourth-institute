@@ -1,0 +1,16 @@
+{
+  "type": "device",
+  "category": "resource",
+  "description": "A managed device. Servers and independently schedulable GPUs have separate IDs and use parent_device_id for containment.",
+  "title": {
+    "zh": "设备",
+    "en": "Device"
+  },
+  "provider": "management_portal.resources.providers.device:install_resolver",
+  "catalog_section": "device",
+  "catalog_order": 60,
+  "registerable": true,
+  "scope": "shared",
+  "unit": "core",
+  "enabled_by_default": true
+}

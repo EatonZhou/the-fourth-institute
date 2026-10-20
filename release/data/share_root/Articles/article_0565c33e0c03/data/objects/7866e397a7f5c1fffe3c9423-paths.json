@@ -1,0 +1,48 @@
+[
+  {
+    "parent": "g1_f1_c0--compact--supported",
+    "arm": "always",
+    "segments": [
+      "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--always"
+    ]
+  },
+  {
+    "parent": "g1_f1_c0--compact--supported",
+    "arm": "off",
+    "segments": [
+      "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--off_prefix",
+      "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--off"
+    ]
+  },
+  {
+    "parent": "g1_f1_c0--compact--supported",
+    "arm": "restart",
+    "segments": [
+      "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--off_prefix",
+      "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--restart"
+    ]
+  },
+  {
+    "parent": "g1_f2_c0--compact--supported",
+    "arm": "always",
+    "segments": [
+      "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--always"
+    ]
+  },
+  {
+    "parent": "g1_f2_c0--compact--supported",
+    "arm": "off",
+    "segments": [
+      "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--off_prefix",
+      "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--off"
+    ]
+  },
+  {
+    "parent": "g1_f2_c0--compact--supported",
+    "arm": "restart",
+    "segments": [
+      "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--off_prefix",
+      "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--restart"
+    ]
+  }
+]

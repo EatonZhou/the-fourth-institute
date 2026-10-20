@@ -1,0 +1,25 @@
+[Unit]
+Description=TFI Portal multi-version user router
+After=network-online.target management-portal.service management-portal-release.service
+Wants=network-online.target management-portal.service management-portal-release.service
+
+[Service]
+# Portal's request path runs ahead of agent commands and tests under CPU contention.
+CPUWeight=1000
+Type=simple
+UMask=0007
+WorkingDirectory=@PORTAL_SOURCE_ROOT@
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=PORTAL_ROUTER_DEV_ORIGIN=http://127.0.0.1:18086
+Environment=PORTAL_ROUTER_RELEASE_ORIGIN=http://127.0.0.1:18085
+Environment=PORTAL_ROUTER_DEV_USERS=@PORTAL_ROUTER_DEV_USERS@
+Environment=PORTAL_DEPLOYMENT_REGISTRY_PATH=@PORTAL_INSTANCES_ROOT@/deployments.json
+Environment=PORTAL_SESSION_SIGNING_KEY_PATH=@PORTAL_SESSION_SIGNING_KEY_PATH@
+EnvironmentFile=-@PORTAL_POSTGRES_ENV_FILE@
+ExecStart=@PORTAL_INSTANCES_ROOT@/dev/runtime-venv/bin/python -m management_portal.portal_deployment_router
+Restart=always
+RestartSec=2
+TimeoutStopSec=15
+
+[Install]
+WantedBy=default.target

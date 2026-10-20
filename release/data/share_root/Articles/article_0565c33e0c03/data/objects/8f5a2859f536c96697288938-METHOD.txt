@@ -1,0 +1,11 @@
+冻结机制与信息边界
+四个实际midpoint256父（两既有seed×ring/separate）完整同态分叉。z0固定，中心输入257..384；life0取得不重演，无CEM/writer。
+先调用原prechoice取得W与requested_w。用同一ready态精确hAB=(1-w)hA+w hB（全w0保原标量运算路径），D=min(rho,dt max(-hAB,0))、其survivor及neighborhood进入原admit得到B_AB；没有混合A/B出生数。G=W&(B_C>B_AB)，R=W&~G，严格阈值。
+both/G-only/R-only/neither各自在自身当前状态重新计算；before-outflow/input/native锁mask与原w。actual after-actor身体产生原A/B/C响应，由已锁mask选h，原native/删除/admit/泵/实际价格仅执行一次。未用标签或未来收益控制。
+R只有实际ready D_C<D_AB才标为保留型；W相对精确混合AB净分非正的异常单列。本次14新未来中上述两个异常计数均0；两旧both新诊断字段null，不能据此声称旧轨也全无异常。ready分数是纯计算假想量，不是已执行反事实。
+观察器原样消费真实K及actor/rule存留；L256是父在256的全部材料，后born0给L256，真实born记post256。life0/L128独立保留。死亡计已观测终末；账残差与未知分开。
+两5602 both精确旧尾窗257..384只读复用256步；四个纯父SHA、输入、状态、prechoice、观察器源码与标签原件核对。旧轨不存在G/R字段保null；没有逆造K/标签/场。
+2个5601父各旧midpoint和新both一次实际step共4边界，完整base/world/physical/model、全部旧receipt字段、账、cohort精确相等。
+主判G-only相对both：post256严格增加，M/E/体时不降、minM>=32；1e-8与零容差并列。两个64窗真实born>=death、E不降、minM>=32另报。全部四条件均需通过；不以均值或保旧体救门。
+6个预定对比全保存，交互为both-G-R+neither。这里是动态策略的factorial差，不是独立G/R处理剂量、单步物理因果分解或中介比例；各臂分化后mask/实际费用均可不同。
+计算、额外admit/响应评估和观察存储未另物理定价。原泵/转换/模板/运动/基费/死能/外排不改；微量欠付保原值。有限128窗和四相关态不代表稳态、life0形成、寿命内学习或独立留出世界。

@@ -1,0 +1,107 @@
+[
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/method_renewal/event_reservoir_20261018/API.txt",
+    "sha256": "552a97da54bd2e6b4ace13587878f1fc4b5c173ac73c36f175c2c063c33ed39e",
+    "bytes": 1616
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/method_renewal/event_reservoir_20261018/LITERATURE.txt",
+    "sha256": "f3555cf7be71c16b9c3a9fe27fe3fc22ae1b4b742ba177c11b9157b6cac24486",
+    "bytes": 5909
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/method_renewal/event_reservoir_20261018/REPORT.txt",
+    "sha256": "45489915e895eeabe216849d74d8c1fca9ab0ee85188c63fdb733d9f981159fb",
+    "bytes": 7111
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/method_renewal/event_reservoir_20261018/actual_body_fields.pdf",
+    "sha256": "bc18b60943d6c91c83653830122655bf463c91c6097ff0c1ff59e55cc9091eb6",
+    "bytes": 25353
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/method_renewal/event_reservoir_20261018/actual_body_fields.png",
+    "sha256": "69c362b58b69a9fafeeb2faa7b51ca2997f4a1474166de18c962fa82a32df0e1",
+    "bytes": 73956
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/method_renewal/event_reservoir_20261018/actual_body_fields.svg",
+    "sha256": "d290d65d3fb9770016231e391de12943d8a68d79f52eebf302860aa8ac7787ed",
+    "bytes": 73134
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/method_renewal/event_reservoir_20261018/analysis.json",
+    "sha256": "2cae7c1a6c10782a802a2b6bf88b32e4d4c1de04c5b672b4ac9bd38ab078a32d",
+    "bytes": 22391
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/method_renewal/event_reservoir_20261018/analyze.py",
+    "sha256": "e57afa67132fa0f741c2356cf563749a4cf959af377b8993241d34332c1faa2d",
+    "bytes": 7280
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/method_renewal/event_reservoir_20261018/eb_primary_review.json",
+    "sha256": "4411c48fed877197b8d81445bab5b22bbecb4b61c8fd06ff3d81635fc3332d30",
+    "bytes": 16671
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/method_renewal/event_reservoir_20261018/learning_paths.pdf",
+    "sha256": "6767f11bfd06d07605391565768a98ac0b3b0b3b5329afae0ad2b012e153aed8",
+    "bytes": 37497
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/method_renewal/event_reservoir_20261018/learning_paths.png",
+    "sha256": "c20a2586564c10fb1ff9f28c7cc6bb1d2cbe811d414bfa881bf14a9f09cb2f0a",
+    "bytes": 588550
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/method_renewal/event_reservoir_20261018/learning_paths.svg",
+    "sha256": "38647ff8dba935c75a13b7ee4de2b43849a811062a6a5a4ee8e14bd9753f992f",
+    "bytes": 195488
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/method_renewal/event_reservoir_20261018/paired_differences.csv",
+    "sha256": "c4b45f77f89820ed208d3cd5ecaebb0caa9e60d3917e470eb80fcd8297f00244",
+    "bytes": 13851
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/method_renewal/event_reservoir_20261018/source/__init__.py",
+    "sha256": "ff4701ac6b08c2c50612ea93aa8c6f863f41983e3a0ccea74bd0dcdf3cf46c7c",
+    "bytes": 68
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/method_renewal/event_reservoir_20261018/source/policy.py",
+    "sha256": "3c7c1ac23919be02486e2a4a967f9442480bba3a000b25782082022243686aac",
+    "bytes": 3757
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/method_renewal/event_reservoir_20261018/source/predictor.py",
+    "sha256": "452ed232eea729359cc100b9b85bbe6fa58e01feb848d0ef40551976814fcdb9",
+    "bytes": 3744
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/method_renewal/event_reservoir_20261018/source/probe.py",
+    "sha256": "cb57158ac3b6c303f410ea0688b765575e80fef9027420f6228a0afa5c7c5b68",
+    "bytes": 1911
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/method_renewal/event_reservoir_20261018/source/run.py",
+    "sha256": "eee992a9fe795eaa13614d3ee8bd4e856a220be11968c842b3c3b7cd5834c65e",
+    "bytes": 6874
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/method_renewal/event_reservoir_20261018/source/run_probe.py",
+    "sha256": "80a0da1a5a5ef6457c74e2740658bbb2fa06f76b16cf024e73b622827d7034b2",
+    "bytes": 239
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/method_renewal/event_reservoir_20261018/sources_and_results.json",
+    "sha256": "3d492f21983bce2f908ca43eec157fde4a376419d75bbeb7c3ac742797eb4fd6",
+    "bytes": 2271
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/method_renewal/event_reservoir_20261018/summary.csv",
+    "sha256": "c85ad5241a25dad797aac499c141bd57f81986e79f62664a42256299e5a5a92e",
+    "bytes": 6772
+  }
+]

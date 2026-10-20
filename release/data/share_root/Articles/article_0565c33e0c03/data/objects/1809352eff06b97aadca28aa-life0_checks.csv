@@ -1,0 +1,9 @@
+id,M,E,P,F,founder_equal_body
+g2_p1_c0--compact--colocated--G2_completion--pump,63.999999999999986,63.999999999999986,0.0,0.0,True
+g2_p1_c0--compact--separated--G2_completion--pump,63.999999999999986,63.999999999999986,0.0,0.0,True
+g2_p1_c1--compact--colocated--G2_completion--pump,63.999999999999986,63.999999999999986,0.0,0.0,True
+g2_p1_c1--compact--separated--G2_completion--pump,63.999999999999986,63.999999999999986,0.0,0.0,True
+g2_p1_c0--double_lobe--colocated--G2_completion--pump,64.0,64.0,0.0,0.0,True
+g2_p1_c0--double_lobe--separated--G2_completion--pump,64.0,64.0,0.0,0.0,True
+g2_p1_c1--double_lobe--colocated--G2_completion--pump,64.0,64.0,0.0,0.0,True
+g2_p1_c1--double_lobe--separated--G2_completion--pump,64.0,64.0,0.0,0.0,True

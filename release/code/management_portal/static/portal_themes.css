@@ -1,0 +1,404 @@
+/*
+ * Portal skin provider.
+ *
+ * Themes publish semantic design tokens and own the picker and decorative scene.
+ * These shell components intentionally know nothing about product
+ * pages, resources, cards, graphs, workbenches or business states.
+ */
+
+html:root[data-portal-theme] {
+  --radius: 8px;
+  --gap: 12px;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  --toolbar-bg: var(--header-bg);
+  --modal-bg: var(--panel);
+  --modal-card-bg: var(--panel);
+  --border-strong: color-mix(in srgb, var(--border) 70%, var(--text));
+  --shadow-soft: 0 4px 14px rgba(15, 23, 42, .05);
+  --rail: color-mix(in srgb, var(--accent) 42%, transparent);
+  --rail-shadow: color-mix(in srgb, var(--accent) 18%, transparent);
+  --theme-button-bg: color-mix(in srgb, var(--accent) 12%, var(--panel));
+  --theme-button-border: color-mix(in srgb, var(--accent) 58%, var(--border));
+}
+
+html:root[data-portal-theme="auto"],
+[data-portal-auto-preview] {
+  color-scheme: light;
+  --bg: #f6f7f9;
+  --panel: #fff;
+  --panel-2: #f1f4f6;
+  --panel-3: #e8edf0;
+  --text: rgba(17, 24, 39, .96);
+  --muted: rgba(92, 103, 117, .96);
+  --border: rgba(202, 211, 219, .95);
+  --chip: rgba(243, 244, 246, .95);
+  --accent: var(--portal-auto-accent-light, #0f766e);
+  --accent-2: var(--portal-auto-accent-light, #064e3b);
+  --on-accent: var(--portal-auto-on-accent-light, #fff);
+  --portal-message-bubble-strength: var(--portal-auto-bubble-strength, 18%);
+  --portal-message-bubble-background: color-mix(in srgb, var(--accent) var(--portal-message-bubble-strength), var(--panel));
+  --portal-message-bubble-text: var(--portal-auto-bubble-text-light, var(--text));
+  --portal-message-bubble-link: var(--portal-auto-bubble-link-light, var(--accent));
+  --portal-message-bubble-inset: var(--portal-auto-bubble-inset-light, var(--panel-2));
+  --portal-message-quote-background: var(--portal-auto-quote-background-light, var(--portal-message-bubble-inset));
+  --portal-message-quote-text: var(--portal-auto-quote-text-light, var(--text));
+  --danger: #b42318;
+  --on-danger: #fff;
+  --bad: #b42318;
+  --warn: #b7791f;
+  --warning: #b7791f;
+  --ok: #15803d;
+  --good: #15803d;
+  --success: #047857;
+  --header-bg: rgba(247, 248, 251, .88);
+  --shadow: 0 10px 28px rgba(15, 23, 42, .08);
+  --shadow-hover: 0 14px 35px rgba(17, 24, 39, .12);
+  --modal-overlay: rgba(17, 24, 39, .48);
+  --modal-card-bg: rgba(255, 255, 255, .98);
+}
+
+html:root[data-portal-theme="light"] {
+  color-scheme: light;
+  --bg: #f7f8fb;
+  --panel: #fff;
+  --panel-2: #f3f4f6;
+  --panel-3: #e8edf0;
+  --text: rgba(17, 24, 39, .96);
+  --muted: rgba(92, 103, 117, .96);
+  --border: rgba(202, 211, 219, .95);
+  --chip: rgba(243, 244, 246, .95);
+  --accent: #2563eb;
+  --accent-2: #1d4ed8;
+  --on-accent: #fff;
+  --danger: #b42318;
+  --on-danger: #fff;
+  --bad: #b42318;
+  --warn: #b7791f;
+  --warning: #b7791f;
+  --ok: #15803d;
+  --good: #15803d;
+  --success: #047857;
+  --header-bg: rgba(247, 248, 251, .88);
+  --shadow: 0 10px 25px rgba(17, 24, 39, .08);
+  --shadow-hover: 0 14px 35px rgba(17, 24, 39, .12);
+  --modal-overlay: rgba(17, 24, 39, .48);
+  --modal-card-bg: rgba(255, 255, 255, .98);
+}
+
+html:root[data-portal-theme="dark"] {
+  color-scheme: dark;
+  --bg: radial-gradient(circle at top left, rgba(242, 170, 76, .10), transparent 28%), radial-gradient(circle at 88% 12%, rgba(86, 182, 194, .12), transparent 24%), linear-gradient(155deg, #091015, #0b1118 40%, #0f141a);
+  --panel: rgba(14, 19, 26, .90);
+  --panel-2: rgba(18, 24, 32, .96);
+  --panel-3: rgba(24, 33, 43, .98);
+  --text: rgba(232, 238, 242, .96);
+  --muted: #96a8b2;
+  --border: rgba(174, 196, 208, .34);
+  --chip: rgba(255, 255, 255, .08);
+  --accent: #8ec7ff;
+  --accent-2: #f1c36f;
+  --on-accent: #071019;
+  --danger: #ff8fa6;
+  --on-danger: #2a0710;
+  --bad: #ff8fa6;
+  --warn: #f1c36f;
+  --warning: #f1c36f;
+  --ok: #a9f1c7;
+  --good: #a9f1c7;
+  --success: #a9f1c7;
+  --header-bg: rgba(10, 14, 19, .82);
+  --modal-overlay: rgba(0, 0, 0, .68);
+  --shadow: 0 24px 60px rgba(0, 0, 0, .28), inset 0 1px 0 rgba(255, 255, 255, .03);
+  --shadow-soft: 0 12px 28px rgba(0, 0, 0, .24);
+  --shadow-hover: 0 28px 70px rgba(0, 0, 0, .34);
+}
+
+html:root[data-portal-theme="fire"] {
+  color-scheme: dark;
+  --bg: radial-gradient(ellipse at 20% 18%, rgba(122, 18, 8, .24), transparent 34%), radial-gradient(ellipse at 82% 16%, rgba(116, 18, 78, .18), transparent 30%), linear-gradient(145deg, #150207, #24040b 42%, #140318 72%, #07020a);
+  --panel: rgba(42, 5, 7, .95);
+  --panel-2: rgba(60, 8, 11, .96);
+  --panel-3: rgba(82, 14, 12, .97);
+  --text: rgba(255, 248, 236, .99);
+  --muted: #ffc0a3;
+  --border: rgba(255, 180, 61, .66);
+  --chip: rgba(255, 155, 32, .24);
+  --accent: #ff3d00;
+  --accent-2: #ffe066;
+  --on-accent: #1f0800;
+  --danger: #ff1f62;
+  --on-danger: #26000b;
+  --bad: #ff2e63;
+  --warn: #ffc400;
+  --warning: #ffc400;
+  --ok: #9cff57;
+  --good: #9cff57;
+  --success: #9cff57;
+  --header-bg: rgba(35, 4, 9, .92);
+  --modal-overlay: rgba(26, 0, 0, .80);
+  --shadow: 0 24px 68px rgba(80, 8, 14, .50), 0 0 30px rgba(255, 80, 0, .12);
+  --shadow-hover: 0 28px 80px rgba(255, 73, 0, .30), 0 0 24px rgba(255, 196, 0, .14);
+}
+
+html:root[data-portal-theme="deepsea"] {
+  color-scheme: dark;
+  --bg: radial-gradient(circle at 18% 12%, rgba(39, 226, 217, .20), transparent 24%), radial-gradient(circle at 84% 18%, rgba(140, 90, 255, .18), transparent 26%), linear-gradient(145deg, #010814, #021a2a 38%, #032d3f 66%, #07091f);
+  --panel: rgba(3, 19, 35, .94);
+  --panel-2: rgba(5, 32, 52, .95);
+  --panel-3: rgba(8, 48, 72, .96);
+  --text: rgba(230, 253, 255, .98);
+  --muted: #8ccbd0;
+  --border: rgba(92, 224, 224, .38);
+  --chip: rgba(66, 217, 219, .14);
+  --accent: #3ee7e1;
+  --accent-2: #9b7cff;
+  --on-accent: #03161b;
+  --danger: #ff6fae;
+  --on-danger: #260713;
+  --bad: #ff6fae;
+  --warn: #f2d06b;
+  --warning: #f2d06b;
+  --ok: #7dffcf;
+  --good: #7dffcf;
+  --success: #7dffcf;
+  --header-bg: rgba(2, 15, 28, .90);
+  --modal-overlay: rgba(0, 8, 18, .78);
+  --shadow: 0 26px 74px rgba(0, 8, 24, .62), 0 0 34px rgba(62, 231, 225, .12);
+  --shadow-hover: 0 30px 84px rgba(0, 180, 210, .24), 0 0 26px rgba(155, 124, 255, .16);
+}
+
+html:root[data-portal-theme="forest"] {
+  color-scheme: dark;
+  --bg: radial-gradient(ellipse at 18% 12%, rgba(95, 146, 72, .20), transparent 34%), radial-gradient(ellipse at 82% 18%, rgba(184, 160, 78, .14), transparent 30%), linear-gradient(145deg, #06140d, #0d2618 45%, #172b17 72%, #080e09);
+  --panel: rgba(10, 31, 20, .96);
+  --panel-2: rgba(14, 43, 27, .97);
+  --panel-3: rgba(24, 56, 34, .98);
+  --text: rgba(242, 250, 230, .98);
+  --muted: #b8cda8;
+  --border: rgba(151, 198, 112, .42);
+  --chip: rgba(143, 194, 95, .18);
+  --accent: #9bd66f;
+  --accent-2: #e0c46a;
+  --on-accent: #10200f;
+  --danger: #ff8f87;
+  --on-danger: #280805;
+  --bad: #ff8f87;
+  --warn: #e0c46a;
+  --warning: #e0c46a;
+  --ok: #79e287;
+  --good: #79e287;
+  --success: #79e287;
+  --header-bg: rgba(7, 22, 14, .94);
+  --modal-overlay: rgba(3, 10, 6, .76);
+  --shadow: 0 24px 68px rgba(0, 10, 4, .48), 0 0 28px rgba(142, 196, 94, .10);
+  --shadow-hover: 0 28px 78px rgba(95, 146, 72, .22), 0 0 22px rgba(224, 196, 106, .12);
+}
+
+html:root[data-portal-theme="scifi"] {
+  color-scheme: dark;
+  --bg: radial-gradient(ellipse at 18% 16%, rgba(94, 231, 255, .16), transparent 30%), radial-gradient(ellipse at 86% 12%, rgba(181, 140, 255, .18), transparent 32%), linear-gradient(145deg, #030716, #071337 44%, #150b33 70%, #02040c);
+  --panel: rgba(5, 13, 35, .96);
+  --panel-2: rgba(7, 18, 48, .97);
+  --panel-3: rgba(12, 29, 68, .98);
+  --text: rgba(236, 250, 255, .98);
+  --muted: #a9c7dc;
+  --border: rgba(94, 231, 255, .46);
+  --chip: rgba(94, 231, 255, .15);
+  --accent: #5ee7ff;
+  --accent-2: #b58cff;
+  --on-accent: #031326;
+  --danger: #ff5e9e;
+  --on-danger: #250411;
+  --bad: #ff5e9e;
+  --warn: #ffd166;
+  --warning: #ffd166;
+  --ok: #63ffca;
+  --good: #63ffca;
+  --success: #63ffca;
+  --header-bg: rgba(3, 7, 22, .94);
+  --modal-overlay: rgba(0, 3, 12, .78);
+  --shadow: 0 24px 68px rgba(0, 5, 20, .52), 0 0 30px rgba(94, 231, 255, .12);
+  --shadow-hover: 0 28px 78px rgba(94, 231, 255, .22), 0 0 26px rgba(181, 140, 255, .18);
+}
+
+html:root[data-portal-theme="moonwalker"] {
+  color-scheme: dark;
+  --portal-running-dot-display: none;
+  --portal-running-mark-display: inline-block;
+  --portal-running-mark-image: url("/static/assets/moonwalker-card-footsteps.svg");
+  --portal-running-mark-animation: portalMoonWalkerSteps 4.4s steps(4, end) infinite;
+  --bg: radial-gradient(circle at 78% 8%, rgba(245, 247, 248, .16) 0 1px, transparent 2px), radial-gradient(ellipse at 86% 6%, rgba(218, 223, 228, .16), transparent 24%), linear-gradient(148deg, #030405, #0b0d10 44%, #171a1e 74%, #050607);
+  --panel: rgba(12, 14, 17, .95);
+  --panel-2: rgba(20, 23, 27, .97);
+  --panel-3: rgba(31, 35, 40, .98);
+  --text: rgba(247, 248, 249, .98);
+  --muted: #a4aab1;
+  --border: rgba(201, 207, 214, .38);
+  --chip: rgba(226, 230, 234, .11);
+  --accent: #e5e8eb;
+  --accent-2: #aeb5bd;
+  --on-accent: #111418;
+  --danger: #ff8585;
+  --on-danger: #250606;
+  --bad: #ff8585;
+  --warn: #e4c983;
+  --warning: #e4c983;
+  --ok: #a9d5bd;
+  --good: #a9d5bd;
+  --success: #a9d5bd;
+  --header-bg: rgba(5, 6, 8, .94);
+  --modal-overlay: rgba(0, 0, 0, .80);
+  --shadow: 0 24px 64px rgba(0, 0, 0, .54), 0 0 0 1px rgba(255, 255, 255, .045);
+  --shadow-hover: 0 28px 76px rgba(0, 0, 0, .64), 0 0 24px rgba(229, 232, 235, .12);
+}
+
+@media (prefers-color-scheme: dark) {
+  html:root[data-portal-theme="auto"],
+  [data-portal-auto-preview] {
+    color-scheme: dark;
+    --bg: linear-gradient(155deg, #091015, #0b1118 40%, #0f141a);
+    --panel: rgba(14, 19, 26, .94);
+    --panel-2: rgba(18, 24, 32, .96);
+    --panel-3: rgba(24, 33, 43, .98);
+    --text: rgba(232, 238, 242, .96);
+    --muted: #96a8b2;
+    --border: rgba(174, 196, 208, .34);
+    --chip: rgba(255, 255, 255, .08);
+    --accent: var(--portal-auto-accent-dark, #8ec7ff);
+    --accent-2: var(--portal-auto-accent-dark, #f1c36f);
+    --on-accent: var(--portal-auto-on-accent-dark, #071019);
+    --portal-message-bubble-text: var(--portal-auto-bubble-text-dark, var(--text));
+    --portal-message-bubble-link: var(--portal-auto-bubble-link-dark, var(--accent));
+    --portal-message-bubble-inset: var(--portal-auto-bubble-inset-dark, var(--panel-2));
+    --portal-message-quote-background: var(--portal-auto-quote-background-dark, var(--portal-message-bubble-inset));
+    --portal-message-quote-text: var(--portal-auto-quote-text-dark, var(--text));
+    --danger: #ff8fa6;
+    --on-danger: #2a0710;
+    --bad: #ff8fa6;
+    --warn: #f1c36f;
+    --warning: #f1c36f;
+    --ok: #a9f1c7;
+    --good: #a9f1c7;
+    --success: #a9f1c7;
+    --header-bg: rgba(10, 14, 19, .82);
+    --modal-overlay: rgba(0, 0, 0, .68);
+    --shadow: 0 24px 60px rgba(0, 0, 0, .28);
+    --shadow-hover: 0 28px 70px rgba(0, 0, 0, .34);
+  }
+}
+
+/* A filled outgoing bubble is its own color surface. Quotes, links and resource
+   chips inherit the same readable palette in ChatWorkspace, Chatroom and preview. */
+:is(html[data-portal-theme="auto"], [data-portal-auto-preview]) .messageItem.human:not(.messageIncoming) > .messageBubble {
+  --text: var(--portal-message-bubble-text);
+  --muted: var(--portal-message-bubble-text);
+  --accent: var(--portal-message-bubble-link);
+  --accent-2: var(--portal-message-bubble-link);
+  --panel: var(--portal-message-bubble-background);
+  --panel-2: var(--portal-message-bubble-inset);
+  --border: color-mix(in srgb, var(--text) 30%, transparent);
+  color: var(--text);
+}
+:is(html[data-portal-theme="auto"], [data-portal-auto-preview]) .messageItem.human:not(.messageIncoming) > .messageBubble :is(.messageQuote, .portalResourceChip) {
+  background: var(--panel-2);
+  /* Text can switch from dark to light while dragging; the surface must switch
+     with it instead of passing through a low-contrast animation frame. */
+  transition-property: border-color, box-shadow;
+}
+:is(html[data-portal-theme="auto"], [data-portal-auto-preview]) .messageItem.human:not(.messageIncoming) > .messageBubble a {
+  color: var(--accent);
+}
+:is(html[data-portal-theme="auto"], [data-portal-auto-preview]) .messageItem.human:not(.messageIncoming) > .messageBubble .messageQuote {
+  --text: var(--portal-message-quote-text);
+  --muted: var(--portal-message-quote-text);
+  --accent: var(--portal-message-quote-text);
+  --border: color-mix(in srgb, var(--text) 30%, transparent);
+  background: var(--portal-message-quote-background);
+  color: var(--text);
+}
+
+html:root[data-portal-theme] body { background: var(--bg) fixed; }
+
+/* One non-interactive scene also works over full-height, opaque workbenches.
+   Screen blending preserves light text; menus/dialogs keep their higher layers. */
+.portalThemeScene {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  overflow: hidden;
+  contain: strict;
+  pointer-events: none;
+  user-select: none;
+  mix-blend-mode: screen;
+}
+.portalThemeScene > span { position: absolute; pointer-events: none; }
+.portalThemeSceneStars {
+  inset: -48px;
+  opacity: .5;
+  background: url("/static/assets/moonwalker-stardust.svg") 37px 19px / 2400px 1400px repeat;
+  animation: portalMoonWalkerDrift 48s ease-in-out infinite alternate;
+}
+.portalThemeSceneMoon {
+  right: -1.5vw;
+  bottom: -2vh;
+  width: min(92vw, 1100px);
+  aspect-ratio: 2 / 1;
+  opacity: .22;
+  background: url("/static/assets/moonwalker-lunar-surface.webp") right bottom / cover no-repeat;
+  filter: brightness(.68) contrast(.94);
+  mask-image: radial-gradient(ellipse 82% 88% at 100% 100%, #000 0 52%, rgba(0, 0, 0, .9) 64%, transparent 100%);
+}
+.portalThemeSceneDust {
+  inset: -48px;
+  opacity: .18;
+  background-image:
+    radial-gradient(circle, rgba(249, 250, 251, .88) 0 1.3px, transparent 2px),
+    radial-gradient(circle, rgba(205, 211, 217, .66) 0 1px, transparent 1.7px);
+  background-size: 119px 97px, 173px 151px;
+  background-position: 14px 9px, 61px 43px;
+  animation: portalMoonWalkerDrift 14s linear infinite alternate;
+}
+.portalThemeSceneFootsteps {
+  right: 12vw;
+  bottom: 4vh;
+  width: 100px;
+  height: 36px;
+  opacity: .6;
+  transform: rotate(-22deg);
+  background: url("/static/assets/moonwalker-card-footsteps.svg") center / contain no-repeat;
+  animation: portalMoonWalkerSteps 4.4s steps(4, end) infinite;
+}
+@keyframes portalMoonWalkerDrift {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(36px, 28px, 0); }
+}
+@keyframes portalMoonWalkerSteps {
+  0%, 8% { clip-path: inset(0 100% 0 0); opacity: 0; }
+  12% { opacity: .6; }
+  72% { clip-path: inset(0 0 0 0); opacity: .6; }
+  86% { clip-path: inset(0 0 0 0); opacity: .5; }
+  100% { clip-path: inset(0 0 0 0); opacity: 0; }
+}
+html[data-portal-motion="reduced"] .portalThemeScene > span { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-portal-motion="full"]) .portalThemeScene > span { animation: none; }
+}
+
+html:root[data-portal-theme] select { color: var(--text); border-color: var(--border); background-color: var(--panel); }
+html:root[data-portal-theme] select :is(option, optgroup) { color: var(--text); background-color: var(--panel); }
+
+.portalThemePicker { position: relative; display: inline-flex; align-items: center; }
+.portalThemeMenu { min-width: 154px; display: grid; gap: 4px; padding: 6px; border: 1px solid var(--border); border-radius: 9px; background: color-mix(in srgb, var(--panel) 96%, transparent); color: var(--text); box-shadow: var(--shadow); }
+.portalThemeMenu[hidden] { display: none !important; }
+.portalThemeOption { appearance: none; width: 100%; min-height: 30px; display: grid; grid-template-columns: 18px minmax(0, 1fr); align-items: center; gap: 8px; border: 0; border-radius: 7px; background: transparent; color: var(--text); padding: 6px 8px; font: inherit; font-size: 12px; text-align: left; cursor: pointer; }
+.portalThemeOption:hover,
+.portalThemeOption[aria-checked="true"] { color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.portalThemeOption svg,
+.portalThemeButton svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.portalThemeButton:hover { border-color: var(--accent); color: var(--accent); }
+.portalThemeButton:not([data-theme-mode="auto"]):not([data-theme-mode="light"]):not([data-theme-mode="dark"]) { border-color: var(--theme-button-border); background: var(--theme-button-bg); color: var(--text); box-shadow: 0 8px 24px color-mix(in srgb, var(--accent) 16%, transparent); }
+
+@media (max-width: 520px) {
+  .portalThemeButton { padding-inline: 7px; }
+  .portalThemeButton [data-theme-label] { display: none; }
+}

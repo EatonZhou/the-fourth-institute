@@ -1,0 +1,130 @@
+{
+  "summary": {
+    "i0_g0_fast_copy": {
+      "steps": 128,
+      "safe_contact": 94.18042245735276,
+      "safe_fraction": 0.8837471857952257,
+      "new_since256": 0.5879831174082537,
+      "total_new_since0": 0.9292041656558346,
+      "M": 113.2176977979332,
+      "E": 135.00458185991437,
+      "U": 129.0873449468583,
+      "motor": 11.400410441423881,
+      "births": 94.59618549217392,
+      "deaths": 66.8810600718759,
+      "tax": 17.78455270627935,
+      "copy_fee": 0.1521669760506603,
+      "value_load_last_birth": 0.5567556444254318
+    },
+    "i0_g0_fast_swap": {
+      "steps": 128,
+      "safe_contact": 94.18042245735276,
+      "safe_fraction": 0.8837471857952257,
+      "new_since256": 0.5879831174082537,
+      "total_new_since0": 0.9292041656558346,
+      "M": 113.2176977979332,
+      "E": 135.00458185991437,
+      "U": 129.0873449468583,
+      "motor": 11.400410441423881,
+      "births": 94.59618549217392,
+      "deaths": 66.8810600718759,
+      "tax": 17.78455270627935,
+      "copy_fee": 0.1521669760506603,
+      "value_load_last_birth": 0.49920556147324047
+    },
+    "i0_g0_fast_zero": {
+      "steps": 128,
+      "safe_contact": 94.18042245735276,
+      "safe_fraction": 0.8837471857952257,
+      "new_since256": 0.5879831174082537,
+      "total_new_since0": 0.9292041656558346,
+      "M": 113.2176977979332,
+      "E": 135.00458185991437,
+      "U": 129.0873449468583,
+      "motor": 11.400410441423881,
+      "births": 94.59618549217392,
+      "deaths": 66.8810600718759,
+      "tax": 17.78455270627935,
+      "copy_fee": 0.1521669760506603,
+      "value_load_last_birth": 0.0
+    },
+    "i0_g1_fast_copy": {
+      "steps": 128,
+      "safe_contact": 86.72657853299822,
+      "safe_fraction": 0.8324106751276263,
+      "new_since256": 0.6046646890175424,
+      "total_new_since0": 0.9332908055964498,
+      "M": 110.84321303083252,
+      "E": 123.03515446152664,
+      "U": 128.38356662137159,
+      "motor": 14.389864728431863,
+      "births": 97.22423327134018,
+      "deaths": 65.27496559801156,
+      "tax": 25.763899974074622,
+      "copy_fee": 0.14346324154818657,
+      "value_load_last_birth": 0.5158799051346054
+    },
+    "i0_g1_fast_swap": {
+      "steps": 128,
+      "safe_contact": 85.51788433617793,
+      "safe_fraction": 0.8258238636706534,
+      "new_since256": 0.5993362151581293,
+      "total_new_since0": 0.9323554203323915,
+      "M": 109.12658291279018,
+      "E": 123.15078399931573,
+      "U": 126.49535688849349,
+      "motor": 10.362803987780758,
+      "births": 95.44446171636784,
+      "deaths": 64.9114195448331,
+      "tax": 26.81652635325393,
+      "copy_fee": 0.13880697897227892,
+      "value_load_last_birth": 0.43471263130075144
+    },
+    "i0_g1_fast_zero": {
+      "steps": 128,
+      "safe_contact": 86.60578797559582,
+      "safe_fraction": 0.8332553959582742,
+      "new_since256": 0.6026562751852398,
+      "total_new_since0": 0.9329612013334116,
+      "M": 110.34453040588917,
+      "E": 123.74144253577747,
+      "U": 127.67452231149194,
+      "motor": 12.309997282149736,
+      "births": 96.55598747209399,
+      "deaths": 65.18624015884828,
+      "tax": 25.886007007930147,
+      "copy_fee": 0.14242405691516985,
+      "value_load_last_birth": 0.0
+    }
+  },
+  "paired": {
+    "g0_zero": {
+      "initial_every_array_equal": true,
+      "final_max_physical_difference": 0.0,
+      "actual_action_differences": 0,
+      "final_value_max_difference": 0.76155302847561,
+      "first_scalar_physics_equal": true
+    },
+    "g0_swap": {
+      "initial_every_array_equal": true,
+      "final_max_physical_difference": 0.0,
+      "actual_action_differences": 0,
+      "final_value_max_difference": 0.48052527268640344,
+      "first_scalar_physics_equal": true
+    },
+    "g1_zero": {
+      "initial_every_array_equal": true,
+      "final_max_physical_difference": 0.15061546849421026,
+      "actual_action_differences": 16,
+      "final_value_max_difference": 0.7615771290144382,
+      "first_scalar_physics_equal": true
+    },
+    "g1_swap": {
+      "initial_every_array_equal": true,
+      "final_max_physical_difference": 0.1983987861162012,
+      "actual_action_differences": 32,
+      "final_value_max_difference": 0.5007488716401712,
+      "first_scalar_physics_equal": true
+    }
+  }
+}

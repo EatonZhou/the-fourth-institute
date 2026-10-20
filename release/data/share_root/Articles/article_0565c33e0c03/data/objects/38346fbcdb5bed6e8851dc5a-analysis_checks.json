@@ -1,0 +1,10 @@
+{
+  "status": "passed",
+  "new_packets": 1536,
+  "old_replayed": 0,
+  "display_entries": 198,
+  "max_balance_error": 9.094947017729282e-13,
+  "fields_and_wallets_audited": true,
+  "operator_calls": 0,
+  "geometry": "rho>.01; nonperiodic 8-connected components and 4-connected holes; bounding-box periodic gaps are geometric warnings, not convolution onset"
+}

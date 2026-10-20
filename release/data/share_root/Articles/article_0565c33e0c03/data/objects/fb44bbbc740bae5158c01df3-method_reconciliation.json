@@ -1,0 +1,41 @@
+{
+  "schema": "lenia.physical-experience-method-addendum.v1",
+  "task": "physical_experience_state_20261019",
+  "owner": "resident_33af539c4a17",
+  "parent_handoff": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/physical_experience_state_20261019/handoff.json",
+    "sha256": "b1119cd365f82b0614fc7169d2edd4b13314864583232be5ee14c990819a05ef"
+  },
+  "scope": "Read-only reconciliation of EB msg_5bf761428a11dd93e8a4368f36a9eea6 and msg_4c24bda010e0228e95fb7ae6da3f98a4 with already completed physical batches. No new native, runner job, parameter sweep or original artifact modification.",
+  "literature_inputs": [
+    "${share_root}/Projects/元胞自动机研究/knowledge_base/research/method_renewal/lifetime_plasticity_v12_20261019/parallel_method_renewal_20261019/physical_experience_state_primary_review.json",
+    "${share_root}/Projects/元胞自动机研究/knowledge_base/research/method_renewal/lifetime_plasticity_v12_20261019/parallel_method_renewal_20261019/physical_experience_material_shape_followup.json"
+  ],
+  "findings": {
+    "standard_material_rule": "Already run: plastic_delta and plastic_last update the same actual c parameter as the material candidate, through the same completed local information, material transport/death and price schedule. No new perturbation interface exists or is added. These are standard rules, not novel algorithms.",
+    "physical_variable": "c is an overdamped mobility-tensor parameter, not an elastic rest length or a modeled stored-energy variable. No c-dependent elastic DeltaU is defined. Keep actual donor movement costs, change-of-parameter proxy price and chemical outcome ledger; none establishes full work/dissipation/hardware equivalence.",
+    "reflection": "probe.py uses order=(-arange(width))%width, not np.flip. At c=0 it transforms body, energy, memory and eligibility together around x=16. Actual saved post-intervention state for parent0 equals this transform of full pre-state exactly in all four arrays. This is one saved-state check plus static inspection of the common implementation, not a new physical trial.",
+    "receipts": {
+      "present": [
+        "force",
+        "weights (actual funded K)",
+        "old_body",
+        "transported_body",
+        "survivor",
+        "parameter_before",
+        "parameter_after",
+        "completed and local consequence fields"
+      ],
+      "absent": [
+        "separately saved pre-budget face rates",
+        "source_budget_scale"
+      ],
+      "limit": "Do not backfill these absent arrays or claim separate density-force and donor-energy mediation from existing records."
+    },
+    "causal_interpretation": "c sign flip preserves tensor eigenvalue set but changes physical force-flow directions. c=0 raises the smallest eigenvalue to1 and removes directional suppression; it is not gain-preserving or nondestructive memory erasure. Full mirror changes energy arrangement and contact geometry as well as density. At c=0 host reflection symmetry itself reverses transverse responses of asymmetric untrained bodies. Mirror effects alone cannot identify feedback-learned shape memory.",
+    "null_model": "Fixed local readout f+(M(w)-I)f=M(w)f matches the material model for w=c; equivalence propagates through rates, clipping, donor funding, K, mixing, completed feedback and updates to future morphology. Main actual trajectories match to4.27e-14. A later useful shape would not break this equivalence.",
+    "feedback": "executed*valence identifies the binary target on a legally completed local event. This is calibration within a preconfigured one-parameter family, not unknown constitutive-law discovery or whole-body one-shot acquisition."
+  },
+  "outcome": "Prior closure unchanged: ordinary local feedback establishes useful revisable physical response; additional material-representation advantage unsupported. Residual full-body configuration was not shown to hold stable useful history; density alone was not isolated.",
+  "next": "Scientific choice already submitted once as event_97004c2672517fe4. No duplicate event or extra physical batch is requested by this addendum."
+}

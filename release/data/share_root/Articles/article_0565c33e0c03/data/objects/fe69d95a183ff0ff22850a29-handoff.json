@@ -1,0 +1,39 @@
+{
+  "schema": "contextual-terminal-records-d3-handoff-v1",
+  "task": "contextual_terminal_records_20261018",
+  "owner": "resident_d3ccfa2d95b7",
+  "status": "completed",
+  "objective_met": false,
+  "job": "71d32015-92aa-404e-8032-4ac39cbb8ebb",
+  "native_steps": 1664,
+  "attempted": 1664,
+  "worker_seconds": 695.402206,
+  "plan": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/contextual_terminal_records/plan.json",
+    "sha256": "091d82231d47ff591774672446a4b9225f6440bbf1208ae53eaa752f285ac943"
+  },
+  "source_handoff": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/contextual_terminal_records_20261018/handoff.json",
+    "sha256": "3eb00cb4cf19c119091db4fca09c63d53b58c4f52bcd98e3dbd0a7fb6f652660"
+  },
+  "archive": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/contextual_terminal_records/archive.json",
+    "sha256": "62ed139ee56ee74872f2b49e033458c492ec752c38fdbbedfffa7e119daa6642"
+  },
+  "manifest": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/contextual_terminal_records/manifest.json",
+    "sha256": "efa1f15477eb4d5ad5cf7dd9b091bb8e0ba8a9a3196a1b7fecaa6d236d52b6e3",
+    "attachments": 29
+  },
+  "summary": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/contextual_terminal_records/summary.json",
+  "report": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/contextual_terminal_records/REPORT.txt",
+  "interpretation": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/contextual_terminal_records/INTERPRETATION.txt",
+  "usage": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/contextual_terminal_records/usage.json",
+  "data_usage": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/contextual_terminal_records/data_usage.json",
+  "checks": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/contextual_terminal_records/checks.json",
+  "completed_futures": 12,
+  "surviving_completed_futures": 12,
+  "partial_stages": [],
+  "unused_budget": "sealed; no retry or scan",
+  "old_budget_used": 0
+}

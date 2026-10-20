@@ -1,0 +1,532 @@
+[
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/API.txt",
+    "bytes": 1398,
+    "sha256": "de174f062ba2b00271c4a388a6e1baac2576c839a08d8165e36ddd5ebb98f1b3"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/METHOD.txt",
+    "bytes": 2575,
+    "sha256": "34fc58c2a5aa02e48b83bff339d20ccfe9a04deb66a2dae540f5f657a43a7346"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/REPORT.txt",
+    "bytes": 4031,
+    "sha256": "3f5fc12bde085f666f030167723effb3e6566e0f40097417c22d1fa0c48d505f"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/acquired_body.png",
+    "bytes": 87700,
+    "sha256": "d7514c667046cc911c37b77b4bfd9b79dc9cae284af984050853364e4b2bfc16"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/acquired_energy.png",
+    "bytes": 91478,
+    "sha256": "bb1e45dfed688819d80ce880c7d0c5c9020406bf1a3238636edae33f53537878"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/acquired_fuel.png",
+    "bytes": 83679,
+    "sha256": "dc95b9ef9c1d408183c70aa686098ac22cb0b13d4b9b09e9bc39a17d9aa91637"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/acquired_precursor.png",
+    "bytes": 83535,
+    "sha256": "f6373583463eacde973f9af52d7d491985f12f29ef6676c83c32d5a507f69b41"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/analysis.json",
+    "bytes": 56853,
+    "sha256": "e5056e62af0bc019f377a569782a17b056b2a9bf2351e4052cf000bb1c62da6c"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/analysis_source/analyze.py",
+    "bytes": 10920,
+    "sha256": "e57730d71c70d2655051b2a38045599afe455559cd573cb902cd77219b123344"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/analysis_source/package.py",
+    "bytes": 15091,
+    "sha256": "b375a7be464646676cebdc404149d19ae833f42392a54af946d327a51fb11ca3"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/boundaries.json",
+    "bytes": 3,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/budget.json",
+    "bytes": 300,
+    "sha256": "0f5d7e00bb18582dc6cf2c4dfacb7baa53ec3d472851d90a7596e3d943431394"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/cohort_audit.json",
+    "bytes": 58290,
+    "sha256": "4d6b145d82f89d2bfe4b9338be48b83656f38c822ab947832fa3238287320ddb"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/combined_frames.json",
+    "bytes": 180439,
+    "sha256": "d3e637d29c4f2e0286da9a414fb4174364d649e28bae83932066f47637e11e28"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/combined_histories.json",
+    "bytes": 138356,
+    "sha256": "a4ed99a797789fe26f9880083b9f102ba057caed1612745bb7edfdaacbec8651"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/combined_probes.json",
+    "bytes": 281271,
+    "sha256": "6637c1732ac9a65c235a7d9b605d4c306eb358da0670bb1e9471032fdbdc0ffd"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/contrasts.csv",
+    "bytes": 15477,
+    "sha256": "5aceea10852eedb0c6889976311e016889f779feaad540b28cfb1f88f9291bc9"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/control_before_native.json",
+    "bytes": 70,
+    "sha256": "ca4c6a5668b5ded8ebaa79d71d1eac806b9fd8591dcc15c978b84eb220020df8"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/control_before_submit.json",
+    "bytes": 428,
+    "sha256": "6cec834f61916ee12ed310623a9dd959005364a5f67c5c0a6d2680db59254ff2"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/costs_by_actual_leg.csv",
+    "bytes": 40126,
+    "sha256": "cd864ea95aa2ba350c16499b4a2ff309e19ebec663fc0aa6927c7d3f4038aa0b"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/cumulative_probe_accounts_from128.json",
+    "bytes": 67472,
+    "sha256": "4d524af5b21e78a991a642ee045a783898269d620759821e5756b17c8303673e"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/curves.csv",
+    "bytes": 1502704,
+    "sha256": "3f613e557c6064ded83dae3c7161bd1a1ed23d57d878ff11e333f078bae4a88b"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/exchange_ledger.csv",
+    "bytes": 2179,
+    "sha256": "19dbcf2c33da0df064fd2bbf70d7c9cb39e867d84c8afd9c53ca2efe81313ea8"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/exchanges.json",
+    "bytes": 40401,
+    "sha256": "bc5495d4308496225072f9b3c8f96c86613f550f2af5622df86127130002d3ea"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/first_parent_probe_D.png",
+    "bytes": 70038,
+    "sha256": "4937e9dd730ece2a205f32116214783eac916ec37f04959fb37416ec69acfde1"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/first_parent_probe_U.png",
+    "bytes": 70306,
+    "sha256": "c1608150f215f0fb379775d927c7999fbc399ad8c587bdd4e26ce6fe8d0e105f"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/frames.json",
+    "bytes": 109286,
+    "sha256": "d9e30d7251c1dce10b15602513e0406c747aba28b50fd659f5c883def12b97e6"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/outcomes.csv",
+    "bytes": 85827,
+    "sha256": "26f51b0af7be0b53c9996b6211c3e687fe6cc6763b3503bb5ab5942ea52fb1d6"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/outcomes.json",
+    "bytes": 245682,
+    "sha256": "781cf97e6c4f021494b52134d98c390ec5e88341fb90b604e80e8eee4444c4a3"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/packet_replacement.csv",
+    "bytes": 6621,
+    "sha256": "4a20f86ccc02a64cdd3391066dcad6dde83a62291366ab50b23edd85ada0c31f"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/plan.json",
+    "bytes": 51920,
+    "sha256": "b2190e0e5cf64d4877b695a8812addb6277c7b6cc6903f57147ac8f1ea4b5d03"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/probe_curves_0.png",
+    "bytes": 200252,
+    "sha256": "efc19cd9a8cf3db8d9d74a4e4030d50cde5c84a9f3d187457221a6f82eb68413"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/probe_curves_1.png",
+    "bytes": 206567,
+    "sha256": "c7881c28e9ab5311cb0bd7e7cf6bb2358b19e6521594e896bde3e38ddabbe67b"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/probe_curves_2.png",
+    "bytes": 204632,
+    "sha256": "aaa93636ceb3a80ec453ce3ae347d0242a1a112f9332b4de8ba9891b6da5dd8d"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/probe_curves_3.png",
+    "bytes": 216608,
+    "sha256": "0429d3d858ef74188045a29979074e204c60a33646eb9ab149db20cefc903f92"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/pure_checks.json",
+    "bytes": 983,
+    "sha256": "bc6a8e71129b88fa99293e3998633eb7a7da8ff319136541b2c4e1b185c19ba7"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/raw_manifest.json",
+    "bytes": 154163,
+    "sha256": "705c4df2aafdb665b62ac44f1e66efd53391e5e54d770a065b152836ff03041d"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/reference_reuse.json",
+    "bytes": 80845,
+    "sha256": "9cd5ed5d174316c1afdbb64fd44573da2ff9ea141d917e1577724a2baae1f751"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/result.json",
+    "bytes": 593,
+    "sha256": "8f9e703eaba40d0aea557fd07fc7dc6d15371f7da53873dd9d0b1bee6e401e14"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/reused_histories.json",
+    "bytes": 103727,
+    "sha256": "db2ce56bb37bb510b3f22c16de81270f54c91f1235385704250f4221112a10b5"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/runner_final.json",
+    "bytes": 1420,
+    "sha256": "bcbca90edcd14bcd740739bffb6eec005f1b38c5e3b7c69aae23ec40637d38a0"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/scientific_next_request.json",
+    "bytes": 1158,
+    "sha256": "bb5ba7b60f6b747a7650c1da8a96473593776b6edcc0ab2083026276587001b8"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/environment_evolution/complementary_cargo_exchange/core.py",
+    "bytes": 10848,
+    "sha256": "2716b4ff5371b1c0095fe955399c7f68b62dd6b53fce048c542b36653ffd7cd9"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/environment_evolution/local_metabolic_translocation/__init__.py",
+    "bytes": 83,
+    "sha256": "6a18014b1fb754e64d976c5f7b9c7f7a3f8835b22c90db7fa7fd40e627a14088"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/environment_evolution/local_metabolic_translocation/core.py",
+    "bytes": 8342,
+    "sha256": "14917689b4a891b8ed27a1574630331b56a64d1538cf785e505b5a8fab3e393e"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/environment_evolution/material_action_response/__init__.py",
+    "bytes": 78,
+    "sha256": "fcbdb20688501c53d8722953f8d3c4228982965c62ff8bc458835aed983a9f92"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/environment_evolution/material_action_response/core.py",
+    "bytes": 9751,
+    "sha256": "15691ada9fd805c076f7c5770ba955dbf6cc454ea3af129b1ba03fe958467b5b"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/environment_evolution/metabolic_maintenance_withdrawal/__init__.py",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/environment_evolution/metabolic_maintenance_withdrawal/core.py",
+    "bytes": 8461,
+    "sha256": "c8260577edb1cec138f3f3869d889860ae93ff3d45fe212ff3cc08c1b2249a12"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/environment_evolution/native_investment_action/__init__.py",
+    "bytes": 78,
+    "sha256": "a80dd0002964474f230aff723a4a94c648b7f3330de722236dc2fb86dcab47b6"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/environment_evolution/native_investment_action/run.py",
+    "bytes": 14352,
+    "sha256": "162a6f3a238334abe364c8fc871fcdac332b9710ba36f43f44b652c30fbba3f9"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/environment_evolution/regenerative_actor/__init__.py",
+    "bytes": 154,
+    "sha256": "b9438b684a84e8b7868c892b912a638023c8afa18ad426135b0a4c5dc6369b66"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/environment_evolution/regenerative_actor/conversion.py",
+    "bytes": 2821,
+    "sha256": "d2b73ccf44d6720e01e2166c055f9a427406dc483b21746476b9f8cc5f95189a"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/environment_evolution/regenerative_actor/model.py",
+    "bytes": 8610,
+    "sha256": "3941450e97d2311f833d1c9c8964f348218467d4cd8d41a68b6584b72b24b5b0"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/environment_evolution/regenerative_actor/prepare.py",
+    "bytes": 8045,
+    "sha256": "dfeac30fd839c0fda9e88398b4ed4446bc332b2be54c4d7287e7c6ad84317620"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/environment_evolution/regenerative_actor/runner.py",
+    "bytes": 6011,
+    "sha256": "4d48a7a9fe11bda60fcf743753a733ef0e574feabb5f0e2192c9b3bb4e7f419d"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/environment_evolution/resource_wave_actionability/__init__.py",
+    "bytes": 82,
+    "sha256": "fe3350daac1e0ac3c02c688585caab51f1760bede457ee9246aad2d6a0ba5b2a"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/environment_evolution/resource_wave_actionability/core.py",
+    "bytes": 6324,
+    "sha256": "fcfb8954f7fa94e21954657545d3e0d4dd3155cf20adef2a87851a129c85726d"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/local_learning/__init__.py",
+    "bytes": 75,
+    "sha256": "0e45857cf6352df2192e9fe1272f55be5010ecb456bb5a6e6dc5d1527a3c3cb5"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/local_learning/adaptive_action_renewal/controller.py",
+    "bytes": 3576,
+    "sha256": "82ce81c7e382119e74ef8f17fe002dfd74d05f8ba87005a6fdaf73b2540bbeb6"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/local_learning/deletion_layout_life0_formation/__init__.py",
+    "bytes": 1,
+    "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/local_learning/deletion_layout_life0_formation/core.py",
+    "bytes": 1582,
+    "sha256": "438213791aaffe2c674437a4adec18a15818ccfa630c5196b795770b5e9c1191"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/local_learning/developmental_history_rule_swap/__init__.py",
+    "bytes": 79,
+    "sha256": "6c39983bb455ed58c9e7b2a7b8c5ccce7f76f305662bc10d9fd663a9f527bca7"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/local_learning/developmental_history_rule_swap/core.py",
+    "bytes": 2698,
+    "sha256": "727edc91ab7725e04ebe979cc58c7e8cb4b14e6e921b81740866342392c05b32"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/local_learning/experience_adaptation_outer_search/__init__.py",
+    "bytes": 263,
+    "sha256": "18b10d0143cb60ab3c1a67bd90de35363b12619cb42f1a4ce7374d94c297a8b9"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/local_learning/experience_adaptation_outer_search/archive.py",
+    "bytes": 5444,
+    "sha256": "46f77d8c9d71aa5ed5f5f760efa6fdc3cb29efb011c517bf05289ef3527ca337"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/local_learning/experience_adaptation_outer_search/genome.py",
+    "bytes": 7258,
+    "sha256": "cad661bf00f177b3cb3f38a5c7210a0095e4db76e5bfbab8a5b6c3541b15d10b"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/local_learning/fixed_amount_rule_deletion_layout/__init__.py",
+    "bytes": 63,
+    "sha256": "53eab39933fb85f6345d71a6806be704cd2d632773cd28249aaf6dbe21c8afca"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/local_learning/fixed_amount_rule_deletion_layout/core.py",
+    "bytes": 6377,
+    "sha256": "71277e88c480cb81b9b602a85dab641c5e4e61b661b4d74f67fe19a36b5914a5"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/local_learning/local_terminal_feedback/__init__.py",
+    "bytes": 83,
+    "sha256": "ed460f70f95f7de2af6391acf68ccc1c8b05d4ec7bda3dbb254aaefb0510f5ec"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/local_learning/local_terminal_feedback/core.py",
+    "bytes": 3104,
+    "sha256": "3e4b5f75ba406762a7e36507f1f2e3a602b3e2517f17880493f5149ab37c8c54"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/local_learning/local_terminal_feedback/experiment.py",
+    "bytes": 15185,
+    "sha256": "1b820d4bed26a3c8452a2dd139fa29dedbb451c3d7f866835ed3b4d6890e1f7f"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/local_learning/material_transport.py",
+    "bytes": 17572,
+    "sha256": "dd5622a2df6a5d50642a31ad586215d5e30e33929cf8f57ee9efff36fdef08d5"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/local_learning/method_renewal_local_plasticity/__init__.py",
+    "bytes": 69,
+    "sha256": "dfce25ef21799ab43cbd04c6137023a8d6911086406a824e0763f04d4d2c4d2d"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/local_learning/method_renewal_local_plasticity/anticipatory_io.py",
+    "bytes": 2565,
+    "sha256": "341c04d4d2fcdfcc629892317021e286a5a4391b11ebe65cf3f713276113574d"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/local_learning/native_investment_action/__init__.py",
+    "bytes": 153,
+    "sha256": "932074acaf8ec99ece1c4342bd9fdaf81acd2eeaf735c1c8ced7dd880e09a96e"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/local_learning/native_investment_action/intent.py",
+    "bytes": 8554,
+    "sha256": "281cdf539552d744002768036509eaab3476e6c74a9ddf156bf093872ecb0d88"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/local_learning/replacement_history_carrier/__init__.py",
+    "bytes": 55,
+    "sha256": "6ce6913f6d11a04d81df0d51f2b18c88ef28fb4456fc1706b139334c88bdec8b"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/local_learning/replacement_history_carrier/core.py",
+    "bytes": 2943,
+    "sha256": "c8d97368cbd8b00b174f3728587702e0e9651b2d96da001af325b8671a345a45"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/local_learning/resource_conditioned_growth_rule/__init__.py",
+    "bytes": 78,
+    "sha256": "87ddc989f8d8289370aad7a8009f147c477f46275793f54fb1f866624a142507"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/local_learning/resource_conditioned_growth_rule/core.py",
+    "bytes": 7061,
+    "sha256": "bad674f254644c8fc00caa6fd50ccd45bbebdd65a229c11125ca3765df981a44"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/local_learning/resource_matched_morphogenesis/__init__.py",
+    "bytes": 66,
+    "sha256": "652c286b9440c8b3d1b51b48aa433f1894c7b61b8bd872d1f547d3a8100d808d"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/local_learning/resource_matched_morphogenesis/core.py",
+    "bytes": 6767,
+    "sha256": "dae6fbd6db1fe1a83f34a6039aee8e292f6d63717270095db981d1e808928a83"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/local_learning/rule_geometry_resource_support/__init__.py",
+    "bytes": 74,
+    "sha256": "7a6102980e60a41c1de40cfa2bee276749ca1dfb9dd18d80d8ca8e53abe54b83"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/local_learning/rule_geometry_resource_support/core.py",
+    "bytes": 3149,
+    "sha256": "006c505f6e388d132f75466b21b8a5ec355e8cc5c0e64b8b5218f3f73e196d39"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/local_learning/spatial_birth_request_coordination/__init__.py",
+    "bytes": 84,
+    "sha256": "67059ab30ca2fc8889dce31c9b756b763632f445cb3f15f17db42603290dea73"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/local_learning/spatial_birth_request_coordination/core.py",
+    "bytes": 4579,
+    "sha256": "1b052a12458e251b343a3bcf1ae7075e095dccd267d55bcd05858e219681bfde"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/local_learning/spatial_coverage_acquired_body/__init__.py",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/local_learning/spatial_coverage_acquired_body/core.py",
+    "bytes": 1165,
+    "sha256": "27b7094847c1a3815f10c3ae9ce64f4b13623ea039c1ebeba03060feba92d5a4"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/local_learning/spatial_coverage_acquired_body/run.py",
+    "bytes": 15822,
+    "sha256": "4abc05479034ba7071ac5721df7c671bd351bf3338dabaff3050d21332b69a4e"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/local_learning/tissue_replacement_pf_location/__init__.py",
+    "bytes": 77,
+    "sha256": "39091d6f3db6d4c57ee090795573a7e93f1f645c1e4602c1d2ade8bd3d332ac6"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/local_learning/tissue_replacement_pf_location/core.py",
+    "bytes": 4398,
+    "sha256": "adf452a8599221a1a21bf9aab22754576a39f5bea357e5f1630d447250ca721f"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/local_learning/turnover_compatible_morphogenesis/__init__.py",
+    "bytes": 73,
+    "sha256": "4e555285ca6c0bfe37cd3ccbe91915b9d7f8828b5c929bb4e2eec75772014d4c"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/local_learning/turnover_compatible_morphogenesis/core.py",
+    "bytes": 5692,
+    "sha256": "dbfea17ca9e68833d2e0fe7f33c37cac6111a4c441f51fb23a6a78f458886a84"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/local_learning/turnover_compatible_morphogenesis/run.py",
+    "bytes": 17503,
+    "sha256": "e73bc74edc530ae6a3d2f17a2232c83056bcb9d56c1b5fc13818bb0608974433"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/morphology_evolution/__init__.py",
+    "bytes": 75,
+    "sha256": "9e9c593e32e60dffaeebf902feda910a47b75d1f5b15a0de77a0f910f9cfc130"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/morphology_evolution/dual_kernel.py",
+    "bytes": 2922,
+    "sha256": "529d42e50876a68bce54a512f8a9cafd48a8f68276cf8507a0e2243b3f450d6e"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/simulation/__init__.py",
+    "bytes": 389,
+    "sha256": "564809e49203a4dc2f071ada201b8ac8bc142d83583a4ff3b4fa861bdeae79da"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/simulation/core.py",
+    "bytes": 2976,
+    "sha256": "0e832298f01c53a5774df1fbd144d40a816529907fcc6ac58ea6dcf9296d4974"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/simulation/data.py",
+    "bytes": 4960,
+    "sha256": "dfcec89a87caecf81836582b4639b01f8ab14edeec154d7f2e769356547805e5"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/simulation/seeds.py",
+    "bytes": 1809,
+    "sha256": "d92ae0992f80b5588f76c1cac5228f53108e90fea71b5970b9a721d1ab775bbf"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/source/simulation/snapshot.py",
+    "bytes": 6192,
+    "sha256": "e99d3eccee47ded2abe1518e3fb80d2d630a8ff21a2a339ff6723c2878dfc382"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/submission.json",
+    "bytes": 704,
+    "sha256": "207817af17b86a6a9c030c5cccde76f0e053f8da8d4064ca20f6aba3fd441575"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/visual_crop.json",
+    "bytes": 299,
+    "sha256": "c8824bff7c770ecf8e69208e69765a9f3cfd7a4b5753609f5b1b6d4df32228b4"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/visual_review.json",
+    "bytes": 4645,
+    "sha256": "318cb44e9486e62fed71e673ec1aafecd7a36f6ff127cc07468016a1c39a9d0f"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/windows.csv",
+    "bytes": 19066,
+    "sha256": "0be5b937026cb9dee90037d68179cfd2b789787a7730ca255bc8a5e25b52e598"
+  }
+]

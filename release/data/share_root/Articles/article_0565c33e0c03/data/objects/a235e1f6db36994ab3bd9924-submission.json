@@ -1,0 +1,19 @@
+{
+  "id": "2b392f3c-1942-48c9-9622-df7fe47271db",
+  "name": "turnover_second_parent_completion_20261019",
+  "command": [
+    "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+    "-m",
+    "local_learning.turnover_second_parent_completion.run"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "d3-turnover-second-parent-completion-20261019-v1",
+  "status": "running",
+  "created_at": "2026-10-18T18:18:37.260285+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/2b392f3c-1942-48c9-9622-df7fe47271db",
+  "pid": 2308627,
+  "manual_pause": false,
+  "create_time": 1792347516.75,
+  "started_at": "2026-10-18T18:18:37.360986+00:00"
+}

@@ -1,0 +1,31 @@
+{
+  "id": "f20a1e36-a713-4e82-8b87-bac39e29c07b",
+  "name": "temporal-history-selected-action-33",
+  "command": [
+    ".venv/bin/python",
+    "-m",
+    "research.temporal_history_selected_action.run"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "resident33-temporal-history-selected-action-20261019-v1",
+  "status": "completed",
+  "created_at": "2026-10-19T12:24:18.001504+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/f20a1e36-a713-4e82-8b87-bac39e29c07b",
+  "pid": 176580,
+  "manual_pause": false,
+  "create_time": 1792412659.95,
+  "started_at": "2026-10-19T12:24:20.568733+00:00",
+  "returncode": 0,
+  "finished_at": "2026-10-19T12:24:30.186049+00:00",
+  "result": {
+    "status": "completed",
+    "job": "f20a1e36-a713-4e82-8b87-bac39e29c07b",
+    "native_steps": 7128,
+    "paths": 9,
+    "failures": 0,
+    "wall_seconds": 8.303411680040881,
+    "raw_bytes": 120930131,
+    "raw": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/f20a1e36-a713-4e82-8b87-bac39e29c07b/raw"
+  }
+}

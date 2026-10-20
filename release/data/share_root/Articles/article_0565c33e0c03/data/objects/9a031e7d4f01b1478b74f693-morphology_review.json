@@ -1,0 +1,12 @@
+{
+  "viewed": [
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/actual_G1_compact.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/actual_G1_double_lobe.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/actual_G2_compact.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/actual_G2_double_lobe.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/actual_continuation_compact.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/actual_continuation_double_lobe.png"
+  ],
+  "observation": "G1 f1 compact develops a clear small ring; f2 and selected child compact retain a denser centre with a rim. Double-lobe colocated trajectories show two uneven lobes and depressions; separated supply increasingly yields a compact elongated connected body. G1 f0/f3 extinctions and f1 double-lobe collapse are retained. Selected-child parent differences are modest, not a new morphology family.",
+  "qualification": "Actual saved density at original coordinates. Common 0..1 display saturation; some true density exceeds 1 (maximum in scalar checks). Per-row fixed crop union, no rotations or invented frames. Topology statistics use existing relative-density threshold; visual depression is not necessarily a topological hole."
+}

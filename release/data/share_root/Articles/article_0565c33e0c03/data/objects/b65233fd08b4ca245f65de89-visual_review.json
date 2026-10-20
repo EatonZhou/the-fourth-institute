@@ -1,0 +1,13 @@
+{
+  "inspected": [
+    "actual_process.png",
+    "actual_fields_history1.png",
+    "actual_fields_history2.png"
+  ],
+  "scope": "24 completed trajectories and24 actual clock384 fields; other120 saved times indexed, not all visually inspected",
+  "observations": [
+    "共定位双叶回收后生环更广，L256仍减少；定量以原场积分为准。",
+    "共定位能量代价及分离身体持续下降在完整曲线中可见。"
+  ],
+  "native": 0
+}

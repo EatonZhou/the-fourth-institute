@@ -1,0 +1,23 @@
+{
+  "native_cap": 520,
+  "native_used": 520,
+  "native_remaining_sealed": 0,
+  "science_native": 512,
+  "boundary_native": 8,
+  "attempts": 1,
+  "unknown_native": 0,
+  "runner_worker_cap": 450,
+  "runner_worker_seconds": 46.641952,
+  "runner_worker_method": "allocated CPU2 * (runner.finished_at - runner.started_at), single active attempt, no pause",
+  "runner_wall_seconds": 23.320976,
+  "runner_remaining_sealed": 403.358048,
+  "offline_charged_cpu": 7.920822,
+  "offline_measured_subprocess_cpu": 4.920822,
+  "offline_metadata_reserve_cpu": 3,
+  "offline_remaining_sealed": 52.079178,
+  "raw_bytes": 110906639,
+  "source_and_postprocessing_bytes": 5934195,
+  "old_budget_used": 0,
+  "old_tail_replay": 0,
+  "acquisition_replay": 0
+}

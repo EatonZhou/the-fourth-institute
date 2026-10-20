@@ -1,0 +1,30 @@
+[
+  {
+    "shape": "compact",
+    "state_exact": true,
+    "maps_exact": true,
+    "ledger_exact": true,
+    "native": 2
+  },
+  {
+    "shape": "ring",
+    "state_exact": true,
+    "maps_exact": true,
+    "ledger_exact": true,
+    "native": 2
+  },
+  {
+    "shape": "double_lobe",
+    "state_exact": true,
+    "maps_exact": true,
+    "ledger_exact": true,
+    "native": 2
+  },
+  {
+    "shape": "separate_seeds",
+    "state_exact": true,
+    "maps_exact": true,
+    "ledger_exact": true,
+    "native": 2
+  }
+]

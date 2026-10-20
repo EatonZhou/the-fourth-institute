@@ -1,0 +1,16 @@
+{
+  "type": "workbench",
+  "category": "resource",
+  "description": "A versioned Portal frontend application with external Lineage bindings.",
+  "title": {
+    "zh": "工作台",
+    "en": "Workbench"
+  },
+  "provider": "management_portal.resources.providers.workbench:install_resolver",
+  "catalog_section": "",
+  "catalog_order": 0,
+  "registerable": true,
+  "scope": "project",
+  "unit": "workbenches",
+  "enabled_by_default": true
+}

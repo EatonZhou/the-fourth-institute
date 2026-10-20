@@ -1,0 +1,98 @@
+{
+  "task": "developmental_history_rule_swap_20261019",
+  "status": "completed_and_closed",
+  "owner": "resident_d3ccfa2d95b7",
+  "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/developmental_history_rule_swap_20261019/handoff.json",
+  "report": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/developmental_history_rule_swap_20261019/REPORT.txt",
+    "sha256": "97199ceed8e29dc55cac81c7201af0b09f41e2f540a9064792b73b8ca34d731d",
+    "bytes": 4034
+  },
+  "method": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/developmental_history_rule_swap_20261019/METHOD.txt",
+    "sha256": "c3c985f3b920b2a0c356023793021e957449ba39b8aed03fbfcdd1bde618c358",
+    "bytes": 2018
+  },
+  "manifest": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/developmental_history_rule_swap_20261019/manifest.json",
+    "sha256": "ef96d558de47c7dd1f7467a34f342e0be1fbef1d8a6fd7b52e289a386d8d1356",
+    "bytes": 24752
+  },
+  "raw_manifest": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/developmental_history_rule_swap_20261019/raw_manifest.json",
+    "sha256": "79b46ff9170c62680f63d82d43ec7a8e3eec17aa047fe8ccbb76fa44170b2d38",
+    "bytes": 52543
+  },
+  "plan": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/developmental_history_rule_swap_20261019/plan.json",
+    "sha256": "09d613f6792d419654721aaff341531c43a52696161f8bf970074d513740383c",
+    "bytes": 39359
+  },
+  "decision": {
+    "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/developmental_history_rule_swap_20261019.json",
+    "sha256": "839e38aff5c9d13f8eabf2cdabc9e5e6feecf528b323f9cf8e619b6204b00216",
+    "bytes": 19306
+  },
+  "result": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/developmental_history_rule_swap_20261019/result.json",
+    "sha256": "6531d3a08bc595b53f79fb42414044f26d04c540e6e20badc3b74e4d7f902520",
+    "bytes": 567
+  },
+  "summary": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/developmental_history_rule_swap_20261019/summary.json",
+    "sha256": "74a2f1995f53e06d15d7b4886829a6390eb37722c800c7e4adb83c06fa61a539",
+    "bytes": 2445
+  },
+  "budget": {
+    "native_cap": 1028,
+    "attempted": 1028,
+    "committed": 1028,
+    "settled": 1028,
+    "science_native": 1024,
+    "boundary_native": 4,
+    "worker_cap": 450,
+    "runner_worker_seconds": 49.649426,
+    "worker_unused": 400.350574,
+    "raw_bytes": 236791515,
+    "raw_cap": 402653184,
+    "cpu_threads": 2,
+    "gpu": 0,
+    "old_balances_used": 0,
+    "old_science_replayed": 0
+  },
+  "job": "3099d6b9-f83e-45c6-95ff-d82d354375d0",
+  "comparison": "8 new swaps plus 8 exact old same-rule diagonals; 2 histories x 2 rules x 4 dependent contexts",
+  "finding": "Child rule raises endpoint M/E and total body-time in all 8 within-history comparisons; no path passes both64 maintenance windows; separated double-lobe gains are founder retention with lower life0-after tissue.",
+  "scientific_choice": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/developmental_history_rule_swap_20261019/scientific_choice.json",
+    "sha256": "194cb0772f70f661c291195b8973f64dfc93b74f3c74da1a9d162f088f9496c5",
+    "bytes": 705
+  },
+  "figures": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/developmental_history_rule_swap_20261019/actual_compact_colocated.png",
+      "sha256": "116ac270077a8bcf0c553bcca3a138e2e945bcddc058f427c0b8c98c37327869",
+      "bytes": 81138
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/developmental_history_rule_swap_20261019/actual_compact_separated.png",
+      "sha256": "f22e947b208673f85536de6111abb88aebdfb3cad184a0c38cccd004a4858533",
+      "bytes": 79637
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/developmental_history_rule_swap_20261019/actual_double_lobe_colocated.png",
+      "sha256": "ed821fb1884c8dcc4b5aa4d5ffc05be19465f1675465019b05e40d8c2c8e90bc",
+      "bytes": 76758
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/developmental_history_rule_swap_20261019/actual_double_lobe_separated.png",
+      "sha256": "6e1c5a579b97e3377daad0260e8e0969acbcd89a1da816791ddbe31fa562f9f4",
+      "bytes": 77748
+    }
+  ],
+  "objective_met": false,
+  "post128_lineage_saved": false,
+  "external_rule_intervention_unpriced": true,
+  "old_results_and_chronology_gap_unchanged": true,
+  "no_new_continuation": true
+}

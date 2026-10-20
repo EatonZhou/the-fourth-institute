@@ -1,0 +1,176 @@
+[
+  {
+    "seed": 202610197401,
+    "order": 0,
+    "arm": "fast_delta",
+    "pairing": "paired",
+    "variant": "life",
+    "id": "202610197401_0_paired_fast_delta_life",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/lifetime_cue_reversal_20261019/56c565a8-a71f-47f8-b55f-3106281c4d1c/202610197401_0_paired_fast_delta_life",
+    "steps": 960,
+    "alive": true,
+    "initial_M": 23.999999999999993,
+    "initial_E": 71.99999999999999,
+    "M": 24.0,
+    "E": 41.87482078827308,
+    "minM": 23.999999999999993,
+    "min_largest": 0.9605201542281208,
+    "probes": [
+      {
+        "tag": "initial",
+        "clock": 64,
+        "correct_fraction": 0.4997783054725464,
+        "correct_displacement": 0.00010158472385057848,
+        "contact_mass": 12.524074647736995,
+        "mean_correct_fraction": 0.4997755333940781
+      },
+      {
+        "tag": "acquisition_0",
+        "clock": 224,
+        "correct_fraction": 0.9999926631024749,
+        "correct_displacement": 3.931786197299763,
+        "contact_mass": 22.198956206031284,
+        "mean_correct_fraction": 0.9466713083546816
+      },
+      {
+        "tag": "acquisition_1",
+        "clock": 384,
+        "correct_fraction": 0.9999904711870746,
+        "correct_displacement": 3.3893478253504625,
+        "contact_mass": 17.139678941382574,
+        "mean_correct_fraction": 0.9373703786447334
+      },
+      {
+        "tag": "acquisition_retention",
+        "clock": 512,
+        "correct_fraction": 0.9999911061677114,
+        "correct_displacement": 4.231982252088169,
+        "contact_mass": 18.58977402133206,
+        "mean_correct_fraction": 0.8750076571424048
+      },
+      {
+        "tag": "reversal_0",
+        "clock": 672,
+        "correct_fraction": 0.9999963030415623,
+        "correct_displacement": 3.3695882874831327,
+        "contact_mass": 16.614068622985673,
+        "mean_correct_fraction": 0.9552355894684902
+      },
+      {
+        "tag": "reversal_1",
+        "clock": 832,
+        "correct_fraction": 0.9999812675609354,
+        "correct_displacement": 4.409436826219768,
+        "contact_mass": 17.07436344359302,
+        "mean_correct_fraction": 0.8703006015498209
+      },
+      {
+        "tag": "reversal_retention",
+        "clock": 960,
+        "correct_fraction": 0.9788646462881913,
+        "correct_displacement": 3.6432783581957295,
+        "contact_mass": 19.933658822799522,
+        "mean_correct_fraction": 0.9728919225266199
+      }
+    ],
+    "cost": {
+      "movement_paid": 3.417565104785444,
+      "movement_unpaid": 0.0,
+      "basal_paid": 27.648000000000003,
+      "mass_injury": 0.0,
+      "mass_starvation": 0.0,
+      "feedback_gain": 25.535038534001657,
+      "feedback_loss": 24.594652640943107,
+      "feedback_contact_mass": 768.0
+    },
+    "turnover": "no added births in this host; all mass losses reported; movement deforms the same transported tissue",
+    "max_energy_error": 3.044092755644101e-14
+  },
+  {
+    "seed": 202610197401,
+    "order": 1,
+    "arm": "fast_delta",
+    "pairing": "paired",
+    "variant": "life",
+    "id": "202610197401_1_paired_fast_delta_life",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/lifetime_cue_reversal_20261019/56c565a8-a71f-47f8-b55f-3106281c4d1c/202610197401_1_paired_fast_delta_life",
+    "steps": 960,
+    "alive": true,
+    "initial_M": 23.999999999999993,
+    "initial_E": 71.99999999999999,
+    "M": 24.0,
+    "E": 42.28804976684188,
+    "minM": 23.999999999999986,
+    "min_largest": 0.9707111002286859,
+    "probes": [
+      {
+        "tag": "initial",
+        "clock": 64,
+        "correct_fraction": 0.5002216945274537,
+        "correct_displacement": -0.00010158472385057848,
+        "contact_mass": 12.524074647736995,
+        "mean_correct_fraction": 0.5002244666059219
+      },
+      {
+        "tag": "acquisition_0",
+        "clock": 224,
+        "correct_fraction": 0.9999927063522552,
+        "correct_displacement": 3.93207358956899,
+        "contact_mass": 22.2005898769738,
+        "mean_correct_fraction": 0.9467919575991753
+      },
+      {
+        "tag": "acquisition_1",
+        "clock": 384,
+        "correct_fraction": 0.9999933685617095,
+        "correct_displacement": 3.92054141688757,
+        "contact_mass": 21.60968298048685,
+        "mean_correct_fraction": 0.9448933119698486
+      },
+      {
+        "tag": "acquisition_retention",
+        "clock": 512,
+        "correct_fraction": 0.9999430751794118,
+        "correct_displacement": 3.999895575478554,
+        "contact_mass": 21.99316011927046,
+        "mean_correct_fraction": 0.9506827976611876
+      },
+      {
+        "tag": "reversal_0",
+        "clock": 672,
+        "correct_fraction": 0.9999923588283156,
+        "correct_displacement": 3.917675136413468,
+        "contact_mass": 21.4449999853265,
+        "mean_correct_fraction": 0.9430606905552827
+      },
+      {
+        "tag": "reversal_1",
+        "clock": 832,
+        "correct_fraction": 0.999991700425598,
+        "correct_displacement": 3.452860688616507,
+        "contact_mass": 16.76804619545692,
+        "mean_correct_fraction": 0.9376377455604903
+      },
+      {
+        "tag": "reversal_retention",
+        "clock": 960,
+        "correct_fraction": 0.9999977237540567,
+        "correct_displacement": 4.258627136912304,
+        "contact_mass": 18.602465232218957,
+        "mean_correct_fraction": 0.9258883366185398
+      }
+    ],
+    "cost": {
+      "movement_paid": 3.5188655291764146,
+      "movement_unpaid": 0.0,
+      "basal_paid": 27.647999999999996,
+      "mass_injury": 0.0,
+      "mass_starvation": 0.0,
+      "feedback_gain": 27.090398381876348,
+      "feedback_loss": 25.635483085858002,
+      "feedback_contact_mass": 767.9999999999998
+    },
+    "turnover": "no added births in this host; all mass losses reported; movement deforms the same transported tissue",
+    "max_energy_error": 2.6117996654306808e-14
+  }
+]

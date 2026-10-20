@@ -1,0 +1,53 @@
+{
+  "reason": "Recording-only np.int64 zero_commands could not serialize; all16 native returns committed and action/update guard passes. No scientific source or definitions changed.",
+  "prior_execution": {
+    "status": "partial",
+    "job_id": "63688e1c-d4f8-47ba-a7f4-589237835349",
+    "native_attempted": 16,
+    "native_returned": 16,
+    "unknown_native": 0,
+    "old_replayed_native": 0,
+    "completed_paths": 0,
+    "worker_seconds": 0.06415779795497656,
+    "raw_bytes": 604520
+  },
+  "prior_failure": {
+    "error": "TypeError('Object of type int64 is not JSON serializable')",
+    "native": 16,
+    "returned": 16,
+    "current": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/plus/width1.6/effort0.5"
+  },
+  "prior_runner": {
+    "id": "63688e1c-d4f8-47ba-a7f4-589237835349",
+    "name": "resource_conditioned_effort_opportunity_20261019",
+    "command": [
+      "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+      "-m",
+      "environment_evolution.embodied_resource_prediction.resource_effort"
+    ],
+    "cwd": "${share_root}/Projects/元胞自动机研究/src",
+    "resource": "cpu",
+    "request_key": "ce2-resource-effort-opportunity-20261019",
+    "status": "failed",
+    "created_at": "2026-10-19T03:53:03.439617+00:00",
+    "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/63688e1c-d4f8-47ba-a7f4-589237835349",
+    "pid": 3605343,
+    "manual_pause": false,
+    "create_time": 1792381982.9,
+    "started_at": "2026-10-19T03:53:03.509900+00:00",
+    "returncode": 2,
+    "finished_at": "2026-10-19T03:53:04.058026+00:00"
+  },
+  "prior_runner_worker_seconds": 1.096252,
+  "completed_prefix_key": "compact_p512/plus/width1.6/effort0.5",
+  "prefix_files": {
+    "state.npz": "5eb5cc7d01725bdecf217d1f2fdbad11360e47e97754dd407111dcd2b75b9359",
+    "joint.json": "cc21c7d0dad29bcdd0f1589b51a1b54f307367c20d9d5cdc57aa059120fc150f"
+  },
+  "continuation_source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/embodied_resource_prediction/resource_effort_resume.py",
+  "continuation_source_sha": "8c3e49f6d25193e50d30d045aff473a190f94c82e8f05a129078fed99d683026",
+  "original_source_sha": "503a9db08e014129eacf2e6df811435f623b1a573087c3c830e99de65cc7f304",
+  "remaining_science": 2032,
+  "no_replayed_native": 0,
+  "manual_recovery": true
+}

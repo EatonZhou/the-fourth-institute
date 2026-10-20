@@ -1,0 +1,263 @@
+{
+  "task": "value_conditioned_propulsion_brake_20261019",
+  "status": "complete",
+  "scientific_choice": "价值刹停不胜固定停留；完整取得-反转-保持共同通过0/4，关闭共同能力主张，保部分有限停留与反例。下一不同问题为反馈后的方向选择与再接触。",
+  "summary": {
+    "task": "value_conditioned_propulsion_brake_20261019",
+    "status": "complete",
+    "native": 12288,
+    "unknown": 0,
+    "old_replay": 0,
+    "worker_seconds": 82.533116,
+    "raw_bytes": 41115051,
+    "survivors": 12,
+    "paths": 12,
+    "groups": {
+      "fast_delta": {
+        "E": [
+          71.69940988331136,
+          78.61971848380452,
+          72.67735103587515,
+          78.81688330259055
+        ],
+        "first_feedback": [
+          2,
+          2,
+          2,
+          2
+        ],
+        "first_meaningful_paid_contact": [
+          31,
+          25,
+          31,
+          25
+        ],
+        "acquisition_last64_good_mass_mean": [
+          0.0013995297728251858,
+          0.19415912943407732,
+          0.0014372175886714581,
+          0.19399837001065745
+        ],
+        "reversal_last64_good_mass_mean": [
+          1.673673520373987,
+          0.27287892669752944,
+          1.4535742100271583,
+          0.2707748328641582
+        ],
+        "retention_last64_good_mass_mean": [
+          0.032160685601987433,
+          0.19624954130732775,
+          0.02946237649130093,
+          0.20004526298226677
+        ],
+        "reversal_last64_good_fraction": [
+          0.8692850485777327,
+          0.21555751054816186,
+          0.7888870944519711,
+          0.21834338191838487
+        ],
+        "reversal_feedback_steps": [
+          384,
+          384,
+          384,
+          384
+        ],
+        "reversal_meaningful_feedback_steps": [
+          378,
+          384,
+          369,
+          384
+        ],
+        "reversal_first_negative_delay": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "reversal_first_full64_pass_end": [
+          64,
+          64,
+          64,
+          64
+        ],
+        "reversal_post_feedback_first_full64_pass_wait": [
+          64,
+          64,
+          64,
+          64
+        ],
+        "acquisition_last64_substantive": 0,
+        "reversal_last64_substantive": 2,
+        "retention_last64_substantive": 0
+      },
+      "fixed_contact_stop": {
+        "E": [
+          76.13123580769525,
+          70.45137485440604,
+          76.89925777331432,
+          70.40775143949783
+        ],
+        "first_feedback": [
+          2,
+          2,
+          2,
+          2
+        ],
+        "first_meaningful_paid_contact": [
+          34,
+          25,
+          34,
+          25
+        ],
+        "acquisition_last64_good_mass_mean": [
+          0.0015127188357506223,
+          6.011901791472216,
+          0.0015097311564983011,
+          6.008073541210109
+        ],
+        "reversal_last64_good_mass_mean": [
+          11.766967187419144,
+          0.0001123346426982983,
+          11.633347978132633,
+          9.721577433686662e-05
+        ],
+        "retention_last64_good_mass_mean": [
+          11.444859272341501,
+          0.00011236093309549538,
+          11.622194573116982,
+          9.721577433686664e-05
+        ],
+        "reversal_last64_good_fraction": [
+          0.9805145495128761,
+          0.9991343041350416,
+          0.9773146835680021,
+          0.060671561407967096
+        ],
+        "reversal_feedback_steps": [
+          384,
+          286,
+          384,
+          384
+        ],
+        "reversal_meaningful_feedback_steps": [
+          371,
+          60,
+          358,
+          60
+        ],
+        "reversal_first_negative_delay": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "reversal_first_full64_pass_end": [
+          64,
+          null,
+          64,
+          null
+        ],
+        "reversal_post_feedback_first_full64_pass_wait": [
+          64,
+          null,
+          64,
+          null
+        ],
+        "acquisition_last64_substantive": 2,
+        "reversal_last64_substantive": 2,
+        "retention_last64_substantive": 2
+      },
+      "value_contact_stop": {
+        "E": [
+          73.33147503318443,
+          68.69899801367471,
+          74.19860940821862,
+          69.00539005102507
+        ],
+        "first_feedback": [
+          2,
+          2,
+          2,
+          2
+        ],
+        "first_meaningful_paid_contact": [
+          31,
+          25,
+          31,
+          25
+        ],
+        "acquisition_last64_good_mass_mean": [
+          0.0012705960405131516,
+          6.245731021847733,
+          0.001275501741956931,
+          6.235425485059487
+        ],
+        "reversal_last64_good_mass_mean": [
+          11.564028563647813,
+          0.0003548407678819001,
+          11.358576871420631,
+          0.00012986566078600965
+        ],
+        "retention_last64_good_mass_mean": [
+          10.870125511213807,
+          0.003570320164703715,
+          9.916750044230028,
+          0.00012986566077739092
+        ],
+        "reversal_last64_good_fraction": [
+          0.9729502894750767,
+          1.0,
+          0.95754534919165,
+          0.048295259350857316
+        ],
+        "reversal_feedback_steps": [
+          384,
+          283,
+          384,
+          384
+        ],
+        "reversal_meaningful_feedback_steps": [
+          378,
+          81,
+          369,
+          82
+        ],
+        "reversal_first_negative_delay": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "reversal_first_full64_pass_end": [
+          64,
+          88,
+          64,
+          86
+        ],
+        "reversal_post_feedback_first_full64_pass_wait": [
+          64,
+          88,
+          64,
+          86
+        ],
+        "acquisition_last64_substantive": 2,
+        "reversal_last64_substantive": 2,
+        "retention_last64_substantive": 2
+      }
+    }
+  },
+  "artifacts": {
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/value_conditioned_propulsion_brake_20261019/plan.json": "2c58f35d1236ce99f4519109a02f16f756ecb51723a9b8baf2ff4bd35227029e",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/value_conditioned_propulsion_brake_20261019/pure_checks.json": "af8ed4a01900b82f93d6f167e1d6d4e57f34aff5591364765fe564cdb56b1d0c",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/value_conditioned_propulsion_brake_20261019/result.json": "49cc9483e1de68b89c3801fa9e6d09bd5780e726d9aed11e7b77774070f17e87",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/value_conditioned_propulsion_brake_20261019/summary.json": "e06c7e2c65343cf9e44f9bd9730669a9a32c10b22158e6f673b03a580e6bb81d",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/value_conditioned_propulsion_brake_20261019/all_branches.csv": "b23cf47c4c56fab11324d5c74d9efc849b0133a27cc0ad5f4173e3fb0a6596ff",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/value_conditioned_propulsion_brake_20261019/blocks.csv": "0944177e6fd39502fd489881987c3ac38869bdf04f4cf5b7ce00ae15aa54ee4b",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/value_conditioned_propulsion_brake_20261019/paired_differences.csv": "32172814ff910b6976f8b14027186b731712579eaf881114d68005ba6f538c59",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/value_conditioned_propulsion_brake_20261019/continuity_checks.json": "0fb552e492ab37524a1e7e7f94ca52f6ce4eab94974392aeffb043539b6f73f0",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/value_conditioned_propulsion_brake_20261019/REPORT.txt": "bbe9dcb08d575f8c18dd586a7b3c748c43ab1ae24a366d067eed0ed51d0ea8f0",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/value_conditioned_propulsion_brake_20261019/behavior_feedback_cost.png": "a20ebf0d0998e15ddf95bf2b1319b30085a2445bb17c9eaea164ab8afe01e9c8",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/value_conditioned_propulsion_brake_20261019/actual_acquisition_reversal.gif": "95bac62df97ba8a977f7d5347943c3d361266907799ae0b4faf5db50b2616656",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/value_conditioned_propulsion_brake_20261019/actual_sequence.png": "de1c403fe061c1fdf74a869e3717bbac8395509061ba9d8fb6450582a34a2b79"
+  }
+}

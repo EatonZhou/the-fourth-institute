@@ -1,0 +1,70 @@
+{
+  "task": "native_investment_action_20261018",
+  "status": "assigned_for_execution",
+  "objective_met": false,
+  "question": "有限局部动作的先付费、组织改变与延迟回报是否形成可用学习单元；物质移动时动作意图固定在坐标或随载体运输有何区别？",
+  "prior_candidate": {
+    "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/handoff.json",
+    "sha256": "7b0edc8db05b91f8750d3fb9e69398fdf75209ab5286d120e7e623dcdcd46ecf",
+    "joint_steps": 4515,
+    "joint_worker_seconds": 348.924344,
+    "unused_steps": 7773,
+    "unused_worker_seconds": 251.075656,
+    "unused_not_reassigned": true,
+    "decision": "关闭H8幸存条件岭模型，不再扫ridge/discount。"
+  },
+  "existing_positive_witness": {
+    "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/material_action_response_20261018/handoff.json",
+    "sha256": "cbf40055bfde856e0ebeccdbf2fc04425da83bd5f9e89dad29705a3f59b865ff",
+    "fact": "四叶体shear_x先128主动后128撤驱，相对none末E+124.164715、U+356.893880、体时+755.124573；多孔体有负效应。",
+    "interpretation": "已有有限组织控制机会，不能说所有主动控制无价值；不同协议不能断言H8是岭模型失败唯一原因。"
+  },
+  "source_host_sha256": "15691ada9fd805c076f7c5770ba955dbf6cc454ea3af129b1ba03fe958467b5b",
+  "compute": {
+    "new_native_body_step_cap": 6144,
+    "worker_seconds_cap": 600,
+    "cpu_threads": 2,
+    "gpu": 0,
+    "serial_physics": true,
+    "ce2_cap_steps": 4608,
+    "ce2_cap_worker_seconds": 430,
+    "d3_cap_steps": 1536,
+    "d3_cap_worker_seconds": 170,
+    "old_budget_used": 0,
+    "storage_cap_bytes": 4294967296,
+    "all_real_calls_count": true
+  },
+  "host_owner": "resident_ce2a5ab005bc",
+  "learning_owner": "resident_d3ccfa2d95b7",
+  "frozen_physical_scope": [
+    "原0ac/6bd完整128态、原development/heldout_rotated几何、原供给/价格/局部动作幅度，不修改环境救结果。",
+    "8或128步动作，随后128步全部撤驱；无驱动控制对齐相同终钟和累计输入。",
+    "固定fuel梯度与shear_x保强简单基准；新材料意图仅以共同初始shear_x行动场作为登记，随真实K和旧幸存体运输，新生不取得既往意图。",
+    "材料意图混合后按实际存留意图广延量除最终body形成有界驱动；混合抵消和出生稀释照实保留。不能称保持每个祖先恒定动作，更不能暗中单位化以恢复幅度。",
+    "此处改变执行参照系而非宣称学习；不同实际费用/动作量必须分报。"
+  ],
+  "default_matrix": {
+    "contexts": "两体×两既定几何，属于相依contexts",
+    "per_context": "none256；Euler gradient与shear_x各(8+128),(128+128)；material shear_x各(8+128),(128+128)",
+    "full_matrix_steps": 5728,
+    "existing_references": "development两体的none/gradient/shear_x各256步六条已完成路径，共1536步只读复用，不重复运行。",
+    "expected_new_steps_if_sources_match": 4192,
+    "boundary_reserve_within_ce2": 416,
+    "on_reference_mismatch": "明确不匹配并缩减新矩阵保持4608上限；不得为凑平衡重跑旧路径或换源。"
+  },
+  "evaluation": [
+    "逐步M/E/U/体时、出生/规则死/饥饿、全motor/basal/synthesis/template费用及输入/热/死能；仅新增运行完整留分项，旧缺失不补造。",
+    "每个相同时钟对none，报告初始投入、最早/持续转正时点和撤驱后净收益；没有转正记删失，不把最大窗补作恢复。",
+    "登记全部初始材料，真实死亡终末与未知分别记；旧体保留/接触描述不当祖先能量因果效应。",
+    "关键动作及撤驱窗保每步真实K/keep及意图/出生/死亡，范围可窄但不能靠末包逆推中间路径。",
+    "两种几何和两体全部保留。强固定控制若足够，作为方法边界；动作责任/生死选择不能只靠延长H宣称解决。"
+  ],
+  "d3_work": [
+    "当前即实现纯意图载荷/生死语义并交ce2同一接口，ce2唯一执行上述矩阵；不重复提交。",
+    "从实际匹配结果确定可用于学习的动作单元和合法完成反馈；不自动把离线全体死亡/总收益广播到活载体。",
+    "仅当同态材料意图与延迟回报形成有用且可读的后果，才在1536步/170秒内做最小真实近期动作单元更新/冻结比较，固定简单策略同行；不训练大网络或用更长H重扫旧岭。",
+    "若接口无法给出目标所需合法终末反馈，保限制并把具体需实现的下一机制交PI请求取舍，不以信息消息让依赖无人承接。"
+  ],
+  "novelty_boundary": "这是控制目标与行动责任的机制检验；时间扩展动作、材料载荷、自模型或近期bandit本身不是新贡献。",
+  "continuation": "ce2实际完成后一次enqueue交d3；原论文/投影已接前批，无需重复派发。所有新运行先读running/started，不使用定时或通用续接。"
+}

@@ -1,0 +1,182 @@
+{
+  "schema": "birth-placement-strategy-binding-v1",
+  "owner": "resident_d3ccfa2d95b7",
+  "host_and_job_owner": "resident_ce2a5ab005bc",
+  "parents": [
+    {
+      "branch": "202610184001__compact__prefix",
+      "seed": 202610184001,
+      "morphology": "compact",
+      "end_step": 768,
+      "packet": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_birth_admission_20261018/25d2a1e5-91bf-41f6-a27d-1e5e0c8b3266/202610184001__compact__prefix__final.npz",
+      "packet_sha256": "6883f11c79ab13deb04ce1013bddf9aa73e95c3cc3184170a6698249b0fa1f22",
+      "ema_metadata": {
+        "size": 32,
+        "mode": "ema",
+        "threshold": 0.1,
+        "n": {
+          "array": "policy__ema__n"
+        },
+        "d": {
+          "array": "policy__ema__d"
+        },
+        "eligibility": {
+          "array": "policy__ema__eligibility"
+        },
+        "intake": {
+          "array": "policy__ema__intake"
+        },
+        "cursor": [
+          0,
+          0
+        ],
+        "current_cue": 0,
+        "cycle_paid": true
+      },
+      "ema_array_sha256": {
+        "n": "7f89e68a0daf4b1f043e1c49e8045b8a3a3dfab8a42ceba4f4219c13cb900c5d",
+        "d": "f990c0fcd1e5cd4daf704785aa7b41c38ad128bf6fb373437c035fe487571474",
+        "eligibility": "a9a3476abb1b690d84428aa3181e71ff9d401522df8ceb8c75892bddde4f942b",
+        "intake": "59db1308d57974aecb0820d3cc33ea6396511c39848db0e638ad7b694553b5a4"
+      }
+    },
+    {
+      "branch": "202610184001__double_lobe__prefix",
+      "seed": 202610184001,
+      "morphology": "double_lobe",
+      "end_step": 768,
+      "packet": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_birth_admission_20261018/25d2a1e5-91bf-41f6-a27d-1e5e0c8b3266/202610184001__double_lobe__prefix__final.npz",
+      "packet_sha256": "3a8ae3369509ceb4d24279684c109d77d8a824ead1f92d3d210dc26132773d76",
+      "ema_metadata": {
+        "size": 32,
+        "mode": "ema",
+        "threshold": 0.1,
+        "n": {
+          "array": "policy__ema__n"
+        },
+        "d": {
+          "array": "policy__ema__d"
+        },
+        "eligibility": {
+          "array": "policy__ema__eligibility"
+        },
+        "intake": {
+          "array": "policy__ema__intake"
+        },
+        "cursor": [
+          0,
+          0
+        ],
+        "current_cue": 0,
+        "cycle_paid": true
+      },
+      "ema_array_sha256": {
+        "n": "005a6c5154bd9698a0cd24b91122b0b37a20e25dab51e2c14157d9d7e959e788",
+        "d": "10a51086621b5b45073b1162ed4d64b86022972e7de4f5f68cf7f8ccee826502",
+        "eligibility": "4bd6d6cccfc30688c819c13f126050642241e35e92be229cffbcf9f32752c021",
+        "intake": "dc8ef374ed8e408098418dbf720772d88ef9cc86896dd8af8f2c20b6cb68578d"
+      }
+    },
+    {
+      "branch": "202610184002__compact__prefix",
+      "seed": 202610184002,
+      "morphology": "compact",
+      "end_step": 768,
+      "packet": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_birth_admission_20261018/25d2a1e5-91bf-41f6-a27d-1e5e0c8b3266/202610184002__compact__prefix__final.npz",
+      "packet_sha256": "9ef632f23d83136fc99b4ffad7b26d4867663e9236cfdfaa18050d05e13cce7c",
+      "ema_metadata": {
+        "size": 32,
+        "mode": "ema",
+        "threshold": 0.1,
+        "n": {
+          "array": "policy__ema__n"
+        },
+        "d": {
+          "array": "policy__ema__d"
+        },
+        "eligibility": {
+          "array": "policy__ema__eligibility"
+        },
+        "intake": {
+          "array": "policy__ema__intake"
+        },
+        "cursor": [
+          0,
+          0
+        ],
+        "current_cue": 1,
+        "cycle_paid": true
+      },
+      "ema_array_sha256": {
+        "n": "7e8947370702160bc15e74dede907240a2a5ba0cdabb083a4b06439fa512c246",
+        "d": "595c25fdf20e05265356cdd5b858ac3a1294ceb2acd30f0c8e972d276390975a",
+        "eligibility": "cd0cbf24f707244e2108b406521562717fac26254cfd82d6a49cac81ab141ae5",
+        "intake": "daf3bc51fff05b961c035b297da9b2be7677e6a72a097acddf54969a99c5333e"
+      }
+    },
+    {
+      "branch": "202610184002__double_lobe__prefix",
+      "seed": 202610184002,
+      "morphology": "double_lobe",
+      "end_step": 768,
+      "packet": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_birth_admission_20261018/25d2a1e5-91bf-41f6-a27d-1e5e0c8b3266/202610184002__double_lobe__prefix__final.npz",
+      "packet_sha256": "2366a0f087d2ecaf7d232701908521109176cf95858214dc6fa2a60d571dbfe9",
+      "ema_metadata": {
+        "size": 32,
+        "mode": "ema",
+        "threshold": 0.1,
+        "n": {
+          "array": "policy__ema__n"
+        },
+        "d": {
+          "array": "policy__ema__d"
+        },
+        "eligibility": {
+          "array": "policy__ema__eligibility"
+        },
+        "intake": {
+          "array": "policy__ema__intake"
+        },
+        "cursor": [
+          0,
+          0
+        ],
+        "current_cue": 1,
+        "cycle_paid": true
+      },
+      "ema_array_sha256": {
+        "n": "c5ed183aca4473fe72c0a37ea487425d1ffc4d4b38d6363d489780f68947a6ed",
+        "d": "f72d8031a3c79a3ab9c425c08487f982b9c232a558cb109c5a74c166ef3d5ee3",
+        "eligibility": "febfe4b7ace76f71588ed97ea2f4abe8aedeadd980a85f419b9a0ee77bc9e8d9",
+        "intake": "32abfeca1872e20504092a79e1443879b27b74cd1dddc7b044b2c07a026fb9ac"
+      }
+    }
+  ],
+  "sources": {
+    "/share/Projects/元胞自动机研究/src/local_learning/method_renewal_local_plasticity/birth_memory.py": "b60a8ab16ad846aecb27e8df4a276f32967c6263596419bc26e13efc1aa2fdca",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_birth_admission/handoff.json": "62c7948090260726010bec6a9082a589388acb616cd6b8fffa31ff5b3630d436"
+  },
+  "ema": "restore original policies.ema, alpha .4; do not convert adaptive history",
+  "instant": "BirthMemory(mode='instant').gate(rho,resource); actual current before-action local resource, no private arrivals",
+  "common_prefix": "advance EMA on only executed all-open receipts; begin at phase0, settle(final=phase31) if fully paid",
+  "pulse": "query existing EMA gate before action; q/quota matching by host only; requested gate follows actual shift",
+  "pulse_schedule_requested": {
+    "cycles": [
+      24,
+      25
+    ],
+    "phase": 23,
+    "before_clock": [
+      791,
+      823
+    ],
+    "after_clock": [
+      792,
+      824
+    ]
+  },
+  "recovery_steps_after_pulse": 128,
+  "comparison_scope": "same total admitted B and same pulse E/fees; proposed quota is host mechanical intervention not policy observation",
+  "cohort": "tag only actual pulse-born; actual shift/keep only, no tag for later births; contact attribution descriptive not local energy mediation",
+  "new_host_steps": 0
+}

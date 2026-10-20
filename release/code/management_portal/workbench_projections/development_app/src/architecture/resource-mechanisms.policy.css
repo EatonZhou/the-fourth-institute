@@ -1,0 +1,118 @@
+.resource-workbench .rp-figure{margin:20px 0;padding:20px;border:1px solid var(--border,#bfd0c8);border-radius:14px;background:var(--panel,#fff);color:var(--text,#183e37);min-width:0;overflow-wrap:anywhere;line-height:1.6}
+.resource-workbench .rp-heading{font-size:1.2rem;font-weight:750;margin:0 0 22px;line-height:1.45}
+.resource-workbench .rp-box-title{font-size:1rem;font-weight:700;margin:0 0 12px}
+.resource-workbench .rp-name{display:block;font-size:1rem}
+.resource-workbench .rp-detail{font-size:.9rem;margin:6px 0}
+.resource-workbench .rp-note{font-size:.88rem;margin:12px 0 0;color:var(--text,#27463e);opacity:.85}
+.resource-workbench .rp-status{display:inline-block;font-size:.91rem;padding:4px 9px;border-radius:5px;background:var(--bg,#f1f5f3);border:1px solid var(--border,#c5d4ce);max-width:100%}
+.resource-workbench .rp-good{border-color:#6d9e87;background:color-mix(in srgb,var(--panel,#fff) 88%,#2d956d)}
+.resource-workbench .rp-bad{border-color:#bf8175;background:color-mix(in srgb,var(--panel,#fff) 90%,#c56b55)}
+.resource-workbench .rp-idle{border-color:var(--border,#c5d4ce)}
+.resource-workbench .rp-flow,.resource-workbench .rp-split-store,.resource-workbench .rp-fd-transfer{display:grid;grid-template-columns:minmax(0,1fr) 120px minmax(0,1fr);align-items:stretch;gap:12px}
+.resource-workbench .rp-box,.resource-workbench .rp-durable,.resource-workbench .rp-projection{border:1px solid var(--border,#c5d4ce);border-radius:10px;padding:16px;min-width:0}
+.resource-workbench .rp-arrow{display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;font-size:.8rem;color:var(--text,#27463e);opacity:.65;min-width:0;padding:5px;gap:3px}
+.resource-workbench .rp-arrow b{font-size:28px;line-height:1}
+.resource-workbench .rp-active{opacity:1;color:var(--accent,#22765a)}
+.resource-workbench .rp-request{padding:0 0 18px}
+.resource-workbench .rp-result{padding-top:18px;display:flex;gap:8px;flex-wrap:wrap}
+.resource-workbench .rp-boundaries{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px;padding-top:14px;border-top:1px solid var(--border,#c5d4ce)}
+.resource-workbench .rp-boundary{font:inherit;font-size:.88rem;cursor:pointer;border:1px solid var(--border,#b7cbc0);border-radius:7px;padding:7px 10px;color:var(--text,#183e37);background:var(--panel,#fff);white-space:normal;max-width:100%;min-height:36px}
+.resource-workbench .rp-boundary[aria-current=step]{border-color:var(--accent,#22765a);box-shadow:inset 0 -2px var(--accent,#22765a)}
+.resource-workbench .rp-boundary:focus-visible{outline:3px solid var(--accent,#22765a);outline-offset:3px}
+.resource-workbench .rp-binding{display:grid;grid-template-columns:minmax(0,1fr) minmax(110px,.8fr) minmax(0,1fr);border:1px solid var(--border,#c5d4ce);padding:16px;border-radius:12px;gap:12px;align-items:center}
+.resource-workbench .rp-binding-check{text-align:center}
+.resource-workbench .rp-binding-line{display:block;border-top:3px solid #569477;margin-top:12px}
+.resource-workbench .rp-broken .rp-binding-line{border-top:3px dashed #b66f5d}
+.resource-workbench .rp-source-conduit{display:grid;grid-template-columns:minmax(0,1fr) 100px minmax(0,1fr);padding-top:20px;gap:8px}
+.resource-workbench .rp-tokens{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.resource-workbench .rp-token{border:1px solid var(--border,#c5d4ce);padding:4px 9px;border-radius:6px;font-size:.85rem;background:var(--bg,#f1f5f3);max-width:100%;overflow-wrap:anywhere}
+.resource-workbench .rp-policy-comparison{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.resource-workbench .rp-policy-current,.resource-workbench .rp-policy-candidate{padding:18px;border:2px solid var(--border,#9bbca9);border-radius:5px;min-width:0}
+.resource-workbench .rp-policy-candidate{border-style:dashed}
+.resource-workbench .rp-version{font-size:1.7rem;font-weight:750;margin:12px 0}
+.resource-workbench .rp-candidate-lines{height:54px;display:flex;flex-direction:column;justify-content:center;gap:7px;margin:12px 0}
+.resource-workbench .rp-stroke{display:block;height:5px;width:80%;background:var(--border,#bed0c6);border-radius:3px}
+.resource-workbench .rp-stroke:nth-child(2){width:60%}
+.resource-workbench .rp-policy-commit{border:1px solid var(--border,#c5d4ce);border-top-width:4px;border-radius:0 0 10px 10px;padding:16px;margin-top:20px}
+.resource-workbench .rp-commit-members{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
+.resource-workbench .rp-ledger-layout{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:24px}
+.resource-workbench .rp-ledger{border:2px solid var(--border,#9bbca9);border-radius:10px;padding:16px;min-width:0}
+.resource-workbench .rp-ledger-row{display:grid;grid-template-columns:65px minmax(0,1fr);border-top:1px solid var(--border,#c5d4ce);padding:14px 0;gap:12px}
+.resource-workbench .rp-attempt{font-size:.86rem;padding-top:5px}
+.resource-workbench .rp-transaction-body{display:flex;gap:8px;flex-direction:column;min-width:0}
+.resource-workbench .rp-sql-mark{font-size:.9rem}
+.resource-workbench .rp-rolled-back .rp-sql-mark{text-decoration:line-through;text-decoration-color:#ad6858}
+.resource-workbench .rp-after-commit{padding:16px;border-left:2px dashed var(--border,#c5d4ce);min-width:0}
+.resource-workbench .rp-file-sheet{border:2px solid var(--border,#9bbca9);border-radius:4px 20px 4px 4px;padding:25px 14px;position:relative;margin-top:15px}
+.resource-workbench .rp-file-fold{position:absolute;top:0;right:0;width:16px;height:16px;border-left:1px solid var(--border,#9bbca9);border-bottom:1px solid var(--border,#9bbca9)}
+.resource-workbench .rp-path-root{border:2px solid var(--border,#9bbca9);border-radius:10px;padding:16px;margin-bottom:18px}
+.resource-workbench .rp-path-root>.rp-status{margin-top:8px}
+.resource-workbench .rp-path-chain{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:16px}
+.resource-workbench .rp-path-segment{padding:8px;border:1px solid var(--border,#c5d4ce);border-radius:5px;font-size:.9rem}
+.resource-workbench .rp-path-join{opacity:.6}
+.resource-workbench .rp-reference{border-left:5px solid var(--accent,#22765a);padding-left:15px;margin-bottom:24px}
+.resource-workbench .rp-reference-name{display:block;font-size:1.4rem;padding-top:8px}
+.resource-workbench .rp-router{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.resource-workbench .rp-route{border:1px solid var(--border,#c5d4ce);border-radius:10px;padding:14px;min-width:0}
+.resource-workbench .rp-owner{font-family:ui-monospace,monospace;font-size:.8rem;overflow-wrap:anywhere}
+.resource-workbench .rp-route-selected{border-color:var(--accent,#22765a);box-shadow:inset 0 4px var(--accent,#22765a);background:color-mix(in srgb,var(--panel,#fff) 94%,var(--accent,#22765a))}
+.resource-workbench .rp-write-branches{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.resource-workbench .rp-write-branch{border:1px solid var(--border,#c5d4ce);padding:18px;border-radius:10px;min-width:0}
+.resource-workbench .rp-lock-enclosure{padding:12px;border:2px solid var(--border,#9bbca9);border-radius:9px}
+.resource-workbench .rp-lock-interior{display:flex;flex-direction:column;padding:8px 0}
+.resource-workbench .rp-delegation{border-left:3px solid var(--border,#c5d4ce);padding-left:12px}
+.resource-workbench .rp-envelope{border:1px solid var(--border,#c5d4ce);padding:14px;border-radius:10px;margin-bottom:20px}
+.resource-workbench .rp-envelope>.rp-status{margin-top:12px}
+.resource-workbench .rp-shelves{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.resource-workbench .rp-shelf{border:1px solid var(--border,#c5d4ce);border-bottom-width:6px;border-radius:10px 10px 3px 3px;padding:16px;min-width:0}
+.resource-workbench .rp-journal{border:1px solid var(--border,#c5d4ce);padding:16px 10px;box-shadow:3px 3px var(--border,#dbe4df)}
+.resource-workbench .rp-removed{border-style:dashed;box-shadow:none}
+.resource-workbench .rp-slice-seal{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:20px}
+.resource-workbench .rp-ruler{padding:18px 0;border-block:1px solid var(--border,#c5d4ce)}
+.resource-workbench .rp-ruler-labels{display:flex;justify-content:space-between;gap:12px;font-family:ui-monospace,monospace;font-size:.85rem}
+.resource-workbench .rp-ruler-label{min-width:0}
+.resource-workbench .rp-ruler-track{display:grid;grid-template-columns:minmax(0,.4fr) minmax(0,2fr) minmax(0,.4fr);margin:10px 0;background:repeating-linear-gradient(90deg,var(--border,#c5d4ce) 0,var(--border,#c5d4ce) 1px,transparent 1px,transparent 12px);border-bottom:2px solid var(--border,#9bbca9);align-items:center}
+.resource-workbench .rp-window{padding:20px 10px;text-align:center;background:var(--bg,#f1f5f3);border:2px dashed var(--border,#9bbca9);min-width:0;display:flex;flex-direction:column}
+.resource-workbench .rp-window-open .rp-window{border:2px solid var(--accent,#22765a);background:color-mix(in srgb,var(--panel,#fff) 88%,var(--accent,#22765a))}
+.resource-workbench .rp-ruler-before,.resource-workbench .rp-ruler-after{font-size:.75rem;background:var(--panel,#fff);padding:3px;text-align:center}
+.resource-workbench .rp-ruler-caption{font-size:.85rem;text-align:center}
+.resource-workbench .rp-receipt-layout{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.2fr);gap:24px}
+.resource-workbench .rp-receipt{border:1px solid var(--border,#c5d4ce);border-bottom:4px double var(--border,#9bbca9);padding:18px;min-width:0}
+.resource-workbench .rp-receipt-line{padding:8px 0;border-top:1px dashed var(--border,#c5d4ce);font-size:.9rem}
+.resource-workbench .rp-package{border:2px solid var(--border,#9bbca9);border-top-width:12px;border-radius:7px;padding:16px;min-width:0}
+.resource-workbench .rp-package-file{margin-top:16px;border:1px solid var(--border,#c5d4ce);padding:12px;border-radius:5px}
+.resource-workbench .rp-package-file>.rp-status{margin-top:8px}
+.resource-workbench .rp-owner-pair{display:grid;grid-template-columns:minmax(0,1fr) 135px minmax(0,.8fr);gap:14px}
+.resource-workbench .rp-local-owner,.resource-workbench .rp-remote-owner{min-width:0}
+.resource-workbench .rp-local-transaction{border:2px solid var(--border,#9bbca9);border-radius:9px;padding:14px}
+.resource-workbench .rp-local-record{border-top:1px solid var(--border,#c5d4ce);margin-top:12px;padding-top:12px;display:flex;flex-direction:column;gap:5px;font-size:.92rem}
+.resource-workbench .rp-remote-transaction{border:2px solid var(--border,#9bbca9);padding:14px;border-radius:9px}
+.resource-workbench .rp-messages{display:flex;justify-content:center;flex-direction:column;gap:22px;padding-top:25px}
+.resource-workbench .rp-message{border-bottom:2px dashed var(--border,#9bbca9);padding:8px 0;font-size:.85rem;text-align:center;opacity:.7}
+.resource-workbench .rp-message.rp-active{opacity:1}
+.resource-workbench .rp-message .rp-name{font-size:.85rem}
+.resource-workbench .rp-direction{display:inline-block;font-size:1.2rem}
+@media(max-width:800px){
+ .resource-workbench .rp-router{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .resource-workbench .rp-owner-pair{grid-template-columns:minmax(0,1fr)}
+ .resource-workbench .rp-messages{padding:0;flex-direction:row;gap:16px}
+ .resource-workbench .rp-message{flex:1;min-width:0}
+ .resource-workbench .rp-direction{transform:rotate(90deg)}
+}
+@media(max-width:660px){
+ .resource-workbench .rp-figure{padding:14px;margin:14px 0}
+ .resource-workbench .rp-flow,.resource-workbench .rp-split-store,.resource-workbench .rp-fd-transfer,.resource-workbench .rp-source-conduit,.resource-workbench .rp-binding{grid-template-columns:minmax(0,1fr)}
+ .resource-workbench .rp-arrow{flex-direction:row;gap:12px}
+ .resource-workbench .rp-arrow b{transform:rotate(90deg)}
+ .resource-workbench .rp-binding-check{padding:8px;border-block:1px dashed var(--border,#c5d4ce)}
+ .resource-workbench .rp-binding-line{display:none}
+ .resource-workbench .rp-ledger-layout,.resource-workbench .rp-write-branches,.resource-workbench .rp-receipt-layout{grid-template-columns:minmax(0,1fr)}
+ .resource-workbench .rp-after-commit{border-left:none;border-top:2px dashed var(--border,#c5d4ce);padding-top:18px}
+}
+@media(max-width:460px){
+ .resource-workbench .rp-policy-comparison,.resource-workbench .rp-shelves,.resource-workbench .rp-router{grid-template-columns:minmax(0,1fr)}
+ .resource-workbench .rp-policy-current,.resource-workbench .rp-policy-candidate{padding:12px}
+ .resource-workbench .rp-ledger-row{grid-template-columns:minmax(0,1fr);gap:5px}
+ .resource-workbench .rp-slice-seal{gap:6px}
+ .resource-workbench .rp-boundary{width:100%;text-align:left}
+}

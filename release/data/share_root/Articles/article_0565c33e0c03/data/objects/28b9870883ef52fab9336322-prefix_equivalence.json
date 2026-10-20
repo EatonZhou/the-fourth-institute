@@ -1,0 +1,32 @@
+[
+  {
+    "context": "compact_p512",
+    "arm": "fixed",
+    "first128_all_scalar_records_equal": true
+  },
+  {
+    "context": "compact_p512",
+    "arm": "last",
+    "first128_all_scalar_records_equal": true
+  },
+  {
+    "context": "compact_p512",
+    "arm": "fit",
+    "first128_all_scalar_records_equal": true
+  },
+  {
+    "context": "soft_p512",
+    "arm": "fixed",
+    "first128_all_scalar_records_equal": true
+  },
+  {
+    "context": "soft_p512",
+    "arm": "last",
+    "first128_all_scalar_records_equal": true
+  },
+  {
+    "context": "soft_p512",
+    "arm": "fit",
+    "first128_all_scalar_records_equal": true
+  }
+]

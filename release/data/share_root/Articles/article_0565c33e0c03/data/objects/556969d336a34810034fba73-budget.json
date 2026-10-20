@@ -1,0 +1,21 @@
+{
+  "native_cap": 1024,
+  "attempted": 1024,
+  "committed": 1024,
+  "settled": 1024,
+  "boundary_native": 0,
+  "new_continuations": 0,
+  "worker_cap": 300,
+  "runner_worker_seconds": 69.055352,
+  "worker_unused": 230.944648,
+  "cpu_threads": 2,
+  "gpu": 0,
+  "raw_bytes": 166123241,
+  "raw_cap": 268435456,
+  "old_native": 6144,
+  "old_worker_seconds": 308.930886,
+  "old_budget_transferred": 0,
+  "combined_science_native": 7168,
+  "combined_worker_seconds": 377.98623799999996,
+  "separate_authorizations": true
+}

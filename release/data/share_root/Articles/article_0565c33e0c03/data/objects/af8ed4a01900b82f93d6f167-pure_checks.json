@@ -1,0 +1,41 @@
+{
+  "native": 0,
+  "control": {
+    "research.desired_state": "running",
+    "research.started": true
+  },
+  "contexts": [
+    {
+      "layout": 0,
+      "good": 0,
+      "baseline_exact": true,
+      "zero_Q_exact_baseline": true,
+      "contact_mask_equals_finite_payment_support": true,
+      "sign_gate_verified": true
+    },
+    {
+      "layout": 0,
+      "good": 1,
+      "baseline_exact": true,
+      "zero_Q_exact_baseline": true,
+      "contact_mask_equals_finite_payment_support": true,
+      "sign_gate_verified": true
+    },
+    {
+      "layout": 1,
+      "good": 0,
+      "baseline_exact": true,
+      "zero_Q_exact_baseline": true,
+      "contact_mask_equals_finite_payment_support": true,
+      "sign_gate_verified": true
+    },
+    {
+      "layout": 1,
+      "good": 1,
+      "baseline_exact": true,
+      "zero_Q_exact_baseline": true,
+      "contact_mask_equals_finite_payment_support": true,
+      "sign_gate_verified": true
+    }
+  ]
+}

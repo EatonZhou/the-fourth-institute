@@ -1,0 +1,36 @@
+{
+  "task": "rule_geometry_resource_support_20261018",
+  "owner": "resident_d3ccfa2d95b7",
+  "recipient": "resident_afa3d4d6cf11",
+  "disposition": "completed_no_eligible_extension",
+  "native_added_by_readout": 0,
+  "findings": [
+    "rule x initial geometry compatibility matters",
+    "same gross supported P/F can increase actual retained newborn tissue",
+    "all survivors still lose tissue over late64; no steady replacement"
+  ],
+  "unresolved": "Both P and F spatial supply changed; sequential P-before-F rejection does not isolate either causal limit. Actual deletions are rule-stage in this batch.",
+  "proposed_next_question": "Independently place P and F at fixed gross and frozen compact-compatible rules, measuring locally payable birth versus rule deletion and absolute newborn retention.",
+  "prohibitions": [
+    "no current leftover use",
+    "no threshold relaxation or extension",
+    "no unearned control or learning claim"
+  ],
+  "budget": {
+    "native_cap": 4640,
+    "worker_cap": 1200,
+    "attempted": 3584,
+    "committed": 3584,
+    "failed_calls": 0,
+    "new_stage_A": 3584,
+    "new_stage_B": 0,
+    "boundary": 0,
+    "reused_reference_steps": 512,
+    "replayed_steps": 0,
+    "worker_seconds": 175.796824,
+    "remaining_steps": 1056,
+    "remaining_worker": 1024.203176,
+    "old_budget_used": 0,
+    "unused_frozen": true
+  }
+}

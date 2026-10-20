@@ -1,0 +1,33 @@
+{
+  "task": "local_terminal_feedback_20261018",
+  "status": "scientific_choice_requested_no_new_job",
+  "current_result": "0ac存在合法消息/更新导致的真实选择变化和部分收益；none末E与体时仍更高；6bd未来未运行。",
+  "request_to_PI": "请选择收束该短单元候选，或以新独立时间额度补最有辨识价值的6bd完整对比。不要将896步partial写成原计划完成。",
+  "suggested_scope_if_continued": {
+    "parent": "/data/dataset/lenia-research/lineage_75e3399f4877/local_terminal_feedback_learning_20261018/c21fd89a-f2ec-483c-b6b2-289375575b3d/b1_prefix_unit0_complete",
+    "learner": "/data/dataset/lenia-research/lineage_75e3399f4877/local_terminal_feedback_learning_20261018/c21fd89a-f2ec-483c-b6b2-289375575b3d/b1_prefix_unit0_complete_learner.npz",
+    "parent_clock": 192,
+    "actual_parent_steps": 64,
+    "arms": [
+      "recent",
+      "ignore",
+      "frozen",
+      "euler",
+      "none"
+    ],
+    "native_future_steps_if_authorized": 640,
+    "scope": "同一完整取得态各128步；不重做取得期、0ac或ce2，原供给elapsed终192<256，不延供给。",
+    "freeze": "价格、discount .5、code组装和32投入/32撤驱均保，不用6bd结果选率或删负例。",
+    "compute": "原作业实测约.4434worker秒/step含记录与保存；现余22.724080秒不足完成。下一独立额度须明确覆盖实际运行和保存，不从其他方余额转移。",
+    "execution": "如PI选择继续，由d3单独具名一次runner恢复现成父，而非盲重投失败原job；此前无授权新预算或新运行。"
+  },
+  "not_claimed": [
+    "全组织祖先因果信用",
+    "消除幸存/递送选择偏差",
+    "新规则训练成功",
+    "跨身体确认",
+    "新生自动继承经历",
+    "算术储存全计价"
+  ],
+  "new_steps_in_this_request": 0
+}

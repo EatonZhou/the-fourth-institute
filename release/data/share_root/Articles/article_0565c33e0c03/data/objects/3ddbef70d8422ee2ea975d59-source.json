@@ -1,0 +1,41 @@
+{
+  "source_root": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/lifetime_cue_reversal_20261019",
+  "files": {
+    "science_result.json": "3a3501f332597b8ca2ce5e16f5a394cc350304c0dfa4cf41cde35c3d0f765ec7",
+    "science_outcomes.json": "49cb6ae940ec342f34dc1e0b8a96c7c2eabe7b03f7f37840bab6b42bb51ba98d",
+    "plan.json": "6ed09e2addce3b96ad684e2afe94c387fdca62ad7fc66b65d06f373092d38190",
+    "source/core.py": "3b1baedbb0f1f402526eb8b7478fbc2c4dd226a5fcbf88725073126ef0541406",
+    "source/run.py": "b6dd9f37235b8e72bd5fe6882accb3b6bba9d160a289840cc2449639ddb3435e",
+    "handoff.json": "7477b13e0695a97aa97323a26607595b51e133eb32e3af26cc30a40dfc3c7e38",
+    "REPORT.txt": "1b87d7ec205669178e62c2768a24436ec36b0b8252836e983764de3d4f865d81",
+    "life_comparisons.csv": "2cd07b70123d0c2c79097ad0fba6989037d1fcdbe3a06246554479a0ae40bc79",
+    "summary.json": "878929629a55efb5223401452d96e911706c22b179e113e9c612f81bbf03af38"
+  },
+  "extraction": "Read archived JSON only. No scientific forward passes. GUI polylines use all seven probe endpoint values; terminal paired lines use saved freeze/erase endpoints. No confidence interval or independent-probe inference.",
+  "units": "Correct-cue contact mass / total contact mass at probe endpoint, dimensionless.",
+  "groups": "2 seeds (202610197401,202610197402) x 2 mapping orders; four dependent constructed lives per arm/pairing. 24 life +24 freeze +24 erase =72.",
+  "energy_summary": {
+    "initial_E": 72,
+    "final_E_range": [
+      38.66202863977191,
+      42.290393048746125
+    ],
+    "movement_range": [
+      2.1541307256889297,
+      3.5188655291764146
+    ],
+    "basal": 27.647999999999993,
+    "births": 0,
+    "Q_update_fee": "Not separately priced in this host"
+  },
+  "all_alive": true,
+  "gui_display": ":96",
+  "gui_profile": "/tmp/lo-lifetime-a388-fresh",
+  "line_semantics": "B uses native editable GUI polylines through the seven saved probe endpoints, with separate pre- and post-reversal segments. C uses native GUI lines between matched freeze/erase endpoints. Lines guide the eye; no early reversal observations are invented. Horizontal categorical offsets in C distinguish conditions only. Exact values and seed/order keys are retained in CSV.",
+  "B_reactor_reference": "The paired reactor reference is drawn in both learning-rule panels. C includes paired and unpaired reactor forks as well as both plasticity rules.",
+  "revision_parent": {
+    "directory": "${share_root}/Articles/article_0565c33e0c03/work/longform_v047/figures/lifetime_learning",
+    "pptx_sha256": "3560437303eb5f33ac36dd7dbfe86b98e7d815a099c789f3042029ebffba1cee"
+  },
+  "revision_scope": "Only the title, subtitle and A heading were edited through the visible GUI to identify the conservative no-birth host and externally arranged encounters. Original CSVs are byte-identical."
+}

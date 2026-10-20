@@ -1,0 +1,23 @@
+{
+  "job": "71d32015-92aa-404e-8032-4ac39cbb8ebb",
+  "status": "completed",
+  "returncode": 0,
+  "attempted": 1664,
+  "committed": 1664,
+  "failed_attempts": 0,
+  "worker_seconds": 695.402206,
+  "script_wall_seconds": 346.3022881849902,
+  "d3_cap_native": 1664,
+  "d3_cap_worker": 840,
+  "d3_unused_native": 0,
+  "d3_unused_worker": 144.59779400000002,
+  "ce2_attempted": 34,
+  "ce2_worker_seconds": 57.11858,
+  "joint_attempted": 1698,
+  "joint_worker_seconds": 752.5207859999999,
+  "raw_bytes": 620701200,
+  "joint_raw_bytes": 648132309,
+  "old_transfer": 0,
+  "ce2_remainder_transfer": 0,
+  "no_resubmit": true
+}

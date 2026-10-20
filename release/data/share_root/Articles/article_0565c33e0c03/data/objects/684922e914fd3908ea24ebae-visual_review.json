@@ -1,0 +1,47 @@
+{
+  "personally_viewed": true,
+  "files": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/replacement_history_carrier_20261019/acquired_body.png",
+      "sha256": "ff46eaebbbb57eb3df94143f79c58cc72e142c23b6345469c1cfd78d156f0d3f"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/replacement_history_carrier_20261019/acquired_energy.png",
+      "sha256": "e8659487797211db0d5e1e6a9b1f241a02e520fdbcd11fe4d6b9d7729c15db0e"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/replacement_history_carrier_20261019/acquired_precursor.png",
+      "sha256": "72630e2e695b9f3962b625d5eaad31262fc160ffb51d234dee9705c6cd75ca94"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/replacement_history_carrier_20261019/acquired_fuel.png",
+      "sha256": "8b411a9e7cf26f0ede33750508b2c56ef14bab2339b0910020bfc0d2679258a2"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/replacement_history_carrier_20261019/probe_curves_0.png",
+      "sha256": "a0b5cdc9835d6cfcadf90bdbc31f7830af82014b58be50572e17315cd39b52ba"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/replacement_history_carrier_20261019/probe_curves_1.png",
+      "sha256": "a9107c97276288434b3aa9aaf66eb5f2defc0f78bec7de5cd6185fb20d27b6c1"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/replacement_history_carrier_20261019/probe_curves_2.png",
+      "sha256": "f59e7b29dcf313034317a35c7a965efbb2342871667ac200e05dc8e5610c7a18"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/replacement_history_carrier_20261019/probe_curves_3.png",
+      "sha256": "5af7623621161d440b0bc41d8d1ef0f50ea2abc049374b0114ae9f746f470a71"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/replacement_history_carrier_20261019/first_parent_probe_U.png",
+      "sha256": "2d1dbee17a3643e6125bbd3b8d40ed211ed082db0b9932cfaf1298684ce9a806"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/replacement_history_carrier_20261019/first_parent_probe_D.png",
+      "sha256": "3025464431d73bf02b5022045c1665df84b8c49e47b36af988039cb37ff750bf"
+    }
+  ],
+  "findings": "亲看四父三历史的实际256 body/E/P/F、四父全部probe标量曲线与预定第一父两方向256/257/320/384场，共10图。HU/HD环体在256左缘更厚、更亮，较中性已有更大M/E；孔保留，顺序差异宏观较小。分离初形HU/HD左侧两团之间出现较弱连接/纵向铺展，中性仍明显四团，未把它命名为新形态类别。第一环父U探测主要上左弧增厚并向上伸展，D探测下左弧增强；PF交换的宏观轮廓差异很小，定量交互必须看原账。全部曲线显示非中心历史普遍高于中性M/E，但ring post256曲线与中性相近或交叉；分离两父真实post256有较清楚增益。只看指定稀疏场与全标量，不称看过所有40条逐步动画。",
+  "native_added": 0
+}

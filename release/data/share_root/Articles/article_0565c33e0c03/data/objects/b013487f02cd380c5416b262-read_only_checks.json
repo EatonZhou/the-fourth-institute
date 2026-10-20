@@ -1,0 +1,218 @@
+{
+  "native": 0,
+  "checks": [
+    {
+      "task": "scalar_response_content_20261019",
+      "condition": 0,
+      "arm": "clear",
+      "physical_sensory_rng_clock_identical": {
+        "body": true,
+        "energy": true,
+        "memory": true,
+        "eligibility": true,
+        "physical_coupling": true,
+        "rng": true,
+        "clock": true
+      },
+      "only_declared_content_transformation": true
+    },
+    {
+      "task": "scalar_response_content_20261019",
+      "condition": 0,
+      "arm": "rotate90",
+      "physical_sensory_rng_clock_identical": {
+        "body": true,
+        "energy": true,
+        "memory": true,
+        "eligibility": true,
+        "physical_coupling": true,
+        "rng": true,
+        "clock": true
+      },
+      "only_declared_content_transformation": true
+    },
+    {
+      "task": "scalar_response_content_20261019",
+      "condition": 1,
+      "arm": "clear",
+      "physical_sensory_rng_clock_identical": {
+        "body": true,
+        "energy": true,
+        "memory": true,
+        "eligibility": true,
+        "physical_coupling": true,
+        "rng": true,
+        "clock": true
+      },
+      "only_declared_content_transformation": true
+    },
+    {
+      "task": "scalar_response_content_20261019",
+      "condition": 1,
+      "arm": "rotate90",
+      "physical_sensory_rng_clock_identical": {
+        "body": true,
+        "energy": true,
+        "memory": true,
+        "eligibility": true,
+        "physical_coupling": true,
+        "rng": true,
+        "clock": true
+      },
+      "only_declared_content_transformation": true
+    },
+    {
+      "task": "scalar_actuator_relearning_20261019",
+      "condition": 0,
+      "arm": "continue",
+      "physical_sensory_rng_clock_identical": {
+        "body": true,
+        "energy": true,
+        "memory": true,
+        "eligibility": true,
+        "physical_coupling": true,
+        "rng": true,
+        "clock": true
+      },
+      "only_declared_content_transformation": true
+    },
+    {
+      "task": "scalar_actuator_relearning_20261019",
+      "condition": 0,
+      "arm": "frozen",
+      "physical_sensory_rng_clock_identical": {
+        "body": true,
+        "energy": true,
+        "memory": true,
+        "eligibility": true,
+        "physical_coupling": true,
+        "rng": true,
+        "clock": true
+      },
+      "only_declared_content_transformation": true
+    },
+    {
+      "task": "scalar_actuator_relearning_20261019",
+      "condition": 0,
+      "arm": "run_tumble",
+      "physical_sensory_rng_clock_identical": {
+        "body": true,
+        "energy": true,
+        "memory": true,
+        "eligibility": true,
+        "physical_coupling": true,
+        "rng": true,
+        "clock": true
+      },
+      "only_declared_content_transformation": true
+    },
+    {
+      "task": "scalar_actuator_relearning_20261019",
+      "condition": 1,
+      "arm": "continue",
+      "physical_sensory_rng_clock_identical": {
+        "body": true,
+        "energy": true,
+        "memory": true,
+        "eligibility": true,
+        "physical_coupling": true,
+        "rng": true,
+        "clock": true
+      },
+      "only_declared_content_transformation": true
+    },
+    {
+      "task": "scalar_actuator_relearning_20261019",
+      "condition": 1,
+      "arm": "frozen",
+      "physical_sensory_rng_clock_identical": {
+        "body": true,
+        "energy": true,
+        "memory": true,
+        "eligibility": true,
+        "physical_coupling": true,
+        "rng": true,
+        "clock": true
+      },
+      "only_declared_content_transformation": true
+    },
+    {
+      "task": "scalar_actuator_relearning_20261019",
+      "condition": 1,
+      "arm": "run_tumble",
+      "physical_sensory_rng_clock_identical": {
+        "body": true,
+        "energy": true,
+        "memory": true,
+        "eligibility": true,
+        "physical_coupling": true,
+        "rng": true,
+        "clock": true
+      },
+      "only_declared_content_transformation": true
+    },
+    {
+      "task": "scalar_response_estimation_20261019",
+      "condition": 0,
+      "life0_exact": true,
+      "first16_actual_physical_receipts_exact_with_reward_delta": true,
+      "reference_not_replayed": true
+    },
+    {
+      "task": "scalar_response_estimation_20261019",
+      "condition": 1,
+      "life0_exact": true,
+      "first16_actual_physical_receipts_exact_with_reward_delta": true,
+      "reference_not_replayed": true
+    },
+    {
+      "task": "scalar_actuator_relearning_20261019",
+      "condition": 0,
+      "first8_actual_complete_action_receipts_equal": true
+    },
+    {
+      "task": "scalar_actuator_relearning_20261019",
+      "condition": 1,
+      "first8_actual_complete_action_receipts_equal": true
+    }
+  ],
+  "learner_interfaces": {
+    "/share/Projects/元胞自动机研究/src/local_learning/scalar_outcome_motor_learning/core.py": {
+      "choose": [
+        "a",
+        "arm",
+        "eps",
+        "heading_noise"
+      ],
+      "observe": [
+        "a",
+        "y",
+        "active",
+        "motion_received",
+        "arm",
+        "write",
+        "end_block"
+      ]
+    },
+    "/share/Projects/元胞自动机研究/src/local_learning/scalar_response_estimation/core.py": {
+      "choose": [
+        "a",
+        "arm",
+        "eps",
+        "heading_noise"
+      ],
+      "observe": [
+        "a",
+        "y",
+        "active",
+        "motion_received",
+        "arm",
+        "write",
+        "end_block"
+      ]
+    }
+  },
+  "reference_sha_unchanged": true,
+  "sources_unchanged": true,
+  "limit": "Interface checks are not a proof of exact individual-particle gradient; actualK still transports state but not a sensed displacement."
+}

@@ -1,0 +1,18 @@
+\begin{table}[htbp]\centering\small
+\caption{Frozen deployment in the separate controlled-density model. Entries are arithmetic means over three specified shapes and three seeds, not independent evolutionary replicates. $\Delta M$ and $\Delta E$ span sixteen test cycles. The oracle receives additional information. The reversal occurs during training. Full results include five further comparison policies.}
+\label{tab:ecology}
+\begin{tabular}{llrrr}\toprule
+World & Policy & Capture fraction & $\Delta M$ & $\Delta E$\\\midrule
+Predictive & Cue history & 0.9955 & +9.356 & +9.840\\
+Predictive & No-history bandit & 0.3454 & -3.433 & -6.050\\
+Predictive & Oracle & 0.9988 & +9.075 & +5.070\\
+\addlinespace
+Reversal & Cue history & 0.4726 & +3.003 & -17.275\\
+Reversal & No-history bandit & 0.1782 & -7.695 & -5.170\\
+Reversal & Oracle & 0.9988 & +9.075 & +5.073\\
+\addlinespace
+Independent & Cue history & 0.2564 & -7.649 & -11.390\\
+Independent & No-history bandit & 0.5270 & +3.944 & -9.419\\
+Independent & Oracle & 0.9987 & +9.067 & +4.969\\
+\bottomrule\end{tabular}
+\end{table}

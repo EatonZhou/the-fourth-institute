@@ -1,0 +1,7 @@
+冻结机制
+uC=(uA+uB)/2；hC=2[max(0,1-(uC-muC)^2/(9 sigmaC^2))]^4-1。mu=mu0 exp(.15 tanh z0)、sigma=sigma0 exp(.25 tanh z1)。原A/B核及参数/物理价/供体当地E/容量/半衰/输入gross/分货泵均保留。
+ready prechoice在本步外排/输入/native之前；原A/B贪心和tie w0精确保留。纯ready hypothetical admit给born-death，C严格胜max(A,B)且neighborhood>0才选，否则用原权重。always_midpoint有neighborhood就锁C。actual actor完成后，用真实两势算C/AB，以已锁mask/权重混合，原D/R、唯一admit及收费执行一次。hypothetical不是已执行因果标签；第三曲线允许实际删除/出生改变，未另加删除倍率。
+PCG64两轮固定seed202610196101/6102各4×2正态，首mean0/std1。按所有实际已评估候选（含midpoint）选前2，均值/populationstd更新，std floor.25。训练两context全程M>=32、末M/E/体时相对原贪心不降，post128都严格增；按冻结归一最差量排序。坏提议不重采。选型冻结先于验证。生命期参数固定；非writer/经验学习。
+两训练父original/disabled-C各1步共4native，状态/原收据/费用/cohort逐值一致。旧HC用0native全态/供给/观察器等价只读；验证original前128旧HC+后128本次真实续接。其余角色来自同128全态256步。
+life0 founder从实际历史继承，L128登记原128材料，L256在各自actual256登记全体材料。广延标签按K→actor存留→rule存留删除，born不加祖先标签。死亡是终末；缺帧保持缺帧。post256是384时实际256后出生留存，不是累计出生或post128替代。标签不进策略。
+维护为固定64窗born>=death、ΔE>=0、minM>=32，报1e-8及0容差。联合用途另要求晚128体时/post256严格提高、末M/E不降，两形态分别判。body包括rho与局部E，非纯几何。额外评分/响应计算未物理计价。有限窗非稳态。

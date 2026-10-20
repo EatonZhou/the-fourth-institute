@@ -1,0 +1,19 @@
+{
+  "native": 0,
+  "checks": [
+    {
+      "shape": "compact",
+      "pure_w0_rate_exact": true,
+      "state_unchanged": true,
+      "policy_bounds": true
+    },
+    {
+      "shape": "double_lobe",
+      "pure_w0_rate_exact": true,
+      "state_unchanged": true,
+      "policy_bounds": true
+    }
+  ],
+  "roundtrip_exact": true,
+  "w0": 0.5442572838640933
+}

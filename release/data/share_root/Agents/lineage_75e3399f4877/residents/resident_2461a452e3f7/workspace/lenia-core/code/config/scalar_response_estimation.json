@@ -1,0 +1,146 @@
+{
+  "owner": "resident_d3ccfa2d95b7",
+  "seeds": [
+    202610199431,
+    202610199432
+  ],
+  "coupling_signs": [
+    1,
+    -1
+  ],
+  "rule": {
+    "transport_scheme": "face_potential",
+    "dt": 0.1,
+    "mobility": 1.0,
+    "cohesion": 3.0,
+    "pressure": 1.5,
+    "interaction_sigma": 1.4,
+    "cue_gain": 0.0,
+    "learning_rate": 0.0,
+    "eligibility_time": 0.8,
+    "memory_time": 1e+30,
+    "uptake_rate": 0.2,
+    "energy_capacity": 8.0,
+    "basal_cost": 0.012,
+    "movement_cost": 0.002,
+    "starvation_rate": 0.15,
+    "starvation_energy": 0.08,
+    "food_sensor_scale": 5.0,
+    "injury_sensor_scale": 25.0,
+    "action_budget": "donor_energy",
+    "polarity_gain": 0.0,
+    "polarity_turn_rate": 0.04,
+    "polarity_relaxation_rate": 0.5,
+    "polarity_energy_gate": "none",
+    "energy_transfer_conductivity": 0.0,
+    "energy_transfer_loss": 0.01
+  },
+  "native_cap": 2048,
+  "worker_cap": 120,
+  "cpu": 2,
+  "gpu": 0,
+  "science_wall": 48,
+  "raw_cap": 67108864,
+  "schedule": "320 acquisition+320 unannounced reward reversal+128same relation no payments/new reward observations or parameter writes. Unknown global +/-90 rotation fixed throughout. Original body/rule/energy/price unchanged. Two new seeds, opposite rotations, same initial reward meaning so the optimal commands differ. First64 of every actual trajectory are opportunity checks, not a separate rerun. No success-selected seeds.",
+  "information": "Policy choose/observe never receives K, displacement, coordinates, field, reward gradient, correct action or change clock. ActualK used only by transport; it is not a sensing input. Scalars are actual energy gained/lost divided by fixedPAY*rho, not divided by field amplitude. No payment means missing, not negative. Four-neighbor or Gaussian body forces are original preset physics; no reward spatial comparison. Internal8-clock action timer is not a reversal cue.",
+  "boundaries": "No birth; local continuous CA material deforms, not rigid point. Unknown coupling physical adapter hidden. Forward transport mixes action/score/receipts so score-weighted local update is not claimed unbiased whole-body REINFORCE. Standard run/tumble and score rules not novel. Extra memory/arithmetic unpriced. Main representation differs6 contextual vs2 active constant weights, disclose capacity.",
+  "gate": "Perlife perphase: alive(M>=12 and largestcomponent>=.75),last64mean field>.25,positive mass/M>=.6. No crosslife mean rescue. Motion/energy/basal/deletion/bodytime alongside. No feedback window uses cached own receipt and continued noise, not motion freeze.",
+  "records": "all scalar steps, actualframes every8, fullstate0/64/320/640/768 or failure inclRNG; first16 and321/328/640/641 actual receipts; pre-native pendingjournal, allattempts charged, unknown never replayed.",
+  "old_replay": 0,
+  "task": "scalar_response_estimation_20261019",
+  "arms": [
+    "spsa"
+  ],
+  "sources": {
+    "/share/Projects/元胞自动机研究/src/local_learning/scalar_response_estimation/run.py": "ae993fd3df0df5e86379923272617d819e2576cd274749131a6ff1b2f3297258",
+    "/share/Projects/元胞自动机研究/src/local_learning/scalar_response_estimation/core.py": "02729d9344ad7327a0a19b8a43458333b1b5199985e0de69d6ff1b51d4906433",
+    "/share/Projects/元胞自动机研究/src/local_learning/scalar_outcome_motor_learning/run.py": "a411e71aa8065a7407a1dd8feea020b7fc1702f61a271f9d98a8d39e653fd6cb",
+    "/share/Projects/元胞自动机研究/src/local_learning/scalar_outcome_motor_learning/core.py": "dddde23a0abae7cf49d98272e42c5eeada29c8044837175461257b4f19834123",
+    "/share/Projects/元胞自动机研究/src/local_learning/affine_motor_baseline/run.py": "deefcf2ea0ba22a2020d77f822d4920986d6c4d1606644c96f8c8f0a3e50c72b",
+    "/share/Projects/元胞自动机研究/src/local_learning/affine_motor_baseline/core.py": "f1c0f1cdb083cd0f8748e32f06e11466418c09ed74210072726c195ceb53d5c7",
+    "/share/Projects/元胞自动机研究/src/local_learning/material_coupling_transport/run.py": "3493ea67f1cad0efabe304c090ed42d2c91d853c2bb66074d77df2c7d7294186",
+    "/share/Projects/元胞自动机研究/src/local_learning/material_coupling_transport/core.py": "f7164caa07b7df75f358424afb0cade51492e13f0ff73d20b9a268161dfc181f",
+    "/share/Projects/元胞自动机研究/src/local_learning/material_action_map/run.py": "61d055e66d3d75869560b5687ff7c93e873c75147131f13b456659fbc3858cea",
+    "/share/Projects/元胞自动机研究/src/local_learning/material_action_map/core.py": "0a8be35e36423435c34933b29b645380199c543d6bacb3e96f7c1c48799a53a1",
+    "/share/Projects/元胞自动机研究/src/local_learning/state_gated_motor_gain/run.py": "22e636e6cce1ddffe096bed89df227c1c17f6e1cd9fb78a6ef9f47b564da6fe3",
+    "/share/Projects/元胞自动机研究/src/local_learning/state_gated_motor_gain/core.py": "327a49e02d8057790dfc34e3b06961afa91d1cf435db24455d0402a8dc33ebb2",
+    "/share/Projects/元胞自动机研究/src/local_learning/state_conditioned_local_motor/run.py": "48feb2f969ea8d7bc79c96d00ca4322308b70dac8927d19078c5e1a8d3c70986",
+    "/share/Projects/元胞自动机研究/src/local_learning/state_conditioned_local_motor/core.py": "2b058f3d2d64e661d62de3fad0e13b1c9714117156ade7424225a1fc368adc03",
+    "/share/Projects/元胞自动机研究/src/local_learning/material_transport.py": "dd5622a2df6a5d50642a31ad586215d5e30e33929cf8f57ee9efff36fdef08d5",
+    "/share/Projects/元胞自动机研究/src/local_learning/embodied_action_learning/core.py": "bb519a2ca973ca40228041f47b44887b118bd192597f24759b47b21a252226cf",
+    "/share/Projects/元胞自动机研究/src/local_learning/material_action_credit/core.py": "d725f553863e95a58d3de157926fa02818f7e6bd7f07440e33cc742054dfe422",
+    "/share/Projects/元胞自动机研究/src/local_learning/paid_gradient_motor_control/core.py": "44a96511b8d125eb38f4904aae19e18f1b77008705aeadc1211cb5dd0716e91f",
+    "/share/Projects/元胞自动机研究/src/local_learning/lifetime_cue_reversal/core.py": "3b1baedbb0f1f402526eb8b7478fbc2c4dd226a5fcbf88725073126ef0541406"
+  },
+  "planned_native": 1536,
+  "read_only_references": [
+    {
+      "condition": 0,
+      "arm": "reward_delta",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c0_reward_delta",
+      "outcome_sha": "f56e2d742969b99a5310be19149d490c7c0c96535b5586c2b1b0cadab97985dc",
+      "steps_sha": "165a5abbeae28f33f449b529dfde89b126d18e25f3d4164da10b2b36d8c151a9",
+      "initial_sha": "6f3059c5a0d0bb63563e69171eb8b6cde62e099b74ed4cd8918bef64df8a3ef0"
+    },
+    {
+      "condition": 0,
+      "arm": "context_delta",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c0_context_delta",
+      "outcome_sha": "befb839c6c51021b30fdd457e41843394e5365a094170736e397ca0bd611ed11",
+      "steps_sha": "adac5fafcc476ee4ad063fe616b183759ef6e3080f91e0adbd475ab9fbed2878",
+      "initial_sha": "6f3059c5a0d0bb63563e69171eb8b6cde62e099b74ed4cd8918bef64df8a3ef0"
+    },
+    {
+      "condition": 0,
+      "arm": "run_tumble",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c0_run_tumble",
+      "outcome_sha": "ce732b18efc606fe8c9d9ff894344984cc9466011eba29fb562912a46de39096",
+      "steps_sha": "efca582deaf323c82e0569c8e0e958aa023a2cb5ff72d4d8d7c33272d6354a47",
+      "initial_sha": "6f3059c5a0d0bb63563e69171eb8b6cde62e099b74ed4cd8918bef64df8a3ef0"
+    },
+    {
+      "condition": 0,
+      "arm": "random",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c0_random",
+      "outcome_sha": "8bb894eb59fbb23376c545a3f98f56debca0d2b289bfee6875c3d479e3a5b938",
+      "steps_sha": "ebe1816d06e5535de5fb1eaf005fd6e7f7fdde4463eb9b5162b2084953557216",
+      "initial_sha": "6f3059c5a0d0bb63563e69171eb8b6cde62e099b74ed4cd8918bef64df8a3ef0"
+    },
+    {
+      "condition": 1,
+      "arm": "reward_delta",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c1_reward_delta",
+      "outcome_sha": "5ba567c95a67fd1b166c1bea093853a21984c86c2b9d0638dd4e081e16a66848",
+      "steps_sha": "042b909c14f5534fdfdbed9c0108e1e5ed82c19440ce26944e9ae095e6aac5ea",
+      "initial_sha": "12d98e7dad7e9aa1ab3b21903a6291fe3b714b0e36c167a8124c620c0062bb96"
+    },
+    {
+      "condition": 1,
+      "arm": "context_delta",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c1_context_delta",
+      "outcome_sha": "60bf3c57ae8cad9ad45f5dadd99f7542fdeadf177f152fd9a149acb3d38a2786",
+      "steps_sha": "27beba4a6094e4708104af4f408deaf7cab428ff7c964df3d1ccfcd050662a5a",
+      "initial_sha": "12d98e7dad7e9aa1ab3b21903a6291fe3b714b0e36c167a8124c620c0062bb96"
+    },
+    {
+      "condition": 1,
+      "arm": "run_tumble",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c1_run_tumble",
+      "outcome_sha": "84288b418bdd509b7d9869be33751588d50b24d251fedab823184d0b189ce325",
+      "steps_sha": "99e9b100d3be9529d82322a0095cecc55e7fb8c3cc53f1cae22b9aa5bbd804f8",
+      "initial_sha": "12d98e7dad7e9aa1ab3b21903a6291fe3b714b0e36c167a8124c620c0062bb96"
+    },
+    {
+      "condition": 1,
+      "arm": "random",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c1_random",
+      "outcome_sha": "bf20b833cbeb34e0907092ddf6f058de8dc5fc015aeffcc6353540f286bbad12",
+      "steps_sha": "17f05fe2685b9e234f3ec475bc55694562e0b3cd6437c0690327755b9464979d",
+      "initial_sha": "12d98e7dad7e9aa1ab3b21903a6291fe3b714b0e36c167a8124c620c0062bb96"
+    }
+  ],
+  "hypothesis": "Does current local scalar-response estimation help reversal relative to accumulation of a persistent policy bias? Reuse every frozen original seed/protocol and actual baseline read-only, not select successful worlds. Standard simple method may suffice; no new algorithm claim.",
+  "learner": "Fixed beta1/8 per completed8-step action block. g <- (1-beta)g+beta*(transported Gaussian score)*(actualpaid_y minus transported block-start paid_y) on valid receipt only. Mean=unit(g), then same .8tanh(mean+.6epsilon). g and receipts follow actual material; no displacement/K/space/reward-gradient inputs. Zero initialg. A standard online random-perturbation scalar response estimate, not paired simultaneous counterfactual SPSA or exact global derivative. Beta fixed as8 completed blocks before first native; no scan.",
+  "baseline": "All original reward_delta/context_delta/run_tumble/random frozen trajectories under exactly same initialstates/seeds/hiddencoupling/phase/payment/hold8/noisesequence/survival/readout limits retained read-only. Fixedrun_tumble also has unit mean; reward_delta permits up to2 per latent component. Current method has no larger force or additional observation. Model differs in normalizing learned direction vs integrating theta; do not attribute differences solely to statistical estimator quality.",
+  "evaluation": "Same perphase endpoint gate and costs. Reversal negativity from old batch never revised. Verify scalar receipt binding and same first completed action from raw initialstates/receipts without native rerun."
+}

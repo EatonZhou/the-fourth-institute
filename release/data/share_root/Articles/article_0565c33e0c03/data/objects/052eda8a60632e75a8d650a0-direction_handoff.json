@@ -1,0 +1,90 @@
+{
+  "task": "scalar_paid_action_learning_20261019",
+  "owner": "resident_d3ccfa2d95b7",
+  "status": "four_actual_batches_complete_scientific_scope_choice",
+  "native": 10880,
+  "worker_seconds": 35.827098,
+  "unknown": 0,
+  "old_replay": 0,
+  "main": "不用donor位移或外给正确梯度，标准标量响应取得2/2、奖励反转1/2、无新反馈后效2/2；条件化候选更差。只变执行关系continue与fixedrun/tumble均2/2，不能立新增算法优势。",
+  "counts": {
+    "new_life0_paths": 10,
+    "counterfactual_paths": 10,
+    "contexts": 2,
+    "content_keep": 2,
+    "content_clear": 1,
+    "content_rotate": 0,
+    "actuator_continue": 2,
+    "actuator_frozen": 0,
+    "actuator_fixed": 2
+  },
+  "batches": [
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/scalar_outcome_motor_learning_20261019",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/scalar_response_estimation_20261019",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/scalar_response_content_20261019",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/scalar_actuator_relearning_20261019"
+  ],
+  "files": {
+    "REPORT.txt": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/scalar_actuator_relearning_20261019/REPORT.txt",
+      "sha256": "3cbe7f3c88ad734e5d3cf86d5e05739b10706c27cd68f2239d82f456e7403507"
+    },
+    "all_phase_costs.csv": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/scalar_actuator_relearning_20261019/all_phase_costs.csv",
+      "sha256": "798ab42fa601b9c5040cafd6671313896fa7e9a36f3d159d5f4b39af9802ac2b"
+    },
+    "read_only_checks.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/scalar_actuator_relearning_20261019/read_only_checks.json",
+      "sha256": "b013487f02cd380c5416b2627bd38e6d8ede14eb209212f4edf273c125bb5704"
+    },
+    "full_state_index.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/scalar_actuator_relearning_20261019/full_state_index.json",
+      "sha256": "3bf54758929b2af8c10579b7ea2fd14877d947e9e00c805442adec42ea1dfad9"
+    },
+    "direction_accounting.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/scalar_actuator_relearning_20261019/direction_accounting.json",
+      "sha256": "0365b3363bc1e8cdd3ed88f13947154d243d6ebcae7b34a50dc714d4f81db84f"
+    },
+    "all_methods_curves.png": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/scalar_actuator_relearning_20261019/all_methods_curves.png",
+      "sha256": "37cc8ab0327ee3ce8203ce8047b9555bcf00385488d36f325d63507d1dd18375"
+    },
+    "all_methods_actual.gif": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/scalar_actuator_relearning_20261019/all_methods_actual.gif",
+      "sha256": "55b9d8d43c32a365f785c982fcda6644def296e9e6daa8b2f80d053422a742f2"
+    },
+    "actual_sequence.gif": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/scalar_actuator_relearning_20261019/actual_sequence.gif",
+      "sha256": "758ce0cfa6b13348de6e17188d1bc66bdc62ea9100646683e95ca590b7ada604"
+    },
+    "actual_contact_sheet.png": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/scalar_actuator_relearning_20261019/actual_contact_sheet.png",
+      "sha256": "0ce58665336f48d846f422cab17c8529fee1e6ae879bec5766e5d84fdf236d78"
+    },
+    "analysis.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/scalar_actuator_relearning_20261019/analysis.json",
+      "sha256": "03477a9996b7029f0c354cc4062283a82df8fad35cc26bced1163445d21575ef"
+    },
+    "plan.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/scalar_actuator_relearning_20261019/plan.json",
+      "sha256": "ea73eed2440dd78ec05eee5fe6782aa545d3490ced7aa9a764d2e11187ddeccd"
+    },
+    "result.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/scalar_actuator_relearning_20261019/result.json",
+      "sha256": "e7db27a7e174f8fa916bfe069b5e1e6a8179900e1ea71815fcec2cd51dcecd23"
+    }
+  },
+  "scientific_question": "是否以纯标量有限能力替代预装位移/梯度作为主文更严格能力边界，并将下一方法投入限定于强标准响应/固定即时反馈尚未解决的稳健协调？不整合ce，不重跑旧批。",
+  "requires_pi_choice": true,
+  "boundaries": [
+    "no birth",
+    "dense actual scalar payments",
+    "K transport only, not sensed motion",
+    "no supplied reward gradient",
+    "not an identified physical Jacobian",
+    "not unbiased whole-body policy gradient",
+    "fixed reflex also adapts",
+    "same tariffs do not mean equal expense",
+    "content probes not independent generalization"
+  ]
+}

@@ -1,0 +1,112 @@
+{
+  "source_index": 5,
+  "source": {
+    "source_candidate": "double_shell_far_ring--bridged_longbody",
+    "genotype": "double_shell_far_ring",
+    "geometry": "bridged_longbody",
+    "life0": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/double_shell_far_ring--bridged_longbody.npz",
+    "sha256": "55543f1b6810aad3806cf862ceb822faafac506690e2979db116df47afb8bdb1"
+  },
+  "parent": {
+    "schema": "experience-adaptation-genome.v1",
+    "id": "genome_6dd0970ae1c018b8d2de",
+    "family": "double_shell_far_ring",
+    "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/double_shell_far_ring--bridged_longbody.npz",
+    "source_sha256": "55543f1b6810aad3806cf862ceb822faafac506690e2979db116df47afb8bdb1",
+    "genes": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "parent_id": null,
+    "generation": 0,
+    "mutation_seed": null,
+    "named_genes": {
+      "log_mu1": 0.0,
+      "log_mu2": 0.0,
+      "log_sigma1": 0.0,
+      "log_sigma2": 0.0,
+      "weight_shift": 0.0,
+      "kernel_radial1": 0.0,
+      "kernel_radial2": 0.0,
+      "kernel_crossmix": 0.0,
+      "log_stretch_y": 0.0,
+      "log_stretch_x": 0.0,
+      "neck_density": 0.0
+    },
+    "lifetime_rule": "fixed; only outer generations mutate"
+  },
+  "sampling": {
+    "seed": 202610180506,
+    "bit_generator": "PCG64",
+    "rng_before": {
+      "bit_generator": "PCG64",
+      "state": {
+        "state": 168358797239820179398940375594187182988,
+        "inc": 151361777087193905105247436002118848751
+      },
+      "has_uint32": 0,
+      "uinteger": 0
+    },
+    "rng_after": {
+      "bit_generator": "PCG64",
+      "state": {
+        "state": 89510716704893316109502837171683834613,
+        "inc": 151361777087193905105247436002118848751
+      },
+      "has_uint32": 0,
+      "uinteger": 0
+    },
+    "raw_uniform": [
+      -0.7960310485199555,
+      0.874453354940762,
+      0.43505316856314313,
+      -0.4907992959428833,
+      0.6070835092214224,
+      -0.5374783115211303,
+      -0.46881625746988176,
+      0.138663056567208,
+      0.6578647680186573,
+      0.016799762631920068,
+      0.1634221917258507
+    ],
+    "scales": [
+      0.12,
+      0.12,
+      0.18,
+      0.18,
+      0.075,
+      0.36,
+      0.36,
+      0.18,
+      0.12,
+      0.12,
+      0.24
+    ],
+    "genes": [
+      -0.09552372582239466,
+      0.10493440259289144,
+      0.07830957034136576,
+      -0.08834387326971899,
+      0.04553126319160668,
+      -0.1934921921476069,
+      -0.16877385268915743,
+      0.02495935018209744,
+      0.07894377216223888,
+      0.002015971515830408,
+      0.039221326014204166
+    ],
+    "vector_draws": 1,
+    "abs_component": "kernel_crossmix"
+  },
+  "generation": 1,
+  "construction": "frozen materialize, explicit NEW mutation"
+}

@@ -1,0 +1,8 @@
+每步ready仍使用原fixed midpoint both选择并锁requested_w/requested_C。原外排一次、中心输入一次、actor与付款一次。actual afteractor的锁定both h形成原D、survivor、死能、ownE、模板。request_hook在这之后、唯一真实admit之前。
+以actual A/B/C的原正请求R_j=dt max(h_j,0)，同一survivor/support/P和actor已摄取后F计算纯admit births。顺序both,A,B,C，严格birth_j>当前best才替换；平局保先前请求。generation=false所有R维持0。不加幅、不剪F、不减两次外流、不借新生E付旧费。
+纯候选不推进身体或占用资源。选中R走一次原admit，并沿原继承、新生E、P/F/热扣账、泵和settle。删除沿新轨当前锁定both，不是回放旧D。可同格先死后生，R与D分别保存。是时点访问+正负分支解耦的新语义，额外算术未计价，不是学习或原规则等价改写。
+隔离AST副本由冻结RegenerativeBody.step生成，仅包装rule_death（原layout original hook）与request（新增本hook）的RHS，其他控制流未改；native_diff.txt和generated_native.py.txt给出实际代码差。原物理/响应/泵源SHA逐个固定。pure_checks包括disabled/strict-tie/零F与实际父roundtrip、标签隔离和真实首收据出生重算。
+C为257..320出生且活到320的既定混龄材料，O为L256，N为321之后实际born。旧320联合父恢复后只换策略执行类和新增诊断观察器；不attach256，不重置旧标签。每步只用真实K/actor keep/rule keep推进一次，未来born只进N。
+8关闭hook边界各1native对196收据字段/157标量精确核，8全过才跑新512步。321原无完整joint，不把未存字段叫全态验证。所有新轨首step保护字段原样，随后物理可分化。两zero path还核完整384state字段和旧观察器；共同前缀仅对明确保存的连续最小transport与标量给精确结论。
+每父门：C384和C体时不降、N384严格增加、M/E/全64体时不降、minM>=32、单窗born>=death且E不降；tol1e-8及0均列。所有结果不归一化或平均救门。八相关父不是新世界，单64不代旧两窗。影子gain是每个新实际状态的一步纯admit差，不是整条旧both反事实轨迹，更不是最终N的因果中介。
+逐钟branch*.npz存四R/四可付born/所选code/实际与shadow gain/P/F/survivor/support及原D/死能；transport*.npz存最小全连续K/keep/born；8指定receipt全场，7fields含O/C/N，320/352/384完整joint。analysis仅只读无native。所有未知native为0，所有attempt计账。

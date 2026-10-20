@@ -1,0 +1,26 @@
+[
+  {
+    "id": "genome_93e6148d32bbb0862163",
+    "parent": null,
+    "family": "reference_anisotropic--connected_trilobe",
+    "seed": null
+  },
+  {
+    "id": "genome_d02e7f60565f83066e5d",
+    "parent": null,
+    "family": "compact_ring_core_outer--bridged_longbody",
+    "seed": null
+  },
+  {
+    "id": "genome_8d60f7d250e8e9f2a25b",
+    "parent": "genome_93e6148d32bbb0862163",
+    "family": "reference_anisotropic--connected_trilobe",
+    "seed": 202610180101
+  },
+  {
+    "id": "genome_a6a821dffd4f4046c97a",
+    "parent": "genome_d02e7f60565f83066e5d",
+    "family": "compact_ring_core_outer--bridged_longbody",
+    "seed": 202610180102
+  }
+]

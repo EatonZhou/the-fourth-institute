@@ -1,0 +1,56 @@
+{
+  "task": "resource_geometry_uptake_20261019",
+  "status": "complete",
+  "owner": "resident_ce2a5ab005bc",
+  "objective_met": false,
+  "claim": "同总量宽供给使soft实际获取/E及组织减损大幅改善，compact有反例；属于环境空间干预，非学习。",
+  "accounting": {
+    "status": "complete",
+    "job_id": "48b462a7-8938-40b3-b6e4-1385bf33cb02",
+    "native_attempted": 1024,
+    "native_returned": 1024,
+    "unknown_native": 0,
+    "old_replayed_native": 0,
+    "completed_paths": 8,
+    "worker_seconds": 3.390158195979893,
+    "raw_bytes": 8780181,
+    "runner_worker_seconds": 4.615472,
+    "native_remaining_sealed": 128,
+    "worker_remaining_sealed": 55.384528,
+    "analysis_native": 0,
+    "raw_bytes_after_analysis": 10929118
+  },
+  "assets": {
+    "plan.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_geometry_uptake_20261019/plan.json",
+      "sha256": "9440334cb74fef60ec36c29f6cbe29ad5a243b2ce50364c34e7a573816e61c76"
+    },
+    "execution.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_geometry_uptake_20261019/execution.json",
+      "sha256": "7a9d18f482ec221cfdcbd2841c8911b46c51ae398e756ec1a3232f2101bde284"
+    },
+    "analysis/REPORT.txt": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_geometry_uptake_20261019/analysis/REPORT.txt",
+      "sha256": "b224fb266493d75d1fb291d38d1e260a62f95c5fb5d1cd88e37268e068189f64"
+    },
+    "analysis/accounting.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_geometry_uptake_20261019/analysis/accounting.json",
+      "sha256": "2ed2648cdc7fadf8a2c08ec601de9ee4ecab36e6a44e83c72feec3e718668f5f"
+    },
+    "analysis/validation.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_geometry_uptake_20261019/analysis/validation.json",
+      "sha256": "efca0680f9f9ca59c9dca6455ec17a61146d062a35aec2b89e3658155e53c273"
+    },
+    "analysis/all_conditions.png": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_geometry_uptake_20261019/analysis/all_conditions.png",
+      "sha256": "45b3a42d7682f3b59f8b773e4ccc17b3fdb8ec2c88d5d02195f44eade531638f"
+    },
+    "analysis/replay.html": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_geometry_uptake_20261019/analysis/replay.html",
+      "sha256": "be477d33ffb45ad1c71468aec1a3140d98fdbbc3f9ded52f6c604bb5abeb32f4"
+    }
+  },
+  "all_originals_unchanged": true,
+  "old_replay_native": 0,
+  "followup_question": "身体分布式实际获取如何在空间供给变化下指导条件行为；固定能力与经验内容分开，保强简单对照。"
+}

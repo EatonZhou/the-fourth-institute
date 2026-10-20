@@ -1,0 +1,82 @@
+[
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/METHOD.txt",
+    "sha256": "cd72abfddb2de49e1bf9a96a1fecf5dd91f3adac188b745d9fdf068215e5a9e8",
+    "bytes": 3833
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/REPORT.txt",
+    "sha256": "b038e7ef5a516a18886b55b71b0616db12e4e50825881d5aae5cb643670b02e1",
+    "bytes": 1252
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/authorization.rev2.json",
+    "sha256": "f35b1f8b7d031175edfda5500d6d82c604f6800ae440f2f8d97e52291c24f7fb",
+    "bytes": 15398
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/candidate_manifest.json",
+    "sha256": "05cb476859d601bf90a8e040d4fbd34198d9ac25af1b8d7bf019a4287bd7aa62",
+    "bytes": 8762
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/candidates/factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1.npz",
+    "sha256": "9bcb6a35e77bde746492ba93ad02c4fe40220006fba1af8c6df5894c84ebeab5",
+    "bytes": 1877204
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/candidates/factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e.npz",
+    "sha256": "f6722aa1fbb1fd3fc68a55d6151a4b11fd9489bde6c5df67d85b0f6289eb351c",
+    "bytes": 1876516
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/candidates/factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423.npz",
+    "sha256": "c5f3d7dc36377b6ff0faaded0f34e2560b74cc225cfae067780e50e08957b962",
+    "bytes": 1877240
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/candidates/factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e.npz",
+    "sha256": "06580223101081fbe20fc7d936791f5e4f55f44642408cb7a2e29ff2466bd859",
+    "bytes": 1876448
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/checks.json",
+    "sha256": "ac2932b66f974d982ce821270394f7bed771c68aa9900f0aa62795c2ea97a63f",
+    "bytes": 37177
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/lineage/factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1.json",
+    "sha256": "918ec31d62fbbab7e05afc697ec7c5deeb964d535d5674653f2e3a39cc7cf5c0",
+    "bytes": 4768
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/lineage/factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e.json",
+    "sha256": "ebd8c5521e7f8a752b4ca0556809ee05e969d184b2c73cbc55fb13b402a00387",
+    "bytes": 4687
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/lineage/factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423.json",
+    "sha256": "e76c370cbb412c639f10f8e8da8c780af97acf1557691bc3d0a44842e8e2ef09",
+    "bytes": 4782
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/lineage/factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e.json",
+    "sha256": "25b51514db66c0a78169b8cd83d9024bce4639857aa697f82662c37999d9157a",
+    "bytes": 4695
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/source/export.py",
+    "sha256": "a3c541bdca03ca3d55b528a98bfb10e6f1f303b63954e1af38eef227cebc6ed7",
+    "bytes": 18320
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/source_evidence.json",
+    "sha256": "e139ef93c67125e25cd1f5309216c05b04e0de534cd4a5bd140a26dd206ee6f3",
+    "bytes": 4461
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/stage_bindings.json",
+    "sha256": "dbaabdaaac17815c1264a5899f30f814dcd1686f9bd03d63fd35245bb8bacb58",
+    "bytes": 30219
+  }
+]

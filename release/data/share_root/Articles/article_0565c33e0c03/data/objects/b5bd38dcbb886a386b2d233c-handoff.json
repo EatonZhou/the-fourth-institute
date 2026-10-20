@@ -1,0 +1,67 @@
+{
+  "task": "local_metabolic_translocation_20261018",
+  "status": "completed",
+  "objective_met": true,
+  "report": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/local_metabolic_translocation_20261018/REPORT.txt",
+    "sha256": "0a1810b7466795e42ff597624141d050eefb9f3b909043faefed0916bdcac905",
+    "bytes": 5885
+  },
+  "summary": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/local_metabolic_translocation_20261018/summary.json",
+    "sha256": "bd8df921b0759ce96ff006185cc1b4486a61dca14263dfce0ff4c22b14d9b3da",
+    "bytes": 18376
+  },
+  "api": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/local_metabolic_translocation_20261018/API.txt",
+    "sha256": "13a1787f94654dd4f125aa94de6a0fcf4d51f04d2a2edc640006509074f45d77",
+    "bytes": 1424
+  },
+  "plan": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/local_metabolic_translocation_20261018/plan.json",
+    "sha256": "e505768cafa945417800921fb687aa39e7945b85f8a4669330c3de15c5e97039",
+    "bytes": 18529
+  },
+  "result": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/local_metabolic_translocation_20261018/result.json",
+    "sha256": "4faf9918f701b3658c87fe9f026cb5464a55f0906fce12d36d1428fbdc58f0ba",
+    "bytes": 735
+  },
+  "budget": {
+    "attempted": 1029,
+    "committed": 1029,
+    "science": 1024,
+    "boundary": 5,
+    "cap_native": 1056,
+    "unused_native": 27,
+    "runner_worker_seconds": 61.589058,
+    "cap_worker": 600,
+    "unused_worker": 538.410942,
+    "old_steps_used": 0,
+    "reference_reused": 512,
+    "reference_forward": 0,
+    "one_job_id": true,
+    "attempts": 2,
+    "cpu_threads": 2,
+    "gpu": 0,
+    "raw_bytes": 138279043,
+    "unused_not_transferable": true
+  },
+  "manifest": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/local_metabolic_translocation_20261018/manifest.json",
+    "sha256": "ddc6f5e42817cca3974002ea85c3c8b05b07af6c61bff323aaeb8af373384c64",
+    "bytes": 12504
+  },
+  "raw_manifest": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/local_metabolic_translocation_20261018/raw_manifest.json",
+    "sha256": "f786c832ad2e4e836d54bf9ea3a8a2cd451b959d3fc069bc69708140503522c9",
+    "bytes": 395892
+  },
+  "figure_sources": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/local_metabolic_translocation_20261018/figure_sources.json",
+    "sha256": "6cec9415635304a3f4141420025f3ff54504e5e64f74b1f11622603d502b02a5",
+    "bytes": 4710
+  },
+  "scope": "new priced transport mechanism; no learning",
+  "reference_reuse": "512 old native steps, zero replay; new pump/receipt fields absent in references stay absent"
+}

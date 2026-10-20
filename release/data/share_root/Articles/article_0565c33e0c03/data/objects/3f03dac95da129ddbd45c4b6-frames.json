@@ -1,0 +1,258 @@
+[
+  {
+    "id": "g1_f1_c0--compact--supported--directed",
+    "parent": "g1_f1_c0--compact--supported",
+    "arm": "directed",
+    "clock": 128,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--directed/state128",
+    "receipt": null
+  },
+  {
+    "id": "g1_f1_c0--compact--supported--directed",
+    "parent": "g1_f1_c0--compact--supported",
+    "arm": "directed",
+    "clock": 129,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--directed/state129",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--directed/receipt129.npz"
+  },
+  {
+    "id": "g1_f1_c0--compact--supported--directed",
+    "parent": "g1_f1_c0--compact--supported",
+    "arm": "directed",
+    "clock": 136,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--directed/state136",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--directed/receipt136.npz"
+  },
+  {
+    "id": "g1_f1_c0--compact--supported--directed",
+    "parent": "g1_f1_c0--compact--supported",
+    "arm": "directed",
+    "clock": 160,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--directed/state160",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--directed/receipt160.npz"
+  },
+  {
+    "id": "g1_f1_c0--compact--supported--directed",
+    "parent": "g1_f1_c0--compact--supported",
+    "arm": "directed",
+    "clock": 192,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--directed/state192",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--directed/receipt192.npz"
+  },
+  {
+    "id": "g1_f1_c0--compact--supported--directed",
+    "parent": "g1_f1_c0--compact--supported",
+    "arm": "directed",
+    "clock": 256,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--directed/state256",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--directed/receipt256.npz"
+  },
+  {
+    "id": "g1_f1_c0--compact--supported--directed",
+    "parent": "g1_f1_c0--compact--supported",
+    "arm": "directed",
+    "clock": 320,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--directed/state320",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--directed/receipt320.npz"
+  },
+  {
+    "id": "g1_f1_c0--compact--supported--directed",
+    "parent": "g1_f1_c0--compact--supported",
+    "arm": "directed",
+    "clock": 384,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--directed/state384",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--directed/receipt384.npz"
+  },
+  {
+    "id": "g1_f1_c0--compact--supported--diffusion",
+    "parent": "g1_f1_c0--compact--supported",
+    "arm": "diffusion",
+    "clock": 128,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--diffusion/state128",
+    "receipt": null
+  },
+  {
+    "id": "g1_f1_c0--compact--supported--diffusion",
+    "parent": "g1_f1_c0--compact--supported",
+    "arm": "diffusion",
+    "clock": 129,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--diffusion/state129",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--diffusion/receipt129.npz"
+  },
+  {
+    "id": "g1_f1_c0--compact--supported--diffusion",
+    "parent": "g1_f1_c0--compact--supported",
+    "arm": "diffusion",
+    "clock": 136,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--diffusion/state136",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--diffusion/receipt136.npz"
+  },
+  {
+    "id": "g1_f1_c0--compact--supported--diffusion",
+    "parent": "g1_f1_c0--compact--supported",
+    "arm": "diffusion",
+    "clock": 160,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--diffusion/state160",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--diffusion/receipt160.npz"
+  },
+  {
+    "id": "g1_f1_c0--compact--supported--diffusion",
+    "parent": "g1_f1_c0--compact--supported",
+    "arm": "diffusion",
+    "clock": 192,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--diffusion/state192",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--diffusion/receipt192.npz"
+  },
+  {
+    "id": "g1_f1_c0--compact--supported--diffusion",
+    "parent": "g1_f1_c0--compact--supported",
+    "arm": "diffusion",
+    "clock": 256,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--diffusion/state256",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--diffusion/receipt256.npz"
+  },
+  {
+    "id": "g1_f1_c0--compact--supported--diffusion",
+    "parent": "g1_f1_c0--compact--supported",
+    "arm": "diffusion",
+    "clock": 320,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--diffusion/state320",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--diffusion/receipt320.npz"
+  },
+  {
+    "id": "g1_f1_c0--compact--supported--diffusion",
+    "parent": "g1_f1_c0--compact--supported",
+    "arm": "diffusion",
+    "clock": 384,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--diffusion/state384",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--diffusion/receipt384.npz"
+  },
+  {
+    "id": "g1_f2_c0--compact--supported--directed",
+    "parent": "g1_f2_c0--compact--supported",
+    "arm": "directed",
+    "clock": 128,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--directed/state128",
+    "receipt": null
+  },
+  {
+    "id": "g1_f2_c0--compact--supported--directed",
+    "parent": "g1_f2_c0--compact--supported",
+    "arm": "directed",
+    "clock": 129,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--directed/state129",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--directed/receipt129.npz"
+  },
+  {
+    "id": "g1_f2_c0--compact--supported--directed",
+    "parent": "g1_f2_c0--compact--supported",
+    "arm": "directed",
+    "clock": 136,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--directed/state136",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--directed/receipt136.npz"
+  },
+  {
+    "id": "g1_f2_c0--compact--supported--directed",
+    "parent": "g1_f2_c0--compact--supported",
+    "arm": "directed",
+    "clock": 160,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--directed/state160",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--directed/receipt160.npz"
+  },
+  {
+    "id": "g1_f2_c0--compact--supported--directed",
+    "parent": "g1_f2_c0--compact--supported",
+    "arm": "directed",
+    "clock": 192,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--directed/state192",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--directed/receipt192.npz"
+  },
+  {
+    "id": "g1_f2_c0--compact--supported--directed",
+    "parent": "g1_f2_c0--compact--supported",
+    "arm": "directed",
+    "clock": 256,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--directed/state256",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--directed/receipt256.npz"
+  },
+  {
+    "id": "g1_f2_c0--compact--supported--directed",
+    "parent": "g1_f2_c0--compact--supported",
+    "arm": "directed",
+    "clock": 320,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--directed/state320",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--directed/receipt320.npz"
+  },
+  {
+    "id": "g1_f2_c0--compact--supported--directed",
+    "parent": "g1_f2_c0--compact--supported",
+    "arm": "directed",
+    "clock": 384,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--directed/state384",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--directed/receipt384.npz"
+  },
+  {
+    "id": "g1_f2_c0--compact--supported--diffusion",
+    "parent": "g1_f2_c0--compact--supported",
+    "arm": "diffusion",
+    "clock": 128,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--diffusion/state128",
+    "receipt": null
+  },
+  {
+    "id": "g1_f2_c0--compact--supported--diffusion",
+    "parent": "g1_f2_c0--compact--supported",
+    "arm": "diffusion",
+    "clock": 129,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--diffusion/state129",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--diffusion/receipt129.npz"
+  },
+  {
+    "id": "g1_f2_c0--compact--supported--diffusion",
+    "parent": "g1_f2_c0--compact--supported",
+    "arm": "diffusion",
+    "clock": 136,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--diffusion/state136",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--diffusion/receipt136.npz"
+  },
+  {
+    "id": "g1_f2_c0--compact--supported--diffusion",
+    "parent": "g1_f2_c0--compact--supported",
+    "arm": "diffusion",
+    "clock": 160,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--diffusion/state160",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--diffusion/receipt160.npz"
+  },
+  {
+    "id": "g1_f2_c0--compact--supported--diffusion",
+    "parent": "g1_f2_c0--compact--supported",
+    "arm": "diffusion",
+    "clock": 192,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--diffusion/state192",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--diffusion/receipt192.npz"
+  },
+  {
+    "id": "g1_f2_c0--compact--supported--diffusion",
+    "parent": "g1_f2_c0--compact--supported",
+    "arm": "diffusion",
+    "clock": 256,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--diffusion/state256",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--diffusion/receipt256.npz"
+  },
+  {
+    "id": "g1_f2_c0--compact--supported--diffusion",
+    "parent": "g1_f2_c0--compact--supported",
+    "arm": "diffusion",
+    "clock": 320,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--diffusion/state320",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--diffusion/receipt320.npz"
+  },
+  {
+    "id": "g1_f2_c0--compact--supported--diffusion",
+    "parent": "g1_f2_c0--compact--supported",
+    "arm": "diffusion",
+    "clock": 384,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--diffusion/state384",
+    "receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--diffusion/receipt384.npz"
+  }
+]

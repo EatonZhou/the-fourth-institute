@@ -1,0 +1,1 @@
+self.onmessage=()=>{self.postMessage({"width":96,"height":96,"steps":[128,136,144,152,160,168,176,184,192,200,208,216,224],"sha256":"65dfc6b0aae2dcf3989021ae2a61f375418a50d1c286d5ca50624b59937c6bf3","framesFile":"clips/diversetransport-genome_85dffefe3eb5bacdfbf5--T00.frames.json"});self.close();};

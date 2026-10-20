@@ -1,0 +1,131 @@
+{
+  "result": {
+    "status": "completed",
+    "job_id": "10238c47-5624-4f8b-acee-a5a478f50549",
+    "attempted_body_steps": 1536,
+    "committed_body_steps": 1536,
+    "independent_energy_steps": 0,
+    "raw_storage": "/data/lenia-research/lineage_75e3399f4877/regenerative_reserve_morphology_transfer_20261018/10238c47-5624-4f8b-acee-a5a478f50549",
+    "raw_bytes": 1381145809,
+    "branches": [
+      {
+        "branch": "reference_anisotropic--connected_trilobe--open_T11",
+        "status": "completed",
+        "attempted": 256,
+        "committed": 256,
+        "raw_directory": "/data/lenia-research/lineage_75e3399f4877/regenerative_reserve_morphology_transfer_20261018/10238c47-5624-4f8b-acee-a5a478f50549/reference_anisotropic--connected_trilobe--open_T11"
+      },
+      {
+        "branch": "reference_anisotropic--connected_trilobe--suppress_T11",
+        "status": "completed",
+        "attempted": 256,
+        "committed": 256,
+        "raw_directory": "/data/lenia-research/lineage_75e3399f4877/regenerative_reserve_morphology_transfer_20261018/10238c47-5624-4f8b-acee-a5a478f50549/reference_anisotropic--connected_trilobe--suppress_T11"
+      },
+      {
+        "branch": "reference_anisotropic--connected_trilobe--reserve_T11",
+        "status": "completed",
+        "attempted": 256,
+        "committed": 256,
+        "raw_directory": "/data/lenia-research/lineage_75e3399f4877/regenerative_reserve_morphology_transfer_20261018/10238c47-5624-4f8b-acee-a5a478f50549/reference_anisotropic--connected_trilobe--reserve_T11"
+      },
+      {
+        "branch": "compact_ring_core_outer--bridged_longbody--open_T11",
+        "status": "completed",
+        "attempted": 256,
+        "committed": 256,
+        "raw_directory": "/data/lenia-research/lineage_75e3399f4877/regenerative_reserve_morphology_transfer_20261018/10238c47-5624-4f8b-acee-a5a478f50549/compact_ring_core_outer--bridged_longbody--open_T11"
+      },
+      {
+        "branch": "compact_ring_core_outer--bridged_longbody--suppress_T11",
+        "status": "completed",
+        "attempted": 256,
+        "committed": 256,
+        "raw_directory": "/data/lenia-research/lineage_75e3399f4877/regenerative_reserve_morphology_transfer_20261018/10238c47-5624-4f8b-acee-a5a478f50549/compact_ring_core_outer--bridged_longbody--suppress_T11"
+      },
+      {
+        "branch": "compact_ring_core_outer--bridged_longbody--reserve_T11",
+        "status": "completed",
+        "attempted": 256,
+        "committed": 256,
+        "raw_directory": "/data/lenia-research/lineage_75e3399f4877/regenerative_reserve_morphology_transfer_20261018/10238c47-5624-4f8b-acee-a5a478f50549/compact_ring_core_outer--bridged_longbody--reserve_T11"
+      }
+    ]
+  },
+  "runner": {
+    "id": "10238c47-5624-4f8b-acee-a5a478f50549",
+    "name": "regenerative-reserve-morphology-transfer",
+    "command": [
+      "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+      "-m",
+      "environment_evolution.regenerative_reserve_morphology_transfer.run",
+      "--contract",
+      "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/plan.json"
+    ],
+    "cwd": "${share_root}/Projects/元胞自动机研究/src",
+    "resource": "cpu",
+    "request_key": "ce2-regenerative-reserve-morphology-transfer-20261018-v1",
+    "status": "completed",
+    "created_at": "2026-10-17T23:06:15.108172+00:00",
+    "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/10238c47-5624-4f8b-acee-a5a478f50549",
+    "pid": 655450,
+    "manual_pause": false,
+    "create_time": 1792278374.56,
+    "started_at": "2026-10-17T23:06:15.171174+00:00",
+    "returncode": 0,
+    "finished_at": "2026-10-17T23:09:43.173495+00:00",
+    "result": {
+      "status": "completed",
+      "job_id": "10238c47-5624-4f8b-acee-a5a478f50549",
+      "attempted_body_steps": 1536,
+      "committed_body_steps": 1536,
+      "independent_energy_steps": 0,
+      "raw_storage": "/data/lenia-research/lineage_75e3399f4877/regenerative_reserve_morphology_transfer_20261018/10238c47-5624-4f8b-acee-a5a478f50549",
+      "raw_bytes": 1381145809,
+      "branches": [
+        {
+          "branch": "reference_anisotropic--connected_trilobe--open_T11",
+          "status": "completed",
+          "attempted": 256,
+          "committed": 256,
+          "raw_directory": "/data/lenia-research/lineage_75e3399f4877/regenerative_reserve_morphology_transfer_20261018/10238c47-5624-4f8b-acee-a5a478f50549/reference_anisotropic--connected_trilobe--open_T11"
+        },
+        {
+          "branch": "reference_anisotropic--connected_trilobe--suppress_T11",
+          "status": "completed",
+          "attempted": 256,
+          "committed": 256,
+          "raw_directory": "/data/lenia-research/lineage_75e3399f4877/regenerative_reserve_morphology_transfer_20261018/10238c47-5624-4f8b-acee-a5a478f50549/reference_anisotropic--connected_trilobe--suppress_T11"
+        },
+        {
+          "branch": "reference_anisotropic--connected_trilobe--reserve_T11",
+          "status": "completed",
+          "attempted": 256,
+          "committed": 256,
+          "raw_directory": "/data/lenia-research/lineage_75e3399f4877/regenerative_reserve_morphology_transfer_20261018/10238c47-5624-4f8b-acee-a5a478f50549/reference_anisotropic--connected_trilobe--reserve_T11"
+        },
+        {
+          "branch": "compact_ring_core_outer--bridged_longbody--open_T11",
+          "status": "completed",
+          "attempted": 256,
+          "committed": 256,
+          "raw_directory": "/data/lenia-research/lineage_75e3399f4877/regenerative_reserve_morphology_transfer_20261018/10238c47-5624-4f8b-acee-a5a478f50549/compact_ring_core_outer--bridged_longbody--open_T11"
+        },
+        {
+          "branch": "compact_ring_core_outer--bridged_longbody--suppress_T11",
+          "status": "completed",
+          "attempted": 256,
+          "committed": 256,
+          "raw_directory": "/data/lenia-research/lineage_75e3399f4877/regenerative_reserve_morphology_transfer_20261018/10238c47-5624-4f8b-acee-a5a478f50549/compact_ring_core_outer--bridged_longbody--suppress_T11"
+        },
+        {
+          "branch": "compact_ring_core_outer--bridged_longbody--reserve_T11",
+          "status": "completed",
+          "attempted": 256,
+          "committed": 256,
+          "raw_directory": "/data/lenia-research/lineage_75e3399f4877/regenerative_reserve_morphology_transfer_20261018/10238c47-5624-4f8b-acee-a5a478f50549/compact_ring_core_outer--bridged_longbody--reserve_T11"
+        }
+      ]
+    }
+  }
+}

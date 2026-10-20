@@ -1,0 +1,12 @@
+{
+  "task": "contextual_terminal_records_20261018",
+  "status": "incomplete",
+  "attempted": 34,
+  "committed": 34,
+  "job_id": "48c455c9-79dc-4c02-9890-fb886c8aab85",
+  "plan_sha256": "72b9ccc0067b737fc5e1f25769a2929b5dde8e087ff9206dc1a70642b3f629b6",
+  "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/contextual_terminal_records_20261018/48c455c9-79dc-4c02-9890-fb886c8aab85",
+  "raw_bytes": 27431109,
+  "script_seconds": 27.279452995047905,
+  "scientific_scope": "affected contextual-record interface checks only; no acquisition64 or learning comparisons"
+}

@@ -1,0 +1,293 @@
+.progressRegion {
+  color: var(--text);
+  background: var(--bg);
+  font:
+    15px/1.7 system-ui,
+    sans-serif;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  padding: 16px 22px 48px;
+}
+.progressRegion * {
+  box-sizing: border-box;
+}
+.progressRegion button,
+.progressRegion input,
+.progressRegion select,
+.progressRegion textarea {
+  font: inherit;
+  color: inherit;
+}
+.progressRegion button {
+  cursor: pointer;
+}
+.progressRegion button:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+.progressRegion button:focus-visible,
+.progressRegion summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+.progressRegion .portalButton {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+  padding: 6px 10px;
+  min-height: 38px;
+  text-align: left;
+  white-space: normal;
+}
+.progressRegion .pToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+  margin-bottom: 20px;
+}
+.progressRegion .pActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.progressRegion .pSelect {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.progressRegion select,
+.progressRegion input[type="search"],
+.progressRegion input[type="date"] {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  padding: 7px;
+  min-width: 0;
+  max-width: 100%;
+  border-radius: 5px;
+}
+.progressRegion .pStories {
+  min-width: 0;
+  max-width: 980px;
+}
+.progressRegion .pPeriod {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 28px;
+  margin-bottom: 28px;
+}
+.progressRegion .pDate,
+.progressRegion .pQuiet {
+  font-size: 12px;
+  opacity: 0.72;
+}
+.progressRegion .pDate {
+  margin: 0 0 9px;
+  letter-spacing: 0.02em;
+}
+.progressRegion .pStory {
+  margin: 0 0 24px;
+  min-width: 0;
+}
+.progressRegion .pStory:last-child {
+  margin-bottom: 0;
+}
+.progressRegion h1,
+.progressRegion h2 {
+  margin: 0 0 8px;
+  font-size: 23px;
+  line-height: 1.4;
+  font-weight: 650;
+}
+.progressRegion .pLead h1 {
+  font-size: 29px;
+  letter-spacing: -0.02em;
+}
+.progressRegion .pTitle {
+  display: block;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  line-height: inherit;
+}
+.progressRegion .pTitle[aria-pressed="true"] {
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+  text-underline-offset: 6px;
+}
+.progressRegion .pEffect {
+  font-size: 16px;
+  line-height: 1.85;
+  margin: 8px 0 14px;
+  max-width: 70ch;
+}
+.progressRegion .pActions .portalButton {
+  border: 0;
+  padding: 5px 0;
+  color: var(--accent);
+}
+.progressRegion .pActions .portalButton:first-child {
+  border-bottom: 1px solid var(--accent);
+  border-radius: 0;
+}
+.progressRegion .pDetails {
+  margin-top: 12px;
+}
+.progressRegion summary {
+  cursor: pointer;
+  font-size: 13px;
+  opacity: 0.85;
+  min-height: 32px;
+}
+.progressRegion .pDetailBody {
+  border-left: 2px solid var(--border);
+  padding: 8px 0 8px 18px;
+  margin-top: 6px;
+  min-width: 0;
+}
+.progressRegion h3 {
+  font-size: 14px;
+  margin: 14px 0 6px;
+}
+.progressRegion .pDetailBody p {
+  margin: 8px 0;
+}
+.progressRegion .pDetailBody li {
+  margin-bottom: 8px;
+}
+.progressRegion .pDetailBody li button {
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+.progressRegion .pFeedback {
+  margin-top: 16px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.progressRegion textarea {
+  width: 100%;
+  min-height: 110px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+  resize: vertical;
+}
+.progressRegion .pMessage {
+  font-size: 13px;
+  margin: 10px 0;
+}
+.progressRegion .pDemo {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  padding: 14px 18px;
+  max-width: 520px;
+  margin: 12px 0 14px;
+  background: var(--panel);
+  border-left: 3px solid var(--accent);
+}
+.progressRegion .pDemo .pQuiet {
+  grid-column: 1/-1;
+}
+.progressRegion .pBubble {
+  padding: 8px 14px;
+  border-radius: 14px 14px 3px 14px;
+  border: 1px solid var(--border);
+}
+.progressRegion .pDemo small {
+  align-self: center;
+}
+.progressRegion .pDemo button {
+  grid-column: 2;
+  font-size: 12px;
+}
+.progressRegion .pDocument {
+  max-height: 520px;
+  overflow: auto;
+  min-width: 0;
+  padding: 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-top: 12px;
+}
+.progressRegion pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.progressRegion table {
+  max-width: 100%;
+  display: block;
+  overflow: auto;
+}
+.progressRegion figure {
+  margin: 16px 0;
+}
+.progressRegion figcaption {
+  font-size: 12px;
+  opacity: 0.8;
+}
+.progressRegion img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin-top: 8px;
+}
+@media (max-width: 700px) {
+  .progressRegion {
+    padding: 12px 14px 32px;
+    font-size: 14px;
+  }
+  .progressRegion .pLead h1 {
+    font-size: 24px;
+  }
+  .progressRegion h2 {
+    font-size: 20px;
+  }
+  .progressRegion .pEffect {
+    font-size: 15px;
+  }
+  .progressRegion .pActions button {
+    min-height: 44px;
+  }
+  .progressRegion .pDemo {
+    padding: 10px;
+  }
+  .progressRegion .pDetailBody {
+    padding-left: 10px;
+  }
+}
+
+.progressRegion .pToolbarTitle {
+  font-size: 20px;
+  margin: 0;
+  white-space: nowrap;
+}
+.progressRegion .pDates {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  max-width: 100%;
+}
+.progressRegion .pDates input { width: 145px; }
+.progressRegion .pDates .portalButton { font-size: 13px; white-space: nowrap; }
+.progressRegion .pDates [aria-pressed="true"] { color: var(--accent); }
+.progressRegion .pModuleFilter { min-width: 0; }
+.progressRegion .pModuleFilter select { width: 158px; }
+.progressRegion .pSearch { flex: 1 1 150px; width: 150px; }
+.progressRegion .pEmpty .portalButton { margin-left: 12px; }
+@media (max-width: 700px) {
+  .progressRegion .pToolbar { gap: 10px; }
+  .progressRegion .pDates input { width: 140px; }
+  .progressRegion .pSearch { flex-basis: 140px; }
+}

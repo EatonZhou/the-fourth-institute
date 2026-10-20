@@ -1,0 +1,13 @@
+可导入：research.event_reservoir_learning.{EventModes,PredictiveReadout,PredictorRule}
+policy.EventPolicy(name,seed,cfg)：act(allowed_observation,cycle)->action,fee；feedback(completed_uptake,cycle,write_funded=True)；checkpoint()。
+probe.SurprisePolicy使用同一接口，只替换PredictiveReadout。无隐藏target、mapping、future输入；cycle仅决定共同训练开关，公共phase决定程序化运动阶段；只有oracle基线拿真实target。
+
+环境唯一来源：environment_evolution.method_renewal_ecology_behavior.core.Config/Ecology/Policy/make_tape。33不复制/修改ce2环境。没有Lenia K或组织载体API，无需旧Certified参考接口。body、resource、energy实变并记录残差；学习状态外置。
+
+运行入口：python -m research.event_reservoir_learning.run --plan <首批plan>
+续试入口：python -m research.event_reservoir_learning.run_probe --plan <探测plan>
+必须经统一runtime/runner.py且使用新request-key。已有两个key已完成，不重提/覆盖。run内部核plan源SHA、自身Resident读running/started、CPU线程由统一runner限2，有限路径及1150秒上限。
+
+只读分析：本目录analyze.py只读两批CSV/控制器JSON/完整周期NPZ，未导入身体算子。图为真实保存周期末密度场；步内动作通过steps.csv查看，不用周期末图伪造轨迹。所有路径固定48轮，失败/负结果全保留。
+
+恢复范围：每轮完整状态及控制器快照用于只读诊断；本候选未实现暂停中任意切点恢复/单步事务重演。旧carry物理失败与223余额不依本实现续接。

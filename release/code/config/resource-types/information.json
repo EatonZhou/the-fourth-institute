@@ -1,0 +1,16 @@
+{
+  "type": "information",
+  "category": "knowledge_entry",
+  "description": "A knowledge-base information entry.",
+  "title": {
+    "zh": "信息",
+    "en": "Information"
+  },
+  "provider": "management_portal.resources.providers.knowledge:install_resolver",
+  "catalog_section": "knowledge",
+  "catalog_order": 10,
+  "registerable": true,
+  "scope": "project",
+  "unit": "core",
+  "enabled_by_default": true
+}

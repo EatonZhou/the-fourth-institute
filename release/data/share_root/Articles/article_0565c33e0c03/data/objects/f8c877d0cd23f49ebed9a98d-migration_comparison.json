@@ -1,0 +1,10 @@
+{
+  "status": "passed",
+  "old": "${share_root}/Projects/元胞自动机研究/src/analysis/runs/orbium_matched_history_20261016_v1",
+  "new": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/268be5d2-5271-4bb5-b95b-4bad9e1a7fac/matched_histories",
+  "compared_arrays": 40,
+  "max_absolute_error": 7.021455417088873e-09,
+  "rtol": 1e-08,
+  "atol": 1e-09,
+  "note": "One existing phase, three histories and six washout points; migration check, not new independent scientific evidence."
+}

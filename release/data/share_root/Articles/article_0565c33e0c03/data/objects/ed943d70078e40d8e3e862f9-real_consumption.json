@@ -1,0 +1,549 @@
+{
+  "status": "read_only_consumption_completed",
+  "source_result": {
+    "path": "environment_evolution/results/anticipatory_material_allocation_20261018/result.json",
+    "sha256": "22a09098267eed5196fec9d388d67226b20cb4391293a6126e5dcce3b94a10b8"
+  },
+  "owner_job_id": "5063bd49-7b65-4ec3-9338-92f5bd855747",
+  "owner_host_steps": 18592,
+  "own_host_steps": 0,
+  "own_controller_runs": 0,
+  "common_full_checkpoint_equal": true,
+  "saved_commit_input_rho_equal": true,
+  "branch_policy_exactly_matches_paid_prefix": [
+    true,
+    true,
+    true,
+    true
+  ],
+  "common_state_digest": "d40ec3f5bc297e585f325771f6e8a0cdbd9d5d37964f528835e5921f6c53d477",
+  "local_saved_events": [
+    {
+      "source": "history_-1",
+      "cycle": 0,
+      "cell": [
+        16,
+        9
+      ],
+      "event": {
+        "event_id": "00ac442cb88500518e3e9f4e6868ac5d2074431183d37cb5a59f14a3ee3ba70a",
+        "cue": -1,
+        "action": 0,
+        "selected_channel": [
+          16,
+          9
+        ],
+        "label": 0,
+        "cue_order": 0,
+        "payment_order": 49,
+        "opened_order": 50,
+        "completed_order": 51,
+        "paid": true,
+        "complete": true,
+        "observed": true,
+        "covered": true,
+        "legal_carrier": true,
+        "receipt_digest": "297f98770a50bc2c66cf3753758fd35000d38bc4b95520d2881beefd3fdee3bf"
+      },
+      "scope": "saved receipt only; not a reconstructed full material history"
+    },
+    {
+      "source": "history_-1",
+      "cycle": 0,
+      "cell": [
+        16,
+        23
+      ],
+      "event": {
+        "event_id": "dda67670907753fa7f4790d3b45a4895044451db475f05cff6895d0f613ded52",
+        "cue": -1,
+        "action": 0,
+        "selected_channel": [
+          16,
+          23
+        ],
+        "label": 1,
+        "cue_order": 0,
+        "payment_order": 49,
+        "opened_order": 50,
+        "completed_order": 51,
+        "paid": true,
+        "complete": true,
+        "observed": true,
+        "covered": true,
+        "legal_carrier": true,
+        "receipt_digest": "297f98770a50bc2c66cf3753758fd35000d38bc4b95520d2881beefd3fdee3bf"
+      },
+      "scope": "saved receipt only; not a reconstructed full material history"
+    },
+    {
+      "source": "history_-1",
+      "cycle": 7,
+      "cell": [
+        16,
+        9
+      ],
+      "event": {
+        "event_id": "3ab967eac34d3eadd421580ecd668a35659c0c5cc6dd8ccbd771d06215bfa304",
+        "cue": 1,
+        "action": 0,
+        "selected_channel": [
+          16,
+          9
+        ],
+        "label": 1,
+        "cue_order": 896,
+        "payment_order": 945,
+        "opened_order": 946,
+        "completed_order": 947,
+        "paid": true,
+        "complete": true,
+        "observed": true,
+        "covered": true,
+        "legal_carrier": true,
+        "receipt_digest": "7ff458aae1a423031137149b3928ad63a15fbe10fdf16ba948097d979506e75f"
+      },
+      "scope": "saved receipt only; not a reconstructed full material history"
+    },
+    {
+      "source": "history_-1",
+      "cycle": 7,
+      "cell": [
+        16,
+        23
+      ],
+      "event": {
+        "event_id": "5173be97678f2cfb80cdef67019e1e1870b0a2fd1f1c659b34559ce450408d54",
+        "cue": 1,
+        "action": 0,
+        "selected_channel": [
+          16,
+          23
+        ],
+        "label": 0,
+        "cue_order": 896,
+        "payment_order": 945,
+        "opened_order": 946,
+        "completed_order": 947,
+        "paid": true,
+        "complete": true,
+        "observed": true,
+        "covered": true,
+        "legal_carrier": true,
+        "receipt_digest": "7ff458aae1a423031137149b3928ad63a15fbe10fdf16ba948097d979506e75f"
+      },
+      "scope": "saved receipt only; not a reconstructed full material history"
+    },
+    {
+      "source": "history_1",
+      "cycle": 0,
+      "cell": [
+        16,
+        9
+      ],
+      "event": {
+        "event_id": "4e9db40d4611d1db1ed1cf94fd9d7c92f4aa234f7d5aec14178b9368b3a4b70e",
+        "cue": -1,
+        "action": 0,
+        "selected_channel": [
+          16,
+          9
+        ],
+        "label": 1,
+        "cue_order": 0,
+        "payment_order": 49,
+        "opened_order": 50,
+        "completed_order": 51,
+        "paid": true,
+        "complete": true,
+        "observed": true,
+        "covered": true,
+        "legal_carrier": true,
+        "receipt_digest": "65b88422fe208b72984e0d910dfcf0d0a7ecb54bade00489570df994bd794726"
+      },
+      "scope": "saved receipt only; not a reconstructed full material history"
+    },
+    {
+      "source": "history_1",
+      "cycle": 0,
+      "cell": [
+        16,
+        23
+      ],
+      "event": {
+        "event_id": "2f9e33a227137e161ffc38b5a9a646dc7b0304ae707a4042a68ebadd6e04ebe9",
+        "cue": -1,
+        "action": 0,
+        "selected_channel": [
+          16,
+          23
+        ],
+        "label": 0,
+        "cue_order": 0,
+        "payment_order": 49,
+        "opened_order": 50,
+        "completed_order": 51,
+        "paid": true,
+        "complete": true,
+        "observed": true,
+        "covered": true,
+        "legal_carrier": true,
+        "receipt_digest": "65b88422fe208b72984e0d910dfcf0d0a7ecb54bade00489570df994bd794726"
+      },
+      "scope": "saved receipt only; not a reconstructed full material history"
+    },
+    {
+      "source": "history_1",
+      "cycle": 7,
+      "cell": [
+        16,
+        9
+      ],
+      "event": {
+        "event_id": "60606e94dbc5690789d3dab23e05de3b7ad703ea5320241a6e4422cd39133f06",
+        "cue": 1,
+        "action": 0,
+        "selected_channel": [
+          16,
+          9
+        ],
+        "label": 0,
+        "cue_order": 896,
+        "payment_order": 945,
+        "opened_order": 946,
+        "completed_order": 947,
+        "paid": true,
+        "complete": true,
+        "observed": true,
+        "covered": true,
+        "legal_carrier": true,
+        "receipt_digest": "a1f1e5133b25fca535e7e606fee0e8d9fd75919e5d9bc52cea9f79a748ee296f"
+      },
+      "scope": "saved receipt only; not a reconstructed full material history"
+    },
+    {
+      "source": "history_1",
+      "cycle": 7,
+      "cell": [
+        16,
+        23
+      ],
+      "event": {
+        "event_id": "bf0ae4bbfeee5e02891710b6fb3022f0e3facf7575ec14fccc7a1329a8732b4d",
+        "cue": 1,
+        "action": 0,
+        "selected_channel": [
+          16,
+          23
+        ],
+        "label": 1,
+        "cue_order": 896,
+        "payment_order": 945,
+        "opened_order": 946,
+        "completed_order": 947,
+        "paid": true,
+        "complete": true,
+        "observed": true,
+        "covered": true,
+        "legal_carrier": true,
+        "receipt_digest": "a1f1e5133b25fca535e7e606fee0e8d9fd75919e5d9bc52cea9f79a748ee296f"
+      },
+      "scope": "saved receipt only; not a reconstructed full material history"
+    }
+  ],
+  "delayed_records": [
+    {
+      "packet": "c5c0314016e42a29bf697cd7022c29dd406d8ab39e51409836559109a42584e5",
+      "after_commit_clock": 261,
+      "pending_due": 268,
+      "active_after_commit": 0.0,
+      "pending_after_commit": 5.998800000000007,
+      "completed_after_commit": 0,
+      "after_arrival_clock": 269,
+      "matured": 5.989208635969217,
+      "unknown_cells_keep_minus_one": true
+    },
+    {
+      "packet": "76ab3454938345d41a4befdeddc6f4a4b5ad4976bd053267582b81e8178d8874",
+      "after_commit_clock": 261,
+      "pending_due": 268,
+      "active_after_commit": 0.0,
+      "pending_after_commit": 5.99880000000002,
+      "completed_after_commit": 0,
+      "after_arrival_clock": 269,
+      "matured": 5.989208635969229,
+      "unknown_cells_keep_minus_one": true
+    },
+    {
+      "packet": "71cb77d314e415d269ea04c5f7092cea432ac09836aaebc0bc11974b310aade8",
+      "after_commit_clock": 261,
+      "pending_due": 268,
+      "active_after_commit": 0.0,
+      "pending_after_commit": 5.998800000000007,
+      "completed_after_commit": 0,
+      "after_arrival_clock": 269,
+      "matured": 5.989208635969217,
+      "unknown_cells_keep_minus_one": true
+    },
+    {
+      "packet": "f981f62bd90419247c4f48301780ef95c5ed9dbfa6d977523c82d145a9986060",
+      "after_commit_clock": 261,
+      "pending_due": 268,
+      "active_after_commit": 0.0,
+      "pending_after_commit": 5.99880000000002,
+      "completed_after_commit": 0,
+      "after_arrival_clock": 269,
+      "matured": 5.989208635969229,
+      "unknown_cells_keep_minus_one": true
+    }
+  ],
+  "selected_reported_outcomes": [
+    {
+      "name": "rich_uniform",
+      "U": 766.6187054040656,
+      "final_M": 19.924136645083966,
+      "final_E": 31.045789720369836,
+      "basal_unpaid": 0.0
+    },
+    {
+      "name": "reversal_202610188101_left",
+      "U": 47.913669087753775,
+      "final_M": 19.924136645083962,
+      "final_E": 18.56352912943447,
+      "basal_unpaid": 0.0
+    },
+    {
+      "name": "reversal_202610188101_right",
+      "U": 95.82733817550766,
+      "final_M": 19.54520471544828,
+      "final_E": 25.968276250851716,
+      "basal_unpaid": 0.0
+    },
+    {
+      "name": "reversal_202610188101_uniform",
+      "U": 72.17667912438733,
+      "final_M": 19.924136645083962,
+      "final_E": 31.04578972036983,
+      "basal_unpaid": 0.0
+    },
+    {
+      "name": "reversal_202610188101_cue_plus",
+      "U": 71.8705036316308,
+      "final_M": 18.451104117800103,
+      "final_E": 10.388664188596753,
+      "basal_unpaid": 0.0
+    },
+    {
+      "name": "reversal_202610188101_cue_minus",
+      "U": 71.87050363163071,
+      "final_M": 19.924136645083966,
+      "final_E": 31.045789720369832,
+      "basal_unpaid": 0.0
+    },
+    {
+      "name": "reversal_202610188101_last",
+      "U": 120.63026047535816,
+      "final_M": 19.92413664508397,
+      "final_E": 31.04578972036983,
+      "basal_unpaid": 0.0
+    },
+    {
+      "name": "reversal_202610188101_ema",
+      "U": 107.37954668959583,
+      "final_M": 19.92413664508397,
+      "final_E": 31.04578972036983,
+      "basal_unpaid": 0.0
+    },
+    {
+      "name": "reversal_202610188101_freeze",
+      "U": 66.466871981157,
+      "final_M": 18.85193555209252,
+      "final_E": 12.618265833571803,
+      "basal_unpaid": 0.0
+    },
+    {
+      "name": "reversal_202610188102_left",
+      "U": 65.88129499566156,
+      "final_M": 19.924136645083962,
+      "final_E": 28.653111666903776,
+      "basal_unpaid": 0.0
+    },
+    {
+      "name": "reversal_202610188102_right",
+      "U": 77.85971226760002,
+      "final_M": 19.54520471544828,
+      "final_E": 25.968276250851716,
+      "basal_unpaid": 0.0
+    },
+    {
+      "name": "reversal_202610188102_uniform",
+      "U": 71.72608362506834,
+      "final_M": 19.924136645083966,
+      "final_E": 31.045789720369832,
+      "basal_unpaid": 0.0
+    },
+    {
+      "name": "reversal_202610188102_cue_plus",
+      "U": 71.87050363163083,
+      "final_M": 18.4511041178001,
+      "final_E": 9.725855565520929,
+      "basal_unpaid": 0.0
+    },
+    {
+      "name": "reversal_202610188102_cue_minus",
+      "U": 71.87050363163068,
+      "final_M": 19.924136645083962,
+      "final_E": 31.045789720369832,
+      "basal_unpaid": 0.0
+    },
+    {
+      "name": "reversal_202610188102_last",
+      "U": 120.58334968482853,
+      "final_M": 19.924136645083966,
+      "final_E": 31.045789720369832,
+      "basal_unpaid": 0.0
+    },
+    {
+      "name": "reversal_202610188102_ema",
+      "U": 106.37873920101995,
+      "final_M": 19.924136645083966,
+      "final_E": 31.04578972036983,
+      "basal_unpaid": 0.0
+    },
+    {
+      "name": "reversal_202610188102_freeze",
+      "U": 66.41863663512693,
+      "final_M": 18.8456140878895,
+      "final_E": 11.98651978420256,
+      "basal_unpaid": 0.0
+    },
+    {
+      "name": "iid_instant",
+      "U": 47.77247304757504,
+      "final_M": 19.924136645083962,
+      "final_E": 30.246003749298882,
+      "basal_unpaid": 0.0
+    },
+    {
+      "name": "iid_ema",
+      "U": 50.17628766413837,
+      "final_M": 19.924136645083966,
+      "final_E": 30.090921499310735,
+      "basal_unpaid": 0.0
+    },
+    {
+      "name": "iid_last",
+      "U": 42.4396124870218,
+      "final_M": 19.924136645083966,
+      "final_E": 23.95979945906176,
+      "basal_unpaid": 0.0
+    }
+  ],
+  "reported_interventions": [
+    {
+      "target": -1,
+      "history_mapping": -1,
+      "matched": true,
+      "U": 5.701949213664966,
+      "delta_E": 2.117289601834468,
+      "final_M": 19.924136645083966,
+      "body_time": 638.0199622528385,
+      "fees": 0.2882305539665375,
+      "packet": {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/anticipatory_material_allocation_20261018/5063bd49-7b65-4ec3-9338-92f5bd855747/history_probe_-1_-1.npz",
+        "sha256": "c5c0314016e42a29bf697cd7022c29dd406d8ab39e51409836559109a42584e5"
+      }
+    },
+    {
+      "target": -1,
+      "history_mapping": 1,
+      "matched": false,
+      "U": 0.28315542579839137,
+      "delta_E": -1.6587563970375285,
+      "final_M": 19.83086644035424,
+      "body_time": 636.1510089230261,
+      "fees": 0.2894142825749583,
+      "packet": {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/anticipatory_material_allocation_20261018/5063bd49-7b65-4ec3-9338-92f5bd855747/history_probe_-1_1.npz",
+        "sha256": "76ab3454938345d41a4befdeddc6f4a4b5ad4976bd053267582b81e8178d8874"
+      }
+    },
+    {
+      "target": 1,
+      "history_mapping": -1,
+      "matched": false,
+      "U": 0.2872594223042513,
+      "delta_E": -1.65473788645291,
+      "final_M": 19.83135705187728,
+      "body_time": 636.1608398228541,
+      "fees": 0.2882305539665375,
+      "packet": {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/anticipatory_material_allocation_20261018/5063bd49-7b65-4ec3-9338-92f5bd855747/history_probe_1_-1.npz",
+        "sha256": "71cb77d314e415d269ea04c5f7092cea432ac09836aaebc0bc11974b310aade8"
+      }
+    },
+    {
+      "target": 1,
+      "history_mapping": 1,
+      "matched": true,
+      "U": 5.706053210170839,
+      "delta_E": 2.1189743847903486,
+      "final_M": 19.92413664508397,
+      "body_time": 638.0199622528385,
+      "fees": 0.2894142825749583,
+      "packet": {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/anticipatory_material_allocation_20261018/5063bd49-7b65-4ec3-9338-92f5bd855747/history_probe_1_1.npz",
+        "sha256": "f981f62bd90419247c4f48301780ef95c5ed9dbfa6d977523c82d145a9986060"
+      }
+    }
+  ],
+  "sources": [
+    {
+      "path": "environment_evolution/results/anticipatory_material_allocation_20261018/result.json",
+      "sha256": "22a09098267eed5196fec9d388d67226b20cb4391293a6126e5dcce3b94a10b8"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/anticipatory_material_allocation_20261018/5063bd49-7b65-4ec3-9338-92f5bd855747/history_-1.npz",
+      "sha256": "037efb3dd7f49f14cff723d46e5d69cf98415143532f6c905d47a8dd5cde44f4"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/anticipatory_material_allocation_20261018/5063bd49-7b65-4ec3-9338-92f5bd855747/history_-1-steps.json",
+      "sha256": "b740f87edf284e7c00ac27acebbaecfae20678e0476e98a25a2d321ae3b8acc6"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/anticipatory_material_allocation_20261018/5063bd49-7b65-4ec3-9338-92f5bd855747/history_1.npz",
+      "sha256": "2193813e71cae4f201eb217d801cf718060bd4c679166183ea53469060824cc1"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/anticipatory_material_allocation_20261018/5063bd49-7b65-4ec3-9338-92f5bd855747/history_1-steps.json",
+      "sha256": "dcda48d638df5d3a6e004b5df4aeae03aa95dc53b885d8e2a41561b7b6205cd9"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/anticipatory_material_allocation_20261018/5063bd49-7b65-4ec3-9338-92f5bd855747/history_probe_-1_-1.npz",
+      "sha256": "c5c0314016e42a29bf697cd7022c29dd406d8ab39e51409836559109a42584e5"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/anticipatory_material_allocation_20261018/5063bd49-7b65-4ec3-9338-92f5bd855747/history_probe_-1_1.npz",
+      "sha256": "76ab3454938345d41a4befdeddc6f4a4b5ad4976bd053267582b81e8178d8874"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/anticipatory_material_allocation_20261018/5063bd49-7b65-4ec3-9338-92f5bd855747/history_probe_1_-1.npz",
+      "sha256": "71cb77d314e415d269ea04c5f7092cea432ac09836aaebc0bc11974b310aade8"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/anticipatory_material_allocation_20261018/5063bd49-7b65-4ec3-9338-92f5bd855747/history_probe_1_1.npz",
+      "sha256": "f981f62bd90419247c4f48301780ef95c5ed9dbfa6d977523c82d145a9986060"
+    }
+  ],
+  "findings": [
+    "Same complete physical start is an explicit policy transplant from two genuinely paid histories, not natural convergence.",
+    "Saved phase4 receipt pins common input rho; full phase4 pre-choice observation is not serialized. Source uses identical no-action/no-fee first four steps, so its equality also relies on static deterministic control flow.",
+    "Only first/last local prefix receipts were saved. The extracted examples validate local completed labels; they are not a complete material-lineage history.",
+    "Do not synthesize a full generic decision/history input from this sparse archive or replace missing observations with tape labels.",
+    "Owner outcomes show a usable paid anticipatory opportunity and a strong fixed last baseline, not a learned U_phi advantage.",
+    "Last and EMA capture more than uniform in the two reversal runs, while final energy is equal at the capacity ceiling; capture differences are not final-energy gains.",
+    "IID, fixed-side and fixed-cue failures remain in selected_reported_outcomes; no filtering or retuning."
+  ],
+  "native_information_partition_audit": "not run: no complete before-choice public/history stream; no reconstruction",
+  "U_phi_training_result": "not yet consumed; d3 is unique trainer"
+}

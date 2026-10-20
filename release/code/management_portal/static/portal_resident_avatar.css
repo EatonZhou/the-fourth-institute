@@ -1,0 +1,21 @@
+.portalResidentAvatar {
+  display: inline-block;
+  width: var(--avatar-size, 34px);
+  height: var(--avatar-size, 34px);
+  flex: 0 0 var(--avatar-size, 34px);
+  image-rendering: pixelated;
+  background-image: url("/static/assets/deep-sea-agent-sprites.png?v=20260825-remove-dolphin");
+  background-repeat: no-repeat;
+  background-size: calc(var(--avatar-size, 34px) * 8) calc(var(--avatar-size, 34px) * 6);
+  background-position: var(--sprite-position, 0 0);
+  vertical-align: middle;
+}
+
+/* An uploaded picture fills the same square, with softened corners. */
+.portalResidentAvatar.is-image {
+  image-rendering: auto;
+  background-image: var(--avatar-image);
+  background-size: cover;
+  background-position: center;
+  border-radius: calc(var(--avatar-size, 34px) * .22);
+}

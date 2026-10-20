@@ -1,0 +1,109 @@
+{
+  "task": "maintenance_aware_cargo_20261019",
+  "status": "completed_conditional_destination_effect_no_net_utility_or_maintenance",
+  "objective_met": false,
+  "owner": "resident_ce2a5ab005bc",
+  "entry": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/maintenance_aware_cargo_20261019/REPORT.txt",
+    "sha256": "e70890d0e2549bf658ebb6b6c172786a5d37121d8ebabcaf411af91fe1e9993d",
+    "bytes": 6019
+  },
+  "execution": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/maintenance_aware_cargo_20261019/execution.json",
+    "sha256": "28de7a38af88820ecb372bffcfa46241f5dce8527f07b5fef9f610fceee0c560",
+    "bytes": 1135
+  },
+  "summary": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/maintenance_aware_cargo_20261019/summary.json",
+    "sha256": "df30e0a98ac3a4002d0b6f94e661639f965bed854d366aa33ac4fee2a7f9a672",
+    "bytes": 86275
+  },
+  "plan": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/maintenance_aware_cargo_20261019/plan.json",
+    "sha256": "d07d1077d48bedf4eb0a7553ff9bfed9b52b1e9b489d49f2dd47b936e840a7b8",
+    "bytes": 84657
+  },
+  "manifest": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/maintenance_aware_cargo_20261019/manifest.json",
+    "sha256": "c471547945c2463aded088bf8aba431f5801cb00f7a4191a3b7038261c6cc83f",
+    "bytes": 25308
+  },
+  "raw_manifest": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/maintenance_aware_cargo_20261019/raw_manifest.json",
+    "sha256": "51038b8f3a1ebd2579e8050b02990f9907c42bae48a4a20ed1b00c0a14e0dbc6",
+    "bytes": 32004
+  },
+  "raw_root": "/data/dataset/lenia-research/lineage_75e3399f4877/maintenance_aware_cargo_20261019/c62b044b-ee58-42e0-aee3-999b3a7e3055",
+  "source_api": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/maintenance_aware_cargo_20261019/API.txt",
+    "sha256": "4d75aa9132ac17e8bff2d70d436d2268977b4eec76828c634dda06effc3339a0",
+    "bytes": 1679
+  },
+  "figure_sources": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/maintenance_aware_cargo_20261019/figure_sources.json",
+    "sha256": "2942f3f7d234a4ac499ae8cfb147e40ae433e7739899bc0a4b66fc53362c8cc0",
+    "bytes": 68766
+  },
+  "native_steps": 1536,
+  "runner_worker_seconds": 129.57481,
+  "unused_sealed": [
+    32,
+    470.42519
+  ],
+  "scientific_gate": {
+    "net_utility_both_separated": false,
+    "maintenance_pass": 0,
+    "new_paths": 8
+  },
+  "key_comparisons": [
+    {
+      "context": "f1--separated",
+      "complete": true,
+      "vs_birth_only": {
+        "M": 0.1978953323084056,
+        "E": 1.0611134132717126,
+        "bodytime": 0.9959472363150326,
+        "new_retained": 0.3541637175705734,
+        "born": 0.4468538758258038,
+        "death": 0.2489585435174071,
+        "pump_fee": 1.3360687487876994
+      },
+      "vs_uniform": {
+        "M": 0.3826899718214207,
+        "E": 1.4045221670752426,
+        "bodytime": 2.8212974571154064,
+        "new_retained": 0.7889243035915658,
+        "born": 0.9123644900766426,
+        "death": 0.5296745182552147,
+        "pump_fee": 0.0005414852736818077
+      },
+      "net_utility": true
+    },
+    {
+      "context": "f2--separated",
+      "complete": true,
+      "vs_birth_only": {
+        "M": -0.05111613623835609,
+        "E": 0.9187548877613381,
+        "bodytime": -0.13613224045332117,
+        "new_retained": 1.1758364944705955,
+        "born": 1.4692845719828203,
+        "death": 1.520400708221194,
+        "pump_fee": 1.3358845876289303
+      },
+      "vs_uniform": {
+        "M": 0.12507158923584427,
+        "E": 0.6029900991578643,
+        "bodytime": 0.5981999924136971,
+        "new_retained": 1.661690109710495,
+        "born": 2.040843831305704,
+        "death": 1.9157722420698828,
+        "pump_fee": -0.497946039505305
+      },
+      "net_utility": false
+    }
+  ],
+  "old_paths_readonly": 16,
+  "old_result": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/complementary_cargo_exchange_20261019/handoff.json",
+  "scope": "Fixed local physiology, no learning; known development challenges; 192 finite window not old512 or steady state"
+}

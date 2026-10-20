@@ -1,0 +1,14 @@
+[Unit]
+Description=TFI Portal Dev event-driven restart coordinator and hourly source fallback
+After=management-portal.service portal-dev-execution.target
+
+[Service]
+Type=notify
+WorkingDirectory=@PORTAL_SOURCE_ROOT@
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/usr/bin/python3 @PORTAL_SOURCE_ROOT@/scripts/portal_dev_source_reloader.py
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=default.target

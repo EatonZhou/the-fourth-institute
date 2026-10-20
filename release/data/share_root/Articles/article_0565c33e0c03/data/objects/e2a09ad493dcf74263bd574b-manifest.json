@@ -1,0 +1,182 @@
+[
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/anticipatory_information_audit/__init__.py",
+    "sha256": "e63c6c2d199c33e3013748c18ed9bf130c20fec625dccc8f249f58470de5822b",
+    "bytes": 147
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/anticipatory_information_audit/__main__.py",
+    "sha256": "67e04c495bc02385d2f180de8c1d1c458fa51f208c045e260a6d674a39e3f797",
+    "bytes": 32
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/anticipatory_information_audit/audit.py",
+    "sha256": "2704be538f2e1be5107eae582f15f9decbefcc87b0256b280bd49fb3ac757076",
+    "bytes": 15812
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/anticipatory_information_audit/check.py",
+    "sha256": "6fee75ce497b03cca67d289bc6b7642cb440d80502f210f24a0e66eeb326ad4f",
+    "bytes": 7276
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/anticipatory_information_audit/check_binding.py",
+    "sha256": "15826d63cf363b8caa0c061a1ee4c9e6b4c932a27ffa8dea1c98e00447303310",
+    "bytes": 5380
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/anticipatory_information_audit/consume_feasibility.py",
+    "sha256": "8c63f61d2999375898c35fa189f13ebfb13f15e55f833acb9bb9711879019531",
+    "bytes": 6229
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/anticipatory_information_audit/host_records.py",
+    "sha256": "8f86b86dc7184ddef0e716169739c2d9fbc2456ec5baccddd9960cc171358614",
+    "bytes": 6042
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/anticipatory_information_audit_20261018/API.txt",
+    "sha256": "984259c3c0320926124cb41af297fad7411b66bd7674277288d42f98a6c6e876",
+    "bytes": 6511
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/anticipatory_information_audit_20261018/REPORT.txt",
+    "sha256": "af8353b5f927402e20042a04efc8960250921d2d721e0c8fcfc571cabe5e09ae",
+    "bytes": 3205
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/anticipatory_information_audit_20261018/check01/censor_is_not_zero.input.json",
+    "sha256": "0a1eb97130019b2164dc2dc996b3c26f023de103c91a8155ab7834737e56883a",
+    "bytes": 6447
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/anticipatory_information_audit_20261018/check01/censor_is_not_zero.result.json",
+    "sha256": "8c9cd6d3d16f8397b550c21b46abfe59d4c96cffffc6066d15cee15b30e4dc88",
+    "bytes": 9236
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/anticipatory_information_audit_20261018/check01/cost_erases_incremental_credit.input.json",
+    "sha256": "f9b6940aac014413bbba6cbbb668c1d04d2a9796d19f2dd4283bc11af71f53aa",
+    "bytes": 6722
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/anticipatory_information_audit_20261018/check01/cost_erases_incremental_credit.result.json",
+    "sha256": "f7584bad3c66e5b7991dd3b3ab7adbd1d937023e8e3a9ea253c6461c2d8a46a4",
+    "bytes": 9483
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/anticipatory_information_audit_20261018/check01/fixed_rule_scores.json",
+    "sha256": "2f22b4b051370b3459d6496d349822a749ca85d7c016409a7675dac8bd618f3a",
+    "bytes": 505
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/anticipatory_information_audit_20261018/check01/last_suffices.input.json",
+    "sha256": "f6e82aa19ff0a1a0dfcdcb970293375c59120fc6ede074bcffac7db37c6ad60c",
+    "bytes": 4198
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/anticipatory_information_audit_20261018/check01/last_suffices.result.json",
+    "sha256": "2c936b8e22a1774c746be186c575cd072e44c98cddcfd2eeea7c3e6da68f28df",
+    "bytes": 6511
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/anticipatory_information_audit_20261018/check01/mature_phenotype_explains.input.json",
+    "sha256": "7de8c48a42c462267fe31674ec35fe45efa4994c2745558119053fc16e584f96",
+    "bytes": 6444
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/anticipatory_information_audit_20261018/check01/mature_phenotype_explains.result.json",
+    "sha256": "e37401a6deba6184fd5bdfff8df292e7cd54ada4afcd61dc9d6be80ebf3dacdf",
+    "bytes": 5735
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/anticipatory_information_audit_20261018/check01/pending_configuration_explains.input.json",
+    "sha256": "b67ad48f13b0fb8087e81c6aa0c9dc2d6c46ed315bc9ab0047508f1b59fec7c9",
+    "bytes": 6490
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/anticipatory_information_audit_20261018/check01/pending_configuration_explains.result.json",
+    "sha256": "627a77c35261e2b1084e6ed11ba4d10fc3793fb0120878af0a2f9b5a2ec0ccca",
+    "bytes": 5735
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/anticipatory_information_audit_20261018/check01/random_realizations_only.input.json",
+    "sha256": "e59f15ad2e407bbeb79c8e47954ede4e911a05e35679c9f5bac77e02e335f495",
+    "bytes": 5776
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/anticipatory_information_audit_20261018/check01/random_realizations_only.result.json",
+    "sha256": "62de6286ac3c35115afb950cce3ecd9854d19461e3de4d991325a05e5ad70088",
+    "bytes": 6654
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/anticipatory_information_audit_20261018/check01/same_last_residual.input.json",
+    "sha256": "393f8ce03c25ad9b94589f60f0a0a62ebdf2bb3055ad75f0460a124e6680bede",
+    "bytes": 6444
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/anticipatory_information_audit_20261018/check01/same_last_residual.result.json",
+    "sha256": "e1a0ae593b5d24bf96f4908f7da13e4d630a2fff94fe989b03b000efcf13299b",
+    "bytes": 9154
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/anticipatory_information_audit_20261018/check01/source/__init__.py",
+    "sha256": "e63c6c2d199c33e3013748c18ed9bf130c20fec625dccc8f249f58470de5822b",
+    "bytes": 147
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/anticipatory_information_audit_20261018/check01/source/audit.py",
+    "sha256": "a014007897a1dfebab1b7c612aa8bc1dbab5d200d502a013806a04b86f79983c",
+    "bytes": 14020
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/anticipatory_information_audit_20261018/check01/source/check.py",
+    "sha256": "cb22592e71c89c660eb310c225d8ac352b9c5aab18e4af488b6881c766d44767",
+    "bytes": 7301
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/anticipatory_information_audit_20261018/check01/summary.json",
+    "sha256": "4eb9ddd349aea9d62671f068f2f6b69387f965533b40c556f70a54caee10d46f",
+    "bytes": 1366
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/anticipatory_information_audit_20261018/check02/host_shaped.input.json",
+    "sha256": "7688ceb83757d1d41c1e710f30254bad0cc82e1e5df49d8a4d87bc7a9af569e3",
+    "bytes": 6597
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/anticipatory_information_audit_20261018/check02/host_shaped.result.json",
+    "sha256": "ebb731d0b82f948431d0f7bbcb2c881ddbeb9d2ef9f696467382f1936bf3a2cd",
+    "bytes": 6528
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/anticipatory_information_audit_20261018/check02/summary.json",
+    "sha256": "660126ef385e3a8ded88460e3777f703e69527a78ff65991cc65ded24ded7ffb",
+    "bytes": 1331
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/anticipatory_information_audit_20261018/cli_check.json",
+    "sha256": "9ecf21942baf603b2791c645f5caa7e35bf8755905564f77ab0b6d5a49165d69",
+    "bytes": 65
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/anticipatory_information_audit_20261018/cli_result.json",
+    "sha256": "ebb731d0b82f948431d0f7bbcb2c881ddbeb9d2ef9f696467382f1936bf3a2cd",
+    "bytes": 6528
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/anticipatory_information_audit_20261018/host_contract.json",
+    "sha256": "9c93de9b16f0b6326417eadfdf83d0caf38dc00ae331cccac01844c85b82feb7",
+    "bytes": 2586
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/anticipatory_information_audit_20261018/literature_positions.json",
+    "sha256": "4459e4fc9a568aa68be9f13215e45773a6e2017476910b40d892f762b17083a3",
+    "bytes": 3999
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/anticipatory_information_audit_20261018/real_consumption.json",
+    "sha256": "ed943d70078e40d8e3e862f9031e8aed7e0294761d0942dc606535553fd638ed",
+    "bytes": 17910
+  }
+]

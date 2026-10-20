@@ -1,0 +1,149 @@
+{
+  "extra_native": 0,
+  "integrated_first_steps": [
+    {
+      "id": "b0--none",
+      "first_q_zero": true,
+      "first_state_equal_none": true,
+      "extra_native": 0
+    },
+    {
+      "id": "b0--paid_inert",
+      "first_q_zero": true,
+      "first_state_equal_none": true,
+      "extra_native": 0
+    },
+    {
+      "id": "b0--paid_recycle",
+      "first_q_zero": true,
+      "first_state_equal_none": true,
+      "extra_native": 0
+    },
+    {
+      "id": "b1--none",
+      "first_q_zero": true,
+      "first_state_equal_none": true,
+      "extra_native": 0
+    },
+    {
+      "id": "b1--paid_inert",
+      "first_q_zero": true,
+      "first_state_equal_none": true,
+      "extra_native": 0
+    },
+    {
+      "id": "b1--paid_recycle",
+      "first_q_zero": true,
+      "first_state_equal_none": true,
+      "extra_native": 0
+    },
+    {
+      "id": "b2--none",
+      "first_q_zero": true,
+      "first_state_equal_none": true,
+      "extra_native": 0
+    },
+    {
+      "id": "b2--paid_inert",
+      "first_q_zero": true,
+      "first_state_equal_none": true,
+      "extra_native": 0
+    },
+    {
+      "id": "b2--paid_recycle",
+      "first_q_zero": true,
+      "first_state_equal_none": true,
+      "extra_native": 0
+    },
+    {
+      "id": "b3--none",
+      "first_q_zero": true,
+      "first_state_equal_none": true,
+      "extra_native": 0
+    },
+    {
+      "id": "b3--paid_inert",
+      "first_q_zero": true,
+      "first_state_equal_none": true,
+      "extra_native": 0
+    },
+    {
+      "id": "b3--paid_recycle",
+      "first_q_zero": true,
+      "first_state_equal_none": true,
+      "extra_native": 0
+    },
+    {
+      "id": "b4--none",
+      "first_q_zero": true,
+      "first_state_equal_none": true,
+      "extra_native": 0
+    },
+    {
+      "id": "b4--paid_inert",
+      "first_q_zero": true,
+      "first_state_equal_none": true,
+      "extra_native": 0
+    },
+    {
+      "id": "b4--paid_recycle",
+      "first_q_zero": true,
+      "first_state_equal_none": true,
+      "extra_native": 0
+    },
+    {
+      "id": "b5--none",
+      "first_q_zero": true,
+      "first_state_equal_none": true,
+      "extra_native": 0
+    },
+    {
+      "id": "b5--paid_inert",
+      "first_q_zero": true,
+      "first_state_equal_none": true,
+      "extra_native": 0
+    },
+    {
+      "id": "b5--paid_recycle",
+      "first_q_zero": true,
+      "first_state_equal_none": true,
+      "extra_native": 0
+    },
+    {
+      "id": "b6--none",
+      "first_q_zero": true,
+      "first_state_equal_none": true,
+      "extra_native": 0
+    },
+    {
+      "id": "b6--paid_inert",
+      "first_q_zero": true,
+      "first_state_equal_none": true,
+      "extra_native": 0
+    },
+    {
+      "id": "b6--paid_recycle",
+      "first_q_zero": true,
+      "first_state_equal_none": true,
+      "extra_native": 0
+    },
+    {
+      "id": "b7--none",
+      "first_q_zero": true,
+      "first_state_equal_none": true,
+      "extra_native": 0
+    },
+    {
+      "id": "b7--paid_inert",
+      "first_q_zero": true,
+      "first_state_equal_none": true,
+      "extra_native": 0
+    },
+    {
+      "id": "b7--paid_recycle",
+      "first_q_zero": true,
+      "first_state_equal_none": true,
+      "extra_native": 0
+    }
+  ]
+}

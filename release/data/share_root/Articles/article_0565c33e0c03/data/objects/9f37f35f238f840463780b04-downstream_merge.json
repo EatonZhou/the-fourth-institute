@@ -1,0 +1,25 @@
+{
+  "task": "paid_material_precursor_reserve_20261019",
+  "prior_entry": {
+    "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/handoff.json",
+    "sha256": "cc471ef3be1e67ce529e94350e8bf79ca2ba898ed4ab35a10d2618a19950d43b",
+    "native": 2048,
+    "worker_seconds": 123.449822,
+    "sealed": [
+      4,
+      476.550178
+    ],
+    "choice": "固定一跳fresh-P递送未维护，关闭扩距/率/价/方向扫描。定向胜均匀及Poff小幅减损保留，非无方向作用。"
+  },
+  "merge_into": "既有论文与投影事项，合并实物，不新增任务或广播",
+  "actual_artifacts": [
+    "REPORT.txt",
+    "summary.json",
+    "windows.csv",
+    "contrasts.csv",
+    "actual_process.png",
+    "first_context_fields.png",
+    "visual_sources.json"
+  ],
+  "takeaway": "保护优于泄漏但两储备均降低相对原位的组织/体时；维护0/8、32窗0通过。固定新生理能力，不是学习。"
+}

@@ -1,0 +1,21 @@
+{
+  "id": "81634410-4dfc-4968-b804-3324df0987dc",
+  "name": "active-observation-commitment-pilot",
+  "command": [
+    ".venv/bin/python",
+    "-m",
+    "environment_evolution.active_observation_commitment.pilot"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "ce2-active-observation-commitment-20261018-v1",
+  "status": "completed",
+  "created_at": "2026-10-18T09:22:43.609282+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/81634410-4dfc-4968-b804-3324df0987dc",
+  "pid": 989791,
+  "manual_pause": false,
+  "create_time": 1792315365.53,
+  "started_at": "2026-10-18T09:22:46.156082+00:00",
+  "returncode": 0,
+  "finished_at": "2026-10-18T09:22:55.170939+00:00"
+}

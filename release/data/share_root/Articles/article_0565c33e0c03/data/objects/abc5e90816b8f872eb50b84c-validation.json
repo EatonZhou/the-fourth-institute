@@ -1,0 +1,162 @@
+[
+  {
+    "key": "compact_p512/plus/same/write",
+    "eligible": 64,
+    "writes": 64,
+    "viable": true,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.0010437717574616739,
+    "chronology_valid": true,
+    "unknown": 0
+  },
+  {
+    "key": "compact_p512/plus/same/frozen",
+    "eligible": 64,
+    "writes": 0,
+    "viable": true,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.0010535711634988812,
+    "chronology_valid": true,
+    "unknown": 0
+  },
+  {
+    "key": "compact_p512/plus/reverse/write",
+    "eligible": 64,
+    "writes": 64,
+    "viable": true,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.0010154939803285012,
+    "chronology_valid": true,
+    "unknown": 0
+  },
+  {
+    "key": "compact_p512/plus/reverse/frozen",
+    "eligible": 64,
+    "writes": 0,
+    "viable": true,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.0007432450174146379,
+    "chronology_valid": true,
+    "unknown": 0
+  },
+  {
+    "key": "compact_p512/minus/same/write",
+    "eligible": 64,
+    "writes": 64,
+    "viable": true,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.002219248701666406,
+    "chronology_valid": true,
+    "unknown": 0
+  },
+  {
+    "key": "compact_p512/minus/same/frozen",
+    "eligible": 64,
+    "writes": 0,
+    "viable": true,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.002228598438854033,
+    "chronology_valid": true,
+    "unknown": 0
+  },
+  {
+    "key": "compact_p512/minus/reverse/write",
+    "eligible": 64,
+    "writes": 64,
+    "viable": true,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.0021928647481982955,
+    "chronology_valid": true,
+    "unknown": 0
+  },
+  {
+    "key": "compact_p512/minus/reverse/frozen",
+    "eligible": 64,
+    "writes": 0,
+    "viable": true,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.0018970623578989335,
+    "chronology_valid": true,
+    "unknown": 0
+  },
+  {
+    "key": "soft_p512/plus/same/write",
+    "eligible": 64,
+    "writes": 64,
+    "viable": true,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.02145813696293928,
+    "chronology_valid": true,
+    "unknown": 0
+  },
+  {
+    "key": "soft_p512/plus/same/frozen",
+    "eligible": 64,
+    "writes": 0,
+    "viable": true,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.02140929824761887,
+    "chronology_valid": true,
+    "unknown": 0
+  },
+  {
+    "key": "soft_p512/plus/reverse/write",
+    "eligible": 64,
+    "writes": 64,
+    "viable": true,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.021349574046308637,
+    "chronology_valid": true,
+    "unknown": 0
+  },
+  {
+    "key": "soft_p512/plus/reverse/frozen",
+    "eligible": 64,
+    "writes": 0,
+    "viable": true,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.01891015057688144,
+    "chronology_valid": true,
+    "unknown": 0
+  },
+  {
+    "key": "soft_p512/minus/same/write",
+    "eligible": 64,
+    "writes": 64,
+    "viable": true,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.017276997411427554,
+    "chronology_valid": true,
+    "unknown": 0
+  },
+  {
+    "key": "soft_p512/minus/same/frozen",
+    "eligible": 64,
+    "writes": 0,
+    "viable": true,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.01721101115390191,
+    "chronology_valid": true,
+    "unknown": 0
+  },
+  {
+    "key": "soft_p512/minus/reverse/write",
+    "eligible": 64,
+    "writes": 64,
+    "viable": true,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.01702144880046781,
+    "chronology_valid": true,
+    "unknown": 0
+  },
+  {
+    "key": "soft_p512/minus/reverse/frozen",
+    "eligible": 64,
+    "writes": 0,
+    "viable": true,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.012926361573785025,
+    "chronology_valid": true,
+    "unknown": 0
+  }
+]

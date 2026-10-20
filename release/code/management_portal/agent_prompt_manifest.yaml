@@ -1,0 +1,19 @@
+schema: tfi.portal-agent-prompt-manifest.v2
+invocation_entry: management_portal.society_service.resident_domain.invoke_resident
+conversation_authority: management_portal.society_service.resident_conversation_stream
+execution_entry: management_portal.execution.service.ExecutionService
+context_entry: management_portal.agent_prompt_context.portal_system_instructions
+
+resident_protocol:
+  role: resident
+  backends: [codex, claude, kimi, dsh, provider_api]
+  durable_job: required
+  lineage_membership: required
+  conversation_projection: required
+
+presentation_surfaces:
+  - resident-chat
+  - project
+  - paper
+  - knowledge-detail
+  - hidden-business-operation

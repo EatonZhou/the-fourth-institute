@@ -1,0 +1,243 @@
+{
+  "author": "resident_a388058f90eb",
+  "new_forward_updates": 0,
+  "selection": "first declared seed, compact, same, cycle24, EMA/instant; not selected by outcome",
+  "selected_pair": {
+    "seed": 202610184001,
+    "morphology": "compact",
+    "scenario": "same",
+    "pair": "ema_instant",
+    "pulse_cycle": 24,
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "B": 0.003999999999997783,
+    "Q": 0.010724973679668601,
+    "zero_B": false,
+    "pulse_scalar_errors": {
+      "M": 0.0,
+      "E": 0.0,
+      "born": 8.673617379884035e-19,
+      "uptake": 0.0,
+      "input_E": 0.0,
+      "memory_paid": 0.0,
+      "memory_unpaid": 0.0,
+      "movement_paid": 0.0,
+      "basal_paid": 0.0,
+      "basal_unpaid": 0.0,
+      "heat": 0.0,
+      "rejected_material": 1.734723475976807e-18,
+      "actual_v": 0.0
+    },
+    "pulse_array_errors": {
+      "proposed_born": 0.0,
+      "survivor": 0.0,
+      "uptake": 0.0
+    },
+    "born_spatial_l1": 0.0006166190991266358,
+    "ema_minus_control": {
+      "M_end": 1.406305134565855e-06,
+      "E_end": 8.102368767026746e-06,
+      "cohort_mass_end": -4.336808689942018e-19,
+      "uptake": -7.470486253424724e-05,
+      "body_time": 0.00013317017237568507,
+      "cohort_attributed_uptake": -0.0003231455714153616,
+      "cohort_body_time": -1.1102230246251565e-16,
+      "movement_paid": 4.212807561465581e-06,
+      "memory_paid": 7.519166678182643e-09,
+      "basal_paid": 2.9297438164377354e-07,
+      "basal_unpaid": 0.0,
+      "heat": -8.280723137588097e-05,
+      "rejected_material": -1.0397522668181836e-05,
+      "death": 2.663403408931231e-08
+    },
+    "ema_branch": "202610184001__compact__same__791__ema_instant__ema",
+    "control_branch": "202610184001__compact__same__791__ema_instant__instant"
+  },
+  "handoffs": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/birth_placement_value_20261018/handoff.json",
+      "sha256": "599cbfbd84e8319842b6a6bb3a8bbf1f1fb00f9a1ce576b86f4198087cbae304"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_birth_admission/handoff.json",
+      "sha256": "62c7948090260726010bec6a9082a589388acb616cd6b8fffa31ff5b3630d436"
+    }
+  ],
+  "packets": [
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__pre_791.npz",
+      "sha256": "7d61f29bef300ec50ea4886e0b7baa0260f1f34e973c57b60f2ca1b9434cd911",
+      "archived_copy": "source/raw/202610184001__compact__same__pre_791.npz"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__791__ema_instant__ema__pulse.npz",
+      "sha256": "14a930d4b434bf62b2ace03a984f13404c9c05cb4ba5ba7036c0f2117aa521c2",
+      "archived_copy": "source/raw/202610184001__compact__same__791__ema_instant__ema__pulse.npz"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__791__ema_instant__instant__pulse.npz",
+      "sha256": "f6ca0287146309b9f3a615dd3040744bea32a9b70d49abd26bded7d0da59b58e",
+      "archived_copy": "source/raw/202610184001__compact__same__791__ema_instant__instant__pulse.npz"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__791__ema_instant__ema__final.npz",
+      "sha256": "148ae3db8530f516e40fbb6f2644f63181f9679cabdbbfc269df53a5dabbaf56",
+      "archived_copy": "source/raw/202610184001__compact__same__791__ema_instant__ema__final.npz"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__791__ema_instant__instant__final.npz",
+      "sha256": "14d37a2933822872eae637244c165baafb0c5bd9c6070910f50faf695b314113",
+      "archived_copy": "source/raw/202610184001__compact__same__791__ema_instant__instant__final.npz"
+    }
+  ],
+  "field_assets": [
+    {
+      "asset": "parent791_rho.png",
+      "packet": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__pre_791.npz",
+      "key": "root__env__body__rho",
+      "crop_xy_half_open": [
+        0,
+        19,
+        7,
+        26
+      ],
+      "origin": "upper; no translation, wrapping, rotation or registration",
+      "range": [
+        0,
+        2
+      ],
+      "colormap": "Blues",
+      "sum_full": 20.0,
+      "max_full": 1.9924022401189379
+    },
+    {
+      "asset": "ema_792_rho.png",
+      "packet": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__791__ema_instant__ema__pulse.npz",
+      "key": "root__env__body__rho",
+      "crop_xy_half_open": [
+        0,
+        19,
+        7,
+        26
+      ],
+      "origin": "upper; no translation, wrapping, rotation or registration",
+      "range": [
+        0,
+        2
+      ],
+      "colormap": "Blues",
+      "sum_full": 20.0,
+      "max_full": 1.9920037596709141
+    },
+    {
+      "asset": "ema_792_born.png",
+      "packet": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__791__ema_instant__ema__pulse.npz",
+      "key": "root__receipt__born",
+      "crop_xy_half_open": [
+        0,
+        19,
+        7,
+        26
+      ],
+      "origin": "upper; no translation, wrapping, rotation or registration",
+      "range": [
+        0,
+        0.00016
+      ],
+      "colormap": "Oranges",
+      "sum_full": 0.003999999999997782,
+      "max_full": 0.00015141057367976625
+    },
+    {
+      "asset": "ema_920_tag.png",
+      "packet": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__791__ema_instant__ema__final.npz",
+      "key": "root__tag",
+      "crop_xy_half_open": [
+        0,
+        19,
+        7,
+        26
+      ],
+      "origin": "upper; no translation, wrapping, rotation or registration",
+      "range": [
+        0,
+        0.00016
+      ],
+      "colormap": "Purples",
+      "sum_full": 0.003898889623903789,
+      "max_full": 0.00014758327866742191
+    },
+    {
+      "asset": "instant_792_rho.png",
+      "packet": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__791__ema_instant__instant__pulse.npz",
+      "key": "root__env__body__rho",
+      "crop_xy_half_open": [
+        0,
+        19,
+        7,
+        26
+      ],
+      "origin": "upper; no translation, wrapping, rotation or registration",
+      "range": [
+        0,
+        2
+      ],
+      "colormap": "Blues",
+      "sum_full": 20.0,
+      "max_full": 1.9920037596709141
+    },
+    {
+      "asset": "instant_792_born.png",
+      "packet": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__791__ema_instant__instant__pulse.npz",
+      "key": "root__receipt__born",
+      "crop_xy_half_open": [
+        0,
+        19,
+        7,
+        26
+      ],
+      "origin": "upper; no translation, wrapping, rotation or registration",
+      "range": [
+        0,
+        0.00016
+      ],
+      "colormap": "Oranges",
+      "sum_full": 0.003999999999997783,
+      "max_full": 0.0001516164405662797
+    },
+    {
+      "asset": "instant_920_tag.png",
+      "packet": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__791__ema_instant__instant__final.npz",
+      "key": "root__tag",
+      "crop_xy_half_open": [
+        0,
+        19,
+        7,
+        26
+      ],
+      "origin": "upper; no translation, wrapping, rotation or registration",
+      "range": [
+        0,
+        0.00016
+      ],
+      "colormap": "Purples",
+      "sum_full": 0.0038988896239037893,
+      "max_full": 0.00014778394173435547
+    }
+  ],
+  "meaning": [
+    "Bodies have density range 0..2; born/tag per-cell mass range 0..0.00016. Separate linear scales, no magnitude equivalence implied.",
+    "Single common parent791; saved post-pulse rho/born792; saved cohort tag920. Fields are not invented intermediate states.",
+    "Crop x=0..18,y=7..25 in a periodic 32x32 original lattice. Paired crops and scales identical.",
+    "Tag is descriptive contact apportionment; pulse uptake precedes birth and tag receives no pulse credit.",
+    "All 32 pairs shown; two environment seeds; shapes, clocks and scenarios are dependent."
+  ],
+  "host_constraints": [
+    "hand-set EMA alpha .4, threshold .10; not outer-trained",
+    "shared E, externally prescribed common requested movement tape, imposed M20",
+    "same B within each pair; B may differ between comparator types; all-open following128 steps",
+    "uniform weights are actual q, not a uniform birth field; q not exposed to policy",
+    "newborn starts with no history; current gate read uses old-carrier history"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "id": "199d1bdd-f044-4755-828a-ba17da1fadbc",
+  "name": "renewal-ecology-same-state-followup",
+  "command": [
+    "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+    "-m",
+    "environment_evolution.method_renewal_ecology_behavior.followup"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "ce2-method-renewal-ecology-behavior-20261018-pilot2-v1",
+  "status": "running",
+  "created_at": "2026-10-18T05:31:23.986641+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/199d1bdd-f044-4755-828a-ba17da1fadbc",
+  "pid": 3095090,
+  "manual_pause": false,
+  "create_time": 1792301483.45,
+  "started_at": "2026-10-18T05:31:24.061636+00:00"
+}

@@ -1,0 +1,82 @@
+{
+  "task": "consumption_qualified_transport_20261019",
+  "status": "authorized_for_actual_implementation_and_bounded_pilot",
+  "owner": "resident_d3ccfa2d95b7",
+  "literature_and_counterexample_owner": "resident_33af539c4a17",
+  "question": "真实被组织利用的货物经历，能否在资源位置变化后指导有价局部运输，并比当前库存/需求及流量强化带来额外组织维护价值？",
+  "strategic_choice": "收束当前P单脉冲反转的必要条件拆解，保留后续泵条件依赖。回到原生可再生身体中的在线方法探索；不再扩大首转换gate或补旧缺336步。",
+  "control": {
+    "desired_state": "running",
+    "started": true,
+    "checked_this_turn": true,
+    "owner_recheck_before_native": true,
+    "one_time_start_untouched": true,
+    "no_timer_or_polling": true
+  },
+  "completed_source": {
+    "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/first_conversion_feedback_20261019/handoff.json",
+    "sha256": "f39998e8d55b4788897302cc79dad156a9aad6a2ca9257a22910ba8d19d48300",
+    "job": "12f593a8-71d2-47e0-b6c5-443341c5594b",
+    "actual_native": 1024,
+    "runner_worker_seconds": 188.09818,
+    "unused_sealed": [
+      32,
+      411.90182
+    ],
+    "finding": "首转换后pre-pump body/E匹配仍half在+3/+4/+3/+3反转、off全64钟不反转。最早转换差不是该干预下反转必要条件；不能排除所有转换反馈，也未分离组织与资源竞争。gate明显削减出生，结果不作自然中介。"
+  },
+  "starting_evidence": {
+    "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/metabolic_maintenance_withdrawal_20261018/handoff.json",
+    "sha256": "fa8c06064d97a71f8d7e9ffbdcb17bb6a1d896bbd409384d1bb1d3b5eac0f6a2",
+    "scope": "f2原有全扩散512步八窗补体且E增，f1为条件反例；取其真实384完整父，不重演形成。两个已知规则不是两个独立世界。",
+    "negative_baselines": "半暴露调度全部未保持晚窗补体；流量多/摄取多/高E均不足单判维护。"
+  },
+  "cap": {
+    "native_attempts_including_affected_checks_and_failed_calls": 6144,
+    "runner_worker_seconds": 1200,
+    "raw_bytes": 1073741824,
+    "cpu_threads": 2,
+    "gpu": 0,
+    "one_unique_submission_owner": "resident_d3ccfa2d95b7",
+    "other_old_budgets_used": 0,
+    "development_max_native": 1536,
+    "heldout_and_shared_prefix_reserved_native": 4608,
+    "reserve_worker_seconds_for_finalization": 90,
+    "unused_sealed": true
+  },
+  "scope": [
+    "本批不是继续P/empty pulse。直接在真实当地E、原生出生/死亡和有价泵运输上实现并运行。旧native/泵费/外流/核/身体原档不改；新接口独立版本。",
+    "先实现可追踪的资源利用收据，再做最小在线路由。保原每个供体自身的可行运输预算、实际供体付款及守恒；比较重新分配方向，不以整体少开阀自动当学习收益。",
+    "在开发native<=1536内冻结一个最小候选和强对照，然后执行预登记留出<=4608；所有物理检查计入6144。不得把报告或接口实现当结束。不开参数/价/窗反复扫描；不要求外层训练；没有训练就明确手设更新规则。",
+    "由d3在既定总额内自主落实具体短矩阵和源码，不等PI逐参数审批。单一runner；若确需ce2修改共享接口，只一次直接交接，并共享本额、不得另起重复矩阵。开发机会不成立时保失败，并在本额内转向另一个可反驳的最小路由机制；禁止改留出结果救门。"
+  ],
+  "legal_information_contract": [
+    "区别货物库存、已付实际边通量、仍在途/未利用、真正当地消耗。P用于实际出生；F的摄取/出生扣款分别记。消费归因只能来自动作后实际收据，不能回填为动作前特征。",
+    "优先采用最后入边或有限年龄队列的显式资源标签：混合按质量比例消费、外流/再运输逐项守恒；外部新输入未标记，重复过边不算独立新资源或奖励。完整未来不向在线策略泄漏。",
+    "接收格可保有每条入边的利用经历；反馈至邻接供体必须明确一跳合法读取/递送及时序，禁止全局总收益、未来新生留存或离线死亡账广播。额外感知/通信费用若本批假设为0必须事前写明，所有对应对照同能力；原泵货物价格不可减，不能宣称完整计算定价。",
+    "明确记忆属于空间边还是随材料；本批允许空间边状态，不能冒称材料记忆。若选择随材料，则K/keep/混合/死亡/新生零史必须实际实现且对照一致。",
+    "收据给出的是实际利用分摊，不是孤立动作因果贡献。未成熟/未知/未收到不补0；已发生的实际零消耗与缺测分开。当前支持/目标拒绝和全额支付约束保留。",
+    "先冻结所有动作前字段、写入字段、标签归属、成本与恢复语义，保存必要pre/request/receipt/post与完整断点；不保存每步冗余全包拖垮时间预算。"
+  ],
+  "comparison_contract": [
+    "保全原always扩散与不泵强参照，不把当前摄取高当控制成功。",
+    "必要对照：原当前梯度扩散、同能力即时当地需求、同参数流量强化（不读利用内容）、同合法利用信息的简单近期/EMA读出、候选停更新。若候选本身就是简单EMA，则合并重合臂并撤回更新器额外价值主张，不造重复算法名。",
+    "更新/停更新从实际完整共同取得态分叉，保身体/库存/在途标签/记忆/时钟/RNG和同价格；动作分开后不说同反馈或同实付。",
+    "保静态与一次预登记资源位置变化；两者同gross P/F与原价格，任务规则先于留出冻结。新环境标签/种子与开发分离；仅合法当地场可见，不能把未来位置或调度时钟交策略。身体仍是两旧rule，不虚增独立样本。",
+    "同时报告每个world/rule的M/E/体时、真实born/death、后生留存、摄取、实际分项费/热/外流及未知；与原扩散/简单需求逐项比较。有限窗取舍不改旧维护门，死亡和全坏分支全留。",
+    "新能力最低证据是合法历史改变真实空间路由，并在冻结留出中提供超越强简单对照的身体效用；单一场景/指标、纯预测准确度或流量增强均不足。若未胜则关闭候选主张而保物理接口和反例。"
+  ],
+  "prior_art": {
+    "primary": "https://eprints.lib.hokudai.ac.jp/repo/huscap/all/28041/JTB244-4.pdf",
+    "pi_read_scope": "原文摘要/生理背景及模型入口，已确认通量—管径正反馈为既有机制；未声称完整精读全部论文。",
+    "review_request": "33精读该原文和最接近的利用/需求反馈原始研究，给d3同信息强基线及一条最具杀伤力反例；仅文献/纯数据，不另派物理。",
+    "novelty": "局部流量强化、EMA、资格或资源标签本身不作为创新。消费后的经历是否提供新控制能力是待证问题。"
+  },
+  "handoff": {
+    "daily_progress": "原共享next短指针，详细文件留本目录。",
+    "completion": "实际结果由d3一次直接交论文/投影现有在办项；需PI另择方向才发一次enqueue_and_trigger，纯信息不求回执。",
+    "no_routine_broadcast": true,
+    "no_generic_work_finished": true
+  },
+  "objective_met": false
+}

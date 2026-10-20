@@ -1,0 +1,158 @@
+{
+  "records": [
+    {
+      "id": "202610195401_compact_256_plus",
+      "alias_of": null,
+      "extra_initial": 0.0,
+      "extra_outside_requested_sign": 0.0,
+      "registered_minus_matched_out": 0.0,
+      "minimum_actual_minus_b0": 0.0
+    },
+    {
+      "id": "202610195401_compact_256_minus",
+      "alias_of": "202610195401_compact_256_plus",
+      "extra_initial": 0.0,
+      "extra_outside_requested_sign": 0.0,
+      "registered_minus_matched_out": 0.0,
+      "minimum_actual_minus_b0": 0.0
+    },
+    {
+      "id": "202610195401_compact_320_plus",
+      "alias_of": null,
+      "extra_initial": 0.0,
+      "extra_outside_requested_sign": 0.0,
+      "registered_minus_matched_out": 0.0,
+      "minimum_actual_minus_b0": 0.0
+    },
+    {
+      "id": "202610195401_compact_320_minus",
+      "alias_of": "202610195401_compact_320_plus",
+      "extra_initial": 0.0,
+      "extra_outside_requested_sign": 0.0,
+      "registered_minus_matched_out": 0.0,
+      "minimum_actual_minus_b0": 0.0
+    },
+    {
+      "id": "202610195401_double_lobe_256_plus",
+      "alias_of": null,
+      "extra_initial": 0.00010876354228588167,
+      "extra_outside_requested_sign": 0.0,
+      "registered_minus_matched_out": 1.2197274440461925e-19,
+      "minimum_actual_minus_b0": 0.0
+    },
+    {
+      "id": "202610195401_double_lobe_256_minus",
+      "alias_of": null,
+      "extra_initial": 0.00010876354228588155,
+      "extra_outside_requested_sign": 0.0,
+      "registered_minus_matched_out": 0.0,
+      "minimum_actual_minus_b0": 0.0
+    },
+    {
+      "id": "202610195401_double_lobe_320_plus",
+      "alias_of": null,
+      "extra_initial": 0.0006721726184688399,
+      "extra_outside_requested_sign": 0.0,
+      "registered_minus_matched_out": 0.0,
+      "minimum_actual_minus_b0": 0.0
+    },
+    {
+      "id": "202610195401_double_lobe_320_minus",
+      "alias_of": null,
+      "extra_initial": 0.0006721726184688399,
+      "extra_outside_requested_sign": 0.0,
+      "registered_minus_matched_out": 0.0,
+      "minimum_actual_minus_b0": 0.0
+    },
+    {
+      "id": "202610195402_compact_256_plus",
+      "alias_of": null,
+      "extra_initial": 0.00014673909674365687,
+      "extra_outside_requested_sign": 0.0,
+      "registered_minus_matched_out": 0.0,
+      "minimum_actual_minus_b0": 0.0
+    },
+    {
+      "id": "202610195402_compact_256_minus",
+      "alias_of": null,
+      "extra_initial": 0.00014673909674365687,
+      "extra_outside_requested_sign": 0.0,
+      "registered_minus_matched_out": 0.0,
+      "minimum_actual_minus_b0": 0.0
+    },
+    {
+      "id": "202610195402_compact_320_plus",
+      "alias_of": null,
+      "extra_initial": 0.0033312962617009305,
+      "extra_outside_requested_sign": 0.0,
+      "registered_minus_matched_out": -4.336808689942018e-19,
+      "minimum_actual_minus_b0": 0.0
+    },
+    {
+      "id": "202610195402_compact_320_minus",
+      "alias_of": null,
+      "extra_initial": 0.003331296261700931,
+      "extra_outside_requested_sign": 0.0,
+      "registered_minus_matched_out": 0.0,
+      "minimum_actual_minus_b0": 0.0
+    },
+    {
+      "id": "202610195402_double_lobe_256_plus",
+      "alias_of": null,
+      "extra_initial": 0.0005518203417703561,
+      "extra_outside_requested_sign": 0.0,
+      "registered_minus_matched_out": 0.0,
+      "minimum_actual_minus_b0": 0.0
+    },
+    {
+      "id": "202610195402_double_lobe_256_minus",
+      "alias_of": null,
+      "extra_initial": 0.0005518203417703561,
+      "extra_outside_requested_sign": 0.0,
+      "registered_minus_matched_out": 0.0,
+      "minimum_actual_minus_b0": 0.0
+    },
+    {
+      "id": "202610195402_double_lobe_320_plus",
+      "alias_of": null,
+      "extra_initial": 0.0,
+      "extra_outside_requested_sign": 0.0,
+      "registered_minus_matched_out": 0.0,
+      "minimum_actual_minus_b0": 0.0
+    },
+    {
+      "id": "202610195402_double_lobe_320_minus",
+      "alias_of": "202610195402_double_lobe_320_plus",
+      "extra_initial": 0.0,
+      "extra_outside_requested_sign": 0.0,
+      "registered_minus_matched_out": 0.0,
+      "minimum_actual_minus_b0": 0.0
+    }
+  ],
+  "retention_crossings": [
+    {
+      "plus_id": "202610195401_double_lobe_256_plus",
+      "first_negative_after_positive_offset": null
+    },
+    {
+      "plus_id": "202610195401_double_lobe_320_plus",
+      "first_negative_after_positive_offset": 55
+    },
+    {
+      "plus_id": "202610195402_compact_256_plus",
+      "first_negative_after_positive_offset": null
+    },
+    {
+      "plus_id": "202610195402_compact_320_plus",
+      "first_negative_after_positive_offset": null
+    },
+    {
+      "plus_id": "202610195402_double_lobe_256_plus",
+      "first_negative_after_positive_offset": 38
+    }
+  ],
+  "all_complete": true,
+  "unknown_terminal": 0,
+  "age_convention": "offset1 is postbirth age0; offset64 is 63 later completed transitions, reported both clocks without extra step.",
+  "message": "No observation label enters policy, pump or birth routing. Actual stage attribution is descriptive; no death cause or causal credit."
+}

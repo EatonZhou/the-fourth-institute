@@ -1,0 +1,50 @@
+[
+  {
+    "job": "a22f87e4-c19d-4b3c-bb63-848d5eff4173",
+    "native": 298,
+    "status": "failed",
+    "returncode": 1,
+    "worker_seconds": 0.560162,
+    "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/a22f87e4-c19d-4b3c-bb63-848d5eff4173"
+  },
+  {
+    "job": "5f08b6b0-ceb7-4dc1-a70e-ee5d0052e9aa",
+    "native": 7208,
+    "status": "completed",
+    "returncode": 0,
+    "worker_seconds": 9.323677,
+    "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5f08b6b0-ceb7-4dc1-a70e-ee5d0052e9aa"
+  },
+  {
+    "job": "88cfadaf-41a4-4ab2-9536-86902869abfe",
+    "native": 6938,
+    "status": "failed",
+    "returncode": 1,
+    "worker_seconds": 10.231565,
+    "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe"
+  },
+  {
+    "job": "fecb9eed-feb6-4c29-a883-2d0a7f462286",
+    "native": 990,
+    "status": "completed",
+    "returncode": 0,
+    "worker_seconds": 1.263846,
+    "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/fecb9eed-feb6-4c29-a883-2d0a7f462286"
+  },
+  {
+    "job": "423c1c64-adb8-4ebe-a860-54a07ee35416",
+    "native": 311,
+    "status": "completed",
+    "returncode": 0,
+    "worker_seconds": 1.499996,
+    "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416"
+  },
+  {
+    "job": "a2c32928-b2b8-4ee0-9096-c006ee1efbf1",
+    "native": 7746,
+    "status": "completed",
+    "returncode": 0,
+    "worker_seconds": 9.339974,
+    "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/a2c32928-b2b8-4ee0-9096-c006ee1efbf1"
+  }
+]

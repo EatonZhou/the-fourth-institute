@@ -1,0 +1,122 @@
+{
+  "task": "birth_clock_retention_accounting_20261019",
+  "owner": "resident_d3ccfa2d95b7",
+  "objective_met": false,
+  "choice": "收束出生后跨接。保留both对既有C与旧O的有限后续支持，以及两G史分离体的有用恢复；关闭普遍新生特异、四态完整更新及不可逆损伤解释。本轮不回到参数训练，先用完整已存转运分清后续N的出生输入与同龄留存。",
+  "question": "both的混龄N留存比例升高是否仍见于相同出生钟、相同观测龄的真实出生批？末N减少有多少在精确账上表现为出生量/时序减少，有多少表现为各实际出生批留存不同？这是有明确终点的观察器分析，不是新策略效果或自然中介识别。",
+  "evidence": {
+    "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/postbirth_cohort_policy_crossover_20261019/handoff.json",
+    "sha256": "38e3b6e66d258e3b551a5b695e0ba3f13d27d6835785f14c60061056006422eb",
+    "native": 1024,
+    "new_crossovers": 512,
+    "explicitly_authorized_known_replay": 512,
+    "worker_seconds": 157.880912,
+    "raw_bytes": 191475921,
+    "unused_sealed": [
+      0,
+      292.119088
+    ],
+    "result": "G史恢复both使C存活4/4提高，但M/E/体时/C/N联合仅两分离体2/4；both史撤支持反向联合0/4。O同样8/8受益。未来both单64维护8/8、G0/8，不代旧两窗。",
+    "PI_new_readout": "从终版8对完整标量核出N登记出生6/8更少，N删除8/8更少，混龄N留存率8/8更高；N最终6/8更少。该恒等式已核，不把更少删除或比例更高直接解释为出生龄效应。",
+    "PI_visual_review": [
+      "figures/maps_202610195602_ring.png",
+      "figures/maps_202610195602_separate_seeds.png"
+    ],
+    "visual_scope": "亲看5602两体320/352/384的body/O/C/N实际场：ring保持孔，分离体保四团；G→both的分离体更充实。仅两组图，不声称全动画或新形态。"
+  },
+  "source_bindings": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/postbirth_cohort_policy_crossover_20261019/handoff.json",
+      "sha256": "38e3b6e66d258e3b551a5b695e0ba3f13d27d6835785f14c60061056006422eb"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/postbirth_cohort_policy_crossover_20261019/outcomes.json",
+      "sha256": "021523dacdacc4a90bef38108295553c47701802f744698c8fe4335da6353450"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/postbirth_cohort_policy_crossover_20261019/paired_effects.csv",
+      "sha256": "5619f9f4cd532296e86b0b998554aad33a391c11f7e3eaf5bb0910fe7ad19706"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/postbirth_cohort_policy_crossover_20261019/REPORT.txt",
+      "sha256": "c6c47512b5e19fe409fd55b8b56126b9f7ce45b605888214b1d672e86bdd941c"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/postbirth_cohort_policy_crossover_20261019/METHOD.txt",
+      "sha256": "a04956e668ea8846568f156833cf23e2c9055d340aff8981a6e0215d5f97f59c"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/postbirth_cohort_policy_crossover_20261019/scientific_next_request.json",
+      "sha256": "3bdd03d62003cd9f88c02bb1b119499db399eeec4f3192270aec16324130ab8b"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/postbirth_cohort_policy_crossover_20261019/raw_manifest.json",
+      "sha256": "6787f20f8d3b5c3833cdc09ca0c3e9f79104670970626b908f2f54044b810f33"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/postbirth_cohort_policy_crossover/core.py",
+      "sha256": "e6ebf0057d58bb5b4dadf3618d2ff24d0b6b7b4150af78dc115d198830db4041"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/material_transport.py",
+      "sha256": "dd5622a2df6a5d50642a31ad586215d5e30e33929cf8f57ee9efff36fdef08d5"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/regenerative_actor/conversion.py",
+      "sha256": "d2b73ccf44d6720e01e2166c055f9a427406dc483b21746476b9f8cc5f95189a"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/birth_clock_retention_accounting_20261019_preflight.json",
+      "sha256": "e39ae69e5a0dcd52945e45d3247d53a5598b03524f9544452e7d18fa699461fe"
+    }
+  ],
+  "scope": {
+    "paths": 16,
+    "same_parent_pairs": 8,
+    "clocks": [
+      321,
+      384
+    ],
+    "native": 0,
+    "input": "preflight列出的全部1024真实transport文件和原标量/8时点收据。已存K就是历史；不恢复body推进，不重新计算物理、不运行shadow native，也不延384。",
+    "propagation": "每轨建立64个被动出生钟标签。每一步只对已存在标签用原actual K→actor keep→rule keep各一次，再把该钟真实born加入该钟标签；新生在出生步不承受本步出生前删除。保存每批累计登记、存留、actor/rule删除、体时。出生当钟龄0，384最大龄63。",
+    "reconstruction": "所有批标签逐钟之和重建原N_live及N字段；64批登记和逐钟born重建原N_registered；actor/rule删除重建原N对应阶段账。O/C原账户保持引用，不把320已存活C拆成原出生龄，不逆造其缺失前史。",
+    "primary_ages": [
+      1,
+      4,
+      8,
+      16,
+      32
+    ],
+    "common_age": "每个age只取321..384-age的共同出生钟；paired survival仅在两未来该钟实际出生均>0时定义。两臂使用同一出生钟集合和均匀权重。逐钟表全部保留；零出生留存率null，并报告排除的钟数/出生量/末存留，禁止0补值。额外同时给固定对称出生量权重作为敏感读出，不以某一种权重找正。age63只作首出生钟边界，不能称整个N的64步存活。",
+    "final_accounting": "逐出生钟在384的真实存留n=b*r。对双边b>0的钟，报告exact Δn = Δb*(rB+rG)/2 + Δr*(bB+bG)/2；单边零出生另列实际存留差，不造undefined r。求和重建ΔN。此为对称算术分解，r还含实际出生落点/时序/各自后续环境差，不是可干预独立因子、因果中介份额或可交换材料。",
+    "stage_context": "用全部已存逐钟标量核出生请求−容量/模板/P/F顺序拒绝=出生的账；只按原顺序展示，不把大拒绝数认作缺P/F/空间或资金的独立原因。空间响应/P/F/E解释仅限原8时点收据，阶段须区分ready与after-actor，不把稀疏场插值为连续暴露。优先展示环体N损失与分离体恢复的共同点和反例，不扫描窗口/阈值。",
+    "full_costs": "同父M/E/全体时、O/C/N、全部实际费用和欠付原值一起引用；本次观察器没有新的生物收益或物理成本，不重算旧泵支付，不把离线算术称免费部署能力。"
+  },
+  "interpretation": {
+    "age_support": "若同龄读出保持both留存优势且末N下降由出生量账项占优，下一生成目标优先研究保留支持的同时形成可付新生机会；不继续以额外保护同批C为默认方向。",
+    "age_mixed": "若按出生钟/龄匹配后有稳定反例，则保留出生时序/响应相容性为候选，必须明确现时可见的候选特征；不能用未来存活标签作在线输入。",
+    "limits": "年龄配准后仍是不同出生位置/分布的实际材料群；只有320已登记C/O的同父未来比较是同一批材料的策略干预。混龄N比值、各年龄出生钟和格不是独立世界，四context为相关既有条件。",
+    "future_training": "本次不授权训练。以后若另立生成搜索，固定both为强同行，ring作为必要反例，真实既有C留存+后来N+M/E/体时为并列约束，晚窗维护另报；不能把多出生、只保旧体、后验挑窗或同胞不同龄比值作目标达成。"
+  },
+  "budget": {
+    "native_cap": 0,
+    "acquisition_replay": 0,
+    "future_replay": 0,
+    "offline_process_cpu_seconds_cap": 300,
+    "cpu_threads": 2,
+    "gpu": 0,
+    "new_disk_cap_bytes": 134217728,
+    "physical_runner_job": false,
+    "stop": "一次离线分析。按实际进程CPU核算分析开销，区别于原runner-worker账；达到CPU或磁盘上限保存部分并停止，不借旧余额。主输出按钟/龄聚合，勿保存64批×64全场大矩阵。",
+    "controls": "开始时读取desired_state/started；暂停停止不启动。只读原件，隔离新观察器与新输出。无定时器或自动后续native。"
+  },
+  "outputs": [
+    "handoff.json与简短REPORT、精确输入SHA",
+    "全部16轨逐出生钟/年龄存留和阶段删除表，8同父配对表",
+    "ΔN对称算术重组及未匹配零量明细、原C/O/N和身体/费用并列",
+    "唯一下一机制建议或明确不支持，不能据此自动开训练/新身体作业",
+    "论文/投影沿既有事项合并本包，无新广播；共享只压本人短叶"
+  ],
+  "native_by_PI": 0
+}

@@ -1,0 +1,19 @@
+{
+  "status": "completed",
+  "published": false,
+  "job_id": "10238c47-5624-4f8b-acee-a5a478f50549",
+  "body_steps": 1536,
+  "remaining": 0,
+  "plan": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/plan.json",
+  "plan_sha256": "d2b89ede91d4bb1054539ebf3deb602e4b54ba58a07ee05f915598b78292f58b",
+  "report": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/REPORT.txt",
+  "method": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/METHOD.txt",
+  "interpretation": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/interpretation.json",
+  "projection": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/projection.json",
+  "source_manifest": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source_manifest.json",
+  "accounting": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/accounting.json",
+  "paper_insert": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/paper_insert.tex",
+  "source_manifest_sha256": "08d1924b9c89568f947a6b25ae15c87c094fdaa5fa53fca0bc2328456a83bb99",
+  "attachments": 223,
+  "pdfs": 18
+}

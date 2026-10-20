@@ -1,0 +1,191 @@
+{
+  "compact_x_matrix": [
+    {
+      "factorial_cell": "R1I0",
+      "history": "naive",
+      "challenge": "x",
+      "M_end": "41.59675080765719",
+      "E_end": "27.468337894434235",
+      "body_time": "586.5787652013053",
+      "origin_extinction_step": "",
+      "execution_source": "new"
+    },
+    {
+      "factorial_cell": "R1I0",
+      "history": "experienced",
+      "challenge": "x",
+      "M_end": "42.28333670351822",
+      "E_end": "21.188984392228804",
+      "body_time": "545.946067752992",
+      "origin_extinction_step": "",
+      "execution_source": "new"
+    },
+    {
+      "factorial_cell": "R0I0",
+      "history": "naive",
+      "challenge": "x",
+      "M_end": "0.0",
+      "E_end": "0.0",
+      "body_time": "374.5383919029844",
+      "origin_extinction_step": "178",
+      "execution_source": "old_reference"
+    },
+    {
+      "factorial_cell": "R0I0",
+      "history": "experienced",
+      "challenge": "x",
+      "M_end": "0.0",
+      "E_end": "0.0",
+      "body_time": "380.4538728784065",
+      "origin_extinction_step": "183",
+      "execution_source": "old_reference"
+    },
+    {
+      "factorial_cell": "R1I1",
+      "history": "naive",
+      "challenge": "x",
+      "M_end": "48.232800969119936",
+      "E_end": "33.13817590480956",
+      "body_time": "587.6912863696929",
+      "origin_extinction_step": "",
+      "execution_source": "old_reference"
+    },
+    {
+      "factorial_cell": "R1I1",
+      "history": "experienced",
+      "challenge": "x",
+      "M_end": "42.69660680980148",
+      "E_end": "21.239884050495487",
+      "body_time": "541.0955476521419",
+      "origin_extinction_step": "",
+      "execution_source": "old_reference"
+    },
+    {
+      "factorial_cell": "R0I1",
+      "history": "naive",
+      "challenge": "x",
+      "M_end": "0.0",
+      "E_end": "0.0",
+      "body_time": "374.1246637720779",
+      "origin_extinction_step": "178",
+      "execution_source": "new"
+    },
+    {
+      "factorial_cell": "R0I1",
+      "history": "experienced",
+      "challenge": "x",
+      "M_end": "0.0",
+      "E_end": "0.0",
+      "body_time": "382.0188300699059",
+      "origin_extinction_step": "184",
+      "execution_source": "new"
+    }
+  ],
+  "selected_archived_effects": [
+    {
+      "effect": "multi_ring/rule_at_I0/naive/none",
+      "start": "0",
+      "end": "224",
+      "M_end": "-274.82205595344476",
+      "E_end": "-105.90651867226762",
+      "body_time": "-1072.4495784444875"
+    },
+    {
+      "effect": "multi_ring/rule_at_I0/naive/x",
+      "start": "0",
+      "end": "224",
+      "M_end": "-202.3038686347365",
+      "E_end": "-85.89785049757768",
+      "body_time": "-910.4738819556037"
+    },
+    {
+      "effect": "multi_ring/rule_at_I0/experienced/none",
+      "start": "0",
+      "end": "224",
+      "M_end": "-212.4508870197347",
+      "E_end": "-95.075057088384",
+      "body_time": "-1006.958977539161"
+    },
+    {
+      "effect": "multi_ring/rule_at_I0/experienced/x",
+      "start": "0",
+      "end": "224",
+      "M_end": "-97.07707504335195",
+      "E_end": "-47.00988576751854",
+      "body_time": "-716.6566575785205"
+    },
+    {
+      "effect": "multi_ring/rule_at_I1/naive/none",
+      "start": "0",
+      "end": "224",
+      "M_end": "-266.7627661565117",
+      "E_end": "-104.53360579452595",
+      "body_time": "-1049.2016367637498"
+    },
+    {
+      "effect": "multi_ring/rule_at_I1/naive/x",
+      "start": "0",
+      "end": "224",
+      "M_end": "-199.22190635544916",
+      "E_end": "-84.1122860877935",
+      "body_time": "-894.9230686789188"
+    },
+    {
+      "effect": "multi_ring/rule_at_I1/experienced/none",
+      "start": "0",
+      "end": "224",
+      "M_end": "-202.23014895205358",
+      "E_end": "-92.87767218961673",
+      "body_time": "-984.7151103857568"
+    },
+    {
+      "effect": "multi_ring/rule_at_I1/experienced/x",
+      "start": "0",
+      "end": "224",
+      "M_end": "-86.62705150243312",
+      "E_end": "-45.9124691581174",
+      "body_time": "-690.7726818081437"
+    },
+    {
+      "effect": "multi_ring/rule_initial_interaction/naive/none",
+      "start": "0",
+      "end": "224",
+      "M_end": "8.059289796933058",
+      "E_end": "1.372912877741669",
+      "body_time": "23.247941680737767"
+    },
+    {
+      "effect": "multi_ring/rule_initial_interaction/naive/x",
+      "start": "0",
+      "end": "224",
+      "M_end": "3.0819622792873247",
+      "E_end": "1.7855644097841719",
+      "body_time": "15.550813276684949"
+    },
+    {
+      "effect": "multi_ring/rule_initial_interaction/experienced/none",
+      "start": "0",
+      "end": "224",
+      "M_end": "10.220738067681111",
+      "E_end": "2.197384898767268",
+      "body_time": "22.243867153404153"
+    },
+    {
+      "effect": "multi_ring/rule_initial_interaction/experienced/x",
+      "start": "0",
+      "end": "224",
+      "M_end": "10.450023540918835",
+      "E_end": "1.0974166094011366",
+      "body_time": "25.883975770376765"
+    },
+    {
+      "effect": "factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1/experienced_minus_naive/x",
+      "start": "0",
+      "end": "224",
+      "M_end": "0.686585895861036",
+      "E_end": "-6.279353502205431",
+      "body_time": "-40.63269744831325"
+    }
+  ],
+  "operation": "Read-only selection of archived table rows, no numerical recomputation or forward calls."
+}

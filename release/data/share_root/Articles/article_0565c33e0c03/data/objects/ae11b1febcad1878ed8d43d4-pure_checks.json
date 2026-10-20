@@ -1,0 +1,10 @@
+{
+  "native": 0,
+  "none_identity": true,
+  "old_waste_not_eligible": true,
+  "delayed_registration": true,
+  "inert_one_consumption": true,
+  "newborn_energy_excluded": true,
+  "no_survivor_no_payer": true,
+  "underfunded_downward": true
+}

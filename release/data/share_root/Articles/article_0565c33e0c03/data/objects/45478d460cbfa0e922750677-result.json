@@ -1,0 +1,20 @@
+{
+  "task": "postbirth_cohort_policy_crossover_20261019",
+  "status": "complete",
+  "job": "5df9843e-6c1d-4b3a-8120-6c233c2a0dfb",
+  "attempted": 1024,
+  "committed": 1024,
+  "settled": 1024,
+  "new_crossover_native": 512,
+  "authorized_diagonal_replay_native": 512,
+  "boundary_native": 0,
+  "unknown_native": 0,
+  "wall_seconds": 78.69068641890772,
+  "failure": null,
+  "logical_paths": 16,
+  "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb",
+  "raw_bytes": 191475921,
+  "objective_met": false,
+  "acquisition_0_320_replayed": 0,
+  "old_budget_used": 0
+}

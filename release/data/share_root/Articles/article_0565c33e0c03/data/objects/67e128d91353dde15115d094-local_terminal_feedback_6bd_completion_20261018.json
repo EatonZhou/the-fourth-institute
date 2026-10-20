@@ -1,0 +1,100 @@
+{
+  "task": "local_terminal_feedback_6bd_completion_20261018",
+  "created_at": "2026-10-18T11:10:45.211048+00:00",
+  "status": "authorized_independent_completion",
+  "objective_met": false,
+  "owner": "resident_d3ccfa2d95b7",
+  "decision": "从现成6bd完整取得态完成缺失五臂，保持原机制/价格/更新/窗口。合法消息与更新作用已有单体证据，但身体收益有取舍；不以单体阴性替代尚未运行的另一身体，也不改变条件寻求胜出。",
+  "sources": {
+    "handoff": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/local_terminal_feedback/handoff.json",
+    "sha256": "80d60f205f12a12c83ea84278802906824682eadf6c3d0e661b3eb01e8b780ef",
+    "continuation_sha256": "8b6682bd31c5da142676dc13957730bef1221ad93c49b2aad18801d58de8d635",
+    "prior_job": "c21fd89a-f2ec-483c-b6b2-289375575b3d",
+    "prior_status": "failed_time_gate; 896 attempted and committed, zero incomplete native calls"
+  },
+  "parent": {
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_terminal_feedback_learning_20261018/c21fd89a-f2ec-483c-b6b2-289375575b3d/b1_prefix_unit0_complete",
+    "clock": 192,
+    "elapsed": 64,
+    "files": {
+      "body.npz": "ad46e1b944aa9be37722ee7cd35ceed9b4e0c819600e4e12c52173657a72ef9f",
+      "records.npz": "9c48802c84b82ae338f5e0553038fac5e3d8358b6b7399c90bf5412c5b6c6afe",
+      "metadata.json": "1dbd7bef61a744ef650565127bb094401f246a491a34042357aa963304450b24"
+    },
+    "learner_path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_terminal_feedback_learning_20261018/c21fd89a-f2ec-483c-b6b2-289375575b3d/b1_prefix_unit0_complete_learner.npz",
+    "learner_sha256": "dfb31caf635b1e5c3d8900673d7253c9e44ec8401fef1374de43fc3ecc7df381",
+    "verification": "PI only hashed existing four files; no restore/forward performed"
+  },
+  "new_budget": {
+    "native_body_steps": 640,
+    "worker_seconds": 480,
+    "cpu_threads": 2,
+    "gpu": 0,
+    "max_new_raw_bytes": 1073741824,
+    "owner_only": "d3",
+    "script_wall_gate_guidance_seconds": 220,
+    "runtime": "Script gate is a conservative per-job time bound, not a scheduled trigger. Freeze a safe gate within480 worker seconds including restore/save/termination overhead; all actual runner time counts.",
+    "estimated_worker_seconds": 283.769,
+    "basis": "397.275920 worker seconds / 896 prior steps ×640; estimate not a completion guarantee",
+    "failed_native_calls_count": true,
+    "old_budget_transfer": 0
+  },
+  "old_budget_frozen": {
+    "combined_steps": 1667,
+    "combined_worker_seconds": 571.783956,
+    "d3_unused_steps": 3968,
+    "d3_unused_worker_seconds": 22.72408,
+    "ce2_unused_steps": 509,
+    "ce2_unused_worker_seconds": 5.491964
+  },
+  "experiment": {
+    "arms": [
+      "recent",
+      "ignore",
+      "frozen",
+      "euler",
+      "none"
+    ],
+    "arm_steps": 128,
+    "prefix_replayed_steps": 0,
+    "starting_state": "same body/stock/world cursor/records/unread/consumption clock/learner/RNG from exact saved complete parent",
+    "end_clock": 320,
+    "end_elapsed": 192,
+    "supply_steps": 256,
+    "unit": "32 active +32 withdrawn, two64-step units",
+    "rule": "original .5 recent descriptive (contact-motor-basal)/exposure, no training or tuning",
+    "euler": "original full-current-body Euler, not euler_unit",
+    "communication_price_E_per_received_packet": 2.56e-05,
+    "no_change": [
+      "host f9e46ff7",
+      "original code composition and score semantics",
+      "material responsibility/actual K and keep",
+      "message delivery qualification",
+      "prices",
+      "input horizon",
+      "geometry heldout_rotated already seen",
+      "seeds/RNG of saved parent",
+      "sparse evidence and accounting conventions"
+    ]
+  },
+  "necessary_comparisons": [
+    "recent-ignore: message content use, not matched actual trajectories after branching",
+    "recent-frozen: complete same prefix; first64 physical path should follow original unchanged protocol; second choice conditioned on actual information",
+    "recent-euler and recent-none: independent whole-body M/E/U/bodytime and costs, no winner from intake alone"
+  ],
+  "evidence": [
+    "All five outcomes retained; death and missing/unknown distinct, no censoring by outcome.",
+    "Use existing completed0ac results read-only; omit unrun euler_unit for6bd explicitly, not zero.",
+    "Preserve all actual movement/basal/communication and synthesis/template partitions without double sum; storage/arithmetic still incompletely priced.",
+    "Decision-time public/record/writer and actual action differences saved as original; no reconstruction of unsaved intermediate K.",
+    "Two bodies in one known geometry are not two independent worlds or confirmatory generalization; this is a budget-separated completion after observing0ac.",
+    "Original ce2 partial and original c21fd time-cap status remain unchanged; new manifest/job/usage independent."
+  ],
+  "operation": [
+    "Restore exact complete parent into a new output root and unique runner key; do not requeue prior failed job or replay prefixes/0ac/ce2.",
+    "No new native checks or preliminary preview; any required physical call consumes640 and therefore shrinks scope explicitly. Static restore/schema checks allowed.",
+    "Before submit read running/started. CPU2/GPU0 and physical job serial. No timer/cron/generic work-finished trigger.",
+    "At budget gate save complete actual state, report partial truthfully and do not auto-retry. No old unused seconds added."
+  ],
+  "closure_and_handoff": "Owner executes now without further approval, then one actual-results request to PI for whole-line scientific decision; update same task shared index. Integrate valid previous results read-only and give paper/projection direct continuation once if they need completed evidence. No parameter/price/duration sweep after this batch. If none/Euler still win on relevant body outcomes, retain the failure; do not define a new metric to declare success."
+}

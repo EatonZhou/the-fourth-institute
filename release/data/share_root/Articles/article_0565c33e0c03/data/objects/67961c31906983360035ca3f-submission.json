@@ -1,0 +1,19 @@
+{
+  "id": "4bc7de9e-dbb5-40b9-9d34-e933083e77df",
+  "name": "method-renewal-ecology-behavior-pilot1",
+  "command": [
+    "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+    "-m",
+    "environment_evolution.method_renewal_ecology_behavior.run"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "ce2-method-renewal-ecology-behavior-20261018-pilot1-v1",
+  "status": "running",
+  "created_at": "2026-10-18T05:28:34.282964+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/4bc7de9e-dbb5-40b9-9d34-e933083e77df",
+  "pid": 3059976,
+  "manual_pause": false,
+  "create_time": 1792301313.75,
+  "started_at": "2026-10-18T05:28:34.360554+00:00"
+}

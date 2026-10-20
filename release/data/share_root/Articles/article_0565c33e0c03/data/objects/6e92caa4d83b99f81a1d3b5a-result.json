@@ -1,0 +1,25 @@
+{
+  "task": "resource_matched_morphogenesis_20261018",
+  "status": "completed",
+  "job_id": "2a453ec6-1e89-4c80-ae85-ee5a10b65ecb",
+  "attempted": 2563,
+  "committed": 2563,
+  "failed_calls": 0,
+  "counts": {
+    "boundary": 3,
+    "formation": 2048,
+    "deployment": 512
+  },
+  "failure": null,
+  "last_label": "g1_f2_c1/continuous_gradient/256",
+  "formation_paths": 16,
+  "deployment_paths": 2,
+  "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_matched_morphogenesis_20261018/2a453ec6-1e89-4c80-ae85-ee5a10b65ecb",
+  "raw_bytes": 301509149,
+  "script_seconds": 82.8675474950578,
+  "plan_sha256": "ab089934ef4aae2e336d441a255d27e23bef164e48b268d442f5f8428112a676",
+  "old_budget_used": 0,
+  "same_job_resume": true,
+  "prior_committed": 643,
+  "replayed_steps": 0
+}

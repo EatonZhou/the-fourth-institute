@@ -1,0 +1,5 @@
+branch,M_error,E_error,F_error,cut_error
+reference_anisotropic--connected_trilobe--uninjured,7.105427357601002e-15,0.0,4.334310688136611e-13,3.552713678800501e-15
+reference_anisotropic--connected_trilobe--excised,7.105427357601002e-15,0.0,1.141309269314661e-13,8.881784197001252e-16
+compact_ring_core_outer--bridged_longbody--uninjured,-1.1368683772161603e-13,0.0,-2.2737367544323206e-13,2.842170943040401e-14
+compact_ring_core_outer--bridged_longbody--excised,0.0,0.0,-4.547473508864641e-13,-3.552713678800501e-15

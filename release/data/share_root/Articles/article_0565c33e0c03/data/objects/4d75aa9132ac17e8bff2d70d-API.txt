@@ -1,0 +1,8 @@
+API: environment_evolution.maintenance_aware_cargo.core.MaintenanceCargo
+from_initial(old384_joint_path) restores the exact completed archived challenge, with the isolated new policy/schema.
+native() performs one unchanged native zero-command call; settle(mode) forms the candidate from this completed receipt and executes the original priced single-hop cargo. Modes maintenance_target / uniform_fuel_destination only.
+proposals(state, maps, config, mode) is pure; returns P,F-equivalent proposals, diagnostic arrays, per-source matching error. No predictor/writer/global reward.
+checkpoint/restore preserve physics, placement, completed/pending-native maps, labels, costs and cursor. Current checkpoint is every8 completed steps, first returned-native restore is checked without a new call. Do not replay successful calls across a failure; consult runner count and pending phase.
+Before-settlement source fields: actual survivor, actor_energy_after_actor-rule_death_energy, current P/F, pump_demand R, support; oldE excludes newborn. Receipts preserve candidate/uniform per-source F sums, u/dP/dZ, P/F requests, stage clipping, actual four directed edges, actual fees, K/keep and old/new tissue labels.
+All-clock scalar sums and per-source zero/mismatch diagnostics are in all_clocks.csv; spatial arrays at future1/8/64/128/192 are indexed by frames.json. Raw fields cannot be inferred at unsaved spatial steps. Full global totals and cohort labels are evaluation, not strategy inputs.
+Physical sources/prices/context SHA are fixed in plan.json; administrative scheduler shim and postprocessing sources listed separately. No new native computation is needed to consume results.

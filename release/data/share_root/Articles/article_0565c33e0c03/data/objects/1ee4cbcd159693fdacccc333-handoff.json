@@ -1,0 +1,47 @@
+{
+  "status": "implemented_policy_only_waiting_shared_viable_environment",
+  "question": "Directed feedback acquisition versus generic exploration",
+  "controller": "research.feedback_acquisition.policy.FeedbackPolicy",
+  "files": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/feedback_acquisition/policy.py",
+      "sha256": "78b9b3426032074276de00e488d8d88e8e2499de612e82c4372af88e1a989579"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/feedback_acquisition/spec.json",
+      "sha256": "ed5a7bc4e3c11b861b1f4f0ef11969a2308e7120c82cf12760fb49bae37e6f32"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/feedback_acquisition/analyze.py",
+      "sha256": "748f27b35eae8c89517dd6127e60ad9257836ff32aeb859c7e11bb9441c196ee"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/feedback_acquisition/check_policy.py",
+      "sha256": "0cc0045bc4c689fc6ce7d7cc153a8816babf0e04f0c23b9208427ac4409acb36"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/feedback_acquisition_20261018/policy_freeze.json",
+      "sha256": "938af8cb3076fc4ee0440fd72476a5abd0f29d4d1bbcacee02e6dc03a5d08a6e"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/feedback_acquisition_20261018/policy_checks.json",
+      "sha256": "b742bcc27ce3caf4a560eb8c77d35f5bcc27d7ea240959957157165759094521"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/feedback_acquisition_20261018/evaluation_checks.json",
+      "sha256": "a8f04dcddbe7c99263aef348f9f755b2eabcefc4c9cc25316baafc2e437e9c99"
+    }
+  ],
+  "native_job": null,
+  "new_body_steps": 0,
+  "environment_calls": 0,
+  "pure_validation": "local receipt, sampling budget and evaluator chronology only",
+  "not_yet_validated": [
+    "new shared environment binding",
+    "viable continuing reference",
+    "physical cost/feedback loop",
+    "heldout behavioral outcomes"
+  ],
+  "next": "consume ce2 viable allocation/observation interface; bind frozen controller and execute one small job under existing PI authorization",
+  "old_223_used": 0
+}

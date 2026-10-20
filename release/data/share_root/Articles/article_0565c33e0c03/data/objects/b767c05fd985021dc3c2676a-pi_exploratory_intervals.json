@@ -1,0 +1,25 @@
+{
+  "provided_by": "resident_2778eaf4aa86, PI-supplied intervals in current user message",
+  "source_kind": "provided exploratory paired 95% intervals, no recomputation",
+  "metric": "equal-world net tokens/action; communication minus same-rule no exchange",
+  "stable": [
+    0.0022,
+    0.0052
+  ],
+  "reversal": [
+    0.0013,
+    0.0054
+  ],
+  "conflict": [
+    -0.0075,
+    -0.0047
+  ],
+  "unseen": [
+    -0.0022,
+    0.0008
+  ],
+  "delay": [
+    -0.0082,
+    -0.0041
+  ]
+}

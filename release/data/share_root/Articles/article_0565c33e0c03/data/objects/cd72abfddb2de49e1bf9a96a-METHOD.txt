@@ -1,0 +1,57 @@
+Exact rule / neutral initial-state package export, rev2
+
+This cap0 export implements only the four combinations specified in authorization
+f35b1f8b7d031175edfda5500d6d82c604f6800ae440f2f8d97e52291c24f7fb.
+The two compact and two multi-ring endpoints in the completed2432 batch remain
+unchanged. No new mutation, interpolation, normalization, body/energy forward,
+operator evaluation, acquisition, preview or runner submission was performed.
+
+Rule source: the two actual centered kernel arrays and entire config.body_rule,
+including both response configs, mixture and unchanged update semantics.
+Initial source: body, energy, founder_mass and polarity, including their spatial
+distribution. The other13 fields are byte-identical to the family reference96:
+precursor, fuel, waste, heat, dead_energy, memory, eligibility, c_theta, c_value,
+c_trace, c_food, c_run, c_remaining. All non-body_rule config matches the same
+reference. This is not a pure morphology intervention.
+
+The original ce2 build_life0 validates the proposed rho/kernels and constructs
+neutral associated fields. Before saving, all18 fields must match their declared
+source arrays by dtype, shape and raw C-order bytes, including signed zero.
+Only after exact agreement are literal detached source copies serialized. No
+mismatch is repaired. The full source body_rule and all other config are compared
+through canonical JSON without changing their values. The source life0 files are
+SHA-checked before and after export. Source initial M/E roundoff is preserved;
+the existing1e-11 total-matching tolerance is not an instruction to renormalize.
+All arrays retain the original96 grid, centered16:80 embedding and zero exterior.
+
+The IDs contain the two source snapshot SHA prefixes and a content digest of
+both source identities, package selectors and payload fingerprints. Full IDs,
+paths, SHA values and descriptive gene provenance appear in each lineage record.
+Gene values describe provenance; the exporter never invokes materialize.
+
+Each new snapshot was saved, loaded, then passed to the original open_life0.
+Its17 state arrays plus model.kernels, entire config and metadata matched the
+declared18-field combination exactly. Ledger clock remained0; no acquired state
+was reset or borrowed. All native/energy/operator entry points were guarded.
+New rejection checks covered wrong kernel source, one-ULP non-target F change,
+missing neutral field, rev1 and an unauthorized third future history. The old
+host/ready/physics suite was not rerun.
+
+Native execution remains ce2's responsibility under the1792 authorization.
+open_life0 defaults to T11/open; ce2 must bind original T00 before formation's
+first physical step. Form each candidate once0..128, independently restore
+naive/experienced T11 acquisition128..160, then none/x T11 futures160..224.
+Experienced receives10%+x before129 and145; x future receives20%+x before161.
+Only formation uses T00: there is no new low_cost_T00 acquisition or future.
+All stage clocks and tape indices are absolute: action t reads tape[t-1].
+The28-stage DAG is4*(128+2*32+4*64)=1792, with16 dependent full paths.
+Parent packet paths/SHA must be recorded after actual completion, never invented.
+Shared prefixes count once for execution; old diagonal controls are read-only.
+
+The manifest and stage_bindings are static inputs, not a submitted job or a
+replacement runner. Before submit ce2 rereads running/started, binds its single
+execution key, frozen source and plan, and uses the original complete-ready and
+resource/accounting rules. Failed/early-dead paths remain within the original cap.
+Evaluation will retain0..224 and128..224, all absolute costs/doses and experience
+contrasts; neither a rule-package effect nor a neutral-initial-package effect
+establishes learning, pure morphology mediation or independent replication.

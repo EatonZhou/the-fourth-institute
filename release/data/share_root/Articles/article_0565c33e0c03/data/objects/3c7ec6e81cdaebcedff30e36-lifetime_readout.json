@@ -1,0 +1,19 @@
+{
+  "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/lifetime_cue_reversal_20261019",
+  "source_sha256": "49cb6ae940ec342f34dc1e0b8a96c7c2eabe7b03f7f37840bab6b42bb51ba98d",
+  "seeds": [
+    202610197401,
+    202610197402
+  ],
+  "orders": [
+    0,
+    1
+  ],
+  "lives": 24,
+  "forks": 48,
+  "alive": 72,
+  "max_energy_error": 3.569367024169878e-14,
+  "new_physics": 0,
+  "new_fits": 0,
+  "scope": "Two seeds crossed with two mapping orders; four correlated constructed conditions per arm; no source-grid p-values."
+}

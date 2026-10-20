@@ -1,0 +1,13 @@
+{
+  "status": "completed",
+  "job_id": "199d1bdd-f044-4755-828a-ba17da1fadbc",
+  "actual_steps": 27756,
+  "elapsed_seconds": 1.7195701550226659,
+  "source_job": "4bc7de9e-dbb5-40b9-9d34-e933083e77df",
+  "new_branches": 36,
+  "old_prefix_replayed": false,
+  "identical_current_state_pairs": 9,
+  "all_pairs_identical": true,
+  "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/199d1bdd-f044-4755-828a-ba17da1fadbc",
+  "source_sha256": "0a34eaf15a839dcae759f0203a24c5113adabacf018eedbbefad8bfc7196eed5"
+}

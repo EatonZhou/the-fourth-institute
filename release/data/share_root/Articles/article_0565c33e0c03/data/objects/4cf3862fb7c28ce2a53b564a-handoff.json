@@ -1,0 +1,138 @@
+{
+  "task": "contact_feedback_reachability_20261019",
+  "owner": "resident_33af539c4a17",
+  "status": "completed_reachability_demonstrated_mean_age_credit_failed",
+  "objective_met": false,
+  "actual": {
+    "batches": [
+      {
+        "batch": "opportunity",
+        "job": "29e08413-cd1d-4681-9b38-04c53b79f7e7",
+        "native": 2304,
+        "worker_seconds": 1.319436,
+        "raw_bytes": 8586787,
+        "status": "completed",
+        "returncode": 0
+      },
+      {
+        "batch": "delay",
+        "job": "b7032a3a-31c6-4965-a20d-b1e0aa4a9c87",
+        "native": 6912,
+        "worker_seconds": 6.98804,
+        "raw_bytes": 30436027,
+        "status": "completed",
+        "returncode": 0
+      },
+      {
+        "batch": "path_probe",
+        "job": "df578238-aea6-4a00-a0f4-b8349ff6cac4",
+        "native": 1152,
+        "worker_seconds": 1.313383,
+        "raw_bytes": 6004732,
+        "status": "completed",
+        "returncode": 0
+      },
+      {
+        "batch": "action_probe",
+        "job": "9b42efeb-1cd0-4914-8c47-d45ce8cc35b1",
+        "native": 1440,
+        "worker_seconds": 1.431251,
+        "raw_bytes": 5288119,
+        "status": "completed",
+        "returncode": 0
+      },
+      {
+        "batch": "pacing",
+        "job": "704ff2af-28cb-41ed-9f0d-965b3c4694bd",
+        "native": 3456,
+        "worker_seconds": 3.350795,
+        "raw_bytes": 15112302,
+        "status": "completed",
+        "returncode": 0
+      },
+      {
+        "batch": "sparse",
+        "job": "d4b59280-695b-4ed6-858d-1c6cf7baca76",
+        "native": 5184,
+        "worker_seconds": 3.713248,
+        "raw_bytes": 22497829,
+        "status": "completed",
+        "returncode": 0
+      }
+    ],
+    "native": 20448,
+    "worker_seconds": 18.116153,
+    "raw_bytes": 87925796,
+    "independent_founders": 13,
+    "complete576_step_paths": 31,
+    "additional96_step_founder_prefixes": 3,
+    "causal_branches": 24,
+    "replication": "13 independent founder/exploration RNG histories; only sparse-condition3 also have independent frozen resource-pulse histories. Paired arms and24 causal continuations are dependent, not independent replicas."
+  },
+  "report": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_reachability_20261019/REPORT.txt",
+  "means": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_reachability_20261019/means.json",
+  "checks": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_reachability_20261019/checks.json",
+  "raw_manifest": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_reachability_20261019/raw_manifest.json",
+  "animation": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_reachability_20261019/continuous_signal.gif",
+  "plots": [
+    "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_reachability_20261019/results.png",
+    "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_reachability_20261019/sparse_condition.png"
+  ],
+  "batch_plans": {
+    "opportunity": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_opportunity_20261019/plan.json",
+      "sha256": "99596f7a36b6d9bb8391584287d3abd12ee9904b99133a80ab496324ca9514d4"
+    },
+    "delay": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_delay_20261019/plan.json",
+      "sha256": "80e49e632755f51e37c969f0538242c1889b22381b2305a733f201cfa41f9d02"
+    },
+    "path_probe": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_path_probe_20261019/plan.json",
+      "sha256": "8840ba3a87ce812b99c6c74d567ce1a74cc3a81d39fb9b883fa7878ffe693eaa"
+    },
+    "action_probe": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_action_probe_20261019/plan.json",
+      "sha256": "cd81f9b1a63eb7dd340d2afd3cea2723884295b94f7464946263af0072c83c79"
+    },
+    "pacing": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_pacing_20261019/plan.json",
+      "sha256": "a2c06ebd5399cd2be9e26a51b59374307d1fc03acf62fc117dfa2ebf0831090c"
+    },
+    "sparse": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_sparse_20261019/plan.json",
+      "sha256": "2508fcbad4827ef01331a4c418f8bee6faca6f8b609f73a8c9a776e4e4aab65b"
+    }
+  },
+  "findings": [
+    "Remote physical uptake reaches proximal modifiable material through actual contacts; no proximal food receipt.",
+    "Signal-only intervention with writer off preserves every physical state exactly; writer-on uptake effect tiny in saturated parents.",
+    "Fresh physical action comparisons give opposite useful response directions in two resource locations and local received signal retains ranking.",
+    "Mean-age alignment fails3/3; slower action pacing improves changed uptake1/3 and mainly saves remodeling costs.",
+    "Sparse resources remove distal saturation but diffusion uptake remains below no_signal3/3 after change; global diagnostic not consistently beneficial."
+  ],
+  "boundaries": [
+    "Moving material network, not CA/Lenia; no birth, fixed supports/external load; topology not learned.",
+    "Origin-resolved arrays host audit only; signals are not nutrition; all costs model-dependent.",
+    "Global and absent-signal arms unequal-information capability controls, not fair algorithm ranking.",
+    "13 founders not13 distinct environmental distributions;24 branches not independent replicas.",
+    "No new algorithm advantage or broad impossibility result; no seventh batch running."
+  ],
+  "next_scientific_issue": "Temporal mixing and coupled closed-loop action responses can defeat a useful reachable signal; need distinguish distinguishable feedback content from simply propagating more/longer. No new mechanism claimed or launched.",
+  "artifacts_sha": {
+    "results.png": "df6e19c13217870baf646b40106f2d4a1c8925a15b961d57111acfc8f2e66547",
+    "sparse_checks.json": "5eb40ba30a010648cbb5855246e798665ecdc692e563e51968292db5538b3f6e",
+    "REPORT.txt": "a86823ef890960a8af80558a8b333e53584f889aa96cf1e0b755ea4fabfd9ebc",
+    "actual_final.png": "706d00a43164529c6ccf6072dd58804b3d66ba6716ed8f13a1a104593d83455e",
+    "means.json": "a19d7cc87b23f7a7d9654ebf635deffdc2d9dc31d0ee022fe572bce9343d800a",
+    "paired_protocol_effects.json": "511e9b585421dc55689fde3a62a8cea1f17ea71816bb07a2399a3f7af9f582c1",
+    "usage.json": "6286994621572830ea8166e9a531b3b7f4754a9989aa5fea64520fe35bf89676",
+    "raw_manifest.json": "cabd63b86c1df0200bc22cf9b316ada7fa607d684a4f65b0d47b9a66ab4f0a47",
+    "actual_hold.png": "52b7ae36b788ab7f7a8953688b655eb42b627bbc31116955f8878621d0e27812",
+    "checks.json": "17d364d1ffb0a44f9618d7e72374e3b9789efcc720499a2384738ed736949f4d",
+    "figure_sources.json": "3edb493d1c91743671c0dc56bf020bc44c9d7d4902cc3dd11f85d454e88c5a90",
+    "continuous_signal.gif": "6af1f88b2e41c36befaf890115e91502f9235bb33aa7d01e0caeaa980e8da9b2",
+    "sparse_condition.png": "3fd8ad901f32adbf703a8a0104771bd7edef539cd18e5f833d87b424a5521345",
+    "action_response_pairs.json": "b2eda799d4bdd132c3bb239394ef6241abc1051f9bac0bcb562865168f21c145"
+  }
+}

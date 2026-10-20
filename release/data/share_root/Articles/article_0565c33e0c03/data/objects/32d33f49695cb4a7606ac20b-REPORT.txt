@@ -1,0 +1,42 @@
+固定场、自生接触与未告知反转：实际终版
+
+结论：去掉按身体质心移动线索和强制经历后，共有预置探索加合法局部接触支付，已足以支持有限自生接触学习。fast_delta与joint_delta各4/4初次习得、4/4第一次无反馈保持、4/4活到1536；反转末窗各2/4通过。反转后的第二次无反馈保持joint为2/4，fast为0/4。reactor初次2/4碰巧通过，最终0/4存续，不能把其早期接触阳性叫学习。没有复杂门、本批无新算法优势主张。
+
+取舍：保留joint作为强简单核心及fast alpha=1同行。关闭“四条件都已完成固定场反转保持”主张。原先先遇到坏区的两条件在反转后形成跨环面条带、绕开两个接触区；接触比例接近1而有利区绝对体时接近0，不能算成功。下一有价值问题是学得避开之后如何重新取得反馈机会；优先共同且明示的无反馈探索机制/同体反向关联干预，保同能力reactor与fast，不给joint独享额外行动，不再堆复杂写门。该下一机制尚无新身体结果。
+
+协议：两新seed202610197503/7504，镜像cue布局与共同探索方向；每个布局两种初始意义×reactor/fast_delta/joint_delta共12条life0主史。身体32×32、初M24/E72、半径4有限支撑；每步真材料四邻运输、变形、原运动与基底收费。无birth；能量不足可失去组织。持续主史不重置rho/E/Q/登记/极性。预设凝聚、压力、趋化执行器、局部结果转导与固定极性0.45是共有能力，非从零涌现的运动。方向在两布局镜像，未从结果学习。两个seed与两个镜像条件高度相关，不当独立世界或格级样本。
+
+两个固定斑块位于(16,8)/(16,24)，life0前冻结，半径5紧支撑余弦感觉场、半径2.5实际付费区；场不随身体质心移动。每个实际actor后，仅rho>=1e-4且处于付费区的材料可获/失能，requested=.02*rho，获能受4*rho容量限制，负支付受真实库存限制。局部价态=(实得−实失)/(.02*rho)，区外严格0，禁止高斯尾部远程反馈。初始付费区质量为0；第2步少量材料实际进入，首例两区质量约.000249/.001916，故首反馈很早并不表示整个身体到达。主体接触阈值.24=初M的1%另外记录。支付为预置外部可补充能量库，不是有限生态能量闭合。
+
+学习信息：fast_delta仅用最近实际局部cue登记与完成支付做alpha=1归一delta；joint_delta以最近/前一次两组cue登记共同拟合当次支付，四个局部系数之和读出两cue偏好。均由真实运输携带状态、每格计算。所有臂共享感觉登记、trace、极性、身体物理、支付机会；reactor不写关联。hidden good/反转时钟/坐标不进更新公式或运动。环境仅据good结算，学习器只见其实际结果。没有外层优化；状态/算术开销未物理计价。联合容量多于last，不能由此宣称同容量新机制优势。
+
+主史：1..640习得；641..704感觉/反馈均关；705..768感觉开、无纠正反馈保持；769..1408未告知交换好坏意义；1409..1472中性；1473..1536无反馈保持。两次中性期间共同探索和身体动力学继续，位置不重置。仍活着的8个学习者在实际768全态分叉freeze与erase各64；只有Q及joint关联bank擦到life0中性值，身体/E/trace/极性/感觉登记保留；主史从未被擦。16探针均无纠正反馈。8配对装配校验全通过。
+
+预先冻结的判定：64步窗按两有限接触区实际材料体时求有利份额，>=.65；习得/反转还须至少32/64步的总接触质量>=.24，保持至少16/64。末完整窗判定，不取最好峰，不因平均救失败。比例不等身体占据比例，另列good_contact/M。存续M>=12且最大连通体比例>=.5，连续32步越界停止。所有初形、微量/无接触、早死都保留；死亡后未取得阶段留空。两个reactor于327失败，另两个于1146失败；没有复活补齐。环境步钟与付费反馈次数曲线分列。真实计算墙钟仅保存作业总计，未存逐步墙钟秒，不逆造逐步计时。
+
+暴露与恢复：存续到反转的10条主史首合法新反馈均为769，因此此次反转前等待为0更新；成功学习者首次合格64窗到896，已累计128付费反馈更新，不能说一次反馈恢复。未到反转的两个死亡个体不计作零等待。initial good0的两joint，在整个反转期0次正支付、60次负支付；同条件fast有624/628次微量正支付，但末窗0/64满足主体接触。二者均未通过重新接触，不能把无正反馈的joint归为孤立算法不学习。initial good1的两joint在反转期均640次正支付、58次负支付；fast也640次正支付但628次负支付，末窗43/64主体接触。反馈更新不是独立接触事件；主史进入阈值事件数1..4。
+
+保持与擦除：第一次保持8/8学习者通过，但freeze及erase的8/8短探针都通过。freeze−erase份额范围−.025374..+.007395，两个fast甚至擦除更高；原位短测被身体/位置残留混杂，不能声称已隔离关联记忆的因果保持。第二次保持initial good1的joint有利份额.999421.. .999423；对应fast约.002253且64/64有足够接触，即明确错误偏好。initial good0四学习者保持窗0/64足够接触，应列接触不足，不能只按低比例叫错误选择。
+
+代价：8学习者均M24，无饥饿组织删除；能量与运动代价不同，按表保留。initial good0末E fast33.816..33.827/joint34.009..34.028，运动3.554..3.557/3.563..3.564；initial good1末E fast77.368..77.371/joint90.583，运动4.717/7.688..7.689。共同主史基底费44.2368；高运动费不否定有限能力。反应器0/4存续，坏意义先遇条件损失约16.08组织，另两条件反转后损失约12.69；局部失能可与别处较高总E并存，不等同全局能量耗尽。全能量逐步重组最大误差4.42e-14，原运动欠付0。额外学习算术与状态储存未计价。
+
+实际视觉：all_conditions_actual.gif由12条实际保存帧组成，无插值/身体重置；每格标真实钟、原意义条件和当前good，停止者冻结最后已保存帧并标STOPPED。all_conditions_sequence.png给640/832/1408/1536四钟。已经逐条件查看：初遇坏区后学习者形成弯月并绕环面找到好区；反转后good0史出现围区环带再变成跨界条带，good1史的joint重聚于新好区，fast后来又到旧区边缘。条带与环面边界不可讲成瞬移或自由新生。
+
+计账与入口：
+本批attempted=returned=16258, unknown=0; runner-worker秒=177.181498; 内部实际wall=86.450755秒；raw=25620401字节；job=ea785e90-138c-461f-998c-64b770243fa7。冻结cap20000/420，planned_max19456，未达计划因为reactor早停，无补步；无额外native测试。此前可达性独立cap4096/180，实际3214/46.258960；两批合计19472更新/223.440458 worker秒，无旧取得重演。
+
+逐主史完整结果（四条件全部保留；A=初次、R=反转、H1/H2=两保持）：
+202610197503_0_0_reactor_life: alive=False, steps=327, A/H1/R/H2=False/未取得/未取得/未取得, M=7.916320, E=0.572526, move=1.002284, events=1, paid_steps=326, write_steps=0
+202610197503_0_0_fast_delta_life: alive=True, steps=1536, A/H1/R/H2=True/True/False/False, M=24.000000, E=33.815885, move=3.554455, events=2, paid_steps=1263, write_steps=1262
+202610197503_0_0_joint_delta_life: alive=True, steps=1536, A/H1/R/H2=True/True/False/False, M=24.000000, E=34.009268, move=3.563350, events=2, paid_steps=699, write_steps=699
+202610197503_0_1_reactor_life: alive=False, steps=1146, A/H1/R/H2=True/True/False/未取得, M=11.311276, E=40.602645, move=4.488744, events=2, paid_steps=1017, write_steps=0
+202610197503_0_1_fast_delta_life: alive=True, steps=1536, A/H1/R/H2=True/True/True/False, M=24.000000, E=77.371261, move=4.716736, events=4, paid_steps=1279, write_steps=1279
+202610197503_0_1_joint_delta_life: alive=True, steps=1536, A/H1/R/H2=True/True/True/True, M=24.000000, E=90.582835, move=7.688272, events=2, paid_steps=1279, write_steps=1279
+202610197504_1_0_reactor_life: alive=False, steps=327, A/H1/R/H2=False/未取得/未取得/未取得, M=7.917710, E=0.590574, move=1.001262, events=1, paid_steps=326, write_steps=0
+202610197504_1_0_fast_delta_life: alive=True, steps=1536, A/H1/R/H2=True/True/False/False, M=24.000000, E=33.827107, move=3.557045, events=2, paid_steps=1267, write_steps=1266
+202610197504_1_0_joint_delta_life: alive=True, steps=1536, A/H1/R/H2=True/True/False/False, M=24.000000, E=34.028120, move=3.564410, events=2, paid_steps=699, write_steps=699
+202610197504_1_1_reactor_life: alive=False, steps=1146, A/H1/R/H2=True/True/False/未取得, M=11.308013, E=40.590780, move=4.487297, events=2, paid_steps=1017, write_steps=0
+202610197504_1_1_fast_delta_life: alive=True, steps=1536, A/H1/R/H2=True/True/True/False, M=24.000000, E=77.367653, move=4.717422, events=4, paid_steps=1279, write_steps=1279
+202610197504_1_1_joint_delta_life: alive=True, steps=1536, A/H1/R/H2=True/True/True/True, M=24.000000, E=90.583260, move=7.688838, events=2, paid_steps=1279, write_steps=1279
+
+机器可读：life_comparisons.csv/phase_metrics.csv/blocks.csv含全部阶段、绝对接触、代价与失败；feedback_exposure.csv分首新反馈与恢复；freeze_erase_comparisons.csv及erase_checks.json保探针限度；outcomes.json指向原steps/frames/完整状态。run.py+plan.json为冻结执行入口；analyze.py与evidence.py仅消费原数据。

@@ -1,0 +1,19 @@
+四个规则包×中性初态包组合已按rev2实际导出，全部可由原ce2 host装载。
+
+紧凑支系：8d60规则＋93e6初态；93e6规则＋8d60初态。
+多环支系：a6a8规则＋d02e初态；d02e规则＋a6a8初态。
+每一新ID和lineage记录均含双源谱系、完整SHA及组分选择。
+
+四份life0的全部18字段、完整body_rule和其他config经静态逐字节核对，
+保存/恢复和原host构造往返一致。没有重新materialize、插值或归一化；
+rho及关联energy/founder/polarity分布从声明初态源继承，实际双核及完整
+body_rule从规则源继承，其他13环境/中性字段保持家族参照。来源及旧包
+未改。初态分解包含能量分布，不能称纯形态中介。
+
+交付candidate_manifest.json列四份可调用NPZ与SHA；stage_bindings.json
+列28阶段、1792步的静态接线。形成T00、取得naive/experienced T11、未来
+none/x；本批没有新增低费T00取得/未来。旧两支系四端点仅只读引用。
+
+当前四新组合全部evaluation_status=unexecuted。0身体、0独立能量、
+0prepare、0potential、0preview、0runner；静态导出不是新动态结果。
+ce2可沿PI rev2既有授权冻结计划并唯一提交，无需d3再次批准。

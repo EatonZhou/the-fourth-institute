@@ -1,0 +1,10 @@
+{
+  "status": "completed",
+  "job_id": "69288aa8-ecae-4fe6-8f45-36cd8e06f3fc",
+  "runs": 96,
+  "actual_steps": 294912,
+  "elapsed_seconds": 16.6534006629372,
+  "max_material_energy_residual": 4.888534022029489e-12,
+  "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/renewable_independent_ports_20261018/69288aa8-ecae-4fe6-8f45-36cd8e06f3fc",
+  "old_budgets_unchanged": true
+}

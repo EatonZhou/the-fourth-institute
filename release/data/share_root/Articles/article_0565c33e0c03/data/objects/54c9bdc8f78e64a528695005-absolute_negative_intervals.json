@@ -1,0 +1,101 @@
+[
+  {
+    "stage_id": "genome_0ac80448a534dc953505/T00",
+    "net_M_negative": [
+      [
+        154,
+        211
+      ],
+      [
+        213,
+        214
+      ],
+      [
+        217,
+        224
+      ]
+    ],
+    "physical_M_negative": [
+      [
+        154,
+        211
+      ],
+      [
+        213,
+        214
+      ],
+      [
+        217,
+        224
+      ]
+    ],
+    "net_E_negative": [],
+    "physical_E_negative": [],
+    "starvation": [
+      [
+        217,
+        224
+      ]
+    ]
+  },
+  {
+    "stage_id": "genome_0ac80448a534dc953505/T11",
+    "net_M_negative": [
+      [
+        168,
+        224
+      ]
+    ],
+    "physical_M_negative": [
+      [
+        168,
+        224
+      ]
+    ],
+    "net_E_negative": [],
+    "physical_E_negative": [],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_6bd5bfd2f629f9414376/T00",
+    "net_M_negative": [],
+    "physical_M_negative": [],
+    "net_E_negative": [],
+    "physical_E_negative": [],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_6bd5bfd2f629f9414376/T11",
+    "net_M_negative": [],
+    "physical_M_negative": [],
+    "net_E_negative": [],
+    "physical_E_negative": [],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_85dffefe3eb5bacdfbf5/T00",
+    "net_M_negative": [
+      [
+        211,
+        214
+      ]
+    ],
+    "physical_M_negative": [
+      [
+        211,
+        214
+      ]
+    ],
+    "net_E_negative": [],
+    "physical_E_negative": [],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_85dffefe3eb5bacdfbf5/T11",
+    "net_M_negative": [],
+    "physical_M_negative": [],
+    "net_E_negative": [],
+    "physical_E_negative": [],
+    "starvation": []
+  }
+]

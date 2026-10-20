@@ -1,0 +1,338 @@
+[
+  {
+    "key": "compact_p512/plus/last/main",
+    "steps": 128,
+    "start": 1344,
+    "end": 1472,
+    "eligible": 128,
+    "writes": 128,
+    "A_changes": 128,
+    "motor_denied": 0.0026181446770764585,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.0034230876075487804,
+    "command_gram_eigenvalues": [
+      0.7675086223200078,
+      19.201827285036167
+    ],
+    "command_gram_condition": 25.018386408472278,
+    "delayed_paid_response_write": true,
+    "omega_fixed": true,
+    "complete_current_hash": true,
+    "viable": true
+  },
+  {
+    "key": "compact_p512/plus/fixed/main",
+    "steps": 128,
+    "start": 1344,
+    "end": 1472,
+    "eligible": 128,
+    "writes": 0,
+    "A_changes": 0,
+    "motor_denied": 0.0029498761008690355,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.003307641100393532,
+    "command_gram_eigenvalues": [
+      1.9786794640849275,
+      26.277588044637454
+    ],
+    "command_gram_condition": 13.28036628549635,
+    "delayed_paid_response_write": true,
+    "omega_fixed": true,
+    "complete_current_hash": true,
+    "viable": true
+  },
+  {
+    "key": "compact_p512/minus/last/main",
+    "steps": 128,
+    "start": 1344,
+    "end": 1472,
+    "eligible": 128,
+    "writes": 128,
+    "A_changes": 128,
+    "motor_denied": 0.00501368173140224,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.008165745789140456,
+    "command_gram_eigenvalues": [
+      1.609514608453694,
+      10.376135407867519
+    ],
+    "command_gram_condition": 6.446748201829721,
+    "delayed_paid_response_write": true,
+    "omega_fixed": true,
+    "complete_current_hash": true,
+    "viable": true
+  },
+  {
+    "key": "compact_p512/minus/fixed/main",
+    "steps": 128,
+    "start": 1344,
+    "end": 1472,
+    "eligible": 128,
+    "writes": 0,
+    "A_changes": 0,
+    "motor_denied": 0.004981860077144334,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.008854185849603569,
+    "command_gram_eigenvalues": [
+      0.9384277847844285,
+      11.112512166174108
+    ],
+    "command_gram_condition": 11.841627396749368,
+    "delayed_paid_response_write": true,
+    "omega_fixed": true,
+    "complete_current_hash": true,
+    "viable": true
+  },
+  {
+    "key": "soft_p512/plus/last/main",
+    "steps": 128,
+    "start": 1344,
+    "end": 1472,
+    "eligible": 128,
+    "writes": 128,
+    "A_changes": 128,
+    "motor_denied": 0.02925674367715537,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.03941212969617681,
+    "command_gram_eigenvalues": [
+      0.7490801200204666,
+      16.94234413315524
+    ],
+    "command_gram_condition": 22.617532731601973,
+    "delayed_paid_response_write": true,
+    "omega_fixed": true,
+    "complete_current_hash": true,
+    "viable": true
+  },
+  {
+    "key": "soft_p512/plus/fixed/main",
+    "steps": 128,
+    "start": 1344,
+    "end": 1472,
+    "eligible": 128,
+    "writes": 0,
+    "A_changes": 0,
+    "motor_denied": 0.03535745602505298,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.0403536672108143,
+    "command_gram_eigenvalues": [
+      1.9651124591013955,
+      23.448851288782272
+    ],
+    "command_gram_condition": 11.932574739007526,
+    "delayed_paid_response_write": true,
+    "omega_fixed": true,
+    "complete_current_hash": true,
+    "viable": true
+  },
+  {
+    "key": "soft_p512/minus/last/main",
+    "steps": 128,
+    "start": 1344,
+    "end": 1472,
+    "eligible": 128,
+    "writes": 128,
+    "A_changes": 128,
+    "motor_denied": 0.024231416006441783,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.044283784723586406,
+    "command_gram_eigenvalues": [
+      1.389302023951755,
+      8.670831982351418
+    ],
+    "command_gram_condition": 6.241142554221544,
+    "delayed_paid_response_write": true,
+    "omega_fixed": true,
+    "complete_current_hash": true,
+    "viable": true
+  },
+  {
+    "key": "soft_p512/minus/fixed/main",
+    "steps": 128,
+    "start": 1344,
+    "end": 1472,
+    "eligible": 128,
+    "writes": 0,
+    "A_changes": 0,
+    "motor_denied": 0.023492838210885884,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.044554802367763664,
+    "command_gram_eigenvalues": [
+      0.575238770729825,
+      9.826526731407567
+    ],
+    "command_gram_condition": 17.08251813232324,
+    "delayed_paid_response_write": true,
+    "omega_fixed": true,
+    "complete_current_hash": true,
+    "viable": true
+  },
+  {
+    "key": "compact_p512/plus/last/keep",
+    "steps": 64,
+    "start": 1472,
+    "end": 1536,
+    "eligible": 64,
+    "writes": 0,
+    "A_changes": 0,
+    "motor_denied": 0.0007173454313369256,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.0012584843764223879,
+    "command_gram_eigenvalues": [
+      0.40583380086652343,
+      7.223717429725701
+    ],
+    "command_gram_condition": 17.799693900069066,
+    "delayed_paid_response_write": true,
+    "omega_fixed": true,
+    "complete_current_hash": true,
+    "viable": true
+  },
+  {
+    "key": "compact_p512/plus/last/reset",
+    "steps": 64,
+    "start": 1472,
+    "end": 1536,
+    "eligible": 64,
+    "writes": 0,
+    "A_changes": 0,
+    "motor_denied": 0.0009308754297594451,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.001136918105423898,
+    "command_gram_eigenvalues": [
+      2.0182258133663824,
+      12.90669479389818
+    ],
+    "command_gram_condition": 6.395069723327902,
+    "delayed_paid_response_write": true,
+    "omega_fixed": true,
+    "complete_current_hash": true,
+    "viable": true
+  },
+  {
+    "key": "compact_p512/minus/last/keep",
+    "steps": 64,
+    "start": 1472,
+    "end": 1536,
+    "eligible": 64,
+    "writes": 0,
+    "A_changes": 0,
+    "motor_denied": 0.0016003075495330547,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.002851145037982693,
+    "command_gram_eigenvalues": [
+      0.3910045605868808,
+      7.092449947688925
+    ],
+    "command_gram_condition": 18.139046606114942,
+    "delayed_paid_response_write": true,
+    "omega_fixed": true,
+    "complete_current_hash": true,
+    "viable": true
+  },
+  {
+    "key": "compact_p512/minus/last/reset",
+    "steps": 64,
+    "start": 1472,
+    "end": 1536,
+    "eligible": 64,
+    "writes": 0,
+    "A_changes": 0,
+    "motor_denied": 0.0018721702021627005,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.0027003798221046636,
+    "command_gram_eigenvalues": [
+      0.046533568632078026,
+      9.802412122856044
+    ],
+    "command_gram_condition": 210.65249047112042,
+    "delayed_paid_response_write": true,
+    "omega_fixed": true,
+    "complete_current_hash": true,
+    "viable": true
+  },
+  {
+    "key": "soft_p512/plus/last/keep",
+    "steps": 64,
+    "start": 1472,
+    "end": 1536,
+    "eligible": 64,
+    "writes": 0,
+    "A_changes": 0,
+    "motor_denied": 0.011655207089778602,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.02122767960736176,
+    "command_gram_eigenvalues": [
+      0.356596285604615,
+      6.886457361798671
+    ],
+    "command_gram_condition": 19.311635145392966,
+    "delayed_paid_response_write": true,
+    "omega_fixed": true,
+    "complete_current_hash": true,
+    "viable": true
+  },
+  {
+    "key": "soft_p512/plus/last/reset",
+    "steps": 64,
+    "start": 1472,
+    "end": 1536,
+    "eligible": 64,
+    "writes": 0,
+    "A_changes": 0,
+    "motor_denied": 0.016292445731334156,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.020972649145858748,
+    "command_gram_eigenvalues": [
+      1.9785480210881736,
+      12.586643639059552
+    ],
+    "command_gram_condition": 6.361555799963387,
+    "delayed_paid_response_write": true,
+    "omega_fixed": true,
+    "complete_current_hash": true,
+    "viable": true
+  },
+  {
+    "key": "soft_p512/minus/last/keep",
+    "steps": 64,
+    "start": 1472,
+    "end": 1536,
+    "eligible": 64,
+    "writes": 0,
+    "A_changes": 0,
+    "motor_denied": 0.009807927709886765,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.01843356229819937,
+    "command_gram_eigenvalues": [
+      0.3589281303832824,
+      6.770142449169881
+    ],
+    "command_gram_condition": 18.862111593037763,
+    "delayed_paid_response_write": true,
+    "omega_fixed": true,
+    "complete_current_hash": true,
+    "viable": true
+  },
+  {
+    "key": "soft_p512/minus/last/reset",
+    "steps": 64,
+    "start": 1472,
+    "end": 1536,
+    "eligible": 64,
+    "writes": 0,
+    "A_changes": 0,
+    "motor_denied": 0.01191446360574474,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.017524913721788618,
+    "command_gram_eigenvalues": [
+      0.06133092045284361,
+      9.535637772626256
+    ],
+    "command_gram_condition": 155.4784715803843,
+    "delayed_paid_response_write": true,
+    "omega_fixed": true,
+    "complete_current_hash": true,
+    "viable": true
+  }
+]

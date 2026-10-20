@@ -1,0 +1,1 @@
+anchors/*.npz: current(n,10),history/shuffled_history(n,2),birth_mass(n),y_raw(n),source_flat_index。index/clock仅审计，不进入模型。predictions/*.npz含五模型raw/clipped以及同标签与权重。models.json保存base及design两级标准化、beta、λ和权重；列序见coefficients.csv。coverage/anchor_metrics/track_metrics/paired_metrics/split_metrics/operator_checks均保全部正负。source.py是唯一实际拟合源码。input_manifest绑定只读输入。0native/0runner，无身体恢复接口。

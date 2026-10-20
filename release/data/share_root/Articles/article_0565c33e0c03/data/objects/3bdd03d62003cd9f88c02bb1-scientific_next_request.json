@@ -1,0 +1,32 @@
+{
+  "task": "postbirth_cohort_policy_crossover_20261019",
+  "decision": "保四态出生后材料支持；仅两G史分离体有用更新；关闭普遍新生特异和普遍更新优势",
+  "evidence": {
+    "restoration": {
+      "C_advantage_tol": 4,
+      "C_advantage_zero": 4,
+      "useful_renewal_tol": 2,
+      "useful_renewal_zero": 2,
+      "total": 4,
+      "positive_specificity": 2
+    },
+    "withdrawal": {
+      "C_advantage_tol": 4,
+      "C_advantage_zero": 4,
+      "useful_renewal_tol": 0,
+      "useful_renewal_zero": 0,
+      "total": 4,
+      "positive_specificity": 0
+    },
+    "maintenance_by_history_future": {
+      "both__both": 4,
+      "both__birth_gain_only": 0,
+      "birth_gain_only__both": 4,
+      "birth_gain_only__birth_gain_only": 0
+    },
+    "same_zero_tolerance_classification": true
+  },
+  "next_action": "PI接受该有限分层结论；后续若重开生成训练，以真实留存+后续N+M/E/体时联合目标，固定both为强同行，保环体反例；另冻结协议，本批不加计算。",
+  "automatic_followup": false,
+  "old_and_remaining_budgets_sealed": true
+}

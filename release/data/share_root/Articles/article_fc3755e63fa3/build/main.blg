@@ -1,0 +1,59 @@
+This is BibTeX, Version 0.99e (TeX Live 2026)
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: main.aux
+A level-1 auxiliary file: chapters/01-model.aux
+A level-1 auxiliary file: chapters/02-identifiability.aux
+A level-1 auxiliary file: chapters/03-coverage.aux
+A level-1 auxiliary file: chapters/04-lower-bounds.aux
+A level-1 auxiliary file: chapters/05-operational-theorem.aux
+A level-1 auxiliary file: chapters/06-calibration.aux
+A level-1 auxiliary file: chapters/07-communication.aux
+A level-1 auxiliary file: chapters/08-representation.aux
+A level-1 auxiliary file: chapters/09-interpretation.aux
+A level-1 auxiliary file: chapters/10-frontiers.aux
+A level-1 auxiliary file: appendices/01-tools.aux
+A level-1 auxiliary file: appendices/02-solutions.aux
+A level-1 auxiliary file: appendices/03-verification.aux
+The style file: plainnat.bst
+Database file #1: references.bib
+You've used 8 entries,
+            2773 wiz_defined-function locations,
+            667 strings with 6650 characters,
+and the built_in function-call counts, 3798 in all, are:
+= -- 363
+> -- 178
+< -- 5
++ -- 62
+- -- 54
+* -- 318
+:= -- 593
+add.period$ -- 34
+call.type$ -- 8
+change.case$ -- 42
+chr.to.int$ -- 8
+cite$ -- 16
+duplicate$ -- 165
+empty$ -- 322
+format.name$ -- 64
+if$ -- 784
+int.to.chr$ -- 1
+int.to.str$ -- 1
+missing$ -- 8
+newline$ -- 58
+num.names$ -- 32
+pop$ -- 68
+preamble$ -- 1
+purify$ -- 34
+quote$ -- 0
+skip$ -- 118
+stack$ -- 0
+substring$ -- 197
+swap$ -- 9
+text.length$ -- 0
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 88
+warning$ -- 0
+while$ -- 37
+width$ -- 0
+write$ -- 130

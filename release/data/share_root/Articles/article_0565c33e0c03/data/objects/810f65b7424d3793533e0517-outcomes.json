@@ -1,0 +1,82 @@
+[
+  {
+    "seed": 202610199741,
+    "arm": "adaptive_gain",
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5f08b6b0-ceb7-4dc1-a70e-ee5d0052e9aa/raw/202610199741_adaptive_gain",
+    "native": 902,
+    "failed": false,
+    "events": 64,
+    "M": 23.999999999999996,
+    "E": 43.4339120283081
+  },
+  {
+    "seed": 202610199741,
+    "arm": "fixed_tick",
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5f08b6b0-ceb7-4dc1-a70e-ee5d0052e9aa/raw/202610199741_fixed_tick",
+    "native": 902,
+    "failed": false,
+    "events": 64,
+    "M": 24.000000000000007,
+    "E": 44.002152945991185
+  },
+  {
+    "seed": 202610199741,
+    "arm": "fixed_event",
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5f08b6b0-ceb7-4dc1-a70e-ee5d0052e9aa/raw/202610199741_fixed_event",
+    "native": 902,
+    "failed": false,
+    "events": 64,
+    "M": 23.999999999999996,
+    "E": 43.4339120283081
+  },
+  {
+    "seed": 202610199741,
+    "arm": "history_table",
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5f08b6b0-ceb7-4dc1-a70e-ee5d0052e9aa/raw/202610199741_history_table",
+    "native": 902,
+    "failed": false,
+    "events": 64,
+    "M": 24.0,
+    "E": 44.242920926861245
+  },
+  {
+    "seed": 202610199742,
+    "arm": "adaptive_gain",
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5f08b6b0-ceb7-4dc1-a70e-ee5d0052e9aa/raw/202610199742_adaptive_gain",
+    "native": 900,
+    "failed": false,
+    "events": 64,
+    "M": 24.00000000000001,
+    "E": 43.910510124739744
+  },
+  {
+    "seed": 202610199742,
+    "arm": "fixed_tick",
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5f08b6b0-ceb7-4dc1-a70e-ee5d0052e9aa/raw/202610199742_fixed_tick",
+    "native": 900,
+    "failed": false,
+    "events": 64,
+    "M": 24.000000000000014,
+    "E": 44.39957578246856
+  },
+  {
+    "seed": 202610199742,
+    "arm": "fixed_event",
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5f08b6b0-ceb7-4dc1-a70e-ee5d0052e9aa/raw/202610199742_fixed_event",
+    "native": 900,
+    "failed": false,
+    "events": 64,
+    "M": 23.99999999999998,
+    "E": 44.49605984086821
+  },
+  {
+    "seed": 202610199742,
+    "arm": "history_table",
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5f08b6b0-ceb7-4dc1-a70e-ee5d0052e9aa/raw/202610199742_history_table",
+    "native": 900,
+    "failed": false,
+    "events": 64,
+    "M": 24.0,
+    "E": 44.818330719318226
+  }
+]

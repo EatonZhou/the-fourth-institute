@@ -1,0 +1,16 @@
+{
+  "type": "document",
+  "category": "resource",
+  "description": "A durable standalone document that requires an identity independent of its path.",
+  "title": {
+    "zh": "文档",
+    "en": "Document"
+  },
+  "provider": "",
+  "catalog_section": "",
+  "catalog_order": 0,
+  "registerable": false,
+  "scope": "shared",
+  "unit": "core",
+  "enabled_by_default": true
+}

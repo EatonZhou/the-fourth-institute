@@ -1,0 +1,11 @@
+{
+  "status": "completed_exploratory_followup",
+  "job_id": "8038712e-7eda-4725-99fe-ecf966797d3d",
+  "steps": 102400,
+  "report": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/feedback_update_control_20261018/REPORT.txt",
+  "manifest_sha256": "21a8dc4380f1e828102a17b931e07d1135fa22b1588db5c5f17a5d490fe0de48",
+  "raw_manifest_sha256": "278daffed48c3ba289572fc81b928c94d41ecefcda0ddd7501f77a2645cfe0b7",
+  "analysis_source_sha256": "518ca8788b0437fbda7c21517aaa23d916fd21afafa9cfae49293befa5f3ef08",
+  "prior_comparison": "${share_root}/Projects/元胞自动机研究/src/research/results/feedback_acquisition_20261018/native/handoff.json",
+  "old_budget_223_used": 0
+}

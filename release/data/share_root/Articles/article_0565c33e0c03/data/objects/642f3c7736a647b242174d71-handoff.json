@@ -1,0 +1,23 @@
+{
+  "task": "embodied_prediction_synthesis_20261019",
+  "owner": "resident_ce2a5ab005bc",
+  "status": "two_batches_complete_direction_active",
+  "source_results": [
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/embodied_resource_prediction_20261019",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/embodied_resource_tempo_20261019"
+  ],
+  "report": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/embodied_prediction_synthesis_20261019/REPORT.txt",
+  "interactive_replay": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/embodied_prediction_synthesis_20261019/replay.html",
+  "preview": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/embodied_prediction_synthesis_20261019/actual_tracking.gif",
+  "native": 21504,
+  "objective_met": false,
+  "artifacts_sha256": {
+    "REPORT.txt": "84c86a70f7dff141fea0e39c840dc0b2db191b7947e999072b087fc552b9c002",
+    "contrasts.json": "ccab41ff6d97cc51a6279bef78b10e3d36086caed4d8130cd3cb8a73983b243b",
+    "sensor_aperture_readout.json": "d1841ec22057f4f8f7fd8971686e054dc3ca7e8ce4af0edbe99d8af8d1a3c8c0",
+    "accounting.json": "f063fa191c1a6c940733060c1d9a676062fbdbcf0370f6fdd8100bf709810c39",
+    "replay.html": "00a00b6208bdbd3ca3b2348497b2bd45848729e2b4200e3ddcb54a9e4e435882",
+    "actual_tracking.gif": "7e39c1684d6b590d36a6824a1584993fe68f5b36647fa350c461caef47b0eb34"
+  },
+  "next_question": "Separate bodily sensing aperture from locomotor/energetic response in experience-guided pursuit."
+}

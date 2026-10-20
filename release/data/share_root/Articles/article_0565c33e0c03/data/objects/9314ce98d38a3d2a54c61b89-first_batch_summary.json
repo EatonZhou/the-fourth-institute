@@ -1,0 +1,60 @@
+{
+  "source_jobs": [
+    "5c0cbcd4-0be6-486a-ab56-35b3ed084979",
+    "d4fa3c8b-aeb4-4f96-83f4-1e4b5bc0af3b",
+    "41a0e2a0-44ab-450a-800e-d71176365daa"
+  ],
+  "genomes_screened": 168,
+  "screen_active": 76,
+  "extended": 18,
+  "long_active": 17,
+  "classes": {
+    "compact_single_bodies": 6,
+    "multiple_smooth_bodies": 1,
+    "distributed_patterns": 10
+  },
+  "control_active": 17,
+  "pulse_active": {
+    ".3": 14,
+    ".45": 12
+  },
+  "compact_single_pulse_active": {
+    ".3": 3,
+    ".45": 1
+  },
+  "candidate_snapshot_match_max_error": 0.0,
+  "selected": [
+    {
+      "candidate_id": "m2026101607-g2-0161",
+      "reason": "compact single-body persistence under both common pulse levels"
+    },
+    {
+      "candidate_id": "m2026101607-g1-0063",
+      "reason": "fast single body; loses activity at .45, preserve speed/robustness tradeoff"
+    },
+    {
+      "candidate_id": "m2026101607-g1-0060",
+      "reason": "multiple bodies; high pulse changes morphology, not identity-preserving recovery"
+    },
+    {
+      "candidate_id": "m2026101607-g2-0136",
+      "reason": "sparse distributed rings"
+    },
+    {
+      "candidate_id": "m2026101607-g1-0069",
+      "reason": "distributed stripe field"
+    },
+    {
+      "candidate_id": "m2026101607-g2-0145",
+      "reason": "fine many-component pattern"
+    }
+  ],
+  "formal_portal_ref": null,
+  "limits": [
+    "Distinct IDs are not distinct species; compact bodies mostly remain Orbium-like variants.",
+    "Activity/occupancy gate admits distributed patterns; raw active_localized flag is not proof of a localized organism.",
+    "Known Orbium is an annotated reference outside the searched pool.",
+    "No learned memory or natural reproduction demonstrated.",
+    "Pulse schedule is matched in updates; evolved dt prevents morphology-only or matched physical-dose claims."
+  ]
+}

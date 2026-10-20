@@ -1,0 +1,24 @@
+<section class="semanticMatrix" aria-label="模型与硬件优化矩阵">
+  <div class="portalToolbar matrixToolbar">
+    <div><h2>模型 × 硬件</h2><p class="matrixMuted">从全局性能到单项优化；点击单元格查看方法、进展和来源。</p></div>
+    <div class="matrixActions"><button class="portalButton" id="matrixRefresh">刷新数据</button><button class="portalButton is-quiet" id="matrixLineage">打开 Lineage</button></div>
+  </div>
+  <div class="matrixSummary" aria-live="polite"><span id="matrixDimensions">正在读取真实模型目录…</span><span id="matrixCoverage"></span><span class="matrixMuted" id="matrixUpdated"></span></div>
+  <div class="matrixFilters">
+    <label class="portalField">筛选模型<input id="matrixSearch" type="search" placeholder="模型名称"></label>
+    <label class="portalField">硬件平台<select id="matrixHardware"><option value="all">全部平台</option></select></label>
+    <span class="matrixMuted">p50 越低越好 · 加速比仅比较同一报告、同一输入契约</span>
+  </div>
+  <p class="matrixNotice" id="matrixNotice">空白表示未登记可用测量，不代表性能为零。负责人运行状态不等于实验完成度。</p>
+  <p role="alert" id="matrixError" hidden></p>
+  <div class="matrixScroll" role="region" aria-label="模型与硬件性能" tabindex="0"><table class="performanceMatrix" id="performanceMatrix"><thead></thead><tbody><tr><td>正在加载…</td></tr></tbody></table></div>
+  <p class="matrixMuted">展示的是各实验资源当前已登记的证据；候选测量不等于独立验收通过，也不与其他硬件、模型或测量窗口混算。</p>
+  <dialog id="matrixDetail" aria-labelledby="matrixDetailTitle">
+    <div class="paneHead"><div><h2 id="matrixDetailTitle"></h2><p class="matrixMuted" id="matrixDetailSubtitle"></p></div><button class="portalButton is-icon" id="matrixClose" aria-label="关闭详情">×</button></div>
+    <div class="matrixDetailBody"><div id="matrixDetailSummary"></div><div class="matrixTabs" role="tablist" aria-label="单元格详情"><button class="portalButton" role="tab" id="matrixResultsTab" aria-controls="matrixResults" aria-selected="true" data-tab="results">性能分层</button><button class="portalButton" role="tab" id="matrixMethodsTab" aria-controls="matrixMethods" aria-selected="false" data-tab="methods">语义优化方式</button><button class="portalButton" role="tab" id="matrixEvidenceTab" aria-controls="matrixEvidence" aria-selected="false" data-tab="evidence">原始证据</button></div>
+      <section id="matrixResults" role="tabpanel" aria-labelledby="matrixResultsTab"></section>
+      <section id="matrixMethods" role="tabpanel" aria-labelledby="matrixMethodsTab" hidden></section>
+      <section id="matrixEvidence" role="tabpanel" aria-labelledby="matrixEvidenceTab" hidden></section>
+    </div>
+  </dialog>
+</section>

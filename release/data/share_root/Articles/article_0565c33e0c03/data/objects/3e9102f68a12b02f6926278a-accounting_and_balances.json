@@ -1,0 +1,584 @@
+{
+  "runs": [
+    {
+      "task": "young_regenerative_learning_opportunity_20261019",
+      "job": "ef9f113a-16db-45fd-861a-1111d2a7a7df",
+      "native": 2011,
+      "native_cap": 8192,
+      "runner_worker_seconds": 50.976446,
+      "worker_cap": 240,
+      "raw_bytes_as_recorded": 21086208,
+      "raw_cap": 134217728,
+      "unknown": 0,
+      "plan_sha256": "b4b0909620e9934163c2afdbf416daf85e1ecf074414c689b07fe0c298bf0851",
+      "execution_sha256": "627f177e41f5ed016f9d0fcef572e09af18ac5004120f3a3ee34c165cae7b214",
+      "complete": 0,
+      "branches": 8
+    },
+    {
+      "task": "young_bounded_habitat_learning_20261019",
+      "job": "af553308-1a19-4abb-a0e2-4f4256b8d564",
+      "native": 6144,
+      "native_cap": 8192,
+      "runner_worker_seconds": 115.981384,
+      "worker_cap": 240,
+      "raw_bytes_as_recorded": 38460641,
+      "raw_cap": 134217728,
+      "unknown": 0,
+      "plan_sha256": "014139d72e3e0233e51ba6cf320fe3bb8d65c0ad17842f179fb1161a9c76ccef",
+      "execution_sha256": "0bcea469b4c91f36699768619b4fbc3aba225238e45f3ab4542f2cd550f05bdb",
+      "complete": 12,
+      "branches": 12
+    },
+    {
+      "task": "homeostatic_regenerative_learning_20261019",
+      "job": "725c41a5-f2e1-4ab6-9490-c1dfe7c68c06",
+      "native": 6144,
+      "native_cap": 8192,
+      "runner_worker_seconds": 134.179728,
+      "worker_cap": 240,
+      "raw_bytes_as_recorded": 134393851,
+      "raw_cap": 134217728,
+      "unknown": 0,
+      "plan_sha256": "d0c968fe2027b03f13edce58da2391bf7cfe9081dff60e6860dda77b08c6abe0",
+      "execution_sha256": "5502d77c30b60db04958e51e8456e10e4077c07f790d529446c2f889fb58feb4",
+      "complete": 12,
+      "branches": 12
+    },
+    {
+      "task": "homeostatic_content_reset_20261019",
+      "job": "3d9d173f-aff7-4878-acce-220e83d22729",
+      "native": 1024,
+      "native_cap": 1024,
+      "runner_worker_seconds": 20.911196,
+      "worker_cap": 90,
+      "raw_bytes_as_recorded": 18769995,
+      "raw_cap": 67108864,
+      "unknown": 0,
+      "plan_sha256": "9efd5521d5fea6f0e978eeb754c9795bd4db4a20ef229be6102bac388cb1b0fa",
+      "execution_sha256": "6930b6ecdcd18167a7970ad9a59c904c7c7647023a31fbcccc778464c9d3cbff",
+      "complete": 4,
+      "branches": 4
+    },
+    {
+      "task": "energetic_cue_regenerative_learning_20261019",
+      "job": "498fb0c9-b161-4a00-83c1-d520800ec135",
+      "native": 5632,
+      "native_cap": 8192,
+      "runner_worker_seconds": 151.45059,
+      "worker_cap": 240,
+      "raw_bytes_as_recorded": 139087277,
+      "raw_cap": 134217728,
+      "unknown": 0,
+      "plan_sha256": "0ea6da1e1e9df70a8e8c36099dde4da0743030e99f7e307aef6984f438c35a49",
+      "execution_sha256": "9c97d56babc6912640cff4fe9e38633cd20dc0e96cdae41055ece3891d517265",
+      "complete": 8,
+      "branches": 12
+    },
+    {
+      "task": "energetic_newborn_content_20261019",
+      "job": "4f881fe2-fc3e-4c44-819d-2a9d7492b358",
+      "native": 768,
+      "native_cap": 1024,
+      "runner_worker_seconds": 16.671024,
+      "worker_cap": 90,
+      "raw_bytes_as_recorded": 29703879,
+      "raw_cap": 100663296,
+      "unknown": 0,
+      "plan_sha256": "9c8f14ebb56e218974c154f67f14907c9d5e83c9c6cbaf6d4aaa7222bbf92652",
+      "execution_sha256": "04244f0d03a25102fba7c93b768eb59f2e0dedf7f9e69445c3ade40252a4833f",
+      "complete": 6,
+      "branches": 6
+    }
+  ],
+  "total_native": 21723,
+  "total_worker": 490.17036800000005,
+  "balance": {
+    "young_regenerative_learning_opportunity_20261019/i0_g1_frozen": {
+      "material_residual": 0.0,
+      "energy_residual": 0.0,
+      "external_P": 2934.4949907643413,
+      "external_F": 2913.695117225744,
+      "tax_paid": 0,
+      "tax_unpaid": 0,
+      "newborn_history_max": 0.0
+    },
+    "young_regenerative_learning_opportunity_20261019/i1_g0_frozen": {
+      "material_residual": 0.0,
+      "energy_residual": -4.547473508864641e-13,
+      "external_P": 2909.34380815991,
+      "external_F": 2852.640171472245,
+      "tax_paid": 0,
+      "tax_unpaid": 0,
+      "newborn_history_max": 0.0
+    },
+    "young_regenerative_learning_opportunity_20261019/i1_g0_fast": {
+      "material_residual": 2.2737367544323206e-13,
+      "energy_residual": 0.0,
+      "external_P": 1528.56471556747,
+      "external_F": 1260.4976764404014,
+      "tax_paid": 0,
+      "tax_unpaid": 0,
+      "newborn_history_max": 0.0
+    },
+    "young_regenerative_learning_opportunity_20261019/i0_g0_frozen": {
+      "material_residual": 4.547473508864641e-13,
+      "energy_residual": 0.0,
+      "external_P": 3137.6566194278075,
+      "external_F": 3280.026797627477,
+      "tax_paid": 0,
+      "tax_unpaid": 0,
+      "newborn_history_max": 0.0
+    },
+    "young_regenerative_learning_opportunity_20261019/i1_g1_fast": {
+      "material_residual": 2.2737367544323206e-13,
+      "energy_residual": -2.2737367544323206e-13,
+      "external_P": 1783.5719379230618,
+      "external_F": 1518.3301226116994,
+      "tax_paid": 0,
+      "tax_unpaid": 0,
+      "newborn_history_max": 0.0
+    },
+    "young_regenerative_learning_opportunity_20261019/i1_g1_frozen": {
+      "material_residual": 0.0,
+      "energy_residual": 0.0,
+      "external_P": 2516.9579621292255,
+      "external_F": 2337.9055323681296,
+      "tax_paid": 0,
+      "tax_unpaid": 0,
+      "newborn_history_max": 0.0
+    },
+    "young_regenerative_learning_opportunity_20261019/i0_g1_fast": {
+      "material_residual": 4.547473508864641e-13,
+      "energy_residual": -4.547473508864641e-13,
+      "external_P": 2368.0456402869354,
+      "external_F": 2121.5015830066363,
+      "tax_paid": 0,
+      "tax_unpaid": 0,
+      "newborn_history_max": 0.0
+    },
+    "young_regenerative_learning_opportunity_20261019/i0_g0_fast": {
+      "material_residual": 4.547473508864641e-13,
+      "energy_residual": 2.2737367544323206e-13,
+      "external_P": 2141.178625457746,
+      "external_F": 1860.7128089828518,
+      "tax_paid": 0,
+      "tax_unpaid": 0,
+      "newborn_history_max": 0.0
+    },
+    "young_bounded_habitat_learning_20261019/i0_g1_frozen": {
+      "material_residual": 1.1368683772161603e-12,
+      "energy_residual": -2.2737367544323206e-13,
+      "external_P": 1266.9299404649867,
+      "external_F": 1946.3863005633596,
+      "tax_paid": 0,
+      "tax_unpaid": 0,
+      "newborn_history_max": 0.0
+    },
+    "young_bounded_habitat_learning_20261019/i1_g0_frozen": {
+      "material_residual": 9.094947017729282e-13,
+      "energy_residual": -2.2737367544323206e-13,
+      "external_P": 1241.336530212909,
+      "external_F": 1903.3227684060478,
+      "tax_paid": 0,
+      "tax_unpaid": 0,
+      "newborn_history_max": 0.0
+    },
+    "young_bounded_habitat_learning_20261019/i1_g0_fast": {
+      "material_residual": 1.1368683772161603e-12,
+      "energy_residual": -2.2737367544323206e-13,
+      "external_P": 1285.8156280488174,
+      "external_F": 1919.6609078961565,
+      "tax_paid": 0,
+      "tax_unpaid": 0,
+      "newborn_history_max": 0.0
+    },
+    "young_bounded_habitat_learning_20261019/i0_g1_fast_freeze_reversal": {
+      "material_residual": 4.547473508864641e-13,
+      "energy_residual": -1.1368683772161603e-13,
+      "external_P": 391.96469883995564,
+      "external_F": 774.4196043545303,
+      "tax_paid": 0,
+      "tax_unpaid": 0,
+      "newborn_history_max": 0.0
+    },
+    "young_bounded_habitat_learning_20261019/i0_g0_frozen": {
+      "material_residual": 1.1368683772161603e-12,
+      "energy_residual": -2.2737367544323206e-13,
+      "external_P": 1282.0933028698892,
+      "external_F": 1977.8671768219765,
+      "tax_paid": 0,
+      "tax_unpaid": 0,
+      "newborn_history_max": 0.0
+    },
+    "young_bounded_habitat_learning_20261019/i1_g1_fast": {
+      "material_residual": 9.094947017729282e-13,
+      "energy_residual": -2.2737367544323206e-13,
+      "external_P": 1273.2259546301448,
+      "external_F": 1913.6833653696647,
+      "tax_paid": 0,
+      "tax_unpaid": 0,
+      "newborn_history_max": 0.0
+    },
+    "young_bounded_habitat_learning_20261019/i1_g1_frozen": {
+      "material_residual": 9.094947017729282e-13,
+      "energy_residual": 2.2737367544323206e-13,
+      "external_P": 1236.89364667468,
+      "external_F": 1909.102095193672,
+      "tax_paid": 0,
+      "tax_unpaid": 0,
+      "newborn_history_max": 0.0
+    },
+    "young_bounded_habitat_learning_20261019/i0_g1_fast": {
+      "material_residual": 6.821210263296962e-13,
+      "energy_residual": 0.0,
+      "external_P": 1277.9528229285388,
+      "external_F": 1933.293602088477,
+      "tax_paid": 0,
+      "tax_unpaid": 0,
+      "newborn_history_max": 0.0
+    },
+    "young_bounded_habitat_learning_20261019/i0_g0_fast_freeze_reversal": {
+      "material_residual": 3.410605131648481e-13,
+      "energy_residual": 1.1368683772161603e-13,
+      "external_P": 412.8102944043319,
+      "external_F": 783.9375684548224,
+      "tax_paid": 0,
+      "tax_unpaid": 0,
+      "newborn_history_max": 0.0
+    },
+    "young_bounded_habitat_learning_20261019/i1_g0_fast_freeze_reversal": {
+      "material_residual": 3.979039320256561e-13,
+      "energy_residual": -2.2737367544323206e-13,
+      "external_P": 387.32055719178135,
+      "external_F": 776.5522456519238,
+      "tax_paid": 0,
+      "tax_unpaid": 0,
+      "newborn_history_max": 0.0
+    },
+    "young_bounded_habitat_learning_20261019/i0_g0_fast": {
+      "material_residual": 6.821210263296962e-13,
+      "energy_residual": -2.2737367544323206e-13,
+      "external_P": 1308.5382303738133,
+      "external_F": 1966.0169209061814,
+      "tax_paid": 0,
+      "tax_unpaid": 0,
+      "newborn_history_max": 0.0
+    },
+    "young_bounded_habitat_learning_20261019/i1_g1_fast_freeze_reversal": {
+      "material_residual": 4.547473508864641e-13,
+      "energy_residual": 0.0,
+      "external_P": 416.12852318380095,
+      "external_F": 789.8630726890686,
+      "tax_paid": 0,
+      "tax_unpaid": 0,
+      "newborn_history_max": 0.0
+    },
+    "homeostatic_regenerative_learning_20261019/i0_g1_frozen": {
+      "material_residual": 5.684341886080801e-13,
+      "energy_residual": 6.821210263296962e-13,
+      "external_P": 474.719979186405,
+      "external_F": 756.8452687191693,
+      "tax_paid": 0,
+      "tax_unpaid": 0,
+      "newborn_history_max": 0.0
+    },
+    "homeostatic_regenerative_learning_20261019/i1_g0_frozen": {
+      "material_residual": 3.979039320256561e-13,
+      "energy_residual": 3.410605131648481e-13,
+      "external_P": 388.30753204536967,
+      "external_F": 630.414796513928,
+      "tax_paid": 0,
+      "tax_unpaid": 0,
+      "newborn_history_max": 0.0
+    },
+    "homeostatic_regenerative_learning_20261019/i1_g0_fast": {
+      "material_residual": 3.979039320256561e-13,
+      "energy_residual": 4.547473508864641e-13,
+      "external_P": 436.57048705448034,
+      "external_F": 702.3464403725602,
+      "tax_paid": 0,
+      "tax_unpaid": 0,
+      "newborn_history_max": 0.0
+    },
+    "homeostatic_regenerative_learning_20261019/i0_g1_fast_freeze_reversal": {
+      "material_residual": 1.1368683772161603e-13,
+      "energy_residual": 4.547473508864641e-13,
+      "external_P": 209.41312515087955,
+      "external_F": 304.53920720383496,
+      "tax_paid": 0,
+      "tax_unpaid": 0,
+      "newborn_history_max": 0.0
+    },
+    "homeostatic_regenerative_learning_20261019/i0_g0_frozen": {
+      "material_residual": 5.115907697472721e-13,
+      "energy_residual": 5.684341886080801e-13,
+      "external_P": 500.0665430347055,
+      "external_F": 776.9695280860343,
+      "tax_paid": 0,
+      "tax_unpaid": 0,
+      "newborn_history_max": 0.0
+    },
+    "homeostatic_regenerative_learning_20261019/i1_g1_fast": {
+      "material_residual": 3.979039320256561e-13,
+      "energy_residual": 4.547473508864641e-13,
+      "external_P": 426.1873148384081,
+      "external_F": 689.0295149382894,
+      "tax_paid": 0,
+      "tax_unpaid": 0,
+      "newborn_history_max": 0.0
+    },
+    "homeostatic_regenerative_learning_20261019/i1_g1_frozen": {
+      "material_residual": 3.979039320256561e-13,
+      "energy_residual": 4.547473508864641e-13,
+      "external_P": 382.1484392540929,
+      "external_F": 621.2530684981405,
+      "tax_paid": 0,
+      "tax_unpaid": 0,
+      "newborn_history_max": 0.0
+    },
+    "homeostatic_regenerative_learning_20261019/i0_g1_fast": {
+      "material_residual": 5.684341886080801e-13,
+      "energy_residual": 4.547473508864641e-13,
+      "external_P": 497.7252792567269,
+      "external_F": 782.434389970931,
+      "tax_paid": 0,
+      "tax_unpaid": 0,
+      "newborn_history_max": 0.0
+    },
+    "homeostatic_regenerative_learning_20261019/i0_g0_fast_freeze_reversal": {
+      "material_residual": 4.547473508864641e-13,
+      "energy_residual": 3.410605131648481e-13,
+      "external_P": 210.2040285280798,
+      "external_F": 304.51434492638384,
+      "tax_paid": 0,
+      "tax_unpaid": 0,
+      "newborn_history_max": 0.0
+    },
+    "homeostatic_regenerative_learning_20261019/i1_g0_fast_freeze_reversal": {
+      "material_residual": 1.1368683772161603e-13,
+      "energy_residual": 2.2737367544323206e-13,
+      "external_P": 182.95749801669558,
+      "external_F": 283.9817523055167,
+      "tax_paid": 0,
+      "tax_unpaid": 0,
+      "newborn_history_max": 0.0
+    },
+    "homeostatic_regenerative_learning_20261019/i0_g0_fast": {
+      "material_residual": 5.684341886080801e-13,
+      "energy_residual": 5.684341886080801e-13,
+      "external_P": 505.0159296101544,
+      "external_F": 781.5477112620255,
+      "tax_paid": 0,
+      "tax_unpaid": 0,
+      "newborn_history_max": 0.0
+    },
+    "homeostatic_regenerative_learning_20261019/i1_g1_fast_freeze_reversal": {
+      "material_residual": 2.5579538487363607e-13,
+      "energy_residual": 2.2737367544323206e-13,
+      "external_P": 175.3127000658574,
+      "external_F": 272.8834160799147,
+      "tax_paid": 0,
+      "tax_unpaid": 0,
+      "newborn_history_max": 0.0
+    },
+    "homeostatic_content_reset_20261019/i1_g1_fast_reset": {
+      "material_residual": 1.7053025658242404e-13,
+      "energy_residual": 2.2737367544323206e-13,
+      "external_P": 177.38523939330835,
+      "external_F": 274.47270514334804,
+      "tax_paid": 0,
+      "tax_unpaid": 0,
+      "newborn_history_max": 0.0
+    },
+    "homeostatic_content_reset_20261019/i0_g0_fast_reset": {
+      "material_residual": 3.126388037344441e-13,
+      "energy_residual": 2.2737367544323206e-13,
+      "external_P": 210.28904141503776,
+      "external_F": 308.91687383752986,
+      "tax_paid": 0,
+      "tax_unpaid": 0,
+      "newborn_history_max": 0.0
+    },
+    "homeostatic_content_reset_20261019/i0_g1_fast_reset": {
+      "material_residual": 3.410605131648481e-13,
+      "energy_residual": 1.7053025658242404e-13,
+      "external_P": 208.367152108936,
+      "external_F": 315.9095795161777,
+      "tax_paid": 0,
+      "tax_unpaid": 0,
+      "newborn_history_max": 0.0
+    },
+    "homeostatic_content_reset_20261019/i1_g0_fast_reset": {
+      "material_residual": 1.7053025658242404e-13,
+      "energy_residual": 5.684341886080802e-14,
+      "external_P": 182.88856800443222,
+      "external_F": 281.20286402507344,
+      "tax_paid": 0,
+      "tax_unpaid": 0,
+      "newborn_history_max": 0.0
+    },
+    "energetic_cue_regenerative_learning_20261019/i0_g1_frozen": {
+      "material_residual": 5.115907697472721e-13,
+      "energy_residual": 6.821210263296962e-13,
+      "external_P": 500.35890042698173,
+      "external_F": 831.1503968923266,
+      "tax_paid": 409.17375576302015,
+      "tax_unpaid": 180.93560671254076,
+      "newborn_history_max": 0.0
+    },
+    "energetic_cue_regenerative_learning_20261019/i1_g0_frozen": {
+      "material_residual": 2.8421709430404007e-13,
+      "energy_residual": 3.410605131648481e-13,
+      "external_P": 325.936848960164,
+      "external_F": 563.4489691543369,
+      "tax_paid": 296.61082391124665,
+      "tax_unpaid": 103.63477104645577,
+      "newborn_history_max": 0.0
+    },
+    "energetic_cue_regenerative_learning_20261019/i1_g0_fast": {
+      "material_residual": 3.979039320256561e-13,
+      "energy_residual": 4.547473508864641e-13,
+      "external_P": 350.17764988457526,
+      "external_F": 593.8823909249012,
+      "tax_paid": 305.7962029562629,
+      "tax_unpaid": 112.61116818939934,
+      "newborn_history_max": 0.0
+    },
+    "energetic_cue_regenerative_learning_20261019/i0_g1_fast_freeze_reversal": {
+      "material_residual": 4.263256414560601e-13,
+      "energy_residual": 2.8421709430404007e-13,
+      "external_P": 215.8993008304409,
+      "external_F": 354.2425158373235,
+      "tax_paid": 265.41009208345156,
+      "tax_unpaid": 103.15817819093766,
+      "newborn_history_max": 0.0
+    },
+    "energetic_cue_regenerative_learning_20261019/i0_g0_frozen": {
+      "material_residual": 6.252776074688882e-13,
+      "energy_residual": 4.547473508864641e-13,
+      "external_P": 496.9129027005519,
+      "external_F": 817.0696062572898,
+      "tax_paid": 413.4322798073416,
+      "tax_unpaid": 187.08524643912574,
+      "newborn_history_max": 0.0
+    },
+    "energetic_cue_regenerative_learning_20261019/i1_g1_fast": {
+      "material_residual": 3.410605131648481e-13,
+      "energy_residual": 4.547473508864641e-13,
+      "external_P": 318.4196670774431,
+      "external_F": 548.1485648283067,
+      "tax_paid": 291.85931875296615,
+      "tax_unpaid": 102.3642381973015,
+      "newborn_history_max": 0.0
+    },
+    "energetic_cue_regenerative_learning_20261019/i1_g1_frozen": {
+      "material_residual": 3.979039320256561e-13,
+      "energy_residual": 3.410605131648481e-13,
+      "external_P": 304.09200819765107,
+      "external_F": 530.9939597239512,
+      "tax_paid": 278.3901547470379,
+      "tax_unpaid": 95.56938660009459,
+      "newborn_history_max": 0.0
+    },
+    "energetic_cue_regenerative_learning_20261019/i0_g1_fast": {
+      "material_residual": 6.821210263296962e-13,
+      "energy_residual": 4.547473508864641e-13,
+      "external_P": 528.3146346037202,
+      "external_F": 887.7298492053201,
+      "tax_paid": 386.9681133492419,
+      "tax_unpaid": 166.46030863130957,
+      "newborn_history_max": 0.0
+    },
+    "energetic_cue_regenerative_learning_20261019/i0_g0_fast_freeze_reversal": {
+      "material_residual": 3.694822225952521e-13,
+      "energy_residual": 3.410605131648481e-13,
+      "external_P": 206.94405166283175,
+      "external_F": 344.94972565418027,
+      "tax_paid": 278.00434860575615,
+      "tax_unpaid": 106.23366372443472,
+      "newborn_history_max": 0.0
+    },
+    "energetic_cue_regenerative_learning_20261019/i1_g0_fast_freeze_reversal": {
+      "material_residual": 2.5579538487363607e-13,
+      "energy_residual": 4.547473508864641e-13,
+      "external_P": 210.52890247106714,
+      "external_F": 345.1531214435619,
+      "tax_paid": 176.4724130699159,
+      "tax_unpaid": 67.35953482810804,
+      "newborn_history_max": 0.0
+    },
+    "energetic_cue_regenerative_learning_20261019/i0_g0_fast": {
+      "material_residual": 5.684341886080801e-13,
+      "energy_residual": 4.547473508864641e-13,
+      "external_P": 519.9476563538569,
+      "external_F": 862.1863737394794,
+      "tax_paid": 419.4981309473139,
+      "tax_unpaid": 188.81328828332536,
+      "newborn_history_max": 0.0
+    },
+    "energetic_cue_regenerative_learning_20261019/i1_g1_fast_freeze_reversal": {
+      "material_residual": 5.684341886080802e-14,
+      "energy_residual": 2.2737367544323206e-13,
+      "external_P": 184.60566187848053,
+      "external_F": 308.8310725585127,
+      "tax_paid": 152.39902792027397,
+      "tax_unpaid": 57.52393957504372,
+      "newborn_history_max": 0.0
+    },
+    "energetic_newborn_content_20261019/i0_g1_fast_zero": {
+      "material_residual": 1.4210854715202004e-13,
+      "energy_residual": 5.684341886080802e-14,
+      "external_P": 96.4773292330211,
+      "external_F": 168.06722518308493,
+      "tax_paid": 25.886007007930147,
+      "tax_unpaid": 21.07309851556609,
+      "newborn_history_max": 0.0
+    },
+    "energetic_newborn_content_20261019/i0_g0_fast_swap": {
+      "material_residual": 1.4210854715202004e-13,
+      "energy_residual": 2.5579538487363607e-13,
+      "external_P": 94.51488883725929,
+      "external_F": 168.62811758034155,
+      "tax_paid": 17.78455270627935,
+      "tax_unpaid": 15.25876600523793,
+      "newborn_history_max": 0.0
+    },
+    "energetic_newborn_content_20261019/i0_g0_fast_zero": {
+      "material_residual": 1.4210854715202004e-13,
+      "energy_residual": 2.5579538487363607e-13,
+      "external_P": 94.51488883725929,
+      "external_F": 168.62811758034155,
+      "tax_paid": 17.78455270627935,
+      "tax_unpaid": 15.25876600523793,
+      "newborn_history_max": 0.0
+    },
+    "energetic_newborn_content_20261019/i0_g1_fast_swap": {
+      "material_residual": 1.2789769243681803e-13,
+      "energy_residual": 2.842170943040401e-14,
+      "external_P": 95.37958778782213,
+      "external_F": 166.45053235531122,
+      "tax_paid": 26.81652635325393,
+      "tax_unpaid": 21.3887712646949,
+      "newborn_history_max": 0.0
+    },
+    "energetic_newborn_content_20261019/i0_g1_fast_copy": {
+      "material_residual": 2.8421709430404007e-13,
+      "energy_residual": 1.4210854715202004e-13,
+      "external_P": 97.13590437285396,
+      "external_F": 169.04057406769704,
+      "tax_paid": 25.763899974074622,
+      "tax_unpaid": 21.379367086061865,
+      "newborn_history_max": 0.0
+    },
+    "energetic_newborn_content_20261019/i0_g0_fast_copy": {
+      "material_residual": 1.4210854715202004e-13,
+      "energy_residual": 2.5579538487363607e-13,
+      "external_P": 94.51488883725929,
+      "external_F": 168.62811758034155,
+      "tax_paid": 17.78455270627935,
+      "tax_unpaid": 15.25876600523793,
+      "newborn_history_max": 0.0
+    }
+  }
+}

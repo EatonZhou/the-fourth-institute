@@ -1,0 +1,343 @@
+{
+  "schema": "research-handoff.v1",
+  "task": "consumption_qualified_transport_20261019",
+  "owner": "resident_d3ccfa2d95b7",
+  "status": "completed_candidate_closed",
+  "objective_met": false,
+  "manifest": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/manifest.json",
+    "sha256": "8b91de0dcf82cc97eeb347af1b5380945e41c925ab4f512b803f0b841f88efbd",
+    "bytes": 23674
+  },
+  "report": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/REPORT.txt",
+    "sha256": "05f0e2acca7d4c8211d74f0cf147b953f66252691d9811cb8bf727412388c3a2",
+    "bytes": 7121
+  },
+  "interpretation": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/INTERPRETATION.json",
+    "sha256": "8313d4f288a2e539f58162b93a9e82447450ce561057bd5bc74a539bdd90ce57",
+    "bytes": 1363
+  },
+  "summary": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/summary.json",
+    "sha256": "8b2625a6d31c0557fa4d5b7ded6f0ee929ef18de388cd2608d50c4ad685e9dad",
+    "bytes": 19369
+  },
+  "method": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/METHOD.txt",
+    "sha256": "4bc3cbb18f42495bb6ba6f20d3a6c30b4c79e0437586bf421bfabad1eaa746a6",
+    "bytes": 4638
+  },
+  "api": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/API.txt",
+    "sha256": "751e21d4cdc73bc709642a1c2413d842aaa8f37cc9098b4e8f2dd856444f2363",
+    "bytes": 1873
+  },
+  "plan": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/plan.json",
+    "sha256": "ccca0c7467d7b54a9e037912b358aed0f53cc14f6ddec6bad169ff73c6be5dcf",
+    "bytes": 14455
+  },
+  "budget": {
+    "cap_native": 6144,
+    "actual_native": 5186,
+    "committed": 5186,
+    "failed_native": 0,
+    "failed_jobs": 1,
+    "worker_seconds": 508.24962800000003,
+    "worker_cap": 1200,
+    "development_native": 1216,
+    "boundary_native": 2,
+    "heldout_native": 3968,
+    "raw_bytes": 628830175,
+    "raw_cap": 1073741824,
+    "old_prefix_replay": 0,
+    "missing_scalar_receipt_native": 1,
+    "missing_scope": "failed logging job development384->385; real full385 state retained and resumed",
+    "jobs": [
+      {
+        "id": "91308130-146d-4f81-942f-061cd2fabada",
+        "status": "failed",
+        "returncode": 1,
+        "started_at": "2026-10-18T16:53:28.926984+00:00",
+        "finished_at": "2026-10-18T16:53:31.037616+00:00",
+        "worker_seconds": 4.221264
+      },
+      {
+        "id": "3aaf67a7-25b8-4230-b8a6-d0eb3703d83e",
+        "status": "completed",
+        "returncode": 0,
+        "started_at": "2026-10-18T16:54:48.092804+00:00",
+        "finished_at": "2026-10-18T16:59:00.106986+00:00",
+        "worker_seconds": 504.028364
+      }
+    ],
+    "unused_native": 958,
+    "unused_worker_seconds": 691.750372,
+    "unused_sealed": true
+  },
+  "budget_ref": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/budget.json",
+    "sha256": "03abe4854d1c422c9f7e7c56bf770398bb5af4588ff4018d2915e222324d51e4",
+    "bytes": 1101
+  },
+  "raw_manifest": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/raw_manifest.json",
+    "sha256": "97473139b03c31c940fa953638676cc2ad4ff5742f2dcafa1a4287f872861d17",
+    "bytes": 107229
+  },
+  "selected_policy": "simple EMA; proposed min rule rejected during development",
+  "binding_source": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/metabolic_maintenance_withdrawal_20261018/handoff.json",
+    "sha256": "fa8c06064d97a71f8d7e9ffbdcb17bb6a1d896bbd409384d1bb1d3b5eac0f6a2",
+    "bytes": 3117
+  },
+  "native_jobs": [
+    {
+      "id": "91308130-146d-4f81-942f-061cd2fabada",
+      "status": "failed",
+      "returncode": 1,
+      "started_at": "2026-10-18T16:53:28.926984+00:00",
+      "finished_at": "2026-10-18T16:53:31.037616+00:00",
+      "worker_seconds": 4.221264
+    },
+    {
+      "id": "3aaf67a7-25b8-4230-b8a6-d0eb3703d83e",
+      "status": "completed",
+      "returncode": 0,
+      "started_at": "2026-10-18T16:54:48.092804+00:00",
+      "finished_at": "2026-10-18T16:59:00.106986+00:00",
+      "worker_seconds": 504.028364
+    }
+  ],
+  "native_replay": 0,
+  "missing": [
+    {
+      "job": "91308130-146d-4f81-942f-061cd2fabada",
+      "stage": "development body0 prefix384->385",
+      "field": "one-step scalar and detailed receipt",
+      "full_state": "retained actual385 full joint; resumed from it",
+      "backfilled": false
+    }
+  ],
+  "findings": {
+    "ema - demand": {
+      "M": {
+        "mean": 0.4550514474601961,
+        "positive": 4,
+        "negative": 0,
+        "n": 4
+      },
+      "E": {
+        "mean": -2.3340706836449954,
+        "positive": 0,
+        "negative": 4,
+        "n": 4
+      },
+      "body_time": {
+        "mean": 2.6481687123935416,
+        "positive": 4,
+        "negative": 0,
+        "n": 4
+      },
+      "new_tissue": {
+        "mean": 1.7452160709307778,
+        "positive": 4,
+        "negative": 0,
+        "n": 4
+      },
+      "U": {
+        "mean": 4.504579934334815,
+        "positive": 4,
+        "negative": 0,
+        "n": 4
+      },
+      "pump_fee": {
+        "mean": 3.3123741477847073,
+        "positive": 4,
+        "negative": 0,
+        "n": 4
+      }
+    },
+    "ema - diffusion": {
+      "M": {
+        "mean": 0.07920454243630459,
+        "positive": 3,
+        "negative": 1,
+        "n": 4
+      },
+      "E": {
+        "mean": -0.5318924218669991,
+        "positive": 1,
+        "negative": 3,
+        "n": 4
+      },
+      "body_time": {
+        "mean": 0.5033237437918388,
+        "positive": 3,
+        "negative": 1,
+        "n": 4
+      },
+      "new_tissue": {
+        "mean": 0.28852931297506235,
+        "positive": 3,
+        "negative": 1,
+        "n": 4
+      },
+      "U": {
+        "mean": -2.5440574432262153,
+        "positive": 0,
+        "negative": 4,
+        "n": 4
+      },
+      "pump_fee": {
+        "mean": -2.4856064874470283,
+        "positive": 0,
+        "negative": 4,
+        "n": 4
+      }
+    },
+    "ema - flux": {
+      "M": {
+        "mean": 0.06023242927742345,
+        "positive": 3,
+        "negative": 1,
+        "n": 4
+      },
+      "E": {
+        "mean": -0.2394990405973374,
+        "positive": 1,
+        "negative": 3,
+        "n": 4
+      },
+      "body_time": {
+        "mean": 0.3569688001357747,
+        "positive": 3,
+        "negative": 1,
+        "n": 4
+      },
+      "new_tissue": {
+        "mean": 0.09502949740916566,
+        "positive": 3,
+        "negative": 1,
+        "n": 4
+      },
+      "U": {
+        "mean": -1.4230386505685875,
+        "positive": 0,
+        "negative": 4,
+        "n": 4
+      },
+      "pump_fee": {
+        "mean": -1.0929012380913057,
+        "positive": 0,
+        "negative": 4,
+        "n": 4
+      }
+    },
+    "ema - frozen_ema": {
+      "M": {
+        "mean": -0.023560589304468138,
+        "positive": 1,
+        "negative": 3,
+        "n": 4
+      },
+      "E": {
+        "mean": 0.0025152225807971718,
+        "positive": 2,
+        "negative": 2,
+        "n": 4
+      },
+      "body_time": {
+        "mean": -0.0099940404530372,
+        "positive": 1,
+        "negative": 3,
+        "n": 4
+      },
+      "new_tissue": {
+        "mean": -0.029028928594543757,
+        "positive": 1,
+        "negative": 3,
+        "n": 4
+      },
+      "U": {
+        "mean": -0.06765641543096912,
+        "positive": 1,
+        "negative": 3,
+        "n": 4
+      },
+      "pump_fee": {
+        "mean": -0.05789202389361592,
+        "positive": 1,
+        "negative": 3,
+        "n": 4
+      }
+    },
+    "ema - none": {
+      "M": {
+        "mean": 1.0981215005290714,
+        "positive": 4,
+        "negative": 0,
+        "n": 4
+      },
+      "E": {
+        "mean": -3.410830603142351,
+        "positive": 0,
+        "negative": 4,
+        "n": 4
+      },
+      "body_time": {
+        "mean": 6.411143444759546,
+        "positive": 4,
+        "negative": 0,
+        "n": 4
+      },
+      "new_tissue": {
+        "mean": 5.588492472899612,
+        "positive": 4,
+        "negative": 0,
+        "n": 4
+      },
+      "U": {
+        "mean": 13.470522218066277,
+        "positive": 4,
+        "negative": 0,
+        "n": 4
+      },
+      "pump_fee": {
+        "mean": 4.553810895805526,
+        "positive": 4,
+        "negative": 0,
+        "n": 4
+      }
+    }
+  },
+  "history_changes_actual_directions": true,
+  "all_frozen_writes_exact_zero": true,
+  "scope": "2 known parents x2 deterministic paired supply schedules x6 arms; no new environment seed inference;160-step futures, no old512 maintenance claim",
+  "retention_label": "L384; new_tissue includes all surviving post384 tissue, including acquired-prefix births",
+  "zero_priced_components": [
+    "controller arithmetic/storage",
+    "one-hop feedback read"
+  ],
+  "science_choice": "Current candidate closed; additional history-dependent control value not demonstrated",
+  "figures": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/actual_body_f1.png",
+      "sha256": "2fbfac933400cb29bedbbfbe971027633136e0c7d2b1e05e076cfbbb8d0cc845",
+      "bytes": 457535
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/actual_body_f2.png",
+      "sha256": "967025100176dd2e56b32262c02b68bddf7bd782b9d905e9be154360b6d5c559",
+      "bytes": 444755
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/paired_body_results.png",
+      "sha256": "54b3b9060c61d60d0243346707453a44f8768cc62d7e3d16174fc3652460fe8d",
+      "bytes": 130608
+    }
+  ],
+  "next_native_authorized_by_this_handoff": false
+}

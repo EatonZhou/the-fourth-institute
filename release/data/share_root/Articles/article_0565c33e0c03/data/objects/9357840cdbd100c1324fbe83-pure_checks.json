@@ -1,0 +1,215 @@
+{
+  "native": 0,
+  "saved_array_checks": [
+    {
+      "seed": 202610195401,
+      "shape": "compact",
+      "saved_receipt_only": true,
+      "layout": [
+        {
+          "arm": "original_prestate_greedy_reference",
+          "out": 0.0,
+          "checks": {
+            "sum_error": 0.0,
+            "source_excess": 0.0,
+            "receiver_excess": 0.0,
+            "negative_error": 0.0,
+            "density_excess": 0.0,
+            "target_error": 0.0,
+            "matched_source_error": 4.336808689942018e-19
+          }
+        },
+        {
+          "arm": "matched_mass",
+          "out": 0.15694175993596585,
+          "checks": {
+            "sum_error": 2.7755575615628914e-17,
+            "source_excess": 0.0,
+            "receiver_excess": 0.0,
+            "negative_error": 0.0,
+            "density_excess": 0.0,
+            "target_error": 0.0,
+            "matched_source_error": 4.336808689942018e-19
+          }
+        },
+        {
+          "arm": "matched_uniform",
+          "out": 0.15694175993596585,
+          "checks": {
+            "sum_error": -2.7755575615628914e-17,
+            "source_excess": 0.0,
+            "receiver_excess": 0.0,
+            "negative_error": 0.0,
+            "density_excess": 0.0,
+            "target_error": 0.0,
+            "matched_source_error": 4.336808689942018e-19
+          }
+        }
+      ],
+      "cohort": {
+        "cohort_reconstruction_error": 5.4643789493269423e-17,
+        "cohort_transport_error": 0.0,
+        "cohort_balance_error": 1.4210854715202004e-14,
+        "cohort_negative_error": 0.0
+      }
+    },
+    {
+      "seed": 202610195401,
+      "shape": "double_lobe",
+      "saved_receipt_only": true,
+      "layout": [
+        {
+          "arm": "original_prestate_greedy_reference",
+          "out": 0.0,
+          "checks": {
+            "sum_error": 0.0,
+            "source_excess": 0.0,
+            "receiver_excess": 0.0,
+            "negative_error": 0.0,
+            "density_excess": 0.0,
+            "target_error": 0.0,
+            "matched_source_error": 0.0
+          }
+        },
+        {
+          "arm": "matched_mass",
+          "out": 0.19584087958162807,
+          "checks": {
+            "sum_error": -5.551115123125783e-17,
+            "source_excess": 0.0,
+            "receiver_excess": 0.0,
+            "negative_error": 0.0,
+            "density_excess": 0.0,
+            "target_error": 0.0,
+            "matched_source_error": 0.0
+          }
+        },
+        {
+          "arm": "matched_uniform",
+          "out": 0.19584087958162807,
+          "checks": {
+            "sum_error": 0.0,
+            "source_excess": 0.0,
+            "receiver_excess": 0.0,
+            "negative_error": 0.0,
+            "density_excess": 0.0,
+            "target_error": 0.0,
+            "matched_source_error": 0.0
+          }
+        }
+      ],
+      "cohort": {
+        "cohort_reconstruction_error": 4.683753385137379e-17,
+        "cohort_transport_error": 0.0,
+        "cohort_balance_error": 0.0,
+        "cohort_negative_error": 0.0
+      }
+    },
+    {
+      "seed": 202610195402,
+      "shape": "compact",
+      "saved_receipt_only": true,
+      "layout": [
+        {
+          "arm": "original_prestate_greedy_reference",
+          "out": 0.0,
+          "checks": {
+            "sum_error": 0.0,
+            "source_excess": 0.0,
+            "receiver_excess": 0.0,
+            "negative_error": 0.0,
+            "density_excess": 0.0,
+            "target_error": 0.0,
+            "matched_source_error": 0.0
+          }
+        },
+        {
+          "arm": "matched_mass",
+          "out": 0.16855958421123346,
+          "checks": {
+            "sum_error": -5.551115123125783e-17,
+            "source_excess": 0.0,
+            "receiver_excess": 0.0,
+            "negative_error": 0.0,
+            "density_excess": 0.0,
+            "target_error": 0.0,
+            "matched_source_error": 0.0
+          }
+        },
+        {
+          "arm": "matched_uniform",
+          "out": 0.16855958421123346,
+          "checks": {
+            "sum_error": -2.7755575615628914e-17,
+            "source_excess": 0.0,
+            "receiver_excess": 0.0,
+            "negative_error": 0.0,
+            "density_excess": 0.0,
+            "target_error": 0.0,
+            "matched_source_error": 0.0
+          }
+        }
+      ],
+      "cohort": {
+        "cohort_reconstruction_error": 5.432258368088651e-17,
+        "cohort_transport_error": 0.0,
+        "cohort_balance_error": 0.0,
+        "cohort_negative_error": 0.0
+      }
+    },
+    {
+      "seed": 202610195402,
+      "shape": "double_lobe",
+      "saved_receipt_only": true,
+      "layout": [
+        {
+          "arm": "original_prestate_greedy_reference",
+          "out": 0.0,
+          "checks": {
+            "sum_error": 0.0,
+            "source_excess": 0.0,
+            "receiver_excess": 0.0,
+            "negative_error": 0.0,
+            "density_excess": 0.0,
+            "target_error": 0.0,
+            "matched_source_error": 3.469446951953614e-18
+          }
+        },
+        {
+          "arm": "matched_mass",
+          "out": 0.1918396099577111,
+          "checks": {
+            "sum_error": -2.7755575615628914e-17,
+            "source_excess": 0.0,
+            "receiver_excess": 0.0,
+            "negative_error": 0.0,
+            "density_excess": 0.0,
+            "target_error": 0.0,
+            "matched_source_error": 3.469446951953614e-18
+          }
+        },
+        {
+          "arm": "matched_uniform",
+          "out": 0.1918396099577111,
+          "checks": {
+            "sum_error": -2.7755575615628914e-17,
+            "source_excess": 0.0,
+            "receiver_excess": 0.0,
+            "negative_error": 0.0,
+            "density_excess": 0.0,
+            "target_error": 0.0,
+            "matched_source_error": 3.469446951953614e-18
+          }
+        }
+      ],
+      "cohort": {
+        "cohort_reconstruction_error": 5.551115123125783e-17,
+        "cohort_transport_error": 0.0,
+        "cohort_balance_error": 7.105427357601002e-15,
+        "cohort_negative_error": 0.0
+      }
+    }
+  ],
+  "synthetic_cases": 40,
+  "roundtrip": true
+}

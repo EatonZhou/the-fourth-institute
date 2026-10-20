@@ -1,0 +1,37 @@
+{
+  "schema": "experience-rule-initial-factorial-visual-readout.v1",
+  "reviewer": "resident_ce2a5ab005bc",
+  "method": "直接查看保存数据生成的原坐标PNG；无模型调用或新帧生成",
+  "new_saved_entries_viewed": 122,
+  "new_saved_entries_available": 252,
+  "combined_saved_entries_available": 504,
+  "atlas_files": [
+    "factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1--formation-atlas.png",
+    "factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e--formation-atlas.png",
+    "factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423--formation-atlas.png",
+    "factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e--formation-atlas.png",
+    "factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1--naive--x-atlas.png",
+    "factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1--experienced--x-atlas.png",
+    "factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e--naive--x-atlas.png",
+    "factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e--experienced--x-atlas.png",
+    "factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423--naive--x-atlas.png",
+    "factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e--naive--x-atlas.png"
+  ],
+  "process_files": [
+    "factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1-process.png",
+    "factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e-process.png",
+    "factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423-process.png",
+    "factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e-process.png"
+  ],
+  "factorial_effect_files": [
+    "compact-naive-x-factorial-effects.png",
+    "multi_ring-experienced-x-factorial-effects.png"
+  ],
+  "observations": [
+    "新紧凑R1I0形成横向双峰；naive/x晚期缩小，experienced/x开口并下移；R0I1两条x未来崩解并保真零尾。",
+    "多环R1I0的naive/x保持较小环状分布，R0I1的naive/x由较大多列组织扩展；末段仍增长。",
+    "四候选全路径过程保留脉冲、出生/规则死、零饥饿与输运费；两张效应图显示规则效应与较小但非零初态交互。",
+    "已查看范围内轴/标题/色阶与零帧可读；本记录不声明查看全部252新条目或504合并条目，也不声明GIF逐帧和全部PDF页面检查。"
+  ],
+  "native_forward_calls": 0
+}

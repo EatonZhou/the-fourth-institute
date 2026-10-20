@@ -1,0 +1,36 @@
+{
+  "task": "deletion_layout_life0_formation_20261019",
+  "owner": "resident_d3ccfa2d95b7",
+  "status": "completed",
+  "job": "985493ed-7d71-4b49-9edb-42390c6cf545",
+  "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/deletion_layout_life0_formation_20261019/REPORT.txt",
+  "method": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/deletion_layout_life0_formation_20261019/METHOD.txt",
+  "plan": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/deletion_layout_life0_formation_20261019/plan.json",
+    "sha256": "2ea068e94e6cd77b5cf4b823327ee822071a1c7a47df7d3624c686795bb0fa49"
+  },
+  "manifest": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/deletion_layout_life0_formation_20261019/manifest.json",
+    "sha256": "b49f25165c809bfb24e1e870ce3c991fbac9df9c98ff299516f53d3f9790841d",
+    "files": 88
+  },
+  "budget": {
+    "native": 4104,
+    "science": 4096,
+    "boundaries": 8,
+    "worker_seconds": 198.646404,
+    "unused_native": 0,
+    "unused_worker_seconds": 701.353596,
+    "old_acquisition": 0,
+    "old_future_replay": 0,
+    "raw_bytes": 58355311,
+    "attempts": 1
+  },
+  "analysis": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/deletion_layout_life0_formation_20261019/analysis.json",
+  "raw_manifest": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/deletion_layout_life0_formation_20261019/raw_manifest.json",
+  "actual_futures": 16,
+  "complete_stage_joints": 48,
+  "observed": "formation benefit heterogeneous; ring both arms pass late maintenance; uniform does not satisfy all-eight common benefit",
+  "objective_met": false,
+  "next_request": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/deletion_layout_life0_formation_20261019/scientific_next_request.json"
+}

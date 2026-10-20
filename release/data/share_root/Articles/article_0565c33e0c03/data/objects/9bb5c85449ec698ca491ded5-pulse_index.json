@@ -1,0 +1,1026 @@
+[
+  {
+    "branch": "202610184001__compact__same__791__ema_uniform__ema",
+    "seed": 202610184001,
+    "morphology": "compact",
+    "scenario": "same",
+    "pair": "ema_uniform",
+    "placement": "ema",
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__791__ema_uniform__ema__pulse.npz",
+      "sha256": "bb35da59f3f6a614347bad4a4f2d794a0fb7f8d7e999e2b31c5bdef970d865af"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__pre_791.npz"
+  },
+  {
+    "branch": "202610184001__compact__same__791__ema_uniform__uniform",
+    "seed": 202610184001,
+    "morphology": "compact",
+    "scenario": "same",
+    "pair": "ema_uniform",
+    "placement": "uniform",
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__791__ema_uniform__uniform__pulse.npz",
+      "sha256": "00c7474dbdd0a24a7d95ac16b83d59cb09072e4b3e94255e1a33dae01d2bb0c9"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__pre_791.npz"
+  },
+  {
+    "branch": "202610184001__compact__same__791__ema_instant__ema",
+    "seed": 202610184001,
+    "morphology": "compact",
+    "scenario": "same",
+    "pair": "ema_instant",
+    "placement": "ema",
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__791__ema_instant__ema__pulse.npz",
+      "sha256": "14a930d4b434bf62b2ace03a984f13404c9c05cb4ba5ba7036c0f2117aa521c2"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__pre_791.npz"
+  },
+  {
+    "branch": "202610184001__compact__same__791__ema_instant__instant",
+    "seed": 202610184001,
+    "morphology": "compact",
+    "scenario": "same",
+    "pair": "ema_instant",
+    "placement": "instant",
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__791__ema_instant__instant__pulse.npz",
+      "sha256": "f6ca0287146309b9f3a615dd3040744bea32a9b70d49abd26bded7d0da59b58e"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__pre_791.npz"
+  },
+  {
+    "branch": "202610184001__compact__same__823__ema_uniform__ema",
+    "seed": 202610184001,
+    "morphology": "compact",
+    "scenario": "same",
+    "pair": "ema_uniform",
+    "placement": "ema",
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__823__ema_uniform__ema__pulse.npz",
+      "sha256": "87c520697c7a484c8bfee71703f4e1adef319f519eefce81848e4076c90cbda8"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__pre_823.npz"
+  },
+  {
+    "branch": "202610184001__compact__same__823__ema_uniform__uniform",
+    "seed": 202610184001,
+    "morphology": "compact",
+    "scenario": "same",
+    "pair": "ema_uniform",
+    "placement": "uniform",
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__823__ema_uniform__uniform__pulse.npz",
+      "sha256": "7dbe38a8458ef1d935a77383215b0fc646718bc7042c9f40eebca778fbe2d5a4"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__pre_823.npz"
+  },
+  {
+    "branch": "202610184001__compact__same__823__ema_instant__ema",
+    "seed": 202610184001,
+    "morphology": "compact",
+    "scenario": "same",
+    "pair": "ema_instant",
+    "placement": "ema",
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__823__ema_instant__ema__pulse.npz",
+      "sha256": "90888b956a9da9605731b375eb87584447a505406c6f9406228413027ab52e1b"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__pre_823.npz"
+  },
+  {
+    "branch": "202610184001__compact__same__823__ema_instant__instant",
+    "seed": 202610184001,
+    "morphology": "compact",
+    "scenario": "same",
+    "pair": "ema_instant",
+    "placement": "instant",
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__823__ema_instant__instant__pulse.npz",
+      "sha256": "0d8d64fd1a72d1b89930667d2630ff60142ae592b73ed78ea05eb7ce694206bd"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__same__pre_823.npz"
+  },
+  {
+    "branch": "202610184001__compact__port_swap__791__ema_uniform__ema",
+    "seed": 202610184001,
+    "morphology": "compact",
+    "scenario": "port_swap",
+    "pair": "ema_uniform",
+    "placement": "ema",
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__port_swap__791__ema_uniform__ema__pulse.npz",
+      "sha256": "bb35da59f3f6a614347bad4a4f2d794a0fb7f8d7e999e2b31c5bdef970d865af"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__port_swap__pre_791.npz"
+  },
+  {
+    "branch": "202610184001__compact__port_swap__791__ema_uniform__uniform",
+    "seed": 202610184001,
+    "morphology": "compact",
+    "scenario": "port_swap",
+    "pair": "ema_uniform",
+    "placement": "uniform",
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__port_swap__791__ema_uniform__uniform__pulse.npz",
+      "sha256": "00c7474dbdd0a24a7d95ac16b83d59cb09072e4b3e94255e1a33dae01d2bb0c9"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__port_swap__pre_791.npz"
+  },
+  {
+    "branch": "202610184001__compact__port_swap__791__ema_instant__ema",
+    "seed": 202610184001,
+    "morphology": "compact",
+    "scenario": "port_swap",
+    "pair": "ema_instant",
+    "placement": "ema",
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__port_swap__791__ema_instant__ema__pulse.npz",
+      "sha256": "14a930d4b434bf62b2ace03a984f13404c9c05cb4ba5ba7036c0f2117aa521c2"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__port_swap__pre_791.npz"
+  },
+  {
+    "branch": "202610184001__compact__port_swap__791__ema_instant__instant",
+    "seed": 202610184001,
+    "morphology": "compact",
+    "scenario": "port_swap",
+    "pair": "ema_instant",
+    "placement": "instant",
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__port_swap__791__ema_instant__instant__pulse.npz",
+      "sha256": "f6ca0287146309b9f3a615dd3040744bea32a9b70d49abd26bded7d0da59b58e"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__port_swap__pre_791.npz"
+  },
+  {
+    "branch": "202610184001__compact__port_swap__823__ema_uniform__ema",
+    "seed": 202610184001,
+    "morphology": "compact",
+    "scenario": "port_swap",
+    "pair": "ema_uniform",
+    "placement": "ema",
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__port_swap__823__ema_uniform__ema__pulse.npz",
+      "sha256": "32646518cdc9352063dc49fe6d96e3a95983b486455c0e2a9ae61a5e37d020ec"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__port_swap__pre_823.npz"
+  },
+  {
+    "branch": "202610184001__compact__port_swap__823__ema_uniform__uniform",
+    "seed": 202610184001,
+    "morphology": "compact",
+    "scenario": "port_swap",
+    "pair": "ema_uniform",
+    "placement": "uniform",
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__port_swap__823__ema_uniform__uniform__pulse.npz",
+      "sha256": "3bcb34dc05eefbf940b178d4735766dbfc2eb395fa541912cd2204ca274fc521"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__port_swap__pre_823.npz"
+  },
+  {
+    "branch": "202610184001__compact__port_swap__823__ema_instant__ema",
+    "seed": 202610184001,
+    "morphology": "compact",
+    "scenario": "port_swap",
+    "pair": "ema_instant",
+    "placement": "ema",
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__port_swap__823__ema_instant__ema__pulse.npz",
+      "sha256": "e884695725683e88ebb5bcd137aa55a5dff794aa975941ba5a7092c501753e16"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__port_swap__pre_823.npz"
+  },
+  {
+    "branch": "202610184001__compact__port_swap__823__ema_instant__instant",
+    "seed": 202610184001,
+    "morphology": "compact",
+    "scenario": "port_swap",
+    "pair": "ema_instant",
+    "placement": "instant",
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__port_swap__823__ema_instant__instant__pulse.npz",
+      "sha256": "e2f48ab0db166f683bc4d98c7653eb7194504d8cc9230ba3e99a2df960bce2fc"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__compact__port_swap__pre_823.npz"
+  },
+  {
+    "branch": "202610184001__double_lobe__same__791__ema_uniform__ema",
+    "seed": 202610184001,
+    "morphology": "double_lobe",
+    "scenario": "same",
+    "pair": "ema_uniform",
+    "placement": "ema",
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__same__791__ema_uniform__ema__pulse.npz",
+      "sha256": "bee8a90045940e3d44f7fcf1725f56fc8a885096dd7f7d5d47e79c97a5c92ed2"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__same__pre_791.npz"
+  },
+  {
+    "branch": "202610184001__double_lobe__same__791__ema_uniform__uniform",
+    "seed": 202610184001,
+    "morphology": "double_lobe",
+    "scenario": "same",
+    "pair": "ema_uniform",
+    "placement": "uniform",
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__same__791__ema_uniform__uniform__pulse.npz",
+      "sha256": "ffda6330c3a8c1014f2f7f5f1a2568569640866ce4470764987799278afdeec2"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__same__pre_791.npz"
+  },
+  {
+    "branch": "202610184001__double_lobe__same__791__ema_instant__ema",
+    "seed": 202610184001,
+    "morphology": "double_lobe",
+    "scenario": "same",
+    "pair": "ema_instant",
+    "placement": "ema",
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__same__791__ema_instant__ema__pulse.npz",
+      "sha256": "3f536f4e61de9f7e1dfc594c295dec4587c2dbdda480f7adbe5a792e5ff16bfa"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__same__pre_791.npz"
+  },
+  {
+    "branch": "202610184001__double_lobe__same__791__ema_instant__instant",
+    "seed": 202610184001,
+    "morphology": "double_lobe",
+    "scenario": "same",
+    "pair": "ema_instant",
+    "placement": "instant",
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__same__791__ema_instant__instant__pulse.npz",
+      "sha256": "8b38b6349735f2f5406c4c73a52f6d3f18326a42cabcf6a64653728b0238609b"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__same__pre_791.npz"
+  },
+  {
+    "branch": "202610184001__double_lobe__same__823__ema_uniform__ema",
+    "seed": 202610184001,
+    "morphology": "double_lobe",
+    "scenario": "same",
+    "pair": "ema_uniform",
+    "placement": "ema",
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__same__823__ema_uniform__ema__pulse.npz",
+      "sha256": "2591fea4a87547c781e8a0b951b38a9123bf830c7c0b875b3bb480605e59471f"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__same__pre_823.npz"
+  },
+  {
+    "branch": "202610184001__double_lobe__same__823__ema_uniform__uniform",
+    "seed": 202610184001,
+    "morphology": "double_lobe",
+    "scenario": "same",
+    "pair": "ema_uniform",
+    "placement": "uniform",
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__same__823__ema_uniform__uniform__pulse.npz",
+      "sha256": "e393bbf08e88e248cc27dfd65af635ba92a757ced874e9fac8e3e18b65f3a1c9"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__same__pre_823.npz"
+  },
+  {
+    "branch": "202610184001__double_lobe__same__823__ema_instant__ema",
+    "seed": 202610184001,
+    "morphology": "double_lobe",
+    "scenario": "same",
+    "pair": "ema_instant",
+    "placement": "ema",
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__same__823__ema_instant__ema__pulse.npz",
+      "sha256": "db1bf752c5d79ea8da89a596d8e2ec18bf5d23c5b223851e2e84ad935a2e05d6"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__same__pre_823.npz"
+  },
+  {
+    "branch": "202610184001__double_lobe__same__823__ema_instant__instant",
+    "seed": 202610184001,
+    "morphology": "double_lobe",
+    "scenario": "same",
+    "pair": "ema_instant",
+    "placement": "instant",
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__same__823__ema_instant__instant__pulse.npz",
+      "sha256": "6f2b2357c8e4c4034066408badfbd257e76f2b15216f8969a1dd12c76f700608"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__same__pre_823.npz"
+  },
+  {
+    "branch": "202610184001__double_lobe__port_swap__791__ema_uniform__ema",
+    "seed": 202610184001,
+    "morphology": "double_lobe",
+    "scenario": "port_swap",
+    "pair": "ema_uniform",
+    "placement": "ema",
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__port_swap__791__ema_uniform__ema__pulse.npz",
+      "sha256": "bee8a90045940e3d44f7fcf1725f56fc8a885096dd7f7d5d47e79c97a5c92ed2"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__port_swap__pre_791.npz"
+  },
+  {
+    "branch": "202610184001__double_lobe__port_swap__791__ema_uniform__uniform",
+    "seed": 202610184001,
+    "morphology": "double_lobe",
+    "scenario": "port_swap",
+    "pair": "ema_uniform",
+    "placement": "uniform",
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__port_swap__791__ema_uniform__uniform__pulse.npz",
+      "sha256": "ffda6330c3a8c1014f2f7f5f1a2568569640866ce4470764987799278afdeec2"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__port_swap__pre_791.npz"
+  },
+  {
+    "branch": "202610184001__double_lobe__port_swap__791__ema_instant__ema",
+    "seed": 202610184001,
+    "morphology": "double_lobe",
+    "scenario": "port_swap",
+    "pair": "ema_instant",
+    "placement": "ema",
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__port_swap__791__ema_instant__ema__pulse.npz",
+      "sha256": "3f536f4e61de9f7e1dfc594c295dec4587c2dbdda480f7adbe5a792e5ff16bfa"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__port_swap__pre_791.npz"
+  },
+  {
+    "branch": "202610184001__double_lobe__port_swap__791__ema_instant__instant",
+    "seed": 202610184001,
+    "morphology": "double_lobe",
+    "scenario": "port_swap",
+    "pair": "ema_instant",
+    "placement": "instant",
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__port_swap__791__ema_instant__instant__pulse.npz",
+      "sha256": "8b38b6349735f2f5406c4c73a52f6d3f18326a42cabcf6a64653728b0238609b"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__port_swap__pre_791.npz"
+  },
+  {
+    "branch": "202610184001__double_lobe__port_swap__823__ema_uniform__ema",
+    "seed": 202610184001,
+    "morphology": "double_lobe",
+    "scenario": "port_swap",
+    "pair": "ema_uniform",
+    "placement": "ema",
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__port_swap__823__ema_uniform__ema__pulse.npz",
+      "sha256": "172ad42ea4afd747246d40b4cf18c24c7e4d927d4a2e6ff35235bf61ab971b46"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__port_swap__pre_823.npz"
+  },
+  {
+    "branch": "202610184001__double_lobe__port_swap__823__ema_uniform__uniform",
+    "seed": 202610184001,
+    "morphology": "double_lobe",
+    "scenario": "port_swap",
+    "pair": "ema_uniform",
+    "placement": "uniform",
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__port_swap__823__ema_uniform__uniform__pulse.npz",
+      "sha256": "9ea379fc09c1e2588ec0479bfc92672568ee57b2ce0444e7dd279f80748bb7f3"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__port_swap__pre_823.npz"
+  },
+  {
+    "branch": "202610184001__double_lobe__port_swap__823__ema_instant__ema",
+    "seed": 202610184001,
+    "morphology": "double_lobe",
+    "scenario": "port_swap",
+    "pair": "ema_instant",
+    "placement": "ema",
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__port_swap__823__ema_instant__ema__pulse.npz",
+      "sha256": "77993cb59e4763c08dcfbf7ee52b1caf30a50419ed56a311e9842ee19057ea2a"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__port_swap__pre_823.npz"
+  },
+  {
+    "branch": "202610184001__double_lobe__port_swap__823__ema_instant__instant",
+    "seed": 202610184001,
+    "morphology": "double_lobe",
+    "scenario": "port_swap",
+    "pair": "ema_instant",
+    "placement": "instant",
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__port_swap__823__ema_instant__instant__pulse.npz",
+      "sha256": "1a2ca5ced59e33cb45945175eb4741a37f29931df9fe8f1f49097f72002ca86f"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184001__double_lobe__port_swap__pre_823.npz"
+  },
+  {
+    "branch": "202610184002__compact__same__791__ema_uniform__ema",
+    "seed": 202610184002,
+    "morphology": "compact",
+    "scenario": "same",
+    "pair": "ema_uniform",
+    "placement": "ema",
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__same__791__ema_uniform__ema__pulse.npz",
+      "sha256": "192c28ee900aadecaeb93e0bb2c0ebdd80f6bec9e301167dcfb2cfc340288b8b"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__same__pre_791.npz"
+  },
+  {
+    "branch": "202610184002__compact__same__791__ema_uniform__uniform",
+    "seed": 202610184002,
+    "morphology": "compact",
+    "scenario": "same",
+    "pair": "ema_uniform",
+    "placement": "uniform",
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__same__791__ema_uniform__uniform__pulse.npz",
+      "sha256": "93f43f69c9e0601af65b7122c6f1f1784939cbd73f21a2d9bbd5e1f89cb18e05"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__same__pre_791.npz"
+  },
+  {
+    "branch": "202610184002__compact__same__791__ema_instant__ema",
+    "seed": 202610184002,
+    "morphology": "compact",
+    "scenario": "same",
+    "pair": "ema_instant",
+    "placement": "ema",
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__same__791__ema_instant__ema__pulse.npz",
+      "sha256": "76f646e6c67745d2d9aec07d8e60c887ef524a635ca420025f211760f0a72112"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__same__pre_791.npz"
+  },
+  {
+    "branch": "202610184002__compact__same__791__ema_instant__instant",
+    "seed": 202610184002,
+    "morphology": "compact",
+    "scenario": "same",
+    "pair": "ema_instant",
+    "placement": "instant",
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__same__791__ema_instant__instant__pulse.npz",
+      "sha256": "95e5c90526e515523770c0a8d955cc8e180b0e240639bd83cc08c43ed3d265fb"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__same__pre_791.npz"
+  },
+  {
+    "branch": "202610184002__compact__same__823__ema_uniform__ema",
+    "seed": 202610184002,
+    "morphology": "compact",
+    "scenario": "same",
+    "pair": "ema_uniform",
+    "placement": "ema",
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__same__823__ema_uniform__ema__pulse.npz",
+      "sha256": "56852ba6cd9138fd5ea85d0a246b710c48ed63d73c8863119aac97126f295469"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__same__pre_823.npz"
+  },
+  {
+    "branch": "202610184002__compact__same__823__ema_uniform__uniform",
+    "seed": 202610184002,
+    "morphology": "compact",
+    "scenario": "same",
+    "pair": "ema_uniform",
+    "placement": "uniform",
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__same__823__ema_uniform__uniform__pulse.npz",
+      "sha256": "f87e5282b1f916b33d17387ffde21cc79d74f79595149a21c230ec6e48be310c"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__same__pre_823.npz"
+  },
+  {
+    "branch": "202610184002__compact__same__823__ema_instant__ema",
+    "seed": 202610184002,
+    "morphology": "compact",
+    "scenario": "same",
+    "pair": "ema_instant",
+    "placement": "ema",
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__same__823__ema_instant__ema__pulse.npz",
+      "sha256": "35cd53d22846707a0709826fddff709eca412847027fcf932321a8e9400c774a"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__same__pre_823.npz"
+  },
+  {
+    "branch": "202610184002__compact__same__823__ema_instant__instant",
+    "seed": 202610184002,
+    "morphology": "compact",
+    "scenario": "same",
+    "pair": "ema_instant",
+    "placement": "instant",
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__same__823__ema_instant__instant__pulse.npz",
+      "sha256": "afec4c8d91dbf38707238dc2bb1778bd217090bf7ca351e299a58f43aec026b8"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__same__pre_823.npz"
+  },
+  {
+    "branch": "202610184002__compact__port_swap__791__ema_uniform__ema",
+    "seed": 202610184002,
+    "morphology": "compact",
+    "scenario": "port_swap",
+    "pair": "ema_uniform",
+    "placement": "ema",
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__port_swap__791__ema_uniform__ema__pulse.npz",
+      "sha256": "4f60f7d1eb0e62c8b5c424dcc21df9982a3f04fd03032e787b9c508db5358b63"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__port_swap__pre_791.npz"
+  },
+  {
+    "branch": "202610184002__compact__port_swap__791__ema_uniform__uniform",
+    "seed": 202610184002,
+    "morphology": "compact",
+    "scenario": "port_swap",
+    "pair": "ema_uniform",
+    "placement": "uniform",
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__port_swap__791__ema_uniform__uniform__pulse.npz",
+      "sha256": "5424e1d8f1c979c2f0b4d93770d58f84c08dbe05fc9a9e6f20ecbc3241506e18"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__port_swap__pre_791.npz"
+  },
+  {
+    "branch": "202610184002__compact__port_swap__791__ema_instant__ema",
+    "seed": 202610184002,
+    "morphology": "compact",
+    "scenario": "port_swap",
+    "pair": "ema_instant",
+    "placement": "ema",
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__port_swap__791__ema_instant__ema__pulse.npz",
+      "sha256": "9216b4dadd70f155c8deaa558129b53a85d96fc6c4106cbbb91c33fe7743824a"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__port_swap__pre_791.npz"
+  },
+  {
+    "branch": "202610184002__compact__port_swap__791__ema_instant__instant",
+    "seed": 202610184002,
+    "morphology": "compact",
+    "scenario": "port_swap",
+    "pair": "ema_instant",
+    "placement": "instant",
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__port_swap__791__ema_instant__instant__pulse.npz",
+      "sha256": "8c2949d7beac74455b1ce54a2d3fb55d57c83b327c6ee2a18e956a8ad7201ea0"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__port_swap__pre_791.npz"
+  },
+  {
+    "branch": "202610184002__compact__port_swap__823__ema_uniform__ema",
+    "seed": 202610184002,
+    "morphology": "compact",
+    "scenario": "port_swap",
+    "pair": "ema_uniform",
+    "placement": "ema",
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__port_swap__823__ema_uniform__ema__pulse.npz",
+      "sha256": "b9d887df40234112fd384e6887626ef44e9abbba6cac0ef9ac8f56ed60a9fdc5"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__port_swap__pre_823.npz"
+  },
+  {
+    "branch": "202610184002__compact__port_swap__823__ema_uniform__uniform",
+    "seed": 202610184002,
+    "morphology": "compact",
+    "scenario": "port_swap",
+    "pair": "ema_uniform",
+    "placement": "uniform",
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__port_swap__823__ema_uniform__uniform__pulse.npz",
+      "sha256": "576f4dcbebb9d700e1b21e1ed2b0eb49bfe98bc1fcb3038e0dfeb6e9c42195c2"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__port_swap__pre_823.npz"
+  },
+  {
+    "branch": "202610184002__compact__port_swap__823__ema_instant__ema",
+    "seed": 202610184002,
+    "morphology": "compact",
+    "scenario": "port_swap",
+    "pair": "ema_instant",
+    "placement": "ema",
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__port_swap__823__ema_instant__ema__pulse.npz",
+      "sha256": "d2fb2d8798b49f98856e4fc9d66f7ef8c6e0908358ec6fb3d3173166a1e4da2f"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__port_swap__pre_823.npz"
+  },
+  {
+    "branch": "202610184002__compact__port_swap__823__ema_instant__instant",
+    "seed": 202610184002,
+    "morphology": "compact",
+    "scenario": "port_swap",
+    "pair": "ema_instant",
+    "placement": "instant",
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__port_swap__823__ema_instant__instant__pulse.npz",
+      "sha256": "401c5949a2cfc9b2d114da1beae8d2d6879ef91e95760a851988ccaa9b9b669e"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__compact__port_swap__pre_823.npz"
+  },
+  {
+    "branch": "202610184002__double_lobe__same__791__ema_uniform__ema",
+    "seed": 202610184002,
+    "morphology": "double_lobe",
+    "scenario": "same",
+    "pair": "ema_uniform",
+    "placement": "ema",
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__same__791__ema_uniform__ema__pulse.npz",
+      "sha256": "7b81a68f759e4c2ff498e6af52db2e9a7bd307a1f6265a50e99ccfbf5f81e022"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__same__pre_791.npz"
+  },
+  {
+    "branch": "202610184002__double_lobe__same__791__ema_uniform__uniform",
+    "seed": 202610184002,
+    "morphology": "double_lobe",
+    "scenario": "same",
+    "pair": "ema_uniform",
+    "placement": "uniform",
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__same__791__ema_uniform__uniform__pulse.npz",
+      "sha256": "fe4c179b33b392acdb33f65d1cc49245b9c07130ca5ac364986c9ebfb1357853"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__same__pre_791.npz"
+  },
+  {
+    "branch": "202610184002__double_lobe__same__791__ema_instant__ema",
+    "seed": 202610184002,
+    "morphology": "double_lobe",
+    "scenario": "same",
+    "pair": "ema_instant",
+    "placement": "ema",
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__same__791__ema_instant__ema__pulse.npz",
+      "sha256": "2fe13632e7e920774e5f8bbf989e625cc31177d5809d2bd1389e81fa8ce7a1c2"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__same__pre_791.npz"
+  },
+  {
+    "branch": "202610184002__double_lobe__same__791__ema_instant__instant",
+    "seed": 202610184002,
+    "morphology": "double_lobe",
+    "scenario": "same",
+    "pair": "ema_instant",
+    "placement": "instant",
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__same__791__ema_instant__instant__pulse.npz",
+      "sha256": "a53cd58d8964fe7651a13ad9855b6cb6ff87dbe5a7ce770ae18cd574a5b0396f"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__same__pre_791.npz"
+  },
+  {
+    "branch": "202610184002__double_lobe__same__823__ema_uniform__ema",
+    "seed": 202610184002,
+    "morphology": "double_lobe",
+    "scenario": "same",
+    "pair": "ema_uniform",
+    "placement": "ema",
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__same__823__ema_uniform__ema__pulse.npz",
+      "sha256": "50db71d91eed07431b7b7a21909831baf101268e2daa86240549d4508851abe4"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__same__pre_823.npz"
+  },
+  {
+    "branch": "202610184002__double_lobe__same__823__ema_uniform__uniform",
+    "seed": 202610184002,
+    "morphology": "double_lobe",
+    "scenario": "same",
+    "pair": "ema_uniform",
+    "placement": "uniform",
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__same__823__ema_uniform__uniform__pulse.npz",
+      "sha256": "e8620123373fec1b8da2db122d2d8c0ff57ddccea41d28f3ecbfa9318640f8fe"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__same__pre_823.npz"
+  },
+  {
+    "branch": "202610184002__double_lobe__same__823__ema_instant__ema",
+    "seed": 202610184002,
+    "morphology": "double_lobe",
+    "scenario": "same",
+    "pair": "ema_instant",
+    "placement": "ema",
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__same__823__ema_instant__ema__pulse.npz",
+      "sha256": "d404e16b9c3555944e8190779e77dc1f68399353d0cc62f53e6e9275db4b9b0d"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__same__pre_823.npz"
+  },
+  {
+    "branch": "202610184002__double_lobe__same__823__ema_instant__instant",
+    "seed": 202610184002,
+    "morphology": "double_lobe",
+    "scenario": "same",
+    "pair": "ema_instant",
+    "placement": "instant",
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__same__823__ema_instant__instant__pulse.npz",
+      "sha256": "bb71ef2058d2b9ba0542e57853044950e078c5a7e9812e8d198f6a5c11691fa5"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__same__pre_823.npz"
+  },
+  {
+    "branch": "202610184002__double_lobe__port_swap__791__ema_uniform__ema",
+    "seed": 202610184002,
+    "morphology": "double_lobe",
+    "scenario": "port_swap",
+    "pair": "ema_uniform",
+    "placement": "ema",
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__port_swap__791__ema_uniform__ema__pulse.npz",
+      "sha256": "0d924fa706a6e29b6d4a9e1c39411de0ad83c67c7a245a0f998d7e011806de80"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__port_swap__pre_791.npz"
+  },
+  {
+    "branch": "202610184002__double_lobe__port_swap__791__ema_uniform__uniform",
+    "seed": 202610184002,
+    "morphology": "double_lobe",
+    "scenario": "port_swap",
+    "pair": "ema_uniform",
+    "placement": "uniform",
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__port_swap__791__ema_uniform__uniform__pulse.npz",
+      "sha256": "79e3841ed53ae1c8591ba0593c7f7a9eb40065c07f605655b691796a7a333f61"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__port_swap__pre_791.npz"
+  },
+  {
+    "branch": "202610184002__double_lobe__port_swap__791__ema_instant__ema",
+    "seed": 202610184002,
+    "morphology": "double_lobe",
+    "scenario": "port_swap",
+    "pair": "ema_instant",
+    "placement": "ema",
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__port_swap__791__ema_instant__ema__pulse.npz",
+      "sha256": "918936fab964732240bf3d604c7811a92f1caac33e8e45b8d2b96341a1ee5ce0"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__port_swap__pre_791.npz"
+  },
+  {
+    "branch": "202610184002__double_lobe__port_swap__791__ema_instant__instant",
+    "seed": 202610184002,
+    "morphology": "double_lobe",
+    "scenario": "port_swap",
+    "pair": "ema_instant",
+    "placement": "instant",
+    "before_clock": 791,
+    "pulse_after_clock": 792,
+    "end_clock": 920,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__port_swap__791__ema_instant__instant__pulse.npz",
+      "sha256": "bfbce99b931d595cf1e66ddc660f756dac77ba68313f3986914056aca05e8379"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__port_swap__pre_791.npz"
+  },
+  {
+    "branch": "202610184002__double_lobe__port_swap__823__ema_uniform__ema",
+    "seed": 202610184002,
+    "morphology": "double_lobe",
+    "scenario": "port_swap",
+    "pair": "ema_uniform",
+    "placement": "ema",
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__port_swap__823__ema_uniform__ema__pulse.npz",
+      "sha256": "ee4c4db7479d412c6c1f6a4dcee6094d1ac3c43240d426f2fffc3d3ceb3fe056"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__port_swap__pre_823.npz"
+  },
+  {
+    "branch": "202610184002__double_lobe__port_swap__823__ema_uniform__uniform",
+    "seed": 202610184002,
+    "morphology": "double_lobe",
+    "scenario": "port_swap",
+    "pair": "ema_uniform",
+    "placement": "uniform",
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__port_swap__823__ema_uniform__uniform__pulse.npz",
+      "sha256": "3b17407eeeee55de97628e5253aeae79c0c9c3e9c1acd8b38436e032b9f967ea"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__port_swap__pre_823.npz"
+  },
+  {
+    "branch": "202610184002__double_lobe__port_swap__823__ema_instant__ema",
+    "seed": 202610184002,
+    "morphology": "double_lobe",
+    "scenario": "port_swap",
+    "pair": "ema_instant",
+    "placement": "ema",
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__port_swap__823__ema_instant__ema__pulse.npz",
+      "sha256": "e65417832a228052352a1d83a9e4553a0b8e68747507608f25a14eb3ed33c95d"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__port_swap__pre_823.npz"
+  },
+  {
+    "branch": "202610184002__double_lobe__port_swap__823__ema_instant__instant",
+    "seed": 202610184002,
+    "morphology": "double_lobe",
+    "scenario": "port_swap",
+    "pair": "ema_instant",
+    "placement": "instant",
+    "before_clock": 823,
+    "pulse_after_clock": 824,
+    "end_clock": 952,
+    "pulse_receipt": {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__port_swap__823__ema_instant__instant__pulse.npz",
+      "sha256": "0f8ccfdfd97cd79fadda71d6fcb9e70c00fa627f7ba95e48350e62e251d285b5"
+    },
+    "pre_state": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_placement_value_20261018/fece0fb5-f2db-465d-9cc3-373933d3f727/202610184002__double_lobe__port_swap__pre_823.npz"
+  }
+]

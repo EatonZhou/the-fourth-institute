@@ -1,0 +1,38 @@
+Read-only information audit v1 — executable interface
+
+Source: research.anticipatory_information_audit
+Run from project src:
+  .venv/bin/python -m research.anticipatory_information_audit input.json output.json
+Python:
+  from research.anticipatory_information_audit import audit, digest
+  report = audit(decisions, outcomes, contract=contract,
+                 assessments=None, accounting_pairs=None, frozen_predictions=None)
+
+No environment, controller training, forward or restore function is imported by this interface. It consumes JSON records and writes a new report. host_records.py uses NumPy only to encode saved arrays and inspect local receipts. Input files and old packages are never rewritten. The fixture input JSONs under check01 and check02 are complete runnable examples, explicitly synthetic. Do not call the physical host to manufacture missing fields for this audit.
+
+Before-choice decisions require decision_id, decision_order, phase=before_choice, decision_receipt_digest, support_digest, comparison_context_digest, public, phenotype, pending and history. Field sets must exactly match the contract. comparison_context binds the same target opportunity, action, horizon and definition; it must not encode world/seed/hidden mapping. support identifies genuinely comparable material/observation support, not just an arbitrary common label. A whole-array match is conservative: unmatched records are inconclusive, not proof that no information exists.
+
+Legal history events contain opaque event_id, cue, action, selected_channel (a local material scope, not an invented left/right configuration type), binary label or a declared unit-interval utilization label; cue/payment/open/completion order; paid/complete/observed/covered/legal_carrier; receipt_digest. Censored label is -1. Duplicate IDs, future/current events, late payment or cue, nonbinary labels and missing declared fields are rejected. Completed history is sorted by unique completion order. Simultaneous observations require a documented multi-event schema or separate local streams; do not impose a favorable order. Configured history time fields preserve age and cue-to-completion delay. Opaque IDs and hidden metadata are provenance, not predictor features.
+
+Future outcomes are a separate evaluator-only table: decision_id, completed_order, receipt_digest, available_to_policy_at_choice=false, complete, observed, label. Realized random outcome differences do not demonstrate historical information. Optional owner assessments give a conditional probability/mean or deterministic target with kind/value/provenance/context; all comparable contexts use one kind. They are owner model declarations, not an independently proven causal law. Private future tape cannot fill missing policy history. Identical complete state/exogenous future/action cannot be declared to have different deterministic outcomes.
+
+Group order: cue-only; instantaneous fields excluding active/pending; full publicly visible input; full body/maturing pipeline; latest legal pair; latest per-cue/material-scope pair; full declared history. Contrast separation by a field is compatibility, not causal sufficiency. Residual history candidates require a declared complete public/phenotype contract and an owner target-law contrast surviving the per-channel last match. They do not establish that a learned updater is needed: a fixed function of the same history may suffice.
+
+Optional frozen_predictions include name/decision_id, input_basis/input_digest, probability, rule_digest, frozen_before_evaluation=true, uses_hidden_state=false. Brier/MSE uses only the intersection of completed decision IDs across supplied predictors. The same fixed rule and exact input must yield the same prediction. Rule provenance is declared; this tool does not certify that a fitting procedure avoided future data. Learned online state must be included in a legitimate declared input basis, not hidden in a rule identifier.
+
+Optional accounting_pairs: pair_id, provenance_digest, unit=energy, resource_energy_credit_delta, actual_paid_cost_delta. Output flags when extra observed credit fails to cover extra paid cost. It explicitly does not infer body value: overflow, death, material value, later effects and opportunity costs can differ. The known target law is never called a bodily upper bound.
+
+Frozen ce2 adapter (host_contract.json identifies source/config):
+  from research.anticipatory_information_audit.host_records import contract, decision_record, local_event, encode
+  c = contract(host_contract_digest)
+  d = decision_record(saved_precommit_observe, decision_id=opaque,
+      receipt_digest=before_source_sha, support_digest=actual_scope_sha,
+      comparison_context_digest=task_action_horizon_sha, history=legal_carried_history)
+  e = local_event(saved_row, saved_receipt, cell=(y,x), cue=locked_cue,
+      cue_order=4*cue_step, action=actual_action, scope_id=material_scope,
+      event_id=opaque, receipt_digest=local_source_sha, detection_density=.02)
+Full observe is required at phase4 before step. Mature and pending fields are public in this host, not privileged only to the auditor. e reads completed_mask/local_label and actual fee/carrier/capacity. It does not rederive arrival from tape, total uptake, sink or the other port. Completing an observation and paying a memory write are distinct. Record arrays before mutation. If a policy is allowed a narrower view, declare a separate contract; never imply the full-host contract is that narrower view.
+
+Actual sparse feasibility archive: real_consumption.json verifies saved common physical start, prefix-policy identity, selected local completion receipts and delayed configuration snapshots. It does NOT run the full partition audit: full precommit public records and complete carrier history were not serialized. No data were reconstructed. The source/control-flow inference of common phase4 input is distinguished from the directly saved shared clock256 checkpoint/rho. Rich/uniform feasibility, content-transplant outcome and trained-update value are separate claims.
+
+Sensory legality is not storage/copy payment proof: local_event validates the paid observation only. Supplying that event as carried history additionally requires the caller's actual admitted write, retention/transport and copy provenance. A raw receipt or positive survivor mass alone does not license free persistent memory. This module never claims to verify the whole acquisition/maintenance cost from a sensor receipt.

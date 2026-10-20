@@ -1,0 +1,24 @@
+{
+  "reason": "Joint restore comparator erroneously included monotonic ForwardPermit.attempted in c; counters2/3 are necessarily unequal. Old failure/source retained. Exclude only this audit counter; all physical maps/state/checks remain compared.",
+  "checkpoint": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/last_complete_transaction",
+  "checkpoint_sha256": {
+    "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/last_complete_transaction/ready.json": "61ffd3bf6305b07c3beebaffd7278d5d0906444e4a310bb90d9e54445c1721be",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/last_complete_transaction/pump.npz": "9999d5002209408d8042fbed44dfa5640f7e24161a200571b822a783f3edc23b",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/last_complete_transaction/native/exchange.npz": "b6b5b1f49543f6ba6552b861253cc4b5b4221dbf448b1f735f4cc079e7855ecb",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/last_complete_transaction/native/ready.json": "af8f77e61851a4e6545b959874398f747723728def9a9f6a412a7e436db84457",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/last_complete_transaction/native/body.npz": "970ff1d420e1998dfaba21a2bcafe0598d4eebac9ed8ffb4119e08175af8cd07",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/last_complete_transaction/native/observer.npz": "8f604c264e20206d5347e1561e865d1269cd0301fc5cbe11cd7c96fa87b5c730"
+  },
+  "new_runner_sha256": "ea3e60da9d111cb393582aa6ddb39eea991e186d12ea6b40c79b7df35f1ed06f",
+  "old_runner_sha256": "fe27a1a8794eb4a10c58941cebf424e37c2724e720a2692d6a1e96c0cd33404a",
+  "frozen_core_sha256": "14917689b4a891b8ed27a1574630331b56a64d1538cf785e505b5a8fab3e393e",
+  "old_plan_sha256": "e505768cafa945417800921fb687aa39e7945b85f8a4669330c3de15c5e97039",
+  "used_native": 3,
+  "new_boundary": 2,
+  "boundary_continuation": "From complete clock130, advance131 on original and restored copies; no replay129/130 or old reference. No scientific paths have started.",
+  "planned_joint_native": 1029,
+  "cap": 1056,
+  "old_worker_seconds": 2.876892,
+  "worker_cap": 600,
+  "physics_prices_policies_unchanged": true
+}

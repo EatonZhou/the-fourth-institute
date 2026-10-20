@@ -1,0 +1,25 @@
+{
+  "name": "portal-development-projection",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node tests/run.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "*"
+  },
+  "dependencies": {
+    "@noble/hashes": "*",
+    "d3": "*",
+    "@dagrejs/dagre": "*",
+    "cytoscape": "*",
+    "marked": "*",
+    "dompurify": "*"
+  }
+}

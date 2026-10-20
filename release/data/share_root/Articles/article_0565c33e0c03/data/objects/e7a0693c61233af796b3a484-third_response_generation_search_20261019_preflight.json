@@ -1,0 +1,78 @@
+{
+  "native": 0,
+  "checks": [
+    {
+      "seed": 202610195601,
+      "shape": "ring",
+      "base_mu": [
+        0.2493082412307801,
+        0.11020804443456855
+      ],
+      "base_sigma": [
+        0.05209093166439917,
+        0.03624676526410053
+      ],
+      "midpoint_mu": 0.17975814283267433,
+      "midpoint_sigma": 0.04345259224059916,
+      "pre_choice_C_cells": 44,
+      "pre_choice_C_material": 16.838909328215692,
+      "pre_hypothetical_C_birth": 4.336808689942018e-19,
+      "native": 0
+    },
+    {
+      "seed": 202610195601,
+      "shape": "separate_seeds",
+      "base_mu": [
+        0.2493082412307801,
+        0.11020804443456855
+      ],
+      "base_sigma": [
+        0.05209093166439917,
+        0.03624676526410053
+      ],
+      "midpoint_mu": 0.17975814283267433,
+      "midpoint_sigma": 0.04345259224059916,
+      "pre_choice_C_cells": 3,
+      "pre_choice_C_material": 0.9107635249845265,
+      "pre_hypothetical_C_birth": 4.336808689942018e-19,
+      "native": 0
+    },
+    {
+      "seed": 202610195602,
+      "shape": "ring",
+      "base_mu": [
+        0.2493082412307801,
+        0.11020804443456855
+      ],
+      "base_sigma": [
+        0.05209093166439917,
+        0.03624676526410053
+      ],
+      "midpoint_mu": 0.17975814283267433,
+      "midpoint_sigma": 0.04345259224059916,
+      "pre_choice_C_cells": 38,
+      "pre_choice_C_material": 14.019023776609686,
+      "pre_hypothetical_C_birth": 0.0007911213462478621,
+      "native": 0
+    },
+    {
+      "seed": 202610195602,
+      "shape": "separate_seeds",
+      "base_mu": [
+        0.2493082412307801,
+        0.11020804443456855
+      ],
+      "base_sigma": [
+        0.05209093166439917,
+        0.03624676526410053
+      ],
+      "midpoint_mu": 0.17975814283267433,
+      "midpoint_sigma": 0.04345259224059916,
+      "pre_choice_C_cells": 6,
+      "pre_choice_C_material": 1.6123003639771238,
+      "pre_hypothetical_C_birth": 0.0053366751407886714,
+      "native": 0
+    }
+  ],
+  "interpretation": "Pure ready-state hypothetical scores only; no actual new births or future benefit established. Differences often reduce predicted removal rather than immediately increase birth."
+}

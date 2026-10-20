@@ -1,0 +1,26 @@
+{
+  "schema": "lenia.material-polarity.v1",
+  "source_hashes": {
+    "local_learning/material_transport.py": "4101300b009c12a6c2c6efdfdf8e0e0417fdf8aac6da422463b697fcd29c7dc8",
+    "local_learning/run_material_polarity.py": "a82512941a23becac0cac40a6bd87ee6c0fb28557842601eab1fd7e4dfbb42c4",
+    "local_learning/run_material_context.py": "486a87df9fb21a9432376f9ef2507b9148e770577687b32e8e780526542721ff",
+    "local_learning/run_material_experience.py": "71ec9bf562b8b1b2c164dae15ad1785def3402c9a32524cf609129e8935f01c3",
+    "environment_evolution/material_context_world.py": "8dbcb79f8f3e4b48282cc071774f8d940b0209f2c58d96d719d79cb0bf21e658",
+    "environment_evolution/material_world.py": "5cee34066eeaa1bff51fde903003bd4749cb2ff01582458c96642857e07f7f9b",
+    "simulation/snapshot.py": "e99d3eccee47ded2abe1518e3fb80d2d630a8ff21a2a339ff6723c2878dfc382"
+  },
+  "seeds": [
+    7501
+  ],
+  "steps": 480,
+  "initial": null,
+  "resume_job": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/36882b27-5e14-4a9a-a001-e64ab6c56ab4",
+  "polarity_initial": "p=(sin(theta),cos(theta)); theta=pi/4+.2sin(2pi*y/H)+.2cos(2pi*x/W); empty sites zero; no world inputs",
+  "mechanism": "Same transport map carries rho*p. Face drive adds gain times signed p. After transport rotate p by dt*.04 then relax its norm toward1 at rate.5. No cue/outcome enters p update.",
+  "policy": "polarity_gain=.5; native mobile-soft and cue_gain unchanged; donor_energy from life0; p is motion state, not learned memory",
+  "control": "no-write uses rate=0 from life0, retains eligibility/decay/p dynamics; online uses original rate=1",
+  "baseline": "109f2456 native world train0..240 plus retain240..720; reuse only matching elapsed windows; no-p online",
+  "funding": "All movement paid through native donor_energy; intrinsic p update has no separate cost. Basal deficits possible.",
+  "reserved_worlds_used": false,
+  "selection": "7501 selected after stored first240 frames: online centroid path10.1 cells and new resource-site peak6.41percent vs baseline0.49percent; continue online and no-write without refill or parameter change, keep7502 at240."
+}

@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "code_pattern": "[0-9a-f]{12}",
+  "type_pattern": "[a-z][a-z0-9]*(?:_[a-z0-9]+)*",
+  "id_exceptions": {
+    "project": {
+      "category": "resource",
+      "format": "registered_project_id",
+      "description": "A Project uses its unique human-readable ID registered in the Portal Project registry (read with GetProject), such as AI员工 or RobotCompany."
+    },
+    "user": {
+      "category": "principal",
+      "format": "registered_portal_username",
+      "description": "A registered Portal username is the canonical User ID and is preserved exactly as registered."
+    }
+  }
+}

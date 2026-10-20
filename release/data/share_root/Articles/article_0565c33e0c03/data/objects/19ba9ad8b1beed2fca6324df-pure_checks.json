@@ -1,0 +1,5 @@
+{
+  "sensor_inverse": true,
+  "rotation_prediction": true,
+  "native": 0
+}

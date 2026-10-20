@@ -1,0 +1,16 @@
+{
+  "type": "family",
+  "category": "resource",
+  "description": "A Family of Residents in one Lineage. Its canonical resource ID is distinct from its local Function Block key and facade Resident identity.",
+  "title": {
+    "zh": "Family",
+    "en": "Family"
+  },
+  "provider": "management_portal.resources.providers.collaboration:install_resolver",
+  "catalog_section": "",
+  "catalog_order": 0,
+  "registerable": false,
+  "scope": "lineage",
+  "unit": "core",
+  "enabled_by_default": true
+}

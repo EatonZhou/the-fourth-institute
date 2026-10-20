@@ -1,0 +1,15 @@
+{
+  "steps": 768,
+  "raw_array_files": 8,
+  "max_errors": {
+    "birth": 0.0,
+    "P_reconstruction": 2.220446049250313e-16,
+    "F_reconstruction": 2.220446049250313e-16
+  },
+  "first129_matching": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_resource_factorial_20261018/first129_matching.json",
+  "categories": "strict P<L and F/price<L on raw L>0; equality belongs to sufficient side; 8ULP near-equality separately retained",
+  "deficit_note": "P and F deficits overlap; never add to total rejected births",
+  "timing": "P=actual post-resource transport P; F=post-transport F minus actual actor consumption; independently checked against next stocks plus spent",
+  "birth_rounding": "original single nextafter affordability correction; raw reconstruction residual retained",
+  "interpretation": "first129 common licensed-request claim conditional on actual equality; later masks are different evolving tissue"
+}

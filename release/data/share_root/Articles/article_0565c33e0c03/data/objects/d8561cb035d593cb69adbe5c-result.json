@@ -1,0 +1,14 @@
+{
+  "task": "native_investment_action_20261018",
+  "status": "completed",
+  "job_id": "ae909c85-6b64-4528-870c-66b8794c3c54",
+  "attempted_host_steps": 4192,
+  "committed_host_steps": 4192,
+  "old_reused_steps": 1536,
+  "script_seconds": 132.44618668500334,
+  "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/native_investment_action_20261018/ae909c85-6b64-4528-870c-66b8794c3c54",
+  "raw_bytes": 1595475068,
+  "outcomes": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/native_investment_action_20261018/outcomes.json",
+  "plan_sha256": "a20e8f718740b0713ffe22714ad744a2de063d6f6f887aefa19698afab1e8650",
+  "raw_cap_ok": true
+}

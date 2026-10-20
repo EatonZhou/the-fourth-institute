@@ -1,0 +1,18 @@
+{
+  "receipt": {
+    "observed": true,
+    "learned": true,
+    "arm": 0,
+    "prediction": 1.0,
+    "outcome": 0.0,
+    "residual": -1.0,
+    "forced_probe": false,
+    "uncertainty": [
+      1.0,
+      1.0
+    ],
+    "triggered_next_probe": true
+  },
+  "forced_next_probe": true,
+  "body_calls": 0
+}

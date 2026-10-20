@@ -1,0 +1,67 @@
+{
+  "task": "local_motor_closed_loop_20261019",
+  "owner": "resident_d3ccfa2d95b7",
+  "status": "four_actual_batches_complete_direction_active",
+  "objective_met": false,
+  "native": 18816,
+  "worker_seconds": 118.121236,
+  "unknown": 0,
+  "old_replay": 0,
+  "report": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/acquired_gain_content_20261019/REPORT.txt",
+  "batches": [
+    {
+      "task": "state_conditioned_local_motor_20261019",
+      "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/state_conditioned_local_motor_20261019/analysis.json",
+      "sha256": "532a9b0823f3ec5d4828bdeb6eaa93ceb14be5691821dfeb9a184422d07300dc",
+      "plan_sha256": "c806e0f27930dca5aa311e23b4fcea5ac416fa76511572974277d26917c4b4af",
+      "animation": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/state_conditioned_local_motor_20261019/actual_sequence.gif",
+      "source_entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/state_conditioned_local_motor/run.py"
+    },
+    {
+      "task": "closed_loop_relation_control_20261019",
+      "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/closed_loop_relation_control_20261019/analysis.json",
+      "sha256": "52b5182f437e447d2ac102e7aceb35feb0b5e8170b431677436580011b03f7ca",
+      "plan_sha256": "6a1313039cc961311e718952daa931730bcc4d7867bdfc3cb56ab28da2089a38",
+      "animation": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/closed_loop_relation_control_20261019/actual_sequence.gif",
+      "source_entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/closed_loop_relation_control/run.py"
+    },
+    {
+      "task": "state_gated_motor_gain_20261019",
+      "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/state_gated_motor_gain_20261019/analysis.json",
+      "sha256": "0a6cee3afbb92fdeddd6d7f1c504416d81e9dd589cc361e238a40f4dea614256",
+      "plan_sha256": "a9104c6e8df231d9bca2d05032d5e78b50a287778d00b6ccec1cf381d90ee097",
+      "animation": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/state_gated_motor_gain_20261019/actual_sequence.gif",
+      "source_entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/state_gated_motor_gain/run.py"
+    },
+    {
+      "task": "acquired_gain_content_20261019",
+      "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/acquired_gain_content_20261019/analysis.json",
+      "sha256": "bae503060a11c919880fafc831babb0518187da1b5dc8839ef66f802b7d0bfc7",
+      "plan_sha256": "2379495c29f1d763fc0ed111e3fb4f4a801c2e84a2fb1af018ab11badeff07aa",
+      "animation": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/acquired_gain_content_20261019/actual_sequence.gif",
+      "source_entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/acquired_gain_content/run.py"
+    }
+  ],
+  "findings": [
+    "Additive linear state policy lacks extra benefit; periodic coasting can satisfy occupancy gates without turning.",
+    "State-dependent learned gain achieves all3 fixedphase gates2/2; fixed positive-gain direction feedback also2/2, so no algorithm advantage.",
+    "Same actual body gain erase2/2 fails; spatially homogenized gain2/2 succeeds. Acquired gain content matters, heterogeneity not required in these parents.",
+    "Freeze gain writing still permits feedback-triggered turning; this is state-conditioned expression, not evidence that reversal requires relearning."
+  ],
+  "limits": [
+    "preset sensing/gradient direction/axes/cohesive actuator",
+    "no birth",
+    "no new reward sensing in last128; stale legitimate records transported",
+    "local score update not asserted unbiased whole-body gradient",
+    "compute/storage/communication unpriced",
+    "same-context forks not independent worlds"
+  ],
+  "active_body_job": null,
+  "artifact_sha256": {
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/acquired_gain_content_20261019/REPORT.txt": "3531a9ead2aeac30a6fb18ef9c06f3d3486793467b0575688926ee3864b5217c",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/acquired_gain_content_20261019/all_phase_comparisons.csv": "44b989ea9e3b3c538593d24f2e3e8176767d2ddfac64e9d10149f152ae02cfae",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/acquired_gain_content_20261019/direction_accounting.json": "17a33d19c43fc8a410be37a60e48285b02c013dfb4fc7a7a7dace3f6c46ed77e",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/acquired_gain_content_20261019/content_parent_checks.json": "0e43876f1cf6b8800663a7e285d2e10f7676d15faed07131044a8ebe411dd96e",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/closed_loop_relation_control_20261019/paired_relation_comparisons.json": "30c1c4944dd5be51ab968f4a65f023a6c9db3681109453a85ef32b2795f2e4a2"
+  }
+}

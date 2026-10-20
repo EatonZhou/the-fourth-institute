@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title data-portal-site-title="[&quot;Society&quot;]">Society</title>
+    <link rel="stylesheet" href="/static/portal_components.css" />
+    <link rel="stylesheet" href="/static/portal_image_editor.css" />
+    <link rel="stylesheet" href="/static/portal_workbench.css" />
+    <link rel="stylesheet" href="/static/projection_host.css" />
+    <link rel="stylesheet" href="/static/vendor/xterm/xterm.css" />
+    <link rel="stylesheet" href="/static/lineage_workbench.css" />
+    <link rel="stylesheet" href="/static/watchboard_applications/wireguard.css" />
+    <link rel="stylesheet" href="/static/hatg_panel.css" />
+    <link rel="stylesheet" href="/static/lineage_function_blocks.css" />
+    <link rel="stylesheet" href="/static/portal_design_system.css" data-portal-skin="default" />
+    <link rel="stylesheet" href="/static/portal_themes.css" data-portal-skin-provider="themes" />
+    <script src="/static/portal_state.js"></script>
+    <script src="/static/portal_text.js"></script>
+    <script src="/static/portal_translations.js"></script>
+    <script src="/static/portal_i18n.js"></script>
+    <script src="/static/portal_theme.js"></script>
+    <script src="/static/portal_page_state.js"></script>
+    <script src="/static/portal_api.js"></script>
+    <script src="/static/portal_instruction_client.js"></script>
+    <script src="/static/portal_resident_service.js"></script>
+    <script src="/static/portal_passkeys.js"></script>
+    <script src="/static/portal_identity.js"></script>
+    <script src="/static/portal_society_service.js"></script>
+    <script src="/static/portal_resident_discovery_service.js"></script>
+    <script src="/static/portal_lineage_catalogs.js"></script>
+    <script src="/static/portal_overlay.js"></script>
+    <script src="/static/portal_events.js"></script>
+    <script src="/static/portal_refresh_coordinator.js"></script>
+    <script src="/static/resident_protocol.js"></script>
+    <script src="/static/portal_conversation_store.js"></script>
+    <script src="/static/portal_ui_primitives.js"></script>
+    <script src="/static/portal_nav.js"></script>
+    <script src="/static/portal_ui.js"></script>
+    <script src="/static/portal_resource_registration_service.js"></script>
+    <script src="/static/portal_project_creation.js"></script>
+    <script src="/static/portal_form_controls.js"></script>
+    <script src="/static/portal_button_tooltips.js"></script>
+    <script src="/static/portal_toolbar.js"></script>
+    <script src="/static/portal_detail_surface.js"></script>
+    <script src="/static/portal_resource_header.js"></script>
+    <script src="/static/portal_file_tree.js"></script>
+    <script src="/static/portal_resource_routes.js"></script>
+    <script src="/static/portal_preview_contract.js"></script>
+    <script src="/static/portal_resource_chips.js"></script>
+    <script src="/static/portal_file_links.js"></script>
+    <script src="/static/portal_preview_runtime.js"></script>
+    <script src="/static/portal_pdf_preview.js"></script>
+    <script src="/static/portal_preview_renderers.js"></script>
+    <script src="/static/portal_agent_preview_source.js"></script>
+    <script src="/static/portal_editor_open_service.js"></script>
+    <script src="/static/portal_command_registry.js"></script>
+    <script src="/static/portal_workbench_context.js"></script>
+    <script src="/static/portal_workbench.js"></script>
+    <script src="/static/portal_projections.js"></script>
+    <script src="/static/projection_host.js"></script>
+    <script src="/static/portal_document_statistics.js"></script>
+    <script src="/static/portal_workspace_surface.js"></script>
+    <script src="/static/vendor/monaco/vs/nls/lang/zh-cn.js"></script>
+    <script src="/static/vendor/monaco/vs/loader.js"></script>
+    <script src="/static/portal_code_editor.js"></script>
+    <script src="/static/portal_editor_open_commands.js"></script>
+    <script src="/static/portal_hatg_loader.js"></script>
+    <script src="/static/portal_navigation.js"></script>
+    <script src="/static/portal_personal_workspaces.js"></script>
+    <script src="/static/portal_component_recovery.js"></script>
+    <script src="/static/resident_projection.js"></script>
+    <script src="/static/portal_image_editor.js"></script>
+    <script src="/static/portal_model_api_settings.js"></script>
+    <script src="/static/portal_resident_runtime_controller.js"></script>
+    <script src="/static/portal_chat_workspace.js"></script>
+    <script src="/static/portal_chatroom_view.js"></script>
+    <script src="/static/portal_command_palette.js"></script>
+
+    <script src="/static/markdown.js"></script>
+  </head>
+  <body class="portalBoardShell" data-portal-workbench-entry="lineage">
+    <header class="portalSiteHeader" data-portal-site-header data-portal-nav-active="lineage"></header>
+
+    <main class="consoleShell portalPageFrame portalWorkbenchPageLayout portalWorkbenchViewportShell" id="consoleShell">
+      <aside class="portalActivityRail" id="lineageActivityRail" aria-label="Society Workbench views" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Society Workbench views&quot;}"></aside>
+
+      <div class="lineageWorkbenchRoot portalWorkbenchViewportRoot" id="lineageWorkbenchRoot" data-portal-boot-required="Society 工作台初始化">
+
+      <!-- Every editor instance is created by PortalWorkbench through its registered factory. -->
+      </div>
+    </main>
+
+    <div class="portalDetailOverlay lineageDialogOverlay" data-portal-detail-overlay id="residentRegisterOverlay" aria-hidden="true" hidden>
+      <div data-portal-detail-surface class="portalDetailSurface" role="dialog" aria-modal="true" aria-labelledby="residentRegisterTitle">
+        <div class="portalDetailHeader" data-portal-detail-header>
+          <div class="residentModalTitle" id="residentRegisterTitle"><!--portal-i18n:"注册 Resident"-->注册 Resident</div>
+          <button class="portalDetailClose" data-portal-detail-close data-portal-icon="close" id="residentRegisterClose" type="button" aria-label="关闭注册窗口" title="关闭" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;关闭注册窗口&quot;, &quot;title&quot;: &quot;关闭&quot;}"></button>
+        </div>
+        <form class="portalDetailForm residentForm" id="residentRegisterForm">
+          <div class="residentFormGrid">
+            <div class="residentFormRow">
+              <label class="residentLabel" for="residentTitleInput"><!--portal-i18n:"标题 *"-->标题 *</label>
+              <input class="residentInput" id="residentTitleInput" required autocomplete="off" />
+            </div>
+            <div class="residentFormRow">
+              <label class="residentLabel" for="residentBackendSelect"><!--portal-i18n:"后端"-->后端</label>
+              <select class="residentSelect" id="residentBackendSelect"></select>
+            </div>
+          </div>
+          <div class="residentRuntimeGrid" id="residentRuntimeSettingsRow">
+            <div class="residentFormRow" id="residentRouteField" hidden>
+              <label class="residentLabel" for="residentRouteSelect"><!--portal-i18n:"Backend Account / Route"-->Backend Account / Route</label>
+              <select class="residentSelect" id="residentRouteSelect" disabled></select>
+              <div class="residentHint"><!--portal-i18n:"原生订阅账号与 DeepSeek 路线分开选择；配置来源为共享 Provider 目录。"-->原生订阅账号与 DeepSeek 路线分开选择；配置来源为共享 Provider 目录。</div>
+            </div>
+            <div class="residentFormRow">
+              <label class="residentLabel" for="residentRuntimeModelSelect"><!--portal-i18n:"Model"-->Model</label>
+              <select class="residentSelect" id="residentRuntimeModelSelect">
+                <option value=""><!--portal-i18n:"Portal 默认模型 (default)"-->Portal 默认模型 (default)</option>
+              </select>
+            </div>
+            <div class="residentFormRow">
+              <label class="residentLabel" for="residentRuntimeEffortSelect"><!--portal-i18n:"Effort"-->Effort</label>
+              <select class="residentSelect" id="residentRuntimeEffortSelect">
+                <option value=""><!--portal-i18n:"xhigh (default)"-->xhigh (default)</option>
+                <option value="minimal"><!--portal-i18n:"minimal"-->minimal</option>
+                <option value="low"><!--portal-i18n:"low"-->low</option>
+                <option value="medium"><!--portal-i18n:"medium"-->medium</option>
+                <option value="high"><!--portal-i18n:"high"-->high</option>
+                <option value="xhigh"><!--portal-i18n:"xhigh"-->xhigh</option>
+                <option value="max"><!--portal-i18n:"max"-->max</option>
+                <option value="ultra"><!--portal-i18n:"ultra"-->ultra</option>
+              </select>
+            </div>
+            <div class="residentFormRow">
+              <label class="residentLabel" for="residentRuntimeTierSelect"><!--portal-i18n:"Speed"-->Speed</label>
+              <select class="residentSelect" id="residentRuntimeTierSelect">
+                <option value=""><!--portal-i18n:"Standard (default)"-->Standard (default)</option>
+                <option value="priority"><!--portal-i18n:"Fast"-->Fast</option>
+              </select>
+            </div>
+            <div class="residentFormRow">
+              <label class="residentLabel" for="residentRuntimePermissionSelect"><!--portal-i18n:"Permissions"-->Permissions</label>
+              <select class="residentSelect" id="residentRuntimePermissionSelect">
+                <option value=""><!--portal-i18n:"Full Access (default)"-->Full Access (default)</option>
+                <option value="default"><!--portal-i18n:"Ask"-->Ask</option>
+                <option value="auto-review"><!--portal-i18n:"Auto-review"-->Auto-review</option>
+                <option value="full-access"><!--portal-i18n:"Full Access"-->Full Access</option>
+              </select>
+            </div>
+          </div>
+          <details class="residentAdvancedDetails" id="residentWorkspaceAdvancedDetails">
+            <summary class="residentAdvancedSummary"><span data-portal-icon="chevron-down" data-portal-icon-class="residentDisclosureIcon" class="residentDisclosureIcon" aria-hidden="true"></span><span><!--portal-i18n:"高级工作路径"-->高级工作路径</span></summary>
+            <div class="residentAdvancedBody">
+              <div class="residentFormRow">
+                <label class="residentLabel" for="residentAdditionalWorkspacesInput"><!--portal-i18n:"其他工作区"-->其他工作区</label>
+                <textarea class="residentTextarea" id="residentAdditionalWorkspacesInput" placeholder="每行一个绝对路径"></textarea>
+                <div class="residentHint"><!--portal-i18n:"每个目录登记为一个 Workspace，可由多个 Resident 使用。"-->每个目录登记为一个 Workspace，可由多个 Resident 使用。</div>
+              </div>
+            </div>
+          </details>
+          <div class="portalDetailFooter" data-portal-detail-footer>
+            <button class="portalButton" type="button" id="residentRegisterCancel"><!--portal-i18n:"取消"-->取消</button>
+            <button class="portalButton is-primary" type="submit" id="residentRegisterSubmit"><!--portal-i18n:"注册"-->注册</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="portalDetailOverlay lineageDialogOverlay" data-portal-detail-overlay id="residentAttachOverlay" aria-hidden="true" hidden>
+      <div data-portal-detail-surface class="portalDetailSurface residentAttachModal" role="dialog" aria-modal="true" aria-labelledby="residentAttachTitle">
+        <div class="portalDetailHeader" data-portal-detail-header>
+          <div>
+            <div class="residentModalTitle" id="residentAttachTitle"><!--portal-i18n:"附加 Resident"-->附加 Resident</div>
+            <div class="residentHint" id="residentAttachSubtitle"></div>
+          </div>
+          <button class="portalDetailClose" data-portal-detail-close data-portal-icon="close" id="residentAttachClose" type="button" aria-label="关闭附加选项" title="关闭" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;关闭附加选项&quot;, &quot;title&quot;: &quot;关闭&quot;}"></button>
+        </div>
+        <div class="residentAttachBody">
+          <button class="residentAttachOption residentAttachOptionButton" id="residentAttachNewButton" type="button" title="注册新的 Resident，并挂接到当前 Lineage" data-portal-i18n-attrs="{&quot;title&quot;: &quot;注册新的 Resident，并挂接到当前 Lineage&quot;}">
+            <span><!--portal-i18n:"新建 Resident"-->新建 Resident</span><span data-portal-icon="chevron-right" data-portal-icon-class="residentDisclosureIcon" aria-hidden="true"></span>
+          </button>
+          <details class="residentAttachOption" id="residentAttachForkDetails" title="从 Leader Resident 创建分支，并把新 Resident 加入此 Lineage" data-portal-i18n-attrs="{&quot;title&quot;: &quot;从 Leader Resident 创建分支，并把新 Resident 加入此 Lineage&quot;}">
+            <summary title="从 Leader Resident 创建分支，并把新 Resident 加入此 Lineage" data-portal-i18n-attrs="{&quot;title&quot;: &quot;从 Leader Resident 创建分支，并把新 Resident 加入此 Lineage&quot;}"><span><!--portal-i18n:"创建并附加分支 Resident"-->创建并附加分支 Resident</span><span data-portal-icon="chevron-down" data-portal-icon-class="residentDisclosureIcon" class="residentDisclosureIcon" aria-hidden="true"></span></summary>
+            <div class="residentAttachPanel">
+              <div class="residentHint"><!--portal-i18n:"从此 Lineage 的 Leader Resident 创建分支，并把新 Resident 作为正式成员加入。"-->从此 Lineage 的 Leader Resident 创建分支，并把新 Resident 作为正式成员加入。</div>
+              <div class="residentAttachInlinePanel" id="residentAttachForkPanel"></div>
+            </div>
+          </details>
+        </div>
+      </div>
+    </div>
+
+    <div class="portalDetailOverlay lineageDialogOverlay" data-portal-detail-overlay id="residentEditOverlay" aria-hidden="true" hidden>
+      <div data-portal-detail-surface class="portalDetailSurface" role="dialog" aria-modal="true" aria-labelledby="residentEditTitle">
+        <div class="portalDetailHeader" data-portal-detail-header>
+          <div class="residentModalTitle" id="residentEditTitle"><!--portal-i18n:"编辑 Resident"-->编辑 Resident</div>
+          <button class="portalDetailClose" data-portal-detail-close data-portal-icon="close" id="residentEditClose" type="button" aria-label="关闭 Resident 编辑窗口" title="关闭" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;关闭 Resident 编辑窗口&quot;, &quot;title&quot;: &quot;关闭&quot;}"></button>
+        </div>
+        <form class="portalDetailForm residentForm" id="residentEditForm">
+          <div class="residentFormRow">
+            <label class="residentLabel" for="residentEditTitleInput"><!--portal-i18n:"名称"-->名称</label>
+            <input class="residentInput" id="residentEditTitleInput" autocomplete="off" />
+          </div>
+          <div class="portalDetailFooter" data-portal-detail-footer>
+            <button class="portalButton" type="button" id="residentEditCancel"><!--portal-i18n:"取消"-->取消</button>
+            <button class="portalButton is-primary" type="submit" id="residentEditSubmit"><!--portal-i18n:"保存"-->保存</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="portalDetailOverlay lineageDialogOverlay" data-portal-detail-overlay id="crossLineageForkOverlay" aria-hidden="true" hidden>
+      <div data-portal-detail-surface class="portalDetailSurface residentAttachModal" role="dialog" aria-modal="true" aria-labelledby="crossLineageForkTitle">
+        <div class="portalDetailHeader" data-portal-detail-header>
+          <div>
+            <div class="residentModalTitle" id="crossLineageForkTitle"><!--portal-i18n:"在其他 Lineage 中创建分支"-->在其他 Lineage 中创建分支</div>
+            <div class="residentHint"><!--portal-i18n:"选择目标 Lineage 和明确的父 Resident 节点。"-->选择目标 Lineage 和明确的父 Resident 节点。</div>
+          </div>
+          <button class="portalDetailClose" data-portal-detail-close data-portal-icon="close" id="crossLineageForkClose" type="button" aria-label="关闭跨 Lineage 分支窗口" title="取消跨 Lineage 分支" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;关闭跨 Lineage 分支窗口&quot;, &quot;title&quot;: &quot;取消跨 Lineage 分支&quot;}"></button>
+        </div>
+        <form class="portalDetailForm residentForm" id="crossLineageForkForm">
+          <div class="residentFormRow">
+            <label class="residentLabel" for="crossLineageForkLineageSelect"><!--portal-i18n:"目标 Lineage"-->目标 Lineage</label>
+            <select class="residentSelect" id="crossLineageForkLineageSelect"></select>
+          </div>
+          <div class="residentFormRow">
+            <label class="residentLabel" for="crossLineageForkResidentSelect"><!--portal-i18n:"父 Resident"-->父 Resident</label>
+            <select class="residentSelect" id="crossLineageForkResidentSelect"></select>
+            <div class="residentHint" id="crossLineageForkHint"></div>
+          </div>
+          <div class="portalDetailFooter" data-portal-detail-footer>
+            <button class="portalButton" type="button" id="crossLineageForkCancel"><!--portal-i18n:"取消"-->取消</button>
+            <button class="portalButton is-primary" type="submit" id="crossLineageForkSubmit" title="从所选 Resident 创建普通分支 Resident" data-portal-i18n-attrs="{&quot;title&quot;: &quot;从所选 Resident 创建普通分支 Resident&quot;}"><!--portal-i18n:"创建分支 Resident"-->创建分支 Resident</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="portalDetailOverlay lineageDialogOverlay" data-portal-detail-overlay id="residentForkCreateOverlay" aria-hidden="true" hidden>
+      <div data-portal-detail-surface class="portalDetailSurface residentForkCreateModal" role="dialog" aria-modal="true" aria-labelledby="residentForkCreateTitle">
+        <div class="portalDetailHeader" data-portal-detail-header>
+          <div>
+            <div class="residentModalTitle" id="residentForkCreateTitle"><!--portal-i18n:"创建分支 Resident"-->创建分支 Resident</div>
+            <div class="residentHint" id="residentForkCreateSubtitle"></div>
+          </div>
+          <button class="portalDetailClose" data-portal-detail-close data-portal-icon="close" id="residentForkCreateClose" type="button" aria-label="关闭分支创建窗口" title="关闭" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;关闭分支创建窗口&quot;, &quot;title&quot;: &quot;关闭&quot;}"></button>
+        </div>
+        <div class="portalDetailForm forkCreateBody" id="residentForkCreateBody">
+          <div class="residentFormRow">
+            <label class="residentLabel" for="residentForkProviderInput">AI Provider</label>
+            <select class="residentSelect" id="residentForkProviderInput"></select>
+          </div>
+          <div class="residentFormRow" id="residentForkAccountField">
+            <label class="residentLabel" for="residentForkAccountInput"><!--portal-i18n:"账号"-->账号</label>
+            <select class="residentSelect" id="residentForkAccountInput"></select>
+            <div class="residentHint" id="residentForkAccountHint"></div>
+          </div>
+          <div class="forkCreateModeGrid">
+            <button class="forkCreateModeBtn" type="button" data-fork-create-action="full" title="从 PostgreSQL 继承来源 Resident 当前有效上下文，并保留完整历史轨迹" data-portal-i18n-attrs="{&quot;title&quot;: &quot;从 PostgreSQL 继承来源 Resident 当前有效上下文，并保留完整历史轨迹&quot;}">
+              <span class="forkCreateModeTitle"><!--portal-i18n:"完整分支"-->完整分支</span>
+              <span class="forkCreateModeMeta"><!--portal-i18n:"继承来源当前有效上下文，完整历史轨迹仍可追溯。"-->继承来源当前有效上下文，完整历史轨迹仍可追溯。</span>
+            </button>
+            <button class="forkCreateModeBtn" type="button" data-fork-create-action="compacted" title="继承来源 Resident 当前有效上下文，并在新 Session 首次工作前完成压缩" data-portal-i18n-attrs="{&quot;title&quot;: &quot;继承来源 Resident 当前有效上下文，并在新 Session 首次工作前完成压缩&quot;}">
+              <span class="forkCreateModeTitle"><!--portal-i18n:"压缩继承"-->压缩继承</span>
+              <span class="forkCreateModeMeta"><!--portal-i18n:"保留完整历史轨迹，新 Session 先压缩继承上下文再开始工作。"-->保留完整历史轨迹，新 Session 先压缩继承上下文再开始工作。</span>
+            </button>
+            <button class="forkCreateModeBtn" type="button" data-fork-create-action="recent-5" title="从来源 Resident 最近 5 轮对话创建分支" data-portal-i18n-attrs="{&quot;title&quot;: &quot;从来源 Resident 最近 5 轮对话创建分支&quot;}">
+              <span class="forkCreateModeTitle"><!--portal-i18n:"最近 5 轮"-->最近 5 轮</span>
+              <span class="forkCreateModeMeta"><!--portal-i18n:"把来源 Resident 最近 5 轮保存到新 Resident 的独立上下文。"-->把来源 Resident 最近 5 轮保存到新 Resident 的独立上下文。</span>
+            </button>
+            <button class="forkCreateModeBtn" type="button" data-fork-create-action="recent-10" title="从来源 Resident 最近 10 轮对话创建分支" data-portal-i18n-attrs="{&quot;title&quot;: &quot;从来源 Resident 最近 10 轮对话创建分支&quot;}">
+              <span class="forkCreateModeTitle"><!--portal-i18n:"最近 10 轮"-->最近 10 轮</span>
+              <span class="forkCreateModeMeta"><!--portal-i18n:"把来源 Resident 最近 10 轮保存到新 Resident 的独立上下文。"-->把来源 Resident 最近 10 轮保存到新 Resident 的独立上下文。</span>
+            </button>
+          </div>
+          <div class="portalDetailFooter" data-portal-detail-footer>
+            <button class="portalButton" type="button" id="residentForkCreateCancel"><!--portal-i18n:"取消"-->取消</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="agentCardMenu" id="agentFloatingMenu" aria-hidden="true" hidden>
+    </div>
+
+    <script src="/static/portal_terminal.js"></script>
+    <script src="/static/watchboard_applications/registry.js"></script>
+    <script src="/static/watchboard_applications/wireguard.js"></script>
+    <script src="/static/watchboard_applications/telepus.js"></script>
+    <script src="/static/lineage_workbench_watchboard.js"></script>
+    <script src="/static/lineage_workbench_state.js"></script>
+    <script src="/static/lineage_workbench_controller.js"></script>
+    <script src="/static/principal_navigation.js"></script>
+    <script src="/static/lineage_workbench.js"></script>
+  </body>
+</html>

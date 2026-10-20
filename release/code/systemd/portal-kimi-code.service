@@ -1,0 +1,19 @@
+[Unit]
+Description=TFI Portal Kimi Code backend server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+UMask=0077
+WorkingDirectory=@PORTAL_SOURCE_ROOT@
+EnvironmentFile=-@PORTAL_POSTGRES_ENV_FILE@
+EnvironmentFile=@PORTAL_RENDERED_CONFIG_ROOT@/portal-kimi-code.env
+Environment=PORTAL_KIMI_CODE_CONFIG_TEMPLATE=@PORTAL_SOURCE_ROOT@/systemd/portal-kimi-code-config.toml
+ExecStart=/usr/bin/python3 -m management_portal.kimi_code_server
+Restart=always
+RestartSec=2
+TimeoutStopSec=30
+
+[Install]
+WantedBy=default.target

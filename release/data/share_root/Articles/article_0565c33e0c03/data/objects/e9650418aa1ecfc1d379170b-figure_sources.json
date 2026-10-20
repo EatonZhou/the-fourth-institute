@@ -1,0 +1,13 @@
+{
+  "sources": [
+    "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_adaptive_gain/animation.npz",
+    "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_local_delay/animation.npz"
+  ],
+  "panels": [
+    "adaptive_gain",
+    "local_delay"
+  ],
+  "stride": 3,
+  "values": "actual rho times q sign; colors do not denote extra body",
+  "full_state": "64bit exact encoded/preGO/postfeedback/final; animations float16 per native"
+}

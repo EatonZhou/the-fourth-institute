@@ -1,0 +1,73 @@
+\chapter{任意自适应组织的证据预算}
+\label{ch:lower}
+\chapterguide{下界比较整个允许的组织类别。自适应选择能够重新分配证据，不能免除区分冲突情境所需的证据量。}
+
+\section{记录的似然比}
+本章假设所有$K_a(v\mid\theta)>0$。这排除一次观察即绝对确定情境的特殊情形，使相对熵有限。令$P_\theta^\Pi$为组织完整记录的分布。
+
+策略在历史$h$上选择实验的概率为$\pi_t(a\mid h)$。对同一条记录，这个概率在两个待比较情境下相同；虽然真实情境会改变历史的出现频率，它不直接进入策略函数。因此记录似然比为
+\[
+ \frac{P_\theta^\Pi(T_n)}{P_{\theta'}^\Pi(T_n)}
+ =\prod_{t=1}^n\frac{K_{A_t}(V_t\mid\theta)}{K_{A_t}(V_t\mid\theta')}.
+\]
+具有零选择概率的路径对两者同时为零，不影响等式在实际支持上的使用。
+
+\begin{theorem}[自适应相对熵账本]
+\label{thm:kl-ledger}
+令$N_a(n)$为实验$a$的调用数，令
+$D_a(\theta\Vert\theta')=\KL(K_a(\cdot\mid\theta)\Vert K_a(\cdot\mid\theta'))$。则
+\[
+ \KL(P_\theta^\Pi\Vert P_{\theta'}^\Pi)
+ =\sum_a\EE_\theta^\Pi N_a(n)D_a(\theta\Vert\theta').
+\]
+\end{theorem}
+\begin{proof}
+对似然比取对数再取$\theta$下的期望。条件于过去与当前实验，单项对数比的期望为$D_a$。把每一步按其所选实验求和即得。提前停止后的空操作在两个情境下相同，贡献零。
+\end{proof}
+
+这样的换测度方法是序贯实验与主动检验的基本工具\citep{chernoff1959,kaufmann2016}。这里的等式允许任意历史依赖的选取规则；重复、分叉、合并与多Agent产生的全记录都在比较范围内。
+
+\section{正确回答要求多少相对熵}
+定义二元相对熵
+\[
+ \kl(p,q)=p\ln\frac pq+(1-p)\ln\frac{1-p}{1-q}.
+\]
+若两个情境要求不同目标，而策略在每个情境的错误都不超过$\delta$，取事件$E=\{\widehat Y=g(\theta)\}$，则$P_\theta(E)\ge1-\delta$、$P_{\theta'}(E)\le\delta$。将完整记录压缩为事件是否发生，数据处理给出
+\begin{equation}
+ \sum_a\EE_\theta N_aD_a(\theta\Vert\theta')
+ \ge\kl(1-\delta,\delta)
+ =(1-2\delta)\ln\frac{1-\delta}{\delta}.
+ \label{eq:pair-lower}
+\end{equation}
+所用二元单调性与数据处理在附录\ref{app:tools}证明。
+
+\section{允许针对不同历史重新分配}
+\begin{definition}[局部KL参数]
+\[
+ \kappa_{\mathrm K}(\theta)=
+ \max_{w\in\Delta(\calA)}\min_{\theta'\in\Alt(\theta)}
+       \sum_aw_aD_a(\theta\Vert\theta'),\qquad
+ \kapK=\min_\theta\kappa_{\mathrm K}(\theta).
+\]
+\end{definition}
+内层分配可以随所分析的真实情境变化。这给自适应组织比固定全局分配更大的自由度，并没有向实际控制者告知真实情境。
+
+\begin{theorem}[全类别调用下界]
+\label{thm:adaptive-lower}
+若$\kapK>0$，任意最坏错误率不超过$\delta$的组织都满足
+\[
+ n\ge\frac{\kl(1-\delta,\delta)}{\kapK}.
+\]
+若$\kapK=0$，则存在目标冲突的不可辨别对。
+\end{theorem}
+\begin{proof}
+固定$\theta$，令$q_a=\EE_\theta N_a/n$。其和不超过1，可将剩余质量补给任意实验而不减小区别量。式\eqref{eq:pair-lower}对所有冲突情境都成立，所以$n\kappa_{\mathrm K}(\theta)\ge\kl(1-\delta,\delta)$。对$\theta$取最严格条件即得。最后，有限多约束下严格正的全支持实验分配能区分所有非等同分布，故参数为零恰有冲突对的全部KL为零。
+\end{proof}
+
+\section{有了适应性是否一定更强}
+下界的局部分配与上界的全局分配不同。某些情境中，先取得少量定位信息，再专门诊断当前备选集可能很有效；有些实验族则无需这种调整。主动序贯检验已系统研究此类选择\citep{naghshvar2013}。
+
+两个不同参数出现在上下界中，表示尚待分析的结构差距。不能直接将$\kapK$当作已经可达的固定预算最坏情境误差指数。下一章在明确条件下连接二者；第\ref{ch:frontiers}章保留增长任务族中的适应性问题。
+
+\begin{exercise}证明$\kl(p,q)$在$p\ge1-\delta$、$q\le\delta$、$\delta<1/2$时不小于$\kl(1-\delta,\delta)$。\end{exercise}
+\begin{exercise}某策略在第一次观察为1时停止，否则继续。解释为何停止事件也携带信息，以及补空操作的记录为何没有丢掉它。\end{exercise}

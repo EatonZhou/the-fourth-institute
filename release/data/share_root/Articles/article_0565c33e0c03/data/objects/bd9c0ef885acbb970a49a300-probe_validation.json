@@ -1,0 +1,66 @@
+[
+  {
+    "context": "compact_p512",
+    "angle": "plus",
+    "arm": "last",
+    "actual_physics_predictor_sensor_identical": true,
+    "only_operational_calibration_A_reset": true,
+    "both_write_stopped": true
+  },
+  {
+    "context": "compact_p512",
+    "angle": "plus",
+    "arm": "fit",
+    "actual_physics_predictor_sensor_identical": true,
+    "only_operational_calibration_A_reset": true,
+    "both_write_stopped": true
+  },
+  {
+    "context": "compact_p512",
+    "angle": "minus",
+    "arm": "last",
+    "actual_physics_predictor_sensor_identical": true,
+    "only_operational_calibration_A_reset": true,
+    "both_write_stopped": true
+  },
+  {
+    "context": "compact_p512",
+    "angle": "minus",
+    "arm": "fit",
+    "actual_physics_predictor_sensor_identical": true,
+    "only_operational_calibration_A_reset": true,
+    "both_write_stopped": true
+  },
+  {
+    "context": "soft_p512",
+    "angle": "plus",
+    "arm": "last",
+    "actual_physics_predictor_sensor_identical": true,
+    "only_operational_calibration_A_reset": true,
+    "both_write_stopped": true
+  },
+  {
+    "context": "soft_p512",
+    "angle": "plus",
+    "arm": "fit",
+    "actual_physics_predictor_sensor_identical": true,
+    "only_operational_calibration_A_reset": true,
+    "both_write_stopped": true
+  },
+  {
+    "context": "soft_p512",
+    "angle": "minus",
+    "arm": "last",
+    "actual_physics_predictor_sensor_identical": true,
+    "only_operational_calibration_A_reset": true,
+    "both_write_stopped": true
+  },
+  {
+    "context": "soft_p512",
+    "angle": "minus",
+    "arm": "fit",
+    "actual_physics_predictor_sensor_identical": true,
+    "only_operational_calibration_A_reset": true,
+    "both_write_stopped": true
+  }
+]

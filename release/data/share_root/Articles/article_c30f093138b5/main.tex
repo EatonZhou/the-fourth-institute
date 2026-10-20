@@ -1,0 +1,54 @@
+% !TeX program = xelatex
+\documentclass[UTF8,a4paper,12pt,fontset=none]{ctexart}
+\usepackage[margin=25mm,headheight=16pt]{geometry}
+\setCJKmainfont{Noto Serif CJK SC}
+\setCJKsansfont{Noto Sans CJK SC}
+\setCJKmonofont{Noto Sans Mono CJK SC}
+\usepackage{amsmath,amssymb,graphicx,booktabs,longtable,tabularx,array}
+\usepackage{enumitem,xcolor,fancyhdr,caption,float,setspace}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue!45!black,citecolor=blue!45!black,urlcolor=blue!45!black,pdftitle={智能软件开发的组织与交互框架：面向能力放大与持续演化}}
+\urlstyle{same}
+\setstretch{1.27}
+\setlength{\parskip}{0.3em}
+\setlength{\emergencystretch}{2em}
+\setlist{nosep,leftmargin=2em,topsep=0.4em}
+\captionsetup{font=small,labelfont=bf,labelsep=quad}
+\renewcommand{\arraystretch}{1.3}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small 智能软件开发的组织与交互框架}
+\fancyhead[R]{\small 概论与设计框架}
+\fancyfoot[C]{\thepage}
+\ctexset{section={format=\Large\bfseries},subsection={format=\large\bfseries},subsubsection={format=\normalsize\bfseries}}
+\newcommand{\fig}[3]{\begin{figure}[htbp]\centering\includegraphics[width=\linewidth]{figures/#1.pdf}\caption{#2}\label{fig:#3}\end{figure}}
+\newenvironment{insight}[1]{\begin{quote}\small\textbf{#1}\par\smallskip}{\end{quote}}
+\newcommand{\chap}[1]{\clearpage\section{#1}}
+\title{智能软件开发的组织与交互框架：面向能力放大与持续演化}
+\author{AI员工项目\thanks{基于项目实践与人机共同讨论形成；AI 辅助研究、撰写与制图。本文为概论与设计框架，所提出的效果假设有待系统评价。}}
+\date{2026年10月15日}
+\begin{document}
+\maketitle
+\begin{abstract}
+语言模型逐步承担软件开发中的理解、实现、协调和验证活动之后，开发系统的关键问题扩展到长期组织、经验延续以及人类如何把握工作。本文提出一个面向持续演化的智能软件开发框架：以人的目标与语义约束维持方向，以沿架构职责组织的持续 Agent 支持知识积累，以递归委派和上下文管理调整工作结构，以局部交付和自适应验证连接开发与真实使用，并通过可生成的交互界面将理解、决策和反馈放在同一工作情境中。框架将开发流程视为 AI 能力的放大器，关注模型能力提升后可承担的工程复杂度，以及长期工作中人的注意力与协调负担。文章结合 Portal 的实践动机，给出六项交互生成原则、六类典型投影指南和一个跨模块任务取消的设计示例，进一步提出多轮演化评价和资源分配方法。本文区分实践观察、设计建议与待验证假设，讨论适用条件与失败方式，为后续系统实现和经验研究提供可操作的研究议程。
+\end{abstract}
+\noindent\textbf{关键词：}智能软件开发；自主 Agent；软件演化；人机协作；生成式界面；自适应验证
+\clearpage
+\setcounter{tocdepth}{2}
+\tableofcontents
+\input{chapters/01-introduction}
+\input{chapters/02-framework}
+\input{chapters/03-intent}
+\input{chapters/04-organization}
+\input{chapters/05-delivery}
+\input{chapters/06-validation}
+\input{chapters/07-interaction}
+\input{chapters/08-guidelines}
+\input{chapters/09-case}
+\input{chapters/10-evaluation}
+\input{chapters/11-outlook}
+\clearpage
+\addcontentsline{toc}{section}{参考文献}
+\input{references}
+\end{document}

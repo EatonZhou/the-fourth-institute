@@ -1,0 +1,19 @@
+{
+  "id": "c559ca12-414b-4710-ba5e-925b619ab8c2",
+  "name": "paid_local_turnover_recycling_20261019",
+  "command": [
+    "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+    "-m",
+    "environment_evolution.paid_local_turnover_recycling.run"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "ce2-paid-local-turnover-recycling-20261019-v1",
+  "status": "running",
+  "created_at": "2026-10-18T18:48:16.216584+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/c559ca12-414b-4710-ba5e-925b619ab8c2",
+  "pid": 2461625,
+  "manual_pause": false,
+  "create_time": 1792349295.66,
+  "started_at": "2026-10-18T18:48:16.277087+00:00"
+}

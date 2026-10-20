@@ -1,0 +1,386 @@
+{
+  "task": "lifetime_cue_reversal_20261019",
+  "science_paths": 72,
+  "lives": 24,
+  "conditions": "2 density perturbation seeds x 2 mapping orders, NOT four seeds x two orders",
+  "all_alive": true,
+  "group_ranges": [
+    {
+      "pairing": "paired",
+      "arm": "reactor",
+      "n_lives": 4,
+      "stage": {
+        "initial": {
+          "min": 0.49779359663684813,
+          "max": 0.5022064033631518,
+          "mean": 0.5
+        },
+        "acquisition_0": {
+          "min": 0.4973998071409058,
+          "max": 0.5026001928590941,
+          "mean": 0.5
+        },
+        "acquisition_1": {
+          "min": 0.4977079471660929,
+          "max": 0.502292052833907,
+          "mean": 0.49999999999999994
+        },
+        "acquisition_retention": {
+          "min": 0.4966942076325323,
+          "max": 0.5033057923674678,
+          "mean": 0.5
+        },
+        "reversal_0": {
+          "min": 0.4968444009415169,
+          "max": 0.5031555990584832,
+          "mean": 0.5
+        },
+        "reversal_1": {
+          "min": 0.49732457917698814,
+          "max": 0.5026754208230119,
+          "mean": 0.5
+        },
+        "reversal_retention": {
+          "min": 0.4961494608819628,
+          "max": 0.5038505391180372,
+          "mean": 0.5
+        },
+        "freeze": {
+          "min": 0.4963338677828055,
+          "max": 0.5036661322171944,
+          "mean": 0.49999999999999994
+        },
+        "erase": {
+          "min": 0.49633386778280564,
+          "max": 0.5036661322171944,
+          "mean": 0.5
+        }
+      },
+      "energy_range": [
+        42.17335234742263,
+        42.2206183949804
+      ],
+      "movement_range": [
+        2.1541307256889297,
+        2.1561565729712164
+      ]
+    },
+    {
+      "pairing": "paired",
+      "arm": "fast_delta",
+      "n_lives": 4,
+      "stage": {
+        "initial": {
+          "min": 0.49779359663684813,
+          "max": 0.5022064033631518,
+          "mean": 0.5
+        },
+        "acquisition_0": {
+          "min": 0.9999924987347776,
+          "max": 0.9999928477670212,
+          "mean": 0.9999926789891322
+        },
+        "acquisition_1": {
+          "min": 0.9999901958221887,
+          "max": 0.9999935672794448,
+          "mean": 0.9999919007126044
+        },
+        "acquisition_retention": {
+          "min": 0.999942831079257,
+          "max": 0.9999911061677114,
+          "mean": 0.9999670145803002
+        },
+        "reversal_0": {
+          "min": 0.9999923588283156,
+          "max": 0.9999963129371016,
+          "mean": 0.9999943908450197
+        },
+        "reversal_1": {
+          "min": 0.9999812037152451,
+          "max": 0.999991700425598,
+          "mean": 0.9999863821312394
+        },
+        "reversal_retention": {
+          "min": 0.9788646462881913,
+          "max": 0.9999979197922272,
+          "mean": 0.9894348310083808
+        },
+        "freeze": {
+          "min": 0.9999995055679584,
+          "max": 0.9999999062898991,
+          "mean": 0.9999997008340042
+        },
+        "erase": {
+          "min": 0.4193586707220909,
+          "max": 0.6533465051937353,
+          "mean": 0.5210609018603506
+        }
+      },
+      "energy_range": [
+        41.87482078827308,
+        42.290393048746125
+      ],
+      "movement_range": [
+        3.4108719754608714,
+        3.5188655291764146
+      ]
+    },
+    {
+      "pairing": "paired",
+      "arm": "eligibility",
+      "n_lives": 4,
+      "stage": {
+        "initial": {
+          "min": 0.49779359663684813,
+          "max": 0.5022064033631518,
+          "mean": 0.5
+        },
+        "acquisition_0": {
+          "min": 0.9999909827293614,
+          "max": 0.9999953790578168,
+          "mean": 0.9999932192832539
+        },
+        "acquisition_1": {
+          "min": 0.9999876941762459,
+          "max": 0.9999902994166049,
+          "mean": 0.9999889977902054
+        },
+        "acquisition_retention": {
+          "min": 0.9999934883037064,
+          "max": 0.9999980948992139,
+          "mean": 0.9999958087354124
+        },
+        "reversal_0": {
+          "min": 0.9999815166434103,
+          "max": 0.9999901756160712,
+          "mean": 0.9999858404942679
+        },
+        "reversal_1": {
+          "min": 0.999989742513953,
+          "max": 0.9999935285678566,
+          "mean": 0.9999917183472324
+        },
+        "reversal_retention": {
+          "min": 0.9999967653458502,
+          "max": 0.9999986548528518,
+          "mean": 0.9999977034581005
+        },
+        "freeze": {
+          "min": 0.999997470747573,
+          "max": 0.999999934126778,
+          "mean": 0.9999988183029598
+        },
+        "erase": {
+          "min": 0.3617648733086321,
+          "max": 0.6493925843113034,
+          "mean": 0.5074511894812641
+        }
+      },
+      "energy_range": [
+        41.69456199698402,
+        42.26005287145177
+      ],
+      "movement_range": [
+        3.3625834218425252,
+        3.392995542741076
+      ]
+    },
+    {
+      "pairing": "unpaired",
+      "arm": "reactor",
+      "n_lives": 4,
+      "stage": {
+        "initial": {
+          "min": 0.49779359663684813,
+          "max": 0.5022064033631518,
+          "mean": 0.5
+        },
+        "acquisition_0": {
+          "min": 0.4973998071409058,
+          "max": 0.5026001928590941,
+          "mean": 0.5
+        },
+        "acquisition_1": {
+          "min": 0.4977079471660929,
+          "max": 0.502292052833907,
+          "mean": 0.49999999999999994
+        },
+        "acquisition_retention": {
+          "min": 0.4966942076325323,
+          "max": 0.5033057923674678,
+          "mean": 0.5
+        },
+        "reversal_0": {
+          "min": 0.4968444009415169,
+          "max": 0.5031555990584832,
+          "mean": 0.5
+        },
+        "reversal_1": {
+          "min": 0.49732457917698814,
+          "max": 0.5026754208230119,
+          "mean": 0.5
+        },
+        "reversal_retention": {
+          "min": 0.4961494608819628,
+          "max": 0.5038505391180372,
+          "mean": 0.5
+        },
+        "freeze": {
+          "min": 0.4963338677828055,
+          "max": 0.5036661322171944,
+          "mean": 0.49999999999999994
+        },
+        "erase": {
+          "min": 0.49633386778280564,
+          "max": 0.5036661322171944,
+          "mean": 0.5
+        }
+      },
+      "energy_range": [
+        42.19017849619504,
+        42.19363826721663
+      ],
+      "movement_range": [
+        2.1541307256889297,
+        2.1561565729712164
+      ]
+    },
+    {
+      "pairing": "unpaired",
+      "arm": "fast_delta",
+      "n_lives": 4,
+      "stage": {
+        "initial": {
+          "min": 0.49779359663684813,
+          "max": 0.5022064033631518,
+          "mean": 0.5
+        },
+        "acquisition_0": {
+          "min": 7.152232978757055e-06,
+          "max": 0.9999928477670212,
+          "mean": 0.5
+        },
+        "acquisition_1": {
+          "min": 5.802051409775962e-06,
+          "max": 0.9999941979485901,
+          "mean": 0.49999999999999994
+        },
+        "acquisition_retention": {
+          "min": 8.954096356949784e-06,
+          "max": 0.9999910459036431,
+          "mean": 0.5
+        },
+        "reversal_0": {
+          "min": 3.6870630017687724e-06,
+          "max": 0.9999963129369983,
+          "mean": 0.5
+        },
+        "reversal_1": {
+          "min": 0.3457055020641998,
+          "max": 0.6542944979358003,
+          "mean": 0.5
+        },
+        "reversal_retention": {
+          "min": 0.4467953165365337,
+          "max": 0.5532046834634663,
+          "mean": 0.5
+        },
+        "freeze": {
+          "min": 0.42941007055676284,
+          "max": 0.570589929443237,
+          "mean": 0.5
+        },
+        "erase": {
+          "min": 0.4079525340256186,
+          "max": 0.5920474659743813,
+          "mean": 0.5
+        }
+      },
+      "energy_range": [
+        38.66202863977191,
+        42.14292127825608
+      ],
+      "movement_range": [
+        2.9565787399652117,
+        3.062028823419441
+      ]
+    },
+    {
+      "pairing": "unpaired",
+      "arm": "eligibility",
+      "n_lives": 4,
+      "stage": {
+        "initial": {
+          "min": 0.49779359663684813,
+          "max": 0.5022064033631518,
+          "mean": 0.5
+        },
+        "acquisition_0": {
+          "min": 0.0005101869421915251,
+          "max": 0.9994898130578085,
+          "mean": 0.5
+        },
+        "acquisition_1": {
+          "min": 6.636207634751282e-06,
+          "max": 0.9999933637923654,
+          "mean": 0.5000000000000001
+        },
+        "acquisition_retention": {
+          "min": 3.0087078322025105e-06,
+          "max": 0.9999969912921678,
+          "mean": 0.5
+        },
+        "reversal_0": {
+          "min": 0.00036600981674260707,
+          "max": 0.9996339901832574,
+          "mean": 0.5
+        },
+        "reversal_1": {
+          "min": 0.017334104404672392,
+          "max": 0.9826658955953277,
+          "mean": 0.5
+        },
+        "reversal_retention": {
+          "min": 0.016351240956225106,
+          "max": 0.9836487590437748,
+          "mean": 0.49999999999999994
+        },
+        "freeze": {
+          "min": 0.005948468309152413,
+          "max": 0.9940515316908476,
+          "mean": 0.5
+        },
+        "erase": {
+          "min": 0.44899076228089874,
+          "max": 0.5510092377191013,
+          "mean": 0.5
+        }
+      },
+      "energy_range": [
+        39.99930171421994,
+        41.87148283466517
+      ],
+      "movement_range": [
+        2.2725035366549986,
+        2.50408085608832
+      ]
+    }
+  ],
+  "counts": {
+    "attempted": 28032,
+    "returned": 28032,
+    "pilot": 1920,
+    "science": 26112,
+    "unknown": 0
+  },
+  "erase_nonQ_exact": true,
+  "main_finding": "both paired learning rules acquire/reverse/retain; fast delta is sufficient, eligibility advantage not established",
+  "limits": [
+    "forced broad local conditioning; preinstalled cue-gradient motion and local energy-valence sensor",
+    "deformable transported continuous CA, no births or regenerative morphology",
+    "unpaired complementary orders can hide strong WRONG preferences; individual trajectories preserved",
+    "first reversal probe follows eight completed pulses (four per cue), not a single-feedback test",
+    "neutral retention has no feedback; reversal first-feedback wait and recovery are separated",
+    "no independent cell samples or broad world generalization"
+  ]
+}

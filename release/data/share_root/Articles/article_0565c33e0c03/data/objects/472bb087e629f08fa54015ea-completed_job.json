@@ -1,0 +1,31 @@
+{
+  "id": "a2c32928-b2b8-4ee0-9096-c006ee1efbf1",
+  "name": "embodied-memory-balanced-maps-33",
+  "command": [
+    ".venv/bin/python",
+    "-m",
+    "research.embodied_adaptive_memory.balanced_run"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "resident33-embodied-memory-balanced-maps-20261019-v1",
+  "status": "completed",
+  "created_at": "2026-10-19T12:53:48.250529+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/a2c32928-b2b8-4ee0-9096-c006ee1efbf1",
+  "pid": 429134,
+  "manual_pause": false,
+  "create_time": 1792414427.71,
+  "started_at": "2026-10-19T12:53:48.325386+00:00",
+  "returncode": 0,
+  "finished_at": "2026-10-19T12:53:57.665360+00:00",
+  "result": {
+    "status": "completed",
+    "job": "a2c32928-b2b8-4ee0-9096-c006ee1efbf1",
+    "native": 7746,
+    "paths": 6,
+    "failed": 0,
+    "raw": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/a2c32928-b2b8-4ee0-9096-c006ee1efbf1/raw",
+    "raw_bytes": 97171456,
+    "seconds": 8.621886488050222
+  }
+}

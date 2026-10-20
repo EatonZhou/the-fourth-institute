@@ -1,0 +1,446 @@
+{
+  "schema": "lenia.fixed-dual-kernel-report.v1",
+  "jobs": [
+    "e5675e43-73f7-42af-b913-392217941cc8",
+    "025c6b49-fee7-4f7e-a280-b4f4132614c6",
+    "4abde81f-62f4-46b0-9672-b1f8108276bd"
+  ],
+  "grid": 64,
+  "dt": 0.1,
+  "budget": {
+    "new_combinations": 48,
+    "dual_combinations": 36,
+    "closure_controls": 12,
+    "screen_updates": 512,
+    "extended_candidates": 8,
+    "extension_end": 3072,
+    "assayed_candidates": 4,
+    "probe_and_sham_updates": 512,
+    "total_body_updates": 49152,
+    "run_and_save_seconds": 9.895901310024783
+  },
+  "screen": {
+    "nonzero": 15,
+    "extinct": 33,
+    "dual_nonzero": 6,
+    "classification_counts": {
+      "localized_single/moving": 3,
+      "extinct/extinct": 33,
+      "distributed_pattern/changing": 8,
+      "localized_single/changing": 1,
+      "multiple_bodies/mass_oscillation_or_transient": 2,
+      "localized_single/weak_residual": 1
+    }
+  },
+  "long": {
+    "nonzero": 7,
+    "extinct": [
+      "dk2026101619-r2-v4"
+    ],
+    "dual_nonzero": 5
+  },
+  "paired_assays": [
+    {
+      "candidate_id": "dk2026101619-r2-v0",
+      "sham": {
+        "mass": 32.73368594128909,
+        "occupied": 90,
+        "center": [
+          -21.78062352805247,
+          9.191892749433386
+        ],
+        "anisotropy": 1.3134711269947594,
+        "compactness": 1.7850446988796074,
+        "fill": 0.3637076215698788,
+        "perimeter_ratio": 11.595018087284057,
+        "components": 1,
+        "mean_activity": 7.543171040547877,
+        "tail_mass_mean": 32.48555788846557,
+        "mass_cv": 0.01134288388538623,
+        "saturation_pixel_fraction": 0.0009765625,
+        "saturation_mass_fraction": 0.12203623088561778,
+        "periodic_spans_yx": [
+          14,
+          14
+        ],
+        "min_tail_concentration": 0.9474132156816106,
+        "centroid_speed": 0.4963265132860765,
+        "extinct_step": null,
+        "lifetime_end": 3584,
+        "morphology": "localized_single",
+        "dynamics": "moving",
+        "classification_limit": "Finite-window density descriptors, not organism/species counts; centroid speed only for coherent localized single states."
+      },
+      "probe": {
+        "mass": 32.91993311401945,
+        "occupied": 93,
+        "center": [
+          -24.062625166132634,
+          9.219906098028911
+        ],
+        "anisotropy": 1.3259672294516742,
+        "compactness": 1.8067995716134184,
+        "fill": 0.353977775419564,
+        "perimeter_ratio": 12.028639658872933,
+        "components": 2,
+        "mean_activity": 7.571120938923961,
+        "tail_mass_mean": 32.46701313875891,
+        "mass_cv": 0.013400929624367026,
+        "saturation_pixel_fraction": 0.000732421875,
+        "saturation_mass_fraction": 0.09113019730657973,
+        "periodic_spans_yx": [
+          15,
+          14
+        ],
+        "min_tail_concentration": 0.9451115059356476,
+        "centroid_speed": null,
+        "extinct_step": null,
+        "lifetime_end": 3584,
+        "morphology": "multiple_bodies",
+        "dynamics": "changing",
+        "classification_limit": "Finite-window density descriptors, not organism/species counts; centroid speed only for coherent localized single states."
+      },
+      "probe_minus_sham_final_mass": 0.1862471727303614,
+      "probe_minus_sham_tail_activity": 0.027949898376084192,
+      "limit": "One deterministic matched endpoint pair per genotype; not independent survival replicates or learning."
+    },
+    {
+      "candidate_id": "dk2026101619-r2-v1",
+      "sham": {
+        "mass": 31.42770499609131,
+        "occupied": 86,
+        "center": [
+          26.572201167238862,
+          -25.62492857912125
+        ],
+        "anisotropy": 1.3874677515063643,
+        "compactness": 1.886289090685141,
+        "fill": 0.36543843018710825,
+        "perimeter_ratio": 10.998942866750719,
+        "components": 1,
+        "mean_activity": 6.574517427407651,
+        "tail_mass_mean": 31.527496658673364,
+        "mass_cv": 0.008966716943547249,
+        "saturation_pixel_fraction": 0.001220703125,
+        "saturation_mass_fraction": 0.15826873996287522,
+        "periodic_spans_yx": [
+          13,
+          14
+        ],
+        "min_tail_concentration": 0.9525136135659135,
+        "centroid_speed": 0.445647530203295,
+        "extinct_step": null,
+        "lifetime_end": 3584,
+        "morphology": "localized_single",
+        "dynamics": "moving",
+        "classification_limit": "Finite-window density descriptors, not organism/species counts; centroid speed only for coherent localized single states."
+      },
+      "probe": {
+        "mass": 0.0,
+        "occupied": 0,
+        "center": [
+          0.0,
+          0.0
+        ],
+        "anisotropy": 1.0,
+        "compactness": 0.0,
+        "fill": 0.0,
+        "perimeter_ratio": 0.0,
+        "components": 0,
+        "mean_activity": 0.0,
+        "tail_mass_mean": 0.0,
+        "mass_cv": 0.0,
+        "saturation_pixel_fraction": 0.0,
+        "saturation_mass_fraction": 0.0,
+        "periodic_spans_yx": [
+          0,
+          0
+        ],
+        "min_tail_concentration": 0.0,
+        "centroid_speed": null,
+        "extinct_step": 3105,
+        "lifetime_end": 3584,
+        "morphology": "extinct",
+        "dynamics": "extinct",
+        "classification_limit": "Finite-window density descriptors, not organism/species counts; centroid speed only for coherent localized single states."
+      },
+      "probe_minus_sham_final_mass": -31.42770499609131,
+      "probe_minus_sham_tail_activity": -6.574517427407651,
+      "limit": "One deterministic matched endpoint pair per genotype; not independent survival replicates or learning."
+    },
+    {
+      "candidate_id": "dk2026101619-r2-v5",
+      "sham": {
+        "mass": 60.97443327059618,
+        "occupied": 123,
+        "center": [
+          -25.71850508628423,
+          6.79937164045156
+        ],
+        "anisotropy": 5.397702867473584,
+        "compactness": 0.21719046363290587,
+        "fill": 0.49572709976094453,
+        "perimeter_ratio": 11.361037396809646,
+        "components": 2,
+        "mean_activity": 5.071982104842341,
+        "tail_mass_mean": 58.13367011921985,
+        "mass_cv": 0.03807333751512632,
+        "saturation_pixel_fraction": 0.0048828125,
+        "saturation_mass_fraction": 0.32627497965313795,
+        "periodic_spans_yx": [
+          39,
+          27
+        ],
+        "min_tail_concentration": 0.031497030789089636,
+        "centroid_speed": null,
+        "extinct_step": null,
+        "lifetime_end": 3584,
+        "morphology": "multiple_bodies",
+        "dynamics": "mass_oscillation_or_transient",
+        "classification_limit": "Finite-window density descriptors, not organism/species counts; centroid speed only for coherent localized single states."
+      },
+      "probe": {
+        "mass": 29.846622478715247,
+        "occupied": 56,
+        "center": [
+          -13.235445678568171,
+          10.225851854863581
+        ],
+        "anisotropy": 1.3503791871015554,
+        "compactness": 2.3072497608782925,
+        "fill": 0.5329754014056294,
+        "perimeter_ratio": 7.750576015460307,
+        "components": 1,
+        "mean_activity": 2.5590471227641363,
+        "tail_mass_mean": 28.911604397107567,
+        "mass_cv": 0.05506421568591801,
+        "saturation_pixel_fraction": 0.00146484375,
+        "saturation_mass_fraction": 0.20006428216751398,
+        "periodic_spans_yx": [
+          11,
+          11
+        ],
+        "min_tail_concentration": 0.9496738532171388,
+        "centroid_speed": 0.17693221321022057,
+        "extinct_step": null,
+        "lifetime_end": 3584,
+        "morphology": "localized_single",
+        "dynamics": "moving",
+        "classification_limit": "Finite-window density descriptors, not organism/species counts; centroid speed only for coherent localized single states."
+      },
+      "probe_minus_sham_final_mass": -31.127810791880933,
+      "probe_minus_sham_tail_activity": -2.512934982078205,
+      "limit": "One deterministic matched endpoint pair per genotype; not independent survival replicates or learning."
+    },
+    {
+      "candidate_id": "dk2026101619-r4-v5",
+      "sham": {
+        "mass": 49.77869150026845,
+        "occupied": 72,
+        "center": [
+          -6.497814370852062,
+          -5.537826177137247
+        ],
+        "anisotropy": 1.1351431520429565,
+        "compactness": 2.8549033986892565,
+        "fill": 0.6913707152815063,
+        "perimeter_ratio": 7.778174593052023,
+        "components": 1,
+        "mean_activity": 1.3229162546452657,
+        "tail_mass_mean": 47.80793139011975,
+        "mass_cv": 0.03790953749112776,
+        "saturation_pixel_fraction": 0.00634765625,
+        "saturation_mass_fraction": 0.5199824318649136,
+        "periodic_spans_yx": [
+          11,
+          13
+        ],
+        "min_tail_concentration": 0.950617587124296,
+        "centroid_speed": 0.06929510567532968,
+        "extinct_step": null,
+        "lifetime_end": 3584,
+        "morphology": "localized_single",
+        "dynamics": "moving",
+        "classification_limit": "Finite-window density descriptors, not organism/species counts; centroid speed only for coherent localized single states."
+      },
+      "probe": {
+        "mass": 48.62310598488428,
+        "occupied": 85,
+        "center": [
+          2.5824750187241015,
+          -13.363240245760771
+        ],
+        "anisotropy": 1.1641678211672353,
+        "compactness": 2.845847157781564,
+        "fill": 0.5720365409986387,
+        "perimeter_ratio": 7.37563556583431,
+        "components": 1,
+        "mean_activity": 2.1326468535098404,
+        "tail_mass_mean": 47.36939976259581,
+        "mass_cv": 0.036325710070211646,
+        "saturation_pixel_fraction": 0.00341796875,
+        "saturation_mass_fraction": 0.2875313710594294,
+        "periodic_spans_yx": [
+          11,
+          14
+        ],
+        "min_tail_concentration": 0.9457591325858766,
+        "centroid_speed": 0.11679694553086006,
+        "extinct_step": null,
+        "lifetime_end": 3584,
+        "morphology": "localized_single",
+        "dynamics": "moving",
+        "classification_limit": "Finite-window density descriptors, not organism/species counts; centroid speed only for coherent localized single states."
+      },
+      "probe_minus_sham_final_mass": -1.1555855153841676,
+      "probe_minus_sham_tail_activity": 0.8097305988645747,
+      "limit": "One deterministic matched endpoint pair per genotype; not independent survival replicates or learning."
+    }
+  ],
+  "findings": [
+    "Most double-response combinations collapse; only6/36 remain nonzero at512 and5/6 of those remain nonzero at3072.",
+    "r2-v4 retains multi-component activity at512 but vanishes at2385; retain the failed extension, not only the early attractive frames.",
+    "r2-v1 is a moving Orbium-derived near-neighbor, not a new morphology on speed alone; it dies33 updates after the probe while its same-parent first-only control remains nonzero.",
+    "r2-v5 retains multiple active density structures through3072; probe reduces to one major structure, so activity is not morphology-preserving recovery.",
+    "Non-Orbium three-blob r4-v5 alternates nearly stationary saturated-ring intervals with translating/deforming intervals already before3072. The sham also leaves the ring-like3072 state; probe does not establish the onset of this behavior.",
+    "r4-v3 and r5-v1 remain saturated distributed patterns with small residual activity; do not call them localized organisms."
+  ],
+  "limits": [
+    "Finite horizons, no stable-attractor proof or learning advantage.",
+    "Weight closure controls are exactly0 and1; all dt=.1.",
+    "Different mature bodies across genotypes: response differences are not isolated causal effects of kernel number.",
+    "Connected density components are not a natural organism count.",
+    "Only the planned48 combinations,8 continuations and4 matched assays; no further search."
+  ],
+  "artifacts": {
+    "catalog": "candidate_catalog.json",
+    "events": "combined_events.json",
+    "projection": "projection_manifest.json"
+  },
+  "non_orbium_r4v5_windows": [
+    {
+      "label": "sham",
+      "end": 512,
+      "start": 256,
+      "min_axis_concentration": 0.9555943902900468,
+      "sampled_centroid_path_speed": 0.0005254436566892366,
+      "net_displacement_yx": [
+        -0.1132057409858902,
+        -0.041072184695174485
+      ],
+      "sampled_mass_cv": 0.020130506915321523
+    },
+    {
+      "label": "sham",
+      "end": 1024,
+      "start": 768,
+      "min_axis_concentration": 0.9482092939607628,
+      "sampled_centroid_path_speed": 0.12612867114313042,
+      "net_displacement_yx": [
+        -23.25134284951466,
+        -12.534125583119199
+      ],
+      "sampled_mass_cv": 0.04639746669639651
+    },
+    {
+      "label": "sham",
+      "end": 1536,
+      "start": 1280,
+      "min_axis_concentration": 0.9454489549518929,
+      "sampled_centroid_path_speed": 0.10286241857816296,
+      "net_displacement_yx": [
+        2.586248686659374,
+        20.59588250042473
+      ],
+      "sampled_mass_cv": 0.04296923628968487
+    },
+    {
+      "label": "sham",
+      "end": 2048,
+      "start": 1792,
+      "min_axis_concentration": 0.9458043308081578,
+      "sampled_centroid_path_speed": 0.1331947468717851,
+      "net_displacement_yx": [
+        -21.383272508525728,
+        18.284250301123972
+      ],
+      "sampled_mass_cv": 0.044803583299958316
+    },
+    {
+      "label": "sham",
+      "end": 2560,
+      "start": 2304,
+      "min_axis_concentration": 0.9457415547497023,
+      "sampled_centroid_path_speed": 0.11954236954390675,
+      "net_displacement_yx": [
+        -22.75705197237717,
+        10.348232520694243
+      ],
+      "sampled_mass_cv": 0.044622610573899234
+    },
+    {
+      "label": "sham",
+      "end": 3072,
+      "start": 2816,
+      "min_axis_concentration": 0.9550116675653911,
+      "sampled_centroid_path_speed": 0.0033479460133598055,
+      "net_displacement_yx": [
+        0.5259717533844608,
+        0.044871329130899085
+      ],
+      "sampled_mass_cv": 0.01794088015544103
+    },
+    {
+      "label": "sham",
+      "end": 3328,
+      "start": 3072,
+      "min_axis_concentration": 0.9556206511517291,
+      "sampled_centroid_path_speed": 0.000893058800986081,
+      "net_displacement_yx": [
+        -0.1474232222161156,
+        -0.1580010222315984
+      ],
+      "sampled_mass_cv": 0.0061450851551372995
+    },
+    {
+      "label": "sham",
+      "end": 3584,
+      "start": 3328,
+      "min_axis_concentration": 0.950617587124296,
+      "sampled_centroid_path_speed": 0.06929510567532968,
+      "net_displacement_yx": [
+        -11.683394205357118,
+        7.1321884419520885
+      ],
+      "sampled_mass_cv": 0.03287639730331254
+    },
+    {
+      "label": "probe",
+      "end": 3328,
+      "start": 3072,
+      "min_axis_concentration": 0.9553699917889612,
+      "sampled_centroid_path_speed": 0.0013365998199831761,
+      "net_displacement_yx": [
+        -0.18545971242117787,
+        -0.2564808555815503
+      ],
+      "sampled_mass_cv": 0.011622893306233586
+    },
+    {
+      "label": "probe",
+      "end": 3584,
+      "start": 3328,
+      "min_axis_concentration": 0.9457591325858766,
+      "sampled_centroid_path_speed": 0.11679694553086006,
+      "net_displacement_yx": [
+        -2.5650683255758935,
+        -0.5947457933214864
+      ],
+      "sampled_mass_cv": 0.03716795371947918
+    }
+  ],
+  "postprocessing_source_sha256": {
+    "analyze_dual_kernel.py": "609ed817e23c597a6705e7bad6f71b9874bb3381a85b94faaf84ac5180c3efd6",
+    "render_dual_kernel.py": "edc3898cb5580a321af908f8d1220079ce75ec8934780b5c85f4359efc80482b"
+  }
+}

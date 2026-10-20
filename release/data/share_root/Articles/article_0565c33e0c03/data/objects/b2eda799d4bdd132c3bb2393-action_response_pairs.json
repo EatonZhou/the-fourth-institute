@@ -1,0 +1,44 @@
+[
+  {
+    "seed": 202610199941,
+    "resource_x_host_only": 5.4,
+    "plus_minus_uptake": 0.44420146907374214,
+    "plus_minus_E": 0.5922338016281188,
+    "plus_minus_proximal_signal": 0.04811587292148389
+  },
+  {
+    "seed": 202610199941,
+    "resource_x_host_only": 4.7,
+    "plus_minus_uptake": -0.41614418148832755,
+    "plus_minus_E": -0.26811184893394113,
+    "plus_minus_proximal_signal": -0.0618174538491687
+  },
+  {
+    "seed": 202610199942,
+    "resource_x_host_only": 5.4,
+    "plus_minus_uptake": 0.4467888324049629,
+    "plus_minus_E": 0.5952927679873596,
+    "plus_minus_proximal_signal": 0.05508492603590942
+  },
+  {
+    "seed": 202610199942,
+    "resource_x_host_only": 4.7,
+    "plus_minus_uptake": -0.4201545709009489,
+    "plus_minus_E": -0.2716506353185508,
+    "plus_minus_proximal_signal": -0.05919572356170688
+  },
+  {
+    "seed": 202610199943,
+    "resource_x_host_only": 5.4,
+    "plus_minus_uptake": 0.45451277456332617,
+    "plus_minus_E": 0.606822648671347,
+    "plus_minus_proximal_signal": 0.053998936296323796
+  },
+  {
+    "seed": 202610199943,
+    "resource_x_host_only": 4.7,
+    "plus_minus_uptake": -0.4297070545403203,
+    "plus_minus_E": -0.27739718043228834,
+    "plus_minus_proximal_signal": -0.06293075312230001
+  }
+]

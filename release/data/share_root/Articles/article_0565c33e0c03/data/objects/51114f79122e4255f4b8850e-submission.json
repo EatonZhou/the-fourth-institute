@@ -1,0 +1,19 @@
+{
+  "id": "a2de8da7-8ed8-46ac-bf42-fca0b7cb8a49",
+  "name": "conversion_time_birth_branch_20261019",
+  "command": [
+    "${user_home}/.local/share/uv/python/cpython-3.13.13-linux-x86_64-gnu/bin/python3.13",
+    "-m",
+    "local_learning.conversion_time_birth_branch.run"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "d3-conversion-time-birth-branch-20261019-v1",
+  "status": "running",
+  "created_at": "2026-10-18T23:15:10.891055+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/a2de8da7-8ed8-46ac-bf42-fca0b7cb8a49",
+  "pid": 440054,
+  "manual_pause": false,
+  "create_time": 1792365310.36,
+  "started_at": "2026-10-18T23:15:10.975860+00:00"
+}

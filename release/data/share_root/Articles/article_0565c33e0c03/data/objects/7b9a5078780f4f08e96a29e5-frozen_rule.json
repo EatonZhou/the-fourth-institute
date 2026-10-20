@@ -1,0 +1,82 @@
+{
+  "theta": [
+    0.26059459630001797,
+    -0.3317718368610072,
+    -0.22841948580152152,
+    0.6787506650791206,
+    -2.62649114683896,
+    2.4214877126767536,
+    0.12423399702604071,
+    -3.09799982558973
+  ],
+  "decoded": {
+    "base_write": 0.46053031187529875,
+    "surprise_write": 0.3342476564103022,
+    "forget": 0.035451370344816796,
+    "diffusion": 0.15923035242685088,
+    "conflict_barrier": 0.809433997040737,
+    "policy_gain": 11.102963656099385,
+    "eligibility_tau": 8.965279212778764,
+    "confidence_floor": 0.013637967122886757
+  },
+  "training_score": 0.691195308549476,
+  "training_seeds": [
+    202610180711,
+    202610180712,
+    202610180713,
+    202610180714
+  ],
+  "best_instant": {
+    "mode": "instant_1",
+    "alpha": 0.4,
+    "score": 0.47976893453145053
+  },
+  "best_ema": {
+    "mode": "ewma",
+    "alpha": 0.25,
+    "score": 0.6877434640687308
+  },
+  "baseline_training": [
+    {
+      "mode": "instant_0",
+      "alpha": 0.4,
+      "score": 0.449216944801027
+    },
+    {
+      "mode": "instant_1",
+      "alpha": 0.4,
+      "score": 0.47976893453145053
+    },
+    {
+      "mode": "instant_2",
+      "alpha": 0.4,
+      "score": 0.4402310654685494
+    },
+    {
+      "mode": "instant_3",
+      "alpha": 0.4,
+      "score": 0.47078305519897307
+    },
+    {
+      "mode": "ewma",
+      "alpha": 0.1,
+      "score": 0.656770602507261
+    },
+    {
+      "mode": "ewma",
+      "alpha": 0.25,
+      "score": 0.6877434640687308
+    },
+    {
+      "mode": "ewma",
+      "alpha": 0.5,
+      "score": 0.6756611146292729
+    },
+    {
+      "mode": "ewma",
+      "alpha": 0.8,
+      "score": 0.6672631918048844
+    }
+  ],
+  "selection": "training net tokens only; no held-out selection"
+}

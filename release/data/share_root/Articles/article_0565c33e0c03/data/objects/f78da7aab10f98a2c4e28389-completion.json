@@ -1,0 +1,75 @@
+{
+  "result": {
+    "status": "completed",
+    "job_id": "b3bf4f0a-5671-4c2e-8b03-f3fa59d27a52",
+    "attempted_body_steps": 256,
+    "committed_body_steps": 256,
+    "independent_energy_steps": 0,
+    "raw_storage": "/data/lenia-research/lineage_75e3399f4877/regenerative_excision_transfer_20261018/b3bf4f0a-5671-4c2e-8b03-f3fa59d27a52",
+    "raw_bytes": 235306216,
+    "branches": [
+      {
+        "branch": "reference_anisotropic--connected_trilobe--open_T11",
+        "status": "completed",
+        "attempted": 128,
+        "committed": 128,
+        "raw_directory": "/data/lenia-research/lineage_75e3399f4877/regenerative_excision_transfer_20261018/b3bf4f0a-5671-4c2e-8b03-f3fa59d27a52/reference_anisotropic--connected_trilobe--open_T11"
+      },
+      {
+        "branch": "compact_ring_core_outer--bridged_longbody--open_T11",
+        "status": "completed",
+        "attempted": 128,
+        "committed": 128,
+        "raw_directory": "/data/lenia-research/lineage_75e3399f4877/regenerative_excision_transfer_20261018/b3bf4f0a-5671-4c2e-8b03-f3fa59d27a52/compact_ring_core_outer--bridged_longbody--open_T11"
+      }
+    ]
+  },
+  "runner": {
+    "id": "b3bf4f0a-5671-4c2e-8b03-f3fa59d27a52",
+    "name": "regenerative-excision-transfer",
+    "command": [
+      "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+      "-m",
+      "environment_evolution.regenerative_excision_transfer.run",
+      "--contract",
+      "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/plan.json"
+    ],
+    "cwd": "${share_root}/Projects/元胞自动机研究/src",
+    "resource": "cpu",
+    "request_key": "ce2-regenerative-excision-transfer-20261018-v1",
+    "status": "completed",
+    "created_at": "2026-10-17T23:22:25.682284+00:00",
+    "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b3bf4f0a-5671-4c2e-8b03-f3fa59d27a52",
+    "pid": 732708,
+    "manual_pause": false,
+    "create_time": 1792279345.13,
+    "started_at": "2026-10-17T23:22:25.746066+00:00",
+    "returncode": 0,
+    "finished_at": "2026-10-17T23:23:00.150250+00:00",
+    "result": {
+      "status": "completed",
+      "job_id": "b3bf4f0a-5671-4c2e-8b03-f3fa59d27a52",
+      "attempted_body_steps": 256,
+      "committed_body_steps": 256,
+      "independent_energy_steps": 0,
+      "raw_storage": "/data/lenia-research/lineage_75e3399f4877/regenerative_excision_transfer_20261018/b3bf4f0a-5671-4c2e-8b03-f3fa59d27a52",
+      "raw_bytes": 235306216,
+      "branches": [
+        {
+          "branch": "reference_anisotropic--connected_trilobe--open_T11",
+          "status": "completed",
+          "attempted": 128,
+          "committed": 128,
+          "raw_directory": "/data/lenia-research/lineage_75e3399f4877/regenerative_excision_transfer_20261018/b3bf4f0a-5671-4c2e-8b03-f3fa59d27a52/reference_anisotropic--connected_trilobe--open_T11"
+        },
+        {
+          "branch": "compact_ring_core_outer--bridged_longbody--open_T11",
+          "status": "completed",
+          "attempted": 128,
+          "committed": 128,
+          "raw_directory": "/data/lenia-research/lineage_75e3399f4877/regenerative_excision_transfer_20261018/b3bf4f0a-5671-4c2e-8b03-f3fa59d27a52/compact_ring_core_outer--bridged_longbody--open_T11"
+        }
+      ]
+    }
+  }
+}

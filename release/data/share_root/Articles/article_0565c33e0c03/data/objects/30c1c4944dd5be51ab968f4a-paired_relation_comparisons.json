@@ -1,0 +1,403 @@
+{
+  "pairs": [
+    {
+      "condition": 0,
+      "arm": "source",
+      "changed": {
+        "first_feedback": 321,
+        "first8_opposite_command": null,
+        "displacement_from320": 10.846805792111986,
+        "command321": 0.6558892854333497,
+        "mean_command_last64": 0.6124153200817215,
+        "final_energy": 101.82958114843103,
+        "movement": 1.4078151606399294,
+        "gain": 1.0010557223090986,
+        "loss": 30.999066315767532,
+        "end_mass": 23.999999999999993,
+        "min_mass": 23.99999999999999,
+        "final_field": 0.0750324676934733,
+        "final_good_mass": 14.5376893043548
+      },
+      "unchanged": {
+        "first_feedback": 321,
+        "first8_opposite_command": null,
+        "displacement_from320": 8.506487962748082,
+        "command321": 0.6558892854333497,
+        "mean_command_last64": 0.08362710090937164,
+        "final_energy": 159.18495992158574,
+        "movement": 1.3644572077353163,
+        "gain": 27.403772500252874,
+        "loss": 0.08976227346118876,
+        "end_mass": 23.999999999999996,
+        "min_mass": 23.999999999999993,
+        "final_field": 0.3077090505797066,
+        "final_good_mass": 18.337836613666745
+      },
+      "delta_changed_minus_unchanged": {
+        "displacement_from320": 2.3403178293639044,
+        "mean_command_last64": 0.5287882191723499,
+        "final_energy": -57.35537877315471,
+        "movement": 0.043357952904613084
+      },
+      "initial_action_equivalence": {
+        "motor": 0.0,
+        "mean": 0.0,
+        "K": 0.0
+      }
+    },
+    {
+      "condition": 0,
+      "arm": "conditional",
+      "changed": {
+        "first_feedback": 321,
+        "first8_opposite_command": null,
+        "displacement_from320": 10.759149862004037,
+        "command321": 0.6565251901943103,
+        "mean_command_last64": 0.6072455596917314,
+        "final_energy": 101.89517415078669,
+        "movement": 1.4066026097051527,
+        "gain": 1.0147963252934318,
+        "loss": 31.01181651734891,
+        "end_mass": 23.999999999999993,
+        "min_mass": 23.99999999999999,
+        "final_field": 0.06686300001173884,
+        "final_good_mass": 14.344933021180832
+      },
+      "unchanged": {
+        "first_feedback": 321,
+        "first8_opposite_command": null,
+        "displacement_from320": 8.324547446665505,
+        "command321": 0.6565251901943103,
+        "mean_command_last64": 0.07153415295276172,
+        "final_energy": 159.36396624484541,
+        "movement": 1.3628436851349524,
+        "gain": 27.51345319534909,
+        "loss": 0.08544021791607927,
+        "end_mass": 23.999999999999986,
+        "min_mass": 23.99999999999998,
+        "final_field": 0.3350387450831299,
+        "final_good_mass": 19.082749246824037
+      },
+      "delta_changed_minus_unchanged": {
+        "displacement_from320": 2.4346024153385315,
+        "mean_command_last64": 0.5357114067389697,
+        "final_energy": -57.46879209405873,
+        "movement": 0.043758924570200364
+      },
+      "initial_action_equivalence": {
+        "motor": 0.0,
+        "mean": 0.0,
+        "K": 0.0
+      }
+    },
+    {
+      "condition": 0,
+      "arm": "fixed",
+      "changed": {
+        "first_feedback": 321,
+        "first8_opposite_command": 330,
+        "displacement_from320": -7.308112100063017,
+        "command321": 0.2075250206364635,
+        "mean_command_last64": -0.32938945858747115,
+        "final_energy": 119.59148316480663,
+        "movement": 1.2831841433439612,
+        "gain": 1.9412818589989136,
+        "loss": 18.73141685741411,
+        "end_mass": 23.999999999999996,
+        "min_mass": 23.999999999999986,
+        "final_field": 0.3898963426725837,
+        "final_good_mass": 19.152640245763113
+      },
+      "unchanged": {
+        "first_feedback": 321,
+        "first8_opposite_command": null,
+        "displacement_from320": 2.5659144903463798,
+        "command321": 0.2075250206364635,
+        "mean_command_last64": 0.06351695842638715,
+        "final_energy": 170.19224721770556,
+        "movement": 1.2794154306772323,
+        "gain": 33.994902855977095,
+        "loss": 0.1880425141599789,
+        "end_mass": 24.000000000000007,
+        "min_mass": 23.999999999999993,
+        "final_field": 0.9459640289388652,
+        "final_good_mass": 23.920987890177866
+      },
+      "delta_changed_minus_unchanged": {
+        "displacement_from320": -9.874026590409397,
+        "mean_command_last64": -0.3929064170138583,
+        "final_energy": -50.600764052898924,
+        "movement": 0.003768712666728957
+      },
+      "initial_action_equivalence": {
+        "motor": 0.0,
+        "mean": 0.0,
+        "K": 0.0
+      }
+    },
+    {
+      "condition": 0,
+      "arm": "conditional_frozen",
+      "changed": {
+        "first_feedback": 321,
+        "first8_opposite_command": null,
+        "displacement_from320": 14.719500332474503,
+        "command321": 0.6565251901943103,
+        "mean_command_last64": 0.6598138578098796,
+        "final_energy": 108.30970657003903,
+        "movement": 1.4462349431648436,
+        "gain": 1.0587358758075531,
+        "loss": 24.601591315151023,
+        "end_mass": 24.0,
+        "min_mass": 23.999999999999993,
+        "final_field": 0.6954374669582531,
+        "final_good_mass": 23.389688815185995
+      },
+      "unchanged": {
+        "first_feedback": 321,
+        "first8_opposite_command": null,
+        "displacement_from320": 14.5975597956188,
+        "command321": 0.6565251901943103,
+        "mean_command_last64": 0.6503457444339535,
+        "final_energy": 155.54039835236284,
+        "movement": 1.443240627681289,
+        "gain": 24.693003662055702,
+        "loss": 1.0081616345589233,
+        "end_mass": 24.000000000000004,
+        "min_mass": 23.999999999999993,
+        "final_field": -0.6833981106629161,
+        "final_good_mass": 0.6091657361367873
+      },
+      "delta_changed_minus_unchanged": {
+        "displacement_from320": 0.12194053685570339,
+        "mean_command_last64": 0.009468113375926013,
+        "final_energy": -47.23069178232382,
+        "movement": 0.002994315483554555
+      },
+      "initial_action_equivalence": {
+        "motor": 0.0,
+        "mean": 0.0,
+        "K": 0.0
+      }
+    },
+    {
+      "condition": 1,
+      "arm": "source",
+      "changed": {
+        "first_feedback": 321,
+        "first8_opposite_command": null,
+        "displacement_from320": 20.182412971788636,
+        "command321": 0.6554166675501986,
+        "mean_command_last64": 1.1459155509499601,
+        "final_energy": 115.38253903510312,
+        "movement": 1.6359085166411036,
+        "gain": 4.146288299028649,
+        "loss": 20.841930076179853,
+        "end_mass": 23.999999999999993,
+        "min_mass": 23.99999999999999,
+        "final_field": 0.6859107711277663,
+        "final_good_mass": 21.497688111400404
+      },
+      "unchanged": {
+        "first_feedback": 321,
+        "first8_opposite_command": null,
+        "displacement_from320": 7.870712718022396,
+        "command321": 0.6554166675501986,
+        "mean_command_last64": 0.04605190939961211,
+        "final_energy": 159.43861816244754,
+        "movement": 1.3541260328141056,
+        "gain": 27.169426034893814,
+        "loss": 0.09077116852760327,
+        "end_mass": 24.0,
+        "min_mass": 23.999999999999993,
+        "final_field": 0.36739564472365593,
+        "final_good_mass": 23.01880834365911
+      },
+      "delta_changed_minus_unchanged": {
+        "displacement_from320": 12.31170025376624,
+        "mean_command_last64": 1.099863641550348,
+        "final_energy": -44.05607912734442,
+        "movement": 0.281782483826998
+      },
+      "initial_action_equivalence": {
+        "motor": 0.0,
+        "mean": 0.0,
+        "K": 0.0
+      }
+    },
+    {
+      "condition": 1,
+      "arm": "conditional",
+      "changed": {
+        "first_feedback": 321,
+        "first8_opposite_command": null,
+        "displacement_from320": 20.20542783341415,
+        "command321": 0.6556887602180022,
+        "mean_command_last64": 1.1476399190746882,
+        "final_energy": 115.54208414684237,
+        "movement": 1.6367618446844763,
+        "gain": 4.197754207856641,
+        "loss": 20.795698936154604,
+        "end_mass": 24.0,
+        "min_mass": 23.999999999999993,
+        "final_field": 0.6836822927060277,
+        "final_good_mass": 21.482587340443597
+      },
+      "unchanged": {
+        "first_feedback": 321,
+        "first8_opposite_command": null,
+        "displacement_from320": 7.6855748187615145,
+        "command321": 0.6556887602180022,
+        "mean_command_last64": 0.03430686269279006,
+        "final_energy": 159.63141827167445,
+        "movement": 1.3527648502024,
+        "gain": 27.293776858705964,
+        "loss": 0.0863844566539532,
+        "end_mass": 24.0,
+        "min_mass": 23.999999999999993,
+        "final_field": 0.3946694689691732,
+        "final_good_mass": 23.31770744326476
+      },
+      "delta_changed_minus_unchanged": {
+        "displacement_from320": 12.519853014652634,
+        "mean_command_last64": 1.1133330563818982,
+        "final_energy": -44.08933412483208,
+        "movement": 0.2839969944820764
+      },
+      "initial_action_equivalence": {
+        "motor": 0.0,
+        "mean": 0.0,
+        "K": 0.0
+      }
+    },
+    {
+      "condition": 1,
+      "arm": "fixed",
+      "changed": {
+        "first_feedback": 321,
+        "first8_opposite_command": 330,
+        "displacement_from320": -7.204402860654016,
+        "command321": 0.20234410940280126,
+        "mean_command_last64": -0.32684040923350627,
+        "final_energy": 118.59553225970765,
+        "movement": 1.2774665485055177,
+        "gain": 1.7261646401928574,
+        "loss": 19.631754843354457,
+        "end_mass": 24.000000000000007,
+        "min_mass": 24.0,
+        "final_field": 0.35393944428866486,
+        "final_good_mass": 18.432168810721773
+      },
+      "unchanged": {
+        "first_feedback": 321,
+        "first8_opposite_command": null,
+        "displacement_from320": 2.485143810423679,
+        "command321": 0.20234410940280126,
+        "mean_command_last64": 0.06267624472533198,
+        "final_energy": 170.5382398205194,
+        "movement": 1.2767755116602015,
+        "gain": 34.2199529141124,
+        "loss": 0.18352659330760487,
+        "end_mass": 24.000000000000007,
+        "min_mass": 23.999999999999996,
+        "final_field": 0.9454187605586135,
+        "final_good_mass": 23.927177778287678
+      },
+      "delta_changed_minus_unchanged": {
+        "displacement_from320": -9.689546671077695,
+        "mean_command_last64": -0.3895166539588383,
+        "final_energy": -51.942707560811755,
+        "movement": 0.0006910368453161286
+      },
+      "initial_action_equivalence": {
+        "motor": 0.0,
+        "mean": 0.0,
+        "K": 0.0
+      }
+    },
+    {
+      "condition": 1,
+      "arm": "conditional_frozen",
+      "changed": {
+        "first_feedback": 321,
+        "first8_opposite_command": null,
+        "displacement_from320": 14.694485972214183,
+        "command321": 0.6556887602180022,
+        "mean_command_last64": 0.6592214221858363,
+        "final_energy": 109.92391752059015,
+        "movement": 1.4464100807237221,
+        "gain": 1.295888741282448,
+        "loss": 23.702351859793445,
+        "end_mass": 24.000000000000007,
+        "min_mass": 23.999999999999993,
+        "final_field": 0.7256814037282584,
+        "final_good_mass": 23.14235875447637
+      },
+      "unchanged": {
+        "first_feedback": 321,
+        "first8_opposite_command": null,
+        "displacement_from320": 14.569322312247287,
+        "command321": 0.6556887602180022,
+        "mean_command_last64": 0.6497723376252076,
+        "final_energy": 154.89537921223376,
+        "movement": 1.4434669517324341,
+        "gain": 23.798995174311983,
+        "loss": 1.2369397301706526,
+        "end_mass": 24.000000000000007,
+        "min_mass": 23.999999999999993,
+        "final_field": -0.7141593759838191,
+        "final_good_mass": 0.8832183370781774
+      },
+      "delta_changed_minus_unchanged": {
+        "displacement_from320": 0.12516365996689593,
+        "mean_command_last64": 0.009449084560628762,
+        "final_energy": -44.97146169164361,
+        "movement": 0.002943128991288013
+      },
+      "initial_action_equivalence": {
+        "motor": 0.0,
+        "mean": 0.0,
+        "K": 0.0
+      }
+    }
+  ],
+  "conditional_term": [
+    {
+      "condition": 0,
+      "clock": 320,
+      "state_term_mass_mean_abs": 0.002464846046439122,
+      "bias_mass_mean_abs": 0.6564130623411839
+    },
+    {
+      "condition": 0,
+      "clock": 640,
+      "state_term_mass_mean_abs": 0.005481559513315267,
+      "bias_mass_mean_abs": 0.6563451942201477
+    },
+    {
+      "condition": 0,
+      "clock": 768,
+      "state_term_mass_mean_abs": 0.005231917485549272,
+      "bias_mass_mean_abs": 0.6416532863742632
+    },
+    {
+      "condition": 1,
+      "clock": 320,
+      "state_term_mass_mean_abs": 0.002287372149354667,
+      "bias_mass_mean_abs": 0.6561604356209714
+    },
+    {
+      "condition": 1,
+      "clock": 640,
+      "state_term_mass_mean_abs": 0.0069846810395907954,
+      "bias_mass_mean_abs": 1.1585594330734093
+    },
+    {
+      "condition": 1,
+      "clock": 768,
+      "state_term_mass_mean_abs": 0.0066091724529216715,
+      "bias_mass_mean_abs": 1.151790952174247
+    }
+  ],
+  "old_reference_readonly": true
+}

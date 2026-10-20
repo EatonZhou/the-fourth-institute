@@ -1,0 +1,476 @@
+{
+  "task": "recycled_cargo_local_routing_20261019",
+  "files": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/API.txt",
+      "bytes": 1445,
+      "sha256": "246cd0be021d3452ca66143149faa75819b28d90761f0b82c68d59864f13b7c5"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/REPORT.txt",
+      "bytes": 5943,
+      "sha256": "1f4345f2b262c879568d1f202380f9e305a9a055cb2bd01dfd31977cf6ecd140"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/actual_fields_b2.png",
+      "bytes": 74422,
+      "sha256": "5697a26922f31c3d4c67324f170223fcbda1caf56c40044089fff3b42d979442"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/actual_fields_b6.png",
+      "bytes": 74347,
+      "sha256": "6d5dddd9ac6819b82499725a0ca8480728ca090600e61e895d57a5514bdc7b6b"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/actual_process.png",
+      "bytes": 641135,
+      "sha256": "ad7921189ec7418c4eb233ae8a5dc6d869401837ffda3d75aa8b263410746622"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/all_steps.csv",
+      "bytes": 7820726,
+      "sha256": "c4ae5dd2217b659f9df5cbcf42560a20b82c525757a2555cae46b70ed655b462"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/audit.json",
+      "bytes": 15552,
+      "sha256": "66caf662d4d21dc64aaeaf35aaa4f0defe8fda96538fddd345a2be6bce8691d3"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/checkpoint_index.json",
+      "bytes": 20346,
+      "sha256": "46f43b4537437a8837bdfe579b36cfdd0993b372c512ea2690f6d6737da1751f"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/checks.json",
+      "bytes": 3188,
+      "sha256": "c23091504f4e388f219bdc49c3499eb0b9223e144c76b2a3e507235866196ba0"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/comparison_frames.json",
+      "bytes": 40195,
+      "sha256": "8388ddee031ab06f4f3e8de347452a6c31528155fde1e2a9d5491ac5b48a0a60"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/comparison_paths.json",
+      "bytes": 108730,
+      "sha256": "58178ec12e4c54e5d4a1c0d5b7a634d7cb3b3808453feb8d1852b12dbf72b37a"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/contrasts.csv",
+      "bytes": 5328,
+      "sha256": "365657dce0f9bbc9acc58a06bcf4205832d72b45b4e7f3c516c9c1d69f4fdb54"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/control_before_native.json",
+      "bytes": 70,
+      "sha256": "ca4c6a5668b5ded8ebaa79d71d1eac806b9fd8591dcc15c978b84eb220020df8"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/control_before_submit.json",
+      "bytes": 70,
+      "sha256": "ca4c6a5668b5ded8ebaa79d71d1eac806b9fd8591dcc15c978b84eb220020df8"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/downstream_merge.json",
+      "bytes": 622,
+      "sha256": "87d8c69ebfad2055079520ecee26d4f9177c8e7b78764827fdd224ab5b8547ed"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/execution.json",
+      "bytes": 1856,
+      "sha256": "b98d3a4b6705354445bf37185a7f37d659e0d2943ac425f4a401e426b832a352"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/figure_sources.json",
+      "bytes": 50564,
+      "sha256": "f089da7329b5cc4fe60608927b2726ce593c4b6a714c2cf83f9dc6afb469bf68"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/frames.json",
+      "bytes": 26219,
+      "sha256": "6ff2983540602996ceeb85a4ed485b3fa554d100fc2400e46e892be578136fd3"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/outcomes.csv",
+      "bytes": 6831,
+      "sha256": "872dff9a6870b60cc9248757beff17458a76ae2377739b1e9f19c45970a38b06"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/paths.json",
+      "bytes": 78723,
+      "sha256": "1aa88f14ba9a6613222fa92b0f135da474d46de3e1b7419978fe57b5c96e2b9a"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/plan.json",
+      "bytes": 47836,
+      "sha256": "637d55054ad959509d31dcb6aeaaa2262eaf1a72f1579f79bc588ec7c267b00e"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/postprocessing_sources.json",
+      "bytes": 882,
+      "sha256": "6fa96e8712a067709d94e5a9ec01d4758bb9110a7b361b4243d6d5883a23ca90"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/pure_checks.json",
+      "bytes": 6422,
+      "sha256": "a4a9b342f1f816a92370d6747aec5ddb05a26492534e11c3d0563b1e9d9d2237"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/raw_manifest.json",
+      "bytes": 51772,
+      "sha256": "09935c7ce05ec113528d333179894843d0fd8d4cde078448e6a91f91eb319609"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/recovery_amendment.json",
+      "bytes": 4190,
+      "sha256": "96bd596c6bd2a2b07052073374a96a5afda94fd6cdcca9b32abe05fe6270b098"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/recovery_source/environment_evolution/recycled_cargo_local_routing/run.py",
+      "bytes": 16598,
+      "sha256": "464d1a09e052c2ac4c7a52a4e65d9762a1da3bcbf3649486bce2e3aee6aef093"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/result.json",
+      "bytes": 1182,
+      "sha256": "48cf2f028f4b2b31d47c1098635101db7e0864a1cb7a8987bb29a9a47b2530fa"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/review.json",
+      "bytes": 310,
+      "sha256": "1ae6b831276c524170b1d897e1e875241d78d3d62e090d81cef1c1c18a04d2a4"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/environment_evolution/complementary_cargo_exchange/core.py",
+      "bytes": 10848,
+      "sha256": "2716b4ff5371b1c0095fe955399c7f68b62dd6b53fce048c542b36653ffd7cd9"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/environment_evolution/local_metabolic_translocation/__init__.py",
+      "bytes": 83,
+      "sha256": "6a18014b1fb754e64d976c5f7b9c7f7a3f8835b22c90db7fa7fd40e627a14088"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/environment_evolution/local_metabolic_translocation/core.py",
+      "bytes": 8342,
+      "sha256": "14917689b4a891b8ed27a1574630331b56a64d1538cf785e505b5a8fab3e393e"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/environment_evolution/local_metabolic_translocation/run.py",
+      "bytes": 16792,
+      "sha256": "ea3e60da9d111cb393582aa6ddb39eea991e186d12ea6b40c79b7df35f1ed06f"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/environment_evolution/material_action_response/__init__.py",
+      "bytes": 78,
+      "sha256": "fcbdb20688501c53d8722953f8d3c4228982965c62ff8bc458835aed983a9f92"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/environment_evolution/material_action_response/core.py",
+      "bytes": 9751,
+      "sha256": "15691ada9fd805c076f7c5770ba955dbf6cc454ea3af129b1ba03fe958467b5b"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/environment_evolution/metabolic_maintenance_withdrawal/__init__.py",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/environment_evolution/metabolic_maintenance_withdrawal/core.py",
+      "bytes": 8461,
+      "sha256": "c8260577edb1cec138f3f3869d889860ae93ff3d45fe212ff3cc08c1b2249a12"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/environment_evolution/native_investment_action/__init__.py",
+      "bytes": 78,
+      "sha256": "a80dd0002964474f230aff723a4a94c648b7f3330de722236dc2fb86dcab47b6"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/environment_evolution/native_investment_action/run.py",
+      "bytes": 14352,
+      "sha256": "162a6f3a238334abe364c8fc871fcdac332b9710ba36f43f44b652c30fbba3f9"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/environment_evolution/paid_local_turnover_recycling/__init__.py",
+      "bytes": 65,
+      "sha256": "354497e285554cf5a57b06fe09ab2f2d1a03a476e69417151d18f6e5a721f292"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/environment_evolution/paid_local_turnover_recycling/core.py",
+      "bytes": 6375,
+      "sha256": "243a5303d2bb0e90a7f7f0c482131d13dbf8dc19ef95ae14fb7c3a47a2d1ead0"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/environment_evolution/paid_local_turnover_recycling/run.py",
+      "bytes": 12193,
+      "sha256": "cb0358d7f3d33e19106f196ccc03fcbaf390bd4dc09f95ac0ace3c2e1a6b497d"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/environment_evolution/recycled_cargo_local_routing/__init__.py",
+      "bytes": 87,
+      "sha256": "eb780e943363a664419166ee217615bd05d27beb893b1c220fb4df6855b9e776"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/environment_evolution/recycled_cargo_local_routing/core.py",
+      "bytes": 8083,
+      "sha256": "a67f75b5676d2199c727e03683393d4bdee0376e28cd6eaea4a7b859a26c6dff"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/environment_evolution/recycled_cargo_local_routing/run.py",
+      "bytes": 14649,
+      "sha256": "c746001a2d99f8941a4328bffb0844fe6131aa1496703954f29f681572f00423"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/environment_evolution/recycling_precursor_dependence/__init__.py",
+      "bytes": 78,
+      "sha256": "58f3b7102b0cf1fcc6709647ba88719f779b257bbff98d0641c8b7424b442649"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/environment_evolution/recycling_precursor_dependence/core.py",
+      "bytes": 6300,
+      "sha256": "e52a191ec29756efadea91d39e0107119468aa114020e03bb09dca48f18476c6"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/environment_evolution/recycling_precursor_dependence/run.py",
+      "bytes": 12419,
+      "sha256": "093548f50323fa22c9bbe52a4dc6726f5979179bbd6a9c14369a777ae8db93eb"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/environment_evolution/regenerative_actor/__init__.py",
+      "bytes": 154,
+      "sha256": "b9438b684a84e8b7868c892b912a638023c8afa18ad426135b0a4c5dc6369b66"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/environment_evolution/regenerative_actor/conversion.py",
+      "bytes": 2821,
+      "sha256": "d2b73ccf44d6720e01e2166c055f9a427406dc483b21746476b9f8cc5f95189a"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/environment_evolution/regenerative_actor/model.py",
+      "bytes": 8610,
+      "sha256": "3941450e97d2311f833d1c9c8964f348218467d4cd8d41a68b6584b72b24b5b0"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/environment_evolution/regenerative_actor/prepare.py",
+      "bytes": 8045,
+      "sha256": "dfeac30fd839c0fda9e88398b4ed4446bc332b2be54c4d7287e7c6ad84317620"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/environment_evolution/regenerative_actor/runner.py",
+      "bytes": 6011,
+      "sha256": "4d48a7a9fe11bda60fcf743753a733ef0e574feabb5f0e2192c9b3bb4e7f419d"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/environment_evolution/resource_wave_actionability/__init__.py",
+      "bytes": 82,
+      "sha256": "fe3350daac1e0ac3c02c688585caab51f1760bede457ee9246aad2d6a0ba5b2a"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/environment_evolution/resource_wave_actionability/core.py",
+      "bytes": 6324,
+      "sha256": "fcfb8954f7fa94e21954657545d3e0d4dd3155cf20adef2a87851a129c85726d"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/environment_evolution/resource_wave_actionability/run.py",
+      "bytes": 11207,
+      "sha256": "41e9c6242367d7fed9926224784ee2c4da43103eacfd125996b0f67983b49c26"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/local_learning/__init__.py",
+      "bytes": 75,
+      "sha256": "0e45857cf6352df2192e9fe1272f55be5010ecb456bb5a6e6dc5d1527a3c3cb5"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/local_learning/adaptive_action_renewal/controller.py",
+      "bytes": 3576,
+      "sha256": "82ce81c7e382119e74ef8f17fe002dfd74d05f8ba87005a6fdaf73b2540bbeb6"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/local_learning/developmental_history_rule_swap/__init__.py",
+      "bytes": 79,
+      "sha256": "6c39983bb455ed58c9e7b2a7b8c5ccce7f76f305662bc10d9fd663a9f527bca7"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/local_learning/developmental_history_rule_swap/core.py",
+      "bytes": 2698,
+      "sha256": "727edc91ab7725e04ebe979cc58c7e8cb4b14e6e921b81740866342392c05b32"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/local_learning/experience_adaptation_outer_search/__init__.py",
+      "bytes": 263,
+      "sha256": "18b10d0143cb60ab3c1a67bd90de35363b12619cb42f1a4ce7374d94c297a8b9"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/local_learning/experience_adaptation_outer_search/archive.py",
+      "bytes": 5444,
+      "sha256": "46f77d8c9d71aa5ed5f5f760efa6fdc3cb29efb011c517bf05289ef3527ca337"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/local_learning/experience_adaptation_outer_search/genome.py",
+      "bytes": 7258,
+      "sha256": "cad661bf00f177b3cb3f38a5c7210a0095e4db76e5bfbab8a5b6c3541b15d10b"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/local_learning/local_terminal_feedback/__init__.py",
+      "bytes": 83,
+      "sha256": "ed460f70f95f7de2af6391acf68ccc1c8b05d4ec7bda3dbb254aaefb0510f5ec"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/local_learning/local_terminal_feedback/core.py",
+      "bytes": 3104,
+      "sha256": "3e4b5f75ba406762a7e36507f1f2e3a602b3e2517f17880493f5149ab37c8c54"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/local_learning/local_terminal_feedback/experiment.py",
+      "bytes": 15185,
+      "sha256": "1b820d4bed26a3c8452a2dd139fa29dedbb451c3d7f866835ed3b4d6890e1f7f"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/local_learning/material_transport.py",
+      "bytes": 17572,
+      "sha256": "dd5622a2df6a5d50642a31ad586215d5e30e33929cf8f57ee9efff36fdef08d5"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/local_learning/method_renewal_local_plasticity/__init__.py",
+      "bytes": 69,
+      "sha256": "dfce25ef21799ab43cbd04c6137023a8d6911086406a824e0763f04d4d2c4d2d"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/local_learning/method_renewal_local_plasticity/anticipatory_io.py",
+      "bytes": 2565,
+      "sha256": "341c04d4d2fcdfcc629892317021e286a5a4391b11ebe65cf3f713276113574d"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/local_learning/native_investment_action/__init__.py",
+      "bytes": 153,
+      "sha256": "932074acaf8ec99ece1c4342bd9fdaf81acd2eeaf735c1c8ced7dd880e09a96e"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/local_learning/native_investment_action/intent.py",
+      "bytes": 8554,
+      "sha256": "281cdf539552d744002768036509eaab3476e6c74a9ddf156bf093872ecb0d88"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/local_learning/resource_matched_morphogenesis/__init__.py",
+      "bytes": 66,
+      "sha256": "652c286b9440c8b3d1b51b48aa433f1894c7b61b8bd872d1f547d3a8100d808d"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/local_learning/resource_matched_morphogenesis/core.py",
+      "bytes": 6767,
+      "sha256": "dae6fbd6db1fe1a83f34a6039aee8e292f6d63717270095db981d1e808928a83"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/local_learning/resource_matched_morphogenesis/run.py",
+      "bytes": 16657,
+      "sha256": "327dcf4c234b52023767c8d63f48546aa755edd14650025cc850edaeec4c1e3c"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/local_learning/rule_geometry_resource_support/__init__.py",
+      "bytes": 74,
+      "sha256": "7a6102980e60a41c1de40cfa2bee276749ca1dfb9dd18d80d8ca8e53abe54b83"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/local_learning/rule_geometry_resource_support/core.py",
+      "bytes": 3149,
+      "sha256": "006c505f6e388d132f75466b21b8a5ec355e8cc5c0e64b8b5218f3f73e196d39"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/local_learning/rule_geometry_resource_support/run.py",
+      "bytes": 14888,
+      "sha256": "f71fbfd5c1536a4d6a37494d80f3df5a552c19dfc9f702c96211a3e84e64abc4"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/local_learning/tissue_replacement_pf_location/__init__.py",
+      "bytes": 77,
+      "sha256": "39091d6f3db6d4c57ee090795573a7e93f1f645c1e4602c1d2ade8bd3d332ac6"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/local_learning/tissue_replacement_pf_location/core.py",
+      "bytes": 4398,
+      "sha256": "adf452a8599221a1a21bf9aab22754576a39f5bea357e5f1630d447250ca721f"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/local_learning/tissue_replacement_pf_location/run.py",
+      "bytes": 12372,
+      "sha256": "119021f849311b93549f71b3dbdcef2859d52c4a1210ed3bb8299314a26a61a9"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/local_learning/turnover_compatible_morphogenesis/__init__.py",
+      "bytes": 73,
+      "sha256": "4e555285ca6c0bfe37cd3ccbe91915b9d7f8828b5c929bb4e2eec75772014d4c"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/local_learning/turnover_compatible_morphogenesis/core.py",
+      "bytes": 5692,
+      "sha256": "dbfea17ca9e68833d2e0fe7f33c37cac6111a4c441f51fb23a6a78f458886a84"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/local_learning/turnover_compatible_morphogenesis/run.py",
+      "bytes": 17503,
+      "sha256": "e73bc74edc530ae6a3d2f17a2232c83056bcb9d56c1b5fc13818bb0608974433"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/morphology_evolution/__init__.py",
+      "bytes": 75,
+      "sha256": "9e9c593e32e60dffaeebf902feda910a47b75d1f5b15a0de77a0f910f9cfc130"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/morphology_evolution/dual_kernel.py",
+      "bytes": 2922,
+      "sha256": "529d42e50876a68bce54a512f8a9cafd48a8f68276cf8507a0e2243b3f450d6e"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/simulation/__init__.py",
+      "bytes": 389,
+      "sha256": "564809e49203a4dc2f071ada201b8ac8bc142d83583a4ff3b4fa861bdeae79da"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/simulation/core.py",
+      "bytes": 2976,
+      "sha256": "0e832298f01c53a5774df1fbd144d40a816529907fcc6ac58ea6dcf9296d4974"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/simulation/data.py",
+      "bytes": 4960,
+      "sha256": "dfcec89a87caecf81836582b4639b01f8ab14edeec154d7f2e769356547805e5"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/simulation/seeds.py",
+      "bytes": 1809,
+      "sha256": "d92ae0992f80b5588f76c1cac5228f53108e90fea71b5970b9a721d1ab775bbf"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/source/simulation/snapshot.py",
+      "bytes": 6192,
+      "sha256": "e99d3eccee47ded2abe1518e3fb80d2d630a8ff21a2a339ff6723c2878dfc382"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/submission.json",
+      "bytes": 706,
+      "sha256": "75ce82eba1a2fdfce2299ec527c7921f15fa7ac59a79f67dafff9d1fb8ae1f24"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/summary.json",
+      "bytes": 76480,
+      "sha256": "6f6b05d60f9555d7eb24e37fd0a41d8e90aba9b425dffd88fe85f14f45033b3f"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/usage_correction.json",
+      "bytes": 319,
+      "sha256": "8ee09bba03f7fec1a242ff1cfc555ee42ec9ee30bced14014075f9fc5b67bb34"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/windows.csv",
+      "bytes": 23177,
+      "sha256": "e81c14c76003d02f05bf041df17d1c2ebecfacd94e3ae36cc372457e1236d4de"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/windows.json",
+      "bytes": 47390,
+      "sha256": "3d173ce40b900f19468940b8d81bbbdafad5c23aad156877bd21a45f7b2b7332"
+    }
+  ],
+  "raw_manifest_sha256": "09935c7ce05ec113528d333179894843d0fd8d4cde078448e6a91f91eb319609"
+}

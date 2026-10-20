@@ -1,0 +1,24 @@
+{
+  "version": "v0.9",
+  "run_id": "62588fca6ab2401490015ee99b406915",
+  "manifest": "release/manifest.json",
+  "manifest_sha256": "55e4ca61c238147127917e47ee68f91ade981ce33f9b143b54641cb26ab4f591",
+  "selection_sha256": "957d8e2b3c9e4ffde574ed133fef459057953858f4816001d4a89eae2bc75ec0",
+  "lenia_workbench_revision": 166,
+  "source": {
+    "selection": "Dev",
+    "commit": "388bc16cc6f30f7ddf04dc3b6d855a95bfd1b2e2",
+    "working_tree_modified": true
+  },
+  "bytes": 378790977,
+  "checks": {
+    "file_inventory": "passed",
+    "python_syntax": "passed",
+    "empty_stage_progress_schema": "passed",
+    "immutable_workbench_assets": "passed",
+    "isolated_postgresql_import": "passed"
+  },
+  "limitations": [
+    "No full instance installation or authenticated Provider/Resident/browser end-to-end test in this publication."
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "schema": "experience-adaptation-genome.v1",
+  "id": "genome_6bd5bfd2f629f9414376",
+  "family": "compact_ring_core_outer",
+  "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/compact_ring_core_outer--connected_trilobe.npz",
+  "source_sha256": "f580f0e32d439787b9e05dca7d9466368a7c5e4551ac4a77e74e16627653d23a",
+  "genes": [
+    0.012956453087913919,
+    0.022709198463853466,
+    0.17626285098119795,
+    0.05800383459687234,
+    -0.07260435761149535,
+    -0.21418174849380128,
+    0.2813942093076687,
+    0.08536268344571417,
+    -0.1047877443099957,
+    0.11780015021215724,
+    -0.04389737066071806
+  ],
+  "parent_id": "genome_f3d8a14ea45758fc6aa1",
+  "generation": 1,
+  "mutation_seed": 202610180507,
+  "named_genes": {
+    "log_mu1": 0.012956453087913919,
+    "log_mu2": 0.022709198463853466,
+    "log_sigma1": 0.17626285098119795,
+    "log_sigma2": 0.05800383459687234,
+    "weight_shift": -0.07260435761149535,
+    "kernel_radial1": -0.21418174849380128,
+    "kernel_radial2": 0.2813942093076687,
+    "kernel_crossmix": 0.08536268344571417,
+    "log_stretch_y": -0.1047877443099957,
+    "log_stretch_x": 0.11780015021215724,
+    "neck_density": -0.04389737066071806
+  },
+  "lifetime_rule": "fixed; only outer generations mutate"
+}

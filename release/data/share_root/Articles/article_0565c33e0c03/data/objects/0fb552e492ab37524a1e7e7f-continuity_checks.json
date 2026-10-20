@@ -1,0 +1,98 @@
+[
+  {
+    "id": "202610197801_0_0_fast_delta",
+    "life0_exact": true,
+    "energy_error": 4.016058319233906e-14,
+    "nofeedback_gain": 0.0,
+    "nofeedback_loss": 0.0,
+    "nofeedback_writes": 0.0
+  },
+  {
+    "id": "202610197801_0_0_fixed_contact_stop",
+    "life0_exact": true,
+    "energy_error": 3.732848448748105e-14,
+    "nofeedback_gain": 0.0,
+    "nofeedback_loss": 0.0,
+    "nofeedback_writes": 0.0
+  },
+  {
+    "id": "202610197801_0_0_value_contact_stop",
+    "life0_exact": true,
+    "energy_error": 2.960045403233025e-14,
+    "nofeedback_gain": 0.0,
+    "nofeedback_loss": 0.0,
+    "nofeedback_writes": 0.0
+  },
+  {
+    "id": "202610197801_0_1_fast_delta",
+    "life0_exact": true,
+    "energy_error": 4.2858078197482996e-14,
+    "nofeedback_gain": 0.0,
+    "nofeedback_loss": 0.0,
+    "nofeedback_writes": 0.0
+  },
+  {
+    "id": "202610197801_0_1_fixed_contact_stop",
+    "life0_exact": true,
+    "energy_error": 3.9768318846333806e-14,
+    "nofeedback_gain": 0.0,
+    "nofeedback_loss": 0.0,
+    "nofeedback_writes": 0.0
+  },
+  {
+    "id": "202610197801_0_1_value_contact_stop",
+    "life0_exact": true,
+    "energy_error": 3.665623763592562e-14,
+    "nofeedback_gain": 0.0,
+    "nofeedback_loss": 0.0,
+    "nofeedback_writes": 0.0
+  },
+  {
+    "id": "202610197802_1_0_fast_delta",
+    "life0_exact": true,
+    "energy_error": 3.333271159089435e-14,
+    "nofeedback_gain": 0.0,
+    "nofeedback_loss": 0.0,
+    "nofeedback_writes": 0.0
+  },
+  {
+    "id": "202610197802_1_0_fixed_contact_stop",
+    "life0_exact": true,
+    "energy_error": 3.9034747656430113e-14,
+    "nofeedback_gain": 0.0,
+    "nofeedback_loss": 0.0,
+    "nofeedback_writes": 0.0
+  },
+  {
+    "id": "202610197802_1_0_value_contact_stop",
+    "life0_exact": true,
+    "energy_error": 3.6377151291233645e-14,
+    "nofeedback_gain": 0.0,
+    "nofeedback_loss": 0.0,
+    "nofeedback_writes": 0.0
+  },
+  {
+    "id": "202610197802_1_1_fast_delta",
+    "life0_exact": true,
+    "energy_error": 4.32254329985754e-14,
+    "nofeedback_gain": 0.0,
+    "nofeedback_loss": 0.0,
+    "nofeedback_writes": 0.0
+  },
+  {
+    "id": "202610197802_1_1_fixed_contact_stop",
+    "life0_exact": true,
+    "energy_error": 3.943817928481197e-14,
+    "nofeedback_gain": 0.0,
+    "nofeedback_loss": 0.0,
+    "nofeedback_writes": 0.0
+  },
+  {
+    "id": "202610197802_1_1_value_contact_stop",
+    "life0_exact": true,
+    "energy_error": 3.328847614225694e-14,
+    "nofeedback_gain": 0.0,
+    "nofeedback_loss": 0.0,
+    "nofeedback_writes": 0.0
+  }
+]

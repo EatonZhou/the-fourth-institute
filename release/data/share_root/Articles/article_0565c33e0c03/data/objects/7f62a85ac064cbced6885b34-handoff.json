@@ -1,0 +1,27 @@
+{
+  "status": "completed_body_host_coupling",
+  "work_item": "method_renewal_local_plasticity_20261018",
+  "resident_id": "resident_d3ccfa2d95b7",
+  "job_id": "8ad62a77-1850-48a4-bb18-2cf1df9c3440",
+  "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling",
+  "scope": "translated-density host with local evidence, shared energy/global actuator; not Lenia",
+  "usage": {
+    "attempted_host_steps": 86032,
+    "committed_host_steps": 86032,
+    "instrumentation_check_steps": 16,
+    "lenia_steps": 0,
+    "independent_energy_steps": 0
+  },
+  "key_results": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling_report/key_results.json",
+  "report": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling_report/METHOD_AND_LIMITS.txt",
+  "manifest": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling_report/manifest.json",
+  "manifest_sha256": "db9d576e4da323b2fa38b9ade0e1cae386b3fa63e82fd795f9b77a27b698565e",
+  "actual_figures": [
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling_report/reversal_process.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling_report/actual_state_atlas.png"
+  ],
+  "source_files": 181,
+  "delivery_files": 15,
+  "viewing_receipt": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling_report/view_and_scope.json",
+  "runner_receipt": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling_report/runner_receipt.json"
+}

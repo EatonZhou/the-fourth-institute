@@ -1,0 +1,15 @@
+{
+  "status": "completed_and_delivered",
+  "handoff_sha256": "5abf367c828d1ab3c34a480836b11f98c20a8138768fcea63beffffb4b167ff3",
+  "message_id": "msg_701d85f0daa74ff382a7a94ea660d635",
+  "recipient": "resident_afa3d4d6cf11",
+  "activation_policy": "enqueue_and_trigger",
+  "accepted": true,
+  "shared_progress_CAS": true,
+  "resident_summary_revision": 252,
+  "new_native": 2048,
+  "worker_seconds": 103.700166,
+  "remaining_native_sealed": 4,
+  "remaining_worker_seconds_sealed": 496.299834,
+  "new_jobs_pending": 0
+}

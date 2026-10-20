@@ -1,0 +1,33 @@
+{
+  "task": "maintenance_aware_cargo_20261019",
+  "status": "completed",
+  "job_id": "c62b044b-ee58-42e0-aee3-999b3a7e3055",
+  "native_attempted": 1536,
+  "native_returned": 1536,
+  "native_settled": 1536,
+  "science": 1536,
+  "extra_boundary": 0,
+  "failed_native": 0,
+  "partial_paths": 0,
+  "complete_paths": 8,
+  "old_paths_read_only": 16,
+  "old_native_replayed": 0,
+  "old_budget_used": 0,
+  "cpu_threads": 2,
+  "gpu": 0,
+  "runner_worker_seconds": 129.57481,
+  "unused_native_sealed": 32,
+  "unused_worker_seconds_sealed": 470.42519,
+  "raw_bytes": 50352193,
+  "start": "2026-10-18T17:44:53.430575+00:00",
+  "finish": "2026-10-18T17:45:58.217980+00:00",
+  "pre_job_dispatch_failures": 2,
+  "pre_job_native": 0,
+  "pre_job_allocated_worker_seconds": 0,
+  "dispatch_notes": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/maintenance_aware_cargo_20261019/dispatch_notes.json",
+    "sha256": "fa8b6e9458cc7e9872b5ad074dcfca42267c6a55d3b371bbe9d841705c589d20",
+    "bytes": 431
+  },
+  "postprocessing": "0 native; pure array analysis and figures outside allocated runner; no additional job"
+}

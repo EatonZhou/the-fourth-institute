@@ -1,0 +1,147 @@
+[
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/contextual_terminal_records/INTERPRETATION.txt",
+    "sha256": "9944bc5b766eb83ef0bebb301702304e0ad6eba84e9381db1827b8f8b983dfb3",
+    "bytes": 4596
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/contextual_terminal_records/METHOD.txt",
+    "sha256": "3104bfd0490f20ae8d03b72aa921a62d3389822e9c1b2af02dcc0c840d4c7a5f",
+    "bytes": 1189
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/contextual_terminal_records/REPORT.txt",
+    "sha256": "4a061f48c2937a21c5f0a33b0a13c6000cccd2dc2e5862dbaa0435f8620cfb96",
+    "bytes": 6785
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/contextual_terminal_records/actual_bodies.png",
+    "sha256": "21dcabea0cfa3fc1c5b887434c94aa4c74d09a7ba3992cc5b2bde75dc48b6acd",
+    "bytes": 214451
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/contextual_terminal_records/archive.json",
+    "sha256": "62ed139ee56ee74872f2b49e033458c492ec752c38fdbbedfffa7e119daa6642",
+    "bytes": 1388
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/contextual_terminal_records/behavior.csv",
+    "sha256": "70cc0327d7e1bca273418b2dd926311fab484f0faa1a56158fb2f96b1faf65be",
+    "bytes": 2169
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/contextual_terminal_records/body_curves.png",
+    "sha256": "683240b473c4a3353f3a2d1674a653f8dc720159c901e9868195777f1fe90596",
+    "bytes": 296776
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/contextual_terminal_records/checks.json",
+    "sha256": "d79635c7083ca5e33eb90442aed76f58719b17cc52a6069f471a474d77590724",
+    "bytes": 4199
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/contextual_terminal_records/data_usage.json",
+    "sha256": "95ed7b52276d411dc64560b690715a06f70e82f83cf66b98608a959e8825093d",
+    "bytes": 217
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/contextual_terminal_records/decision_summary.json",
+    "sha256": "edf8b5a2a91d47cd9aa5612dfd4302a6f19045b0b79d10df6516aab4c1564ed4",
+    "bytes": 11931
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/contextual_terminal_records/exposures.csv",
+    "sha256": "8baa2d1563395a6c7f4187a37d0cd6f3376a9e528109eb62b303fa6a7e1f1d82",
+    "bytes": 5593
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/contextual_terminal_records/identifiability.json",
+    "sha256": "f0dacd21e54059054772b444956f91b66982e11f6643abd5366c3841bc936f6e",
+    "bytes": 1091
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/contextual_terminal_records/outcomes.csv",
+    "sha256": "f677c3ee469c6795fb41e9380033b04dc8f8f9529f7aab4d2b989b7c5b5b4217",
+    "bytes": 8170
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/contextual_terminal_records/paired.csv",
+    "sha256": "38df38e160b99d72ed888532d51114941fc27a61041fc9879afaa09b289084af",
+    "bytes": 3207
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/contextual_terminal_records/plan.json",
+    "sha256": "091d82231d47ff591774672446a4b9225f6440bbf1208ae53eaa752f285ac943",
+    "bytes": 8366
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/contextual_terminal_records/pure_checks.json",
+    "sha256": "d02c9514f0a325b7661f7e94fbe6df74b5995f7e02e07fce67996ae67990e7f3",
+    "bytes": 336
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/contextual_terminal_records/raw_manifest.json",
+    "sha256": "4512252cdfaee744d00a5ff4df10d514c3d7896846a5b242c54998a30f2c062a",
+    "bytes": 74633
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/contextual_terminal_records/result.json",
+    "sha256": "c1b5344fa3cd133387cf68a1039b80a3647194ae0ea11d59a39010826c269c84",
+    "bytes": 1833
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/contextual_terminal_records/runner_job.json",
+    "sha256": "0885f34bfbac8eb8317ff69eba671d1df8499afb0f2c465a0e548474b824890c",
+    "bytes": 2667
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/contextual_terminal_records/same_state_requests.png",
+    "sha256": "407aa7331138b8271a25d4a7b829e78e5077a78e2a05a2161184501bbfc247e5",
+    "bytes": 200541
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/contextual_terminal_records/source/analyze.py",
+    "sha256": "8ffb36486f3e4f02c5ba744ca0cd9fe732137e5d5142dd473254cdc4fb42d684",
+    "bytes": 13773
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/contextual_terminal_records/source/checks.py",
+    "sha256": "01209582befcb4e21f5d69a3fbf5488a3ced7b4cf8ebb13e66308f52fbd80635",
+    "bytes": 2026
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/contextual_terminal_records/source/core.py",
+    "sha256": "795c230367a0260b227e2269dbd9765b469de807bb929bb018bcdcf370ccbc20",
+    "bytes": 5599
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/contextual_terminal_records/source/experiment.py",
+    "sha256": "adec156e7bf4fc941fd1c2fe5df3bd772a26c18e31c47a28c521b632f0c322fc",
+    "bytes": 13478
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/contextual_terminal_records/source/finalize.py",
+    "sha256": "3db859986262bccca9704b2d79ec219d279227946e9acd6e0682fb50048dc948",
+    "bytes": 3840
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/contextual_terminal_records/source_refs.json",
+    "sha256": "1a8d056aaae1fd2f0423b8f544dcb2977d60d43cd481188204b0a33203a23825",
+    "bytes": 7519
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/contextual_terminal_records/summary.json",
+    "sha256": "e5593faae37bded0e67c945c56899c3078af13dfa3d5bf192ad5bfb0394a2573",
+    "bytes": 35139
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/contextual_terminal_records/terminal_accounting.csv",
+    "sha256": "cb17df0d152ea05122c80a22088f8660ef74ad05940e66c019c00a30dd28a076",
+    "bytes": 2541
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/contextual_terminal_records/usage.json",
+    "sha256": "fbb8061713a265625120f12968d6035aedcf1d9abe9e3063c3e3aa8681912fd3",
+    "bytes": 616
+  }
+]

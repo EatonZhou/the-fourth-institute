@@ -1,0 +1,11 @@
+{
+  "native": 2048,
+  "runner_seconds": 74.729388,
+  "runner_worker_seconds": 149.458776,
+  "incoming_message_worker_seconds": 148.458776,
+  "sealed": [
+    4,
+    450.541224
+  ],
+  "basis": "冻结execution.json与REPORT一致；消息少1worker秒，不静默沿用，不改旧文件，下一交接合并勘误。"
+}

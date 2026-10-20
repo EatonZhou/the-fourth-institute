@@ -1,0 +1,66 @@
+{
+  "resident": "resident_a388058f90eb",
+  "scope": "v0476 acquired gain Figure3, no new science; independently saved native GUI candidate",
+  "sources": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/acquired_gain_content_20261019/direction_handoff.json",
+      "sha256": "5045d64975466cb11c69e28f332fdccba2962188385fbbe62a2141b4324c087a"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/acquired_gain_content_20261019/REPORT.txt",
+      "sha256": "3531a9ead2aeac30a6fb18ef9c06f3d3486793467b0575688926ee3864b5217c"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/acquired_gain_content_20261019/all_phase_comparisons.csv",
+      "sha256": "44b989ea9e3b3c538593d24f2e3e8176767d2ddfac64e9d10149f152ae02cfae"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/acquired_gain_content_20261019/content_parent_checks.json",
+      "sha256": "0e43876f1cf6b8800663a7e285d2e10f7676d15faed07131044a8ebe411dd96e"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/state_conditioned_local_motor_20261019/analysis.json",
+      "sha256": "532a9b0823f3ec5d4828bdeb6eaa93ceb14be5691821dfeb9a184422d07300dc"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/closed_loop_relation_control_20261019/analysis.json",
+      "sha256": "52b5182f437e447d2ac102e7aceb35feb0b5e8170b431677436580011b03f7ca"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/state_gated_motor_gain_20261019/analysis.json",
+      "sha256": "0a6cee3afbb92fdeddd6d7f1c504416d81e9dd589cc361e238a40f4dea614256"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/acquired_gain_content_20261019/analysis.json",
+      "sha256": "bae503060a11c919880fafc831babb0518187da1b5dc8839ef66f802b7d0bfc7"
+    }
+  ],
+  "data_selection": {
+    "B": "all four primary methods x two conditions x three phases from state_gated_motor_gain, original scores and full gates",
+    "C": "gain_frozen reused; erase_gain and homogenize_gain new completed saved forks. All two parents and both phases retained. Commands use every stored step321..352, normalized only by original field sign for common axis."
+  },
+  "assets": [
+    {
+      "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/state_gated_motor_gain_20261019/actual_sequence.gif",
+      "source_sha256": "b467194948cd1a8edfde4014ef23c165255f835c91826a4fc529bb33c23bc064",
+      "frame_index": 48,
+      "clock": 768,
+      "asset": "gain_0768.png",
+      "operation": "lossless RGB extraction of existing GIF frame; no plot or field regenerated; native GUI crop removes labels"
+    },
+    {
+      "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/acquired_gain_content_20261019/actual_sequence.gif",
+      "source_sha256": "a9bd0e91263d7ac99e8d39120a2ebebf7f0e352dd7f702670f2260ea6e33db7c",
+      "frame_index": 28,
+      "clock": 768,
+      "asset": "content_0768.png",
+      "operation": "lossless RGB extraction of existing GIF frame; no plot or field regenerated; native GUI crop removes labels"
+    }
+  ],
+  "renderer": "src/local_learning/state_conditioned_local_motor/analyze.py: blue opacity min(rho/.8,1); green/red field, original32x32periodic coordinates; GIFclock768; no image recomputation",
+  "raw_source_table": "source_data/all_phase_comparisons.csv",
+  "raw_action_tables": "source_data/c{0,1}_{gain_frozen,erase_gain,homogenize_gain}_steps.csv",
+  "new_forward_steps": 0,
+  "cost_wording": "Local outcome transfers request 0.005 rho |field|, limited by available energy/capacity; actual gains/losses, basal and movement costs are recorded. No separate computation, communication or sensing-hardware cost is assigned.",
+  "preservation_incident": "preservation_incident.json"
+}

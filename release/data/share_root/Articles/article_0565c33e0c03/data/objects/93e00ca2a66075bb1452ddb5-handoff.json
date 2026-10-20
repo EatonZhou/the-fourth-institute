@@ -1,0 +1,45 @@
+{
+  "task": "paid_action_reversal_20261019",
+  "owner": "resident_ce2a5ab005bc",
+  "status": "complete",
+  "objective_met": false,
+  "plan_sha256": "bc22da6fba33cd358689136ef4d336fd653ca6a4f52e17c3b0fc05c143685fd2",
+  "accounting": {
+    "status": "complete",
+    "job_id": "721bddbe-15fb-4eaa-a01b-23a3e965d8b3",
+    "native_attempted": 1024,
+    "native_returned": 1024,
+    "unknown_native": 0,
+    "old_replayed_native": 0,
+    "worker_seconds": 12.120379981817678,
+    "paths": 16,
+    "runner_worker_seconds": 15.666068,
+    "native_remaining_sealed": 128,
+    "worker_remaining_sealed": 44.333932000000004,
+    "raw_bytes": 12824182,
+    "analysis_native": 0
+  },
+  "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/paid_action_reversal_20261019/analysis/REPORT.txt",
+  "replay": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/paid_action_reversal_20261019/analysis/replay.html",
+  "figures": [
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/paid_action_reversal_20261019/analysis/all_conditions.png"
+  ],
+  "files": {
+    "analysis/validation.json": "abc5e90816b8f872eb50b84cb485b861db36deca1ed07ef8744831d7b51a013e",
+    "analysis/energy_decomposition.json": "2a725e164b9ea125ef77bb281e00906f837ee6be2599adcd1d78355420df1353",
+    "analysis/accounting.json": "147b67c768c75dcef76b5b3ec4ac69f9ecd6e636bb946d920f94b8867d71713d",
+    "analysis/REPORT.txt": "01cb5fbbdba555ae950d7202e710258e4a3b0b1d1ae925ee03b1bab6cefe3c26",
+    "analysis/comparisons.json": "27d46e0ede1f6140949deca97178c2910a26460e9cc27482173ccfcadb4a2999",
+    "analysis/all_conditions.png": "9aada51a390c73702ed9196bc5544d702bb2347ee24c2a0c40bd21dfc9530c8d",
+    "analysis/replay.html": "39395ee31623935222b0de43edd1e7a53c88a6042d1dc8d47e405957834c5abe",
+    "analysis/recovery.json": "7f544c3fffbafd11cb01e410614006ea210c5113cf54336d81a94261d584263d",
+    "analysis/paired_validation.json": "cb771d1c3740d3546738da00f07bed0ceb72680a321986e9d6ddb3d13b41cf8d",
+    "analysis/source/paid_action_switch_analysis.py": "f25be43f9e7ec541b10cfaed99d77e8c757e162c93b27c9edea87b7615446f94"
+  },
+  "interpretation": {
+    "primary": "Paid last response correction expressed and supported by actual same-body A intervention; body utility is conditional.",
+    "followup": "Continued writing matters after reversal but adds negligible tracking under unchanged channel; soft energy can worsen despite closer tracking.",
+    "next": "Resource availability/goal mismatch: inspect actual stock-body overlap before distinct supply-time experiment, retain standard last as strong baseline; no fit tuning.",
+    "objective_met": false
+  }
+}

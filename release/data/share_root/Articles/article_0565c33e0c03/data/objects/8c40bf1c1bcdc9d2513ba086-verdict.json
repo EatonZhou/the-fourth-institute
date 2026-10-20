@@ -1,0 +1,365 @@
+{
+  "task": "paired_policy_material_fate_20261019",
+  "primary": {
+    "0.0": {
+      "all_occupied_sources_dominate": false,
+      "parent_horizon_count": 16,
+      "counterexamples": [
+        {
+          "parent_id": "202610195601_ring_birth_gain_only",
+          "horizon": 16,
+          "negative_mass": 30.483233069103434,
+          "negative_fraction": 0.3487207577202656,
+          "negative_contribution": -0.19036032760200028,
+          "support_min": -0.14056028501839102,
+          "retained_mass_difference": 1.0763986530118927
+        },
+        {
+          "parent_id": "202610195601_ring_birth_gain_only",
+          "horizon": 64,
+          "negative_mass": 28.579692699952883,
+          "negative_fraction": 0.32694471977912937,
+          "negative_contribution": -1.7672242899820048,
+          "support_min": -0.9434189692941279,
+          "retained_mass_difference": 3.4257357899363683
+        },
+        {
+          "parent_id": "202610195601_ring_both",
+          "horizon": 16,
+          "negative_mass": 11.258253710504112,
+          "negative_fraction": 0.11669332845358953,
+          "negative_contribution": -0.02024498264375911,
+          "support_min": -0.16084477592240853,
+          "retained_mass_difference": 7.019078401093509
+        },
+        {
+          "parent_id": "202610195601_ring_both",
+          "horizon": 64,
+          "negative_mass": 23.680887788788535,
+          "negative_fraction": 0.24545561752897826,
+          "negative_contribution": -0.7150941976771509,
+          "support_min": -0.2751890220446924,
+          "retained_mass_difference": 10.840175176740843
+        },
+        {
+          "parent_id": "202610195601_separate_seeds_birth_gain_only",
+          "horizon": 16,
+          "negative_mass": 9.560793119464682,
+          "negative_fraction": 0.15641938415408696,
+          "negative_contribution": -0.0796479508047171,
+          "support_min": -0.1253701560215621,
+          "retained_mass_difference": 4.6991138747915
+        },
+        {
+          "parent_id": "202610195601_separate_seeds_birth_gain_only",
+          "horizon": 64,
+          "negative_mass": 15.563528898368185,
+          "negative_fraction": 0.25462716064746244,
+          "negative_contribution": -1.5790383740448517,
+          "support_min": -0.7462030630512428,
+          "retained_mass_difference": 13.386780757860166
+        },
+        {
+          "parent_id": "202610195601_separate_seeds_both",
+          "horizon": 16,
+          "negative_mass": 23.35171555520091,
+          "negative_fraction": 0.29488279524555433,
+          "negative_contribution": -0.9015415333551857,
+          "support_min": -0.9945083408332779,
+          "retained_mass_difference": 4.454652771253876
+        },
+        {
+          "parent_id": "202610195601_separate_seeds_both",
+          "horizon": 64,
+          "negative_mass": 23.758713633207467,
+          "negative_fraction": 0.3000223204602408,
+          "negative_contribution": -3.2874546626091825,
+          "support_min": -0.9939422983987222,
+          "retained_mass_difference": 9.224527227270173
+        },
+        {
+          "parent_id": "202610195602_ring_birth_gain_only",
+          "horizon": 16,
+          "negative_mass": 34.623282485356796,
+          "negative_fraction": 0.41401993817350374,
+          "negative_contribution": -0.26122095959334274,
+          "support_min": -0.13549255962962203,
+          "retained_mass_difference": 1.5640888901190806
+        },
+        {
+          "parent_id": "202610195602_ring_birth_gain_only",
+          "horizon": 64,
+          "negative_mass": 33.314017677525555,
+          "negative_fraction": 0.3983639490274634,
+          "negative_contribution": -1.6270747732181055,
+          "support_min": -0.5096666332356472,
+          "retained_mass_difference": 4.260297734632246
+        },
+        {
+          "parent_id": "202610195602_ring_both",
+          "horizon": 16,
+          "negative_mass": 23.25581614552225,
+          "negative_fraction": 0.243757725797474,
+          "negative_contribution": -0.21407701277967536,
+          "support_min": -0.16583626215943725,
+          "retained_mass_difference": 8.261482194566753
+        },
+        {
+          "parent_id": "202610195602_ring_both",
+          "horizon": 64,
+          "negative_mass": 24.334029123051998,
+          "negative_fraction": 0.2550591026953379,
+          "negative_contribution": -2.9819619818783,
+          "support_min": -0.4704847621909797,
+          "retained_mass_difference": 17.74974909358366
+        },
+        {
+          "parent_id": "202610195602_separate_seeds_birth_gain_only",
+          "horizon": 16,
+          "negative_mass": 7.277809446334365,
+          "negative_fraction": 0.10954367666312748,
+          "negative_contribution": -0.1051567461493046,
+          "support_min": -0.17558962348736973,
+          "retained_mass_difference": 4.850431934613908
+        },
+        {
+          "parent_id": "202610195602_separate_seeds_birth_gain_only",
+          "horizon": 64,
+          "negative_mass": 16.029775525653537,
+          "negative_fraction": 0.24127597185841887,
+          "negative_contribution": -1.6791346780835363,
+          "support_min": -0.999168440069764,
+          "retained_mass_difference": 13.670170666485106
+        },
+        {
+          "parent_id": "202610195602_separate_seeds_both",
+          "horizon": 16,
+          "negative_mass": 23.96592326564237,
+          "negative_fraction": 0.2946715819408346,
+          "negative_contribution": -0.7884719023994018,
+          "support_min": -0.38115052409705175,
+          "retained_mass_difference": 4.053989105951885
+        },
+        {
+          "parent_id": "202610195602_separate_seeds_both",
+          "horizon": 64,
+          "negative_mass": 25.441642271688135,
+          "negative_fraction": 0.31281619707590297,
+          "negative_contribution": -2.4855614793575764,
+          "support_min": -0.5656486479877152,
+          "retained_mass_difference": 9.503787275988444
+        }
+      ]
+    },
+    "1e-08": {
+      "all_occupied_sources_dominate": false,
+      "parent_horizon_count": 16,
+      "counterexamples": [
+        {
+          "parent_id": "202610195601_ring_birth_gain_only",
+          "horizon": 16,
+          "negative_mass": 25.66097249876945,
+          "negative_fraction": 0.29355527195308,
+          "negative_contribution": -0.19036032272255066,
+          "support_min": -0.14056028501839102,
+          "retained_mass_difference": 1.0763986530118927
+        },
+        {
+          "parent_id": "202610195601_ring_birth_gain_only",
+          "horizon": 64,
+          "negative_mass": 27.25103277415823,
+          "negative_fraction": 0.31174517401489493,
+          "negative_contribution": -1.7672242887830147,
+          "support_min": -0.9434189692941279,
+          "retained_mass_difference": 3.4257357899363683
+        },
+        {
+          "parent_id": "202610195601_ring_both",
+          "horizon": 16,
+          "negative_mass": 7.900792418509544,
+          "negative_fraction": 0.08189278625658908,
+          "negative_contribution": -0.02024498264375845,
+          "support_min": -0.16084477592240853,
+          "retained_mass_difference": 7.019078401093509
+        },
+        {
+          "parent_id": "202610195601_ring_both",
+          "horizon": 64,
+          "negative_mass": 21.108464333641166,
+          "negative_fraction": 0.21879209911020672,
+          "negative_contribution": -0.7150941976762659,
+          "support_min": -0.2751890220446924,
+          "retained_mass_difference": 10.840175176740843
+        },
+        {
+          "parent_id": "202610195601_separate_seeds_birth_gain_only",
+          "horizon": 16,
+          "negative_mass": 7.557169283340028,
+          "negative_fraction": 0.12363909044759416,
+          "negative_contribution": -0.07964795080471686,
+          "support_min": -0.1253701560215621,
+          "retained_mass_difference": 4.6991138747915
+        },
+        {
+          "parent_id": "202610195601_separate_seeds_birth_gain_only",
+          "horizon": 64,
+          "negative_mass": 15.563528898368185,
+          "negative_fraction": 0.25462716064746244,
+          "negative_contribution": -1.5790383740448517,
+          "support_min": -0.7462030630512428,
+          "retained_mass_difference": 13.386780757860166
+        },
+        {
+          "parent_id": "202610195601_separate_seeds_both",
+          "horizon": 16,
+          "negative_mass": 22.91456008065716,
+          "negative_fraction": 0.2893624458739791,
+          "negative_contribution": -0.9015415321787215,
+          "support_min": -0.9945083408332779,
+          "retained_mass_difference": 4.454652771253876
+        },
+        {
+          "parent_id": "202610195601_separate_seeds_both",
+          "horizon": 64,
+          "negative_mass": 23.758713633207467,
+          "negative_fraction": 0.3000223204602408,
+          "negative_contribution": -3.2874546626091825,
+          "support_min": -0.9939422983987222,
+          "retained_mass_difference": 9.224527227270173
+        },
+        {
+          "parent_id": "202610195602_ring_birth_gain_only",
+          "horizon": 16,
+          "negative_mass": 28.816173414788274,
+          "negative_fraction": 0.34457941244113266,
+          "negative_contribution": -0.2612209505460698,
+          "support_min": -0.13549255962962203,
+          "retained_mass_difference": 1.5640888901190806
+        },
+        {
+          "parent_id": "202610195602_ring_birth_gain_only",
+          "horizon": 64,
+          "negative_mass": 31.81257636046449,
+          "negative_fraction": 0.38040994245620113,
+          "negative_contribution": -1.6270747712374531,
+          "support_min": -0.5096666332356472,
+          "retained_mass_difference": 4.260297734632246
+        },
+        {
+          "parent_id": "202610195602_ring_both",
+          "horizon": 16,
+          "negative_mass": 17.827726283849508,
+          "negative_fraction": 0.18686276103570476,
+          "negative_contribution": -0.2140770036392373,
+          "support_min": -0.16583626215943725,
+          "retained_mass_difference": 8.261482194566753
+        },
+        {
+          "parent_id": "202610195602_ring_both",
+          "horizon": 64,
+          "negative_mass": 22.009214823858766,
+          "negative_fraction": 0.2306913727938481,
+          "negative_contribution": -2.98196198187045,
+          "support_min": -0.4704847621909797,
+          "retained_mass_difference": 17.74974909358366
+        },
+        {
+          "parent_id": "202610195602_separate_seeds_birth_gain_only",
+          "horizon": 16,
+          "negative_mass": 7.05263732689236,
+          "negative_fraction": 0.1061544450505672,
+          "negative_contribution": -0.10515674508626728,
+          "support_min": -0.17558962348736973,
+          "retained_mass_difference": 4.850431934613908
+        },
+        {
+          "parent_id": "202610195602_separate_seeds_birth_gain_only",
+          "horizon": 64,
+          "negative_mass": 16.029775525653537,
+          "negative_fraction": 0.24127597185841887,
+          "negative_contribution": -1.6791346780835363,
+          "support_min": -0.999168440069764,
+          "retained_mass_difference": 13.670170666485106
+        },
+        {
+          "parent_id": "202610195602_separate_seeds_both",
+          "horizon": 16,
+          "negative_mass": 23.339282837804106,
+          "negative_fraction": 0.2869667618872754,
+          "negative_contribution": -0.7884719013249052,
+          "support_min": -0.38115052409705175,
+          "retained_mass_difference": 4.053989105951885
+        },
+        {
+          "parent_id": "202610195602_separate_seeds_both",
+          "horizon": 64,
+          "negative_mass": 25.441642271688135,
+          "negative_fraction": 0.31281619707590297,
+          "negative_contribution": -2.4855614793575764,
+          "support_min": -0.5656486479877152,
+          "retained_mass_difference": 9.503787275988444
+        }
+      ]
+    }
+  },
+  "survival_fields": 32,
+  "parents": 8,
+  "source_steps": 1024,
+  "max_operator_and_ledger_error": 1.7053025658242404e-13,
+  "max_weight_identity_error": 3.0531133177191805e-16,
+  "native": 0,
+  "new_fits": 0,
+  "objective_met": false,
+  "conclusion": "Only whole-future policy source heterogeneity if dominance fails; no executable sourcewise stitching or inferred writer.",
+  "next_decision": "Retain fixed both as comparator. Do not deploy a sourcewise mask from future delta maps. A future generation mechanism must preserve existing C/O and improve genuine new N with M/E/bodytime constraints; this offline analysis authorizes none.",
+  "M_summary_by_horizon": {
+    "16": {
+      "retained_mass_difference": [
+        1.0763986530118927,
+        8.261482194566753
+      ],
+      "negative_mass": [
+        7.05263732689236,
+        28.816173414788274
+      ],
+      "negative_fraction": [
+        0.08189278625658908,
+        0.34457941244113266
+      ],
+      "negative_contribution": [
+        -0.9015415321787215,
+        -0.02024498264375845
+      ],
+      "mixture_mse_lower_bound": [
+        0.0009521474709200637,
+        0.012591056910306098
+      ]
+    },
+    "64": {
+      "retained_mass_difference": [
+        3.4257357899363683,
+        17.74974909358366
+      ],
+      "negative_mass": [
+        15.563528898368185,
+        31.81257636046449
+      ],
+      "negative_fraction": [
+        0.21879209911020672,
+        0.38040994245620113
+      ],
+      "negative_contribution": [
+        -3.2874546626091825,
+        -0.7150941976762659
+      ],
+      "mixture_mse_lower_bound": [
+        0.008488180124705766,
+        0.039149337630089306
+      ]
+    }
+  },
+  "measured_original_update_gate_passes": 2,
+  "final_N_lower_pairs": 6,
+  "all_cohort_totals_higher": true,
+  "next_scientific_choice": "关闭both对全部占据来源的空间支配；保两完整政策的来源异质性。保fixed both为强同行；不从未来delta反推局部mask或writer。现有材料支持不足以授权下一生成机制，下一身体干预须重新给出当下可读、同时守C/O与N及M/E/体时的规则假设，由PI另定。"
+}

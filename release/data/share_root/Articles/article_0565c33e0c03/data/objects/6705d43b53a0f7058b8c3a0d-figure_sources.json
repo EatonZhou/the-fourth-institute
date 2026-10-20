@@ -1,0 +1,290 @@
+[
+  {
+    "id": "g2_p1_c0--compact--colocated--G2_completion--pump",
+    "crop": [
+      38,
+      59,
+      52,
+      73
+    ],
+    "frames": [
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--compact--colocated--G2_completion--pump/fields000.npz",
+        "sha256": "a712fe84c6c8b8643f5d95e148631e3d2b88ea483c7076a4f0d4b7a4cc702570",
+        "bytes": 15545
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--compact--colocated--G2_completion--pump/fields032.npz",
+        "sha256": "1ff967f90a34290f2cdf13d09dc92b4dffe349d24ad9750a94d939a0991d1197",
+        "bytes": 21343
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--compact--colocated--G2_completion--pump/fields064.npz",
+        "sha256": "1db96745894d1bbb35f3a7f69c0bf1c917a2d36690b6605c5717bd75ed85b452",
+        "bytes": 21630
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--compact--colocated--G2_completion--pump/fields096.npz",
+        "sha256": "430fd23fa9bdb91cf00b286e6dac41c4486a18d8a3997cbce1b17c82a205fc85",
+        "bytes": 22720
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--compact--colocated--G2_completion--pump/fields128.npz",
+        "sha256": "9fd8058c5f02c2c6be9b186439ae24aaeacba5934fa2ac1f62a7c94a04c885b9",
+        "bytes": 23188
+      }
+    ]
+  },
+  {
+    "id": "g2_p1_c0--compact--separated--G2_completion--pump",
+    "crop": [
+      38,
+      59,
+      52,
+      73
+    ],
+    "frames": [
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--compact--separated--G2_completion--pump/fields000.npz",
+        "sha256": "ea4c325e9d39acfceea4d303462bb298d9f666003387f920d656c82d3f450ba2",
+        "bytes": 15497
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--compact--separated--G2_completion--pump/fields032.npz",
+        "sha256": "55071a1d94a4368885afc5157b14cd535955a8deec7733ea832dd81afec81f28",
+        "bytes": 21009
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--compact--separated--G2_completion--pump/fields064.npz",
+        "sha256": "9854ff972d1f1bc2226688dc81c4f43ad4f5aa075479522e10571b9fcec4be0f",
+        "bytes": 21710
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--compact--separated--G2_completion--pump/fields096.npz",
+        "sha256": "47687db8af942c9c8a295f5aeb0bd56d5f95323a5d61af8e0ede3864be47d7e6",
+        "bytes": 22125
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--compact--separated--G2_completion--pump/fields128.npz",
+        "sha256": "c73749bfcc3024be13f2b4c3d474b2344cd289d9c771aa39f39a1aa58e28325f",
+        "bytes": 22134
+      }
+    ]
+  },
+  {
+    "id": "g2_p1_c1--compact--colocated--G2_completion--pump",
+    "crop": [
+      38,
+      59,
+      52,
+      73
+    ],
+    "frames": [
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--compact--colocated--G2_completion--pump/fields000.npz",
+        "sha256": "a712fe84c6c8b8643f5d95e148631e3d2b88ea483c7076a4f0d4b7a4cc702570",
+        "bytes": 15545
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--compact--colocated--G2_completion--pump/fields032.npz",
+        "sha256": "a1f006d9ce85eb99d9e51bc467c6136ef2be11bb8ef7b54f831d759417985e55",
+        "bytes": 21233
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--compact--colocated--G2_completion--pump/fields064.npz",
+        "sha256": "f49f99002a75854c0f3322a07e0a482872b14fbb34dd406e9f12cfd4543ab458",
+        "bytes": 21671
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--compact--colocated--G2_completion--pump/fields096.npz",
+        "sha256": "b1575fdade6aee7d57eadd1faa88de5a353bdc92ec6e993ef526390b361c57e8",
+        "bytes": 22439
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--compact--colocated--G2_completion--pump/fields128.npz",
+        "sha256": "ec5e2caa2507c5a8bee447e3bdbd28b78cc5121312e28998ed469aab78ea14ae",
+        "bytes": 22921
+      }
+    ]
+  },
+  {
+    "id": "g2_p1_c1--compact--separated--G2_completion--pump",
+    "crop": [
+      38,
+      59,
+      52,
+      73
+    ],
+    "frames": [
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--compact--separated--G2_completion--pump/fields000.npz",
+        "sha256": "ea4c325e9d39acfceea4d303462bb298d9f666003387f920d656c82d3f450ba2",
+        "bytes": 15497
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--compact--separated--G2_completion--pump/fields032.npz",
+        "sha256": "11a8a8f8232507735b96f9d4cd8a42757eaa089d4e5bee47141f8202f25a1526",
+        "bytes": 20947
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--compact--separated--G2_completion--pump/fields064.npz",
+        "sha256": "4b7c2f0f83725aa5eb4b0e7064e28bb1cb77e6e0debfdcf43484038aec0f7a21",
+        "bytes": 21412
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--compact--separated--G2_completion--pump/fields096.npz",
+        "sha256": "c71710409b517ba884bd19079540f3f133575c9da473fc3453a166514d5799d8",
+        "bytes": 21949
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--compact--separated--G2_completion--pump/fields128.npz",
+        "sha256": "69129a906166a98d3c589fdd35a714d0993c3de2686257f8fbe65be4fa905680",
+        "bytes": 22222
+      }
+    ]
+  },
+  {
+    "id": "g2_p1_c0--double_lobe--colocated--G2_completion--pump",
+    "crop": [
+      41,
+      56,
+      51,
+      74
+    ],
+    "frames": [
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--double_lobe--colocated--G2_completion--pump/fields000.npz",
+        "sha256": "8776063591db0f64b8e95a05555de3f4d89ab4bb63d48d7653c3852a316d2ca2",
+        "bytes": 13646
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--double_lobe--colocated--G2_completion--pump/fields032.npz",
+        "sha256": "31447f79f3bd33b2d5f173bb6f7bd7270ccaad93d7e0645bf4f946b3ca62c09f",
+        "bytes": 20022
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--double_lobe--colocated--G2_completion--pump/fields064.npz",
+        "sha256": "65fe4bbf17392cb959ea598a4dd533a3ef1d8d69c64d29cda87cdb6db7573d6b",
+        "bytes": 20194
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--double_lobe--colocated--G2_completion--pump/fields096.npz",
+        "sha256": "8de86694c5ad75fb42bce5262c49a65da9423b556767a73a5fa889dedcbfb3b1",
+        "bytes": 20764
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--double_lobe--colocated--G2_completion--pump/fields128.npz",
+        "sha256": "e025bf3f260a5d7fcef5aa76eaf6d98d899c8d5a360efdc8b4f636949238191b",
+        "bytes": 20706
+      }
+    ]
+  },
+  {
+    "id": "g2_p1_c0--double_lobe--separated--G2_completion--pump",
+    "crop": [
+      41,
+      56,
+      51,
+      74
+    ],
+    "frames": [
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--double_lobe--separated--G2_completion--pump/fields000.npz",
+        "sha256": "12a495caefd3e05c2f385cc2faebe555ee21dd35bc0cb1a481dc7dd7035a9a70",
+        "bytes": 13612
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--double_lobe--separated--G2_completion--pump/fields032.npz",
+        "sha256": "2ea358699a2cf3cd14b1afedc79cfdd11d8e2d4f33619f0e0e55af28644a8263",
+        "bytes": 20314
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--double_lobe--separated--G2_completion--pump/fields064.npz",
+        "sha256": "6e96af3eca5107db8cceb32de07a25a472bee54572890d6eaca08423026c30cc",
+        "bytes": 20559
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--double_lobe--separated--G2_completion--pump/fields096.npz",
+        "sha256": "3dcae9c17e0726c437cd4f37427a3ed8fb1585d715d1628034638b9553d61941",
+        "bytes": 20131
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c0--double_lobe--separated--G2_completion--pump/fields128.npz",
+        "sha256": "ab532b5027ebe312e86e08d1551a293dcb33ba0ffa2edd338395002acef573c9",
+        "bytes": 18705
+      }
+    ]
+  },
+  {
+    "id": "g2_p1_c1--double_lobe--colocated--G2_completion--pump",
+    "crop": [
+      41,
+      56,
+      51,
+      74
+    ],
+    "frames": [
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--double_lobe--colocated--G2_completion--pump/fields000.npz",
+        "sha256": "8776063591db0f64b8e95a05555de3f4d89ab4bb63d48d7653c3852a316d2ca2",
+        "bytes": 13646
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--double_lobe--colocated--G2_completion--pump/fields032.npz",
+        "sha256": "4cf37a6f3948ed01e2e907ba09f424f7c84bacda6ebfd8316be40022a0681dbf",
+        "bytes": 20414
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--double_lobe--colocated--G2_completion--pump/fields064.npz",
+        "sha256": "b510e6dec89afb642638f07071ef440a19b668e2a16d9a68c89fd46f68698d6e",
+        "bytes": 20490
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--double_lobe--colocated--G2_completion--pump/fields096.npz",
+        "sha256": "f92bf5bf6df5c5e85c6091dd71dfcc1d1ecdd9910a4182093348c46457e7f655",
+        "bytes": 20303
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--double_lobe--colocated--G2_completion--pump/fields128.npz",
+        "sha256": "4c16cb73384eb83c83f07b13edaaee8d7f78fe78b7b6b7e7f145e6075aa613af",
+        "bytes": 21391
+      }
+    ]
+  },
+  {
+    "id": "g2_p1_c1--double_lobe--separated--G2_completion--pump",
+    "crop": [
+      41,
+      56,
+      51,
+      74
+    ],
+    "frames": [
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--double_lobe--separated--G2_completion--pump/fields000.npz",
+        "sha256": "12a495caefd3e05c2f385cc2faebe555ee21dd35bc0cb1a481dc7dd7035a9a70",
+        "bytes": 13612
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--double_lobe--separated--G2_completion--pump/fields032.npz",
+        "sha256": "563174b3ae2e2e5b27ae60ee3f837360de678f380c02ccfdb6c362409f5ce494",
+        "bytes": 20231
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--double_lobe--separated--G2_completion--pump/fields064.npz",
+        "sha256": "185cc6255ee1218573c2d8658115c85dc01ba6ae329910411f946a921ff79901",
+        "bytes": 21047
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--double_lobe--separated--G2_completion--pump/fields096.npz",
+        "sha256": "50d0625c129cdc9714225fd9a250809c9b75ab3266ab26852c470eeabf36907d",
+        "bytes": 20641
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db/g2_p1_c1--double_lobe--separated--G2_completion--pump/fields128.npz",
+        "sha256": "e839dadd60def289fc8c57a212473bb95e8ba1bfbc3cd3fe6d827a6336c40131",
+        "bytes": 20514
+      }
+    ]
+  }
+]

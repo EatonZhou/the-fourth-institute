@@ -1,0 +1,19 @@
+{
+  "id": "890654b4-a7fa-462d-acf4-3d995635b0b9",
+  "name": "d3 turnover compatible two-generation rule search",
+  "command": [
+    "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+    "-m",
+    "local_learning.turnover_compatible_morphogenesis.run"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "d3-turnover-compatible-morphogenesis-20261019-v1",
+  "status": "running",
+  "created_at": "2026-10-18T18:02:29.049019+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/890654b4-a7fa-462d-acf4-3d995635b0b9",
+  "pid": 2219477,
+  "manual_pause": false,
+  "create_time": 1792346548.53,
+  "started_at": "2026-10-18T18:02:29.139903+00:00"
+}

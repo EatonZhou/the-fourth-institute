@@ -1,0 +1,205 @@
+{
+  "schema": "lenia.fast-slow-native-handoff.v1",
+  "representatives": [
+    {
+      "candidate_id": "b02-g2-t32",
+      "source_route": "local_learning.fast_slow",
+      "source_job_id": "b883f316-75ab-4bdc-9fd6-834b4a7cf335",
+      "parent_job_id": "16b3b143-0a79-419c-acfc-fb74ff6ee7dc",
+      "parent_candidate_id": "b02-g2-t32",
+      "event_kind": "fixed_rule_continuation",
+      "origin_state_event": "16b3b143-0a79-419c-acfc-fb74ff6ee7dc:origin:b02",
+      "source_candidate": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/12d8620a-dcaf-43dc-a20f-1802c06be7f2/candidates/ls-12d8620a-b02-i036.npz",
+      "native_manifest_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b883f316-75ab-4bdc-9fd6-834b4a7cf335/manifest.json",
+      "full_rule_state_restart": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b883f316-75ab-4bdc-9fd6-834b4a7cf335/candidates/b02-g2-t32/checkpoint.npz",
+      "native_loader": "local_learning.fast_slow.load_state",
+      "initial_state": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/16b3b143-0a79-419c-acfc-fb74ff6ee7dc/candidates/b02-g2-t32/initial.npz",
+      "raw_trajectory": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b883f316-75ab-4bdc-9fd6-834b4a7cf335/candidates/b02-g2-t32/trajectory.npz",
+      "fields": {
+        "body": "body_frames",
+        "slow": "slow_frames",
+        "memory": "memory_frames",
+        "step": "branch_steps",
+        "dense_body": "tail_body",
+        "dense_slow": "tail_slow",
+        "dense_memory": "tail_memory",
+        "dense_steps": "tail_steps"
+      },
+      "array_axes": {
+        "body": [
+          "time",
+          "y",
+          "x"
+        ],
+        "slow": [
+          "time",
+          "y",
+          "x"
+        ],
+        "memory": [
+          "time",
+          "cue",
+          "y",
+          "x"
+        ]
+      },
+      "branch_steps": [
+        384,
+        2048
+      ],
+      "dense_tail_steps": [
+        1793,
+        2048
+      ],
+      "lifetime_offset": 64,
+      "preview": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261016/fast_slow/b02-g2-t32_late.gif",
+      "rule": {
+        "coupling": 2.0,
+        "recovery_steps": 32.0,
+        "beta": 0.9978280288921647
+      },
+      "generation": null,
+      "optimization_step": null,
+      "scientific_limits": "Finite 2048-step coupled dynamic pattern; not evidence of learning, fitness, new species or asymptotic stability.",
+      "slow_state_location": "environment_fixed_grid",
+      "cue": 0,
+      "toxin": 0,
+      "project_readers_allowed": true
+    },
+    {
+      "candidate_id": "b07-g2-t128",
+      "source_route": "local_learning.fast_slow",
+      "source_job_id": "b883f316-75ab-4bdc-9fd6-834b4a7cf335",
+      "parent_job_id": "16b3b143-0a79-419c-acfc-fb74ff6ee7dc",
+      "parent_candidate_id": "b07-g2-t128",
+      "event_kind": "fixed_rule_continuation",
+      "origin_state_event": "16b3b143-0a79-419c-acfc-fb74ff6ee7dc:origin:b07",
+      "source_candidate": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/12d8620a-dcaf-43dc-a20f-1802c06be7f2/candidates/ls-12d8620a-b07-i036.npz",
+      "native_manifest_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b883f316-75ab-4bdc-9fd6-834b4a7cf335/manifest.json",
+      "full_rule_state_restart": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b883f316-75ab-4bdc-9fd6-834b4a7cf335/candidates/b07-g2-t128/checkpoint.npz",
+      "native_loader": "local_learning.fast_slow.load_state",
+      "initial_state": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/16b3b143-0a79-419c-acfc-fb74ff6ee7dc/candidates/b07-g2-t128/initial.npz",
+      "raw_trajectory": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b883f316-75ab-4bdc-9fd6-834b4a7cf335/candidates/b07-g2-t128/trajectory.npz",
+      "fields": {
+        "body": "body_frames",
+        "slow": "slow_frames",
+        "memory": "memory_frames",
+        "step": "branch_steps",
+        "dense_body": "tail_body",
+        "dense_slow": "tail_slow",
+        "dense_memory": "tail_memory",
+        "dense_steps": "tail_steps"
+      },
+      "array_axes": {
+        "body": [
+          "time",
+          "y",
+          "x"
+        ],
+        "slow": [
+          "time",
+          "y",
+          "x"
+        ],
+        "memory": [
+          "time",
+          "cue",
+          "y",
+          "x"
+        ]
+      },
+      "branch_steps": [
+        384,
+        2048
+      ],
+      "dense_tail_steps": [
+        1793,
+        2048
+      ],
+      "lifetime_offset": 64,
+      "preview": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261016/fast_slow/b07-g2-t128_late.gif",
+      "rule": {
+        "coupling": 2.0,
+        "recovery_steps": 128.0,
+        "beta": 0.9971127588115012
+      },
+      "generation": null,
+      "optimization_step": null,
+      "scientific_limits": "Finite 2048-step coupled dynamic pattern; not evidence of learning, fitness, new species or asymptotic stability.",
+      "slow_state_location": "environment_fixed_grid",
+      "cue": 0,
+      "toxin": 0,
+      "project_readers_allowed": true
+    },
+    {
+      "candidate_id": "newlocal-g2-t32",
+      "source_route": "local_learning.fast_slow",
+      "source_job_id": "b883f316-75ab-4bdc-9fd6-834b4a7cf335",
+      "parent_job_id": "16b3b143-0a79-419c-acfc-fb74ff6ee7dc",
+      "parent_candidate_id": "newlocal-g2-t32",
+      "event_kind": "fixed_rule_continuation",
+      "origin_state_event": "16b3b143-0a79-419c-acfc-fb74ff6ee7dc:origin:newlocal",
+      "source_candidate": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/12d8620a-dcaf-43dc-a20f-1802c06be7f2/candidates/ls-12d8620a-b04-i036.npz",
+      "native_manifest_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b883f316-75ab-4bdc-9fd6-834b4a7cf335/manifest.json",
+      "full_rule_state_restart": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b883f316-75ab-4bdc-9fd6-834b4a7cf335/candidates/newlocal-g2-t32/checkpoint.npz",
+      "native_loader": "local_learning.fast_slow.load_state",
+      "initial_state": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/16b3b143-0a79-419c-acfc-fb74ff6ee7dc/candidates/newlocal-g2-t32/initial.npz",
+      "raw_trajectory": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b883f316-75ab-4bdc-9fd6-834b4a7cf335/candidates/newlocal-g2-t32/trajectory.npz",
+      "fields": {
+        "body": "body_frames",
+        "slow": "slow_frames",
+        "memory": "memory_frames",
+        "step": "branch_steps",
+        "dense_body": "tail_body",
+        "dense_slow": "tail_slow",
+        "dense_memory": "tail_memory",
+        "dense_steps": "tail_steps"
+      },
+      "array_axes": {
+        "body": [
+          "time",
+          "y",
+          "x"
+        ],
+        "slow": [
+          "time",
+          "y",
+          "x"
+        ],
+        "memory": [
+          "time",
+          "cue",
+          "y",
+          "x"
+        ]
+      },
+      "branch_steps": [
+        384,
+        2048
+      ],
+      "dense_tail_steps": [
+        1793,
+        2048
+      ],
+      "lifetime_offset": 0,
+      "preview": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261016/fast_slow/newlocal-g2-t32_late.gif",
+      "rule": {
+        "coupling": 2.0,
+        "recovery_steps": 32.0,
+        "beta": 0.9962953843612299
+      },
+      "generation": null,
+      "optimization_step": null,
+      "scientific_limits": "Finite 2048-step coupled dynamic pattern; not evidence of learning, fitness, new species or asymptotic stability.",
+      "slow_state_location": "environment_fixed_grid",
+      "cue": 0,
+      "toxin": 0,
+      "project_readers_allowed": true
+    }
+  ],
+  "report": "${share_root}/Projects/元胞自动机研究/src/local_learning/README.md",
+  "events": [
+    "${share_root}/Projects/元胞自动机研究/src/runs/jobs/16b3b143-0a79-419c-acfc-fb74ff6ee7dc/events.json",
+    "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b883f316-75ab-4bdc-9fd6-834b4a7cf335/events.json"
+  ]
+}

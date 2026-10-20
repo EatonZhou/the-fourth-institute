@@ -1,0 +1,20 @@
+{
+  "id": "88644365-c43f-4faa-b720-d4d119e4ffac",
+  "name": "d3 embodied local motor learning 7680",
+  "command": [
+    "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+    "-m",
+    "local_learning.embodied_action_learning.run",
+    "run"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "d3-embodied-action-learning-20261019-v1",
+  "status": "running",
+  "created_at": "2026-10-19T09:14:23.105395+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88644365-c43f-4faa-b720-d4d119e4ffac",
+  "pid": 2309936,
+  "manual_pause": false,
+  "create_time": 1792401262.56,
+  "started_at": "2026-10-19T09:14:23.178944+00:00"
+}

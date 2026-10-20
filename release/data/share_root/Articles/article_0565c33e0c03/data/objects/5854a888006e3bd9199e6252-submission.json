@@ -1,0 +1,20 @@
+{
+  "id": "2d40f3c4-19e3-4162-a16a-3829488b76c2",
+  "name": "self_generated_recontact_learning_20261019",
+  "command": [
+    "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+    "-m",
+    "local_learning.self_generated_recontact_learning.run",
+    "run"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "d3-self-generated-recontact-20261019-v1",
+  "status": "running",
+  "created_at": "2026-10-19T02:49:12.198061+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/2d40f3c4-19e3-4162-a16a-3829488b76c2",
+  "pid": 2678722,
+  "manual_pause": false,
+  "create_time": 1792378151.79,
+  "started_at": "2026-10-19T02:49:12.408884+00:00"
+}

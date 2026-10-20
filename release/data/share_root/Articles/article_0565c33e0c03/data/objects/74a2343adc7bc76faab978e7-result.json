@@ -1,0 +1,19 @@
+{
+  "task": "replacement_history_carrier_20261019",
+  "status": "completed",
+  "job": "325b618a-c145-4529-8c24-f93b81d375f5",
+  "attempted": 6664,
+  "committed": 6664,
+  "settled": 6664,
+  "science_native": 6656,
+  "boundary_native": 8,
+  "wall_seconds": 184.41991661896463,
+  "failure": null,
+  "actual_legs": 52,
+  "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/replacement_history_carrier_20261019/325b618a-c145-4529-8c24-f93b81d375f5",
+  "raw_bytes": 151184357,
+  "old_budget_used": 0,
+  "old_acquisition_replayed": 0,
+  "old_future_replayed": 0,
+  "objective_met": false
+}

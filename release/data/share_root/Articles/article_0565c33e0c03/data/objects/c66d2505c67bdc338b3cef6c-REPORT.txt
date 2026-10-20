@@ -1,0 +1,46 @@
+Birth-admission pilot: measured results, hand-specified update rule.
+
+Job 25d2a1e5-91bf-41f6-a27d-1e5e0c8b3266; actual new host steps 52224; elapsed 18.744s; CPU 18.792s; In-script elapsed time times two (excludes runner overhead) 37.488 worker-seconds.
+
+Local histories are extensive n/d carried by executed displacement/death. Newborn history is zero. Completed, paid, locally attributed intake updates only the observed cue. No complement label.
+
+The candidate uses a hand-set innovation-dependent EMA rate. EMA and last are mandatory strong baselines. No outer training was performed. All arms use identical cue-driven movement; only birth admission differs.
+
+The unlocated baseline has 4096 learned-history floats (two cue-specific intake/support time buffers) and 2048 common attribution floats, matching the local model; its cue cursors are additional scalar metadata. It pools completed feedback before storing, never restores position-indexed values.
+
+same adaptive - open: M -0.001371, E +0.023585, body-time -15.634769, uptake +1.617906; uptake positive 4/4.
+
+same adaptive - instant: M +0.875826, E +1.385108, body-time +303.405362, uptake -0.291109; uptake positive 1/4.
+
+same adaptive - ema: M +0.000098, E -0.000866, body-time -10.052868, uptake +0.705601; uptake positive 1/4.
+
+same adaptive - last: M -0.000153, E -0.001646, body-time +33.300536, uptake +0.804411; uptake positive 4/4.
+
+same adaptive - freeze: M +0.001723, E +0.008373, body-time -14.425250, uptake +1.168126; uptake positive 2/4.
+
+same adaptive - global_buffer: M +0.000899, E +0.004910, body-time -6.579187, uptake +0.865435; uptake positive 4/4.
+
+port_swap adaptive - open: M -0.000452, E -0.003627, body-time -11.040800, uptake +0.624950; uptake positive 4/4.
+
+port_swap adaptive - instant: M +0.681937, E +1.088831, body-time +295.505053, uptake -1.349130; uptake positive 1/4.
+
+port_swap adaptive - ema: M -0.000050, E +0.001360, body-time -10.145061, uptake -0.563309; uptake positive 0/4.
+
+port_swap adaptive - last: M +0.000107, E +0.001946, body-time +28.915389, uptake +0.522835; uptake positive 3/4.
+
+port_swap adaptive - freeze: M +0.000229, E +0.001240, body-time -10.905827, uptake -0.071567; uptake positive 0/4.
+
+port_swap adaptive - global_buffer: M +0.000044, E -0.001118, body-time -7.202095, uptake +0.558715; uptake positive 4/4.
+
+All conditions, failed/low-mass branches and costs remain in outcomes.json/per_step.jsonl. This is a dependent small development pilot, not a confirmation test.
+
+Host M20 viability control, common E and global translation remain hand-specified. A useful local gate would not by itself establish learned body maintenance or Lenia learning.
+
+Additional spatial-action ablation (post-pilot, no retuning):
+same: spatial minus uniform same-adaptive mean {'M_end': 0.001272919768593006, 'E_end': 0.008279539013073212, 'body_time': 7.749066034070438, 'uptake': 0.8815403061263289}; positive counts {'M_end': 3, 'E_end': 2, 'body_time': 4, 'uptake': 4} of 4.
+port_swap: spatial minus uniform same-adaptive mean {'M_end': 0.00017316810934353555, 'E_end': 0.0006620838022577402, 'body_time': 7.596090183258184, 'uptake': 0.48931142348966716}; positive counts {'M_end': 4, 'E_end': 3, 'body_time': 4, 'uptake': 4} of 4.
+Uniform uses old-rho-weighted mean gate, not equal realized pre-cap birth amount. Both retain the same spatial payload/update; this isolates action layout, not spatial storage. The separate global-buffer arm is the equal-capacity unlocated-storage comparison.
+Extra gate execution fee is explicitly zero; existing memory package, movement, basal fees, all material rejection and capacity heat are recorded. This is not complete hardware/algorithmic economics.
+At saturation, a spatially uniform multiplier can cancel through M20 renormalization. End M/E often approach the hand-chosen M20 and energy-capacity ceilings; uptake alone is not a maintenance victory.
+Movement is an identical externally prescribed cue-holding controller in every arm. The instantaneous baseline is memory-free only for birth allocation, not for that common movement schedule.
+Joint physical host steps 58561 (d3 58368, ce2 boundary193); runner slot accounting 43.124932/300 worker-seconds.

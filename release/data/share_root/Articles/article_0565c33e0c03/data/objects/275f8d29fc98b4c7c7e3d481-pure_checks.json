@@ -1,0 +1,38 @@
+[
+  {
+    "seed": 202610197501,
+    "arm": "reactor",
+    "initial_contact_mass": 0.0,
+    "outside_cue_exact_zero": true
+  },
+  {
+    "seed": 202610197501,
+    "arm": "fast_delta",
+    "initial_contact_mass": 0.0,
+    "outside_cue_exact_zero": true
+  },
+  {
+    "seed": 202610197501,
+    "arm": "joint_delta",
+    "initial_contact_mass": 0.0,
+    "outside_cue_exact_zero": true
+  },
+  {
+    "seed": 202610197502,
+    "arm": "reactor",
+    "initial_contact_mass": 0.0,
+    "outside_cue_exact_zero": true
+  },
+  {
+    "seed": 202610197502,
+    "arm": "fast_delta",
+    "initial_contact_mass": 0.0,
+    "outside_cue_exact_zero": true
+  },
+  {
+    "seed": 202610197502,
+    "arm": "joint_delta",
+    "initial_contact_mass": 0.0,
+    "outside_cue_exact_zero": true
+  }
+]

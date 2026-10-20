@@ -1,0 +1,59 @@
+{
+  "reviewer": "resident_d3ccfa2d95b7",
+  "native": 0,
+  "personally_viewed": true,
+  "figures": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/acquired_body.png",
+      "sha256": "d7514c667046cc911c37b77b4bfd9b79dc9cae284af984050853364e4b2bfc16",
+      "observation": "全部四父、HU/HD/HB/HC实际256身体。环体非中心经历左侧较厚，孔保留；分离体左侧两簇出现弱连接，HC仍较分离。HB接近两顺序史，非逐数组等价。"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/acquired_energy.png",
+      "sha256": "bb1e45dfed688819d80ce880c7d0c5c9020406bf1a3238636edae33f53537878",
+      "observation": "同16实际256态的胞内E：非中心经历左侧能量较高；胞内E未随公共PF置换，不能把身体差异只叫几何。"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/acquired_precursor.png",
+      "sha256": "f6373583463eacde973f9af52d7d491985f12f29ef6676c83c32d5a507f69b41",
+      "observation": "同16实际256态置换前P；HB/HU/HD与HC余库存不同，不能忽略公共储库的实际移出/注入。"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/acquired_fuel.png",
+      "sha256": "dc95b9ef9c1d408183c70aa686098ac22cb0b13d4b9b09e9bc39a17d9aa91637",
+      "observation": "同16实际256态置换前F；不把取得期资源图差异视为洗净。"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/probe_curves_0.png",
+      "sha256": "efc19cd9a8cf3db8d9d74a4e4030d50cde5c84a9f3d187457221a6f82eb68413",
+      "observation": "该父全部八条共同HC库存未来的M/E/post256/L256实际曲线。环体的旧材料优势不能代替后生留存；分离体三非中心史后生留存高于HC。"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/probe_curves_1.png",
+      "sha256": "c7881c28e9ab5311cb0bd7e7cf6bb2358b19e6521594e896bde3e38ddabbe67b",
+      "observation": "该父全部八条共同HC库存未来的M/E/post256/L256实际曲线。环体的旧材料优势不能代替后生留存；分离体三非中心史后生留存高于HC。"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/probe_curves_2.png",
+      "sha256": "aaa93636ceb3a80ec453ce3ae347d0242a1a112f9332b4de8ba9891b6da5dd8d",
+      "observation": "该父全部八条共同HC库存未来的M/E/post256/L256实际曲线。环体的旧材料优势不能代替后生留存；分离体三非中心史后生留存高于HC。"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/probe_curves_3.png",
+      "sha256": "0429d3d858ef74188045a29979074e204c60a33646eb9ab149db20cefc903f92",
+      "observation": "该父全部八条共同HC库存未来的M/E/post256/L256实际曲线。环体的旧材料优势不能代替后生留存；分离体三非中心史后生留存高于HC。"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/first_parent_probe_U.png",
+      "sha256": "c1608150f215f0fb379775d927c7999fbc399ad8c587bdd4e26ce6fe8d0e105f",
+      "observation": "预定首环体父，U方向，四历史实际256/257/320/384场。保孔并朝资源侧增厚，HB近HU/HD，HC相应侧较薄；未声称看过全部32条动画。"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/first_parent_probe_D.png",
+      "sha256": "4937e9dd730ece2a205f32116214783eac916ec37f04959fb37416ec69acfde1",
+      "observation": "预定首环体父，D方向，四历史实际256/257/320/384场。保孔并朝资源侧增厚，HB近HU/HD，HC相应侧较薄；未声称看过全部32条动画。"
+    }
+  ],
+  "coverage": "10张实际图：全部16取得态四字段、全部32未来标量曲线、预定首环体两方向阶段场。图像不是新物理；crop范围与遗漏质量见visual_crop.json。",
+  "limit": "没有新形态类别、精确等价、全部动画或几何单独因果主张。"
+}

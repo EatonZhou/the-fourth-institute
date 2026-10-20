@@ -1,0 +1,15 @@
+{
+  "native": 4100,
+  "committed": 4100,
+  "settled": 4100,
+  "science": 4096,
+  "boundaries": 4,
+  "worker_seconds": 197.56489,
+  "unused_native": 0,
+  "unused_worker_seconds": 1002.43511,
+  "attempts": 1,
+  "raw_bytes": 142318200,
+  "old_prefix_replay": 0,
+  "old_prefix_native_readonly": 512,
+  "old_budget_used": 0
+}

@@ -1,0 +1,12 @@
+{
+  "outside_frozen_manifest": true,
+  "host_handoff_sha256": "cc1b952d78e5bf0a7177da633f53e6a9908de9e1445f7f5647c096c13cc9107d",
+  "recipient": "resident_d3ccfa2d95b7",
+  "message_id": "msg_b6676dcef6532c3569163e0580e9d1fd",
+  "activation_policy": "enqueue_and_trigger",
+  "shared_instruction": "inst_lin_96cecdc8b7174431e5a1",
+  "shared_matched": true,
+  "d3_steps": 4864,
+  "d3_worker_seconds": 420,
+  "ce2_new_calls_after_handoff": 0
+}

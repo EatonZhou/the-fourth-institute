@@ -1,0 +1,96 @@
+{
+  "parents": [
+    {
+      "id": "202610195601_ring_both",
+      "native": 0,
+      "state_exact": true,
+      "old_tags_exact": true,
+      "OCN_exact": true,
+      "roundtrip": true,
+      "diagnostic_tags_inert": true,
+      "first_old_born_reconstructed_exact": true,
+      "first_expected_gain": 0.0
+    },
+    {
+      "id": "202610195601_ring_birth_gain_only",
+      "native": 0,
+      "state_exact": true,
+      "old_tags_exact": true,
+      "OCN_exact": true,
+      "roundtrip": true,
+      "diagnostic_tags_inert": true,
+      "first_old_born_reconstructed_exact": true,
+      "first_expected_gain": 0.0
+    },
+    {
+      "id": "202610195601_separate_seeds_both",
+      "native": 0,
+      "state_exact": true,
+      "old_tags_exact": true,
+      "OCN_exact": true,
+      "roundtrip": true,
+      "diagnostic_tags_inert": true,
+      "first_old_born_reconstructed_exact": true,
+      "first_expected_gain": 0.0
+    },
+    {
+      "id": "202610195601_separate_seeds_birth_gain_only",
+      "native": 0,
+      "state_exact": true,
+      "old_tags_exact": true,
+      "OCN_exact": true,
+      "roundtrip": true,
+      "diagnostic_tags_inert": true,
+      "first_old_born_reconstructed_exact": true,
+      "first_expected_gain": 0.007580076648899225
+    },
+    {
+      "id": "202610195602_ring_both",
+      "native": 0,
+      "state_exact": true,
+      "old_tags_exact": true,
+      "OCN_exact": true,
+      "roundtrip": true,
+      "diagnostic_tags_inert": true,
+      "first_old_born_reconstructed_exact": true,
+      "first_expected_gain": 0.0011866487675343679
+    },
+    {
+      "id": "202610195602_ring_birth_gain_only",
+      "native": 0,
+      "state_exact": true,
+      "old_tags_exact": true,
+      "OCN_exact": true,
+      "roundtrip": true,
+      "diagnostic_tags_inert": true,
+      "first_old_born_reconstructed_exact": true,
+      "first_expected_gain": 0.0
+    },
+    {
+      "id": "202610195602_separate_seeds_both",
+      "native": 0,
+      "state_exact": true,
+      "old_tags_exact": true,
+      "OCN_exact": true,
+      "roundtrip": true,
+      "diagnostic_tags_inert": true,
+      "first_old_born_reconstructed_exact": true,
+      "first_expected_gain": 0.0
+    },
+    {
+      "id": "202610195602_separate_seeds_birth_gain_only",
+      "native": 0,
+      "state_exact": true,
+      "old_tags_exact": true,
+      "OCN_exact": true,
+      "roundtrip": true,
+      "diagnostic_tags_inert": true,
+      "first_old_born_reconstructed_exact": true,
+      "first_expected_gain": 0.0
+    }
+  ],
+  "native": 0,
+  "strict_ties": true,
+  "disabled": true,
+  "fuel_zero_no_clipping": true
+}

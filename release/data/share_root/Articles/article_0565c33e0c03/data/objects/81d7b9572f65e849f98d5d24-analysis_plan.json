@@ -1,0 +1,1307 @@
+{
+  "schema": "experience-rule-initial-factorial-plan.v1",
+  "shared_key": "research.experience_rule_initial_factorial_20261018",
+  "request_key": "ce2-experience-rule-initial-factorial-20261018-v1",
+  "body_budget": 1792,
+  "stages": [
+    {
+      "id": "factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1/formation",
+      "candidate_id": "factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1",
+      "stage": "formation",
+      "start": 0,
+      "end": 128,
+      "body_steps": 128,
+      "transport": "T00",
+      "pulses": [],
+      "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/candidates/factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1.npz",
+      "source_sha256": "9bcb6a35e77bde746492ba93ad02c4fe40220006fba1af8c6df5894c84ebeab5"
+    },
+    {
+      "id": "factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1/naive/acquisition",
+      "candidate_id": "factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1",
+      "stage": "acquisition",
+      "history": "naive",
+      "parent": "factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1/formation",
+      "start": 128,
+      "end": 160,
+      "body_steps": 32,
+      "transport": "T11",
+      "pulses": []
+    },
+    {
+      "id": "factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1/naive/none",
+      "candidate_id": "factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1",
+      "stage": "future",
+      "history": "naive",
+      "challenge": "none",
+      "parent": "factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1/naive/acquisition",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "transport": "T11",
+      "pulses": []
+    },
+    {
+      "id": "factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1/naive/x",
+      "candidate_id": "factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1",
+      "stage": "future",
+      "history": "naive",
+      "challenge": "x",
+      "parent": "factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1/naive/acquisition",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "transport": "T11",
+      "pulses": [
+        {
+          "before_step": 161,
+          "fraction": 0.2,
+          "direction": "+x"
+        }
+      ]
+    },
+    {
+      "id": "factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1/experienced/acquisition",
+      "candidate_id": "factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1",
+      "stage": "acquisition",
+      "history": "experienced",
+      "parent": "factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1/formation",
+      "start": 128,
+      "end": 160,
+      "body_steps": 32,
+      "transport": "T11",
+      "pulses": [
+        {
+          "before_step": 129,
+          "fraction": 0.1,
+          "direction": "+x"
+        },
+        {
+          "before_step": 145,
+          "fraction": 0.1,
+          "direction": "+x"
+        }
+      ]
+    },
+    {
+      "id": "factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1/experienced/none",
+      "candidate_id": "factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1",
+      "stage": "future",
+      "history": "experienced",
+      "challenge": "none",
+      "parent": "factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1/experienced/acquisition",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "transport": "T11",
+      "pulses": []
+    },
+    {
+      "id": "factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1/experienced/x",
+      "candidate_id": "factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1",
+      "stage": "future",
+      "history": "experienced",
+      "challenge": "x",
+      "parent": "factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1/experienced/acquisition",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "transport": "T11",
+      "pulses": [
+        {
+          "before_step": 161,
+          "fraction": 0.2,
+          "direction": "+x"
+        }
+      ]
+    },
+    {
+      "id": "factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e/formation",
+      "candidate_id": "factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e",
+      "stage": "formation",
+      "start": 0,
+      "end": 128,
+      "body_steps": 128,
+      "transport": "T00",
+      "pulses": [],
+      "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/candidates/factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e.npz",
+      "source_sha256": "f6722aa1fbb1fd3fc68a55d6151a4b11fd9489bde6c5df67d85b0f6289eb351c"
+    },
+    {
+      "id": "factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e/naive/acquisition",
+      "candidate_id": "factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e",
+      "stage": "acquisition",
+      "history": "naive",
+      "parent": "factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e/formation",
+      "start": 128,
+      "end": 160,
+      "body_steps": 32,
+      "transport": "T11",
+      "pulses": []
+    },
+    {
+      "id": "factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e/naive/none",
+      "candidate_id": "factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e",
+      "stage": "future",
+      "history": "naive",
+      "challenge": "none",
+      "parent": "factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e/naive/acquisition",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "transport": "T11",
+      "pulses": []
+    },
+    {
+      "id": "factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e/naive/x",
+      "candidate_id": "factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e",
+      "stage": "future",
+      "history": "naive",
+      "challenge": "x",
+      "parent": "factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e/naive/acquisition",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "transport": "T11",
+      "pulses": [
+        {
+          "before_step": 161,
+          "fraction": 0.2,
+          "direction": "+x"
+        }
+      ]
+    },
+    {
+      "id": "factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e/experienced/acquisition",
+      "candidate_id": "factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e",
+      "stage": "acquisition",
+      "history": "experienced",
+      "parent": "factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e/formation",
+      "start": 128,
+      "end": 160,
+      "body_steps": 32,
+      "transport": "T11",
+      "pulses": [
+        {
+          "before_step": 129,
+          "fraction": 0.1,
+          "direction": "+x"
+        },
+        {
+          "before_step": 145,
+          "fraction": 0.1,
+          "direction": "+x"
+        }
+      ]
+    },
+    {
+      "id": "factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e/experienced/none",
+      "candidate_id": "factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e",
+      "stage": "future",
+      "history": "experienced",
+      "challenge": "none",
+      "parent": "factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e/experienced/acquisition",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "transport": "T11",
+      "pulses": []
+    },
+    {
+      "id": "factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e/experienced/x",
+      "candidate_id": "factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e",
+      "stage": "future",
+      "history": "experienced",
+      "challenge": "x",
+      "parent": "factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e/experienced/acquisition",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "transport": "T11",
+      "pulses": [
+        {
+          "before_step": 161,
+          "fraction": 0.2,
+          "direction": "+x"
+        }
+      ]
+    },
+    {
+      "id": "factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423/formation",
+      "candidate_id": "factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423",
+      "stage": "formation",
+      "start": 0,
+      "end": 128,
+      "body_steps": 128,
+      "transport": "T00",
+      "pulses": [],
+      "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/candidates/factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423.npz",
+      "source_sha256": "c5f3d7dc36377b6ff0faaded0f34e2560b74cc225cfae067780e50e08957b962"
+    },
+    {
+      "id": "factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423/naive/acquisition",
+      "candidate_id": "factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423",
+      "stage": "acquisition",
+      "history": "naive",
+      "parent": "factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423/formation",
+      "start": 128,
+      "end": 160,
+      "body_steps": 32,
+      "transport": "T11",
+      "pulses": []
+    },
+    {
+      "id": "factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423/naive/none",
+      "candidate_id": "factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423",
+      "stage": "future",
+      "history": "naive",
+      "challenge": "none",
+      "parent": "factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423/naive/acquisition",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "transport": "T11",
+      "pulses": []
+    },
+    {
+      "id": "factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423/naive/x",
+      "candidate_id": "factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423",
+      "stage": "future",
+      "history": "naive",
+      "challenge": "x",
+      "parent": "factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423/naive/acquisition",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "transport": "T11",
+      "pulses": [
+        {
+          "before_step": 161,
+          "fraction": 0.2,
+          "direction": "+x"
+        }
+      ]
+    },
+    {
+      "id": "factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423/experienced/acquisition",
+      "candidate_id": "factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423",
+      "stage": "acquisition",
+      "history": "experienced",
+      "parent": "factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423/formation",
+      "start": 128,
+      "end": 160,
+      "body_steps": 32,
+      "transport": "T11",
+      "pulses": [
+        {
+          "before_step": 129,
+          "fraction": 0.1,
+          "direction": "+x"
+        },
+        {
+          "before_step": 145,
+          "fraction": 0.1,
+          "direction": "+x"
+        }
+      ]
+    },
+    {
+      "id": "factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423/experienced/none",
+      "candidate_id": "factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423",
+      "stage": "future",
+      "history": "experienced",
+      "challenge": "none",
+      "parent": "factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423/experienced/acquisition",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "transport": "T11",
+      "pulses": []
+    },
+    {
+      "id": "factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423/experienced/x",
+      "candidate_id": "factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423",
+      "stage": "future",
+      "history": "experienced",
+      "challenge": "x",
+      "parent": "factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423/experienced/acquisition",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "transport": "T11",
+      "pulses": [
+        {
+          "before_step": 161,
+          "fraction": 0.2,
+          "direction": "+x"
+        }
+      ]
+    },
+    {
+      "id": "factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e/formation",
+      "candidate_id": "factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e",
+      "stage": "formation",
+      "start": 0,
+      "end": 128,
+      "body_steps": 128,
+      "transport": "T00",
+      "pulses": [],
+      "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/candidates/factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e.npz",
+      "source_sha256": "06580223101081fbe20fc7d936791f5e4f55f44642408cb7a2e29ff2466bd859"
+    },
+    {
+      "id": "factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e/naive/acquisition",
+      "candidate_id": "factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e",
+      "stage": "acquisition",
+      "history": "naive",
+      "parent": "factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e/formation",
+      "start": 128,
+      "end": 160,
+      "body_steps": 32,
+      "transport": "T11",
+      "pulses": []
+    },
+    {
+      "id": "factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e/naive/none",
+      "candidate_id": "factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e",
+      "stage": "future",
+      "history": "naive",
+      "challenge": "none",
+      "parent": "factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e/naive/acquisition",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "transport": "T11",
+      "pulses": []
+    },
+    {
+      "id": "factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e/naive/x",
+      "candidate_id": "factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e",
+      "stage": "future",
+      "history": "naive",
+      "challenge": "x",
+      "parent": "factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e/naive/acquisition",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "transport": "T11",
+      "pulses": [
+        {
+          "before_step": 161,
+          "fraction": 0.2,
+          "direction": "+x"
+        }
+      ]
+    },
+    {
+      "id": "factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e/experienced/acquisition",
+      "candidate_id": "factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e",
+      "stage": "acquisition",
+      "history": "experienced",
+      "parent": "factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e/formation",
+      "start": 128,
+      "end": 160,
+      "body_steps": 32,
+      "transport": "T11",
+      "pulses": [
+        {
+          "before_step": 129,
+          "fraction": 0.1,
+          "direction": "+x"
+        },
+        {
+          "before_step": 145,
+          "fraction": 0.1,
+          "direction": "+x"
+        }
+      ]
+    },
+    {
+      "id": "factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e/experienced/none",
+      "candidate_id": "factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e",
+      "stage": "future",
+      "history": "experienced",
+      "challenge": "none",
+      "parent": "factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e/experienced/acquisition",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "transport": "T11",
+      "pulses": []
+    },
+    {
+      "id": "factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e/experienced/x",
+      "candidate_id": "factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e",
+      "stage": "future",
+      "history": "experienced",
+      "challenge": "x",
+      "parent": "factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e/experienced/acquisition",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "transport": "T11",
+      "pulses": [
+        {
+          "before_step": 161,
+          "fraction": 0.2,
+          "direction": "+x"
+        }
+      ]
+    },
+    {
+      "id": "genome_93e6148d32bbb0862163/formation",
+      "candidate_id": "genome_93e6148d32bbb0862163",
+      "stage": "formation",
+      "start": 0,
+      "end": 128,
+      "body_steps": 128,
+      "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/candidates/genome_93e6148d32bbb0862163.npz",
+      "transport": "T00",
+      "parent": null,
+      "source_sha256": "cfc25c642daa522c210b790b44ef1ac6ac9251e4d479a4ffd0e185d2e953aeeb"
+    },
+    {
+      "id": "genome_93e6148d32bbb0862163/naive/acquisition",
+      "candidate_id": "genome_93e6148d32bbb0862163",
+      "stage": "acquisition",
+      "history": "naive",
+      "start": 128,
+      "end": 160,
+      "body_steps": 32,
+      "parent": "genome_93e6148d32bbb0862163/formation",
+      "transport": "T11",
+      "pulses": []
+    },
+    {
+      "id": "genome_93e6148d32bbb0862163/naive/none",
+      "candidate_id": "genome_93e6148d32bbb0862163",
+      "stage": "future",
+      "history": "naive",
+      "challenge": "none",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "parent": "genome_93e6148d32bbb0862163/naive/acquisition",
+      "transport": "T11",
+      "pulses": []
+    },
+    {
+      "id": "genome_93e6148d32bbb0862163/naive/x",
+      "candidate_id": "genome_93e6148d32bbb0862163",
+      "stage": "future",
+      "history": "naive",
+      "challenge": "x",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "parent": "genome_93e6148d32bbb0862163/naive/acquisition",
+      "transport": "T11",
+      "pulses": [
+        {
+          "before_step": 161,
+          "fraction": 0.2,
+          "direction": "+x"
+        }
+      ]
+    },
+    {
+      "id": "genome_93e6148d32bbb0862163/experienced/acquisition",
+      "candidate_id": "genome_93e6148d32bbb0862163",
+      "stage": "acquisition",
+      "history": "experienced",
+      "start": 128,
+      "end": 160,
+      "body_steps": 32,
+      "parent": "genome_93e6148d32bbb0862163/formation",
+      "transport": "T11",
+      "pulses": [
+        {
+          "before_step": 129,
+          "fraction": 0.1,
+          "direction": "+x"
+        },
+        {
+          "before_step": 145,
+          "fraction": 0.1,
+          "direction": "+x"
+        }
+      ]
+    },
+    {
+      "id": "genome_93e6148d32bbb0862163/experienced/none",
+      "candidate_id": "genome_93e6148d32bbb0862163",
+      "stage": "future",
+      "history": "experienced",
+      "challenge": "none",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "parent": "genome_93e6148d32bbb0862163/experienced/acquisition",
+      "transport": "T11",
+      "pulses": []
+    },
+    {
+      "id": "genome_93e6148d32bbb0862163/experienced/x",
+      "candidate_id": "genome_93e6148d32bbb0862163",
+      "stage": "future",
+      "history": "experienced",
+      "challenge": "x",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "parent": "genome_93e6148d32bbb0862163/experienced/acquisition",
+      "transport": "T11",
+      "pulses": [
+        {
+          "before_step": 161,
+          "fraction": 0.2,
+          "direction": "+x"
+        }
+      ]
+    },
+    {
+      "id": "genome_d02e7f60565f83066e5d/formation",
+      "candidate_id": "genome_d02e7f60565f83066e5d",
+      "stage": "formation",
+      "start": 0,
+      "end": 128,
+      "body_steps": 128,
+      "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/candidates/genome_d02e7f60565f83066e5d.npz",
+      "transport": "T00",
+      "parent": null,
+      "source_sha256": "ff37d942c7168eeb4832aa42f0f94d14ceaa86ca8e454741efe4a183e049a185"
+    },
+    {
+      "id": "genome_d02e7f60565f83066e5d/naive/acquisition",
+      "candidate_id": "genome_d02e7f60565f83066e5d",
+      "stage": "acquisition",
+      "history": "naive",
+      "start": 128,
+      "end": 160,
+      "body_steps": 32,
+      "parent": "genome_d02e7f60565f83066e5d/formation",
+      "transport": "T11",
+      "pulses": []
+    },
+    {
+      "id": "genome_d02e7f60565f83066e5d/naive/none",
+      "candidate_id": "genome_d02e7f60565f83066e5d",
+      "stage": "future",
+      "history": "naive",
+      "challenge": "none",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "parent": "genome_d02e7f60565f83066e5d/naive/acquisition",
+      "transport": "T11",
+      "pulses": []
+    },
+    {
+      "id": "genome_d02e7f60565f83066e5d/naive/x",
+      "candidate_id": "genome_d02e7f60565f83066e5d",
+      "stage": "future",
+      "history": "naive",
+      "challenge": "x",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "parent": "genome_d02e7f60565f83066e5d/naive/acquisition",
+      "transport": "T11",
+      "pulses": [
+        {
+          "before_step": 161,
+          "fraction": 0.2,
+          "direction": "+x"
+        }
+      ]
+    },
+    {
+      "id": "genome_d02e7f60565f83066e5d/experienced/acquisition",
+      "candidate_id": "genome_d02e7f60565f83066e5d",
+      "stage": "acquisition",
+      "history": "experienced",
+      "start": 128,
+      "end": 160,
+      "body_steps": 32,
+      "parent": "genome_d02e7f60565f83066e5d/formation",
+      "transport": "T11",
+      "pulses": [
+        {
+          "before_step": 129,
+          "fraction": 0.1,
+          "direction": "+x"
+        },
+        {
+          "before_step": 145,
+          "fraction": 0.1,
+          "direction": "+x"
+        }
+      ]
+    },
+    {
+      "id": "genome_d02e7f60565f83066e5d/experienced/none",
+      "candidate_id": "genome_d02e7f60565f83066e5d",
+      "stage": "future",
+      "history": "experienced",
+      "challenge": "none",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "parent": "genome_d02e7f60565f83066e5d/experienced/acquisition",
+      "transport": "T11",
+      "pulses": []
+    },
+    {
+      "id": "genome_d02e7f60565f83066e5d/experienced/x",
+      "candidate_id": "genome_d02e7f60565f83066e5d",
+      "stage": "future",
+      "history": "experienced",
+      "challenge": "x",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "parent": "genome_d02e7f60565f83066e5d/experienced/acquisition",
+      "transport": "T11",
+      "pulses": [
+        {
+          "before_step": 161,
+          "fraction": 0.2,
+          "direction": "+x"
+        }
+      ]
+    },
+    {
+      "id": "genome_8d60f7d250e8e9f2a25b/formation",
+      "candidate_id": "genome_8d60f7d250e8e9f2a25b",
+      "stage": "formation",
+      "start": 0,
+      "end": 128,
+      "body_steps": 128,
+      "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/candidates/genome_8d60f7d250e8e9f2a25b.npz",
+      "transport": "T00",
+      "parent": null,
+      "source_sha256": "3fae7135bd9572011a4cdbf2bf174e96832481bca6f1de24277fc8894ea0d4a1"
+    },
+    {
+      "id": "genome_8d60f7d250e8e9f2a25b/naive/acquisition",
+      "candidate_id": "genome_8d60f7d250e8e9f2a25b",
+      "stage": "acquisition",
+      "history": "naive",
+      "start": 128,
+      "end": 160,
+      "body_steps": 32,
+      "parent": "genome_8d60f7d250e8e9f2a25b/formation",
+      "transport": "T11",
+      "pulses": []
+    },
+    {
+      "id": "genome_8d60f7d250e8e9f2a25b/naive/none",
+      "candidate_id": "genome_8d60f7d250e8e9f2a25b",
+      "stage": "future",
+      "history": "naive",
+      "challenge": "none",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "parent": "genome_8d60f7d250e8e9f2a25b/naive/acquisition",
+      "transport": "T11",
+      "pulses": []
+    },
+    {
+      "id": "genome_8d60f7d250e8e9f2a25b/naive/x",
+      "candidate_id": "genome_8d60f7d250e8e9f2a25b",
+      "stage": "future",
+      "history": "naive",
+      "challenge": "x",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "parent": "genome_8d60f7d250e8e9f2a25b/naive/acquisition",
+      "transport": "T11",
+      "pulses": [
+        {
+          "before_step": 161,
+          "fraction": 0.2,
+          "direction": "+x"
+        }
+      ]
+    },
+    {
+      "id": "genome_8d60f7d250e8e9f2a25b/experienced/acquisition",
+      "candidate_id": "genome_8d60f7d250e8e9f2a25b",
+      "stage": "acquisition",
+      "history": "experienced",
+      "start": 128,
+      "end": 160,
+      "body_steps": 32,
+      "parent": "genome_8d60f7d250e8e9f2a25b/formation",
+      "transport": "T11",
+      "pulses": [
+        {
+          "before_step": 129,
+          "fraction": 0.1,
+          "direction": "+x"
+        },
+        {
+          "before_step": 145,
+          "fraction": 0.1,
+          "direction": "+x"
+        }
+      ]
+    },
+    {
+      "id": "genome_8d60f7d250e8e9f2a25b/experienced/none",
+      "candidate_id": "genome_8d60f7d250e8e9f2a25b",
+      "stage": "future",
+      "history": "experienced",
+      "challenge": "none",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "parent": "genome_8d60f7d250e8e9f2a25b/experienced/acquisition",
+      "transport": "T11",
+      "pulses": []
+    },
+    {
+      "id": "genome_8d60f7d250e8e9f2a25b/experienced/x",
+      "candidate_id": "genome_8d60f7d250e8e9f2a25b",
+      "stage": "future",
+      "history": "experienced",
+      "challenge": "x",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "parent": "genome_8d60f7d250e8e9f2a25b/experienced/acquisition",
+      "transport": "T11",
+      "pulses": [
+        {
+          "before_step": 161,
+          "fraction": 0.2,
+          "direction": "+x"
+        }
+      ]
+    },
+    {
+      "id": "genome_a6a821dffd4f4046c97a/formation",
+      "candidate_id": "genome_a6a821dffd4f4046c97a",
+      "stage": "formation",
+      "start": 0,
+      "end": 128,
+      "body_steps": 128,
+      "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/candidates/genome_a6a821dffd4f4046c97a.npz",
+      "transport": "T00",
+      "parent": null,
+      "source_sha256": "7efd847ad3efa0db001afe56a162b297d3a536ec48326890d4b09b6ceb793b4a"
+    },
+    {
+      "id": "genome_a6a821dffd4f4046c97a/naive/acquisition",
+      "candidate_id": "genome_a6a821dffd4f4046c97a",
+      "stage": "acquisition",
+      "history": "naive",
+      "start": 128,
+      "end": 160,
+      "body_steps": 32,
+      "parent": "genome_a6a821dffd4f4046c97a/formation",
+      "transport": "T11",
+      "pulses": []
+    },
+    {
+      "id": "genome_a6a821dffd4f4046c97a/naive/none",
+      "candidate_id": "genome_a6a821dffd4f4046c97a",
+      "stage": "future",
+      "history": "naive",
+      "challenge": "none",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "parent": "genome_a6a821dffd4f4046c97a/naive/acquisition",
+      "transport": "T11",
+      "pulses": []
+    },
+    {
+      "id": "genome_a6a821dffd4f4046c97a/naive/x",
+      "candidate_id": "genome_a6a821dffd4f4046c97a",
+      "stage": "future",
+      "history": "naive",
+      "challenge": "x",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "parent": "genome_a6a821dffd4f4046c97a/naive/acquisition",
+      "transport": "T11",
+      "pulses": [
+        {
+          "before_step": 161,
+          "fraction": 0.2,
+          "direction": "+x"
+        }
+      ]
+    },
+    {
+      "id": "genome_a6a821dffd4f4046c97a/experienced/acquisition",
+      "candidate_id": "genome_a6a821dffd4f4046c97a",
+      "stage": "acquisition",
+      "history": "experienced",
+      "start": 128,
+      "end": 160,
+      "body_steps": 32,
+      "parent": "genome_a6a821dffd4f4046c97a/formation",
+      "transport": "T11",
+      "pulses": [
+        {
+          "before_step": 129,
+          "fraction": 0.1,
+          "direction": "+x"
+        },
+        {
+          "before_step": 145,
+          "fraction": 0.1,
+          "direction": "+x"
+        }
+      ]
+    },
+    {
+      "id": "genome_a6a821dffd4f4046c97a/experienced/none",
+      "candidate_id": "genome_a6a821dffd4f4046c97a",
+      "stage": "future",
+      "history": "experienced",
+      "challenge": "none",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "parent": "genome_a6a821dffd4f4046c97a/experienced/acquisition",
+      "transport": "T11",
+      "pulses": []
+    },
+    {
+      "id": "genome_a6a821dffd4f4046c97a/experienced/x",
+      "candidate_id": "genome_a6a821dffd4f4046c97a",
+      "stage": "future",
+      "history": "experienced",
+      "challenge": "x",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "parent": "genome_a6a821dffd4f4046c97a/experienced/acquisition",
+      "transport": "T11",
+      "pulses": [
+        {
+          "before_step": 161,
+          "fraction": 0.2,
+          "direction": "+x"
+        }
+      ]
+    }
+  ],
+  "candidates": [
+    {
+      "id": "factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1",
+      "candidate_id": "factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1",
+      "family": "compact",
+      "slot": "compact__offspring_rule_parent_initial",
+      "rule_source": "genome_8d60f7d250e8e9f2a25b",
+      "initial_source": "genome_93e6148d32bbb0862163",
+      "rule_source_sha256": "3fae7135bd9572011a4cdbf2bf174e96832481bca6f1de24277fc8894ea0d4a1",
+      "initial_source_sha256": "cfc25c642daa522c210b790b44ef1ac6ac9251e4d479a4ffd0e185d2e953aeeb",
+      "identity_sha256": "f6e408a330c8d3b15888d1e0c8fc785bf5430886c129c74d5632de0130b95299",
+      "lineage": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/lineage/factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1.json",
+      "snapshot": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/candidates/factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1.npz",
+      "snapshot_sha256": "9bcb6a35e77bde746492ba93ad02c4fe40220006fba1af8c6df5894c84ebeab5",
+      "snapshot_schema": "experience-adaptation-life0.v1",
+      "reference96": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/references/genome_93e6148d32bbb0862163-embedded-life0.npz",
+      "reference96_sha256": "472e50b1c73e7cbfe4b68d73aaaf1e906d4544696d3a9f120ede04124626f9ec",
+      "body_rule_sha256": "68d2a5053526e83c80258af0f40eb9cb375732dcc9e665fea111c66ef3748d8d",
+      "config_sha256": "06e7ab4b056264a2f54eb3e85d5dcdcdd5d03ea514abbae0c0c552c0c3547b89",
+      "loader": "environment_evolution.experience_adaptation_host.open_life0",
+      "initial_M": 71.24861043657577,
+      "initial_E": 56.998888349260625,
+      "state_time": 0,
+      "shape": [
+        96,
+        96
+      ],
+      "evaluation_status": "unexecuted",
+      "scope": "rule package versus neutral initial-state package including energy spatial distribution",
+      "factorial_family": "compact",
+      "factorial_cell": "R1I0",
+      "execution_source": "new"
+    },
+    {
+      "id": "genome_93e6148d32bbb0862163",
+      "snapshot": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/candidates/genome_93e6148d32bbb0862163.npz",
+      "snapshot_sha256": "cfc25c642daa522c210b790b44ef1ac6ac9251e4d479a4ffd0e185d2e953aeeb",
+      "genome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/genomes/genome_93e6148d32bbb0862163.json",
+      "genome_sha256": "09bf2462010cb3e2041e06a9f04ae21c51e2a162e561c3d4adf1ba4bce23e2d5",
+      "reference96": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/references/genome_93e6148d32bbb0862163-embedded-life0.npz",
+      "reference96_sha256": "472e50b1c73e7cbfe4b68d73aaaf1e906d4544696d3a9f120ede04124626f9ec",
+      "factorial_family": "compact",
+      "factorial_cell": "R0I0",
+      "execution_source": "old_reference"
+    },
+    {
+      "id": "genome_8d60f7d250e8e9f2a25b",
+      "snapshot": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/candidates/genome_8d60f7d250e8e9f2a25b.npz",
+      "snapshot_sha256": "3fae7135bd9572011a4cdbf2bf174e96832481bca6f1de24277fc8894ea0d4a1",
+      "genome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/genomes/genome_8d60f7d250e8e9f2a25b.json",
+      "genome_sha256": "4c2cb8f434927c3c754e788ba270001e9b295fe1acd4f1fc715a422b6829d33e",
+      "reference96": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/references/genome_93e6148d32bbb0862163-embedded-life0.npz",
+      "reference96_sha256": "472e50b1c73e7cbfe4b68d73aaaf1e906d4544696d3a9f120ede04124626f9ec",
+      "factorial_family": "compact",
+      "factorial_cell": "R1I1",
+      "execution_source": "old_reference"
+    },
+    {
+      "id": "factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e",
+      "candidate_id": "factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e",
+      "family": "compact",
+      "slot": "compact__parent_rule_offspring_initial",
+      "rule_source": "genome_93e6148d32bbb0862163",
+      "initial_source": "genome_8d60f7d250e8e9f2a25b",
+      "rule_source_sha256": "cfc25c642daa522c210b790b44ef1ac6ac9251e4d479a4ffd0e185d2e953aeeb",
+      "initial_source_sha256": "3fae7135bd9572011a4cdbf2bf174e96832481bca6f1de24277fc8894ea0d4a1",
+      "identity_sha256": "1f52bcc754bf012ededb0ecd649410c564cc89e4570f3aa00f87c23e118e820f",
+      "lineage": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/lineage/factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e.json",
+      "snapshot": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/candidates/factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e.npz",
+      "snapshot_sha256": "f6722aa1fbb1fd3fc68a55d6151a4b11fd9489bde6c5df67d85b0f6289eb351c",
+      "snapshot_schema": "experience-adaptation-life0.v1",
+      "reference96": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/references/genome_93e6148d32bbb0862163-embedded-life0.npz",
+      "reference96_sha256": "472e50b1c73e7cbfe4b68d73aaaf1e906d4544696d3a9f120ede04124626f9ec",
+      "body_rule_sha256": "52aab565cd92b01752bba60e165d935eccd17f41a00cace6f78ace57317aec4d",
+      "config_sha256": "52e0a1d5e0275852f1c7f772a34ed129f02d7a1582c8e27f391a8e14c163cc7b",
+      "loader": "environment_evolution.experience_adaptation_host.open_life0",
+      "initial_M": 71.24861043657577,
+      "initial_E": 56.99888834926063,
+      "state_time": 0,
+      "shape": [
+        96,
+        96
+      ],
+      "evaluation_status": "unexecuted",
+      "scope": "rule package versus neutral initial-state package including energy spatial distribution",
+      "factorial_family": "compact",
+      "factorial_cell": "R0I1",
+      "execution_source": "new"
+    },
+    {
+      "id": "factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423",
+      "candidate_id": "factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423",
+      "family": "multi_ring",
+      "slot": "multi_ring__offspring_rule_parent_initial",
+      "rule_source": "genome_a6a821dffd4f4046c97a",
+      "initial_source": "genome_d02e7f60565f83066e5d",
+      "rule_source_sha256": "7efd847ad3efa0db001afe56a162b297d3a536ec48326890d4b09b6ceb793b4a",
+      "initial_source_sha256": "ff37d942c7168eeb4832aa42f0f94d14ceaa86ca8e454741efe4a183e049a185",
+      "identity_sha256": "708df58caddc44235b06ad0b20fb27f3e0958d45e04ff7517d2bbced226b9a4a",
+      "lineage": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/lineage/factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423.json",
+      "snapshot": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/candidates/factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423.npz",
+      "snapshot_sha256": "c5f3d7dc36377b6ff0faaded0f34e2560b74cc225cfae067780e50e08957b962",
+      "snapshot_schema": "experience-adaptation-life0.v1",
+      "reference96": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/references/genome_d02e7f60565f83066e5d-embedded-life0.npz",
+      "reference96_sha256": "c5f8ab0600edafb27bd5bb9e99796c2e66c4af059171835762542972d8f5a17a",
+      "body_rule_sha256": "36cf71ce6850857e75cfbd0b08e55d4e4c5d63abea1813e4449f19999d044cc8",
+      "config_sha256": "2b67ae5dc055fdad43273ecdb1198c53b373c0389d6a56e589efcfe98b4f34bb",
+      "loader": "environment_evolution.experience_adaptation_host.open_life0",
+      "initial_M": 71.24861043657577,
+      "initial_E": 56.99888834926062,
+      "state_time": 0,
+      "shape": [
+        96,
+        96
+      ],
+      "evaluation_status": "unexecuted",
+      "scope": "rule package versus neutral initial-state package including energy spatial distribution",
+      "factorial_family": "multi_ring",
+      "factorial_cell": "R1I0",
+      "execution_source": "new"
+    },
+    {
+      "id": "genome_d02e7f60565f83066e5d",
+      "snapshot": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/candidates/genome_d02e7f60565f83066e5d.npz",
+      "snapshot_sha256": "ff37d942c7168eeb4832aa42f0f94d14ceaa86ca8e454741efe4a183e049a185",
+      "genome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/genomes/genome_d02e7f60565f83066e5d.json",
+      "genome_sha256": "58891d508dbd892ad6fd2adc95b0416a250ba80b428139d4c1f7eb4d720cb507",
+      "reference96": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/references/genome_d02e7f60565f83066e5d-embedded-life0.npz",
+      "reference96_sha256": "c5f8ab0600edafb27bd5bb9e99796c2e66c4af059171835762542972d8f5a17a",
+      "factorial_family": "multi_ring",
+      "factorial_cell": "R0I0",
+      "execution_source": "old_reference"
+    },
+    {
+      "id": "genome_a6a821dffd4f4046c97a",
+      "snapshot": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/candidates/genome_a6a821dffd4f4046c97a.npz",
+      "snapshot_sha256": "7efd847ad3efa0db001afe56a162b297d3a536ec48326890d4b09b6ceb793b4a",
+      "genome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/genomes/genome_a6a821dffd4f4046c97a.json",
+      "genome_sha256": "b788fa270a4c40f0e8a67f7efb304c40ef3133566e0a1d682a11d80948c907ad",
+      "reference96": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/references/genome_d02e7f60565f83066e5d-embedded-life0.npz",
+      "reference96_sha256": "c5f8ab0600edafb27bd5bb9e99796c2e66c4af059171835762542972d8f5a17a",
+      "factorial_family": "multi_ring",
+      "factorial_cell": "R1I1",
+      "execution_source": "old_reference"
+    },
+    {
+      "id": "factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e",
+      "candidate_id": "factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e",
+      "family": "multi_ring",
+      "slot": "multi_ring__parent_rule_offspring_initial",
+      "rule_source": "genome_d02e7f60565f83066e5d",
+      "initial_source": "genome_a6a821dffd4f4046c97a",
+      "rule_source_sha256": "ff37d942c7168eeb4832aa42f0f94d14ceaa86ca8e454741efe4a183e049a185",
+      "initial_source_sha256": "7efd847ad3efa0db001afe56a162b297d3a536ec48326890d4b09b6ceb793b4a",
+      "identity_sha256": "a48f1041422aca0ebaff2c9e356401c216d702d546ef80e33b678211c3e9941b",
+      "lineage": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/lineage/factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e.json",
+      "snapshot": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/candidates/factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e.npz",
+      "snapshot_sha256": "06580223101081fbe20fc7d936791f5e4f55f44642408cb7a2e29ff2466bd859",
+      "snapshot_schema": "experience-adaptation-life0.v1",
+      "reference96": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/references/genome_d02e7f60565f83066e5d-embedded-life0.npz",
+      "reference96_sha256": "c5f8ab0600edafb27bd5bb9e99796c2e66c4af059171835762542972d8f5a17a",
+      "body_rule_sha256": "5be6f88188a01cb1f15099b7df122cf35c77ab18391979f9b1091cede60c6536",
+      "config_sha256": "27f87b0cbb6bdcd7581ef2ebb92abe93f0c9973d4b149819505c9a0f7353cc88",
+      "loader": "environment_evolution.experience_adaptation_host.open_life0",
+      "initial_M": 71.24861043657577,
+      "initial_E": 56.99888834926062,
+      "state_time": 0,
+      "shape": [
+        96,
+        96
+      ],
+      "evaluation_status": "unexecuted",
+      "scope": "rule package versus neutral initial-state package including energy spatial distribution",
+      "factorial_family": "multi_ring",
+      "factorial_cell": "R0I1",
+      "execution_source": "new"
+    }
+  ],
+  "controls": [
+    {
+      "id": "genome_93e6148d32bbb0862163",
+      "snapshot": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/candidates/genome_93e6148d32bbb0862163.npz",
+      "snapshot_sha256": "cfc25c642daa522c210b790b44ef1ac6ac9251e4d479a4ffd0e185d2e953aeeb",
+      "genome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/genomes/genome_93e6148d32bbb0862163.json",
+      "genome_sha256": "09bf2462010cb3e2041e06a9f04ae21c51e2a162e561c3d4adf1ba4bce23e2d5",
+      "reference96": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/references/genome_93e6148d32bbb0862163-embedded-life0.npz",
+      "reference96_sha256": "472e50b1c73e7cbfe4b68d73aaaf1e906d4544696d3a9f120ede04124626f9ec"
+    },
+    {
+      "id": "genome_8d60f7d250e8e9f2a25b",
+      "snapshot": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/candidates/genome_8d60f7d250e8e9f2a25b.npz",
+      "snapshot_sha256": "3fae7135bd9572011a4cdbf2bf174e96832481bca6f1de24277fc8894ea0d4a1",
+      "genome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/genomes/genome_8d60f7d250e8e9f2a25b.json",
+      "genome_sha256": "4c2cb8f434927c3c754e788ba270001e9b295fe1acd4f1fc715a422b6829d33e",
+      "reference96": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/references/genome_93e6148d32bbb0862163-embedded-life0.npz",
+      "reference96_sha256": "472e50b1c73e7cbfe4b68d73aaaf1e906d4544696d3a9f120ede04124626f9ec"
+    },
+    {
+      "id": "genome_d02e7f60565f83066e5d",
+      "snapshot": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/candidates/genome_d02e7f60565f83066e5d.npz",
+      "snapshot_sha256": "ff37d942c7168eeb4832aa42f0f94d14ceaa86ca8e454741efe4a183e049a185",
+      "genome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/genomes/genome_d02e7f60565f83066e5d.json",
+      "genome_sha256": "58891d508dbd892ad6fd2adc95b0416a250ba80b428139d4c1f7eb4d720cb507",
+      "reference96": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/references/genome_d02e7f60565f83066e5d-embedded-life0.npz",
+      "reference96_sha256": "c5f8ab0600edafb27bd5bb9e99796c2e66c4af059171835762542972d8f5a17a"
+    },
+    {
+      "id": "genome_a6a821dffd4f4046c97a",
+      "snapshot": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/candidates/genome_a6a821dffd4f4046c97a.npz",
+      "snapshot_sha256": "7efd847ad3efa0db001afe56a162b297d3a536ec48326890d4b09b6ceb793b4a",
+      "genome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/genomes/genome_a6a821dffd4f4046c97a.json",
+      "genome_sha256": "b788fa270a4c40f0e8a67f7efb304c40ef3133566e0a1d682a11d80948c907ad",
+      "reference96": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/references/genome_d02e7f60565f83066e5d-embedded-life0.npz",
+      "reference96_sha256": "c5f8ab0600edafb27bd5bb9e99796c2e66c4af059171835762542972d8f5a17a"
+    }
+  ],
+  "factorial_cells": {
+    "compact": {
+      "R1I0": "factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1",
+      "R0I0": "genome_93e6148d32bbb0862163",
+      "R1I1": "genome_8d60f7d250e8e9f2a25b",
+      "R0I1": "factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e"
+    },
+    "multi_ring": {
+      "R1I0": "factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423",
+      "R0I0": "genome_d02e7f60565f83066e5d",
+      "R1I1": "genome_a6a821dffd4f4046c97a",
+      "R0I1": "factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e"
+    }
+  },
+  "candidate_manifest": "local_learning/results_20261018/experience_rule_initial_factorial_exports/candidate_manifest.json",
+  "candidate_manifest_sha256": "05cb476859d601bf90a8e040d4fbd34198d9ac25af1b8d7bf019a4287bd7aa62",
+  "candidate_handoff": "local_learning/results_20261018/experience_rule_initial_factorial_exports/handoff.json",
+  "candidate_handoff_sha256": "5a3ba9a63d50dbda439c1ff5d84732d7503f46e1b387be35f13f661ecbd7a82f",
+  "old_result": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018",
+  "old_handoff_sha256": "b167d527f0ba7ee39d4730221ee805d1b0212ff4a61767dd25d6bbe020cf00ee",
+  "draws": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/draws001_224.npy",
+  "forcing": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/forcing001_224.npz",
+  "storage_root": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018",
+  "free_gate_bytes": 4294967296,
+  "soft_budget_bytes": 68719476736,
+  "sha256": {
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_actor/conversion.py": "d2b73ccf44d6720e01e2166c055f9a427406dc483b21746476b9f8cc5f95189a",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_actor/check_interface.py": "c7b48b4117afc793a01e091bdcc53d922e1b69fca75a74788248552649e80915",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_actor/__init__.py": "b9438b684a84e8b7868c892b912a638023c8afa18ad426135b0a4c5dc6369b66",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_actor/check_algebra.py": "b6566787ca6f7b245603533bb92a86179d69c0c276a70bbfce1f7418482c22ee",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_actor/model.py": "3941450e97d2311f833d1c9c8964f348218467d4cd8d41a68b6584b72b24b5b0",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_actor/prepare.py": "dfeac30fd839c0fda9e88398b4ed4446bc332b2be54c4d7287e7c6ad84317620",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_actor/runner.py": "4d48a7a9fe11bda60fcf743753a733ef0e574feabb5f0e2192c9b3bb4e7f419d",
+    "/share/Projects/元胞自动机研究/src/local_learning/regenerative_actor_adapter.py": "3004fc43d26ce781d8a1945f7f399d238114d623509001855005a6d087b7418e",
+    "/share/Projects/元胞自动机研究/src/local_learning/material_transport.py": "dd5622a2df6a5d50642a31ad586215d5e30e33929cf8f57ee9efff36fdef08d5",
+    "/share/Projects/元胞自动机研究/src/local_learning/adaptive_action_renewal/controller.py": "82ce81c7e382119e74ef8f17fe002dfd74d05f8ba87005a6fdaf73b2540bbeb6",
+    "/share/Projects/元胞自动机研究/src/morphology_evolution/dual_kernel.py": "529d42e50876a68bce54a512f8a9cafd48a8f68276cf8507a0e2243b3f450d6e",
+    "/share/Projects/元胞自动机研究/src/simulation/core.py": "0e832298f01c53a5774df1fbd144d40a816529907fcc6ac58ea6dcf9296d4974",
+    "/share/Projects/元胞自动机研究/src/simulation/data.py": "dfcec89a87caecf81836582b4639b01f8ab14edeec154d7f2e769356547805e5",
+    "/share/Projects/元胞自动机研究/src/simulation/snapshot.py": "e99d3eccee47ded2abe1518e3fb80d2d630a8ff21a2a339ff6723c2878dfc382",
+    "/share/Projects/元胞自动机研究/src/simulation/__init__.py": "564809e49203a4dc2f071ada201b8ac8bc142d83583a4ff3b4fa861bdeae79da",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/prepare_regenerative_pilot.py": "f07e03d196cd28366064d6ec9591b1128d0f83a75e762e956be3b312b733c2de",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_action_capability/run.py": "9a59900b20a0cb920d5cf9f2e6ceba57d9e577af4d72a753eea5755ddab67194",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_action_capability/check_policy.py": "3c047f47aa94719511a176563b90e05a577cb50a3f1b849a0ceaf2fed61c3e3e",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_action_capability/policy.py": "de581bd0ef63548883dbf7d08e6139bd3b11a31e6d4e07b1695829a0b8d2d840",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_action_capability/__init__.py": "085cfdf3682cf112fd03129e6366c4f26a8b261ef0c83b0da5002580a0599fb3",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_action_capability/prepare.py": "8dffc115a6236f39bf8a693a8bdcf5e022cd7455a50ee017ff7a21f9075ee249",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_resource_opportunity/run.py": "894506acb8cfc98f9f4a4015dcb8d68c267d342b362c71748bb3e9f9c14677ae",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_resource_opportunity/policy.py": "c19a4f72a2b34f3ddd5c5801e2a398f5cf0b444b46f11d758f1f6d16348b5ad0",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_resource_opportunity/packet.py": "ec4b3d612c6bf3c98e6c41167259c89c6722e7f4ee0ba89a33832bafaa14c40a",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_resource_opportunity/check.py": "609f6ae67673cf8a7ddd8f7288eb7d471c842c09290eafe1c99c4ffcd05d0556",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_resource_opportunity/__init__.py": "7f71bbfb5062ebbb094b9c8ee5ae961f88decf5569711a9dbae0340685eb711e",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_resource_opportunity/prepare.py": "be9d2d5cdf006e1a1d4c28eeb7bcd214c30e1145013faba9de7e96d3b8ea450c",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_supply_recovery/run.py": "9e4949e0c8c3ee61db303effd20302b97cc491d95cb503100f7d9fec1fda5f66",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_supply_recovery/__init__.py": "59e09546ab763578815e115fa6dd978d84b38f602320bff6197f129af573c509",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_supply_recovery/prepare.py": "ee68aa1a88c6cc048af667abd98db22130a1abb8ae432ca72562a56c41aab749",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_supply_factorial/run.py": "35a4daed8abff2dd3af5ee0ffba3a8d65b9dee2c6006ddbb37fe5f32f39341f1",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_supply_factorial/__init__.py": "43a9f20450ddd01c2f7664a3e78bdf5b2e500edbe62d833095ce1c806e7e77ce",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_supply_factorial/prepare.py": "8cd9464d7300506256801d71ced75d806a95578b26d2ab8bdce5e5c64f799345",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_fuel_allocation/__init__.py": "6e4ff249f6e6e46946a3c077a54b8245d720e1fafdd0fdaa3e5afff90588911c",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_fuel_allocation/adapter.py": "34dadde16dd27757d9d439fcfa47169114b808ec6e632f62fdc32a837f7923b7",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_fuel_allocation/allocation.py": "8ae962b37eb07a65867d7d2ce0139caab969a17c688a93a32a5aab0f52d75d81",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_fuel_allocation/check_cap0.py": "61e2be882d6bf29d414146b03e587d502346972d1763b2eef9261c42d0c32d8b",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_fuel_allocation/package.py": "efbbec1b17cc13c1767a94b5fa6c8acf2492aba160ed949cd514ee93754c9824",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_fuel_allocation/runtime.py": "122b0ead498e0b78854aad48927784a1f65a635672043efb1a7ee36658b735b6",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_fuel_allocation_native/run.py": "a54bf2b10615567d348cb65e3512408972ca02d0829d7546d6d425bd92143810",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_fuel_allocation_native/adapter.py": "e2667470c9a268bd3c4897dc8d7f666590cbd5d4f61062ec7e5b86c84750927f",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_fuel_allocation_native/check.py": "1c60bfac8ce7979dd1d23c1bfb65cfa1038cba1da706f016dcc04380042d022a",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_fuel_allocation_native/__init__.py": "b6a52497b223661424d1b96b6d64add0bf655e119521cf7239baa2a1f9fcbd8a",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_fuel_allocation_native/runtime.py": "f8b1196735277fa02cfc2b9ce1b6f292136a265ea726df790028a651ff2e6d0b",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_fuel_allocation_native/prepare.py": "3542bed95b2e4057abfa403a5da65e2d6352a2238956252ed87aa03b463208f4",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_local_fuel_transport/run.py": "f715c1c45ca1de792324767c8e937227cfd50fb0722402f9932f97a768517d8f",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_local_fuel_transport/check.py": "b889b63a5d132606142d2ca0270d60b906a527ae1d4607c43abde832c6f79e76",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_local_fuel_transport/__init__.py": "403b134646c8b20111cf5c48fce7bb4057ee02d0892ccb119777dd5ef84d1376",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_local_fuel_transport/submit.py": "0212ceeb52d5e3a808e4eb0172de433a08cee43adc2402018cd1d154c099001c",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_local_fuel_transport/transport.py": "67c16127790b782f6b4cab6d45b27cba36408fb0f0a87cf3bad8305179714d6b",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_local_fuel_transport/runtime.py": "c05e5ca199fc29085f74b97a832f52c99d729f4281b82c105b27699ef4a74d7a",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_local_fuel_transport/prepare.py": "522b6c58fa1ecfc479660b236106aef6711792d9c354a34ee4ad275d30372012",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_morphology_transport_search/run.py": "30e41997888e4110c161a3dbf78816b7aebcae2d8bda210bcbf3725eb61888c9",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_morphology_transport_search/__init__.py": "0701540667e63bf983b2ba70b7a6c4a5be84af681f0c95811d7f2fc6b5bc23ba",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_morphology_transport_search/submit.py": "10d5bd2c16c07cb10e7d82ce01ef559d5079b070487b6db10bb1a65ba0e66820",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_morphology_transport_search/common.py": "02602cc25a29ba9c67c4f956158dee0148869d6d23660acfdf59a73db40f6b6f",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_morphology_transport_search/prepare.py": "3be4e99241bf79b0edce71bab2a083270a768d4cc7a57b321c852f51423c3a51",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_morphology_transport_search/observe.py": "e49c3e65b1c590b9120652702196136081f67eb3887795da5757683762200e4c",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_morphology_transport_search/select.py": "4cff1fe82f2cf4fbe34faa3dbb8baacb3421c7a627418ce42a9f31a975dced1e",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_domain_embedding/run.py": "5b1755a6ad57e1b5b8f22f12691d4c6fcc0a98e0a0653a1997059b3f55d356be",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_domain_embedding/__init__.py": "729b06624194a9f116124ec689bc8b12312b792e94f2307cb0ed4b964273a9ce",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_domain_embedding/submit.py": "e62433a5e33acce2d170bee6d1a2986e02f05e39179d40bd5423caf1c5589e0a",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_domain_embedding/common.py": "b301e92fc3a708b1a01222303edc8cd7994576091f3339ef015236baa1c628ce",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_domain_embedding/prepare.py": "2b780debc0db0957fd77215768f77809edb351b80c1778dcccdc84f4c5407f01",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_joint_resource_transport/run.py": "c378b648a58338111cb15fe48546fcef00fe830fc9407b229dbe2d1b3a050e6c",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_joint_resource_transport/__init__.py": "ccdcfe8ddcb025f044f6d72b121aabc7858551b4736dd4e4db36c7fd7056f9b3",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_joint_resource_transport/submit.py": "1869f8768de509f6077ac52d927eac0195c93a068b071912da78eca65c573b9c",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_joint_resource_transport/common.py": "1eff162e931e9a4c1ba580ae5820c74355733913ab39bf2ea72559bf8b7b9b96",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_joint_resource_transport/transport.py": "19cf10d64d52fad045d4b373ba6d8205b338b520e1ef60bcab6a90463031a6d6",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_joint_resource_transport/runtime.py": "afe0c82fdd06265566fcd1fd614146bcfeacfa980c516e101a651731911f6f9a",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_joint_resource_transport/prepare.py": "60c42182075a0443f17170612ec84f3877d690f863e62fffa4f5ed8bbf387798",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_joint_resource_transport/checks.py": "dd9f839b4d046a605b2017c8634eb1aeb8fbb8fabf5b295632814ab2509ec1fb",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_transport_allocation_interaction/run.py": "e1ceb67dd95bc1e2bbb441e92b2087eec4247c807c9b2140c8a4a2e1d415e186",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_transport_allocation_interaction/__init__.py": "0eaaac2944d6f3a000e5a20d78d6f83db0981c037d092cd9e5217db3d50fd2e3",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_transport_allocation_interaction/submit.py": "cd550e5bcb84c98cc195b392f3d880ee6b0e4c76f3cc35caa875a9d81982e7d3",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_transport_allocation_interaction/common.py": "79790b162ebabe68b210f5dfb9642fa86f988fda7a91c6542f96ac067652431a",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_transport_allocation_interaction/runtime.py": "69058e166b723146b0086b5359d111079fb499a5fd9168751f944175a61c0d97",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_transport_allocation_interaction/prepare.py": "c838bc191d34119c32573e19f1e3666cb4b714ae8994f887d1039cb67c66e864",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_transport_allocation_interaction/checks.py": "e2cffbc49109c43e11ab312bd6444c0ad2a70b26af272341f9236a718c93ac3d",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_homeostatic_allocation/run.py": "ed63e56206b664a531d1f866ad36fa871e92d3757d802f0077b54c0c156d0b16",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_homeostatic_allocation/policy.py": "bee98b8d30e65e9fe1fdc8e0a6483d7594c620fb7b94a587ae69a2485c49672f",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_homeostatic_allocation/__init__.py": "ab1c5b1fac15aed084205e336fd7c78e14c7199150a3a8cd789d9ac474f25049",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_homeostatic_allocation/submit.py": "b76c83a4f77b80b3264693850af36a1a79273231d0e7b940947469795c07e920",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_homeostatic_allocation/common.py": "ccdcd73fe0860f189d6ded29c94ce39c190ef85ecc763695ba220f4d5de08356",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_homeostatic_allocation/runtime.py": "c464049636d5dd3d6885bd24669baa77356f6ae1e2bd2caf29f01dcda86f7b93",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_homeostatic_allocation/prepare.py": "316a19478fece768dbe74beaf6fd491468ae2255aa56b8715f32c8f51479712e",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_homeostatic_allocation/checks.py": "828eaa10993ec261ededc819d54923db18fe6482e01ebbb10be4cb381636223f",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_reserve_morphology_transfer/run.py": "157b114a94e953e7e40825f9f2fd7a2a58eef0f4b1a9517001438280e76196a9",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_reserve_morphology_transfer/__init__.py": "7b374adb2924a398824c1e23382408788a10a7ec66cb2e41c059d70de9df7553",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_reserve_morphology_transfer/submit.py": "d90e631edf8b01f52144391d5e19013d86c0f7688e3b3df2a979e68bcde88fdc",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_reserve_morphology_transfer/common.py": "e1569199347ddfb8cab71e0965536e479d8fc6078b7e030687fa53f6f586f396",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_reserve_morphology_transfer/runtime.py": "8626cd0ea0f8e9709a2215c33d6af6fd56ea1934cbf72d4ccc4ffe84b6b67ea5",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_reserve_morphology_transfer/prepare.py": "e97d50f041d27c3cfb0cdb612b4123f25680e98e97b4f6ed8ec5129110e75ab7",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_excision_transfer/excision.py": "481ebca7dae34082675a0bdf0ada9984583d1ef980113f5e6a58cc53e72e1c01",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_conditioning_transfer/run.py": "ea2b68e749a4f938b6157da1fb7064bea27d3d5237217e05190e2a58802ec980",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_conditioning_transfer/__init__.py": "8cbfc59f3cfd00b503143d77b8c7234d040d23e4cb08a46e3eed37e68e231848",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_conditioning_transfer/submit.py": "19e536e16de56b367ddab782c17973fd6f4f77a2f5f1367d9e5ee47ba0d221eb",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_conditioning_transfer/common.py": "9eb7c168c3c2ae83f0ac9e1e2302dfb260614c0f83f1c6b51d9f140dd884fca7",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_conditioning_transfer/prepare.py": "e2d18d458b7c1da6a88162a4e512fa74658f9b13818771ac5916236c423ad7ec",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_conditioning_transfer/pulse.py": "ec772c3d5e0983d0f5d0c443e7d45384573ef344459ac530e6e88a01fadc07d0",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_reciprocal_conditioning/run.py": "44f0139ba0d1675708c942cd14c2b4bcdb0b01ed83ff36de48618adc5c3aa546",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_reciprocal_conditioning/__init__.py": "4aa6423e6254e5ec6a742ed6e7609307fd05c68fcd5a6302374a1b2b317d5a56",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_reciprocal_conditioning/submit.py": "5f2380a6860520eef57e9170fce486cf78976a63b0aef27ec9962209583e99f6",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_reciprocal_conditioning/common.py": "095cac418fdab71a5d9ebd287959a4074b268593ca70ef0e6652199142d8e738",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_reciprocal_conditioning/prepare.py": "76082570e36d19d5f0f6b0fe7204f377baa029fdaaddacbfa5573b2775f0b2ae",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/experience_adaptation_host/interface.py": "b4ae75ca53bacb912a418d3e9fa4bcdc96cda17e5f6ff20cc96d5da83c1cb7bc",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/experience_adaptation_outer_search_native/run.py": "4c809d2c366095bbc6b8b86e0fdedf921e4c609290e3283f1e8744c656faaed3",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/experience_adaptation_outer_search_native/binding.py": "3e029b65bf401d6b1b2d64f732772f1cda6f0bc6389d465ca163b57f25f27082",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/experience_adaptation_outer_search_native/__init__.py": "e683e8a79313f8fe624366688c709dfdd0726fc9f91091aa633adc2fcebc6f93",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/experience_adaptation_outer_search_native/submit.py": "159b29cd7c0c385db5f32dc795ae5042302a2229c5d499c113974b8a6587a52c",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/experience_adaptation_outer_search_native/common.py": "559d0f4dc089450d8acac2af99f4337aaa0fcd0609543001f81d1764a36425f1",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/experience_adaptation_outer_search_native/prepare.py": "de6febb2feb48d7806c68b1b0e80a5352d1882f9f0eba49e3d0e3bd252e3ac31",
+    "/share/Projects/元胞自动机研究/src/runtime/runner.py": "bb5f95162e2a99802450e8039ac23a89e35217889cf339c6e8c82f88f96439ae",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/experience_adaptation_host/check_interface.py": "9e470a03eb8d9df43f20d16f5593393b06b99b47f84f8f5589bc833a1adbe69a",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/experience_adaptation_host/__init__.py": "9176fe49af7d8cd4daf408325b5a49a6223e500b59f65c586618ae4abac95736",
+    "/share/Projects/元胞自动机研究/knowledge_base/research/experience_learning/experience_rule_initial_factorial_20261018.json": "f35b1f8b7d031175edfda5500d6d82c604f6800ae440f2f8d97e52291c24f7fb",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/candidate_manifest.json": "05cb476859d601bf90a8e040d4fbd34198d9ac25af1b8d7bf019a4287bd7aa62",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/handoff.json": "5a3ba9a63d50dbda439c1ff5d84732d7503f46e1b387be35f13f661ecbd7a82f",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/handoff.json": "b167d527f0ba7ee39d4730221ee805d1b0212ff4a61767dd25d6bbe020cf00ee",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/candidate_manifest.json": "323671cef21d7992236fea957d4d16d5f0e39b478d3e20cc5f7a9ab1393c43b4",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/stage_bindings.json": "dbaabdaaac17815c1264a5899f30f814dcd1686f9bd03d63fd35245bb8bacb58",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/checks.json": "ac2932b66f974d982ce821270394f7bed771c68aa9900f0aa62795c2ea97a63f",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/source_evidence.json": "e139ef93c67125e25cd1f5309216c05b04e0de534cd4a5bd140a26dd206ee6f3",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/authorization.rev2.json": "f35b1f8b7d031175edfda5500d6d82c604f6800ae440f2f8d97e52291c24f7fb",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/METHOD.txt": "cd72abfddb2de49e1bf9a96a1fecf5dd91f3adac188b745d9fdf068215e5a9e8",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/REPORT.txt": "b038e7ef5a516a18886b55b71b0616db12e4e50825881d5aae5cb643670b02e1",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/manifest.json": "bdd1ed37f9fa08760ab864b2812c8d413ac238732a90c009f421374013321562",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/candidates/genome_93e6148d32bbb0862163.npz": "cfc25c642daa522c210b790b44ef1ac6ac9251e4d479a4ffd0e185d2e953aeeb",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/candidates/genome_8d60f7d250e8e9f2a25b.npz": "3fae7135bd9572011a4cdbf2bf174e96832481bca6f1de24277fc8894ea0d4a1",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/candidates/genome_d02e7f60565f83066e5d.npz": "ff37d942c7168eeb4832aa42f0f94d14ceaa86ca8e454741efe4a183e049a185",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/candidates/genome_a6a821dffd4f4046c97a.npz": "7efd847ad3efa0db001afe56a162b297d3a536ec48326890d4b09b6ceb793b4a",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/candidates/factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1.npz": "9bcb6a35e77bde746492ba93ad02c4fe40220006fba1af8c6df5894c84ebeab5",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/candidates/factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e.npz": "f6722aa1fbb1fd3fc68a55d6151a4b11fd9489bde6c5df67d85b0f6289eb351c",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/candidates/factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423.npz": "c5f3d7dc36377b6ff0faaded0f34e2560b74cc225cfae067780e50e08957b962",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/candidates/factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e.npz": "06580223101081fbe20fc7d936791f5e4f55f44642408cb7a2e29ff2466bd859",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/draws001_224.npy": "985ec671b00f346e7ba414e6460a68ac274f95fc4b317a100cc6399fad55a293",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/forcing001_224.npz": "65fb316a56a7b2b15123b954bfabe580a7d232ea544d3615cc669faeeba28993",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/experience_rule_initial_factorial_20261018/checks.json": "7f86b8e19ddfd58839baa8aa4bb0dcbf88ee4ef86d42c5e219b8b52ab2456e30",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/experience_rule_initial_factorial/__init__.py": "098d87caaf484b02e7c455602daece42c6732361b6be619deb0a9f59b144f829",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/experience_rule_initial_factorial/common.py": "9068bf99ed00d7f5f5604b3cebc10d5f61ebc786fe4d70332d37e44d7da67ad4",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/experience_rule_initial_factorial/prepare.py": "d7b68a31ed00d62b3a48be687b3c9c7875b05ab79c93f9f984644bd1ddd9c083",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/experience_rule_initial_factorial/run.py": "266aa7a13e5bd88ef92703fdb424ab0b49f2df64ee4ad14548620f783cea360d",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/experience_rule_initial_factorial/submit.py": "95ba36075fc5a2cb6aef97ef749d740490291df664031e35fe51855273a6b084",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/references/genome_93e6148d32bbb0862163-embedded-life0.npz": "472e50b1c73e7cbfe4b68d73aaaf1e906d4544696d3a9f120ede04124626f9ec",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/references/genome_d02e7f60565f83066e5d-embedded-life0.npz": "c5f8ab0600edafb27bd5bb9e99796c2e66c4af059171835762542972d8f5a17a"
+  },
+  "fixed_offsets": [
+    1,
+    8,
+    16,
+    32,
+    64,
+    128
+  ],
+  "display_cadence": 8,
+  "reporting": {
+    "factorial": "Within each family and matched history/challenge retain all four absolute trajectories, rule simple effects at each initial state, initial simple effects at each rule, and R1I1-R1I0-R0I1+R0I0. Keep endpoints M/E, 0..224 and128..224 body-time, birth/death, actual removed M/E and all EU/F accounts. Complete cumulative/fixed/negative windows stay in source; use a concise synthesis.",
+    "experience": "For every combination show experienced-minus-naive with the acquisition included, none and x separately. Differences of injury penalties remain diagnostics, not adaptive selection. Keep fixed frozen archive criteria unchanged; component effect does not establish memory/learning.",
+    "dynamic": "Keep original-coordinate common-scale formation and injured raw sequences; retain early failures and complete zero tails. Measure whether compact double-peak vs open/ring outcomes and multi-ring growth associate with rule or initialization; do not pre-label outcomes or select only favorable frames.",
+    "limits": "Shared tape, two deliberately selected families, dependent branches and actual cut-dose differences. Body-time includes scale; no independent replication, stable recovery or long-term safety inference."
+  },
+  "policy": "fresh_brake",
+  "learn": false,
+  "requested_a": 1.0,
+  "birth_price_components": [
+    0.2,
+    0.2,
+    0.02
+  ]
+}

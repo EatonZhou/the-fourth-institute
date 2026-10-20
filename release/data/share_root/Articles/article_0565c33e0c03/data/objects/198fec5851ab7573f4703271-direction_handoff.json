@@ -1,0 +1,47 @@
+{
+  "owner": "resident_d3ccfa2d95b7",
+  "status": "three_finite_experiments_complete_direction_active",
+  "entries": [
+    {
+      "task": "lifetime_cue_reversal_20261019",
+      "handoff": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/lifetime_cue_reversal_20261019/handoff.json",
+      "sha256": "d0ca1aa9384085b1ba4a20ba8176617adf171cc35f2cf18b7a18294907e738a8",
+      "report": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/lifetime_cue_reversal_20261019/REPORT.txt",
+      "native": 28032,
+      "worker_seconds": 77.099762
+    },
+    {
+      "task": "distractor_credit_assignment_20261019",
+      "handoff": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/distractor_credit_assignment_20261019/handoff.json",
+      "sha256": "4f016a5ffc613db006a216bffd9d7c951bbd9e02e1e623f89fbb4670e6b70ca2",
+      "report": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/distractor_credit_assignment_20261019/REPORT.txt",
+      "native": 25280,
+      "worker_seconds": 70.686758
+    },
+    {
+      "task": "temporal_credit_reassignment_20261019",
+      "handoff": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/temporal_credit_reassignment_20261019/handoff.json",
+      "sha256": "467bec1fa6081d4d3ae34eb8f68e42fb8ba7be88fcebe1d7e1c9ebf4a5ca35db",
+      "report": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/temporal_credit_reassignment_20261019/REPORT.txt",
+      "native": 11968,
+      "worker_seconds": 35.809792
+    }
+  ],
+  "total_actual_native": 65280,
+  "total_runner_worker_seconds": 183.596312,
+  "new_this_continuation_native": 37248,
+  "new_this_continuation_worker_seconds": 106.49655,
+  "old_native_replayed": 0,
+  "claim": "Actual learned cue control, retention, reversal and temporal-credit reassignment in a continuous deformable CA. Simple baselines sufficient; no novel-method superiority.",
+  "limits": [
+    "preinstalled sensory/motor/feedback capability",
+    "externally positioned lessons and probe fields",
+    "no births in this simplified host",
+    "two seeds by two mapping orders per batch; related histories",
+    "three prior connectivity failures retained; successor subset not full success"
+  ],
+  "next_question": "Self-generated contacts in a fixed arena; keep strong joint delta. Not yet run.",
+  "original_animation": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/lifetime_cue_reversal_20261019/actual_learning_reversal.gif",
+  "continuous_animation": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/temporal_credit_reassignment_20261019/continuous_learning_credit_shift.gif",
+  "metric_definition": "指标释义更正（零native，原数值不变）：每个探针末帧的 f=M_good/(M_0+M_1)，M_i=sum_x rho(x)*1[torus_distance(x,spot_i)<2.5]。这是两个半径2.5接触区的材料质量份额，不是高斯cue强度加权sum(rho*cue)，也不是整阶段正确率。感觉场及付费反馈场与此观察指标应分开；原CSV、模型源、实际轨迹和运行计数不变。"
+}

@@ -1,0 +1,228 @@
+{
+  "status": "first_path_physical_complete_json_packaging_failed",
+  "job": "a22f87e4-c19d-4b3c-bb63-848d5eff4173",
+  "native": 298,
+  "planned": 596,
+  "unexecuted_arm": "fixed_event",
+  "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/a22f87e4-c19d-4b3c-bb63-848d5eff4173/raw/202610199731_history_table",
+  "rows": [
+    {
+      "trial": 0,
+      "stage": "acquire",
+      "correct": true,
+      "actual": 1,
+      "command": 1,
+      "feedback_mass": 17.710114991766027,
+      "dx": 0.4953358114605706
+    },
+    {
+      "trial": 1,
+      "stage": "acquire",
+      "correct": false,
+      "actual": 1,
+      "command": 1,
+      "feedback_mass": 17.62167172802788,
+      "dx": 0.5032906022186694
+    },
+    {
+      "trial": 2,
+      "stage": "acquire",
+      "correct": true,
+      "actual": 1,
+      "command": 1,
+      "feedback_mass": 16.61858167809037,
+      "dx": 0.5167986325582739
+    },
+    {
+      "trial": 3,
+      "stage": "acquire",
+      "correct": false,
+      "actual": 1,
+      "command": 1,
+      "feedback_mass": 15.086579574018947,
+      "dx": 0.5162874987247541
+    },
+    {
+      "trial": 4,
+      "stage": "acquire",
+      "correct": false,
+      "actual": 1,
+      "command": 1,
+      "feedback_mass": 13.34617511705592,
+      "dx": 0.5232471540179198
+    },
+    {
+      "trial": 5,
+      "stage": "acquire",
+      "correct": true,
+      "actual": 1,
+      "command": 1,
+      "feedback_mass": 11.51042854899782,
+      "dx": 0.5206192487697372
+    },
+    {
+      "trial": 6,
+      "stage": "acquire",
+      "correct": true,
+      "actual": 1,
+      "command": 1,
+      "feedback_mass": 9.725149152456572,
+      "dx": 0.5233218582492611
+    },
+    {
+      "trial": 7,
+      "stage": "acquire",
+      "correct": false,
+      "actual": 1,
+      "command": 1,
+      "feedback_mass": 8.04278359185492,
+      "dx": 0.5223400572663088
+    },
+    {
+      "trial": 8,
+      "stage": "acquire",
+      "correct": true,
+      "actual": -1,
+      "command": -1,
+      "feedback_mass": 9.215170777507907,
+      "dx": -0.5542562304471517
+    },
+    {
+      "trial": 9,
+      "stage": "acquire",
+      "correct": true,
+      "actual": -1,
+      "command": -1,
+      "feedback_mass": 10.320038250709189,
+      "dx": -0.5420584770143861
+    },
+    {
+      "trial": 10,
+      "stage": "acquire",
+      "correct": true,
+      "actual": -1,
+      "command": -1,
+      "feedback_mass": 11.167564024539393,
+      "dx": -0.5281066057371113
+    },
+    {
+      "trial": 11,
+      "stage": "acquire",
+      "correct": true,
+      "actual": 1,
+      "command": 1,
+      "feedback_mass": 10.614338470388946,
+      "dx": 0.4868081180948778
+    },
+    {
+      "trial": 12,
+      "stage": "acquire",
+      "correct": true,
+      "actual": 1,
+      "command": 1,
+      "feedback_mass": 9.498718713409442,
+      "dx": 0.49721058610102276
+    },
+    {
+      "trial": 13,
+      "stage": "acquire",
+      "correct": true,
+      "actual": -1,
+      "command": -1,
+      "feedback_mass": 10.44625348880852,
+      "dx": -0.5441352215557629
+    },
+    {
+      "trial": 14,
+      "stage": "acquire",
+      "correct": true,
+      "actual": 1,
+      "command": 1,
+      "feedback_mass": 9.504085880060018,
+      "dx": 0.4962286749596103
+    },
+    {
+      "trial": 15,
+      "stage": "acquire",
+      "correct": true,
+      "actual": 1,
+      "command": 1,
+      "feedback_mass": 8.173927397137868,
+      "dx": 0.5099793174022054
+    },
+    {
+      "trial": 16,
+      "stage": "retention",
+      "correct": true,
+      "actual": 1,
+      "command": 1,
+      "feedback_mass": 6.767844110567403,
+      "dx": 0.5191737496821069
+    },
+    {
+      "trial": 17,
+      "stage": "retention",
+      "correct": true,
+      "actual": -1,
+      "command": -1,
+      "feedback_mass": 7.953410816505723,
+      "dx": -0.5551979332824786
+    },
+    {
+      "trial": 18,
+      "stage": "retention",
+      "correct": true,
+      "actual": -1,
+      "command": -1,
+      "feedback_mass": 9.055728790932708,
+      "dx": -0.5414173593812954
+    },
+    {
+      "trial": 19,
+      "stage": "retention",
+      "correct": true,
+      "actual": 1,
+      "command": 1,
+      "feedback_mass": 8.12208150917678,
+      "dx": 0.49498581446339784
+    },
+    {
+      "trial": 20,
+      "stage": "retention",
+      "correct": true,
+      "actual": -1,
+      "command": -1,
+      "feedback_mass": 9.150505860392188,
+      "dx": -0.5424487453045792
+    },
+    {
+      "trial": 21,
+      "stage": "retention",
+      "correct": true,
+      "actual": 1,
+      "command": 1,
+      "feedback_mass": 8.202564833913673,
+      "dx": 0.49654675424136485
+    },
+    {
+      "trial": 22,
+      "stage": "retention",
+      "correct": true,
+      "actual": -1,
+      "command": -1,
+      "feedback_mass": 9.224084377287285,
+      "dx": -0.5430235604038245
+    },
+    {
+      "trial": 23,
+      "stage": "retention",
+      "correct": true,
+      "actual": 1,
+      "command": 1,
+      "feedback_mass": 8.274426673592854,
+      "dx": 0.49704279107013605
+    }
+  ],
+  "raw_bytes": 2246722,
+  "recovery_native": 0
+}

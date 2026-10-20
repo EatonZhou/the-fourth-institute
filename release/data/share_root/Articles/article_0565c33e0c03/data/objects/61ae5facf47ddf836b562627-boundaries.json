@@ -1,0 +1,18 @@
+[
+  {
+    "shape": "ring",
+    "native": 2,
+    "state_exact": true,
+    "original_receipts_exact": true,
+    "ledger_exact": true,
+    "cohorts_exact": true
+  },
+  {
+    "shape": "separate_seeds",
+    "native": 2,
+    "state_exact": true,
+    "original_receipts_exact": true,
+    "ledger_exact": true,
+    "cohorts_exact": true
+  }
+]

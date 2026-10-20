@@ -1,0 +1,39 @@
+{
+  "native": 11112,
+  "runner_worker_seconds": 3.403083,
+  "raw_bytes": 30865906,
+  "jobs": [
+    {
+      "batch": "opportunity",
+      "id": "f1875722-4dd2-4d02-8507-3177f4bc8a0a",
+      "status": "completed",
+      "native": 912,
+      "runner_worker_seconds": 0.339834,
+      "raw_bytes": 2589296
+    },
+    {
+      "batch": "comparison",
+      "id": "637b27a6-59dc-4a48-b0be-50b5fd7fce18",
+      "status": "completed",
+      "native": 6840,
+      "runner_worker_seconds": 1.781069,
+      "raw_bytes": 18786884
+    },
+    {
+      "batch": "content_control",
+      "id": "b680f7d4-d600-46cd-a8d8-77276aceeb42",
+      "status": "completed",
+      "native": 2736,
+      "runner_worker_seconds": 0.818623,
+      "raw_bytes": 7756798
+    },
+    {
+      "batch": "content_probe",
+      "id": "0292fd76-0510-44b6-a285-bf4c6d16767a",
+      "status": "completed",
+      "native": 624,
+      "runner_worker_seconds": 0.463557,
+      "raw_bytes": 1732928
+    }
+  ]
+}

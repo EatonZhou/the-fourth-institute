@@ -1,0 +1,121 @@
+{
+  "schema": "lenia.saved-state-clipping-diagnostic.v1",
+  "source_report": "information_32b47995bdda",
+  "source_sha256": {
+    "runs/jobs/12d8620a-dcaf-43dc-a20f-1802c06be7f2/candidates/ls-12d8620a-b04-i036.npz": "baafe4150e61b111626606ec667c256fbd964e47ed3211bc3b282a08b432c2bf",
+    "runs/jobs/0dc400d8-80a0-462c-a147-cd1aabcebd48/continuation.npz": "ceff84acbdc42886c8b8eada30dd855ca4ab20ac0ff0b746c388244d21752a66",
+    "runs/jobs/0dc400d8-80a0-462c-a147-cd1aabcebd48/result.json": "9e4342887a00d4f0b46e92e11b32c2d1c15342af8f202e88ad35ef75587e6d36",
+    "analysis/rearrangement_clipping_audit.py": "50f123aca93857aa5e8d140c2542efc384949cb216ea2ef3dfe7189b4ca07fd1",
+    "local_learning/outer_search.py": "dee84d3ba5da05e71f35f931997db452fce1fafae218a97b38f6f0eb970b73a3",
+    "simulation/torch_core.py": "11f93138947353ef261080ab332aa785e99c233f1cff8d5d52e46c9018117439"
+  },
+  "dt": 0.1,
+  "operator_reconstruction_max_error": 0.0,
+  "trajectory_rollouts": 0,
+  "single_step_state_evaluations": 4,
+  "scope": "Two fixed b04 trajectories, two saved times. Cue-free body map; exact learned kernel. No optimizer or new trajectories.",
+  "limits": [
+    "All-grid blocked fraction includes empty background; occupied fraction is reported separately.",
+    "Tiny clipped residual and outward boundary growth do not prove asymptotic or perturbation stability.",
+    "No clipping-removal intervention was simulated; no claim that removing clipping creates sustained dynamics.",
+    "Two nearly static spot patterns need not be identical states or the same attractor."
+  ],
+  "rows": [
+    {
+      "id": "b4_pixel_shuffle",
+      "updates_since_rearrangement": 384,
+      "original_life_step": 448,
+      "mass": 193.7544884278151,
+      "raw_increment_L1": 84.53567414040731,
+      "clipped_increment_L1": 0.05818162901697494,
+      "occupied_raw_increment_L1": 12.713938806411608,
+      "occupied_clipped_increment_L1": 0.05818162901697494,
+      "blocked_fraction_all_grid": 0.9993117505762084,
+      "blocked_fraction_occupied": 0.9954237919575613,
+      "upper_bound_mass_fraction": 0.9754612733547775,
+      "upper_bound_pixels": 189,
+      "upper_outward_pixels": 189,
+      "upper_outward_raw_increment": 12.655757177394634,
+      "lower_bound_pixels": 826,
+      "lower_outward_pixels": 826,
+      "interior_pixels": 9,
+      "near_upper_mass_by_tolerance": {
+        "1e-12": 0.9754612733547775,
+        "1e-08": 0.9754612733547775,
+        "0.0001": 0.9754612733547775
+      }
+    },
+    {
+      "id": "b4_radial_concentration",
+      "updates_since_rearrangement": 384,
+      "original_life_step": 448,
+      "mass": 180.57202225277504,
+      "raw_increment_L1": 80.43505232658751,
+      "clipped_increment_L1": 65.02618939745516,
+      "occupied_raw_increment_L1": 65.58890157595253,
+      "occupied_clipped_increment_L1": 60.45419902493121,
+      "blocked_fraction_all_grid": 0.19156900484838757,
+      "blocked_fraction_occupied": 0.07828614944977075,
+      "upper_bound_mass_fraction": 0.07753139066251359,
+      "upper_bound_pixels": 14,
+      "upper_outward_pixels": 12,
+      "upper_outward_raw_increment": 0.8987115374088726,
+      "lower_bound_pixels": 227,
+      "lower_outward_pixels": 137,
+      "interior_pixels": 783,
+      "near_upper_mass_by_tolerance": {
+        "1e-12": 0.07753139066251359,
+        "1e-08": 0.07753139066251359,
+        "0.0001": 0.07753139066251359
+      }
+    },
+    {
+      "id": "b4_pixel_shuffle",
+      "updates_since_rearrangement": 2048,
+      "original_life_step": 2112,
+      "mass": 193.11599268477647,
+      "raw_increment_L1": 84.83171250378496,
+      "clipped_increment_L1": 1.676020433549752e-13,
+      "occupied_raw_increment_L1": 13.294064431195208,
+      "occupied_clipped_increment_L1": 1.676020433549752e-13,
+      "blocked_fraction_all_grid": 0.999999999999998,
+      "blocked_fraction_occupied": 0.9999999999999873,
+      "upper_bound_mass_fraction": 0.9993993626153697,
+      "upper_bound_pixels": 193,
+      "upper_outward_pixels": 193,
+      "upper_outward_raw_increment": 13.29406443119504,
+      "lower_bound_pixels": 830,
+      "lower_outward_pixels": 830,
+      "interior_pixels": 1,
+      "near_upper_mass_by_tolerance": {
+        "1e-12": 0.9993993626153697,
+        "1e-08": 0.9993993626153697,
+        "0.0001": 0.9993993626153697
+      }
+    },
+    {
+      "id": "b4_radial_concentration",
+      "updates_since_rearrangement": 2048,
+      "original_life_step": 2112,
+      "mass": 194.47255653017476,
+      "raw_increment_L1": 86.28643836147945,
+      "clipped_increment_L1": 6.152397041825353e-08,
+      "occupied_raw_increment_L1": 12.825939720798743,
+      "occupied_clipped_increment_L1": 6.152397041825353e-08,
+      "blocked_fraction_all_grid": 0.9999999992869798,
+      "blocked_fraction_occupied": 0.9999999952031609,
+      "upper_bound_mass_fraction": 0.9924279468710215,
+      "upper_bound_pixels": 193,
+      "upper_outward_pixels": 193,
+      "upper_outward_raw_increment": 12.825939659274773,
+      "lower_bound_pixels": 828,
+      "lower_outward_pixels": 828,
+      "interior_pixels": 3,
+      "near_upper_mass_by_tolerance": {
+        "1e-12": 0.9924279468710215,
+        "1e-08": 0.9924279468710215,
+        "0.0001": 0.9924279468710215
+      }
+    }
+  ]
+}

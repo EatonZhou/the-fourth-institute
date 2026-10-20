@@ -1,0 +1,204 @@
+\subsection*{Scalar-consequence action learning}
+The frozen final handoff is \path{scalar_actuator_relearning_20261019/direction_handoff.json}. Four actual batches total 10,880 native updates and 35.827098 worker seconds: ten life-zero paths and ten dependent branches. K is physical transport only; gradient, location and donor displacement are unavailable to the learner. These tables transcribe original outcomes without fitting, replay or filling failed phases.
+\begingroup\scriptsize\setlength{\tabcolsep}{3pt}\setlength{\LTpre}{6pt}\setlength{\LTpost}{6pt}
+\begin{longtable}{llllllll}
+\caption{All life-zero scalar-feedback phases. B/C denotes batch and seed--actuator condition. B1: accumulated, context, fixed run/tumble and random policies; B2: response estimation. A/R/H denote acquisition, reward reversal and no-new-feedback aftereffect. Values are final-64 scores and favourable-half fractions; P/F retains the original complete gate. Conditions share designed fields and are not population replicates.}\label{tab:scalar-phases}\\
+\toprule
+B/C & Policy & Phase & $S$ & $p_+$ & $M$ & $E$ & Gate \\
+\midrule
+\endfirsthead
+\toprule
+B/C & Policy & Phase & $S$ & $p_+$ & $M$ & $E$ & Gate \\
+\midrule
+\endhead
+1/0 & Accum. & A & 0.45880 & 0.93795 & 24.00000 & 141.47464 & P \\
+1/0 & Accum. & R & -0.24106 & 0.29753 & 24.00000 & 112.52269 & F \\
+1/0 & Accum. & H & 0.21602 & 0.72717 & 24.00000 & 108.42360 & F \\
+1/0 & Context & A & 0.45548 & 0.93331 & 24.00000 & 141.42674 & P \\
+1/0 & Context & R & -0.52429 & 0.22949 & 24.00000 & 109.25751 & F \\
+1/0 & Context & H & -0.42793 & 0.26866 & 24.00000 & 105.24167 & F \\
+1/0 & Run/tumble & A & 0.25860 & 0.80085 & 24.00000 & 139.26813 & P \\
+1/0 & Run/tumble & R & -0.02739 & 0.44834 & 24.00000 & 123.41600 & F \\
+1/0 & Run/tumble & H & 0.07212 & 0.57151 & 24.00000 & 119.38822 & F \\
+1/0 & Random & A & 0.06567 & 0.58982 & 24.00000 & 135.68548 & F \\
+1/0 & Random & R & -0.05110 & 0.38835 & 24.00000 & 123.26366 & F \\
+1/0 & Random & H & -0.08689 & 0.32797 & 24.00000 & 119.28847 & F \\
+1/1 & Accum. & A & 0.46246 & 0.91734 & 24.00000 & 140.77320 & P \\
+1/1 & Accum. & R & -0.18498 & 0.22542 & 24.00000 & 113.37151 & F \\
+1/1 & Accum. & H & 0.17726 & 0.65875 & 24.00000 & 109.27323 & F \\
+1/1 & Context & A & 0.45859 & 0.91103 & 24.00000 & 140.71667 & P \\
+1/1 & Context & R & -0.51626 & 0.10088 & 24.00000 & 107.40498 & F \\
+1/1 & Context & H & -0.26544 & 0.22956 & 24.00000 & 103.35246 & F \\
+1/1 & Run/tumble & A & 0.16078 & 0.65202 & 24.00000 & 136.68917 & F \\
+1/1 & Run/tumble & R & -0.01925 & 0.44539 & 24.00000 & 123.34240 & F \\
+1/1 & Run/tumble & H & 0.04742 & 0.52039 & 24.00000 & 119.29422 & F \\
+1/1 & Random & A & -0.00848 & 0.45700 & 24.00000 & 133.50245 & F \\
+1/1 & Random & R & 0.02761 & 0.52943 & 24.00000 & 124.42239 & F \\
+1/1 & Random & H & 0.03695 & 0.54288 & 24.00000 & 120.44199 & F \\
+2/0 & Response & A & 0.63550 & 0.96765 & 24.00000 & 146.48055 & P \\
+2/0 & Response & R & 0.14684 & 0.61446 & 24.00000 & 125.44861 & F \\
+2/0 & Response & H & 0.53410 & 0.91177 & 24.00000 & 121.30789 & P \\
+2/1 & Response & A & 0.63274 & 0.96494 & 24.00000 & 145.69751 & P \\
+2/1 & Response & R & 0.27984 & 0.78357 & 24.00000 & 128.45767 & P \\
+2/1 & Response & H & 0.60963 & 0.95065 & 24.00000 & 124.31863 & P \\
+\bottomrule
+\end{longtable}
+\begin{longtable}{llllllll}
+\caption{Actual costs for all 46 scalar-feedback phase windows, including dependent continuations. B3 changes acquired content; B4 changes only the actuator. X denotes that actuator-change interval, not reward reversal. Gain and loss are completed outcome transfers; no separate sensor tariff is charged.}\label{tab:scalar-costs}\\
+\toprule
+B/C & Policy & Phase & Steps & Gain & Loss & Motor & Basal \\
+\midrule
+\endfirsthead
+\toprule
+B/C & Policy & Phase & Steps & Gain & Loss & Motor & Basal \\
+\midrule
+\endhead
+1/0 & Accum. & A & 320 & 9.64906 & 2.17522 & 0.78320 & 9.21600 \\
+1/0 & Accum. & R & 320 & 1.72337 & 20.40287 & 1.05645 & 9.21600 \\
+1/0 & Accum. & H & 128 & 0.00000 & 0.00000 & 0.41269 & 3.68640 \\
+1/0 & Context & A & 320 & 9.61796 & 2.19036 & 0.78486 & 9.21600 \\
+1/0 & Context & R & 320 & 1.31484 & 23.40674 & 0.86133 & 9.21600 \\
+1/0 & Context & H & 128 & 0.00000 & 0.00000 & 0.32943 & 3.68640 \\
+1/0 & Run/tumble & A & 320 & 8.06814 & 2.70261 & 0.88141 & 9.21600 \\
+1/0 & Run/tumble & R & 320 & 3.14939 & 8.89969 & 0.88583 & 9.21600 \\
+1/0 & Run/tumble & H & 128 & 0.00000 & 0.00000 & 0.34138 & 3.68640 \\
+1/0 & Random & A & 320 & 5.15571 & 3.53303 & 0.72120 & 9.21600 \\
+1/0 & Random & R & 320 & 2.82530 & 5.29983 & 0.73130 & 9.21600 \\
+1/0 & Random & H & 128 & 0.00000 & 0.00000 & 0.28879 & 3.68640 \\
+1/1 & Accum. & A & 320 & 9.36770 & 2.57411 & 0.80439 & 9.21600 \\
+1/1 & Accum. & R & 320 & 1.41087 & 18.59952 & 0.99704 & 9.21600 \\
+1/1 & Accum. & H & 128 & 0.00000 & 0.00000 & 0.41188 & 3.68640 \\
+1/1 & Context & A & 320 & 9.33387 & 2.59579 & 0.80541 & 9.21600 \\
+1/1 & Context & R & 320 & 1.03790 & 24.25615 & 0.87744 & 9.21600 \\
+1/1 & Context & H & 128 & 0.00000 & 0.00000 & 0.36612 & 3.68640 \\
+1/1 & Run/tumble & A & 320 & 6.70004 & 3.90077 & 0.89410 & 9.21600 \\
+1/1 & Run/tumble & R & 320 & 4.76012 & 7.98483 & 0.90606 & 9.21600 \\
+1/1 & Run/tumble & H & 128 & 0.00000 & 0.00000 & 0.36178 & 3.68640 \\
+1/1 & Random & A & 320 & 4.15902 & 4.71184 & 0.72872 & 9.21600 \\
+1/1 & Random & R & 320 & 4.61328 & 3.74541 & 0.73194 & 9.21600 \\
+1/1 & Random & H & 128 & 0.00000 & 0.00000 & 0.29400 & 3.68640 \\
+2/0 & Response & A & 320 & 14.13818 & 1.42393 & 1.01770 & 9.21600 \\
+2/0 & Response & R & 320 & 3.59591 & 14.31667 & 1.09518 & 9.21600 \\
+2/0 & Response & H & 128 & 0.00000 & 0.00000 & 0.45432 & 3.68640 \\
+2/1 & Response & A & 320 & 13.73607 & 1.79897 & 1.02359 & 9.21600 \\
+2/1 & Response & R & 320 & 4.64699 & 11.57446 & 1.09636 & 9.21600 \\
+2/1 & Response & H & 128 & 0.00000 & 0.00000 & 0.45264 & 3.68640 \\
+3/0 & Clear & H & 128 & 0.00000 & 0.00000 & 0.30716 & 3.68640 \\
+3/0 & Rotate & H & 128 & 0.00000 & 0.00000 & 0.45566 & 3.68640 \\
+3/1 & Clear & H & 128 & 0.00000 & 0.00000 & 0.30467 & 3.68640 \\
+3/1 & Rotate & H & 128 & 0.00000 & 0.00000 & 0.45287 & 3.68640 \\
+4/0 & Continue & X & 320 & 29.72727 & 0.08580 & 0.99902 & 9.21600 \\
+4/0 & Continue & H & 128 & 0.00000 & 0.00000 & 0.42308 & 3.68640 \\
+4/0 & Frozen & X & 320 & 10.75098 & 4.85627 & 1.05909 & 9.21600 \\
+4/0 & Frozen & H & 128 & 0.00000 & 0.00000 & 0.42824 & 3.68640 \\
+4/0 & Run/tumble & X & 320 & 26.62353 & 0.24493 & 0.87433 & 9.21600 \\
+4/0 & Run/tumble & H & 128 & 0.00000 & 0.00000 & 0.32933 & 3.68640 \\
+4/1 & Continue & X & 320 & 29.40942 & 0.12737 & 0.97053 & 9.21600 \\
+4/1 & Continue & H & 128 & 0.00000 & 0.00000 & 0.41235 & 3.68640 \\
+4/1 & Frozen & X & 320 & 10.54381 & 5.96074 & 1.05363 & 9.21600 \\
+4/1 & Frozen & H & 128 & 0.00000 & 0.00000 & 0.43361 & 3.68640 \\
+4/1 & Run/tumble & X & 320 & 26.67450 & 0.30702 & 0.87516 & 9.21600 \\
+4/1 & Run/tumble & H & 128 & 0.00000 & 0.00000 & 0.33494 & 3.68640 \\
+\bottomrule
+\end{longtable}
+\begin{longtable}{llllllll}
+\caption{Phase-end physical accounts. Body-time is the integral of living mass over actual updates; zero unpaid/death entries are recorded values. Mass and energy are stocks, not sums.}\label{tab:scalar-physical}\\
+\toprule
+B/C & Policy & Phase & $M$ & $E$ & Unpaid & Deleted & Body-time \\
+\midrule
+\endfirsthead
+\toprule
+B/C & Policy & Phase & $M$ & $E$ & Unpaid & Deleted & Body-time \\
+\midrule
+\endhead
+1/0 & Accum. & A & 24.00000 & 141.47464 & 0.00000 & 0.00000 & 7680.00000 \\
+1/0 & Accum. & R & 24.00000 & 112.52269 & 0.00000 & 0.00000 & 7680.00000 \\
+1/0 & Accum. & H & 24.00000 & 108.42360 & 0.00000 & 0.00000 & 3072.00000 \\
+1/0 & Context & A & 24.00000 & 141.42674 & 0.00000 & 0.00000 & 7680.00000 \\
+1/0 & Context & R & 24.00000 & 109.25751 & 0.00000 & 0.00000 & 7680.00000 \\
+1/0 & Context & H & 24.00000 & 105.24167 & 0.00000 & 0.00000 & 3072.00000 \\
+1/0 & Run/tumble & A & 24.00000 & 139.26813 & 0.00000 & 0.00000 & 7680.00000 \\
+1/0 & Run/tumble & R & 24.00000 & 123.41600 & 0.00000 & 0.00000 & 7680.00000 \\
+1/0 & Run/tumble & H & 24.00000 & 119.38822 & 0.00000 & 0.00000 & 3072.00000 \\
+1/0 & Random & A & 24.00000 & 135.68548 & 0.00000 & 0.00000 & 7680.00000 \\
+1/0 & Random & R & 24.00000 & 123.26366 & 0.00000 & 0.00000 & 7680.00000 \\
+1/0 & Random & H & 24.00000 & 119.28847 & 0.00000 & 0.00000 & 3072.00000 \\
+1/1 & Accum. & A & 24.00000 & 140.77320 & 0.00000 & 0.00000 & 7680.00000 \\
+1/1 & Accum. & R & 24.00000 & 113.37151 & 0.00000 & 0.00000 & 7680.00000 \\
+1/1 & Accum. & H & 24.00000 & 109.27323 & 0.00000 & 0.00000 & 3072.00000 \\
+1/1 & Context & A & 24.00000 & 140.71667 & 0.00000 & 0.00000 & 7680.00000 \\
+1/1 & Context & R & 24.00000 & 107.40498 & 0.00000 & 0.00000 & 7680.00000 \\
+1/1 & Context & H & 24.00000 & 103.35246 & 0.00000 & 0.00000 & 3072.00000 \\
+1/1 & Run/tumble & A & 24.00000 & 136.68917 & 0.00000 & 0.00000 & 7680.00000 \\
+1/1 & Run/tumble & R & 24.00000 & 123.34240 & 0.00000 & 0.00000 & 7680.00000 \\
+1/1 & Run/tumble & H & 24.00000 & 119.29422 & 0.00000 & 0.00000 & 3072.00000 \\
+1/1 & Random & A & 24.00000 & 133.50245 & 0.00000 & 0.00000 & 7680.00000 \\
+1/1 & Random & R & 24.00000 & 124.42239 & 0.00000 & 0.00000 & 7680.00000 \\
+1/1 & Random & H & 24.00000 & 120.44199 & 0.00000 & 0.00000 & 3072.00000 \\
+2/0 & Response & A & 24.00000 & 146.48055 & 0.00000 & 0.00000 & 7680.00000 \\
+2/0 & Response & R & 24.00000 & 125.44861 & 0.00000 & 0.00000 & 7680.00000 \\
+2/0 & Response & H & 24.00000 & 121.30789 & 0.00000 & 0.00000 & 3072.00000 \\
+2/1 & Response & A & 24.00000 & 145.69751 & 0.00000 & 0.00000 & 7680.00000 \\
+2/1 & Response & R & 24.00000 & 128.45767 & 0.00000 & 0.00000 & 7680.00000 \\
+2/1 & Response & H & 24.00000 & 124.31863 & 0.00000 & 0.00000 & 3072.00000 \\
+3/0 & Clear & H & 24.00000 & 121.45505 & 0.00000 & 0.00000 & 3072.00000 \\
+3/0 & Rotate & H & 24.00000 & 121.30655 & 0.00000 & 0.00000 & 3072.00000 \\
+3/1 & Clear & H & 24.00000 & 124.46660 & 0.00000 & 0.00000 & 3072.00000 \\
+3/1 & Rotate & H & 24.00000 & 124.31840 & 0.00000 & 0.00000 & 3072.00000 \\
+4/0 & Continue & X & 24.00000 & 165.90701 & 0.00000 & 0.00000 & 7680.00000 \\
+4/0 & Continue & H & 24.00000 & 161.79753 & 0.00000 & 0.00000 & 3072.00000 \\
+4/0 & Frozen & X & 24.00000 & 142.10017 & 0.00000 & 0.00000 & 7680.00000 \\
+4/0 & Frozen & H & 24.00000 & 137.98553 & 0.00000 & 0.00000 & 3072.00000 \\
+4/0 & Run/tumble & X & 24.00000 & 162.76882 & 0.00000 & 0.00000 & 7680.00000 \\
+4/0 & Run/tumble & H & 24.00000 & 158.75309 & 0.00000 & 0.00000 & 3072.00000 \\
+4/1 & Continue & X & 24.00000 & 164.79303 & 0.00000 & 0.00000 & 7680.00000 \\
+4/1 & Continue & H & 24.00000 & 160.69428 & 0.00000 & 0.00000 & 3072.00000 \\
+4/1 & Frozen & X & 24.00000 & 140.01095 & 0.00000 & 0.00000 & 7680.00000 \\
+4/1 & Frozen & H & 24.00000 & 135.89095 & 0.00000 & 0.00000 & 3072.00000 \\
+4/1 & Run/tumble & X & 24.00000 & 161.97383 & 0.00000 & 0.00000 & 7680.00000 \\
+4/1 & Run/tumble & H & 24.00000 & 157.95249 & 0.00000 & 0.00000 & 3072.00000 \\
+\bottomrule
+\end{longtable}
+\begin{longtable}{lllllll}
+\caption{Actual 640-step parents and their no-feedback content interventions. Retained tails are recorded references from B2, not additional executions. Clearing and rotation are four new dependent branches; norm preservation is not command or expense matching.}\label{tab:scalar-content}\\
+\toprule
+Parent & Content & $S$ & $p_+$ & $E$ & Motor & Gate \\
+\midrule
+\endfirsthead
+\toprule
+Parent & Content & $S$ & $p_+$ & $E$ & Motor & Gate \\
+\midrule
+\endhead
+0 & Retained (recorded) & 0.53410 & 0.91177 & 121.30789 & 0.45432 & P \\
+0 & Clear & 0.22435 & 0.69697 & 121.45505 & 0.30716 & F \\
+0 & Rotate & 0.14044 & 0.61550 & 121.30655 & 0.45566 & F \\
+1 & Retained (recorded) & 0.60963 & 0.95065 & 124.31863 & 0.45264 & P \\
+1 & Clear & 0.34531 & 0.80976 & 124.46660 & 0.30467 & P \\
+1 & Rotate & 0.19537 & 0.62192 & 124.31840 & 0.45287 & F \\
+\bottomrule
+\end{longtable}
+\begin{longtable}{llllllll}
+\caption{Actuator-only change from two actual 320-step parents. X lasts 320 paid steps and H lasts 128 steps without new outcomes or writes. The fixed run/tumble control is endowed with the same initial acquired direction. Six continuations are paired branches.}\label{tab:scalar-actuator}\\
+\toprule
+B/C & Policy & Phase & $S$ & $p_+$ & $M$ & $E$ & Gate \\
+\midrule
+\endfirsthead
+\toprule
+B/C & Policy & Phase & $S$ & $p_+$ & $M$ & $E$ & Gate \\
+\midrule
+\endhead
+4/0 & Continue & X & 0.88986 & 0.99463 & 24.00000 & 165.90701 & P \\
+4/0 & Continue & H & 0.85625 & 0.99860 & 24.00000 & 161.79753 & P \\
+4/0 & Frozen & X & -0.23287 & 0.30229 & 24.00000 & 142.10017 & F \\
+4/0 & Frozen & H & -0.25315 & 0.34688 & 24.00000 & 137.98553 & F \\
+4/0 & Run/tumble & X & 0.71258 & 0.95895 & 24.00000 & 162.76882 & P \\
+4/0 & Run/tumble & H & 0.71991 & 0.95358 & 24.00000 & 158.75309 & P \\
+4/1 & Continue & X & 0.86846 & 0.99443 & 24.00000 & 164.79303 & P \\
+4/1 & Continue & H & 0.76574 & 0.99779 & 24.00000 & 160.69428 & P \\
+4/1 & Frozen & X & -0.29387 & 0.30623 & 24.00000 & 140.01095 & F \\
+4/1 & Frozen & H & -0.28662 & 0.30342 & 24.00000 & 135.89095 & F \\
+4/1 & Run/tumble & X & 0.70764 & 0.95810 & 24.00000 & 161.97383 & P \\
+4/1 & Run/tumble & H & 0.72083 & 0.95011 & 24.00000 & 157.95249 & P \\
+\bottomrule
+\end{longtable}
+\endgroup

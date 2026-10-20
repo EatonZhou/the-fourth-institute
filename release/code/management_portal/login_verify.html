@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title data-portal-site-title="[&quot;Two-factor verification&quot;]">Two-factor verification</title>
+    <link rel="stylesheet" href="/static/portal_components.css" />
+    <link rel="stylesheet" href="/static/portal_design_system.css" data-portal-skin="default" />
+    <link rel="stylesheet" href="/static/portal_themes.css" data-portal-skin-provider="themes" />
+    <script src="/static/portal_state.js"></script>
+    <script src="/static/portal_overlay.js"></script>
+    <script src="/static/portal_text.js"></script>
+    <script src="/static/portal_translations.js"></script>
+    <script src="/static/portal_i18n.js"></script>
+    <script src="/static/portal_theme.js"></script>
+    <script src="/static/portal_ui_primitives.js"></script>
+    <script src="/static/portal_api.js"></script>
+    <script src="/static/portal_button_tooltips.js"></script>
+    <style>
+      *, *::before, *::after { box-sizing: border-box; }
+      body { margin: 0; min-height: 100vh; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; -webkit-font-smoothing: antialiased; }
+      main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 32px 16px; }
+      .loginCard { --portal-detail-width: 360px; padding: 36px 40px 32px; width: 100%; max-width: 360px; }
+      .loginCard h1 { margin: 0 0 8px; font-size: 20px; font-weight: 700; color: var(--text); }
+      .loginHint { margin: 0 0 22px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+      .loginForm { display: grid; gap: 14px; }
+      .loginSubmit { width: 100%; }
+      .loginError { margin-top: 16px; }
+      .loginBack { display: block; margin-top: 16px; color: var(--muted); font-size: 12px; text-align: center; }
+    </style>
+  </head>
+  <body class="portalBoardShell">
+    <header class="portalSiteHeader">
+      <div class="portalNavShell"><div class="portalNavTop" data-portal-public-language><a class="portalBrand" href="/" data-portal-site-name>Portal</a></div></div>
+    </header>
+    <main>
+      <div class="portalDetailSurface loginCard">
+        <h1><!--portal-i18n:"两次验证"-->两次验证</h1>
+        <p class="loginHint"><!--portal-i18n:"输入验证器中的 6 位动态码，或使用一枚恢复码。"-->输入验证器中的 6 位动态码，或使用一枚恢复码。</p>
+        <form class="loginForm" method="POST" action="/login/verify">
+          <label class="portalField" for="code"><!--portal-i18n:"验证码"-->验证码<input id="code" type="text" name="code" inputmode="numeric" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" autofocus required /></label>
+          <button class="portalButton is-primary loginSubmit" type="submit"><!--portal-i18n:"验证并登录"-->验证并登录</button>
+        </form>
+        <!--ERROR-->
+        <a class="loginBack" href="/login"><!--portal-i18n:"返回密码登录"-->返回密码登录</a>
+      </div>
+    </main>
+  </body>
+</html>

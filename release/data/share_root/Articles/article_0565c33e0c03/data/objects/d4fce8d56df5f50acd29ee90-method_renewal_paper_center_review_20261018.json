@@ -1,0 +1,92 @@
+{
+  "status": "author_review_for_next_integrated_revision",
+  "public_publication_requested": false,
+  "review_scope": [
+    "complete current abstract",
+    "all seven figure source wrappers/captions and asset references",
+    "result/method figure-reference lines; not all current PDF pages"
+  ],
+  "observed": {
+    "abstract_sha256": "50b27752ac3c4eb4af4da4eede943b3b9477f8caef508086c2b70a4b5704e668",
+    "figures": [
+      {
+        "source": "${share_root}/Articles/article_0565c33e0c03/work/method_renewal/figures/action_opportunity.tex",
+        "sha256": "48949230bccfc9b4e9cb1593eee544c4e727d6a05ea366f9262c8187d3367c9c",
+        "assets": [
+          "figures/main/action_opportunity/action_opportunity.pdf"
+        ]
+      },
+      {
+        "source": "${share_root}/Articles/article_0565c33e0c03/work/method_renewal/figures/action_updating.tex",
+        "sha256": "5e99b2c0fd4e776d9429217bfdd68dadd6350f92fae4f64fb6b1d75cf61fded2",
+        "assets": [
+          "figures/main/action_updating/adaptive_action_renewal.pdf"
+        ]
+      },
+      {
+        "source": "${share_root}/Articles/article_0565c33e0c03/work/method_renewal/figures/formation.tex",
+        "sha256": "e74b994a1a0b5b9248e04aca2c61b7a8bdafee0295975451800528270118ab98",
+        "assets": [
+          "figures/main/formation/regenerative_morphology_transport.pdf"
+        ]
+      },
+      {
+        "source": "${share_root}/Articles/article_0565c33e0c03/work/method_renewal/figures/inheritance_recovery.tex",
+        "sha256": "272f091602d98dfa39f5784f55adc6c045bbd5f9ffb47ac71bd6895ce254bba6",
+        "assets": [
+          "figures/main/inheritance_recovery/regenerative_inheritance_recovery_factorial.pdf"
+        ]
+      },
+      {
+        "source": "${share_root}/Articles/article_0565c33e0c03/work/method_renewal/figures/protection.tex",
+        "sha256": "e87636ce2cf5e5d4852c835a6c94344892baac7d3ff84abf677b3032ffcb6f1d",
+        "assets": [
+          "figures/main/protection/paid_protection_renewal.pdf"
+        ]
+      },
+      {
+        "source": "${share_root}/Articles/article_0565c33e0c03/work/method_renewal/figures/resource_constraints.tex",
+        "sha256": "cde4915768a7fdc96d530ba798c9cd1669ceb69b4789b3567671a5e0e545a73e",
+        "assets": [
+          "figures/main/resource_constraints/resource_constraint_unmasking.pdf"
+        ]
+      },
+      {
+        "source": "${share_root}/Articles/article_0565c33e0c03/work/method_renewal/figures/spatial_experience.tex",
+        "sha256": "b6a9a7ac34886c8b5ca04d6b882e80648a2766748448f3d96ab07eb52b8b8027",
+        "assets": [
+          "figures/main/spatial_experience/spatial_state_divergence.pdf"
+        ]
+      }
+    ],
+    "main_issue": "All seven current main images depict earlier models; the new candidate mechanism and actual local-host coupling lack dedicated main figures. The abstract still inventories multiple models rather than following one method and its decisive tests."
+  },
+  "scientific_center_question": "Can locally acquired evidence select useful actions and acquire corrective feedback after a hidden environmental change while its bodily carrier changes?",
+  "claim_boundary": "The separated local-contact rule, hand-set EMA/last-contact host coupling and event/RLS controller are distinct implementations. Their results must not be combined into a single already-validated algorithm; a central innovation and sustained bodily adaptation remain unproven.",
+  "abstract_opening_candidate": "Artificial life seeks to connect the organization of a body with adaptive behaviour. A central challenge is to turn past encounters into actions that remain useful when environmental relationships change. Here we investigate how locally acquired evidence can guide action while its material carrier moves, grows and dies.",
+  "abstract_followthrough": "After field/problem, state the actual unified algorithm once it exists, its specific distinction from verified nearest work, then the key matched tests and failures. At present explicitly identify the distinct prototypes; do not call their collection a novel framework or force three contributions. Replace a catalogue of old precursor/inheritance/protection findings with only the constraint essential to the central claim.",
+  "next_actual_figures": [
+    {
+      "role": "Show the candidate learning operation and where evidence comes from",
+      "owner": "tfi-exported-user",
+      "inputs": [
+        "src/local_learning/results_20261018/method_renewal_local_plasticity_report/handoff.json",
+        "src/local_learning/results_20261018/method_renewal_ecology_local_coupling_report/handoff.json"
+      ],
+      "content": "GUI schematic of delayed local contact, paid write, direct/borrowed separation for the fixed-unit variant; separately label the actual carried n/d EMA variant, selected-action update, motion/death and naive newborn. Include actual data on reversal versus recent-feedback/no-exchange controls and failures; never imply borrowed-state transport was tested in the host when it was not."
+    },
+    {
+      "role": "Show a genuine experience-to-action-to-uptake spatial process",
+      "owner": "tfi-exported-user",
+      "inputs": [
+        "src/local_learning/results_20261018/method_renewal_ecology_local_coupling_report/actual_state_atlas.png",
+        "src/local_learning/results_20261018/method_renewal_ecology_local_coupling_report/first_divergences.json",
+        "src/local_learning/results_20261018/method_renewal_ecology_local_coupling_report/paired_effects.csv"
+      ],
+      "content": "Actual matched update/freeze body and evidence frames at saved times; annotate first content/action/uptake differences at 1056/1191/1201 from the tables without inventing unsaved frames. Keep global action/shared E model label, current-frame support for evidence ratios, all-seed paired results, energy decline and faster alpha1 comparison. Not another montage of unrelated candidates."
+    }
+  ],
+  "legacy_selection": "Keep representative spatial processes and mechanisms needed to interpret the centre. Move or compress redundant legacy formation/inheritance/protection material according to function, not automatically by age or sign. No fixed requirement to retain seven main figures, no ban on spatial fields, and no deletion of useful evidence.",
+  "delivery": "Real editor-made editable PPTX plus exported PDF/PNG, actually inserted in the same internal manuscript with changed-page checks. Use the existing author; no script-generated finished figure/PPT. Continue new method experiments in parallel. Public update should combine real method/data/figure progress, not a text-only cosmetic release.",
+  "no_new_science_steps": true
+}

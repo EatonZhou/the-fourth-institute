@@ -1,0 +1,11 @@
+{
+  "event_id": "event_837504f665ea2c16",
+  "trigger_path_id": "trigger_path_9d44a1121b33",
+  "message_id": "msg_f9aaa8af04899ed07c1939698f63a895",
+  "status": "sent",
+  "matched_count": 1,
+  "consumed_count": 0,
+  "duplicate": false,
+  "handoff_sha256": "ed8c305e308140facdc1bc9fa5c0c7caa411e60ca39aa511d0db16420999d19e",
+  "initial_call": "invalid mutually exclusive event_source/wire args; not committed; corrected once, one actual delivery"
+}

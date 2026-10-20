@@ -1,0 +1,11 @@
+{
+  "resident": "resident_d3ccfa2d95b7",
+  "pid": 3031860,
+  "command": [
+    "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+    "-m",
+    "local_learning.turnover_compatible_morphogenesis.supervise"
+  ],
+  "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/turnover_compatible_morphogenesis/supervise.py",
+  "prelaunch_discovery_failures_native": 0
+}

@@ -1,0 +1,438 @@
+{
+  "selected": {
+    "id": "round1_proposal1",
+    "policy": {
+      "kind": "third",
+      "z": [
+        0.5781407147615433,
+        0.6717839831668448
+      ]
+    },
+    "complete": true,
+    "eligible": true,
+    "eligible_zero": true,
+    "violations": 0,
+    "zero_violations": 0,
+    "post128_delta": [
+      1.8385369716549391,
+      2.623083380654716
+    ],
+    "score_min": 0.02562236430780781,
+    "score_mean": 0.03560816625895956,
+    "outcomes": [
+      "round1_proposal1_ring",
+      "round1_proposal1_separate_seeds"
+    ],
+    "context_differences": [
+      {
+        "M": 21.747798643876337,
+        "E": 51.098950754723234,
+        "bodytime": 78.20123395218127,
+        "post128": 1.8385369716549391
+      },
+      {
+        "M": 4.451977126480166,
+        "E": 7.677648561484077,
+        "bodytime": 6.136619603435975,
+        "post128": 2.623083380654716
+      }
+    ]
+  },
+  "ranked": [
+    {
+      "id": "round1_proposal1",
+      "policy": {
+        "kind": "third",
+        "z": [
+          0.5781407147615433,
+          0.6717839831668448
+        ]
+      },
+      "complete": true,
+      "eligible": true,
+      "eligible_zero": true,
+      "violations": 0,
+      "zero_violations": 0,
+      "post128_delta": [
+        1.8385369716549391,
+        2.623083380654716
+      ],
+      "score_min": 0.02562236430780781,
+      "score_mean": 0.03560816625895956,
+      "outcomes": [
+        "round1_proposal1_ring",
+        "round1_proposal1_separate_seeds"
+      ],
+      "context_differences": [
+        {
+          "M": 21.747798643876337,
+          "E": 51.098950754723234,
+          "bodytime": 78.20123395218127,
+          "post128": 1.8385369716549391
+        },
+        {
+          "M": 4.451977126480166,
+          "E": 7.677648561484077,
+          "bodytime": 6.136619603435975,
+          "post128": 2.623083380654716
+        }
+      ]
+    },
+    {
+      "id": "round2_proposal2",
+      "policy": {
+        "kind": "third",
+        "z": [
+          0.3954535403471955,
+          1.061000080761526
+        ]
+      },
+      "complete": true,
+      "eligible": true,
+      "eligible_zero": true,
+      "violations": 0,
+      "zero_violations": 0,
+      "post128_delta": [
+        1.8321411701372874,
+        7.137023938984964
+      ],
+      "score_min": 0.025533230633015186,
+      "score_mean": 0.07479385489812992,
+      "outcomes": [
+        "round2_proposal2_ring",
+        "round2_proposal2_separate_seeds"
+      ],
+      "context_differences": [
+        {
+          "M": 21.7314917113726,
+          "E": 51.00590399967126,
+          "bodytime": 78.12370413012843,
+          "post128": 1.8321411701372874
+        },
+        {
+          "M": 16.198548357965436,
+          "E": 35.861376074646046,
+          "bodytime": 44.34257260945532,
+          "post128": 7.137023938984964
+        }
+      ]
+    },
+    {
+      "id": "round1_proposal0",
+      "policy": {
+        "kind": "third",
+        "z": [
+          -0.5197360901544221,
+          1.150261834023061
+        ]
+      },
+      "complete": true,
+      "eligible": true,
+      "eligible_zero": true,
+      "violations": 0,
+      "zero_violations": 0,
+      "post128_delta": [
+        1.719453980974606,
+        7.973892656408751
+      ],
+      "score_min": 0.023962790517823983,
+      "score_mean": 0.08128178634987236,
+      "outcomes": [
+        "round1_proposal0_ring",
+        "round1_proposal0_separate_seeds"
+      ],
+      "context_differences": [
+        {
+          "M": 21.420041573158585,
+          "E": 50.39966934250984,
+          "bodytime": 77.45119366288043,
+          "post128": 1.719453980974606
+        },
+        {
+          "M": 19.92838020650477,
+          "E": 46.064785075712976,
+          "bodytime": 67.64805346965454,
+          "post128": 7.973892656408751
+        }
+      ]
+    },
+    {
+      "id": "round2_proposal3",
+      "policy": {
+        "kind": "third",
+        "z": [
+          -0.4575132421826662,
+          1.1673777417981896
+        ]
+      },
+      "complete": true,
+      "eligible": true,
+      "eligible_zero": true,
+      "violations": 0,
+      "zero_violations": 0,
+      "post128_delta": [
+        1.7173127866239142,
+        7.9480096467640635
+      ],
+      "score_min": 0.023932950235820916,
+      "score_mean": 0.08104191927664114,
+      "outcomes": [
+        "round2_proposal3_ring",
+        "round2_proposal3_separate_seeds"
+      ],
+      "context_differences": [
+        {
+          "M": 21.418116850993783,
+          "E": 50.36870949739708,
+          "bodytime": 77.41445069151303,
+          "post128": 1.7173127866239142
+        },
+        {
+          "M": 19.96403552051305,
+          "E": 46.056377155564036,
+          "bodytime": 67.26661766178171,
+          "post128": 7.9480096467640635
+        }
+      ]
+    },
+    {
+      "id": "round2_proposal0",
+      "policy": {
+        "kind": "third",
+        "z": [
+          -0.42949561083401055,
+          1.2494395005306582
+        ]
+      },
+      "complete": true,
+      "eligible": true,
+      "eligible_zero": true,
+      "violations": 0,
+      "zero_violations": 0,
+      "post128_delta": [
+        1.7168022039709747,
+        7.9431110726793115
+      ],
+      "score_min": 0.02392583461348394,
+      "score_mean": 0.08099578839426527,
+      "outcomes": [
+        "round2_proposal0_ring",
+        "round2_proposal0_separate_seeds"
+      ],
+      "context_differences": [
+        {
+          "M": 21.41755368694308,
+          "E": 50.392516362453165,
+          "bodytime": 77.41056339176532,
+          "post128": 1.7168022039709747
+        },
+        {
+          "M": 19.966708364547628,
+          "E": 46.04956199775303,
+          "bodytime": 67.20774068682744,
+          "post128": 7.9431110726793115
+        }
+      ]
+    },
+    {
+      "id": "round2_proposal1",
+      "policy": {
+        "kind": "third",
+        "z": [
+          -0.12389216423901181,
+          0.8368327007330427
+        ]
+      },
+      "complete": true,
+      "eligible": true,
+      "eligible_zero": true,
+      "violations": 0,
+      "zero_violations": 0,
+      "post128_delta": [
+        1.7030830078587869,
+        7.692430271412373
+      ],
+      "score_min": 0.023734640067920722,
+      "score_mean": 0.07872154659799215,
+      "outcomes": [
+        "round2_proposal1_ring",
+        "round2_proposal1_separate_seeds"
+      ],
+      "context_differences": [
+        {
+          "M": 21.406341018787472,
+          "E": 50.354218025928645,
+          "bodytime": 77.29317274595473,
+          "post128": 1.7030830078587869
+        },
+        {
+          "M": 19.55347559528947,
+          "E": 44.97417232790508,
+          "bodytime": 63.73352907627998,
+          "post128": 7.692430271412373
+        }
+      ]
+    },
+    {
+      "id": "midpoint",
+      "policy": {
+        "kind": "third",
+        "z": [
+          0.0,
+          0.0
+        ]
+      },
+      "complete": true,
+      "eligible": true,
+      "eligible_zero": true,
+      "violations": 0,
+      "zero_violations": 0,
+      "post128_delta": [
+        1.69563848501668,
+        6.811267942991165
+      ],
+      "score_min": 0.02363089112008936,
+      "score_mean": 0.07101156878541011,
+      "outcomes": [
+        "midpoint_ring",
+        "midpoint_separate_seeds"
+      ],
+      "context_differences": [
+        {
+          "M": 21.401252981607655,
+          "E": 50.382371942906985,
+          "bodytime": 77.16613795305841,
+          "post128": 1.69563848501668
+        },
+        {
+          "M": 14.351318406449636,
+          "E": 30.73678323571734,
+          "bodytime": 35.377485884382,
+          "post128": 6.811267942991165
+        }
+      ]
+    },
+    {
+      "id": "round1_proposal3",
+      "policy": {
+        "kind": "third",
+        "z": [
+          0.3912469032810017,
+          -1.1634908566497733
+        ]
+      },
+      "complete": true,
+      "eligible": false,
+      "eligible_zero": false,
+      "violations": 0,
+      "zero_violations": 0,
+      "post128_delta": [
+        1.7866973480775385,
+        0.0
+      ],
+      "score_min": 0.0,
+      "score_mean": 0.012449956423511285,
+      "outcomes": [
+        "round1_proposal3_ring",
+        "round1_proposal3_separate_seeds"
+      ],
+      "context_differences": [
+        {
+          "M": 16.27819333311291,
+          "E": 46.27979686826441,
+          "bodytime": 63.55773417129217,
+          "post128": 1.7866973480775385
+        },
+        {
+          "M": 0.0,
+          "E": 0.0,
+          "bodytime": 0.0,
+          "post128": 0.0
+        }
+      ]
+    },
+    {
+      "id": "round1_proposal2",
+      "policy": {
+        "kind": "third",
+        "z": [
+          1.075392216127891,
+          0.5524577191046862
+        ]
+      },
+      "complete": true,
+      "eligible": false,
+      "eligible_zero": false,
+      "violations": 1,
+      "zero_violations": 1,
+      "post128_delta": [
+        2.0522031089266903,
+        0.1908134472812293
+      ],
+      "score_min": 0.0033166853610389732,
+      "score_mean": 0.015958380292274466,
+      "outcomes": [
+        "round1_proposal2_ring",
+        "round1_proposal2_separate_seeds"
+      ],
+      "context_differences": [
+        {
+          "M": 19.731490065010064,
+          "E": 50.194252258055,
+          "bodytime": 73.0828273379285,
+          "post128": 2.0522031089266903
+        },
+        {
+          "M": 0.15450424962968157,
+          "E": -0.016198552442020286,
+          "bodytime": 0.47522919816412923,
+          "post128": 0.1908134472812293
+        }
+      ]
+    }
+  ],
+  "midpoint": {
+    "id": "midpoint",
+    "policy": {
+      "kind": "third",
+      "z": [
+        0.0,
+        0.0
+      ]
+    },
+    "complete": true,
+    "eligible": true,
+    "eligible_zero": true,
+    "violations": 0,
+    "zero_violations": 0,
+    "post128_delta": [
+      1.69563848501668,
+      6.811267942991165
+    ],
+    "score_min": 0.02363089112008936,
+    "score_mean": 0.07101156878541011,
+    "outcomes": [
+      "midpoint_ring",
+      "midpoint_separate_seeds"
+    ],
+    "context_differences": [
+      {
+        "M": 21.401252981607655,
+        "E": 50.382371942906985,
+        "bodytime": 77.16613795305841,
+        "post128": 1.69563848501668
+      },
+      {
+        "M": 14.351318406449636,
+        "E": 30.73678323571734,
+        "bodytime": 35.377485884382,
+        "post128": 6.811267942991165
+      }
+    ]
+  },
+  "training_native": 2304,
+  "validation_consumed": false,
+  "trained_nonzero_selected": true,
+  "plan_sha": "d76ab6f941660dcb9ed4c7fc9a2edd82f2b08e2f3729ea7bf60ab087909f051a",
+  "native_at_freeze": 2308
+}

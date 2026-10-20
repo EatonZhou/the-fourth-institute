@@ -1,0 +1,16 @@
+{
+  "native": 0,
+  "missing_feedback_zero_updates": [
+    "reward_delta",
+    "context_delta",
+    "run_tumble",
+    "random"
+  ],
+  "freeze_association_keeps_coefficients": [
+    "reward_delta",
+    "context_delta",
+    "run_tumble",
+    "random"
+  ],
+  "policy_inputs": "state + scalar paid outcome + exploration only; K is a transport-service input"
+}

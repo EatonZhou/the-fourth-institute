@@ -1,0 +1,90 @@
+[
+  {
+    "effect": "reference_anisotropic--connected_trilobe--excised_minus_uninjured",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          257,
+          384
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          257,
+          384
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          257,
+          258
+        ]
+      ],
+      "negative": [
+        [
+          259,
+          384
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          257,
+          384
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "compact_ring_core_outer--bridged_longbody--excised_minus_uninjured",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          257,
+          384
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          257,
+          384
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          257,
+          367
+        ]
+      ],
+      "negative": [
+        [
+          368,
+          384
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          257,
+          384
+        ]
+      ]
+    }
+  }
+]

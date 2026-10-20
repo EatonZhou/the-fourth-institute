@@ -1,0 +1,3739 @@
+[
+  {
+    "candidate": "genome_93e6148d32bbb0862163",
+    "comparison": "experienced_minus_naive",
+    "challenge": "none",
+    "start": 0,
+    "M": {
+      "positive": [
+        [
+          155,
+          201
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          154
+        ],
+        [
+          202,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          199,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          198
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          197,
+          207
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          196
+        ],
+        [
+          208,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "candidate": "genome_93e6148d32bbb0862163",
+    "comparison": "experienced_minus_naive",
+    "challenge": "x",
+    "start": 0,
+    "M": {
+      "positive": [
+        [
+          155,
+          182
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          154
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          164,
+          182
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          163
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          172,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          171
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "candidate": "genome_93e6148d32bbb0862163",
+    "comparison": "experienced_minus_low_cost_T00",
+    "challenge": "none",
+    "start": 0,
+    "M": {
+      "positive": [
+        [
+          154,
+          208
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          153
+        ],
+        [
+          209,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          188,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          187
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          198,
+          217
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          197
+        ],
+        [
+          218,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "candidate": "genome_93e6148d32bbb0862163",
+    "comparison": "experienced_minus_low_cost_T00",
+    "challenge": "x",
+    "start": 0,
+    "M": {
+      "positive": [
+        [
+          154,
+          182
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          153
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          163,
+          182
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          162
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          170,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          169
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "candidate": "genome_93e6148d32bbb0862163",
+    "comparison": "naive_minus_low_cost_T00",
+    "challenge": "none",
+    "start": 0,
+    "M": {
+      "positive": [
+        [
+          129,
+          167
+        ],
+        [
+          195,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          168,
+          194
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          190
+        ],
+        [
+          200,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          191,
+          199
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          170
+        ],
+        [
+          187,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          171,
+          186
+        ]
+      ]
+    }
+  },
+  {
+    "candidate": "genome_93e6148d32bbb0862163",
+    "comparison": "naive_minus_low_cost_T00",
+    "challenge": "x",
+    "start": 0,
+    "M": {
+      "positive": [
+        [
+          129,
+          177
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          177
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "candidate": "genome_d02e7f60565f83066e5d",
+    "comparison": "experienced_minus_naive",
+    "challenge": "none",
+    "start": 0,
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          216
+        ]
+      ],
+      "negative": [
+        [
+          217,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "candidate": "genome_d02e7f60565f83066e5d",
+    "comparison": "experienced_minus_naive",
+    "challenge": "x",
+    "start": 0,
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          179
+        ]
+      ],
+      "negative": [
+        [
+          180,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "candidate": "genome_d02e7f60565f83066e5d",
+    "comparison": "experienced_minus_low_cost_T00",
+    "challenge": "none",
+    "start": 0,
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "candidate": "genome_d02e7f60565f83066e5d",
+    "comparison": "experienced_minus_low_cost_T00",
+    "challenge": "x",
+    "start": 0,
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          181
+        ]
+      ],
+      "negative": [
+        [
+          182,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "candidate": "genome_d02e7f60565f83066e5d",
+    "comparison": "naive_minus_low_cost_T00",
+    "challenge": "none",
+    "start": 0,
+    "M": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          208,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          207
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "candidate": "genome_d02e7f60565f83066e5d",
+    "comparison": "naive_minus_low_cost_T00",
+    "challenge": "x",
+    "start": 0,
+    "M": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          223,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          222
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "candidate": "genome_8d60f7d250e8e9f2a25b",
+    "comparison": "experienced_minus_naive",
+    "challenge": "none",
+    "start": 0,
+    "M": {
+      "positive": [
+        [
+          190,
+          194
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          189
+        ],
+        [
+          195,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          148,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          147
+        ]
+      ]
+    }
+  },
+  {
+    "candidate": "genome_8d60f7d250e8e9f2a25b",
+    "comparison": "experienced_minus_naive",
+    "challenge": "x",
+    "start": 0,
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          148,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          147
+        ]
+      ]
+    }
+  },
+  {
+    "candidate": "genome_8d60f7d250e8e9f2a25b",
+    "comparison": "experienced_minus_low_cost_T00",
+    "challenge": "none",
+    "start": 0,
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "candidate": "genome_8d60f7d250e8e9f2a25b",
+    "comparison": "experienced_minus_low_cost_T00",
+    "challenge": "x",
+    "start": 0,
+    "M": {
+      "positive": [
+        [
+          184,
+          209
+        ],
+        [
+          213,
+          219
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          183
+        ],
+        [
+          210,
+          212
+        ],
+        [
+          220,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "candidate": "genome_8d60f7d250e8e9f2a25b",
+    "comparison": "naive_minus_low_cost_T00",
+    "challenge": "none",
+    "start": 0,
+    "M": {
+      "positive": [
+        [
+          129,
+          179
+        ],
+        [
+          217,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          180,
+          216
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          160
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          204
+        ]
+      ],
+      "negative": [
+        [
+          205,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "candidate": "genome_8d60f7d250e8e9f2a25b",
+    "comparison": "naive_minus_low_cost_T00",
+    "challenge": "x",
+    "start": 0,
+    "M": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "candidate": "genome_8d60f7d250e8e9f2a25b",
+    "comparison": "offspring_minus_parent/naive",
+    "challenge": "none",
+    "start": 0,
+    "M": {
+      "positive": [
+        [
+          1,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          1,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          2,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          4,
+          4
+        ],
+        [
+          8,
+          43
+        ],
+        [
+          57,
+          81
+        ]
+      ],
+      "negative": [
+        [
+          5,
+          7
+        ],
+        [
+          44,
+          56
+        ],
+        [
+          82,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "candidate": "genome_8d60f7d250e8e9f2a25b",
+    "comparison": "offspring_minus_parent/naive",
+    "challenge": "x",
+    "start": 0,
+    "M": {
+      "positive": [
+        [
+          1,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          1,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          2,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          4,
+          4
+        ],
+        [
+          8,
+          43
+        ],
+        [
+          57,
+          81
+        ],
+        [
+          172,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          5,
+          7
+        ],
+        [
+          44,
+          56
+        ],
+        [
+          82,
+          171
+        ]
+      ]
+    }
+  },
+  {
+    "candidate": "genome_8d60f7d250e8e9f2a25b",
+    "comparison": "offspring_minus_parent/experienced",
+    "challenge": "none",
+    "start": 0,
+    "M": {
+      "positive": [
+        [
+          1,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          1,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          2,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          4,
+          4
+        ],
+        [
+          8,
+          43
+        ],
+        [
+          57,
+          81
+        ]
+      ],
+      "negative": [
+        [
+          5,
+          7
+        ],
+        [
+          44,
+          56
+        ],
+        [
+          82,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "candidate": "genome_8d60f7d250e8e9f2a25b",
+    "comparison": "offspring_minus_parent/experienced",
+    "challenge": "x",
+    "start": 0,
+    "M": {
+      "positive": [
+        [
+          1,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          1,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          2,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          4,
+          4
+        ],
+        [
+          8,
+          43
+        ],
+        [
+          57,
+          81
+        ],
+        [
+          192,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          5,
+          7
+        ],
+        [
+          44,
+          56
+        ],
+        [
+          82,
+          191
+        ]
+      ]
+    }
+  },
+  {
+    "candidate": "genome_8d60f7d250e8e9f2a25b",
+    "comparison": "offspring_minus_parent/low_cost_T00",
+    "challenge": "none",
+    "start": 0,
+    "M": {
+      "positive": [
+        [
+          1,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          1,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          2,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          4,
+          4
+        ],
+        [
+          8,
+          43
+        ],
+        [
+          57,
+          81
+        ]
+      ],
+      "negative": [
+        [
+          5,
+          7
+        ],
+        [
+          44,
+          56
+        ],
+        [
+          82,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "candidate": "genome_8d60f7d250e8e9f2a25b",
+    "comparison": "offspring_minus_parent/low_cost_T00",
+    "challenge": "x",
+    "start": 0,
+    "M": {
+      "positive": [
+        [
+          1,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          1,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          2,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          4,
+          4
+        ],
+        [
+          8,
+          43
+        ],
+        [
+          57,
+          81
+        ],
+        [
+          190,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          5,
+          7
+        ],
+        [
+          44,
+          56
+        ],
+        [
+          82,
+          189
+        ]
+      ]
+    }
+  },
+  {
+    "candidate": "genome_a6a821dffd4f4046c97a",
+    "comparison": "experienced_minus_naive",
+    "challenge": "none",
+    "start": 0,
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "candidate": "genome_a6a821dffd4f4046c97a",
+    "comparison": "experienced_minus_naive",
+    "challenge": "x",
+    "start": 0,
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "candidate": "genome_a6a821dffd4f4046c97a",
+    "comparison": "experienced_minus_low_cost_T00",
+    "challenge": "none",
+    "start": 0,
+    "M": {
+      "positive": [
+        [
+          190,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          189
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "candidate": "genome_a6a821dffd4f4046c97a",
+    "comparison": "experienced_minus_low_cost_T00",
+    "challenge": "x",
+    "start": 0,
+    "M": {
+      "positive": [
+        [
+          189,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          188
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "candidate": "genome_a6a821dffd4f4046c97a",
+    "comparison": "naive_minus_low_cost_T00",
+    "challenge": "none",
+    "start": 0,
+    "M": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "candidate": "genome_a6a821dffd4f4046c97a",
+    "comparison": "naive_minus_low_cost_T00",
+    "challenge": "x",
+    "start": 0,
+    "M": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "candidate": "genome_a6a821dffd4f4046c97a",
+    "comparison": "offspring_minus_parent/naive",
+    "challenge": "none",
+    "start": 0,
+    "M": {
+      "positive": [
+        [
+          1,
+          4
+        ]
+      ],
+      "negative": [
+        [
+          5,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          1,
+          5
+        ]
+      ],
+      "negative": [
+        [
+          6,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          2,
+          6
+        ]
+      ],
+      "negative": [
+        [
+          7,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          1,
+          3
+        ]
+      ],
+      "negative": [
+        [
+          4,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "candidate": "genome_a6a821dffd4f4046c97a",
+    "comparison": "offspring_minus_parent/naive",
+    "challenge": "x",
+    "start": 0,
+    "M": {
+      "positive": [
+        [
+          1,
+          4
+        ]
+      ],
+      "negative": [
+        [
+          5,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          1,
+          5
+        ]
+      ],
+      "negative": [
+        [
+          6,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          2,
+          6
+        ]
+      ],
+      "negative": [
+        [
+          7,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          1,
+          3
+        ]
+      ],
+      "negative": [
+        [
+          4,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "candidate": "genome_a6a821dffd4f4046c97a",
+    "comparison": "offspring_minus_parent/experienced",
+    "challenge": "none",
+    "start": 0,
+    "M": {
+      "positive": [
+        [
+          1,
+          4
+        ]
+      ],
+      "negative": [
+        [
+          5,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          1,
+          5
+        ]
+      ],
+      "negative": [
+        [
+          6,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          2,
+          6
+        ]
+      ],
+      "negative": [
+        [
+          7,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          1,
+          3
+        ]
+      ],
+      "negative": [
+        [
+          4,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "candidate": "genome_a6a821dffd4f4046c97a",
+    "comparison": "offspring_minus_parent/experienced",
+    "challenge": "x",
+    "start": 0,
+    "M": {
+      "positive": [
+        [
+          1,
+          4
+        ]
+      ],
+      "negative": [
+        [
+          5,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          1,
+          5
+        ]
+      ],
+      "negative": [
+        [
+          6,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          2,
+          6
+        ]
+      ],
+      "negative": [
+        [
+          7,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          1,
+          3
+        ]
+      ],
+      "negative": [
+        [
+          4,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "candidate": "genome_a6a821dffd4f4046c97a",
+    "comparison": "offspring_minus_parent/low_cost_T00",
+    "challenge": "none",
+    "start": 0,
+    "M": {
+      "positive": [
+        [
+          1,
+          4
+        ]
+      ],
+      "negative": [
+        [
+          5,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          1,
+          5
+        ]
+      ],
+      "negative": [
+        [
+          6,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          2,
+          6
+        ]
+      ],
+      "negative": [
+        [
+          7,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          1,
+          3
+        ]
+      ],
+      "negative": [
+        [
+          4,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "candidate": "genome_a6a821dffd4f4046c97a",
+    "comparison": "offspring_minus_parent/low_cost_T00",
+    "challenge": "x",
+    "start": 0,
+    "M": {
+      "positive": [
+        [
+          1,
+          4
+        ]
+      ],
+      "negative": [
+        [
+          5,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          1,
+          5
+        ]
+      ],
+      "negative": [
+        [
+          6,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          2,
+          6
+        ]
+      ],
+      "negative": [
+        [
+          7,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          1,
+          3
+        ]
+      ],
+      "negative": [
+        [
+          4,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "candidate": "genome_93e6148d32bbb0862163",
+    "comparison": "experienced_minus_naive",
+    "challenge": "none",
+    "start": 128,
+    "M": {
+      "positive": [
+        [
+          155,
+          201
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          154
+        ],
+        [
+          202,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          199,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          198
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          197,
+          207
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          196
+        ],
+        [
+          208,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "candidate": "genome_93e6148d32bbb0862163",
+    "comparison": "experienced_minus_naive",
+    "challenge": "x",
+    "start": 128,
+    "M": {
+      "positive": [
+        [
+          155,
+          182
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          154
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          164,
+          182
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          163
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          172,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          171
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "candidate": "genome_93e6148d32bbb0862163",
+    "comparison": "experienced_minus_low_cost_T00",
+    "challenge": "none",
+    "start": 128,
+    "M": {
+      "positive": [
+        [
+          154,
+          208
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          153
+        ],
+        [
+          209,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          188,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          187
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          198,
+          217
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          197
+        ],
+        [
+          218,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "candidate": "genome_93e6148d32bbb0862163",
+    "comparison": "experienced_minus_low_cost_T00",
+    "challenge": "x",
+    "start": 128,
+    "M": {
+      "positive": [
+        [
+          154,
+          182
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          153
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          163,
+          182
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          162
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          170,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          169
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "candidate": "genome_93e6148d32bbb0862163",
+    "comparison": "naive_minus_low_cost_T00",
+    "challenge": "none",
+    "start": 128,
+    "M": {
+      "positive": [
+        [
+          129,
+          167
+        ],
+        [
+          195,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          168,
+          194
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          190
+        ],
+        [
+          200,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          191,
+          199
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          170
+        ],
+        [
+          187,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          171,
+          186
+        ]
+      ]
+    }
+  },
+  {
+    "candidate": "genome_93e6148d32bbb0862163",
+    "comparison": "naive_minus_low_cost_T00",
+    "challenge": "x",
+    "start": 128,
+    "M": {
+      "positive": [
+        [
+          129,
+          177
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          177
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "candidate": "genome_d02e7f60565f83066e5d",
+    "comparison": "experienced_minus_naive",
+    "challenge": "none",
+    "start": 128,
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          216
+        ]
+      ],
+      "negative": [
+        [
+          217,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "candidate": "genome_d02e7f60565f83066e5d",
+    "comparison": "experienced_minus_naive",
+    "challenge": "x",
+    "start": 128,
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          179
+        ]
+      ],
+      "negative": [
+        [
+          180,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "candidate": "genome_d02e7f60565f83066e5d",
+    "comparison": "experienced_minus_low_cost_T00",
+    "challenge": "none",
+    "start": 128,
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "candidate": "genome_d02e7f60565f83066e5d",
+    "comparison": "experienced_minus_low_cost_T00",
+    "challenge": "x",
+    "start": 128,
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          181
+        ]
+      ],
+      "negative": [
+        [
+          182,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "candidate": "genome_d02e7f60565f83066e5d",
+    "comparison": "naive_minus_low_cost_T00",
+    "challenge": "none",
+    "start": 128,
+    "M": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          208,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          207
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "candidate": "genome_d02e7f60565f83066e5d",
+    "comparison": "naive_minus_low_cost_T00",
+    "challenge": "x",
+    "start": 128,
+    "M": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          223,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          222
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "candidate": "genome_8d60f7d250e8e9f2a25b",
+    "comparison": "experienced_minus_naive",
+    "challenge": "none",
+    "start": 128,
+    "M": {
+      "positive": [
+        [
+          190,
+          194
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          189
+        ],
+        [
+          195,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          148,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          147
+        ]
+      ]
+    }
+  },
+  {
+    "candidate": "genome_8d60f7d250e8e9f2a25b",
+    "comparison": "experienced_minus_naive",
+    "challenge": "x",
+    "start": 128,
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          148,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          147
+        ]
+      ]
+    }
+  },
+  {
+    "candidate": "genome_8d60f7d250e8e9f2a25b",
+    "comparison": "experienced_minus_low_cost_T00",
+    "challenge": "none",
+    "start": 128,
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "candidate": "genome_8d60f7d250e8e9f2a25b",
+    "comparison": "experienced_minus_low_cost_T00",
+    "challenge": "x",
+    "start": 128,
+    "M": {
+      "positive": [
+        [
+          184,
+          209
+        ],
+        [
+          213,
+          219
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          183
+        ],
+        [
+          210,
+          212
+        ],
+        [
+          220,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "candidate": "genome_8d60f7d250e8e9f2a25b",
+    "comparison": "naive_minus_low_cost_T00",
+    "challenge": "none",
+    "start": 128,
+    "M": {
+      "positive": [
+        [
+          129,
+          179
+        ],
+        [
+          217,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          180,
+          216
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          160
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          204
+        ]
+      ],
+      "negative": [
+        [
+          205,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "candidate": "genome_8d60f7d250e8e9f2a25b",
+    "comparison": "naive_minus_low_cost_T00",
+    "challenge": "x",
+    "start": 128,
+    "M": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "candidate": "genome_8d60f7d250e8e9f2a25b",
+    "comparison": "offspring_minus_parent/naive",
+    "challenge": "none",
+    "start": 128,
+    "M": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          148
+        ]
+      ],
+      "negative": [
+        [
+          149,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "candidate": "genome_8d60f7d250e8e9f2a25b",
+    "comparison": "offspring_minus_parent/naive",
+    "challenge": "x",
+    "start": 128,
+    "M": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          148
+        ],
+        [
+          168,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          149,
+          167
+        ]
+      ]
+    }
+  },
+  {
+    "candidate": "genome_8d60f7d250e8e9f2a25b",
+    "comparison": "offspring_minus_parent/experienced",
+    "challenge": "none",
+    "start": 128,
+    "M": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          131
+        ]
+      ],
+      "negative": [
+        [
+          132,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "candidate": "genome_8d60f7d250e8e9f2a25b",
+    "comparison": "offspring_minus_parent/experienced",
+    "challenge": "x",
+    "start": 128,
+    "M": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          131
+        ],
+        [
+          189,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          132,
+          188
+        ]
+      ]
+    }
+  },
+  {
+    "candidate": "genome_8d60f7d250e8e9f2a25b",
+    "comparison": "offspring_minus_parent/low_cost_T00",
+    "challenge": "none",
+    "start": 128,
+    "M": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "candidate": "genome_8d60f7d250e8e9f2a25b",
+    "comparison": "offspring_minus_parent/low_cost_T00",
+    "challenge": "x",
+    "start": 128,
+    "M": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          185,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          184
+        ]
+      ]
+    }
+  },
+  {
+    "candidate": "genome_a6a821dffd4f4046c97a",
+    "comparison": "experienced_minus_naive",
+    "challenge": "none",
+    "start": 128,
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "candidate": "genome_a6a821dffd4f4046c97a",
+    "comparison": "experienced_minus_naive",
+    "challenge": "x",
+    "start": 128,
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "candidate": "genome_a6a821dffd4f4046c97a",
+    "comparison": "experienced_minus_low_cost_T00",
+    "challenge": "none",
+    "start": 128,
+    "M": {
+      "positive": [
+        [
+          190,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          189
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "candidate": "genome_a6a821dffd4f4046c97a",
+    "comparison": "experienced_minus_low_cost_T00",
+    "challenge": "x",
+    "start": 128,
+    "M": {
+      "positive": [
+        [
+          189,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          188
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "candidate": "genome_a6a821dffd4f4046c97a",
+    "comparison": "naive_minus_low_cost_T00",
+    "challenge": "none",
+    "start": 128,
+    "M": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "candidate": "genome_a6a821dffd4f4046c97a",
+    "comparison": "naive_minus_low_cost_T00",
+    "challenge": "x",
+    "start": 128,
+    "M": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "candidate": "genome_a6a821dffd4f4046c97a",
+    "comparison": "offspring_minus_parent/naive",
+    "challenge": "none",
+    "start": 128,
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          130,
+          140
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          129
+        ],
+        [
+          141,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "candidate": "genome_a6a821dffd4f4046c97a",
+    "comparison": "offspring_minus_parent/naive",
+    "challenge": "x",
+    "start": 128,
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          130,
+          140
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          129
+        ],
+        [
+          141,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "candidate": "genome_a6a821dffd4f4046c97a",
+    "comparison": "offspring_minus_parent/experienced",
+    "challenge": "none",
+    "start": 128,
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "candidate": "genome_a6a821dffd4f4046c97a",
+    "comparison": "offspring_minus_parent/experienced",
+    "challenge": "x",
+    "start": 128,
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "candidate": "genome_a6a821dffd4f4046c97a",
+    "comparison": "offspring_minus_parent/low_cost_T00",
+    "challenge": "none",
+    "start": 128,
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          131,
+          141
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          130
+        ],
+        [
+          142,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "candidate": "genome_a6a821dffd4f4046c97a",
+    "comparison": "offspring_minus_parent/low_cost_T00",
+    "challenge": "x",
+    "start": 128,
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          131,
+          141
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          130
+        ],
+        [
+          142,
+          224
+        ]
+      ]
+    }
+  }
+]

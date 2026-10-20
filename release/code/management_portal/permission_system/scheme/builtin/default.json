@@ -1,0 +1,1282 @@
+{
+  "schema": "tfi.permission-scheme.v2",
+  "scheme_id": "default",
+  "title": "默认方案",
+  "description": "Portal 的分级权限规则（decision_600ae27b0538）：树按 Portal 对象的自然归属分层，User 按分类（Portal 管理员、一般用户、实习用户）放在 P 树对应节点下，Portal 管理员与全员可读写在“共享”节点上，一般用户管理全部 Project，个人空间天然私有，个人 AMA 放在所有者之下、与所有者权限相同；受保护指令按参数要求 A 树节点：查看 @viewer、协作 @contributor、管理 @admin，或给 Resident 发消息 @message。",
+  "trees": {
+    "P": {
+      "root": "@principals",
+      "default_parent": "@users",
+      "nodes": [
+        {
+          "id": "@principals",
+          "title": "全部主体"
+        },
+        {
+          "id": "@users",
+          "parent": "@principals",
+          "title": "User"
+        },
+        {
+          "id": "@portal_admins",
+          "parent": "@users",
+          "title": "Portal 管理员",
+          "user_category": "portal_admin"
+        },
+        {
+          "id": "@members",
+          "parent": "@users",
+          "title": "一般用户",
+          "user_category": "member"
+        },
+        {
+          "id": "@interns",
+          "parent": "@users",
+          "title": "实习用户",
+          "user_category": "intern"
+        },
+        {
+          "id": "@residents",
+          "parent": "@principals",
+          "title": "Resident"
+        },
+        {
+          "id": "@project_residents",
+          "parent": "@residents",
+          "title": "每个 Project",
+          "each": "project"
+        },
+        {
+          "id": "@lineage_residents",
+          "parent": "@project_residents",
+          "title": "每个 Lineage",
+          "each": "lineage",
+          "under": "project",
+          "otherwise": "@residents"
+        },
+        {
+          "id": "@resident",
+          "parent": "@lineage_residents",
+          "title": "每个 Resident",
+          "each": "resident",
+          "under": "lineage",
+          "otherwise": "@residents"
+        },
+        {
+          "id": "@personal_ama",
+          "parent": "@users",
+          "title": "个人 AMA（在所有者名下）",
+          "each": "lineage",
+          "under": "user"
+        }
+      ]
+    },
+    "A": {
+      "root": "@actions",
+      "default_parent": "@admin",
+      "nodes": [
+        {
+          "id": "@actions",
+          "title": "全部动作"
+        },
+        {
+          "id": "@free",
+          "parent": "@actions",
+          "title": "免检"
+        },
+        {
+          "id": "@admin",
+          "parent": "@actions",
+          "title": "管理（admin）"
+        },
+        {
+          "id": "@contributor",
+          "parent": "@admin",
+          "title": "协作（contributor）"
+        },
+        {
+          "id": "@viewer",
+          "parent": "@contributor",
+          "title": "查看（viewer）"
+        },
+        {
+          "id": "@message",
+          "parent": "@contributor",
+          "title": "给 Resident 发消息"
+        }
+      ]
+    },
+    "R": {
+      "root": "@portal",
+      "default_parent": "@shared",
+      "nodes": [
+        {
+          "id": "@portal",
+          "title": "Portal"
+        },
+        {
+          "id": "@shared",
+          "parent": "@portal",
+          "title": "共享"
+        },
+        {
+          "id": "@accounts",
+          "parent": "@shared",
+          "title": "每个 User 账号",
+          "each": "user"
+        },
+        {
+          "id": "@chatroom",
+          "parent": "@shared",
+          "title": "每个聊天室",
+          "each": "chatroom"
+        },
+        {
+          "id": "@notice",
+          "parent": "@shared",
+          "title": "每个帖子",
+          "each": "notice"
+        },
+        {
+          "id": "@operations",
+          "parent": "@shared",
+          "title": "Portal 运维"
+        },
+        {
+          "id": "@projects",
+          "parent": "@shared",
+          "title": "全部 Project"
+        },
+        {
+          "id": "@public",
+          "parent": "@shared",
+          "title": "公共内容"
+        },
+        {
+          "id": "@papers",
+          "parent": "@public",
+          "title": "论文库"
+        },
+        {
+          "id": "@project",
+          "parent": "@projects",
+          "title": "每个 Project",
+          "each": "project"
+        },
+        {
+          "id": "@project_paper",
+          "parent": "@project",
+          "title": "Project 内的论文",
+          "each": "paper",
+          "under": "project",
+          "otherwise": "@papers"
+        },
+        {
+          "id": "@project_content",
+          "parent": "@project",
+          "title": "Project 内的知识、skill、todo 与 repo",
+          "under": "project",
+          "otherwise": "@public",
+          "each": [
+            "article",
+            "concept",
+            "decision",
+            "experiment",
+            "idea",
+            "information",
+            "insight",
+            "material",
+            "meeting",
+            "patent",
+            "plan",
+            "question",
+            "repo",
+            "review",
+            "risk",
+            "skill",
+            "thinking",
+            "todo"
+          ]
+        },
+        {
+          "id": "@lineage",
+          "parent": "@project",
+          "title": "每个 Lineage",
+          "each": "lineage",
+          "under": "project",
+          "otherwise": "@shared"
+        },
+        {
+          "id": "@resident",
+          "parent": "@lineage",
+          "title": "每个 Resident",
+          "each": "resident",
+          "under": "lineage"
+        },
+        {
+          "id": "@workspace",
+          "parent": "@resident",
+          "title": "Resident 自有的 Workspace",
+          "each": "workspace",
+          "under": "resident"
+        },
+        {
+          "id": "@project_workbench",
+          "parent": "@project",
+          "title": "Project 内的 Workbench",
+          "each": "workbench",
+          "under": "project",
+          "otherwise": "@public"
+        },
+        {
+          "id": "@workbench",
+          "parent": "@lineage",
+          "title": "每个 Workbench",
+          "each": "workbench",
+          "under": "lineage",
+          "otherwise": "@public"
+        },
+        {
+          "id": "@family",
+          "parent": "@lineage",
+          "title": "每个 Family",
+          "each": "family",
+          "under": "lineage"
+        },
+        {
+          "id": "@personal",
+          "parent": "@portal",
+          "title": "个人"
+        },
+        {
+          "id": "@personal_space",
+          "parent": "@personal",
+          "title": "每个 User 的个人空间",
+          "each": "personal_space"
+        },
+        {
+          "id": "@personal_ama_space",
+          "parent": "@personal_space",
+          "title": "个人 AMA",
+          "each": "lineage",
+          "under": "personal_space",
+          "otherwise": "@personal"
+        }
+      ]
+    }
+  },
+  "entries": [
+    {
+      "id": "exempt",
+      "effect": "permit",
+      "p": "@principals",
+      "a": "@free",
+      "r": "@portal",
+      "title": "免检放行"
+    },
+    {
+      "id": "everyone_reads",
+      "effect": "permit",
+      "p": "@principals",
+      "a": "@viewer",
+      "r": "@shared",
+      "title": "全员可读"
+    },
+    {
+      "id": "everyone_manages_public",
+      "effect": "permit",
+      "p": "@principals",
+      "a": "@admin",
+      "r": "@public",
+      "title": "全员可管理公共内容"
+    },
+    {
+      "id": "administrators",
+      "effect": "permit",
+      "p": "@portal_admins",
+      "a": "@actions",
+      "r": "@shared",
+      "title": "Portal 管理员"
+    },
+    {
+      "id": "members_manage_projects",
+      "effect": "permit",
+      "p": "@members",
+      "a": "@admin",
+      "r": "@projects",
+      "title": "一般用户管理全部 Project"
+    },
+    {
+      "id": "project_creator",
+      "effect": "permit",
+      "relation": "creator",
+      "a": "@admin",
+      "r": "@project",
+      "title": "Project 创建人"
+    },
+    {
+      "id": "chatroom_creator",
+      "effect": "permit",
+      "relation": "creator",
+      "a": "@admin",
+      "r": "@chatroom",
+      "title": "聊天室创建者"
+    },
+    {
+      "id": "post_author",
+      "effect": "permit",
+      "relation": "creator",
+      "a": "@admin",
+      "r": "@notice",
+      "title": "帖子作者"
+    },
+    {
+      "id": "account_self",
+      "effect": "permit",
+      "relation": "self",
+      "a": "@admin",
+      "r": "@accounts",
+      "title": "账号本人"
+    },
+    {
+      "id": "personal_space",
+      "effect": "permit",
+      "relation": "owner",
+      "a": "@admin",
+      "r": "@personal_space",
+      "title": "个人空间"
+    },
+    {
+      "id": "project_members",
+      "effect": "permit",
+      "relation": "belongs",
+      "a": "@admin",
+      "r": "@project",
+      "title": "Project 内管理"
+    },
+    {
+      "id": "steward",
+      "effect": "permit",
+      "relation": "steward",
+      "a": "@admin",
+      "r": "@lineage",
+      "title": "Family steward"
+    },
+    {
+      "id": "chatroom_members",
+      "effect": "permit",
+      "relation": "members",
+      "a": "@contributor",
+      "r": "@chatroom",
+      "title": "聊天室成员"
+    },
+    {
+      "id": "everyone_messages",
+      "effect": "permit",
+      "p": "@principals",
+      "a": "@message",
+      "r": "@shared",
+      "title": "全员可给 Resident 发消息"
+    }
+  ],
+  "instructions": {
+    "AbsorbContext:source_resident_id": {
+      "a": "@viewer"
+    },
+    "AbsorbContext:target_resident_id": {
+      "a": "@contributor"
+    },
+    "AnswerResidentRequest": {
+      "a": "@message"
+    },
+    "ApplyLineageChanges": {
+      "a": "@contributor"
+    },
+    "ApplyTemplate": {
+      "a": "@contributor"
+    },
+    "BindTelepusContactForUser": {
+      "a": "@admin",
+      "r": "@shared"
+    },
+    "BindWorkspace": {
+      "a": "@contributor"
+    },
+    "CancelInput": {
+      "a": "@contributor"
+    },
+    "CancelScriptRun": {
+      "a": "@admin"
+    },
+    "CancelSessionRestart": {
+      "a": "@contributor"
+    },
+    "ClearContext": {
+      "a": "@admin"
+    },
+    "CreateCandidateFork": {
+      "a": "@contributor"
+    },
+    "CreateComponent": {
+      "a": "@contributor"
+    },
+    "CreatePermissionScheme": {
+      "a": "@admin",
+      "r": "@shared"
+    },
+    "CreateResident": {
+      "a": "@contributor"
+    },
+    "CreateTemplate:@public": {
+      "a": "@contributor",
+      "r": "@public"
+    },
+    "CreateTemplate:from_selection.lineage_id": {
+      "a": "@viewer"
+    },
+    "CreateUser": {
+      "a": "@admin",
+      "r": "@shared"
+    },
+    "OpenTerminal": {
+      "a": "@admin",
+      "r": "@shared"
+    },
+    "CreateUserInvitation": {
+      "a": "@admin",
+      "r": "@shared"
+    },
+    "CreateWire": {
+      "a": "@contributor"
+    },
+    "CreateWorkspaceHandoff": {
+      "a": "@contributor"
+    },
+    "DeleteCandidateFork": {
+      "a": "@contributor"
+    },
+    "DeleteChatroom": {
+      "a": "@admin"
+    },
+    "DeleteComponent": {
+      "a": "@contributor"
+    },
+    "DeleteFunctionBlock": {
+      "a": "@contributor"
+    },
+    "DeleteLineage": {
+      "a": "@admin"
+    },
+    "DeletePendingDelivery": {
+      "a": "@contributor"
+    },
+    "DeletePermissionScheme": {
+      "a": "@admin",
+      "r": "@shared"
+    },
+    "DeletePost": {
+      "a": "@admin"
+    },
+    "DeleteProject": {
+      "a": "@admin"
+    },
+    "DeleteResident:lineage_id": {
+      "a": "@contributor"
+    },
+    "DeleteResident:resident_id": {
+      "a": "@admin"
+    },
+    "DeleteSharedState": {
+      "a": "@contributor"
+    },
+    "DeleteUser": {
+      "a": "@admin",
+      "r": "@shared"
+    },
+    "DeleteWire": {
+      "a": "@contributor"
+    },
+    "DeleteWorkspaceHandoff": {
+      "a": "@contributor"
+    },
+    "DeliverMessage:resident_id": {
+      "a": "@message"
+    },
+    "DeliverMessage:user_id": {
+      "a": "@message"
+    },
+    "Familize": {
+      "a": "@contributor"
+    },
+    "FeaturePost": {
+      "a": "@admin",
+      "r": "@shared"
+    },
+    "ForkResident:lineage_id": {
+      "a": "@contributor"
+    },
+    "ForkResident:source_resident_id": {
+      "a": "@viewer"
+    },
+    "ForkResident:context_source_resident_id": {
+      "a": "@viewer"
+    },
+    "ForwardMessages:target_resident_id": {
+      "a": "@message"
+    },
+    "ForwardMessages:target_chatroom_id": {
+      "a": "@contributor"
+    },
+    "Functionalize": {
+      "a": "@contributor"
+    },
+    "GetComponentRuntime": {
+      "a": "@viewer"
+    },
+    "GetConversation": {
+      "a": "@viewer"
+    },
+    "GetExecutionSettings": {
+      "a": "@admin",
+      "r": "@shared"
+    },
+    "GetInputState": {
+      "a": "@viewer"
+    },
+    "GetInstructionExecution:instruction_id": {
+      "a": "@viewer"
+    },
+    "GetInstructionExecution:@portal": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "GetLineage": {
+      "a": "@viewer"
+    },
+    "GetLineageDiagnostics": {
+      "a": "@viewer"
+    },
+    "GetMailbox:resident_id": {
+      "a": "@viewer"
+    },
+    "GetMailbox:user_id": {
+      "a": "@admin"
+    },
+    "GetMessage": {
+      "a": "@viewer"
+    },
+    "GetMessageArtifact": {
+      "a": "@viewer"
+    },
+    "GetProject": {
+      "a": "@viewer"
+    },
+    "GetResidentRequest": {
+      "a": "@viewer"
+    },
+    "GetResidentSettings": {
+      "a": "@viewer"
+    },
+    "GetResidentSummaries": {
+      "a": "@viewer"
+    },
+    "GetScriptRun": {
+      "a": "@viewer"
+    },
+    "GetSentPrompt": {
+      "a": "@admin"
+    },
+    "GetSessionRestart": {
+      "a": "@viewer"
+    },
+    "GetTelepusStatus": {
+      "a": "@admin",
+      "r": "@shared"
+    },
+    "GetSharedState": {
+      "a": "@viewer"
+    },
+    "GetSubagentRun": {
+      "a": "@viewer"
+    },
+    "GetTriggerPath": {
+      "a": "@viewer"
+    },
+    "CreatePermissionEntry": {
+      "a": "@admin"
+    },
+    "UpdatePermissionEntry:entry_id": {
+      "a": "@admin"
+    },
+    "UpdatePermissionEntry:r": {
+      "a": "@admin"
+    },
+    "InjectMailboxItem": {
+      "a": "@contributor"
+    },
+    "ListInputHistory:resident_id": {
+      "a": "@viewer"
+    },
+    "ListInputHistory:chatroom_id": {
+      "a": "@viewer"
+    },
+    "ListMessages": {
+      "a": "@viewer"
+    },
+    "ListPermissionEntries:p": {
+      "a": "@admin"
+    },
+    "ListPermissionEntries:r": {
+      "a": "@viewer"
+    },
+    "ListPendingDeliveries": {
+      "a": "@viewer"
+    },
+    "ListRecentRounds": {
+      "a": "@viewer"
+    },
+    "ListResidentRequests": {
+      "a": "@viewer"
+    },
+    "ListScriptRuns": {
+      "a": "@viewer"
+    },
+    "ListTriggerPaths": {
+      "a": "@viewer"
+    },
+    "ListUserInvitations": {
+      "a": "@admin",
+      "r": "@shared"
+    },
+    "MergeMailboxItems": {
+      "a": "@contributor"
+    },
+    "MoveLineageObjects:lineage_id": {
+      "a": "@admin"
+    },
+    "MoveLineageObjects:target_lineage_id": {
+      "a": "@admin"
+    },
+    "MoveResident:lineage_id": {
+      "a": "@contributor"
+    },
+    "MoveResident:resident_id": {
+      "a": "@admin"
+    },
+    "MoveResident:target_lineage_id": {
+      "a": "@admin"
+    },
+    "OpenIntake:resident_id": {
+      "a": "@contributor"
+    },
+    "OpenIntake:resident_ids": {
+      "a": "@contributor"
+    },
+    "PauseComponent": {
+      "a": "@contributor"
+    },
+    "PinPost": {
+      "a": "@admin",
+      "r": "@shared"
+    },
+    "CreateChatroomMessage": {
+      "a": "@contributor"
+    },
+    "PrepareWorkspaceHandoff": {
+      "a": "@contributor"
+    },
+    "PreviewPromptInjection": {
+      "a": "@viewer"
+    },
+    "PromoteSeed": {
+      "a": "@contributor"
+    },
+    "ReadScriptRunOutput": {
+      "a": "@viewer"
+    },
+    "RegisterResource": {
+      "a": "@contributor"
+    },
+    "RelayFamilyMessage": {
+      "a": "@contributor"
+    },
+    "RenameProject": {
+      "a": "@admin"
+    },
+    "ReorderMailbox": {
+      "a": "@contributor"
+    },
+    "RequestResidentSummaryRebuild": {
+      "a": "@contributor"
+    },
+    "RequeueMessage": {
+      "a": "@contributor"
+    },
+    "ResetComponentRuntime": {
+      "a": "@contributor"
+    },
+    "ResetUserPassword": {
+      "a": "@admin",
+      "r": "@shared"
+    },
+    "ResolveEffectActivation": {
+      "a": "@admin"
+    },
+    "RestartSession": {
+      "a": "@contributor"
+    },
+    "RetryResidentInitialization": {
+      "a": "@contributor"
+    },
+    "GetResidentInitialization": {
+      "a": "@viewer"
+    },
+    "RevokeUserInvitation": {
+      "a": "@admin",
+      "r": "@shared"
+    },
+    "RevokeUserSessions": {
+      "a": "@admin",
+      "r": "@shared"
+    },
+    "RunResourceAction": {
+      "a": "@contributor"
+    },
+    "SearchMessages:resident_ids": {
+      "a": "@viewer"
+    },
+    "SearchMessages:chatroom_id": {
+      "a": "@viewer"
+    },
+    "ActivatePermissionScheme": {
+      "a": "@admin",
+      "r": "@shared"
+    },
+    "SplitMailboxItem": {
+      "a": "@contributor"
+    },
+    "CancelSubagent": {
+      "a": "@contributor"
+    },
+    "TriggerEvent": {
+      "a": "@contributor"
+    },
+    "UnbindTelepusContactForUser": {
+      "a": "@admin",
+      "r": "@shared"
+    },
+    "UnbindWorkspace": {
+      "a": "@contributor"
+    },
+    "Unfamilize": {
+      "a": "@contributor"
+    },
+    "Unfunctionalize": {
+      "a": "@contributor"
+    },
+    "UnregisterResource": {
+      "a": "@admin"
+    },
+    "UpdateChatroom": {
+      "a": "@contributor"
+    },
+    "UpdateComponent": {
+      "a": "@contributor"
+    },
+    "UpdateExecutionSettings": {
+      "a": "@admin",
+      "r": "@shared"
+    },
+    "UpdateFamily": {
+      "a": "@contributor"
+    },
+    "UpdateFunctionBlock": {
+      "a": "@contributor"
+    },
+    "UpdateLineage": {
+      "a": "@contributor"
+    },
+    "UpdateLineageLayout": {
+      "a": "@contributor"
+    },
+    "UpdatePendingDelivery": {
+      "a": "@contributor"
+    },
+    "UpdatePermissionScheme": {
+      "a": "@admin",
+      "r": "@shared"
+    },
+    "UpdatePost": {
+      "a": "@admin"
+    },
+    "UpdateProject": {
+      "a": "@admin"
+    },
+    "UpdateKnowledgeTags": {
+      "a": "@admin",
+      "r": "@shared"
+    },
+    "UpdateResident": {
+      "a": "@contributor"
+    },
+    "UpdateResidentSettings": {
+      "a": "@contributor"
+    },
+    "UpdateResource": {
+      "a": "@contributor"
+    },
+    "UpdateProviderAccount": {
+      "a": "@admin",
+      "r": "@shared"
+    },
+    "OpenProviderAccountLogin": {
+      "a": "@admin",
+      "r": "@shared"
+    },
+    "UpdateProviderAccountLogin": {
+      "a": "@admin",
+      "r": "@shared"
+    },
+    "CancelProviderAccountLogin": {
+      "a": "@admin",
+      "r": "@shared"
+    },
+    "GetProviderAccountLogin": {
+      "a": "@viewer",
+      "r": "@shared"
+    },
+    "RegisterProviderAccount": {
+      "a": "@admin",
+      "r": "@shared"
+    },
+    "UpdateProviderAccountRegistration": {
+      "a": "@admin",
+      "r": "@shared"
+    },
+    "DeleteProviderAccount": {
+      "a": "@admin",
+      "r": "@shared"
+    },
+    "UpdateBackendRole": {
+      "a": "@admin",
+      "r": "@shared"
+    },
+    "PrepareProviderRuntime": {
+      "a": "@admin",
+      "r": "@shared"
+    },
+    "CheckProviderAccount": {
+      "a": "@admin",
+      "r": "@shared"
+    },
+    "GetProviderAccountCheck": {
+      "a": "@admin",
+      "r": "@shared"
+    },
+    "GetProviderAccountSetup": {
+      "a": "@viewer",
+      "r": "@shared"
+    },
+    "UpdateSharedState": {
+      "a": "@contributor"
+    },
+    "UpdateUser": {
+      "a": "@admin"
+    },
+    "UpdateWire": {
+      "a": "@contributor"
+    },
+    "UpdateWorkspaceHandoff": {
+      "a": "@contributor"
+    },
+    "WatchConversationEvents": {
+      "a": "@viewer"
+    },
+    "WatchLineage": {
+      "a": "@viewer"
+    },
+    "WatchTriggerPath": {
+      "a": "@viewer"
+    },
+    "CheckFamilyProgress": {
+      "a": "@contributor"
+    },
+    "CheckFamilyRecovery": {
+      "a": "@contributor"
+    },
+    "ResolveFamilyRequest": {
+      "a": "@contributor"
+    },
+    "CheckFamilyRoleAvailability": {
+      "a": "@contributor"
+    },
+    "DispatchFamilyTask": {
+      "a": "@contributor"
+    },
+    "CheckPermission": {
+      "a": "@admin"
+    },
+    "CheckResidentWorkSummary": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "ClaimResidentSummaryJobs": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "ClearMailbox:resident_id": {
+      "a": "@contributor"
+    },
+    "ClearMailbox:user_id": {
+      "a": "@admin"
+    },
+    "CompleteChat": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "CreateChatroom": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "CreateLineage": {
+      "a": "@contributor"
+    },
+    "CreateMailboxTodo": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "CreateModelApi": {
+      "a": "@admin",
+      "r": "@operations"
+    },
+    "CreateNotification": {
+      "a": "@message",
+      "r": "@shared"
+    },
+    "CreatePost": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "CreateProject": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "CreateReply": {
+      "a": "@viewer"
+    },
+    "CreateUpload": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "CreateUserAccessToken": {
+      "a": "@admin"
+    },
+    "DeleteFamily": {
+      "a": "@admin"
+    },
+    "DeleteMailboxTodo": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "DeleteModelApi": {
+      "a": "@admin",
+      "r": "@operations"
+    },
+    "DeleteReply": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "DeleteTemplate": {
+      "a": "@admin",
+      "r": "@public"
+    },
+    "DeleteUpload": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "UpdateChatroomMessage": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "GetChatroom": {
+      "a": "@viewer"
+    },
+    "GetDeviceStatus": {
+      "a": "@viewer",
+      "r": "@shared"
+    },
+    "GetEffectivePermissions": {
+      "a": "@admin"
+    },
+    "GetFamilySummaryInputs": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "GetInstructionSchema": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "GetMoveOperation": {
+      "a": "@viewer",
+      "r": "@shared"
+    },
+    "GetPermissionNode": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "GetPermissionSystem": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "GetPermissionScheme": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "GetPortalStatus": {
+      "a": "@viewer",
+      "r": "@shared"
+    },
+    "GetPost": {
+      "a": "@viewer"
+    },
+    "GetKnowledgeTags": {
+      "a": "@viewer",
+      "r": "@shared"
+    },
+    "GetProviderUsageEvents": {
+      "a": "@viewer",
+      "r": "@shared"
+    },
+    "GetPulse": {
+      "a": "@admin"
+    },
+    "GetResident": {
+      "a": "@viewer"
+    },
+    "GetResidentSummaryQueue": {
+      "a": "@viewer",
+      "r": "@shared"
+    },
+    "GetResourceType": {
+      "a": "@viewer",
+      "r": "@shared"
+    },
+    "ListResourceTypes": {
+      "a": "@viewer",
+      "r": "@shared"
+    },
+    "UpdateResourceType": {
+      "a": "@admin",
+      "r": "@shared"
+    },
+    "GetRuntimeCapacity": {
+      "a": "@viewer",
+      "r": "@shared"
+    },
+    "GetTemplate": {
+      "a": "@viewer",
+      "r": "@shared"
+    },
+    "GetUsage": {
+      "a": "@viewer",
+      "r": "@shared"
+    },
+    "GetUser": {
+      "a": "@viewer"
+    },
+    "GetUserNavigation": {
+      "a": "@admin"
+    },
+    "GetWorkspaceHandoff": {
+      "a": "@viewer",
+      "r": "@shared"
+    },
+    "IssueTemporaryCredential": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "LeaveChatroom": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "ListChatroomMessages": {
+      "a": "@viewer"
+    },
+    "ListChatrooms": {
+      "a": "@admin"
+    },
+    "ListComponentTypes": {
+      "a": "@viewer",
+      "r": "@shared"
+    },
+    "ListInstructions": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "ListMailboxTodos": {
+      "a": "@admin"
+    },
+    "ListModelApis": {
+      "a": "@viewer",
+      "r": "@shared"
+    },
+    "ListPermissionSchemes": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "ListPosts": {
+      "a": "@viewer",
+      "r": "@shared"
+    },
+    "ListProviderAccounts": {
+      "a": "@viewer",
+      "r": "@shared"
+    },
+    "ListProviders": {
+      "a": "@viewer",
+      "r": "@shared"
+    },
+    "ListBackendRoles": {
+      "a": "@viewer",
+      "r": "@shared"
+    },
+    "ListResidentStates": {
+      "a": "@viewer"
+    },
+    "ListTemplates": {
+      "a": "@viewer",
+      "r": "@shared"
+    },
+    "ListTemporaryCredentials": {
+      "a": "@admin"
+    },
+    "ListUserAccessTokens": {
+      "a": "@admin"
+    },
+    "ListUsers": {
+      "a": "@viewer",
+      "r": "@shared"
+    },
+    "MarkChatroomRead": {
+      "a": "@viewer"
+    },
+    "MarkMailboxItemRead": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "MarkPostRead": {
+      "a": "@viewer"
+    },
+    "MoveMailboxTodo": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "PinMailboxItem": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "PublishFamilyProgress": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "PublishPulseItem": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "PublishRelease": {
+      "a": "@admin",
+      "r": "@operations"
+    },
+    "ReadResource": {
+      "a": "@viewer"
+    },
+    "ReleaseResidentSummaryJob": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "RestartPortal": {
+      "a": "@admin",
+      "r": "@operations"
+    },
+    "ResolveResource": {
+      "a": "@viewer"
+    },
+    "RestoreTemplate": {
+      "a": "@contributor",
+      "r": "@public"
+    },
+    "RetractChatroomMessage": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "DeletePermissionEntry:entry_id": {
+      "a": "@admin"
+    },
+    "DeletePermissionEntry:entry_ids": {
+      "a": "@admin"
+    },
+    "SearchPermissionNodes": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "RenewTemporaryCredential": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "RevokeTemporaryCredential": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "RevokeUserAccessToken": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "RunScript": {
+      "a": "@admin"
+    },
+    "SearchResidents": {
+      "a": "@viewer",
+      "r": "@shared"
+    },
+    "SearchResources": {
+      "a": "@viewer",
+      "r": "@shared"
+    },
+    "SetTelepusEnabled": {
+      "a": "@admin",
+      "r": "@shared"
+    },
+    "UpdateChatroomReaction": {
+      "a": "@contributor"
+    },
+    "SubmitResidentSummary": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "UpdateMailboxTodo": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "UpdateModelApi": {
+      "a": "@admin",
+      "r": "@operations"
+    },
+    "UpdateResidentWorkSummary": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "UpdateTemplate": {
+      "a": "@contributor",
+      "r": "@public"
+    },
+    "UpdateUserNavigation": {
+      "a": "@admin"
+    },
+    "UpdateWorkspaceFile": {
+      "a": "@contributor"
+    },
+    "WatchMailbox": {
+      "a": "@admin"
+    }
+  }
+}

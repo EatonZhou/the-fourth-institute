@@ -1,0 +1,116 @@
+.arch-graph{position:relative;display:flex;flex-direction:column;min-width:0;width:100%;height:100%;min-height:440px;background:var(--bg,#101923);color:var(--text,#e5edf4);border:1px solid var(--border,#344656);border-radius:12px;overflow:hidden;font:13px/1.5 system-ui,sans-serif}
+.arch-graph[hidden]{display:none}
+.arch-graph-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:9px 12px;background:var(--panel,#172431);border-bottom:1px solid var(--border,#344656)}
+.arch-graph-control{min-height:32px;min-width:32px;cursor:pointer;font:inherit;color:var(--text,#e5edf4);background:var(--panel,#172431);border:1px solid var(--border,#344656);border-radius:6px;padding:3px 9px}
+.arch-graph-control:hover{border-color:var(--accent,#68ccca)}
+.arch-graph-scale{font-variant-numeric:tabular-nums;min-width:44px;text-align:center}
+.arch-graph-legend{margin-left:auto;color:var(--text,#e5edf4);font-size:12px;opacity:.8}
+.arch-graph-stage{position:relative;flex:1;min-height:340px;overflow:hidden;background-image:radial-gradient(var(--border,#344656) .7px,transparent .7px);background-size:20px 20px}
+.arch-graph-canvas{display:block;width:100%;height:100%;min-height:340px;position:absolute;inset:0;touch-action:none;cursor:grab}
+.arch-graph-canvas:active{cursor:grabbing}
+.arch-graph-canvas:focus-visible,.arch-graph-minimap:focus-visible{outline:2px solid var(--accent,#68ccca);outline-offset:-3px}
+.arch-graph-control:focus-visible{outline:2px solid var(--accent,#68ccca);outline-offset:2px}
+.arch-graph-edge{stroke:var(--border,#526778);stroke-width:1.5;fill:none;vector-effect:non-scaling-stroke;pointer-events:stroke}
+.arch-graph-edge-membership{stroke-width:1.2;stroke-dasharray:3 3}
+.arch-graph-edge-participation{stroke:var(--text,#e5edf4);opacity:.48}
+.arch-graph-edge-association{stroke-dasharray:7 4}
+.arch-graph-edge-proposed{stroke-dasharray:2 5}
+.arch-graph-edge.arch-graph-edge-active,.arch-graph-edge.arch-graph-edge-highlighted{stroke:var(--accent,#68ccca);stroke-width:2.5;opacity:1}
+.arch-graph-node{cursor:pointer;outline:none}
+.arch-graph-hit{fill:transparent;pointer-events:all}
+.arch-graph-box{fill:var(--panel,#172431);stroke:var(--border,#526778);stroke-width:1.5;vector-effect:non-scaling-stroke}
+.arch-graph-diamond{display:none;fill:var(--panel,#172431);stroke:var(--accent,#68ccca);stroke-width:1.5;vector-effect:non-scaling-stroke}
+.arch-graph-node text{fill:var(--text,#e5edf4);pointer-events:none}
+.arch-graph-node-type{font-size:12px;opacity:.7}
+.arch-graph-node-label{font-size:13px;font-weight:650}
+.arch-graph-node-subtitle{font-size:12px;opacity:.75}
+.arch-graph-protocol .arch-graph-box,.arch-graph-protocol .arch-graph-node-subtitle{display:none}
+.arch-graph-protocol .arch-graph-diamond{display:block}
+.arch-graph-protocol .arch-graph-node-label{font-size:12px;paint-order:stroke;stroke:var(--bg,#101923);stroke-width:5;stroke-linejoin:round}
+.arch-graph-node:hover .arch-graph-box,.arch-graph-node:hover .arch-graph-diamond,.arch-graph-node:focus-visible .arch-graph-box,.arch-graph-node:focus-visible .arch-graph-diamond{stroke:var(--accent,#68ccca);stroke-width:3}
+.arch-graph-selected .arch-graph-box,.arch-graph-selected .arch-graph-diamond{stroke:var(--accent,#68ccca);stroke-width:3.5}
+.arch-graph-highlighted .arch-graph-box,.arch-graph-highlighted .arch-graph-diamond{stroke:var(--accent,#68ccca);stroke-width:2.5;stroke-dasharray:5 2}
+.arch-graph-muted{opacity:.4}
+.arch-graph-muted:focus,.arch-graph-muted:hover{opacity:1}
+.arch-graph-outlines rect{fill:var(--accent,#68ccca);fill-opacity:.025;stroke:var(--border,#526778);stroke-dasharray:6 4;vector-effect:non-scaling-stroke}
+.arch-graph-outlines text{font-size:12px;fill:var(--text,#e5edf4);opacity:.65}
+.arch-graph-tooltip{position:absolute;z-index:3;max-width:min(360px,calc(100% - 24px));padding:9px 12px;box-sizing:border-box;border:1px solid var(--accent,#68ccca);border-radius:8px;background:var(--panel,#172431);color:var(--text,#e5edf4);box-shadow:0 6px 24px #0005;pointer-events:none;overflow-wrap:anywhere;font-size:13px}
+.arch-graph-status{position:absolute;top:12px;left:12px;max-width:calc(100% - 24px);background:var(--panel,#172431);border-radius:6px;padding:6px 10px;pointer-events:none}
+.arch-graph-status:empty{display:none}
+.arch-graph-minimap{position:absolute;bottom:12px;right:12px;width:160px;height:105px;border:1px solid var(--border,#344656);border-radius:8px;background:var(--panel,#172431);cursor:crosshair;opacity:.94}
+.arch-graph-mini-node{fill:var(--text,#e5edf4);opacity:.45}
+.arch-graph-mini-selected{fill:var(--accent,#68ccca)}
+.arch-graph-minimap-camera{fill:var(--accent,#68ccca);fill-opacity:.12;stroke:var(--accent,#68ccca);stroke-width:1.5;vector-effect:non-scaling-stroke}
+.arch-graph-help{margin:0;padding:7px 12px;border-top:1px solid var(--border,#344656);font-size:12px;opacity:.75}
+@media(max-width:600px){.arch-graph-legend{width:100%;margin-left:0}.arch-graph-minimap{width:116px;height:76px}.arch-graph-help{font-size:12px}.arch-graph{min-height:400px}}
+@media(prefers-reduced-motion:reduce){.arch-graph *{animation:none!important;transition:none!important}}
+
+.arch-graph-footer{display:flex;gap:12px;align-items:center;padding:8px 12px;border-top:1px solid var(--border);background:var(--panel)}
+.arch-graph-footer .arch-graph-help{flex:1;min-width:0;margin:0;padding:0}
+.arch-graph-footer .arch-graph-minimap{position:static;flex:0 0 120px;width:120px;height:78px;opacity:1}
+.arch-graph-protocol-control{display:flex;flex-wrap:wrap;align-items:center;gap:8px;width:100%;font-size:13px}
+.arch-graph-protocol-control select{max-width:100%;min-width:0;padding:6px;font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:5px}
+.arch-graph-overview-summary{font-size:12px;opacity:.8}
+.arch-graph-overview .arch-graph-stage{flex:none;height:min(60vh,620px);min-height:380px;overflow-y:auto;overflow-x:hidden}
+.arch-graph-overview .arch-graph-canvas{position:relative;inset:auto;min-height:0}
+
+/* Runtime architecture: the map owns the surface; controls occupy one corner.
+   No minimap overlays, no ellipsized identities, and no fixed desktop zoom. */
+.arch-runtime{position:relative;isolation:isolate;box-sizing:border-box;display:flex;min-width:0;width:100%;height:100%;min-height:520px;overflow:hidden;background:var(--bg,#f7f9fa);color:var(--text,#183b49);font:14px/1.4 system-ui,sans-serif;border:1px solid var(--border,#ccdadd);border-radius:10px}
+.arch-runtime[hidden]{display:none}
+.arch-runtime-stage{position:relative;flex:1;min-width:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+.arch-runtime-canvas{display:block;width:100%;touch-action:none;cursor:grab;outline:none}
+.arch-runtime-canvas:active{cursor:grabbing}
+.arch-runtime-canvas:focus-visible{outline:2px solid var(--accent,#16877c);outline-offset:-3px}
+.arch-runtime-tools{position:absolute;right:16px;top:116px;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:3px;padding:3px;border:1px solid var(--border,#ccdadd);border-radius:8px;background:var(--panel,#fff);box-shadow:0 2px 6px #1231;width:calc((100% - 32px)/3 - 30px);max-width:180px;box-sizing:border-box}
+.arch-runtime-tools button,.arch-runtime-tools select{font:inherit;color:inherit;background:transparent;border:0;border-radius:4px;min-width:28px;min-height:28px;cursor:pointer}
+.arch-runtime-tools button:hover,.arch-runtime-tools button:focus-visible,.arch-runtime-tools select:focus-visible{background:var(--bg,#eef6f5);outline:2px solid var(--accent,#16877c);outline-offset:-2px}
+.arch-runtime-tools select{width:100%;padding:3px}
+.arch-runtime-layer text{fill:var(--text,#183b49);opacity:.58;font-size:14px;letter-spacing:.04em}
+.arch-runtime-box{fill:var(--panel,#fff);stroke:var(--border,#8eafb5);stroke-width:1.4;vector-effect:non-scaling-stroke}
+.arch-runtime-node{cursor:pointer;outline:none}
+.arch-runtime-node text{fill:var(--text,#183b49);pointer-events:none;text-anchor:middle}
+.arch-runtime-title{font-size:15px;font-weight:570}
+.arch-runtime-duty{font-size:14px;opacity:.72}
+.arch-runtime-status{font-size:12px;opacity:.62}
+.arch-runtime-node:hover>.arch-runtime-box,.arch-runtime-node:focus-visible>.arch-runtime-box{stroke:var(--accent,#16877c);stroke-width:2.8}
+.arch-runtime-node.selected>.arch-runtime-box{stroke:var(--accent,#16877c);stroke-width:3}
+.arch-runtime-node.highlighted>.arch-runtime-box{stroke:var(--accent,#16877c);stroke-width:2.4;stroke-dasharray:5 2}
+.arch-runtime-node.dimmed{opacity:.4}.arch-runtime-node.dimmed:focus,.arch-runtime-node.dimmed:hover{opacity:1}
+.arch-runtime-protocol{cursor:pointer;outline:none}
+.arch-runtime-wire path{stroke:var(--accent,#387f8b);stroke-width:1.5;fill:none;opacity:.62;vector-effect:non-scaling-stroke;pointer-events:stroke}
+.arch-runtime-protocol-label-bg{fill:var(--bg,#f7f9fa);stroke:none}
+.arch-runtime-protocol-label{font-size:14px;fill:var(--text,#2c6473);text-anchor:middle}
+.arch-runtime-protocol:hover .arch-runtime-wire path,.arch-runtime-protocol:focus-visible .arch-runtime-wire path,.arch-runtime-protocol.selected .arch-runtime-wire path{stroke-width:2.5;opacity:1}
+.arch-runtime-protocol.highlighted .arch-runtime-wire path{stroke-width:2.5;stroke-dasharray:5 2;opacity:1}
+.arch-runtime-protocol:hover .arch-runtime-protocol-label-bg,.arch-runtime-protocol:focus-visible .arch-runtime-protocol-label-bg,.arch-runtime-protocol.selected .arch-runtime-protocol-label-bg{stroke:var(--accent,#16877c);stroke-width:1.5;vector-effect:non-scaling-stroke}
+.arch-runtime-tooltip{position:absolute;z-index:4;max-width:min(350px,calc(100% - 16px));box-sizing:border-box;padding:10px 12px;color:var(--text,#183b49);background:var(--panel,#fff);border:1px solid var(--accent,#16877c);border-radius:8px;box-shadow:0 6px 20px #1233;pointer-events:none;overflow-wrap:anywhere}
+.arch-runtime-legend{position:absolute;left:12px;top:65px;padding:3px 6px;border-radius:4px;background:var(--bg,#f7f9fa);color:var(--text,#183b49);font-size:12px;opacity:.7;pointer-events:none;max-width:calc((100% - 32px)/3 - 25px);box-sizing:border-box}
+@media(max-width:500px){.arch-runtime{min-height:600px}.arch-runtime-tools{top:120px;right:6px;gap:1px}.arch-runtime-tools button{min-width:24px}.arch-runtime-layer text{font-size:13px}.arch-runtime-legend{font-size:11px;left:4px}}
+@media(prefers-reduced-motion:reduce){.arch-runtime *{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+.arch-scope{flex-direction:column;min-height:0}
+.arch-scope .arch-scope-tools{position:static;order:-1;flex:none;align-self:stretch;width:auto;max-width:none;flex-wrap:nowrap;justify-content:flex-end;box-shadow:none;border-radius:0;border-width:0 0 1px;min-height:40px;margin:0;padding:3px 8px;gap:3px}
+.arch-scope-protocols{display:flex;flex:1;min-width:0;gap:4px;align-items:center}
+.arch-scope-protocols select{font:inherit;font-size:13px;min-width:0;max-width:210px;width:auto;flex:0 1 auto;color:var(--text);background:var(--panel);border:1px solid var(--border);border-radius:4px;padding:5px 3px;cursor:pointer}
+.arch-scope-protocols select[hidden]{display:none}
+.arch-scope .arch-runtime-stage{min-height:0}
+.arch-scope-frame{fill:var(--panel,#fff);stroke:var(--border,#8eafb5);stroke-width:1.5;vector-effect:non-scaling-stroke;pointer-events:none}
+.arch-scope-root{cursor:pointer;outline:none}
+.arch-scope-root-title{font-size:19px;font-weight:650;fill:var(--text,#183b49)}
+.arch-scope-root-duty{font-size:14px;fill:var(--text,#183b49);opacity:.75}
+.arch-scope-root.selected .arch-scope-root-title,.arch-scope-root:focus-visible .arch-scope-root-title{fill:var(--accent,#16877c);text-decoration:underline}
+.arch-scope-empty{font-size:16px;text-anchor:middle;fill:var(--text,#183b49);opacity:.68}
+.arch-scope .arch-runtime-title{font-size:16px}
+.arch-scope .arch-runtime-duty{font-size:13px}
+.arch-scope-context .arch-runtime-box{stroke-dasharray:6 4;fill:var(--bg,#f7f9fa)}
+.arch-scope-context .arch-runtime-title{font-size:14px}
+.arch-scope-context .arch-runtime-duty{font-size:12px}
+.arch-scope-context-label{font-size:11px;opacity:.65}
+.arch-scope-route{color:var(--accent,#387f8b)}
+.arch-scope-route>path{fill:none;stroke:currentColor;stroke-width:1.3;opacity:.5;vector-effect:non-scaling-stroke;pointer-events:none}
+.arch-scope-route.selected>path,.arch-scope-route.highlighted>path{stroke-width:2.6;opacity:1}
+.arch-scope-relation{cursor:pointer;outline:none}
+.arch-scope-relation>rect{fill:var(--panel,#fff);stroke:transparent;vector-effect:non-scaling-stroke}
+.arch-scope-relation>text{fill:var(--text,#183b49);font-size:14px;text-anchor:middle;pointer-events:none}
+.arch-scope-relation.selected>rect,.arch-scope-relation:focus-visible>rect,.arch-scope-relation:hover>rect{stroke:var(--accent,#16877c);stroke-width:2}
+.arch-scope-section{font-size:12px;fill:var(--text,#183b49);opacity:.65}

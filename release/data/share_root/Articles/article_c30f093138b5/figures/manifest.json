@@ -1,0 +1,98 @@
+[
+  {
+    "index": 1,
+    "name": "01-overview",
+    "native_shapes": 29,
+    "scene_objects": 25
+  },
+  {
+    "index": 2,
+    "name": "02-amplification",
+    "native_shapes": 28,
+    "scene_objects": 28
+  },
+  {
+    "index": 3,
+    "name": "03-semantics",
+    "native_shapes": 36,
+    "scene_objects": 36
+  },
+  {
+    "index": 4,
+    "name": "04-organization",
+    "native_shapes": 45,
+    "scene_objects": 38
+  },
+  {
+    "index": 5,
+    "name": "05-context",
+    "native_shapes": 23,
+    "scene_objects": 21
+  },
+  {
+    "index": 6,
+    "name": "06-delivery",
+    "native_shapes": 45,
+    "scene_objects": 39
+  },
+  {
+    "index": 7,
+    "name": "07-evidence",
+    "native_shapes": 54,
+    "scene_objects": 54
+  },
+  {
+    "index": 8,
+    "name": "08-validation",
+    "native_shapes": 30,
+    "scene_objects": 28
+  },
+  {
+    "index": 9,
+    "name": "09-projection",
+    "native_shapes": 24,
+    "scene_objects": 24
+  },
+  {
+    "index": 10,
+    "name": "10-architecture",
+    "native_shapes": 38,
+    "scene_objects": 38
+  },
+  {
+    "index": 11,
+    "name": "11-workbench",
+    "native_shapes": 28,
+    "scene_objects": 28
+  },
+  {
+    "index": 12,
+    "name": "12-guides",
+    "native_shapes": 21,
+    "scene_objects": 21
+  },
+  {
+    "index": 13,
+    "name": "13-case-sequence",
+    "native_shapes": 28,
+    "scene_objects": 28
+  },
+  {
+    "index": 14,
+    "name": "14-case-iteration",
+    "native_shapes": 35,
+    "scene_objects": 35
+  },
+  {
+    "index": 15,
+    "name": "15-evaluation",
+    "native_shapes": 27,
+    "scene_objects": 27
+  },
+  {
+    "index": 16,
+    "name": "16-cost",
+    "native_shapes": 18,
+    "scene_objects": 18
+  }
+]

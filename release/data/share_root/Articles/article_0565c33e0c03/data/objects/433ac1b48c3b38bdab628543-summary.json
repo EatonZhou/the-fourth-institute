@@ -1,0 +1,165 @@
+{
+  "task": "turnover_second_parent_completion_20261019",
+  "status": "completed",
+  "new_paths": 8,
+  "new_qualified_rules": [],
+  "qualified_ranking": [
+    "g2_p0_c0",
+    "g2_p0_c1"
+  ],
+  "proposal_ranking": [
+    "g2_p0_c0",
+    "g2_p0_c1",
+    "g2_p1_c1",
+    "g2_p1_c0"
+  ],
+  "aggregates": [
+    {
+      "id": "g2_p0_c0",
+      "complete": true,
+      "eligible": true,
+      "pareto": [
+        53.43541310683334,
+        -2.741238089575232,
+        4.5261002354233355,
+        3.910036472641982
+      ],
+      "fallback": [
+        353.55115509752414,
+        52.034712144871094
+      ],
+      "contexts": [
+        "g2_p0_c0--compact--colocated--G2--pump",
+        "g2_p0_c0--compact--separated--G2--pump",
+        "g2_p0_c0--double_lobe--colocated--G2--pump",
+        "g2_p0_c0--double_lobe--separated--G2--pump"
+      ]
+    },
+    {
+      "id": "g2_p0_c1",
+      "complete": true,
+      "eligible": true,
+      "pareto": [
+        48.272027856358264,
+        -3.0420044264367943,
+        1.6252202850256339,
+        3.336638385748237
+      ],
+      "fallback": [
+        321.65859881236815,
+        46.69752742309352
+      ],
+      "contexts": [
+        "g2_p0_c1--compact--colocated--G2--pump",
+        "g2_p0_c1--compact--separated--G2--pump",
+        "g2_p0_c1--double_lobe--colocated--G2--pump",
+        "g2_p0_c1--double_lobe--separated--G2--pump"
+      ]
+    },
+    {
+      "id": "g2_p1_c0",
+      "complete": true,
+      "eligible": false,
+      "pareto": [
+        22.090439731901363,
+        -35.56674249574537,
+        -39.54687761757149,
+        0.8065701676251141
+      ],
+      "fallback": [
+        228.27494772196903,
+        2.922811376532982
+      ],
+      "contexts": [
+        "g2_p1_c0--compact--colocated--G2_completion--pump",
+        "g2_p1_c0--compact--separated--G2_completion--pump",
+        "g2_p1_c0--double_lobe--colocated--G2_completion--pump",
+        "g2_p1_c0--double_lobe--separated--G2_completion--pump"
+      ]
+    },
+    {
+      "id": "g2_p1_c1",
+      "complete": true,
+      "eligible": false,
+      "pareto": [
+        34.75065650733705,
+        -22.075489723758878,
+        -22.536030800073974,
+        3.167220598760511
+      ],
+      "fallback": [
+        280.94831264755675,
+        22.700358708030794
+      ],
+      "contexts": [
+        "g2_p1_c1--compact--colocated--G2_completion--pump",
+        "g2_p1_c1--compact--separated--G2_completion--pump",
+        "g2_p1_c1--double_lobe--colocated--G2_completion--pump",
+        "g2_p1_c1--double_lobe--separated--G2_completion--pump"
+      ]
+    }
+  ],
+  "budget": {
+    "native_cap": 1024,
+    "attempted": 1024,
+    "committed": 1024,
+    "settled": 1024,
+    "boundary_native": 0,
+    "new_continuations": 0,
+    "worker_cap": 300,
+    "runner_worker_seconds": 69.055352,
+    "worker_unused": 230.944648,
+    "cpu_threads": 2,
+    "gpu": 0,
+    "raw_bytes": 166123241,
+    "raw_cap": 268435456,
+    "old_native": 6144,
+    "old_worker_seconds": 308.930886,
+    "old_budget_transferred": 0,
+    "combined_science_native": 7168,
+    "combined_worker_seconds": 377.98623799999996,
+    "separate_authorizations": true
+  },
+  "recomposition_max_abs": {
+    "M": 0,
+    "E": 0,
+    "new_tissue": 0,
+    "bodytime": 0
+  },
+  "maximum_checks": {
+    "check_material_error": 2.842170943040401e-14,
+    "check_energy_error": 2.842170943040401e-14,
+    "check_max_density": 0.79777554627948,
+    "check_attempted_body_steps": 3072.0,
+    "check_reconstruction_error": 5.551115123125783e-17,
+    "check_K_column_error": 0,
+    "check_transport_error": 2.842170943040401e-14,
+    "check_exchange_material_error": 1.5681900222830336e-14,
+    "check_exchange_energy_error": 3.219646771412954e-14,
+    "check_whole_material_error": 2.964295475749168e-14,
+    "check_whole_energy_error": 4.418687638008123e-14,
+    "check_input_material_array_error": 0,
+    "check_input_energy_array_error": 0,
+    "check_cargo_P_error": 3.552713678800501e-15,
+    "check_cargo_F_error": 7.105427357601002e-15,
+    "check_cargo_E_heat_error": 7.105427357601002e-15,
+    "check_cargo_capacity_excess": 0,
+    "check_cargo_payable_excess": 0,
+    "check_cargo_negative": 0,
+    "check_cargo_newborn_payer": 0,
+    "check_request_partition_error": 6.938893903907228e-18,
+    "check_founder_excess": 1.1102230246251565e-16
+  },
+  "new_early_extinctions": [],
+  "new_late64_birth_deficits": 8,
+  "old_maintenance_pass": 0,
+  "old_maintenance_fail": 12,
+  "old_late_windows_birth_deficit": 24,
+  "objective_met": false,
+  "coverage_complete": true,
+  "chronology_gap_preserved": true,
+  "figures": [
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_second_parent_completion_20261019/actual_compact.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_second_parent_completion_20261019/actual_double_lobe.png"
+  ]
+}

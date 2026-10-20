@@ -1,0 +1,32 @@
+{
+  "native_used": 0,
+  "physical_runner_jobs": 0,
+  "runner_worker_seconds": 0,
+  "acquisition_replay": 0,
+  "future_replay": 0,
+  "gpu": 0,
+  "cpu_threads_limit": 2,
+  "offline_analysis_process_cpu_seconds_recorded": 11.886524,
+  "closure_process_cpu_seconds_recorded": 0.04072,
+  "packaging_process_cpu_seconds_recorded": 0.020546,
+  "process_cpu_seconds_recorded_sum": 11.94779,
+  "cpu_precision_note": "进程内完成点utime+stime；最终元数据写入/解释器退出未计入小数尾数。约12秒CPU，独立上限300秒；非原runner-worker账。",
+  "offline_cpu_cap_seconds": 300,
+  "analysis_wall_seconds": 11.698461589985527,
+  "new_disk_cap_bytes": 134217728,
+  "delivery_and_source_bytes": 18298702,
+  "raw_maps_copied": false,
+  "source_binding_files": 11,
+  "input_physical_files_verified": 1168,
+  "prior_sealed": {
+    "native": 1024,
+    "new_crossovers": 512,
+    "known_tail_measurement_replay": 512,
+    "worker_seconds": 157.880912,
+    "remaining_native": 0,
+    "remaining_worker_seconds": 292.119088
+  },
+  "analysis_attempts": 1,
+  "analysis_failures": 0,
+  "setup_note": "control JSON setup initially failed before analysis; 0 map processing/0 native; corrected before one-shot freeze"
+}

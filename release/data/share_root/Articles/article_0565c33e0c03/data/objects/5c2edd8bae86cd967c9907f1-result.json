@@ -1,0 +1,142 @@
+{
+  "status": "completed",
+  "new_continuations": 6,
+  "new_body_updates": 6144,
+  "compute_seconds": 0.9036976129864343,
+  "records": {
+    "unperturbed/free": {
+      "mass": 288.65850362328763,
+      "occupied": 741,
+      "components": 2,
+      "saturated_fraction": 0.010498046875,
+      "fill": 0.3895526364686743,
+      "perimeter_ratio": 14.620895331575836,
+      "lifetime_start": 4608,
+      "lifetime_end": 6656,
+      "tail256_mass": 286.93120536161007,
+      "tail256_activity": 56.05952841095001,
+      "tail256_mass_range": [
+        285.08108958721255,
+        288.9732055197514
+      ],
+      "extinct_at": null,
+      "status": "active"
+    },
+    "unperturbed/sham": {
+      "mass": 286.9699111389939,
+      "occupied": 729,
+      "components": 2,
+      "saturated_fraction": 0.010498046875,
+      "fill": 0.39364871212482017,
+      "perimeter_ratio": 14.592592592592593,
+      "lifetime_start": 6656,
+      "lifetime_end": 7168,
+      "tail256_mass": 287.1453119255906,
+      "tail256_activity": 56.05351121967928,
+      "tail256_mass_range": [
+        284.98270198350883,
+        289.1025979071159
+      ],
+      "extinct_at": null,
+      "status": "active"
+    },
+    "unperturbed/probe": {
+      "mass": 876.6624124743646,
+      "occupied": 907,
+      "components": 9,
+      "saturated_fraction": 0.2060546875,
+      "fill": 0.9665517226839742,
+      "perimeter_ratio": 30.94655206796484,
+      "lifetime_start": 6656,
+      "lifetime_end": 7168,
+      "tail256_mass": 869.51163272491,
+      "tail256_activity": 1.9011011926679446,
+      "tail256_mass_range": [
+        848.6574524844023,
+        876.6624124743646
+      ],
+      "extinct_at": null,
+      "status": "active"
+    },
+    "first_pulse/free": {
+      "mass": 923.1115178918606,
+      "occupied": 949,
+      "components": 6,
+      "saturated_fraction": 0.21923828125,
+      "fill": 0.9727202506763546,
+      "perimeter_ratio": 28.8906225556732,
+      "lifetime_start": 4608,
+      "lifetime_end": 6656,
+      "tail256_mass": 924.8181744097363,
+      "tail256_activity": 0.33280050607894124,
+      "tail256_mass_range": [
+        922.7219406986219,
+        927.2286612892299
+      ],
+      "extinct_at": null,
+      "status": "active"
+    },
+    "first_pulse/sham": {
+      "mass": 925.3453063172981,
+      "occupied": 962,
+      "components": 5,
+      "saturated_fraction": 0.218994140625,
+      "fill": 0.9618974078142392,
+      "perimeter_ratio": 28.243373553599252,
+      "lifetime_start": 6656,
+      "lifetime_end": 7168,
+      "tail256_mass": 924.2275631055222,
+      "tail256_activity": 0.5379068047086921,
+      "tail256_mass_range": [
+        919.5770335999516,
+        927.5012245459975
+      ],
+      "extinct_at": null,
+      "status": "active"
+    },
+    "first_pulse/probe": {
+      "mass": 926.6423567613853,
+      "occupied": 958,
+      "components": 6,
+      "saturated_fraction": 0.218017578125,
+      "fill": 0.967267595784327,
+      "perimeter_ratio": 28.237658268129124,
+      "lifetime_start": 6656,
+      "lifetime_end": 7168,
+      "tail256_mass": 924.9247534306917,
+      "tail256_activity": 0.42174452439616916,
+      "tail256_mass_range": [
+        922.198397757888,
+        928.287093402527
+      ],
+      "extinct_at": null,
+      "status": "active"
+    }
+  },
+  "paired_comparisons": {
+    "unperturbed": {
+      "mass_probe_minus_sham": 589.6925013353707,
+      "occupied_probe_minus_sham": 178,
+      "components_probe_minus_sham": 7,
+      "tail256_mass_probe_minus_sham": 582.3663207993194,
+      "tail256_activity_probe_minus_sham": -54.152410027011335,
+      "saturated_fraction_probe_minus_sham": 0.195556640625,
+      "spectral_cosine_distance": 0.9394745329256553
+    },
+    "first_pulse": {
+      "mass_probe_minus_sham": 1.2970504440871764,
+      "occupied_probe_minus_sham": -4,
+      "components_probe_minus_sham": 1,
+      "tail256_mass_probe_minus_sham": 0.6971903251694584,
+      "tail256_activity_probe_minus_sham": -0.11616228031252296,
+      "saturated_fraction_probe_minus_sham": -0.0009765625,
+      "spectral_cosine_distance": 0.00036002669822510214
+    }
+  },
+  "free_branch_spectral_distance": 0.9134043391330422,
+  "limits": [
+    "Same genome and dt; two histories and different bodies, not independent worlds.",
+    "Finite state-branch persistence, not proof of attractors, learning, improved resistance or natural reproduction.",
+    "Distributed/multiple bodies have no reported centroid speed."
+  ]
+}

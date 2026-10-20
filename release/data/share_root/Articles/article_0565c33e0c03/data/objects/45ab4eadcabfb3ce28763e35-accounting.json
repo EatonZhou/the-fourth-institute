@@ -1,0 +1,12 @@
+{
+  "job": "a0744c61-f535-4d48-92ef-e9979a9d4e27",
+  "status": "completed",
+  "native": 7040,
+  "attempted": 7040,
+  "unknown": 0,
+  "worker_seconds": 55.887814,
+  "old_replay": 0,
+  "raw_bytes": 32953378,
+  "plan_sha256": "a9104c6e8df231d9bca2d05032d5e78b50a287778d00b6ccec1cf381d90ee097",
+  "result_sha256": "441ebc71bcb390d0027f6c751bf360e7742f88dea47975cc2dd44c96a2383411"
+}

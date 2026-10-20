@@ -1,0 +1,10 @@
+{
+  "status": "complete",
+  "job_id": "f9075338-2cb4-42b5-a787-375d65fc3076",
+  "native_attempted": 9216,
+  "native_returned": 9216,
+  "unknown_native": 0,
+  "body_steps_replayed": 0,
+  "worker_seconds": 17.58211364597082,
+  "completed_paths": 24
+}

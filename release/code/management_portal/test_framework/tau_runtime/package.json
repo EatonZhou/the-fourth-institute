@@ -1,0 +1,13 @@
+{
+  "name": "tfi-portal-tau-runtime",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Optional browser runtime for TAU Resident acceptance runs",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "playwright": "*"
+  },
+  "license": "Apache-2.0"
+}

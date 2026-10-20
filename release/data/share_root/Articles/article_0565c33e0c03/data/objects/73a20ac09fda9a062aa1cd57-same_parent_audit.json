@@ -1,0 +1,182 @@
+[
+  {
+    "seed": 202610195401,
+    "shape": "compact",
+    "role": "learned",
+    "actual": "validation_202610195401_compact_learned",
+    "prefix_sha": "ae5a5b26a48ff7565e9c0d6d4e30e50761d046e5a30a1667ce4060785dec2653",
+    "child_start_sha": "b2eded0834faabbef01d79c01b6692ae42170ba690a7d6a7d1c84b874e391125",
+    "physical_world_cursor_RNG_label_exact": true
+  },
+  {
+    "seed": 202610195401,
+    "shape": "compact",
+    "role": "best_constant",
+    "actual": "validation_202610195401_compact_learned",
+    "prefix_sha": "ae5a5b26a48ff7565e9c0d6d4e30e50761d046e5a30a1667ce4060785dec2653",
+    "child_start_sha": "b2eded0834faabbef01d79c01b6692ae42170ba690a7d6a7d1c84b874e391125",
+    "physical_world_cursor_RNG_label_exact": true
+  },
+  {
+    "seed": 202610195401,
+    "shape": "compact",
+    "role": "prestate_greedy",
+    "actual": "validation_202610195401_compact_prestate_greedy",
+    "prefix_sha": "ae5a5b26a48ff7565e9c0d6d4e30e50761d046e5a30a1667ce4060785dec2653",
+    "child_start_sha": "8cd4ce1c9b8c1bacbc2cf113f280d8de8fec8657e7df322cd07a7f8f4b4b616f",
+    "physical_world_cursor_RNG_label_exact": true
+  },
+  {
+    "seed": 202610195401,
+    "shape": "compact",
+    "role": "pooled_same_phi",
+    "actual": "validation_202610195401_compact_learned",
+    "prefix_sha": "ae5a5b26a48ff7565e9c0d6d4e30e50761d046e5a30a1667ce4060785dec2653",
+    "child_start_sha": "b2eded0834faabbef01d79c01b6692ae42170ba690a7d6a7d1c84b874e391125",
+    "physical_world_cursor_RNG_label_exact": true
+  },
+  {
+    "seed": 202610195401,
+    "shape": "compact",
+    "role": "original_w0",
+    "actual": "validation_202610195401_compact_learned",
+    "prefix_sha": "ae5a5b26a48ff7565e9c0d6d4e30e50761d046e5a30a1667ce4060785dec2653",
+    "child_start_sha": "b2eded0834faabbef01d79c01b6692ae42170ba690a7d6a7d1c84b874e391125",
+    "physical_world_cursor_RNG_label_exact": true
+  },
+  {
+    "seed": 202610195401,
+    "shape": "double_lobe",
+    "role": "learned",
+    "actual": "validation_202610195401_double_lobe_learned",
+    "prefix_sha": "88132ae0098ca0d1c9f180792b0fd9ae563465e77d433642da783caf3c9c0e7f",
+    "child_start_sha": "ad89d2428c8fe04a525a0bb06a26f732463bba0eb799956e48792c6bbc48dcbb",
+    "physical_world_cursor_RNG_label_exact": true
+  },
+  {
+    "seed": 202610195401,
+    "shape": "double_lobe",
+    "role": "best_constant",
+    "actual": "validation_202610195401_double_lobe_learned",
+    "prefix_sha": "88132ae0098ca0d1c9f180792b0fd9ae563465e77d433642da783caf3c9c0e7f",
+    "child_start_sha": "ad89d2428c8fe04a525a0bb06a26f732463bba0eb799956e48792c6bbc48dcbb",
+    "physical_world_cursor_RNG_label_exact": true
+  },
+  {
+    "seed": 202610195401,
+    "shape": "double_lobe",
+    "role": "prestate_greedy",
+    "actual": "validation_202610195401_double_lobe_prestate_greedy",
+    "prefix_sha": "88132ae0098ca0d1c9f180792b0fd9ae563465e77d433642da783caf3c9c0e7f",
+    "child_start_sha": "76dac27fc14ee64edb4c5f539edfe83e7953a33eb98ca440bb977ddeaedc7c28",
+    "physical_world_cursor_RNG_label_exact": true
+  },
+  {
+    "seed": 202610195401,
+    "shape": "double_lobe",
+    "role": "pooled_same_phi",
+    "actual": "validation_202610195401_double_lobe_learned",
+    "prefix_sha": "88132ae0098ca0d1c9f180792b0fd9ae563465e77d433642da783caf3c9c0e7f",
+    "child_start_sha": "ad89d2428c8fe04a525a0bb06a26f732463bba0eb799956e48792c6bbc48dcbb",
+    "physical_world_cursor_RNG_label_exact": true
+  },
+  {
+    "seed": 202610195401,
+    "shape": "double_lobe",
+    "role": "original_w0",
+    "actual": "validation_202610195401_double_lobe_learned",
+    "prefix_sha": "88132ae0098ca0d1c9f180792b0fd9ae563465e77d433642da783caf3c9c0e7f",
+    "child_start_sha": "ad89d2428c8fe04a525a0bb06a26f732463bba0eb799956e48792c6bbc48dcbb",
+    "physical_world_cursor_RNG_label_exact": true
+  },
+  {
+    "seed": 202610195402,
+    "shape": "compact",
+    "role": "learned",
+    "actual": "validation_202610195402_compact_learned",
+    "prefix_sha": "0f1748036416d7e451e420d348b241ca2016e85cb609a0d99502909d5d93fc24",
+    "child_start_sha": "0c3f445c0aeb9b95dc943eafbe07bc4a60b443204c18dd941f04fe193aeaa928",
+    "physical_world_cursor_RNG_label_exact": true
+  },
+  {
+    "seed": 202610195402,
+    "shape": "compact",
+    "role": "best_constant",
+    "actual": "validation_202610195402_compact_learned",
+    "prefix_sha": "0f1748036416d7e451e420d348b241ca2016e85cb609a0d99502909d5d93fc24",
+    "child_start_sha": "0c3f445c0aeb9b95dc943eafbe07bc4a60b443204c18dd941f04fe193aeaa928",
+    "physical_world_cursor_RNG_label_exact": true
+  },
+  {
+    "seed": 202610195402,
+    "shape": "compact",
+    "role": "prestate_greedy",
+    "actual": "validation_202610195402_compact_prestate_greedy",
+    "prefix_sha": "0f1748036416d7e451e420d348b241ca2016e85cb609a0d99502909d5d93fc24",
+    "child_start_sha": "026849a70f194a82e3557cc58c6df2b277bc75154059f131c69a4bfb8378e363",
+    "physical_world_cursor_RNG_label_exact": true
+  },
+  {
+    "seed": 202610195402,
+    "shape": "compact",
+    "role": "pooled_same_phi",
+    "actual": "validation_202610195402_compact_learned",
+    "prefix_sha": "0f1748036416d7e451e420d348b241ca2016e85cb609a0d99502909d5d93fc24",
+    "child_start_sha": "0c3f445c0aeb9b95dc943eafbe07bc4a60b443204c18dd941f04fe193aeaa928",
+    "physical_world_cursor_RNG_label_exact": true
+  },
+  {
+    "seed": 202610195402,
+    "shape": "compact",
+    "role": "original_w0",
+    "actual": "validation_202610195402_compact_learned",
+    "prefix_sha": "0f1748036416d7e451e420d348b241ca2016e85cb609a0d99502909d5d93fc24",
+    "child_start_sha": "0c3f445c0aeb9b95dc943eafbe07bc4a60b443204c18dd941f04fe193aeaa928",
+    "physical_world_cursor_RNG_label_exact": true
+  },
+  {
+    "seed": 202610195402,
+    "shape": "double_lobe",
+    "role": "learned",
+    "actual": "validation_202610195402_double_lobe_learned",
+    "prefix_sha": "1bf350e310f1a511d7ddc2fbcc2a125cac26b4cdabf578f25c3c275b487d51d1",
+    "child_start_sha": "bd317a28853013edd1493d1e4c55bc999516addc5fb1ab737acc3a69d0a33f72",
+    "physical_world_cursor_RNG_label_exact": true
+  },
+  {
+    "seed": 202610195402,
+    "shape": "double_lobe",
+    "role": "best_constant",
+    "actual": "validation_202610195402_double_lobe_learned",
+    "prefix_sha": "1bf350e310f1a511d7ddc2fbcc2a125cac26b4cdabf578f25c3c275b487d51d1",
+    "child_start_sha": "bd317a28853013edd1493d1e4c55bc999516addc5fb1ab737acc3a69d0a33f72",
+    "physical_world_cursor_RNG_label_exact": true
+  },
+  {
+    "seed": 202610195402,
+    "shape": "double_lobe",
+    "role": "prestate_greedy",
+    "actual": "validation_202610195402_double_lobe_prestate_greedy",
+    "prefix_sha": "1bf350e310f1a511d7ddc2fbcc2a125cac26b4cdabf578f25c3c275b487d51d1",
+    "child_start_sha": "43949c9a153e8473953f06e7feb1856434d3820193dd9b5925744bb59b50e3f6",
+    "physical_world_cursor_RNG_label_exact": true
+  },
+  {
+    "seed": 202610195402,
+    "shape": "double_lobe",
+    "role": "pooled_same_phi",
+    "actual": "validation_202610195402_double_lobe_learned",
+    "prefix_sha": "1bf350e310f1a511d7ddc2fbcc2a125cac26b4cdabf578f25c3c275b487d51d1",
+    "child_start_sha": "bd317a28853013edd1493d1e4c55bc999516addc5fb1ab737acc3a69d0a33f72",
+    "physical_world_cursor_RNG_label_exact": true
+  },
+  {
+    "seed": 202610195402,
+    "shape": "double_lobe",
+    "role": "original_w0",
+    "actual": "validation_202610195402_double_lobe_learned",
+    "prefix_sha": "1bf350e310f1a511d7ddc2fbcc2a125cac26b4cdabf578f25c3c275b487d51d1",
+    "child_start_sha": "bd317a28853013edd1493d1e4c55bc999516addc5fb1ab737acc3a69d0a33f72",
+    "physical_world_cursor_RNG_label_exact": true
+  }
+]

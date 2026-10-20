@@ -1,0 +1,71 @@
+[
+  {
+    "task": "embodied_resource_sampling_20261019",
+    "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/embodied_resource_sampling_20261019/analysis/handoff.json",
+    "sha": "5c16426efc26bbdd04d62151d3e440465b54c536e29dea5c1dc438ccba17bc05",
+    "relation": "same existing paper/projection task; frozen means omega only"
+  },
+  {
+    "task": "visible_innovation_sensing_calibration_20261019",
+    "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/visible_innovation_sensing_calibration_20261019/analysis/handoff.json",
+    "sha": "d60dc6f3d6c1d97d95bf0bd2ddb2f11524d2e5104be6d53e1c19b2fbb43e3224",
+    "relation": "fixed-omega aggregation intervention and common-prediction bias followup; same paper/projection item"
+  },
+  {
+    "task": "embodied_action_calibration_20261019",
+    "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/embodied_action_calibration_20261019/analysis/handoff.json",
+    "sha": "8e472c45c55dc744343925fbf017d6e100d82a4269389656c53d11f7aa4d5768",
+    "relation": "same paper/projection task; invalid calibration intervention, preserve true environment action response"
+  },
+  {
+    "task": "paid_action_closed_loop_20261019",
+    "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/paid_action_closed_loop_20261019/analysis/handoff.json",
+    "sha256": "9b9f08f4d9916761d471a03d816ba578138423c56e2c8607c8f5ae35c215acb4",
+    "status": "complete",
+    "boundary": {
+      "primary": "Paid last response correction expressed and supported by actual same-body A intervention; body utility is conditional.",
+      "followup": "Continued writing matters after reversal but adds negligible tracking under unchanged channel; soft energy can worsen despite closer tracking.",
+      "next": "Resource availability/goal mismatch: inspect actual stock-body overlap before distinct supply-time experiment, retain standard last as strong baseline; no fit tuning.",
+      "objective_met": false
+    }
+  },
+  {
+    "task": "paid_action_reversal_20261019",
+    "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/paid_action_reversal_20261019/analysis/handoff.json",
+    "sha256": "93e00ca2a66075bb1452ddb594e3a46bcf2b92b0d41634f79997d81f33ca9baa",
+    "status": "complete",
+    "boundary": {
+      "primary": "Paid last response correction expressed and supported by actual same-body A intervention; body utility is conditional.",
+      "followup": "Continued writing matters after reversal but adds negligible tracking under unchanged channel; soft energy can worsen despite closer tracking.",
+      "next": "Resource availability/goal mismatch: inspect actual stock-body overlap before distinct supply-time experiment, retain standard last as strong baseline; no fit tuning.",
+      "objective_met": false
+    }
+  },
+  {
+    "task": "resource_timing_goal_mismatch_20261019",
+    "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_timing_goal_mismatch_20261019/analysis/handoff.json",
+    "sha256": "6e1bc7eb8a1fd8abc76e52566c597543eabcded5c2bf436be5a613d4a3a5ffca",
+    "status": "complete",
+    "boundary": "预置16目标在food16的实际U为0/4改善；soft省能取舍保留；不认定学习时滞。"
+  },
+  {
+    "task": "resource_geometry_uptake_20261019",
+    "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_geometry_uptake_20261019/analysis/handoff.json",
+    "sha256": "7ce13a64262b9e9e70458a96640232675859c6bee70079a224d807c754dd6ff8",
+    "status": "complete",
+    "boundary": "同总量宽供给使soft实际获取/E及组织减损大幅改善，compact有反例；属于环境空间干预，非学习。"
+  },
+  {
+    "task": "resource_conditioned_effort_opportunity_20261019",
+    "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/analysis/handoff.json",
+    "sha256": "15b6177c0a64eb371c2725f1207abaa8de5b0861774995fd5604b7001c96194b",
+    "status": "complete",
+    "boundary": {
+      "primary": "半投入U下降8/8；compact末E下降4/4，soft末E上升4/4但M/体时下降。宽度不改变净E排序。",
+      "temporal": "soft末64窗半投入U提高4/4但全128仍降低，早晚完整保留。",
+      "choice": "关闭本宽窄任务摄取历史必要性；不加第三档。继续身体摄取机会/局部能量配置反馈结构，保两个固定投入。",
+      "spatial": "96当步摄取前收据+272真帧，整体E较高可与局部匮乏共存；免费全局重分配仅数学诊断上界。",
+      "objective_met": false
+    }
+  }
+]

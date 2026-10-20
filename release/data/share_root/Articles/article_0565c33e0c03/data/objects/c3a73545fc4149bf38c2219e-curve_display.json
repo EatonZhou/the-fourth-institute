@@ -1,0 +1,104 @@
+{
+  "screen_mapping": "x=495+25.2*x_cm, y=88+25.2*y_cm",
+  "simplification_max_pixel_deviation": 0.45,
+  "rounding": "nearest screen pixel",
+  "smooth": false,
+  "curves": {
+    "0ac_F_at_P0_M": {
+      "source_points": 97,
+      "step_range": [
+        128,
+        224
+      ],
+      "metric": "M",
+      "axis": [
+        -2,
+        12
+      ]
+    },
+    "0ac_F_at_P0_E": {
+      "source_points": 97,
+      "step_range": [
+        128,
+        224
+      ],
+      "metric": "E",
+      "axis": [
+        0,
+        100
+      ]
+    },
+    "0ac_F_at_P1_M": {
+      "source_points": 97,
+      "step_range": [
+        128,
+        224
+      ],
+      "metric": "M",
+      "axis": [
+        -2,
+        12
+      ]
+    },
+    "0ac_F_at_P1_E": {
+      "source_points": 97,
+      "step_range": [
+        128,
+        224
+      ],
+      "metric": "E",
+      "axis": [
+        0,
+        100
+      ]
+    },
+    "6bd_F_at_P0_M": {
+      "source_points": 97,
+      "step_range": [
+        128,
+        224
+      ],
+      "metric": "M",
+      "axis": [
+        -2,
+        12
+      ]
+    },
+    "6bd_F_at_P0_E": {
+      "source_points": 97,
+      "step_range": [
+        128,
+        224
+      ],
+      "metric": "E",
+      "axis": [
+        0,
+        100
+      ]
+    },
+    "6bd_F_at_P1_M": {
+      "source_points": 97,
+      "step_range": [
+        128,
+        224
+      ],
+      "metric": "M",
+      "axis": [
+        -2,
+        12
+      ]
+    },
+    "6bd_F_at_P1_E": {
+      "source_points": 97,
+      "step_range": [
+        128,
+        224
+      ],
+      "metric": "E",
+      "axis": [
+        0,
+        100
+      ]
+    }
+  }
+}

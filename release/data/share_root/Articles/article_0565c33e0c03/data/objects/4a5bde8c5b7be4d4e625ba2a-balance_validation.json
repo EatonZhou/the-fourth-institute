@@ -1,0 +1,70 @@
+{
+  "paths": [
+    {
+      "parent": "g1_f1_c0--compact--supported",
+      "arm": "directed",
+      "material": 7.105427357601002e-15,
+      "energy": 0.0,
+      "max_step_error": 7.127631818093505e-14,
+      "pump_requested": 0.9499550256269516,
+      "pump_paid": 0.9251907317897955,
+      "energy_unaffordable": 0.0
+    },
+    {
+      "parent": "g1_f1_c0--compact--supported",
+      "arm": "diffusion",
+      "material": 1.4210854715202004e-14,
+      "energy": -2.842170943040401e-14,
+      "max_step_error": 6.838973831690964e-14,
+      "pump_requested": 6.574859745759984,
+      "pump_paid": 6.574859745759984,
+      "energy_unaffordable": 0.0
+    },
+    {
+      "parent": "g1_f2_c0--compact--supported",
+      "arm": "directed",
+      "material": -2.842170943040401e-14,
+      "energy": -5.684341886080802e-14,
+      "max_step_error": 7.716050021144838e-14,
+      "pump_requested": 0.9314522119978946,
+      "pump_paid": 0.7845629848409463,
+      "energy_unaffordable": 0.0
+    },
+    {
+      "parent": "g1_f2_c0--compact--supported",
+      "arm": "diffusion",
+      "material": 3.552713678800501e-14,
+      "energy": 2.842170943040401e-14,
+      "max_step_error": 7.338574192772285e-14,
+      "pump_requested": 21.956845858086762,
+      "pump_paid": 21.956845858086762,
+      "energy_unaffordable": 0.0
+    }
+  ],
+  "input_checks": [
+    {
+      "parent": "g1_f1_c0--compact--supported",
+      "arm": "directed",
+      "max_gross_input_difference": 4.440892098500626e-16,
+      "scope": "same gross input each clock; body-following spatial distribution changes with trajectory"
+    },
+    {
+      "parent": "g1_f1_c0--compact--supported",
+      "arm": "diffusion",
+      "max_gross_input_difference": 3.3306690738754696e-16,
+      "scope": "same gross input each clock; body-following spatial distribution changes with trajectory"
+    },
+    {
+      "parent": "g1_f2_c0--compact--supported",
+      "arm": "directed",
+      "max_gross_input_difference": 3.3306690738754696e-16,
+      "scope": "same gross input each clock; body-following spatial distribution changes with trajectory"
+    },
+    {
+      "parent": "g1_f2_c0--compact--supported",
+      "arm": "diffusion",
+      "max_gross_input_difference": 2.220446049250313e-16,
+      "scope": "same gross input each clock; body-following spatial distribution changes with trajectory"
+    }
+  ]
+}

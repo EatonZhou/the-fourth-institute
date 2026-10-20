@@ -1,0 +1,842 @@
+[
+  {
+    "id": "202610195601_ring_birth_gain_only__material_carried",
+    "clock": 320,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195601_ring_birth_gain_only__material_carried/fields320.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195601_ring_birth_gain_only__material_carried/state320.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.1738893692399954,
+      "radius": 6.687024617973313,
+      "mass": 87.41444951079237,
+      "maximum": 0.9675581488256545
+    }
+  },
+  {
+    "id": "202610195601_ring_birth_gain_only__material_carried",
+    "clock": 321,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195601_ring_birth_gain_only__material_carried/fields321.npz",
+    "joint": null,
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.1748426147193503,
+      "radius": 6.687374040054361,
+      "mass": 87.5015563506998,
+      "maximum": 0.9681344158742766
+    }
+  },
+  {
+    "id": "202610195601_ring_birth_gain_only__material_carried",
+    "clock": 328,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195601_ring_birth_gain_only__material_carried/fields328.npz",
+    "joint": null,
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.1807862920565315,
+      "radius": 6.691810391911592,
+      "mass": 87.98020584417915,
+      "maximum": 0.9743658096210843
+    }
+  },
+  {
+    "id": "202610195601_ring_birth_gain_only__material_carried",
+    "clock": 336,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195601_ring_birth_gain_only__material_carried/fields336.npz",
+    "joint": null,
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.1874436989188903,
+      "radius": 6.700625893560502,
+      "mass": 88.39568068437822,
+      "maximum": 0.9835557195435504
+    }
+  },
+  {
+    "id": "202610195601_ring_birth_gain_only__material_carried",
+    "clock": 352,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195601_ring_birth_gain_only__material_carried/fields352.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195601_ring_birth_gain_only__material_carried/state352.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.199304392244835,
+      "radius": 6.717168119305332,
+      "mass": 89.16901767531121,
+      "maximum": 0.99284010068536
+    }
+  },
+  {
+    "id": "202610195601_ring_birth_gain_only__material_carried",
+    "clock": 368,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195601_ring_birth_gain_only__material_carried/fields368.npz",
+    "joint": null,
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.2074583423628125,
+      "radius": 6.739935441810539,
+      "mass": 89.64409665366644,
+      "maximum": 0.9906319445526246
+    }
+  },
+  {
+    "id": "202610195601_ring_birth_gain_only__material_carried",
+    "clock": 384,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195601_ring_birth_gain_only__material_carried/fields384.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195601_ring_birth_gain_only__material_carried/state384.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.2135478089027187,
+      "radius": 6.769604688972125,
+      "mass": 89.85058740862996,
+      "maximum": 0.9822712265410687
+    }
+  },
+  {
+    "id": "202610195601_ring_both__material_carried",
+    "clock": 320,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195601_ring_both__material_carried/fields320.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195601_ring_both__material_carried/state320.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.117758385108235,
+      "radius": 6.780013786436294,
+      "mass": 96.47726960656249,
+      "maximum": 0.9631734411026829
+    }
+  },
+  {
+    "id": "202610195601_ring_both__material_carried",
+    "clock": 321,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195601_ring_both__material_carried/fields321.npz",
+    "joint": null,
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.1181233590413837,
+      "radius": 6.781698636143618,
+      "mass": 96.50176151727067,
+      "maximum": 0.9636100009884069
+    }
+  },
+  {
+    "id": "202610195601_ring_both__material_carried",
+    "clock": 328,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195601_ring_both__material_carried/fields328.npz",
+    "joint": null,
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.1207056187299942,
+      "radius": 6.795077263929794,
+      "mass": 96.62883188606152,
+      "maximum": 0.9653466730411371
+    }
+  },
+  {
+    "id": "202610195601_ring_both__material_carried",
+    "clock": 336,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195601_ring_both__material_carried/fields336.npz",
+    "joint": null,
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.1236788912333735,
+      "radius": 6.808403139512637,
+      "mass": 96.87042541500618,
+      "maximum": 0.9649270649471988
+    }
+  },
+  {
+    "id": "202610195601_ring_both__material_carried",
+    "clock": 352,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195601_ring_both__material_carried/fields352.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195601_ring_both__material_carried/state352.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.1301936120894862,
+      "radius": 6.829014736245444,
+      "mass": 97.62603192320672,
+      "maximum": 0.9621425652671538
+    }
+  },
+  {
+    "id": "202610195601_ring_both__material_carried",
+    "clock": 368,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195601_ring_both__material_carried/fields368.npz",
+    "joint": null,
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.1364467224000916,
+      "radius": 6.846858006513525,
+      "mass": 98.43640258228334,
+      "maximum": 0.9590756559376971
+    }
+  },
+  {
+    "id": "202610195601_ring_both__material_carried",
+    "clock": 384,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195601_ring_both__material_carried/fields384.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195601_ring_both__material_carried/state384.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.14275206543355,
+      "radius": 6.86610786468566,
+      "mass": 99.14266988774428,
+      "maximum": 0.9617169883584916
+    }
+  },
+  {
+    "id": "202610195601_separate_seeds_birth_gain_only__material_carried",
+    "clock": 320,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195601_separate_seeds_birth_gain_only__material_carried/fields320.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195601_separate_seeds_birth_gain_only__material_carried/state320.bin",
+    "shape": {
+      "alive": true,
+      "components": 4,
+      "holes": 0,
+      "elongation": 1.1087635296848153,
+      "radius": 7.1093040357723805,
+      "mass": 61.1228152518901,
+      "maximum": 0.8424627417397683
+    }
+  },
+  {
+    "id": "202610195601_separate_seeds_birth_gain_only__material_carried",
+    "clock": 321,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195601_separate_seeds_birth_gain_only__material_carried/fields321.npz",
+    "joint": null,
+    "shape": {
+      "alive": true,
+      "components": 4,
+      "holes": 0,
+      "elongation": 1.109825594775106,
+      "radius": 7.103972039549724,
+      "mass": 61.320656169292235,
+      "maximum": 0.8427303125740424
+    }
+  },
+  {
+    "id": "202610195601_separate_seeds_birth_gain_only__material_carried",
+    "clock": 328,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195601_separate_seeds_birth_gain_only__material_carried/fields328.npz",
+    "joint": null,
+    "shape": {
+      "alive": true,
+      "components": 4,
+      "holes": 0,
+      "elongation": 1.1184591265710329,
+      "radius": 7.069707019927216,
+      "mass": 62.64075306907955,
+      "maximum": 0.9182825090078428
+    }
+  },
+  {
+    "id": "202610195601_separate_seeds_birth_gain_only__material_carried",
+    "clock": 336,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195601_separate_seeds_birth_gain_only__material_carried/fields336.npz",
+    "joint": null,
+    "shape": {
+      "alive": true,
+      "components": 4,
+      "holes": 0,
+      "elongation": 1.1296179099284784,
+      "radius": 7.031345601507956,
+      "mass": 64.11077453926788,
+      "maximum": 0.978309387351257
+    }
+  },
+  {
+    "id": "202610195601_separate_seeds_birth_gain_only__material_carried",
+    "clock": 352,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195601_separate_seeds_birth_gain_only__material_carried/fields352.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195601_separate_seeds_birth_gain_only__material_carried/state352.bin",
+    "shape": {
+      "alive": true,
+      "components": 4,
+      "holes": 0,
+      "elongation": 1.151507769667082,
+      "radius": 6.964145050590726,
+      "mass": 66.91238923177133,
+      "maximum": 1.0513960586328228
+    }
+  },
+  {
+    "id": "202610195601_separate_seeds_birth_gain_only__material_carried",
+    "clock": 368,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195601_separate_seeds_birth_gain_only__material_carried/fields368.npz",
+    "joint": null,
+    "shape": {
+      "alive": true,
+      "components": 4,
+      "holes": 0,
+      "elongation": 1.1770141672136634,
+      "radius": 6.901150440936261,
+      "mass": 69.56400495324321,
+      "maximum": 1.0985417146319285
+    }
+  },
+  {
+    "id": "202610195601_separate_seeds_birth_gain_only__material_carried",
+    "clock": 384,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195601_separate_seeds_birth_gain_only__material_carried/fields384.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195601_separate_seeds_birth_gain_only__material_carried/state384.bin",
+    "shape": {
+      "alive": true,
+      "components": 4,
+      "holes": 0,
+      "elongation": 1.2041578667429857,
+      "radius": 6.842050813889875,
+      "mass": 72.17266928654718,
+      "maximum": 1.1340663170587126
+    }
+  },
+  {
+    "id": "202610195601_separate_seeds_both__material_carried",
+    "clock": 320,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195601_separate_seeds_both__material_carried/fields320.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195601_separate_seeds_both__material_carried/state320.bin",
+    "shape": {
+      "alive": true,
+      "components": 4,
+      "holes": 0,
+      "elongation": 1.2417275594941266,
+      "radius": 6.889166316534101,
+      "mass": 79.18982026657574,
+      "maximum": 1.1787391926957962
+    }
+  },
+  {
+    "id": "202610195601_separate_seeds_both__material_carried",
+    "clock": 321,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195601_separate_seeds_both__material_carried/fields321.npz",
+    "joint": null,
+    "shape": {
+      "alive": true,
+      "components": 4,
+      "holes": 0,
+      "elongation": 1.2431120261351158,
+      "radius": 6.88969474594498,
+      "mass": 79.27529962717162,
+      "maximum": 1.1794990587160215
+    }
+  },
+  {
+    "id": "202610195601_separate_seeds_both__material_carried",
+    "clock": 328,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195601_separate_seeds_both__material_carried/fields328.npz",
+    "joint": null,
+    "shape": {
+      "alive": true,
+      "components": 4,
+      "holes": 0,
+      "elongation": 1.2526442513174587,
+      "radius": 6.894589053295405,
+      "mass": 79.85608310849403,
+      "maximum": 1.18388487261369
+    }
+  },
+  {
+    "id": "202610195601_separate_seeds_both__material_carried",
+    "clock": 336,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195601_separate_seeds_both__material_carried/fields336.npz",
+    "joint": null,
+    "shape": {
+      "alive": true,
+      "components": 4,
+      "holes": 0,
+      "elongation": 1.2632568853823571,
+      "radius": 6.90106560775093,
+      "mass": 80.53486875960998,
+      "maximum": 1.1874082554683298
+    }
+  },
+  {
+    "id": "202610195601_separate_seeds_both__material_carried",
+    "clock": 352,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195601_separate_seeds_both__material_carried/fields352.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195601_separate_seeds_both__material_carried/state352.bin",
+    "shape": {
+      "alive": true,
+      "components": 4,
+      "holes": 0,
+      "elongation": 1.2838465102981444,
+      "radius": 6.913982127315676,
+      "mass": 81.93839870614802,
+      "maximum": 1.1927387852470932
+    }
+  },
+  {
+    "id": "202610195601_separate_seeds_both__material_carried",
+    "clock": 368,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195601_separate_seeds_both__material_carried/fields368.npz",
+    "joint": null,
+    "shape": {
+      "alive": true,
+      "components": 4,
+      "holes": 0,
+      "elongation": 1.3018252411238502,
+      "radius": 6.926102449138328,
+      "mass": 83.08997166959338,
+      "maximum": 1.1855118461794962
+    }
+  },
+  {
+    "id": "202610195601_separate_seeds_both__material_carried",
+    "clock": 384,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195601_separate_seeds_both__material_carried/fields384.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195601_separate_seeds_both__material_carried/state384.bin",
+    "shape": {
+      "alive": true,
+      "components": 4,
+      "holes": 0,
+      "elongation": 1.3189173110204597,
+      "radius": 6.934314007930776,
+      "mass": 84.24049709755909,
+      "maximum": 1.1927712357022944
+    }
+  },
+  {
+    "id": "202610195602_ring_birth_gain_only__material_carried",
+    "clock": 320,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195602_ring_birth_gain_only__material_carried/fields320.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195602_ring_birth_gain_only__material_carried/state320.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.1837889726443973,
+      "radius": 6.58915738515648,
+      "mass": 83.62708964718303,
+      "maximum": 0.910221203725659
+    }
+  },
+  {
+    "id": "202610195602_ring_birth_gain_only__material_carried",
+    "clock": 321,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195602_ring_birth_gain_only__material_carried/fields321.npz",
+    "joint": null,
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.184820211871979,
+      "radius": 6.589828247171754,
+      "mass": 83.71468477225815,
+      "maximum": 0.9115927527529059
+    }
+  },
+  {
+    "id": "202610195602_ring_birth_gain_only__material_carried",
+    "clock": 328,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195602_ring_birth_gain_only__material_carried/fields328.npz",
+    "joint": null,
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.1910682340074552,
+      "radius": 6.595890754431547,
+      "mass": 84.1856797877073,
+      "maximum": 0.9238516661442063
+    }
+  },
+  {
+    "id": "202610195602_ring_birth_gain_only__material_carried",
+    "clock": 336,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195602_ring_birth_gain_only__material_carried/fields336.npz",
+    "joint": null,
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.1981520131690018,
+      "radius": 6.603823687665139,
+      "mass": 84.68927161488429,
+      "maximum": 0.9413569797811153
+    }
+  },
+  {
+    "id": "202610195602_ring_birth_gain_only__material_carried",
+    "clock": 352,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195602_ring_birth_gain_only__material_carried/fields352.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195602_ring_birth_gain_only__material_carried/state352.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.2120682444144693,
+      "radius": 6.621640641043005,
+      "mass": 85.6326726693049,
+      "maximum": 0.9699465904675848
+    }
+  },
+  {
+    "id": "202610195602_ring_birth_gain_only__material_carried",
+    "clock": 368,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195602_ring_birth_gain_only__material_carried/fields368.npz",
+    "joint": null,
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.2257467190720055,
+      "radius": 6.636431980715172,
+      "mass": 86.68009518341502,
+      "maximum": 0.9952928482727387
+    }
+  },
+  {
+    "id": "202610195602_ring_birth_gain_only__material_carried",
+    "clock": 384,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195602_ring_birth_gain_only__material_carried/fields384.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195602_ring_birth_gain_only__material_carried/state384.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.2396150537193893,
+      "radius": 6.650906278621346,
+      "mass": 87.61201417148598,
+      "maximum": 1.0119200986393584
+    }
+  },
+  {
+    "id": "202610195602_ring_both__material_carried",
+    "clock": 320,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195602_ring_both__material_carried/fields320.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195602_ring_both__material_carried/state320.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.140758355092705,
+      "radius": 6.6918601910887325,
+      "mass": 95.40545256335511,
+      "maximum": 0.9349200519830223
+    }
+  },
+  {
+    "id": "202610195602_ring_both__material_carried",
+    "clock": 321,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195602_ring_both__material_carried/fields321.npz",
+    "joint": null,
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.140913677090306,
+      "radius": 6.693301657680183,
+      "mass": 95.43336119454548,
+      "maximum": 0.9357205258206963
+    }
+  },
+  {
+    "id": "202610195602_ring_both__material_carried",
+    "clock": 328,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195602_ring_both__material_carried/fields328.npz",
+    "joint": null,
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.142456271409338,
+      "radius": 6.700922991323046,
+      "mass": 95.74013745244014,
+      "maximum": 0.9409473954387286
+    }
+  },
+  {
+    "id": "202610195602_ring_both__material_carried",
+    "clock": 336,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195602_ring_both__material_carried/fields336.npz",
+    "joint": null,
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.14428192585643,
+      "radius": 6.70733603308179,
+      "mass": 96.18614408352362,
+      "maximum": 0.9463367851960729
+    }
+  },
+  {
+    "id": "202610195602_ring_both__material_carried",
+    "clock": 352,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195602_ring_both__material_carried/fields352.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195602_ring_both__material_carried/state352.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.1477258012150275,
+      "radius": 6.723800850441987,
+      "mass": 96.87498965368519,
+      "maximum": 0.9552211172619597
+    }
+  },
+  {
+    "id": "202610195602_ring_both__material_carried",
+    "clock": 368,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195602_ring_both__material_carried/fields368.npz",
+    "joint": null,
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.1522719924996028,
+      "radius": 6.740217314355702,
+      "mass": 97.55946019375175,
+      "maximum": 0.9657067479574325
+    }
+  },
+  {
+    "id": "202610195602_ring_both__material_carried",
+    "clock": 384,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195602_ring_both__material_carried/fields384.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195602_ring_both__material_carried/state384.bin",
+    "shape": {
+      "alive": true,
+      "components": 1,
+      "holes": 1,
+      "elongation": 1.157990822623125,
+      "radius": 6.759055049604627,
+      "mass": 98.10519984888431,
+      "maximum": 0.9753369648708866
+    }
+  },
+  {
+    "id": "202610195602_separate_seeds_birth_gain_only__material_carried",
+    "clock": 320,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195602_separate_seeds_birth_gain_only__material_carried/fields320.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195602_separate_seeds_birth_gain_only__material_carried/state320.bin",
+    "shape": {
+      "alive": true,
+      "components": 4,
+      "holes": 0,
+      "elongation": 1.1782056821994458,
+      "radius": 7.011232322481674,
+      "mass": 66.4375130361503,
+      "maximum": 0.934146517852649
+    }
+  },
+  {
+    "id": "202610195602_separate_seeds_birth_gain_only__material_carried",
+    "clock": 321,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195602_separate_seeds_birth_gain_only__material_carried/fields321.npz",
+    "joint": null,
+    "shape": {
+      "alive": true,
+      "components": 4,
+      "holes": 0,
+      "elongation": 1.1791459592765232,
+      "radius": 7.006999144675955,
+      "mass": 66.64299828725078,
+      "maximum": 0.9417663797567417
+    }
+  },
+  {
+    "id": "202610195602_separate_seeds_birth_gain_only__material_carried",
+    "clock": 328,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195602_separate_seeds_birth_gain_only__material_carried/fields328.npz",
+    "joint": null,
+    "shape": {
+      "alive": true,
+      "components": 4,
+      "holes": 0,
+      "elongation": 1.1866560094933951,
+      "radius": 6.979189604585667,
+      "mass": 67.97563658393331,
+      "maximum": 1.005070537079095
+    }
+  },
+  {
+    "id": "202610195602_separate_seeds_birth_gain_only__material_carried",
+    "clock": 336,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195602_separate_seeds_birth_gain_only__material_carried/fields336.npz",
+    "joint": null,
+    "shape": {
+      "alive": true,
+      "components": 4,
+      "holes": 0,
+      "elongation": 1.1968405200943426,
+      "radius": 6.949077017912102,
+      "mass": 69.45567305533461,
+      "maximum": 1.0532271398957962
+    }
+  },
+  {
+    "id": "202610195602_separate_seeds_birth_gain_only__material_carried",
+    "clock": 352,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195602_separate_seeds_birth_gain_only__material_carried/fields352.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195602_separate_seeds_birth_gain_only__material_carried/state352.bin",
+    "shape": {
+      "alive": true,
+      "components": 4,
+      "holes": 0,
+      "elongation": 1.2203607654682598,
+      "radius": 6.892928181137278,
+      "mass": 72.2558842304905,
+      "maximum": 1.1104210215246968
+    }
+  },
+  {
+    "id": "202610195602_separate_seeds_birth_gain_only__material_carried",
+    "clock": 368,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195602_separate_seeds_birth_gain_only__material_carried/fields368.npz",
+    "joint": null,
+    "shape": {
+      "alive": true,
+      "components": 4,
+      "holes": 0,
+      "elongation": 1.2449557618202975,
+      "radius": 6.8442345693849695,
+      "mass": 74.81897140100523,
+      "maximum": 1.1506980759934382
+    }
+  },
+  {
+    "id": "202610195602_separate_seeds_birth_gain_only__material_carried",
+    "clock": 384,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195602_separate_seeds_birth_gain_only__material_carried/fields384.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195602_separate_seeds_birth_gain_only__material_carried/state384.bin",
+    "shape": {
+      "alive": true,
+      "components": 4,
+      "holes": 0,
+      "elongation": 1.2677528050875713,
+      "radius": 6.8256833314089205,
+      "mass": 76.77923442004378,
+      "maximum": 1.1770700773970828
+    }
+  },
+  {
+    "id": "202610195602_separate_seeds_both__material_carried",
+    "clock": 320,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195602_separate_seeds_both__material_carried/fields320.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195602_separate_seeds_both__material_carried/state320.bin",
+    "shape": {
+      "alive": true,
+      "components": 4,
+      "holes": 0,
+      "elongation": 1.3037291299232312,
+      "radius": 6.853263306176053,
+      "mass": 81.33096210972373,
+      "maximum": 1.1908864643930426
+    }
+  },
+  {
+    "id": "202610195602_separate_seeds_both__material_carried",
+    "clock": 321,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195602_separate_seeds_both__material_carried/fields321.npz",
+    "joint": null,
+    "shape": {
+      "alive": true,
+      "components": 4,
+      "holes": 0,
+      "elongation": 1.304956207109216,
+      "radius": 6.854769032363582,
+      "mass": 81.39722905190506,
+      "maximum": 1.191278666510795
+    }
+  },
+  {
+    "id": "202610195602_separate_seeds_both__material_carried",
+    "clock": 328,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195602_separate_seeds_both__material_carried/fields328.npz",
+    "joint": null,
+    "shape": {
+      "alive": true,
+      "components": 4,
+      "holes": 0,
+      "elongation": 1.3132835643011112,
+      "radius": 6.86591966109425,
+      "mass": 81.87014741866923,
+      "maximum": 1.1938061335073458
+    }
+  },
+  {
+    "id": "202610195602_separate_seeds_both__material_carried",
+    "clock": 336,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195602_separate_seeds_both__material_carried/fields336.npz",
+    "joint": null,
+    "shape": {
+      "alive": true,
+      "components": 4,
+      "holes": 0,
+      "elongation": 1.3219957074947863,
+      "radius": 6.880918740982695,
+      "mass": 82.38020568919413,
+      "maximum": 1.196248243358136
+    }
+  },
+  {
+    "id": "202610195602_separate_seeds_both__material_carried",
+    "clock": 352,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195602_separate_seeds_both__material_carried/fields352.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195602_separate_seeds_both__material_carried/state352.bin",
+    "shape": {
+      "alive": true,
+      "components": 4,
+      "holes": 1,
+      "elongation": 1.3373697030031597,
+      "radius": 6.905899786175398,
+      "mass": 83.47331099239044,
+      "maximum": 1.1951601653874033
+    }
+  },
+  {
+    "id": "202610195602_separate_seeds_both__material_carried",
+    "clock": 368,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195602_separate_seeds_both__material_carried/fields368.npz",
+    "joint": null,
+    "shape": {
+      "alive": true,
+      "components": 4,
+      "holes": 0,
+      "elongation": 1.3517843295109169,
+      "radius": 6.918777288453829,
+      "mass": 84.70256333906319,
+      "maximum": 1.1976192678586066
+    }
+  },
+  {
+    "id": "202610195602_separate_seeds_both__material_carried",
+    "clock": 384,
+    "fields": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195602_separate_seeds_both__material_carried/fields384.npz",
+    "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e/202610195602_separate_seeds_both__material_carried/state384.bin",
+    "shape": {
+      "alive": true,
+      "components": 4,
+      "holes": 0,
+      "elongation": 1.3650573288460255,
+      "radius": 6.932848864538985,
+      "mass": 85.63426235586434,
+      "maximum": 1.1924798470049156
+    }
+  }
+]

@@ -1,0 +1,24 @@
+{
+  "task": "metabolic_maintenance_withdrawal_20261018",
+  "status": "completed",
+  "job_id": "6e9a666a-8353-4033-89a9-ecc1cdbb4824",
+  "attempted": 2821,
+  "committed": 2821,
+  "counts": {
+    "boundary": 5,
+    "science": 2816
+  },
+  "failed_native_calls": 0,
+  "failure": null,
+  "last": {
+    "stage": "science",
+    "clock": 895,
+    "schedule": "restart"
+  },
+  "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824",
+  "raw_bytes": 403700404,
+  "script_seconds": 153.3250445149606,
+  "plan_sha256": "cd9087fc54cea553716f0dc54514b8994a4995217794f89b47b3dc7fd4e77630",
+  "old_budget_used": 0,
+  "old_prefix_replayed": 0
+}

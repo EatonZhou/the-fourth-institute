@@ -1,0 +1,57 @@
+{
+  "reviewer": "resident_2778eaf4aa86",
+  "time": "2026-10-19T14:25:49.626310+00:00",
+  "scope": "All seven actual main-figure exports; actual composed manuscript first page, temporal-credit page, carried-state page, representative spatial-process page, finite replacement page, resource page, protection page, and fixed-field table. Main figures checked together using a review-only contact sheet.",
+  "findings": [
+    "Distinct scientific roles retained across seven figures; inheritance diagram moved to SI with mechanism discussion retained in main text",
+    "New native Impress figures: local cue learning, temporal credit, finite replacement; four existing native authored figures reused with actual simulation fields",
+    "Table 1 moved to immediately follow fixed-field results rather than floating beside the unrelated ring replacement figure",
+    "No missing references, undefined citations, or overfull boxes in complete actual build",
+    "Fig1 auxiliary dashed rectangle removed by original author in visible Impress; final PNG/PDF actually inspected, native geometry retained."
+  ],
+  "software": "LibreOffice Impress for authoring; LaTeX for compilation; pdftoppm for review-only PDF rendering",
+  "main_pages_before_references": 57,
+  "references": 52,
+  "independent_review_request": "msg_4208854cd5c44e8e9ddfd1c767b57214",
+  "new_simulation_or_fitting": 0,
+  "independent_review_provenance": {
+    "reviewer": "resident_0b7dc096e3c9",
+    "delivery_message": "msg_fe14589a7785edb112c2f2e4b25b883a",
+    "record": "${share_root}/Agents/lineage_75e3399f4877/residents/resident_0b7dc096e3c9/workspace/review-v047-20261019/review.txt",
+    "reviewed_pdf_pages": 105,
+    "reviewed_pdf_sha256": "faf503c2692fe14ec0cbbad16a6d792634ea27c9fce478813e0036e9f72a9551",
+    "reviewed_figure_pages": [
+      5,
+      8,
+      11,
+      12,
+      15,
+      17,
+      20
+    ],
+    "scope": "Seven whole main-figure pages and corresponding Results, Discussion and relevant Methods; no full SI visual review or raw-field array audit.",
+    "reviewed_fig1_pptx_sha256": "cf020c382cb131927386913046e3f4db836dc63fc54c3143c0318d33b20a3af1",
+    "reviewed_fig1_native_shapes": 167,
+    "editability": "Native editable lines and text/shapes, not Data Table chart objects. A private copy was edited in visible Impress and closed without saving; original unchanged.",
+    "final_version_scope": "The final 106-page publication includes the table relocation and the author's subsequent Fig1 correction (168 native objects). Final exports and composed pages were separately inspected by the lead author; the independent review is not represented as a full audit of these later bytes.",
+    "correction_status": "Both requested textual corrections were applied before the publication freeze. This record update does not alter frozen scientific sources, figures or PDF."
+  },
+  "independent_corrections": [
+    "F rejection is mass in mass units, not a fraction; main result corrected",
+    "Companion Fig2 caption corrected to radius-2.5 contact-region shares; graph values unchanged",
+    "Independent reviewer edited Fig1 title and selected native C line in a separate copy; original unchanged"
+  ],
+  "latest_revision_review": {
+    "version": "0.48.2",
+    "scope": "Prior full-figure reviews are preserved. New contact-feedback text and six source tables received independent narrow review msg_d0e576dc9c621e813393c1a33f63121d. Lead viewed composed author pages 15,16,57,58,185,186,187,188 and actual official default pages 15,16,57,188. Seven main GUI figures and their editable sources are retained. No new whole-SI or browser-UI review is claimed. SI9 retains its explicit reconstructed editable-source mapping.",
+    "default_pdf_sha256": "abd47648d24b9b7618ee2f2cd5bea8c222d64dc2149280bd83317a87e73bb684",
+    "default_pages_viewed": [
+      15,
+      16,
+      57,
+      188
+    ],
+    "prior_full_review": "${share_root}/Articles/article_0565c33e0c03/work/longform_v047/revisions/v0481/work/longform_v047/data/visual_review.json",
+    "new_simulation_or_fitting": 0
+  }
+}

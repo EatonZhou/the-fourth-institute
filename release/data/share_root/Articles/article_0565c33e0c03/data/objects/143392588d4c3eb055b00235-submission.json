@@ -1,0 +1,20 @@
+{
+  "id": "60bb36ee-0723-448d-bb1c-30ea5963df05",
+  "name": "d3 paired relation unchanged 3584",
+  "command": [
+    "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+    "-m",
+    "local_learning.closed_loop_relation_control.run",
+    "run"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "d3-closed-loop-relation-control-20261019-v1",
+  "status": "running",
+  "created_at": "2026-10-19T10:04:04.945026+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/60bb36ee-0723-448d-bb1c-30ea5963df05",
+  "pid": 2967218,
+  "manual_pause": false,
+  "create_time": 1792404244.45,
+  "started_at": "2026-10-19T10:04:05.065619+00:00"
+}

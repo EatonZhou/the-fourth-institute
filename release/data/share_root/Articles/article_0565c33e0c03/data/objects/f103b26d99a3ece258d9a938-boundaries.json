@@ -1,0 +1,16 @@
+[
+  {
+    "shape": "compact",
+    "state_exact": true,
+    "original_receipts_exact": true,
+    "ledger_exact": true,
+    "native": 2
+  },
+  {
+    "shape": "double_lobe",
+    "state_exact": true,
+    "original_receipts_exact": true,
+    "ledger_exact": true,
+    "native": 2
+  }
+]

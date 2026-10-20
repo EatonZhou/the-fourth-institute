@@ -1,0 +1,206 @@
+{
+  "schema": "lenia.candidate-assembly-observation-index.v1",
+  "source_owner": "resident_33af539c4a17",
+  "indexed_by": "resident_ce2a5ab005bc",
+  "sourceRef": "information_307d59b12f6f/file/information_307d59b12f6f/donors_20261016/progress.json",
+  "sourceRef_scope": "Only the encounter/assembly artifacts; original candidate sourceRef remains unchanged.",
+  "resource_id": "information_307d59b12f6f",
+  "resource_version": 3,
+  "export_job": "739c8a1e-8ead-4343-8743-4ef3aa7997cd",
+  "export_directory": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/739c8a1e-8ead-4343-8743-4ef3aa7997cd",
+  "source_jobs": [
+    "de3a28eb-50c0-4ea1-8135-4e4f30099cca",
+    "6d2e5f0a-bcd2-416e-a7b2-36743d49fb62"
+  ],
+  "source_files": {
+    "state_index.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/739c8a1e-8ead-4343-8743-4ef3aa7997cd/state_index.json",
+      "sha256": "ab227830e01dfe574783f9eef08639cf43801db965ce307b2c930998c0993536"
+    },
+    "lineage.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/739c8a1e-8ead-4343-8743-4ef3aa7997cd/lineage.json",
+      "sha256": "a90aeaff0d096e8247509daf9c3bc1aa576cb79114f3ccb4f265867839e0c35e"
+    },
+    "component_diagnostic.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/739c8a1e-8ead-4343-8743-4ef3aa7997cd/component_diagnostic.json",
+      "sha256": "dcb24e1831e846f67f7de1f289062f1ea229ab025d246cb79aa5527fb9e7109c"
+    },
+    "short_results.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/739c8a1e-8ead-4343-8743-4ef3aa7997cd/short_results.json",
+      "sha256": "8caa844e2996761619203d38ed4f8d6d8a36bc8af69f1646422e97da1350fd60"
+    },
+    "long_results.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/739c8a1e-8ead-4343-8743-4ef3aa7997cd/long_results.json",
+      "sha256": "355c5e142a7c05a1ed0b4a388fad6de9ff8d04e5d2317642035a679b2af14485"
+    }
+  },
+  "clock_semantics": {
+    "donor_lifetime_step": 4096,
+    "assembly_start_step": 0,
+    "outer_generation_unchanged": true,
+    "physical_time": "assembly_update * each donor config.dt; rules are not shared across the two donor IDs"
+  },
+  "candidate_observations": {
+    "m2026101607-g1-0082": {
+      "candidate_id": "m2026101607-g1-0082",
+      "origin": "annulus",
+      "parent_id": "founder:annulus",
+      "outer_generation": 1,
+      "donor_lifetime_step": 4096,
+      "assembly_updates_observed": 2048,
+      "short_cases": [
+        {
+          "case": "single_reference",
+          "initial_mass": 68.20365065972658,
+          "final_mass": 67.44441187759557,
+          "first_extinct_assembly_update": null,
+          "mean_last64_step_L1": 15.827014818033614,
+          "max_step_L1": 16.790852815499612,
+          "max_mass": 68.33418450032127,
+          "max_mass_assembly_update": 292,
+          "final_component_sizes_above_point1": [
+            155
+          ],
+          "isolated_final_masses": [
+            67.44441187759557
+          ],
+          "max_difference_from_isolated_superposition": 0.0
+        },
+        {
+          "case": "head_on",
+          "initial_mass": 136.40730131945315,
+          "final_mass": 0.0,
+          "first_extinct_assembly_update": 54,
+          "mean_last64_step_L1": 0.0,
+          "max_step_L1": 36.02486995244486,
+          "max_mass": 140.26704705480657,
+          "max_mass_assembly_update": 40,
+          "final_component_sizes_above_point1": [],
+          "isolated_final_masses": [
+            67.44441187759551,
+            67.44441187759587
+          ],
+          "max_difference_from_isolated_superposition": 257.8465837388077
+        },
+        {
+          "case": "parallel_pair",
+          "initial_mass": 136.40730131945315,
+          "final_mass": 134.46887287782994,
+          "first_extinct_assembly_update": null,
+          "mean_last64_step_L1": 31.818657102090135,
+          "max_step_L1": 33.67334076664205,
+          "max_mass": 137.6004353558269,
+          "max_mass_assembly_update": 353,
+          "final_component_sizes_above_point1": [
+            154,
+            152
+          ],
+          "isolated_final_masses": [
+            67.44441187759523,
+            67.44441187759537
+          ],
+          "max_difference_from_isolated_superposition": 265.8235925884728
+        }
+      ],
+      "long_cases": [
+        {
+          "case": "parallel_pair",
+          "initial_mass": 134.46887287782994,
+          "final_mass": 67.47116927564349,
+          "first_extinct_assembly_update": null,
+          "mean_last64_step_L1": 15.893396614492858,
+          "max_step_L1": 35.383549110313645,
+          "max_mass": 148.07381202569692,
+          "max_mass_assembly_update": 1059,
+          "final_component_sizes_above_point1": [
+            149
+          ],
+          "isolated_final_masses": [
+            66.83253340776045,
+            66.83253340777856
+          ],
+          "max_difference_from_isolated_superposition": 282.1952218342467
+        }
+      ],
+      "finding": "Parallel pair remains two components at512, becomes one component by the end of2048; head-on assembly disappears at54 while isolated controls remain active."
+    },
+    "m2026101607-g2-0161": {
+      "candidate_id": "m2026101607-g2-0161",
+      "origin": "paired_orbium",
+      "parent_id": "m2026101607-g1-0062",
+      "outer_generation": 2,
+      "donor_lifetime_step": 4096,
+      "assembly_updates_observed": 512,
+      "short_cases": [
+        {
+          "case": "single_reference",
+          "initial_mass": 32.312821247731655,
+          "final_mass": 32.358845663661555,
+          "first_extinct_assembly_update": null,
+          "mean_last64_step_L1": 6.1712879249491035,
+          "max_step_L1": 6.582945786952733,
+          "max_mass": 33.10755111566407,
+          "max_mass_assembly_update": 135,
+          "final_component_sizes_above_point1": [
+            79
+          ],
+          "isolated_final_masses": [
+            32.358845663661555
+          ],
+          "max_difference_from_isolated_superposition": 0.0
+        },
+        {
+          "case": "head_on",
+          "initial_mass": 64.62564249546331,
+          "final_mass": 0.0,
+          "first_extinct_assembly_update": 89,
+          "mean_last64_step_L1": 0.0,
+          "max_step_L1": 16.173015252390208,
+          "max_mass": 73.38349698543271,
+          "max_mass_assembly_update": 73,
+          "final_component_sizes_above_point1": [],
+          "isolated_final_masses": [
+            32.35884566366678,
+            32.35884566366503
+          ],
+          "max_difference_from_isolated_superposition": 121.77502022869106
+        },
+        {
+          "case": "parallel_pair",
+          "initial_mass": 64.62564249546332,
+          "final_mass": 64.71769132733124,
+          "first_extinct_assembly_update": null,
+          "mean_last64_step_L1": 12.342575849898092,
+          "max_step_L1": 13.165891573905514,
+          "max_mass": 66.21510223132799,
+          "max_mass_assembly_update": 135,
+          "final_component_sizes_above_point1": [
+            79,
+            79
+          ],
+          "isolated_final_masses": [
+            32.35884566366624,
+            32.358845663659295
+          ],
+          "max_difference_from_isolated_superposition": 3.143479606389915e-10
+        }
+      ],
+      "finding": "Head-on assembly disappears at89; parallel field matches independent-world max to L1 3.14348e-10, so no interacting novel combination is established."
+    }
+  },
+  "snapshot_count": 10,
+  "lineage_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/739c8a1e-8ead-4343-8743-4ef3aa7997cd/lineage.json",
+  "state_index_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/739c8a1e-8ead-4343-8743-4ef3aa7997cd/state_index.json",
+  "component_diagnostic": {
+    "definition": "periodic 8-connected A>.1 components with >=10 pixels; morphology diagnostic, not organisms",
+    "last_window_all_one_from_sample": 1088
+  },
+  "visualization_limits": [
+    "pair_history.gif left panel is one actual common-world trajectory; right panel is the pixelwise max of two independent-world trajectories, a synthetic no-interaction diagnostic, not a common-world run.",
+    "Assembly records include explicit artificial placement/rotation; these do not establish new morphological diversity or natural reproduction.",
+    "Component counts are thresholded morphology diagnostics, not organism counts."
+  ],
+  "interpretation": "No persistent novel interacting combination established in these layouts and finite windows.",
+  "new_candidate_count": 0,
+  "new_simulation_updates_during_ingestion": 0
+}

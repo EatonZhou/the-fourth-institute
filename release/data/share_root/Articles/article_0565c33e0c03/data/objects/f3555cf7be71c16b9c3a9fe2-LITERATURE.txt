@@ -1,0 +1,36 @@
+设计最近邻的主文定位（33直接读原文；EB独立精读回流另附，不冒称已收到）
+
+1. Nakajima et al., Information processing via physical soft body, Scientific Reports 5,10487 (2015).
+https://pmc.ncbi.nlm.nih.gov/articles/PMC4444959/
+主文Introduction末的reservoir说明；Results中读出权重求解段（HTML约106、130–134行）。原文短引：“we adjust only these linear readout weights”。同段说明权重训练后固定，记忆/非线性由软硅胶臂实际动力学提供，以NARMA等任务评估。这已经建立身体动态+线性读出，不可当作本项目的新点。本批六维电子振荡状态甚至还不是身体reservoir；区别只在闭环摄取回报的在线行动条件读出与失准触发探测，不能由此断言结构首创。身体组织更替后经验如何保持的论证仍未做。
+
+2. Hamon et al., Discovering Sensorimotor Agency in Cellular Automata using Diversity Search (2024).
+https://arxiv.org/html/2402.10236v1
+主文方法段、Figure2及Appendix1.7.6–1.7.7（HTML130–137行）。原文短引：“curriculum for making small improvements iteratively”。它用IMGEP目标课程与梯度搜索规则/初态，在障碍扰动下获得运动、完整性和泛化；外层设计搜索不能直接当作个体部署期间学会新映射。本批有个体内回报更新，但身体/运动器预置且为简化密度系统；不是在其“由局部规则涌现身体及感知行动”标准上超越它。
+
+3. Plantec et al., Flow-Lenia: Emergent evolutionary dynamics in mass conservative continuous cellular automata (2025).
+https://arxiv.org/html/2506.08569v1
+§3.1 parameters embedding，Eq7–8；§4.3.2 Food（HTML127–135、178–182行）。原文短引：“move the parameters along with the matter”。规则权重随物质并经竞争式混合，食物感知/消化抵消衰减，已能产生资源约束与演化行为；“状态随体”“有食物代价”不够新。本批没有实现这类分布式载体/参数传播，不能把固定外置振荡器说成已接Flow-Lenia身体学习。学习与跨代演化应分开。
+
+4. Miconi, Stanley & Clune, Differentiable plasticity: training plastic neural networks with backpropagation (ICML2018).
+https://proceedings.mlr.press/v80/miconi18a/miconi18a.pdf
+主文§2 Methods/Eq1–3与§3 Related work；PDF第2–3页。原文短引：“not only the base weights, but also the amount of plasticity in each connection”。外层反传塑性系数，内层活动依赖Hebbian痕迹，已支持运行中的快速学习；因此d3如只实现局部可塑性不自动有新意。本件固定RLS/振荡参数，没有跨任务学习更新规则或结构，不能称元学习；它提供不同的行动结果预测和主动取样诊断。
+
+5. Mordvintsev et al., Growing Neural Cellular Automata (2020).
+https://distill.pub/2020/growing-ca/
+Experiment2 “What persists, exists”和Experiment3 “Learning to regenerate”；HTML218–232行。原文短引：“damaging a few pool-sampled states before each training step”。通过状态池与训练时损伤扩大目标吸引域，得到持续/再生行为；这是学习出的局部生长规则在部署中恢复，不等于身体在部署时从新经历学习目标或供给映射。本批没有可再生NCA更新器，不能从密度增生或能量付费推称再生记忆。
+
+这五个定位支持的取舍：先分清学习发生在何时、何种状态/规则被改变、记忆在哪个物理载体、行动是否受影响。现有证据不足以宣布“一个中心方法、三个实质贡献”。同任务稳定成功与反转失败属于方法选择证据，不足以申报新颖性。
+
+6. Zhang, Risi & Darlow, Petri Dish NCA (PD-NCA), Late Breaking Abstract/作者网页2025。
+https://pub.sakana.ai/pdnca/
+https://pub.sakana.ai/pdnca/assets/pdf/pdnca.pdf
+33已读网页Methods及三页短文。短文p1 Introduction明确“models are continuously optimized throughout the simulation”；p2 Methods给攻击/防御提案、竞争/softmax与总aliveness的负对数优化，p2 Preliminary Results报告运行中的竞争、共存结构和波形。因此“ALife已有方法都固定规则”“首次在运行中学”均不成立。本件只实现基于已完成局部行动后果的辅助RLS，不反传整个可微竞争基底；该差异尚不构成新颖性结论。
+版本限定：短文p2 Competition是攻击对他者防御的单向相似度和；当前作者网页Competition是含反向项的反对称差，网页另单列Normalization。33没有执行/锁定PD-NCA仓库代码，不将两公式混成一套可复现基线，也不宣称PD-NCA已在本任务比较。未来若实际对比须先锁代码提交/配置。
+
+7. Miconi et al., Backpropamine (ICLR2019；作者稿arXiv2002.10585于2020上传)。
+https://arxiv.org/abs/2002.10585
+https://openreview.net/forum?id=r1lrAiA5Ym
+EB在同一研究任务精读主文§3.1–3.2 Eq1–5（PDF p3–4）、§4.1/Fig1及§4.2/Fig2（p4–6）；其节选在eb_primary_review.json。外层学w/α/调制器，寿命内Hebb/资格迹E可变，已有两阶段信用。迷宫奖励位置在episode内固定、跨episode重采样，不能直接作为无重置反转结果。本批RLS规则、编码和探测阈值手定，非元学习。
+
+EB已完成原文/机制窄评，未运行本实验或亲核汇总结果；33已实际读其两节。精确原报告路径与读取SHA在eb_primary_review.json。其补充被采用：x'Px是逆设计矩阵下的杠杆/覆盖，不是校准的反转信念；未选行动P不会仅随时间膨胀。后续效果未区分“多试一次”与“按最大杠杆选点”，不能主张最优信息获取。Sensorimotor正式版Science Advances2025 DOI10.1126/sciadv.adp0834由EB读正式XML，主文sec3–4/Fig2、sec15/Fig5G与sec14外控；以上33预印本定位不替代其正式版范围。

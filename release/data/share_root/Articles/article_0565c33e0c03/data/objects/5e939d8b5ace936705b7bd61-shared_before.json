@@ -1,0 +1,1281 @@
+{
+  "schema": "dirtybase.hatg-instruction-result.v2",
+  "instruction_id": "inst_lin_49daae820782817f8175",
+  "instruction": "GetSharedState",
+  "status": "committed",
+  "replayed": false,
+  "result": {
+    "state": {
+      "research.active_observation_commitment_20261018": {
+        "entry": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/active_observation_commitment_20261018.json",
+        "host_request": "msg_2e3edad12107b6a149616a884d26e9a1",
+        "host_result": {
+          "checkpoint_note": "checkpoint_timing_addendum.json",
+          "continuation": "msg_dba445e03f41464c813e97dc4208961c",
+          "d3_remaining_steps": 114688,
+          "d3_remaining_worker_seconds": 210,
+          "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/active_observation_commitment_20261018/handoff.json",
+          "host_steps": 12561,
+          "job": "81634410-4dfc-4968-b804-3324df0987dc",
+          "sha256": "94481cf26cecb9da4e4569ba0b45265345161e0b2cc3901266760c0de79cb57e",
+          "worker_seconds": 18.029714
+        },
+        "host_stage_cap": 16384,
+        "host_steps_cap": 131072,
+        "joint_usage": {
+          "ce2_unused_steps": 3823,
+          "d3_unused_steps": 1024,
+          "host_steps": 126225,
+          "unused_not_reassigned": true,
+          "worker_seconds": 137.95879
+        },
+        "learning_owner": "resident_d3ccfa2d95b7",
+        "learning_preparation": {
+          "dependency": "msg_10b595d3241243ae97dc1e382ac8562b",
+          "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/active_observation_commitment/preparation.json",
+          "host_steps": 0,
+          "sha256": "38a63a4ef334b961ad989fcfa4545d2aa4459be1c1f364d678c4dedbbba7a9c1",
+          "status": "policy_semantics_ready_host_pending"
+        },
+        "learning_request": "msg_11bb532786c976336926fb725265811d",
+        "learning_result": {
+          "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/active_observation_commitment/handoff.json",
+          "host_steps": 113664,
+          "job": "7fb4625f-3e22-4549-ab77-bb9bfca395d8",
+          "outer_search_improved": false,
+          "selected_incumbent": true,
+          "sha256": "c65e64a7bd664b2f27141055e234a1172d21faf41f91d1ba863df4b0a94ecd71",
+          "status": "completed_candidate_closed",
+          "worker_seconds": 119.929076
+        },
+        "learning_stage_cap": 114688,
+        "next_branch": {
+          "ce2_body_cap": 3072,
+          "continuation": {
+            "ce2_cap_steps": 4608,
+            "d3_cap_steps": 1536,
+            "entry": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/native_investment_action_20261018.json",
+            "feedback_review": {
+              "continuation_request": "msg_78b3af0079ace7bdab2cbaa86fc19cbe",
+              "d3_unspent_steps": 1536,
+              "d3_unspent_worker_seconds": 170,
+              "decision": "真实组织投资成立；完整登记材料回报/终末消息未合法交活writer，不以幸存条件代理启动学习。向PI交当地终末收据递送或缩窄目标的具体取舍。",
+              "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/native_investment_action_feedback/handoff.json",
+              "native_steps": 0,
+              "objective_met": false,
+              "sha256": "5079817398db785093088f40ff689c64e8dad7f0865a89bdb880887741d497e6",
+              "source_job": "ae909c85-6b64-4528-870c-66b8794c3c54",
+              "worker_seconds": 0
+            },
+            "followup": {
+              "ce2_cap_steps": 1280,
+              "ce2_cap_worker_seconds": 180,
+              "completion_6bd": {
+                "archive": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/shared_history_birth_cohort_57e9e28c9d0868b1.json",
+                "attempted": 640,
+                "committed": 640,
+                "cpu_threads": 2,
+                "end_clock": 320,
+                "entry": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/local_terminal_feedback_6bd_completion_20261018.json",
+                "failed_native_calls": 0,
+                "gpu": 0,
+                "historical_index": true,
+                "job": "f906304e-b82b-4111-858b-a0fafb3aca0c",
+                "new_data_bytes": 149115344,
+                "new_native_body_step_cap": 640,
+                "no_auto_continuation": true,
+                "objective_met": false,
+                "old_budget_used": 0,
+                "parent_clock": 192,
+                "path": [
+                  "next_branch",
+                  "continuation",
+                  "followup",
+                  "completion_6bd"
+                ],
+                "returncode": 0,
+                "runner_worker_seconds": 87.957026,
+                "script_wall_limit": 220,
+                "sha256": "2dba2d66b01d4bdfe1aacf8c69148222cfe9c81ee57e3f0374a14a1409a8075a",
+                "status": "completed",
+                "task_complete": true,
+                "unused_native_steps": 0,
+                "unused_worker_seconds": 392.042974,
+                "worker_seconds_cap": 480
+              },
+              "contextual_continuation": {
+                "archive": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/shared_history_birth_cohort_c98892a6e84c8f28.json",
+                "attempted": 34,
+                "ce2_cap_steps": 64,
+                "ce2_cap_worker_seconds": 60,
+                "committed": 34,
+                "d3_cap_steps": 1664,
+                "d3_cap_worker_seconds": 840,
+                "entry": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/contextual_terminal_records_20261018.json",
+                "historical_index": true,
+                "native_body_step_cap": 1728,
+                "objective_met": false,
+                "old_budget_transfer": 0,
+                "path": [
+                  "next_branch",
+                  "continuation",
+                  "followup",
+                  "contextual_continuation"
+                ],
+                "runner_worker_seconds_cap": 900,
+                "sha256": "c21c7831a33ea7f7173010de84ecda0e4c8d8b19aa78b5b1075c996daf0de69b",
+                "status": "completed_conditional_context_effect",
+                "worker_seconds": 57.11858
+              },
+              "d3_cap_steps": 4864,
+              "d3_cap_worker_seconds": 420,
+              "dispatch": {
+                "confirmed_active_input": "msg_7a0dcf3c1bdc5da3cb65f961e4c7dacd",
+                "d3_scope_info": "msg_d24ec50cd114ac4a2f2ff82e42b58e7d",
+                "learning_request": "msg_b6676dcef6532c3569163e0580e9d1fd",
+                "request": "msg_7a0dcf3c1bdc5da3cb65f961e4c7dacd"
+              },
+              "entry": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/local_terminal_feedback_20261018.json",
+              "execution_receipt": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/local_terminal_feedback_20261018_execution.json",
+              "handoff": "ce2真实1024新步+≤256边界，4条旧material长轨只读复用；一次enqueue交d3实际固定近期/paid-ignore/paid-freeze对照。",
+              "host_result": {
+                "attempted": 771,
+                "channel_available": true,
+                "committed": 771,
+                "complete_paths": 3,
+                "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/local_terminal_feedback_20261018/handoff.json",
+                "job": "b63cdc7c-3f38-4a43-af6e-9c481c419fa9",
+                "job_status": "failed_time_gate",
+                "learning_success": false,
+                "partial_path_steps": 1,
+                "sha256": "cc1b952d78e5bf0a7177da633f53e6a9908de9e1445f7f5647c096c13cc9107d",
+                "worker_seconds": 174.508036
+              },
+              "learning": {
+                "cap_steps": 4864,
+                "cap_worker_seconds": 420,
+                "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/local_terminal_feedback/plan.json",
+                "job": "c21fd89a-f2ec-483c-b6b2-289375575b3d",
+                "planned_steps": 1664,
+                "request_key": "d3-local-terminal-feedback-20261018-v1",
+                "scope": "two bodies/one known rotated layout; actual shared64 prefix, six128 futures; fixed recent descriptive records, no global causal label",
+                "sha256": "0718f65e82da3184c65e720664e3187ed80f75bd6d0b17df02db9ce0f2104394",
+                "status": "partial_execution_analysis_complete"
+              },
+              "learning_result": {
+                "attempted": 896,
+                "committed": 896,
+                "complete_contexts": 1,
+                "completed_futures": 6,
+                "dispatch": {
+                  "manuscript": "msg_4a36bc2252d9777f493942e4f12b31f1",
+                  "projection": "msg_c3d2495aaf8557f13faf15dca83c1ebe",
+                  "scientific_choice": "msg_496737183a2cdc69cb6f2ec6bc575d24"
+                },
+                "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/local_terminal_feedback/handoff.json",
+                "failed_native_calls": 0,
+                "finding": "0ac消息影响首动作，更新相对冻写M/E/U/体时小增；none末E/体时更高。6bd只取得64步，无未来比较。固定描述性近期法，未证明一般控制优势。",
+                "job": "c21fd89a-f2ec-483c-b6b2-289375575b3d",
+                "job_status": "failed_time_gate",
+                "objective_met": false,
+                "sha256": "80d60f205f12a12c83ea84278802906824682eadf6c3d0e661b3eb01e8b780ef",
+                "unrun_futures": 6,
+                "worker_seconds": 397.27592
+              },
+              "motor_calibration_continuation": {
+                "actual_steps": 840,
+                "actual_worker_seconds": 44.40215,
+                "ce2_steps": 896,
+                "ce2_worker_seconds": 360,
+                "d3_launched": false,
+                "d3_review": "src/local_learning/results_20261018/adaptive_motor_frame/review_integration/handoff.json",
+                "d3_steps": 1280,
+                "d3_worker_seconds": 540,
+                "entry": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/adaptive_motor_frame_20261018.json",
+                "native_step_cap": 2176,
+                "next": {
+                  "body_search": {
+                    "actual": [
+                      2563,
+                      257.971584
+                    ],
+                    "d3_entry": "src/local_learning/results_20261018/resource_matched_morphogenesis_20261018/handoff.json",
+                    "entry": "knowledge_base/research/experience_learning/resource_matched_morphogenesis_20261018.json",
+                    "next": {
+                      "actual": [
+                        3584,
+                        175.796824
+                      ],
+                      "cap": [
+                        4640,
+                        1200
+                      ],
+                      "d3_entry": "src/local_learning/results_20261018/rule_geometry_resource_support_20261018/handoff.json",
+                      "eligible": 0,
+                      "entry": "knowledge_base/research/experience_learning/rule_geometry_resource_support_20261018.json",
+                      "next": {
+                        "actual": [
+                          2048,
+                          83.732428
+                        ],
+                        "d3_entry": "src/local_learning/results_20261018/tissue_replacement_pf_location_20261018/handoff.json",
+                        "next": {
+                          "entry": "src/environment_evolution/results/local_metabolic_translocation_20261018/handoff.json",
+                          "next": {
+                            "completed": "src/environment_evolution/results/metabolic_maintenance_withdrawal_20261018/handoff.json",
+                            "next": {
+                              "completed": "src/environment_evolution/results/metabolic_pump_timing_20261018/handoff.json",
+                              "next": {
+                                "cap": [
+                                  1056,
+                                  450
+                                ],
+                                "entry": "src/environment_evolution/results/pump_cargo_factorial_20261018/handoff.json",
+                                "next": {
+                                  "cap": [
+                                    1568,
+                                    600
+                                  ],
+                                  "entry": "src/environment_evolution/results/cargo_delay_feedback_20261018/handoff.json",
+                                  "next": {
+                                    "handoff": "src/environment_evolution/results/cargo_transport_payment_20261018/handoff.json",
+                                    "missing": 336,
+                                    "next": {
+                                      "handoff": "src/environment_evolution/results/pump_gradient_feedback_20261019/handoff.json",
+                                      "next": {
+                                        "handoff": "src/environment_evolution/results/first_conversion_feedback_20261019/handoff.json",
+                                        "next": {
+                                          "actual": [
+                                            5186,
+                                            508.249628
+                                          ],
+                                          "entry": "src/local_learning/results_20261019/consumption_qualified_transport_20261019/handoff.json",
+                                          "next": {
+                                            "completion": {
+                                              "entry": "src/local_learning/results_20261019/turnover_second_parent_completion_20261019/handoff.json",
+                                              "objective_met": false,
+                                              "sealed": [
+                                                0,
+                                                230.944648
+                                              ],
+                                              "sha256": "8da7fd2299925ab45d240be2cb6c2a5b6b4db8ab689c4f7d9932de583c007d49",
+                                              "status": "complete_coverage;chronology_gap_kept;no_new_continuation",
+                                              "used": [
+                                                1024,
+                                                69.055352
+                                              ]
+                                            },
+                                            "entry": "src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/handoff.json",
+                                            "next": {
+                                              "entry": "src/local_learning/results_20261019/developmental_history_rule_swap_20261019/handoff.json",
+                                              "next": {
+                                                "cap": [
+                                                  9312,
+                                                  1800
+                                                ],
+                                                "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/handoff.json",
+                                                "job": "43568f01-955a-4ddc-ba37-62903b18f278",
+                                                "next": {
+                                                  "entry": "src/local_learning/results_20261019/spatial_birth_request_coordination_20261019/handoff.json",
+                                                  "next": {
+                                                    "cap": [
+                                                      1028,
+                                                      450
+                                                    ],
+                                                    "entry": "knowledge_base/research/experience_learning/birth_site_compatibility_cohort_20261019.json",
+                                                    "finding": "五非零脉冲留存3正2负；三零null。两双叶先领先后反转，无一致身体净益；当前h符号非普遍长期落点准则。",
+                                                    "next": {
+                                                      "cap": [
+                                                        1544,
+                                                        600
+                                                      ],
+                                                      "entry": "knowledge_base/research/experience_learning/fixed_amount_rule_deletion_layout_20261019.json",
+                                                      "finding": "两布局对原baseline四context均增M/E/体时/真实post256；mass未普胜uniform；12轨两窗维护全失败。一次输出检查失败388步已保，同job恢复1152步无重演。",
+                                                      "job": "0b471f2a-d4d9-4469-94e5-6ab4d5a1540a",
+                                                      "next": {
+                                                        "entry": "src/local_learning/results_20261019/deletion_layout_life0_formation_20261019/handoff.json",
+                                                        "next": {
+                                                          "d3": {
+                                                            "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/replacement_history_carrier_20261019/handoff.json",
+                                                            "next": "PI scientific choice requested; no automatic continuation",
+                                                            "result": "ring body matching fails; PF co-primary positive/E interaction negative; 36/40 probe maintenance, 4 neutral separated failures",
+                                                            "sealed": [
+                                                              0,
+                                                              830.100144
+                                                            ],
+                                                            "sha": "2c79356d025a68cb636de438ce3aac19b2e2fc1c9e7c20a3af30b9378d3d54cf",
+                                                            "used": [
+                                                              6664,
+                                                              369.899856
+                                                            ]
+                                                          },
+                                                          "entry": "knowledge_base/research/experience_learning/replacement_history_carrier_20261019.json",
+                                                          "status": "completed",
+                                                          "task": "replacement_history_carrier_20261019"
+                                                        },
+                                                        "objective_met": false,
+                                                        "request": "msg_9f1cac355169a90d326000b6fc4169ea",
+                                                        "sha256": "70910cb085dee351e4a2aab3fbc80a478b5fd98dbad07c25ace79e69f8f12c37",
+                                                        "status": "completed",
+                                                        "task": "deletion_layout_life0_formation_20261019",
+                                                        "unused_sealed": [
+                                                          0,
+                                                          701.353596
+                                                        ],
+                                                        "used": [
+                                                          4104,
+                                                          198.646404
+                                                        ]
+                                                      },
+                                                      "next_request": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/fixed_amount_rule_deletion_layout_20261019/scientific_next_request.json",
+                                                      "objective_met": false,
+                                                      "owner": "resident_d3ccfa2d95b7",
+                                                      "request": "msg_972f5f3f641329f67734f729344fccff",
+                                                      "result": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/fixed_amount_rule_deletion_layout_20261019/handoff.json",
+                                                      "sha256": "4c8022c30feb3f7cf313d226a731a6e191149e8dcc08a75c7b565cdbf86a7b74",
+                                                      "status": "completed_with_documented_same_job_recovery",
+                                                      "task": "fixed_amount_rule_deletion_layout_20261019",
+                                                      "unused_sealed": [
+                                                        4,
+                                                        520.912194
+                                                      ],
+                                                      "used": [
+                                                        1540,
+                                                        79.087806
+                                                      ]
+                                                    },
+                                                    "objective_met": false,
+                                                    "owner": "resident_d3ccfa2d95b7",
+                                                    "request": "msg_76df7e1a08dd21560b47fe879463e94c",
+                                                    "result": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/birth_site_compatibility_cohort_20261019/handoff.json",
+                                                    "sha256": "13a95fa6d0498936a5328dd5f59ab873f20e66092d5c6575c3f344d59f50b206",
+                                                    "status": "completed_mixed_direction",
+                                                    "task": "birth_site_compatibility_cohort_20261019",
+                                                    "unused_sealed": [
+                                                      192,
+                                                      401.619274
+                                                    ],
+                                                    "used": [
+                                                      836,
+                                                      48.380726
+                                                    ]
+                                                  },
+                                                  "objective_met": false,
+                                                  "sha256": "e19829c9c1970869d94ee2b530ec9fe8f6b08556da5821b4fe2311d82af397a6",
+                                                  "status": "completed_maintenance_negative",
+                                                  "task": "spatial_birth_request_coordination_20261019",
+                                                  "unused_sealed": [
+                                                    4,
+                                                    589.604362
+                                                  ],
+                                                  "used": [
+                                                    3076,
+                                                    310.395638
+                                                  ]
+                                                },
+                                                "next_request": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/scientific_next_request.json",
+                                                "objective_met": false,
+                                                "result": "theta0 retained;0/10 nonzero eligible;greedy beats w0 M/E/bodytime/new tissue in4 related contexts;0/8 last-two-window maintenance",
+                                                "sha256": "557f7c82043c06ce9db8edeb67ac042ff04cec6db991c98506aa1ac88778d2e2",
+                                                "status": "completed_candidate_closed",
+                                                "task": "resource_conditioned_growth_rule_20261019",
+                                                "unused_sealed": [
+                                                  3484,
+                                                  1533.025286
+                                                ],
+                                                "used": [
+                                                  5828,
+                                                  266.974714
+                                                ]
+                                              },
+                                              "objective_met": false,
+                                              "sealed": [
+                                                0,
+                                                400.350574
+                                              ],
+                                              "sha256": "299e31dbf262d9da0b0651ceb03a6af31f0f28f1f8921a938516c07fb4900c21",
+                                              "status": "completed_closed;both64maintenance0/16;current_rule_benefit_not_sustained_replacement",
+                                              "used": [
+                                                1028,
+                                                49.649426
+                                              ]
+                                            },
+                                            "objective_met": false,
+                                            "sealed": [
+                                              1056,
+                                              1491.069114
+                                            ],
+                                            "sha256": "1d1e19754d61c77ea7b4275d24c6baafbb8430db354346a27e3640924b50bb8a",
+                                            "status": "partial_missing_second_parent;maintenance0/12",
+                                            "used": [
+                                              6144,
+                                              308.930886
+                                            ]
+                                          },
+                                          "objective_met": false,
+                                          "review": "../consumption_qualified_transport_method_addendum_20261019/handoff.json",
+                                          "sha": "fc2cd49b5d86ab1c3a8f77218209c3aedae9017af336ee34f3dd0850f1788acb",
+                                          "status": "closed_no_advantage",
+                                          "task": "consumption_qualified_transport_20261019"
+                                        },
+                                        "sealed_unused": [
+                                          32,
+                                          411.90182
+                                        ],
+                                        "sha256": "f39998e8d55b4788897302cc79dad156a9aad6a2ca9257a22910ba8d19d48300",
+                                        "status": "completed",
+                                        "used": [
+                                          1024,
+                                          188.09818
+                                        ]
+                                      },
+                                      "status": "completed",
+                                      "used": [
+                                        1536,
+                                        263.612546
+                                      ]
+                                    },
+                                    "overrun": 0.806816,
+                                    "status": "partial_closed",
+                                    "used": [
+                                      1200,
+                                      600.806816
+                                    ]
+                                  },
+                                  "objective_met": false,
+                                  "sha256": "e5f8081b7ce3013e0b525cd4cc6a6f83d2e329864bfcf8837f5e465e9918818a",
+                                  "status": "completed",
+                                  "unused_sealed": [
+                                    32,
+                                    543.18282
+                                  ],
+                                  "used": [
+                                    1536,
+                                    56.81718
+                                  ]
+                                },
+                                "objective_met": false,
+                                "sha256": "1c21dccbdc6747722f971ce76830f0245e6da97270429eb2918cfc21dc067530",
+                                "status": "completed",
+                                "unused_sealed": [
+                                  12,
+                                  221.14874
+                                ],
+                                "used": [
+                                  1044,
+                                  228.85126
+                                ]
+                              },
+                              "objective_met": false,
+                              "status": "timing_negative_cargo_next",
+                              "used": [
+                                4103,
+                                309.614648
+                              ]
+                            },
+                            "objective_met": false,
+                            "status": "maintenance_completed_regulation_next",
+                            "used": [
+                              2821,
+                              314.814888
+                            ]
+                          },
+                          "status": "completed_finite_window"
+                        },
+                        "status": "completed_no_finite_renewal"
+                      },
+                      "objective_met": false,
+                      "owner": "resident_d3ccfa2d95b7",
+                      "request": "msg_382cf3c21dd0b1a00fe5fb05d6f40286",
+                      "status": "completed_no_eligible_extension"
+                    },
+                    "objective_met": false,
+                    "owner": "resident_d3ccfa2d95b7",
+                    "request": "msg_465e9cb89bebbca3b01d59283a9e3f10",
+                    "status": "completed_action_gate_failed",
+                    "steps": 4160,
+                    "worker_seconds": 1500
+                  },
+                  "entry": "src/environment_evolution/results/resource_wave_actionability_20261018/handoff.json",
+                  "native_steps": 3136,
+                  "objective_met": false,
+                  "sha256": "e6d9e671e85a45f90b3144511c719c3123e3b374dba3ebb7c0a2fe11cff3ffff",
+                  "status": "completed_gate_failed",
+                  "used": [
+                    3090,
+                    419.117056
+                  ],
+                  "worker_seconds": 1200
+                },
+                "objective_met": false,
+                "old_budget_used": 0,
+                "result": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/adaptive_motor_frame_20261018/handoff.json",
+                "result_sha256": "5d2dfa9be358f0f840f2e14288e33f50a0820185a7f573e57111e4cf5cfcfce3",
+                "sha256": "e2ec9367f94518910eb329d59dac0946783c89389d8797ac03c13bf76026aad9",
+                "status": "opportunity_gate_failed",
+                "task": "adaptive_motor_frame_20261018",
+                "worker_seconds_cap": 900
+              },
+              "new_native_body_step_cap": 6144,
+              "objective_met": false,
+              "old_budget_used": 0,
+              "sha256": "16e6cabd93f4f56157d563cc4e13ccf31a795a243993552ab1924fb924bd06c4",
+              "status": "d3_closed_partial_time_cap",
+              "strategy_judgment": {
+                "finding": "0ac更新优于冻结，6bd四指标相反；两体都确认内容改变真实动作，未建立普遍身体收益。",
+                "objective_met": false,
+                "status": "pooled_recent_strategy_closed"
+              },
+              "target": "有价局部终末消息带来的已完成记录利用；全组织收益独立验效，不宣称祖先/新生因果信用。",
+              "task": "local_terminal_feedback_20261018",
+              "usage": {
+                "ce2_remaining_steps_not_transferred": 509,
+                "ce2_remaining_worker_not_transferred": 5.491964,
+                "ce2_steps": 771,
+                "ce2_worker_seconds": 174.508036,
+                "combined_steps": 1667,
+                "combined_worker_seconds": 571.783956,
+                "d3_reserved_steps": 4864,
+                "d3_reserved_worker_seconds": 420,
+                "d3_steps": 896,
+                "d3_unused_steps": 3968,
+                "d3_unused_worker_seconds": 22.72408,
+                "d3_worker_seconds": 397.27592,
+                "old_used": 0
+              },
+              "worker_seconds_cap": 600
+            },
+            "host_result": {
+              "ce2_unused_steps": 416,
+              "ce2_unused_worker_seconds": 163.02475,
+              "d3_exclusive_steps": 1536,
+              "d3_exclusive_worker_seconds": 170,
+              "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/native_investment_action_20261018/handoff.json",
+              "finding": "6bd长剪切两布局延迟有益，8步未回本；材料框架省费用/早回本但末E/U均低于Euler。0ac短梯度略益、长梯度仍亏。高初始材料死亡，合法终末归属待d3。",
+              "job": "ae909c85-6b64-4528-870c-66b8794c3c54",
+              "new_native_steps": 4192,
+              "raw_bytes": 1595475068,
+              "read_only_reused_steps": 1536,
+              "sha256": "44afec3f92a82c7b95042117817ee48e3f8e569ffd22f22a10965af6a1621ff0",
+              "worker_seconds": 266.97525
+            },
+            "intent_interface": {
+              "continuation_request": "msg_d321fcfe298da86843bd785d84761816",
+              "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/native_investment_action_interface/handoff.json",
+              "module_sha256": "281cdf539552d744002768036509eaab3476e6c74a9ddf156bf093872ecb0d88",
+              "native_steps": 0,
+              "scientific_jobs": [],
+              "sha256": "6593b79ab44bc576174c48b976862c431e3f96d32dc52e05ec342b40ac2023d7"
+            },
+            "learning_condition": "ce2实际投资/撤驱后果与合法局部完成反馈均成立，才用d3≤1536步/170worker秒；死亡终末与未知分开，不广播死者全局收益。",
+            "new_native_body_step_cap": 6144,
+            "objective_met": false,
+            "old_budget_used": 0,
+            "sha256": "a6fc726bb8de578235a43c51cfd76d6df25d513233cad47c67623df50ac28fb7",
+            "status": "completed_feedback_review_learning_gate_not_met",
+            "task": "native_investment_action_20261018",
+            "worker_seconds_cap": 600
+          },
+          "d3_body_cap": 9216,
+          "entry": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/material_action_response_20261018.json",
+          "host_result": {
+            "actual_body_steps": 2051,
+            "continuation": "msg_8e69b409d380b2c676a46a884f59afdb",
+            "core_sha256": "15691ada9fd805c076f7c5770ba955dbf6cc454ea3af129b1ba03fe958467b5b",
+            "d3_remaining_steps": 9216,
+            "d3_remaining_worker_seconds": 420,
+            "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/material_action_response_20261018/handoff.json",
+            "first_failed_steps": 1,
+            "job": "0eb661f2-b286-43c6-b27e-ee8f3f2da135",
+            "objective_met": false,
+            "sha256": "cbf40055bfde856e0ebeccdbf2fc04425da83bd5f9e89dad29705a3f59b865ff",
+            "worker_seconds": 109.358436
+          },
+          "learning_job": {
+            "actual_steps": 2464,
+            "cap_steps": 9216,
+            "cap_worker_seconds": 420,
+            "id": "a8ace198-bb5f-4dd2-a836-f659d641cc07",
+            "key": "d3-material-action-response-20261018-v1",
+            "plan": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/plan.json",
+            "planned_steps": 2464,
+            "returncode": 0,
+            "sha256": "e0a6338d96fbd48c4b7f65e977969f95c0a56d8a13e9c3b24ce89c07f005735c",
+            "status": "completed",
+            "worker_seconds": 239.565908
+          },
+          "learning_owner": "resident_d3ccfa2d95b7",
+          "learning_preparation": {
+            "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/preparation.json",
+            "interface_request": "msg_29c753665dc3dc95ac69b03a015d255c",
+            "native_body_steps": 0,
+            "pure_checks": "passed",
+            "scientific_jobs": [],
+            "sha256": "cd2a2a74608728fbcb6dbbde8258a30373c47d70d1e5f8d787a6aa19639e3a72"
+          },
+          "learning_result": {
+            "decision": "model较recent四context摄取与末E均低；比none末M/E/体时均低，关闭当前H8幸存条件岭模型，不扫描或转用余量。",
+            "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/handoff.json",
+            "joint_steps": 4515,
+            "joint_worker_seconds": 348.924344,
+            "limitations": "两体×两相关布局；局部回归只含幸存可读材料，死亡终末另保。算术/存储未计价，合成/模板费未保存全程独立分项；90稀疏块非完整中间K。",
+            "manifest_sha256": "fd0f9db377e924980b00c9e8c85b98b3201927355b9e26124c92be77207d533c",
+            "objective_met": false,
+            "sha256": "7b0edc8db05b91f8750d3fb9e69398fdf75209ab5286d120e7e623dcdcd46ecf",
+            "status": "completed_candidate_closed"
+          },
+          "new_native_body_step_cap": 12288,
+          "note": "独立新额度；仅因128-cell上限以子索引寄存，原候选已关闭且余量不转用。",
+          "objective_met": false,
+          "old_budget_used": 0,
+          "owner": "resident_ce2a5ab005bc",
+          "sha256": "c5eb5f4eef661a171be86e15f11fab4b6d1e6d91489ab8c50ccaee9349bbaecd",
+          "status": "completed_candidate_closed",
+          "task": "material_action_response_20261018",
+          "worker_seconds_cap": 600
+        },
+        "objective_met": false,
+        "old_budget_used": 0,
+        "owner": "resident_ce2a5ab005bc",
+        "sha256": "3779e9ce422f7abed7020bd9691d17d545ac7e604084801404bf8fc6615dc8c7",
+        "status": "completed_candidate_closed",
+        "worker_seconds_cap": 300
+      }
+    },
+    "value": {
+      "entry": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/active_observation_commitment_20261018.json",
+      "host_request": "msg_2e3edad12107b6a149616a884d26e9a1",
+      "host_result": {
+        "checkpoint_note": "checkpoint_timing_addendum.json",
+        "continuation": "msg_dba445e03f41464c813e97dc4208961c",
+        "d3_remaining_steps": 114688,
+        "d3_remaining_worker_seconds": 210,
+        "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/active_observation_commitment_20261018/handoff.json",
+        "host_steps": 12561,
+        "job": "81634410-4dfc-4968-b804-3324df0987dc",
+        "sha256": "94481cf26cecb9da4e4569ba0b45265345161e0b2cc3901266760c0de79cb57e",
+        "worker_seconds": 18.029714
+      },
+      "host_stage_cap": 16384,
+      "host_steps_cap": 131072,
+      "joint_usage": {
+        "ce2_unused_steps": 3823,
+        "d3_unused_steps": 1024,
+        "host_steps": 126225,
+        "unused_not_reassigned": true,
+        "worker_seconds": 137.95879
+      },
+      "learning_owner": "resident_d3ccfa2d95b7",
+      "learning_preparation": {
+        "dependency": "msg_10b595d3241243ae97dc1e382ac8562b",
+        "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/active_observation_commitment/preparation.json",
+        "host_steps": 0,
+        "sha256": "38a63a4ef334b961ad989fcfa4545d2aa4459be1c1f364d678c4dedbbba7a9c1",
+        "status": "policy_semantics_ready_host_pending"
+      },
+      "learning_request": "msg_11bb532786c976336926fb725265811d",
+      "learning_result": {
+        "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/active_observation_commitment/handoff.json",
+        "host_steps": 113664,
+        "job": "7fb4625f-3e22-4549-ab77-bb9bfca395d8",
+        "outer_search_improved": false,
+        "selected_incumbent": true,
+        "sha256": "c65e64a7bd664b2f27141055e234a1172d21faf41f91d1ba863df4b0a94ecd71",
+        "status": "completed_candidate_closed",
+        "worker_seconds": 119.929076
+      },
+      "learning_stage_cap": 114688,
+      "next_branch": {
+        "ce2_body_cap": 3072,
+        "continuation": {
+          "ce2_cap_steps": 4608,
+          "d3_cap_steps": 1536,
+          "entry": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/native_investment_action_20261018.json",
+          "feedback_review": {
+            "continuation_request": "msg_78b3af0079ace7bdab2cbaa86fc19cbe",
+            "d3_unspent_steps": 1536,
+            "d3_unspent_worker_seconds": 170,
+            "decision": "真实组织投资成立；完整登记材料回报/终末消息未合法交活writer，不以幸存条件代理启动学习。向PI交当地终末收据递送或缩窄目标的具体取舍。",
+            "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/native_investment_action_feedback/handoff.json",
+            "native_steps": 0,
+            "objective_met": false,
+            "sha256": "5079817398db785093088f40ff689c64e8dad7f0865a89bdb880887741d497e6",
+            "source_job": "ae909c85-6b64-4528-870c-66b8794c3c54",
+            "worker_seconds": 0
+          },
+          "followup": {
+            "ce2_cap_steps": 1280,
+            "ce2_cap_worker_seconds": 180,
+            "completion_6bd": {
+              "archive": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/shared_history_birth_cohort_57e9e28c9d0868b1.json",
+              "attempted": 640,
+              "committed": 640,
+              "cpu_threads": 2,
+              "end_clock": 320,
+              "entry": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/local_terminal_feedback_6bd_completion_20261018.json",
+              "failed_native_calls": 0,
+              "gpu": 0,
+              "historical_index": true,
+              "job": "f906304e-b82b-4111-858b-a0fafb3aca0c",
+              "new_data_bytes": 149115344,
+              "new_native_body_step_cap": 640,
+              "no_auto_continuation": true,
+              "objective_met": false,
+              "old_budget_used": 0,
+              "parent_clock": 192,
+              "path": [
+                "next_branch",
+                "continuation",
+                "followup",
+                "completion_6bd"
+              ],
+              "returncode": 0,
+              "runner_worker_seconds": 87.957026,
+              "script_wall_limit": 220,
+              "sha256": "2dba2d66b01d4bdfe1aacf8c69148222cfe9c81ee57e3f0374a14a1409a8075a",
+              "status": "completed",
+              "task_complete": true,
+              "unused_native_steps": 0,
+              "unused_worker_seconds": 392.042974,
+              "worker_seconds_cap": 480
+            },
+            "contextual_continuation": {
+              "archive": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/shared_history_birth_cohort_c98892a6e84c8f28.json",
+              "attempted": 34,
+              "ce2_cap_steps": 64,
+              "ce2_cap_worker_seconds": 60,
+              "committed": 34,
+              "d3_cap_steps": 1664,
+              "d3_cap_worker_seconds": 840,
+              "entry": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/contextual_terminal_records_20261018.json",
+              "historical_index": true,
+              "native_body_step_cap": 1728,
+              "objective_met": false,
+              "old_budget_transfer": 0,
+              "path": [
+                "next_branch",
+                "continuation",
+                "followup",
+                "contextual_continuation"
+              ],
+              "runner_worker_seconds_cap": 900,
+              "sha256": "c21c7831a33ea7f7173010de84ecda0e4c8d8b19aa78b5b1075c996daf0de69b",
+              "status": "completed_conditional_context_effect",
+              "worker_seconds": 57.11858
+            },
+            "d3_cap_steps": 4864,
+            "d3_cap_worker_seconds": 420,
+            "dispatch": {
+              "confirmed_active_input": "msg_7a0dcf3c1bdc5da3cb65f961e4c7dacd",
+              "d3_scope_info": "msg_d24ec50cd114ac4a2f2ff82e42b58e7d",
+              "learning_request": "msg_b6676dcef6532c3569163e0580e9d1fd",
+              "request": "msg_7a0dcf3c1bdc5da3cb65f961e4c7dacd"
+            },
+            "entry": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/local_terminal_feedback_20261018.json",
+            "execution_receipt": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/local_terminal_feedback_20261018_execution.json",
+            "handoff": "ce2真实1024新步+≤256边界，4条旧material长轨只读复用；一次enqueue交d3实际固定近期/paid-ignore/paid-freeze对照。",
+            "host_result": {
+              "attempted": 771,
+              "channel_available": true,
+              "committed": 771,
+              "complete_paths": 3,
+              "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/local_terminal_feedback_20261018/handoff.json",
+              "job": "b63cdc7c-3f38-4a43-af6e-9c481c419fa9",
+              "job_status": "failed_time_gate",
+              "learning_success": false,
+              "partial_path_steps": 1,
+              "sha256": "cc1b952d78e5bf0a7177da633f53e6a9908de9e1445f7f5647c096c13cc9107d",
+              "worker_seconds": 174.508036
+            },
+            "learning": {
+              "cap_steps": 4864,
+              "cap_worker_seconds": 420,
+              "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/local_terminal_feedback/plan.json",
+              "job": "c21fd89a-f2ec-483c-b6b2-289375575b3d",
+              "planned_steps": 1664,
+              "request_key": "d3-local-terminal-feedback-20261018-v1",
+              "scope": "two bodies/one known rotated layout; actual shared64 prefix, six128 futures; fixed recent descriptive records, no global causal label",
+              "sha256": "0718f65e82da3184c65e720664e3187ed80f75bd6d0b17df02db9ce0f2104394",
+              "status": "partial_execution_analysis_complete"
+            },
+            "learning_result": {
+              "attempted": 896,
+              "committed": 896,
+              "complete_contexts": 1,
+              "completed_futures": 6,
+              "dispatch": {
+                "manuscript": "msg_4a36bc2252d9777f493942e4f12b31f1",
+                "projection": "msg_c3d2495aaf8557f13faf15dca83c1ebe",
+                "scientific_choice": "msg_496737183a2cdc69cb6f2ec6bc575d24"
+              },
+              "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/local_terminal_feedback/handoff.json",
+              "failed_native_calls": 0,
+              "finding": "0ac消息影响首动作，更新相对冻写M/E/U/体时小增；none末E/体时更高。6bd只取得64步，无未来比较。固定描述性近期法，未证明一般控制优势。",
+              "job": "c21fd89a-f2ec-483c-b6b2-289375575b3d",
+              "job_status": "failed_time_gate",
+              "objective_met": false,
+              "sha256": "80d60f205f12a12c83ea84278802906824682eadf6c3d0e661b3eb01e8b780ef",
+              "unrun_futures": 6,
+              "worker_seconds": 397.27592
+            },
+            "motor_calibration_continuation": {
+              "actual_steps": 840,
+              "actual_worker_seconds": 44.40215,
+              "ce2_steps": 896,
+              "ce2_worker_seconds": 360,
+              "d3_launched": false,
+              "d3_review": "src/local_learning/results_20261018/adaptive_motor_frame/review_integration/handoff.json",
+              "d3_steps": 1280,
+              "d3_worker_seconds": 540,
+              "entry": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/adaptive_motor_frame_20261018.json",
+              "native_step_cap": 2176,
+              "next": {
+                "body_search": {
+                  "actual": [
+                    2563,
+                    257.971584
+                  ],
+                  "d3_entry": "src/local_learning/results_20261018/resource_matched_morphogenesis_20261018/handoff.json",
+                  "entry": "knowledge_base/research/experience_learning/resource_matched_morphogenesis_20261018.json",
+                  "next": {
+                    "actual": [
+                      3584,
+                      175.796824
+                    ],
+                    "cap": [
+                      4640,
+                      1200
+                    ],
+                    "d3_entry": "src/local_learning/results_20261018/rule_geometry_resource_support_20261018/handoff.json",
+                    "eligible": 0,
+                    "entry": "knowledge_base/research/experience_learning/rule_geometry_resource_support_20261018.json",
+                    "next": {
+                      "actual": [
+                        2048,
+                        83.732428
+                      ],
+                      "d3_entry": "src/local_learning/results_20261018/tissue_replacement_pf_location_20261018/handoff.json",
+                      "next": {
+                        "entry": "src/environment_evolution/results/local_metabolic_translocation_20261018/handoff.json",
+                        "next": {
+                          "completed": "src/environment_evolution/results/metabolic_maintenance_withdrawal_20261018/handoff.json",
+                          "next": {
+                            "completed": "src/environment_evolution/results/metabolic_pump_timing_20261018/handoff.json",
+                            "next": {
+                              "cap": [
+                                1056,
+                                450
+                              ],
+                              "entry": "src/environment_evolution/results/pump_cargo_factorial_20261018/handoff.json",
+                              "next": {
+                                "cap": [
+                                  1568,
+                                  600
+                                ],
+                                "entry": "src/environment_evolution/results/cargo_delay_feedback_20261018/handoff.json",
+                                "next": {
+                                  "handoff": "src/environment_evolution/results/cargo_transport_payment_20261018/handoff.json",
+                                  "missing": 336,
+                                  "next": {
+                                    "handoff": "src/environment_evolution/results/pump_gradient_feedback_20261019/handoff.json",
+                                    "next": {
+                                      "handoff": "src/environment_evolution/results/first_conversion_feedback_20261019/handoff.json",
+                                      "next": {
+                                        "actual": [
+                                          5186,
+                                          508.249628
+                                        ],
+                                        "entry": "src/local_learning/results_20261019/consumption_qualified_transport_20261019/handoff.json",
+                                        "next": {
+                                          "completion": {
+                                            "entry": "src/local_learning/results_20261019/turnover_second_parent_completion_20261019/handoff.json",
+                                            "objective_met": false,
+                                            "sealed": [
+                                              0,
+                                              230.944648
+                                            ],
+                                            "sha256": "8da7fd2299925ab45d240be2cb6c2a5b6b4db8ab689c4f7d9932de583c007d49",
+                                            "status": "complete_coverage;chronology_gap_kept;no_new_continuation",
+                                            "used": [
+                                              1024,
+                                              69.055352
+                                            ]
+                                          },
+                                          "entry": "src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/handoff.json",
+                                          "next": {
+                                            "entry": "src/local_learning/results_20261019/developmental_history_rule_swap_20261019/handoff.json",
+                                            "next": {
+                                              "cap": [
+                                                9312,
+                                                1800
+                                              ],
+                                              "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/handoff.json",
+                                              "job": "43568f01-955a-4ddc-ba37-62903b18f278",
+                                              "next": {
+                                                "entry": "src/local_learning/results_20261019/spatial_birth_request_coordination_20261019/handoff.json",
+                                                "next": {
+                                                  "cap": [
+                                                    1028,
+                                                    450
+                                                  ],
+                                                  "entry": "knowledge_base/research/experience_learning/birth_site_compatibility_cohort_20261019.json",
+                                                  "finding": "五非零脉冲留存3正2负；三零null。两双叶先领先后反转，无一致身体净益；当前h符号非普遍长期落点准则。",
+                                                  "next": {
+                                                    "cap": [
+                                                      1544,
+                                                      600
+                                                    ],
+                                                    "entry": "knowledge_base/research/experience_learning/fixed_amount_rule_deletion_layout_20261019.json",
+                                                    "finding": "两布局对原baseline四context均增M/E/体时/真实post256；mass未普胜uniform；12轨两窗维护全失败。一次输出检查失败388步已保，同job恢复1152步无重演。",
+                                                    "job": "0b471f2a-d4d9-4469-94e5-6ab4d5a1540a",
+                                                    "next": {
+                                                      "entry": "src/local_learning/results_20261019/deletion_layout_life0_formation_20261019/handoff.json",
+                                                      "next": {
+                                                        "d3": {
+                                                          "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/replacement_history_carrier_20261019/handoff.json",
+                                                          "next": "PI scientific choice requested; no automatic continuation",
+                                                          "result": "ring body matching fails; PF co-primary positive/E interaction negative; 36/40 probe maintenance, 4 neutral separated failures",
+                                                          "sealed": [
+                                                            0,
+                                                            830.100144
+                                                          ],
+                                                          "sha": "2c79356d025a68cb636de438ce3aac19b2e2fc1c9e7c20a3af30b9378d3d54cf",
+                                                          "used": [
+                                                            6664,
+                                                            369.899856
+                                                          ]
+                                                        },
+                                                        "entry": "knowledge_base/research/experience_learning/replacement_history_carrier_20261019.json",
+                                                        "status": "completed",
+                                                        "task": "replacement_history_carrier_20261019"
+                                                      },
+                                                      "objective_met": false,
+                                                      "request": "msg_9f1cac355169a90d326000b6fc4169ea",
+                                                      "sha256": "70910cb085dee351e4a2aab3fbc80a478b5fd98dbad07c25ace79e69f8f12c37",
+                                                      "status": "completed",
+                                                      "task": "deletion_layout_life0_formation_20261019",
+                                                      "unused_sealed": [
+                                                        0,
+                                                        701.353596
+                                                      ],
+                                                      "used": [
+                                                        4104,
+                                                        198.646404
+                                                      ]
+                                                    },
+                                                    "next_request": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/fixed_amount_rule_deletion_layout_20261019/scientific_next_request.json",
+                                                    "objective_met": false,
+                                                    "owner": "resident_d3ccfa2d95b7",
+                                                    "request": "msg_972f5f3f641329f67734f729344fccff",
+                                                    "result": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/fixed_amount_rule_deletion_layout_20261019/handoff.json",
+                                                    "sha256": "4c8022c30feb3f7cf313d226a731a6e191149e8dcc08a75c7b565cdbf86a7b74",
+                                                    "status": "completed_with_documented_same_job_recovery",
+                                                    "task": "fixed_amount_rule_deletion_layout_20261019",
+                                                    "unused_sealed": [
+                                                      4,
+                                                      520.912194
+                                                    ],
+                                                    "used": [
+                                                      1540,
+                                                      79.087806
+                                                    ]
+                                                  },
+                                                  "objective_met": false,
+                                                  "owner": "resident_d3ccfa2d95b7",
+                                                  "request": "msg_76df7e1a08dd21560b47fe879463e94c",
+                                                  "result": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/birth_site_compatibility_cohort_20261019/handoff.json",
+                                                  "sha256": "13a95fa6d0498936a5328dd5f59ab873f20e66092d5c6575c3f344d59f50b206",
+                                                  "status": "completed_mixed_direction",
+                                                  "task": "birth_site_compatibility_cohort_20261019",
+                                                  "unused_sealed": [
+                                                    192,
+                                                    401.619274
+                                                  ],
+                                                  "used": [
+                                                    836,
+                                                    48.380726
+                                                  ]
+                                                },
+                                                "objective_met": false,
+                                                "sha256": "e19829c9c1970869d94ee2b530ec9fe8f6b08556da5821b4fe2311d82af397a6",
+                                                "status": "completed_maintenance_negative",
+                                                "task": "spatial_birth_request_coordination_20261019",
+                                                "unused_sealed": [
+                                                  4,
+                                                  589.604362
+                                                ],
+                                                "used": [
+                                                  3076,
+                                                  310.395638
+                                                ]
+                                              },
+                                              "next_request": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/scientific_next_request.json",
+                                              "objective_met": false,
+                                              "result": "theta0 retained;0/10 nonzero eligible;greedy beats w0 M/E/bodytime/new tissue in4 related contexts;0/8 last-two-window maintenance",
+                                              "sha256": "557f7c82043c06ce9db8edeb67ac042ff04cec6db991c98506aa1ac88778d2e2",
+                                              "status": "completed_candidate_closed",
+                                              "task": "resource_conditioned_growth_rule_20261019",
+                                              "unused_sealed": [
+                                                3484,
+                                                1533.025286
+                                              ],
+                                              "used": [
+                                                5828,
+                                                266.974714
+                                              ]
+                                            },
+                                            "objective_met": false,
+                                            "sealed": [
+                                              0,
+                                              400.350574
+                                            ],
+                                            "sha256": "299e31dbf262d9da0b0651ceb03a6af31f0f28f1f8921a938516c07fb4900c21",
+                                            "status": "completed_closed;both64maintenance0/16;current_rule_benefit_not_sustained_replacement",
+                                            "used": [
+                                              1028,
+                                              49.649426
+                                            ]
+                                          },
+                                          "objective_met": false,
+                                          "sealed": [
+                                            1056,
+                                            1491.069114
+                                          ],
+                                          "sha256": "1d1e19754d61c77ea7b4275d24c6baafbb8430db354346a27e3640924b50bb8a",
+                                          "status": "partial_missing_second_parent;maintenance0/12",
+                                          "used": [
+                                            6144,
+                                            308.930886
+                                          ]
+                                        },
+                                        "objective_met": false,
+                                        "review": "../consumption_qualified_transport_method_addendum_20261019/handoff.json",
+                                        "sha": "fc2cd49b5d86ab1c3a8f77218209c3aedae9017af336ee34f3dd0850f1788acb",
+                                        "status": "closed_no_advantage",
+                                        "task": "consumption_qualified_transport_20261019"
+                                      },
+                                      "sealed_unused": [
+                                        32,
+                                        411.90182
+                                      ],
+                                      "sha256": "f39998e8d55b4788897302cc79dad156a9aad6a2ca9257a22910ba8d19d48300",
+                                      "status": "completed",
+                                      "used": [
+                                        1024,
+                                        188.09818
+                                      ]
+                                    },
+                                    "status": "completed",
+                                    "used": [
+                                      1536,
+                                      263.612546
+                                    ]
+                                  },
+                                  "overrun": 0.806816,
+                                  "status": "partial_closed",
+                                  "used": [
+                                    1200,
+                                    600.806816
+                                  ]
+                                },
+                                "objective_met": false,
+                                "sha256": "e5f8081b7ce3013e0b525cd4cc6a6f83d2e329864bfcf8837f5e465e9918818a",
+                                "status": "completed",
+                                "unused_sealed": [
+                                  32,
+                                  543.18282
+                                ],
+                                "used": [
+                                  1536,
+                                  56.81718
+                                ]
+                              },
+                              "objective_met": false,
+                              "sha256": "1c21dccbdc6747722f971ce76830f0245e6da97270429eb2918cfc21dc067530",
+                              "status": "completed",
+                              "unused_sealed": [
+                                12,
+                                221.14874
+                              ],
+                              "used": [
+                                1044,
+                                228.85126
+                              ]
+                            },
+                            "objective_met": false,
+                            "status": "timing_negative_cargo_next",
+                            "used": [
+                              4103,
+                              309.614648
+                            ]
+                          },
+                          "objective_met": false,
+                          "status": "maintenance_completed_regulation_next",
+                          "used": [
+                            2821,
+                            314.814888
+                          ]
+                        },
+                        "status": "completed_finite_window"
+                      },
+                      "status": "completed_no_finite_renewal"
+                    },
+                    "objective_met": false,
+                    "owner": "resident_d3ccfa2d95b7",
+                    "request": "msg_382cf3c21dd0b1a00fe5fb05d6f40286",
+                    "status": "completed_no_eligible_extension"
+                  },
+                  "objective_met": false,
+                  "owner": "resident_d3ccfa2d95b7",
+                  "request": "msg_465e9cb89bebbca3b01d59283a9e3f10",
+                  "status": "completed_action_gate_failed",
+                  "steps": 4160,
+                  "worker_seconds": 1500
+                },
+                "entry": "src/environment_evolution/results/resource_wave_actionability_20261018/handoff.json",
+                "native_steps": 3136,
+                "objective_met": false,
+                "sha256": "e6d9e671e85a45f90b3144511c719c3123e3b374dba3ebb7c0a2fe11cff3ffff",
+                "status": "completed_gate_failed",
+                "used": [
+                  3090,
+                  419.117056
+                ],
+                "worker_seconds": 1200
+              },
+              "objective_met": false,
+              "old_budget_used": 0,
+              "result": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/adaptive_motor_frame_20261018/handoff.json",
+              "result_sha256": "5d2dfa9be358f0f840f2e14288e33f50a0820185a7f573e57111e4cf5cfcfce3",
+              "sha256": "e2ec9367f94518910eb329d59dac0946783c89389d8797ac03c13bf76026aad9",
+              "status": "opportunity_gate_failed",
+              "task": "adaptive_motor_frame_20261018",
+              "worker_seconds_cap": 900
+            },
+            "new_native_body_step_cap": 6144,
+            "objective_met": false,
+            "old_budget_used": 0,
+            "sha256": "16e6cabd93f4f56157d563cc4e13ccf31a795a243993552ab1924fb924bd06c4",
+            "status": "d3_closed_partial_time_cap",
+            "strategy_judgment": {
+              "finding": "0ac更新优于冻结，6bd四指标相反；两体都确认内容改变真实动作，未建立普遍身体收益。",
+              "objective_met": false,
+              "status": "pooled_recent_strategy_closed"
+            },
+            "target": "有价局部终末消息带来的已完成记录利用；全组织收益独立验效，不宣称祖先/新生因果信用。",
+            "task": "local_terminal_feedback_20261018",
+            "usage": {
+              "ce2_remaining_steps_not_transferred": 509,
+              "ce2_remaining_worker_not_transferred": 5.491964,
+              "ce2_steps": 771,
+              "ce2_worker_seconds": 174.508036,
+              "combined_steps": 1667,
+              "combined_worker_seconds": 571.783956,
+              "d3_reserved_steps": 4864,
+              "d3_reserved_worker_seconds": 420,
+              "d3_steps": 896,
+              "d3_unused_steps": 3968,
+              "d3_unused_worker_seconds": 22.72408,
+              "d3_worker_seconds": 397.27592,
+              "old_used": 0
+            },
+            "worker_seconds_cap": 600
+          },
+          "host_result": {
+            "ce2_unused_steps": 416,
+            "ce2_unused_worker_seconds": 163.02475,
+            "d3_exclusive_steps": 1536,
+            "d3_exclusive_worker_seconds": 170,
+            "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/native_investment_action_20261018/handoff.json",
+            "finding": "6bd长剪切两布局延迟有益，8步未回本；材料框架省费用/早回本但末E/U均低于Euler。0ac短梯度略益、长梯度仍亏。高初始材料死亡，合法终末归属待d3。",
+            "job": "ae909c85-6b64-4528-870c-66b8794c3c54",
+            "new_native_steps": 4192,
+            "raw_bytes": 1595475068,
+            "read_only_reused_steps": 1536,
+            "sha256": "44afec3f92a82c7b95042117817ee48e3f8e569ffd22f22a10965af6a1621ff0",
+            "worker_seconds": 266.97525
+          },
+          "intent_interface": {
+            "continuation_request": "msg_d321fcfe298da86843bd785d84761816",
+            "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/native_investment_action_interface/handoff.json",
+            "module_sha256": "281cdf539552d744002768036509eaab3476e6c74a9ddf156bf093872ecb0d88",
+            "native_steps": 0,
+            "scientific_jobs": [],
+            "sha256": "6593b79ab44bc576174c48b976862c431e3f96d32dc52e05ec342b40ac2023d7"
+          },
+          "learning_condition": "ce2实际投资/撤驱后果与合法局部完成反馈均成立，才用d3≤1536步/170worker秒；死亡终末与未知分开，不广播死者全局收益。",
+          "new_native_body_step_cap": 6144,
+          "objective_met": false,
+          "old_budget_used": 0,
+          "sha256": "a6fc726bb8de578235a43c51cfd76d6df25d513233cad47c67623df50ac28fb7",
+          "status": "completed_feedback_review_learning_gate_not_met",
+          "task": "native_investment_action_20261018",
+          "worker_seconds_cap": 600
+        },
+        "d3_body_cap": 9216,
+        "entry": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/material_action_response_20261018.json",
+        "host_result": {
+          "actual_body_steps": 2051,
+          "continuation": "msg_8e69b409d380b2c676a46a884f59afdb",
+          "core_sha256": "15691ada9fd805c076f7c5770ba955dbf6cc454ea3af129b1ba03fe958467b5b",
+          "d3_remaining_steps": 9216,
+          "d3_remaining_worker_seconds": 420,
+          "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/material_action_response_20261018/handoff.json",
+          "first_failed_steps": 1,
+          "job": "0eb661f2-b286-43c6-b27e-ee8f3f2da135",
+          "objective_met": false,
+          "sha256": "cbf40055bfde856e0ebeccdbf2fc04425da83bd5f9e89dad29705a3f59b865ff",
+          "worker_seconds": 109.358436
+        },
+        "learning_job": {
+          "actual_steps": 2464,
+          "cap_steps": 9216,
+          "cap_worker_seconds": 420,
+          "id": "a8ace198-bb5f-4dd2-a836-f659d641cc07",
+          "key": "d3-material-action-response-20261018-v1",
+          "plan": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/plan.json",
+          "planned_steps": 2464,
+          "returncode": 0,
+          "sha256": "e0a6338d96fbd48c4b7f65e977969f95c0a56d8a13e9c3b24ce89c07f005735c",
+          "status": "completed",
+          "worker_seconds": 239.565908
+        },
+        "learning_owner": "resident_d3ccfa2d95b7",
+        "learning_preparation": {
+          "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/preparation.json",
+          "interface_request": "msg_29c753665dc3dc95ac69b03a015d255c",
+          "native_body_steps": 0,
+          "pure_checks": "passed",
+          "scientific_jobs": [],
+          "sha256": "cd2a2a74608728fbcb6dbbde8258a30373c47d70d1e5f8d787a6aa19639e3a72"
+        },
+        "learning_result": {
+          "decision": "model较recent四context摄取与末E均低；比none末M/E/体时均低，关闭当前H8幸存条件岭模型，不扫描或转用余量。",
+          "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/handoff.json",
+          "joint_steps": 4515,
+          "joint_worker_seconds": 348.924344,
+          "limitations": "两体×两相关布局；局部回归只含幸存可读材料，死亡终末另保。算术/存储未计价，合成/模板费未保存全程独立分项；90稀疏块非完整中间K。",
+          "manifest_sha256": "fd0f9db377e924980b00c9e8c85b98b3201927355b9e26124c92be77207d533c",
+          "objective_met": false,
+          "sha256": "7b0edc8db05b91f8750d3fb9e69398fdf75209ab5286d120e7e623dcdcd46ecf",
+          "status": "completed_candidate_closed"
+        },
+        "new_native_body_step_cap": 12288,
+        "note": "独立新额度；仅因128-cell上限以子索引寄存，原候选已关闭且余量不转用。",
+        "objective_met": false,
+        "old_budget_used": 0,
+        "owner": "resident_ce2a5ab005bc",
+        "sha256": "c5eb5f4eef661a171be86e15f11fab4b6d1e6d91489ab8c50ccaee9349bbaecd",
+        "status": "completed_candidate_closed",
+        "task": "material_action_response_20261018",
+        "worker_seconds_cap": 600
+      },
+      "objective_met": false,
+      "old_budget_used": 0,
+      "owner": "resident_ce2a5ab005bc",
+      "sha256": "3779e9ce422f7abed7020bd9691d17d545ac7e604084801404bf8fc6615dc8c7",
+      "status": "completed_candidate_closed",
+      "worker_seconds_cap": 300
+    }
+  }
+}

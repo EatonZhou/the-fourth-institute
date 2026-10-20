@@ -1,0 +1,189 @@
+<!-- WALL's view in the development projection page (web.native_view). Not a standalone page. -->
+<template id="wallNativeView" data-host-class="wallPage">
+<section id="wallDesignView" class="wallWorkspaceView" aria-label="设计与改进" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;设计与改进&quot;}">
+      <div class="wallToolbar">
+        <div class="wallCommandRow">
+          <label class="wallField"><span class="wallSrOnly"><!--portal-i18n:"工程"-->工程</span><select id="wallProject" aria-label="工程" disabled data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;工程&quot;}"></select></label>
+          <span id="wallMeta" class="wallSrOnly" role="status"><!--portal-i18n:"正在读取工程…"-->正在读取工程…</span>
+        <div data-portal-board-toolbar aria-label="WALL 控件" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;WALL 控件&quot;}">
+          <div data-portal-board-search><label for="wallQuery"><!--portal-i18n:"搜索墙面"-->搜索墙面</label><input id="wallQuery" data-portal-board-search-input type="search" placeholder="搜索设计、改进、方向与出处" autocomplete="off"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;搜索设计、改进、方向与出处&quot;}"/><button data-portal-board-semantic id="wallSemanticButton" type="button" aria-label="根据输入内容发起语义检索" title="根据输入内容发起语义检索" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;根据输入内容发起语义检索&quot;, &quot;title&quot;: &quot;根据输入内容发起语义检索&quot;}"><span data-semantic-label><!--portal-i18n:"语义检索"-->语义检索</span></button></div>
+          <div data-portal-board-actions>
+            <button id="wallRecent" class="portalButton is-compact" data-portal-toolbar-item data-portal-toolbar-priority="high" data-portal-icon="history" aria-haspopup="dialog" aria-controls="wallRecentOverlay" disabled><!--portal-i18n:"最近完成"-->最近完成</button>
+            <button id="wallDocumentation" class="portalButton is-compact" data-portal-toolbar-item data-portal-toolbar-priority="high" aria-haspopup="dialog" aria-controls="wallDocumentationOverlay" disabled><!--portal-i18n:"生成发布文档"-->生成发布文档</button>
+            <select id="wallAccount" data-portal-toolbar-item data-portal-toolbar-priority="high" aria-label="新任务 Codex 账号" title="用于新任务与首次讨论；已有讨论可在 Session 中切换账号" disabled data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;新任务 Codex 账号&quot;, &quot;title&quot;: &quot;用于新任务与首次讨论；已有讨论可在 Session 中切换账号&quot;}"><option value=""><!--portal-i18n:"账号：沿用配置"-->账号：沿用配置</option></select>
+            <button id="wallAnalyse" class="portalButton is-compact" data-portal-toolbar-item data-portal-toolbar-priority="normal" data-portal-icon="search" disabled><!--portal-i18n:"分析"-->分析</button>
+            <button id="wallVerify" class="portalButton is-compact" data-portal-toolbar-item data-portal-toolbar-priority="normal" data-portal-icon="shield-check" title="调用本工程的回归测试与修复 Resident，运行测试、排查失败并修复" disabled data-portal-i18n-attrs="{&quot;title&quot;: &quot;调用本工程的回归测试与修复 Resident，运行测试、排查失败并修复&quot;}"><!--portal-i18n:"全面回归"-->全面回归</button>
+            <button id="wallPublishAll" class="portalButton is-compact" data-portal-toolbar-item data-portal-toolbar-priority="normal" data-portal-icon="upload" title="将当前 Dev 源码完整同步到 Release；不等待全面回归，不改变功能卡片的完成状态" disabled data-portal-i18n-attrs="{&quot;title&quot;: &quot;将当前 Dev 源码完整同步到 Release；不等待全面回归，不改变功能卡片的完成状态&quot;}"><!--portal-i18n:"全量发布"-->全量发布</button>
+            <button id="wallSettings" class="portalButton is-compact" data-portal-toolbar-item data-portal-toolbar-priority="normal" data-portal-icon="settings" disabled><!--portal-i18n:"自动推进"-->自动推进</button>
+            <button id="wallRegister" class="portalButton is-compact" data-portal-toolbar-item data-portal-toolbar-priority="low" data-portal-icon="folder" disabled><!--portal-i18n:"登记工程"-->登记工程</button>
+            <button id="wallUnregister" class="portalButton is-compact" data-portal-toolbar-item data-portal-toolbar-priority="low" disabled hidden><!--portal-i18n:"取消登记"-->取消登记</button>
+            <button id="wallRefresh" data-portal-board-action="refresh" data-portal-toolbar-item data-portal-toolbar-priority="critical" aria-label="刷新墙面" data-portal-tooltip="重新扫描工程文档" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;刷新墙面&quot;}"></button>
+            <button id="wallCreate" class="portalButton is-compact is-primary" data-portal-toolbar-item data-portal-toolbar-priority="critical" data-portal-icon="plus" disabled><!--portal-i18n:"新建"-->新建</button>
+          </div>
+        </div>
+        </div>
+        <div class="wallViewRow">
+          <div id="wallFilters" class="wallFilters" role="group" aria-label="类别筛选" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;类别筛选&quot;}">
+            <button type="button" data-kind="all" aria-pressed="true"><!--portal-i18n:"全部 "-->全部 <span data-count="all">0</span></button>
+            <button type="button" data-kind="design" aria-pressed="false"><!--portal-i18n:"设计 "-->设计 <span data-count="design">0</span></button>
+            <button type="button" data-kind="improvement" aria-pressed="false"><!--portal-i18n:"改进 "-->改进 <span data-count="improvement">0</span></button>
+            <button type="button" data-kind="dev" aria-pressed="false"><!--portal-i18n:"Dev 已完成 "-->Dev 已完成 <span data-count="dev">0</span></button>
+            <button type="button" data-kind="inconsistency" aria-pressed="false"><!--portal-i18n:"不一致 "-->不一致 <span data-count="inconsistency">0</span></button>
+            <button type="button" data-kind="direction" aria-pressed="false"><!--portal-i18n:"方向 "-->方向 <span data-count="direction">0</span></button>
+          </div>
+          <div class="wallViewControls">
+            <label class="wallField wallModuleField"><span><!--portal-i18n:"模块"-->模块</span><select id="wallModule" aria-label="SPEC 模块筛选" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;SPEC 模块筛选&quot;}"><option value=""><!--portal-i18n:"全部模块"-->全部模块</option></select></label>
+            <label class="wallField"><span><!--portal-i18n:"重要度"-->重要度</span><select id="wallImportanceFilter" aria-label="重要程度筛选" title="仅显示达到所选重要度的点" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;重要程度筛选&quot;, &quot;title&quot;: &quot;仅显示达到所选重要度的点&quot;}"><option value="0"><!--portal-i18n:"全部"-->全部</option><option value="2"><!--portal-i18n:"≥ 2 分"-->≥ 2 分</option><option value="3"><!--portal-i18n:"≥ 3 分"-->≥ 3 分</option><option value="4"><!--portal-i18n:"≥ 4 分"-->≥ 4 分</option><option value="5"><!--portal-i18n:"≥ 5 分"-->≥ 5 分</option><option value="6"><!--portal-i18n:"≥ 6 分"-->≥ 6 分</option><option value="7"><!--portal-i18n:"≥ 7 分"-->≥ 7 分</option><option value="8"><!--portal-i18n:"≥ 8 分"-->≥ 8 分</option><option value="9"><!--portal-i18n:"≥ 9 分"-->≥ 9 分</option><option value="10"><!--portal-i18n:"10 分"-->10 分</option></select></label>
+            <label class="wallField"><span><!--portal-i18n:"Metaness"-->Metaness</span><select id="wallMetanessFilter" aria-label="Metaness 元层级筛选" title="按元层级筛选；未填写按 M1，显式非法值仅在全部中显示并提示诊断" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Metaness 元层级筛选&quot;, &quot;title&quot;: &quot;按元层级筛选；未填写按 M1，显式非法值仅在全部中显示并提示诊断&quot;}"><option value="all"><!--portal-i18n:"全部"-->全部</option><option value="1">M1</option><option value="2">M2</option><option value="3">M3</option><option value="4">M4</option><option value="5">M5</option><option value="6">M6</option><option value="7">M7</option><option value="8">M8</option><option value="9">M9</option><option value="10">M10</option></select></label>
+            <label class="wallField"><span><!--portal-i18n:"聚类"-->聚类</span><select id="wallCluster" aria-label="聚类" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;聚类&quot;}"><option value="domain"><!--portal-i18n:"领域"-->领域</option><option value="document"><!--portal-i18n:"文档"-->文档</option><option value="direction"><!--portal-i18n:"方向"-->方向</option></select></label>
+            <label class="wallField"><span><!--portal-i18n:"阅读状态"-->阅读状态</span><select id="wallReadFilter" aria-label="阅读状态筛选" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;阅读状态筛选&quot;}"><option value="all"><!--portal-i18n:"全部"-->全部</option><option value="unread"><!--portal-i18n:"未读"-->未读</option></select></label>
+            <label class="wallField"><span><!--portal-i18n:"审核状态"-->审核状态</span><select id="wallReviewFilter" aria-label="审核状态筛选" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;审核状态筛选&quot;}"><option value="all"><!--portal-i18n:"全部"-->全部</option><option value="unreviewed"><!--portal-i18n:"未审核"-->未审核</option><option value="reviewed"><!--portal-i18n:"已审核"-->已审核</option></select></label>
+            <label class="wallField"><span><!--portal-i18n:"排序"-->排序</span><select id="wallSort" aria-label="排序" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;排序&quot;}"><option value="importance"><!--portal-i18n:"重要"-->重要</option><option value="title"><!--portal-i18n:"标题"-->标题</option><option value="recent"><!--portal-i18n:"最近打开"-->最近打开</option></select></label>
+            <label class="wallField"><span><!--portal-i18n:"缩放"-->缩放</span><select id="wallZoom" aria-label="缩放" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;缩放&quot;}"><option value="overview"><!--portal-i18n:"方向总览"-->方向总览</option><option value="cards" selected><!--portal-i18n:"点卡片"-->点卡片</option><option value="detail"><!--portal-i18n:"详细"-->详细</option></select></label>
+          </div>
+        </div>
+      </div>
+    <main class="wallMain" id="wallMain">
+      <div class="wallSemantic">
+        <div id="wallSemanticPanel" class="portalSemanticPanel" aria-label="语义检索任务" hidden data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;语义检索任务&quot;}"></div>
+        <div id="wallSemanticIdentity" class="portalSemanticIdentity" hidden></div>
+      </div>
+      <div id="wallErrors" class="wallErrors" role="alert" hidden></div>
+      <div id="wallWarnings" class="wallWarnings" role="status" hidden></div>
+      <div id="wallJobs" class="wallJobs" aria-label="工程运行" hidden data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;工程运行&quot;}"></div>
+      <div id="wallEmpty" class="portalAsyncState" data-state="loading" data-density="panel" role="status"><strong><!--portal-i18n:"正在读取墙面…"-->正在读取墙面…</strong></div>
+      <div id="wallBoard" class="wallBoard" data-zoom="cards" aria-label="设计与改进墙" aria-description="每份改进计划显示为一个块；面积表示 Metaness 元层级，颜色深浅表示重要度。" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;设计与改进墙&quot;}"></div>
+    </main>
+        </section>
+<div id="wallRecentOverlay" class="portalDetailOverlay" data-portal-detail-overlay aria-hidden="true" hidden>
+      <section class="portalDetailSurface wallRecentSurface" data-portal-detail-surface role="dialog" aria-modal="true" aria-labelledby="wallRecentTitle">
+        <header class="portalDetailHeader"><div><h2 id="wallRecentTitle"><!--portal-i18n:"最近完成"-->最近完成</h2><div id="wallRecentMeta" class="wallCompletedMeta"></div></div><button id="wallRecentClose" class="portalDetailClose" data-portal-detail-close data-portal-icon="close" aria-label="关闭最近完成" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;关闭最近完成&quot;}"></button></header>
+        <div class="portalDetailBody is-flush">
+          <p id="wallRecentEmpty" class="wallCompletedEmpty" role="status"><!--portal-i18n:"暂无已完成的工作"-->暂无已完成的工作</p>
+          <ol id="wallRecentList" class="wallCompletedList" aria-label="最近完成的工作" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;最近完成的工作&quot;}"></ol>
+        </div>
+      </section>
+    </div>
+    <div id="wallDetail" class="portalDetailOverlay" data-portal-detail-overlay aria-hidden="true" hidden>
+      <section class="portalDetailSurface wallDetailSurface" data-portal-detail-surface data-portal-detail-size="wide" role="dialog" aria-modal="true" aria-labelledby="wallDetailTitle">
+        <header class="portalDetailHeader"><div><div class="portalDetailEyebrow" id="wallDetailKind"></div><h2 id="wallDetailTitle"><!--portal-i18n:"点详情"-->点详情</h2></div><button id="wallDetailClose" class="portalDetailClose" data-portal-detail-close data-portal-icon="close" aria-label="关闭详情" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;关闭详情&quot;}"></button></header>
+        <div class="portalDetailBody wallDetailBody">
+          <section class="wallDocument" aria-label="原文与出处" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;原文与出处&quot;}"><div id="wallDetailSource" class="wallDetailSource"></div><div id="wallDetailMetaness" class="wallDetailSource"></div><div class="wallDetailTools"><label id="wallDetailReview" class="wallReview"></label><div id="wallDetailActions" class="wallActions"></div></div><div id="wallDetailStatus" class="wallJobStatus" role="status"></div><div id="wallDetailEditor" hidden></div><div id="wallDetailContent" class="wallMarkdown"></div><div id="wallDetailRelated" class="wallRelated"></div></section>
+          <section class="wallConversation" aria-label="Chat Workspace" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Chat Workspace&quot;}">
+            <div id="wallChatTabs" class="wallChatTabs" role="tablist" aria-label="对话工作区" hidden data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;对话工作区&quot;}">
+              <button id="wallDiscussionTab" type="button" role="tab" aria-controls="wallChat" aria-selected="true" data-chat-tab="discussion"><!--portal-i18n:"讨论"-->讨论</button>
+              <button id="wallWorkTab" type="button" role="tab" aria-controls="wallWorkChat" aria-selected="false" tabindex="-1" data-chat-tab="work"><!--portal-i18n:"实现中"-->实现中</button>
+            </div>
+            <div id="wallChat" class="wallChat" role="tabpanel" aria-labelledby="wallDiscussionTab"></div>
+            <div id="wallWorkChat" class="wallChat" role="tabpanel" aria-labelledby="wallWorkTab" hidden></div>
+          </section>
+        </div>
+      </section>
+    </div>
+    <div class="portalDetailOverlay portalDetailFrameOverlay" data-portal-detail-overlay id="wallResourceDetail" aria-hidden="true" hidden>
+      <div class="portalDetailFrameHost" data-portal-detail-frame-host>
+        <iframe class="portalDetailFrame" id="wallResourceFrame" title="资源详情" data-portal-i18n-attrs="{&quot;title&quot;: &quot;资源详情&quot;}"></iframe>
+        <div class="portalDetailFrameLoading" id="wallResourceLoading" role="status"><!--portal-i18n:"正在打开资源…"-->正在打开资源…</div>
+      </div>
+    </div>
+    <div id="wallSourceOverlay" class="portalDetailOverlay" data-portal-detail-overlay aria-hidden="true" hidden>
+      <section class="portalDetailSurface" data-portal-detail-surface data-portal-detail-size="wide" role="dialog" aria-modal="true" aria-labelledby="wallSourceTitle">
+        <header class="portalDetailHeader"><h2 id="wallSourceTitle">Design / Plan</h2><button id="wallSourceClose" class="portalDetailClose" data-portal-detail-close data-portal-icon="close" aria-label="关闭" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;关闭&quot;}"></button></header>
+        <div class="portalDetailBody"><p id="wallSourceStatus" role="status" aria-live="polite"></p><p id="wallSourceError" role="alert" hidden></p><div id="wallSourceContent" class="wallMarkdown"></div></div>
+      </section>
+    </div>
+    <div id="wallDocumentationOverlay" class="portalDetailOverlay" data-portal-detail-overlay aria-hidden="true" hidden>
+      <section class="portalDetailSurface" data-portal-detail-surface data-portal-detail-size="wide" role="dialog" aria-modal="true" aria-labelledby="wallDocumentationTitle">
+        <header class="portalDetailHeader"><h2 id="wallDocumentationTitle"><!--portal-i18n:"发布文档预览"-->发布文档预览</h2><button id="wallDocumentationClose" class="portalDetailClose" data-portal-detail-close data-portal-icon="close" aria-label="关闭发布文档预览" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;关闭发布文档预览&quot;}"></button></header>
+        <div class="portalDetailBody">
+          <p><!--portal-i18n:"仅按当前工程 SPEC 索引生成 Markdown。保留每份 Design 的版本和 SHA256；不会发布 Release、提交代码或重启服务。"-->仅按当前工程 SPEC 索引生成 Markdown。保留每份 Design 的版本和 SHA256；不会发布 Release、提交代码或重启服务。</p>
+          <p id="wallDocumentationStatus" role="status" aria-live="polite"></p>
+          <p id="wallDocumentationError" role="alert" hidden></p>
+          <button id="wallDocumentationDownload" type="button" class="portalButton is-primary" disabled><!--portal-i18n:"下载 Markdown"-->下载 Markdown</button>
+          <pre id="wallDocumentationContent" class="wallDocumentationContent" tabindex="0" aria-label="生成的发布文档"></pre>
+        </div>
+      </section>
+    </div>
+    <div id="wallFormOverlay" class="portalDetailOverlay" data-portal-detail-overlay aria-hidden="true" hidden>
+      <section class="portalDetailSurface wallFormSurface" data-portal-detail-surface role="dialog" aria-modal="true" aria-labelledby="wallFormTitle">
+        <header class="portalDetailHeader"><h2 id="wallFormTitle"><!--portal-i18n:"新建"-->新建</h2><button id="wallFormClose" class="portalDetailClose" data-portal-detail-close data-portal-icon="close" aria-label="关闭表单" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;关闭表单&quot;}"></button></header>
+        <form id="wallForm" class="portalDetailBody wallForm">
+          <div id="wallFormFields"></div><p id="wallFormError" class="wallFormError" role="alert" hidden></p>
+          <footer class="wallFormFooter"><button id="wallFormCancel" type="button" class="portalButton"><!--portal-i18n:"取消"-->取消</button><button id="wallFormSave" type="submit" class="portalButton is-primary"><!--portal-i18n:"保存"-->保存</button></footer>
+        </form>
+      </section>
+    </div>
+</template>
+<script type="application/json" id="wallNativeViewAssets">{
+    "styles": [
+      "/static/portal_components.css",
+      "/static/portal_image_editor.css",
+      "/static/portal_workbench.css",
+      "/static/wall.css",
+      "/static/portal_design_system.css",
+      "/static/portal_themes.css",
+      "/static/portal_board_toolbar.css",
+      "/static/portal_collection_board.css"
+    ],
+    "scripts": [
+      "/static/portal_state.js",
+      "/static/portal_text.js",
+      "/static/portal_translations.js",
+      "/static/portal_i18n.js",
+      "/static/portal_theme.js",
+      "/static/portal_page_state.js",
+      "/static/portal_api.js",
+      "/static/portal_instruction_client.js",
+      "/static/portal_resident_service.js",
+      "/static/portal_passkeys.js",
+      "/static/portal_identity.js",
+      "/static/portal_society_service.js",
+      "/static/portal_resident_discovery_service.js",
+      "/static/portal_lineage_catalogs.js",
+      "/static/portal_overlay.js",
+      "/static/portal_events.js",
+      "/static/portal_refresh_coordinator.js",
+      "/static/resident_protocol.js",
+      "/static/portal_conversation_store.js",
+      "/static/portal_ui_primitives.js",
+      "/static/portal_nav.js",
+      "/static/portal_ui.js",
+      "/static/portal_form_controls.js",
+      "/static/portal_button_tooltips.js",
+      "/static/portal_toolbar.js",
+      "/static/portal_board_toolbar.js",
+      "/static/portal_detail_surface.js",
+      "/static/portal_resource_routes.js",
+      "/static/portal_resource_detail.js",
+      "/static/portal_resource_header.js",
+      "/static/portal_semantic_search.js",
+      "/static/portal_file_tree.js",
+      "/static/portal_preview_contract.js",
+      "/static/portal_resource_chips.js",
+      "/static/portal_file_links.js",
+      "/static/portal_preview_runtime.js",
+      "/static/portal_pdf_preview.js",
+      "/static/portal_preview_renderers.js",
+      "/static/portal_agent_preview_source.js",
+      "/static/portal_editor_open_service.js",
+      "/static/portal_command_registry.js",
+      "/static/portal_workbench_context.js",
+      "/static/portal_workbench.js",
+      "/static/portal_document_statistics.js",
+      "/static/portal_workspace_surface.js",
+      "/static/vendor/monaco/vs/nls/lang/zh-cn.js",
+      "/static/vendor/monaco/vs/loader.js",
+      "/static/portal_code_editor.js",
+      "/static/portal_editor_open_commands.js",
+      "/static/portal_navigation.js",
+      "/static/portal_component_recovery.js",
+      "/static/resident_projection.js",
+      "/static/portal_image_editor.js",
+      "/static/portal_model_api_settings.js",
+      "/static/portal_resident_runtime_controller.js",
+      "/static/portal_chat_workspace.js",
+      "/static/portal_command_palette.js",
+      "/static/markdown.js",
+      "/static/wall.js"
+    ]
+}</script>

@@ -1,0 +1,28 @@
+{
+  "to": "resident_afa3d4d6cf11",
+  "task": "deletion_layout_life0_formation_20261019",
+  "requested_decision": "保留原greedy ring四窗有限维护及真实替代阳性与uniform条件收益；不将uniform作为默认生成规则。下一独立任务是否以原ring阳性和分离初形负例建立有替代能力的生成规则/经历研究强基线，或将layout off作为搜索必要分支；当前不自行开新物理。",
+  "common_benefit": false,
+  "finite_transfer_pairs": 4,
+  "gates": {
+    "original_prestate_greedy_reference": {
+      "M128_ge32": 8,
+      "M256_ge32": 8,
+      "extinct": 0,
+      "all_four": 2,
+      "last_two": 2,
+      "all_four_zero": 2,
+      "last_two_zero": 2
+    },
+    "matched_uniform": {
+      "M128_ge32": 8,
+      "M256_ge32": 8,
+      "extinct": 0,
+      "all_four": 2,
+      "last_two": 2,
+      "all_four_zero": 2,
+      "last_two_zero": 2
+    }
+  },
+  "no_auto_extension": true
+}

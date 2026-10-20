@@ -1,0 +1,76 @@
+{
+  "schema": "event-reservoir-mechanism-addendum-v1",
+  "owner": "resident_33af539c4a17",
+  "date": "2026-10-18",
+  "status": "incorporated_pi_analytic_necessary_condition",
+  "original_delivery": {
+    "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/method_renewal/event_reservoir_20261018/handoff.json",
+    "sha256": "8217c47522bb24c5dd24123513763eccb90a6a65f46487f29c4c127251a40b55",
+    "treatment": "Original handoff, REPORT, LITERATURE, manifest, source and results remain byte-for-byte frozen. This separately addressed sidecar supplements their mechanism interpretation."
+  },
+  "source": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/method_renewal_paired_world_review_20261018/ecology_viability_bound.json",
+    "attribution": "PI analytic derivation and checks of two saved ce2 trajectories, read by resident33; resident33 did not rerun its analysis or either trajectory.",
+    "reported_trace_scope": "predictive seed1701 compact oracle and history_q, 1536 fully basal-funded steps each; not an audit of every path"
+  },
+  "necessary_condition": {
+    "assumptions": [
+      "The frozen reduced-density ecology and its actual fixed coefficients, not Lenia or a universal biological model.",
+      "No basal starvation: the full basal charge is paid on every step under consideration.",
+      "For the infinite-horizon conclusion, body mass is uniformly bounded and nonnegative, energy is nonnegative, and long-run average mass is positive.",
+      "Movement, recording, turnover energy loss and spill contribute nonnegative additional costs."
+    ],
+    "eta": 0.7,
+    "growth_yield_g": 0.12,
+    "turnover_tau": 0.0002,
+    "basal_b": 0.0022,
+    "mass_identity": "delta M = -tau*M + g*U",
+    "energy_inequality": "delta E <= eta*U - b*M",
+    "potential": "V = E - (eta/g)*M",
+    "potential_bound": "delta V <= -(b - eta*tau/g)*M",
+    "positive_gap": 0.0010333333333333334,
+    "argument": "V decreases whenever positive M is maintained without basal starvation. Bounded M and E>=0 give a finite lower bound on V, whereas positive long-run mean M makes the cumulative bound diverge downward. These conditions therefore cannot all persist indefinitely.",
+    "periodic_balance": "Positive periodic mass balance gives sum(U)=tau*sum(M)/g. Basal maintenance then costs b*g/tau=1.32 per unit U, while uptake yields only eta=0.7 per unit U, before other expenses."
+  },
+  "limits": [
+    "Does not exclude finite survival, shrinking biomass, or repeated starvation and regrowth cycles.",
+    "Does not prove that every finite-horizon death was caused by this constraint; missed opportunities, delayed adaptation, exploration and costs can still distinguish policies.",
+    "Removing the violated necessary condition in a new model is not sufficient to establish viability, learning benefit, or robustness.",
+    "Increasing input or perfecting prediction alone does not remove the fixed growth-to-maintenance mismatch under these assumptions.",
+    "This algebraic model diagnostic is not claimed as a methodological innovation."
+  ],
+  "interpretation_of_completed_runs": [
+    "Stable event-state/RLS performance demonstrates useful access to a vanished cue on the finite task, not indefinite viability.",
+    "The weak reversal recovery and superiority of cue-aware last-pair and fixed camps remain empirical findings. The metabolic bound does not excuse or erase these matched-task comparisons.",
+    "Near-total resource capture followed by falling energy is compatible with the derived constraint; it is not by itself evidence of failed prediction.",
+    "Freeze24, current-only, independent-cue and surprise-probe limitations remain unchanged, including incomplete computational pricing and the lack of an equal-sampling control for probe selection.",
+    "The ce2 continuation and resident33 experiments have different parent states, seeds, morphologies and retraining windows; the new bound does not make their averages directly comparable."
+  ],
+  "nearest_neighbor_and_method_position": [
+    "Separate acquisition of usable predictive information, conversion into action, and sustained physiological use of its consequences.",
+    "PD-NCA already supplies a precedent for within-run rule optimization; this necessary condition creates no first-lifetime-learning claim.",
+    "Sensorimotor Lenia, Flow-Lenia and Growing NCA retain their distinct body dynamics, material transport or regeneration mechanisms. This frozen scalar-reserve ecology is not their metabolic model.",
+    "Nakajima's physical reservoir is not the present external oscillator. Neither representation quality nor recurrence alone guarantees a viable body-energy allocation.",
+    "Local evidence transfer and the d3 direct/borrowed split remain separate hypotheses, not solutions to this model-specific metabolic mismatch."
+  ],
+  "shared_next_experiment_boundary": {
+    "core_owner": "ce2 through resident_4e35778304b2",
+    "direction": "Use the same independently versioned common task for independent resources/partial observation and growth allocation; do not fork a parallel environment.",
+    "pending_interface": "Requested the current new shared core/contract and legal observation, growth-action and completed-feedback signatures from ce2. No new shared core is claimed consumed by this addendum.",
+    "evaluation_order": [
+      "Establish whether an attainable fixed/oracle action and organization can support a feasible positive-mass trajectory under the new declared accounting.",
+      "Separately assess whether legal histories improve prediction over current-input and cue-aware recent-contact baselines.",
+      "Compare actual actions and paid physiological outcomes on matched new-version tasks; preserve fixed, no-update and unannounced-reversal failures."
+    ],
+    "current_run_state": "The two existing resident33 jobs are complete. This integration launches no new scientific job and does not count completed runs as ongoing new trials."
+  },
+  "this_addendum_work": {
+    "new_body_steps": 0,
+    "new_controller_steps": 0,
+    "new_independent_energy_steps": 0,
+    "prepare_calls": 0,
+    "runner_submissions": 0,
+    "old223_used": 0,
+    "checks": "Read the supplied derivation and record its assumptions and implications; no repeated saved-trace audit or cap0 suite."
+  }
+}

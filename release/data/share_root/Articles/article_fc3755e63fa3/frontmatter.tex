@@ -1,0 +1,62 @@
+\begin{titlepage}
+\thispagestyle{empty}
+\vspace*{30mm}
+{\fontsize{40}{50}\selectfont\bfseries\color{ink}思维论\par}
+\vspace{15mm}
+\begin{tikzpicture}[node distance=17mm]
+\node[fragment] (input) {$v_0$};
+\node[operation,above right=7mm and 14mm of input] (first) {$F_1$};
+\node[operation,below right=7mm and 14mm of input] (second) {$F_2$};
+\node[fragment,right=14mm of first] (left) {$v_1$};
+\node[fragment,right=14mm of second] (right) {$v_2$};
+\node[operation,below right=7mm and 14mm of left] (combine) {$F_3$};
+\node[fragment,right=of combine] (output) {$v_3$};
+\draw[edge] (input)--(first); \draw[edge] (first)--(left);
+\draw[edge] (input)--(second); \draw[edge] (second)--(right);
+\draw[edge] (left)--(combine); \draw[edge] (right)--(combine);
+\draw[edge] (combine)--(output);
+\end{tikzpicture}
+\vfill
+{\large 诊断组织的有限数学\par}
+\vspace{3mm}
+{共同错误、可辨别性与通信\par}
+\vspace{5mm}
+{A Theory of Organized Reasoning\par}
+\end{titlepage}
+
+\chapter*{前言}
+\addcontentsline{toc}{chapter}{前言}
+几个推理过程可能反复确认同一个答案，却始终没有排除造成这个答案的共同误解。可靠性取决于它们能够取得哪些区别、怎样分配取得区别的机会，以及这些区别能否到达真正需要它们的过程。增加重复次数只有在这些条件允许时才有效。
+
+一个具体问题贯穿全书：\emph{当基本操作可能受到共同错误影响，控制者只能通过这些操作取得证据时，什么样的组织能够把错误概率持续压低，需要付出多少调用与通信？}
+
+研究从有限的未知情境出发。情境同时规定真实目标与隐藏的失效因素。每个基本操作在不同情境下产生不同的片段分布；组织可以根据已经得到的片段决定下一步。这允许把错误相关性明确写入模型，并把所有自适应组织放进同一个比较范围。
+
+第一条结果刻画永久障碍：两个需要不同答案的情境，如果在所有允许操作下都产生相同分布，任何组织都无法将它们分开。第二条结果给出建设性方向：用一份诊断分配覆盖所有目标冲突对，可以得到统一的可靠性上界。第三条结果利用自适应实验的相对熵账本，约束整个组织类别。在固定有限情境数和有界似然比的范围内，诊断覆盖率由此同时控制充分预算与必要预算的数量级。
+
+带共同偏差的二元模型把这些结果变成可计算的例子。额外操作是否有用，由它能否打破混淆类决定；中间表示能否构造，可以通过有限域线性关系判断。通信章研究哪些消息保存诊断能力，哪些压缩会把可解任务重新变成不可解任务，以及何时已有证据足以结束交流。
+
+统计实验、主动检验和有噪计算提供了数学基础。经典工具在使用处归属；本书展开有限模型中的连接、推导和可复算实例。全书的统一性由几条相互调用的结果承担：不可辨别类、诊断覆盖率、自适应下界，以及保存这些量的通信与表示变换。
+
+\section*{阅读路线}
+第1--2章建立对象与永久障碍；第3--5章给出覆盖率、上下界和主定理；第6章分析共同偏差与校准；第7章独立研究通信；第8章讨论表示、计算和模型误差；第9--10章据此解释认知现象并提出未解决的问题。附录提供基础工具、练习解答和核验说明。
+
+\chapter*{符号与约定}
+\addcontentsline{toc}{chapter}{符号与约定}
+\begin{longtable}{p{0.23\textwidth}p{0.70\textwidth}}
+\toprule
+符号 & 含义\\\midrule
+$v,\II_e,e$ & 思维片段、有序输入和一次推理操作。\\
+$\LL_t,\Pi$ & 操作记录，以及决定后续操作的推理链模式。\\
+$\theta\in\Theta$ & 未知情境，可以包含答案和共同错误因素。\\
+$g(\theta)$ & 该情境下任务要求的答案。\\
+$a,K_a(v\mid\theta)$ & 基本实验，以及它产生片段的概率。\\
+$d,m$ & 情境数，以及任一情境最多有多少目标不同的备选情境。\\
+$h_a(\theta,\theta')$ & 一个实验对两个情境的Hellinger区别量。\\
+$\kap,\kapK$ & 全局诊断覆盖率与局部自适应KL参数。\\
+$N_a(n),T_n$ & 实验调用次数与完整运行记录。\\
+$n^*(\delta)$ & 最坏情境错误率不超过$\delta$的最少调用数。\\
+$\mu(\calA,l)$ & 二元线性模型中的结构覆盖率。\\
+\bottomrule
+\end{longtable}
+除特别说明，集合有限，$d\ge2$，$g$至少取两个值，$0<\delta<1/2$。$\ln$和$\KL$使用自然单位；$\log_2$、$H_2$和$I_2$使用bit。$\PP_\theta$表示固定真实情境后的运行概率。节点直接表示片段，不另设一套内容变量。目标可以由外部给出，每次操作无需重新生成目标。

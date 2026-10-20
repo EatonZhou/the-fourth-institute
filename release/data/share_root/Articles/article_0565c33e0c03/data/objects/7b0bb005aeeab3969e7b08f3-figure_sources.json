@@ -1,0 +1,6 @@
+{
+  "comparison": "all nine predeclared paths",
+  "animation": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/f20a1e36-a713-4e82-8b87-bac39e29c07b/raw/202610199721_literal_q/animation.npz",
+  "stride": 3,
+  "every_native_frame_saved": true
+}

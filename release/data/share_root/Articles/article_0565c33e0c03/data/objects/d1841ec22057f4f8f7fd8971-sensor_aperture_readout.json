@@ -1,0 +1,42 @@
+[
+  {
+    "context": "compact_p512",
+    "native": 0,
+    "noise_draws": 256,
+    "rms_error": 0.0393792618458687,
+    "median_error": 0.03420528064163376,
+    "effective_sensor_weight_count": 55.54826161676111,
+    "physical_support_cells": 255,
+    "notes": "Frozen actual rho; target 3 cells from own pose; measurement operator only, not an independent body-outcome intervention."
+  },
+  {
+    "context": "compact_p768",
+    "native": 0,
+    "noise_draws": 256,
+    "rms_error": 0.050307731207880936,
+    "median_error": 0.04155677281206039,
+    "effective_sensor_weight_count": 42.650518163360736,
+    "physical_support_cells": 195,
+    "notes": "Frozen actual rho; target 3 cells from own pose; measurement operator only, not an independent body-outcome intervention."
+  },
+  {
+    "context": "soft_p512",
+    "native": 0,
+    "noise_draws": 256,
+    "rms_error": 0.014106961813298203,
+    "median_error": 0.011624127752183022,
+    "effective_sensor_weight_count": 173.810695199002,
+    "physical_support_cells": 254,
+    "notes": "Frozen actual rho; target 3 cells from own pose; measurement operator only, not an independent body-outcome intervention."
+  },
+  {
+    "context": "soft_p768",
+    "native": 0,
+    "noise_draws": 256,
+    "rms_error": 0.015492503369750178,
+    "median_error": 0.013695577250458633,
+    "effective_sensor_weight_count": 154.76928631108777,
+    "physical_support_cells": 254,
+    "notes": "Frozen actual rho; target 3 cells from own pose; measurement operator only, not an independent body-outcome intervention."
+  }
+]

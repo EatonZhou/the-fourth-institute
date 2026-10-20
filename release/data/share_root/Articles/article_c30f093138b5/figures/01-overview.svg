@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600" viewBox="0 0 1200 600">
+<rect width="1200" height="600" fill="white"/>
+<text x="28" y="41.56" text-anchor="start" font-family="Noto Sans CJK SC" font-size="26" font-weight="700" fill="#275D85">整体框架：人的方向、团队工作与真实结果</text>
+<polyline points="28,62 1172,62" fill="none" stroke="#91A2AE" stroke-width="1.7"/>
+<text x="30" y="583.0300000000001" text-anchor="start" font-family="Noto Sans CJK SC" font-size="13" font-weight="400" fill="#61717E">设计示意 · 实线：工作或依赖关系；虚线：反馈或关联；不表示实验测量</text>
+<rect x="35" y="105" width="205" height="155" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="137.5" y="131.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">人类目标</text>
+<text x="137.5" y="183.71" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">方向与偏好</text>
+<text x="137.5" y="203.77" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">关键约束</text>
+<text x="137.5" y="223.83" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">成果体验</text>
+<rect x="305" y="105" width="245" height="155" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="427.5" y="131.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">语义与工作状态</text>
+<text x="427.5" y="183.71" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">目标／规范／设计</text>
+<text x="427.5" y="203.77" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">任务／职责／依赖</text>
+<text x="427.5" y="223.83" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">内容／版本／证据</text>
+<rect x="615" y="105" width="245" height="155" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="737.5" y="131.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">自主开发组织</text>
+<text x="737.5" y="183.71" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">委派与上下文</text>
+<text x="737.5" y="203.77" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">模块实现与协作</text>
+<text x="737.5" y="223.83" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">验证与局部交付</text>
+<rect x="925" y="105" width="240" height="155" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="1045.0" y="131.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">实际软件与使用</text>
+<text x="1045.0" y="183.71" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">功能与运行状态</text>
+<text x="1045.0" y="203.77" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">用户任务与故障</text>
+<text x="1045.0" y="223.83" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">变化后的真实结果</text>
+<polyline points="240,183 305,183" fill="none" stroke="#275D85" stroke-width="1.7"/>
+<polygon points="305,183 296.6420182798114,186.33828422471686 296.6420182798114,179.66171577528314" fill="#275D85"/>
+<polyline points="550,183 615,183" fill="none" stroke="#275D85" stroke-width="1.7"/>
+<polygon points="615,183 606.6420182798114,186.33828422471686 606.6420182798114,179.66171577528314" fill="#275D85"/>
+<polyline points="860,183 925,183" fill="none" stroke="#275D85" stroke-width="1.7"/>
+<polygon points="925,183 916.6420182798114,186.33828422471686 916.6420182798114,179.66171577528314" fill="#275D85"/>
+<rect x="305" y="350" width="555" height="150" fill="#EDF5F1" stroke="#26756C" stroke-width="1.5"/>
+<text x="582.5" y="376.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#26756C">Workbench：理解与控制共处</text>
+<text x="582.5" y="446.27000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">按当前问题选择表达 → 体验／探索／比较 → 对象上的操作与反馈</text>
+<polyline points="1045,260 1045,423 860,423" fill="none" stroke="#26756C" stroke-width="1.7"/>
+<polygon points="860,423 868.3579817201886,419.66171577528314 868.3579817201886,426.33828422471686" fill="#26756C"/>
+<polyline points="305,423 135,423 135,260" fill="none" stroke="#26756C" stroke-width="1.7"/>
+<polygon points="135,260 138.33828422471683,268.3579817201886 131.66171577528317,268.3579817201886" fill="#26756C"/>
+<polyline points="550,350 550,300 427,300 427,260" fill="none" stroke="#26756C" stroke-width="1.7" stroke-dasharray="7 5"/>
+<polygon points="427,260 430.33828422471686,268.3579817201886 423.66171577528314,268.3579817201886" fill="#26756C"/>
+<text x="1015.0" y="352.77000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#26756C">观察与验证证据</text>
+</svg>

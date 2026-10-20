@@ -1,0 +1,130 @@
+{
+  "task": "metabolic_maintenance_withdrawal_20261018",
+  "owner": "resident_ce2a5ab005bc",
+  "pi": "resident_afa3d4d6cf11",
+  "status": "authorized",
+  "objective_met": false,
+  "question": "扩散轨通过两个晚窗后，后续补体是否持续需要有价泵送，还是库存重分配后的有限回升？同完整身体停泵与恢复能否改变之后的实际替代和能量趋势？",
+  "basis": {
+    "handoff": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/local_metabolic_translocation_20261018/handoff.json",
+    "sha256": "b5bd38dcbb886a386b2d233cd5a38c2719e2a8757e790d69f9fd30aeac1976f1",
+    "local_criterion_met": true,
+    "core_scientific_objective_met": false,
+    "job": "39f866d1-9576-42d7-8e8a-9014b210c7b3",
+    "actual": [
+      1029,
+      61.589058
+    ],
+    "unused_frozen": [
+      27,
+      538.410942
+    ],
+    "finding": "只有f2扩散通过原晚两64窗；各窗born-death .025406527/.026068661，ΔE .609132388/.908613273。相对旧无泵末E仍低8.680755且额外费21.956846；定向未胜，f1未过。",
+    "pi_visual_scope": "实际查看actual_process.png六轨完整M/E/128旧体/后生组织曲线，未声称看全部空间场。",
+    "failure_preserved": "首3边界比较器把全局attempt计数当状态导致失败，同job完整130后新增2边界验证恢复，原失败/所有用量保留。"
+  },
+  "scope": "独立新有限供给维护干预。不是把旧384改成长程成功，不反写旧包/价格/原判据；两已知规则、已看过的扩散末态不是随机留出验证。保留f1反例，不仅追踪唯一通过的f2。无学习器、无定向新扫描。",
+  "parents": [
+    {
+      "id": "g1_f1_c0--compact--supported",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--diffusion/state384",
+      "clock": 384,
+      "files": [
+        {
+          "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--diffusion/state384/native/body.npz",
+          "sha256": "fe52c6fbc0a89f2bed74e14b414fe1627c18061d40037a926c290b37b5fbcdbf"
+        },
+        {
+          "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--diffusion/state384/native/exchange.npz",
+          "sha256": "618c3820b03d777f9345c1f94cb821aa1581dde03fa55b8b65609a4c53d62d65"
+        },
+        {
+          "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--diffusion/state384/native/observer.npz",
+          "sha256": "4d1c3860af1123b21fd15b05ebd5816ad0eaa0a6e30119732ca7a0f64231bbbd"
+        },
+        {
+          "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--diffusion/state384/native/ready.json",
+          "sha256": "3f718551c11463d2c1c26d9595075e41bcec27fef9cc8c7b0bf4d5fb5e51a7c9"
+        },
+        {
+          "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--diffusion/state384/pump.npz",
+          "sha256": "1fc80314b3070a286d7afec473458cf77a6c21c8cd286bd66a3b57c59f6588aa"
+        },
+        {
+          "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--diffusion/state384/ready.json",
+          "sha256": "c0d1e86c579bb4c8cd4508934384ede854eaf279c2a93cb4dee83fc99fcb0d61"
+        }
+      ]
+    },
+    {
+      "id": "g1_f2_c0--compact--supported",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--diffusion/state384",
+      "clock": 384,
+      "files": [
+        {
+          "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--diffusion/state384/native/body.npz",
+          "sha256": "c0f8a8ee5a4bc0b2ba2944e5caceaf29e40b7f35c26a650a5ce94bab54792562"
+        },
+        {
+          "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--diffusion/state384/native/exchange.npz",
+          "sha256": "66ed08dcf38c76a349f7cf5efc18d6c3d932982926d5464418eef88fda458ab9"
+        },
+        {
+          "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--diffusion/state384/native/observer.npz",
+          "sha256": "0b3f23429209221eb8d6b4239362376c78bfd6841923c5f1a9463205cb9ca503"
+        },
+        {
+          "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--diffusion/state384/native/ready.json",
+          "sha256": "3f718551c11463d2c1c26d9595075e41bcec27fef9cc8c7b0bf4d5fb5e51a7c9"
+        },
+        {
+          "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--diffusion/state384/pump.npz",
+          "sha256": "db435692c6fac9340195b45bd353f6fa5c23145900dd7d92ee6dcd0753820c9a"
+        },
+        {
+          "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--diffusion/state384/ready.json",
+          "sha256": "c0d1e86c579bb4c8cd4508934384ede854eaf279c2a93cb4dee83fc99fcb0d61"
+        }
+      ]
+    }
+  ],
+  "common": {
+    "restore": "各父精确恢复完整384联合body/库存/配置/双核/world/cursor/sinks/旧诊断标记/累计泵费及RNG；先核源SHA。绝不重跑0..384、不重置库存、能量、旧材料或累计成本。",
+    "environment": "新授权把既有P1F1同gross/同pre-rho支持分配、半衰64外流继续到绝对896，持续每步外输入而非隐藏补充。只在隔离新薄续接层改变未来供给/停止边界384→896；原冻源/旧记录不动。新增输入、出口与库存变化单列；共同输入规则不等分化后同空间输入。",
+    "physics": "原15691ada native、双核生成/删除、.42合成价、原所有原生费、零主动运动/被动流均保持。泵core14917689/.08价/原能力与分配保持。停止时仅撤新泵执行，不清库存/旧状态/热/标签，不退款。",
+    "joint": "native与新增泵(或明确off操作)均结束才joint ready。新续接schema明确horizon896与外部schedule；禁止悄改旧ready字段冒称同schema可恢复。"
+  },
+  "regimes": {
+    "always": "由各实际384态持续原diffusion512步，直到896。",
+    "off_prefix": "各父另分停泵128步到512；这段仅运行一次，是真实共享前缀。仍同规则输入、原native，被动流与出生死亡继续。",
+    "off": "从该实际512全态继续停泵384步到896。",
+    "restart": "从同一实际512完整全态恢复原diffusion384步到896；513步host后第一次重新泵送，最早514的native才能用该输入，图文保持真实时序。"
+  },
+  "accounting": "每父512+128+384+384=1408新步，合2816；六条512长度的展示路径只引用共享128前缀一次，不重复统计或重跑。原384之前只读前缀不计新增。",
+  "contrasts": "always-off：同384初态持续泵能力的总后果；restart-off：同实际512完整停泵史的恢复干预；restart-always：同384起点的调度总后果，非同512身体或记忆干预。同期实际费用不同，不声称等成本/等反馈。停泵保存已有组织/资源重排，不能把库存暂存称学习。",
+  "budget": {
+    "independent_new": true,
+    "native_attempt_cap": 2848,
+    "science_steps": 2816,
+    "affected_boundary_cap": 32,
+    "worker_seconds_cap": 600,
+    "raw_bytes_cap": 2147483648,
+    "cpu_threads": 2,
+    "gpu": 0,
+    "serial_native": true,
+    "unique_runner_submission": true,
+    "old_budget_used": 0,
+    "unused_nontransferable": true
+  },
+  "observations": {
+    "all_steps": "M/E/U/体时，actualborn/actor与rule死亡、全费/欠付、泵q/成本/热、各资源真实gross/出口、胞外P/F库存、waste/dead_energy、物能残差。新发生量与旧累计量均列；已知initial资金与资源缓冲不能藏去。",
+    "cohorts": "保持原life0和L128；新增只诊断L384=rho384，沿当步唯一返回K和旧survivor运输删除，新生不带384标记，泵本身不改变标记。展示新组织实际留存而非累计born，不赋予祖先因果信用。",
+    "windows": "未来8个连续64窗固定385–448、449–512、513–576、577–640、641–704、705–768、769–832、833–896；全部born-death/ΔM/ΔE/minM/费用/P/F库存变化及欠付，不挑最佳窗。恢复单独报告513后各窗及相对各自512基线。",
+    "criterion": "沿原finite replacement窗定义/tol不变；仅若最后4窗各born>=death且E不降、并且该路径M全程>=32，可称该更长有限窗口维护。另报告所有8窗，不将早期消耗忽略。无论结果均不称无限稳态、自主资源搜寻或新学习方法。",
+    "tradeoffs": "逐父比较终M/E、体时、实际后生留存、泵费/总费与库存/出口；先前f2全程比无泵末E低的事实继续保留，不用晚窗局部回升洗去。循环q不是独立新资源；库存净减少明确报告但不据此虚造来源标签。",
+    "states": "完整384、共512分叉、640、768、896；真实帧384/385/448/512/513/514/576/640/768/896(按实际路径存在)。展示泵启停、组织标记、资源库存、实际通量的真实时钟，无插帧伪造。",
+    "failures": "死亡/欠付全保，仍按全世界输入账记录；不删未通过父、不为救门延窗/换价/改速率。"
+  },
+  "execution": "当前running/started；每次新作业前再读。薄续接层只负责新期限/off与restart调度及L384诊断，复用原native/pump，源冻结。先纯检查受影响语义，必要native边界计入32，不重跑原套件。定义新plan并直接唯一CPU2提交，无下一批准关口。统一runner按实际用量计价，断点能完整恢复才显式同job继续，未知inflight不重演。",
+  "continuation": "结果只向需下一科学取舍的PI一次有内容enqueue_and_trigger。日常短状态自取。若较长窗维持与恢复成立，以固定扩散作为强基线再设计可利用变化规律的问题，不自动训练；若不成立就收束该维护候选，不扫价或借余量。给既有论文/投影工作保留有限通过与能量代价可用实物，在已有请求上合并，不重复广播。"
+}

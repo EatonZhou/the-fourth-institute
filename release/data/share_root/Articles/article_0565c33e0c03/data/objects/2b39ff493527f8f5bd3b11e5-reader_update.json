@@ -1,0 +1,107 @@
+{
+  "version": "0.48.2",
+  "article_id": "article_0565c33e0c03",
+  "article_url": "/resource/article?item=article_0565c33e0c03",
+  "local_pdf": "${share_root}/Articles/article_0565c33e0c03/manuscript.pdf",
+  "headline": "严格局部经历能建立行动；强对照厘清了学习与材料作用的边界",
+  "stage": "完整长文围绕标量动作主证据重写：7主图、5主表、52篇正文引用，保留真实身体演化过程；持续研究，尚未证明一般方法优势。",
+  "findings": [
+    {
+      "claim": "只有当地实付标量与随身体运输的内部状态，也能取得可用行动；反转能力仍有限。",
+      "comparison": "两个条件取得2/2、奖励反转1/2、随后无新反馈2/2。保留后效不补记反转成功；清除内容仍1/2通过，旋转内容0/2。K只负责物理运输，学习器不读梯度、场位置或donor位移。",
+      "figures": [
+        1
+      ]
+    },
+    {
+      "claim": "执行关系变化后，持续估计能恢复行动，但便宜的固定对照同样成功。",
+      "comparison": "同父继续更新2/2、冻结0/2；获授相同初始方向的固定run/tumble也2/2，且运动费更低。10条life0与10同父分支不当20独立重复。",
+      "figures": [
+        1
+      ]
+    },
+    {
+      "claim": "有用经历可以留在随材料运输的局部历史中；本轮无需可塑的循环增益。",
+      "comparison": "固定六事件局部记忆配普通delta读出，在平衡初始映射中取得60/64，陌生间隔及再训练后均16/16；中央历史表后两项也16/16，可塑增益为10/16和8/16。反转学习期的13/32、16/32、9/32原错误全部保留。",
+      "tables": [
+        1,
+        2
+      ]
+    },
+    {
+      "claim": "学得的材料响应系数确实改变身体运动，但普通读出可完全复现这一作用。",
+      "comparison": "三条实际历程中，固定材料加在线读出与可塑材料的身体、能量和行动最大差约4.27e−14；不支持新增材料能力。该比较允许当地位移观察，属于比主动作实验更充分的信息条件。",
+      "main_result_page": 14
+    },
+    {
+      "claim": "接触传回的后果信息确实可达且保留动作排序，当前普通规则却未可靠利用。",
+      "comparison": "新增六批中，三父只切信息且停写，物理轨迹完全相同；三新身体的正负动作在两资源位置产生相反摄取排序，传回信号保序。平均年龄对齐3/3更差，慢交互仅1/3改善；解除饱和后扩散反馈仍3/3低于无信号。早期接触内容的小效应与补偿等价保留；移动节点非CA、无birth，小样本不支持一般不可能性或新算法优势。",
+      "main_result_page": 15
+    },
+    {
+      "claim": "取得的维护内容在等量购料时有有限用途，却未显示一般净优势。",
+      "comparison": "相对混合内容的损伤减少16.6%/5.1%；关系改变后，学习规则却比即时生理对照多损伤7.51%/4.83%。稳定关系下的时序收益保留，不能写成反转成功或全部费用相等。",
+      "figures": [
+        7
+      ]
+    },
+    {
+      "claim": "完整图组保留真实身体过程与宿主之间的能力边界。",
+      "comparison": "受控学习、时间信用、自主遭遇、资源权衡和新生材料结果并列呈现。原Lenia生成、无birth保守运动身体、外供密度调节材料CA保持分开；尚未建立同一身体中的学习与持续再生。",
+      "figures": [
+        2,
+        3,
+        4,
+        5,
+        6
+      ]
+    }
+  ],
+  "reading_guide": {
+    "main_pages": 57,
+    "main_figures": 7,
+    "main_table": 5,
+    "references_cited_in_main": 52,
+    "supplementary_figures": 11,
+    "figures": "${share_root}/Articles/article_0565c33e0c03/work/longform_v047/data/main_figure_register.json",
+    "total_pages": 188,
+    "supplementary_tables": 94,
+    "main_figure_pages": {
+      "1": 6,
+      "2": 8,
+      "3": 11,
+      "4": 24,
+      "5": 29,
+      "6": 30,
+      "7": 36
+    }
+  },
+  "actual_animation_sources": {
+    "controlled_learning": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/lifetime_cue_reversal_20261019/actual_learning_reversal.gif",
+    "fixed_field_reversal": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_contact_reversal_20261019/fixed_arena_reversal_actual.gif",
+    "all_fixed_field_conditions": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_contact_reversal_20261019/all_conditions_actual.gif",
+    "recontact_turning": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_recontact_learning_20261019/actual_recontact.gif",
+    "association_readout_recontact": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/association_readout_recontact_20261019/actual_recontact.gif",
+    "action_coordination": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/local_signal_action_coordination_20261019/actual_coordination.gif",
+    "coordinated_write_freeze_retention": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/coordinated_feedback_retention_20261019/actual_write_freeze_retention.gif",
+    "propulsion_expression": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/association_polarity_expression_20261019/actual_expression.gif",
+    "value_conditioned_propulsion_brake": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/value_conditioned_propulsion_brake_20261019/actual_acquisition_reversal.gif",
+    "local_motor_content": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/local_motor_expression_20261019/actual_expression.gif",
+    "local_motor_learning": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_action_credit_20261019/actual_local_motor.gif",
+    "young_newborn_content": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/young_regenerative_learning_opportunity_20261019/synthesis/newborn_content_actual.gif",
+    "acquired_gain": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/state_gated_motor_gain_20261019/actual_sequence.gif",
+    "gain_content": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/acquired_gain_content_20261019/actual_sequence.gif",
+    "scalar_acquisition_and_reward_reversal": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/scalar_response_estimation_20261019/actual_sequence.gif",
+    "scalar_execution_change_comparisons": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/scalar_actuator_relearning_20261019/actual_sequence.gif",
+    "scalar_all_methods": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/scalar_actuator_relearning_20261019/all_methods_actual.gif",
+    "selected_action_history": "${share_root}/Projects/元胞自动机研究/src/research/results/temporal_history_selected_action_20261019/continuous_body.gif",
+    "strong_maintenance": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/predictive_strong_physiology_20261019/actual_continuous.gif",
+    "material_carried_history": "${share_root}/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_balanced_20261019/continuous_body_state.gif",
+    "physical_response_state": "${share_root}/Projects/元胞自动机研究/src/research/results/physical_experience_comparison_20261019/continuous_response.gif",
+    "contact_network": "${share_root}/Projects/元胞自动机研究/src/research/results/persistent_contact_remodeling_20261019/continuous_contacts.gif",
+    "contact_feedback": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_reachability_20261019/continuous_signal.gif"
+  },
+  "default_preview_status": "同一Article默认预览已同步v0.48.2；188页与作者冻结稿逐页一致，新增图文已实看。",
+  "publication_record": "${share_root}/Articles/article_0565c33e0c03/work/longform_v047/data/publication_record.json",
+  "default_pdf_url": "/api/articles/article_0565c33e0c03/pdf"
+}

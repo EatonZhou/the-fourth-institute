@@ -1,0 +1,33 @@
+<section class="semanticMatrix" aria-label="模型与硬件优化矩阵">
+  <div class="portalToolbar paneHead matrixToolbar matrixCompactToolbar">
+    <h2>模型 × 硬件</h2>
+    <div class="matrixCompactFilters">
+      <div class="portalField"><label for="matrixSearch">模型</label><input id="matrixSearch" type="search" placeholder="搜索模型" autocomplete="off"></div>
+      <div class="portalField"><label for="matrixHardware">硬件</label><select id="matrixHardware"><option value="all">全部平台</option></select></div>
+    </div>
+    <div class="matrixActions"><button type="button" class="portalButton" id="matrixRefresh">刷新数据</button><button type="button" class="portalButton is-quiet" id="matrixReset">清除筛选</button><button type="button" class="portalButton is-quiet" id="matrixLineage">打开 Lineage</button></div>
+  </div>
+  <div class="matrixCompactMeta">
+    <span id="matrixDimensions" aria-live="polite">正在读取真实模型目录…</span>
+    <span class="matrixMuted matrixReadingHint">延迟 ms · 点击单元格查看探索详情</span>
+    <details class="matrixHelp">
+      <summary>数据口径</summary>
+      <div class="paneBody matrixHelpBody">
+        <p id="matrixCoverage"></p>
+        <p class="matrixMuted" id="matrixUpdated"></p>
+        <p id="matrixNotice">空白表示未登记可用测量，不代表性能为零。负责人运行状态不等于实验完成度。</p>
+        <p class="matrixMuted">平台实验及方法报告在点击后只读加载；候选、未达标与缺测各保留原说明。</p>
+      </div>
+    </details>
+  </div>
+  <p role="alert" id="matrixError" hidden></p>
+  <div class="matrixScroll" role="region" aria-label="模型与硬件性能" tabindex="0"><table class="performanceMatrix" id="performanceMatrix"><thead></thead><tbody><tr><td>正在加载…</td></tr></tbody></table></div>
+  <dialog id="matrixDetail" aria-labelledby="matrixDetailTitle">
+    <div class="paneHead"><div><h2 id="matrixDetailTitle"></h2><p class="matrixMuted" id="matrixDetailSubtitle"></p></div><button type="button" class="portalButton is-icon" id="matrixClose" aria-label="关闭详情">×</button></div>
+    <div class="paneBody matrixDetailBody"><div id="matrixDetailSummary"></div><div class="matrixTabs" role="tablist" aria-label="单元格详情"><button type="button" class="portalButton" role="tab" id="matrixMethodsTab" aria-controls="matrixMethods" aria-selected="false" data-tab="methods">方案性能</button><button type="button" class="portalButton" role="tab" id="matrixJourneyTab" aria-controls="matrixJourney" aria-selected="false" data-tab="journey">探索图谱</button><button type="button" class="portalButton" role="tab" id="matrixResultsTab" aria-controls="matrixResults" aria-selected="true" data-tab="results">性能对比</button><button type="button" class="portalButton" role="tab" id="matrixEvidenceTab" aria-controls="matrixEvidence" aria-selected="false" data-tab="evidence">原始证据</button></div>
+      <section id="matrixResults" role="tabpanel" aria-labelledby="matrixResultsTab"></section>
+      <section id="matrixMethods" role="tabpanel" aria-labelledby="matrixMethodsTab" hidden></section>
+      <section id="matrixJourney" role="tabpanel" aria-labelledby="matrixJourneyTab" hidden></section><section id="matrixEvidence" role="tabpanel" aria-labelledby="matrixEvidenceTab" hidden></section>
+    </div>
+  </dialog>
+</section>

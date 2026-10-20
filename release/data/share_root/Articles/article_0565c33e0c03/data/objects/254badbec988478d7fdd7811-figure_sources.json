@@ -1,0 +1,28 @@
+{
+  "figure": "channel_process.png",
+  "fields": [
+    "E",
+    "U",
+    "received_mass",
+    "message_mass_alive"
+  ],
+  "path_clock": "offset1..256 = postclock129..384; withdrawal starts offset129",
+  "sources": [
+    {
+      "new": "/data/dataset/lenia-research/lineage_75e3399f4877/local_terminal_feedback_20261018/b63cdc7c-3f38-4a43-af6e-9c481c419fa9/genome_0ac80448a534dc953505--development--shear_x--material--128/steps.csv",
+      "old": "/data/dataset/lenia-research/lineage_75e3399f4877/native_investment_action_20261018/ae909c85-6b64-4528-870c-66b8794c3c54/genome_0ac80448a534dc953505--development--shear_x--material--128/steps.csv"
+    },
+    {
+      "new": "/data/dataset/lenia-research/lineage_75e3399f4877/local_terminal_feedback_20261018/b63cdc7c-3f38-4a43-af6e-9c481c419fa9/genome_0ac80448a534dc953505--heldout_rotated--shear_x--material--128/steps.csv",
+      "old": "/data/dataset/lenia-research/lineage_75e3399f4877/native_investment_action_20261018/ae909c85-6b64-4528-870c-66b8794c3c54/genome_0ac80448a534dc953505--heldout_rotated--shear_x--material--128/steps.csv"
+    },
+    {
+      "new": "/data/dataset/lenia-research/lineage_75e3399f4877/local_terminal_feedback_20261018/b63cdc7c-3f38-4a43-af6e-9c481c419fa9/genome_6bd5bfd2f629f9414376--development--shear_x--material--128/steps.csv",
+      "old": "/data/dataset/lenia-research/lineage_75e3399f4877/native_investment_action_20261018/ae909c85-6b64-4528-870c-66b8794c3c54/genome_6bd5bfd2f629f9414376--development--shear_x--material--128/steps.csv"
+    },
+    {
+      "new": "/data/dataset/lenia-research/lineage_75e3399f4877/local_terminal_feedback_20261018/b63cdc7c-3f38-4a43-af6e-9c481c419fa9/genome_6bd5bfd2f629f9414376--heldout_rotated--shear_x--material--128/steps.csv",
+      "old": "/data/dataset/lenia-research/lineage_75e3399f4877/native_investment_action_20261018/ae909c85-6b64-4528-870c-66b8794c3c54/genome_6bd5bfd2f629f9414376--heldout_rotated--shear_x--material--128/steps.csv"
+    }
+  ]
+}

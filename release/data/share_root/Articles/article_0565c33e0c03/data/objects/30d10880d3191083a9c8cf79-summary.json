@@ -1,0 +1,390 @@
+{
+  "schema": "lenia.fast-slow-summary.v1",
+  "screen_job": "16b3b143-0a79-419c-acfc-fb74ff6ee7dc",
+  "continuation_job": "b883f316-75ab-4bdc-9fd6-834b4a7cf335",
+  "original_reference_job": "50a1ca66-ba15-47a5-8b50-3494d49e4589",
+  "conditions": 28,
+  "new_short_trajectories": 25,
+  "reused_short_baselines": 3,
+  "continuations": 6,
+  "end_branch_step": 2048,
+  "simulation_updates_in_analysis": 0,
+  "source_result_paths": [
+    "${share_root}/Projects/元胞自动机研究/src/runs/jobs/16b3b143-0a79-419c-acfc-fb74ff6ee7dc/result.json",
+    "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b883f316-75ab-4bdc-9fd6-834b4a7cf335/result.json",
+    "${share_root}/Projects/元胞自动机研究/src/runs/jobs/50a1ca66-ba15-47a5-8b50-3494d49e4589/result.json"
+  ],
+  "selection_reason": "Two b04 ring transients at distinct strength/recovery; moderate b02/b07 spot dynamics; matched new-seed coupled/uncoupled pair. Selected from the short batch, not a random sample.",
+  "checkpoint_boundary_max_error": 0.0,
+  "baseline_2048": {
+    "b02": {
+      "tail_l1": 0.15132732995223874,
+      "final_mass": 209.4360838628275,
+      "saturated_mass_fraction_ge_099": 0.964494734022539,
+      "source_job": "50a1ca66-ba15-47a5-8b50-3494d49e4589",
+      "branch_step": 2048,
+      "lifetime_step": 2112
+    },
+    "b04": {
+      "tail_l1": 2.2350095130801648e-06,
+      "final_mass": 193.2724738228952,
+      "saturated_mass_fraction_ge_099": 0.9934161663183283,
+      "source_job": "50a1ca66-ba15-47a5-8b50-3494d49e4589",
+      "branch_step": 2048,
+      "lifetime_step": 2112
+    },
+    "b07": {
+      "tail_l1": 0.0,
+      "final_mass": 236.0,
+      "saturated_mass_fraction_ge_099": 1.0,
+      "source_job": "50a1ca66-ba15-47a5-8b50-3494d49e4589",
+      "branch_step": 2048,
+      "lifetime_step": 2112
+    }
+  },
+  "results": [
+    {
+      "id": "b02-g2-t32",
+      "metrics": {
+        "final_mass": 189.98686169429666,
+        "min_mass": 189.9533917858901,
+        "max_mass": 190.6138167848262,
+        "tail_window": 128,
+        "tail_l1": 5.091451927385165,
+        "tail_relative_l1": 0.026761629657609046,
+        "tail_mass_cv": 0.0008402334740705972,
+        "saturated_mass_fraction_ge_099": 0.08410391121615932,
+        "mean_slow": 0.18579455454616695,
+        "status": "changing",
+        "status_is_finite_observation": true,
+        "dense_tail_mean_l1_by_lag": {
+          "1": 5.093130794818977,
+          "2": 10.175092934268884,
+          "4": 20.27274453028146,
+          "8": 40.00418688705053,
+          "16": 76.35325448582425,
+          "32": 139.12324695701633,
+          "64": 219.88751029172818
+        }
+      },
+      "screen_metrics": {
+        "final_mass": 189.9830440808861,
+        "min_mass": 185.3197189568037,
+        "max_mass": 206.91733698131222,
+        "tail_window": 64,
+        "tail_l1": 4.817967274938043,
+        "tail_relative_l1": 0.025400411780790857,
+        "tail_mass_cv": 0.0020584465697443643,
+        "saturated_mass_fraction_ge_099": 0.06316353155648433,
+        "mean_slow": 0.18511741147119604,
+        "status": "changing",
+        "status_is_finite_observation": true
+      },
+      "translation": {
+        "lag_steps": 32,
+        "raw_l1": 139.12324695701633,
+        "aligned_l1": 5.943135839496054,
+        "aligned_over_raw": 0.0427184957905148,
+        "modal_integer_dy_dx": [
+          1,
+          0
+        ],
+        "caveat": "L2-optimal integer translations; deformation and subpixel displacement are not separated completely."
+      },
+      "first_mass_below_one_step": null,
+      "source_rule": {
+        "coupling": 2.0,
+        "recovery_steps": 32.0,
+        "beta": 0.9978280288921647
+      },
+      "source_checkpoint": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b883f316-75ab-4bdc-9fd6-834b4a7cf335/candidates/b02-g2-t32/checkpoint.npz"
+    },
+    {
+      "id": "b04-g0.75-t32",
+      "metrics": {
+        "final_mass": 190.3260093313694,
+        "min_mass": 60.47131569902973,
+        "max_mass": 218.2513376121592,
+        "tail_window": 128,
+        "tail_l1": 0.00842710346933137,
+        "tail_relative_l1": 4.427577132985952e-05,
+        "tail_mass_cv": 2.8045213860031985e-05,
+        "saturated_mass_fraction_ge_099": 0.6935175865910462,
+        "mean_slow": 0.18587092568368796,
+        "status": "near_stationary",
+        "status_is_finite_observation": true,
+        "dense_tail_mean_l1_by_lag": {
+          "1": 0.012365677198874327,
+          "2": 0.02470410813776368,
+          "4": 0.04928619196030651,
+          "8": 0.09797600924006156,
+          "16": 0.19273966902073064,
+          "32": 0.3668116773022933,
+          "64": 0.622055168764962
+        }
+      },
+      "screen_metrics": {
+        "final_mass": 130.1048363408281,
+        "min_mass": 57.57530590659,
+        "max_mass": 217.81560471341533,
+        "tail_window": 64,
+        "tail_l1": 62.94100629072702,
+        "tail_relative_l1": 0.41093415074335043,
+        "tail_mass_cv": 0.16695896194508103,
+        "saturated_mass_fraction_ge_099": 0.0,
+        "mean_slow": 0.15408234408734206,
+        "status": "changing",
+        "status_is_finite_observation": true
+      },
+      "translation": {
+        "lag_steps": 32,
+        "raw_l1": 0.3668116773022933,
+        "aligned_l1": 0.3668116773022933,
+        "aligned_over_raw": 1.0,
+        "modal_integer_dy_dx": [
+          0,
+          0
+        ],
+        "caveat": "L2-optimal integer translations; deformation and subpixel displacement are not separated completely."
+      },
+      "first_mass_below_one_step": null,
+      "source_rule": {
+        "coupling": 0.75,
+        "recovery_steps": 32.0,
+        "beta": 0.9962953843612299
+      },
+      "source_checkpoint": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b883f316-75ab-4bdc-9fd6-834b4a7cf335/candidates/b04-g0.75-t32/checkpoint.npz"
+    },
+    {
+      "id": "b04-g2-t8",
+      "metrics": {
+        "final_mass": 0.0,
+        "min_mass": 0.0,
+        "max_mass": 219.5331333529873,
+        "tail_window": 128,
+        "tail_l1": 0.0,
+        "tail_relative_l1": 0.0,
+        "tail_mass_cv": 0.0,
+        "saturated_mass_fraction_ge_099": 0.0,
+        "mean_slow": 8.164682707838182e-68,
+        "status": "extinct",
+        "status_is_finite_observation": true,
+        "dense_tail_mean_l1_by_lag": {
+          "1": 0.0,
+          "2": 0.0,
+          "4": 0.0,
+          "8": 0.0,
+          "16": 0.0,
+          "32": 0.0,
+          "64": 0.0
+        }
+      },
+      "screen_metrics": {
+        "final_mass": 173.76719652622364,
+        "min_mass": 79.22322293954545,
+        "max_mass": 207.91206088005126,
+        "tail_window": 64,
+        "tail_l1": 61.4236816741648,
+        "tail_relative_l1": 0.4043533287141956,
+        "tail_mass_cv": 0.14020103591950261,
+        "saturated_mass_fraction_ge_099": 0.0,
+        "mean_slow": 0.1525806390519367,
+        "status": "changing",
+        "status_is_finite_observation": true
+      },
+      "translation": {
+        "lag_steps": 32,
+        "raw_l1": 0.0,
+        "aligned_l1": 0.0,
+        "aligned_over_raw": 0.0,
+        "modal_integer_dy_dx": [
+          0,
+          0
+        ],
+        "caveat": "L2-optimal integer translations; deformation and subpixel displacement are not separated completely."
+      },
+      "first_mass_below_one_step": 829,
+      "source_rule": {
+        "coupling": 2.0,
+        "recovery_steps": 8.0,
+        "beta": 0.9962953843612299
+      },
+      "source_checkpoint": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b883f316-75ab-4bdc-9fd6-834b4a7cf335/candidates/b04-g2-t8/checkpoint.npz"
+    },
+    {
+      "id": "b07-g2-t128",
+      "metrics": {
+        "final_mass": 215.39174954332614,
+        "min_mass": 213.09466659515772,
+        "max_mass": 221.61567411100467,
+        "tail_window": 128,
+        "tail_l1": 3.375388172861674,
+        "tail_relative_l1": 0.015587210735169464,
+        "tail_mass_cv": 0.003314767464516687,
+        "saturated_mass_fraction_ge_099": 0.33427464214694613,
+        "mean_slow": 0.2114214356103489,
+        "status": "changing",
+        "status_is_finite_observation": true,
+        "dense_tail_mean_l1_by_lag": {
+          "1": 3.3600231891694214,
+          "2": 6.7175366541058565,
+          "4": 13.433965949558944,
+          "8": 26.883664054341367,
+          "16": 53.588311200472205,
+          "32": 105.46866888721408,
+          "64": 197.9954436213832
+        }
+      },
+      "screen_metrics": {
+        "final_mass": 212.82333065960808,
+        "min_mass": 206.9186169169267,
+        "max_mass": 227.21000830935395,
+        "tail_window": 64,
+        "tail_l1": 3.3334697575313332,
+        "tail_relative_l1": 0.015912365773608862,
+        "tail_mass_cv": 0.007748529302880031,
+        "saturated_mass_fraction_ge_099": 0.2818477043574335,
+        "mean_slow": 0.1968687888524729,
+        "status": "changing",
+        "status_is_finite_observation": true
+      },
+      "translation": {
+        "lag_steps": 32,
+        "raw_l1": 105.46866888721408,
+        "aligned_l1": 15.15423335262271,
+        "aligned_over_raw": 0.14368469340243897,
+        "modal_integer_dy_dx": [
+          1,
+          0
+        ],
+        "caveat": "L2-optimal integer translations; deformation and subpixel displacement are not separated completely."
+      },
+      "first_mass_below_one_step": null,
+      "source_rule": {
+        "coupling": 2.0,
+        "recovery_steps": 128.0,
+        "beta": 0.9971127588115012
+      },
+      "source_checkpoint": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b883f316-75ab-4bdc-9fd6-834b4a7cf335/candidates/b07-g2-t128/checkpoint.npz"
+    },
+    {
+      "id": "newlocal-g0-t32",
+      "metrics": {
+        "final_mass": 194.15396747880436,
+        "min_mass": 69.2079306338191,
+        "max_mass": 226.0317628316142,
+        "tail_window": 128,
+        "tail_l1": 0.0012829300125961711,
+        "tail_relative_l1": 6.60778656492776e-06,
+        "tail_mass_cv": 1.141642772967666e-06,
+        "saturated_mass_fraction_ge_099": 0.9940564311211908,
+        "mean_slow": 0.0,
+        "status": "near_stationary",
+        "status_is_finite_observation": true,
+        "dense_tail_mean_l1_by_lag": {
+          "1": 0.0012665307050369206,
+          "2": 0.002533012692789941,
+          "4": 0.005065833198887624,
+          "8": 0.010130918938102524,
+          "16": 0.020259015676533165,
+          "32": 0.040508044297823405,
+          "64": 0.08098602017405575
+        }
+      },
+      "screen_metrics": {
+        "final_mass": 139.88566105771238,
+        "min_mass": 31.64493691351098,
+        "max_mass": 233.28133228727108,
+        "tail_window": 64,
+        "tail_l1": 68.83989823078234,
+        "tail_relative_l1": 0.43467140909609375,
+        "tail_mass_cv": 0.17102644353214141,
+        "saturated_mass_fraction_ge_099": 0.0,
+        "mean_slow": 0.0,
+        "status": "changing",
+        "status_is_finite_observation": true
+      },
+      "translation": {
+        "lag_steps": 32,
+        "raw_l1": 0.040508044297823405,
+        "aligned_l1": 0.040508044297823405,
+        "aligned_over_raw": 1.0,
+        "modal_integer_dy_dx": [
+          0,
+          0
+        ],
+        "caveat": "L2-optimal integer translations; deformation and subpixel displacement are not separated completely."
+      },
+      "first_mass_below_one_step": null,
+      "source_rule": {
+        "coupling": 0.0,
+        "recovery_steps": 32.0,
+        "beta": 0.9962953843612299
+      },
+      "source_checkpoint": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b883f316-75ab-4bdc-9fd6-834b4a7cf335/candidates/newlocal-g0-t32/checkpoint.npz"
+    },
+    {
+      "id": "newlocal-g2-t32",
+      "metrics": {
+        "final_mass": 37.59134626255879,
+        "min_mass": 27.489673064345943,
+        "max_mass": 221.13853023349273,
+        "tail_window": 128,
+        "tail_l1": 54.897281295288664,
+        "tail_relative_l1": 0.39355466217129875,
+        "tail_mass_cv": 0.2845753866303012,
+        "saturated_mass_fraction_ge_099": 0.0,
+        "mean_slow": 0.1177419704731984,
+        "status": "changing",
+        "status_is_finite_observation": true,
+        "dense_tail_mean_l1_by_lag": {
+          "1": 52.68248688979843,
+          "2": 52.825293317476394,
+          "4": 78.14086982518904,
+          "8": 112.93247030808017,
+          "16": 146.91126306638532,
+          "32": 150.11088099583407,
+          "64": 150.45252588148028
+        }
+      },
+      "screen_metrics": {
+        "final_mass": 184.99368567149727,
+        "min_mass": 31.459196587096365,
+        "max_mass": 221.82615327274533,
+        "tail_window": 64,
+        "tail_l1": 39.84548237113438,
+        "tail_relative_l1": 0.31361226067973974,
+        "tail_mass_cv": 0.26935558390078485,
+        "saturated_mass_fraction_ge_099": 0.0,
+        "mean_slow": 0.12910346715644577,
+        "status": "changing",
+        "status_is_finite_observation": true
+      },
+      "translation": {
+        "lag_steps": 32,
+        "raw_l1": 150.11088099583407,
+        "aligned_l1": 129.0463635429101,
+        "aligned_over_raw": 0.8596736138434323,
+        "modal_integer_dy_dx": [
+          15,
+          8
+        ],
+        "caveat": "L2-optimal integer translations; deformation and subpixel displacement are not separated completely."
+      },
+      "first_mass_below_one_step": null,
+      "source_rule": {
+        "coupling": 2.0,
+        "recovery_steps": 32.0,
+        "beta": 0.9962953843612299
+      },
+      "source_checkpoint": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b883f316-75ab-4bdc-9fd6-834b4a7cf335/candidates/newlocal-g2-t32/checkpoint.npz"
+    }
+  ],
+  "scientific_limits": [
+    "Finite deterministic examples, no novelty or learning claim.",
+    "Same archived trained A/m or same new seed within origin; q starts at zero.",
+    "q is environmental occupancy trace, not tissue-carried state; m is passive here.",
+    "dt=.1 only; temporal refinement and causal state reset not tested.",
+    "Six selected trajectories do not estimate survival or success rates for the full condition set."
+  ]
+}

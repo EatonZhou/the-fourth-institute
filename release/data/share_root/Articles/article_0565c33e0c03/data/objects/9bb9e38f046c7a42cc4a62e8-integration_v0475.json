@@ -1,0 +1,95 @@
+{
+  "version": "0.47.5",
+  "status": "published to the same Article and default preview",
+  "time": "2026-10-19T09:40:18.053945+00:00",
+  "source_handoff": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/local_motor_expression_20261019/direction_handoff.json",
+  "source_handoff_sha256": "c5f6ce24a7e2fdc7f76a352ffcd84d69be9bbff6e1cb96665eb39c71a5a1d299",
+  "ce_architecture_source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/joint_behavior_actual_renewal_20261019/analysis/handoff.json",
+  "ce_handoff_sha256": "dcca0357477ab758ac21a36b52c1ffae3742b5901a4445082b90e95331a2867c",
+  "main_figures": 7,
+  "new_native": 0,
+  "new_fits": 0,
+  "source_native": 13824,
+  "source_worker_seconds": 44.05452,
+  "parent_interventions": 2,
+  "expression_branches": 6,
+  "gui_request": "msg_31028b11fa107047c165d6799e1244d3",
+  "old_fig3_retained_as_supplement": true,
+  "main_scientific_result": "Acquired local motor content changes bodily action; prescribed reversal remains unsuccessful",
+  "full_source_row_record": "${share_root}/Articles/article_0565c33e0c03/work/longform_v047/data/local_motor_source_rows_v0475.json",
+  "source_cost_rows": 16,
+  "phase_rows": 14,
+  "expression_rows": 6,
+  "data_checks": {
+    "matched_source_sha256": true,
+    "all_phase_rows_retained": 14,
+    "cost_rows_including_pilots": 16,
+    "all_expression_branches": 6,
+    "maximum_recorded_learning_energy_residual": 7.441269822550112e-14,
+    "source_phase_acquisition_fraction": [
+      0.96398829917015,
+      0.9666085788959442
+    ],
+    "frame_semantics": "Original coordinates; cyan positive/yellow negative; density opacity normalized independently within each tile",
+    "expression_missing_channels": [
+      "separate basal",
+      "separate unpaid"
+    ]
+  },
+  "additional_pi_request": "msg_2f09939cdf409808ab8863800f006362",
+  "young_host_source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/young_regenerative_learning_opportunity_20261019/synthesis/final_handoff.json",
+  "young_host_source_sha256": "ed8c305e308140facdc1bc9fa5c0c7caa411e60ca39aa511d0db16420999d19e",
+  "gui_figures_in_revision": [
+    3,
+    5
+  ],
+  "local_motor_independent_review": {
+    "reviewer": "resident_0b7dc096e3c9",
+    "message_id": "msg_d4d2646b6c44be3aff0d03d67a5ccff2",
+    "record": "${share_root}/Agents/lineage_75e3399f4877/residents/resident_0b7dc096e3c9/workspace/local-motor-v0475-review.txt",
+    "scope": "new local motor Results/Methods/Discussion and 14/16/6 source rows; no new figure, composed PDF or young-host review",
+    "necessary_corrections": []
+  },
+  "young_host_integrated": true,
+  "young_gui_request": "msg_395f4f3de3585a885edc9bb2a15ec172",
+  "young_energy_paths": 12,
+  "young_probe_paths": 6,
+  "young_native": 21723,
+  "young_new_manuscript_native": 0,
+  "old_fig5_retained_as_supplement": true,
+  "supplementary_table_count_expected": 37,
+  "supplementary_figure_count_expected": 8,
+  "local_gui_received": true,
+  "local_gui_author_message": "msg_2e7f5937af0384e2a32e033b42dc7939",
+  "local_gui_author_review": "Whole actual PNG personally inspected: mechanism, full negative comparisons, eight raw-state tiles, dependent six forks and signed displacement readable. Figure3 wrapper attached.",
+  "young_review_request": "msg_a8052cd6cb7401e14f9fbcc0e88b92c7",
+  "young_handoff_corrected_sha256": "062a874bd3108aa9bdce0c6d736cd92e7b39ff836f405fcdfc42b8e6a6fa8b35",
+  "young_source_visual_review": [
+    "energetic_task_actual.png",
+    "newborn_content_final.png"
+  ],
+  "young_corrected_handoff_note": "Original execution records unchanged; 10:01 storage-summary correction retained both raw-file finalization footprints, not continuous measured peaks.",
+  "young_independent_review": {
+    "message_id": "msg_b57fb9e43366fffc84814be698e5387d",
+    "path": "${share_root}/Agents/lineage_75e3399f4877/residents/resident_a388058f90eb/workspace/research/young_turnover_narrow_review_20261019/review.json",
+    "scope": "534 numeric/gate cells, 18 raw paths and states (6400 recorded steps), six execution metadata; no new figure or PDF review",
+    "corrections_applied": [
+      "copy tariff actually admitted newborn mass, energy-limited; holding requested tariff",
+      "binomial-weighted 3x3 survivor average",
+      "raw footprints lower bounds, not continuous peak",
+      "birth fuel/energy/heat/dead-energy/waste/stocks/body-time added; no double counting"
+    ]
+  },
+  "young_gui_received": true,
+  "main_pages": 44,
+  "pages": 133,
+  "supplementary_tables": 37,
+  "supplementary_figures": 8,
+  "compile_errors": 0,
+  "undefined_references": 0,
+  "undefined_citations": 0,
+  "overfull_boxes": 0,
+  "publication_record": "${share_root}/Articles/article_0565c33e0c03/work/longform_v047/data/publication_record.json",
+  "published_at": "2026-10-19T10:19:53Z",
+  "default_pdf_sha256": "fa53676c5007bd593edcb7d4f6002024c7910cf33a29097ccf2b883d7848177e"
+}

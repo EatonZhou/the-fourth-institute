@@ -1,0 +1,39 @@
+{
+  "attempted": 28032,
+  "returned": 28032,
+  "jobs": [
+    {
+      "task": "lifetime_cue_reversal_20261019",
+      "mode": "pilot",
+      "job": "56c565a8-a71f-47f8-b55f-3106281c4d1c",
+      "status": "complete",
+      "attempted": 1920,
+      "returned": 1920,
+      "unknown": 0,
+      "wall": 2.725161939044483,
+      "error": null,
+      "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/lifetime_cue_reversal_20261019/56c565a8-a71f-47f8-b55f-3106281c4d1c",
+      "raw_bytes": 5154316,
+      "paths": 2,
+      "runner_worker_seconds": 7.263932
+    },
+    {
+      "task": "lifetime_cue_reversal_20261019",
+      "mode": "science",
+      "job": "58bb9d10-1c13-4a48-b8ab-0270124d4a72",
+      "status": "complete",
+      "attempted": 26112,
+      "returned": 26112,
+      "unknown": 0,
+      "wall": 33.81539975502528,
+      "error": null,
+      "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/lifetime_cue_reversal_20261019/58bb9d10-1c13-4a48-b8ab-0270124d4a72",
+      "raw_bytes": 72061760,
+      "paths": 72,
+      "runner_worker_seconds": 69.83583
+    }
+  ],
+  "worker_seconds": 77.099762,
+  "unused_updates_sealed": 1968,
+  "unused_worker_seconds_sealed": 1122.900238
+}

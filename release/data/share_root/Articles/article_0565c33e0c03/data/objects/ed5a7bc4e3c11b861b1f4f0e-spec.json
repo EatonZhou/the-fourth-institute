@@ -1,0 +1,65 @@
+{
+  "schema": "feedback-acquisition-preregistered-design.v1",
+  "status": "policy_frozen_environment_binding_pending",
+  "question": "Does negative-error-triggered directed sampling outperform general exploration at the same operation tariff and probe ceiling, including realized costs?",
+  "seeds": [
+    6201,
+    6202,
+    6203,
+    6204
+  ],
+  "morphologies": [
+    "compact",
+    "ring"
+  ],
+  "worlds": [
+    "stable",
+    "persistent",
+    "iid"
+  ],
+  "policies": [
+    "error_directed",
+    "error_random",
+    "scheduled_random",
+    "ema_greedy",
+    "cue_last_pair"
+  ],
+  "cycles": 96,
+  "predictor": {
+    "features": "[1, paid held current cue]; no world identity, environment seed, hidden state/change time or unchosen arrival",
+    "target": "chosen port completed paid binary arrival, separately from bodily uptake",
+    "readout": "existing action-conditional RLS, forgetting .92, ridge 1, initial probability .5",
+    "clip_for_decision_and_trigger": [
+      0,
+      1
+    ],
+    "raw_prediction_retained": true,
+    "lifetime_updates": "all 96 cycles, only qualified completed and write-funded observations",
+    "negative_trigger": "label minus clipped pre-outcome prediction < -.5",
+    "directed_selection": "largest x'P_action x; P is design coverage, not calibrated change uncertainty",
+    "random_selection": "uniform port, same negative trigger",
+    "probe_ceiling": 12,
+    "scheduled_selection": "uniform port at zero-based cycles 7,15,...,95, independent of feedback",
+    "ema_rate": 0.25,
+    "last_pair": "per-cue latest legal chosen-port pair; stay if arrival, switch if no arrival, without assigning an observation to the other port"
+  },
+  "binding_precondition": "ce2 shared version with explicit viable continuing reference and completed local observation API; old fixed-growth ecology will not be used for this comparison",
+  "environment_ownership": "ce2; no new environment or tape generator in this module",
+  "heldout_scope": "new seeds, not previously examined; same seed reused across policies and morphology is paired, not an independent replicate",
+  "primary_metrics": [
+    "paired per-seed total actual uptake, final mass/energy, body-time and cumulative actual costs",
+    "actual probe requests, selected probes, changed-from-greedy probes, arrival/observation success and movement distance",
+    "conditional choice-probability regret using evaluator-only latent probability, not realized-outcome oracle",
+    "recovery after persistent-world preference-changing transitions: first three consecutive qualified expected-optimal choices before the next transition; observed feedback count and elapsed cycles, otherwise right-censored"
+  ],
+  "scoring_support": "cross-policy prediction scoring only on identical cycle/cue/chosen-port opportunities paid and completed for all scored policies; own-path calibration, if reported, separately labeled and not pooled as common support",
+  "recovery_limits": "evaluator uses hidden transition only after simulation; both-rich/both-poor transitions without a strict preference change are not recovery trials; chance three-choice streaks are possible",
+  "cost_limits": [
+    "identical operation prices and probe ceilings do not imply equal realized probe counts, observations, displacement or total cost",
+    "use actual paid memory/motion/basal costs; report unpaid requests and missing observations",
+    "RLS computation, inverse storage and directed-selection arithmetic remain unpriced auxiliary computation; no fully physical equal-information-cost claim"
+  ],
+  "failure_preservation": "all worlds and paths including extinction, no switches, unavailable feedback and exhausted probe budget retained; no threshold/seed/noise scan",
+  "yoked_control": "not used",
+  "old_budget_223_used": 0
+}

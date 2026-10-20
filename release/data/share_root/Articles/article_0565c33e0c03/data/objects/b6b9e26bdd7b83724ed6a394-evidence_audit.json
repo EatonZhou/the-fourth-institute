@@ -1,0 +1,13 @@
+{
+  "source_bindings": 55,
+  "source_mismatch": 0,
+  "role_same_parent_checks": 20,
+  "same_parent_unique_futures": 8,
+  "saved_receipts": 158,
+  "max_mix_error": 0.0,
+  "native_science_rows": 5824,
+  "full_scheduled_joints": 204,
+  "raw_files": 705,
+  "raw_bytes": 96247580,
+  "analysis_native_calls": 0
+}

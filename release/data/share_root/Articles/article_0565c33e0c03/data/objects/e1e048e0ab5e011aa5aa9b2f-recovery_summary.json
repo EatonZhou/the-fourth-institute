@@ -1,0 +1,42 @@
+[
+  {
+    "policy": "error_directed",
+    "opportunities": 16,
+    "recovered": 6,
+    "censored": 10,
+    "successful_elapsed_median": 12.0,
+    "successful_feedback_median": 11.0
+  },
+  {
+    "policy": "error_random",
+    "opportunities": 16,
+    "recovered": 4,
+    "censored": 12,
+    "successful_elapsed_median": 14.5,
+    "successful_feedback_median": 13.5
+  },
+  {
+    "policy": "scheduled_random",
+    "opportunities": 16,
+    "recovered": 6,
+    "censored": 10,
+    "successful_elapsed_median": 8.0,
+    "successful_feedback_median": 7.0
+  },
+  {
+    "policy": "ema_greedy",
+    "opportunities": 16,
+    "recovered": 8,
+    "censored": 8,
+    "successful_elapsed_median": 8.5,
+    "successful_feedback_median": 7.5
+  },
+  {
+    "policy": "cue_last_pair",
+    "opportunities": 16,
+    "recovered": 10,
+    "censored": 6,
+    "successful_elapsed_median": 6.0,
+    "successful_feedback_median": 5.0
+  }
+]

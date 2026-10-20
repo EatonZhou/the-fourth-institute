@@ -1,0 +1,5 @@
+{
+  "type": "TypeError",
+  "message": "dict() got multiple values for keyword argument 'clock'",
+  "trace": "Traceback (most recent call last):\n  File \"${share_root}/Projects/元胞自动机研究/src/local_learning/consumption_qualified_transport/run.py\", line 156, in main\n    pref=segment(e,f'dev_b{i}_prefix','diffusion',32,'development',i,'dev')\n  File \"${share_root}/Projects/元胞自动机研究/src/local_learning/consumption_qualified_transport/run.py\", line 116, in segment\n    m,l,c,errs=call(e,arm,stage);row=dict(name=name,stage=stage,body_id=body,condition=condition,arm=arm,offset=j,**stats(e),**l)\n                                     ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nTypeError: dict() got multiple values for keyword argument 'clock'\n"
+}

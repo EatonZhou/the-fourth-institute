@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600" viewBox="0 0 1200 600">
+<rect width="1200" height="600" fill="white"/>
+<text x="28" y="41.56" text-anchor="start" font-family="Noto Sans CJK SC" font-size="26" font-weight="700" fill="#275D85">自适应验证：决定投入并完成修复</text>
+<polyline points="28,62 1172,62" fill="none" stroke="#91A2AE" stroke-width="1.7"/>
+<text x="30" y="583.0300000000001" text-anchor="start" font-family="Noto Sans CJK SC" font-size="13" font-weight="400" fill="#61717E">设计示意 · 实线：工作或依赖关系；虚线：反馈或关联；不表示实验测量</text>
+<rect x="35" y="105" width="340" height="145" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="205.0" y="131.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">变化与故障</text>
+<text x="205.0" y="188.74" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">相关模块／契约</text>
+<text x="205.0" y="208.8" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">已有检查与未覆盖项</text>
+<rect x="430" y="105" width="340" height="145" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="600.0" y="131.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">判断验证范围</text>
+<text x="600.0" y="188.74" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">预期信息价值</text>
+<text x="600.0" y="208.8" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">运行成本与影响范围</text>
+<rect x="825" y="105" width="340" height="145" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="995.0" y="131.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">执行选定检查</text>
+<text x="995.0" y="188.74" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">代码测试／任务体验</text>
+<text x="995.0" y="208.8" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">环境与结果记录</text>
+<polyline points="375,178 430,178" fill="none" stroke="#275D85" stroke-width="1.7"/>
+<polygon points="430,178 421.6420182798114,181.33828422471686 421.6420182798114,174.66171577528314" fill="#275D85"/>
+<polyline points="770,178 825,178" fill="none" stroke="#275D85" stroke-width="1.7"/>
+<polygon points="825,178 816.6420182798114,181.33828422471686 816.6420182798114,174.66171577528314" fill="#275D85"/>
+<rect x="35" y="365" width="340" height="145" fill="#EDF5F1" stroke="#26756C" stroke-width="1.5"/>
+<text x="205.0" y="391.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#26756C">更新证据与下一步</text>
+<text x="205.0" y="448.74" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">保留有效范围</text>
+<text x="205.0" y="468.8" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">定位剩余未知</text>
+<rect x="430" y="365" width="340" height="145" fill="#FAF3E7" stroke="#99651B" stroke-width="1.5"/>
+<text x="600.0" y="391.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#99651B">修复与必要复查</text>
+<text x="600.0" y="448.74" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">产品／测试／环境</text>
+<text x="600.0" y="468.8" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">相关责任成员</text>
+<rect x="825" y="365" width="340" height="145" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="995.0" y="391.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">解释结果</text>
+<text x="995.0" y="448.74" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">通过：范围内成立</text>
+<text x="995.0" y="468.8" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">失败：区分问题来源</text>
+<polyline points="995,250 995,365" fill="none" stroke="#275D85" stroke-width="1.7"/>
+<polygon points="995,365 991.6617157752831,356.6420182798114 998.3382842247169,356.6420182798114" fill="#275D85"/>
+<polyline points="825,437 770,437" fill="none" stroke="#275D85" stroke-width="1.7"/>
+<polygon points="770,437 778.3579817201886,433.66171577528314 778.3579817201886,440.33828422471686" fill="#275D85"/>
+<polyline points="430,437 375,437" fill="none" stroke="#275D85" stroke-width="1.7"/>
+<polygon points="375,437 383.3579817201886,433.66171577528314 383.3579817201886,440.33828422471686" fill="#275D85"/>
+<polyline points="205,365 205,305 600,305 600,250" fill="none" stroke="#26756C" stroke-width="1.7" stroke-dasharray="7 5"/>
+<polygon points="600,250 603.3382842247169,258.3579817201886 596.6617157752831,258.3579817201886" fill="#26756C"/>
+<text x="777.5" y="295.27000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#26756C">按新证据调整；无需为其他无关变化反复重跑</text>
+</svg>

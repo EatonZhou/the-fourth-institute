@@ -1,0 +1,13 @@
+{
+  "status": "incomplete",
+  "job_id": "412202f2-441d-4f09-9129-da3e579bf00c",
+  "attempted_host_steps": 1,
+  "committed_host_steps": 1,
+  "script_seconds": 0.991932868026197,
+  "raw_bytes": 0,
+  "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018/412202f2-441d-4f09-9129-da3e579bf00c",
+  "boundaries": [],
+  "outcomes": [],
+  "plan_sha256": "396b81c2a38bb85163b672287c87c71c55c687e9df7c5169cc9977184683d040",
+  "raw_cap_ok": true
+}

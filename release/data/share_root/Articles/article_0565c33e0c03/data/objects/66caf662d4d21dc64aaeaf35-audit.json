@@ -1,0 +1,451 @@
+{
+  "saved_receipts": 56,
+  "read_only_reference_receipts": 28,
+  "receipt_max_errors": {
+    "recycle_fee": 0,
+    "recycle_pay_excess": 0,
+    "recycle_cap_excess": 0,
+    "registration": 2.6020852139652106e-18,
+    "F": 0,
+    "new_tissue": 5.551115123125783e-17,
+    "recycle_no_newborn_payer": 0,
+    "route_fresh": 0,
+    "route_fee": 0,
+    "route_shared_capacity": 0,
+    "route_oldE": 0,
+    "same_state_q": 1.734723475976807e-18,
+    "same_state_fee": 1.0842021724855044e-19,
+    "route_precursor_start": 0,
+    "route_energy_start": 0,
+    "route_no_closed_gate": 0,
+    "route_conservation": 6.938893903907228e-18,
+    "P": 0,
+    "E": 0,
+    "first_native_pump_and_candidates_exact": 0
+  },
+  "first_inherited_eligible": {
+    "b2--P_on_demand": 0.539491450111989,
+    "b2--P_on_uniform": 0.539491450111989,
+    "b2--P_off_demand": 0.539491450111989,
+    "b2--P_off_uniform": 0.539491450111989,
+    "b6--P_on_demand": 0.35293886899820237,
+    "b6--P_on_uniform": 0.35293886899820237,
+    "b6--P_off_demand": 0.35293886899820237,
+    "b6--P_off_uniform": 0.35293886899820237,
+    "b2--P_on_local": 0.539491450111989,
+    "b2--P_off_local": 0.539491450111989,
+    "b6--P_on_local": 0.35293886899820237,
+    "b6--P_off_local": 0.35293886899820237
+  },
+  "per_step_max_checks": {
+    "check_material_error": 2.8421709430404014e-14,
+    "check_energy_error": 5.684341886080803e-14,
+    "check_max_density": 0.968781084743456,
+    "check_attempted_body_steps": 2047.0,
+    "check_reconstruction_error": 5.551115123125783e-17,
+    "check_K_column_error": 0,
+    "check_transport_error": 1.4210854715202004e-14,
+    "check_exchange_material_error": 2.0317081350640365e-14,
+    "check_exchange_energy_error": 6.566969190657801e-14,
+    "check_whole_material_error": 3.524958103184872e-14,
+    "check_whole_energy_error": 1.3178347302300608e-13,
+    "check_input_material_array_error": 0,
+    "check_input_energy_array_error": 0,
+    "check_cargo_P_error": 7.105427357601002e-15,
+    "check_cargo_F_error": 1.4210854715202004e-14,
+    "check_cargo_E_heat_error": 1.4210854715202004e-14,
+    "check_cargo_capacity_excess": 0,
+    "check_cargo_payable_excess": 0,
+    "check_cargo_negative": 0,
+    "check_cargo_newborn_payer": 0,
+    "check_request_partition_error": 6.938893903907228e-18,
+    "check_founder_excess": 0,
+    "check_recycle_material_error": 2.8421709430404014e-14,
+    "check_recycle_energy_error": 5.684341886080803e-14,
+    "check_recycle_payable_excess": 0,
+    "check_recycle_capacity_excess": 0,
+    "check_recycle_eligible_excess": 1.7347234759768068e-17,
+    "check_recycle_negative": 8.673617379884035e-19,
+    "check_recycle_newborn_payer": 0,
+    "check_recycle_no_F_or_deathE_change": 0,
+    "check_L256_excess": 3.469446951953614e-18,
+    "check_L256_balance_error": 6.394884621840903e-14,
+    "check_eligible_balance_error": 7.893685705084864e-14,
+    "check_A_balance_error": 3.426078865054194e-14,
+    "check_L384_balance_error": 3.907985046680551e-14,
+    "check_L384_excess": 3.469446951953614e-18,
+    "check_continuation_F_array_error": 0,
+    "check_continuation_P_array_error": 0,
+    "check_route_material_error": 1.4210854715202004e-14,
+    "check_route_energy_error": 5.684341886080803e-14,
+    "check_route_fresh_excess": 0,
+    "check_route_shared_capacity_excess": 0,
+    "check_route_payable_excess": 0,
+    "check_route_negative": 0,
+    "check_route_source_match_error": 1.734723475976807e-18,
+    "check_route_fee_match_error": 2.1684043449710093e-19,
+    "check_route_face_excess": 0,
+    "check_route_no_newborn_payer": 0,
+    "check_route_P_error": 7.105427357601002e-15,
+    "check_route_A_error": 2.8421709430404014e-14
+  },
+  "whole_balance_max": {
+    "M": 4.263256414560601e-14,
+    "L256": 1.9539925233402755e-14,
+    "L384": 2.842170943040401e-14,
+    "post256": 4.263256414560601e-14,
+    "post384": 6.394884621840902e-14,
+    "eligible": 7.105427357601002e-15,
+    "P": 1.4921397450962104e-13,
+    "waste": 1.4210854715202004e-14,
+    "heat": 9.592326932761353e-14,
+    "energy_all": 1.2789769243681803e-13,
+    "A": 1.461053500406706e-13
+  },
+  "source_bytes_unchanged": true,
+  "original_physics_bytes_unchanged": true,
+  "runner_recovery_amendment": {
+    "job_id": "6b11a236-26eb-46a7-9c6d-5a3f216199cc",
+    "failed_finished_at": "2026-10-18T19:22:49.151913+00:00",
+    "prior_runner_seconds": 1.262195,
+    "attempted": 1,
+    "returned": 1,
+    "settled": 1,
+    "recovery_bindings": {
+      "/share/Projects/元胞自动机研究/src/environment_evolution/recycled_cargo_local_routing/run.py": "464d1a09e052c2ac4c7a52a4e65d9762a1da3bcbf3649486bce2e3aee6aef093",
+      "/data/dataset/lenia-research/lineage_75e3399f4877/recycled_cargo_local_routing_20261019/6b11a236-26eb-46a7-9c6d-5a3f216199cc/b2--P_on_demand/current.bin": "912e17a1ab2c9ae4720af53a213af823e055088ad85a25de24fdac540c2c6b9f",
+      "/share/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/paths.json": "db2ef0c78054587c500aab7bf9cfd8e33fad444cd23fa9d0c8deb8f6d948f5fd",
+      "/share/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/frames.json": "ef3587c64a435f243d4f5afce94967cddbf7091006b0f4d6ac8289b28833bed1",
+      "/share/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/checks.json": "e001b6fb72728f0ff7c6917b0710de843c6a5b0cfd9db978c5a0ca6ffdc5934b",
+      "/data/dataset/lenia-research/lineage_75e3399f4877/recycled_cargo_local_routing_20261019/6b11a236-26eb-46a7-9c6d-5a3f216199cc/b2--P_on_demand/steps.csv": "6088d82492742f7ad9f91ba1ed04e03ec1dca2706ca422d0368e1c1fc631afbb",
+      "/data/dataset/lenia-research/lineage_75e3399f4877/recycled_cargo_local_routing_20261019/6b11a236-26eb-46a7-9c6d-5a3f216199cc/b2--P_on_demand/receipt385.npz": "a4b6e3ba587d31fa04475b26f365a52649d31995903c8da2dbd6945d1c275d1e",
+      "/data/dataset/lenia-research/lineage_75e3399f4877/recycled_cargo_local_routing_20261019/6b11a236-26eb-46a7-9c6d-5a3f216199cc/b2--P_on_demand/fields385.npz": "89dddb107cf683b440a16ce0e86f9ca60e8cd7e92f4aa8e35c296e4887131e38",
+      "/share/Projects/元胞自动机研究/src/runs/jobs/6b11a236-26eb-46a7-9c6d-5a3f216199cc/native_done.bin": "d5c85debd316367e6c1d5b90d0af0eefc42209e18e34ca7c0c9c86c66eb7efa0",
+      "/data/dataset/lenia-research/lineage_75e3399f4877/recycled_cargo_local_routing_20261019/6b11a236-26eb-46a7-9c6d-5a3f216199cc/failure_current.bin": "912e17a1ab2c9ae4720af53a213af823e055088ad85a25de24fdac540c2c6b9f"
+    },
+    "source_overrides": {
+      "/share/Projects/元胞自动机研究/src/environment_evolution/recycled_cargo_local_routing/run.py": "464d1a09e052c2ac4c7a52a4e65d9762a1da3bcbf3649486bce2e3aee6aef093"
+    },
+    "first_fingerprints": {
+      "b2_P_on": {
+        "born": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "9fcb1274bff399b03aacb7313b661b45dfe3d8f7fd69d997399d218570bc10a2"
+        },
+        "survivor": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "f471f2879d2773a4176fc4e35b61639c5a599c0a6e0f1d8acdf264da8595cf0b"
+        },
+        "route_precursor_before": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "84a04c6427f4e24cf2d84795bceb21f36e298cef674e5d7e482e602f9e3568df"
+        },
+        "route_energy_before": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "1b30740eee00046a13566af919af8a365d6d52be1b68760a8e985464b244486e"
+        },
+        "route_demand_sent": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "bb6749876f10d8fe84129c5988ef47598cda9367f9898e77bb955bb3721db8d4"
+        },
+        "route_uniform_sent": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "bb6749876f10d8fe84129c5988ef47598cda9367f9898e77bb955bb3721db8d4"
+        }
+      }
+    },
+    "native_replayed": 0,
+    "receipt_reconstruction": "Pure deterministic settlement of saved native_done copy exactly matched actual completed joint385 fingerprint; actual385 retained. No native call.",
+    "failure": "Missing diagnostic import only. Original run.py archived in frozen source; no physics/formula changes.",
+    "remaining_science": 2047,
+    "cap_total_native": 2052,
+    "cap_total_worker_seconds": 600
+  },
+  "pure_checks": {
+    "native": 0,
+    "within_state_source_and_fee_match": true,
+    "direction_different": true,
+    "zero_fresh_no_oldP_moved": true,
+    "no_demand_no_charge": true,
+    "no_newborn_payer": true,
+    "spent_original_capacity_respected": true,
+    "blocked_faces": true,
+    "one_hop_only": true,
+    "downward_only": true,
+    "forks": [
+      {
+        "parent": "b2",
+        "arm": "P_on_demand",
+        "baseline_exact": true,
+        "roundtrip_exact": true
+      },
+      {
+        "parent": "b2",
+        "arm": "P_on_uniform",
+        "baseline_exact": true,
+        "roundtrip_exact": true
+      },
+      {
+        "parent": "b2",
+        "arm": "P_off_demand",
+        "baseline_exact": true,
+        "roundtrip_exact": true
+      },
+      {
+        "parent": "b2",
+        "arm": "P_off_uniform",
+        "baseline_exact": true,
+        "roundtrip_exact": true
+      },
+      {
+        "parent": "b6",
+        "arm": "P_on_demand",
+        "baseline_exact": true,
+        "roundtrip_exact": true
+      },
+      {
+        "parent": "b6",
+        "arm": "P_on_uniform",
+        "baseline_exact": true,
+        "roundtrip_exact": true
+      },
+      {
+        "parent": "b6",
+        "arm": "P_off_demand",
+        "baseline_exact": true,
+        "roundtrip_exact": true
+      },
+      {
+        "parent": "b6",
+        "arm": "P_off_uniform",
+        "baseline_exact": true,
+        "roundtrip_exact": true
+      }
+    ],
+    "actual_saved_poststates": [
+      {
+        "id": "b2--P_on_recycle_on",
+        "clock": 385,
+        "same_source_error": 0.0,
+        "Q": 0.024259240434165948,
+        "direction_L1": 0.030277252958624788
+      },
+      {
+        "id": "b2--P_on_recycle_on",
+        "clock": 392,
+        "same_source_error": 0.0,
+        "Q": 0.027742253398358275,
+        "direction_L1": 0.03985056246950776
+      },
+      {
+        "id": "b2--P_on_recycle_on",
+        "clock": 416,
+        "same_source_error": 0.0,
+        "Q": 0.03011921582621238,
+        "direction_L1": 0.04274811401226525
+      },
+      {
+        "id": "b2--P_on_recycle_on",
+        "clock": 448,
+        "same_source_error": 4.336808689942018e-19,
+        "Q": 0.0322211507674211,
+        "direction_L1": 0.04478044401698965
+      },
+      {
+        "id": "b2--P_on_recycle_on",
+        "clock": 512,
+        "same_source_error": 0.0,
+        "Q": 0.032631826276838236,
+        "direction_L1": 0.04253623564969562
+      },
+      {
+        "id": "b2--P_on_recycle_on",
+        "clock": 576,
+        "same_source_error": 0.0,
+        "Q": 0.03782147106241254,
+        "direction_L1": 0.04831132072976399
+      },
+      {
+        "id": "b2--P_on_recycle_on",
+        "clock": 640,
+        "same_source_error": 0.0,
+        "Q": 0.032796087517641806,
+        "direction_L1": 0.032796087517641806
+      },
+      {
+        "id": "b2--P_off_recycle_on",
+        "clock": 385,
+        "same_source_error": 0.0,
+        "Q": 0.031359147245624594,
+        "direction_L1": 0.04117328229871822
+      },
+      {
+        "id": "b2--P_off_recycle_on",
+        "clock": 392,
+        "same_source_error": 0.0,
+        "Q": 0.024010974612684945,
+        "direction_L1": 0.0281816567778889
+      },
+      {
+        "id": "b2--P_off_recycle_on",
+        "clock": 416,
+        "same_source_error": 0.0,
+        "Q": 0.020404345808623627,
+        "direction_L1": 0.02676809754811614
+      },
+      {
+        "id": "b2--P_off_recycle_on",
+        "clock": 448,
+        "same_source_error": 0.0,
+        "Q": 0.009403800038800357,
+        "direction_L1": 0.006671017199484541
+      },
+      {
+        "id": "b2--P_off_recycle_on",
+        "clock": 512,
+        "same_source_error": 0.0,
+        "Q": 0.004188447329138389,
+        "direction_L1": 0.0020942236645691945
+      },
+      {
+        "id": "b2--P_off_recycle_on",
+        "clock": 576,
+        "same_source_error": 0.0,
+        "Q": 0.004202125544539509,
+        "direction_L1": 0.004202125544539509
+      },
+      {
+        "id": "b2--P_off_recycle_on",
+        "clock": 640,
+        "same_source_error": 0.0,
+        "Q": 0.0007641867648386356,
+        "direction_L1": 0.0003820933824193178
+      },
+      {
+        "id": "b6--P_on_recycle_on",
+        "clock": 385,
+        "same_source_error": 0.0,
+        "Q": 0.021948602551732144,
+        "direction_L1": 0.02566117770460961
+      },
+      {
+        "id": "b6--P_on_recycle_on",
+        "clock": 392,
+        "same_source_error": 0.0,
+        "Q": 0.024623440139409015,
+        "direction_L1": 0.03561635037024628
+      },
+      {
+        "id": "b6--P_on_recycle_on",
+        "clock": 416,
+        "same_source_error": 0.0,
+        "Q": 0.027681134801914635,
+        "direction_L1": 0.039620628759965894
+      },
+      {
+        "id": "b6--P_on_recycle_on",
+        "clock": 448,
+        "same_source_error": 4.336808689942018e-19,
+        "Q": 0.030318040350950908,
+        "direction_L1": 0.04230138131069462
+      },
+      {
+        "id": "b6--P_on_recycle_on",
+        "clock": 512,
+        "same_source_error": 0.0,
+        "Q": 0.036380604053830534,
+        "direction_L1": 0.04857484521012902
+      },
+      {
+        "id": "b6--P_on_recycle_on",
+        "clock": 576,
+        "same_source_error": 8.673617379884035e-19,
+        "Q": 0.03400591538185367,
+        "direction_L1": 0.039418736720636297
+      },
+      {
+        "id": "b6--P_on_recycle_on",
+        "clock": 640,
+        "same_source_error": 0.0,
+        "Q": 0.024278631152622028,
+        "direction_L1": 0.024278631152622025
+      },
+      {
+        "id": "b6--P_off_recycle_on",
+        "clock": 385,
+        "same_source_error": 0.0,
+        "Q": 0.02850681644950854,
+        "direction_L1": 0.035498498551274196
+      },
+      {
+        "id": "b6--P_off_recycle_on",
+        "clock": 392,
+        "same_source_error": 8.673617379884035e-19,
+        "Q": 0.028366745749713863,
+        "direction_L1": 0.03149610999570938
+      },
+      {
+        "id": "b6--P_off_recycle_on",
+        "clock": 416,
+        "same_source_error": 0.0,
+        "Q": 0.017921586779562855,
+        "direction_L1": 0.019030529732866643
+      },
+      {
+        "id": "b6--P_off_recycle_on",
+        "clock": 448,
+        "same_source_error": 0.0,
+        "Q": 0.009369386324321582,
+        "direction_L1": 0.006426586766934897
+      },
+      {
+        "id": "b6--P_off_recycle_on",
+        "clock": 512,
+        "same_source_error": 0.0,
+        "Q": 0.004122493995966255,
+        "direction_L1": 0.002061246997983128
+      },
+      {
+        "id": "b6--P_off_recycle_on",
+        "clock": 576,
+        "same_source_error": 0.0,
+        "Q": 0.002945300118829493,
+        "direction_L1": 0.0025085145045852
+      },
+      {
+        "id": "b6--P_off_recycle_on",
+        "clock": 640,
+        "same_source_error": 0.0,
+        "Q": 0.000838094580006607,
+        "direction_L1": 0.00041904729000330346
+      }
+    ],
+    "nonzero_saved_plans": 28,
+    "max_match_error": 8.673617379884035e-19
+  },
+  "native_boundary": 0
+}

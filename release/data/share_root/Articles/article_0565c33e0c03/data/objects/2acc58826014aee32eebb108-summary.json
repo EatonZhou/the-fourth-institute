@@ -1,0 +1,117 @@
+{
+  "task": "distractor_credit_assignment_20261019",
+  "groups": {
+    "fast_delta": {
+      "lives": 4,
+      "survived": 3,
+      "all_six_probes_pass": 0,
+      "end_E": [
+        52.18402059359063,
+        31.141772399575135,
+        30.73839512649811,
+        29.556232957779017
+      ],
+      "end_older_gate": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ]
+    },
+    "fixed_trace": {
+      "lives": 4,
+      "survived": 2,
+      "all_six_probes_pass": 0,
+      "end_E": [
+        51.723151840586404,
+        32.21354113409599,
+        33.233230850845175,
+        31.568071915280058
+      ],
+      "end_older_gate": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ]
+    },
+    "lag1_delta": {
+      "lives": 4,
+      "survived": 4,
+      "all_six_probes_pass": 4,
+      "end_E": [
+        35.67438498973476,
+        32.0393979236787,
+        33.86105352176645,
+        33.51935501393445
+      ],
+      "end_older_gate": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ]
+    },
+    "joint_delta": {
+      "lives": 4,
+      "survived": 4,
+      "all_six_probes_pass": 4,
+      "end_E": [
+        34.9895469944963,
+        31.47056113492831,
+        33.737036418314766,
+        32.58545682881269
+      ],
+      "end_older_gate": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ]
+    },
+    "gated_lags": {
+      "lives": 4,
+      "survived": 4,
+      "all_six_probes_pass": 4,
+      "end_E": [
+        35.35265544624074,
+        31.948248114179258,
+        33.75534351053105,
+        33.35767231488211
+      ],
+      "end_older_gate": [
+        0.9994522961623461,
+        0.9995236196286282,
+        0.9995096125953552,
+        0.9992506740736461
+      ]
+    }
+  },
+  "accounting": {
+    "attempted": 25280,
+    "returned": 25280,
+    "jobs": [
+      {
+        "task": "distractor_credit_assignment_20261019",
+        "mode": "science",
+        "job": "1634a0b5-3bab-4566-b508-93b2e62d8b59",
+        "status": "complete",
+        "attempted": 25280,
+        "returned": 25280,
+        "unknown": 0,
+        "wall": 34.63946920202579,
+        "error": null,
+        "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/distractor_credit_assignment_20261019/1634a0b5-3bab-4566-b508-93b2e62d8b59",
+        "raw_bytes": 80198173,
+        "paths": 54,
+        "runner_worker_seconds": 70.686758
+      }
+    ],
+    "worker_seconds": 70.686758,
+    "unspent_scientific_steps": 1600,
+    "unspent_reason": "three connectivity failures stop their lives and omit terminal forks; not unknown, no resurrection"
+  },
+  "missing": "failed-life unobserved probes null; failures retained",
+  "claim": "Sufficient history restores delayed cue learning under distractors; gated-lag advantage over strong fixed-lag and additive-delta NOT established",
+  "next": "credit reliability under nonstationary causal lag requires a separate frozen comparison, not a posthoc claim here"
+}

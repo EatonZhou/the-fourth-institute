@@ -1,0 +1,176 @@
+"""Eight charged off-hook boundaries, then eight finite new futures, one job."""
+import argparse,csv,difflib,json,os,shutil,signal,sys,time,traceback
+from pathlib import Path
+import numpy as np
+from .core import attach,select_request,branch_scalars,GENERATED_SOURCE,ORIGINAL_SOURCE
+from local_learning.postbirth_cohort_policy_crossover.core import observe,scalars
+from local_learning.postbirth_cohort_policy_crossover.run import MINIMAL,RECEIPTS,FIELDS
+from local_learning.renewal_preservation_choice_factorial.core import choice,choice_scalars
+from local_learning.renewal_preservation_choice_factorial.run import readrows,cohorts
+from local_learning.third_response_generation_search.run import summary
+from local_learning.resource_conditioned_growth_rule.core import GrowthBody
+from local_learning.turnover_compatible_morphogenesis.run import record,snapshot_scalar
+from local_learning.developmental_history_rule_swap.core import fingerprint
+from local_learning.experience_adaptation_outer_search.genome import sha,digest,shape_descriptor
+from environment_evolution.regenerative_actor.model import ForwardPermit
+from environment_evolution.regenerative_actor.conversion import Conversion
+from environment_evolution.native_investment_action.run import write
+from local_learning.local_terminal_feedback.experiment import control
+SRC=Path(__file__).resolve().parents[2];TASK='conversion_time_birth_branch_20261019'
+OUT=SRC/'local_learning/results_20261019'/TASK;PLAN=OUT/'plan.json';DECISION=SRC.parent/'knowledge_base/research/experience_learning'/f'{TASK}.json'
+OLD=SRC/'local_learning/results_20261019/postbirth_cohort_policy_crossover_20261019'
+STOP=False
+
+def prepare():
+    if PLAN.exists():raise FileExistsError('already frozen')
+    assert sha(DECISION)=='5d1154109a042132a6313c266b85e975c68ebccee6a6c2eb731da987ba0f51a2'
+    d=json.loads(DECISION.read_text());OUT.mkdir(parents=True,exist_ok=True);bindings={str(DECISION):sha(DECISION)}
+    for s in d['source_bindings']:assert sha(s['path'])==s['sha256'];bindings[s['path']]=s['sha256']
+    # Pure strict tie, disabled, and limited-fuel choices; no physical step.
+    q=np.ones((2,2))*.02;surv=np.ones_like(q)*.2;P=np.ones_like(q);F=P.copy();support=P.copy();hs=[q/.05,q/.05,np.ones_like(q)]
+    z,f=select_request(q,hs,surv,P,F,support,Conversion(),.05,False);assert np.array_equal(z,q) and not f['branch_selected'].any()
+    z,f=select_request(q,hs,surv,P,np.zeros_like(F),support,Conversion(),.05);assert np.array_equal(z,q) and not f['branch_selected'].any()
+    z,f=select_request(q,hs,surv,P,F,support,Conversion(),.05);assert np.all(f['branch_selected']==3)
+    checks=[]
+    for pp in d['parents']:
+        for k,h in [('path','sha256'),('baseline_rows','baseline_rows_sha256'),('baseline_final','baseline_final_sha256'),('baseline_first_receipt','baseline_first_receipt_sha256')]:
+            assert sha(pp[k])==pp[h];bindings[pp[k]]=pp[h]
+        original=GrowthBody.restore(pp['path']);before=fingerprint(original)
+        for enabled in (False,True):
+            e=attach(GrowthBody.restore(pp['path']),enabled)
+            assert e.clock==320 and e.base.phase=='ready'
+            for k in e.state:assert np.array_equal(e.state[k],original.state[k])
+            for k in ('life0_cohorts','cohorts128','cohorts256','label128','label_dead'):assert fingerprint(getattr(e,k))==fingerprint(getattr(original,k))
+            assert np.array_equal(e.body.model.kernels,original.body.model.kernels) and e.body.model.config==original.body.model.config
+            assert np.array_equal(e.postbirth_cohorts.labels[0],original.cohorts256.labels[0]) and np.array_equal(e.postbirth_cohorts.labels[1],original.cohorts256.labels[1])
+            out=choice(e.body.model,e.state,'both');e.postbirth_cohorts.labels[:]=99
+            again=choice(e.body.model,e.state,'both');assert all(np.array_equal(v,again[k]) for k,v in out.items())
+            e=attach(GrowthBody.restore(pp['path']),enabled);tmp=OUT/'pure_joint.bin';e.checkpoint(tmp);assert fingerprint(e)==fingerprint(GrowthBody.restore(tmp));tmp.unlink()
+        assert fingerprint(original)==before
+        with np.load(pp['baseline_first_receipt']) as z:
+            rr=[z['actual_h'+k] for k in 'ABC'];oldR=z['positive_request'];P=z['old_precursor']+z['input_material'];F=z['old_fuel']+z['input_energy']-z['uptake']
+            assert P.min()>=0 and F.min()>=0
+            r,f=select_request(oldR,rr,z['survivor'],P,F,z['template_support'],e.body.model.conversion,e.body.model.dt)
+            assert np.array_equal(f['branch_shadow_birth'],z['born'])
+        checks.append(dict(id=pp['id'],native=0,state_exact=True,old_tags_exact=True,OCN_exact=True,roundtrip=True,diagnostic_tags_inert=True,first_old_born_reconstructed_exact=True,first_expected_gain=float((f['branch_expected_birth']-f['branch_shadow_birth']).sum())))
+    write(OUT/'pure_checks.json',dict(parents=checks,native=0,strict_ties=True,disabled=True,fuel_zero_no_clipping=True))
+    (OUT/'generated_native.py.txt').write_text(GENERATED_SOURCE)
+    (OUT/'native_diff.txt').write_text(''.join(difflib.unified_diff(ORIGINAL_SOURCE.splitlines(True),GENERATED_SOURCE.splitlines(True),fromfile='frozen_RegenerativeBody.step',tofile='AST_deletion_and_request_hooks')))
+    for mod in list(sys.modules.values()):
+        f=getattr(mod,'__file__',None)
+        if f and f.startswith(str(SRC)) and f.endswith('.py') and '/.venv/' not in f:bindings[str(Path(f).resolve())]=sha(f)
+    for f in Path(__file__).parent.glob('*.py'):bindings[str(f)]=sha(f)
+    p=dict(task=TASK,protocol=d,source_sha256=bindings,native_cap=520,science_native=512,boundary_native=8,worker_cap=450,cpu_threads=2,gpu=0,science_wall_limit=170,shutdown_reserve_worker_seconds=60,raw_cap_bytes=512*2**20,
+        request_key='d3-conversion-time-birth-branch-20261019-v1',receipts=list(RECEIPTS),fields=list(FIELDS),joints=[320,352,384],order='all eight off-hook321 boundaries first; then decision parent order',objective_met=False)
+    write(PLAN,p)
+    for f in bindings:
+        q=Path(f)
+        if q.suffix=='.py' and q.is_relative_to(SRC):
+            dst=OUT/'source'/q.relative_to(SRC);dst.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(q,dst)
+    print(json.dumps(dict(plan=str(PLAN),sha256=sha(PLAN),native=0,parents=len(checks))))
+
+def main():
+    global STOP
+    start=time.monotonic();p=json.loads(PLAN.read_text());d=p['protocol'];job=os.environ['LENIA_JOB_ID'];run=Path(os.environ['LENIA_RUN_DIR'])
+    raw=Path('/data/dataset/lenia-research/lineage_75e3399f4877')/TASK/job;raw.mkdir(parents=True,exist_ok=False)
+    permit=ForwardPermit(520,str(DECISION));committed=settled=science=boundary=0;outcomes=[];frames=[];boundary_checks=[];e=None;failure=None;status='partial'
+    def stop(*_):
+        global STOP
+        STOP=True
+    signal.signal(signal.SIGTERM,stop);signal.signal(signal.SIGINT,stop)
+    def step(env,name,isboundary):
+        nonlocal committed,settled,science,boundary
+        if STOP or time.monotonic()-start>p['science_wall_limit']:raise InterruptedError('frozen stop/time gate')
+        write(run/'pending.json',dict(id=name,preclock=env.clock,attempt=permit.attempted+1))
+        env.native(permit);committed+=1;m,l,c=env.settle();settled+=1;boundary+=int(isboundary);science+=int(not isboundary);c.update(observe(env,m))
+        errors={k:float(v) for k,v in c.items() if any(s in k for s in ('error','excess','violation','roundoff'))}
+        if errors and max(abs(v) for v in errors.values())>1e-8:raise ArithmeticError(errors)
+        (run/'pending.json').unlink();return m,l,c
+    def row(env,m,l,c,name):
+        r=record(env.base,m,l,c,name,'conversion_branch');r.update(rule_death=float(m['rule_death'].sum()),actor_death=float(m['death'].sum()-m['rule_death'].sum()),rule_dead_energy=float(m['rule_death_energy'].sum()))
+        r.update(choice_scalars(m));r.update(cohorts(env));r.update(scalars(env,m));r.update(branch_scalars(m));cm=m['requested_C']
+        r.update(C_sites=int(cm.sum()),C_pre_mass=float((cm*m['pre_body']).sum()),C_actual_h_difference_mass=float((abs(m['actual_h']-m['actual_hAB'])*m['actor_body_after_actor']).sum()))
+        return r
+    def frame(env,path,name):
+        f=path/f'fields{env.clock:03d}.npz';arrays=dict(**env.state)
+        for ob,tag in ((env.life0_cohorts,'life0'),(env.cohorts128,'age128'),(env.cohorts256,'age256'),(env.postbirth_cohorts,'ocn')):
+            for k in ('labels','registered','actor_deleted','rule_deleted','bodytime'):arrays[tag+'_'+k]=getattr(ob,k)
+        arrays['input_P'],arrays['input_F']=env.base.inner.inputs(min(env.clock,383));arrays.update({'next_'+k:v for k,v in choice(env.body.model,env.state,'both').items()})
+        np.savez_compressed(f,**arrays);cp=None
+        if env.clock in (320,352,384):cp=path/f'state{env.clock:03d}.bin';env.checkpoint(cp)
+        frames.append(dict(id=name,clock=env.clock,fields=str(f),joint=str(cp) if cp else None,shape=shape_descriptor(env.state['body'])))
+    def off_boundary(pp):
+        nonlocal e
+        e=attach(GrowthBody.restore(pp['path']),False);m,l,c=step(e,pp['id']+'_off_boundary',True)
+        r=row(e,m,l,c,pp['id']);old=readrows(pp['baseline_rows'])[0];columns=[]
+        for k,v in old.items():
+            if k in ('id','stage','policy') or k.startswith('check_'):continue
+            assert k in r and r[k]==v,('boundary scalar',pp['id'],k,r.get(k),v)
+            columns.append(k)
+        with np.load(pp['baseline_first_receipt']) as z:
+            fields=list(z.files)
+            for k in fields:assert k in m and np.array_equal(z[k],m[k]),('boundary array',pp['id'],k)
+        dst=raw/'boundaries'/pp['id'];dst.mkdir(parents=True);np.savez_compressed(dst/'receipt321.npz',**m);e.checkpoint(dst/'state321.bin')
+        check=dict(id=pp['id'],native=1,scalar_fields_exact=columns,receipt_fields_exact=fields,old321_full_joint_available=False,
+            unverified_full_joint_fields=['RNG internal state after321','controller internal caches absent from receipt','full post-pump controller concentration fields absent from receipt'],
+            claim='all saved actual321 receipt arrays and physical/observer scalars exact; not full joint equivalence')
+        boundary_checks.append(check);write(OUT/'boundary_checks.json',boundary_checks)
+    def trajectory(pp):
+        nonlocal e
+        name=pp['id']+'__conversion_branch';e=attach(GrowthBody.restore(pp['path']),True);path=raw/name;path.mkdir()
+        initial=snapshot_scalar(e.base)
+        initial_cohorts=cohorts(e);registered=scalars(e);initial_sha=digest(fingerprint(e.state))
+        info=dict(seed=pp['seed'],shape=pp['shape'],history=pp['history'],future='conversion_branch',parent_id=pp['id'],source=pp['path'],source_sha=pp['sha256'],execution_kind='new_conversion_branch',rows=str(path/'steps.csv'))
+        frame(e,path,name);rows=[];header=None;first_active=None;first_difference=None;common_prefix=0;oldrows={int(r['clock']):r for r in readrows(pp['baseline_rows'])}
+        write(path/'configuration.json',dict(**info,initial=initial,initial_OCN=registered,plan_sha=sha(PLAN)))
+        while e.clock<384:
+            m,l,c=step(e,name,False);r=row(e,m,l,c,name)
+            if e.clock==321:
+                with np.load(pp['baseline_first_receipt']) as z:
+                    protected=[k for k in z.files if k.startswith('actor_') or k in ('K_weights','transported_body','survivor','keep','rule_death','rule_death_energy','template_support','inherited_theta','inherited_polarity','actual_h','requested_w','requested_C')]
+                    for k in protected:assert np.array_equal(z[k],m[k]),('first protected stage',name,k)
+                write(path/'first_protected_stage.json',dict(exact=protected,only_same_parent_first_step=True))
+            if r['branch_selected_sites'] and first_active is None:first_active=e.clock
+            old=oldrows[e.clock];commoncols=[k for k in old if k not in ('id','stage','policy') and not k.startswith('check_')]
+            eq=all(r[k]==old[k] for k in commoncols)
+            if first_difference is None:
+                if eq:common_prefix+=1
+                else:first_difference=e.clock
+            r['old_same_clock_scalar_equal']=eq;rows.append(r)
+            if header is None:header=list(r)
+            with (path/'steps.csv').open('a') as f:
+                w=csv.DictWriter(f,fieldnames=header)
+                if len(rows)==1:w.writeheader()
+                w.writerow(r)
+            np.savez_compressed(path/f'transport{e.clock:03d}.npz',**{k:m[k] for k in MINIMAL})
+            np.savez_compressed(path/f'branch{e.clock:03d}.npz',**{k:v for k,v in m.items() if k.startswith('branch_')},rule_death=m['rule_death'],rule_death_energy=m['rule_death_energy'])
+            if e.clock in RECEIPTS:np.savez_compressed(path/f'receipt{e.clock:03d}.npz',**m)
+            if e.clock in FIELDS:frame(e,path,name)
+            if len(rows)%16==0:
+                e.checkpoint(raw/'latest.bin')
+                if sum(f.stat().st_size for f in raw.rglob('*') if f.is_file())>p['raw_cap_bytes']-8*2**20:raise RuntimeError('raw cap reserve')
+        o=summary(name,info,rows,initial,initial_sha,str(path/'state384.bin'),e.body.model.dt)
+        o.update(OCN_initial=registered,OCN_final=scalars(e),initial_cohorts=initial_cohorts,final_cohorts=cohorts(e),new_native_steps=64,
+            first_active_clock=first_active,first_old_scalar_difference=first_difference,common_scalar_prefix_steps=common_prefix,
+            branch_selected_sites=sum(r['branch_selected_sites'] for r in rows),branch_birth_gain=sum(r['branch_birth_gain'] for r in rows),branch_simultaneous_sites=sum(r['branch_simultaneous_sites'] for r in rows))
+        outcomes.append(o);write(path/'outcome.json',o);write(OUT/'outcomes.json',outcomes);write(OUT/'frames.json',frames)
+        print(json.dumps(dict(event='complete',id=name,M=o['M'],E=o['E'],C=o['OCN_final']['C_live'],N=o['OCN_final']['N_live'],first_active=first_active,native=permit.attempted,wall=time.monotonic()-start)),flush=True)
+    try:
+        for f,h in p['source_sha256'].items():assert sha(f)==h,f
+        write(OUT/'control_before_native.json',control())
+        for pp in d['parents']:off_boundary(pp)
+        assert boundary==8 and len(boundary_checks)==8
+        for pp in d['parents']:trajectory(pp)
+        assert permit.attempted==committed==settled==520 and science==512 and len(outcomes)==8
+        status='complete'
+    except BaseException:
+        failure=traceback.format_exc();print(failure,flush=True)
+        if e is not None and e.base.phase=='ready':e.checkpoint(raw/'failure_settled.bin')
+    finally:
+        result=dict(task=TASK,status=status,job=job,attempted=permit.attempted,committed=committed,settled=settled,science_native=science,boundary_native=boundary,unknown_native=permit.attempted-settled,wall_seconds=time.monotonic()-start,failure=failure,
+            logical_paths=len(outcomes),raw=str(raw),raw_bytes=sum(f.stat().st_size for f in raw.rglob('*') if f.is_file()),objective_met=False,acquisition_replay=0,old_tail_replay=0,old_budget_used=0)
+        write(OUT/'result.json',result);write(run/'result.json',result);print(json.dumps(result),flush=True)
+    if failure:raise SystemExit(1)
+
+if __name__=='__main__':
+    ap=argparse.ArgumentParser();ap.add_argument('--prepare',action='store_true');a=ap.parse_args();prepare() if a.prepare else main()

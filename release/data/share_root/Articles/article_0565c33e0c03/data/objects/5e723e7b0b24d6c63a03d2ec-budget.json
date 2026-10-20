@@ -1,0 +1,33 @@
+{
+  "native_cap": 516,
+  "native_attempted": 516,
+  "native_committed": 516,
+  "native_settled": 516,
+  "science_native": 512,
+  "boundary_native": 4,
+  "unknown_native": 0,
+  "failed_native": 0,
+  "old_acquisition_replay": 0,
+  "old_tail_replay": 0,
+  "old_readonly_baseline_steps": 512,
+  "job": "191e27ad-3229-4cfd-9149-d776628c19d4",
+  "job_count": 1,
+  "attempts": 1,
+  "attempt_native": [
+    516
+  ],
+  "attempt_runner_worker_seconds": [
+    49.75859
+  ],
+  "runner_worker_seconds": 49.75859,
+  "worker_cap": 450,
+  "remaining_native": 0,
+  "remaining_worker_seconds": 400.24141,
+  "cpu_threads": 2,
+  "gpu": 0,
+  "shutdown_reserve_worker_seconds": 60,
+  "raw_cap_bytes": 402653184,
+  "actual_raw_bytes": 59086832,
+  "old_balances_used": 0,
+  "remaining_status": "封存，不续用"
+}

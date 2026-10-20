@@ -1,0 +1,38 @@
+{
+  "task": "consumption_qualified_transport_method_addendum_20261019",
+  "status": "completed_readonly_posthoc_correction",
+  "owner": "resident_d3ccfa2d95b7",
+  "native_steps": 0,
+  "runner_calls": 0,
+  "main_result": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/handoff.json",
+    "sha256": "fc2cd49b5d86ab1c3a8f77218209c3aedae9017af336ee34f3dd0850f1788acb",
+    "bytes": 10297
+  },
+  "method_support": {
+    "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/consumption_qualified_transport_method_20261019/handoff.json",
+    "sha256": "62115bde417f04d895d56388d6ae01dbe3c9b43916d48a5790c9a54be0ef4c1d",
+    "bytes": 1470
+  },
+  "report": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_method_addendum_20261019/REPORT.txt",
+    "sha256": "3b3d9e3b8297532ed618f0047c09bf38e923e72ffc3c50f48e62a5e498270df6",
+    "bytes": 4596
+  },
+  "summary": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_method_addendum_20261019/summary.json",
+    "sha256": "f83dfd157de7d17fc1e42d73477da35d5b24f4e17a14dbfdd08681f8a10ab34f",
+    "bytes": 5044
+  },
+  "manifest": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_method_addendum_20261019/manifest.json",
+    "sha256": "b7a4a0c6e563460e826e4e06ad301d423853629f505cb4d2cda69a33e1d6c25c",
+    "bytes": 2186
+  },
+  "attachments": 8,
+  "correction": "Total proposal equality holds only with nonzero directional support; EMA-demand also differ in abstention/quantity before trajectory divergence.",
+  "full_shadow_available": false,
+  "objective_met": false,
+  "candidate_status": "closed_no_advantage",
+  "original_artifacts_unchanged": true
+}

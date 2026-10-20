@@ -1,0 +1,274 @@
+[
+  {
+    "sha256": "3c56aebd71ffa29146f7150e7c0dfcc405c7217d15d4a3088061aee082713033",
+    "bytes": 1136170,
+    "paths": [
+      "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/deletion_layout_life0_formation_20261019/curves.csv"
+    ],
+    "reason": "non-core full step-by-step trace; summaries and frozen figure sources retained"
+  },
+  {
+    "sha256": "2cbb276f0b8a58449bc0d24873da296e3eebd89225ce535dbc96679cea80c72d",
+    "bytes": 2736699,
+    "paths": [
+      "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/method_renewal_ecology_behavior_20261018/cycles.csv"
+    ],
+    "reason": "non-core full step-by-step trace; summaries and frozen figure sources retained"
+  },
+  {
+    "sha256": "d8ca63e2182ed45dcd5d625c7f23ea92af1425d7bf1c4e83a76eb0b1a719f95c",
+    "bytes": 1256540,
+    "paths": [
+      "${share_root}/Projects/元胞自动机研究/src/research/results/event_reservoir_learning_20261018/cycles.csv"
+    ],
+    "reason": "non-core full step-by-step trace; summaries and frozen figure sources retained"
+  },
+  {
+    "sha256": "ce09adbeddc47f4302f4967b0753ded3d2d72102257511855eb926311bbe4cf7",
+    "bytes": 770884,
+    "paths": [
+      "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_allocation_ecology_20261018/cycles.csv"
+    ],
+    "reason": "non-core full step-by-step trace; summaries and frozen figure sources retained"
+  },
+  {
+    "sha256": "d4198acb622d037ff830735350c694b06b7c1d7fae3dd0de56a2528e3fba2fcc",
+    "bytes": 28424634,
+    "paths": [
+      "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_allocation_ecology_20261018/per_step.csv"
+    ],
+    "reason": "non-core full step-by-step trace; summaries and frozen figure sources retained"
+  },
+  {
+    "sha256": "81356757294f386b8bac00b69cb7a86ad097d8a4c4b68f767ae764fbbec9ea78",
+    "bytes": 9331843,
+    "paths": [
+      "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/steps.csv"
+    ],
+    "reason": "non-core full step-by-step trace; summaries and frozen figure sources retained"
+  },
+  {
+    "sha256": "475693fc2674f885f8c026e95fcc5a93438cfef9e8a56e6a251d3dfc6a18ab19",
+    "bytes": 7459826,
+    "paths": [
+      "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/all_steps.csv"
+    ],
+    "reason": "non-core full step-by-step trace; summaries and frozen figure sources retained"
+  },
+  {
+    "sha256": "52bc805110993cc694ac55610b83208ffd811b1f339577d314d7531f6118ace0",
+    "bytes": 1333517,
+    "paths": [
+      "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_second_parent_completion_20261019/all_steps.csv"
+    ],
+    "reason": "non-core full step-by-step trace; summaries and frozen figure sources retained"
+  },
+  {
+    "sha256": "d6c593bbdecbe221dfb0e0fed5ca45707c35f84802c8e059d0660eb315a88cda",
+    "bytes": 1369127,
+    "paths": [
+      "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/developmental_history_rule_swap_20261019/all_steps.csv"
+    ],
+    "reason": "non-core full step-by-step trace; summaries and frozen figure sources retained"
+  },
+  {
+    "sha256": "ba0b6455f414f3ac8146028c0743c3219de700a7e8f2d3f9cc9f97cbcf9d2e29",
+    "bytes": 1564446,
+    "paths": [
+      "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/replacement_history_carrier_20261019/curves.csv"
+    ],
+    "reason": "non-core full step-by-step trace; summaries and frozen figure sources retained"
+  },
+  {
+    "sha256": "3f613e557c6064ded83dae3c7161bd1a1ed23d57d878ff11e333f078bae4a88b",
+    "bytes": 1502704,
+    "paths": [
+      "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/curves.csv"
+    ],
+    "reason": "non-core full step-by-step trace; summaries and frozen figure sources retained"
+  },
+  {
+    "sha256": "cc323b2f540ebebc9ab72b9d7284ee4531cb6c3367c9af843d320db938244e10",
+    "bytes": 3467390,
+    "paths": [
+      "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/postbirth_cohort_policy_crossover_20261019/curves.csv"
+    ],
+    "reason": "non-core full step-by-step trace; summaries and frozen figure sources retained"
+  },
+  {
+    "sha256": "a6e0d6d641af6986faacc9d939660098fe84ecd83e63fa4489e57418453a1e35",
+    "bytes": 7319830,
+    "paths": [
+      "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/birth_clock_retention_accounting_20261019/all_birth_clock_curves.csv"
+    ],
+    "reason": "non-core full step-by-step trace; summaries and frozen figure sources retained"
+  },
+  {
+    "sha256": "0e5463c9ef80a61228dca54d9bb3a8e2be067d1260697d877bdacbb74e33404a",
+    "bytes": 1779092,
+    "paths": [
+      "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/conversion_time_birth_branch_20261019/curves.csv"
+    ],
+    "reason": "non-core full step-by-step trace; summaries and frozen figure sources retained"
+  },
+  {
+    "sha256": "da645023b4794104b2355e97d497783a9cab0710f5f4a784d27ad0243bcc4a26",
+    "bytes": 3540681,
+    "paths": [
+      "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_carried_generation_choice_20261019/curves.csv"
+    ],
+    "reason": "non-core full step-by-step trace; summaries and frozen figure sources retained"
+  },
+  {
+    "sha256": "4b58844925fb310f84a54a5763f2c643f20787ebc78070aab097330f03291e92",
+    "bytes": 11466953,
+    "paths": [
+      "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_rule_initial_factorial_20261018/full_cycle_effect_steps.csv"
+    ],
+    "reason": "non-core full step-by-step trace; summaries and frozen figure sources retained"
+  },
+  {
+    "sha256": "23eb1f1dd27f98ce40e6f84265ec070eca74fb1ec085de1be160461393cca6af",
+    "bytes": 2113051,
+    "paths": [
+      "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_rule_initial_factorial_20261018/new_per_step.csv"
+    ],
+    "reason": "non-core full step-by-step trace; summaries and frozen figure sources retained"
+  },
+  {
+    "sha256": "920f15376762906bba559239e563eba42589bf80dc140c06a63449507bbf4b1e",
+    "bytes": 4088667,
+    "paths": [
+      "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_rule_initial_factorial_20261018/per_step.csv"
+    ],
+    "reason": "non-core full step-by-step trace; summaries and frozen figure sources retained"
+  },
+  {
+    "sha256": "6420c46812551a0dca15e0a93336b1cd4d5240a71d1f40938fe100cf41125edb",
+    "bytes": 5199987,
+    "paths": [
+      "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_rule_initial_factorial_20261018/effect_steps.csv"
+    ],
+    "reason": "non-core full step-by-step trace; summaries and frozen figure sources retained"
+  },
+  {
+    "sha256": "466c312b16969fc0bbfbd2eede52f0863536427173558785e49f98c0f5c561ee",
+    "bytes": 6654966,
+    "paths": [
+      "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/full_cycle_effect_steps.csv"
+    ],
+    "reason": "non-core full step-by-step trace; summaries and frozen figure sources retained"
+  },
+  {
+    "sha256": "f414a8094396e3850b89ada21c8f76236f6c75782f0d86e945c73f1dbc3fab59",
+    "bytes": 2595859,
+    "paths": [
+      "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/per_step.csv"
+    ],
+    "reason": "non-core full step-by-step trace; summaries and frozen figure sources retained"
+  },
+  {
+    "sha256": "1f67ec470c678331eb8da7e5b2a57013e272af96fd86ae501c11b63f3d30b6db",
+    "bytes": 2666419,
+    "paths": [
+      "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/effect_steps.csv"
+    ],
+    "reason": "non-core full step-by-step trace; summaries and frozen figure sources retained"
+  },
+  {
+    "sha256": "fdebe33cbd9c57ecf52b742292290f8fbc3f4d3b0c1af75c21f1dc802881873e",
+    "bytes": 1019324,
+    "paths": [
+      "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_resource_factorial_20261018/all_per_step.csv"
+    ],
+    "reason": "non-core full step-by-step trace; summaries and frozen figure sources retained"
+  },
+  {
+    "sha256": "542496228c78268ba5063a69b68c548831693d907fb1ce96a875bba751b187d6",
+    "bytes": 2601807,
+    "paths": [
+      "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_independent_ports_20261018/cycles.csv"
+    ],
+    "reason": "non-core full step-by-step trace; summaries and frozen figure sources retained"
+  },
+  {
+    "sha256": "e77f53d602bd99f0587bd06c3ea30d25852250206df1b26dc7ed3bf10079b152",
+    "bytes": 3098475,
+    "paths": [
+      "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/maintenance_aware_cargo_20261019/all_clocks.csv"
+    ],
+    "reason": "non-core full step-by-step trace; summaries and frozen figure sources retained"
+  },
+  {
+    "sha256": "e4fcaee92af4e117ee0dd7b93816a8a81beaabfedfbeee0e9045384ca2f4aefb",
+    "bytes": 7951924,
+    "paths": [
+      "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/paid_material_precursor_reserve_20261019/all_steps.csv"
+    ],
+    "reason": "non-core full step-by-step trace; summaries and frozen figure sources retained"
+  },
+  {
+    "sha256": "3180d10628372d01f9241024ce57f13bb8d12b155de1bfc12d540ec9a2038809",
+    "bytes": 1426122,
+    "paths": [
+      "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/effects_per_step.csv"
+    ],
+    "reason": "non-core full step-by-step trace; summaries and frozen figure sources retained"
+  },
+  {
+    "sha256": "a20373243a93bb364a5b0ff1f592fd082a87be0e721973943ff3b784cd617306",
+    "bytes": 1745412,
+    "paths": [
+      "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/per_step.csv"
+    ],
+    "reason": "non-core full step-by-step trace; summaries and frozen figure sources retained"
+  },
+  {
+    "sha256": "9064acd47ca0d8556a924f2d97c74b1e331ba456dbd43125f179c586aea7922a",
+    "bytes": 1013266,
+    "paths": [
+      "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_generation_screen_20261018/per_step.csv"
+    ],
+    "reason": "non-core full step-by-step trace; summaries and frozen figure sources retained"
+  },
+  {
+    "sha256": "80e738d7f8b2b9508133bc7ddbe3034070454d805a868e6b554265ba60669ae2",
+    "bytes": 1362361,
+    "paths": [
+      "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/local_metabolic_translocation_20261018/steps.csv"
+    ],
+    "reason": "non-core full step-by-step trace; summaries and frozen figure sources retained"
+  },
+  {
+    "sha256": "dca17e091decb0cd8b085a3db93be68828127abf8aaf37de57b507fa588e3efc",
+    "bytes": 4955427,
+    "paths": [
+      "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/complementary_cargo_exchange_20261019/all_clocks.csv"
+    ],
+    "reason": "non-core full step-by-step trace; summaries and frozen figure sources retained"
+  },
+  {
+    "sha256": "c4ae5dd2217b659f9df5cbcf42560a20b82c525757a2555cae46b70ed655b462",
+    "bytes": 7820726,
+    "paths": [
+      "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/all_steps.csv"
+    ],
+    "reason": "non-core full step-by-step trace; summaries and frozen figure sources retained"
+  },
+  {
+    "sha256": "82b18393e4d1c357512f502e743fc89926bd693e2c0ceb7f36d53e50a77e22bd",
+    "bytes": 4051242,
+    "paths": [
+      "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycling_precursor_dependence_20261019/all_steps.csv"
+    ],
+    "reason": "non-core full step-by-step trace; summaries and frozen figure sources retained"
+  },
+  {
+    "sha256": "96115e3d6f31611616ad5cd42eba44d8703da6006b2dc25acdd4317c6fc73e3b",
+    "bytes": 5400286,
+    "paths": [
+      "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/paid_local_turnover_recycling_20261019/all_steps.csv"
+    ],
+    "reason": "non-core full step-by-step trace; summaries and frozen figure sources retained"
+  }
+]

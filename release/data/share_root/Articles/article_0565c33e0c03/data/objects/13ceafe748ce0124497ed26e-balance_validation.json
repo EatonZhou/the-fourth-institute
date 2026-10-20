@@ -1,0 +1,44 @@
+[
+  {
+    "parent": "g1_f1_c0--compact--supported",
+    "arm": "always",
+    "material": 5.684341886080802e-14,
+    "energy": -5.684341886080802e-14,
+    "max_step_error": 1.4310774787418268e-13
+  },
+  {
+    "parent": "g1_f1_c0--compact--supported",
+    "arm": "off",
+    "material": -1.4210854715202004e-14,
+    "energy": -1.1368683772161603e-13,
+    "max_step_error": 1.1468603844377867e-13
+  },
+  {
+    "parent": "g1_f1_c0--compact--supported",
+    "arm": "restart",
+    "material": 0.0,
+    "energy": -1.1368683772161603e-13,
+    "max_step_error": 2.2737367544323206e-13
+  },
+  {
+    "parent": "g1_f2_c0--compact--supported",
+    "arm": "always",
+    "material": -5.684341886080802e-14,
+    "energy": 5.684341886080802e-14,
+    "max_step_error": 1.907363156306019e-13
+  },
+  {
+    "parent": "g1_f2_c0--compact--supported",
+    "arm": "off",
+    "material": -4.263256414560601e-14,
+    "energy": 5.684341886080802e-14,
+    "max_step_error": 1.6131540547803525e-13
+  },
+  {
+    "parent": "g1_f2_c0--compact--supported",
+    "arm": "restart",
+    "material": 1.4210854715202004e-14,
+    "energy": -5.684341886080802e-14,
+    "max_step_error": 2.2737367544323206e-13
+  }
+]

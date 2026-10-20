@@ -1,0 +1,7 @@
+[Unit]
+Description=TFI Portal Release domain services
+Wants=portal-release-nats.service portal-release-resource-service.service portal-release-execution-service.service portal-release-execution-worker.service portal-release-society-service.service
+After=portal-release-nats.service portal-release-resource-service.service portal-release-execution-service.service portal-release-execution-worker.service portal-release-society-service.service
+
+[Install]
+WantedBy=default.target

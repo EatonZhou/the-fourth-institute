@@ -1,0 +1,37 @@
+{
+  "schema": "experience-adaptation-genome.v1",
+  "id": "genome_8a9ce6d23c3acf3e2fce",
+  "family": "reference_anisotropic",
+  "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/reference_anisotropic--connected_trilobe.npz",
+  "source_sha256": "c73aa228328b141bf094093030fcd8c82fa49f7b022d5e3f4bffe171b29d300a",
+  "genes": [
+    0.03421275770799031,
+    0.08029281369321803,
+    0.011506740322160933,
+    0.05304430706574325,
+    -0.01407398616973669,
+    0.12830455927456882,
+    0.12906578392119672,
+    0.0037293503461114106,
+    0.09711495309915594,
+    0.11879305999572985,
+    0.09825815289093799
+  ],
+  "parent_id": "genome_93e6148d32bbb0862163",
+  "generation": 1,
+  "mutation_seed": 202610180501,
+  "named_genes": {
+    "log_mu1": 0.03421275770799031,
+    "log_mu2": 0.08029281369321803,
+    "log_sigma1": 0.011506740322160933,
+    "log_sigma2": 0.05304430706574325,
+    "weight_shift": -0.01407398616973669,
+    "kernel_radial1": 0.12830455927456882,
+    "kernel_radial2": 0.12906578392119672,
+    "kernel_crossmix": 0.0037293503461114106,
+    "log_stretch_y": 0.09711495309915594,
+    "log_stretch_x": 0.11879305999572985,
+    "neck_density": 0.09825815289093799
+  },
+  "lifetime_rule": "fixed; only outer generations mutate"
+}

@@ -1,0 +1,413 @@
+[
+  {
+    "effect": "reference_anisotropic--connected_trilobe--reserve_T11_minus_open_T11",
+    "M": {
+      "positive": [
+        [
+          129,
+          185
+        ],
+        [
+          214,
+          260
+        ],
+        [
+          299,
+          338
+        ],
+        [
+          375,
+          384
+        ]
+      ],
+      "negative": [
+        [
+          186,
+          213
+        ],
+        [
+          261,
+          298
+        ],
+        [
+          339,
+          374
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          384
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          187
+        ]
+      ],
+      "negative": [
+        [
+          188,
+          384
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          384
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "effect": "reference_anisotropic--connected_trilobe--reserve_T11_minus_suppress_T11",
+    "M": {
+      "positive": [
+        [
+          174,
+          213
+        ],
+        [
+          218,
+          219
+        ],
+        [
+          240,
+          299
+        ],
+        [
+          328,
+          379
+        ]
+      ],
+      "negative": [
+        [
+          162,
+          173
+        ],
+        [
+          214,
+          217
+        ],
+        [
+          220,
+          239
+        ],
+        [
+          300,
+          327
+        ],
+        [
+          380,
+          384
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          150,
+          384
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          174,
+          175
+        ]
+      ],
+      "negative": [
+        [
+          162,
+          173
+        ],
+        [
+          176,
+          384
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          175,
+          234
+        ],
+        [
+          251,
+          384
+        ]
+      ],
+      "negative": [
+        [
+          164,
+          174
+        ],
+        [
+          235,
+          250
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "reference_anisotropic--connected_trilobe--suppress_T11_minus_open_T11",
+    "M": {
+      "positive": [
+        [
+          129,
+          185
+        ],
+        [
+          214,
+          257
+        ],
+        [
+          299,
+          336
+        ],
+        [
+          376,
+          384
+        ]
+      ],
+      "negative": [
+        [
+          186,
+          213
+        ],
+        [
+          258,
+          298
+        ],
+        [
+          337,
+          375
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          384
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          187
+        ],
+        [
+          213,
+          384
+        ]
+      ],
+      "negative": [
+        [
+          188,
+          212
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          294
+        ],
+        [
+          304,
+          363
+        ]
+      ],
+      "negative": [
+        [
+          295,
+          303
+        ],
+        [
+          364,
+          384
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "compact_ring_core_outer--bridged_longbody--reserve_T11_minus_open_T11",
+    "M": {
+      "positive": [
+        [
+          129,
+          137
+        ],
+        [
+          143,
+          231
+        ],
+        [
+          290,
+          384
+        ]
+      ],
+      "negative": [
+        [
+          138,
+          142
+        ],
+        [
+          232,
+          289
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          384
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          384
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          384
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "effect": "compact_ring_core_outer--bridged_longbody--reserve_T11_minus_suppress_T11",
+    "M": {
+      "positive": [
+        [
+          191,
+          384
+        ]
+      ],
+      "negative": [
+        [
+          166,
+          190
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          156,
+          384
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [],
+      "negative": [
+        [
+          166,
+          384
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          195,
+          384
+        ]
+      ],
+      "negative": [
+        [
+          167,
+          194
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "compact_ring_core_outer--bridged_longbody--suppress_T11_minus_open_T11",
+    "M": {
+      "positive": [
+        [
+          129,
+          137
+        ],
+        [
+          143,
+          229
+        ]
+      ],
+      "negative": [
+        [
+          138,
+          142
+        ],
+        [
+          230,
+          384
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          384
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          384
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          251
+        ]
+      ],
+      "negative": [
+        [
+          252,
+          384
+        ]
+      ]
+    }
+  }
+]

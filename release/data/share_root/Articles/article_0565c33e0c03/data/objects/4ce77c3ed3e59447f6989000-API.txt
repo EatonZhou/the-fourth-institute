@@ -1,0 +1,7 @@
+local_learning.fixed_amount_rule_deletion_layout.core:
+route_deletion(D0,rho,h,mode)->new,fields,checks：纯数组，同源量匹配；DIRECTIONS +y,-y,+x,-x，周期四邻。
+attach(parent256,mode)->GrowthBody：恢复具名完整取得态，替换私有LayoutRate，增加纯observer，禁止任何自动前向。
+env.native(ForwardPermit) / env.settle()：唯一runner授权真实调用；maps含layout_D0/Dnew/rho/h/v、offer/candidate/matched mass/uniform、q/out/in及原所有费用，cohort由runner随后推进。
+GrowthBody.checkpoint/restore保存全部物理、供给、RNG、L128及layout_cohorts；labels[0]=L256,labels[1]=post256。
+frames.json索引所有真实指定时点和256/320/384完整joint，raw_manifest每原件SHA。step.csv全物理账/费用/标签；cohort_accounting.json为原逐步终末汇总，不是新测量。
+plan冻结初版；attempt1与runner attempts/0001留失败；resume_evidence.json绑定同job恢复，不可将尝试1抹去。

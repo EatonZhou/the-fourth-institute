@@ -1,0 +1,65 @@
+{
+  "native": 0,
+  "control": {
+    "research.desired_state": "running",
+    "research.started": true
+  },
+  "parents": [
+    {
+      "parent": "202610197503_0_0_fast_delta_life",
+      "both_on_rates_bitwise_equal": true,
+      "initial_all_fields_exact": true,
+      "known128_clock_feedback_observer_verified": true,
+      "weighted_rate_differences": {
+        "both_on": 0.0,
+        "cue_only": 8.908816105154957,
+        "polarity_only": 5.061125201881293,
+        "both_off": 14.058307088630642
+      },
+      "raw_cue_abs": 17.567391751186385,
+      "raw_polarity_abs": 21.600000000000012
+    },
+    {
+      "parent": "202610197503_0_1_fast_delta_life",
+      "both_on_rates_bitwise_equal": true,
+      "initial_all_fields_exact": true,
+      "known128_clock_feedback_observer_verified": true,
+      "weighted_rate_differences": {
+        "both_on": 0.0,
+        "cue_only": 10.66858599943397,
+        "polarity_only": 1.9068802174611927,
+        "both_off": 9.828158090563603
+      },
+      "raw_cue_abs": 5.215989414042907,
+      "raw_polarity_abs": 21.599999999999984
+    },
+    {
+      "parent": "202610197504_1_0_fast_delta_life",
+      "both_on_rates_bitwise_equal": true,
+      "initial_all_fields_exact": true,
+      "known128_clock_feedback_observer_verified": true,
+      "weighted_rate_differences": {
+        "both_on": 0.0,
+        "cue_only": 8.974600093100568,
+        "polarity_only": 5.066894164461314,
+        "both_off": 14.05543191713721
+      },
+      "raw_cue_abs": 17.19215403879082,
+      "raw_polarity_abs": 21.6
+    },
+    {
+      "parent": "202610197504_1_1_fast_delta_life",
+      "both_on_rates_bitwise_equal": true,
+      "initial_all_fields_exact": true,
+      "known128_clock_feedback_observer_verified": true,
+      "weighted_rate_differences": {
+        "both_on": 0.0,
+        "cue_only": 10.668706142077246,
+        "polarity_only": 1.9069963092457063,
+        "both_off": 9.827824289517851
+      },
+      "raw_cue_abs": 5.216041480795277,
+      "raw_polarity_abs": 21.600000000000005
+    }
+  ]
+}

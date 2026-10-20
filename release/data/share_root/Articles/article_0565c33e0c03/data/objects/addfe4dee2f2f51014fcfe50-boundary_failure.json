@@ -1,0 +1,7 @@
+{
+  "reason": "boundary incorrectly required K weights zero even on empty donor cells; actual donor flux is the relevant condition",
+  "attempted_body_steps": 1,
+  "receipt_saved": false,
+  "old_source_unchanged": true,
+  "prior_plan_sha256": "396b81c2a38bb85163b672287c87c71c55c687e9df7c5169cc9977184683d040"
+}

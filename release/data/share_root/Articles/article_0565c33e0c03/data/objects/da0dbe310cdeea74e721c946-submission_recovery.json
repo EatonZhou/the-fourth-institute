@@ -1,0 +1,20 @@
+{
+  "id": "7c3e1af1-a28a-492a-833d-f01f15248091",
+  "name": "d3 embodied local motor recovery remaining7424",
+  "command": [
+    "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+    "-m",
+    "local_learning.embodied_action_learning.run",
+    "run"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "d3-embodied-action-learning-20261019-record-recovery",
+  "status": "running",
+  "created_at": "2026-10-19T09:18:33.442548+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/7c3e1af1-a28a-492a-833d-f01f15248091",
+  "pid": 2343482,
+  "manual_pause": false,
+  "create_time": 1792401512.91,
+  "started_at": "2026-10-19T09:18:33.520567+00:00"
+}

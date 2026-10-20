@@ -1,0 +1,26 @@
+[
+  {
+    "resident_id": "resident_afa3d4d6cf11",
+    "status": "committed",
+    "message_id": "msg_c8b94eba1d71ef73140782c2e27ff71e",
+    "accepted": true
+  },
+  {
+    "resident_id": "resident_78225d1bc049",
+    "status": "committed",
+    "message_id": "msg_b3f713001f7587ec95f80a7c48c072b8",
+    "accepted": true
+  },
+  {
+    "resident_id": "resident_a48ab8bd3f81",
+    "status": "committed",
+    "message_id": "msg_e1c809e0880c232a43fcc4a74d9e8c0b",
+    "accepted": true
+  },
+  {
+    "resident_id": "resident_5fe1227e36c0",
+    "status": "committed",
+    "message_id": "msg_597507cd0241e91607c9a85050ad9502",
+    "accepted": true
+  }
+]

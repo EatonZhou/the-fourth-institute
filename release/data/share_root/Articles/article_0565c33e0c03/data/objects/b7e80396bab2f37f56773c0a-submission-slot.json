@@ -1,0 +1,10 @@
+{
+  "scheduler": {
+    "cpu_slots": 2,
+    "cpu_threads_per_job": 2,
+    "gpu_slots": 1,
+    "gpu_available": false
+  },
+  "active_experiments": [],
+  "queued_experiments": []
+}

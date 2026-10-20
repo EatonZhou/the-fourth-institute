@@ -1,0 +1,68 @@
+{
+  "host_schema": "anticipatory-material-allocation-v1",
+  "host_source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/anticipatory_material_allocation/core.py",
+  "host_sha256": "4ea2ebf8f3ec025624b30688122dbb3ea7f5717606f9eccb1ea5c4765b726817",
+  "config": {
+    "size": 32,
+    "cycle": 32,
+    "commit_phase": 4,
+    "delay": 8,
+    "arrival": 12,
+    "initial_mass": 20.0,
+    "initial_energy": 24.0,
+    "mass_cap": 20.0,
+    "capacity": 6.0,
+    "input_per_port": 6.0,
+    "build_price": 0.02,
+    "change_price": 0.03,
+    "detect_price_per_mass": 0.0001,
+    "detection_density": 0.02,
+    "energy_efficiency": 0.7,
+    "growth_per_uptake": 0.12,
+    "basal_per_mass": 0.0022,
+    "move_per_mass_distance": 0.002,
+    "turnover": 0.0002,
+    "speed": 1.05,
+    "energy_capacity": 1.6
+  },
+  "selection": {
+    "phase": 4,
+    "ordinal": "4*step_index before call",
+    "visible": [
+      "phase",
+      "cue",
+      "rho",
+      "resource",
+      "energy",
+      "active",
+      "pending",
+      "pending_due",
+      "step",
+      "subcell_x"
+    ]
+  },
+  "completion": {
+    "phase": 12,
+    "postclock": 13,
+    "ordinal_slots": [
+      "before",
+      "sensor payment",
+      "opening",
+      "completion"
+    ],
+    "label": "local resource available >1e-12 only where completed_mask; unknown -1",
+    "payment": "detect_paid >= detect_requested; memory/write payment is separate",
+    "support": "fixed port_mask, old survivor>1e-12, active>=.02*survivor. Host completed_mask certifies port coverage; adapter checks stored payment/capacity/carrier, not physical geometry."
+  },
+  "history_scope": "one material scope per stream; caller must retain actual carrier/shift/keep/receipt provenance. Do not concatenate fixed coordinates across movement without provenance.",
+  "arrays": "exact dtype/shape/C-byte SHA; no rounding/interpolation, no tolerance added",
+  "task": "single capacity field; cue×mapping chooses one supplied side in stable/reversal; iid chooses one side independently of cue, not two independent Bernoulli ports",
+  "limits": [
+    "no host call or physical reconstruction",
+    "active/pending are public, and may already encode history",
+    "absolute public step is included; policy must not use hidden reversal schedule/seed",
+    "initial capacity is nonzero; no new commitment can retain an existing configuration",
+    "resource is a same-step pulse; current resource is zero at legal commitment, by task construction",
+    "ability is a priced function of tissue, not extra biomass; newborn has no inherited ability"
+  ]
+}

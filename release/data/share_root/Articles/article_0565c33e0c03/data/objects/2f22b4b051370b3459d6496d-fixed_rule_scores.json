@@ -1,0 +1,26 @@
+{
+  "fixed_last": {
+    "common_completed_events": 2,
+    "decision_ids": [
+      "a",
+      "b"
+    ],
+    "metric": "brier",
+    "score": 0.0,
+    "rule_digests": [
+      "f5098e991f1592eec7dd63a3e6bfa7a53fb087666183c937912d4d2ab15e3154"
+    ]
+  },
+  "current_prior": {
+    "common_completed_events": 2,
+    "decision_ids": [
+      "a",
+      "b"
+    ],
+    "metric": "brier",
+    "score": 0.25,
+    "rule_digests": [
+      "721336d7c82ebb7630ecd47ce7eec7af6366b151c16f5bb0ec70f3d519719abc"
+    ]
+  }
+}

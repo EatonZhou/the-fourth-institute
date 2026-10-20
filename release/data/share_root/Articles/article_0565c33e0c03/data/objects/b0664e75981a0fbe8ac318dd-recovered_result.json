@@ -1,0 +1,34 @@
+{
+  "status": "all_physical_branches_complete_postrun_artifact_guard_failed",
+  "job": "f9e56126-9ad7-4722-a6c9-e9d7cc5107dd",
+  "runner_status": "failed",
+  "returncode": 1,
+  "native_steps": 108,
+  "branches": 18,
+  "independent_new_histories": 0,
+  "worker_seconds": 0.935069,
+  "raw_bytes": 10033478,
+  "own_raw_limit": 8388608,
+  "authorized_raw_limit": 134217728,
+  "recovery": "Read only:18 final arrays,18 exact complete parents and108 unique step receipts. No native retry, no original plan/source/result rewrite. Original failure retained.",
+  "policy": {
+    "literal_q": {
+      "n": 6,
+      "factual_correct": 6,
+      "swapped_correct": 0,
+      "commands_changed": 6
+    },
+    "pair_q": {
+      "n": 6,
+      "factual_correct": 6,
+      "swapped_correct": 0,
+      "commands_changed": 6
+    },
+    "body_q": {
+      "n": 6,
+      "factual_correct": 4,
+      "swapped_correct": 4,
+      "commands_changed": 0
+    }
+  }
+}

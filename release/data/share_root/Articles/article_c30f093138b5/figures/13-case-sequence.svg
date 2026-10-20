@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600" viewBox="0 0 1200 600">
+<rect width="1200" height="600" fill="white"/>
+<text x="28" y="41.56" text-anchor="start" font-family="Noto Sans CJK SC" font-size="26" font-weight="700" fill="#275D85">构造案例：取消请求与完成事件的竞争</text>
+<polyline points="28,62 1172,62" fill="none" stroke="#91A2AE" stroke-width="1.7"/>
+<text x="30" y="583.0300000000001" text-anchor="start" font-family="Noto Sans CJK SC" font-size="13" font-weight="400" fill="#61717E">设计示意 · 实线：工作或依赖关系；虚线：反馈或关联；不表示实验测量</text>
+<rect x="35" y="90" width="200" height="65" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="135.0" y="128.39" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#275D85">用户界面</text>
+<polyline points="135,160 135,530" fill="none" stroke="#91A2AE" stroke-width="1.7"/>
+<rect x="335" y="90" width="200" height="65" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="435.0" y="128.39" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#275D85">任务状态服务</text>
+<polyline points="435,160 435,530" fill="none" stroke="#91A2AE" stroke-width="1.7"/>
+<rect x="635" y="90" width="200" height="65" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="735.0" y="128.39" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#275D85">执行器</text>
+<polyline points="735,160 735,530" fill="none" stroke="#91A2AE" stroke-width="1.7"/>
+<rect x="965" y="90" width="200" height="65" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="1065.0" y="128.39" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#275D85">资源／结果</text>
+<polyline points="1065,160 1065,530" fill="none" stroke="#91A2AE" stroke-width="1.7"/>
+<polyline points="135,205 435,205" fill="none" stroke="#275D85" stroke-width="1.7"/>
+<polygon points="435,205 426.6420182798114,208.33828422471686 426.6420182798114,201.66171577528314" fill="#275D85"/>
+<text x="285.0" y="195.46" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="16" font-weight="400" fill="#263442">提交取消请求</text>
+<polyline points="435,265 135,265" fill="none" stroke="#26756C" stroke-width="1.7"/>
+<polygon points="135,265 143.3579817201886,261.66171577528314 143.3579817201886,268.33828422471686" fill="#26756C"/>
+<text x="285.0" y="255.46" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="16" font-weight="400" fill="#263442">请求已接收</text>
+<polyline points="435,325 735,325" fill="none" stroke="#275D85" stroke-width="1.7"/>
+<polygon points="735,325 726.6420182798114,328.33828422471686 726.6420182798114,321.66171577528314" fill="#275D85"/>
+<text x="585.0" y="315.46" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="16" font-weight="400" fill="#263442">转发停止意图</text>
+<polyline points="735,385 1065,385" fill="none" stroke="#275D85" stroke-width="1.7"/>
+<polygon points="1065,385 1056.6420182798115,388.33828422471686 1056.6420182798115,381.66171577528314" fill="#275D85"/>
+<text x="900.0" y="375.46" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="16" font-weight="400" fill="#263442">释放资源／保留输出</text>
+<polyline points="735,445 435,445" fill="none" stroke="#26756C" stroke-width="1.7"/>
+<polygon points="435,445 443.3579817201886,441.66171577528314 443.3579817201886,448.33828422471686" fill="#26756C"/>
+<text x="585.0" y="435.46" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="16" font-weight="400" fill="#263442">终态确认与版本</text>
+<polyline points="435,505 135,505" fill="none" stroke="#26756C" stroke-width="1.7"/>
+<polygon points="135,505 143.3579817201886,501.66171577528314 143.3579817201886,508.33828422471686" fill="#26756C"/>
+<text x="285.0" y="495.46" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="16" font-weight="400" fill="#263442">显示实际终态</text>
+<text x="942.5" y="221.83999999999997" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="18" font-weight="400" fill="#99651B">并发分支：完成事件可能先到达</text>
+<text x="942.5" y="243.07999999999998" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="18" font-weight="400" fill="#99651B">状态服务核对实际终态与版本</text>
+<text x="942.5" y="264.32" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="18" font-weight="400" fill="#99651B">界面据此说明结果</text>
+</svg>

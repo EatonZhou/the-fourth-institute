@@ -1,0 +1,19 @@
+{
+  "status": "rules_frozen_waiting_shared_viable_environment",
+  "sources": {
+    "research/feedback_acquisition/__init__.py": "bcb5f792f411a86bb3c50c07f63e33c90276d215a1d867a851a6b2da67fb383e",
+    "research/feedback_acquisition/analyze.py": "d42fbef2a15192d65924a277e2bc76a06998ff6ec57c296e88e0792a637b02f2",
+    "research/feedback_acquisition/check_policy.py": "0cc0045bc4c689fc6ce7d7cc153a8816babf0e04f0c23b9208427ac4409acb36",
+    "research/feedback_acquisition/policy.py": "78b9b3426032074276de00e488d8d88e8e2499de612e82c4372af88e1a989579",
+    "research/feedback_acquisition/spec.json": "ed5a7bc4e3c11b861b1f4f0ef11969a2308e7120c82cf12760fb49bae37e6f32",
+    "research/event_reservoir_learning/predictor.py": "452ed232eea729359cc100b9b85bbe6fa58e01feb848d0ef40551976814fcdb9"
+  },
+  "body_steps": 0,
+  "old_budget_used": 0,
+  "new_seeds": [
+    6201,
+    6202,
+    6203,
+    6204
+  ]
+}

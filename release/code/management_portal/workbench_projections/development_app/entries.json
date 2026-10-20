@@ -1,0 +1,7 @@
+{
+  "architecture": "src/architecture/index.js",
+  "progress": "src/progress/index.js",
+  "evolution": "src/evolution/index.js",
+  "example": "src/example/index.js",
+  "packaging": "src/packaging/index.js"
+}

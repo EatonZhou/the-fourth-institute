@@ -1,0 +1,9 @@
+# Optional SocietyService additions to the Dev runtime (portal_instances/dev/runtime-venv),
+# which runs both instances' SocietyService. Resident discovery embeds search
+# text locally with the paraphrase-multilingual-MiniLM-L12-v2 ONNX model
+# (management_portal/society_service/resident_context/embedder.py).
+# Resident embeddings are off by default. Install with the embeddings bootstrap
+# profile, then enable in Portal Management. pip resolves package dependencies.
+numpy
+onnxruntime
+tokenizers

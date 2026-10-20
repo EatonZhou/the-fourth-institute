@@ -1,0 +1,46 @@
+[
+  {
+    "shape": "ring",
+    "role": "selected",
+    "reference": "midpoint",
+    "available": true,
+    "same_pre_body": true,
+    "same_pre_PFE": true,
+    "request_C_disagreement": 0,
+    "actual_h_max_difference": 0.2211263491089177,
+    "actual_h_mass_difference": 2.8479738228237057
+  },
+  {
+    "shape": "ring",
+    "role": "always_midpoint",
+    "reference": "midpoint",
+    "available": true,
+    "same_pre_body": true,
+    "same_pre_PFE": true,
+    "request_C_disagreement": 310,
+    "actual_h_max_difference": 1.608939108619141,
+    "actual_h_mass_difference": 32.766462835325164
+  },
+  {
+    "shape": "separate_seeds",
+    "role": "selected",
+    "reference": "midpoint",
+    "available": true,
+    "same_pre_body": true,
+    "same_pre_PFE": true,
+    "request_C_disagreement": 1,
+    "actual_h_max_difference": 0.221287818863098,
+    "actual_h_mass_difference": 0.28732670190114773
+  },
+  {
+    "shape": "separate_seeds",
+    "role": "always_midpoint",
+    "reference": "midpoint",
+    "available": true,
+    "same_pre_body": true,
+    "same_pre_PFE": true,
+    "request_C_disagreement": 319,
+    "actual_h_max_difference": 1.9000875654324598,
+    "actual_h_mass_difference": 49.94139311593625
+  }
+]

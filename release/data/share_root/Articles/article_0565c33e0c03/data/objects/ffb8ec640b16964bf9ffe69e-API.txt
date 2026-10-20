@@ -1,0 +1,10 @@
+数据消费入口；不授权重跑
+handoff/manifest：终版、来源、预算、附件SHA。raw_manifest：401真实原件SHA。
+plan/source：首前向冻结的实际运行计划/依赖；analysis_source为事后只读分析，不参与native。
+selection_frozen/training_proposals/CEM_rounds：提议、评价与训练选择时序；aliases为空，8验证角色真实不同。
+outcomes：26条新物理轨迹；combined_validation明确original prefix_rows(旧HC)/new_tail_rows(真实续窗)。
+steps.csv逐步请求/实际付款欠付/输入出口/生死/物能及cohort标量；fields/receipt NPZ仅预定保存时点，不代表逐步完整K。state*.bin完整joint包括物理、有限输入cursor、标签和固定策略。
+requested_C/requested_w为本次ready锁存；actual_h为真实afteractor响应；next_字段是下一ready，不可回填本步特征。
+outcomes/contrasts/costs/windows/curves CSV逐项量；bodytime含dt。L128、L256与post128、post256明确分开。
+boundaries/pure_checks/reference_reuse为责任检查。runner_final/budget为本job真预算，来源继承计数不当成本job步数。
+图中not registered/not saved是未登记或未保存，不是0；实际0以实色空场呈现。

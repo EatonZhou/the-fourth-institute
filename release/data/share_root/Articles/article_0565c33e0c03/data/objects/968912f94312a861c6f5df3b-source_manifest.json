@@ -1,0 +1,1189 @@
+{
+  "files": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/METHOD.txt",
+      "relative": "METHOD.txt",
+      "sha256": "a8c08efcfeea83af3e48a60a8a4e741e2675ec016785bb1130828b8c37dfad39",
+      "bytes": 4099
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/REPORT.txt",
+      "relative": "REPORT.txt",
+      "sha256": "d1fa6c95a5bba87eed4a05e41d6b0386cfb25c9169917a6f21b55b2d1d1472be",
+      "bytes": 7073
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/accounting.json",
+      "relative": "accounting.json",
+      "sha256": "e9f36017ad320d2a0503467bcf2a2a8e3d2dfc26411811b1e71b038d0eedffcc",
+      "bytes": 758
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/analysis_checks.json",
+      "relative": "analysis_checks.json",
+      "sha256": "bd7f054876a69f159abb41d47674f0bfd3212bf5b143247c2772424106f67fad",
+      "bytes": 429
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/compact_ring_core_outer--bridged_longbody--excised-atlas.pdf",
+      "relative": "compact_ring_core_outer--bridged_longbody--excised-atlas.pdf",
+      "sha256": "7edee93b0c2d6ceb9fd37b60713c8c77d394794fa15bf4a1433dcc8d2b2ef690",
+      "bytes": 151454
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/compact_ring_core_outer--bridged_longbody--excised-atlas.png",
+      "relative": "compact_ring_core_outer--bridged_longbody--excised-atlas.png",
+      "sha256": "559018ca5c3e7ac59c68622679fa382409c13dec035683d1706602160518a9f7",
+      "bytes": 329794
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/compact_ring_core_outer--bridged_longbody--excised-atlas.svg",
+      "relative": "compact_ring_core_outer--bridged_longbody--excised-atlas.svg",
+      "sha256": "5ceef3daba6bde07e4ac6fe7c0d665d5509cc823af2f5f6137be5797890d3250",
+      "bytes": 441031
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/compact_ring_core_outer--bridged_longbody--excised-frames.npz",
+      "relative": "compact_ring_core_outer--bridged_longbody--excised-frames.npz",
+      "sha256": "ec40033b34680960c344f5ab51f74be13e7e664845bc0e2ac70596190d653a34",
+      "bytes": 1986643
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/compact_ring_core_outer--bridged_longbody--excised.gif",
+      "relative": "compact_ring_core_outer--bridged_longbody--excised.gif",
+      "sha256": "56fe588f4d3af370af6beb6c79157cc0a243a7d134d0903f960024f96e9a85a8",
+      "bytes": 294800
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/compact_ring_core_outer--bridged_longbody--open_T11/initial256.npz",
+      "relative": "compact_ring_core_outer--bridged_longbody--open_T11/initial256.npz",
+      "sha256": "79856753dafc20730271e62f707228ff141ae904b50d49a3c176cfccfb59e63f",
+      "bytes": 260527
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/compact_ring_core_outer--bridged_longbody--open_T11/injury.npz",
+      "relative": "compact_ring_core_outer--bridged_longbody--open_T11/injury.npz",
+      "sha256": "2044951b2c6a6298233cab81ebfe2dc64db616ea6b7230ec6477dbfd81da6468",
+      "bytes": 47174
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/compact_ring_core_outer--bridged_longbody--uninjured-atlas.pdf",
+      "relative": "compact_ring_core_outer--bridged_longbody--uninjured-atlas.pdf",
+      "sha256": "a6e151d2833dc48f0ff33d032a8a6235bc0463ca578e6c34f2a0bc75d8e7526f",
+      "bytes": 157672
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/compact_ring_core_outer--bridged_longbody--uninjured-atlas.png",
+      "relative": "compact_ring_core_outer--bridged_longbody--uninjured-atlas.png",
+      "sha256": "c84aa32b24875b99b0c14da7d1210a4b1a832f37960cfe79759120e6aac312d9",
+      "bytes": 349391
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/compact_ring_core_outer--bridged_longbody--uninjured-atlas.svg",
+      "relative": "compact_ring_core_outer--bridged_longbody--uninjured-atlas.svg",
+      "sha256": "792e8c8b593026f85d3030d4eeb401542ad30a1935bcf8578cd4b330920e4a1c",
+      "bytes": 462500
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/compact_ring_core_outer--bridged_longbody--uninjured-frames.npz",
+      "relative": "compact_ring_core_outer--bridged_longbody--uninjured-frames.npz",
+      "sha256": "c4e6c1b7703215e7449bf3aed5ded5f84ba3908b93bd6ba263f28db8ae9d9713",
+      "bytes": 2087491
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/compact_ring_core_outer--bridged_longbody--uninjured.gif",
+      "relative": "compact_ring_core_outer--bridged_longbody--uninjured.gif",
+      "sha256": "1ca9a23473bb731cd5885234a1a345118396f458479dda29e5e3ad8ac8ade603",
+      "bytes": 318075
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/compact_ring_core_outer--bridged_longbody-effects.pdf",
+      "relative": "compact_ring_core_outer--bridged_longbody-effects.pdf",
+      "sha256": "7dedc44bd57019160181b8972d7a09be94e915d9fff28de9999265fab5b4e8db",
+      "bytes": 21419
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/compact_ring_core_outer--bridged_longbody-effects.png",
+      "relative": "compact_ring_core_outer--bridged_longbody-effects.png",
+      "sha256": "d436bd7be22920f01ae41dd229fe2d3a778a4000ea878e6cb8365ff9f43ea888",
+      "bytes": 161138
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/compact_ring_core_outer--bridged_longbody-effects.svg",
+      "relative": "compact_ring_core_outer--bridged_longbody-effects.svg",
+      "sha256": "9d3420cbc3aa62bd11b062a591ac949b8a02ab5a53c4b0a11cd9d2155517c32c",
+      "bytes": 102095
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/compact_ring_core_outer--bridged_longbody-injury.pdf",
+      "relative": "compact_ring_core_outer--bridged_longbody-injury.pdf",
+      "sha256": "757a4b4db2b8f0a67aebc3598f626dce2feb166704f63150a3c5d77740fb1920",
+      "bytes": 67370
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/compact_ring_core_outer--bridged_longbody-injury.png",
+      "relative": "compact_ring_core_outer--bridged_longbody-injury.png",
+      "sha256": "1757117f12b93259f6e7e45f93ab9ddf12045db26799e73c6d7ee2863ae6d9ce",
+      "bytes": 186566
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/compact_ring_core_outer--bridged_longbody-injury.svg",
+      "relative": "compact_ring_core_outer--bridged_longbody-injury.svg",
+      "sha256": "bafacff6d5a888e8c65ae0410f15616a61517e0d082bb46fad38285ec6cf006f",
+      "bytes": 205609
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/compact_ring_core_outer--bridged_longbody-process.pdf",
+      "relative": "compact_ring_core_outer--bridged_longbody-process.pdf",
+      "sha256": "1868a1778348eb15d011d5bf3dcd3f3623f3d7be8b825d8793d37fa8cf95deea",
+      "bytes": 31795
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/compact_ring_core_outer--bridged_longbody-process.png",
+      "relative": "compact_ring_core_outer--bridged_longbody-process.png",
+      "sha256": "829b9e4189127ada01aa55efe3d6aac6dd80965971bc566a52a2efd340d308f6",
+      "bytes": 324994
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/compact_ring_core_outer--bridged_longbody-process.svg",
+      "relative": "compact_ring_core_outer--bridged_longbody-process.svg",
+      "sha256": "b3d9eca06a25c88da2442ae447babc314e1eb302934dc496e1a1d6c3473fdcde",
+      "bytes": 182075
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/completion.json",
+      "relative": "completion.json",
+      "sha256": "f78da7aab10f98a2c4e283891c3d56692cf4c84d338a610b38d7e1b0e834570e",
+      "bytes": 3299
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/draws257_384.npy",
+      "relative": "draws257_384.npy",
+      "sha256": "06e973dad92b3cdb49fac62ab229fbb076a4e3e4ddccc8085ec24bb8c529e368",
+      "bytes": 9437312
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/early_collapse_readout.json",
+      "relative": "early_collapse_readout.json",
+      "sha256": "c8449d753ab8ec71eee3ed6bcf302c3e974b06431392d609af98c634f6508d46",
+      "bytes": 108447
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/effect_sign_intervals.json",
+      "relative": "effect_sign_intervals.json",
+      "sha256": "5477f127644d229a697262a67ffc54449277433c0dd0cd6f0f84fd986e0013fd",
+      "bytes": 1260
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/effects.csv",
+      "relative": "effects.csv",
+      "sha256": "e074126d60c42c212a3e92d2fb784415b3d89b5050dd282701b319de0487526c",
+      "bytes": 2490
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/effects.json",
+      "relative": "effects.json",
+      "sha256": "34aeff9f1eba7ecc7ee3901587a0899f623a7a872a28cb91bc315a5584ff7c85",
+      "bytes": 4032
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/effects_per_step.csv",
+      "relative": "effects_per_step.csv",
+      "sha256": "bbc4fb54a97398f833aed604130a2b99c0086ae414dd3aa35e23f8104d92809a",
+      "bytes": 203031
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/external_pulse.json",
+      "relative": "external_pulse.json",
+      "sha256": "23afc216346b982183b5638282ec91c0aef6e95334c5f1a1c1f2800bf77f6ccd",
+      "bytes": 4060
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/fixed_effects.csv",
+      "relative": "fixed_effects.csv",
+      "sha256": "1c4ef338ed0ee01dab22c7024079cd2ed9ed9f79c9a503b2bb2192e409689909",
+      "bytes": 16944
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/fixed_segments.csv",
+      "relative": "fixed_segments.csv",
+      "sha256": "ee13770813592df89c81566d815533b8980a628e39b0e5d8b35804497bd9fb3a",
+      "bytes": 15737
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/fixed_windows.csv",
+      "relative": "fixed_windows.csv",
+      "sha256": "73cffcc040df90fe71bdf29011aceb6e4a33c1423bbd88c9b5156b985f9fbb73",
+      "bytes": 16970
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/forcing257_384.npz",
+      "relative": "forcing257_384.npz",
+      "sha256": "30e3d0052ffe7b2bf88d06b98395e49f22583f2b54ec5514475a1bec4719c292",
+      "bytes": 27966
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/frame_coverage.csv",
+      "relative": "frame_coverage.csv",
+      "sha256": "9959403d3fd489fb4acc40ca3901346b5ffeec771ffaf62439af37f029b55d53",
+      "bytes": 8221
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/interpretation.json",
+      "relative": "interpretation.json",
+      "sha256": "f209a54224c6754d356c064be8a4dcddcb895889fd87dcbd639509f644f9de42",
+      "bytes": 4207
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/negative_intervals.json",
+      "relative": "negative_intervals.json",
+      "sha256": "b0a9230ff6a504ddf7a98a284b37c7d750d3e1414022e46869b87d0c59b4415b",
+      "bytes": 1425
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/old_packets.json",
+      "relative": "old_packets.json",
+      "sha256": "fffcabdb51a30cb728468b6ff59b224ca59e294a48848d9d64b535dd9efc8c38",
+      "bytes": 108621
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/outcomes.csv",
+      "relative": "outcomes.csv",
+      "sha256": "11a2c69f397997c0092ac705b716ac6bebe5cfa101703c25c7f5e23e61260aad",
+      "bytes": 5289
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/outcomes.json",
+      "relative": "outcomes.json",
+      "sha256": "c3c46b6ffe56eb7128aeaa63f87f323da3f2d83fab297ed097c78d4868b36092",
+      "bytes": 10924
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/packet_recovery.json",
+      "relative": "packet_recovery.json",
+      "sha256": "83fa0fe7ff423915a27813d1e164b36f02dfe25b57f49bd1cf0e197488b3bb1c",
+      "bytes": 793
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/paper_insert.tex",
+      "relative": "paper_insert.tex",
+      "sha256": "07ac39c2ac708fc65b64fe751119866b6350f7b2d6d17583723538d5c16289ac",
+      "bytes": 3150
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/path_closure.csv",
+      "relative": "path_closure.csv",
+      "sha256": "7d7e7b3c15756e3eac956a72d71345b0ed6d955f551915761de159db1d4e0e89",
+      "bytes": 520
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/per_step.csv",
+      "relative": "per_step.csv",
+      "sha256": "f3940b9734a7240abd9de32ad96fa0c04bfd38ab9bb281c315c20a3e4b3220cc",
+      "bytes": 532134
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/plan.json",
+      "relative": "plan.json",
+      "sha256": "cc918a725be7019e51b285daea2c35ee4827f66b279a4849adba6f11cf5654c1",
+      "bytes": 28761
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/postprocessing_source/analyze.py",
+      "relative": "postprocessing_source/analyze.py",
+      "sha256": "114749145611fa669d9d5cb633dce55525ddab20acb7b8cbf9943d736e18a0d9",
+      "bytes": 18064
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/postprocessing_source/package.py",
+      "relative": "postprocessing_source/package.py",
+      "sha256": "40acf107a9214ad66a4e2b051181d974e47e92640e54909e0ecb242d2438625e",
+      "bytes": 19087
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/projection.json",
+      "relative": "projection.json",
+      "sha256": "3171f5bdc0fe7cec2549c50665ee0e8c2f1322b0c48d70f9f6c01ffb39ca1902",
+      "bytes": 12081
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/reference_anisotropic--connected_trilobe--excised-atlas.pdf",
+      "relative": "reference_anisotropic--connected_trilobe--excised-atlas.pdf",
+      "sha256": "bb0d32c57263f629ffe57c41b536cebd67fcae0e4b94c330f4ba4a4803b43bca",
+      "bytes": 28605
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/reference_anisotropic--connected_trilobe--excised-atlas.png",
+      "relative": "reference_anisotropic--connected_trilobe--excised-atlas.png",
+      "sha256": "23fa78c2e422fed3e0599bc6919244edeff80132ab6fa5c48d02d2adecc5eab5",
+      "bytes": 118551
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/reference_anisotropic--connected_trilobe--excised-atlas.svg",
+      "relative": "reference_anisotropic--connected_trilobe--excised-atlas.svg",
+      "sha256": "ce1712b3f1c6a675e831a2f9f51da9ca2ac3dffbc7bb179f16573199549edb3f",
+      "bytes": 146057
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/reference_anisotropic--connected_trilobe--excised-frames.npz",
+      "relative": "reference_anisotropic--connected_trilobe--excised-frames.npz",
+      "sha256": "dfda1a88faab90b840dfd771e44a6ea5ec9317fe92908c1f4d3254361f0b95ed",
+      "bytes": 100873
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/reference_anisotropic--connected_trilobe--excised.gif",
+      "relative": "reference_anisotropic--connected_trilobe--excised.gif",
+      "sha256": "291bf6e013928334a9eac55c1c1beb0bfcf7f3563c7d059720bd9d2f7bef2d33",
+      "bytes": 19329
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/reference_anisotropic--connected_trilobe--open_T11/initial256.npz",
+      "relative": "reference_anisotropic--connected_trilobe--open_T11/initial256.npz",
+      "sha256": "dfa06a94decaec046c57920c759e71886a6ee4999ba7ece50a35b929d7de8123",
+      "bytes": 42343
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/reference_anisotropic--connected_trilobe--open_T11/injury.npz",
+      "relative": "reference_anisotropic--connected_trilobe--open_T11/injury.npz",
+      "sha256": "bbf7ec99ae7299ffbabe5b68ab25364db9804985911aa883d41f1ef38c21f20f",
+      "bytes": 9967
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/reference_anisotropic--connected_trilobe--uninjured-atlas.pdf",
+      "relative": "reference_anisotropic--connected_trilobe--uninjured-atlas.pdf",
+      "sha256": "497efbacf90d686fd5c7576a1fe6d096c9118854f4c6a84f8f0d6d36ad8d5ab5",
+      "bytes": 47636
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/reference_anisotropic--connected_trilobe--uninjured-atlas.png",
+      "relative": "reference_anisotropic--connected_trilobe--uninjured-atlas.png",
+      "sha256": "c54097eff98424889c56b2fb2d46644423b868770fdefcba29e371cf0202ebf9",
+      "bytes": 134734
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/reference_anisotropic--connected_trilobe--uninjured-atlas.svg",
+      "relative": "reference_anisotropic--connected_trilobe--uninjured-atlas.svg",
+      "sha256": "c5f9af68d38994bde0ec5a70a4c0be2ad24d97932e6f7ce79664836baa909e6d",
+      "bytes": 161500
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/reference_anisotropic--connected_trilobe--uninjured-frames.npz",
+      "relative": "reference_anisotropic--connected_trilobe--uninjured-frames.npz",
+      "sha256": "2032275af69e408876c726419d86c0914f722e48f7ff89d05ba609039ce58c8e",
+      "bytes": 166608
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/reference_anisotropic--connected_trilobe--uninjured.gif",
+      "relative": "reference_anisotropic--connected_trilobe--uninjured.gif",
+      "sha256": "579022aabbf8f1b431734ae7274f0db5965dcf401de8c06f29195bdd54ab7dd8",
+      "bytes": 37024
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/reference_anisotropic--connected_trilobe-effects.pdf",
+      "relative": "reference_anisotropic--connected_trilobe-effects.pdf",
+      "sha256": "18024d4d9ab1f5964e6f8e6207699dbd9f8451965d475b66073652042e376f37",
+      "bytes": 21248
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/reference_anisotropic--connected_trilobe-effects.png",
+      "relative": "reference_anisotropic--connected_trilobe-effects.png",
+      "sha256": "7744a7418c262e0939935d1cf7c6464f771ae9e79807a4808ad2b81161f9da72",
+      "bytes": 152870
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/reference_anisotropic--connected_trilobe-effects.svg",
+      "relative": "reference_anisotropic--connected_trilobe-effects.svg",
+      "sha256": "74938b9f5c181acb7af15244956b0d5cfc155aa949186d08d0ecd5ec21013ec7",
+      "bytes": 101064
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/reference_anisotropic--connected_trilobe-injury.pdf",
+      "relative": "reference_anisotropic--connected_trilobe-injury.pdf",
+      "sha256": "46bbe3719d8248ac4e616e1300d07dd56c3a4de65f840d8a43db4a25e7a35275",
+      "bytes": 39078
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/reference_anisotropic--connected_trilobe-injury.png",
+      "relative": "reference_anisotropic--connected_trilobe-injury.png",
+      "sha256": "beeff694b24839951d70ab249d7fba9594cdc63ccb486f10987b91fd31448f5d",
+      "bytes": 132173
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/reference_anisotropic--connected_trilobe-injury.svg",
+      "relative": "reference_anisotropic--connected_trilobe-injury.svg",
+      "sha256": "49d012db76283f755f3e1c94937441eb71f18359c5aafb80ae53b99f865b44d7",
+      "bytes": 119843
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/reference_anisotropic--connected_trilobe-process.pdf",
+      "relative": "reference_anisotropic--connected_trilobe-process.pdf",
+      "sha256": "476d99cc86400aaeb7519abde55d27dc58a2abbf8cbbd5cabf850a9cb435e220",
+      "bytes": 29635
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/reference_anisotropic--connected_trilobe-process.png",
+      "relative": "reference_anisotropic--connected_trilobe-process.png",
+      "sha256": "3ec1ce42c7391b62022a42093f24c0ee698b01b218e217b30d84b9f0f60d6134",
+      "bytes": 280184
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/reference_anisotropic--connected_trilobe-process.svg",
+      "relative": "reference_anisotropic--connected_trilobe-process.svg",
+      "sha256": "606cee41eecb32bbdec9c050885f4f334d5ba8667600a01bc87ffac9644768b5",
+      "bytes": 179489
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/shape_comparison.csv",
+      "relative": "shape_comparison.csv",
+      "sha256": "d519c195419fca2767f8b2072b3e88a439d672a6f9d3aacaf335b5346a64d7ce",
+      "bytes": 4074
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/analyze_developmental_rule_diversity.py",
+      "relative": "source/environment_evolution/analyze_developmental_rule_diversity.py",
+      "sha256": "5a20cf24c78491a828aa43ce49519433c7b1f772e839cab29b82c24965d23b7b",
+      "bytes": 9883
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/prepare_regenerative_pilot.py",
+      "relative": "source/environment_evolution/prepare_regenerative_pilot.py",
+      "sha256": "f07e03d196cd28366064d6ec9591b1128d0f83a75e762e956be3b312b733c2de",
+      "bytes": 4764
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_action_capability/__init__.py",
+      "relative": "source/environment_evolution/regenerative_action_capability/__init__.py",
+      "sha256": "085cfdf3682cf112fd03129e6366c4f26a8b261ef0c83b0da5002580a0599fb3",
+      "bytes": 84
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_action_capability/check_policy.py",
+      "relative": "source/environment_evolution/regenerative_action_capability/check_policy.py",
+      "sha256": "3c047f47aa94719511a176563b90e05a577cb50a3f1b849a0ceaf2fed61c3e3e",
+      "bytes": 2184
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_action_capability/policy.py",
+      "relative": "source/environment_evolution/regenerative_action_capability/policy.py",
+      "sha256": "de581bd0ef63548883dbf7d08e6139bd3b11a31e6d4e07b1695829a0b8d2d840",
+      "bytes": 2747
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_action_capability/prepare.py",
+      "relative": "source/environment_evolution/regenerative_action_capability/prepare.py",
+      "sha256": "8dffc115a6236f39bf8a693a8bdcf5e022cd7455a50ee017ff7a21f9075ee249",
+      "bytes": 3917
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_action_capability/run.py",
+      "relative": "source/environment_evolution/regenerative_action_capability/run.py",
+      "sha256": "9a59900b20a0cb920d5cf9f2e6ceba57d9e577af4d72a753eea5755ddab67194",
+      "bytes": 4583
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_actor/__init__.py",
+      "relative": "source/environment_evolution/regenerative_actor/__init__.py",
+      "sha256": "b9438b684a84e8b7868c892b912a638023c8afa18ad426135b0a4c5dc6369b66",
+      "bytes": 154
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_actor/check_algebra.py",
+      "relative": "source/environment_evolution/regenerative_actor/check_algebra.py",
+      "sha256": "b6566787ca6f7b245603533bb92a86179d69c0c276a70bbfce1f7418482c22ee",
+      "bytes": 5470
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_actor/check_interface.py",
+      "relative": "source/environment_evolution/regenerative_actor/check_interface.py",
+      "sha256": "c7b48b4117afc793a01e091bdcc53d922e1b69fca75a74788248552649e80915",
+      "bytes": 2545
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_actor/conversion.py",
+      "relative": "source/environment_evolution/regenerative_actor/conversion.py",
+      "sha256": "d2b73ccf44d6720e01e2166c055f9a427406dc483b21746476b9f8cc5f95189a",
+      "bytes": 2821
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_actor/model.py",
+      "relative": "source/environment_evolution/regenerative_actor/model.py",
+      "sha256": "3941450e97d2311f833d1c9c8964f348218467d4cd8d41a68b6584b72b24b5b0",
+      "bytes": 8610
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_actor/prepare.py",
+      "relative": "source/environment_evolution/regenerative_actor/prepare.py",
+      "sha256": "dfeac30fd839c0fda9e88398b4ed4446bc332b2be54c4d7287e7c6ad84317620",
+      "bytes": 8045
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_actor/runner.py",
+      "relative": "source/environment_evolution/regenerative_actor/runner.py",
+      "sha256": "4d48a7a9fe11bda60fcf743753a733ef0e574feabb5f0e2192c9b3bb4e7f419d",
+      "bytes": 6011
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_domain_embedding/__init__.py",
+      "relative": "source/environment_evolution/regenerative_domain_embedding/__init__.py",
+      "sha256": "729b06624194a9f116124ec689bc8b12312b792e94f2307cb0ed4b964273a9ce",
+      "bytes": 69
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_domain_embedding/common.py",
+      "relative": "source/environment_evolution/regenerative_domain_embedding/common.py",
+      "sha256": "b301e92fc3a708b1a01222303edc8cd7994576091f3339ef015236baa1c628ce",
+      "bytes": 1130
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_domain_embedding/prepare.py",
+      "relative": "source/environment_evolution/regenerative_domain_embedding/prepare.py",
+      "sha256": "2b780debc0db0957fd77215768f77809edb351b80c1778dcccdc84f4c5407f01",
+      "bytes": 7372
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_domain_embedding/run.py",
+      "relative": "source/environment_evolution/regenerative_domain_embedding/run.py",
+      "sha256": "5b1755a6ad57e1b5b8f22f12691d4c6fcc0a98e0a0653a1997059b3f55d356be",
+      "bytes": 4644
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_domain_embedding/submit.py",
+      "relative": "source/environment_evolution/regenerative_domain_embedding/submit.py",
+      "sha256": "e62433a5e33acce2d170bee6d1a2986e02f05e39179d40bd5423caf1c5589e0a",
+      "bytes": 835
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_excision_transfer/__init__.py",
+      "relative": "source/environment_evolution/regenerative_excision_transfer/__init__.py",
+      "sha256": "67e990f42fe9b689f2e966dc7eed830ca2bfdcd8e800305c4def2cd5fadb1ca4",
+      "bytes": 60
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_excision_transfer/common.py",
+      "relative": "source/environment_evolution/regenerative_excision_transfer/common.py",
+      "sha256": "5f3d6f0d817cfe60c43d13b059693d67d9b07a37f47164492ccd6e4c3edae849",
+      "bytes": 448
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_excision_transfer/excision.py",
+      "relative": "source/environment_evolution/regenerative_excision_transfer/excision.py",
+      "sha256": "481ebca7dae34082675a0bdf0ada9984583d1ef980113f5e6a58cc53e72e1c01",
+      "bytes": 3283
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_excision_transfer/prepare.py",
+      "relative": "source/environment_evolution/regenerative_excision_transfer/prepare.py",
+      "sha256": "c648442b36893f547350377f82db6d677b0a18422fbc4296d0a0abbd27ad5dab",
+      "bytes": 4746
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_excision_transfer/run.py",
+      "relative": "source/environment_evolution/regenerative_excision_transfer/run.py",
+      "sha256": "977a4d55cb8b86cca490d050ede52ba20fb4228087e22f2fba43d0f62e71aaf8",
+      "bytes": 4302
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_excision_transfer/submit.py",
+      "relative": "source/environment_evolution/regenerative_excision_transfer/submit.py",
+      "sha256": "6066c3be46820765588dadd2ae4ca94c3c4eeaa7852d8e845b1b688f8a01086f",
+      "bytes": 716
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_fuel_allocation/__init__.py",
+      "relative": "source/environment_evolution/regenerative_fuel_allocation/__init__.py",
+      "sha256": "6e4ff249f6e6e46946a3c077a54b8245d720e1fafdd0fdaa3e5afff90588911c",
+      "bytes": 379
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_fuel_allocation/adapter.py",
+      "relative": "source/environment_evolution/regenerative_fuel_allocation/adapter.py",
+      "sha256": "34dadde16dd27757d9d439fcfa47169114b808ec6e632f62fdc32a837f7923b7",
+      "bytes": 5351
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_fuel_allocation/allocation.py",
+      "relative": "source/environment_evolution/regenerative_fuel_allocation/allocation.py",
+      "sha256": "8ae962b37eb07a65867d7d2ce0139caab969a17c688a93a32a5aab0f52d75d81",
+      "bytes": 4872
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_fuel_allocation/check_cap0.py",
+      "relative": "source/environment_evolution/regenerative_fuel_allocation/check_cap0.py",
+      "sha256": "61e2be882d6bf29d414146b03e587d502346972d1763b2eef9261c42d0c32d8b",
+      "bytes": 14378
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_fuel_allocation/package.py",
+      "relative": "source/environment_evolution/regenerative_fuel_allocation/package.py",
+      "sha256": "efbbec1b17cc13c1767a94b5fa6c8acf2492aba160ed949cd514ee93754c9824",
+      "bytes": 5781
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_fuel_allocation/runtime.py",
+      "relative": "source/environment_evolution/regenerative_fuel_allocation/runtime.py",
+      "sha256": "122b0ead498e0b78854aad48927784a1f65a635672043efb1a7ee36658b735b6",
+      "bytes": 3135
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_fuel_allocation_native/__init__.py",
+      "relative": "source/environment_evolution/regenerative_fuel_allocation_native/__init__.py",
+      "sha256": "b6a52497b223661424d1b96b6d64add0bf655e119521cf7239baa2a1f9fcbd8a",
+      "bytes": 54
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_fuel_allocation_native/adapter.py",
+      "relative": "source/environment_evolution/regenerative_fuel_allocation_native/adapter.py",
+      "sha256": "e2667470c9a268bd3c4897dc8d7f666590cbd5d4f61062ec7e5b86c84750927f",
+      "bytes": 6183
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_fuel_allocation_native/check.py",
+      "relative": "source/environment_evolution/regenerative_fuel_allocation_native/check.py",
+      "sha256": "1c60bfac8ce7979dd1d23c1bfb65cfa1038cba1da706f016dcc04380042d022a",
+      "bytes": 4845
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_fuel_allocation_native/prepare.py",
+      "relative": "source/environment_evolution/regenerative_fuel_allocation_native/prepare.py",
+      "sha256": "3542bed95b2e4057abfa403a5da65e2d6352a2238956252ed87aa03b463208f4",
+      "bytes": 4294
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_fuel_allocation_native/run.py",
+      "relative": "source/environment_evolution/regenerative_fuel_allocation_native/run.py",
+      "sha256": "a54bf2b10615567d348cb65e3512408972ca02d0829d7546d6d425bd92143810",
+      "bytes": 4836
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_fuel_allocation_native/runtime.py",
+      "relative": "source/environment_evolution/regenerative_fuel_allocation_native/runtime.py",
+      "sha256": "f8b1196735277fa02cfc2b9ce1b6f292136a265ea726df790028a651ff2e6d0b",
+      "bytes": 2047
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_homeostatic_allocation/__init__.py",
+      "relative": "source/environment_evolution/regenerative_homeostatic_allocation/__init__.py",
+      "sha256": "ab1c5b1fac15aed084205e336fd7c78e14c7199150a3a8cd789d9ac474f25049",
+      "bytes": 76
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_homeostatic_allocation/checks.py",
+      "relative": "source/environment_evolution/regenerative_homeostatic_allocation/checks.py",
+      "sha256": "828eaa10993ec261ededc819d54923db18fe6482e01ebbb10be4cb381636223f",
+      "bytes": 6352
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_homeostatic_allocation/common.py",
+      "relative": "source/environment_evolution/regenerative_homeostatic_allocation/common.py",
+      "sha256": "ccdcd73fe0860f189d6ded29c94ce39c190ef85ecc763695ba220f4d5de08356",
+      "bytes": 463
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_homeostatic_allocation/policy.py",
+      "relative": "source/environment_evolution/regenerative_homeostatic_allocation/policy.py",
+      "sha256": "bee98b8d30e65e9fe1fdc8e0a6483d7594c620fb7b94a587ae69a2485c49672f",
+      "bytes": 586
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_homeostatic_allocation/prepare.py",
+      "relative": "source/environment_evolution/regenerative_homeostatic_allocation/prepare.py",
+      "sha256": "316a19478fece768dbe74beaf6fd491468ae2255aa56b8715f32c8f51479712e",
+      "bytes": 3200
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_homeostatic_allocation/run.py",
+      "relative": "source/environment_evolution/regenerative_homeostatic_allocation/run.py",
+      "sha256": "ed63e56206b664a531d1f866ad36fa871e92d3757d802f0077b54c0c156d0b16",
+      "bytes": 4256
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_homeostatic_allocation/runtime.py",
+      "relative": "source/environment_evolution/regenerative_homeostatic_allocation/runtime.py",
+      "sha256": "c464049636d5dd3d6885bd24669baa77356f6ae1e2bd2caf29f01dcda86f7b93",
+      "bytes": 5102
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_homeostatic_allocation/submit.py",
+      "relative": "source/environment_evolution/regenerative_homeostatic_allocation/submit.py",
+      "sha256": "b76c83a4f77b80b3264693850af36a1a79273231d0e7b940947469795c07e920",
+      "bytes": 734
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_joint_resource_transport/__init__.py",
+      "relative": "source/environment_evolution/regenerative_joint_resource_transport/__init__.py",
+      "sha256": "ccdcfe8ddcb025f044f6d72b121aabc7858551b4736dd4e4db36c7fd7056f9b3",
+      "bytes": 79
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_joint_resource_transport/checks.py",
+      "relative": "source/environment_evolution/regenerative_joint_resource_transport/checks.py",
+      "sha256": "dd9f839b4d046a605b2017c8634eb1aeb8fbb8fabf5b295632814ab2509ec1fb",
+      "bytes": 7851
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_joint_resource_transport/common.py",
+      "relative": "source/environment_evolution/regenerative_joint_resource_transport/common.py",
+      "sha256": "1eff162e931e9a4c1ba580ae5820c74355733913ab39bf2ea72559bf8b7b9b96",
+      "bytes": 714
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_joint_resource_transport/prepare.py",
+      "relative": "source/environment_evolution/regenerative_joint_resource_transport/prepare.py",
+      "sha256": "60c42182075a0443f17170612ec84f3877d690f863e62fffa4f5ed8bbf387798",
+      "bytes": 3137
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_joint_resource_transport/run.py",
+      "relative": "source/environment_evolution/regenerative_joint_resource_transport/run.py",
+      "sha256": "c378b648a58338111cb15fe48546fcef00fe830fc9407b229dbe2d1b3a050e6c",
+      "bytes": 4332
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_joint_resource_transport/runtime.py",
+      "relative": "source/environment_evolution/regenerative_joint_resource_transport/runtime.py",
+      "sha256": "afe0c82fdd06265566fcd1fd614146bcfeacfa980c516e101a651731911f6f9a",
+      "bytes": 4092
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_joint_resource_transport/submit.py",
+      "relative": "source/environment_evolution/regenerative_joint_resource_transport/submit.py",
+      "sha256": "1869f8768de509f6077ac52d927eac0195c93a068b071912da78eca65c573b9c",
+      "bytes": 731
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_joint_resource_transport/transport.py",
+      "relative": "source/environment_evolution/regenerative_joint_resource_transport/transport.py",
+      "sha256": "19cf10d64d52fad045d4b373ba6d8205b338b520e1ef60bcab6a90463031a6d6",
+      "bytes": 3489
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_local_fuel_transport/__init__.py",
+      "relative": "source/environment_evolution/regenerative_local_fuel_transport/__init__.py",
+      "sha256": "403b134646c8b20111cf5c48fce7bb4057ee02d0892ccb119777dd5ef84d1376",
+      "bytes": 83
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_local_fuel_transport/check.py",
+      "relative": "source/environment_evolution/regenerative_local_fuel_transport/check.py",
+      "sha256": "b889b63a5d132606142d2ca0270d60b906a527ae1d4607c43abde832c6f79e76",
+      "bytes": 7932
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_local_fuel_transport/prepare.py",
+      "relative": "source/environment_evolution/regenerative_local_fuel_transport/prepare.py",
+      "sha256": "522b6c58fa1ecfc479660b236106aef6711792d9c354a34ee4ad275d30372012",
+      "bytes": 4290
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_local_fuel_transport/run.py",
+      "relative": "source/environment_evolution/regenerative_local_fuel_transport/run.py",
+      "sha256": "f715c1c45ca1de792324767c8e937227cfd50fb0722402f9932f97a768517d8f",
+      "bytes": 4812
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_local_fuel_transport/runtime.py",
+      "relative": "source/environment_evolution/regenerative_local_fuel_transport/runtime.py",
+      "sha256": "c05e5ca199fc29085f74b97a832f52c99d729f4281b82c105b27699ef4a74d7a",
+      "bytes": 5697
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_local_fuel_transport/submit.py",
+      "relative": "source/environment_evolution/regenerative_local_fuel_transport/submit.py",
+      "sha256": "0212ceeb52d5e3a808e4eb0172de433a08cee43adc2402018cd1d154c099001c",
+      "bytes": 963
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_local_fuel_transport/transport.py",
+      "relative": "source/environment_evolution/regenerative_local_fuel_transport/transport.py",
+      "sha256": "67c16127790b782f6b4cab6d45b27cba36408fb0f0a87cf3bad8305179714d6b",
+      "bytes": 3484
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_morphology_transport_search/__init__.py",
+      "relative": "source/environment_evolution/regenerative_morphology_transport_search/__init__.py",
+      "sha256": "0701540667e63bf983b2ba70b7a6c4a5be84af681f0c95811d7f2fc6b5bc23ba",
+      "bytes": 83
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_morphology_transport_search/common.py",
+      "relative": "source/environment_evolution/regenerative_morphology_transport_search/common.py",
+      "sha256": "02602cc25a29ba9c67c4f956158dee0148869d6d23660acfdf59a73db40f6b6f",
+      "bytes": 1390
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_morphology_transport_search/observe.py",
+      "relative": "source/environment_evolution/regenerative_morphology_transport_search/observe.py",
+      "sha256": "e49c3e65b1c590b9120652702196136081f67eb3887795da5757683762200e4c",
+      "bytes": 17196
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_morphology_transport_search/prepare.py",
+      "relative": "source/environment_evolution/regenerative_morphology_transport_search/prepare.py",
+      "sha256": "3be4e99241bf79b0edce71bab2a083270a768d4cc7a57b321c852f51423c3a51",
+      "bytes": 8675
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_morphology_transport_search/run.py",
+      "relative": "source/environment_evolution/regenerative_morphology_transport_search/run.py",
+      "sha256": "30e41997888e4110c161a3dbf78816b7aebcae2d8bda210bcbf3725eb61888c9",
+      "bytes": 5105
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_morphology_transport_search/select.py",
+      "relative": "source/environment_evolution/regenerative_morphology_transport_search/select.py",
+      "sha256": "4cff1fe82f2cf4fbe34faa3dbb8baacb3421c7a627418ce42a9f31a975dced1e",
+      "bytes": 7719
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_morphology_transport_search/submit.py",
+      "relative": "source/environment_evolution/regenerative_morphology_transport_search/submit.py",
+      "sha256": "10d5bd2c16c07cb10e7d82ce01ef559d5079b070487b6db10bb1a65ba0e66820",
+      "bytes": 1043
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_reserve_morphology_transfer/__init__.py",
+      "relative": "source/environment_evolution/regenerative_reserve_morphology_transfer/__init__.py",
+      "sha256": "7b374adb2924a398824c1e23382408788a10a7ec66cb2e41c059d70de9df7553",
+      "bytes": 73
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_reserve_morphology_transfer/common.py",
+      "relative": "source/environment_evolution/regenerative_reserve_morphology_transfer/common.py",
+      "sha256": "e1569199347ddfb8cab71e0965536e479d8fc6078b7e030687fa53f6f586f396",
+      "bytes": 556
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_reserve_morphology_transfer/prepare.py",
+      "relative": "source/environment_evolution/regenerative_reserve_morphology_transfer/prepare.py",
+      "sha256": "e97d50f041d27c3cfb0cdb612b4123f25680e98e97b4f6ed8ec5129110e75ab7",
+      "bytes": 6919
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_reserve_morphology_transfer/run.py",
+      "relative": "source/environment_evolution/regenerative_reserve_morphology_transfer/run.py",
+      "sha256": "157b114a94e953e7e40825f9f2fd7a2a58eef0f4b1a9517001438280e76196a9",
+      "bytes": 4238
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_reserve_morphology_transfer/runtime.py",
+      "relative": "source/environment_evolution/regenerative_reserve_morphology_transfer/runtime.py",
+      "sha256": "8626cd0ea0f8e9709a2215c33d6af6fd56ea1934cbf72d4ccc4ffe84b6b67ea5",
+      "bytes": 2930
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_reserve_morphology_transfer/submit.py",
+      "relative": "source/environment_evolution/regenerative_reserve_morphology_transfer/submit.py",
+      "sha256": "d90e631edf8b01f52144391d5e19013d86c0f7688e3b3df2a979e68bcde88fdc",
+      "bytes": 736
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_resource_opportunity/__init__.py",
+      "relative": "source/environment_evolution/regenerative_resource_opportunity/__init__.py",
+      "sha256": "7f71bbfb5062ebbb094b9c8ee5ae961f88decf5569711a9dbae0340685eb711e",
+      "bytes": 78
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_resource_opportunity/check.py",
+      "relative": "source/environment_evolution/regenerative_resource_opportunity/check.py",
+      "sha256": "609f6ae67673cf8a7ddd8f7288eb7d471c842c09290eafe1c99c4ffcd05d0556",
+      "bytes": 2823
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_resource_opportunity/packet.py",
+      "relative": "source/environment_evolution/regenerative_resource_opportunity/packet.py",
+      "sha256": "ec4b3d612c6bf3c98e6c41167259c89c6722e7f4ee0ba89a33832bafaa14c40a",
+      "bytes": 1240
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_resource_opportunity/policy.py",
+      "relative": "source/environment_evolution/regenerative_resource_opportunity/policy.py",
+      "sha256": "c19a4f72a2b34f3ddd5c5801e2a398f5cf0b444b46f11d758f1f6d16348b5ad0",
+      "bytes": 2743
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_resource_opportunity/prepare.py",
+      "relative": "source/environment_evolution/regenerative_resource_opportunity/prepare.py",
+      "sha256": "be9d2d5cdf006e1a1d4c28eeb7bcd214c30e1145013faba9de7e96d3b8ea450c",
+      "bytes": 4965
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_resource_opportunity/run.py",
+      "relative": "source/environment_evolution/regenerative_resource_opportunity/run.py",
+      "sha256": "894506acb8cfc98f9f4a4015dcb8d68c267d342b362c71748bb3e9f9c14677ae",
+      "bytes": 4097
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_supply_factorial/__init__.py",
+      "relative": "source/environment_evolution/regenerative_supply_factorial/__init__.py",
+      "sha256": "43a9f20450ddd01c2f7664a3e78bdf5b2e500edbe62d833095ce1c806e7e77ce",
+      "bytes": 71
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_supply_factorial/prepare.py",
+      "relative": "source/environment_evolution/regenerative_supply_factorial/prepare.py",
+      "sha256": "8cd9464d7300506256801d71ced75d806a95578b26d2ab8bdce5e5c64f799345",
+      "bytes": 6608
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_supply_factorial/run.py",
+      "relative": "source/environment_evolution/regenerative_supply_factorial/run.py",
+      "sha256": "35a4daed8abff2dd3af5ee0ffba3a8d65b9dee2c6006ddbb37fe5f32f39341f1",
+      "bytes": 359
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_supply_recovery/__init__.py",
+      "relative": "source/environment_evolution/regenerative_supply_recovery/__init__.py",
+      "sha256": "59e09546ab763578815e115fa6dd978d84b38f602320bff6197f129af573c509",
+      "bytes": 84
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_supply_recovery/prepare.py",
+      "relative": "source/environment_evolution/regenerative_supply_recovery/prepare.py",
+      "sha256": "ee68aa1a88c6cc048af667abd98db22130a1abb8ae432ca72562a56c41aab749",
+      "bytes": 6575
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_supply_recovery/run.py",
+      "relative": "source/environment_evolution/regenerative_supply_recovery/run.py",
+      "sha256": "9e4949e0c8c3ee61db303effd20302b97cc491d95cb503100f7d9fec1fda5f66",
+      "bytes": 4571
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_transport_allocation_interaction/__init__.py",
+      "relative": "source/environment_evolution/regenerative_transport_allocation_interaction/__init__.py",
+      "sha256": "0eaaac2944d6f3a000e5a20d78d6f83db0981c037d092cd9e5217db3d50fd2e3",
+      "bytes": 74
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_transport_allocation_interaction/checks.py",
+      "relative": "source/environment_evolution/regenerative_transport_allocation_interaction/checks.py",
+      "sha256": "e2cffbc49109c43e11ab312bd6444c0ad2a70b26af272341f9236a718c93ac3d",
+      "bytes": 6946
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_transport_allocation_interaction/common.py",
+      "relative": "source/environment_evolution/regenerative_transport_allocation_interaction/common.py",
+      "sha256": "79790b162ebabe68b210f5dfb9642fa86f988fda7a91c6542f96ac067652431a",
+      "bytes": 744
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_transport_allocation_interaction/prepare.py",
+      "relative": "source/environment_evolution/regenerative_transport_allocation_interaction/prepare.py",
+      "sha256": "c838bc191d34119c32573e19f1e3666cb4b714ae8994f887d1039cb67c66e864",
+      "bytes": 3272
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_transport_allocation_interaction/run.py",
+      "relative": "source/environment_evolution/regenerative_transport_allocation_interaction/run.py",
+      "sha256": "e1ceb67dd95bc1e2bbb441e92b2087eec4247c807c9b2140c8a4a2e1d415e186",
+      "bytes": 4242
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_transport_allocation_interaction/runtime.py",
+      "relative": "source/environment_evolution/regenerative_transport_allocation_interaction/runtime.py",
+      "sha256": "69058e166b723146b0086b5359d111079fb499a5fd9168751f944175a61c0d97",
+      "bytes": 5283
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/regenerative_transport_allocation_interaction/submit.py",
+      "relative": "source/environment_evolution/regenerative_transport_allocation_interaction/submit.py",
+      "sha256": "cd550e5bcb84c98cc195b392f3d880ee6b0e4c76f3cc35caa875a9d81982e7d3",
+      "bytes": 754
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/results/regenerative_actor_pilot/source/environment_evolution/prepare_regenerative_pilot.py",
+      "relative": "source/environment_evolution/results/regenerative_actor_pilot/source/environment_evolution/prepare_regenerative_pilot.py",
+      "sha256": "f07e03d196cd28366064d6ec9591b1128d0f83a75e762e956be3b312b733c2de",
+      "bytes": 4764
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/results/regenerative_actor_pilot/source/environment_evolution/regenerative_actor/__init__.py",
+      "relative": "source/environment_evolution/results/regenerative_actor_pilot/source/environment_evolution/regenerative_actor/__init__.py",
+      "sha256": "b9438b684a84e8b7868c892b912a638023c8afa18ad426135b0a4c5dc6369b66",
+      "bytes": 154
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/results/regenerative_actor_pilot/source/environment_evolution/regenerative_actor/check_algebra.py",
+      "relative": "source/environment_evolution/results/regenerative_actor_pilot/source/environment_evolution/regenerative_actor/check_algebra.py",
+      "sha256": "b6566787ca6f7b245603533bb92a86179d69c0c276a70bbfce1f7418482c22ee",
+      "bytes": 5470
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/results/regenerative_actor_pilot/source/environment_evolution/regenerative_actor/check_interface.py",
+      "relative": "source/environment_evolution/results/regenerative_actor_pilot/source/environment_evolution/regenerative_actor/check_interface.py",
+      "sha256": "c7b48b4117afc793a01e091bdcc53d922e1b69fca75a74788248552649e80915",
+      "bytes": 2545
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/results/regenerative_actor_pilot/source/environment_evolution/regenerative_actor/conversion.py",
+      "relative": "source/environment_evolution/results/regenerative_actor_pilot/source/environment_evolution/regenerative_actor/conversion.py",
+      "sha256": "d2b73ccf44d6720e01e2166c055f9a427406dc483b21746476b9f8cc5f95189a",
+      "bytes": 2821
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/results/regenerative_actor_pilot/source/environment_evolution/regenerative_actor/model.py",
+      "relative": "source/environment_evolution/results/regenerative_actor_pilot/source/environment_evolution/regenerative_actor/model.py",
+      "sha256": "3941450e97d2311f833d1c9c8964f348218467d4cd8d41a68b6584b72b24b5b0",
+      "bytes": 8610
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/results/regenerative_actor_pilot/source/environment_evolution/regenerative_actor/prepare.py",
+      "relative": "source/environment_evolution/results/regenerative_actor_pilot/source/environment_evolution/regenerative_actor/prepare.py",
+      "sha256": "dfeac30fd839c0fda9e88398b4ed4446bc332b2be54c4d7287e7c6ad84317620",
+      "bytes": 8045
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/results/regenerative_actor_pilot/source/environment_evolution/regenerative_actor/runner.py",
+      "relative": "source/environment_evolution/results/regenerative_actor_pilot/source/environment_evolution/regenerative_actor/runner.py",
+      "sha256": "4d48a7a9fe11bda60fcf743753a733ef0e574feabb5f0e2192c9b3bb4e7f419d",
+      "bytes": 6011
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/results/regenerative_actor_pilot/source/local_learning/adaptive_action_renewal/controller.py",
+      "relative": "source/environment_evolution/results/regenerative_actor_pilot/source/local_learning/adaptive_action_renewal/controller.py",
+      "sha256": "82ce81c7e382119e74ef8f17fe002dfd74d05f8ba87005a6fdaf73b2540bbeb6",
+      "bytes": 3576
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/results/regenerative_actor_pilot/source/local_learning/material_transport.py",
+      "relative": "source/environment_evolution/results/regenerative_actor_pilot/source/local_learning/material_transport.py",
+      "sha256": "dd5622a2df6a5d50642a31ad586215d5e30e33929cf8f57ee9efff36fdef08d5",
+      "bytes": 17572
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/results/regenerative_actor_pilot/source/local_learning/regenerative_actor_adapter.py",
+      "relative": "source/environment_evolution/results/regenerative_actor_pilot/source/local_learning/regenerative_actor_adapter.py",
+      "sha256": "3004fc43d26ce781d8a1945f7f399d238114d623509001855005a6d087b7418e",
+      "bytes": 2131
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/results/regenerative_actor_pilot/source/morphology_evolution/dual_kernel.py",
+      "relative": "source/environment_evolution/results/regenerative_actor_pilot/source/morphology_evolution/dual_kernel.py",
+      "sha256": "529d42e50876a68bce54a512f8a9cafd48a8f68276cf8507a0e2243b3f450d6e",
+      "bytes": 2922
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/results/regenerative_actor_pilot/source/simulation/__init__.py",
+      "relative": "source/environment_evolution/results/regenerative_actor_pilot/source/simulation/__init__.py",
+      "sha256": "564809e49203a4dc2f071ada201b8ac8bc142d83583a4ff3b4fa861bdeae79da",
+      "bytes": 389
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/results/regenerative_actor_pilot/source/simulation/core.py",
+      "relative": "source/environment_evolution/results/regenerative_actor_pilot/source/simulation/core.py",
+      "sha256": "0e832298f01c53a5774df1fbd144d40a816529907fcc6ac58ea6dcf9296d4974",
+      "bytes": 2976
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/results/regenerative_actor_pilot/source/simulation/data.py",
+      "relative": "source/environment_evolution/results/regenerative_actor_pilot/source/simulation/data.py",
+      "sha256": "dfcec89a87caecf81836582b4639b01f8ab14edeec154d7f2e769356547805e5",
+      "bytes": 4960
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/results/regenerative_actor_pilot/source/simulation/snapshot.py",
+      "relative": "source/environment_evolution/results/regenerative_actor_pilot/source/simulation/snapshot.py",
+      "sha256": "e99d3eccee47ded2abe1518e3fb80d2d630a8ff21a2a339ff6723c2878dfc382",
+      "bytes": 6192
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/environment_evolution/run_developmental_excision.py",
+      "relative": "source/environment_evolution/run_developmental_excision.py",
+      "sha256": "ae2d5862655d6c6f309d360e63234c1297a0d8bf3f6ec3c5d0c3c17e50fd472e",
+      "bytes": 14766
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/local_learning/adaptive_action_renewal/controller.py",
+      "relative": "source/local_learning/adaptive_action_renewal/controller.py",
+      "sha256": "82ce81c7e382119e74ef8f17fe002dfd74d05f8ba87005a6fdaf73b2540bbeb6",
+      "bytes": 3576
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/local_learning/material_transport.py",
+      "relative": "source/local_learning/material_transport.py",
+      "sha256": "dd5622a2df6a5d50642a31ad586215d5e30e33929cf8f57ee9efff36fdef08d5",
+      "bytes": 17572
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/local_learning/regenerative_actor_adapter.py",
+      "relative": "source/local_learning/regenerative_actor_adapter.py",
+      "sha256": "3004fc43d26ce781d8a1945f7f399d238114d623509001855005a6d087b7418e",
+      "bytes": 2131
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/morphology_evolution/dual_kernel.py",
+      "relative": "source/morphology_evolution/dual_kernel.py",
+      "sha256": "529d42e50876a68bce54a512f8a9cafd48a8f68276cf8507a0e2243b3f450d6e",
+      "bytes": 2922
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/simulation/__init__.py",
+      "relative": "source/simulation/__init__.py",
+      "sha256": "564809e49203a4dc2f071ada201b8ac8bc142d83583a4ff3b4fa861bdeae79da",
+      "bytes": 389
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/simulation/core.py",
+      "relative": "source/simulation/core.py",
+      "sha256": "0e832298f01c53a5774df1fbd144d40a816529907fcc6ac58ea6dcf9296d4974",
+      "bytes": 2976
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/simulation/data.py",
+      "relative": "source/simulation/data.py",
+      "sha256": "dfcec89a87caecf81836582b4639b01f8ab14edeec154d7f2e769356547805e5",
+      "bytes": 4960
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source/simulation/snapshot.py",
+      "relative": "source/simulation/snapshot.py",
+      "sha256": "e99d3eccee47ded2abe1518e3fb80d2d630a8ff21a2a339ff6723c2878dfc382",
+      "bytes": 6192
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source_archive.json",
+      "relative": "source_archive.json",
+      "sha256": "cb4e6687080c565956a55acce0a9388813ee24254458bd003476ec4450bea3c4",
+      "bytes": 49457
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source_packets.csv",
+      "relative": "source_packets.csv",
+      "sha256": "7fc5266e5701d1d76b452ec048cb6e9502860267a74f68fe2e2428400a5b8005",
+      "bytes": 171326
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/static_checks.json",
+      "relative": "static_checks.json",
+      "sha256": "90a24f47490266f71b9b636aaff06218cc88c2bbd4d2be522398134981da66cf",
+      "bytes": 4271
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/storage.json",
+      "relative": "storage.json",
+      "sha256": "6e79621680eb0c1a0d650468890d31518d3785a93e8424fdc12fa7f0f1267e33",
+      "bytes": 222
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/submission-control.json",
+      "relative": "submission-control.json",
+      "sha256": "ca4c6a5668b5ded8ebaa79d71d1eac806b9fd8591dcc15c978b84eb220020df8",
+      "bytes": 70
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/submission.json",
+      "relative": "submission.json",
+      "sha256": "756d0795d1ea110b3dd91289594338f4c4b2c8927083556f96b9a6bd59d059e2",
+      "bytes": 849
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/visual_review.json",
+      "relative": "visual_review.json",
+      "sha256": "b4d3bd71b6c168eba49137cfcd5aa411a40c95eccda6539f1053f6ad74340e75",
+      "bytes": 402
+    }
+  ],
+  "raw_packet_index": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source_packets.csv",
+  "frozen_pre_execution_plan": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/plan.json",
+  "postprocessing": "postprocessing_source/* created after completed dynamics; not part of pre-execution freeze"
+}

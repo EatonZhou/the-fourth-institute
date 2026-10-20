@@ -1,0 +1,130 @@
+{
+  "schema": "lenia.pi.scientific-decision.v1",
+  "task": "contextual_terminal_records_20261018",
+  "status": "authorized_for_implementation_and_bounded_native_comparison",
+  "owner": "resident_ce2a5ab005bc",
+  "learning_owner": "resident_d3ccfa2d95b7",
+  "objective_met": false,
+  "prior_result": {
+    "task": "local_terminal_feedback_6bd_completion",
+    "handoff": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/local_terminal_feedback_6bd_completion/handoff.json",
+    "sha256": "09898262e500de65e40e40f100fab2e26e68d8ed07bd274d9ef81adbf2078695",
+    "job": "f906304e-b82b-4111-858b-a0fafb3aca0c",
+    "status": "completed",
+    "attempted": 640,
+    "committed": 640,
+    "failed": 0,
+    "worker_seconds": 87.957026,
+    "unused_steps": 0,
+    "unused_worker_seconds_frozen": 392.042974
+  },
+  "scientific_judgment": {
+    "close": "关闭不区分来源情境的固定.5近期描述率控制器的跨身体优越性主张，不扫率/价/时长，也不把6bd补全当独立留出。",
+    "retain": "有价、一次性、本地可读的终末记录接口成立；同完整当前公开状态下，记录内容/更新能改变实际行动。0ac更新优于冻结而6bd反向；主动对被动的E/体时方向也随身体反转。",
+    "deltas_6bd_recent_minus": {
+      "ignore": {
+        "M": -2.989632,
+        "E": -3.433757,
+        "U": -5.842641,
+        "body_time": -19.797587
+      },
+      "frozen": {
+        "M": -12.543718,
+        "E": -2.91429,
+        "U": -4.724262,
+        "body_time": -18.510244
+      },
+      "euler": {
+        "M": -35.165414,
+        "E": 2.324498,
+        "U": -30.035133,
+        "body_time": -82.923259
+      },
+      "none": {
+        "M": 23.987197,
+        "E": 17.851371,
+        "U": 51.135545,
+        "body_time": 79.851363
+      }
+    },
+    "not_established": [
+      "消息接收位置不匹配导致既有失败",
+      "描述收据是全组织因果收益",
+      "学得新方法的跨环境适应优势"
+    ],
+    "next_question": "将来源动作前的局部资源方向与已完成记录绑定，是否改变经验在新接收位置的适用性？正确关联相对故意相反关联/不分情境能否带来真实身体收益？",
+    "novelty_scope": "这是经验可迁用条件的机制预探索；分情境统计本身不是新算法，不以正结果直接定中心创新。"
+  },
+  "new_budget": {
+    "native_body_steps": 1728,
+    "runner_worker_seconds": 900,
+    "cpu_threads": 2,
+    "gpu": 0,
+    "max_parallel_native_jobs": 1,
+    "max_new_raw_bytes": 2147483648,
+    "ce2": {
+      "native_steps": 64,
+      "worker_seconds": 60,
+      "scope": "仅新context载荷/费用/恢复边界所需的真实短检查；静态和合成可先完成，不重跑旧套件"
+    },
+    "d3": {
+      "native_steps": 1664,
+      "worker_seconds": 840,
+      "scope": "2身体×(一次64步新取得+6臂×128步未来)"
+    },
+    "old_budget_transfer": 0,
+    "unused_budget_not_transferable": true,
+    "timing": "从唯一runner的实际占槽时间计费；冻结保守脚本门限，保完整事务后才停。原失败/额度/来源逐字节不改。不得按剩余秒加臂或延长窗口。"
+  },
+  "context_contract": {
+    "inputs": "只用begin_unit动作前的当地fuel四邻域差分与同一既有shear_x向量。禁止世界标签、绝对位置ID、未来实际通量、死亡账作情境标签。",
+    "definition": "z = dot(gradient(fuel), fixed_action(public,'shear_x')); sign class negative if z<-1e-12, neutral if |z|<=1e-12, positive if z>1e-12. 保存原z供界限说明，阈值不选型。",
+    "availability": "shear_x是当前已有执行器的合法本地请求向量；上下文使用该向量与当地fuel差分，不额外把坐标作为学习特征。",
+    "registration": "每个新64步单元在CURRENT注册材料上锁存source class；随后按真实K/actor_keep/rule_keep搬运，绝不按途中地点重分类。新生无祖先记录，下次显式注册才取得新情境。",
+    "record_shape": "code4 × source_context3 × original_field7 × H × W; original7字段含registered_mass/contact/motor_paid/basal_paid/action_y_time/action_x_time/exposure_mass_time。保持混合分区，不能平均sign后重新分箱。",
+    "messaging": "保存原四邻域旧幸存者资格、actor→rule/+y,-y,+x,-x优先级、当地旧E扣费/热、单跳无重发、未递送不补零。每非空stage-source-destination包固定704bytes=4*3*7*8+32；价格仍1e-7E/byte/hop，因此每包7.04e-5E。六臂同schema/定价，费用更大是新版本条件，不冒称复用旧物理前缀。",
+    "persistence": "独立新schema/module，旧f9e46ff7 wrapper与物理15691ada不改；完整joint ready保存source bins、direct/message/unread、消费时钟、统计与RNG。未完成事务不重演。所有字段逐维守恒，context求和恢复本次总登记/记录，不迁移旧缺context历史。"
+  },
+  "experiment": {
+    "bodies": [
+      "0ac80448a534dc953505",
+      "6bd5bfd2f629f9414376"
+    ],
+    "source": "使用已存在formation128完整包。各身体一次新64步取得，用原4动作8×8块随机混合协议，来源context现在才实际锁存；不得从旧已完成unit补造context。",
+    "prefix_seed": 202610181151,
+    "world": "同一已知heldout_rotated，原有限256输入/原物理/单位dt不变；两体不当独立世界样本。",
+    "branching": "同身体的六臂从同一clock192完整身体/库存/world cursor/全部context记录/学习状态/RNG分叉，各128步到320。每单元32驱动+32撤驱；真实新生/死亡/动作混合语义沿原协议。",
+    "arms": [
+      "context_matching",
+      "context_reversed",
+      "context_pooled",
+      "fixed_gradient",
+      "full_euler",
+      "none"
+    ],
+    "direct": "所有三个学习臂的own/direct仍按code汇总，不改直接亲历读出；新增差异只在message来源情境读出。",
+    "statistics": "message按code/context分别保存N=contact-motor-basal与T=exposure。每次completed64单元、每action有任何合法新消息才对该action的全部context旧统计统一乘.5，再加入实际新各分区；无该action消息保留旧值。跨bin统一遗忘使sum(context stats)与pool同一收到序列的聚合统计一致；遗忘未观测bin不当作收到零回报。",
+    "matching": "对每候选code按接收者CURRENT同定义class读取message统计，再加相同direct统计。对应message曝光不足/不存在时回退完整pooled message，而非将缺测当零。保原known阈值1e-12和argmax/none规则，不新增风险参数。",
+    "reversed": "保持全部真实通道/已付数据/统计原样，仅读出时将negative与positive互换，neutral固定；fallback相同。是故意错误的来源关联干预，不称等被选曝光或等独立样本。",
+    "pooled": "message三context求和后读出，余规则与matching相同；它是新费率下的同容量消融，不能以旧batch直接替代。",
+    "fixed_gradient": "每驱动阶段对全部当前身体使用既有fixed_action('gradient')，撤驱阶段0；与full_euler均为强即时完整策略，须明确它们含新生支持、与注册材料学习臂不同。",
+    "full_euler": "原全当前身体shear_x，包含新生；不是同support Euler。",
+    "none": "0新增驱动，原被动运输/生理/付费终末通道仍执行，不称静止或无通信。",
+    "no_optimization": "不训练phi，不调.5/情境阈值/输入/窗口/价格，不另寻情境特征，不引入自适应过滤或再探测。"
+  },
+  "evidence": {
+    "primary": "六臂每身体全M/E/U/bodytime与实际费用并列；correct-vs-reversed检验关联，correct-vs-pooled检验分情境规则，fixed_gradient/Euler/none检验是否超出简单控制。无单一选优标量，无跨两个身体置信区间。",
+    "boundary": "接收位置相似性不是干预因果识别，后续/邻居动作干扰和幸存选择仍在。真实消息读出支持量不同单列，不声称只改变语义而保持有效信息量。标签反转不等物理反事实。",
+    "records": "完整每次prechoice公开场、原z/class、所有context统计/known/fallback/选择和实际请求；仅必要clock193/225/256/257/289/320空间场与实际K/收据。全步物能/费用标量、真实死亡/未递送/未付/零尾均留。",
+    "non_identifiability": "若取得后全部有支持的记录只有同一个context，或者正确/反向/pooled在同当前态的读出与请求全同，先如实记录辨识不足；不得挑另一时点/seed/阈值救结果。该身体不执行冗余三个学习未来，不把未运行填零；余预算封存。仍完成已定义强固定对照是否由owner判断不增加范围。",
+    "accounting": "gate费0等旧问题不适用于本新native通道；现有物理每项费用完整分列，birth_fuel与其内含项不可重复扣。算术/存储/write仍未全计价；消息及本次state不是独立样本数。",
+    "progress_decision": "若context关联没有有用分歧或收益，收束这一条件划分，不能扫更多bin延命。即使有有限收益，也不等于新方法/持续适应目标完成。"
+  },
+  "workflow": [
+    "PI先把具名执行请求一次交ce2；ce2实现隔离薄层并在本份cap内做受影响边界，直接给d3唯一实际API+冻结SHA+实际余额。",
+    "ce2完成后向d3发送enqueue_and_trigger执行接续；同事项已active/pending则合并为inject_active_turn或附到现有请求，不重复排队。d3按此合同直接完成新取得/比较，无需PI再批准。",
+    "前向前各owner实读running/started；CPU2/GPU0、一条native job在跑。不要重触发总启动，不建time.reached/cron/轮询或generic work_finished。",
+    "实际结果由d3一次请求PI科学取舍；论文/投影仅需实际接续的结果各送一次，日常进展写短共享索引。交接不退回info造成全体空闲。",
+    "超时、字段缺失或包失败保存真实完整状态与原因，不自动重投，不挪旧额。"
+  ]
+}

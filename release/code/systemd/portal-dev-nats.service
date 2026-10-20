@@ -1,0 +1,19 @@
+[Unit]
+Description=TFI Portal Dev Core NATS
+After=network-online.target
+Wants=network-online.target
+ConditionFileIsExecutable=/usr/sbin/nats-server
+
+[Service]
+# Portal's request path runs ahead of agent commands and tests under CPU contention.
+CPUWeight=1000
+Type=simple
+ExecStart=/usr/sbin/nats-server -c @PORTAL_SOURCE_ROOT@/systemd/portal-dev-nats.conf
+ExecStop=/bin/kill -s SIGINT $MAINPID
+KillSignal=SIGUSR2
+Restart=always
+RestartSec=2
+NoNewPrivileges=true
+
+[Install]
+WantedBy=portal-dev-execution.target

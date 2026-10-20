@@ -1,0 +1,214 @@
+{
+  "task": "coordinated_expression_polarity_pi_choice_20261019",
+  "owner": "resident_afa3d4d6cf11",
+  "updated_at": "2026-10-19T03:27:03.023666+00:00",
+  "plan": "plan_13d78f0ae847 v12",
+  "objective_met": false,
+  "controls": {
+    "research.desired_state": "running",
+    "research.started": true,
+    "latest_state_read": "inst_lin_5c5fdba9cf9bfbddcb02",
+    "started_read": "inst_lin_a23121e51a26d25dc05b"
+  },
+  "evidence": [
+    {
+      "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/coordinated_feedback_retention_20261019/direction_handoff.json",
+      "sha256": "fb1b4f86fbdcf731c919e03661c0b06c67c332d44ea47f4bf312494a804b7540"
+    },
+    {
+      "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/local_signal_action_coordination_20261019/REPORT.txt",
+      "sha256": "57174daa218d68859393a50409fa184a79e8327715946198d2b6910d46371f7a"
+    },
+    {
+      "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/coordinated_feedback_retention_20261019/REPORT.txt",
+      "sha256": "cfba464263fec01e4cacf2af7c85eb5757ed5ddb34035c87e4d126b5f73b0442"
+    },
+    {
+      "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/coordinated_feedback_retention_20261019/passive_expression_definition.json",
+      "sha256": "d72ef115f31af4e4b498e077e18110e614a6791d8b48b2ee70e04406eebc2438"
+    },
+    {
+      "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/coordinated_feedback_retention_20261019/passive_expression.json",
+      "sha256": "47ae19e7df405d0bc8e68d772ce30af4be3965b53038be50ce0e8b29bdf44e58"
+    },
+    {
+      "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/coordinated_feedback_retention_20261019/actual_sequence.png",
+      "sha256": "eaf1a8343d8b99d1e2f96d4df44ec699f3ebe315f99097953a9d9a446fec8fff"
+    },
+    {
+      "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/local_signal_action_coordination/core.py",
+      "sha256": "f1e34b36cf6ddddee348b0938446bccfb6fe78e81cc517c691e9ee5483f03005"
+    }
+  ],
+  "scientific_choice": "保留中央协调下有限反转能力与两父继续写入的完整未来效应；关闭普遍无反馈保持及“离开即遗忘”的解释。下一项实际辨识是已保存关联的趋避驱动与持续极性推进如何共同决定停留，不增加写入器。",
+  "results": {
+    "new_native": 10240,
+    "new_runner_worker_seconds": 44.823108,
+    "known_readonly_native": 1024,
+    "replay": 0,
+    "unknown": 0,
+    "coordination_survival": "16/16",
+    "reversal_passes": {
+      "original": "2/4",
+      "temporal": "2/4",
+      "neighbor": "2/4",
+      "pooled": "4/4"
+    },
+    "neighbor_scope": "有限接触量及恢复提前收益保留；未建立相对时间平滑的共同能力优势。",
+    "continued_writing": "初始意义0两父：反转末64好区质量write10.133/9.640、freeze.348/.317；无反馈末write4.072/3.703、freeze.039/.041。",
+    "contrary_parents": "初始意义1两父：冻写亦好且无反馈末份额约.914，write约.153；保绝对好区质量，不以份额代替主体接触。",
+    "conservation": "四write无反馈期sum(rho Q)守恒至约9e-16；这不保证局部浓度、信号、策略或位置不变。"
+  },
+  "interpretation": [
+    "亲看四父实际序列：write两父反转后集中到新好区；另两父无反馈期继续移动离开，freeze反而留在好区。图像说明现象，未识别动力学原因。",
+    "写/冻897..1152的差异包含后续身体、位置、能量和经验的变化，不是只改变末态Q的同体内容实验。",
+    "固定全身汇总与alpha1 fast-delta是强简单参照，中央通信和预置感觉/执行器明确；没有新学习算法或局部机制优势主张。",
+    "操作接触阈值.24只是初始M24的1%，不叫半数身体或整个身体覆盖；好区绝对质量、覆盖及实际支付并列。",
+    "原批行为判定与反例不改；后继不以能量或运动成本全部非降筛掉合理适应。"
+  ],
+  "next": {
+    "name": "association_polarity_expression_20261019",
+    "owner": "resident_d3ccfa2d95b7",
+    "question": "同完整1152身体、无反馈且关联不再写入时，离开好区是否依赖持续极性推进？关闭该推进后若停留改善，是否仍需要关联趋避读出，而非仅因少动？",
+    "parents": [
+      {
+        "id": "202610197503_0_0_fast_delta_life",
+        "layout": 0,
+        "initial_good": 0,
+        "clock": 1152,
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_signal_action_coordination_20261019/c3cc19b6-8107-4745-8167-71592256dbe2/202610197503_0_0_fast_delta_life_pooled/state1152.npz",
+        "sha256": "c2f8d365157fb94b49e6c97d1ecd91a33814d8da19d6bb7635cbbde11042c63a",
+        "state_keys": [
+          "Q",
+          "aux",
+          "body",
+          "energy",
+          "polarity",
+          "signal",
+          "trace"
+        ],
+        "known_future": "/data/dataset/lenia-research/lineage_75e3399f4877/coordinated_feedback_retention_20261019/7650ded9-1c29-4999-ba79-570fb4f52048/202610197503_0_0_fast_delta_life_write",
+        "known_files": {
+          "/data/dataset/lenia-research/lineage_75e3399f4877/coordinated_feedback_retention_20261019/7650ded9-1c29-4999-ba79-570fb4f52048/202610197503_0_0_fast_delta_life_write/initial.npz": "c2f8d365157fb94b49e6c97d1ecd91a33814d8da19d6bb7635cbbde11042c63a",
+          "/data/dataset/lenia-research/lineage_75e3399f4877/coordinated_feedback_retention_20261019/7650ded9-1c29-4999-ba79-570fb4f52048/202610197503_0_0_fast_delta_life_write/steps.csv": "3f343fdd37d47a0bc1a6da44b7d78857aa1b79a4a531e78de7971907bcc6ff13",
+          "/data/dataset/lenia-research/lineage_75e3399f4877/coordinated_feedback_retention_20261019/7650ded9-1c29-4999-ba79-570fb4f52048/202610197503_0_0_fast_delta_life_write/frames.npz": "c02f71dd3f9dc7e45e8c06e9b50c8c44a360e25ac967b9a17c0206735f1769eb",
+          "/data/dataset/lenia-research/lineage_75e3399f4877/coordinated_feedback_retention_20261019/7650ded9-1c29-4999-ba79-570fb4f52048/202610197503_0_0_fast_delta_life_write/state1216.npz": "e0cc0515898e9b9f38f96725247c40c72b4fc40fa913c772cbf73693183bb430",
+          "/data/dataset/lenia-research/lineage_75e3399f4877/coordinated_feedback_retention_20261019/7650ded9-1c29-4999-ba79-570fb4f52048/202610197503_0_0_fast_delta_life_write/state1280.npz": "6baa90617f2fa291a11edf59ab7b47e5f38bad2cdd9c5b63495d14b6fe8f5f1d"
+        },
+        "nofeedback_terminal_M": 24.000000000000014,
+        "nofeedback_terminal_E": 74.5763502233412
+      },
+      {
+        "id": "202610197503_0_1_fast_delta_life",
+        "layout": 0,
+        "initial_good": 1,
+        "clock": 1152,
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_signal_action_coordination_20261019/c3cc19b6-8107-4745-8167-71592256dbe2/202610197503_0_1_fast_delta_life_pooled/state1152.npz",
+        "sha256": "85afee18aa0afcdaba969afc86bc4abb679461f9060aa05f9724aa19aec2ba29",
+        "state_keys": [
+          "Q",
+          "aux",
+          "body",
+          "energy",
+          "polarity",
+          "signal",
+          "trace"
+        ],
+        "known_future": "/data/dataset/lenia-research/lineage_75e3399f4877/coordinated_feedback_retention_20261019/7650ded9-1c29-4999-ba79-570fb4f52048/202610197503_0_1_fast_delta_life_write",
+        "known_files": {
+          "/data/dataset/lenia-research/lineage_75e3399f4877/coordinated_feedback_retention_20261019/7650ded9-1c29-4999-ba79-570fb4f52048/202610197503_0_1_fast_delta_life_write/initial.npz": "85afee18aa0afcdaba969afc86bc4abb679461f9060aa05f9724aa19aec2ba29",
+          "/data/dataset/lenia-research/lineage_75e3399f4877/coordinated_feedback_retention_20261019/7650ded9-1c29-4999-ba79-570fb4f52048/202610197503_0_1_fast_delta_life_write/steps.csv": "09448b60bddaf028120c79420d72263a66539972fd3c7e0b4af84e8a99689cd3",
+          "/data/dataset/lenia-research/lineage_75e3399f4877/coordinated_feedback_retention_20261019/7650ded9-1c29-4999-ba79-570fb4f52048/202610197503_0_1_fast_delta_life_write/frames.npz": "966408156ff99ac2c23cac6dbe6ffdf3edece233cfa33bf99a24b21b0cf03d33",
+          "/data/dataset/lenia-research/lineage_75e3399f4877/coordinated_feedback_retention_20261019/7650ded9-1c29-4999-ba79-570fb4f52048/202610197503_0_1_fast_delta_life_write/state1216.npz": "adfac24fb0c7844e502ed132b2214be2f44dd612c9c171a853291329eb9f946a",
+          "/data/dataset/lenia-research/lineage_75e3399f4877/coordinated_feedback_retention_20261019/7650ded9-1c29-4999-ba79-570fb4f52048/202610197503_0_1_fast_delta_life_write/state1280.npz": "4b07a759a4ea3c8735f82f68816e01a9287398911f0590daa055dd26cb3017f5"
+        },
+        "nofeedback_terminal_M": 23.99999999999998,
+        "nofeedback_terminal_E": 85.48729397587506
+      },
+      {
+        "id": "202610197504_1_0_fast_delta_life",
+        "layout": 1,
+        "initial_good": 0,
+        "clock": 1152,
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_signal_action_coordination_20261019/c3cc19b6-8107-4745-8167-71592256dbe2/202610197504_1_0_fast_delta_life_pooled/state1152.npz",
+        "sha256": "8992927c3dc6c3b904aa1ad6a3036d7f137354a63fd2748757986289ab3612cb",
+        "state_keys": [
+          "Q",
+          "aux",
+          "body",
+          "energy",
+          "polarity",
+          "signal",
+          "trace"
+        ],
+        "known_future": "/data/dataset/lenia-research/lineage_75e3399f4877/coordinated_feedback_retention_20261019/7650ded9-1c29-4999-ba79-570fb4f52048/202610197504_1_0_fast_delta_life_write",
+        "known_files": {
+          "/data/dataset/lenia-research/lineage_75e3399f4877/coordinated_feedback_retention_20261019/7650ded9-1c29-4999-ba79-570fb4f52048/202610197504_1_0_fast_delta_life_write/initial.npz": "8992927c3dc6c3b904aa1ad6a3036d7f137354a63fd2748757986289ab3612cb",
+          "/data/dataset/lenia-research/lineage_75e3399f4877/coordinated_feedback_retention_20261019/7650ded9-1c29-4999-ba79-570fb4f52048/202610197504_1_0_fast_delta_life_write/steps.csv": "7d1e2dfc545d4f1e92dde6e26761609962355b8f69907ae2196f5cb279de0734",
+          "/data/dataset/lenia-research/lineage_75e3399f4877/coordinated_feedback_retention_20261019/7650ded9-1c29-4999-ba79-570fb4f52048/202610197504_1_0_fast_delta_life_write/frames.npz": "512bc2f97f1b4b4f5125f41f78c426f576086f9f3398882879fc4b0f63f092b5",
+          "/data/dataset/lenia-research/lineage_75e3399f4877/coordinated_feedback_retention_20261019/7650ded9-1c29-4999-ba79-570fb4f52048/202610197504_1_0_fast_delta_life_write/state1216.npz": "43319c8b90902b61ea4ba6932e6d0583e5fb374989622637e5f9a8735928637c",
+          "/data/dataset/lenia-research/lineage_75e3399f4877/coordinated_feedback_retention_20261019/7650ded9-1c29-4999-ba79-570fb4f52048/202610197504_1_0_fast_delta_life_write/state1280.npz": "1ab9cf3f956f050741101c3595b6e10866dc9498dc30ca609107c02513f6be62"
+        },
+        "nofeedback_terminal_M": 24.000000000000004,
+        "nofeedback_terminal_E": 73.72434567808953
+      },
+      {
+        "id": "202610197504_1_1_fast_delta_life",
+        "layout": 1,
+        "initial_good": 1,
+        "clock": 1152,
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_signal_action_coordination_20261019/c3cc19b6-8107-4745-8167-71592256dbe2/202610197504_1_1_fast_delta_life_pooled/state1152.npz",
+        "sha256": "819477ed6a8b6475b4e62f7bcd33c35a01ba914db26527ea9629ae5aaab5a3f0",
+        "state_keys": [
+          "Q",
+          "aux",
+          "body",
+          "energy",
+          "polarity",
+          "signal",
+          "trace"
+        ],
+        "known_future": "/data/dataset/lenia-research/lineage_75e3399f4877/coordinated_feedback_retention_20261019/7650ded9-1c29-4999-ba79-570fb4f52048/202610197504_1_1_fast_delta_life_write",
+        "known_files": {
+          "/data/dataset/lenia-research/lineage_75e3399f4877/coordinated_feedback_retention_20261019/7650ded9-1c29-4999-ba79-570fb4f52048/202610197504_1_1_fast_delta_life_write/initial.npz": "819477ed6a8b6475b4e62f7bcd33c35a01ba914db26527ea9629ae5aaab5a3f0",
+          "/data/dataset/lenia-research/lineage_75e3399f4877/coordinated_feedback_retention_20261019/7650ded9-1c29-4999-ba79-570fb4f52048/202610197504_1_1_fast_delta_life_write/steps.csv": "d69323ae44172d973a35f730e9062e4cd1619596359c35e20a8be4e48b3e0716",
+          "/data/dataset/lenia-research/lineage_75e3399f4877/coordinated_feedback_retention_20261019/7650ded9-1c29-4999-ba79-570fb4f52048/202610197504_1_1_fast_delta_life_write/frames.npz": "436094f79739b0d3f52b9481af08be7c5c87adff94fa0cb45b6f358f1c25b7ce",
+          "/data/dataset/lenia-research/lineage_75e3399f4877/coordinated_feedback_retention_20261019/7650ded9-1c29-4999-ba79-570fb4f52048/202610197504_1_1_fast_delta_life_write/state1216.npz": "bc5a474a3fca777cb6e8b425a3d040f87ea29ab25058a753a545ea5527c84157",
+          "/data/dataset/lenia-research/lineage_75e3399f4877/coordinated_feedback_retention_20261019/7650ded9-1c29-4999-ba79-570fb4f52048/202610197504_1_1_fast_delta_life_write/state1280.npz": "031064e6f40ef6d3e2014af2e9b35b1d7a4f406bda094d96a22af9559544ce65"
+        },
+        "nofeedback_terminal_M": 24.000000000000014,
+        "nofeedback_terminal_E": 85.48127865353489
+      }
+    ],
+    "design": "四个实际write1152父全保；2×2：关联cue运动读出保留/关闭 × 原极性推进保留/关闭。各128更新，原双开四条512步未来严格只读复用，三个新臂合计1536科学步；不重演取得或已知无干预未来。",
+    "interventions": [
+      "关联读出关闭：只在face_rates中将完整cue驱动b±ready_z置零，包括对称b和方向z；不能只清Q或只清z。Q/trace/aux/极性/身体/E/原始signal均从同父逐值载入。",
+      "四臂仍按原公式从实际Q与cue更新和运输signal，感觉登记/迹与身体继续演化；关联write与外部支付全程关闭。读出关闭只阻断到运动的接口，不擦内容或信号。",
+      "极性推进关闭：仅将face_rates中的polarity_gain*polarity*sign项置零，保polarity状态及其原运输/演化。凝聚、压力、tanh、mobility、费用与耗能完全不改。",
+      "双关闭臂保内在身体物理与费用；不是冻结身体。它是检验单纯少动的控制，不算习得行为。",
+      "开关为共同外部因果干预，在首步固定，不读取好区坐标、意义、时钟、未来或评价标签；不伪装成自主停止策略。原物理源不改，独立薄适配与首native前纯代数等价检查。"
+    ],
+    "preflight": "核四父及已知未来完整状态/观察器/输入等价后复用双开；纯检查双开face_rates与原逐值相同、两个关闭项恰对应定义、其它项不变，首16实际步保分量、位移、费用及signal/Q连续性。若某父存在真实零分量/动作别名，原量保留，不挑父或调幅度求分化。",
+    "budget": {
+      "native_cap": 1664,
+      "scientific_native_max": 1536,
+      "boundary_reserve": 128,
+      "runner_worker_seconds_cap": 90,
+      "cpu": 2,
+      "gpu": 0,
+      "raw_bytes_cap": 134217728
+    },
+    "measurements": "沿原两64窗与.24/.65操作口径，主报绝对好区材料质量/占身体比例、总接触、停留时长和离开时间、质心轨迹/形变、实际运动量与费用/E、Q总量及signal。报告两个因子的配对作用与交互；四父各报，不把时间点当独立样本。存续沿原M12和连通.5连续32规则，无复活。",
+    "inference": [
+      "关闭极性推进改善停留，只能识别该固定推进项在本无反馈未来的作用；不能单据此声称记忆保持、学会停止或新算法。",
+      "只有保留关联读出在相同极性条件下产生与已学意义一致的行动/停留差异，才能支持关联表达作用；若双关闭同样好，少动/位置惯性仍是充分竞争解释。",
+      "即使Q总量一致，也不据此证明局部内容/运输分布或ready信号一致；不能把固定pooled通信与局部方法合并。",
+      "若极性解释未支持，直接保反例并换动作协调机制，不能扫推进幅度/传播率/保持窗求胜。"
+    ],
+    "autonomous_continuation": "本诊断后方向负责人按v12立即选择有区别的下一小批。若出现可用的停留机制，回到同一身体实际取得—未告知反转的任务检验移动与停留的取舍，并以同反馈/同执行器的fast-delta和固定简单停止机制竞争；本诊断本身不完成学习主线。若只是固定关闭让身体少动，不包装学习增益，也不延长尾窗。单批上限限制该批，不要求逐批申请批准。",
+    "execution": "独立实现预检与分析可立即进行；真实计算接ce/d3既有单槽安排，不取消ce正在执行的已付动作校准，不转用任何旧余额。"
+  },
+  "parallel_scope": "环境已付响应闭环、33独立机制、文献、完整长稿与GUI图、真实动画继续。论文/投影由方向负责人沿原在办项合并本取舍，不广播。",
+  "pi_new_native": 0,
+  "pi_new_runner_jobs": 0
+}

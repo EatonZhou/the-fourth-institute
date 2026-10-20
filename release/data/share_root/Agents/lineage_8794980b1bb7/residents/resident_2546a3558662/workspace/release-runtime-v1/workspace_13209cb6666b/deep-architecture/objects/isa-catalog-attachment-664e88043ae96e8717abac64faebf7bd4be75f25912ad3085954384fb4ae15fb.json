@@ -1,0 +1,15 @@
+{
+  "schema": "tfi.hatg-catalog-attachment.v1",
+  "revision": 1,
+  "catalog_id": "hatg",
+  "catalog_manifest": {
+    "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/deep-architecture/current/catalog-manifest.json",
+    "sha256": "2dea30fda0d9eb477a97baa6f66c824cc87b716b2daced34a3c5a960fd1ef425",
+    "size": 7413
+  },
+  "lesson_sources": {
+    "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/deep-architecture/current/lesson-manifest.json",
+    "sha256": "de177ad9bcdac8688f0a9acb69d96e10e2a24f44853dcf029cb488584ddae46d",
+    "size": 5552
+  }
+}

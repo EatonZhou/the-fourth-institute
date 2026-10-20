@@ -1,0 +1,46 @@
+{
+  "task": "self_generated_contact_learning_20261019",
+  "status": "complete",
+  "native": 3214,
+  "worker_seconds": 46.25896,
+  "unknown": 0,
+  "claim": "Finite-support contact opportunity and simple-learning benefit in two mirrored pilot conditions; no reversal/retention claim.",
+  "files": {
+    "plan.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_contact_learning_20261019/plan.json",
+      "sha256": "0ba21fa2e8ed3edcb75c9c19f647c1324f3122e478d6cac75db88f6dd0061e58"
+    },
+    "summary.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_contact_learning_20261019/summary.json",
+      "sha256": "eb74b5f91593455aa7e55f1bceb12a1b794a7267446831adaf0713427069acc4"
+    },
+    "comparisons.csv": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_contact_learning_20261019/comparisons.csv",
+      "sha256": "0e187b9b43ac15375746de1582888b29879c95b6bc1e911d31b65d47769ac581"
+    },
+    "blocks.csv": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_contact_learning_20261019/blocks.csv",
+      "sha256": "6beb8f5e7f56a3ab9ef2be7f5cbf219830329f66fe1935fd026a9a2a92ff0035"
+    },
+    "accounting.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_contact_learning_20261019/accounting.json",
+      "sha256": "80f992a26669aed8d1a89800f72a96e3f3cc3ceefc6fe99f9b55dec5d5bcea4f"
+    },
+    "REPORT.txt": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_contact_learning_20261019/REPORT.txt",
+      "sha256": "4db0831af6ce98895bacc7772e18587adaa9cfebc391aa4c97587434be86aa9c"
+    },
+    "fixed_arena_actual.gif": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_contact_learning_20261019/fixed_arena_actual.gif",
+      "sha256": "87b853e375a715ccc1da9b518aad6a1344c2056fac3d5ba65570c7c8683843b7"
+    },
+    "actual_sequence.png": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_contact_learning_20261019/actual_sequence.png",
+      "sha256": "275472952aa364255fd67d2e685249bfe3d0ee5c8c49d47c6fd1516e7a83c39e"
+    },
+    "execution_notes.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_contact_learning_20261019/execution_notes.json",
+      "sha256": "9c005554e720d7ac65497afaf2151d8c0f79c6201044ccaba8debfe7ce281797"
+    }
+  }
+}

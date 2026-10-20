@@ -1,0 +1,7 @@
+ContinuationBody.from_parent(exact_joint384_path, treatment)
+Treatments: P_on_recycle_on, P_on_recycle_off, P_off_recycle_on, P_off_recycle_off
+Original RecyclingBody/TurnoverBody/model unchanged. from_parent changes only future arm, three nested horizons, P_multiplier, and offline L384/A diagnostics.
+native(permit) exactly once, then settle() exactly once. No further native after640. P/F input fixed maps remain parent arrays; P0 drops new P only.
+checkpoint(path)/restore(path) preserve all nested state, phases, eligible, L256/L384, cumulative ledgers. Phases ready/native_done/original_done/base_settled; native_in_progress completion unknown and not replayable. No automatic restart. Current checkpoints every8 clocks plus every64, completed256 path cursors.
+L384 and A are evaluation-only. Newborn carries no L384. No writer/control input. Recovered pending native is never executed twice.
+A balance includes actor injury/starvation as irreversible losses; eligible is delayed waste, not immediately available precursor.

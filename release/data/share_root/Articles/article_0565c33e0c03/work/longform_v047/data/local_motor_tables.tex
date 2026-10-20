@@ -1,0 +1,78 @@
+\subsection*{Actual local motor learning and content interventions}
+The unified source is \path{local_motor_expression_20261019/direction_handoff.json}, SHA-256 \texttt{c5f6ce24\allowbreak{}a7e2fdc7\allowbreak{}f76a352f\allowbreak{}fcd84d69\allowbreak{}be9bbff6\allowbreak{}e1cb9666\allowbreak{}5eb39c71\allowbreak{}a5a1d299}. Its three archived reports, plans, full states, step tables and actual animations remain the primary records. Conditions 0 and 1 pair different seeds with opposite field signs; no cell-level or frame-level sample size is inferred. The first two capacity pilots are kept in the cost table but are not counted as extra learning histories. The manuscript's row transcription and per-step cost sums run no simulator or fit.
+
+\begingroup\scriptsize\setlength{\tabcolsep}{3pt}\setlength{\LTpre}{6pt}\setlength{\LTpost}{6pt}
+\begin{longtable}{llrrrrrrl}
+\caption{All local-motor learning conditions. A/R/H denote acquisition, reversal and the unchanged-relation no-feedback phase. Scores and favourable fractions are means over each phase's final 64 updates. P/F reproduce the original conjunctive criterion.}\label{tab:motor-phases}\\
+\toprule
+Cond. & Rule & $S_A$ & $S_R$ & $S_H$ & $p_A$ & $p_R$ & $p_H$ & A/R/H \\
+\midrule
+\endfirsthead
+\toprule
+Cond. & Rule & $S_A$ & $S_R$ & $S_H$ & $p_A$ & $p_R$ & $p_H$ & A/R/H \\
+\midrule
+\endhead
+0 & Fixed east & 0.46659 & 0.59933 & -0.71784 & 0.81513 & 0.88175 & 0.07641 & P/P/F \\
+0 & Recipient immediate & 0.00911 & 0.18018 & 0.39094 & 0.41518 & 0.58708 & 0.79886 & F/F/P \\
+0 & Recipient EMA & -0.01253 & 0.07220 & 0.12091 & 0.39303 & 0.47949 & 0.53096 & F/F/F \\
+0 & Recipient EMA+neighbour & -0.01459 & 0.06694 & 0.10562 & 0.39110 & 0.47427 & 0.51492 & F/F/F \\
+1 & Fixed east & -0.43844 & -0.57948 & 0.72025 & 0.20858 & 0.08954 & 0.91016 & F/F/P \\
+1 & Recipient immediate & 0.07102 & -0.41816 & -0.60872 & 0.47630 & 0.05627 & 0.03327 & F/F/F \\
+1 & Recipient EMA & 0.01405 & -0.02933 & -0.05577 & 0.41843 & 0.36507 & 0.33852 & F/F/F \\
+1 & Recipient EMA+neighbour & 0.01156 & -0.01625 & -0.03672 & 0.41599 & 0.38262 & 0.36073 & F/F/F \\
+0 & Source immediate & 0.72154 & -0.18610 & 0.01706 & 0.96399 & 0.39274 & 0.43269 & P/F/F \\
+0 & Source EMA & 0.04634 & -0.08652 & -0.05384 & 0.45481 & 0.31534 & 0.34282 & F/F/F \\
+0 & Source EMA+neighbour & 0.04328 & -0.09489 & -0.07410 & 0.45243 & 0.30485 & 0.32109 & F/F/F \\
+1 & Source immediate & 0.74061 & -0.01191 & 0.44816 & 0.96661 & 0.41987 & 0.77952 & P/F/P \\
+1 & Source EMA & 0.06593 & -0.12745 & -0.12081 & 0.47233 & 0.26311 & 0.27175 & F/F/F \\
+1 & Source EMA+neighbour & 0.06418 & -0.11169 & -0.09521 & 0.47130 & 0.28477 & 0.30049 & F/F/F \\
+\bottomrule
+\end{longtable}
+\begin{longtable}{lllrrrrrrr}
+\caption{Actual whole-path energy and material accounts. Pilot rows have 256 updates; all learning rows have 896. Gain/loss are external paid consequences; motor and basal are physical expenditures. Unpaid requests and actual death remain separate. All rows end at mass 24 to displayed precision; no failed behavioural endpoint is removed.}\label{tab:motor-costs}\\
+\toprule
+Cond. & Stage & Rule & Gain & Loss & Motor & Basal & Unpaid & Death & End $E$ \\
+\midrule
+\endfirsthead
+\toprule
+Cond. & Stage & Rule & Gain & Loss & Motor & Basal & Unpaid & Death & End $E$ \\
+\midrule
+\endhead
+0 & pilot & Fixed east & 20.10113 & 0.92264 & 0.92703 & 7.37280 & 0 & 0 & 154.87866 \\
+1 & pilot & Fixed east & 0.93219 & 20.04536 & 0.92720 & 7.37280 & 0 & 0 & 116.58682 \\
+0 & science & Fixed east & 45.87929 & 4.14604 & 3.25913 & 25.80480 & 0 & 0 & 156.66932 \\
+0 & science & Recipient immediate & 13.87954 & 10.67440 & 2.50060 & 25.80480 & 0 & 0 & 118.89974 \\
+0 & science & Recipient EMA & 12.64612 & 11.25300 & 2.48387 & 25.80480 & 0 & 0 & 117.10445 \\
+0 & science & Recipient EMA+neighbour & 12.47860 & 11.17909 & 2.48570 & 25.80480 & 0 & 0 & 117.00901 \\
+1 & science & Fixed east & 4.12776 & 45.88737 & 3.25763 & 25.80480 & 0 & 0 & 73.17796 \\
+1 & science & Recipient immediate & 8.47034 & 18.38124 & 2.49494 & 25.80480 & 0 & 0 & 105.78936 \\
+1 & science & Recipient EMA & 11.26358 & 12.09902 & 2.48125 & 25.80480 & 0 & 0 & 114.87851 \\
+1 & science & Recipient EMA+neighbour & 11.49814 & 12.03074 & 2.48101 & 25.80480 & 0 & 0 & 115.18158 \\
+0 & science & Source immediate & 18.19574 & 28.25958 & 2.82279 & 25.80480 & 0 & 0 & 105.30858 \\
+0 & science & Source EMA & 10.73221 & 13.35536 & 2.48372 & 25.80480 & 0 & 0 & 113.08833 \\
+0 & science & Source EMA+neighbour & 10.55892 & 13.31738 & 2.48499 & 25.80480 & 0 & 0 & 112.95175 \\
+1 & science & Source immediate & 17.79108 & 27.47637 & 2.99284 & 25.80480 & 0 & 0 & 105.51706 \\
+1 & science & Source EMA & 10.14200 & 13.64179 & 2.48420 & 25.80480 & 0 & 0 & 112.21122 \\
+1 & science & Source EMA+neighbour & 10.41988 & 13.56453 & 2.48279 & 25.80480 & 0 & 0 & 112.56775 \\
+\bottomrule
+\end{longtable}
+\begin{longtable}{llrrrrr}
+\caption{All six 128-update expression futures from two complete step-320 parents. Displacement is signed along the original learned direction. Good/strong masses use $f>0$/$f>0.5$ and are time means, not endpoint masses. Every branch ends at mass 24 with zero external gain/loss. The expression step table omits separate basal and unpaid columns; these channels are not asserted to be measured zeros.}\label{tab:motor-expression}\\
+\toprule
+Parent & Content & Signed $\Delta x$ & Good $M$ & Strong $M$ & Motor & End $E$ \\
+\midrule
+\endfirsthead
+\toprule
+Parent & Content & Signed $\Delta x$ & Good $M$ & Strong $M$ & Motor & End $E$ \\
+\midrule
+\endhead
+0 & retain & 4.30712 & 23.77062 & 23.15075 & 0.41466 & 141.95489 \\
+0 & zero & -0.00182 & 23.58081 & 22.49769 & 0.35402 & 142.01553 \\
+0 & negate & -4.42416 & 20.96045 & 15.85672 & 0.41382 & 141.95574 \\
+1 & retain & 4.18421 & 23.80730 & 23.24000 & 0.41278 & 142.51433 \\
+1 & zero & -0.00167 & 23.60146 & 22.58284 & 0.35143 & 142.57567 \\
+1 & negate & -4.30046 & 21.35105 & 16.60726 & 0.41379 & 142.51331 \\
+\bottomrule
+\end{longtable}
+\endgroup
+\paragraph{Separate regenerative implementation.} The central joint-association comparison is archived at \path{src/environment_evolution/results/joint_behavior_actual_renewal_20261019/analysis/handoff.json}. Its original report retains four joint lives and their frozen-prior controls, actual rule deaths and paid births, pre-write bank copying, mass-floor truncations, full-window criteria, and the separate action-clamp diagnostic. Complete joint behaviour passes zero of four conditions. The diagnostic is explicitly clamped action, not learned reversal; its 16 stored steps are reused read-only. This source supports an architectural distinction from the local no-birth host, not a pooled estimate of learning or a newborn-content causal claim. The actual two-job record contains 4,035 new updates and 137.354014 worker seconds; no part was rerun for this manuscript.

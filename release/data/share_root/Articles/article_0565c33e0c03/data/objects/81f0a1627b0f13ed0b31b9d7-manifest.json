@@ -1,0 +1,12 @@
+{
+  "files": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/consumption_qualified_transport_method_20261019/REPORT.txt",
+      "sha256": "6d7cf008034e5149ce64a08064aabb888c1c7310e32ca8f18127c778188fbd6a"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/consumption_qualified_transport_method_20261019/sources.json",
+      "sha256": "d7220d9695c0f14e723c64eef1ea4e5a122969934db618dd5a37aca197df2845"
+    }
+  ]
+}

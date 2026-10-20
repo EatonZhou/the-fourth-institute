@@ -1,0 +1,16 @@
+{
+  "type": "model",
+  "category": "resource",
+  "description": "A logical model or weight package whose identity is independent of providers, repositories, and cache paths.",
+  "title": {
+    "zh": "模型",
+    "en": "Model"
+  },
+  "provider": "",
+  "catalog_section": "",
+  "catalog_order": 0,
+  "registerable": false,
+  "scope": "shared",
+  "unit": "core",
+  "enabled_by_default": true
+}

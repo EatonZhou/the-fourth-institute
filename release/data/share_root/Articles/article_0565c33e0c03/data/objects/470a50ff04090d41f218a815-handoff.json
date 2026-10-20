@@ -1,0 +1,33 @@
+{
+  "status": "completed_exploratory_pilot",
+  "resident_id": "resident_ce2a5ab005bc",
+  "jobs": [
+    {
+      "job_id": "ecae3539-8cad-43fb-a2c8-e7993a5d83b3",
+      "actual_steps": 75776,
+      "runs": 22
+    }
+  ],
+  "steps": 75776,
+  "report": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_allocation_ecology_20261018/REPORT.txt",
+  "manifest": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_allocation_ecology_20261018/manifest.json",
+    "bytes": 7744,
+    "sha256": "7bffc0eb328e9de0c6567791fc228638d69acaa686eb9057dc1563325726bf60"
+  },
+  "raw_manifest": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_allocation_ecology_20261018/raw_manifest.json",
+    "bytes": 41799,
+    "sha256": "a350c1980bc578fc190e5711991f9a11903224b529a0099b7d79af68f0db0ec3"
+  },
+  "delivery_files": 31,
+  "raw_files": 146,
+  "raw_bytes": 2380617,
+  "prior": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_independent_ports_20261018/handoff.json",
+    "bytes": 1389,
+    "sha256": "7ef20fd7b7eb29f7cf4a718652d293d9aeaf08321bf22349b9b180b5b3ca3010"
+  },
+  "old_budgets_unchanged": true,
+  "published": false
+}

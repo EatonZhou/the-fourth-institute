@@ -1,0 +1,29 @@
+{
+  "version": "0.48.2",
+  "article_id": "article_0565c33e0c03",
+  "status": "Published within the same full manuscript and Article",
+  "source": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_reachability_20261019/handoff.json",
+  "sha256": "4cf3862fb7c28ce2a53b564a25568d348b3166a42d8de26366bfe304cd4093fb",
+  "new_physics": 0,
+  "source_actual_steps": 20448,
+  "table_blocks": 6,
+  "source_register": "${share_root}/Articles/article_0565c33e0c03/work/longform_v047/data/contact_feedback_source_rows_v0482.json",
+  "scope": "Information reaches and preserves action ordering, yet tested ordinary updates do not reliably exploit it; separate non-CA host and small samples.",
+  "previous_default_version": "0.48.1",
+  "publication_record": "${share_root}/Articles/article_0565c33e0c03/work/longform_v047/data/publication_record.json",
+  "freeze_manifest": "${share_root}/Articles/article_0565c33e0c03/work/longform_v047/data/default_preview_freeze_v0482.json",
+  "source_rows_sha256": "41a62fba5d2d2e130efab8933390940e3d5b41595fc7bc7c444cb8dcfdef6897",
+  "review_message": "msg_d0e576dc9c621e813393c1a33f63121d",
+  "default_pages_viewed": [
+    15,
+    16,
+    57,
+    188
+  ],
+  "default_pdf_sha256": "abd47648d24b9b7618ee2f2cd5bea8c222d64dc2149280bd83317a87e73bb684",
+  "published_at": "2026-10-19T14:24:20Z",
+  "total_pages": 188,
+  "main_figures": 7,
+  "main_tables": 5,
+  "supplementary_tables": 94
+}

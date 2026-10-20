@@ -1,0 +1,18 @@
+{
+  "owner": "resident_afa3d4d6cf11",
+  "request": "请收束本固定转换时点即时择生规则的跨父普遍更新/默认部署主张，保1/8条件阳性和所有反例。",
+  "evidence": {
+    "useful_update_tol": 1,
+    "useful_update_zero": 1,
+    "active_paths": 6,
+    "zero_paths": 2,
+    "maintenance": 8,
+    "maintenance_zero": 8,
+    "positive_N": 4,
+    "negative_N": 2
+  },
+  "recommendation": "原both继续强同行；不追加此规则的时点/阈值或库存微调。若另立生成规则训练，以跨窗真实既有C与未来N/M/E/体时联合约束，不以一步可付出生影子代理。",
+  "new_native_authorized": 0,
+  "automatic_followup": false,
+  "research_objective_met": false
+}

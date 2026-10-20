@@ -1,0 +1,118 @@
+{
+  "schema": "renewal-ecology-behavior-pilot-v1",
+  "status": "completed",
+  "task": "method_renewal_ecology_behavior_20261018",
+  "owner": "resident_ce2a5ab005bc",
+  "model": "reduced controlled density body and scalar reserve; not native Lenia or local memory",
+  "jobs": [
+    {
+      "job_id": "4bc7de9e-dbb5-40b9-9d34-e933083e77df",
+      "status": "completed",
+      "returncode": 0,
+      "request_key": "ce2-method-renewal-ecology-behavior-20261018-pilot1-v1",
+      "resource": "cpu",
+      "started_at": "2026-10-18T05:28:34.360554+00:00",
+      "finished_at": "2026-10-18T05:28:57.278595+00:00",
+      "threads": null
+    },
+    {
+      "job_id": "199d1bdd-f044-4755-828a-ba17da1fadbc",
+      "status": "completed",
+      "returncode": 0,
+      "request_key": "ce2-method-renewal-ecology-behavior-20261018-pilot2-v1",
+      "resource": "cpu",
+      "started_at": "2026-10-18T05:31:24.061636+00:00",
+      "finished_at": "2026-10-18T05:31:26.110614+00:00",
+      "threads": null
+    }
+  ],
+  "actual_new_steps": 359532,
+  "entry": {
+    "REPORT.txt": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/method_renewal_ecology_behavior_20261018/REPORT.txt",
+      "sha256": "9c08098445ed064edd6ca2dfd0dd90b840a2fa003cf08594b947a540e7bee2cb",
+      "bytes": 7313
+    },
+    "METHOD.txt": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/method_renewal_ecology_behavior_20261018/METHOD.txt",
+      "sha256": "031c56abde39004ae2e6d3831ebe3efe32e2f033bff2aad52acd79813c07f5da",
+      "bytes": 3227
+    },
+    "summary.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/method_renewal_ecology_behavior_20261018/summary.json",
+      "sha256": "6d13a96646b4b1681c07ebbcce9a2a115dcf02b6f95e022cdcddfa2c9e22cf3f",
+      "bytes": 19354
+    },
+    "plan.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/method_renewal_ecology_behavior_20261018/plan.json",
+      "sha256": "2f1a85da27d1f975e1ba143dc85e0eb3c0be64991b2fe324cf08b48f42fd6daa",
+      "bytes": 2409
+    },
+    "manifest.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/method_renewal_ecology_behavior_20261018/manifest.json",
+      "sha256": "41574d95e3efdedaaf1502a8e54bf060e134e468aec5a76e503d2860dd1b0f05",
+      "bytes": 12693
+    },
+    "policy_summary.csv": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/method_renewal_ecology_behavior_20261018/policy_summary.csv",
+      "sha256": "c7a72d6b2ee11dc66dd9b9e277273a249ddd69e63010b258c806b9075d9918ce",
+      "bytes": 5690
+    },
+    "seed_summary.csv": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/method_renewal_ecology_behavior_20261018/seed_summary.csv",
+      "sha256": "22482c41d0dde43d3471132d7b38be9700b6a933bc23b044d0517edd8af2e230",
+      "bytes": 10347
+    },
+    "morphology_summary.csv": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/method_renewal_ecology_behavior_20261018/morphology_summary.csv",
+      "sha256": "e9b2ac9c869e9095d159254912ea97fb234c15d2be8937bb2a371a216fb64322",
+      "bytes": 10402
+    },
+    "paired_differences.csv": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/method_renewal_ecology_behavior_20261018/paired_differences.csv",
+      "sha256": "f701edd9843fec99b287f59b91e28b9b414ada6bd26dab85186f54fbae4666ba",
+      "bytes": 27732
+    },
+    "followup/summary.csv": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/method_renewal_ecology_behavior_20261018/followup/summary.csv",
+      "sha256": "9c7fdfd5a68ffb8b7c3ea148b43f48650f0232977ae4927640411a29aee624af",
+      "bytes": 897
+    },
+    "followup/branch_summary.csv": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/method_renewal_ecology_behavior_20261018/followup/branch_summary.csv",
+      "sha256": "8a7893dbdcec37b21adf091127ac13996d0786471bf343a419eee0b8b025bc43",
+      "bytes": 7476
+    },
+    "followup/equivalent_current_state.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/method_renewal_ecology_behavior_20261018/followup/equivalent_current_state.json",
+      "sha256": "3ccee03f730f18eef6b44e2373d1edeea9d02c7baadf16f7221ca097f3a62ac2",
+      "bytes": 1950
+    }
+  },
+  "actual_process": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/method_renewal_ecology_behavior_20261018/figures/actual_body_process.png",
+    "sha256": "838678245e024298fd23b625e75446502486bf08222ee687a70cbdc0d2e49e06",
+    "bytes": 90739
+  },
+  "readonly_analysis": true,
+  "old_prefix_replayed": false,
+  "old_environment_history": {
+    "attempted": 17,
+    "committed": 16,
+    "failed": 1,
+    "unused": 223,
+    "unchanged": true
+  },
+  "scientific_scope": "Three paired tapes, controlled delay, direct actuation. Learned association and history use established in this task; local plasticity/Lenia/evolution unresolved.",
+  "visual_inspection": {
+    "actual_body_saved_fields": 15,
+    "figures": [
+      "actual_body_process",
+      "capture_process",
+      "same_state_followups",
+      "actual_behavior_trace"
+    ],
+    "all_2160_saved_frames_viewed": false
+  },
+  "next_shared_interface": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/method_renewal_ecology_behavior/core.py"
+}

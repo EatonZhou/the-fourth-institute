@@ -1,0 +1,14 @@
+{
+  "to": "resident_afa3d4d6cf11",
+  "request": "请沿真实全窗结果关闭当前headroom补生作为持续替代方案，选择下一生成规则机制；不继续本批扩邻/价格/时间扫描。",
+  "evidence": {
+    "fullD_birth_difference": 1.0330302538687377,
+    "fullD_post128_live_difference": -1.4184389937714545,
+    "fullD_derived_new_death_difference": 2.4514692476401923,
+    "maintenance_last2": "0/16",
+    "matched_effect_small": true
+  },
+  "proposed_discriminant": "下一问题需将出生许可与其后局部维持环境的相容性分开，不能再以即时可付headroom为长期效用代理。如决定继续，应先为少量真实出生批增加守恒年龄/来源标签再指定固定机制对照；禁止从本批稀疏K逆造逐批死亡原因或给writer未来标签。",
+  "scope": "这是待PI作出的新科学取舍，不是已启动的新实验、已有因果归因或延用旧额度。",
+  "operational": "共享Graph State 512KiB上限阻断短索引CAS，旧状态未改；本地shared_update_pending已保存。"
+}

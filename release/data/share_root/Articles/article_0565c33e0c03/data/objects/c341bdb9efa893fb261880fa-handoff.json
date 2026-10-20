@@ -1,0 +1,8 @@
+{
+  "task": "local_motor_expression_20261019",
+  "native": 768,
+  "worker_seconds": 3.079438,
+  "unknown": 0,
+  "finding": "无中央五动作的真实可变形CA中，标准即时来源信用取得2/2；同父无反馈retain移动+4.31/+4.18、zero约0、negate-4.42/-4.30格。规定反转0/2，完整适应未成；邻域/EMA迹无优势。",
+  "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/local_motor_expression_20261019/direction_handoff.json"
+}

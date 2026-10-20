@@ -1,0 +1,39 @@
+{
+  "task": "maintenance_aware_cargo_20261019",
+  "status": "completed",
+  "job_id": "c62b044b-ee58-42e0-aee3-999b3a7e3055",
+  "attempted": 1536,
+  "returned": 1536,
+  "settled": 1536,
+  "science": 1536,
+  "boundary": 0,
+  "failed_native": 0,
+  "unsettled_native": 0,
+  "complete_paths": 8,
+  "partial_paths": 0,
+  "unrun_paths": 0,
+  "missing_science": 0,
+  "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/maintenance_aware_cargo_20261019/c62b044b-ee58-42e0-aee3-999b3a7e3055",
+  "raw_bytes": 50352193,
+  "failure": null,
+  "last": {
+    "path": "f2--separated--uniform_fuel_destination",
+    "future": 192,
+    "preclock": 575,
+    "phase": "settle"
+  },
+  "script_seconds": 64.24749732203782,
+  "trajectory_seconds": [
+    6.549085443024524,
+    6.912232163012959,
+    6.573518672958016,
+    6.068314679083414,
+    6.328736526076682,
+    7.31057907291688,
+    10.367822846048512,
+    9.57677335490007
+  ],
+  "old_budget_used": 0,
+  "old_prefix_replayed": 0,
+  "plan_sha256": "d07d1077d48bedf4eb0a7553ff9bfed9b52b1e9b489d49f2dd47b936e840a7b8"
+}

@@ -1,0 +1,337 @@
+{
+  "recent_frozen_first64_scalars_exact": false,
+  "second_decision_public_field_exact": {
+    "body": true,
+    "energy": true,
+    "fuel": true,
+    "precursor": true,
+    "polarity": true,
+    "face_permeability": true,
+    "hazard": true,
+    "direct": true,
+    "message": true,
+    "message_support": true,
+    "completion_clock": true
+  },
+  "units": [
+    {
+      "stage": "b0_prefix",
+      "unit": 0,
+      "clock": 128,
+      "choice_mass": [
+        282.14401681679277,
+        192.83992286438482,
+        232.8396205577086,
+        273.75441588596266
+      ],
+      "direct_registered_received": 495.1682956252894,
+      "message_registered_received": 252.57843218839685,
+      "direct_exposure": 1584.5385460009259,
+      "message_exposure": 382.4690682197419,
+      "source_clock": 192
+    },
+    {
+      "stage": "b0_recent",
+      "unit": 0,
+      "clock": 192,
+      "choice_mass": [
+        400.4375026620861,
+        151.607021019908,
+        218.42384584768985,
+        228.51980440793568
+      ],
+      "direct_registered_received": 667.7757997547747,
+      "message_registered_received": 209.9990435322091,
+      "direct_exposure": 2136.8825592152793,
+      "message_exposure": 332.1012536049542,
+      "source_clock": 256
+    },
+    {
+      "stage": "b0_recent",
+      "unit": 1,
+      "clock": 256,
+      "choice_mass": [
+        341.34482724892325,
+        179.05567934310653,
+        234.37608347581096,
+        220.6036578065578
+      ],
+      "direct_registered_received": 743.9226354073438,
+      "message_registered_received": 157.1247143941024,
+      "direct_exposure": 2380.5524333035,
+      "message_exposure": 245.81069878290575,
+      "source_clock": 320
+    },
+    {
+      "stage": "b0_ignore",
+      "unit": 0,
+      "clock": 192,
+      "choice_mass": [
+        369.1140466431717,
+        166.52326592064088,
+        236.68250174935636,
+        226.66835962445072
+      ],
+      "direct_registered_received": 661.8637861104994,
+      "message_registered_received": 212.2553513661314,
+      "direct_exposure": 2117.9641155535983,
+      "message_exposure": 337.14039733300484,
+      "source_clock": 256
+    },
+    {
+      "stage": "b0_ignore",
+      "unit": 1,
+      "clock": 256,
+      "choice_mass": [
+        357.9108940524914,
+        176.36759523599895,
+        205.11944789851822,
+        235.06404033706474
+      ],
+      "direct_registered_received": 740.588917681283,
+      "message_registered_received": 157.96991012432852,
+      "direct_exposure": 2369.8845365801058,
+      "message_exposure": 246.51506898574473,
+      "source_clock": 320
+    },
+    {
+      "stage": "b0_frozen",
+      "unit": 0,
+      "clock": 192,
+      "choice_mass": [
+        400.4375026620861,
+        151.607021019908,
+        218.42384584768985,
+        228.51980440793568
+      ],
+      "direct_registered_received": 667.7757997547747,
+      "message_registered_received": 209.9990435322091,
+      "direct_exposure": 2136.8825592152793,
+      "message_exposure": 332.1012536049542,
+      "source_clock": 256
+    },
+    {
+      "stage": "b0_frozen",
+      "unit": 1,
+      "clock": 256,
+      "choice_mass": [
+        400.9978705770495,
+        151.36984030244125,
+        200.3526254109239,
+        222.65991158398396
+      ],
+      "direct_registered_received": 741.719006342167,
+      "message_registered_received": 158.03618188458702,
+      "direct_exposure": 2373.5008202949343,
+      "message_exposure": 249.93186614643247,
+      "source_clock": 320
+    },
+    {
+      "stage": "b0_euler_unit",
+      "unit": 0,
+      "clock": 192,
+      "choice_mass": [
+        0.0,
+        0.0,
+        998.9881739376196,
+        0.0
+      ],
+      "direct_registered_received": 672.5851740251837,
+      "message_registered_received": 211.8477985151075,
+      "direct_exposure": 2152.272556880588,
+      "message_exposure": 332.9553581422589,
+      "source_clock": 256
+    },
+    {
+      "stage": "b0_euler_unit",
+      "unit": 1,
+      "clock": 256,
+      "choice_mass": [
+        0.0,
+        0.0,
+        982.7444814397079,
+        0.0
+      ],
+      "direct_registered_received": 745.0013551301046,
+      "message_registered_received": 163.45758405132216,
+      "direct_exposure": 2384.004336416335,
+      "message_exposure": 252.59836550669428,
+      "source_clock": 320
+    },
+    {
+      "stage": "b0_euler",
+      "unit": 0,
+      "clock": 192,
+      "choice_mass": [
+        0.0,
+        0.0,
+        998.9881739376196,
+        0.0
+      ],
+      "direct_registered_received": 670.2523885255328,
+      "message_registered_received": 211.67023645132264,
+      "direct_exposure": 2144.807643281705,
+      "message_exposure": 333.4405809198331,
+      "source_clock": 256
+    },
+    {
+      "stage": "b0_euler",
+      "unit": 1,
+      "clock": 256,
+      "choice_mass": [
+        0.0,
+        0.0,
+        981.2746524191338,
+        0.0
+      ],
+      "direct_registered_received": 740.9928792396114,
+      "message_registered_received": 165.04949056586153,
+      "direct_exposure": 2371.177213566756,
+      "message_exposure": 257.0257985687142,
+      "source_clock": 320
+    },
+    {
+      "stage": "b0_none",
+      "unit": 0,
+      "clock": 192,
+      "choice_mass": [
+        998.9881739376196,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "direct_registered_received": 712.2687533338583,
+      "message_registered_received": 192.73891322102622,
+      "direct_exposure": 2279.2600106683467,
+      "message_exposure": 304.46664824030677,
+      "source_clock": 256
+    },
+    {
+      "stage": "b0_none",
+      "unit": 1,
+      "clock": 256,
+      "choice_mass": [
+        979.4985966870477,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "direct_registered_received": 810.7658584497933,
+      "message_registered_received": 127.5874497543324,
+      "direct_exposure": 2594.4507470393387,
+      "message_exposure": 193.47001301852552,
+      "source_clock": 320
+    },
+    {
+      "stage": "b1_prefix",
+      "unit": 0,
+      "clock": 128,
+      "choice_mass": [
+        113.03454270791626,
+        109.57841745121117,
+        131.27409543678348,
+        130.60816407239992
+      ],
+      "direct_registered_received": 296.9219180597131,
+      "message_registered_received": 84.87672918201345,
+      "direct_exposure": 950.150137791082,
+      "message_exposure": 162.04962702663448,
+      "source_clock": 192
+    }
+  ],
+  "first64_scalar_max_differences": {
+    "unit": 0,
+    "unit_offset": 0,
+    "clock": 0,
+    "M": 0.0,
+    "E": 0.0,
+    "heat": 0.0,
+    "waste": 0.0,
+    "dead_energy": 0.0,
+    "communication": 0.0,
+    "generated": 0.0,
+    "delivered": 0.0,
+    "undelivered": 0.0,
+    "lost_message": 0.0,
+    "uptake": 0.0,
+    "born": 0.0,
+    "death": 0.0,
+    "actor_movement_requested": 0.0,
+    "actor_movement_paid": 0.0,
+    "actor_movement_unpaid": 0.0,
+    "actor_basal_requested": 0.0,
+    "actor_basal_paid": 0.0,
+    "actor_basal_unpaid": 0.0,
+    "synthesis_heat": 0.0,
+    "template_heat": 0.0,
+    "birth_fuel": 0.0,
+    "newborn_energy": 0.0,
+    "precursor_spent": 0.0,
+    "input_energy": 0.0,
+    "input_material": 0.0,
+    "rule_death": 0.0,
+    "rule_death_energy": 0.0
+  },
+  "first64_nonzero_differences_examples": [
+    {
+      "clock": 193,
+      "differences": {
+        "checks": [
+          {
+            "material_error": 0.0,
+            "energy_error": 0.0,
+            "max_density": 1.019493352528568,
+            "attempted_body_steps": 65,
+            "reconstruction_error": 5.551115123125783e-17,
+            "K_column_error": 0.0,
+            "transport_error": 0.0,
+            "communication_energy_error": 7.382983113757291e-15,
+            "terminal_balance_error": 4.440892098500626e-16
+          },
+          {
+            "material_error": 0.0,
+            "energy_error": 0.0,
+            "max_density": 1.019493352528568,
+            "attempted_body_steps": 321,
+            "reconstruction_error": 5.551115123125783e-17,
+            "K_column_error": 0.0,
+            "transport_error": 0.0,
+            "communication_energy_error": 7.382983113757291e-15,
+            "terminal_balance_error": 4.440892098500626e-16
+          }
+        ]
+      }
+    },
+    {
+      "clock": 194,
+      "differences": {
+        "checks": [
+          {
+            "material_error": 0.0,
+            "energy_error": 0.0,
+            "max_density": 1.0236115478582017,
+            "attempted_body_steps": 66,
+            "reconstruction_error": 5.551115123125783e-17,
+            "K_column_error": 0.0,
+            "transport_error": 1.1368683772161603e-13,
+            "communication_energy_error": 7.299716386910404e-15,
+            "terminal_balance_error": 4.440892098500626e-16
+          },
+          {
+            "material_error": 0.0,
+            "energy_error": 0.0,
+            "max_density": 1.0236115478582017,
+            "attempted_body_steps": 322,
+            "reconstruction_error": 5.551115123125783e-17,
+            "K_column_error": 0.0,
+            "transport_error": 1.1368683772161603e-13,
+            "communication_energy_error": 7.299716386910404e-15,
+            "terminal_balance_error": 4.440892098500626e-16
+          }
+        ]
+      }
+    }
+  ],
+  "first64_physical_scalar_exact": true,
+  "checks_difference_scope": "only global ForwardPermit.attempted_body_steps differs by execution order; it is evaluator metadata, not a policy feature"
+}

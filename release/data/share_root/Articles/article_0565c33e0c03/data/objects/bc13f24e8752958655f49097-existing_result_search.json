@@ -1,0 +1,21 @@
+{
+  "roots": [
+    "environment_evolution/results",
+    "research/results",
+    "local_learning/results_20261018"
+  ],
+  "filters": [
+    "plan.json",
+    "result.json",
+    "outcomes.json",
+    "runs.csv",
+    "*summary.csv",
+    "handoff.json"
+  ],
+  "seed_field_matches": [
+    "research/results/feedback_acquisition_20261018/native/plan.json",
+    "research/results/feedback_acquisition_20261018/native/outcomes.json"
+  ],
+  "matching_camp_results": [],
+  "scope": "indexed project result metadata, exact seed fields; original five-policy batch has no camp"
+}

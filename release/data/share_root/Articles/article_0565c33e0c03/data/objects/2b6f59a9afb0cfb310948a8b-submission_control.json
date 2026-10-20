@@ -1,0 +1,14 @@
+{
+  "desired_state": "running",
+  "started": true,
+  "control_checked_at": "2026-10-18T06:35:09.651477+00:00",
+  "scheduler": {
+    "cpu_slots": 2,
+    "cpu_threads_per_job": 2,
+    "gpu_slots": 1,
+    "gpu_available": true,
+    "gpu_backend": "thor"
+  },
+  "active_experiments": [],
+  "queued_experiments": []
+}

@@ -1,0 +1,1332 @@
+{
+  "provenance": {
+    "fixture_sha256": "ded7223f491d0eb9f0ae8c0c0a10cbda248ac3e3b4661403a8fb0b5de0854ecf",
+    "manifest": {
+      "address": "workspace_13209cb6666b/file/deep-architecture/objects/manifest-3104ba692ecfb483bf684aff24c82e5c788faa4585f7707224d42a3d6710e3e4.json",
+      "sha256": "3104ba692ecfb483bf684aff24c82e5c788faa4585f7707224d42a3d6710e3e4",
+      "size": 65621
+    },
+    "model": {
+      "address": "workspace_13209cb6666b/file/deep-architecture/objects/model-3b3660fb56b08759f761ff49cc25ca4c201cbc55a382584d0ce3e06e1f98e9ad.json",
+      "sha256": "3b3660fb56b08759f761ff49cc25ca4c201cbc55a382584d0ce3e06e1f98e9ad",
+      "size": 4696263
+    },
+    "binding": {
+      "commit": "a0dac83394748582158ee9c63a8b23c715872a1e",
+      "base_manifest": {
+        "address": "workspace_13209cb6666b/file/architecture-evidence/objects/manifest-43e2c68c22125fa9e390d3970bb3ba890e7304a4d3fbd6c1bb39465138b1faa2.json",
+        "sha256": "43e2c68c22125fa9e390d3970bb3ba890e7304a4d3fbd6c1bb39465138b1faa2",
+        "size": 312931
+      },
+      "consumer_contract": {
+        "address": "workspace_13209cb6666b/file/architecture-evidence/objects/consumer-contract-44b674154fb267114f3285b6b3b3039a285fcccb8ae891dc46039c715499cd92.json",
+        "sha256": "44b674154fb267114f3285b6b3b3039a285fcccb8ae891dc46039c715499cd92",
+        "size": 332878
+      },
+      "module_map": {
+        "address": "workspace_13209cb6666b/file/architecture-evidence/commits/a0dac83394748582158ee9c63a8b23c715872a1e/architecture/modules.yaml",
+        "sha256": "9aa3b1615bf8ddc192cc7859ab5257abbf063fa5d52fceaff7fe7eb3c539048e",
+        "size": 48968
+      },
+      "evolution": {
+        "address": "workspace_13209cb6666b/file/architecture-evidence/commits/a0dac83394748582158ee9c63a8b23c715872a1e/architecture/evolution.yaml",
+        "sha256": "9c9c4c6d0340cd2a86ff6ff491fe3e0819500de53a86f1cb29a8b7ead6f135f3",
+        "size": 34097
+      }
+    },
+    "purpose": "Exact test capture; authorization remains with parent loader."
+  },
+  "batchKey": "3104ba692ecfb483bf684aff24c82e5c788faa4585f7707224d42a3d6710e3e4",
+  "mechanism": {
+    "id": "web.m.resident-cursors",
+    "owner_id": "interface.conversation",
+    "title": "缺口后快照接纳与待处理事件续接",
+    "question": "缺口后快照接纳与待处理事件续接",
+    "presentation": "event_timeline",
+    "adapter": "portal.architecture.resident-cursors.v1",
+    "mode": "simulated",
+    "entry_conditions": [
+      "仅在固定a0dac完整授权批内解释；示例A/B与时间常量均为合成演示值。"
+    ],
+    "participants": [
+      {
+        "object_id": "interface.conversation.resident-store",
+        "role": "状态权威；引用不表示调用顺序"
+      }
+    ],
+    "state_fields": [
+      {
+        "id": "resident_id",
+        "label": "resident_id",
+        "meaning": "演示目标；不是线上Resident",
+        "type": "string",
+        "initial": "demo.resident",
+        "authority_id": "interface.conversation.resident-store",
+        "state_scope": "authoritative"
+      },
+      {
+        "id": "actor_revision",
+        "label": "actor_revision",
+        "meaning": "本地actorRevision；身份变化令请求过期",
+        "type": "integer",
+        "initial": 1,
+        "authority_id": "interface.conversation.resident-store",
+        "state_scope": "authoritative"
+      },
+      {
+        "id": "request_actor_revision",
+        "label": "request_actor_revision",
+        "meaning": "请求发起时捕获的actorRevision",
+        "type": "integer",
+        "initial": 1,
+        "authority_id": "interface.conversation.resident-store",
+        "state_scope": "authoritative"
+      },
+      {
+        "id": "conversation_cursor",
+        "label": "conversation_cursor",
+        "meaning": "已经连续应用的对话事件游标",
+        "type": "integer",
+        "initial": 10,
+        "authority_id": "interface.conversation.resident-store",
+        "state_scope": "authoritative"
+      },
+      {
+        "id": "state_cursor",
+        "label": "state_cursor",
+        "meaning": "独立运行状态游标",
+        "type": "integer",
+        "initial": 10,
+        "authority_id": "interface.conversation.resident-store",
+        "state_scope": "authoritative"
+      },
+      {
+        "id": "snapshot_reads",
+        "label": "snapshot_reads",
+        "meaning": "本轮追加snapshot请求次数",
+        "type": "integer",
+        "initial": 0,
+        "authority_id": "interface.conversation.resident-store",
+        "state_scope": "authoritative"
+      },
+      {
+        "id": "applied",
+        "label": "applied",
+        "meaning": "已应用的连续事件示例标记",
+        "type": "array",
+        "initial": [],
+        "authority_id": "interface.conversation.resident-store",
+        "state_scope": "authoritative"
+      },
+      {
+        "id": "installed_snapshot_label",
+        "label": "installed_snapshot_label",
+        "meaning": "本地演示标签；服务端没有此snapshot_id字段，不冒充哈希",
+        "type": "string",
+        "initial": "demo.snapshot@10",
+        "authority_id": "interface.conversation.resident-store",
+        "state_scope": "authoritative"
+      },
+      {
+        "id": "returned_snapshot_label",
+        "label": "returned_snapshot_label",
+        "meaning": "尚未接纳的返回快照的本地示例标签",
+        "type": "string",
+        "initial": "",
+        "authority_id": "interface.conversation.resident-store",
+        "state_scope": "authoritative"
+      },
+      {
+        "id": "returned_resident_id",
+        "label": "returned_resident_id",
+        "meaning": "实际返回结构snapshot.resident.resident_id",
+        "type": "string",
+        "initial": "",
+        "authority_id": "interface.conversation.resident-store",
+        "state_scope": "authoritative"
+      },
+      {
+        "id": "returned_cursor",
+        "label": "returned_cursor",
+        "meaning": "返回结构snapshot.cursor",
+        "type": "integer",
+        "initial": 0,
+        "authority_id": "interface.conversation.resident-store",
+        "state_scope": "authoritative"
+      },
+      {
+        "id": "returned_message_ids",
+        "label": "returned_message_ids",
+        "meaning": "返回snapshot.messages的message_id列表；模拟窗口不代表全部历史",
+        "type": "array",
+        "initial": [],
+        "authority_id": "interface.conversation.resident-store",
+        "state_scope": "authoritative"
+      },
+      {
+        "id": "message_ids",
+        "label": "message_ids",
+        "meaning": "已安装快照消息窗口",
+        "type": "array",
+        "initial": [
+          "demo.m10"
+        ],
+        "authority_id": "interface.conversation.resident-store",
+        "state_scope": "authoritative"
+      },
+      {
+        "id": "history_limit",
+        "label": "history_limit",
+        "meaning": "请求历史窗口容量，不是保证返回的消息数",
+        "type": "integer",
+        "initial": 200,
+        "authority_id": "interface.conversation.resident-store",
+        "state_scope": "authoritative"
+      },
+      {
+        "id": "snapshot_accepted",
+        "label": "snapshot_accepted",
+        "meaning": "经过身份/请求检查且refCount>0后安装",
+        "type": "boolean",
+        "initial": false,
+        "authority_id": "interface.conversation.resident-store",
+        "state_scope": "authoritative"
+      },
+      {
+        "id": "discarded_event_cursor",
+        "label": "discarded_event_cursor",
+        "meaning": "缺口或载荷缺失事件，不作为正文应用",
+        "type": "integer",
+        "initial": 0,
+        "authority_id": "interface.conversation.resident-store",
+        "state_scope": "authoritative"
+      },
+      {
+        "id": "recovery_requested",
+        "label": "recovery_requested",
+        "meaning": "仍需事件补读；不等于后台已恢复",
+        "type": "boolean",
+        "initial": false,
+        "authority_id": "interface.conversation.resident-store",
+        "state_scope": "authoritative"
+      },
+      {
+        "id": "ref_count",
+        "label": "ref_count",
+        "meaning": "活动订阅数",
+        "type": "integer",
+        "initial": 1,
+        "authority_id": "interface.conversation.resident-store",
+        "state_scope": "authoritative"
+      },
+      {
+        "id": "error",
+        "label": "error",
+        "meaning": "拒绝原因",
+        "type": "string",
+        "initial": "",
+        "authority_id": "interface.conversation.resident-store",
+        "state_scope": "authoritative"
+      },
+      {
+        "id": "case_input_scenario",
+        "label": "本地到达顺序",
+        "meaning": "固定示例事件顺序，不是业务请求参数或运行观察。",
+        "type": "string",
+        "initial": "out-of-order",
+        "enum": [
+          "out-of-order",
+          "gap",
+          "omitted",
+          "actor_changed",
+          "wrong_resident",
+          "released",
+          "pending_contiguous",
+          "pending_gap"
+        ],
+        "authority_id": "interface.conversation.resident-store",
+        "state_scope": "observation"
+      }
+    ],
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "scenario": {
+          "type": "string",
+          "enum": [
+            "out-of-order",
+            "gap",
+            "omitted",
+            "actor_changed",
+            "wrong_resident",
+            "released",
+            "pending_contiguous",
+            "pending_gap"
+          ]
+        }
+      },
+      "required": [
+        "scenario"
+      ],
+      "additionalProperties": false
+    },
+    "state_model": {
+      "authority": "字段authority_id/state_changes.writer_id；所有状态为本地模拟。",
+      "initialization": "逐case从typed initial起步，再显式load_case_inputs。",
+      "operations": [
+        "set"
+      ],
+      "dynamic_value": "{input: field_name}",
+      "condition_lookup": "when只查声明state",
+      "scope": "固定实现的有限因果示例；不代替远端执行或UI验收。"
+    },
+    "invariants": [
+      "snapshot标签是本地模拟身份，不是服务端额外字段。",
+      "只有消息窗口与cursor都已安装才表示此轮恢复完成。",
+      "pending事件再次不连续仍要继续恢复；不能通过清空队列假称接纳。"
+    ],
+    "steps": [
+      {
+        "id": "load_case_inputs",
+        "title": "载入固定示例",
+        "from": "interface.conversation.resident-store",
+        "to": "interface.conversation.resident-store",
+        "relation_id": null,
+        "trigger": "打开本地case",
+        "guard": "输入满足schema",
+        "state_changes": [
+          {
+            "field": "case_input_scenario",
+            "op": "set",
+            "value": {
+              "input": "scenario"
+            },
+            "writer_id": "interface.conversation.resident-store"
+          }
+        ],
+        "observable": "只载入本地示例，不发真实请求",
+        "next": [
+          "ack"
+        ],
+        "evidence_ids": [
+          "projection.e.snapshot-accept",
+          "projection.e.events-recover",
+          "web.e.resident-state",
+          "web.e.d-conversation"
+        ]
+      },
+      {
+        "id": "ack",
+        "title": "运行状态回执先到",
+        "from": "interface.conversation.resident-store",
+        "to": "interface.conversation.resident-store",
+        "relation_id": null,
+        "trigger": "运行状态回执先到",
+        "guard": "仅执行当前case声明的事件顺序；每字段writer标明真实权威",
+        "when": {
+          "field": "case_input_scenario",
+          "in": [
+            "out-of-order",
+            "gap",
+            "omitted",
+            "actor_changed",
+            "wrong_resident",
+            "released",
+            "pending_contiguous",
+            "pending_gap"
+          ]
+        },
+        "state_changes": [
+          {
+            "field": "state_cursor",
+            "op": "set",
+            "value": 12,
+            "writer_id": "interface.conversation.resident-store"
+          }
+        ],
+        "observable": "acceptStateSnapshot只推进stateCursor，对话cursor保持10。",
+        "next": [
+          "read"
+        ],
+        "evidence_ids": [
+          "projection.e.snapshot-accept",
+          "projection.e.events-recover",
+          "web.e.resident-state",
+          "web.e.d-conversation"
+        ]
+      },
+      {
+        "id": "read",
+        "title": "按cursor10读取事件",
+        "from": "interface.conversation.resident-store",
+        "to": "interface.conversation.resident-store",
+        "relation_id": null,
+        "trigger": "按cursor10读取事件",
+        "guard": "仅执行当前case声明的事件顺序；每字段writer标明真实权威",
+        "when": {
+          "field": "case_input_scenario",
+          "in": [
+            "out-of-order",
+            "gap",
+            "omitted",
+            "actor_changed",
+            "wrong_resident",
+            "released",
+            "pending_contiguous",
+            "pending_gap"
+          ]
+        },
+        "state_changes": [],
+        "observable": "读取事件并按cursor排序；先检查整批连续性。",
+        "next": [
+          "continuous",
+          "gap",
+          "omitted"
+        ],
+        "evidence_ids": [
+          "projection.e.snapshot-accept",
+          "projection.e.events-recover",
+          "web.e.resident-state",
+          "web.e.d-conversation"
+        ]
+      },
+      {
+        "id": "continuous",
+        "title": "连续cursor11应用",
+        "from": "interface.conversation.resident-store",
+        "to": "interface.conversation.resident-store",
+        "relation_id": null,
+        "trigger": "连续cursor11应用",
+        "guard": "仅执行当前case声明的事件顺序；每字段writer标明真实权威",
+        "when": {
+          "field": "case_input_scenario",
+          "in": [
+            "out-of-order"
+          ]
+        },
+        "state_changes": [
+          {
+            "field": "conversation_cursor",
+            "op": "set",
+            "value": 11,
+            "writer_id": "interface.conversation.resident-store"
+          },
+          {
+            "field": "applied",
+            "op": "set",
+            "value": [
+              "cursor11"
+            ],
+            "writer_id": "interface.conversation.resident-store"
+          }
+        ],
+        "observable": "stateCursor仍为12，不因对话事件回退。",
+        "next": [],
+        "evidence_ids": [
+          "projection.e.snapshot-accept",
+          "projection.e.events-recover",
+          "web.e.resident-state",
+          "web.e.d-conversation"
+        ]
+      },
+      {
+        "id": "gap",
+        "title": "发现cursor12，缺cursor11",
+        "from": "interface.conversation.resident-store",
+        "to": "interface.conversation.resident-store",
+        "relation_id": null,
+        "trigger": "发现cursor12，缺cursor11",
+        "guard": "仅执行当前case声明的事件顺序；每字段writer标明真实权威",
+        "when": {
+          "field": "case_input_scenario",
+          "in": [
+            "gap",
+            "actor_changed",
+            "wrong_resident",
+            "released",
+            "pending_contiguous",
+            "pending_gap"
+          ]
+        },
+        "state_changes": [
+          {
+            "field": "discarded_event_cursor",
+            "op": "set",
+            "value": 12,
+            "writer_id": "interface.conversation.resident-store"
+          }
+        ],
+        "observable": "不从10跳到12应用事件；改为强制快照。",
+        "next": [
+          "request"
+        ],
+        "evidence_ids": [
+          "projection.e.snapshot-accept",
+          "projection.e.events-recover",
+          "web.e.resident-state",
+          "web.e.d-conversation"
+        ]
+      },
+      {
+        "id": "omitted",
+        "title": "cursor11载荷被省略",
+        "from": "interface.conversation.resident-store",
+        "to": "interface.conversation.resident-store",
+        "relation_id": null,
+        "trigger": "cursor11载荷被省略",
+        "guard": "仅执行当前case声明的事件顺序；每字段writer标明真实权威",
+        "when": {
+          "field": "case_input_scenario",
+          "in": [
+            "omitted"
+          ]
+        },
+        "state_changes": [
+          {
+            "field": "discarded_event_cursor",
+            "op": "set",
+            "value": 11,
+            "writer_id": "interface.conversation.resident-store"
+          }
+        ],
+        "observable": "即便连续也不把省略的消息当作空正文。",
+        "next": [
+          "request"
+        ],
+        "evidence_ids": [
+          "projection.e.snapshot-accept",
+          "projection.e.events-recover",
+          "web.e.resident-state",
+          "web.e.d-conversation"
+        ]
+      },
+      {
+        "id": "request",
+        "title": "发起强制快照读取",
+        "from": "interface.conversation.resident-store",
+        "to": "interface.conversation.resident-store",
+        "relation_id": null,
+        "trigger": "发起强制快照读取",
+        "guard": "仅执行当前case声明的事件顺序；每字段writer标明真实权威",
+        "when": {
+          "field": "case_input_scenario",
+          "in": [
+            "gap",
+            "omitted",
+            "actor_changed",
+            "wrong_resident",
+            "released",
+            "pending_contiguous",
+            "pending_gap"
+          ]
+        },
+        "state_changes": [
+          {
+            "field": "snapshot_reads",
+            "op": "set",
+            "value": 1,
+            "writer_id": "interface.conversation.resident-store"
+          }
+        ],
+        "observable": "load(force:true)保留旧快照，冻结requestActorRevision和当前loading Promise。",
+        "next": [
+          "return",
+          "actor_change",
+          "foreign_return",
+          "release"
+        ],
+        "evidence_ids": [
+          "projection.e.snapshot-accept",
+          "projection.e.events-recover",
+          "web.e.resident-state",
+          "web.e.d-conversation"
+        ]
+      },
+      {
+        "id": "return",
+        "title": "快照返回",
+        "from": "interface.conversation.resident-store",
+        "to": "interface.conversation.resident-store",
+        "relation_id": null,
+        "trigger": "快照返回",
+        "guard": "仅执行当前case声明的事件顺序；每字段writer标明真实权威",
+        "when": {
+          "field": "case_input_scenario",
+          "in": [
+            "gap",
+            "omitted",
+            "actor_changed",
+            "released",
+            "pending_contiguous",
+            "pending_gap"
+          ]
+        },
+        "state_changes": [
+          {
+            "field": "returned_snapshot_label",
+            "op": "set",
+            "value": "demo.snapshot@12",
+            "writer_id": "interface.conversation.resident-store"
+          },
+          {
+            "field": "returned_resident_id",
+            "op": "set",
+            "value": "demo.resident",
+            "writer_id": "interface.conversation.resident-store"
+          },
+          {
+            "field": "returned_cursor",
+            "op": "set",
+            "value": 12,
+            "writer_id": "interface.conversation.resident-store"
+          },
+          {
+            "field": "returned_message_ids",
+            "op": "set",
+            "value": [
+              "demo.m10",
+              "demo.m11",
+              "demo.m12"
+            ],
+            "writer_id": "interface.conversation.resident-store"
+          }
+        ],
+        "observable": "返回字段与本地演示标签分开，尚未写入store。",
+        "next": [
+          "accept",
+          "reject_actor",
+          "no_install"
+        ],
+        "evidence_ids": [
+          "projection.e.snapshot-accept",
+          "projection.e.events-recover",
+          "web.e.resident-state",
+          "web.e.d-conversation"
+        ]
+      },
+      {
+        "id": "accept",
+        "title": "核验身份并安装消息窗口",
+        "from": "interface.conversation.resident-store",
+        "to": "interface.conversation.resident-store",
+        "relation_id": null,
+        "trigger": "核验身份并安装消息窗口",
+        "guard": "仅执行当前case声明的事件顺序；每字段writer标明真实权威",
+        "when": {
+          "field": "case_input_scenario",
+          "in": [
+            "gap",
+            "omitted",
+            "pending_contiguous",
+            "pending_gap"
+          ]
+        },
+        "state_changes": [
+          {
+            "field": "snapshot_accepted",
+            "op": "set",
+            "value": true,
+            "writer_id": "interface.conversation.resident-store"
+          },
+          {
+            "field": "installed_snapshot_label",
+            "op": "set",
+            "value": "demo.snapshot@12",
+            "writer_id": "interface.conversation.resident-store"
+          },
+          {
+            "field": "conversation_cursor",
+            "op": "set",
+            "value": 12,
+            "writer_id": "interface.conversation.resident-store"
+          },
+          {
+            "field": "message_ids",
+            "op": "set",
+            "value": [
+              "demo.m10",
+              "demo.m11",
+              "demo.m12"
+            ],
+            "writer_id": "interface.conversation.resident-store"
+          }
+        ],
+        "observable": "actor与loading Promise仍匹配、snapshot Resident匹配、refCount>0；clone完整snapshot，再acceptStateSnapshot/reapplyAcknowledgements。",
+        "next": [
+          "emit",
+          "pending_contiguous",
+          "pending_gap"
+        ],
+        "evidence_ids": [
+          "projection.e.snapshot-accept",
+          "projection.e.events-recover",
+          "web.e.resident-state",
+          "web.e.d-conversation"
+        ]
+      },
+      {
+        "id": "emit",
+        "title": "通知已安装快照",
+        "from": "interface.conversation.resident-store",
+        "to": "interface.conversation.resident-store",
+        "relation_id": null,
+        "trigger": "通知已安装快照",
+        "guard": "仅执行当前case声明的事件顺序；每字段writer标明真实权威",
+        "when": {
+          "field": "case_input_scenario",
+          "in": [
+            "gap",
+            "omitted",
+            "pending_contiguous",
+            "pending_gap"
+          ]
+        },
+        "state_changes": [],
+        "observable": "emit(snapshot)后调用方可使用已核验窗口；不假设全部历史已经加载。",
+        "next": [
+          "schedule"
+        ],
+        "evidence_ids": [
+          "projection.e.snapshot-accept",
+          "projection.e.events-recover",
+          "web.e.resident-state",
+          "web.e.d-conversation"
+        ]
+      },
+      {
+        "id": "actor_change",
+        "title": "请求期间actor改变",
+        "from": "interface.conversation.resident-store",
+        "to": "interface.conversation.resident-store",
+        "relation_id": null,
+        "trigger": "请求期间actor改变",
+        "guard": "仅执行当前case声明的事件顺序；每字段writer标明真实权威",
+        "when": {
+          "field": "case_input_scenario",
+          "in": [
+            "actor_changed"
+          ]
+        },
+        "state_changes": [
+          {
+            "field": "actor_revision",
+            "op": "set",
+            "value": 2,
+            "writer_id": "interface.conversation.resident-store"
+          }
+        ],
+        "observable": "旧请求不能借新actor安装快照。",
+        "next": [
+          "return"
+        ],
+        "evidence_ids": [
+          "projection.e.snapshot-accept",
+          "projection.e.events-recover",
+          "web.e.resident-state",
+          "web.e.d-conversation"
+        ]
+      },
+      {
+        "id": "reject_actor",
+        "title": "返回的请求已经过期",
+        "from": "interface.conversation.resident-store",
+        "to": "interface.conversation.resident-store",
+        "relation_id": null,
+        "trigger": "返回的请求已经过期",
+        "guard": "仅执行当前case声明的事件顺序；每字段writer标明真实权威",
+        "when": {
+          "field": "case_input_scenario",
+          "in": [
+            "actor_changed"
+          ]
+        },
+        "state_changes": [
+          {
+            "field": "error",
+            "op": "set",
+            "value": "AbortError",
+            "writer_id": "interface.conversation.resident-store"
+          }
+        ],
+        "observable": "requestActorRevision不匹配，安装前拒绝。",
+        "next": [],
+        "evidence_ids": [
+          "projection.e.snapshot-accept",
+          "projection.e.events-recover",
+          "web.e.resident-state",
+          "web.e.d-conversation"
+        ]
+      },
+      {
+        "id": "foreign_return",
+        "title": "返回其他Resident快照",
+        "from": "interface.conversation.resident-store",
+        "to": "interface.conversation.resident-store",
+        "relation_id": null,
+        "trigger": "返回其他Resident快照",
+        "guard": "仅执行当前case声明的事件顺序；每字段writer标明真实权威",
+        "when": {
+          "field": "case_input_scenario",
+          "in": [
+            "wrong_resident"
+          ]
+        },
+        "state_changes": [
+          {
+            "field": "returned_snapshot_label",
+            "op": "set",
+            "value": "demo.foreign@12",
+            "writer_id": "interface.conversation.resident-store"
+          },
+          {
+            "field": "returned_resident_id",
+            "op": "set",
+            "value": "demo.other",
+            "writer_id": "interface.conversation.resident-store"
+          },
+          {
+            "field": "returned_cursor",
+            "op": "set",
+            "value": 12,
+            "writer_id": "interface.conversation.resident-store"
+          },
+          {
+            "field": "error",
+            "op": "set",
+            "value": "Resident Snapshot target mismatch",
+            "writer_id": "interface.conversation.resident-store"
+          }
+        ],
+        "observable": "resident_id不匹配，保留原快照，不安装其他用户/目标正文。",
+        "next": [],
+        "evidence_ids": [
+          "projection.e.snapshot-accept",
+          "projection.e.events-recover",
+          "web.e.resident-state",
+          "web.e.d-conversation"
+        ]
+      },
+      {
+        "id": "release",
+        "title": "读取期间最后订阅释放",
+        "from": "interface.conversation.resident-store",
+        "to": "interface.conversation.resident-store",
+        "relation_id": null,
+        "trigger": "读取期间最后订阅释放",
+        "guard": "仅执行当前case声明的事件顺序；每字段writer标明真实权威",
+        "when": {
+          "field": "case_input_scenario",
+          "in": [
+            "released"
+          ]
+        },
+        "state_changes": [
+          {
+            "field": "ref_count",
+            "op": "set",
+            "value": 0,
+            "writer_id": "interface.conversation.resident-store"
+          }
+        ],
+        "observable": "无活跃订阅，load可返回clone给调用者，但不更新共享store。",
+        "next": [
+          "return"
+        ],
+        "evidence_ids": [
+          "projection.e.snapshot-accept",
+          "projection.e.events-recover",
+          "web.e.resident-state",
+          "web.e.d-conversation"
+        ]
+      },
+      {
+        "id": "no_install",
+        "title": "返回但不安装",
+        "from": "interface.conversation.resident-store",
+        "to": "interface.conversation.resident-store",
+        "relation_id": null,
+        "trigger": "返回但不安装",
+        "guard": "仅执行当前case声明的事件顺序；每字段writer标明真实权威",
+        "when": {
+          "field": "case_input_scenario",
+          "in": [
+            "released"
+          ]
+        },
+        "state_changes": [],
+        "observable": "refCount为0时直接return clone(snapshot)，不声称store已恢复。",
+        "next": [],
+        "evidence_ids": [
+          "projection.e.snapshot-accept",
+          "projection.e.events-recover",
+          "web.e.resident-state",
+          "web.e.d-conversation"
+        ]
+      },
+      {
+        "id": "pending_contiguous",
+        "title": "安装后应用等待中的cursor13",
+        "from": "interface.conversation.resident-store",
+        "to": "interface.conversation.resident-store",
+        "relation_id": null,
+        "trigger": "安装后应用等待中的cursor13",
+        "guard": "仅执行当前case声明的事件顺序；每字段writer标明真实权威",
+        "when": {
+          "field": "case_input_scenario",
+          "in": [
+            "pending_contiguous"
+          ]
+        },
+        "state_changes": [
+          {
+            "field": "conversation_cursor",
+            "op": "set",
+            "value": 13,
+            "writer_id": "interface.conversation.resident-store"
+          },
+          {
+            "field": "applied",
+            "op": "set",
+            "value": [
+              "cursor13"
+            ],
+            "writer_id": "interface.conversation.resident-store"
+          },
+          {
+            "field": "message_ids",
+            "op": "set",
+            "value": [
+              "demo.m10",
+              "demo.m11",
+              "demo.m12",
+              "demo.m13"
+            ],
+            "writer_id": "interface.conversation.resident-store"
+          }
+        ],
+        "observable": "跳过<=12的重复事件；本例cursor13是具有正文的message新增事件。",
+        "next": [
+          "emit"
+        ],
+        "evidence_ids": [
+          "projection.e.snapshot-accept",
+          "projection.e.events-recover",
+          "web.e.resident-state",
+          "web.e.d-conversation"
+        ]
+      },
+      {
+        "id": "pending_gap",
+        "title": "安装后等待事件cursor14仍不连续",
+        "from": "interface.conversation.resident-store",
+        "to": "interface.conversation.resident-store",
+        "relation_id": null,
+        "trigger": "安装后等待事件cursor14仍不连续",
+        "guard": "仅执行当前case声明的事件顺序；每字段writer标明真实权威",
+        "when": {
+          "field": "case_input_scenario",
+          "in": [
+            "pending_gap"
+          ]
+        },
+        "state_changes": [
+          {
+            "field": "discarded_event_cursor",
+            "op": "set",
+            "value": 14,
+            "writer_id": "interface.conversation.resident-store"
+          },
+          {
+            "field": "recovery_requested",
+            "op": "set",
+            "value": true,
+            "writer_id": "interface.conversation.resident-store"
+          }
+        ],
+        "observable": "不应用cursor14；recoveryRequested=true并停止处理该pending批。",
+        "next": [
+          "emit"
+        ],
+        "evidence_ids": [
+          "projection.e.snapshot-accept",
+          "projection.e.events-recover",
+          "web.e.resident-state",
+          "web.e.d-conversation"
+        ]
+      },
+      {
+        "id": "schedule",
+        "title": "load finally安排进一步恢复",
+        "from": "interface.conversation.resident-store",
+        "to": "interface.conversation.resident-store",
+        "relation_id": null,
+        "trigger": "load finally安排进一步恢复",
+        "guard": "仅执行当前case声明的事件顺序；每字段writer标明真实权威",
+        "when": {
+          "field": "case_input_scenario",
+          "in": [
+            "pending_gap"
+          ]
+        },
+        "state_changes": [],
+        "observable": "同actor且recoveryRequested时scheduleRecovery(0)；未宣称已取得下一批。",
+        "next": [],
+        "evidence_ids": [
+          "projection.e.snapshot-accept",
+          "projection.e.events-recover",
+          "web.e.resident-state",
+          "web.e.d-conversation"
+        ]
+      }
+    ],
+    "cases": [
+      {
+        "id": "out-of-order",
+        "title": "out-of-order",
+        "inputs": {
+          "scenario": "out-of-order"
+        },
+        "path": [
+          "load_case_inputs",
+          "ack",
+          "read",
+          "continuous"
+        ],
+        "outcome": "state12与conversation11独立。",
+        "evidence_ids": [
+          "projection.e.snapshot-accept",
+          "projection.e.events-recover",
+          "web.e.resident-state",
+          "web.e.d-conversation"
+        ]
+      },
+      {
+        "id": "gap",
+        "title": "gap",
+        "inputs": {
+          "scenario": "gap"
+        },
+        "path": [
+          "load_case_inputs",
+          "ack",
+          "read",
+          "gap",
+          "request",
+          "return",
+          "accept",
+          "emit"
+        ],
+        "outcome": "以返回的同Resident快照窗口恢复到cursor12。",
+        "evidence_ids": [
+          "projection.e.snapshot-accept",
+          "projection.e.events-recover",
+          "web.e.resident-state",
+          "web.e.d-conversation"
+        ]
+      },
+      {
+        "id": "omitted",
+        "title": "omitted",
+        "inputs": {
+          "scenario": "omitted"
+        },
+        "path": [
+          "load_case_inputs",
+          "ack",
+          "read",
+          "omitted",
+          "request",
+          "return",
+          "accept",
+          "emit"
+        ],
+        "outcome": "省略事件不回放，正式返回快照补齐窗口。",
+        "evidence_ids": [
+          "projection.e.snapshot-accept",
+          "projection.e.events-recover",
+          "web.e.resident-state",
+          "web.e.d-conversation"
+        ]
+      },
+      {
+        "id": "actor_changed",
+        "title": "actor_changed",
+        "inputs": {
+          "scenario": "actor_changed"
+        },
+        "path": [
+          "load_case_inputs",
+          "ack",
+          "read",
+          "gap",
+          "request",
+          "actor_change",
+          "return",
+          "reject_actor"
+        ],
+        "outcome": "旧actor请求被拒绝，保留原已安装快照。",
+        "evidence_ids": [
+          "projection.e.snapshot-accept",
+          "projection.e.events-recover",
+          "web.e.resident-state",
+          "web.e.d-conversation"
+        ]
+      },
+      {
+        "id": "wrong_resident",
+        "title": "wrong_resident",
+        "inputs": {
+          "scenario": "wrong_resident"
+        },
+        "path": [
+          "load_case_inputs",
+          "ack",
+          "read",
+          "gap",
+          "request",
+          "foreign_return"
+        ],
+        "outcome": "拒绝目标错配，保留原窗口。",
+        "evidence_ids": [
+          "projection.e.snapshot-accept",
+          "projection.e.events-recover",
+          "web.e.resident-state",
+          "web.e.d-conversation"
+        ]
+      },
+      {
+        "id": "released",
+        "title": "released",
+        "inputs": {
+          "scenario": "released"
+        },
+        "path": [
+          "load_case_inputs",
+          "ack",
+          "read",
+          "gap",
+          "request",
+          "release",
+          "return",
+          "no_install"
+        ],
+        "outcome": "返回不意味着共享store安装。",
+        "evidence_ids": [
+          "projection.e.snapshot-accept",
+          "projection.e.events-recover",
+          "web.e.resident-state",
+          "web.e.d-conversation"
+        ]
+      },
+      {
+        "id": "pending_contiguous",
+        "title": "pending_contiguous",
+        "inputs": {
+          "scenario": "pending_contiguous"
+        },
+        "path": [
+          "load_case_inputs",
+          "ack",
+          "read",
+          "gap",
+          "request",
+          "return",
+          "accept",
+          "pending_contiguous",
+          "emit"
+        ],
+        "outcome": "快照12后连续事件13接纳。",
+        "evidence_ids": [
+          "projection.e.snapshot-accept",
+          "projection.e.events-recover",
+          "web.e.resident-state",
+          "web.e.d-conversation"
+        ]
+      },
+      {
+        "id": "pending_gap",
+        "title": "pending_gap",
+        "inputs": {
+          "scenario": "pending_gap"
+        },
+        "path": [
+          "load_case_inputs",
+          "ack",
+          "read",
+          "gap",
+          "request",
+          "return",
+          "accept",
+          "pending_gap",
+          "emit",
+          "schedule"
+        ],
+        "outcome": "已接纳快照12，后续缺口继续恢复；不冒称已恢复到14。",
+        "evidence_ids": [
+          "projection.e.snapshot-accept",
+          "projection.e.events-recover",
+          "web.e.resident-state",
+          "web.e.d-conversation"
+        ]
+      }
+    ],
+    "evidence_ids": [
+      "projection.e.snapshot-accept",
+      "projection.e.events-recover",
+      "web.e.resident-state",
+      "web.e.d-conversation"
+    ]
+  },
+  "objects": [
+    {
+      "id": "interface.conversation",
+      "kind": "module",
+      "title": "聊天与运行状态视图",
+      "responsibility": "将共享 Resident 状态快照、事件及未确认输入投影为对话；不独立猜测运行状态。",
+      "parent_id": "interface",
+      "child_ids": [
+        "interface.conversation.resident-store"
+      ],
+      "host_ids": [
+        "interface"
+      ],
+      "state_owned": [
+        "渲染状态、草稿与未确认提交；已接受对话数据是服务端投影"
+      ],
+      "relation_ids": [
+        "web.r.conversation-store",
+        "web.r.host-feedback"
+      ],
+      "protocol_ids": [
+        "projection-family"
+      ],
+      "mechanism_ids": [
+        "web.m.resident-cursors"
+      ],
+      "evidence_ids": [
+        "web.e.chat-view",
+        "web.e.resident-state",
+        "web.e.resident-repair",
+        "web.e.d-conversation",
+        "projection.e.snapshot-accept",
+        "projection.e.events-recover"
+      ],
+      "identity": {
+        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "focus_owner_id": "interface.conversation",
+        "focus_kind": "module:interface.conversation",
+        "local_only": false
+      }
+    },
+    {
+      "id": "interface.conversation.resident-store",
+      "kind": "concept",
+      "title": "Resident 协议状态层",
+      "responsibility": "共享快照与事件归并，检测缺口后重取快照。",
+      "parent_id": "interface.conversation",
+      "child_ids": [],
+      "host_ids": [
+        "interface"
+      ],
+      "state_owned": [
+        "conversation cursor 与 stateCursor、未确认发送缓存"
+      ],
+      "relation_ids": [
+        "web.r.conversation-store",
+        "web.r.resident-events"
+      ],
+      "protocol_ids": [
+        "hatg-isa"
+      ],
+      "mechanism_ids": [
+        "web.m.resident-cursors"
+      ],
+      "evidence_ids": [
+        "web.e.resident-state",
+        "web.e.resident-snapshot",
+        "web.e.resident-repair",
+        "projection.e.snapshot-accept",
+        "projection.e.events-recover",
+        "web.e.d-conversation"
+      ],
+      "identity": {
+        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "focus_owner_id": "interface.conversation",
+        "focus_kind": "module:interface.conversation",
+        "local_only": true
+      }
+    }
+  ],
+  "evidence": [
+    {
+      "id": "web.e.resident-state",
+      "kind": "code",
+      "claim": "状态游标拒绝倒退，与对话事件游标分别维护。",
+      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/static/resident_protocol.js",
+      "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
+      "sha256": "8f00e5728e60880686fd7a6d0f78229226114f9600ae02f3bfcea22131265ed4",
+      "start_line": 529,
+      "end_line": 545,
+      "symbol": "acceptStateSnapshot",
+      "excerpt": "    acceptStateSnapshot(state, cursor, viewerState) {\n      const nextCursor = Number(cursor || 0);\n      if (Number.isFinite(this.stateCursor) && nextCursor < this.stateCursor) return;\n      this.stateProjection = clone(state || {});\n      if (viewerState && typeof viewerState.unread === \"boolean\") {\n        this.viewerState = clone(viewerState);\n      }\n      this.stateCursor = nextCursor;\n      this.stateSnapshotLoaded = true;\n      const pending = this.pendingStateEvents;\n      this.pendingStateEvents = [];\n      for (const event of pending) {\n        const eventCursor = Number(event?.cursor || 0);\n        if (eventCursor <= this.stateCursor) continue;\n        this.applyStateEvent(event);\n      }\n      this.emitState({ type: \"snapshot\" });",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-8f00e5728e60880686fd7a6d0f78229226114f9600ae02f3bfcea22131265ed4.json",
+        "sha256": "8f00e5728e60880686fd7a6d0f78229226114f9600ae02f3bfcea22131265ed4",
+        "size": 58335
+      }
+    },
+    {
+      "id": "web.e.d-conversation",
+      "kind": "design",
+      "claim": "运行状态权威、双游标与未确认发送独立。",
+      "address": "decision_18abbdef3da3",
+      "version": "21",
+      "sha256": "3a427f213f8ded9b58f7fdb2ab6439faad9ab16179d204c3843ddda8c0e29f22",
+      "start_line": 102,
+      "end_line": 145,
+      "symbol": "Resident 协议状态层",
+      "excerpt": "## Resident 协议状态层\n\n### 运行状态只有一个来源\n\n- **同一个 Resident 在各处显示同一份运行状态。** 是否在运行、是否排队、接单开关、排队消息数都由 Resident 协议状态层按 Resident ID 保存。Home、HATG、Lineage 导航、User Mailbox 和共享 Chat 都读取它，不从账号统计或会话索引中的旧字段推断。\n- **对话列表只组合运行状态。** 对话列表输出的条目带有 `resident_state`、`resident_state_cursor` 和 `resident_state_ready`，都来自 Resident 协议状态层，不写回列表的游标。条目中最后一次结果为失败、中断或归档时，Resident 空闲期间继续显示这个结果；Resident 开始新工作时显示当前状态。\n- **Resident 状态快照带有当前用户的未读。** 批量读取状态的 `ListResidentStates` 为每个 Resident 附带 `viewer_state.unread`，即当前用户对这个 Resident 的对话是否有未读结果。对话列表中这个 Resident 的条目以它为准（本地正在进行已读操作时除外）。用户的已读标记变化时，服务端发出 `resident-view-state` 变化通知；Resident 的一条输入进入终态时，状态层也重新读取状态。\n- **状态订阅在同一标签页内共享。** `acquireStates` 为一组 Resident 建立订阅，复用每个 Resident 已有的状态和正在进行的读取，只读取缺少的成员；`stateSnapshot` 只读取已有状态，不发请求。页面恢复可见、获得焦点时，以及可见页面每两分钟，由状态协议统一作废已有订阅的快照并批量补读，修复漏掉的通知。最后一个订阅释放后，解除页面监听和计时器，缓存的生命周期由状态层管理。不同标签页各自读取服务端结果，通过 Portal 的变化通知保持一致。\n\n### 消息快照与事件补读\n\n- **首次打开时读取快照，之后按游标连续接收事件。** 状态层用 `GetConversation` 读取一个 Resident 的对话快照（默认最近 200 条消息），用 `WatchConversationEvents` 读取之后的事件；更早的消息用 `ListMessages` 按页读取。重复的游标跳过，消息按消息 ID 更新。缓存记录已请求的历史容量；新的读取需要更多历史时重新取得快照，不复用只含少量历史的状态观察快照。\n- **事件有缺口时自动补齐。** 通知跳过了游标，或只说明“有变化”而没有带上内容时，状态层从最后连续的游标开始补读事件；补读仍有缺口、只返回部分内容，或返回空页而服务端游标更大时，直接重新读取快照并继续显示。用户不需要刷新页面。\n- **暂时的读取失败自动恢复。** 补读或快照读取遇到网络断开、408、429 或 5xx 时，保留已有内容，从 1 秒开始按倍数退避重试，最长间隔 10 秒，没有新通知也继续恢复；读取成功后退避清零。403、404 这类确定的错误直接作为错误显示。最后一个消息订阅释放时，取消重试并作废正在进行的读取。\n- **切换登录用户时清空全部 Resident 的状态。** 旧用户的消息、状态、回执和重试全部清除，正在进行的请求不再复用，再为新用户读取快照。旧用户的成功响应、失败响应和停止回执都不能改动新用户的界面。\n\n### 对话游标与状态游标分开前进\n\n同一条有序的 Resident 事件流同时更新对话和运行状态，两者各自记录处理到的位置：\n\n- **对话游标只在事件连续到达或补齐后前进。**\n- **状态游标可以单独前进。** 状态只从 `resident.state.changed` 事件和完整的状态快照、操作回执中更新，跳过与状态无关的事件，不为填补这些事件去读取聊天历史。新的完整状态同时替换运行状态和可用操作（`controls`，例如能否发送、能否停止）；它可以推进状态游标，但不会让对话游标越过还没收到的事件。较旧的快照、回执或事件不能让状态倒退。\n- **不完整的状态通知只当作“需要补读”。** 通知省略了内容，或缺少 `controls` 及其字段时，状态层只记下 Resident ID 和游标，重新读取完整的状态与可用操作后一次性更新；补读期间保留最后确认的状态和草稿，不把缺少字段理解为权限被撤销。服务端明确返回 `can_send=false` 时，界面按它禁用发送并显示原因。首次加载还没有取得可用操作时，输入框保持不可发送。\n\n### 操作回执与事件的先后顺序\n\n操作的回执和实时事件可能以任意顺序到达，Resident 协议状态层统一处理，页面不另建规则：\n\n- **回执先到时，按回执的游标暂存操作后的状态。** 暂存内容包括运行状态、可用操作、输入状态、等待队列和输入消息，较旧的事件或正在进行的快照读取不能把它们退回操作之前。\n- **回执不推进对话游标。** 中间的消息仍按连续事件补齐。事件追上回执的游标后，释放暂存的内容；较旧的回执不能覆盖已经处理过的更新终态。\n\n例如，停止的回执比消息事件先到时，界面立即显示“正在停止”，之后连续事件补齐；“立即发送”的回执晚到时，也不能覆盖已经确认的输入终态。\n\n### Resident 的即时发送与待确认消息\n\n用户点击发送时，协议状态层按消息 ID 保存一份本地提交，并立即通知同一标签页内订阅该 Resident 的所有 Chat。Chat 显示“发送中…”气泡，输入框清空且继续可用。正文、图片顺序、附件、引用和提交时的目标均固定；后续草稿、附件和焦点不受旧回执影响。这份本地记录独立于服务端消息、队列、运行状态和游标，不能作为已受理或有权限的证据。\n\n- 同一 Resident 的提交按点击顺序受理；异步准备业务上下文也在这个顺序内。前一条得到受理事实或明确拒绝后再提交下一条，输入框始终允许编辑和继续发送。\n- 消息、输入状态、队列、回执与事件按同一消息 ID 对齐。正式消息出现时替换临时显示，只保留一条；服务端确认在队列中时移除临时气泡，显示服务端队列项。回执和事件先后到达都遵守原有游标规则。\n- 403 等明确拒绝保留气泡并在下方显示错误，可移除或显式重试。重试复用原消息 ID 和已准备好的内容，不重新追加上下文，也不覆盖新草稿。\n- 断线、超时或 5xx 无法证明请求未被受理，显示“正在确认发送状态”。有 Chat 订阅时每两秒查询原消息 ID，也可手动检查；只有匹配的服务端事实才确认。查询失败或暂未找到不自动重发。结果不确定时后续本地提交等待确认，输入框继续可用。\n- 本地提交只保存在当前标签页内存中，重新打开同一 Resident 时继续显示；刷新或关闭标签页后仅恢复服务端已经保存的事实。切换登录身份时清空全部本地提交和查询计时器，未发出的旧身份提交不再发出，迟到结果不进入新身份的界面。\n\n`sendInput(payload, { prepare, preview })` 负责上述提交；`retrySubmission`、`dismissSubmission` 和 `checkSubmissions` 分别用于明确失败后的重试、移除和查询。宿主只提供业务上下文准备回调与展示内容，不另建发送队列或重试规则。",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-3a427f213f8ded9b58f7fdb2ab6439faad9ab16179d204c3843ddda8c0e29f22.json",
+        "sha256": "3a427f213f8ded9b58f7fdb2ab6439faad9ab16179d204c3843ddda8c0e29f22",
+        "size": 28438
+      }
+    },
+    {
+      "id": "projection.e.snapshot-accept",
+      "kind": "code",
+      "claim": "快照actor/request/Resident身份检查、安装、待处理事件连续性与再次恢复",
+      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/static/resident_protocol.js",
+      "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
+      "path": "management_portal/static/resident_protocol.js",
+      "sha256": "8f00e5728e60880686fd7a6d0f78229226114f9600ae02f3bfcea22131265ed4",
+      "start_line": 586,
+      "end_line": 656,
+      "symbol": "快照actor/request/Resident身份检查、安装、待处理事件连续性与再次恢复",
+      "excerpt": "      // only an explicit request for more history expands the shared snapshot.\n      historyLimit ??= this.loadingHistoryLimit || this.snapshotHistoryLimit || 200;\n      if (this.snapshot && !force && this.snapshotHistoryLimit >= historyLimit) return clone(this.snapshot);\n      if (this.loading) {\n        if (historyLimit > this.loadingHistoryLimit) {\n          await this.loading;\n          return this.load({ force, historyLimit });\n        }\n        if (force && !this.loadingForce) this.reloadRequested = true;\n        return this.loading;\n      }\n      this.loadingHistoryLimit = historyLimit;\n      this.loadingForce = force;\n      this.recovering = this.loadingForce;\n      const requestActorRevision = actorRevision;\n      const request = window.PortalResidentService.snapshot(this.residentId, { historyLimit })\n        .then(snapshot => {\n          if (requestActorRevision !== actorRevision || this.loading !== request) throw new DOMException(\"Resident request superseded\", \"AbortError\");\n          if (String(snapshot?.resident?.resident_id || \"\") !== this.residentId) {\n            throw new Error(\"Resident Snapshot target mismatch\");\n          }\n          if (!this.refCount) return clone(snapshot);\n          this.snapshot = clone(snapshot);\n          this.snapshotHistoryLimit = historyLimit;\n          if (this.snapshotRetryTimer !== null) window.clearTimeout(this.snapshotRetryTimer);\n          this.snapshotRetryTimer = null;\n          this.snapshotRetryMs = 1000;\n          this.cursor = Number(snapshot?.cursor || 0);\n          this.acceptStateSnapshot(snapshot?.state || {}, this.cursor);\n          this.reapplyAcknowledgements();\n          touchStore(this);\n          const pending = this.pendingEvents;\n          this.pendingEvents = [];\n          for (const event of pending) {\n            const eventCursor = Number(event?.cursor || 0);\n            if (eventCursor <= this.cursor) continue;\n            if (event?.payload_omitted === true || eventCursor !== this.cursor + 1) {\n              this.recoveryRequested = true;\n              break;\n            }\n            this.applyEvent(event);\n          }\n          // Live events that arrived while this Snapshot loaded are at least as new.\n          const live = this.pendingLiveEvents;\n          this.pendingLiveEvents = [];\n          for (const event of live) this.applyLivePayload(event);\n          this.recovering = false;\n          this.emit({ type: \"snapshot\", snapshot: clone(this.snapshot) });\n          return clone(this.snapshot);\n        })\n        .catch(error => {\n          if (requestActorRevision !== actorRevision || this.loading !== request) throw error;\n          this.recovering = false;\n          this.emitError(error);\n          throw error;\n        })\n        .finally(() => {\n          if (this.loading !== request) return;\n          this.loading = null;\n          this.loadingForce = false;\n          if (!this.reloadRequested) return;\n          this.reloadRequested = false;\n          this.load({ force: true, historyLimit }).catch(() => {});\n        });\n      this.loading = request;\n      request.finally(() => {\n        if (requestActorRevision === actorRevision && this.recoveryRequested) this.scheduleRecovery(0);\n      }).catch(() => {});\n      return request;\n    }\n",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-8f00e5728e60880686fd7a6d0f78229226114f9600ae02f3bfcea22131265ed4.json",
+        "sha256": "8f00e5728e60880686fd7a6d0f78229226114f9600ae02f3bfcea22131265ed4",
+        "size": 58335
+      }
+    },
+    {
+      "id": "projection.e.events-recover",
+      "kind": "code",
+      "claim": "事件补读完整性检查；缺口/省略/高水位空读重新请求快照",
+      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/static/resident_protocol.js",
+      "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
+      "path": "management_portal/static/resident_protocol.js",
+      "sha256": "8f00e5728e60880686fd7a6d0f78229226114f9600ae02f3bfcea22131265ed4",
+      "start_line": 823,
+      "end_line": 917,
+      "symbol": "事件补读完整性检查；缺口/省略/高水位空读重新请求快照",
+      "excerpt": "    recoverEvents() {\n      if (!this.snapshot || this.cursor == null) return this.load({ force: true });\n      if (this.loading) {\n        this.recoveryRequested = true;\n        return this.loading;\n      }\n      if (this.recoveryLoading) {\n        this.recoveryRequested = true;\n        return this.recoveryLoading;\n      }\n      this.recoveryRequested = false;\n      this.recovering = true;\n      const afterCursor = Number(this.cursor || 0);\n      const requestActorRevision = actorRevision;\n      let retryDelay = 0;\n      const isCurrent = () => requestActorRevision === actorRevision && this.recoveryLoading === request;\n      const request = window.PortalResidentService.events(this.residentId, {\n        afterCursor,\n        limit: 500,\n      })\n        .then(payload => {\n          if (!isCurrent()) throw new DOMException(\"Resident request superseded\", \"AbortError\");\n          if (String(payload?.resident_id || \"\") !== this.residentId) {\n            throw new Error(\"Resident Event recovery target mismatch\");\n          }\n          const events = (Array.isArray(payload?.events) ? payload.events : [])\n            .slice()\n            .sort((left, right) => Number(left?.cursor || 0) - Number(right?.cursor || 0));\n          const highWatermark = Number(payload?.high_watermark ?? payload?.cursor ?? 0);\n          let expectedCursor = this.cursor;\n          for (const event of events) {\n            const cursor = Number(event?.cursor || 0);\n            if (cursor <= expectedCursor) continue;\n            if (cursor !== expectedCursor + 1 || event?.payload_omitted === true) {\n              this.recoveryRequested = false;\n              return this.load({ force: true });\n            }\n            expectedCursor = cursor;\n          }\n          if (expectedCursor === this.cursor && highWatermark > this.cursor) {\n            this.recoveryRequested = false;\n            return this.load({ force: true });\n          }\n          for (const event of events) {\n            const eventCursor = Number(event?.cursor || 0);\n            if (eventCursor <= this.cursor) continue;\n            this.applyStateEvent(event, { emit: false });\n            try {\n              this.applyEvent(event, { emit: false });\n            } catch (_error) {\n              this.recoveryRequested = false;\n              return this.load({ force: true });\n            }\n          }\n          const pendingCursor = this.pendingEvents.reduce(\n            (latest, event) => Math.max(latest, Number(event?.cursor || 0)),\n            0,\n          );\n          this.pendingEvents = [];\n          if (highWatermark > this.cursor || pendingCursor > this.cursor) {\n            this.recoveryRequested = true;\n          }\n          touchStore(this);\n          this.emitState({ type: \"recovery\" });\n          this.emit({ type: \"recovery\", snapshot: clone(this.snapshot) });\n          return clone(this.snapshot);\n        })\n        .then(value => {\n          if (isCurrent()) this.recoveryRetryMs = 1000;\n          return value;\n        })\n        .catch(error => {\n          if (!isCurrent()) throw error;\n          const transient = isTransientSyncError(error);\n          this.recoveryRequested = transient;\n          if (transient) {\n            retryDelay = this.recoveryRetryMs;\n            this.recoveryRetryMs = Math.min(this.recoveryRetryMs * 2, 10000);\n          }\n          this.emitError(error);\n          throw error;\n        })\n        .finally(() => {\n          if (this.recoveryLoading !== request) return;\n          this.recoveryLoading = null;\n          this.recovering = false;\n          if (this.recoveryRequested) this.scheduleRecovery(retryDelay);\n        });\n      this.recoveryLoading = request;\n      return request;\n    }\n\n    acceptAcknowledgement(value) {\n      const acknowledgement = value && typeof value === \"object\" ? value : {};\n      if (String(acknowledgement.resident_id || \"\") !== this.residentId) return;",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-8f00e5728e60880686fd7a6d0f78229226114f9600ae02f3bfcea22131265ed4.json",
+        "sha256": "8f00e5728e60880686fd7a6d0f78229226114f9600ae02f3bfcea22131265ed4",
+        "size": 58335
+      }
+    }
+  ]
+}

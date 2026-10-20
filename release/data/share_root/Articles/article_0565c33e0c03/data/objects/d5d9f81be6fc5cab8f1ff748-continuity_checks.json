@@ -1,0 +1,130 @@
+[
+  {
+    "id": "202610197503_0_0_fast_delta_life_original_write",
+    "initial_exact": true,
+    "frozen_bank_error": 0.0,
+    "max_energy_error": 1.0085682289329156e-14,
+    "nofeedback_total_payment": 0,
+    "frozen_association_updates": null
+  },
+  {
+    "id": "202610197503_0_0_fast_delta_life_original_freeze",
+    "initial_exact": true,
+    "frozen_bank_error": 0.0,
+    "max_energy_error": 1.0085682289329156e-14,
+    "nofeedback_total_payment": 0,
+    "frozen_association_updates": 0
+  },
+  {
+    "id": "202610197503_0_0_fast_delta_life_turn_once_write",
+    "initial_exact": true,
+    "frozen_bank_error": 0.0,
+    "max_energy_error": 1.4252488078625447e-14,
+    "nofeedback_total_payment": 0.0,
+    "frozen_association_updates": null
+  },
+  {
+    "id": "202610197503_0_0_fast_delta_life_turn_once_freeze",
+    "initial_exact": true,
+    "frozen_bank_error": 0.0,
+    "max_energy_error": 1.4252488078625447e-14,
+    "nofeedback_total_payment": 0.0,
+    "frozen_association_updates": 0
+  },
+  {
+    "id": "202610197503_0_0_joint_delta_life_original_write",
+    "initial_exact": true,
+    "frozen_bank_error": 0.0,
+    "max_energy_error": 1.3666151543745286e-14,
+    "nofeedback_total_payment": 0,
+    "frozen_association_updates": null
+  },
+  {
+    "id": "202610197503_0_0_joint_delta_life_original_freeze",
+    "initial_exact": true,
+    "frozen_bank_error": 0.0,
+    "max_energy_error": 1.3666151543745286e-14,
+    "nofeedback_total_payment": 0,
+    "frozen_association_updates": 0
+  },
+  {
+    "id": "202610197503_0_0_joint_delta_life_turn_once_write",
+    "initial_exact": true,
+    "frozen_bank_error": 0.0,
+    "max_energy_error": 1.086630785351872e-14,
+    "nofeedback_total_payment": 0.0,
+    "frozen_association_updates": null
+  },
+  {
+    "id": "202610197503_0_0_joint_delta_life_turn_once_freeze",
+    "initial_exact": true,
+    "frozen_bank_error": 0.0,
+    "max_energy_error": 1.086630785351872e-14,
+    "nofeedback_total_payment": 0.0,
+    "frozen_association_updates": 0
+  },
+  {
+    "id": "202610197504_1_0_fast_delta_life_original_write",
+    "initial_exact": true,
+    "frozen_bank_error": 0.0,
+    "max_energy_error": 1.0345890810725678e-14,
+    "nofeedback_total_payment": 0,
+    "frozen_association_updates": null
+  },
+  {
+    "id": "202610197504_1_0_fast_delta_life_original_freeze",
+    "initial_exact": true,
+    "frozen_bank_error": 0.0,
+    "max_energy_error": 1.0345890810725678e-14,
+    "nofeedback_total_payment": 0,
+    "frozen_association_updates": 0
+  },
+  {
+    "id": "202610197504_1_0_fast_delta_life_turn_once_write",
+    "initial_exact": true,
+    "frozen_bank_error": 0.0,
+    "max_energy_error": 1.4474532683550478e-14,
+    "nofeedback_total_payment": 0.0,
+    "frozen_association_updates": null
+  },
+  {
+    "id": "202610197504_1_0_fast_delta_life_turn_once_freeze",
+    "initial_exact": true,
+    "frozen_bank_error": 0.0,
+    "max_energy_error": 1.4474532683550478e-14,
+    "nofeedback_total_payment": 0.0,
+    "frozen_association_updates": 0
+  },
+  {
+    "id": "202610197504_1_0_joint_delta_life_original_write",
+    "initial_exact": true,
+    "frozen_bank_error": 0.0,
+    "max_energy_error": 9.471590178833367e-15,
+    "nofeedback_total_payment": 0,
+    "frozen_association_updates": null
+  },
+  {
+    "id": "202610197504_1_0_joint_delta_life_original_freeze",
+    "initial_exact": true,
+    "frozen_bank_error": 0.0,
+    "max_energy_error": 9.471590178833367e-15,
+    "nofeedback_total_payment": 0,
+    "frozen_association_updates": 0
+  },
+  {
+    "id": "202610197504_1_0_joint_delta_life_turn_once_write",
+    "initial_exact": true,
+    "frozen_bank_error": 0.0,
+    "max_energy_error": 1.1053657988924215e-14,
+    "nofeedback_total_payment": 0.0,
+    "frozen_association_updates": null
+  },
+  {
+    "id": "202610197504_1_0_joint_delta_life_turn_once_freeze",
+    "initial_exact": true,
+    "frozen_bank_error": 0.0,
+    "max_energy_error": 1.1053657988924215e-14,
+    "nofeedback_total_payment": 0.0,
+    "frozen_association_updates": 0
+  }
+]

@@ -1,0 +1,32 @@
+{
+  "task": "active_observation_commitment_20261018",
+  "status": "completed_feasibility_not_method_success",
+  "objective_met": false,
+  "result": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/active_observation_commitment_20261018/result.json",
+    "sha256": "0f4a505dd7450b1315c9f3cc3ec0593940a6f67a9c1c628f09225e4cae058d27"
+  },
+  "summary": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/active_observation_commitment_20261018/summary.json",
+    "sha256": "ab87f955fc228ccbacab89ca07bc6b4ae16cdd50200c6abae33bdabb2468cb93"
+  },
+  "manifest": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/active_observation_commitment_20261018/manifest.json",
+    "sha256": "e967f1fefe7f12543c22df127da4953b2a874bb4bfb6ff2433777067fde99ee0"
+  },
+  "host": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/active_observation_commitment/core.py",
+    "sha256": "941265f64b609b46fc040cc71b3979e0d0f33bbc0d6939daf827c80c72e49e77"
+  },
+  "analysis_source": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/active_observation_commitment/analyze.py",
+    "sha256": "8377f10784b72eae8446103244dc43fde2a0a68507082ebd34506062cda99f53"
+  },
+  "job_id": "81634410-4dfc-4968-b804-3324df0987dc",
+  "actual_host_steps": 12561,
+  "runner_worker_seconds": 18.029714,
+  "d3_reserved": {
+    "host": 114688,
+    "worker_seconds": 210
+  }
+}

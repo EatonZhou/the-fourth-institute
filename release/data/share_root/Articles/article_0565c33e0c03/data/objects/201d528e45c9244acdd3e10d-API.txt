@@ -1,0 +1,1 @@
+唯一新模块 local_learning.replacement_history_carrier：core.ScheduledFormation只改inputs，exchange_pf只替换实际precursor/fuel并核其余全状态。GrowthBody.restore/checkpoint原样用于所有joint。observe复用真实K/actor/rule Cohorts。run冻结后唯一提交；analyze/package只读。frames.json、outcomes.json、exchange256.json/npz、raw_manifest定位原件。

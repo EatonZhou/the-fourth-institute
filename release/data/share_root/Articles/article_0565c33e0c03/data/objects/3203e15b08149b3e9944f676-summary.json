@@ -1,0 +1,482 @@
+{
+  "status": "completed",
+  "native": 6144,
+  "committed": 6144,
+  "settled": 6144,
+  "paths": 36,
+  "G1": 16,
+  "G2": 8,
+  "continuations": 12,
+  "selection": [
+    {
+      "stage": "G1",
+      "aggregates": [
+        {
+          "id": "g1_f0_c0",
+          "complete": true,
+          "eligible": false,
+          "pareto": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "fallback": [
+            37.303659370634016,
+            0.0
+          ],
+          "contexts": [
+            "g1_f0_c0--compact--colocated--G1--pump",
+            "g1_f0_c0--compact--separated--G1--pump",
+            "g1_f0_c0--double_lobe--colocated--G1--pump",
+            "g1_f0_c0--double_lobe--separated--G1--pump"
+          ]
+        },
+        {
+          "id": "g1_f1_c0",
+          "complete": true,
+          "eligible": false,
+          "pareto": [
+            23.849684422419895,
+            -32.583927192832256,
+            -36.05014282700825,
+            1.8061515808675346
+          ],
+          "fallback": [
+            232.50304236259836,
+            6.574090949599974
+          ],
+          "contexts": [
+            "g1_f1_c0--compact--colocated--G1--pump",
+            "g1_f1_c0--compact--separated--G1--pump",
+            "g1_f1_c0--double_lobe--colocated--G1--pump",
+            "g1_f1_c0--double_lobe--separated--G1--pump"
+          ]
+        },
+        {
+          "id": "g1_f2_c0",
+          "complete": true,
+          "eligible": true,
+          "pareto": [
+            51.181327722464744,
+            -2.7372695043086837,
+            2.7617612997445136,
+            3.2964082931623455
+          ],
+          "fallback": [
+            339.42873346173377,
+            49.76957049782679
+          ],
+          "contexts": [
+            "g1_f2_c0--compact--colocated--G1--pump",
+            "g1_f2_c0--compact--separated--G1--pump",
+            "g1_f2_c0--double_lobe--colocated--G1--pump",
+            "g1_f2_c0--double_lobe--separated--G1--pump"
+          ]
+        },
+        {
+          "id": "g1_f3_c0",
+          "complete": true,
+          "eligible": false,
+          "pareto": [
+            0.0,
+            -51.27408098629973,
+            -55.504255828874705,
+            0.0
+          ],
+          "fallback": [
+            67.69541991948768,
+            0.0
+          ],
+          "contexts": [
+            "g1_f3_c0--compact--colocated--G1--pump",
+            "g1_f3_c0--compact--separated--G1--pump",
+            "g1_f3_c0--double_lobe--colocated--G1--pump",
+            "g1_f3_c0--double_lobe--separated--G1--pump"
+          ]
+        }
+      ],
+      "ranking": [
+        {
+          "id": "g1_f2_c0",
+          "complete": true,
+          "eligible": true,
+          "pareto": [
+            51.181327722464744,
+            -2.7372695043086837,
+            2.7617612997445136,
+            3.2964082931623455
+          ],
+          "fallback": [
+            339.42873346173377,
+            49.76957049782679
+          ],
+          "contexts": [
+            "g1_f2_c0--compact--colocated--G1--pump",
+            "g1_f2_c0--compact--separated--G1--pump",
+            "g1_f2_c0--double_lobe--colocated--G1--pump",
+            "g1_f2_c0--double_lobe--separated--G1--pump"
+          ],
+          "layer": 0,
+          "selection_mode": "qualified"
+        }
+      ],
+      "selected": [
+        "g1_f2_c0"
+      ]
+    },
+    {
+      "stage": "G2",
+      "aggregates": [
+        {
+          "id": "g2_p0_c0",
+          "complete": true,
+          "eligible": true,
+          "pareto": [
+            53.43541310683334,
+            -2.741238089575232,
+            4.5261002354233355,
+            3.910036472641982
+          ],
+          "fallback": [
+            353.55115509752414,
+            52.034712144871094
+          ],
+          "contexts": [
+            "g2_p0_c0--compact--colocated--G2--pump",
+            "g2_p0_c0--compact--separated--G2--pump",
+            "g2_p0_c0--double_lobe--colocated--G2--pump",
+            "g2_p0_c0--double_lobe--separated--G2--pump"
+          ]
+        },
+        {
+          "id": "g2_p0_c1",
+          "complete": true,
+          "eligible": true,
+          "pareto": [
+            48.272027856358264,
+            -3.0420044264367943,
+            1.6252202850256339,
+            3.336638385748237
+          ],
+          "fallback": [
+            321.65859881236815,
+            46.69752742309352
+          ],
+          "contexts": [
+            "g2_p0_c1--compact--colocated--G2--pump",
+            "g2_p0_c1--compact--separated--G2--pump",
+            "g2_p0_c1--double_lobe--colocated--G2--pump",
+            "g2_p0_c1--double_lobe--separated--G2--pump"
+          ]
+        }
+      ],
+      "ranking": [
+        {
+          "id": "g2_p0_c0",
+          "complete": true,
+          "eligible": true,
+          "pareto": [
+            53.43541310683334,
+            -2.741238089575232,
+            4.5261002354233355,
+            3.910036472641982
+          ],
+          "fallback": [
+            353.55115509752414,
+            52.034712144871094
+          ],
+          "contexts": [
+            "g2_p0_c0--compact--colocated--G2--pump",
+            "g2_p0_c0--compact--separated--G2--pump",
+            "g2_p0_c0--double_lobe--colocated--G2--pump",
+            "g2_p0_c0--double_lobe--separated--G2--pump"
+          ],
+          "layer": 0,
+          "selection_mode": "qualified"
+        },
+        {
+          "id": "g2_p0_c1",
+          "complete": true,
+          "eligible": true,
+          "pareto": [
+            48.272027856358264,
+            -3.0420044264367943,
+            1.6252202850256339,
+            3.336638385748237
+          ],
+          "fallback": [
+            321.65859881236815,
+            46.69752742309352
+          ],
+          "contexts": [
+            "g2_p0_c1--compact--colocated--G2--pump",
+            "g2_p0_c1--compact--separated--G2--pump",
+            "g2_p0_c1--double_lobe--colocated--G2--pump",
+            "g2_p0_c1--double_lobe--separated--G2--pump"
+          ],
+          "layer": 1,
+          "selection_mode": "qualified"
+        }
+      ],
+      "qualified_ranking": [
+        {
+          "id": "g2_p0_c0",
+          "complete": true,
+          "eligible": true,
+          "pareto": [
+            53.43541310683334,
+            -2.741238089575232,
+            4.5261002354233355,
+            3.910036472641982
+          ],
+          "fallback": [
+            353.55115509752414,
+            52.034712144871094
+          ],
+          "contexts": [
+            "g2_p0_c0--compact--colocated--G2--pump",
+            "g2_p0_c0--compact--separated--G2--pump",
+            "g2_p0_c0--double_lobe--colocated--G2--pump",
+            "g2_p0_c0--double_lobe--separated--G2--pump"
+          ],
+          "layer": 0,
+          "selection_mode": "qualified"
+        },
+        {
+          "id": "g2_p0_c1",
+          "complete": true,
+          "eligible": true,
+          "pareto": [
+            48.272027856358264,
+            -3.0420044264367943,
+            1.6252202850256339,
+            3.336638385748237
+          ],
+          "fallback": [
+            321.65859881236815,
+            46.69752742309352
+          ],
+          "contexts": [
+            "g2_p0_c1--compact--colocated--G2--pump",
+            "g2_p0_c1--compact--separated--G2--pump",
+            "g2_p0_c1--double_lobe--colocated--G2--pump",
+            "g2_p0_c1--double_lobe--separated--G2--pump"
+          ],
+          "layer": 1,
+          "selection_mode": "qualified"
+        }
+      ],
+      "selected": [
+        "g2_p0_c0"
+      ]
+    }
+  ],
+  "maintenance384_pass": 0,
+  "maintenance384_fail": 12,
+  "extinctions": [
+    "g1_f0_c0--compact--colocated--G1--pump",
+    "g1_f0_c0--compact--separated--G1--pump",
+    "g1_f0_c0--double_lobe--colocated--G1--pump",
+    "g1_f0_c0--double_lobe--separated--G1--pump",
+    "g1_f3_c0--compact--colocated--G1--pump",
+    "g1_f3_c0--compact--separated--G1--pump",
+    "g1_f3_c0--double_lobe--colocated--G1--pump"
+  ],
+  "max_checks": {
+    "check_material_error": 4.263256414560601e-14,
+    "check_energy_error": 5.684341886080802e-14,
+    "check_max_density": 1.0186776493997878,
+    "check_attempted_body_steps": 6144.0,
+    "check_reconstruction_error": 5.551115123125783e-17,
+    "check_K_column_error": 0,
+    "check_transport_error": 2.842170943040401e-14,
+    "check_exchange_material_error": 2.5472679521243435e-14,
+    "check_exchange_energy_error": 5.900835375882707e-14,
+    "check_whole_material_error": 3.647082635893639e-14,
+    "check_whole_energy_error": 7.382983113757291e-14,
+    "check_input_material_array_error": 0,
+    "check_input_energy_array_error": 0,
+    "check_cargo_P_error": 3.552713678800501e-15,
+    "check_cargo_F_error": 1.4210854715202004e-14,
+    "check_cargo_E_heat_error": 0,
+    "check_cargo_capacity_excess": 0,
+    "check_cargo_payable_excess": 0,
+    "check_cargo_negative": 0,
+    "check_cargo_newborn_payer": 0,
+    "check_request_partition_error": 6.938893903907228e-18,
+    "check_founder_excess": 1.1102230246251565e-16
+  },
+  "contrasts": [
+    {
+      "child": "g2_p0_c0",
+      "shape": "compact",
+      "condition": "colocated",
+      "comparison": "child_none",
+      "delta_M": 0.9878929768366262,
+      "delta_E": -1.7243996005841211,
+      "delta_new_tissue": 2.8481192887707323,
+      "delta_founder": -1.8602263119341025,
+      "delta_bodytime": 8.121230694850397,
+      "delta_whole_bodytime": 8.121230694850283,
+      "delta_U": 13.657783118185193,
+      "delta_whole_U": 13.657783118185193,
+      "delta_born": 8.789795413939927,
+      "delta_death": 7.80190243710323,
+      "delta_pump_fee": 2.758282640635008,
+      "delta_whole_pump_fee": 2.7582826406350085,
+      "delta_whole_born": 8.789795413939927,
+      "delta_whole_death": 7.801902437103237
+    },
+    {
+      "child": "g2_p0_c0",
+      "shape": "compact",
+      "condition": "colocated",
+      "comparison": "genetic_parent",
+      "delta_M": 2.434601989109879,
+      "delta_E": 5.515300309942376,
+      "delta_new_tissue": 1.0860670603065117,
+      "delta_founder": 1.3485349288033603,
+      "delta_bodytime": 34.181696817424495,
+      "delta_whole_bodytime": 50.60563683780015,
+      "delta_U": 5.037041899025823,
+      "delta_whole_U": 7.654548958752798,
+      "delta_born": 1.0853490123950778,
+      "delta_death": 1.4800586078197284,
+      "delta_pump_fee": -0.17213719482919743,
+      "delta_whole_pump_fee": -0.22803841250020485,
+      "delta_whole_born": 3.6309332337198086,
+      "delta_whole_death": 1.1963312446099863
+    },
+    {
+      "child": "g2_p0_c0",
+      "shape": "compact",
+      "condition": "separated",
+      "comparison": "child_none",
+      "delta_M": 6.115297670291298,
+      "delta_E": 8.674154204895402,
+      "delta_new_tissue": 9.523243070463504,
+      "delta_founder": -3.407945400172217,
+      "delta_bodytime": 42.35519627834401,
+      "delta_whole_bodytime": 42.35519627834401,
+      "delta_U": 19.769370159106145,
+      "delta_whole_U": 19.76937015910614,
+      "delta_born": 11.504049529918593,
+      "delta_death": 5.388751859627305,
+      "delta_pump_fee": 4.154351942095121,
+      "delta_whole_pump_fee": 4.154351942095121,
+      "delta_whole_born": 11.504049529918593,
+      "delta_whole_death": 5.388751859627305
+    },
+    {
+      "child": "g2_p0_c0",
+      "shape": "compact",
+      "condition": "separated",
+      "comparison": "genetic_parent",
+      "delta_M": 2.10876420583498,
+      "delta_E": 1.904898474247645,
+      "delta_new_tissue": 2.196401787431638,
+      "delta_founder": -0.08763758159665969,
+      "delta_bodytime": 26.57679222208867,
+      "delta_whole_bodytime": 39.592535654938274,
+      "delta_U": 3.3760912498974527,
+      "delta_whole_U": 4.842940427525043,
+      "delta_born": 2.1530723719092126,
+      "delta_death": 2.1866448334539967,
+      "delta_pump_fee": 1.0920730176367401,
+      "delta_whole_pump_fee": 1.330521123734428,
+      "delta_whole_born": 2.781576304116136,
+      "delta_whole_death": 0.6728120982811454
+    },
+    {
+      "child": "g2_p0_c0",
+      "shape": "double_lobe",
+      "condition": "colocated",
+      "comparison": "child_none",
+      "delta_M": 1.465718798231805,
+      "delta_E": 0.6650441530594549,
+      "delta_new_tissue": 2.2358907491326434,
+      "delta_founder": -0.7701719509008491,
+      "delta_bodytime": 14.573470579806894,
+      "delta_whole_bodytime": 14.573470579807008,
+      "delta_U": 12.501354903825955,
+      "delta_whole_U": 12.501354903825955,
+      "delta_born": 6.581074836923314,
+      "delta_death": 5.115356038691566,
+      "delta_pump_fee": 4.687309948621075,
+      "delta_whole_pump_fee": 4.687309948621076,
+      "delta_whole_born": 6.581074836923307,
+      "delta_whole_death": 5.115356038691559
+    },
+    {
+      "child": "g2_p0_c0",
+      "shape": "double_lobe",
+      "condition": "colocated",
+      "comparison": "genetic_parent",
+      "delta_M": 1.9029347467607565,
+      "delta_E": 3.855740414944364,
+      "delta_new_tissue": 1.2491179116084155,
+      "delta_founder": 0.653816835152325,
+      "delta_bodytime": 19.020597052819767,
+      "delta_whole_bodytime": 32.160686201022486,
+      "delta_U": 5.807638740738852,
+      "delta_whole_U": 7.197531142880621,
+      "delta_born": 1.4783317744205746,
+      "delta_death": 1.1447493986813413,
+      "delta_pump_fee": 0.3619051958237085,
+      "delta_whole_pump_fee": 0.22349364664730498,
+      "delta_whole_born": 1.9341318377365795,
+      "delta_whole_death": 0.031197090975837227
+    },
+    {
+      "child": "g2_p0_c0",
+      "shape": "double_lobe",
+      "condition": "separated",
+      "comparison": "child_none",
+      "delta_M": 5.384937574643828,
+      "delta_E": 7.173827390125439,
+      "delta_new_tissue": 3.592421686153017,
+      "delta_founder": 1.792515888490808,
+      "delta_bodytime": 34.113939471006574,
+      "delta_whole_bodytime": 34.113939471006574,
+      "delta_U": 8.97628399283308,
+      "delta_whole_U": 8.976283992833082,
+      "delta_born": 4.844656483467845,
+      "delta_death": -0.540281091175995,
+      "delta_pump_fee": 1.4251477967804593,
+      "delta_whole_pump_fee": 1.4251477967804598,
+      "delta_whole_born": 4.844656483467844,
+      "delta_whole_death": -0.5402810911759914
+    },
+    {
+      "child": "g2_p0_c0",
+      "shape": "double_lobe",
+      "condition": "separated",
+      "comparison": "genetic_parent",
+      "delta_M": 1.3979374105135207,
+      "delta_E": 4.467271075223628,
+      "delta_new_tissue": -1.2647605039433216,
+      "delta_founder": 2.6626979144568423,
+      "delta_bodytime": 23.491511861588492,
+      "delta_whole_bodytime": 37.61393349737875,
+      "delta_U": -1.6969743653474367,
+      "delta_whole_U": -0.3264394093786578,
+      "delta_born": -1.2923222063499766,
+      "delta_death": -0.4251179698191976,
+      "delta_pump_fee": -0.5705629945972677,
+      "delta_whole_pump_fee": -1.092780053345206,
+      "delta_whole_born": -2.0128135485763874,
+      "delta_whole_death": -3.41075095908991
+    }
+  ],
+  "figures": [
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/actual_G1_compact.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/actual_G1_double_lobe.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/actual_G2_compact.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/actual_G2_double_lobe.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/actual_continuation_compact.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/actual_continuation_double_lobe.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/continuation_contrasts.png"
+  ],
+  "objective_met": false
+}

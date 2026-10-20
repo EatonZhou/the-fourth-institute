@@ -1,0 +1,74 @@
+[
+  {
+    "seed": 1701,
+    "morphology": "compact",
+    "current_fields_and_observation_identical": true,
+    "action_after_negative_cue": -1.0,
+    "action_after_positive_cue": 1.0,
+    "opposite_actions": true
+  },
+  {
+    "seed": 1701,
+    "morphology": "ring",
+    "current_fields_and_observation_identical": true,
+    "action_after_negative_cue": -1.0,
+    "action_after_positive_cue": 1.0,
+    "opposite_actions": true
+  },
+  {
+    "seed": 1701,
+    "morphology": "double_lobe",
+    "current_fields_and_observation_identical": true,
+    "action_after_negative_cue": -1.0,
+    "action_after_positive_cue": 1.0,
+    "opposite_actions": true
+  },
+  {
+    "seed": 1702,
+    "morphology": "compact",
+    "current_fields_and_observation_identical": true,
+    "action_after_negative_cue": 1.0,
+    "action_after_positive_cue": -1.0,
+    "opposite_actions": true
+  },
+  {
+    "seed": 1702,
+    "morphology": "ring",
+    "current_fields_and_observation_identical": true,
+    "action_after_negative_cue": 1.0,
+    "action_after_positive_cue": -1.0,
+    "opposite_actions": true
+  },
+  {
+    "seed": 1702,
+    "morphology": "double_lobe",
+    "current_fields_and_observation_identical": true,
+    "action_after_negative_cue": 1.0,
+    "action_after_positive_cue": -1.0,
+    "opposite_actions": true
+  },
+  {
+    "seed": 1703,
+    "morphology": "compact",
+    "current_fields_and_observation_identical": true,
+    "action_after_negative_cue": -1.0,
+    "action_after_positive_cue": 1.0,
+    "opposite_actions": true
+  },
+  {
+    "seed": 1703,
+    "morphology": "ring",
+    "current_fields_and_observation_identical": true,
+    "action_after_negative_cue": -1.0,
+    "action_after_positive_cue": 1.0,
+    "opposite_actions": true
+  },
+  {
+    "seed": 1703,
+    "morphology": "double_lobe",
+    "current_fields_and_observation_identical": true,
+    "action_after_negative_cue": -1.0,
+    "action_after_positive_cue": 1.0,
+    "opposite_actions": true
+  }
+]

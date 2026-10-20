@@ -1,0 +1,37 @@
+Three complete fixed-action paths establish that paid local terminal records can reach surviving old controllers. This is a channel opportunity, not a learning result.
+
+Native job b63cdc7c-3f38-4a43-af6e-9c481c419fa9 failed rc1 at the frozen 86-second script time gate. 771 attempted=771 committed: two zero-old-energy boundary steps + three complete256 paths + one step of fourth. Runner worker use174.508036/180. No physics exception, replay, restart, price change or extension. Fourth heldout_rotated 6bd lacks255 planned steps; its 256-step comparison is missing.
+
+Old four complete material128+128 references were hash/initial/config/geometry/input matched. Three are compared at256 and fourth only at its actual129 clock. Missing old communication/stage fields remain null. Prior4192/266.975250 and all earlier budgets remain closed.
+
+Fixed material shear uses original intention281cdf53: 128 active then128 zero request with passive intent transport. Current receipts do not change this action policy. Native original15691ada retains source128, two96 bodies, local energy and dual-kernel generation; no M20/shared-E/roll model.
+
+PATH RESULTS (paid minus old baseline, whole256):
+
+genome_0ac80448a534dc953505--development--shear_x--material--128: dM -0.269016423, dE -7.138546772, dU 0.269189264, d bodytime -0.925195173, communication E 15.849369600
+
+genome_0ac80448a534dc953505--heldout_rotated--shear_x--material--128: dM -0.394450198, dE -7.054669272, dU 0.320602935, d bodytime -1.263926032, communication E 16.016435200
+
+genome_6bd5bfd2f629f9414376--development--shear_x--material--128: dM -0.002600864, dE -4.124303891, dU 0.009787742, d bodytime -0.003499064, communication E 13.890636800
+
+COVERAGE (initial registered material; death-stage and post-delivery death are separate):
+
+genome_0ac80448a534dc953505--development--shear_x--material--128 steps=256 complete=True: initial 981.577976, live 241.635578, terminal 739.942398; actor 2.332008/rule 737.610390; delivered fraction 0.998702589; unavailable no-receiver 0.398225578/unpaid 0.561783632; received record mass still retained 214.244708, lost later 524.737681.
+
+genome_0ac80448a534dc953505--heldout_rotated--shear_x--material--128 steps=256 complete=True: initial 981.577976, live 238.972624, terminal 742.605352; actor 1.972467/rule 740.632885; delivered fraction 0.998703191; unavailable no-receiver 0.393321699/unpaid 0.569695701; received record mass still retained 207.835637, lost later 533.806698.
+
+genome_6bd5bfd2f629f9414376--development--shear_x--material--128 steps=256 complete=True: initial 484.495220, live 34.299117, terminal 450.196103; actor 0.000919/rule 450.195184; delivered fraction 0.999607611; unavailable no-receiver 0.174693684/unpaid 0.001958099; received record mass still retained 44.104111, lost later 405.915340.
+
+genome_6bd5bfd2f629f9414376--heldout_rotated--shear_x--material--128 steps=1 complete=False: initial 484.495220, live 480.974091, terminal 3.521129; actor 0.000000/rule 3.521129; delivered fraction 0.999995310; unavailable no-receiver 0.000015555/unpaid 0.000000959; received record mass still retained 3.521112, lost later 0.000000.
+
+All three completed whole bodies remain, with lower terminal M/E and bodytime than their old no-channel references. Tiny U increases are not a benefit claim. Terminal delivery coverage near one does not imply durable record retention: the 6bd development path delivered450.019 mass-equivalent records but retained44.104 at the end;405.915 was lost as receivers later died. Known terminal mass is not unknown; nondelivery is unavailable evidence to learners, not a zero target. No new learner ran.
+
+Pure channel tests cover no receiver, insufficient old E, four-way split, actor/rule priority and disjoint stage partition. Two real zero-old-E steps generated terminal records while delivering zero, despite native uptake/newborn E. Three real midpoint snapshots were restored and consumed once; saving after consume then restoring caused no duplicate output, fee or heat. These restore checks added no body step. Global/packet/registered/retained-message conservation errors max1.819e-12. No complete crash-resume claim.
+
+Inspected channel_process.png: all three complete E differences stay negative, cumulative delivered records rise while retained records peak and decline. Fourth one-point curve is not a256-step trajectory.
+
+D3 handoff: legitimate descriptive direct+message target exists; choose a small recent local response comparison against same-paid ignore-message and same-paid freeze-content, plus strong Euler/none. Register action units explicitly, never sum repeated cumulative own snapshots as independent evidence. Body response and all deaths still evaluated on initial denominator. No global E/death ledger may fill local labels. Actual payment differs if action trajectories change; same tariff is not equal actual fee. Preserve input horizon256.
+
+Exclusive d3 balance4864 steps/420worker seconds. Ce2 unspent509 steps/5.491964worker seconds are not transferred or used to finish the fourth path. Complete per-step archives dominated this job; choose a conservatively bounded physical comparison within actual worker limit, preserve scalar/all actual stages and necessary evidence without repeating this matrix. No new approval required.
+
+Original scientific scope remains open: no learned improvement or terminal-communication necessity established. Four contexts are two bodies/two related deterministic geometries, not independent random replicates.

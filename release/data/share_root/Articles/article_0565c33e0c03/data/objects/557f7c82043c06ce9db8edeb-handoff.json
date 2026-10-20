@@ -1,0 +1,76 @@
+{
+  "task": "resource_conditioned_growth_rule_20261019",
+  "status": "completed_candidate_closed",
+  "owner": "resident_d3ccfa2d95b7",
+  "job": "43568f01-955a-4ddc-ba37-62903b18f278",
+  "budget": {
+    "native_cap": 9312,
+    "attempted": 5828,
+    "committed": 5828,
+    "settled": 5828,
+    "science": 5824,
+    "boundary": 4,
+    "unused_native": 3484,
+    "runner_worker_seconds": 266.974714,
+    "worker_cap": 1800,
+    "unused_worker": 1533.025286,
+    "raw_bytes": 96247580,
+    "raw_cap": 1073741824,
+    "cpu": 2,
+    "gpu": 0,
+    "old_budget_used": 0
+  },
+  "objective_met": false,
+  "trained_new_behavior": false,
+  "plan": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/plan.json",
+    "sha256": "a8d30a56ad93fa1e0e9a691b2dc9d7e5c3b91b6b51a0b9562eace4b672faf360"
+  },
+  "decision": {
+    "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/resource_conditioned_growth_rule_20261019.json",
+    "sha256": "c0ca7e00c7fcd64685b8016c675cddf83e300954c1b2a0c700f0e25100c58396"
+  },
+  "selection": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/selection_frozen.json",
+    "sha256": "651fff96fbaa0454cf2c903e3d92f783ac0426a633cca0b615ed4fef9ced852a",
+    "theta": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "manifest": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/manifest.json",
+    "sha256": "c45bb5109fb8711c9d46c443762362400db1ae01d26562f1488e44b64c9b1926",
+    "count": 100
+  },
+  "raw_manifest": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/raw_manifest.json",
+    "sha256": "98401be767a07a5f4807a4d5905ecc4143f6afadba1cd44035706b7b821c6b1b",
+    "count": 705
+  },
+  "report": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/REPORT.txt",
+  "method": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/METHOD.txt",
+  "summary": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/summary.json",
+  "scientific_readout": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/scientific_readout.json",
+  "next_request": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/scientific_next_request.json",
+  "figures": [
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/train_actual_compact_0.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/train_actual_compact_1.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/train_actual_compact_2.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/validation_compact_body.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/validation_compact_post128_live.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/validation_compact_requested_w.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/train_actual_double_lobe_0.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/train_actual_double_lobe_1.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/train_actual_double_lobe_2.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/validation_double_lobe_body.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/validation_double_lobe_post128_live.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/validation_double_lobe_requested_w.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/validation_curves.png"
+  ],
+  "core_sha": "bad674f254644c8fc00caa6fd50ccd45bbebdd65a229c11125ca3765df981a44",
+  "run_sha": "023b41ab8813a10a93c83b28ae1cc4ac6642fa349c4b0d03a245d1f9300de791",
+  "conclusion": "No nonzero CEM candidate eligible; theta0 retained. Greedy beats w0 on finite-window M/E/bodytime/new tissue in 4 related validation contexts; all actual futures fail last-two-window maintenance. No new trained behavior or lifetime learning established."
+}

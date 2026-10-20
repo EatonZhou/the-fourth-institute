@@ -1,0 +1,44 @@
+{
+  "version": "0.47.2",
+  "article_id": "article_0565c33e0c03",
+  "handoff": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/coordinated_feedback_retention_20261019/direction_handoff.json",
+  "sha256": "fb1b4f86fbdcf731c919e03661c0b06c67c332d44ea47f4bf312494a804b7540",
+  "paper_team_new_native_or_fits": 0,
+  "source_new_native": 10240,
+  "source_runner_worker_seconds": 44.823108,
+  "source_known_readonly_native": 1024,
+  "source_old_replay": 0,
+  "coverage": {
+    "coordination_rows": 16,
+    "retention_rows": 8,
+    "main_paired_rows": 4,
+    "new_supplementary_tables": 4
+  },
+  "interpretation": "Conditional writing-dependent reversal/short retention, opposite late-retention effects by acquired parent. Conserved total association is not invariant local concentration or policy. Central pooling is not a local algorithm or strict bound.",
+  "figure_assets": "Seven existing GUI figures unchanged; no new formal figure introduced.",
+  "status": "Published to the same Article default preview",
+  "engineering_request": "msg_cf1f9586535c13626e6775db913601c7",
+  "local_pdf_sha256": "a3c544628375c2e3cd8f5100d84aa660538398eca00774c93338a588f30adf25",
+  "main_pages": 34,
+  "total_pages": 113,
+  "freeze_manifest": "${share_root}/Articles/article_0565c33e0c03/work/longform_v047/data/default_preview_freeze_v0472.json",
+  "freeze_sha256": "bada833cb22e6fa4d5b82311b5950bd2d4c69789759e67d5558b86a829537076",
+  "review": {
+    "actual_sequences_viewed": [
+      "local_signal_action_coordination_20261019/actual_sequence.png",
+      "coordinated_feedback_retention_20261019/actual_sequence.png"
+    ],
+    "composed_pages_viewed": [
+      12,
+      13,
+      32,
+      112,
+      113
+    ],
+    "scope": "Lead viewed changed main/method/table pages; no independent revision review or full GIF playback/raw-array audit claim.",
+    "official_default_page_viewed": 12
+  },
+  "default_pdf_sha256": "8aae7b3a36e3e4780ab5f03b13be69693b7ad218e6a13031cef48f58702f5434",
+  "engineering_receipt": "${share_root}/Agents/lineage_75e3399f4877/residents/resident_2461a452e3f7/workspace/article-current-default-sync/bada833cb22e6fa4d5b82311b5950bd2d4c69789759e67d5558b86a829537076/receipt.json",
+  "default_preview_pages": 113
+}

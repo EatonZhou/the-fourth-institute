@@ -1,0 +1,5 @@
+{
+  "native": 0,
+  "previous_plan_sha": "e87ee92e28bca73d67b9d955a5ccf20616f7d345e7ae27f9758054f32777e580",
+  "reason": "Correct dynamic controller-field list from original CONTROLLER constant; no physics/policy change."
+}

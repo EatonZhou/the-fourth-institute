@@ -1,0 +1,54 @@
+{
+  "first": {
+    "id": "88cfadaf-41a4-4ab2-9536-86902869abfe",
+    "name": "embodied-memory-return-33",
+    "command": [
+      ".venv/bin/python",
+      "-m",
+      "research.embodied_adaptive_memory.return_run"
+    ],
+    "cwd": "${share_root}/Projects/元胞自动机研究/src",
+    "resource": "cpu",
+    "request_key": "resident33-embodied-memory-return-20261019-v1",
+    "status": "failed",
+    "created_at": "2026-10-19T12:46:51.530469+00:00",
+    "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe",
+    "pid": 388199,
+    "manual_pause": false,
+    "create_time": 1792414011.0,
+    "started_at": "2026-10-19T12:46:51.618684+00:00",
+    "returncode": 1,
+    "finished_at": "2026-10-19T12:47:01.850249+00:00"
+  },
+  "unstarted_completion": {
+    "id": "fecb9eed-feb6-4c29-a883-2d0a7f462286",
+    "name": "embodied-memory-unstarted-path-33",
+    "command": [
+      ".venv/bin/python",
+      "-m",
+      "research.embodied_adaptive_memory.return_finish"
+    ],
+    "cwd": "${share_root}/Projects/元胞自动机研究/src",
+    "resource": "cpu",
+    "request_key": "resident33-embodied-memory-unstarted-20261019-v1",
+    "status": "completed",
+    "created_at": "2026-10-19T12:50:20.988510+00:00",
+    "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/fecb9eed-feb6-4c29-a883-2d0a7f462286",
+    "pid": 410610,
+    "manual_pause": false,
+    "create_time": 1792414220.46,
+    "started_at": "2026-10-19T12:50:21.070276+00:00",
+    "returncode": 0,
+    "finished_at": "2026-10-19T12:50:22.334122+00:00",
+    "result": {
+      "status": "completed",
+      "job": "fecb9eed-feb6-4c29-a883-2d0a7f462286",
+      "native": 990,
+      "paths": 1,
+      "failed": 0,
+      "raw": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/fecb9eed-feb6-4c29-a883-2d0a7f462286/raw",
+      "raw_bytes": 6045581,
+      "seconds": 0.9647241700440645
+    }
+  }
+}

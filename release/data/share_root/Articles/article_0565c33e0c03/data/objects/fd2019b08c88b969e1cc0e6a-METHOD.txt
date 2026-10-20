@@ -1,0 +1,11 @@
+本实现复用GrowthBody及权威RegenerativeBody.step代码对象，仅为本实例创建独立函数globals，将admit绑定到本实例conversion_hook；旧模块及其它job不变。调用计数每步必须为1。实际actor/原D和R先完成，再纯计算路由，原admit只对R_new执行一次。ready态贪心w在外排/当步输入/native前算定，h仍基于实际afteractor体。
+
+s=afteractor−D，C=support>0时min(max(1−s,0),P,F/.42)，F affordability沿原admit对不能支付的浮点乘积向0一ULP收缩。b0=min(R,C)为代数，a=max(R−b0,0)且support>0，v=max(C−b0,0)。四邻周期+y/−y/+x/−x。定向offer=a*v_neighbor/sum(v_neighbor)，均匀=a/4；接收按min(1,v/sum_incoming)同时缩放。无循环投递、边序抢占或物质搬运。
+
+fD/fU是两个纯候选；q_i=min(sumout fD,sumout fU)，每源各缩为q_i得mD/mU。fullD、mD、mU三臂各执行自己选中的request。R_new=R−out+incoming。因浮点求和可能超源上限，最多三次只做向内数值缩放，不改变目标、不做新的空间迭代；不把负请求clip成0。保存offer、投影f、匹配m、选中边、出入量、a/v/R/R_new和数值残差。coord_offer_roundoff_excess仅是纯定向offer求和超a的舍入量，不冒称物理拒绝或实际数值缩放损失。
+
+由同一父文件每臂完整restore，源128标签就是当时rho；沿真实K、旧survivor推进，born加0标签，post128_live=rho−L128。life0创始体另保。图和逐步指标不得把累计born叫末留存。三臂共同初态不仅身体，还含库存、world、有限tape、cursor、已取得状态和RNG。每步原泵只在native完成后执行，费用与后续身体可受出生布局影响。
+
+固定3072科学步与4关闭hook边界；冻结计划e1654a5d1a77b95c988b7f167460f3b23b3c1f17a8c1766491da71864c4818fa。20既有收据仅纯数组重构，无native。剩余4边界额度不使用。源冻结后不改研究实现，后加analyze/visualize/package仅消费真实文件。
+
+每窗64步维护门born−death≥−1e−8、ΔE≥−1e−8、minM≥32，同时报零容差、全四及末二；用窗口初E而非首步末E。体时按原dt×每步post M求和。基础/运动/生成/模板/泵真实收费与请求/拒绝分开；协调读写/计算未额外物理计价。无外层训练、个体内经历更新或额外资源赠予。

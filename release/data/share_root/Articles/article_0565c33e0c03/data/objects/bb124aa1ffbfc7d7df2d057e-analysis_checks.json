@@ -1,0 +1,16 @@
+{
+  "status": "passed",
+  "new_packets": 2432,
+  "stages": 40,
+  "full_paths": 24,
+  "display_entries": 344,
+  "effects": 60,
+  "pulse_events": 20,
+  "native_forward_calls": 0,
+  "max_balance_error": 1.8189894035458565e-12,
+  "max_M_path_error": 1.8474111129762605e-13,
+  "max_E_path_error": 1.021405182655144e-13,
+  "prefix_charged_once_per_path": true,
+  "parent_boundaries_exact": true,
+  "full_ready_recovery_exact": true
+}

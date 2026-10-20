@@ -1,0 +1,19 @@
+{
+  "id": "0b471f2a-d4d9-4469-94e5-6ab4d5a1540a",
+  "name": "fixed_amount_rule_deletion_layout_20261019",
+  "command": [
+    "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+    "-m",
+    "local_learning.fixed_amount_rule_deletion_layout.run"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "d3-fixed-amount-rule-deletion-layout-20261019-v1",
+  "status": "running",
+  "created_at": "2026-10-18T21:07:45.101445+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/0b471f2a-d4d9-4469-94e5-6ab4d5a1540a",
+  "pid": 3822954,
+  "manual_pause": false,
+  "create_time": 1792357664.56,
+  "started_at": "2026-10-18T21:07:45.178886+00:00"
+}

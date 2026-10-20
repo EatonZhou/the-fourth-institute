@@ -1,0 +1,681 @@
+{
+  "parents": [
+    {
+      "id": "202610195601_ring_birth_gain_only",
+      "native": 0,
+      "state_exact": true,
+      "old_tags_exact": true,
+      "roundtrip": true,
+      "diagnostic_tags_inert": true
+    },
+    {
+      "id": "202610195601_ring_both",
+      "native": 0,
+      "state_exact": true,
+      "old_tags_exact": true,
+      "roundtrip": true,
+      "diagnostic_tags_inert": true
+    },
+    {
+      "id": "202610195601_separate_seeds_birth_gain_only",
+      "native": 0,
+      "state_exact": true,
+      "old_tags_exact": true,
+      "roundtrip": true,
+      "diagnostic_tags_inert": true
+    },
+    {
+      "id": "202610195601_separate_seeds_both",
+      "native": 0,
+      "state_exact": true,
+      "old_tags_exact": true,
+      "roundtrip": true,
+      "diagnostic_tags_inert": true
+    },
+    {
+      "id": "202610195602_ring_birth_gain_only",
+      "native": 0,
+      "state_exact": true,
+      "old_tags_exact": true,
+      "roundtrip": true,
+      "diagnostic_tags_inert": true
+    },
+    {
+      "id": "202610195602_ring_both",
+      "native": 0,
+      "state_exact": true,
+      "old_tags_exact": true,
+      "roundtrip": true,
+      "diagnostic_tags_inert": true
+    },
+    {
+      "id": "202610195602_separate_seeds_birth_gain_only",
+      "native": 0,
+      "state_exact": true,
+      "old_tags_exact": true,
+      "roundtrip": true,
+      "diagnostic_tags_inert": true
+    },
+    {
+      "id": "202610195602_separate_seeds_both",
+      "native": 0,
+      "state_exact": true,
+      "old_tags_exact": true,
+      "roundtrip": true,
+      "diagnostic_tags_inert": true
+    }
+  ],
+  "panel": [
+    {
+      "id": "202610195601_ring_birth_gain_only",
+      "clock": 321,
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195601_ring_birth_gain_only__future_both/receipt321.npz",
+      "sha256": "f9aca12e08a625e9e32478f547815546b2b72887a8836122ce8615475dfba7b7",
+      "checks": {
+        "partition_error": 4.440892098500626e-16,
+        "initial_partition_error": 0.0,
+        "carried_mass_error": 1.1102230246251565e-16,
+        "actor_component_error": 1.1102230246251565e-16,
+        "negative_error": 0.0,
+        "component_conservation_error": 0.0,
+        "original_transport_error": 0.0
+      },
+      "disabled_expression_exact": true,
+      "changed_sites": 115,
+      "weighted_L1": 0.08133313344951801,
+      "max_abs": 1.659020578264326
+    },
+    {
+      "id": "202610195601_ring_birth_gain_only",
+      "clock": 328,
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195601_ring_birth_gain_only__future_both/receipt328.npz",
+      "sha256": "a4f435bdc0aeec6b466b6b7ca5df42037f693d63059094c00dcf5d8e2e09ddca",
+      "checks": {
+        "partition_error": 2.220446049250313e-16,
+        "initial_partition_error": 0.0,
+        "carried_mass_error": 1.1102230246251565e-16,
+        "actor_component_error": 1.1102230246251565e-16,
+        "negative_error": 0.0,
+        "component_conservation_error": 1.7763568394002505e-15,
+        "original_transport_error": 0.0
+      },
+      "disabled_expression_exact": true,
+      "changed_sites": 113,
+      "weighted_L1": 0.045852450722959584,
+      "max_abs": 1.6731427745872571
+    },
+    {
+      "id": "202610195601_ring_birth_gain_only",
+      "clock": 352,
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195601_ring_birth_gain_only__future_both/receipt352.npz",
+      "sha256": "83a513af3dd91885881d912fddd3d5128d94672ee4d314d1d59f3c89972f6647",
+      "checks": {
+        "partition_error": 2.220446049250313e-16,
+        "initial_partition_error": 0.0,
+        "carried_mass_error": 1.1102230246251565e-16,
+        "actor_component_error": 1.1102230246251565e-16,
+        "negative_error": 0.0,
+        "component_conservation_error": 0.0,
+        "original_transport_error": 0.0
+      },
+      "disabled_expression_exact": true,
+      "changed_sites": 111,
+      "weighted_L1": 0.02765369519476219,
+      "max_abs": 1.707534103024402
+    },
+    {
+      "id": "202610195601_ring_birth_gain_only",
+      "clock": 384,
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195601_ring_birth_gain_only__future_both/receipt384.npz",
+      "sha256": "ca1ae814540ed9cdf55c1ea95092b49023e759e5be66ad5644911e69b3af796b",
+      "checks": {
+        "partition_error": 4.440892098500626e-16,
+        "initial_partition_error": 0.0,
+        "carried_mass_error": 1.1102230246251565e-16,
+        "actor_component_error": 1.1102230246251565e-16,
+        "negative_error": 0.0,
+        "component_conservation_error": 7.105427357601002e-15,
+        "original_transport_error": 0.0
+      },
+      "disabled_expression_exact": true,
+      "changed_sites": 113,
+      "weighted_L1": 0.03441706997531859,
+      "max_abs": 1.7301446150429582
+    },
+    {
+      "id": "202610195601_ring_both",
+      "clock": 321,
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195601_ring_both__future_both/receipt321.npz",
+      "sha256": "d5f9419e4da2d5de970aff944f89d6f9f6bb2c737302a889e66bfd44128dc80f",
+      "checks": {
+        "partition_error": 2.220446049250313e-16,
+        "initial_partition_error": 0.0,
+        "carried_mass_error": 1.1102230246251565e-16,
+        "actor_component_error": 1.1102230246251565e-16,
+        "negative_error": 0.0,
+        "component_conservation_error": 3.552713678800501e-15,
+        "original_transport_error": 0.0
+      },
+      "disabled_expression_exact": true,
+      "changed_sites": 126,
+      "weighted_L1": 0.029149431749970513,
+      "max_abs": 0.44675800953058153
+    },
+    {
+      "id": "202610195601_ring_both",
+      "clock": 328,
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195601_ring_both__future_both/receipt328.npz",
+      "sha256": "0e86be286be15de0d80c7dff644f27eeaf57340b6f0e68f44b6333347de77631",
+      "checks": {
+        "partition_error": 2.220446049250313e-16,
+        "initial_partition_error": 0.0,
+        "carried_mass_error": 1.1102230246251565e-16,
+        "actor_component_error": 1.1102230246251565e-16,
+        "negative_error": 0.0,
+        "component_conservation_error": 0.0,
+        "original_transport_error": 0.0
+      },
+      "disabled_expression_exact": true,
+      "changed_sites": 120,
+      "weighted_L1": 0.029280681392615426,
+      "max_abs": 0.450451395491665
+    },
+    {
+      "id": "202610195601_ring_both",
+      "clock": 352,
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195601_ring_both__future_both/receipt352.npz",
+      "sha256": "7bc74d06c934d55a53b3613dac1959eaba0b6023220ce4c5ec39dd7ff763ecc2",
+      "checks": {
+        "partition_error": 2.220446049250313e-16,
+        "initial_partition_error": 0.0,
+        "carried_mass_error": 1.1102230246251565e-16,
+        "actor_component_error": 1.1102230246251565e-16,
+        "negative_error": 0.0,
+        "component_conservation_error": 1.4210854715202004e-14,
+        "original_transport_error": 0.0
+      },
+      "disabled_expression_exact": true,
+      "changed_sites": 126,
+      "weighted_L1": 0.03152994443907736,
+      "max_abs": 0.5299767693819134
+    },
+    {
+      "id": "202610195601_ring_both",
+      "clock": 384,
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195601_ring_both__future_both/receipt384.npz",
+      "sha256": "bf8046f0ff522f10eb887629a10da1cc65174e745d539ad231f2fa369949de8e",
+      "checks": {
+        "partition_error": 2.220446049250313e-16,
+        "initial_partition_error": 0.0,
+        "carried_mass_error": 1.1102230246251565e-16,
+        "actor_component_error": 1.1102230246251565e-16,
+        "negative_error": 0.0,
+        "component_conservation_error": 1.4210854715202004e-14,
+        "original_transport_error": 0.0
+      },
+      "disabled_expression_exact": true,
+      "changed_sites": 118,
+      "weighted_L1": 0.028864407260320253,
+      "max_abs": 0.5295246375914274
+    },
+    {
+      "id": "202610195601_separate_seeds_birth_gain_only",
+      "clock": 321,
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195601_separate_seeds_birth_gain_only__future_both/receipt321.npz",
+      "sha256": "a3cf0327e6a2a4a7599d66833e99fcc4606a54be4315d4de265a8858da72b169",
+      "checks": {
+        "partition_error": 2.220446049250313e-16,
+        "initial_partition_error": 0.0,
+        "carried_mass_error": 2.220446049250313e-16,
+        "actor_component_error": 2.220446049250313e-16,
+        "negative_error": 0.0,
+        "component_conservation_error": 0.0,
+        "original_transport_error": 0.0
+      },
+      "disabled_expression_exact": true,
+      "changed_sites": 75,
+      "weighted_L1": 0.22193331926090054,
+      "max_abs": 0.7169449435538028
+    },
+    {
+      "id": "202610195601_separate_seeds_birth_gain_only",
+      "clock": 328,
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195601_separate_seeds_birth_gain_only__future_both/receipt328.npz",
+      "sha256": "cbfbeb84d1db3ab8aca36580cb50a8f9a941b6077e6b64c92076dd79c269e540",
+      "checks": {
+        "partition_error": 2.220446049250313e-16,
+        "initial_partition_error": 0.0,
+        "carried_mass_error": 1.1102230246251565e-16,
+        "actor_component_error": 1.1102230246251565e-16,
+        "negative_error": 0.0,
+        "component_conservation_error": 3.552713678800501e-15,
+        "original_transport_error": 0.0
+      },
+      "disabled_expression_exact": true,
+      "changed_sites": 76,
+      "weighted_L1": 0.15171761980130966,
+      "max_abs": 0.01650526443958472
+    },
+    {
+      "id": "202610195601_separate_seeds_birth_gain_only",
+      "clock": 352,
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195601_separate_seeds_birth_gain_only__future_both/receipt352.npz",
+      "sha256": "9fa6f082c18c48f31e2eea2538dc8a1cab8dee132bb3b9d68db4f4b003da2dc5",
+      "checks": {
+        "partition_error": 2.220446049250313e-16,
+        "initial_partition_error": 0.0,
+        "carried_mass_error": 1.1102230246251565e-16,
+        "actor_component_error": 1.1102230246251565e-16,
+        "negative_error": 0.0,
+        "component_conservation_error": 7.105427357601002e-15,
+        "original_transport_error": 0.0
+      },
+      "disabled_expression_exact": true,
+      "changed_sites": 87,
+      "weighted_L1": 0.08064915860147104,
+      "max_abs": 0.00983246367281787
+    },
+    {
+      "id": "202610195601_separate_seeds_birth_gain_only",
+      "clock": 384,
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195601_separate_seeds_birth_gain_only__future_both/receipt384.npz",
+      "sha256": "58100042b03ef52dd30f1a0fa84ee68e12df1f03406cfde53010387422ed4d1d",
+      "checks": {
+        "partition_error": 2.220446049250313e-16,
+        "initial_partition_error": 0.0,
+        "carried_mass_error": 2.220446049250313e-16,
+        "actor_component_error": 2.220446049250313e-16,
+        "negative_error": 0.0,
+        "component_conservation_error": 0.0,
+        "original_transport_error": 0.0
+      },
+      "disabled_expression_exact": true,
+      "changed_sites": 108,
+      "weighted_L1": 0.04332146273844788,
+      "max_abs": 0.06318294519475665
+    },
+    {
+      "id": "202610195601_separate_seeds_both",
+      "clock": 321,
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195601_separate_seeds_both__future_both/receipt321.npz",
+      "sha256": "400443001a039065429ae90e5c04552414af7d7340109599c2a570a663f48c4e",
+      "checks": {
+        "partition_error": 2.220446049250313e-16,
+        "initial_partition_error": 0.0,
+        "carried_mass_error": 2.220446049250313e-16,
+        "actor_component_error": 2.220446049250313e-16,
+        "negative_error": 0.0,
+        "component_conservation_error": 0.0,
+        "original_transport_error": 0.0
+      },
+      "disabled_expression_exact": true,
+      "changed_sites": 116,
+      "weighted_L1": 0.03571082775238228,
+      "max_abs": 0.6657736928928009
+    },
+    {
+      "id": "202610195601_separate_seeds_both",
+      "clock": 328,
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195601_separate_seeds_both__future_both/receipt328.npz",
+      "sha256": "cbd62782d70a1401ba7abd47447a9bdebee55527ad772d01cba1903b2a72f039",
+      "checks": {
+        "partition_error": 3.3306690738754696e-16,
+        "initial_partition_error": 0.0,
+        "carried_mass_error": 2.220446049250313e-16,
+        "actor_component_error": 2.220446049250313e-16,
+        "negative_error": 0.0,
+        "component_conservation_error": 7.105427357601002e-15,
+        "original_transport_error": 0.0
+      },
+      "disabled_expression_exact": true,
+      "changed_sites": 114,
+      "weighted_L1": 0.03381760258555772,
+      "max_abs": 0.6746050502747631
+    },
+    {
+      "id": "202610195601_separate_seeds_both",
+      "clock": 352,
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195601_separate_seeds_both__future_both/receipt352.npz",
+      "sha256": "f8eb64476976cec631662a9993b30af6fccc1acc4e4daa54f8c2c42333502a87",
+      "checks": {
+        "partition_error": 2.220446049250313e-16,
+        "initial_partition_error": 0.0,
+        "carried_mass_error": 2.220446049250313e-16,
+        "actor_component_error": 2.220446049250313e-16,
+        "negative_error": 0.0,
+        "component_conservation_error": 7.105427357601002e-15,
+        "original_transport_error": 0.0
+      },
+      "disabled_expression_exact": true,
+      "changed_sites": 114,
+      "weighted_L1": 0.03204725158267395,
+      "max_abs": 0.7394949922320239
+    },
+    {
+      "id": "202610195601_separate_seeds_both",
+      "clock": 384,
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195601_separate_seeds_both__future_both/receipt384.npz",
+      "sha256": "435371b3f5df74b42734735b4af5ce1d8e9bc42115e9d380b2a301228a650cd3",
+      "checks": {
+        "partition_error": 3.3306690738754696e-16,
+        "initial_partition_error": 0.0,
+        "carried_mass_error": 2.220446049250313e-16,
+        "actor_component_error": 2.220446049250313e-16,
+        "negative_error": 0.0,
+        "component_conservation_error": 0.0,
+        "original_transport_error": 0.0
+      },
+      "disabled_expression_exact": true,
+      "changed_sites": 114,
+      "weighted_L1": 0.031178410186651,
+      "max_abs": 0.7809159202629323
+    },
+    {
+      "id": "202610195602_ring_birth_gain_only",
+      "clock": 321,
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195602_ring_birth_gain_only__future_both/receipt321.npz",
+      "sha256": "d2544dd3b4bab27c20c40c481f27af809608143b55af49bd3f3893bad0f35c0f",
+      "checks": {
+        "partition_error": 2.220446049250313e-16,
+        "initial_partition_error": 0.0,
+        "carried_mass_error": 1.1102230246251565e-16,
+        "actor_component_error": 1.1102230246251565e-16,
+        "negative_error": 0.0,
+        "component_conservation_error": 0.0,
+        "original_transport_error": 0.0
+      },
+      "disabled_expression_exact": true,
+      "changed_sites": 104,
+      "weighted_L1": 0.11159660915171124,
+      "max_abs": 0.7362839714156443
+    },
+    {
+      "id": "202610195602_ring_birth_gain_only",
+      "clock": 328,
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195602_ring_birth_gain_only__future_both/receipt328.npz",
+      "sha256": "e2aa0af4ed7e6606af24a935c05928c08da62d78c5ace7afbcd3000f74e817d6",
+      "checks": {
+        "partition_error": 3.3306690738754696e-16,
+        "initial_partition_error": 0.0,
+        "carried_mass_error": 1.1102230246251565e-16,
+        "actor_component_error": 1.1102230246251565e-16,
+        "negative_error": 0.0,
+        "component_conservation_error": 0.0,
+        "original_transport_error": 0.0
+      },
+      "disabled_expression_exact": true,
+      "changed_sites": 107,
+      "weighted_L1": 0.06123658649950874,
+      "max_abs": 0.7234484591731751
+    },
+    {
+      "id": "202610195602_ring_birth_gain_only",
+      "clock": 352,
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195602_ring_birth_gain_only__future_both/receipt352.npz",
+      "sha256": "0413c9686195549e9764015df900fe6ea301d807c68c7812c804d440cc2df206",
+      "checks": {
+        "partition_error": 4.440892098500626e-16,
+        "initial_partition_error": 0.0,
+        "carried_mass_error": 1.1102230246251565e-16,
+        "actor_component_error": 1.1102230246251565e-16,
+        "negative_error": 0.0,
+        "component_conservation_error": 7.105427357601002e-15,
+        "original_transport_error": 0.0
+      },
+      "disabled_expression_exact": true,
+      "changed_sites": 106,
+      "weighted_L1": 0.03905859372313678,
+      "max_abs": 0.6886769148375245
+    },
+    {
+      "id": "202610195602_ring_birth_gain_only",
+      "clock": 384,
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195602_ring_birth_gain_only__future_both/receipt384.npz",
+      "sha256": "6634b1ca7b5df3e061925ecd0bb48fce5ec92f655d8fe763f6cf77df2b92485b",
+      "checks": {
+        "partition_error": 3.3306690738754696e-16,
+        "initial_partition_error": 0.0,
+        "carried_mass_error": 1.1102230246251565e-16,
+        "actor_component_error": 1.1102230246251565e-16,
+        "negative_error": 0.0,
+        "component_conservation_error": 3.552713678800501e-15,
+        "original_transport_error": 0.0
+      },
+      "disabled_expression_exact": true,
+      "changed_sites": 103,
+      "weighted_L1": 0.031156340204885252,
+      "max_abs": 0.6430947412014332
+    },
+    {
+      "id": "202610195602_ring_both",
+      "clock": 321,
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195602_ring_both__future_both/receipt321.npz",
+      "sha256": "b8fca38ec363659fcd7b22c9060d8cabfac5b8c7931876208fc131b7e3513e4d",
+      "checks": {
+        "partition_error": 2.220446049250313e-16,
+        "initial_partition_error": 0.0,
+        "carried_mass_error": 1.1102230246251565e-16,
+        "actor_component_error": 1.1102230246251565e-16,
+        "negative_error": 0.0,
+        "component_conservation_error": 7.105427357601002e-15,
+        "original_transport_error": 0.0
+      },
+      "disabled_expression_exact": true,
+      "changed_sites": 120,
+      "weighted_L1": 0.04233974090783535,
+      "max_abs": 0.5423311905226665
+    },
+    {
+      "id": "202610195602_ring_both",
+      "clock": 328,
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195602_ring_both__future_both/receipt328.npz",
+      "sha256": "63218dc550fb2e057626d6d10a0993b55d9ffebc5ed0554251e9697713118122",
+      "checks": {
+        "partition_error": 2.220446049250313e-16,
+        "initial_partition_error": 0.0,
+        "carried_mass_error": 1.1102230246251565e-16,
+        "actor_component_error": 1.1102230246251565e-16,
+        "negative_error": 0.0,
+        "component_conservation_error": 7.105427357601002e-15,
+        "original_transport_error": 0.0
+      },
+      "disabled_expression_exact": true,
+      "changed_sites": 119,
+      "weighted_L1": 0.04179335819103019,
+      "max_abs": 0.607566181286008
+    },
+    {
+      "id": "202610195602_ring_both",
+      "clock": 352,
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195602_ring_both__future_both/receipt352.npz",
+      "sha256": "6515062a982df7f6ac368ccfc8f7718da613e0797fe135e2651729242e9232a0",
+      "checks": {
+        "partition_error": 2.220446049250313e-16,
+        "initial_partition_error": 0.0,
+        "carried_mass_error": 1.1102230246251565e-16,
+        "actor_component_error": 1.1102230246251565e-16,
+        "negative_error": 0.0,
+        "component_conservation_error": 7.105427357601002e-15,
+        "original_transport_error": 0.0
+      },
+      "disabled_expression_exact": true,
+      "changed_sites": 123,
+      "weighted_L1": 0.04011323563772397,
+      "max_abs": 0.7729582450733359
+    },
+    {
+      "id": "202610195602_ring_both",
+      "clock": 384,
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195602_ring_both__future_both/receipt384.npz",
+      "sha256": "ad1f196bdc70a2c71873ef842a93a5f1cd69b5c1a805938dccbc44bd666b8582",
+      "checks": {
+        "partition_error": 2.220446049250313e-16,
+        "initial_partition_error": 0.0,
+        "carried_mass_error": 1.1102230246251565e-16,
+        "actor_component_error": 1.1102230246251565e-16,
+        "negative_error": 0.0,
+        "component_conservation_error": 7.105427357601002e-15,
+        "original_transport_error": 0.0
+      },
+      "disabled_expression_exact": true,
+      "changed_sites": 119,
+      "weighted_L1": 0.03313496717017207,
+      "max_abs": 0.7855662605614961
+    },
+    {
+      "id": "202610195602_separate_seeds_birth_gain_only",
+      "clock": 321,
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195602_separate_seeds_birth_gain_only__future_both/receipt321.npz",
+      "sha256": "ddc129499759bcf3e032cc659ae4ede1c92796fa67d7b3c9581063690bbccd96",
+      "checks": {
+        "partition_error": 2.220446049250313e-16,
+        "initial_partition_error": 0.0,
+        "carried_mass_error": 1.6653345369377348e-16,
+        "actor_component_error": 1.6653345369377348e-16,
+        "negative_error": 0.0,
+        "component_conservation_error": 3.552713678800501e-15,
+        "original_transport_error": 0.0
+      },
+      "disabled_expression_exact": true,
+      "changed_sites": 90,
+      "weighted_L1": 0.27740212071153225,
+      "max_abs": 0.7439272275997726
+    },
+    {
+      "id": "202610195602_separate_seeds_birth_gain_only",
+      "clock": 328,
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195602_separate_seeds_birth_gain_only__future_both/receipt328.npz",
+      "sha256": "f777cdc6880b1a7f2dcbf52c2c9e127ff05ee70a088850199c16a6924aee3c4a",
+      "checks": {
+        "partition_error": 2.220446049250313e-16,
+        "initial_partition_error": 0.0,
+        "carried_mass_error": 1.1102230246251565e-16,
+        "actor_component_error": 1.1102230246251565e-16,
+        "negative_error": 0.0,
+        "component_conservation_error": 0.0,
+        "original_transport_error": 0.0
+      },
+      "disabled_expression_exact": true,
+      "changed_sites": 97,
+      "weighted_L1": 0.17687320937166745,
+      "max_abs": 0.6937311968462737
+    },
+    {
+      "id": "202610195602_separate_seeds_birth_gain_only",
+      "clock": 352,
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195602_separate_seeds_birth_gain_only__future_both/receipt352.npz",
+      "sha256": "ad6fe654e1ddd1747b672d40d4e105e16647b9583bef9604abd77a9f3d354475",
+      "checks": {
+        "partition_error": 3.3306690738754696e-16,
+        "initial_partition_error": 0.0,
+        "carried_mass_error": 1.1102230246251565e-16,
+        "actor_component_error": 1.1102230246251565e-16,
+        "negative_error": 0.0,
+        "component_conservation_error": 0.0,
+        "original_transport_error": 0.0
+      },
+      "disabled_expression_exact": true,
+      "changed_sites": 108,
+      "weighted_L1": 0.08725237642781926,
+      "max_abs": 0.528025189026299
+    },
+    {
+      "id": "202610195602_separate_seeds_birth_gain_only",
+      "clock": 384,
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195602_separate_seeds_birth_gain_only__future_both/receipt384.npz",
+      "sha256": "634f2d56dbb2492323decb1933895155e2744538f17a60d226ed59be11bef8d6",
+      "checks": {
+        "partition_error": 2.220446049250313e-16,
+        "initial_partition_error": 0.0,
+        "carried_mass_error": 1.1102230246251565e-16,
+        "actor_component_error": 1.1102230246251565e-16,
+        "negative_error": 0.0,
+        "component_conservation_error": 0.0,
+        "original_transport_error": 0.0
+      },
+      "disabled_expression_exact": true,
+      "changed_sites": 103,
+      "weighted_L1": 0.026291895686629842,
+      "max_abs": 0.4542003771713048
+    },
+    {
+      "id": "202610195602_separate_seeds_both",
+      "clock": 321,
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195602_separate_seeds_both__future_both/receipt321.npz",
+      "sha256": "01c2556f02a59bb8aac277689edf89138077c9b903690ef1d2976f9bb5f38ca1",
+      "checks": {
+        "partition_error": 2.220446049250313e-16,
+        "initial_partition_error": 0.0,
+        "carried_mass_error": 2.220446049250313e-16,
+        "actor_component_error": 2.220446049250313e-16,
+        "negative_error": 0.0,
+        "component_conservation_error": 7.105427357601002e-15,
+        "original_transport_error": 0.0
+      },
+      "disabled_expression_exact": true,
+      "changed_sites": 106,
+      "weighted_L1": 0.040075180388732756,
+      "max_abs": 0.8150839956211258
+    },
+    {
+      "id": "202610195602_separate_seeds_both",
+      "clock": 328,
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195602_separate_seeds_both__future_both/receipt328.npz",
+      "sha256": "656546acba884aed82da528d6ced8a8bb7a7905eb2e1f6e38de5e8f794e01f6e",
+      "checks": {
+        "partition_error": 4.440892098500626e-16,
+        "initial_partition_error": 0.0,
+        "carried_mass_error": 2.220446049250313e-16,
+        "actor_component_error": 2.220446049250313e-16,
+        "negative_error": 0.0,
+        "component_conservation_error": 1.4210854715202004e-14,
+        "original_transport_error": 0.0
+      },
+      "disabled_expression_exact": true,
+      "changed_sites": 103,
+      "weighted_L1": 0.03493935385199482,
+      "max_abs": 0.8408735227361166
+    },
+    {
+      "id": "202610195602_separate_seeds_both",
+      "clock": 352,
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195602_separate_seeds_both__future_both/receipt352.npz",
+      "sha256": "ac4c7d0488163be3ad32a72cd63d0de24363ceaec58bb399801241a190d9a320",
+      "checks": {
+        "partition_error": 3.3306690738754696e-16,
+        "initial_partition_error": 0.0,
+        "carried_mass_error": 2.220446049250313e-16,
+        "actor_component_error": 2.220446049250313e-16,
+        "negative_error": 0.0,
+        "component_conservation_error": 1.7763568394002505e-15,
+        "original_transport_error": 0.0
+      },
+      "disabled_expression_exact": true,
+      "changed_sites": 101,
+      "weighted_L1": 0.025400940323714143,
+      "max_abs": 0.9143203442911825
+    },
+    {
+      "id": "202610195602_separate_seeds_both",
+      "clock": 384,
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195602_separate_seeds_both__future_both/receipt384.npz",
+      "sha256": "437c12ebb419b0e4c378794ad83257dc86a18f9fc74f30a9732b2156fdd2b652",
+      "checks": {
+        "partition_error": 2.220446049250313e-16,
+        "initial_partition_error": 0.0,
+        "carried_mass_error": 2.220446049250313e-16,
+        "actor_component_error": 2.220446049250313e-16,
+        "negative_error": 0.0,
+        "component_conservation_error": 7.105427357601002e-15,
+        "original_transport_error": 0.0
+      },
+      "disabled_expression_exact": true,
+      "changed_sites": 105,
+      "weighted_L1": 0.03185419598384349,
+      "max_abs": 0.9625386127081755
+    }
+  ],
+  "activate": true,
+  "native": 0,
+  "plan_sha": "e9737f4c9ba5fc5012c2f067d49e5c665324461ef5c543ba1efceaf2268b4fd3"
+}

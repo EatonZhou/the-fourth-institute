@@ -1,0 +1,71 @@
+{
+  "task": "lifetime_cue_reversal_20261019",
+  "status": "complete",
+  "report": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/lifetime_cue_reversal_20261019/REPORT.txt",
+  "summary": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/lifetime_cue_reversal_20261019/summary.json",
+  "table": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/lifetime_cue_reversal_20261019/life_comparisons.csv",
+  "animation": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/lifetime_cue_reversal_20261019/actual_learning_reversal.gif",
+  "counts": {
+    "attempted": 28032,
+    "returned": 28032,
+    "jobs": [
+      {
+        "task": "lifetime_cue_reversal_20261019",
+        "mode": "pilot",
+        "job": "56c565a8-a71f-47f8-b55f-3106281c4d1c",
+        "status": "complete",
+        "attempted": 1920,
+        "returned": 1920,
+        "unknown": 0,
+        "wall": 2.725161939044483,
+        "error": null,
+        "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/lifetime_cue_reversal_20261019/56c565a8-a71f-47f8-b55f-3106281c4d1c",
+        "raw_bytes": 5154316,
+        "paths": 2,
+        "runner_worker_seconds": 7.263932
+      },
+      {
+        "task": "lifetime_cue_reversal_20261019",
+        "mode": "science",
+        "job": "58bb9d10-1c13-4a48-b8ab-0270124d4a72",
+        "status": "complete",
+        "attempted": 26112,
+        "returned": 26112,
+        "unknown": 0,
+        "wall": 33.81539975502528,
+        "error": null,
+        "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/lifetime_cue_reversal_20261019/58bb9d10-1c13-4a48-b8ab-0270124d4a72",
+        "raw_bytes": 72061760,
+        "paths": 72,
+        "runner_worker_seconds": 69.83583
+      }
+    ],
+    "worker_seconds": 77.099762,
+    "unused_updates_sealed": 1968,
+    "unused_worker_seconds_sealed": 1122.900238
+  },
+  "findings": "same-body acquisition/reversal/retention established in limited host; strong fast delta sufficient; no new-method superiority",
+  "artifacts": {
+    "life_comparisons.csv": "2cd07b70123d0c2c79097ad0fba6989037d1fcdbe3a06246554479a0ae40bc79",
+    "actual_sequence.png": "0cc175c3c13fc6b3bd2ef2163f04eb6207fba55ea313a772ad485d097d426624",
+    "runner_final.json": "3e4187be5157b93fa91ab8cefc79f60564e9d08587272f58acda36658edf6f98",
+    "reversal_exposure_and_recovery.json": "59d29a5a1ca96e28a852b814e7b592df7f3ff047d88129272e5eb708e2509a0a",
+    "accounting.json": "bb527b48c57e257694ae58225a4edd0b56b37869a181d628da3c98885ba8186b",
+    "control_science.json": "ca4c6a5668b5ded8ebaa79d71d1eac806b9fd8591dcc15c978b84eb220020df8",
+    "REPORT.txt": "512132adbfa55a9792cc6f9124792d978c0789fce5df81569b421e658ebb37fd",
+    "pilot_result.json": "0200e7574c1d195025a5ad9ab7cc3797307688715cded79367287e01deec23b0",
+    "science_frozen.json": "6b538a10df4ac2aac6eb9db8459a018bf1b633b05e30400adf4dff62592b521a",
+    "pilot_runner.json": "c55da2fc9b954842ceac335318b67f3c2848e07fa042e67775c1c23deb8e401b",
+    "actual_learning_reversal.gif": "4bf8428b2851d76836b870c95717820e54e4fc17651b4afd4fd93804017a3a3d",
+    "q_erase_checks.json": "5eda7949d50fbcb0ff1ec066a78ab31e539afc30f4f669ca8db2abd3696a48d7",
+    "pilot_outcomes.json": "51bdd112af91537d7e8317e15c9e1b2865fe6a1f16845aa3a3bd16ec68cfc7d4",
+    "all_life_curves.png": "f8fa308630f98fa5e1bf1188896951a84cb5fd53c7dc9ed44847d9b5ec3a7c1b",
+    "control_pilot.json": "ca4c6a5668b5ded8ebaa79d71d1eac806b9fd8591dcc15c978b84eb220020df8",
+    "science_outcomes.json": "49cb6ae940ec342f34dc1e0b8a96c7c2eabe7b03f7f37840bab6b42bb51ba98d",
+    "science_result.json": "3a3501f332597b8ca2ce5e16f5a394cc350304c0dfa4cf41cde35c3d0f765ec7",
+    "plan.json": "6ed09e2addce3b96ad684e2afe94c387fdca62ad7fc66b65d06f373092d38190",
+    "summary.json": "878929629a55efb5223401452d96e911706c22b179e113e9c612f81bbf03af38",
+    "inspection.png": "5109cd12dcf21574e511d205f43f112a21ed1b49591fb6724deed83259a823f6"
+  },
+  "metric_definition": "指标释义更正（零native，原数值不变）：每个探针末帧的 f=M_good/(M_0+M_1)，M_i=sum_x rho(x)*1[torus_distance(x,spot_i)<2.5]。这是两个半径2.5接触区的材料质量份额，不是高斯cue强度加权sum(rho*cue)，也不是整阶段正确率。感觉场及付费反馈场与此观察指标应分开；原CSV、模型源、实际轨迹和运行计数不变。"
+}

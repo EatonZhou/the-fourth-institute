@@ -1,0 +1,423 @@
+{
+  "task": "spatial_coverage_acquired_body_20261019",
+  "owner": "resident_d3ccfa2d95b7",
+  "objective_met": false,
+  "choice": "Close the tested positive directional body-matching claim. Test whether fixed simultaneous spatial coverage produces a useful acquired body-associated state under a common extracellular P/F reference, compared with sequential histories and central-only history.",
+  "question": "Under identical actual HC extracellular arrays and a fixed U/D challenge, do the previously observed noncentral-history benefits persist in the body-associated package, and can a static simultaneous U+D coverage history produce the same kind of useful state without the sequential schedule?",
+  "evidence": {
+    "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/replacement_history_carrier_20261019/handoff.json",
+    "sha256": "2c79356d025a68cb636de438ce3aac19b2e2fc1c9e7c20a3af30b9378d3d54cf",
+    "actual_native": 6664,
+    "actual_worker_seconds": 369.899856,
+    "unused_sealed": [
+      0,
+      830.100144
+    ],
+    "body_matching": "No repeatable positive body interaction in both bodytime and actual post256 retention; ring5601 anti-match, ring5602 bodytime/post256 conflict. Separate histories also lack reproducible positive matching.",
+    "extracellular": "Eight fixed-body P/F interactions positive for bodytime/post256 but negative for finalE; not comprehensive advantage or mediation proportion.",
+    "maintenance": "36/40 actual probes pass both64 windows; four failures all separate HC. Earlier separate formation failure is retained but not generalized to every future.",
+    "visual_PI": "Viewed acquired_body.png across all12 actual256 states: ring left-side thickening under HU/HD, weak connection of left separate clusters, relative to HC. No new morphotype or all-animation claim."
+  },
+  "parents": [
+    {
+      "parent_index": 0,
+      "seed": 202610195601,
+      "shape": "ring",
+      "acquisition128": {
+        "seed": 202610195601,
+        "shape": "ring",
+        "clock": 128,
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/deletion_layout_life0_formation_20261019/985493ed-7d71-4b49-9edb-42390c6cf545/202610195601_ring_original_prestate_greedy_reference/state128.bin",
+        "sha256": "577c86e7952471bc851de8fc7a50544046c1c168a836148325a4be1ebd6cfd78",
+        "M": 71.7551647290679,
+        "E": 85.33424175212423,
+        "fixed_P_sha": "3738955e354f61734f23c311a49d00ae97781b80dc71fe724a1e69b19cd10a50",
+        "fixed_F_sha": "9624bd76317157284bdc9900c3cc1636fd478f913c77b27f4faff586d7af0a33",
+        "gross_P_step": 0.20026968119879088,
+        "gross_F_step": 0.8010787247951635,
+        "initial_supply_on_current_body": {
+          "center": 0.9973404255319149,
+          "up": 0.6881648936170213,
+          "down": 0.7200797872340425
+        },
+        "paired_order_integrated_input_error": 0.0,
+        "native": 0
+      },
+      "histories256": {
+        "H_U": {
+          "path": "/data/dataset/lenia-research/lineage_75e3399f4877/replacement_history_carrier_20261019/325b618a-c145-4529-8c24-f93b81d375f5/202610195601_ring_H_U/state256.bin",
+          "sha256": "b3b40df23d1d82ff709a6edd73de5b4fbff9d3abfe6f1274255d647dad8d3f89",
+          "outcome_id": "202610195601_ring_H_U",
+          "M": 76.31418429316797,
+          "E": 108.42569287056655,
+          "post128": 21.806637718421868
+        },
+        "H_D": {
+          "path": "/data/dataset/lenia-research/lineage_75e3399f4877/replacement_history_carrier_20261019/325b618a-c145-4529-8c24-f93b81d375f5/202610195601_ring_H_D/state256.bin",
+          "sha256": "e1ec318a92f93e976ce2e22e8eccdad888738afb01ba02fb65d962cd7bda8db4",
+          "outcome_id": "202610195601_ring_H_D",
+          "M": 76.24296598584343,
+          "E": 108.69352255187371,
+          "post128": 21.717100656835036
+        },
+        "H_C": {
+          "path": "/data/dataset/lenia-research/lineage_75e3399f4877/replacement_history_carrier_20261019/325b618a-c145-4529-8c24-f93b81d375f5/202610195601_ring_H_C/state256.bin",
+          "sha256": "be09a32f82f868449f59e199eb5f55901ece8f5678e60c65d5116578ffff35f8",
+          "outcome_id": "202610195601_ring_H_C",
+          "M": 71.30495724741272,
+          "E": 94.59065323526383,
+          "post128": 21.844076480471045
+        }
+      },
+      "HC_readonly_probes": [
+        {
+          "id": "202610195601_ring_BH_C_RH_C_U",
+          "direction": "U",
+          "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/replacement_history_carrier_20261019/325b618a-c145-4529-8c24-f93b81d375f5/202610195601_ring_BH_C_RH_C_U/steps.csv",
+          "rows_sha256": "7844591556c764fa19d8acc3fe053d2f74b43fd18905a53d1ef5b1bf3a811896",
+          "final": "/data/dataset/lenia-research/lineage_75e3399f4877/replacement_history_carrier_20261019/325b618a-c145-4529-8c24-f93b81d375f5/202610195601_ring_BH_C_RH_C_U/state384.bin",
+          "final_sha256": "924493c36302e3ae511e0975c0196c18ad64e0c86f168efca94305591d4cc337",
+          "steps": 128
+        },
+        {
+          "id": "202610195601_ring_BH_C_RH_C_D",
+          "direction": "D",
+          "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/replacement_history_carrier_20261019/325b618a-c145-4529-8c24-f93b81d375f5/202610195601_ring_BH_C_RH_C_D/steps.csv",
+          "rows_sha256": "a5789001e40b7e30795c9ae26ea63207ccb7e3fa4548c7ef077fbdbf047af951",
+          "final": "/data/dataset/lenia-research/lineage_75e3399f4877/replacement_history_carrier_20261019/325b618a-c145-4529-8c24-f93b81d375f5/202610195601_ring_BH_C_RH_C_D/state384.bin",
+          "final_sha256": "aed1efa637c1596cf1c36260e9ae1a8e3cb323ee7cf8cb2af89ebbc60f3f6ca5",
+          "steps": 128
+        }
+      ]
+    },
+    {
+      "parent_index": 1,
+      "seed": 202610195601,
+      "shape": "separate_seeds",
+      "acquisition128": {
+        "seed": 202610195601,
+        "shape": "separate_seeds",
+        "clock": 128,
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/deletion_layout_life0_formation_20261019/985493ed-7d71-4b49-9edb-42390c6cf545/202610195601_separate_seeds_original_prestate_greedy_reference/state128.bin",
+        "sha256": "b736471639a7fa9ccfb79cd3a1a89417c9c13932c4c7be3adac26b47c6574271",
+        "M": 57.53136837238481,
+        "E": 65.57448129096247,
+        "fixed_P_sha": "cc29033b6aef1572cbbee652d687ebd2aafec67329cd8166ce45d0b110fa1f7e",
+        "fixed_F_sha": "b4dbbb6af3f6543c68f93b22137610c1054672bcce24955b59ce4c2235c82748",
+        "gross_P_step": 0.2002696811987909,
+        "gross_F_step": 0.8010787247951636,
+        "initial_supply_on_current_body": {
+          "center": 0.9459459459459459,
+          "up": 0.5760135135135135,
+          "down": 0.6021959459459459
+        },
+        "paired_order_integrated_input_error": 0.0,
+        "native": 0
+      },
+      "histories256": {
+        "H_U": {
+          "path": "/data/dataset/lenia-research/lineage_75e3399f4877/replacement_history_carrier_20261019/325b618a-c145-4529-8c24-f93b81d375f5/202610195601_separate_seeds_H_U/state256.bin",
+          "sha256": "45e96df3f97a74b9e643e1f74c39f2c2c27eee7dcb5ff9bbe3050d24e5559a46",
+          "outcome_id": "202610195601_separate_seeds_H_U",
+          "M": 57.01906354452686,
+          "E": 73.22913425958973,
+          "post128": 18.84927093085301
+        },
+        "H_D": {
+          "path": "/data/dataset/lenia-research/lineage_75e3399f4877/replacement_history_carrier_20261019/325b618a-c145-4529-8c24-f93b81d375f5/202610195601_separate_seeds_H_D/state256.bin",
+          "sha256": "a2f2197b1f74f7ffb029b3e972b8c823e02750962121c06ba51e735830faa9ab",
+          "outcome_id": "202610195601_separate_seeds_H_D",
+          "M": 56.97019551127166,
+          "E": 73.59055755892715,
+          "post128": 18.788073930632027
+        },
+        "H_C": {
+          "path": "/data/dataset/lenia-research/lineage_75e3399f4877/replacement_history_carrier_20261019/325b618a-c145-4529-8c24-f93b81d375f5/202610195601_separate_seeds_H_C/state256.bin",
+          "sha256": "23c82c934b8b8068f5053dda525b39303192cfe5e711352a0e4ecc88da5e2673",
+          "outcome_id": "202610195601_separate_seeds_H_C",
+          "M": 56.530531438684235,
+          "E": 70.6409408588719,
+          "post128": 19.003693894707364
+        }
+      },
+      "HC_readonly_probes": [
+        {
+          "id": "202610195601_separate_seeds_BH_C_RH_C_U",
+          "direction": "U",
+          "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/replacement_history_carrier_20261019/325b618a-c145-4529-8c24-f93b81d375f5/202610195601_separate_seeds_BH_C_RH_C_U/steps.csv",
+          "rows_sha256": "37367e42f3ce8f587ede2f5c0810c71739b0681649cc9e6b00a2ab0647bcf3f8",
+          "final": "/data/dataset/lenia-research/lineage_75e3399f4877/replacement_history_carrier_20261019/325b618a-c145-4529-8c24-f93b81d375f5/202610195601_separate_seeds_BH_C_RH_C_U/state384.bin",
+          "final_sha256": "750a37bb086b750ba0ced4aa94f649dab361a1b14cb902edd547c08faa05e642",
+          "steps": 128
+        },
+        {
+          "id": "202610195601_separate_seeds_BH_C_RH_C_D",
+          "direction": "D",
+          "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/replacement_history_carrier_20261019/325b618a-c145-4529-8c24-f93b81d375f5/202610195601_separate_seeds_BH_C_RH_C_D/steps.csv",
+          "rows_sha256": "225884a0217abdddc03abccb4d32ec2874826c4bf8bb2a017ec3b589d3ad00dc",
+          "final": "/data/dataset/lenia-research/lineage_75e3399f4877/replacement_history_carrier_20261019/325b618a-c145-4529-8c24-f93b81d375f5/202610195601_separate_seeds_BH_C_RH_C_D/state384.bin",
+          "final_sha256": "c79113167241f43048f81f6075089ba2eba4fa9511cbe43fc51059df6ca634f1",
+          "steps": 128
+        }
+      ]
+    },
+    {
+      "parent_index": 2,
+      "seed": 202610195602,
+      "shape": "ring",
+      "acquisition128": {
+        "seed": 202610195602,
+        "shape": "ring",
+        "clock": 128,
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/deletion_layout_life0_formation_20261019/985493ed-7d71-4b49-9edb-42390c6cf545/202610195602_ring_original_prestate_greedy_reference/state128.bin",
+        "sha256": "ad69b2ad0d9726fbd39202aec51231b07bec9d04a5cd8935324e0f416da1d7d5",
+        "M": 69.87693758615609,
+        "E": 84.49424812826368,
+        "fixed_P_sha": "3738955e354f61734f23c311a49d00ae97781b80dc71fe724a1e69b19cd10a50",
+        "fixed_F_sha": "9624bd76317157284bdc9900c3cc1636fd478f913c77b27f4faff586d7af0a33",
+        "gross_P_step": 0.20026968119879088,
+        "gross_F_step": 0.8010787247951635,
+        "initial_supply_on_current_body": {
+          "center": 0.9847074468085107,
+          "up": 0.6462765957446809,
+          "down": 0.7466755319148934
+        },
+        "paired_order_integrated_input_error": 0.0,
+        "native": 0
+      },
+      "histories256": {
+        "H_U": {
+          "path": "/data/dataset/lenia-research/lineage_75e3399f4877/replacement_history_carrier_20261019/325b618a-c145-4529-8c24-f93b81d375f5/202610195602_ring_H_U/state256.bin",
+          "sha256": "36dc98247a178e6cef903ca38eff09231c1d5b82a9d6a3fbee0121c8b3c6701c",
+          "outcome_id": "202610195602_ring_H_U",
+          "M": 74.09956757495567,
+          "E": 104.28237013925926,
+          "post128": 21.728260927291835
+        },
+        "H_D": {
+          "path": "/data/dataset/lenia-research/lineage_75e3399f4877/replacement_history_carrier_20261019/325b618a-c145-4529-8c24-f93b81d375f5/202610195602_ring_H_D/state256.bin",
+          "sha256": "71704724baf57c519c122e5d31a550df59c57d2fe3be2de20ccc37fbe930857e",
+          "outcome_id": "202610195602_ring_H_D",
+          "M": 74.16222956817566,
+          "E": 105.26558472491969,
+          "post128": 21.671374132857295
+        },
+        "H_C": {
+          "path": "/data/dataset/lenia-research/lineage_75e3399f4877/replacement_history_carrier_20261019/325b618a-c145-4529-8c24-f93b81d375f5/202610195602_ring_H_C/state256.bin",
+          "sha256": "a69f0dbde106d6db4d2b4e0096d9fbb36a269c7c456322afc317906d415935c9",
+          "outcome_id": "202610195602_ring_H_C",
+          "M": 70.30138859355998,
+          "E": 94.43528031979716,
+          "post128": 21.898631930963493
+        }
+      },
+      "HC_readonly_probes": [
+        {
+          "id": "202610195602_ring_BH_C_RH_C_U",
+          "direction": "U",
+          "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/replacement_history_carrier_20261019/325b618a-c145-4529-8c24-f93b81d375f5/202610195602_ring_BH_C_RH_C_U/steps.csv",
+          "rows_sha256": "a39f7673c493cd54056a1523f1e9827005c0a25b0552bbfc00441db7a399c4aa",
+          "final": "/data/dataset/lenia-research/lineage_75e3399f4877/replacement_history_carrier_20261019/325b618a-c145-4529-8c24-f93b81d375f5/202610195602_ring_BH_C_RH_C_U/state384.bin",
+          "final_sha256": "4e1cea38cd9f3bbc116000777086c47733d263899d0c1b81fda023ac03ff38dc",
+          "steps": 128
+        },
+        {
+          "id": "202610195602_ring_BH_C_RH_C_D",
+          "direction": "D",
+          "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/replacement_history_carrier_20261019/325b618a-c145-4529-8c24-f93b81d375f5/202610195602_ring_BH_C_RH_C_D/steps.csv",
+          "rows_sha256": "e6df4757969aed9c68126d0a2cb74ca65b5383938a17722ee102f87fe169abec",
+          "final": "/data/dataset/lenia-research/lineage_75e3399f4877/replacement_history_carrier_20261019/325b618a-c145-4529-8c24-f93b81d375f5/202610195602_ring_BH_C_RH_C_D/state384.bin",
+          "final_sha256": "fd58d3a149b8f41d3dfe48a888b87cee5c28cdf4c139266f228d4498af431e20",
+          "steps": 128
+        }
+      ]
+    },
+    {
+      "parent_index": 3,
+      "seed": 202610195602,
+      "shape": "separate_seeds",
+      "acquisition128": {
+        "seed": 202610195602,
+        "shape": "separate_seeds",
+        "clock": 128,
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/deletion_layout_life0_formation_20261019/985493ed-7d71-4b49-9edb-42390c6cf545/202610195602_separate_seeds_original_prestate_greedy_reference/state128.bin",
+        "sha256": "886751c9b3a1da24c7fec020ef82b14ddfccfb1ed7297efef0d7a35115127471",
+        "M": 58.174988462232875,
+        "E": 65.21947474591072,
+        "fixed_P_sha": "cc29033b6aef1572cbbee652d687ebd2aafec67329cd8166ce45d0b110fa1f7e",
+        "fixed_F_sha": "b4dbbb6af3f6543c68f93b22137610c1054672bcce24955b59ce4c2235c82748",
+        "gross_P_step": 0.2002696811987909,
+        "gross_F_step": 0.8010787247951636,
+        "initial_supply_on_current_body": {
+          "center": 0.9366554054054053,
+          "up": 0.549831081081081,
+          "down": 0.5988175675675675
+        },
+        "paired_order_integrated_input_error": 0.0,
+        "native": 0
+      },
+      "histories256": {
+        "H_U": {
+          "path": "/data/dataset/lenia-research/lineage_75e3399f4877/replacement_history_carrier_20261019/325b618a-c145-4529-8c24-f93b81d375f5/202610195602_separate_seeds_H_U/state256.bin",
+          "sha256": "34f89a2f1429bef31bca7ef98838a95b3cb3e203147cdaee421162c3e3791322",
+          "outcome_id": "202610195602_separate_seeds_H_U",
+          "M": 58.246309078816154,
+          "E": 74.52222200557367,
+          "post128": 18.693417478613135
+        },
+        "H_D": {
+          "path": "/data/dataset/lenia-research/lineage_75e3399f4877/replacement_history_carrier_20261019/325b618a-c145-4529-8c24-f93b81d375f5/202610195602_separate_seeds_H_D/state256.bin",
+          "sha256": "c1597256d7108a0c6882e8c4c1c78baa8e5547d5f53f6a677c9769f55bb49e1b",
+          "outcome_id": "202610195602_separate_seeds_H_D",
+          "M": 58.09296571265541,
+          "E": 74.68752040106067,
+          "post128": 18.493865696895412
+        },
+        "H_C": {
+          "path": "/data/dataset/lenia-research/lineage_75e3399f4877/replacement_history_carrier_20261019/325b618a-c145-4529-8c24-f93b81d375f5/202610195602_separate_seeds_H_C/state256.bin",
+          "sha256": "980d41f9d35bbf40d4566d3014ef3a15e55bbeeb556920aa11a9c7bc027e0956",
+          "outcome_id": "202610195602_separate_seeds_H_C",
+          "M": 57.14930433611222,
+          "E": 72.45546694062067,
+          "post128": 18.542704595580354
+        }
+      },
+      "HC_readonly_probes": [
+        {
+          "id": "202610195602_separate_seeds_BH_C_RH_C_U",
+          "direction": "U",
+          "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/replacement_history_carrier_20261019/325b618a-c145-4529-8c24-f93b81d375f5/202610195602_separate_seeds_BH_C_RH_C_U/steps.csv",
+          "rows_sha256": "1e5312ba849c95781987e67d38b5c9727273dd051c6fef8584652ecb2086d0dd",
+          "final": "/data/dataset/lenia-research/lineage_75e3399f4877/replacement_history_carrier_20261019/325b618a-c145-4529-8c24-f93b81d375f5/202610195602_separate_seeds_BH_C_RH_C_U/state384.bin",
+          "final_sha256": "723c733d11070afb2c5481f74ae8fc0fcd9328ddb731496c8c5ec15e510cea65",
+          "steps": 128
+        },
+        {
+          "id": "202610195602_separate_seeds_BH_C_RH_C_D",
+          "direction": "D",
+          "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/replacement_history_carrier_20261019/325b618a-c145-4529-8c24-f93b81d375f5/202610195602_separate_seeds_BH_C_RH_C_D/steps.csv",
+          "rows_sha256": "fe83fc2c32c608a0fb39d03ff4ba9ad200d7e10a1bb6e6af7ee48346ecc99417",
+          "final": "/data/dataset/lenia-research/lineage_75e3399f4877/replacement_history_carrier_20261019/325b618a-c145-4529-8c24-f93b81d375f5/202610195602_separate_seeds_BH_C_RH_C_D/state384.bin",
+          "final_sha256": "00d77e9fc26926265b31abcbdaa772b57a3543a781739d88db812e9b0146fef6",
+          "steps": 128
+        }
+      ]
+    }
+  ],
+  "source_bindings": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/replacement_history_carrier_20261019/handoff.json",
+      "sha256": "2c79356d025a68cb636de438ce3aac19b2e2fc1c9e7c20a3af30b9378d3d54cf"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/replacement_history_carrier_20261019/outcomes.json",
+      "sha256": "ddcc3db2a077591083549eb26f51234373ac440746c4344f62191ee9aaffcb68"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/replacement_history_carrier_20261019/plan.json",
+      "sha256": "67e57f6b6c1a531981088d8b03c22ebb7c6db7c5ab440c59d02e6d92d2715a59"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/replacement_history_carrier_20261019/exchanges.json",
+      "sha256": "690141f8a3ba3636be70f0e5fe8ca00bff5a54f71120a45a11789b37346aefb1"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/replacement_history_carrier_20261019/scientific_next_request.json",
+      "sha256": "6da113d630c809d351eca95cf43386d46a101f6b776e2189a9062c3d8232e504"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/replacement_history_carrier_20261019.json",
+      "sha256": "3fa390af9ec9060fc9fa51d20502a95e29a1ed311ecf0c3050ffad0d6d64b3ea"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/spatial_coverage_acquired_body_20261019_preflight.json",
+      "sha256": "01836447bc1e8d18ca50fdd607cc0416ea41b8d8d2c8ff378a441da33e2f3f5f"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/replacement_history_carrier/core.py",
+      "sha256": "c8d97368cbd8b00b174f3728587702e0e9651b2d96da001af325b8671a345a45"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/resource_conditioned_growth_rule/core.py",
+      "sha256": "bad674f254644c8fc00caa6fd50ccd45bbebdd65a229c11125ca3765df981a44"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/deletion_layout_life0_formation/core.py",
+      "sha256": "438213791aaffe2c674437a4adec18a15818ccfa630c5196b795770b5e9c1191"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/fixed_amount_rule_deletion_layout/core.py",
+      "sha256": "71277e88c480cb81b9b602a85dab641c5e4e61b661b4d74f67fe19a36b5914a5"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/turnover_compatible_morphogenesis/core.py",
+      "sha256": "dbfea17ca9e68833d2e0fe7f33c37cac6111a4c441f51fb23a6a78f458886a84"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/regenerative_actor/model.py",
+      "sha256": "3941450e97d2311f833d1c9c8964f348218467d4cd8d41a68b6584b72b24b5b0"
+    }
+  ],
+  "invariants": "Original greedy, g2 rule package, deletion-layout off, native/pump/admission/basal prices, command0 and finite clock384 horizon remain unchanged. No writer, training, new pump/reserve/recycling layer, rule or rate change. All original balances and failures retained.",
+  "protocol": {
+    "stage_scope": "Begin at four previously acquired actual128 states. This is developmental continuation/acquired body construction, not a new life0 formation or new seed experiment.",
+    "H_B": "For native129..192 inject 0.5*U+0.5*D each step for each cargo separately; native193..256 inject center. U/D are the identical original fixed life0 maps rolled dy -4/+4, as before. Do not recompute from current rho or displace existing inventories.",
+    "exposure": "H_B is fixed simultaneous coverage. It matches HU/HD per-step gross and per-grid cumulative added P/F over129..192, then shares the same64center inputs. Local pulse intensity and simultaneity differ; this is not an order-only intervention or proof that coverage is the unique cause. HC has the same gross but a different spatial cumulative map.",
+    "acquisition": "Four new H_B histories of128 steps each from exact original128 parents; preserve full160/192/256. All twelve HU/HD/HC history legs reused read-only with actual acquisition costs. No replay of them.",
+    "common_PF": "At256 use each parent's actual saved HC precursor and fuel arrays, copied together identically into each full B in HU/HD/H_B. HC is its own sham. Preserve B rho, intracellularE, physics/rule state, labels, world, RNG and cumulative records. Retain L256/post256 observer state; H_B registers it at actual256 before exchange. Probe state must be byte-identical in P/F across histories, not normalized to a target sum.",
+    "exchange_account": "Use the existing exact exchange_pf path. Record removed/received arrays and net material/fuel energy for each recipient. Unlike the old reciprocal crossover, several histories receive the same reference packet: these are separate experimental worlds with an explicitly accounted external reservoir, NOT a closed paired exchange. Do not subtract the exchange from biological costs to manufacture a net win; no physical work price exists for it. Own HC sham has zero exchange. History costs remain from each actual history.",
+    "body_interpretation": "The retained body package includes rho and intracellularE, so a common-PF contrast isolates the effect of that complete state under this intervention, not geometry alone, a learned writer or cost-free biological acquisition. No resetting E, material labels or accumulated accounts.",
+    "probes": "Each HU/HD/H_B under common HC P/F is cloned to fixed U and D probes for128 steps257..384. Same original U/D future maps and physical schedule as existing HC futures; no new phase, end clock or shifted source distance.",
+    "references": "Reuse the eight exact old HC/H_C U/D probes at unchanged protocol, including full source hashes and their actual windows/ledgers. HC starts via the same sham-copy path. Prove state/input/observer equivalence by pure assembly; do not rerun reference futures or fill absent fields. If equivalence fails, record the mismatch and stop dependent execution rather than silently change comparator.",
+    "count": "512 new history native +24 new probes*128=3584 science native;4 new history legs and24 new futures;8 old HC futures1024 native read-only. Report32 distinct probe paths in the combined comparison, not32 new simulations.",
+    "tags": "Inherited founder/L128 stay truthful. L256 records actual body at256; real later births enter post256. Carry actual K and actor/rule survival once. Report both retained masses and their sums. Labels and future outcomes never enter live policy."
+  },
+  "contrasts": {
+    "primary": "For every seed/shape and U/D direction report HU-HC, HD-HC and H_B-HC under the same HC PF packet, with probe bodytime and actual post256 retained mass at384 co-primary. Also report all HU-H_B and HD-H_B contrasts without choosing the more favorable order.",
+    "body_guard": "For a useful-body advantage in a given shape, both co-primary contrasts must be positive and finalM/finalE must not fall (1e-8 accounting tolerance; zero sensitivity) in both directions and both already-selected seeds. If a sign differs, report conditional effects. No pooled mean overrides a failed case. Not a held-out confirmation.",
+    "fixed_coverage": "If H_B gives the same guarded advantage over HC, fixed simultaneous coverage is sufficient to produce a useful state in these conditions. Do not infer exact equivalence to HU/HD, unique causation, or absence of all history dependence. HU/HD beating H_B would remain a schedule-dependent package effect, not automatically directional memory.",
+    "PF_removal": "For existing HU/HD own-PF probes versus their new common-HC-PF probes, quantify the declared external packet replacement effect at each fixed body/probe. Keep this separate from all-HC body contrasts. No natural mediation fraction or assumption of additive components.",
+    "reporting": "FinalM/E, deltaM/E from256, U, bodytime, actual post256/L256/founder/post128, births/deaths, real fees/heat/exports/unpaid requests, pre/post exchange inventories and complete costs from128. Display acquisition and probe costs separately. No composite or uptake-only victory.",
+    "maintenance": "Both predeclared probe64 windows require born-death>=-1e-8, deltaE>=-1e-8,minM>=32; report zero tolerance too. Preserve actual successes/failures and report H_B history windows separately. Finite384 is not steady state.",
+    "scope": "Two related previously selected seeds and two fixed shapes. Spatial cells, U/D repeated probes and state transfers are not independent replicates. No new morphology or learned method claim."
+  },
+  "records": {
+    "histories": [
+      128,
+      160,
+      192,
+      256
+    ],
+    "probe_joints": [
+      256,
+      320,
+      384
+    ],
+    "probe_frames": [
+      1,
+      8,
+      32,
+      64,
+      96,
+      128
+    ],
+    "receipts": "Actual history160/192/256 and probe1/8/64/128; entire exchange arrays and scalar ledger at256. Unique per-native physical/tag/cost/input/export/arrears records. Persist actual full checkpoints without replay.",
+    "visual": "Inspect all four H_B vs HU/HD/HC acquired256 states and complete probe curves, plus first predeclared ring parent U/D field sequences256/257/320/384. Reuse real raw frames; keep image coverage description exact."
+  },
+  "budget": {
+    "native_cap": 3584,
+    "science_cap": 3584,
+    "affected_native": 0,
+    "worker_seconds": 900,
+    "cpu": 2,
+    "gpu": 0,
+    "jobs": 1,
+    "raw_cap_bytes": 536870912,
+    "shutdown_reserve_worker_seconds": 90,
+    "checks": "Only input-map construction gains a convex sum; old native and exchange interfaces are unchanged. Use pure-array finite-schedule/gross/per-grid-integral, restoration/exchange/sham and original HC compatibility checks. No repeated old native boundaries; the first real H_B call is scientific and retained. Freeze adapter/plan before native.",
+    "control": "Read current research.desired_state/started before job; pause/stop forbids launching. PI observed running/true. All previous leftovers sealed, independent authorization only.",
+    "failure": "Charge every attempted/returned/settled native and every runner attempt. Do not replay unknown calls. Same-job explicit recovery only from known completed state; preserve failure and amendments. No extra job, borrowed budget or timer. If required checks cannot fit or treatment changes, stop dependent calls and hand off the exact issue."
+  },
+  "handoff": "d3 is sole execution owner: implement, freeze and actually run this finite experiment; provide actual findings and next scientific choice once complete. Update only original compact shared leaf; paper/projection merge current owner items. No automatic training, distance/phase/washout/price sweep or extension.",
+  "native_by_PI": 0
+}

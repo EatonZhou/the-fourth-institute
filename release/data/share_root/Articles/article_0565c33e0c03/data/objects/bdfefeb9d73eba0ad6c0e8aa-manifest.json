@@ -1,0 +1,187 @@
+[
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/INTERFACE.json",
+    "sha256": "cdeb6e8989ac53c94f93e80d247ebd107de4fab0494b168904aa92791feef2f6",
+    "bytes": 934
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/REPORT.txt",
+    "sha256": "4070b4725fb6c1c061160f6b37e9ec1ecaccdec9bccdbe2a1e8dd29efdd077d3",
+    "bytes": 3521
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/archive.json",
+    "sha256": "510bbb937d8abd78419e5260eb6109830a30b6baf710c461160706849626a11e",
+    "bytes": 205392
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/authorization.json",
+    "sha256": "0f9c0fad810b22cde952bbd6165351bf62c08657547422a9c2c4add115495468",
+    "bytes": 2893
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/candidate_lineage.json",
+    "sha256": "a0e6503af34f9bf41973651ea1946b566564a5062e6977a621dcc8fbc9055afb",
+    "bytes": 651
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/candidate_manifest.json",
+    "sha256": "a1c639ee9483c88d7b000403a721b728f2e0d91907dd303461109e9587963faf",
+    "bytes": 6042
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/candidates/genome_8d60f7d250e8e9f2a25b.npz",
+    "sha256": "66857a18d5310bf45e03c0e5bfef3ec7e36901b933cd89c71d844e0f6bd03a31",
+    "bytes": 1865260
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/candidates/genome_93e6148d32bbb0862163.npz",
+    "sha256": "ccd7a62c82be66c717309cf2e37291a33ab13cc56bf9856175d0298fd9a274ef",
+    "bytes": 1863284
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/candidates/genome_a6a821dffd4f4046c97a.npz",
+    "sha256": "2647e3999959ce742a8c8b5dc9c873c8be868ddeb782247ffdc4cd839adf2ff1",
+    "bytes": 1865280
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/candidates/genome_d02e7f60565f83066e5d.npz",
+    "sha256": "d8cc3be5a4cd7f469d35ccd981ad42398206b1d9cc775cdb418e73e0f7cf1ca1",
+    "bytes": 1863192
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/checks.json",
+    "sha256": "e63d703bf29f30dd613ebc7fa11790cf458402ae6b83e7f5bd664c10c49e86b1",
+    "bytes": 512
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/genomes/genome_8d60f7d250e8e9f2a25b.json",
+    "sha256": "4c2cb8f434927c3c754e788ba270001e9b295fe1acd4f1fc715a422b6829d33e",
+    "bytes": 1357
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/genomes/genome_93e6148d32bbb0862163.json",
+    "sha256": "09bf2462010cb3e2041e06a9f04ae21c51e2a162e561c3d4adf1ba4bce23e2d5",
+    "bytes": 954
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/genomes/genome_a6a821dffd4f4046c97a.json",
+    "sha256": "b788fa270a4c40f0e8a67f7efb304c40ef3133566e0a1d682a11d80948c907ad",
+    "bytes": 1367
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/genomes/genome_d02e7f60565f83066e5d.json",
+    "sha256": "58891d508dbd892ad6fd2adc95b0416a250ba80b428139d4c1f7eb4d720cb507",
+    "bytes": 956
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/history.json",
+    "sha256": "b1c8f25bc71f624cdc47eb3a7dcc103ffe64adaf99689c512aeb61ad1879ada5",
+    "bytes": 313410
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/candidate_manifest.json",
+    "sha256": "323671cef21d7992236fea957d4d16d5f0e39b478d3e20cc5f7a9ab1393c43b4",
+    "bytes": 7836
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/candidates/genome_8d60f7d250e8e9f2a25b.npz",
+    "sha256": "3fae7135bd9572011a4cdbf2bf174e96832481bca6f1de24277fc8894ea0d4a1",
+    "bytes": 1862804
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/candidates/genome_93e6148d32bbb0862163.npz",
+    "sha256": "cfc25c642daa522c210b790b44ef1ac6ac9251e4d479a4ffd0e185d2e953aeeb",
+    "bytes": 1862308
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/candidates/genome_a6a821dffd4f4046c97a.npz",
+    "sha256": "7efd847ad3efa0db001afe56a162b297d3a536ec48326890d4b09b6ceb793b4a",
+    "bytes": 1862784
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/candidates/genome_d02e7f60565f83066e5d.npz",
+    "sha256": "ff37d942c7168eeb4832aa42f0f94d14ceaa86ca8e454741efe4a183e049a185",
+    "bytes": 1862208
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/checks.json",
+    "sha256": "b418254831ddbbfbd864bb2d0e61cfa8b61dc4eeee5646778ef417c3dd7024a8",
+    "bytes": 1599
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/draws001_224.npy",
+    "sha256": "985ec671b00f346e7ba414e6460a68ac274f95fc4b317a100cc6399fad55a293",
+    "bytes": 16515200
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/forcing001_224.npz",
+    "sha256": "65fb316a56a7b2b15123b954bfabe580a7d232ea544d3615cc669faeeba28993",
+    "bytes": 48590
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/native_draft.json",
+    "sha256": "1cebced21e653f159f4a8c68c1ac048195177250e7efd58ea245a9ffc04e8efe",
+    "bytes": 21096
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/references/genome_93e6148d32bbb0862163-embedded-life0.npz",
+    "sha256": "472e50b1c73e7cbfe4b68d73aaaf1e906d4544696d3a9f120ede04124626f9ec",
+    "bytes": 1865036
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/references/genome_d02e7f60565f83066e5d-embedded-life0.npz",
+    "sha256": "c5f8ab0600edafb27bd5bb9e99796c2e66c4af059171835762542972d8f5a17a",
+    "bytes": 1864948
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/native_draft.json",
+    "sha256": "6c4001d459f2b243260123657a7b24986ad68005b6ab79be07cc71e5f42624db",
+    "bytes": 19285
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/pre_host_handoff.json",
+    "sha256": "fd0fb18236838908ced5738d937fead3f3dc4fab0975100c37c38cb1eda0979c",
+    "bytes": 2061
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/source/__init__.py",
+    "sha256": "18b10d0143cb60ab3c1a67bd90de35363b12619cb42f1a4ce7374d94c297a8b9",
+    "bytes": 263
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/source/archive.py",
+    "sha256": "46f77d8c9d71aa5ed5f5f760efa6fdc3cb29efb011c517bf05289ef3527ca337",
+    "bytes": 5444
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/source/budget.py",
+    "sha256": "537a209b765c115f4c4941e70e7bcdf8be29fbf71f626f08b88a55696daa11cc",
+    "bytes": 3262
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/source/build.py",
+    "sha256": "3c630e3deaefce1136bd46e7f9ab7405eb50bfcc79cea69d27463a033144bb92",
+    "bytes": 8178
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/source/checks.py",
+    "sha256": "ad03a557959d17262c76b6319d0200faf0bbd8bb853de89a5e0e6aa69be5cbe4",
+    "bytes": 5516
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/source/genome.py",
+    "sha256": "cad661bf00f177b3cb3f38a5c7210a0095e4db76e5bfbab8a5b6c3541b15d10b",
+    "bytes": 7258
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/source/history.py",
+    "sha256": "2945f719c7292dc1cd3bfe5650b0aac824a67e46c2eb756bef237e8531e393ef",
+    "bytes": 4447
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/source/host_export.py",
+    "sha256": "57c5495dac8b6f9199826f8cd22dc1c6f3b10c393a1737be54dd1dd38c86f086",
+    "bytes": 8173
+  }
+]

@@ -1,0 +1,22 @@
+[
+  {
+    "recipient": "resident_afa3d4d6cf11",
+    "status": "committed",
+    "result": "msg_9cbbc39dbd9e3b3f5fa94a9e48da9552"
+  },
+  {
+    "recipient": "resident_78225d1bc049",
+    "status": "committed",
+    "result": "msg_67a1c0c84d62fa54dc285bff20b86d4a"
+  },
+  {
+    "recipient": "resident_a48ab8bd3f81",
+    "status": "committed",
+    "result": "msg_bd1c433bad59510dd8653ec30e4390a3"
+  },
+  {
+    "recipient": "resident_5fe1227e36c0",
+    "status": "committed",
+    "result": "msg_fe1e816f391c7c6bea4b2fbdb340470d"
+  }
+]

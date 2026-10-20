@@ -1,0 +1,39 @@
+{
+  "status": "completed_readonly",
+  "native": 0,
+  "sparse_receipts": 70,
+  "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/birth_site_compatibility_cohort_20261019/handoff.json",
+  "source_sha256": "13a95fa6d0498936a5328dd5f59ab873f20e66092d5c6575c3f344d59f50b206",
+  "finding": "五非零配对全70稀疏场中，cohort加权negative暴露与两核同时negative暴露数值相同；不把该现象推广到未存钟或全身体。",
+  "reversals": [
+    {
+      "context": "5401 double_lobe ready320",
+      "offset64": {
+        "h_plus": -0.02138,
+        "h_minus": -0.06038,
+        "rule_fraction_plus": 0.00713,
+        "rule_fraction_minus": 0.00575
+      }
+    },
+    {
+      "context": "5402 double_lobe ready256",
+      "offset64": {
+        "h_plus": -0.07053,
+        "h_minus": -0.07279,
+        "rule_fraction_plus": 0.01085,
+        "rule_fraction_minus": 0.007
+      }
+    }
+  ],
+  "resource_finding": "两反转末帧plus的P/body与F/body均低于minus；但两个compact正例plus同样P/F更低。因此这些稀疏暴露不足指定资源短缺为反转原因。payable headroom非未来用途。",
+  "consequence": "当前h符号/平均值不等单位材料删除危险。原D=min(rho,dt max(-h,0))按格绝对量生成，材料删除比例D/rho还受实际密度与暴露分布影响。此公式是模型事实；尚未证实空间删除分配导致旧留存反转。",
+  "visual_review": "PI亲看原cohort_retention_pairs.png全8面板：3零率null、两双叶曲线晚期交叉，非新形态。",
+  "boundaries": [
+    "五非零配对70真实稀疏收据；3零配对保持原null，无补轨。",
+    "offset1权重为出生后标签，不是出生前暴露；offset2起为该步actor后、rule删除前全在场cohort。",
+    "稀疏暴露不能积分为累计中介，不能恢复未存K或局部符号切换次数；只按原完整逐步标签标量判断总留存反转。",
+    "P/F使用当前input并减实际uptake；资源暴露与生成响应相关不说明哪一个造成死亡。",
+    "两个kernel同时negative只是同保存状态现有两响应的瞬时支持限制，非未来控制上界或所有生成规则不可能。"
+  ],
+  "next_task": "fixed_amount_rule_deletion_layout_20261019"
+}

@@ -1,0 +1,669 @@
+{
+  "schema": "outer-search-native-draft.v1",
+  "status": "DRAFT_NOT_AUTHORIZED",
+  "body_cap": 0,
+  "proposed_body_steps": 2432,
+  "per_candidate_body_steps": 608,
+  "candidate_count": 4,
+  "independent_energy_steps": 0,
+  "preview_steps": 0,
+  "paths": [
+    {
+      "id": "genome_93e6148d32bbb0862163/formation",
+      "candidate_id": "genome_93e6148d32bbb0862163",
+      "stage": "formation",
+      "start": 0,
+      "end": 128,
+      "body_steps": 128,
+      "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/candidates/genome_93e6148d32bbb0862163.npz",
+      "transport": "T00",
+      "parent": null,
+      "source_sha256": "cfc25c642daa522c210b790b44ef1ac6ac9251e4d479a4ffd0e185d2e953aeeb"
+    },
+    {
+      "id": "genome_93e6148d32bbb0862163/naive/acquisition",
+      "candidate_id": "genome_93e6148d32bbb0862163",
+      "stage": "acquisition",
+      "history": "naive",
+      "start": 128,
+      "end": 160,
+      "body_steps": 32,
+      "parent": "genome_93e6148d32bbb0862163/formation",
+      "transport": "T11",
+      "pulses": []
+    },
+    {
+      "id": "genome_93e6148d32bbb0862163/naive/none",
+      "candidate_id": "genome_93e6148d32bbb0862163",
+      "stage": "future",
+      "history": "naive",
+      "challenge": "none",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "parent": "genome_93e6148d32bbb0862163/naive/acquisition",
+      "transport": "T11",
+      "pulses": []
+    },
+    {
+      "id": "genome_93e6148d32bbb0862163/naive/x",
+      "candidate_id": "genome_93e6148d32bbb0862163",
+      "stage": "future",
+      "history": "naive",
+      "challenge": "x",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "parent": "genome_93e6148d32bbb0862163/naive/acquisition",
+      "transport": "T11",
+      "pulses": [
+        {
+          "before_step": 161,
+          "fraction": 0.2,
+          "direction": "+x"
+        }
+      ]
+    },
+    {
+      "id": "genome_93e6148d32bbb0862163/experienced/acquisition",
+      "candidate_id": "genome_93e6148d32bbb0862163",
+      "stage": "acquisition",
+      "history": "experienced",
+      "start": 128,
+      "end": 160,
+      "body_steps": 32,
+      "parent": "genome_93e6148d32bbb0862163/formation",
+      "transport": "T11",
+      "pulses": [
+        {
+          "before_step": 129,
+          "fraction": 0.1,
+          "direction": "+x"
+        },
+        {
+          "before_step": 145,
+          "fraction": 0.1,
+          "direction": "+x"
+        }
+      ]
+    },
+    {
+      "id": "genome_93e6148d32bbb0862163/experienced/none",
+      "candidate_id": "genome_93e6148d32bbb0862163",
+      "stage": "future",
+      "history": "experienced",
+      "challenge": "none",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "parent": "genome_93e6148d32bbb0862163/experienced/acquisition",
+      "transport": "T11",
+      "pulses": []
+    },
+    {
+      "id": "genome_93e6148d32bbb0862163/experienced/x",
+      "candidate_id": "genome_93e6148d32bbb0862163",
+      "stage": "future",
+      "history": "experienced",
+      "challenge": "x",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "parent": "genome_93e6148d32bbb0862163/experienced/acquisition",
+      "transport": "T11",
+      "pulses": [
+        {
+          "before_step": 161,
+          "fraction": 0.2,
+          "direction": "+x"
+        }
+      ]
+    },
+    {
+      "id": "genome_93e6148d32bbb0862163/low_cost_T00/acquisition",
+      "candidate_id": "genome_93e6148d32bbb0862163",
+      "stage": "acquisition",
+      "history": "low_cost_T00",
+      "start": 128,
+      "end": 160,
+      "body_steps": 32,
+      "parent": "genome_93e6148d32bbb0862163/formation",
+      "transport": "T00",
+      "pulses": []
+    },
+    {
+      "id": "genome_93e6148d32bbb0862163/low_cost_T00/none",
+      "candidate_id": "genome_93e6148d32bbb0862163",
+      "stage": "future",
+      "history": "low_cost_T00",
+      "challenge": "none",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "parent": "genome_93e6148d32bbb0862163/low_cost_T00/acquisition",
+      "transport": "T00",
+      "pulses": []
+    },
+    {
+      "id": "genome_93e6148d32bbb0862163/low_cost_T00/x",
+      "candidate_id": "genome_93e6148d32bbb0862163",
+      "stage": "future",
+      "history": "low_cost_T00",
+      "challenge": "x",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "parent": "genome_93e6148d32bbb0862163/low_cost_T00/acquisition",
+      "transport": "T00",
+      "pulses": [
+        {
+          "before_step": 161,
+          "fraction": 0.2,
+          "direction": "+x"
+        }
+      ]
+    },
+    {
+      "id": "genome_d02e7f60565f83066e5d/formation",
+      "candidate_id": "genome_d02e7f60565f83066e5d",
+      "stage": "formation",
+      "start": 0,
+      "end": 128,
+      "body_steps": 128,
+      "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/candidates/genome_d02e7f60565f83066e5d.npz",
+      "transport": "T00",
+      "parent": null,
+      "source_sha256": "ff37d942c7168eeb4832aa42f0f94d14ceaa86ca8e454741efe4a183e049a185"
+    },
+    {
+      "id": "genome_d02e7f60565f83066e5d/naive/acquisition",
+      "candidate_id": "genome_d02e7f60565f83066e5d",
+      "stage": "acquisition",
+      "history": "naive",
+      "start": 128,
+      "end": 160,
+      "body_steps": 32,
+      "parent": "genome_d02e7f60565f83066e5d/formation",
+      "transport": "T11",
+      "pulses": []
+    },
+    {
+      "id": "genome_d02e7f60565f83066e5d/naive/none",
+      "candidate_id": "genome_d02e7f60565f83066e5d",
+      "stage": "future",
+      "history": "naive",
+      "challenge": "none",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "parent": "genome_d02e7f60565f83066e5d/naive/acquisition",
+      "transport": "T11",
+      "pulses": []
+    },
+    {
+      "id": "genome_d02e7f60565f83066e5d/naive/x",
+      "candidate_id": "genome_d02e7f60565f83066e5d",
+      "stage": "future",
+      "history": "naive",
+      "challenge": "x",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "parent": "genome_d02e7f60565f83066e5d/naive/acquisition",
+      "transport": "T11",
+      "pulses": [
+        {
+          "before_step": 161,
+          "fraction": 0.2,
+          "direction": "+x"
+        }
+      ]
+    },
+    {
+      "id": "genome_d02e7f60565f83066e5d/experienced/acquisition",
+      "candidate_id": "genome_d02e7f60565f83066e5d",
+      "stage": "acquisition",
+      "history": "experienced",
+      "start": 128,
+      "end": 160,
+      "body_steps": 32,
+      "parent": "genome_d02e7f60565f83066e5d/formation",
+      "transport": "T11",
+      "pulses": [
+        {
+          "before_step": 129,
+          "fraction": 0.1,
+          "direction": "+x"
+        },
+        {
+          "before_step": 145,
+          "fraction": 0.1,
+          "direction": "+x"
+        }
+      ]
+    },
+    {
+      "id": "genome_d02e7f60565f83066e5d/experienced/none",
+      "candidate_id": "genome_d02e7f60565f83066e5d",
+      "stage": "future",
+      "history": "experienced",
+      "challenge": "none",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "parent": "genome_d02e7f60565f83066e5d/experienced/acquisition",
+      "transport": "T11",
+      "pulses": []
+    },
+    {
+      "id": "genome_d02e7f60565f83066e5d/experienced/x",
+      "candidate_id": "genome_d02e7f60565f83066e5d",
+      "stage": "future",
+      "history": "experienced",
+      "challenge": "x",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "parent": "genome_d02e7f60565f83066e5d/experienced/acquisition",
+      "transport": "T11",
+      "pulses": [
+        {
+          "before_step": 161,
+          "fraction": 0.2,
+          "direction": "+x"
+        }
+      ]
+    },
+    {
+      "id": "genome_d02e7f60565f83066e5d/low_cost_T00/acquisition",
+      "candidate_id": "genome_d02e7f60565f83066e5d",
+      "stage": "acquisition",
+      "history": "low_cost_T00",
+      "start": 128,
+      "end": 160,
+      "body_steps": 32,
+      "parent": "genome_d02e7f60565f83066e5d/formation",
+      "transport": "T00",
+      "pulses": []
+    },
+    {
+      "id": "genome_d02e7f60565f83066e5d/low_cost_T00/none",
+      "candidate_id": "genome_d02e7f60565f83066e5d",
+      "stage": "future",
+      "history": "low_cost_T00",
+      "challenge": "none",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "parent": "genome_d02e7f60565f83066e5d/low_cost_T00/acquisition",
+      "transport": "T00",
+      "pulses": []
+    },
+    {
+      "id": "genome_d02e7f60565f83066e5d/low_cost_T00/x",
+      "candidate_id": "genome_d02e7f60565f83066e5d",
+      "stage": "future",
+      "history": "low_cost_T00",
+      "challenge": "x",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "parent": "genome_d02e7f60565f83066e5d/low_cost_T00/acquisition",
+      "transport": "T00",
+      "pulses": [
+        {
+          "before_step": 161,
+          "fraction": 0.2,
+          "direction": "+x"
+        }
+      ]
+    },
+    {
+      "id": "genome_8d60f7d250e8e9f2a25b/formation",
+      "candidate_id": "genome_8d60f7d250e8e9f2a25b",
+      "stage": "formation",
+      "start": 0,
+      "end": 128,
+      "body_steps": 128,
+      "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/candidates/genome_8d60f7d250e8e9f2a25b.npz",
+      "transport": "T00",
+      "parent": null,
+      "source_sha256": "3fae7135bd9572011a4cdbf2bf174e96832481bca6f1de24277fc8894ea0d4a1"
+    },
+    {
+      "id": "genome_8d60f7d250e8e9f2a25b/naive/acquisition",
+      "candidate_id": "genome_8d60f7d250e8e9f2a25b",
+      "stage": "acquisition",
+      "history": "naive",
+      "start": 128,
+      "end": 160,
+      "body_steps": 32,
+      "parent": "genome_8d60f7d250e8e9f2a25b/formation",
+      "transport": "T11",
+      "pulses": []
+    },
+    {
+      "id": "genome_8d60f7d250e8e9f2a25b/naive/none",
+      "candidate_id": "genome_8d60f7d250e8e9f2a25b",
+      "stage": "future",
+      "history": "naive",
+      "challenge": "none",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "parent": "genome_8d60f7d250e8e9f2a25b/naive/acquisition",
+      "transport": "T11",
+      "pulses": []
+    },
+    {
+      "id": "genome_8d60f7d250e8e9f2a25b/naive/x",
+      "candidate_id": "genome_8d60f7d250e8e9f2a25b",
+      "stage": "future",
+      "history": "naive",
+      "challenge": "x",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "parent": "genome_8d60f7d250e8e9f2a25b/naive/acquisition",
+      "transport": "T11",
+      "pulses": [
+        {
+          "before_step": 161,
+          "fraction": 0.2,
+          "direction": "+x"
+        }
+      ]
+    },
+    {
+      "id": "genome_8d60f7d250e8e9f2a25b/experienced/acquisition",
+      "candidate_id": "genome_8d60f7d250e8e9f2a25b",
+      "stage": "acquisition",
+      "history": "experienced",
+      "start": 128,
+      "end": 160,
+      "body_steps": 32,
+      "parent": "genome_8d60f7d250e8e9f2a25b/formation",
+      "transport": "T11",
+      "pulses": [
+        {
+          "before_step": 129,
+          "fraction": 0.1,
+          "direction": "+x"
+        },
+        {
+          "before_step": 145,
+          "fraction": 0.1,
+          "direction": "+x"
+        }
+      ]
+    },
+    {
+      "id": "genome_8d60f7d250e8e9f2a25b/experienced/none",
+      "candidate_id": "genome_8d60f7d250e8e9f2a25b",
+      "stage": "future",
+      "history": "experienced",
+      "challenge": "none",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "parent": "genome_8d60f7d250e8e9f2a25b/experienced/acquisition",
+      "transport": "T11",
+      "pulses": []
+    },
+    {
+      "id": "genome_8d60f7d250e8e9f2a25b/experienced/x",
+      "candidate_id": "genome_8d60f7d250e8e9f2a25b",
+      "stage": "future",
+      "history": "experienced",
+      "challenge": "x",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "parent": "genome_8d60f7d250e8e9f2a25b/experienced/acquisition",
+      "transport": "T11",
+      "pulses": [
+        {
+          "before_step": 161,
+          "fraction": 0.2,
+          "direction": "+x"
+        }
+      ]
+    },
+    {
+      "id": "genome_8d60f7d250e8e9f2a25b/low_cost_T00/acquisition",
+      "candidate_id": "genome_8d60f7d250e8e9f2a25b",
+      "stage": "acquisition",
+      "history": "low_cost_T00",
+      "start": 128,
+      "end": 160,
+      "body_steps": 32,
+      "parent": "genome_8d60f7d250e8e9f2a25b/formation",
+      "transport": "T00",
+      "pulses": []
+    },
+    {
+      "id": "genome_8d60f7d250e8e9f2a25b/low_cost_T00/none",
+      "candidate_id": "genome_8d60f7d250e8e9f2a25b",
+      "stage": "future",
+      "history": "low_cost_T00",
+      "challenge": "none",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "parent": "genome_8d60f7d250e8e9f2a25b/low_cost_T00/acquisition",
+      "transport": "T00",
+      "pulses": []
+    },
+    {
+      "id": "genome_8d60f7d250e8e9f2a25b/low_cost_T00/x",
+      "candidate_id": "genome_8d60f7d250e8e9f2a25b",
+      "stage": "future",
+      "history": "low_cost_T00",
+      "challenge": "x",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "parent": "genome_8d60f7d250e8e9f2a25b/low_cost_T00/acquisition",
+      "transport": "T00",
+      "pulses": [
+        {
+          "before_step": 161,
+          "fraction": 0.2,
+          "direction": "+x"
+        }
+      ]
+    },
+    {
+      "id": "genome_a6a821dffd4f4046c97a/formation",
+      "candidate_id": "genome_a6a821dffd4f4046c97a",
+      "stage": "formation",
+      "start": 0,
+      "end": 128,
+      "body_steps": 128,
+      "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/candidates/genome_a6a821dffd4f4046c97a.npz",
+      "transport": "T00",
+      "parent": null,
+      "source_sha256": "7efd847ad3efa0db001afe56a162b297d3a536ec48326890d4b09b6ceb793b4a"
+    },
+    {
+      "id": "genome_a6a821dffd4f4046c97a/naive/acquisition",
+      "candidate_id": "genome_a6a821dffd4f4046c97a",
+      "stage": "acquisition",
+      "history": "naive",
+      "start": 128,
+      "end": 160,
+      "body_steps": 32,
+      "parent": "genome_a6a821dffd4f4046c97a/formation",
+      "transport": "T11",
+      "pulses": []
+    },
+    {
+      "id": "genome_a6a821dffd4f4046c97a/naive/none",
+      "candidate_id": "genome_a6a821dffd4f4046c97a",
+      "stage": "future",
+      "history": "naive",
+      "challenge": "none",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "parent": "genome_a6a821dffd4f4046c97a/naive/acquisition",
+      "transport": "T11",
+      "pulses": []
+    },
+    {
+      "id": "genome_a6a821dffd4f4046c97a/naive/x",
+      "candidate_id": "genome_a6a821dffd4f4046c97a",
+      "stage": "future",
+      "history": "naive",
+      "challenge": "x",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "parent": "genome_a6a821dffd4f4046c97a/naive/acquisition",
+      "transport": "T11",
+      "pulses": [
+        {
+          "before_step": 161,
+          "fraction": 0.2,
+          "direction": "+x"
+        }
+      ]
+    },
+    {
+      "id": "genome_a6a821dffd4f4046c97a/experienced/acquisition",
+      "candidate_id": "genome_a6a821dffd4f4046c97a",
+      "stage": "acquisition",
+      "history": "experienced",
+      "start": 128,
+      "end": 160,
+      "body_steps": 32,
+      "parent": "genome_a6a821dffd4f4046c97a/formation",
+      "transport": "T11",
+      "pulses": [
+        {
+          "before_step": 129,
+          "fraction": 0.1,
+          "direction": "+x"
+        },
+        {
+          "before_step": 145,
+          "fraction": 0.1,
+          "direction": "+x"
+        }
+      ]
+    },
+    {
+      "id": "genome_a6a821dffd4f4046c97a/experienced/none",
+      "candidate_id": "genome_a6a821dffd4f4046c97a",
+      "stage": "future",
+      "history": "experienced",
+      "challenge": "none",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "parent": "genome_a6a821dffd4f4046c97a/experienced/acquisition",
+      "transport": "T11",
+      "pulses": []
+    },
+    {
+      "id": "genome_a6a821dffd4f4046c97a/experienced/x",
+      "candidate_id": "genome_a6a821dffd4f4046c97a",
+      "stage": "future",
+      "history": "experienced",
+      "challenge": "x",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "parent": "genome_a6a821dffd4f4046c97a/experienced/acquisition",
+      "transport": "T11",
+      "pulses": [
+        {
+          "before_step": 161,
+          "fraction": 0.2,
+          "direction": "+x"
+        }
+      ]
+    },
+    {
+      "id": "genome_a6a821dffd4f4046c97a/low_cost_T00/acquisition",
+      "candidate_id": "genome_a6a821dffd4f4046c97a",
+      "stage": "acquisition",
+      "history": "low_cost_T00",
+      "start": 128,
+      "end": 160,
+      "body_steps": 32,
+      "parent": "genome_a6a821dffd4f4046c97a/formation",
+      "transport": "T00",
+      "pulses": []
+    },
+    {
+      "id": "genome_a6a821dffd4f4046c97a/low_cost_T00/none",
+      "candidate_id": "genome_a6a821dffd4f4046c97a",
+      "stage": "future",
+      "history": "low_cost_T00",
+      "challenge": "none",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "parent": "genome_a6a821dffd4f4046c97a/low_cost_T00/acquisition",
+      "transport": "T00",
+      "pulses": []
+    },
+    {
+      "id": "genome_a6a821dffd4f4046c97a/low_cost_T00/x",
+      "candidate_id": "genome_a6a821dffd4f4046c97a",
+      "stage": "future",
+      "history": "low_cost_T00",
+      "challenge": "x",
+      "start": 160,
+      "end": 224,
+      "body_steps": 64,
+      "parent": "genome_a6a821dffd4f4046c97a/low_cost_T00/acquisition",
+      "transport": "T00",
+      "pulses": [
+        {
+          "before_step": 161,
+          "fraction": 0.2,
+          "direction": "+x"
+        }
+      ]
+    }
+  ],
+  "lifetime_rule_fixed": true,
+  "host_owner": "resident_ce2a5ab005bc",
+  "runner_owner": "resident_ce2a5ab005bc",
+  "policy": "fresh_brake",
+  "learn": false,
+  "uptake": "open_a1",
+  "dt": 0.05,
+  "transport": {
+    "D": 1.0,
+    "price_P": 0.02,
+    "price_F": 0.02
+  },
+  "seed": 202610180401,
+  "random_tape": "single common absolute 224x96x96 tape, ce2 freezes before first forward; same recipient futures reuse same slice",
+  "source_cloning": "Complete paid checkpoints only; immutable phenotype rule/config per candidate for all descendants, no refunds/restocking/reset of carried fields",
+  "failure_policy": "All attempted steps including failure/preview charge any future authorized cap; dead/invalid/unsupported candidates remain failed, never silently replaced. No current forward authorization.",
+  "scientific_scope": "Different generated bodies, one fixed experience/challenge protocol; no dose/direction rescue sweep of old bodies. Conservative feasibility screen, not directional memory proof.",
+  "baseline": "Same phenotype fresh-brake/open uptake with no learned actor or recorder; T00 adds no resource-transport charge, but also changes resource delivery. It is a whole-strategy strong low-cost comparator, not pure fee mediation.",
+  "parent_controls": "Both unmutated founders receive the same newly authorized complete pipeline as offspring. Old704/448 only guide design; no assumed equivalence to new life0 formation.",
+  "per_realized_path": {
+    "formation": 128,
+    "acquisition": 32,
+    "future": 64,
+    "total": 224
+  },
+  "prefix_counting": "One formation shared by three acquired histories; each acquisition shared by two futures. Unique cost608/candidate, not six times224.",
+  "draws": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/draws001_224.npy",
+  "draws_sha256": "985ec671b00f346e7ba414e6460a68ac274f95fc4b317a100cc6399fad55a293",
+  "forcing": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/forcing001_224.npz",
+  "forcing_sha256": "65fb316a56a7b2b15123b954bfabe580a7d232ea544d3615cc669faeeba28993",
+  "grid": 96,
+  "embedding": "Every candidate starts at newly embedded life0. All 128 formation steps budgeted; no old96 state128 reused.",
+  "host_interface": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/experience_adaptation_host/interface.py",
+  "host_interface_sha256": "b4ae75ca53bacb912a418d3e9fa4bcdc96cda17e5f6ff20cc96d5da83c1cb7bc",
+  "capability_scope": "ce2 open_life0 defaults T11/open. Draft T00 phases must be bound by ce2 to the same original InteractionRuntime with both resource transport flags false; do not use T11-only restore_ready to silently change T00.",
+  "evidence_start": 0,
+  "full_path_reporting": "For new native work retain formation 0..128 + acquisition128..160 + future160..224 once per full path; also retain 128..224 acquisition/future subwindow. Historical archive only has matched128..224, not a fabricated0..128 common prefix."
+}

@@ -1,0 +1,30 @@
+{
+  "schema": "tfi.hatg-instruction-result.v2",
+  "instruction_id": "inst_lin_9370c7f03d19b4b3d099",
+  "instruction": "TriggerEvent",
+  "status": "committed",
+  "replayed": false,
+  "result": {
+    "event_id": "event_dc0d78b5fa8470f8",
+    "trigger_path_id": "trigger_path_51eb64671ae4",
+    "delivery": {
+      "matched_count": 0,
+      "consumed_count": 1,
+      "duplicate": false,
+      "results": [
+        {
+          "status": "queued",
+          "wire_id": "wire_c8d63412787a",
+          "pending_count": 1,
+          "replaced_count": 0,
+          "queue_limit": 3,
+          "expires_at": "",
+          "target_id": "resident_afa3d4d6cf11",
+          "target_kind": "agent",
+          "reason": "resident_running",
+          "event_id": "event_dc0d78b5fa8470f8"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600" viewBox="0 0 1200 600">
+<rect width="1200" height="600" fill="white"/>
+<text x="28" y="41.56" text-anchor="start" font-family="Noto Sans CJK SC" font-size="26" font-weight="700" fill="#275D85">工作投影：真实对象、生成表达与操作回传</text>
+<polyline points="28,62 1172,62" fill="none" stroke="#91A2AE" stroke-width="1.7"/>
+<text x="30" y="583.0300000000001" text-anchor="start" font-family="Noto Sans CJK SC" font-size="13" font-weight="400" fill="#61717E">设计示意 · 实线：工作或依赖关系；虚线：反馈或关联；不表示实验测量</text>
+<rect x="35" y="110" width="300" height="390" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="185.0" y="136.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">工作语义与状态</text>
+<text x="185.0" y="276.12" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">目标／模块／协议</text>
+<text x="185.0" y="296.18" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">任务／依赖／责任</text>
+<text x="185.0" y="316.24" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">版本／证据／结果</text>
+<text x="185.0" y="336.3" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442"></text>
+<text x="185.0" y="356.36" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">稳定对象标识</text>
+<text x="185.0" y="376.42" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">各状态的实际来源</text>
+<rect x="435" y="110" width="300" height="160" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="585.0" y="136.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">投影生成过程</text>
+<text x="585.0" y="191.21" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">人的当前问题与熟悉程度</text>
+<text x="585.0" y="211.27" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">选择信息、粒度与媒体</text>
+<text x="585.0" y="231.33" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">模板与表达经验</text>
+<rect x="835" y="110" width="330" height="160" fill="#EDF5F1" stroke="#26756C" stroke-width="1.5"/>
+<text x="1000.0" y="136.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#26756C">可理解的界面</text>
+<text x="1000.0" y="191.21" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">结构／演示／比较</text>
+<text x="1000.0" y="211.27" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">重点＋逐步深入</text>
+<text x="1000.0" y="231.33" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">来源与状态可查看</text>
+<rect x="435" y="355" width="300" height="145" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="585.0" y="381.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">动作解析与结果</text>
+<text x="585.0" y="438.74" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">对象＋参数＋预期作用</text>
+<text x="585.0" y="458.8" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">执行后读取真实状态</text>
+<rect x="835" y="355" width="330" height="145" fill="#EDF5F1" stroke="#26756C" stroke-width="1.5"/>
+<text x="1000.0" y="381.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#26756C">人的直接参与</text>
+<text x="1000.0" y="438.74" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">体验、标注、选择</text>
+<text x="1000.0" y="458.8" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">提出新的约束与问题</text>
+<polyline points="335,190 435,190" fill="none" stroke="#275D85" stroke-width="1.7"/>
+<polygon points="435,190 426.6420182798114,193.33828422471686 426.6420182798114,186.66171577528314" fill="#275D85"/>
+<polyline points="735,190 835,190" fill="none" stroke="#275D85" stroke-width="1.7"/>
+<polygon points="835,190 826.6420182798114,193.33828422471686 826.6420182798114,186.66171577528314" fill="#275D85"/>
+<polyline points="1000,270 1000,355" fill="none" stroke="#26756C" stroke-width="1.7"/>
+<polygon points="1000,355 996.6617157752831,346.6420182798114 1003.3382842247169,346.6420182798114" fill="#26756C"/>
+<polyline points="835,427 735,427" fill="none" stroke="#26756C" stroke-width="1.7"/>
+<polygon points="735,427 743.3579817201886,423.66171577528314 743.3579817201886,430.33828422471686" fill="#26756C"/>
+<polyline points="435,427 335,427" fill="none" stroke="#26756C" stroke-width="1.7"/>
+<polygon points="335,427 343.3579817201886,423.66171577528314 343.3579817201886,430.33828422471686" fill="#26756C"/>
+<polyline points="585,355 585,270" fill="none" stroke="#26756C" stroke-width="1.7" stroke-dasharray="7 5"/>
+<polygon points="585,270 588.3382842247169,278.3579817201886 581.6617157752831,278.3579817201886" fill="#26756C"/>
+</svg>

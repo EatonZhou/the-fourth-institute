@@ -1,0 +1,38 @@
+[
+  {
+    "seed": 202610195601,
+    "shape": "ring",
+    "state_exact": true,
+    "maps_exact": true,
+    "ledger_exact": true,
+    "cohorts_exact": true,
+    "native": 2
+  },
+  {
+    "seed": 202610195601,
+    "shape": "separate_seeds",
+    "state_exact": true,
+    "maps_exact": true,
+    "ledger_exact": true,
+    "cohorts_exact": true,
+    "native": 2
+  },
+  {
+    "seed": 202610195602,
+    "shape": "ring",
+    "state_exact": true,
+    "maps_exact": true,
+    "ledger_exact": true,
+    "cohorts_exact": true,
+    "native": 2
+  },
+  {
+    "seed": 202610195602,
+    "shape": "separate_seeds",
+    "state_exact": true,
+    "maps_exact": true,
+    "ledger_exact": true,
+    "cohorts_exact": true,
+    "native": 2
+  }
+]

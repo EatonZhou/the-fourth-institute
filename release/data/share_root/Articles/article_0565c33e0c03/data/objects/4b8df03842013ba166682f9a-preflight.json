@@ -1,0 +1,8 @@
+{
+  "native": 0,
+  "pure_checks_passed": 3,
+  "launches": 0,
+  "first_error": "launcher missing runtime import path before work;fixed",
+  "second_stop": "running slot detected; no submit",
+  "research": "running/started true"
+}

@@ -1,0 +1,20 @@
+{
+  "status": "passed",
+  "new_packets": 1792,
+  "old_unique_steps": 1792,
+  "new_stages": 28,
+  "old_stages": 28,
+  "full_paths": 32,
+  "new_paths": 16,
+  "display_entries": 504,
+  "effects": 118,
+  "full_cycle_comparisons": 112,
+  "pulse_events": 32,
+  "native_forward_calls": 0,
+  "max_balance_error": 1.8189894035458565e-12,
+  "max_M_path_error": 2.0872192862952943e-13,
+  "max_E_path_error": 1.0125233984581428e-13,
+  "prefix_charged_once_per_path": true,
+  "parent_boundaries_exact": true,
+  "new_full_ready_recovery_exact": true
+}

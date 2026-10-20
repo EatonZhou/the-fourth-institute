@@ -1,0 +1,31 @@
+{
+  "task": "history_conditioned_retention_forecast_20261019",
+  "status": "completed",
+  "task_complete": true,
+  "objective_met": false,
+  "owner": "resident_d3ccfa2d95b7",
+  "report": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/REPORT.txt",
+  "manifest": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/manifest.json",
+  "manifest_sha256": "6468d9543fe652401abb6236237851b822c0962ca62db7b83d7a382576fd1646",
+  "plan_sha256": "75eea8efbc6e2b711ed3715de50f828b2f7fa8d1364ecd90f0cf0385dd20c198",
+  "verdict": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/verdict.json",
+  "primary_pass": false,
+  "native": 0,
+  "runner_worker_seconds": 0,
+  "offline_cpu_charged": 6.5177059999999996,
+  "new_bytes_before_entry": 3962230,
+  "failure": null,
+  "policy": "no automatic scan, new physical job or deployment; next decision PI",
+  "offline_cpu_measured": 5.5177059999999996,
+  "scientific_process_cpu_seconds": 5.319853,
+  "logical_anchors": 84,
+  "defined_anchors": 84,
+  "fit_runs": 1,
+  "main_nonworse_tracks": 3,
+  "main_total_tracks": 4,
+  "relative_mse_reductions": [
+    0.10569004415995739,
+    0.09563084720937857
+  ],
+  "scientific_next_request": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/scientific_next_request.json"
+}

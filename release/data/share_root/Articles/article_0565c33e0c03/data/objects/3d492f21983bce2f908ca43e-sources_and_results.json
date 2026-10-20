@@ -1,0 +1,52 @@
+[
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/event_reservoir_learning_20261018/plan.json",
+    "sha256": "a9ac2ca2269eba6cbfdfc33a096ff6e1cad93a45056fe91b8297f22a07c35107",
+    "bytes": 3194
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/event_reservoir_learning_20261018/result.json",
+    "sha256": "e809d56a3cca7560eb5fa639d6ef4b5891f3536765c92c717872230614fed059",
+    "bytes": 986
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/event_reservoir_learning_20261018/cycles.csv",
+    "sha256": "d8ca63e2182ed45dcd5d625c7f23ea92af1425d7bf1c4e83a76eb0b1a719f95c",
+    "bytes": 1256540
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/event_reservoir_learning_20261018/runs.csv",
+    "sha256": "33af4ecc5ef816b333b9d0dcfe528a883d699c9fa8b3cc3a391adcc445054290",
+    "bytes": 16614
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/event_reservoir_learning_20261018/frames.json",
+    "sha256": "e9c5853aa953f42d0a9090e80921dba9418440085436a7af071abed5c60a1eb7",
+    "bytes": 35403
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/event_reservoir_probe_20261018/plan.json",
+    "sha256": "4b422dc4e8a90f7bfbddb4faf14d71e0ed7f996eb877bb1ffc90cfe58f72c4eb",
+    "bytes": 3964
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/event_reservoir_probe_20261018/result.json",
+    "sha256": "99d70d078440bd98b19a689e34a88dda82bc21d60f9d91b568b51e389a60c44d",
+    "bytes": 978
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/event_reservoir_probe_20261018/cycles.csv",
+    "sha256": "e554fd697e644ecd3c580263e4e11155e8ae0a04ecff97ab20f6ba93701956d2",
+    "bytes": 150573
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/event_reservoir_probe_20261018/runs.csv",
+    "sha256": "d7aef1347192756009442701976ccee4a7aab8a716d6cbb056be6c1267aaec2a",
+    "bytes": 2076
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/event_reservoir_probe_20261018/frames.json",
+    "sha256": "4ee4439b6739732741ac9b4aec2da9ed5ecc7b7c87f6f947aa13d12d84a6413b",
+    "bytes": 4003
+  }
+]

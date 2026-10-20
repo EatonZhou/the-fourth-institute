@@ -1,0 +1,6 @@
+{
+  "schema": "rule-geometry-resource-support-v1",
+  "arm": "supported",
+  "clock": 128,
+  "elapsed": 128
+}

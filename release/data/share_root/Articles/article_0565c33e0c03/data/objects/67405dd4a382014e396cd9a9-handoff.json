@@ -1,0 +1,22 @@
+{
+  "task": "embodied_action_learning_20261019",
+  "native": 7680,
+  "worker_seconds": 22.542748,
+  "unknown": 0,
+  "raw_bytes": 37668531,
+  "finding": "无中央动作汇总的真实局部运动CA可行动；三个局部学习法均0/2完整取得-反转-保持，邻接平均未显示能力优势。固定东向周期经过好区不算学习。",
+  "status": "complete_negative",
+  "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/embodied_action_learning",
+  "report": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/embodied_action_learning_20261019/REPORT.txt",
+  "animation": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/embodied_action_learning_20261019/actual_local_motor.gif",
+  "summary": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/embodied_action_learning_20261019/summary.json",
+  "files": {
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/embodied_action_learning_20261019/plan.json": "f2cb3702e916d06ad2d023c43fa9fd2065086dba22af15f97f22944ce57f7702",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/embodied_action_learning_20261019/REPORT.txt": "c255802a0eda5fd6a3f5107033266488e8481511366170a80be6148a90ab1449",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/embodied_action_learning_20261019/summary.json": "cd92d14665de5e68f1d4659dcb179078ae1f48efb56fd08da566137be2ba9f29",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/embodied_action_learning_20261019/comparisons.csv": "112264de265fddb451851e44085b269991ef31a23330cad97a31f31deb72abcc",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/embodied_action_learning_20261019/actual_local_motor.gif": "97cc304dd1d363a168c1224c40bd50b70353600a8efe20af55321f162659face"
+  },
+  "next_actual_task": "material_action_credit_20261019: same parameters but actual paid descendant outcomes returned one hop to source motor score; new 5376 native batch, old references readonly.",
+  "requires_pi_choice": false
+}

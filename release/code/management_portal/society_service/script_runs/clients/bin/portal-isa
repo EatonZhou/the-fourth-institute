@@ -1,0 +1,2 @@
+#!/bin/sh
+exec "${PORTAL_PYTHON:-python3}" -c 'from portal_script import cli; cli()' "$@"

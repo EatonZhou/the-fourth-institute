@@ -1,0 +1,16 @@
+{
+  "task": "recycled_cargo_local_routing_20261019",
+  "prior_entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycling_precursor_dependence_20261019/handoff.json",
+  "merge_into": "既有论文与投影事项，不新增任务或广播",
+  "actual_artifacts": [
+    "REPORT.txt",
+    "summary.json",
+    "windows.csv",
+    "contrasts.csv",
+    "actual_process.png",
+    "actual_fields_b2.png",
+    "actual_fields_b6.png",
+    "figure_sources.json"
+  ],
+  "takeaway": "定向优于均匀的条件组织保留，未超过P_on原位；撤P效应小，0/8维护。旧用量更正合并。"
+}

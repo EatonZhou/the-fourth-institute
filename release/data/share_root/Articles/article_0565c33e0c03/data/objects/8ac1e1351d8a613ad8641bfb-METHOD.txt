@@ -1,0 +1,10 @@
+当前改变仅第三响应的非线性与平均顺序：
+C0=g((uA+uB)/2; mu0,sigma0)
+C1=(g(uA;mu0,sigma0)+g(uB;mu0,sigma0))/2
+mu0=.17975814283267433，sigma0=.04345259224059916，两项均用此C参数。A/B自身响应和核固定。
+新隔离pool_prechoice用原prechoice函数代码与私有third函数命名空间；pool_choice同理保原both严格净分和tie，不修改任何旧模块全局。requested_w/C在ready即锁，原外排/输入/actor后只新算实际C1，signed h正负一起进原native。disabled调用原ThirdRate.rate及原choice，不近似重写。LayoutRate仍原off，原生成/actor/pump/settle字节不变；完全没有conversion request hook。
+父均为实际midpoint256完整joint：5601/5602 × ring/separate。中心供给与所有库存/费用/游标/状态保持。四个disabled257边界全过后才跑四个新128未来。旧both512未来只读，0取得/尾窗重演；不按ready即时效果筛父。一次job CPU2 GPU0，ForwardPermit516，170wall秒科学门限及450worker/60收尾，raw384MiB上限；无unknown重放。
+新标签从256：O=cohorts128.labels[0]，C=cohorts128.labels[1]，N=0；O/C注册后不再加出生，实际born只加N。每步真实K，再actor比例keep，再rule比例keep各一次；删除分类/存留/体时独立记。标签从不进策略。O+C+N重组身体，C+N=真实post128，N=post256。
+旧参考逐钟C=post128_live-post256_live，O=L128，N=post256。累计C删除/体时先减256父已累积的post128项，再减post256项；报告窗体时直接逐钟sum(dt*C)并与累计差校验。保持双精度余差，不裁剪、不逆造出生钟或缺失空间K。纯检查和末384场证明嵌套重组；两套容差的指标逐项报告，不总分/均值救门。
+主门：C384与两窗C体时不低；N384严格增且晚窗N体时不低；M/E/128体时不低，minM>=32，两64窗均born>=death且E不降。1e-8与0并列。四相关开发父非独立世界。额外响应算术未生物计价，无writer/训练/生命期学习。
+每步transport NPZ保K/transported/after_actor/survivor/born/keep/death；36科学指定全receipt另含uA/uB、C0/C1纯影子差、ready mask、actual signed h及全支付；C0影子只指定时点算，无额外native。新joint256/320/384，fields256/257/288/320/352/384全保存；原无的新诊断null。所有实际新场与费用可只读复核。

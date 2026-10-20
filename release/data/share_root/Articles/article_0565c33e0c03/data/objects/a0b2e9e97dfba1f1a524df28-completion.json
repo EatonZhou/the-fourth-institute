@@ -1,0 +1,161 @@
+{
+  "result": {
+    "status": "completed",
+    "job_id": "821217b6-b04f-4968-a217-e5acb0461191",
+    "attempted_body_steps": 576,
+    "committed_body_steps": 576,
+    "independent_energy_steps": 0,
+    "raw_storage": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_transport_continuation_20261018/821217b6-b04f-4968-a217-e5acb0461191",
+    "raw_bytes": 628868515,
+    "branches": [
+      {
+        "stage": "genome_0ac80448a534dc953505/T00",
+        "branch": "genome_0ac80448a534dc953505--T00",
+        "status": "completed",
+        "attempted": 96,
+        "committed": 96,
+        "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_transport_continuation_20261018/821217b6-b04f-4968-a217-e5acb0461191/genome_0ac80448a534dc953505--T00",
+        "pulses": []
+      },
+      {
+        "stage": "genome_0ac80448a534dc953505/T11",
+        "branch": "genome_0ac80448a534dc953505--T11",
+        "status": "completed",
+        "attempted": 96,
+        "committed": 96,
+        "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_transport_continuation_20261018/821217b6-b04f-4968-a217-e5acb0461191/genome_0ac80448a534dc953505--T11",
+        "pulses": []
+      },
+      {
+        "stage": "genome_6bd5bfd2f629f9414376/T00",
+        "branch": "genome_6bd5bfd2f629f9414376--T00",
+        "status": "completed",
+        "attempted": 96,
+        "committed": 96,
+        "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_transport_continuation_20261018/821217b6-b04f-4968-a217-e5acb0461191/genome_6bd5bfd2f629f9414376--T00",
+        "pulses": []
+      },
+      {
+        "stage": "genome_6bd5bfd2f629f9414376/T11",
+        "branch": "genome_6bd5bfd2f629f9414376--T11",
+        "status": "completed",
+        "attempted": 96,
+        "committed": 96,
+        "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_transport_continuation_20261018/821217b6-b04f-4968-a217-e5acb0461191/genome_6bd5bfd2f629f9414376--T11",
+        "pulses": []
+      },
+      {
+        "stage": "genome_85dffefe3eb5bacdfbf5/T00",
+        "branch": "genome_85dffefe3eb5bacdfbf5--T00",
+        "status": "completed",
+        "attempted": 96,
+        "committed": 96,
+        "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_transport_continuation_20261018/821217b6-b04f-4968-a217-e5acb0461191/genome_85dffefe3eb5bacdfbf5--T00",
+        "pulses": []
+      },
+      {
+        "stage": "genome_85dffefe3eb5bacdfbf5/T11",
+        "branch": "genome_85dffefe3eb5bacdfbf5--T11",
+        "status": "completed",
+        "attempted": 96,
+        "committed": 96,
+        "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_transport_continuation_20261018/821217b6-b04f-4968-a217-e5acb0461191/genome_85dffefe3eb5bacdfbf5--T11",
+        "pulses": []
+      }
+    ],
+    "authorized_cap": 576,
+    "planned_steps": 576,
+    "unused_not_reassigned": 0
+  },
+  "runner": {
+    "id": "821217b6-b04f-4968-a217-e5acb0461191",
+    "name": "experience-diverse-transport-continuation",
+    "command": [
+      "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+      "-m",
+      "environment_evolution.experience_diverse_transport_continuation.run",
+      "--contract",
+      "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_transport_continuation_20261018/plan.json"
+    ],
+    "cwd": "${share_root}/Projects/元胞自动机研究/src",
+    "resource": "cpu",
+    "request_key": "ce2-experience-diverse-transport-continuation-20261018-v1",
+    "status": "completed",
+    "created_at": "2026-10-18T02:51:41.766538+00:00",
+    "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/821217b6-b04f-4968-a217-e5acb0461191",
+    "pid": 1712992,
+    "manual_pause": false,
+    "create_time": 1792291901.22,
+    "started_at": "2026-10-18T02:51:41.831799+00:00",
+    "returncode": 0,
+    "finished_at": "2026-10-18T02:53:12.422375+00:00",
+    "result": {
+      "status": "completed",
+      "job_id": "821217b6-b04f-4968-a217-e5acb0461191",
+      "attempted_body_steps": 576,
+      "committed_body_steps": 576,
+      "independent_energy_steps": 0,
+      "raw_storage": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_transport_continuation_20261018/821217b6-b04f-4968-a217-e5acb0461191",
+      "raw_bytes": 628868515,
+      "branches": [
+        {
+          "stage": "genome_0ac80448a534dc953505/T00",
+          "branch": "genome_0ac80448a534dc953505--T00",
+          "status": "completed",
+          "attempted": 96,
+          "committed": 96,
+          "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_transport_continuation_20261018/821217b6-b04f-4968-a217-e5acb0461191/genome_0ac80448a534dc953505--T00",
+          "pulses": []
+        },
+        {
+          "stage": "genome_0ac80448a534dc953505/T11",
+          "branch": "genome_0ac80448a534dc953505--T11",
+          "status": "completed",
+          "attempted": 96,
+          "committed": 96,
+          "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_transport_continuation_20261018/821217b6-b04f-4968-a217-e5acb0461191/genome_0ac80448a534dc953505--T11",
+          "pulses": []
+        },
+        {
+          "stage": "genome_6bd5bfd2f629f9414376/T00",
+          "branch": "genome_6bd5bfd2f629f9414376--T00",
+          "status": "completed",
+          "attempted": 96,
+          "committed": 96,
+          "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_transport_continuation_20261018/821217b6-b04f-4968-a217-e5acb0461191/genome_6bd5bfd2f629f9414376--T00",
+          "pulses": []
+        },
+        {
+          "stage": "genome_6bd5bfd2f629f9414376/T11",
+          "branch": "genome_6bd5bfd2f629f9414376--T11",
+          "status": "completed",
+          "attempted": 96,
+          "committed": 96,
+          "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_transport_continuation_20261018/821217b6-b04f-4968-a217-e5acb0461191/genome_6bd5bfd2f629f9414376--T11",
+          "pulses": []
+        },
+        {
+          "stage": "genome_85dffefe3eb5bacdfbf5/T00",
+          "branch": "genome_85dffefe3eb5bacdfbf5--T00",
+          "status": "completed",
+          "attempted": 96,
+          "committed": 96,
+          "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_transport_continuation_20261018/821217b6-b04f-4968-a217-e5acb0461191/genome_85dffefe3eb5bacdfbf5--T00",
+          "pulses": []
+        },
+        {
+          "stage": "genome_85dffefe3eb5bacdfbf5/T11",
+          "branch": "genome_85dffefe3eb5bacdfbf5--T11",
+          "status": "completed",
+          "attempted": 96,
+          "committed": 96,
+          "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_transport_continuation_20261018/821217b6-b04f-4968-a217-e5acb0461191/genome_85dffefe3eb5bacdfbf5--T11",
+          "pulses": []
+        }
+      ],
+      "authorized_cap": 576,
+      "planned_steps": 576,
+      "unused_not_reassigned": 0
+    }
+  }
+}

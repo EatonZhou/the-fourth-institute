@@ -1,0 +1,1 @@
+主入口 local_learning.deletion_layout_life0_formation.run；plan冻结后唯一runner运行。core只装配GrowthBody/TurnoverBody并附加冻结LayoutRate与双时期Cohorts。analyze/package只读真实原件，无host调用。frames.json指向实际场，raw_manifest绑定全部原始文件；state*.bin使用原GrowthBody.restore。所有待计算标签不公开给策略。

@@ -1,0 +1,260 @@
+# Portal 规范索引
+
+本文件按领域索引 Portal 当前规范及相关设计思考，仅列名称和知识库 ID；具体内容保存在对应条目中。新增、修改或删除规范前，先阅读 `decision_ef80c6d3b5ee`。
+
+## 1. 规范管理与总体设计
+
+### 规范管理
+
+| 规范 | Decision ID |
+| --- | --- |
+| Portal设计规范Spec.md索引 | `decision_ef80c6d3b5ee` |
+| Portal 改进 Plan 的编写与 IMPROVE.md 索引规范 | `decision_9c258743f91e` |
+
+### Portal 基本设计哲学
+
+| 设计哲学 | Thinking ID |
+| --- | --- |
+| Meta_of_Meta：人的管理重心逐步上移 | `thinking_218380bb8148` |
+| AI_Society_Is_All_You_Need：从单个_Agent_到持续发展的科研社会 | `thinking_fa75e877a6e4` |
+| Portal的语义内核与个性化前端投影 | `thinking_6a81f20aeb57` |
+| AI社会的指令集架构：稳定规则与开放演化 | `thinking_ca8f397a47de` |
+| 人类与AI的统一操作面：共同使用与共同演化 | `thinking_ab37a18be710` |
+
+### Portal 系统架构
+
+| 规范 | Decision ID |
+| --- | --- |
+| Portal 系统架构 | `decision_463fd3e76150` |
+
+## 2. HATG ISA 指令集
+
+| 规范 | Decision ID |
+| --- | --- |
+| HATG ISA：指令格式、调用入口与执行规则 | `decision_898b8911a2ff` |
+| HATG ISA：资源指令 | `decision_ad3e21094f14` |
+| HATG ISA：用户指令 | `decision_6eac174d85bf` |
+| HATG ISA：Resident 指令 | `decision_d19b9909a674` |
+| HATG ISA：对话与上下文指令 | `decision_2fe6fd5367fb` |
+| HATG ISA：Mailbox 指令 | `decision_c54e68a82d7a` |
+| HATG ISA：Resident 执行与队列指令 | `decision_2a3ff353165c` |
+| HATG ISA：Lineage 定义指令 | `decision_4637ca4a69e2` |
+| HATG ISA：Lineage 共享状态指令 | `decision_71ba0494b93e` |
+| HATG ISA：Lineage 运行指令 | `decision_68215b3a825b` |
+| HATG ISA：脚本运行（RunScript） | `decision_8b510cbd9c58` |
+| HATG ISA：Function Block、画布选区与指令 | `decision_5b5653c3eaa5` |
+| HATG ISA：Family 内部机制指令 | `decision_b77fde81e7a0` |
+| HATG ISA：模板与指令 | `decision_b04cac4188bb` |
+| HATG ISA：公共讨论指令 | `decision_3e063aac15b3` |
+| HATG ISA：Pulse 指令 | `decision_cc96fce57ab6` |
+| HATG ISA：组织与分工指令 | `decision_6591e7793116` |
+| HATG ISA：权限指令 | `decision_22227d0ad075` |
+| HATG ISA：运行环境指令 | `decision_4527448ad07f` |
+| HATG ISA：指令集自描述指令 | `decision_aa4fdbac8364` |
+
+## 3. 用户、权限与安全
+
+| 规范 | Decision ID |
+| --- | --- |
+| Portal 身份认证与领域授权架构 | `decision_3fe3cca8fd95` |
+| Portal 权限系统：PAR 引擎架构与开关 | `decision_b820faf42218` |
+| Portal 权限默认方案：P、A、R 三棵树与表规则 | `decision_600ae27b0538` |
+| Portal 根身份、消息署名与异步执行归属 | `decision_ae422b92c6f3` |
+| Portal 用户身份与领域业务关系 | `decision_34158fdd4078` |
+| Portal 登录 Session、密码与重置协议 | `decision_3bce8b455a3c` |
+| Portal 敏感账户操作的当前凭据再认证 | `decision_6c3d74a9bc9d` |
+| Portal TOTP 两步验证与恢复码 | `decision_ad7bdfde49ef` |
+| Portal Passkey 注册与登录协议 | `decision_626fb02b3894` |
+| Resident Bearer 令牌与机器接口认证 | `decision_fb910c43ab07` |
+| Portal Management：用户账号管理 | `decision_30528aff7035` |
+| Portal 管理页：权限方案编辑器 | `decision_ea13b85216d0` |
+| Portal 新用户指引与统一入口 | `decision_3286d4167180` |
+| Principal 个人卡片、Package、头像与实例配置 | `decision_5bc3fdfc7eec` |
+| Device SSH 连接与凭据安全边界 | `decision_d397f2d99f89` |
+| Portal 网络入口、TLS 与可信代理边界 | `decision_85222f2d316b` |
+
+## 4. 资源注册、搜索与内容管理
+
+| 规范 | Decision ID |
+| --- | --- |
+| 统一资源 ID、地址与解析协议 | `decision_4a9ba5dfada6` |
+| Portal 内容中的 Resource Address 提取与鉴权引用 | `decision_a4e5f03c8b9b` |
+| ResourceService 模块与运行架构 | `decision_cf27d39e39cd` |
+| ResourceService 调用协议：查询、读取、变更与动作 | `decision_b6e74d78f7b6` |
+| 资源索引：摘要记录、查询与串行刷新 | `decision_8dc6b3d03ca7` |
+| Portal 语义搜索：搜索记录、执行与页面交互 | `decision_eb066fbea4ed` |
+| Repo 与 Article 的自动资源注册：Git 工作副本、导出源码树存活与失效清理 | `decision_36f46b395d8e` |
+| PortalResourceRegistrationService 的浏览器资源登记与 Git 初始化确认 | `decision_b0997bc3a922` |
+| 资源类型注册：声明文件、提供者绑定与管理页 | `decision_355ed742bca5` |
+
+## 5. Resident、Session 与 Conversation
+
+| 规范 | Decision ID |
+| --- | --- |
+| Resident 稳定身份、成员归属与字段边界 | `decision_0f57656a2acd` |
+| Principal 五层组织、Project 层 Lineage 与导航 | `decision_3e07c6d35cac` |
+| Resident 输入、执行与 Conversation 运行架构 | `decision_edc470e09f5a` |
+| Portal Resident Invocation 的共享业务调用与结果收敛 | `decision_725dedbe89b2` |
+| Family：把多个 Resident 组合为对外一个 Resident | `decision_44cf587c1721` |
+| Family 消息路由与对外对话 | `decision_9ad68dd077d4` |
+| Family Router 与 Steward：Event、Effect 与 Prompt | `decision_89b9df038a95` |
+| Family 运行维护：记忆、队列与故障恢复 | `decision_a64b3ea2c3c5` |
+| Family 画布、菜单与状态交互 | `decision_f5ab721f3d5d` |
+| 私人 Family 与个人助手 | `decision_328fb2548b8f` |
+| Resident Conversation、Input 与运行控制协议 | `decision_c524c775e0be` |
+| Mailbox：Resident 和 User 的收件 | `decision_15f7df737ed5` |
+| Chatroom：用户聊天室与 @ Resident 投递 | `decision_a6bebf4ac283` |
+| Telepus 外部消息、联系人映射与 Resident 投递 | `decision_692a484e9bea` |
+| Which Resident 的候选发现、推荐、输入预算与纠正 | `decision_8fe87d812a4c` |
+| Ask Me Anything 的个人 Resident 入口关联 | `decision_bd5217d08c09` |
+| Resident Fork 的上下文继承与 Provider 选择 | `decision_5bf5bfbd52cb` |
+| Resident Session 重启、账号切换与上下文清空 | `decision_c47a13e8b962` |
+| Lineage Folder 的聚合布局与节点目录 | `decision_721c64f9bdcc` |
+| Resident Folder、连续性记录与节点 owned Workspace | `decision_ccb99a00eebd` |
+| Resident Watchboard 的脚本、配置、命令与工作台应用 | `decision_0571f3741e23` |
+| Resident Workspace 与使用关系 | `decision_8838269736d3` |
+| Workspace Handoff 的图关系、准备与交付 | `decision_7ef392b5f60d` |
+| Resident 上下文来源与组装 | `decision_c616d197abbb` |
+| 定时与自动触发工作及 Portal System 运行维护 | `decision_5ff0cb51ed84` |
+
+## 6. Lineage 与 Agent 协作
+
+| 规范 | Decision ID |
+| --- | --- |
+| SocietyService 模块与运行架构 | `decision_1b2bdf5c33d6` |
+| SocietyService Domain RPC 与并发控制协议 | `decision_d918ebebc062` |
+| Lineage 的成员集合、协作定义与协调角色 | `decision_6fc653d55c79` |
+| HATG 的可组合对象模型、Packet 路由与可恢复 Program | `decision_4adcc1ff2f2c` |
+
+## 7. Execution、Provider 与 Agent Harness
+
+| 规范 | Decision ID |
+| --- | --- |
+| ExecutionService 模块与运行架构 | `decision_25eb93d803a4` |
+| ExecutionService 请求、生命周期与控制协议 | `decision_6ad0384e020d` |
+| Portal Business Task 的进程内异步运行 | `decision_86721bb4e8c8` |
+| Execution Scheduler 的容量分区、公平准入与租约恢复 | `decision_8ac0b5a6c0e5` |
+| ExecutionService 执行账号：目录、额度保护、绑定放行与调度设置 | `decision_d40f59f5508f` |
+| ExecutionWorker Generation 与滚动交接 | `decision_075f66430606` |
+| SessionManager 与 Provider Binding | `decision_91eb3626d323` |
+| Provider Adapter 的统一执行、事件与中断契约 | `decision_425e428410e0` |
+| AgentData 的当前内容轨迹、不可变修订与运行记录 | `decision_b1ab45c4b3ec` |
+| Execution usage 的增量记账与归因边界 | `decision_f1331d57be89` |
+| Agent Harness 的可组合插件与自适应运行管线 | `decision_5c62deb8253a` |
+| Harness 策略单元格与按日常使用的演化 | `decision_fd760e898f9a` |
+| 共享 Codex App Server 的会话与 turn 协议 | `decision_3e8c2a7f91d4` |
+| Provider 运行时的安装、依赖更新与 Codex App Server 部署 | `decision_e587fe1c472e` |
+| Kimi Code Provider 的 Session 接入 | `decision_6b9e42f1c8a7` |
+| Claude Code Provider daemon 与 Session 接入 | `decision_3948ce9b9443` |
+| DeepSeek Harness Provider 的会话接入 | `decision_276105b5d67b` |
+| Codex 账号路由、会话归属与故障切换 | `decision_3dd52c0692c1` |
+| LLM API Registry 与直连 Model API Backend | `decision_6c2f91a7d84e` |
+| AI Backend 注册与管理页：多 Provider 环境准备、账号接入测试与默认 Backend | `decision_7956d7cb4bde` |
+| Portal LAN AI Socket Relay 的请求与安全协议 | `decision_c604274e21dd` |
+| Portal Prompt Context 的物化与注入边界 | `decision_ef1d6c925955` |
+
+## 8. Paper 与业务工作流
+
+| 规范 | Decision ID |
+| --- | --- |
+| WALL：以设计点驱动的 AI 软件开发工作台与条目身份生命周期 | `decision_06defc47e960` |
+| Paper 资源、Library 与基础文件生命周期 | `decision_528bf9985705` |
+| Paper 后台研究任务与产物协议 | `decision_e37f240e186d` |
+| 投影工坊：页面实现与 Lineage 反向整理流程 | `decision_4bc03b20c30f` |
+| Repo：代码库登记、导出源码读取、工作区与 Git 操作边界 | `decision_6476c69b33da` |
+| Article 工作区：按资源地址打开、编辑、构建与协作 | `decision_956154cd02f6` |
+| Knowledge Resource 的登记、版本与受控修改 | `decision_3ece26686464` |
+| Skill 资源与 Skill 工作台 | `decision_f48c2514bf33` |
+| Experiment Resource 与 Experiment 工作台 | `decision_9ef033d79173` |
+| 资源详情中的私有 AI 对话 | `decision_58db6282c244` |
+| 知识库归档：把材料整理成项目知识 | `decision_4666241592d4` |
+| Project 的创建、Summary 与删除 | `decision_4648f7fa3295` |
+| Project State：项目状态文件与 Overview 显示 | `decision_9b94f218a188` |
+| WALL 语义搜索 | `decision_1a2730dcd3d1` |
+
+## 9. Portal 前端与工作台
+
+### Home
+
+| 规范 | Decision ID |
+| --- | --- |
+| Home 页的信息结构与加载方式 | `decision_00546e28e1e0` |
+| Portal Pulse 与个人动态发布 | `decision_865ac8ebef25` |
+| Daily News 的每日信息摘要 | `decision_5d2bf4a72f09` |
+| Home Notice Board 的发布与讨论 | `decision_605810a1292b` |
+| Home Agent Access 的常用 Resident 入口 | `decision_152d5c046a23` |
+| Home 活动 Agent 状态、头像与会话入口 | `decision_e30897dd3dc3` |
+| Home AI 账号面板：额度、余额、调度设置与批量接单 | `decision_4dea0db1f45a` |
+| Home Usage Attribution 的 token 统计 | `decision_fc26f883773d` |
+| Home 定时与自动触发：查看与操作 | `decision_481dc4e6292c` |
+| Home GPU 与磁盘资源状态 | `decision_ed57c4ad1001` |
+
+### 页面基础设施
+
+| 规范 | Decision ID |
+| --- | --- |
+| Portal Refresh Coordinator 的刷新协调、事件订阅与共享读取 | `decision_6e230393221c` |
+| Portal Page State 的页面偏好保存与恢复 | `decision_9f6135cbbb22` |
+| Portal Shell、共享站点顶栏、全局导航与账号设置 | `decision_e486671af066` |
+| Portal 浏览器请求客户端：PortalAPI 与 HATG 指令客户端 | `decision_daba6706a788` |
+| Portal Lineage 浏览器客户端与 Catalog 共享读取 | `decision_fd9851ae01c0` |
+| Portal 前端组件系统、命令与生命周期 | `decision_741b04821171` |
+| Portal Overlay、表单与 Toolbar 通用交互 | `decision_b3022c27d22f` |
+| Portal 全局资源搜索 | `decision_a144bf700017` |
+| Portal UI Association 的服务端存储与并发 | `decision_bd179998ba08` |
+
+### 工作台与通用交互
+
+| 规范 | Decision ID |
+| --- | --- |
+| Portal Workbench 模块与运行架构 | `decision_4348ed990621` |
+| Portal 中英文界面与语言偏好 | `decision_27253e25f016` |
+| Portal Workbench 与 Panel Package 组合协议 | `decision_538e155e1102` |
+| Lineage 个性化前端投影：公共绑定、身份创建、生成提交恢复、有界资源读取与双向演化 | `decision_f67ae5e70793` |
+| Portal 投影协议 v2：页面清单、门面对话、语义对象与变化通知 | `decision_7a5ae487e2e9` |
+| Portal 开发投影：软件开发范式（架构与协议、阶段进展、未来演化；架构地图只读当前，联动核对当前模块身份，阶段 Git 来源保留） | `decision_13e1a748cf04` |
+| 软件工程智能开发核心团队：Lineage 模板与创建原则 | `decision_78134209e5c9` |
+| Society Workbench 多实例 Editor 与统一打开协议 | `decision_79de71d9890d` |
+| Portal Chat Workspace | `decision_f560803947c6` |
+| Resident 聊天中的提问、审批与本轮修改卡片 | `decision_1e2eb869bc10` |
+| Resident 统一执行配置：模型、Prompt、后端参数与 Harness | `decision_8b2fa224616b` |
+| Portal 内容图片的插入、引用、查看与编辑组件 | `decision_dca903d71575` |
+| Portal Resource Chip 的统一引用呈现与资源打开 | `decision_e5f66e2f6a5e` |
+| Portal Conversation Store：浏览器共享的对话列表、Resident 状态与操作回执 | `decision_18abbdef3da3` |
+| Agent Console：Society 页面的 Resident 协作工作台 | `decision_ce44377c3257` |
+| Portal 文件入口、上传与 Preview/Renderer 协议 | `decision_61e50306cc79` |
+| Portal Resource Detail 宿主与历史协议 | `decision_864d4fe41934` |
+| Portal Resource Catalog 的统一分类导航、资源发现与详情入口 | `decision_2f67ed28db67` |
+| Portal Workspace Surface 与 Document Session | `decision_769a35d6b5c7` |
+| Portal Terminal 的会话、输入与输出生命周期 | `decision_f22e45dfd382` |
+| Project Board 页面与 Project Page 投影 | `decision_46c37026e8ea` |
+| Portal 前端恢复、HTTP 缓存与 Web 重启衔接 | `decision_f25266e5a0e7` |
+
+## 10. 数据、事件与服务通信
+
+| 规范 | Decision ID |
+| --- | --- |
+| Portal Web 应用与请求处理架构 | `decision_0820081083f5` |
+| Portal Core NATS 变化通知与浏览器实时刷新 | `decision_abaedeefca6f` |
+| Portal 本地文件变化观察与投影失效机制 | `decision_f55bac7fc199` |
+| LineageData：当前事实、领域工作与长期运行记录 | `decision_71aa039e3211` |
+| Portal 领域数据所有权与数据库分区 | `decision_86aed2f0e8c7` |
+| Portal 内部本地 RPC、服务身份与错误语义 | `decision_96a887d83e8a` |
+| Portal 共享文件状态的锁、原子替换与不变量作用域 | `decision_0e043d5f81be` |
+| Portal ASGI、同步 HTTP Handler 与长连接边界 | `decision_ecf0f2b2de28` |
+| Portal 运行状态与 Component Lifecycle 投影 | `decision_99bb5dc0f96b` |
+
+## 11. 部署、测试与运行保障
+
+| 规范 | Decision ID |
+| --- | --- |
+| Portal 共享运行基础与 Dev 到 Release 的发布流程 | `decision_08bb2d9141f9` |
+| Portal 运行维护：安装、检查、发布与恢复 | `decision_ab9880dc4c9d` |
+| Portal Dev 与 Release 实例、用户路由与服务控制面 | `decision_850e6248d680` |
+| Portal Web 重启通知与服务恢复编排 | `decision_37f98f8fcb4b` |
+| Portal Resource Backup 监控、触发与恢复边界 | `decision_b06ae321a668` |
+| Portal Test Case、Catalog 与运行证据协议 | `decision_8273271b67b1` |
+| Portal Test Workbench 的测试浏览、运行与审查界面 | `decision_f2a6a5dd4646` |
+| Portal TAU Campaign 与模块 Resident 自动验证机制 | `decision_c953eab654cd` |
+| Portal 定向验证与发布证据 | `decision_6febe7bb57f9` |
+| TFI Portal 开源发行：命名、发布内容、首次部署与发布工作台 | `decision_15aab18c0ab3` |

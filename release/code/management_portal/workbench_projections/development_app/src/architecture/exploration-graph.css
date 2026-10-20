@@ -1,0 +1,100 @@
+.arch-exploration-graph{position:relative;display:flex;flex-direction:column;width:100%;min-width:0;height:100%;min-height:440px;color:var(--text-color,#203d46);font:14px/1.45 system-ui,sans-serif;background:var(--panel-bg,#fafbf8);border:1px solid var(--border-color,#ccd9d3);border-radius:12px;overflow:hidden;box-sizing:border-box}
+.arch-exploration-graph[hidden]{display:none}
+.arch-exploration-graph *{box-sizing:border-box}
+.aeg-toolbar{display:flex;position:relative;z-index:3;align-items:center;gap:6px;padding:6px 10px;border-bottom:1px solid var(--border-color,#d6dfda);flex-shrink:0;background:var(--panel2,var(--panel-bg,#fafbf8));container-type:inline-size}
+.arch-exploration-graph button{min-height:32px;padding:5px 10px;border:1px solid var(--border-color,#bdcec5);border-radius:6px;background:var(--surface-color,#fff);color:inherit;cursor:pointer;font:inherit;white-space:normal;overflow-wrap:anywhere;text-align:left}
+.arch-exploration-graph button:hover{background:var(--hover-bg,#e8f2ed)}
+.arch-exploration-graph button:focus-visible{outline:3px solid #158479;outline-offset:2px}
+.aeg-hint{font-size:12px;color:var(--muted-color,#566d73);margin:4px 0;line-height:1.6}
+.aeg-toolbar button,.aeg-toolbar summary,.aeg-toolbar select{font:13px/1.3 system-ui,sans-serif;color:inherit;min-height:30px;white-space:nowrap;overflow-wrap:normal;border-radius:5px}
+.aeg-toolbar>button,.aeg-toolbar summary,.aeg-protocol-select{height:30px;padding:4px 8px;border:1px solid var(--border-color,#bdcec5);background:var(--surface-color,#fff);cursor:pointer}
+.aeg-toolbar>button{display:flex;align-items:center;gap:6px}
+.aeg-zoom-controls{display:flex;flex:none;border:1px solid var(--border-color,#bdcec5);border-radius:5px;background:var(--surface-color,#fff)}
+.aeg-zoom-controls button{width:28px;min-height:28px;padding:0;border:0;border-radius:4px;text-align:center;font-size:16px}
+.aeg-zoom-controls button+button{border-left:1px solid var(--border-color,#bdcec5);border-radius:0 4px 4px 0}
+.aeg-menu{flex:none;position:relative}
+.aeg-menu>summary{display:flex;align-items:center;gap:6px;list-style:none}
+.aeg-menu>summary::-webkit-details-marker{display:none}
+.aeg-menu>summary::after{content:'⌄';font-size:12px}
+.aeg-menu>summary:hover{background:var(--hover-bg,#e8f2ed)}
+.aeg-menu-body{position:absolute;z-index:5;top:calc(100% + 10px);left:0;width:240px;max-width:calc(100vw - 100px);padding:10px;border:1px solid var(--border-color,#bdcec5);border-radius:8px;background:var(--surface-color,#fff);box-shadow:0 6px 20px #0002;display:grid;gap:6px;white-space:normal}
+.aeg-theme-menu .aeg-menu-body{left:auto;right:0}
+.aeg-menu-body button{width:100%;white-space:normal}
+.aeg-theme-value{color:var(--muted-color,#566d73)}
+.aeg-protocol-select{width:160px;min-width:80px;max-width:28%;appearance:none;padding-right:24px!important;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='m3 4 3 3 3-3' fill='none' stroke='%23647b77' stroke-width='1.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;text-overflow:ellipsis}
+.aeg-toolbar select:focus-visible,.aeg-toolbar summary:focus-visible{outline:2px solid #158479;outline-offset:2px}
+.aeg-relation-count{color:var(--muted-color,#566d73);font-variant-numeric:tabular-nums}
+@container(max-width:520px){.aeg-theme-value{display:none}.aeg-protocol-select{width:106px}.aeg-toolbar>button{padding-inline:6px}}
+@container(max-width:360px){.aeg-relation-count{display:none}.aeg-protocol-select{width:80px}.aeg-menu>summary{padding-inline:6px}}
+.aeg-related-legend{display:inline-flex;align-items:center;gap:6px;font-size:13px}
+.aeg-related-legend[hidden]{display:none}
+.aeg-related-legend::before{content:"";display:inline-block;width:16px;height:12px;border:1px solid #927123;border-radius:3px;background:#fff0c2}
+.aeg-viewport{position:relative;flex:1;min-height:340px;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;background-image:radial-gradient(#bfcfc4 .8px,transparent .8px);background-size:20px 20px}
+.aeg-viewport>svg{display:block;touch-action:none;overflow:visible;min-height:100%;user-select:none}
+.aeg-scope-frame{fill:var(--surface-color,#f4f8f2);fill-opacity:.72;stroke:#a5bcae;stroke-width:1.5}
+.aeg-object{cursor:pointer}
+.aeg-object>rect{fill:var(--panel-bg,#fffef8);stroke:#8eaba1;stroke-width:1.3;filter:drop-shadow(0 3px 0 #c7d4cc)}
+.aeg-object-root>rect{fill:#e4f1ea;stroke:#528776;filter:none}
+.aeg-object-boundary>rect{fill:var(--panel-bg,#f4f5f1);stroke-dasharray:6 4;stroke:#78919a}
+.aeg-object.is-related>rect{fill:#fff0c2}
+.aeg-object.is-related>text{fill:#5a4316}
+.aeg-object-title{font:600 16px system-ui,sans-serif;fill:var(--text-color,#203d46)}
+.aeg-object-description{font:13px system-ui,sans-serif;fill:var(--text-color,#37565e)}
+.aeg-object-host{font:12px system-ui,sans-serif;fill:var(--muted-color,#60797e)}
+.aeg-entry-hint{font:12px system-ui,sans-serif;fill:#08766c}
+.aeg-boundary-heading{font:12px system-ui,sans-serif;fill:#60797e}
+.aeg-edge-path{fill:none;stroke:#648a82;stroke-width:1.7;stroke-linejoin:round;stroke-linecap:round}
+.aeg-edge-interrupts .aeg-edge-path{stroke:#b16a41;stroke-dasharray:7 4}
+.aeg-edge-hosts .aeg-edge-path{stroke:#7b7595;stroke-dasharray:2 4}
+.aeg-viewport marker path{fill:#426f66}
+.aeg-edge-label{cursor:pointer}
+.aeg-edge-label rect{fill:var(--panel-bg,#fffdf4);stroke:#c4d2c8;stroke-width:1}
+.aeg-relation-title{font:13px system-ui,sans-serif;fill:var(--text-color,#254b51)}
+.aeg-object:hover>rect,.aeg-object:focus>rect,.aeg-object.is-selected>rect,.aeg-object.is-endpoint>rect{stroke:#087e72;stroke-width:3}
+.aeg-edge-label:hover rect,.aeg-edge-label:focus rect,.aeg-edge-label.is-selected rect{stroke:#087e72;stroke-width:2.5;fill:#e9f5d7}
+.aeg-edge.is-selected .aeg-edge-path{stroke:#087e72;stroke-width:3.5}
+.aeg-object:focus,.aeg-edge-label:focus{outline:none}
+.aeg-inspector{position:absolute;right:12px;bottom:12px;width:min(390px,calc(100% - 24px));max-height:60%;overflow:auto;padding:14px;background:var(--panel-bg,#fffef9);border:1px solid #98b2a7;border-radius:10px;box-shadow:0 8px 30px #1b42352b;z-index:2}
+.aeg-inspector[hidden]{display:none}
+.aeg-inspector h3{font-size:17px;margin:10px 0}
+.aeg-inspector p{margin:8px 0;overflow-wrap:anywhere;white-space:pre-wrap}
+.aeg-inspector button{display:block;width:100%;margin:6px 0}
+.aeg-inspector .aeg-source{font-size:12px}
+.aeg-sr{position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden}
+@media(max-width:680px){.aeg-toolbar{gap:4px;padding:5px 6px}.aeg-inspector{max-height:50%}}
+
+/* Overall relationships remain a graph at readable scale. Long lists of
+   operations are available by selecting the corresponding real connection. */
+.aeg-overview .aeg-edge { cursor:pointer; outline:none }
+.aeg-overview .aeg-edge-path { stroke:#547a83; stroke-width:1.7 }
+.aeg-overview .aeg-edge:hover .aeg-edge-path,.aeg-overview .aeg-edge:focus .aeg-edge-path,.aeg-overview .aeg-edge.is-selected .aeg-edge-path,.aeg-overview .aeg-edge.is-incident .aeg-edge-path { stroke:#176f71; stroke-width:3.5 }
+.aeg-overview .aeg-edge.is-muted { opacity:.18 }
+.aeg-overview .aeg-edge-label { opacity:1; pointer-events:auto }
+.aeg-overview .aeg-edge-label:focus,.aeg-overview .aeg-edge-label.is-selected { opacity:1; pointer-events:auto }
+.aeg-overview .aeg-inspector section { border-top:1px solid #ccd8d3; padding-top:6px; margin-top:12px }
+
+.aeg-overview .aeg-object-title { font-size:18px }
+
+.aeg-reading{min-height:0}
+.aeg-reading .aeg-viewport{min-height:0;background-image:none}
+.aeg-reading-nav{display:grid;gap:6px}
+.aeg-reading-nav button[aria-pressed=true]{background:#176f69;color:white}
+.aeg-reading .aeg-object-title{font-size:18px}
+.aeg-reading .aeg-relation-title{font-size:16px}
+.aeg-reading .aeg-edge-path{stroke-width:2.5}
+
+/* Reading emphasis never removes a physical collaboration or its label. */
+.aeg-layer-band{fill:#ecf3f0;fill-opacity:.42;stroke:none;pointer-events:none}
+.aeg-layer-heading{font:12px system-ui,sans-serif;fill:#637d79;pointer-events:none}
+.aeg-reading .aeg-edge-path{stroke:#92a8a4;stroke-width:1.4}
+.aeg-reading .aeg-edge.is-emphasized .aeg-edge-path{stroke:#387b77;stroke-width:2}
+.aeg-reading .aeg-edge-label{opacity:1}
+.aeg-reading .aeg-relation-title{font-size:14px}
+.aeg-reading .aeg-object-title{font-size:16px}
+.aeg-reading .aeg-edge-label.is-emphasized rect{stroke:#568b84}
+
+.aeg-continuation rect{fill:#f0f6ef;stroke:#bad1c3;stroke-width:1}
+.aeg-reading .aeg-object-description{font-size:14px}
+.aeg-reading .aeg-edge-label:focus rect{stroke-width:3}
+
+.aeg-capability>rect{stroke:#438276;stroke-width:2;fill:var(--panel-bg,#f3faf6)}

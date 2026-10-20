@@ -1,0 +1,7 @@
+{
+  "native": 0,
+  "mixing_and_stage_order": true,
+  "retransport_closes_old_label": true,
+  "freeze": true,
+  "max_tag_error": -0.0
+}

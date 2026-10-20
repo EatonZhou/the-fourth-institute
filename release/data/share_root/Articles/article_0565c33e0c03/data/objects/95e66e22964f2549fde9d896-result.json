@@ -1,0 +1,13 @@
+{
+  "task": "self_generated_contact_reversal_20261019",
+  "status": "complete",
+  "job": "ea785e90-138c-461f-998c-64b770243fa7",
+  "attempted": 16258,
+  "returned": 16258,
+  "unknown": 0,
+  "wall": 86.4507549109403,
+  "error": null,
+  "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/self_generated_contact_reversal_20261019/ea785e90-138c-461f-998c-64b770243fa7",
+  "raw_bytes": 25620401,
+  "paths": 28
+}

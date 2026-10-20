@@ -1,0 +1,43 @@
+{
+  "version": "0.47.4",
+  "status": "published to the same Article and default preview",
+  "scientific_question": "Behavioural continuity across experience and acquired-state continuity through replacement of its carrier",
+  "prior_full_life_scope": "Earlier fixed-field joint delta retains two conditional successes; the independent life-zero braking comparison has zero complete successes in all three arms.",
+  "effort_source": {
+    "handoff.json": "15b6177c0a64eb371c2725f1207abaa8de5b0861774995fd5604b7001c96194b",
+    "REPORT.txt": "c97cf1c6395b2984ea2e2aaa1fb7488914cfd04438915f983231fd0393df4ead",
+    "comparisons.json": "d55125f5748130f74e5fa688a59f224bd018755c6dad5df933c16eef05874a34",
+    "summaries.json": "d8e5fa571f7198e68b484cf6738ed00e7659f6f86b925f83b9afa2b18192e3b6",
+    "accounting.json": "94bd435794e5ce1bfd82e6ca2e417bde44fb22fdf5ed3edf75a202c19244ff7a",
+    "body_opportunity_readout.json": "ee5f8f1b0222043faa1df3fe967abdb0927f6cdb08f681807801ca1b2457182d"
+  },
+  "new_native": 0,
+  "new_fits": 0,
+  "source_comparisons": 8,
+  "source_futures": 16,
+  "unexecuted_restart_plans_counted_as_results": false,
+  "timestamp": "2026-10-19T06:14:22.342258+00:00",
+  "new_independent_worlds_added": 0,
+  "interpretive_changes": [
+    "controlled experience-dependent capacity remains positive",
+    "standard delta/joint-delta sufficient in the respective controlled tasks",
+    "complete-life zero restricted to independent braking experiment; earlier joint-delta conditional positives retained",
+    "two continuities: action/experience across the same life and acquired-state use across material replacement",
+    "fixed effort data describes physical trade-offs, not width-history learning"
+  ],
+  "retained_main_figures": 7,
+  "new_supplementary_tables": [
+    26,
+    27
+  ],
+  "gui_revisions": [
+    1,
+    5
+  ],
+  "freeze_manifest": "${share_root}/Articles/article_0565c33e0c03/work/longform_v047/data/default_preview_freeze_v0474.json",
+  "freeze_manifest_sha256": "7fad1a2564b5291495c04a00fd4b529fdd815e352b15ee48f9cc5ef9df6aaaee",
+  "engineering_request": "msg_9c7d521eff68f90c6915c476239bd0e4",
+  "publication_record": "${share_root}/Articles/article_0565c33e0c03/work/longform_v047/data/publication_record.json",
+  "published_at": "2026-10-19T06:26:44Z",
+  "default_pdf_sha256": "86bb9e084a99680657bfc6471c8898d78c6c7e506e7d144012fb78022edbbffc"
+}

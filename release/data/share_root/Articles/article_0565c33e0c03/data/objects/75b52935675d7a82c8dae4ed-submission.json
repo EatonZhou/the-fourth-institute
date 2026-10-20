@@ -1,0 +1,19 @@
+{
+  "id": "985493ed-7d71-4b49-9edb-42390c6cf545",
+  "name": "deletion_layout_life0_formation_20261019",
+  "command": [
+    "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+    "-m",
+    "local_learning.deletion_layout_life0_formation.run"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "d3-deletion-layout-life0-formation-20261019-v1",
+  "status": "running",
+  "created_at": "2026-10-18T21:21:46.089213+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/985493ed-7d71-4b49-9edb-42390c6cf545",
+  "pid": 3909037,
+  "manual_pause": false,
+  "create_time": 1792358505.54,
+  "started_at": "2026-10-18T21:21:46.152133+00:00"
+}

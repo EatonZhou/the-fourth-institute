@@ -1,0 +1,20 @@
+{
+  "status": "passed",
+  "new_packets": 1024,
+  "old_steps_replayed": 0,
+  "stages": 8,
+  "display_entries": 136,
+  "native_forward_calls": 0,
+  "invalid_proposals": 0,
+  "body_cap": 1024,
+  "attempted": 1024,
+  "remaining": 0,
+  "max_balance_error": 9.094947017729282e-13,
+  "max_M_path_error": 2.5934809855243657e-13,
+  "max_E_path_error": 9.237055564881302e-14,
+  "exact_new_life_boundaries": true,
+  "full_ready_recovery_exact": true,
+  "topology": "rho>.01; 8-neighbor components and 4-neighbor holes in displayed plane, no periodic stitching",
+  "motion": "density circular-centroid displacement; not tissue tracking or independent organisms",
+  "interpretation": "formation exploration only; no matched old64 control or adaptation eligibility"
+}

@@ -1,0 +1,33 @@
+共同API：contextual-terminal-records-v1，96×96，独立于旧f9e46ff7。
+
+接续选用（C数组运算已做保存真map逐值比较，尚无本版本新native；首个d3新步如实登记）：
+from environment_evolution.contextual_terminal_records.optimized import ContextualTerminalBody, local_context, PACKET_PRICE
+from environment_evolution.contextual_terminal_records.optimized_joint import save_joint, load_joint
+from environment_evolution.material_action_response.core import geometry
+env=ContextualTerminalBody.from_formation(source['path'],source['sha256'],world=geometry(96,'heldout_rotated'))
+public=env.observe_local()
+z,current_class=local_context(public)
+env.begin_unit(codes)   # scalar或96²code0..3；只在真正新单元注册当前实际材料
+maps,receipt,checks=env.step(request,permit=permit)  # request[2,96,96]，唯一真实host调用
+feedback=env.consume_feedback(decision_clock=env.clock+1)  # 每完成clock只消费一次，重复None
+save_joint(path,env,learner.checkpoint())  # 必须含真实统计、意图、RNG等所有控制器状态
+env,learner_state=load_joint(path)         # 0前向/0重新付款
+
+源formation128的完整路径与SHA见plan.sources；禁止从本检查前缀或旧父冒充新取得64。
+原native host15691ada、intent281cdf53、旧terminal f9e46ff7及依赖SHA均见source_refs，未改。
+context source z=dot(中心四邻fuel差分,既有shear_x请求)；threshold±1e-12。
+class0负/1中/2正。source_z/source_context只是注册坐标快照；随体来源由direct/message三分区携带，不按途中地点重分箱。
+direct/message/unread：(code4,source_context3,field7,y,x)。field顺序：registered_mass,contact,motor_paid,basal_paid,action_y_time,action_x_time,exposure_mass_time。
+begin_unit以实际rho写入对应code/context，随后K→actor_keep→rule_keep。新生本单元零祖先记录，下一显式注册才有新来源。
+已有意图MaterialIntent.initialize/advance/checkpoint继续用原模块，不另造。注册动作混合份额为env.direct[:,:,0].sum(1)/当前body；不是取单个context。
+
+一步真实receipt包含generated[stage2,code4,context3,field7,y,x]、incoming[4,3,7,y,x]、undelivered_no_receiver/unpaid、fractions/accepted[stage2,direction4,y,x]、paid/requested/budget_before/after、actor_keep/rule_keep、direct_after/message_after/message_support、message_lost_actor/rule、receiver_old_survivor/energy、physical_own_energy、postclock/unit_start_clock及逐分区登记守恒差。
+原maps给actual K_weights(+y,-y,+x,-x)、transported_body、actor_body_after_actor、survivor/keep/born、uptake、old_energy和全部原费用。maps.energy为通信前，energy_after_communication为实际通信后；communication_paid单列，不重复算热或birth_fuel内含项。
+每非空stage-source-destination包固定704bytes，1e-7E/byte/hop，7.04e-5E/包（不是每bin一份价）。先actor再rule，+y,-y,+x,-x；按接收旧survivor质量拆分，旧E剩余额付款后记热，无当步摄取/新生/未来收入垫付。欠付/无旧接收者不递送、不再分配、不补零；只新生格不能接收。后续接收者死亡删消息，不转发。
+生成/未递送/死亡总账仅离线评价，不能广播给活学习器。合法消费为feedback.direct累计存活亲历、message_unread新收未读消息及支持。来源clock严格早于下一decision；条数/格数不是独立样本，单条材料记录也不是全组织或新生的因果回报。
+
+学习侧仍按PI合同：direct按code汇总；message保三context N/T。某action在某当地单元有合法新消息时，对该action三bin旧统计共同×.5再加新值；缺action不更新。正确/反向仅改变message查询（0↔2，中性不动），无对应曝光回退pool，known阈值1e-12。sum三bin与pool代数兼容。
+保存完整learner.checkpoint必须包含统计、已消费时钟、意图/RNG；host不猜测或代填控制器内容。joint140里的控制器是检查fixture，不是实验已取得学习历史。
+
+实现说明：core.py/joint.py是已执行34步的冻结参考；optimized.py/optimized_joint.py仅将等价搬运与包累加换成fast_ops C循环，无价格/物理/随机/分区语义变化。编译命令：cc -O3 -std=c99 -ffp-contract=off -fPIC -shared environment_evolution/contextual_terminal_records/fast_ops.c -o environment_evolution/contextual_terminal_records/_fast_ops.so
+二进制与源码都绑定SHA。纯保存map比较见optimized_equivalence.json，不当作额外native或吞吐保证。禁止自动重跑原52步或旧套件。

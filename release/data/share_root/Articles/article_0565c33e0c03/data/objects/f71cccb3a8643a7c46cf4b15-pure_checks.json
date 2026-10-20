@@ -1,0 +1,9 @@
+{
+  "native": 0,
+  "control": {
+    "research.desired_state": "running",
+    "research.started": true
+  },
+  "parent_count": 4,
+  "signal_keys_present": true
+}

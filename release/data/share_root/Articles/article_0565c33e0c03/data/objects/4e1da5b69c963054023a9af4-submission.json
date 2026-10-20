@@ -1,0 +1,20 @@
+{
+  "id": "943b4cc6-3967-4f91-9961-e2f784231d3c",
+  "name": "d3 acquired local motor causal expression 768",
+  "command": [
+    "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+    "-m",
+    "local_learning.local_motor_expression.run",
+    "run"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "d3-local-motor-expression-20261019-v1",
+  "status": "running",
+  "created_at": "2026-10-19T09:24:59.530638+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/943b4cc6-3967-4f91-9961-e2f784231d3c",
+  "pid": 2414028,
+  "manual_pause": false,
+  "create_time": 1792401898.99,
+  "started_at": "2026-10-19T09:24:59.602312+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "attempted": 3214,
+  "returned": 3214,
+  "unknown": 0,
+  "worker_seconds": 46.25896,
+  "job": "4d95f4be-1767-41ea-a08d-c09af0bd6aa7",
+  "raw_bytes": 4891687,
+  "internal_wall": 20.224589961930178
+}

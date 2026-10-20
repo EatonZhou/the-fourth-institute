@@ -1,0 +1,19 @@
+{
+  "id": "43568f01-955a-4ddc-ba37-62903b18f278",
+  "name": "resource_conditioned_growth_rule_20261019",
+  "command": [
+    "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+    "-m",
+    "local_learning.resource_conditioned_growth_rule.run"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "d3-resource-conditioned-growth-rule-20261019-v1",
+  "status": "running",
+  "created_at": "2026-10-18T20:03:36.084508+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/43568f01-955a-4ddc-ba37-62903b18f278",
+  "pid": 3032947,
+  "manual_pause": false,
+  "create_time": 1792353815.59,
+  "started_at": "2026-10-18T20:03:36.204093+00:00"
+}

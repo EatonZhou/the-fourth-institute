@@ -1,0 +1,265 @@
+[
+  {
+    "stage_id": "genome_8a9ce6d23c3acf3e2fce/formation",
+    "M_change": {
+      "positive": [],
+      "negative": [
+        [
+          1,
+          27
+        ]
+      ],
+      "zero": [
+        [
+          28,
+          128
+        ]
+      ]
+    },
+    "E_change": {
+      "positive": [],
+      "negative": [
+        [
+          1,
+          27
+        ]
+      ],
+      "zero": [
+        [
+          28,
+          128
+        ]
+      ]
+    }
+  },
+  {
+    "stage_id": "genome_263c8a617a8734da20b4/formation",
+    "M_change": {
+      "positive": [],
+      "negative": [
+        [
+          1,
+          18
+        ]
+      ],
+      "zero": [
+        [
+          19,
+          128
+        ]
+      ]
+    },
+    "E_change": {
+      "positive": [],
+      "negative": [
+        [
+          1,
+          18
+        ]
+      ],
+      "zero": [
+        [
+          19,
+          128
+        ]
+      ]
+    }
+  },
+  {
+    "stage_id": "genome_009dfb62455ffa95b7af/formation",
+    "M_change": {
+      "positive": [
+        [
+          1,
+          128
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    },
+    "E_change": {
+      "positive": [
+        [
+          3,
+          128
+        ]
+      ],
+      "negative": [
+        [
+          1,
+          2
+        ]
+      ],
+      "zero": []
+    }
+  },
+  {
+    "stage_id": "genome_31f3a3913b57bc13b2c0/formation",
+    "M_change": {
+      "positive": [
+        [
+          2,
+          128
+        ]
+      ],
+      "negative": [
+        [
+          1,
+          1
+        ]
+      ],
+      "zero": []
+    },
+    "E_change": {
+      "positive": [
+        [
+          4,
+          128
+        ]
+      ],
+      "negative": [
+        [
+          1,
+          3
+        ]
+      ],
+      "zero": []
+    }
+  },
+  {
+    "stage_id": "genome_fa17a0d7ba9d7e8045f4/formation",
+    "M_change": {
+      "positive": [
+        [
+          1,
+          128
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    },
+    "E_change": {
+      "positive": [
+        [
+          11,
+          128
+        ]
+      ],
+      "negative": [
+        [
+          1,
+          10
+        ]
+      ],
+      "zero": []
+    }
+  },
+  {
+    "stage_id": "genome_0ac80448a534dc953505/formation",
+    "M_change": {
+      "positive": [
+        [
+          1,
+          128
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    },
+    "E_change": {
+      "positive": [
+        [
+          1,
+          11
+        ],
+        [
+          15,
+          32
+        ],
+        [
+          36,
+          128
+        ]
+      ],
+      "negative": [
+        [
+          12,
+          14
+        ],
+        [
+          33,
+          35
+        ]
+      ],
+      "zero": []
+    }
+  },
+  {
+    "stage_id": "genome_6bd5bfd2f629f9414376/formation",
+    "M_change": {
+      "positive": [
+        [
+          1,
+          128
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    },
+    "E_change": {
+      "positive": [
+        [
+          1,
+          128
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    }
+  },
+  {
+    "stage_id": "genome_85dffefe3eb5bacdfbf5/formation",
+    "M_change": {
+      "positive": [
+        [
+          1,
+          17
+        ],
+        [
+          28,
+          128
+        ]
+      ],
+      "negative": [
+        [
+          18,
+          27
+        ]
+      ],
+      "zero": []
+    },
+    "E_change": {
+      "positive": [
+        [
+          3,
+          18
+        ],
+        [
+          24,
+          128
+        ]
+      ],
+      "negative": [
+        [
+          1,
+          2
+        ],
+        [
+          19,
+          23
+        ]
+      ],
+      "zero": []
+    }
+  }
+]

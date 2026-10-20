@@ -1,0 +1,26 @@
+d3真实U_phi结果的一次只读方法补充（2026-10-18）
+
+结论：本候选支持合法完成反馈后的持续更新能改善准备和摄取，但未证明学得U_phi超过固定last。原信息审计实现及ce2可行性消费不变。本补充不执行模型、控制器或身体，不重算轨迹/评分，不请求补跑。
+
+d3 job3786e0f1-73a7-4da8-9bdb-ae8fff7fb44e completed：100864实际步、56留出路径。3×8 CEM提出24候选，22个唯一候选有物理评估；训练2个世界、1个优化随机种子，留出4个世界，每个stable/changed。单一人工两叶身体、action=0、共同E/M20，非Lenia。phi在留出前冻结，生命期内局部状态持续更新。训练目标是U减实际支付及质量损失罚项，不等整体身体适合度。这里只引用owner结果，不重新选择phi。
+
+owner全32周期摄取均值：
+条件       learned       last         EMA          frozen       instant
+stable     166.300196    168.368746   162.799634   159.765689    95.659105
+changed    146.538323    149.072584   127.561834   111.370181    95.698166
+
+learned-last差为stable −2.068550、changed −2.534261，均4/4种子为负。changed中learned-EMA摄取+18.976489但体时−2.610304、费用+1.231371；learned-frozen摄取+35.168142、体时+77.761629、费用+1.129617。learned-last体时有微小+0.074351、费用−.200108，不能把摄取负差写成所有身体指标严格更差。上述五臂末E均约31.026862，E容量/溢出与M20调节使多摄取不自动成为末身体净益。所有留出路径存活。两次变化的恢复周期，learned和last逐条相同：(3,2)、(3,1)、(3,3)、(3,2)。四世界内两次变化不能当八个独立世界。
+
+learned/frozen/permuted只运行一次真实八周期父态再分叉。冻写仍真实运输、死亡、年龄演化，且照付共同套餐；不是所有隐藏状态停止演化。置换交换cue关联而非空间。last/EMA/fixed/instant独立从初体运行；截取它们cycle8后的量，不会使其取得史等于learned父态。fixed仅在预置九种cue权重表中按训练目标选出[0,0]，不是全公开输入下最强固定策略。instant在空库存承诺窗默认均匀，其劣势不能独证需要学习更新规则。
+
+实际信息接口必须分两层。host.observe公开phase/cue/rho/resource/energy/active/pending/pending_due/step/subcell_x。d3 prepare实际仅收rho/resource/cue/phase/energy，另读自身材料历史。不能说d3直接读取了active/pending；同样不能从空resource断言整个身体或公开观察不含历史。完整身体匹配仍应包含成熟/待成熟管线，rho/E也可带历史。
+
+检测和写入资格分开。paid detect与成熟能力/合法旧支持决定completed_mask/local_label；cue付款、存留eligibility与当步memory支付另决定writer。冻写或写资格不满足不等检测缺失。仅已完成的本格0/1写本格，不从无摄取、未来tape或未观察端补0。当前互补两端任务有强last；不要与以前独立Bernoulli端口任务混写。
+
+实看首留出changed父prefix的两个既定原样本：phase4后post5完成数0/label−1，pending约5.9988；phase12后post13完成98格/label含−1/0/1，检测已付，98格已写。两帧SHA匹配索引。prediction是post-settle写后值，不能用于选择时评分；post13的requested仍是先前last_requested。另核clock256前缀完整checkpoint含env和controller。该样本检查不代表832帧全量核验，也不补齐选择前全态。
+
+audit_record_contract的缺项成立：832帧均在host与settle后，缺每决策前完整公开输入、逐帧pending_due/subcell、shift/keep及完整写前后记忆；全步标量和末包不能替代这些记录。故原audit可运行，但本批完整public/body/last条件分区结论为incomplete。不得把后态逆推、实际v代替shift、写后预测配未来标签，或从tape制造已付历史。源SHA/stage/clock/cell只能生成只读索引，非新事件凭证。本次不产生伪造的decision_record。
+
+最近邻沿同一原文报告，不重新堆引用：Mitchell & Pilpel (2011), PNAS pp7271–73 Fig1–2及p7275 Fig4已研究提前准备、生产成本和两阶段激活；Lambert & Kussell (2014), PLoS Genetics Fig2–3/5–6已有残留表型和持续响应记忆。Flow材料参数、PD-NCA运行梯度学习、Backpropamine外层学习/内层快权定位保原版本。当前可证机制增量须超过同材料接口固定last/快EMA，结果尚未达到；局部、携带、延迟与CEM本身不是新意。已知环境预测器不等同状态/目标/价格/动作约束下的身体收益上界。
+
+可运行原入口：research.anticipatory_information_audit.audit 与host_records（完整host视图适配）；API.txt和主文位置见上一冻结包。input_scope.json声明本批实际窄输入和缺项；consumption.json包含源SHA、直接摘取的owner结果、两个原帧及一个前缀末包定位。原主handoff08c69b6a…08345不回写。

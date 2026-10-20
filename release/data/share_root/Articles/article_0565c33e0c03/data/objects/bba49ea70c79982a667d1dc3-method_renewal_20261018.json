@@ -1,0 +1,1636 @@
+{
+  "status": "lifetime_behavior_experiments_running",
+  "plan": "plan_13d78f0ae847 v10",
+  "question": "同一个持续存活、形态可变的元胞身体，能否通过自身经历习得原先不会的行为，在未告知的环境规律反转后重新适应，并保留可检验的习得？",
+  "tracks": {
+    "local_plasticity": {
+      "owner": "resident_5fe1227e36c0",
+      "state": "local_readout_complete_v2_coupling_continues_body_action_exploration_assigned"
+    },
+    "ecology_behavior": {
+      "owner": "resident_4e35778304b2",
+      "state": "renewable_allocation_pilots_completed_local_body_action_exploration_assigned"
+    },
+    "alternative_and_literature": {
+      "owner": "resident_b417caafec66",
+      "state": "v2_sampling_batch_completed_negative_fixed_baseline_extension_assigned"
+    },
+    "manuscript": {
+      "owner": "resident_78225d1bc049",
+      "state": "whole_working_draft_revised_24pages_public_v045_unchanged_new_method_figures_pending"
+    },
+    "cleanup": {
+      "owner": "resident_4702ee61167e",
+      "state": "authorized_cleanup_completed"
+    },
+    "projection": {
+      "owner": "resident_a48ab8bd3f81",
+      "state": "method_renewal_first_actual_models_published_revision98_next_results_pending"
+    }
+  },
+  "compute": "CPU2槽×2线程；Thor受控GPU单槽已生产加载，通过暂停/继续/停止、幂等、断线保护；已退出GPU任务不支持checkpoint续跑而明确拒绝。科研每次长作业前仍读控制，旧预算独立。",
+  "claims": "局部可塑性、材料携带、固定核参数优化、离线预测或在线更新本身均不足以构成新方法；比较结果未出，不宣称新能力或新颖性。",
+  "first_pilots": {
+    "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/method_renewal_first_pilots_20261018.json",
+    "status": "first_pilots_completed_goal_not_achieved",
+    "actual_jobs": [
+      "21868d19-c3ae-43cb-a2a6-b68bf7a863b8",
+      "bb9a8a4e-24eb-4cf9-a4ce-55362fa82764",
+      "4bc7de9e-dbb5-40b9-9d34-e933083e77df"
+    ]
+  },
+  "pi_cleanup": {
+    "receipt": "${share_root}/Agents/lineage_75e3399f4877/residents/resident_afa3d4d6cf11/workspace/pi_receipt_cleanup_20261018.json",
+    "deleted_files": 23,
+    "deleted_bytes": 5141742,
+    "no_backup": true
+  },
+  "formal_handoffs": {
+    "ecology": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/method_renewal_ecology_behavior_20261018/handoff.json",
+      "sha256": "42a3e245a4f7fb028da1d527db75449e56ba1713f9ecb7f36bf9b27087b9e1c0",
+      "steps": 359532
+    },
+    "local": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_local_plasticity_report/handoff.json",
+      "sha256": "c359bf6d7397cc82608a3f344e17b1be6d36f9aa87c1db89bf7d7c83dbcc4866",
+      "world_trajectories": 5848,
+      "contact_decisions": 6035642,
+      "Lenia_body_steps": 0
+    },
+    "alternative": {
+      "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/method_renewal/event_reservoir_20261018/handoff.json",
+      "sha256": "8217c47522bb24c5dd24123513763eccb90a6a65f46487f29c4c127251a40b55",
+      "new_reduced_body_steps": 184320,
+      "paths": 120,
+      "finding": "event/RLS反转失败，失准探测部分恢复仍输last-pair/固定；独立环境.282824→.327354但仍输固定。"
+    },
+    "local_body_coupling": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling_report/handoff.json",
+      "sha256": "7f62a85ac064cbced6885b3427b9027b0375aefbd32ab9752da68a9db3eba1f8",
+      "job": "8ad62a77-1850-48a4-bb18-2cf1df9c3440",
+      "attempted_committed_host_steps": 86032,
+      "scientific_steps": 86016,
+      "included_instrumentation_steps": 16,
+      "dependent_futures": 144,
+      "world_seeds": 2,
+      "Lenia_steps": 0,
+      "scope": "actual local uptake/evidence carried by translation and death; global action and energy; alpha1 adapts faster than alpha.4"
+    }
+  },
+  "cleanup_update": {
+    "engineering_receipt_message": "msg_2bc7d021f8bcef385eb2fc415bd0e423",
+    "moved_files": 3966,
+    "moved_bytes_not_freed": 320831764,
+    "engineering_deleted_files": 2118,
+    "engineering_freed_exclusive_blocks_bytes": 296452096,
+    "projection_deleted_index_files": 9,
+    "projection_deleted_logical_bytes": 9981528,
+    "pi_deleted_receipt_files": 23,
+    "pi_deleted_logical_bytes": 5141742,
+    "no_backup": true,
+    "affected_entry_checks": "main30/SI176 compilation;29SDK aliases;defaultv045/download;canonicalSHA unchanged as reported by owners",
+    "historical_snapshot_superseded_by": "cleanup_final"
+  },
+  "historical_findings_index": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/historical_research_findings_index_20261018.json",
+  "pi_followup_analysis": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/method_renewal_paired_world_review_20261018/handoff.json",
+    "sha256": "da24a4d69dc31bf461994dfc8e6d46c5d83cee0f09fb6ad1b9925c8166b1c026",
+    "bytes": 2794
+  },
+  "shared_index": {
+    "key": "research.method_renewal_20261018",
+    "registered": true,
+    "registration_instruction": "inst_lin_4201e4e1fd3413f3e024",
+    "progress_compaction_instruction": "inst_lin_512793c56df1e8e13911",
+    "progress_serialized_bytes_removed": 25953,
+    "scope": "Only PI progress narratives condensed into historical findings/source index; controls, budgets and runtime untouched; no rollback snapshot."
+  },
+  "core_scientific_goal_achieved": false,
+  "cleanup_final": {
+    "handoff": "${share_root}/Projects/元胞自动机研究/src/runtime/maintenance/method_renewal_runtime_and_cleanup_20261018.json",
+    "sha256": "9035f7429989f31f11dcaeccafb7ede2a34a480599375d825bfa27b1d2ce0c58",
+    "engineering_removed_payloads": 2129,
+    "logical_bytes": 330314580,
+    "net_disk_blocks_bytes": 334888960,
+    "article_migration_files": 3966,
+    "article_migration_bytes_not_freed": 320831764,
+    "projection_and_PI_deletions_excluded": true,
+    "backup_created": false,
+    "affected_entry_checks": "main30/SI176编译;29SDK别名/3261显示路径无缺失;默认v045和PPTX只读检查通过，未追加UI编译。"
+  },
+  "manuscript_working_delivery": {
+    "source": "${share_root}/Articles/article_0565c33e0c03/work/method_renewal/manuscript.tex",
+    "pdf": "${share_root}/Articles/article_0565c33e0c03/work/method_renewal/preview/manuscript.pdf",
+    "author_reported_at": "2026-10-18T06:35:36Z",
+    "author_reported_pages": 24,
+    "author_reported_gui_figures": 7,
+    "author_reported_references": 50,
+    "author_reported_pdf_sha256": "a71ec6e2864a3eb04d54637984efcdd2832ff17c4c03cbdc2f1865215611ca7e",
+    "pdf_sha256_at_pi_check": "a71ec6e2864a3eb04d54637984efcdd2832ff17c4c03cbdc2f1865215611ca7e",
+    "author_report_matches_current_pdf": true,
+    "scope": "同一内部全稿继续重构，默认v045未发布新方法成功结论。PI本轮只核PDF字节指纹，不重编译或冒称看完新稿。",
+    "latest_text_change": "共享稳定/反转小条件增益与checker/延迟负差，12世界等权及事后统计边界；新方法仍未完成。"
+  },
+  "pi_probe_request_review": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/method_renewal_probe_request_review_20261018/probe_request_audit.json",
+    "sha256": "749fd44b9cad56feb17b3924aa405dde8e8caa4971bc9cee4e0ff34bb9a12bcd",
+    "scope": "read_only_saved_receipts_no_new_steps",
+    "reversal_post_change_requests": [
+      3,
+      3,
+      4,
+      3
+    ],
+    "reversal_pending_at_freeze": 2,
+    "reversal_paths": 4,
+    "frozen_updates_and_requests": 0,
+    "limitation": "finite retraining then frozen testing does not establish lifetime online adaptation or the causal advantage of targeted exploration"
+  },
+  "next_discriminating_question": "同一元胞身体能否从真实接触结果学会线索选择，并在未告知反转后重学？强标准反馈与局部资格迹有何可解释差异和代价？",
+  "pi_visual_review_addendum": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling_report/actual_state_atlas.png",
+    "scope": "one saved atlas, actual density and evidence at four displayed arrival cycles for update/freeze; not all branches or movie"
+  },
+  "manuscript_center_review": {
+    "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/method_renewal_paper_center_review_20261018.json",
+    "sha256": "d4fce8d56df5f50acd29ee90a8eb797aa75445897b31fdd7e4e78a2f68411e9e",
+    "status": "review_complete_existing_GUI_author_tasks_assigned",
+    "finding": "Seven current main figures are legacy models; new candidate/host-coupling results need actual dedicated method and spatial process figures. Current prototypes remain distinct, no validated unified innovation.",
+    "message_id": "msg_79997a34973d838bad87454b2275b4cb",
+    "new_figures_delivered": false
+  },
+  "alternative_physiology_addendum": {
+    "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/method_renewal/event_reservoir_20261018/physiological_feasibility_addendum.json",
+    "sha256": "85543ab59aa944a19e8b34879609e64670ece3c31a78a7dc35bb212220293ffc",
+    "evidence": "author completion report; PI did not reread unchanged source traces",
+    "scope": "conditional long-run viability bound; finite-window algorithm comparisons retained",
+    "new_body_or_controller_steps": 0
+  },
+  "feedback_acquisition_binding": {
+    "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/method_renewal_feedback_binding_review_20261018.json",
+    "sha256": "da66913f84e61636ffaed8d8e10df767e1ab966cc562a786fcbbb08816c93a55",
+    "status": "completed_v2_five_policy_experiment_no_directed_advantage",
+    "actual_environment_job": "ecae3539-8cad-43fb-a2c8-e7993a5d83b3",
+    "policy_result_pending": false,
+    "next": "收束当前采样版本；33补同带固定左右基线，ce2/d3继续局部载荷并探索经验控制真实身体资源配置。",
+    "actual_policy_handoff": "${share_root}/Projects/元胞自动机研究/src/research/results/feedback_acquisition_20261018/native/handoff.json",
+    "actual_policy_handoff_sha256": "d36a8051b6ea45c2736978dc2ad4bb45f683a2d2920037c15288b50a7472f526"
+  },
+  "allocation_delivery": {
+    "status": "completed_exploratory_pilots",
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_allocation_ecology_20261018/handoff.json",
+    "sha256": "470a50ff04090d41f218a81511b635e924fef7173bb9ceec1961bab7eb369f67",
+    "all_three_new_steps": 419840,
+    "finding": "固定M20分配提供有限可维持参照，仍未证学习胜固定驻留；旧固定生理阴性保留。",
+    "projection_followup": "msg_20f0b94d3ea3fb8b8a0fdeb1d5b276db"
+  },
+  "local_readout_diagnostic": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_readout_report/handoff.json",
+    "sha256": "4b937ea4cdcfaefa38f28437c3ad4084793c99406c74af494209209093105437",
+    "finding": "10/12实际对照相同，两形态同一反转seed因比值/空间归约次序改变行动与后续摄取；不是全身四标量存储对照或局部记忆必要性证据。",
+    "scope": "PI读取冻结handoff和方法结论，未重跑、未声称看过新图。"
+  },
+  "allocation_paired_budget_review": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/method_renewal_allocation_budget_review_20261018/paired_budget.json",
+    "sha256": "a878a9e991ca3299cf738e042db144e996524ab69b445ffd9dd037e3546f9600",
+    "finding": "同32父态64周期：4101少摄取17.108878但少热23.602418、留能量多6.493540；4102多摄取16.189697而留能量只多.012364。全热含费用/转换/死亡/溢出，不重复加总或称纯中介。",
+    "new_physical_steps": 0
+  },
+  "feedback_acquisition_decision": {
+    "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/method_renewal_feedback_decision_20261018.json",
+    "sha256": "4cb52338ab9ba2215660d6a8ca9055989c670526e2a776e98b04eaa423867dd8",
+    "finding": "定向未胜同触发随机与EMA/last；采样版本收束，中心方法尚未成立。"
+  },
+  "growth_admission_discriminator": {
+    "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/method_renewal_growth_admission_bound_20261018.json",
+    "sha256": "66d58140761bc75c382ab89252b019d98ede87449aec9f4b4121c17e87ecd6ea",
+    "ceiling": 0.5303030303030303,
+    "finding": "充分付款周期维持的有效接收率必要上界35/66；可维持本身不等经验适应。"
+  },
+  "allocation_interface_review": {
+    "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/method_renewal_allocation_interface_review_20261018.json",
+    "sha256": "65db56894fdbc01ed17e5bbaa522bbac56becb5d184609e77ea488d996be9318",
+    "status": "source_scope_review_no_new_execution",
+    "finding": "旧资源权限/返航已由新act源级移除；4个动作价值不是4标量整控制器，摄取回报不等缺测环境标签。",
+    "v2_actual_execution": "33已完成；ce2旧v1不重标。"
+  },
+  "projection_method_renewal_release": {
+    "path": "${share_root}/Agents/lineage_75e3399f4877/residents/resident_4b26ea4a30af/workspace/method-renewal-release.json",
+    "sha256": "6a823f35867eff3d90cdaddc95f159ddfd44012f5f2c861be06c6b0462681626",
+    "status": "PUBLISHED_HOST_PASS_CLOSED",
+    "revision": 98,
+    "published_revision": 98,
+    "commit": "a312cbd083cab70f091f0258e9a08579e62e8c67",
+    "artifact": "b35c571ec192a2e86c7da714b83f1955c18c4efcee7f7ec916c649b8b00b242c",
+    "entry": "/workbenches/view?id=workbench_a8735d84f9af",
+    "owner_reported_scope": "行动、再生与观察：两独立方法预实验13轨654真态，保原八体及既有空间过程；97为未发布草稿。",
+    "pi_scope": "只读正式发布回执的状态/版本/commit/artifact；未重开浏览器、重验旧矩阵或重发布。",
+    "does_not_establish_scientific_goal": true
+  },
+  "latest_input_reconciliation": {
+    "active_request": "msg_31904dae36cd945e4a9e98402f313bde",
+    "consumed_infos": [
+      "msg_11fb4a49869cbd0577fcd60a324f0ab6",
+      "msg_191b6ba3ddc6e1d6cc210d5143d312e3",
+      "msg_2e4ef9232c7d59162872a67217aef22c",
+      "msg_5c433ccafd4d63e6cb8a24619bd381c7",
+      "msg_7a7630d4077a980ae370f45b38254091",
+      "msg_82035d575d170fe9892a2ef84dd6b25f",
+      "msg_897cc6656ceefa0d3ffe87a31228653f",
+      "msg_8f7746429870cc2eed878830561bc710",
+      "msg_ad3db06b08fbaa61044bee9bda7b2ab9",
+      "msg_c396a95eaa15dfd75b6a673c294efea6",
+      "msg_e372ce565a613c2af1b6918aeda925fd"
+    ],
+    "status": "consumed_in_current_round"
+  },
+  "birth_placement_value_decision": {
+    "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/birth_placement_value_decision_20261018.json",
+    "sha256": "c6c47f6dcae63bb80bff97577e6373a2e71c83450de3e968e3cb98d602eecc3a",
+    "status": "prior_pilot_completed_next_causal_experiment_assigned",
+    "analysis": "${share_root}/Projects/元胞自动机研究/src/research/results/method_renewal_birth_layout_review_20261018/allocation_identity.json",
+    "analysis_sha256": "e7efd5317b829618da326ef3f65fbe16d165ce486b2e2b4568c261f8257c9cb0",
+    "next_execution": "ce2 unique new bounded batch; not yet reported executed"
+  },
+  "birth_placement_value_completion": {
+    "status": "completed_target_closed",
+    "job": "fece0fb5-f2db-465d-9cc3-373933d3f727",
+    "host_steps": 9728,
+    "worker_seconds": 8.789298,
+    "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/birth_placement_value_20261018/handoff.json",
+    "source_sha256": "599cbfbd84e8319842b6a6bb3a8bbf1f1fb00f9a1ce576b86f4198087cbae304",
+    "diagnostic": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/birth_placement_value/handoff.json",
+    "diagnostic_sha256": "795014e0c0a9afbb47511e8bf8de1be662d5b5c0c4933b2a6eb4e33203debe48",
+    "finding": "等实际出生量下，EMA相对即时库存门，same摄取8/8负、swap7/8负，唯一正差2.52927e-10；相对均匀配置只有很小且逐指标不一致的收益。16个相依context来自两seed，不作为16个独立重复。",
+    "pi_structural_analysis": "${share_root}/Projects/元胞自动机研究/src/research/results/birth_placement_structural_review_20261018/handoff.json",
+    "pi_analysis_sha256": "c96cda7566349b5923dfd1b00ae0ce4100be8bfdf4a4489236123a27a5e13220"
+  },
+  "anticipatory_material_allocation": {
+    "status": "assigned_actual_implementation_and_experiment",
+    "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/anticipatory_material_allocation_20261018.json",
+    "sha256": "be1575942de0a314d3f7a44f64924c71d5baacf74f304b0a7f291d1140a704be",
+    "host_steps_cap": 200000,
+    "worker_seconds_cap": 600,
+    "new_result_available": false
+  },
+  "projection_latest_confirmed": {
+    "published_revision": 100,
+    "source": "knowledge_base/agents/lineage_75e3399f4877/residents/resident_4b26ea4a30af/workspace/renewable-allocation-release.json",
+    "scope": "5 groups, 9 tracks, 90 real saved states; allocation finite viability and matched update/freeze; birth placement not presumed published"
+  },
+  "anticipatory_material_allocation_completion": {
+    "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/handoff.json",
+    "sha256": "60e3fca596e007d0ebc9d2c365b3d626b1a020f14798ab4a5fbcfc9f1e92dd24",
+    "job": "3786e0f1-73a7-4da8-9bdb-ae8fff7fb44e",
+    "judgment": "真实U_phi训练完成且更新有用，但留出摄取stable/changed各0/4胜last，八变化窗恢复延迟相同。该候选关闭；实际提前准备接口保留，不称中心新方法完成。",
+    "d3_host_steps": 100864,
+    "joint_host_steps": 119456,
+    "joint_worker_seconds": 42.98199
+  },
+  "noisy_evidence_preparation": {
+    "status": "assigned_to_unique_executor",
+    "decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/noisy_evidence_preparation_20261018.json",
+    "sha256": "2a910b027533fe0e0bc7cadbd9d7a0bb5f7c1456bd02e54a29f434aadc682b18",
+    "request": "msg_b099c2e8cf39566f56b96df86110fcb6",
+    "host_steps_cap": 80544,
+    "worker_seconds_cap": 557.01801,
+    "source": "residual allocation within original 200000/600 shared tranche, no extra host allocation"
+  },
+  "manuscript_working_delivery_v11": {
+    "status": "internal_rewrite_actual_37_pages_3_GUI_main_7_supplement_52_references",
+    "pdf_sha256": "c347f4f9bc9ac4a14437bd887dd5b92e198a5ea928fdb005a962f2a2ea2416b0",
+    "public_default": "v045 unchanged",
+    "source": "src/articles/experience_memory/work/method_renewal"
+  },
+  "noisy_evidence_preparation_completion": {
+    "status": "completed_candidate_closed",
+    "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/noisy_evidence_preparation/handoff.json",
+    "sha256": "5c45bb7d4e578b8e157c962f381e46203375eda0740b4dd2bd5e4e1aeaca9ffc",
+    "job": "bb737931-b8ac-4671-864e-1b04060e5f87",
+    "new_host_steps": 76800,
+    "new_worker_seconds": 81.702378,
+    "joint_steps": 196256,
+    "joint_worker_seconds": 124.684368,
+    "unused_steps": 3744,
+    "unused_worker_seconds": 475.315632,
+    "finding": "学得更新器未胜当地Bayes/count。相对冻结的作用不等于方法额外价值；单端负对照Bayes/last身体全步一致。",
+    "pi_read_scope": "handoff SHA、REPORT/METHOD；未重算原路径或图、不冒称亲看5184场"
+  },
+  "active_observation_commitment": {
+    "status": "owners_running",
+    "objective_met": false,
+    "entry": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/active_observation_commitment_20261018.json",
+    "sha256": "3779e9ce422f7abed7020bd9691d17d545ac7e604084801404bf8fc6615dc8c7",
+    "host_request": "msg_2e3edad12107b6a149616a884d26e9a1",
+    "learning_request": "msg_11bb532786c976336926fb725265811d",
+    "host_active_input": "msg_3073f4812542635e6192bfc00cd57c35",
+    "learning_active_input": "msg_c9567594177e443b2cc9eeeabd6cc1ed",
+    "new_host_steps_cap": 131072,
+    "worker_seconds_cap": 300,
+    "physical_results_available": false,
+    "pi_exact_analysis": "${share_root}/Projects/元胞自动机研究/src/research/results/observation_decision_headroom_20261018/result.json"
+  },
+  "active_observation_commitment_completion": {
+    "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/active_observation_commitment/handoff.json",
+    "sha256": "c65e64a7bd664b2f27141055e234a1172d21faf41f91d1ba863df4b0a94ecd71",
+    "status": "completed_candidate_closed",
+    "joint_steps": 126225,
+    "joint_worker_seconds": 137.95879,
+    "unused_ce2_steps": 3823,
+    "unused_d3_steps": 1024,
+    "unused_not_reassigned": true,
+    "outer_search_improved": false,
+    "finding": "真实搜索保留初值，未胜固定value/threshold；不能称训练获得观察行为。"
+  },
+  "material_action_response": {
+    "status": "completed_candidate_closed",
+    "objective_met": false,
+    "decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/material_action_response_20261018.json",
+    "sha256": "c5eb5f4eef661a171be86e15f11fab4b6d1e6d91489ab8c50ccaee9349bbaecd",
+    "execution_receipt": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/material_action_response_20261018_execution.json",
+    "new_native_body_step_cap": 12288,
+    "worker_seconds_cap": 600,
+    "shared_location": "research.active_observation_commitment_20261018.next_branch",
+    "handoff": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/handoff.json",
+    "handoff_sha256": "7b0edc8db05b91f8750d3fb9e69398fdf75209ab5286d120e7e623dcdcd46ecf",
+    "joint_actual_steps": 4515,
+    "joint_worker_seconds": 348.924344,
+    "unused_steps": 7773,
+    "unused_worker_seconds": 251.075656,
+    "finding": "局部H8幸存条件岭模型在四相关context的摄取与末E均低于recent，运动费更高；关闭ridge/discount扫描。"
+  },
+  "native_investment_action": {
+    "status": "completed_feedback_gate_not_met",
+    "objective_met": false,
+    "decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/native_investment_action_20261018.json",
+    "sha256": "a6fc726bb8de578235a43c51cfd76d6df25d513233cad47c67623df50ac28fb7",
+    "execution_receipt": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/native_investment_action_20261018_execution.json",
+    "new_native_body_step_cap": 6144,
+    "worker_seconds_cap": 600,
+    "shared_location": "research.active_observation_commitment_20261018.next_branch.continuation",
+    "timing_analysis": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/native_investment_action_20261018_timing.json",
+    "question": "有限局部动作的延迟组织回报，以及随材料运输的意图能否提供可用的动作单元。",
+    "host_handoff": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/native_investment_action_20261018/handoff.json",
+    "host_sha256": "44afec3f92a82c7b95042117817ee48e3f8e569ffd22f22a10965af6a1621ff0",
+    "feedback_handoff": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/native_investment_action_feedback/handoff.json",
+    "feedback_sha256": "5079817398db785093088f40ff689c64e8dad7f0865a89bdb880887741d497e6",
+    "actual_native_steps": 4192,
+    "actual_worker_seconds": 266.97525,
+    "d3_actual_steps": 0,
+    "old_reference_steps": 1536,
+    "ce2_unused_steps": 416,
+    "d3_unused_steps": 1536,
+    "finding": "四叶体长驱动延迟有益，材料框架未胜Euler；大部分初始材料死亡，原生活载体没有全登记材料的终末反馈，未以幸存条件均值启动学习。",
+    "limits": "派生L保留比例是指定线性编码，不是一般信息上界；终末消息也不解决新生和邻居因果信用。"
+  },
+  "local_terminal_feedback": {
+    "status": "partial_time_cap_analysis_complete",
+    "objective_met": false,
+    "decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/local_terminal_feedback_20261018.json",
+    "sha256": "16e6cabd93f4f56157d563cc4e13ccf31a795a243993552ab1924fb924bd06c4",
+    "execution_receipt": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/local_terminal_feedback_20261018_execution.json",
+    "new_native_body_step_cap": 6144,
+    "worker_seconds_cap": 600,
+    "shared_location": "research.active_observation_commitment_20261018.next_branch.continuation.followup",
+    "question": "有价单跳终末消息能否保存原本丢失的已完成动作记录并改善固定近期控制；与同通信付费忽略消息/冻结内容比较。",
+    "learning_handoff": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/local_terminal_feedback/handoff.json",
+    "learning_sha256": "80d60f205f12a12c83ea84278802906824682eadf6c3d0e661b3eb01e8b780ef",
+    "d3_attempted_and_committed": 896,
+    "d3_native_failed_calls": 0,
+    "d3_worker_seconds": 397.27592,
+    "joint_actual_steps": 1667,
+    "joint_worker_seconds": 571.783956,
+    "completed_context": "0ac six futures",
+    "unrun_context": "6bd prefix64 only; no futures",
+    "finding": "合法消息改变首选择；同完整物理/公开场第二次选择由writer更新分开，recent比frozen部分收益更好。但相对none E−49.997287、体时−26.514655而U+58.531370，不称全面身体优势。",
+    "overall_strategy_judgment": "关闭固定近期描述率的跨身体优势主张；0ac与6bd更新收益及相对被动的E/体时方向相反。原partial记录不改，6bd独立补全另列。"
+  },
+  "local_terminal_feedback_6bd_completion": {
+    "status": "completed",
+    "objective_met": false,
+    "entry": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/local_terminal_feedback_6bd_completion_20261018.json",
+    "sha256": "67e128d91353dde15115d09435e3990b7919ffdd15c06fc11c0e7aec0a08d489",
+    "execution_receipt": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/local_terminal_feedback_6bd_completion_20261018_execution.json",
+    "new_native_body_step_cap": 640,
+    "worker_seconds_cap": 480,
+    "shared_location": "research.active_observation_commitment_20261018.next_branch.continuation.followup.completion_6bd",
+    "result_entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/local_terminal_feedback_6bd_completion/handoff.json",
+    "result_sha256": "09898262e500de65e40e40f100fab2e26e68d8ed07bd274d9ef81adbf2078695",
+    "job": "f906304e-b82b-4111-858b-a0fafb3aca0c",
+    "attempted": 640,
+    "committed": 640,
+    "worker_seconds": 87.957026,
+    "unused_seconds_frozen": 392.042974
+  },
+  "contextual_terminal_records": {
+    "status": "completed_strategy_closed",
+    "objective_met": false,
+    "entry": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/contextual_terminal_records_20261018.json",
+    "sha256": "66e6163de2709ee918b74d8d7584439fbe69d8539436f4d4f7af80b745746e6e",
+    "shared_location": "research.active_observation_commitment_20261018.next_branch.continuation.followup.contextual_continuation",
+    "native_step_cap": 1728,
+    "worker_seconds_cap": 900,
+    "owner": "resident_ce2a5ab005bc",
+    "learning_owner": "resident_d3ccfa2d95b7",
+    "dispatch": "msg_7ed9a1bb6f28b93190d16950cb3736d6",
+    "execution_receipt": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/contextual_terminal_records_20261018_execution.json",
+    "result_entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/contextual_terminal_records/handoff.json",
+    "result_sha256": "fe69d95a183ff0ff22850a298bcda9d01330691b435110be7934ec1000e68a7a",
+    "d3_native_steps": 1664,
+    "d3_worker_seconds": 695.402206,
+    "joint_native_steps": 1698,
+    "joint_worker_seconds": 752.520786
+  },
+  "adaptive_motor_frame": {
+    "status": "host_and_method_owners_active",
+    "entry": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/adaptive_motor_frame_20261018.json",
+    "sha256": "e2ec9367f94518910eb329d59dac0946783c89389d8797ac03c13bf76026aad9",
+    "shared_location": "research.active_observation_commitment_20261018.next_branch.continuation.followup.motor_calibration_continuation",
+    "objective_met": false,
+    "native_step_cap": 2176,
+    "worker_seconds_cap": 900,
+    "host_request": "msg_367f5aef3bd06b53247f27cfb313d0ac",
+    "method_request": "msg_00a25bde1f3e21a66117286c0814dfd0",
+    "execution_receipt": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/adaptive_motor_frame_20261018_execution.json"
+  },
+  "adaptive_motor_frame_completion": {
+    "status": "opportunity_gate_failed",
+    "handoff": "src/environment_evolution/results/adaptive_motor_frame_20261018/handoff.json",
+    "sha256": "5d2dfa9be358f0f840f2e14288e33f50a0820185a7f573e57111e4cf5cfcfce3",
+    "steps": 840,
+    "worker_seconds": 44.40215,
+    "d3_launched": false,
+    "unused_frozen": {
+      "ce2": [
+        56,
+        315.59785
+      ],
+      "d3": [
+        1280,
+        540
+      ]
+    },
+    "judgment": "两plant的特权补偿均较被动体时/E负；关闭当前身体效用候选，不称未运行的学习失败。"
+  },
+  "resource_wave_actionability_20261018": {
+    "status": "owner_active",
+    "entry": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/resource_wave_actionability_20261018.json",
+    "sha256": "ed5125da37031b516703242096aebbbb7e9ae04be81215d8e6ab97782aec0883",
+    "native_cap": 3136,
+    "worker_seconds_cap": 1200,
+    "owner": "resident_ce2a5ab005bc",
+    "objective_met": false,
+    "request": "msg_831f57c5bcff332f5f22707ef0a2603e",
+    "execution_receipt": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/resource_wave_actionability_20261018_execution.json"
+  },
+  "resource_wave_actionability_20261018_completion": {
+    "status": "completed_opportunity_not_established",
+    "entry": "src/environment_evolution/results/resource_wave_actionability_20261018/handoff.json",
+    "sha256": "e6d9e671e85a45f90b3144511c719c3123e3b374dba3ebb7c0a2fe11cff3ffff",
+    "steps": 3090,
+    "worker_seconds": 419.117056,
+    "unused_frozen": [
+      46,
+      780.882944
+    ],
+    "judgment": "8主动对照U增但末E全降，12轨晚64 M/E均降；关闭本固定生态试验，原门限不放宽。旧摘要能量字段更正以原stage账侧记为准，不改原值。"
+  },
+  "resource_matched_morphogenesis_20261018": {
+    "status": "completed_action_gate_failed",
+    "entry": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/resource_matched_morphogenesis_20261018.json",
+    "sha256": "7039a282a44377cb82870a3df020393b5d7d8e0a6189595a7977ac13d79a2a43",
+    "owner": "resident_d3ccfa2d95b7",
+    "native_cap": 4160,
+    "worker_seconds_cap": 1500,
+    "objective_met": false,
+    "request": "msg_465e9cb89bebbca3b01d59283a9e3f10",
+    "execution_receipt": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/resource_matched_morphogenesis_20261018_execution.json",
+    "completion": {
+      "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/resource_matched_morphogenesis_20261018/handoff.json",
+      "sha256": "ff98d1ce5906de0b114be1925f2f554bff477846d7cd5c676d40b39868f3c6c1",
+      "attempted_committed": 2563,
+      "worker_seconds": 257.971584,
+      "unused_frozen": [
+        1597,
+        1242.028416
+      ],
+      "first_export_failure_committed": 643,
+      "checkpoint_resume_same_job": true,
+      "replayed_steps": 0,
+      "judgment": "四双叶存留而十二他类早灭；生成规则与初态混杂。唯一部署gradient多摄取但末E下降，未过联合门；第二代不称优胜。"
+    }
+  },
+  "rule_geometry_resource_support_20261018": {
+    "task": "rule_geometry_resource_support_20261018",
+    "status": "completed_no_eligible_extension",
+    "owner": "resident_d3ccfa2d95b7",
+    "entry": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/rule_geometry_resource_support_20261018.json",
+    "sha256": "50de8341893a6a73a97a23afe2275b70cd0e553a5163a601feb2237ccd3583a6",
+    "request": "msg_382cf3c21dd0b1a00fe5fb05d6f40286",
+    "native_cap": 4640,
+    "worker_seconds_cap": 1200,
+    "old_budget_used": 0,
+    "objective_met": false,
+    "accepted_at": "2026-10-18T13:21:18.950943+00:00",
+    "execution_receipt": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/rule_geometry_resource_support_20261018_execution.json",
+    "started_at": "2026-10-18T13:20:53.967000Z",
+    "completion": {
+      "entry": "src/local_learning/results_20261018/rule_geometry_resource_support_20261018/handoff.json",
+      "sha256": "0e683fbda185911a620a60d6f9a081ce5b38d9aa0413caf96586e5636bc6fc92",
+      "actual": [
+        3584,
+        175.796824
+      ],
+      "reused_readonly_steps": 512,
+      "unused_frozen": [
+        1056,
+        1024.203176
+      ],
+      "summary": "32格23灭失，9有限存留而0过原门；f1 compact形成小环，支持资源提升新组织留存但晚补体未覆盖rule删除。"
+    }
+  },
+  "tissue_replacement_pf_location_20261018": {
+    "status": "completed_no_finite_renewal",
+    "entry": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/tissue_replacement_pf_location_20261018.json",
+    "sha256": "f2fcb23cea48d9af80b2ed626b0a20f1d39d9af07c57ac725581fbd23489e269",
+    "owner": "resident_d3ccfa2d95b7",
+    "cap": [
+      2080,
+      600
+    ],
+    "objective_met": false,
+    "request": "msg_8414e2247dfeecfdcf99dd51b5f76423",
+    "execution_receipt": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/tissue_replacement_pf_location_20261018_execution.json",
+    "handoff": "src/local_learning/results_20261018/tissue_replacement_pf_location_20261018/handoff.json",
+    "handoff_sha256": "1297a52fa61c3af755a3087cc300b4e140897085b87b819f421b1abb3b8833e1",
+    "actual": [
+      2048,
+      83.732428
+    ],
+    "unused_frozen": [
+      32,
+      516.267572
+    ],
+    "finding": "P/F位置有条件互补，真实新组织增加伴随旧组织删除；全部32预定窗出生不足。保外部配置成本边界。"
+  },
+  "local_metabolic_translocation_20261018": {
+    "status": "completed_finite_window",
+    "owner": "resident_ce2a5ab005bc",
+    "decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/local_metabolic_translocation_20261018.json",
+    "decision_sha256": "fc08b1946b3f8cf5dbb0fb6c3e4e3312bd164757a22e67bd7141e6a33d6eb51f",
+    "question": "有价局部协同资源转运能否改善真实组织替代，是否超过普通扩散？",
+    "cap": [
+      1056,
+      600
+    ],
+    "objective_met": false,
+    "request": "msg_40166a042a46a6677f29aaa81d2526f5",
+    "handoff": "src/environment_evolution/results/local_metabolic_translocation_20261018/handoff.json",
+    "handoff_sha256": "b5bd38dcbb886a386b2d233cd5a38c2719e2a8757e790d69f9fd30aeac1976f1",
+    "actual": [
+      1029,
+      61.589058
+    ],
+    "unused_frozen": [
+      27,
+      538.410942
+    ],
+    "finite_criterion_met": true,
+    "interpretation": "f2扩散唯一晚两窗通过；相对无泵末E低8.680755，费用21.956846，未证明普遍或长期维持/学习。"
+  },
+  "metabolic_maintenance_withdrawal_20261018": {
+    "status": "completed_finite_maintenance_with_tradeoff",
+    "owner": "resident_ce2a5ab005bc",
+    "decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/metabolic_maintenance_withdrawal_20261018.json",
+    "decision_sha256": "5d179cb62a92529ccbf658386ccb266643a6dab95e9605a8ed24fbc5cb13feb4",
+    "cap": [
+      2848,
+      600
+    ],
+    "science_steps": 2816,
+    "question": "同384扩散体持续/停止/停止128后恢复：后续维护是否需要持续付费？",
+    "objective_met": false,
+    "request": "msg_45d802d0fb43260865e17029f52e34c9",
+    "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/metabolic_maintenance_withdrawal_20261018/handoff.json",
+    "sha256": "fa8c06064d97a71f8d7e9ffbdcb17bb6a1d896bbd409384d1bb1d3b5eac0f6a2",
+    "actual": [
+      2821,
+      314.814888
+    ],
+    "unused_frozen": [
+      27,
+      285.185112
+    ],
+    "finite_pass": "f2_always_only",
+    "learning": false,
+    "interpretation": "f2 always八64窗补体覆盖死亡且E增，停泵八窗均补体不足；always较off末M+4.317818、体时+62.193150、末E-3.603944、泵费40.291550。restart改善规模但未恢复末四窗维护，不能称永久不可逆。f1三臂均未过。"
+  },
+  "metabolic_pump_timing_20261018": {
+    "status": "completed_negative",
+    "owner": "resident_ce2a5ab005bc",
+    "decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/metabolic_pump_timing_20261018.json",
+    "decision_sha256": "5e5982ae9a29e1fdd4a48b5a7b5b2997125622ff475f68de9e263fbe3aebed71",
+    "cap": [
+      4128,
+      900
+    ],
+    "science_steps": 4096,
+    "objective_met": false,
+    "request": "msg_dc3e259dcd9006e612320fb6c2441280",
+    "execution_receipt": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/metabolic_pump_timing_20261018_execution.json",
+    "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/metabolic_pump_timing_20261018/handoff.json",
+    "sha256": "54cdba58dd5ddc885f564a766680b8a8edf7e5d15391fc7366b119dac401c0d0",
+    "actual": [
+      4103,
+      309.614648
+    ],
+    "unused_frozen": [
+      25,
+      590.385352
+    ],
+    "judgment": "四个半暴露调度八新轨全未过原综合门。f2半连续虽省泵费62.3394%、最大质量差仅0.415346%，晚四窗仍全部出生不足；不救门，不延窗。"
+  },
+  "pump_cargo_factorial_20261018": {
+    "status": "completed_cargo_factorial",
+    "owner": "resident_ce2a5ab005bc",
+    "decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/pump_cargo_factorial_20261018.json",
+    "decision_sha256": "7fcdb776715bbcabcd93a829d2524f7720fcca4cf68eaf89fa991ed59092c935",
+    "cap": [
+      1056,
+      450
+    ],
+    "objective_met": false,
+    "request": "msg_55332428e275baf6deec610ca358b49a",
+    "execution_receipt": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/pump_cargo_factorial_20261018_execution.json",
+    "handoff": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/pump_cargo_factorial_20261018/handoff.json",
+    "handoff_sha256": "1c21dccbdc6747722f971ce76830f0245e6da97270429eb2918cfc21dc067530",
+    "actual": [
+      1044,
+      228.85126
+    ],
+    "unused_frozen": [
+      12,
+      221.14874
+    ],
+    "finding": "P即时增出生却延迟少留存；F留存增加伴死亡与能量代价，未救维护或学习目标。"
+  },
+  "cargo_delay_feedback_20261018": {
+    "status": "completed",
+    "owner": "resident_ce2a5ab005bc",
+    "decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/cargo_delay_feedback_20261018.json",
+    "decision_sha256": "a07be066990babb3ae273f44375c468015269bf8b53db3cdee72b37aadcdf2e8",
+    "cap": [
+      1568,
+      600
+    ],
+    "science_steps": 1536,
+    "objective_met": false,
+    "execution_receipt": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/cargo_delay_feedback_20261018_execution.json",
+    "request": "msg_bf20ad1fc001146e44dcccf9bb8ff4e2",
+    "handoff": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/cargo_delay_feedback_20261018/handoff.json",
+    "handoff_sha256": "e5f8081b7ce3013e0b525cd4cc6a6f83d2e329864bfcf8837f5e465e9918818a",
+    "actual": [
+      1536,
+      56.81718
+    ],
+    "unused_frozen": [
+      32,
+      543.18282
+    ]
+  },
+  "cargo_transport_payment_20261018": {
+    "status": "partial_budget_exhausted_closed",
+    "owner": "resident_ce2a5ab005bc",
+    "decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/cargo_transport_payment_20261018.json",
+    "decision_sha256": "f2468fa8a13e4c95dbd02b09582a2f8eaef4ee71f2e3e26f5a4a2748399db175",
+    "cap": [
+      1568,
+      600
+    ],
+    "objective_met": false,
+    "execution_receipt": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/cargo_transport_payment_20261018_execution.json",
+    "request": "msg_0f6db7e918a47f70bcf504bd1ce34de9",
+    "handoff": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/cargo_transport_payment_20261018/handoff.json",
+    "handoff_sha256": "159132b0738e0aefc1d3707ceea4a5a7485a47e1676d8d55b9e9df4add06daf2",
+    "actual": [
+      1200,
+      600.806816
+    ],
+    "missing_science": 336,
+    "worker_overrun": 0.806816,
+    "native_unused_sealed": 368
+  },
+  "pump_gradient_feedback_20261019": {
+    "status": "completed",
+    "owner": "resident_ce2a5ab005bc",
+    "decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/pump_gradient_feedback_20261019.json",
+    "decision_sha256": "a799e96c9908bf064f959a6ce5a9556eeedc110639c52b482187354086242784",
+    "cap": [
+      1568,
+      600
+    ],
+    "science_steps": 1536,
+    "objective_met": false,
+    "execution_receipt": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/pump_gradient_feedback_20261019_execution.json",
+    "readonly_diagnostic": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/pump_gradient_feedback_readout_20261019.json",
+    "request": "msg_93fb632a924b58e3a880798ecb381b3d",
+    "handoff": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/pump_gradient_feedback_20261019/handoff.json",
+    "handoff_sha256": "ee150a5b052688b66eec08bab99122298df7a1bad2646287b73077216c2cfdc3",
+    "actual": [
+      1536,
+      263.612546
+    ],
+    "unused_sealed": [
+      32,
+      336.387454
+    ]
+  },
+  "first_conversion_feedback_20261019": {
+    "status": "completed",
+    "owner": "resident_ce2a5ab005bc",
+    "decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/first_conversion_feedback_20261019.json",
+    "decision_sha256": "fcf450db01afb3ed0054ae5c43b6c6f3021bea4cdedf9b447da7808825d9fe2d",
+    "cap": [
+      1056,
+      600
+    ],
+    "science_steps": 1024,
+    "objective_met": false,
+    "execution_receipt": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/first_conversion_feedback_20261019_execution.json",
+    "request": "msg_09bc12469121f8cd5acb67a0bea3ccfe",
+    "handoff": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/first_conversion_feedback_20261019/handoff.json",
+    "handoff_sha256": "f39998e8d55b4788897302cc79dad156a9aad6a2ca9257a22910ba8d19d48300",
+    "actual": [
+      1024,
+      188.09818
+    ],
+    "unused_sealed": [
+      32,
+      411.90182
+    ],
+    "finding": "首转换后pre-pump body/E匹配仍half在+3/+4/+3/+3反转、off全64钟不反转。最早转换差不是该干预下反转必要条件；不能排除所有转换反馈，也未分离组织与资源竞争。gate明显削减出生，结果不作自然中介。"
+  },
+  "consumption_qualified_transport_20261019": {
+    "status": "completed_candidate_closed",
+    "owner": "resident_d3ccfa2d95b7",
+    "decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/consumption_qualified_transport_20261019.json",
+    "decision_sha256": "a45b4ceef888aa049b70a49361b19681a9df842561f7c051862502e00dd0585f",
+    "cap": [
+      6144,
+      1200
+    ],
+    "objective_met": false,
+    "execution_receipt": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/consumption_qualified_transport_20261019_execution.json",
+    "request": "msg_93fc82069125cd8f89cd5d1cddb2b185",
+    "method_support_request": "msg_ec8f9f95838efa07715d76c9d31ed2aa",
+    "started_at": "2026-10-18T16:45:45.982000Z",
+    "completion": {
+      "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/handoff.json",
+      "sha256": "fc2cd49b5d86ab1c3a8f77218209c3aedae9017af336ee34f3dd0850f1788acb",
+      "status": "closed_no_strong_baseline_advantage",
+      "actual_native": 5186,
+      "runner_worker_seconds": 508.249628,
+      "unused_sealed": [
+        958,
+        691.750372
+      ],
+      "selected": "simple EMA; min candidate rejected, duplicate EMA merged; no outer training",
+      "finding": "EMA比即时需求四对体时增加但末E全低；对冻写微差混合。真实消费→方向→身体接口成立，不证明新增历史控制优势。",
+      "failure_scope": "日志失败后的已提交385全态续接，0native重演/失败；一开发步标量及细收据缺失，未补造。"
+    },
+    "method_correction": {
+      "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_method_addendum_20261019/handoff.json",
+      "sha256": "b40f4e3251876639a0806797e8c9bff3e6d6fab7e2856ac476562ad924f45ddd",
+      "finding": "EMA/需求不是整臂纯方向比较；零权重源格停止泵送，首执行总量f1 .324439/.201948、f2 .768875/.489266。28保存事件同格入边单位利用率等至2.22e-16；原负结果、关闭与用量不改。"
+    }
+  },
+  "complementary_cargo_exchange_20261019": {
+    "status": "completed_conditional_physiology_no_maintenance",
+    "owner": "resident_ce2a5ab005bc",
+    "decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/complementary_cargo_exchange_20261019.json",
+    "decision_sha256": "e0807f67ff7d8d8c943e21bc8890338fb6abdce3b87ae4a6660680e7456677e4",
+    "cap": [
+      3104,
+      900
+    ],
+    "objective_met": false,
+    "execution_receipt": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/complementary_cargo_exchange_20261019_execution.json",
+    "request": "msg_50d195df4d11ec4ae9da538423ad264a",
+    "started_at": "2026-10-18T17:18:17.668000Z",
+    "completion": {
+      "status": "completed_conditional_physiology_no_maintenance",
+      "result_entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/complementary_cargo_exchange_20261019/handoff.json",
+      "result_sha256": "cc00f42e34a321b2c19c2e4bded840e81d8ef04c25fc4fdae26d5a2c115cf4f2",
+      "actual_native": 3072,
+      "runner_worker_seconds": 181.354156,
+      "unused_sealed": [
+        32,
+        718.645844
+      ],
+      "finding": "分离条件需求分货两规则均比bundle/none末M/E/体时高，但全部16轨32晚窗出生不足且E降；固定能力非学习。"
+    }
+  },
+  "maintenance_aware_cargo_20261019": {
+    "status": "completed",
+    "owner": "resident_ce2a5ab005bc",
+    "decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/maintenance_aware_cargo_20261019.json",
+    "decision_sha256": "3e181ddfa5504586d4f2eb4076938c5b530c43ef822912ba16fb932d21e1b285",
+    "cap": [
+      1568,
+      600
+    ],
+    "objective_met": false,
+    "execution_receipt": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/maintenance_aware_cargo_20261019_execution.json",
+    "request": "msg_f86ce2f528bf643de0a1ea9c6c349068",
+    "started_at": "2026-10-18T17:41:01.368000Z",
+    "completion": {
+      "status": "completed_conditional_destination_effect_no_joint_net_gain",
+      "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/maintenance_aware_cargo_20261019/handoff.json",
+      "sha256": "55ad59c578bdf26260fac695c284d997c63a17ccb1c72e517d4ad107e3031be1",
+      "job": "c62b044b-ee58-42e0-aee3-999b3a7e3055",
+      "actual": [
+        1536,
+        129.57481
+      ],
+      "unused_sealed": [
+        32,
+        470.42519
+      ],
+      "finding": "分离target比uniform两规则M/E/体时/新组织均正；比birth-only只有f1净益，f2旧体损失抵消新增。8新轨16晚窗全部出生不足/E降。",
+      "native_failures": 0,
+      "setup_failures": "两次pre-job启动故障未形成job/占槽，隔离控制绑定修正后科学唯一提交。"
+    }
+  },
+  "turnover_compatible_morphogenesis_20261019": {
+    "status": "completed_runner_partial_protocol",
+    "owner": "resident_d3ccfa2d95b7",
+    "decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/turnover_compatible_morphogenesis_20261019.json",
+    "decision_sha256": "d2fa622364bf338129622132759031b5a3ab025de4c5f168b5cc93d23d5a9a86",
+    "cap": [
+      7200,
+      1800
+    ],
+    "objective_met": false,
+    "execution_receipt": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/turnover_compatible_morphogenesis_20261019_execution.json",
+    "request": "msg_15fe81b2ff0b85d7345c7debd0c43e87",
+    "started_at": "2026-10-18T17:58:15.755000Z",
+    "completion": {
+      "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/handoff.json",
+      "sha256": "1d1e19754d61c77ea7b4275d24c6baafbb8430db354346a27e3640924b50bb8a",
+      "job": "890654b4-a7fa-462d-acf4-3d995635b0b9",
+      "runner_status": "completed",
+      "protocol_status": "partial_second_parent_missing",
+      "actual_native": 6144,
+      "actual_runner_worker_seconds": 308.930886,
+      "old_unused_sealed": [
+        1056,
+        1491.069114
+      ]
+    },
+    "next_decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/turnover_second_parent_completion_20261019.json"
+  },
+  "turnover_second_parent_completion_20261019": {
+    "status": "completed",
+    "owner": "resident_d3ccfa2d95b7",
+    "decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/turnover_second_parent_completion_20261019.json",
+    "decision_sha256": "06dae607292d982abb0cfad93a7e07b9ed6bac47a223c7c5df799f65d7a80aee",
+    "cap": [
+      1024,
+      300
+    ],
+    "objective_met": false,
+    "execution_receipt": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/turnover_second_parent_completion_20261019_execution.json",
+    "request": "msg_3f6e3669962bcafd9db6d6078ae97be1",
+    "started_at": "2026-10-18T18:15:49.262000Z",
+    "completion": {
+      "status": "formation_coverage_completed_chronology_gap_preserved",
+      "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_second_parent_completion_20261019/handoff.json",
+      "sha256": "8da7fd2299925ab45d240be2cb6c2a5b6b4db8ab689c4f7d9932de583c007d49",
+      "job": "2b392f3c-1942-48c9-9622-df7fe47271db",
+      "native": 1024,
+      "runner_worker_seconds": 69.055352,
+      "unused_worker_seconds_sealed": 230.944648,
+      "finding": "四子排序p0c0/p0c1/p1c1/p1c0，新增两子双叶分离不合格，不延长。p1c1改善主要为创始体保存；原两子提前选优时序缺口和12维护失败保留。"
+    },
+    "next_decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/developmental_history_rule_swap_20261019.json"
+  },
+  "developmental_history_rule_swap_20261019": {
+    "status": "completed",
+    "owner": "resident_d3ccfa2d95b7",
+    "decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/developmental_history_rule_swap_20261019.json",
+    "decision_sha256": "839e38aff5c9d13f8eabf2cdabc9e5e6feecf528b323f9cf8e619b6204b00216",
+    "execution_receipt": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/developmental_history_rule_swap_20261019_execution.json",
+    "cap": [
+      1028,
+      450
+    ],
+    "objective_met": false,
+    "request": "msg_f3ec207ce3e1b05b8b94136d78311aa0",
+    "started_at": "2026-10-18T18:26:40.819000Z",
+    "handoff": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/developmental_history_rule_swap_20261019/handoff.json",
+    "handoff_sha256": "299e31dbf262d9da0b0651ceb03a6af31f0f28f1f8921a938516c07fb4900c21",
+    "actual_native": 1028,
+    "runner_worker_seconds": 49.649426,
+    "next_decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/paid_local_turnover_recycling_20261019.json"
+  },
+  "paid_local_turnover_recycling_20261019": {
+    "status": "completed",
+    "owner": "resident_ce2a5ab005bc",
+    "decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/paid_local_turnover_recycling_20261019.json",
+    "decision_sha256": "102424ee076f2aef8c37a7cd31dd74a4db319827d7b763d9aa1382f08ae4713b",
+    "execution_receipt": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/paid_local_turnover_recycling_20261019_execution.json",
+    "cap": [
+      3076,
+      900
+    ],
+    "objective_met": false,
+    "request": "msg_9fd5f7fb0b661bb318d0ff7066b3359f",
+    "started_at": "2026-10-18T18:42:43.226000Z",
+    "handoff": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/paid_local_turnover_recycling_20261019/handoff.json",
+    "handoff_sha256": "13a5392e5056aaa88c2d1ac0cae12a8aab1482716a8bb35d627081a06a9a7fc2",
+    "actual_native": 3072,
+    "runner_worker_seconds": 111.597578,
+    "finite_maintenance_pass": "1/8 recycle; 0/8 none/inert",
+    "next_decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/recycling_precursor_dependence_20261019.json"
+  },
+  "recycling_precursor_dependence_20261019": {
+    "status": "completed",
+    "owner": "resident_ce2a5ab005bc",
+    "decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/recycling_precursor_dependence_20261019.json",
+    "decision_sha256": "366aae37e85a680a0dd3c604fe20257e1d57ba53c0e1254e679b11470eef72e2",
+    "execution_receipt": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/recycling_precursor_dependence_20261019_execution.json",
+    "cap": [
+      2052,
+      600
+    ],
+    "objective_met": false,
+    "request": "msg_ca7a0b136a26f8d97c8c966f86c7eddb",
+    "started_at": "2026-10-18T19:00:40.765000Z",
+    "handoff": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycling_precursor_dependence_20261019/handoff.json",
+    "handoff_sha256": "509cf1b028e732519d74f8052034016b4f1af9681ebe28fdfb72685fb44a51a2",
+    "actual_native": 2048,
+    "runner_worker_seconds": 149.458776,
+    "usage_discrepancy": "消息148.458776；冻结execution/REPORT149.458776，按后者登记。",
+    "maintenance_pass": "0/8 full-four and final-two windows",
+    "next_decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/recycled_cargo_local_routing_20261019.json"
+  },
+  "recycled_cargo_local_routing_20261019": {
+    "status": "completed",
+    "owner": "resident_ce2a5ab005bc",
+    "decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/recycled_cargo_local_routing_20261019.json",
+    "decision_sha256": "8bf670bebda0fe9934099910c84dcefced64978b26249b3f335c2bfdb94c5887",
+    "execution_receipt": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/recycled_cargo_local_routing_20261019_execution.json",
+    "cap": [
+      2052,
+      600
+    ],
+    "objective_met": false,
+    "request_message_id": "msg_eb48fd45819ce13eada0984fc23f9dda",
+    "owner_started_at": "2026-10-18T19:19:22.376000Z",
+    "shared_cas_instruction": "inst_lin_89abc363e4c3d2aedd30",
+    "new_native_completed": 0,
+    "result": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/handoff.json",
+    "result_sha256": "cc471ef3be1e67ce529e94350e8bf79ca2ba898ed4ab35a10d2618a19950d43b",
+    "actual_native": 2048,
+    "actual_worker_seconds": 123.449822,
+    "sealed_unused": [
+      4,
+      476.550178
+    ],
+    "next_decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/paid_material_precursor_reserve_20261019.json"
+  },
+  "paid_material_precursor_reserve_20261019": {
+    "task": "paid_material_precursor_reserve_20261019",
+    "status": "completed_negative",
+    "owner": "resident_ce2a5ab005bc",
+    "decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/paid_material_precursor_reserve_20261019.json",
+    "decision_sha256": "ebf09d966864d2b7a5f8e5e9740597af2729814028341071ebfefbea77e2ff8a",
+    "cap": [
+      2052,
+      600
+    ],
+    "native_by_PI": 0,
+    "new_native_completed": 0,
+    "request_message_id": "msg_06f2ae0675c8fe8b2f7c5f0a7f7b00d0",
+    "owner_started_at": "2026-10-18T19:39:44.894000Z",
+    "owner_pending_at_confirmation": 0,
+    "shared_cas_instruction": "inst_lin_6aaed0820f86f763c9ff",
+    "result": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/paid_material_precursor_reserve_20261019/handoff.json",
+    "result_sha256": "5abf367c828d1ab3c34a480836b11f98c20a8138768fcea63beffffb4b167ff3",
+    "actual_native": 2048,
+    "actual_worker_seconds": 103.700166,
+    "sealed_unused": [
+      4,
+      496.299834
+    ],
+    "next_decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/resource_conditioned_growth_rule_20261019.json"
+  },
+  "resource_conditioned_growth_rule_20261019": {
+    "task": "resource_conditioned_growth_rule_20261019",
+    "status": "completed_candidate_closed",
+    "owner": "resident_d3ccfa2d95b7",
+    "decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/resource_conditioned_growth_rule_20261019.json",
+    "decision_sha256": "c0ca7e00c7fcd64685b8016c675cddf83e300954c1b2a0c700f0e25100c58396",
+    "cap": [
+      9312,
+      1800
+    ],
+    "native_by_PI": 0,
+    "new_native_completed": 0,
+    "request_message_id": "msg_6f5e97ad95e9a20d5d8d942206eb52d8",
+    "owner_started_at": "2026-10-18T19:58:48.416000Z",
+    "owner_pending_at_confirmation": 0,
+    "shared_cas_instruction": "inst_lin_a91f7684bf73f3917207",
+    "result": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/handoff.json",
+    "result_sha256": "557f7c82043c06ce9db8edeb67ac042ff04cec6db991c98506aa1ac88778d2e2",
+    "actual": [
+      5828,
+      266.974714
+    ],
+    "sealed": [
+      3484,
+      1533.025286
+    ],
+    "trained_new_behavior": false,
+    "next_task": "spatial_birth_request_coordination_20261019"
+  },
+  "spatial_birth_request_coordination_20261019": {
+    "task": "spatial_birth_request_coordination_20261019",
+    "status": "completed_maintenance_negative",
+    "owner": "resident_d3ccfa2d95b7",
+    "decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/spatial_birth_request_coordination_20261019.json",
+    "decision_sha256": "99121f1cd6277a40a75e02beaf127aa637ad6d5fb9c6ee10b5b65d3cc75fb873",
+    "cap": [
+      3080,
+      900
+    ],
+    "native_by_PI": 0,
+    "new_native_completed": 0,
+    "request_message_id": "msg_a744fa5932f8144dce1003ca7cf4fe79",
+    "dispatch_instruction": "inst_lin_f52d13b93015402ed816",
+    "shared_cas_instruction": "inst_lin_4f095fb846979abd35d5",
+    "shared_cas_matched": true,
+    "owner_started_at": "2026-10-18T20:28:11.052000Z",
+    "owner_pending_at_confirmation": 0,
+    "result": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_birth_request_coordination_20261019/handoff.json",
+    "result_sha256": "e19829c9c1970869d94ee2b530ec9fe8f6b08556da5821b4fe2311d82af397a6",
+    "actual": [
+      3076,
+      310.395638
+    ],
+    "sealed": [
+      4,
+      589.604362
+    ],
+    "next_task": "birth_site_compatibility_cohort_20261019"
+  },
+  "birth_site_compatibility_cohort_20261019": {
+    "task": "birth_site_compatibility_cohort_20261019",
+    "status": "completed_mixed_sign_effect_closed",
+    "owner": "resident_d3ccfa2d95b7",
+    "decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/birth_site_compatibility_cohort_20261019.json",
+    "decision_sha256": "781942926ac88ced32d5a176b7d34df8f3dc70e19ba4353029701fd4b6099cb5",
+    "cap": [
+      1028,
+      450
+    ],
+    "native_by_PI": 0,
+    "new_native_completed": 0,
+    "request_message_id": "msg_76df7e1a08dd21560b47fe879463e94c",
+    "dispatch_instruction": "inst_lin_038667376b6256e24a64",
+    "shared_capacity_record": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/birth_site_compatibility_cohort_20261019_shared_capacity.json",
+    "shared_cas_matched": true,
+    "shared_instructions": [
+      "inst_lin_9594a75b269ace897474",
+      "inst_lin_e162b59a0a957e4737ee"
+    ],
+    "owner_started_at": "2026-10-18T20:48:47.896000Z",
+    "owner_pending_at_confirmation": 0,
+    "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/birth_site_compatibility_cohort_20261019/handoff.json",
+    "sha256": "13a95fa6d0498936a5328dd5f59ab873f20e66092d5c6575c3f344d59f50b206",
+    "actual": [
+      836,
+      48.380726
+    ],
+    "sealed": [
+      192,
+      401.619274
+    ],
+    "next_task": "fixed_amount_rule_deletion_layout_20261019"
+  },
+  "fixed_amount_rule_deletion_layout_20261019": {
+    "task": "fixed_amount_rule_deletion_layout_20261019",
+    "status": "completed_scientific_choice_closed",
+    "owner": "resident_d3ccfa2d95b7",
+    "decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/fixed_amount_rule_deletion_layout_20261019.json",
+    "decision_sha256": "b0aa717151f71b66cf9577437a4aeb3ede4a2ce6958e58dc081807cac770474f",
+    "cap": [
+      1544,
+      600
+    ],
+    "native_by_PI": 0,
+    "request_message_id": "msg_972f5f3f641329f67734f729344fccff",
+    "dispatch_instruction": "inst_lin_3bce4b2f7e0f7f7e79ae",
+    "shared_receipts": [
+      {
+        "key": "research.progress",
+        "instruction": "inst_lin_e561994e893a702c740a",
+        "matched": true
+      },
+      {
+        "key": "research.active_observation_commitment_20261018",
+        "instruction": "inst_lin_f891c1e6505687ddf8a3",
+        "matched": true
+      }
+    ],
+    "owner_started_at": "2026-10-18T21:04:38.709000Z",
+    "owner_pending_at_confirmation": 0,
+    "readout_stage_addendum": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/birth_cohort_exposure_readout_20261019/stage_qualification_addendum.json",
+    "handoff": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/fixed_amount_rule_deletion_layout_20261019/handoff.json",
+    "handoff_sha256": "4c8022c30feb3f7cf313d226a731a6e191149e8dcc08a75c7b565cdbf86a7b74",
+    "actual_native": 1540,
+    "actual_worker_seconds": 79.087806,
+    "unused_sealed": [
+      4,
+      520.912194
+    ],
+    "next_task": "deletion_layout_life0_formation_20261019",
+    "objective_met": false
+  },
+  "deletion_layout_life0_formation_20261019": {
+    "task": "deletion_layout_life0_formation_20261019",
+    "status": "completed_scientific_choice_closed",
+    "owner": "resident_d3ccfa2d95b7",
+    "decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/deletion_layout_life0_formation_20261019.json",
+    "decision_sha256": "7211fd3c9d4a4902fc7d4fbbef6f1eefb42f8bc1f17431e4d1149dbefa786930",
+    "cap": [
+      4104,
+      900
+    ],
+    "native_by_PI": 0,
+    "objective_met": false,
+    "request_message_id": "msg_9f1cac355169a90d326000b6fc4169ea",
+    "dispatch_instruction": "inst_lin_06aa65b91629831972d7",
+    "shared_receipts": [
+      {
+        "key": "research.progress",
+        "instruction": "inst_lin_45b6171730b6853516b5",
+        "matched": true
+      },
+      {
+        "key": "research.active_observation_commitment_20261018",
+        "instruction": "inst_lin_c2a3b71b30e50441a54e",
+        "matched": true
+      }
+    ],
+    "owner_started_at": "2026-10-18T21:19:17.570000Z",
+    "owner_pending_at_confirmation": 0,
+    "handoff": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/deletion_layout_life0_formation_20261019/handoff.json",
+    "handoff_sha256": "70910cb085dee351e4a2aab3fbc80a478b5fd98dbad07c25ace79e69f8f12c37",
+    "actual_native": 4104,
+    "actual_worker_seconds": 198.646404,
+    "unused_sealed": [
+      0,
+      701.353596
+    ],
+    "next_task": "replacement_history_carrier_20261019"
+  },
+  "replacement_history_carrier_20261019": {
+    "task": "replacement_history_carrier_20261019",
+    "status": "completed_scientific_choice_closed",
+    "owner": "resident_d3ccfa2d95b7",
+    "decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/replacement_history_carrier_20261019.json",
+    "decision_sha256": "3fa390af9ec9060fc9fa51d20502a95e29a1ed311ecf0c3050ffad0d6d64b3ea",
+    "cap": [
+      6664,
+      1200
+    ],
+    "objective_met": false,
+    "native_by_PI": 0,
+    "request_message_id": "msg_e8dcfbf7e13c1db24c243c803c495edc",
+    "dispatch_instruction": "inst_lin_c07b61991a50e772de56",
+    "shared_receipts": [
+      {
+        "key": "research.progress",
+        "instruction": "inst_lin_323d505d8815eadb732c",
+        "matched": true
+      },
+      {
+        "key": "research.active_observation_commitment_20261018",
+        "instruction": "inst_lin_6c695bf0c13fc95224a7",
+        "matched": true
+      }
+    ],
+    "owner_started_at": "2026-10-18T21:30:01.728000Z",
+    "owner_pending_at_confirmation": 0,
+    "handoff": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/replacement_history_carrier_20261019/handoff.json",
+    "handoff_sha256": "2c79356d025a68cb636de438ce3aac19b2e2fc1c9e7c20a3af30b9378d3d54cf",
+    "actual_native": 6664,
+    "actual_worker_seconds": 369.899856,
+    "unused_sealed": [
+      0,
+      830.100144
+    ],
+    "next_task": "spatial_coverage_acquired_body_20261019"
+  },
+  "spatial_coverage_acquired_body_20261019": {
+    "task": "spatial_coverage_acquired_body_20261019",
+    "status": "completed_scientific_choice_closed",
+    "owner": "resident_d3ccfa2d95b7",
+    "decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/spatial_coverage_acquired_body_20261019.json",
+    "decision_sha256": "27618c056cc09765bcc13fa188ebcb01ac228d438918cb3de66f444a521d705d",
+    "cap": [
+      3584,
+      900
+    ],
+    "objective_met": false,
+    "native_by_PI": 0,
+    "request_message_id": "msg_6944cfebf6dba25d68dd8772d2c0cef5",
+    "dispatch_instruction": "inst_lin_e1b9e74ae9c962b3d2b8",
+    "shared_receipts": [
+      {
+        "key": "research.progress",
+        "instruction": "inst_lin_bc533975fc95e04b5a1a",
+        "matched": true
+      }
+    ],
+    "shared_scope": "Only PI current direction in existing research.progress replaced. Existing completed owner result and deep chain left unchanged; no new cell or duplicate long next chain.",
+    "shared_byte_delta": -41,
+    "handoff": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/handoff.json",
+    "handoff_sha256": "8e0672824cdb65da02ae3f1f8e7c3b3fd66ac4e1a3f15c74ea694feb75b66e59",
+    "actual_native": 3584,
+    "actual_worker_seconds": 186.76506,
+    "unused_sealed": [
+      0,
+      713.23494
+    ],
+    "next_task": "third_response_generation_search_20261019"
+  },
+  "third_response_generation_search_20261019": {
+    "task": "third_response_generation_search_20261019",
+    "status": "completed_scientific_choice_closed",
+    "owner": "resident_d3ccfa2d95b7",
+    "decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/third_response_generation_search_20261019.json",
+    "decision_sha256": "23479403c6680a301406929b5ca5111ab539179e33a16bba66a548515ced0020",
+    "cap": [
+      4100,
+      1200
+    ],
+    "objective_met": false,
+    "native_by_PI": 0,
+    "request_message_id": "msg_fde616c8d928baf336457b534787d1b6",
+    "dispatch_instruction": "inst_lin_4bd25bbf63a9a74d8a1c",
+    "shared_receipts": [
+      {
+        "key": "research.progress",
+        "instruction": "inst_lin_683386bcb34efcccc4cd",
+        "matched": true
+      }
+    ],
+    "shared_scope": "Only PI current direction in existing research.progress replaced. Existing completed owner result and deep chain left unchanged; no new cell or duplicate long next chain.",
+    "shared_byte_delta": 10,
+    "handoff": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/third_response_generation_search_20261019/handoff.json",
+    "handoff_sha256": "0a5ad186fdb3562bb4660d844b5bd54f2945d22e443a3464127f0e43a83e1dd6",
+    "actual_native": 4100,
+    "actual_worker_seconds": 197.56489,
+    "unused_sealed": [
+      0,
+      1002.43511
+    ],
+    "next_task": "renewal_preservation_choice_factorial_20261019",
+    "scientific_choice": "Close this search universal advantage; keep fixed conditional midpoint and late true-renewal target; preserve all4 maintenance positives and alwaysC deaths."
+  },
+  "renewal_preservation_choice_factorial_20261019": {
+    "task": "renewal_preservation_choice_factorial_20261019",
+    "status": "completed_scientific_choice_closed",
+    "owner": "resident_d3ccfa2d95b7",
+    "decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/renewal_preservation_choice_factorial_20261019.json",
+    "decision_sha256": "e7f091f2bb919919d1e0b05e044a6387a6630b44de88b129847e2580bccbd552",
+    "cap": [
+      1796,
+      600
+    ],
+    "objective_met": false,
+    "native_by_PI": 0,
+    "request_message_id": "msg_411c3d7df4bc225eda5e3fe66100018a",
+    "dispatch_instruction": "inst_lin_978f11ca9e8353e1722c",
+    "shared_receipts": [
+      {
+        "key": "research.progress",
+        "instruction": "inst_lin_6b3d1cbe75a8c29750fd",
+        "matched": true
+      }
+    ],
+    "shared_scope": "Only PI current direction in existing research.progress replaced. Existing completed owner result and deep chain left unchanged; no new cell or duplicate long next chain.",
+    "shared_byte_delta": -16,
+    "handoff": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/renewal_preservation_choice_factorial_20261019/handoff.json",
+    "handoff_sha256": "15a208ff747f7668a5ad6ffff41391997b8f7b72741f21267f46dd8d22a8ff8e",
+    "actual_native": 1796,
+    "actual_worker_seconds": 114.722546,
+    "unused_sealed": [
+      0,
+      485.277454
+    ],
+    "next_task": "postbirth_cohort_policy_crossover_20261019",
+    "scientific_choice": "Close G-only common guarded advantage and R-only universal replacement; keep both finite128 maintenance strong baseline. New question is future effect on a fixed already-born cohort."
+  },
+  "postbirth_cohort_policy_crossover_20261019": {
+    "task": "postbirth_cohort_policy_crossover_20261019",
+    "status": "completed_scientifically_closed",
+    "owner": "resident_d3ccfa2d95b7",
+    "decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/postbirth_cohort_policy_crossover_20261019.json",
+    "decision_sha256": "05ee97a030634bb3a6805251ac3f2cf09715531ad2a7705985e3d97353c98237",
+    "cap": [
+      1024,
+      450
+    ],
+    "objective_met": false,
+    "native_by_PI": 0,
+    "request_message_id": "msg_3994e36c177d8e206db4d9df7fa991ea",
+    "dispatch_instruction": "inst_lin_c4aad5bff7854b14a7e6",
+    "shared_receipts": [
+      {
+        "key": "research.progress",
+        "instruction": "inst_lin_61e0adaa434288bf375f",
+        "matched": true
+      }
+    ],
+    "shared_scope": "Only PI current direction in existing research.progress replaced. Existing completed owner result and deep chain left unchanged; no new cell or duplicate long next chain.",
+    "shared_byte_delta": -19,
+    "result": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/postbirth_cohort_policy_crossover_20261019/handoff.json",
+    "result_sha256": "38e3b6e66d258e3b551a5b695e0ba3f13d27d6835785f14c60061056006422eb",
+    "actual_native": 1024,
+    "new_crossovers": 512,
+    "authorized_known_replay": 512,
+    "worker_seconds": 157.880912,
+    "unused_sealed": [
+      0,
+      292.119088
+    ],
+    "next_task": "birth_clock_retention_accounting_20261019",
+    "scientific_choice": "收束出生后跨接。保留both对既有C与旧O的有限后续支持，以及两G史分离体的有用恢复；关闭普遍新生特异、四态完整更新及不可逆损伤解释。本轮不回到参数训练，先用完整已存转运分清后续N的出生输入与同龄留存。"
+  },
+  "birth_clock_retention_accounting_20261019": {
+    "task": "birth_clock_retention_accounting_20261019",
+    "status": "completed_scientifically_closed",
+    "owner": "resident_d3ccfa2d95b7",
+    "decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/birth_clock_retention_accounting_20261019.json",
+    "decision_sha256": "78d93154363638d926aebb3f6db00765177f134bc6feb467de0b4622d9896579",
+    "cap_native": 0,
+    "cap_offline_cpu_seconds": 300,
+    "objective_met": false,
+    "native_by_PI": 0,
+    "request_message_id": "msg_4f697c1fbb3bc581b958f303b2bd3e7e",
+    "dispatch_instruction": "inst_lin_15434b0561504b87948e",
+    "shared_receipt": {
+      "instruction": "inst_lin_7690f2fbcd9f7a9b1fbf",
+      "matched": true
+    },
+    "shared_byte_delta": -18,
+    "shared_scope": "Only PI current-science pointer replaced; completed owner leaf, control and other members preserved.",
+    "result": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/birth_clock_retention_accounting_20261019/handoff.json",
+    "result_sha256": "4bfe364d73c88f59a5b03bef922ebc10104419057a29e8460cc192d07a4f926e",
+    "actual_native": 0,
+    "recorded_offline_cpu_seconds": 11.94779,
+    "new_bytes": 18298702,
+    "scientific_choice": "接受出生钟分析终版：有限both支持与出生输入/留存的算术区分成立，保留同龄反例和非因果边界。关闭ready同D重选正支候选在当前八父的部署：其严格可付增益为0。独立检验转换时点重选正支，保留原both删除决定。",
+    "next_task": "conversion_time_birth_branch_20261019"
+  },
+  "conversion_time_birth_branch_20261019": {
+    "task": "conversion_time_birth_branch_20261019",
+    "status": "completed_scientifically_closed",
+    "owner": "resident_d3ccfa2d95b7",
+    "decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/conversion_time_birth_branch_20261019.json",
+    "decision_sha256": "5d1154109a042132a6313c266b85e975c68ebccee6a6c2eb731da987ba0f51a2",
+    "cap": [
+      520,
+      450
+    ],
+    "objective_met": false,
+    "native_by_PI": 0,
+    "request_message_id": "msg_1370ac34d928f2f6a4ce9f13205491cd",
+    "dispatch_instruction": "inst_lin_7e3901be33e969dadf05",
+    "shared_receipt": {
+      "instruction": "inst_lin_7c932b1b2ce066ea0f5e",
+      "matched": true
+    },
+    "shared_byte_delta": -8,
+    "shared_scope": "Only PI current-science pointer replaced; completed owner leaf, control and other members preserved.",
+    "result": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/conversion_time_birth_branch_20261019/handoff.json",
+    "result_sha256": "08334473307a2db7ad93de6f43b28063691001357cd2027cb133b55b3a02c8ba",
+    "actual_native": 520,
+    "actual_worker_seconds": 48.844336,
+    "unused_native": 0,
+    "unused_worker_seconds": 401.155664,
+    "scientific_choice": "收束conversion时点固定即时择生的跨父普遍部署：保5601 separate/G的1/8微小条件阳性、全部反例和原both强同行。停止该规则的时点/阈值/幅度优化。独立检验第三生成响应的邻域聚合顺序，不把即时出生最大化继续当部署目标。",
+    "next_task": "response_pooling_order_20261019"
+  },
+  "response_pooling_order_20261019": {
+    "task": "response_pooling_order_20261019",
+    "status": "completed_scientifically_closed",
+    "owner": "resident_d3ccfa2d95b7",
+    "decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/response_pooling_order_20261019.json",
+    "decision_sha256": "5d363cae2dde723b185a43af1b6eaa77803ee62b9f48e9f381b345ec4f42be3f",
+    "cap": [
+      516,
+      450
+    ],
+    "objective_met": false,
+    "native_by_PI": 0,
+    "request_message_id": "msg_23997e1dcf0f06f98985b9955657ae9d",
+    "dispatch_instruction": "inst_lin_3c130ef15fab484a7250",
+    "shared_receipt": {
+      "instruction": "inst_lin_09e0b4d07d3eca2db285",
+      "matched": true
+    },
+    "shared_byte_delta": -3,
+    "shared_scope": "Only PI current-science pointer replaced; completed owner leaf, control and other members preserved.",
+    "result": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/response_pooling_order_20261019/handoff.json",
+    "result_sha256": "c343ba8284792295a53fdc390d687602aa288b2a3f1699c68a18e94f70231798",
+    "actual_native": 516,
+    "actual_worker_seconds": 49.75859,
+    "unused_native": 0,
+    "unused_worker_seconds": 400.24141,
+    "scientific_choice": "关闭固定response-after-pooling的共同有用更新/默认部署：0/4全门，末N四增而既有C四减；保原fixed both强同行。不续扫mu/sigma/权重/时点。一次有限离线拟合先检验局部过去信息是否增加出生后留存的可预测性，停止继续凭即时代理逐个拼固定生理规则。",
+    "next_task": "history_conditioned_retention_forecast_20261019"
+  },
+  "history_conditioned_retention_forecast_20261019": {
+    "task": "history_conditioned_retention_forecast_20261019",
+    "status": "completed_scientifically_closed",
+    "owner": "resident_d3ccfa2d95b7",
+    "decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/history_conditioned_retention_forecast_20261019.json",
+    "decision_sha256": "bae478c4d6543a8a0d2ec32c21166055b567ea7c9e085b0002112a28027414da",
+    "native_cap": 0,
+    "offline_cpu_seconds_cap": 120,
+    "objective_met": false,
+    "request_message_id": "msg_e8f4d64dbd113d1d4de0f982439520e9",
+    "dispatch_instruction": "inst_lin_6d5d79db4653700c823b",
+    "shared_receipt": {
+      "instruction": "inst_lin_7767e27b2aa25b23321b",
+      "matched": true
+    },
+    "shared_byte_delta": -37,
+    "shared_scope": "Only PI current-science pointer replaced; completed owner leaf, control and other members preserved.",
+    "result": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/handoff.json",
+    "result_sha256": "2cff6b8fee915918cbf11c6252ee542699ccae07520aa393409cd784b159ddc2",
+    "actual_native": 0,
+    "actual_worker_seconds": 0,
+    "measured_offline_cpu_seconds": 5.517706,
+    "charged_offline_cpu_seconds": 6.517706,
+    "unused_offline_cpu_seconds": 113.482294,
+    "new_bytes": 3962713,
+    "scientific_choice": "关闭固定4步Euler历史预测的四轨共同增量价值和部署主张；保3/4主留出改善、5602 separate/G→both反例及G压力组不及常数。保fixed both与C/O/N、M/E/体时原门，不部署writer、预测器或身体干预。",
+    "next_task": "paired_policy_material_fate_20261019"
+  },
+  "paired_policy_material_fate_20261019": {
+    "task": "paired_policy_material_fate_20261019",
+    "status": "completed_scientifically_closed",
+    "owner": "resident_d3ccfa2d95b7",
+    "decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/paired_policy_material_fate_20261019.json",
+    "decision_sha256": "3a8755e8740e2196d8e45a7cff1ab35686c58a9ad1c837566b1abe12f3075a04",
+    "native_cap": 0,
+    "offline_cpu_seconds_cap": 60,
+    "objective_met": false,
+    "request_message_id": "msg_d13f3d65cf47a01f5bd6bf6d28ec75a2",
+    "dispatch_instruction": "inst_lin_66d6f9302ce12a3644eb",
+    "shared_receipt": {
+      "instruction": "inst_lin_8dbaa5f56bd0443bf001",
+      "matched": true
+    },
+    "shared_byte_delta": -23,
+    "shared_scope": "Only PI current-science pointer replaced; completed owner leaf, control and other members preserved.",
+    "result": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/paired_policy_material_fate_20261019/handoff.json",
+    "result_sha256": "5dc7368d2b463bb6d79f0e2fa756e4fbd3bd4361dbc3e434ce9ee7e49cd72bec",
+    "actual_native": 0,
+    "actual_worker_seconds": 0,
+    "charged_offline_cpu_seconds": 9.198719,
+    "unused_offline_cpu_seconds": 50.801281,
+    "new_bytes": 5345855,
+    "scientific_choice": "关闭both的全来源空间支配及从事后存留图逐格拼接writer的路径；保整体支持、来源异质性、两G史分离体恢复阳性与fixed both强同行。结束本来源图分析链，独立检验一次可执行生成构造。",
+    "next_task": "material_carried_generation_choice_20261019"
+  },
+  "material_carried_generation_choice_20261019": {
+    "task": "material_carried_generation_choice_20261019",
+    "status": "completed_scientifically_closed",
+    "owner": "resident_d3ccfa2d95b7",
+    "decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/material_carried_generation_choice_20261019.json",
+    "decision_sha256": "9afd14763a1e21c2ad6089bebca8eab5bfcb0438b373f364b16ea362d64d1632",
+    "native_cap": 520,
+    "worker_seconds_cap": 450,
+    "offline_cpu_seconds_cap": 60,
+    "objective_met": false,
+    "request_message_id": "msg_541d4bcd552568a25349b7645e857ab4",
+    "dispatch_instruction": "inst_lin_34088cecb535d15aecf2",
+    "shared_receipt": {
+      "instruction": "inst_lin_d7f8d0567b74b928edfd",
+      "matched": true
+    },
+    "shared_byte_delta": -12,
+    "shared_scope": "Only PI current-science pointer replaced; completed owner leaf, control and other members preserved.",
+    "result": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_carried_generation_choice_20261019/handoff.json",
+    "result_sha256": "557b63f9c5f8f26565757bad711ab3f6ee72214895004fd7c367a4070948b82a",
+    "actual_native": 520,
+    "actual_worker_seconds": 46.641952,
+    "charged_offline_cpu_seconds": 7.920822,
+    "raw_bytes": 110906639,
+    "sealed_worker_seconds": 403.358048,
+    "sealed_offline_cpu_seconds": 52.079178,
+    "scientific_choice": "关闭本固定材料携带构造的共同净收益及部署主张，保fixed midpoint both。结束对同一局部选择的参考系/混合/时点微改链；另立一个按多步真实留存约束选型的空间感受核分支。",
+    "next_task": "cohort_constrained_kernel_search_20261019"
+  },
+  "cohort_constrained_kernel_search_20261019": {
+    "task": "cohort_constrained_kernel_search_20261019",
+    "status": "cancelled_superseded",
+    "owner": "resident_d3ccfa2d95b7",
+    "decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/cohort_constrained_kernel_search_20261019.json",
+    "decision_sha256": "5985c9210f6fb2eeb747ad215bbaa48146fb120ceae6e8069badee157a32255e",
+    "native_cap": 4104,
+    "runner_worker_seconds_cap": 1200,
+    "offline_cpu_seconds_cap": 120,
+    "objective_met": false,
+    "request_message_id": "msg_9ccaf588f7f21e0d578c2bebb9886302",
+    "dispatch_instruction": "inst_lin_aafa3a689a16b7b03cca",
+    "shared_receipt": {
+      "instruction": "inst_lin_19aa80506fd0260c450f",
+      "matched": true
+    },
+    "shared_byte_delta": -4,
+    "shared_scope": "Only PI current-science pointer replaced; completed owner leaf, control and other members preserved.",
+    "prior_dispatch_status": "dispatch_accepted",
+    "cancelled_at": "2026-10-19T00:23:40Z",
+    "replacement": "lifetime_behavior_reset_20261019",
+    "cancellation_evidence": {
+      "task": "cohort_constrained_kernel_search_20261019",
+      "request": "msg_9ccaf588f7f21e0d578c2bebb9886302",
+      "actual_state": "cancelled",
+      "cancelled_at": "2026-10-19T00:23:40Z",
+      "evidence_instruction": "inst_lin_942179bf0ef2ed79d95f",
+      "system_reply": "msg_849e55d88429bdc393c2e48761b37bc1",
+      "system_text": "resident_afa3d4d6cf11 已停止当前 Codex 运行。",
+      "cause_limit": "系统记录确认本人Resident停止，但未给出更深原因。未发现任务实现或结果目录，不据此编造科学步数零。",
+      "repair": "撤回dispatch_accepted作为当前状态，标记cancelled_superseded；不重启、不挪用封存余额。"
+    },
+    "unverified_compute_usage": null
+  },
+  "future_evaluation": "以明确行为能力、习得/重学速度与保持为主结果；必要存续单列，能量、组织周转和运动代价作为可解释取舍；不设所有指标必须优于同行的通用门。",
+  "lifetime_behavior_reset_20261019": {
+    "task": "lifetime_behavior_reset_20261019",
+    "status": "science_complete_analysis_resumed_direction_continues",
+    "decision": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/lifetime_behavior_reset_20261019.json",
+    "decision_sha256": "1c3b466faf05523e394a8a6e6a2d3411ed762521c725f9c88dc6bea2b359add5",
+    "owner": "resident_d3ccfa2d95b7",
+    "request_message_id": "msg_8750ebab8ab2cc3171eee0a2ae87fa8a",
+    "execution_evidence_instruction": "inst_lin_54f8f64bc8c375c13a0d",
+    "scientific_result": {
+      "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/lifetime_cue_reversal_20261019/science_result.json",
+      "status": "complete",
+      "scientific_native": 26112,
+      "total_with_pilot": 28032,
+      "paths": 72
+    },
+    "objective_met": false,
+    "shared_receipt": {
+      "instruction": "inst_lin_ad0d19b8ea66f9663a04",
+      "matched": true,
+      "changed": true
+    },
+    "shared_byte_delta": -13,
+    "method_review": {
+      "status": "read_and_integrated",
+      "entry": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/lifetime_behavior_reset_20261019_review.txt",
+      "sha256": "2cd6a8339497c8bba42522a9f5b8ec476c19c89e2de94caa6e2002c300eac9f3",
+      "owner": "resident_33af539c4a17",
+      "delivery_to_active_owner": "msg_fe8944c9bc01a58347dac38a271bb097",
+      "limits": "本批计算已完成；行为能力成立于受控宿主，强delta亦成功，方法增量未建立；保持不等于A→B→A再习得。",
+      "structured_entry": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/lifetime_behavior_reset_20261019_review.json",
+      "structured_sha256": "feeca0d24ae0823deea7437c4fd813389d5ef27b07c1056c2a382543d0e5dfb1"
+    },
+    "route_choice": {
+      "entry": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/lifetime_cue_reversal_route_choice_20261019.json",
+      "sha256": "13b804660b63510c57fa7f54785ad6450798dd4899d9c603052c1605d1acbd6b",
+      "decision": "continue_existing_pilot_with_fast_delta_first",
+      "owner_request": "msg_e644a83593206e653bbeb43532113d8f"
+    },
+    "manuscript_preview": {
+      "status": "awaiting_temporary_operations_credential",
+      "entry": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/article_v046_preview_authorization_20261019.json",
+      "holder": "TFI portal",
+      "operator": "resident_2461a452e3f7",
+      "pi_run_script_permitted": false
+    },
+    "old_input_state": "cancelled",
+    "continuing_request_message_id": "msg_2ef4715104354b84cac82cb816f0e990",
+    "continuation_record": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/lifetime_parallel_continuation_20261019.json"
+  },
+  "lifetime_parallel_continuation_20261019": {
+    "entry": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/lifetime_parallel_continuation_20261019.json",
+    "status": "future_task_evidence_choice_dispatched",
+    "objective_met": false,
+    "latest_scientific_choice": {
+      "entry": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/future_task_evidence_reuse_choice_20261019.json",
+      "sha256": "ba86df5a99f5a0bce8cbb19bcf117925a2701c8f0e0077b1564515ed8df9ef09",
+      "objective_met": false
+    }
+  }
+}

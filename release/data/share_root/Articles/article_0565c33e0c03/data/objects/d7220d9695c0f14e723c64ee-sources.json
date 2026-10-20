@@ -1,0 +1,33 @@
+{
+  "primary": [
+    {
+      "title": "Tero, Kobayashi & Nakagaki 2007",
+      "url": "https://eprints.lib.hokudai.ac.jp/repo/huscap/all/28041/JTB244-4.pdf",
+      "path": "${share_root}/Agents/lineage_75e3399f4877/residents/resident_33af539c4a17/workspace/research/consumption_qualified_transport_20261019/primary/tero2007.pdf",
+      "sha256": "07a8cb7554bb2c4ea9ba9987f3fa2a7c2f51ff2cce7f1f39afa354e83447c426",
+      "locations": [
+        "section3.1-3.3 equations1-6, PDF7-8/manuscript6-7",
+        "section4.1,5.2,6; figures5-9,13-14"
+      ],
+      "read_scope": "primary text: model, simulations, simple graph analysis, discussion; no claim of independent visual review of all figures"
+    },
+    {
+      "title": "Reglin, Secomb & Pries 2017",
+      "url": "https://www.frontiersin.org/journals/physiology/articles/10.3389/fphys.2017.00813/full",
+      "path": "${share_root}/Agents/lineage_75e3399f4877/residents/resident_33af539c4a17/workspace/research/consumption_qualified_transport_20261019/primary/reglin2017.pdf",
+      "sha256": "2bf8e312e61189d1abb50445207e736ff9cd1be9275c30cb6dcaf070b565ffd6",
+      "locations": [
+        "PDF3 Methods Eq1",
+        "PDF5 signal convection/conduction",
+        "PDF6-9 Results/Discussion Figures3-6, especially dilution mechanism PDF9"
+      ],
+      "read_scope": "original model paper based on measured 576-segment network; not empirical proof of cargo credit learning"
+    }
+  ],
+  "not_fulltext_verified": [
+    "Pries et al.1998 publisher403; not used for equation-level claims"
+  ],
+  "non_primary_search_candidates_not_used": [
+    "Greenwald et al.2018; not added to review"
+  ]
+}

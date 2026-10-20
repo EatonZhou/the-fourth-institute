@@ -1,0 +1,16 @@
+实现范围与再现入口
+源 local_learning.turnover_compatible_morphogenesis.core/run；原始冻结副本在source/。plan.json SHA9e3f2ef30481af0ec50631d7b0de21d6597ddb892a211e764f3b16d6d6fafa88。实际规则和子代在actual_records/actual_children，选择在selection.json；runner spec、控制快照、纯装配检查与首实际native事务检查均保存。不要将再现入口误用为授权重跑。
+
+新life0：由既有construct重建四来源双核规则，继承原kernel_log_scales，仅复用规则，不复用旧取得身体/库存。所有规则都用固定中性compact和double_lobe构造，M64/E64，外P/F零，founder_mass=rho，其余热/废料/死能/记忆/极性等为零。0..384外部输入图由life0 rho的既有3×3 A/B一次确定，供给总量沿原真实数组，半衰64，地图不移动库存。单步zero行动→原FormationBody/MaterialActionBody一次原生→固定birth-only joint-demand和原execute一次分货。旧宿主、正负生长响应、价格和localE不改。
+
+遗传：仅前8规则基因可变，最后3初形基因固定0。沿已有幅度和LIMITS，PCG64的3001..3004种子及每可能父/slot的提议在前向前预登记。没有外层梯度或CEM，没有个体内更新器；两个实际子使用3001/3002，3003/3004未执行。变化含mu/sigma、双核相对权重和形状等，不以简单遗传程序主张算法新意。生命周期内规则/核字节固定。
+
+选择：四context聚合最差晚64平均M、born−death、ΔE及后生组织；繁殖资格为每context M128及晚64均M>=32。实际rank错误地只保留合格组，唯一合格f2产生两子；应选两不同提议父的原协议没有完成。selection_completion.py是完成后提出的纯修正，不用于已运行轨迹。它保合格排序优先，再用剩余完整规则fallback补足提议位；部署资格不变。protocol_deviation.json明确记录漏跑和未来修正边界。
+
+续接：实际合格子g2_p0_c0与其直接遗传父各四context的真实128完整包。每context子pump、同子none、父pump各256。停泵只更换未来policy，取得状态完整一致；子父并非同128体。每16步完整latest事务、预定0/32/64/96/128/192/256/320/384稀疏字段、对应完整状态/实际收据、每步标量均保存。没有二次物理取图或重演前缀。
+
+费用/来源：原泵.05 survivor共享载量/.08q和face/旧E reserve保持；P/F同一运输能力约束。新生不能支付旧体动作债。生成热、模板热、出生燃料/能量、基础费、泵费、库存/外流和逐级拒绝分列；分项存在账内转化，勿把全部列盲加成单一成本。all_steps.csv为原生事务连续行；stage_accounting为实际每条轨迹求和；windows含每个64步窗与同源实际前缀。累计bodytime=.05×sum(M_post)。父子对照须同时读全期和128后窗。
+
+只读验收：原价与源SHA一致；每个life0相同非规则配置；输入gross相同；pending-native可保存并恢复但不重复推进；规则/核不变；请求顺序分账及全物能守恒；四fork全对象只允许policy差。最终约束误差<=7.383e-14。真实死亡保终末，不能当缺测；无重新给予已死候选资源或补命。
+
+原件入口raw_manifest.json（625项）与frames.json（180项）。REPORT的形态观察来自六张实际序列，figure_sources绑定精确NPZ与裁窗；没有图像生成。所有阴性、欠费和方案漏跑保留。raw742625831B，预算只计本唯一job6144步/308.930886占槽worker秒；1056步未用封存，不转旧额度。

@@ -1,0 +1,20 @@
+association_readout_recontact_20261019 — actual motor-only readout intervention
+
+科学结论：共享暂闭关联运动读出恢复有限实际反馈，但没有形成主体回返。4对readout_pause在反馈段出现124/125次总区质量>=0.24的主体接触，正支付381/382次、实际总能量增益0.58875..0.64790；首次总区主体接触在+53/+56。好区峰值质量0.19380..0.21726，一直未达到另列的好区主体门0.24，不能把所有正支付叫主体接触。原读出8支仍零支付/零接触机会。
+学习表达的窄阳性：readout_pause写入与冻写配对，前384步所有存下的物理/支付标量完全一致；实际2432态body/E/trace/polarity/感觉aux[:5]逐位相同，只关联Q及bank不同。恢复同一原读出且无反馈后，写入支末64好区平均组织量0.013107..0.013363，冻写支1.15e-7..7.67e-7。可识别关联状态表达对微小接触/动作的作用，不需要逆造或补跑任何态。这隔离Q+关联bank的联合状态，不把Q和bank拆为独立原因。
+行为失败仍保留：所有16支反馈末窗与无反馈末窗均0个主体接触更新，0/16通过冻结的行为判据；写入后末窗比例0.69745..0.73384，分母仅平均0.01787..0.01915组织，不能把这个比例叫重新学会或有效觅食。fast与joint均呈小幅表达，没有joint独特优势。
+同体延续：父为上一转向批实际2048四个存续写入分支（它们各自与冻写最终完全相同）。不复活上一批8条连通失败，不重演取得。每父original/readout_pause×write/freeze四支。384有支付时，仅暂停支actor规则cue_gain由18改0；感觉/登记/迹/关联学习仍收同真实cue与本地结果。原极性幅度0.45、转速0、价格/世界不变。后128恢复cue_gain18，全支无支付/写入，不重置Q、身体或极性。
+日程外定且首native前冻结；这是共有的执行器探索干预，不是个体自发学会暂停或新门，未读取隐藏意义/目标位置。暂闭时身体可以穿过回避读出限制，但不是材料瞬移；每步仍原native与实际付费。
+存续与费用：16/16走完512并通过原存续规则；末M23.2071..23.6408，E2.1251..2.7615，已显著接近储能耗竭。readout_pause运动费约1.0453..1.0458，原读出约1.0301..1.0324。反馈收益不抵384/512步全部基础代谢；不以所有身体指标同升筛结果。低能且无持续主体觅食，不宣称稳态或永久保持。
+独立计账：job ad4ac8e6-8d32-47e7-b7fd-8a14dc557161，8192 attempted/returned、unknown0，51.468148 runner-worker秒，原件43654859字节；旧余额未借，原取得/尾窗重演0。计划cap8192/160，余0/108.531852秒封存。纯配对态核验和图均0native。
+核验：所有分支初态与其真实父逐字段精确；joint冻写bank每步等原材料运输，无额外关联写入；完整E误差最大7.67e-15；后效无支付。冻结读出期各配对物理量相等不是事后筛选，而是Q不进actor时实测的结果。
+可引用数据：all_branches.csv全16支、blocks.csv全部64窗（含不足）、paired_differences.csv、factorial_interactions.csv、expression_same_body_check.json。交互只作同父有限设计差，不当自然中介比例。time/elapsed_wall及feedback_steps保双轴，不把支付更新当独立经历样本。
+实际序列：2048/2176/2432/2560全16身体已亲看，原环弧又拉成条带并绕过大部分支付区。actual_recontact.gif实际保存每4步、显示每8步，无插值、居中校正或强制经历；图中T表示temporary readout_pause，本批并无转向。
+下一有区别的问题：少量接触后的关联信息已可表达，但不足以让整身体持续进入资源区。优先研究局部信息如何组织整身体行动及自主恢复探索，保alpha1/固定共享探索为强简单对照，不再把暂无反馈归咎学习或加复杂写门。当前不延长这些低能父或放宽接触门；后续应另冻新低成本协议，检验协调/行动能力，不把本批微观表达先写成主体适应。
+宿主/解释边界：无出生的可变形材料CA，不是刚体点；感觉、动作、基础凝聚及外部支付场预置；学习和旋转算术/存储未物理计价，运动真实扣费。两相关布局×fast/joint不是独立世界。本批意义未再次反转，不是新反转学习成功。
+
+逐条件写入/冻写后效：
+fast_delta layout0: shared physical2432 exact=True; first meaningful+53; meaningful total updates=125; positive energy=0.647898216; write/freeze last64 good meanM=0.0131214086584/7.65031422098e-07; body-weighted abs ΔQ=0.009235127.
+joint_delta layout0: shared physical2432 exact=True; first meaningful+56; meaningful total updates=124; positive energy=0.588984188; write/freeze last64 good meanM=0.0133630589884/1.15446308207e-07; body-weighted abs ΔQ=0.011082127.
+fast_delta layout1: shared physical2432 exact=True; first meaningful+53; meaningful total updates=125; positive energy=0.647390459; write/freeze last64 good meanM=0.0131065960652/7.66545293855e-07; body-weighted abs ΔQ=0.009226797.
+joint_delta layout1: shared physical2432 exact=True; first meaningful+56; meaningful total updates=124; positive energy=0.588748764; write/freeze last64 good meanM=0.0133546799733/1.16299342735e-07; body-weighted abs ΔQ=0.011078426.

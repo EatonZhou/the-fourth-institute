@@ -1,0 +1,57 @@
+{
+  "schema": "pi.regenerative-excision-transfer.v1",
+  "status": "authorized",
+  "owner_resident_id": "resident_ce2a5ab005bc",
+  "owner_facade": "resident_4e35778304b2",
+  "shared_key": "research.regenerative_excision_transfer_20261018",
+  "request_key": "ce2-regenerative-excision-transfer-20261018-v1",
+  "body_forward_cap": 256,
+  "independent_energy_cap": 0,
+  "cpu_threads": 2,
+  "gpu": 0,
+  "scientific_question": "在紧凑开口体与正在展开的多环体中，固定侧向组织移除后的付费生成是否恢复自身未损伤路径的身体组织？分开存留、质量补偿、原切区原位出生与组织输入。此问题不检验学习，也不把图像环单元当独立个体。",
+  "selection": "本次新未来前固定两身体open_T11的完整256态；不按未来恢复程度选择，不增加策略轴。",
+  "sources": [
+    {
+      "branch": "reference_anisotropic--connected_trilobe--open_T11",
+      "step": "256",
+      "kind": "new_atomic",
+      "path": "/data/lenia-research/lineage_75e3399f4877/regenerative_reserve_morphology_transfer_20261018/10238c47-5624-4f8b-acee-a5a478f50549/reference_anisotropic--connected_trilobe--open_T11/transactions/000256.npz",
+      "sha256": "abb91a662a14eed204ab5d59b57ff0bd10450fe0141ae9020fbea95e16d30249"
+    },
+    {
+      "branch": "compact_ring_core_outer--bridged_longbody--open_T11",
+      "step": "256",
+      "kind": "new_atomic",
+      "path": "/data/lenia-research/lineage_75e3399f4877/regenerative_reserve_morphology_transfer_20261018/10238c47-5624-4f8b-acee-a5a478f50549/compact_ring_core_outer--bridged_longbody--open_T11/transactions/000256.npz",
+      "sha256": "d3cee1bfbb75b9a50012896f8ab928bfc3fb748fbcabd2d8e85a810393ee63bd"
+    }
+  ],
+  "intervention": {
+    "when": "完整state256之后、action257之前，一次外部组织切除，不计成模型前向；剂量和全部账独立记录。",
+    "mask_rule": "复用旧developmental_excision的20% +x质量切除规则，尺寸从其64常量泛化为实际96。由原rho圆周质量质心定义相对x，列按相对x降序、列号稳定破平；逐列移除，最终列用同一分数精确补足总M的20%。在两源上静态生成并封存mask后才运行。不得改变比例/方向/时点追恢复。",
+    "ledger": "切除rho同格转waste，切除E同格转dead_energy（原模型对应死亡能量账），不能转F/P或作为可用热回收，不退款。保持总物质/能量含损伤账闭合。该外部脉冲与后续出生/规则死亡/费用分列。",
+    "state": "按当前actor完整字段的真实语义处理组织：广延身体/携带E/founder等按相同存留比例，存活格浓度与策略/时钟保持、空格按原空体语义清理。需列字段映射，不把18数组一律缩放。核/P/F/既存废物热死亡账/外生带与其他非组织状态不作改变；只有新增切除账变化。原历史receipt不可改写。",
+    "validation": "只验证新增移除映射、全账、完整ready恢复及原source不变；不重复原policy套件，不调用身体/能量预览。旧无身体输运的observer不可直接用于本actor，必须消费实际K。"
+  },
+  "futures": {
+    "new": "两损伤分支各128步257..384，共256；原open_T11两个同窗完整未来256唯一packet只读复用，0重演。",
+    "tape": "复用本1536批同96公共带的257..384切片，世界/forcing逐值同。",
+    "physics": "T11原付费P/F搬运、open a1、.42出生、fresh-brake/learnfalse，无记忆。核/物理/策略/费用/环境全部冻结；单次切除是唯一新干预。"
+  },
+  "readout": [
+    "两新+两旧完整绝对M/E/体时/U/q/生/规则死/饥饿/运动维护与资源费/库存/携能损失，初始损伤M/E单列；所有死亡与零尾保存。",
+    "固定1/8/32/64/128累计与分段、损伤相对同身体原未来差；形态/连通开合/孔洞只作描述。不能把不同规则/历史的两体作纯形态中介或独立重复。",
+    "原固定切区中身体流入/流出、原位出生、规则死和后续身体损失列路径账。若做旧存活/新生被动示踪，使用保存实际K及当步真实死亡比例，不影响模型，不把身体移动回切区称局部再生。",
+    "保全原坐标每8步真帧及初始切除前后图；绝对M回升/达原质量不等形态修复、稳定或独立模块。未恢复或解体同样交付，不延窗救援。"
+  ],
+  "runtime": {
+    "raw_root": "/data/lenia-research/lineage_75e3399f4877/regenerative_excision_transfer_20261018",
+    "soft_budget_gib": 64,
+    "free_space_gate_gib": 4,
+    "jobs": 1,
+    "concurrency": "保持原总并发，不增加GPU任务",
+    "control": "提交/运行前读取research.desired_state与started；paused/stopped不启动。失败尝试计入256，未知inflight拒绝重演。"
+  },
+  "execution": "本文件授权完成必要新静态/纯检查后冻结唯一执行plan并提交，不另设审批。若字段或守恒账无法实现，回报具体冲突而非绕过；不暗改旧模型。旧1536及所有旧预算封存。"
+}

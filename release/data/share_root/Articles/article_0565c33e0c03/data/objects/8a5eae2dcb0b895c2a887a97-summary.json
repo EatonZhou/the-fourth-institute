@@ -1,0 +1,156 @@
+{
+  "status": "completed",
+  "objective_met": false,
+  "formation_candidates": 16,
+  "complete_formations": 16,
+  "families": [
+    {
+      "family": "compact",
+      "proposed": 4,
+      "completed": 4,
+      "eligible": 0,
+      "extinct": 4,
+      "M": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "E": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "family": "ring",
+      "proposed": 4,
+      "completed": 4,
+      "eligible": 0,
+      "extinct": 4,
+      "M": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "E": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "family": "double_lobe",
+      "proposed": 4,
+      "completed": 4,
+      "eligible": 4,
+      "extinct": 0,
+      "M": [
+        47.12368115629485,
+        47.96136163804684,
+        49.083339099618044,
+        36.130974964014975
+      ],
+      "E": [
+        66.97351391349986,
+        68.20079772339895,
+        68.20364178113704,
+        53.23722068088866
+      ]
+    },
+    {
+      "family": "separate_seeds",
+      "proposed": 4,
+      "completed": 4,
+      "eligible": 0,
+      "extinct": 4,
+      "M": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "E": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  ],
+  "eligible_candidates": 4,
+  "deployment_parents": 1,
+  "passed_action_gates": 0,
+  "pairs": [
+    {
+      "id": "g1_f2_c1",
+      "family": "double_lobe",
+      "delta_M": -0.8411040717259688,
+      "delta_E": -1.899069346940415,
+      "delta_U": 5.597175557199741,
+      "delta_bodytime": 30.348490249618465,
+      "delta_actor_movement_paid": 1.7650626108541667,
+      "delta_actor_basal_paid": 0.364686545438456,
+      "delta_birth_fuel": 1.2502561357453112,
+      "delta_synthesis_heat": 0.5953600646406243,
+      "delta_template_heat": 0.0595360064640624,
+      "delta_external_energy_out": -5.3921794468442386,
+      "delta_born": 2.976800323203121,
+      "delta_death": 3.81790439492908,
+      "passed": false
+    }
+  ],
+  "max_cumulative_material_error": 2.4868995751603507e-14,
+  "max_cumulative_energy_error": 1.4210854715202004e-13,
+  "max_scalar_reconstruction_error": 0.0,
+  "scalar_steps": 2560,
+  "parent_fork_hashes": [
+    {
+      "id": "g1_f2_c1",
+      "file": "body.npz",
+      "sha256": "5327c2edeca47814877538be2c7b8405e75a97b9a4cf4bf52f0d0561a8450716"
+    },
+    {
+      "id": "g1_f2_c1",
+      "file": "exchange.npz",
+      "sha256": "0fcf844a6a71d73cf3d264aaa1307e34c198d4d36ceba7b11aa772af28ca0620"
+    },
+    {
+      "id": "g1_f2_c1",
+      "file": "ready.json",
+      "sha256": "7494e45592ef630343b95c8d9def137c986feb5899c065679b44336955346f11"
+    }
+  ],
+  "basal_unpaid": 1.3627685781687163e-15,
+  "budget": {
+    "native_cap": 4160,
+    "worker_cap": 1500,
+    "attempted": 2563,
+    "committed": 2563,
+    "failed_calls": 0,
+    "counts": {
+      "boundary": 3,
+      "formation": 2048,
+      "deployment": 512
+    },
+    "job_attempts": 2,
+    "first_attempt_export_failure": true,
+    "replayed_steps": 0,
+    "worker_seconds": 257.971584,
+    "remaining_steps": 1597,
+    "remaining_worker_seconds": 1242.028416,
+    "old_budget_used": 0,
+    "unused_not_transferable": true
+  },
+  "figures": [
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/resource_matched_morphogenesis_20261018/formation_generation_1.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/resource_matched_morphogenesis_20261018/formation_generation_2.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/resource_matched_morphogenesis_20261018/formation_curves.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/resource_matched_morphogenesis_20261018/actual_deployment.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/resource_matched_morphogenesis_20261018/deployment_sequence.png"
+  ],
+  "inference": "Exploratory hereditary rule/initialization search, not lifetime learning, steady state, independent-world confirmation or novel algorithm."
+}

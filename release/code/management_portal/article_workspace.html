@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title data-portal-site-title="[&quot;Article Workspace&quot;]">Article Workspace</title>
+    <link rel="stylesheet" href="/static/portal_components.css" />
+    <link rel="stylesheet" href="/static/portal_workbench.css" />
+    <link rel="stylesheet" href="/static/portal_image_editor.css" />
+    <link rel="stylesheet" href="/static/resource_tabs.css" />
+    <link rel="stylesheet" href="/static/article_workspace.css" />
+    <link rel="stylesheet" href="/static/portal_design_system.css" data-portal-skin="default" />
+    <link rel="stylesheet" href="/static/portal_themes.css" data-portal-skin-provider="themes" />
+    <link rel="stylesheet" href="/static/portal_board_toolbar.css" />
+    <script src="/static/portal_state.js"></script>
+    <script src="/static/portal_text.js"></script>
+    <script src="/static/portal_translations.js"></script>
+    <script src="/static/portal_i18n.js"></script>
+    <script src="/static/portal_theme.js"></script>
+    <script src="/static/portal_page_state.js"></script>
+    <script src="/static/portal_api.js"></script>
+    <script src="/static/portal_instruction_client.js"></script>
+    <script src="/static/portal_society_service.js"></script>
+    <script src="/static/portal_resident_service.js"></script>
+    <script src="/static/portal_resource_registration_service.js"></script>
+    <script src="/static/portal_passkeys.js"></script>
+    <script src="/static/portal_identity.js"></script>
+    <script src="/static/portal_overlay.js"></script>
+    <script src="/static/portal_events.js"></script>
+    <script src="/static/portal_refresh_coordinator.js"></script>
+    <script src="/static/resident_protocol.js"></script>
+    <script src="/static/portal_conversation_store.js"></script>
+    <script src="/static/portal_ui_primitives.js"></script>
+    <script src="/static/portal_nav.js"></script>
+    <script src="/static/portal_ui.js"></script>
+    <script src="/static/portal_form_controls.js"></script>
+    <script src="/static/portal_button_tooltips.js"></script>
+    <script src="/static/portal_toolbar.js"></script>
+    <script src="/static/portal_board_toolbar.js"></script>
+    <script src="/static/portal_detail_surface.js"></script>
+    <script src="/static/portal_resource_header.js"></script>
+    <script src="/static/portal_resource_routes.js"></script>
+    <script src="/static/portal_resource_detail.js"></script>
+    <script src="/static/portal_file_tree.js"></script>
+    <script src="/static/portal_preview_contract.js"></script>
+    <script src="/static/portal_resource_chips.js"></script>
+    <script src="/static/portal_file_links.js"></script>
+    <script src="/static/portal_preview_runtime.js"></script>
+    <script src="/static/portal_pdf_preview.js"></script>
+    <script src="/static/portal_preview_renderers.js"></script>
+    <script src="/static/portal_editor_open_service.js"></script>
+    <script src="/static/portal_command_registry.js"></script>
+    <script src="/static/portal_workbench_context.js"></script>
+    <script src="/static/portal_workbench.js"></script>
+    <script src="/static/portal_document_statistics.js"></script>
+    <script src="/static/portal_workspace_surface.js"></script>
+    <script src="/static/portal_semantic_search.js"></script>
+    <script src="/static/resident_projection.js"></script>
+    <script src="/static/portal_image_editor.js"></script>
+    <script src="/static/portal_model_api_settings.js"></script>
+    <script src="/static/portal_resident_runtime_controller.js"></script>
+    <script src="/static/portal_chat_workspace.js"></script>
+    <script src="/static/portal_command_palette.js"></script>
+    <script src="/static/resource_tabs.js"></script>
+    <script src="/static/vendor/monaco/vs/nls/lang/zh-cn.js"></script>
+    <script src="/static/vendor/monaco/vs/loader.js"></script>
+    <script src="/static/portal_code_editor.js"></script>
+    <script src="/static/markdown.js"></script>
+    <script src="/static/article_workspace.js" defer></script>
+  </head>
+  <body class="portalBoardShell articleWorkbenchShell">
+    <header class="articlePortalHeader resourceSectionPageHeader">
+      <div class="portalSiteHeader" data-portal-site-header data-portal-nav-active="resource"></div>
+      <div class="resourceSectionFrame portalPageHeaderFrame">
+        <div class="portalBoardHeader" data-resource-section-header>
+          <div data-resource-tabs data-resource-category="article"></div>
+          <div data-portal-board-toolbar>
+          <div data-portal-board-search id="articleResourceSearch">
+            <label for="articleResourceQuery"><!--portal-i18n:"搜索 Article"-->搜索 Article</label>
+            <input data-portal-board-search-input id="articleResourceQuery" type="search" autocomplete="off" placeholder="Article 标题 / Project / ID"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;Article 标题 / Project / ID&quot;}"/>
+            <button data-portal-board-semantic id="articleSemanticButton" type="button" aria-label="根据输入内容发起 Article 语义检索" title="根据输入内容发起 Article 语义检索" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;根据输入内容发起 Article 语义检索&quot;, &quot;title&quot;: &quot;根据输入内容发起 Article 语义检索&quot;}">
+              <span data-semantic-label><!--portal-i18n:"语义检索"-->语义检索</span>
+            </button>
+          </div>
+          <div data-portal-board-actions data-portal-board-actions-layout="selector-primary">
+            <div class="articleProjectSwitcher" data-portal-toolbar-priority="critical" data-portal-toolbar-grow="true">
+              <button class="portalButton articleProjectButton" id="articleProjectButton" type="button" aria-haspopup="dialog" aria-expanded="false">
+                <span class="articleProjectGlyph" aria-hidden="true">A</span>
+                <span class="articleProjectText" id="articleProjectIdentity">
+                  <span class="portalResourceIdentity compact">
+                    <span class="portalResourceIdentityTitleRow">
+                      <strong class="portalResourceIdentityTitle" id="articleProjectTitle"><!--portal-i18n:"正在加载 Article…"-->正在加载 Article…</strong>
+                    </span>
+                  </span>
+                </span>
+                <span data-portal-icon="chevron-down" aria-hidden="true"></span>
+              </button>
+              <div class="articleProjectMenu" id="articleProjectMenu" hidden>
+                <div class="articleProjectMenuHead">
+                  <strong><!--portal-i18n:"Article 项目"-->Article 项目</strong>
+                  <button class="portalButton is-icon is-quiet iconBtn" id="articleProjectMenuClose" type="button" aria-label="关闭 Article projects" data-portal-icon="close" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;关闭 Article projects&quot;}"></button>
+                </div>
+                <div class="articleMenuSearch">
+                  <div data-portal-search-field data-portal-search-density="compact">
+                    <label for="articleMenuSearch"><!--portal-i18n:"Search articles"-->Search articles</label>
+                    <input data-portal-search-input id="articleMenuSearch" type="search" placeholder="Search articles or ID" autocomplete="off"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;Search articles or ID&quot;}"/>
+                  </div>
+                </div>
+                <div class="articleMenuList" id="articleMenuList"></div>
+                <div class="articleProjectMenuActions">
+                  <button class="portalButton is-danger" id="articleUnregisterCurrent" type="button"><!--portal-i18n:"解除当前注册"-->解除当前注册</button>
+                </div>
+              </div>
+            </div>
+            <button class="portalButton is-compact is-primary articleRegisterPrimary" data-portal-toolbar-priority="critical" id="articleRegisterOpen" type="button" data-portal-icon="file-plus">
+              <span><!--portal-i18n:"注册新 Article"-->注册新 Article</span>
+            </button>
+          </div>
+          <div data-portal-board-slot="search-results" class="articleResourceSearchPopover" id="articleResourceSearchPopover" hidden>
+            <div class="articleResourceSearchResults" id="articleResourceSearchResults"></div>
+            <div class="articleSemanticPanel portalSemanticPanel" id="articleSemanticPanel" aria-label="Article 语义检索任务" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Article 语义检索任务&quot;}"></div>
+          </div>
+          </div>
+        </div>
+      </div>
+      <div class="portalSemanticIdentity" id="articleSemanticIdentity" hidden></div>
+    </header>
+
+    <main class="articleWorkbench portalPageFrame" id="articleWorkbench">
+      <div class="articleWorkspaceGrid" id="articleWorkspaceGrid" data-portal-boot-required="Article 工作台初始化">
+        <aside class="portalActivityRail articleActivityBar" aria-label="Article workspace views" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Article workspace views&quot;}">
+          <button class="portalActivityRailView active" data-portal-icon="file-text" type="button" data-article-view="files" aria-label="File tree" title="File tree" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;File tree&quot;, &quot;title&quot;: &quot;File tree&quot;}"></button>
+          <button class="portalActivityRailView" data-portal-icon="search" type="button" data-article-view="search" aria-label="Search" title="Search" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Search&quot;, &quot;title&quot;: &quot;Search&quot;}"></button>
+          <button class="portalActivityRailView" id="articleGitView" data-portal-icon="branch" type="button" data-article-view="git" aria-label="源代码管理" title="源代码管理" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;源代码管理&quot;, &quot;title&quot;: &quot;源代码管理&quot;}">
+            <span class="articleGitBadge" id="articleGitBadge" hidden aria-hidden="true">0</span>
+          </button>
+          <button class="portalActivityRailView" type="button" data-article-view="chat" aria-label="Chat Workspace" title="Chat Workspace" data-portal-icon="chat-room" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Chat Workspace&quot;, &quot;title&quot;: &quot;Chat Workspace&quot;}">
+          </button>
+          <div class="articleActivityDivider"></div>
+          <button class="portalActivityRailView" data-portal-icon="settings" type="button" data-article-view="settings" aria-label="编辑器与 LaTeX 设置" title="编辑器与 LaTeX 设置" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;编辑器与 LaTeX 设置&quot;, &quot;title&quot;: &quot;编辑器与 LaTeX 设置&quot;}"></button>
+          <button class="portalActivityRailView articleLibraryActivity" type="button" data-article-view="library" aria-label="Article 注册管理" title="Article 注册管理" data-portal-icon="book" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Article 注册管理&quot;, &quot;title&quot;: &quot;Article 注册管理&quot;}">
+          </button>
+        </aside>
+
+        <section class="pane articleSidePane" id="articleSidePane">
+          <div class="sideView active" data-article-panel="files">
+            <div class="paneHead articleFileTreeHead">
+              <button class="articleTreeTitle" data-portal-icon="chevron-down" id="articleTreeToggle" type="button" aria-expanded="true">
+                <span class="paneTitle"><!--portal-i18n:"File tree"-->File tree</span>
+              </button>
+              <div class="paneHeadActions actionGroup">
+                <button class="portalButton is-icon is-quiet iconBtn" id="articleNewFile" type="button" aria-label="创建新文件" title="创建新文件" data-portal-icon="file-plus" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;创建新文件&quot;, &quot;title&quot;: &quot;创建新文件&quot;}">
+                </button>
+                <button class="portalButton is-icon is-quiet iconBtn" id="articleNewFolder" type="button" aria-label="创建新文件夹" title="创建新文件夹" data-portal-icon="folder-plus" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;创建新文件夹&quot;, &quot;title&quot;: &quot;创建新文件夹&quot;}">
+                </button>
+                <button class="portalButton is-icon is-quiet iconBtn" data-portal-icon="upload" id="articleUploadFile" type="button" aria-label="上传文件" title="上传文件" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;上传文件&quot;, &quot;title&quot;: &quot;上传文件&quot;}"></button>
+                <button class="portalButton is-icon is-quiet iconBtn" data-portal-icon="panel-left-close" id="articleSideCollapse" type="button" aria-label="折叠左侧功能面板" title="折叠左侧功能面板" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;折叠左侧功能面板&quot;, &quot;title&quot;: &quot;折叠左侧功能面板&quot;}"></button>
+              </div>
+            </div>
+            <div class="articleFileTree paneBody" id="articleFileTree"><div class="portalAsyncState is-compact" data-state="empty" data-density="compact" role="status"><span class="portalAsyncStateIcon" aria-hidden="true"></span><span class="portalAsyncStateMessage"><!--portal-i18n:"Select an Article project."-->Select an Article project.</span></div></div>
+            <div class="articleOutlineSplitter" id="articleOutlineSplitter" role="separator" aria-orientation="horizontal" aria-label="调整 File outline 高度" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;调整 File outline 高度&quot;}"></div>
+            <section class="articleOutlineSection" id="articleOutlineSection">
+              <button class="articleOutlineHead" data-portal-icon="chevron-down" id="articleOutlineToggle" type="button" aria-expanded="true">
+                <span><!--portal-i18n:"工程导航"-->工程导航</span>
+                <small id="articleOutlineCount">0</small>
+              </button>
+              <div class="articleSemanticTabs" id="articleSemanticTabs" role="tablist" aria-label="Article 工程语义导航" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Article 工程语义导航&quot;}">
+                <button class="active" type="button" role="tab" aria-selected="true" data-semantic-view="outline"><!--portal-i18n:"大纲"-->大纲</button>
+                <button type="button" role="tab" aria-selected="false" data-semantic-view="labels"><!--portal-i18n:"标签"-->标签</button>
+                <button type="button" role="tab" aria-selected="false" data-semantic-view="citations"><!--portal-i18n:"文献"-->文献</button>
+                <button type="button" role="tab" aria-selected="false" data-semantic-view="figures"><!--portal-i18n:"图片"-->图片</button>
+                <button type="button" role="tab" aria-selected="false" data-semantic-view="problems"><!--portal-i18n:"问题"-->问题</button>
+              </div>
+              <div class="articleOutlineList" id="articleOutlineList"><div class="portalAsyncState is-inline" data-state="empty" data-density="inline" role="status"><span class="portalAsyncStateIcon" aria-hidden="true"></span><span class="portalAsyncStateMessage"><!--portal-i18n:"Open a .tex file to view its outline."-->Open a .tex file to view its outline.</span></div></div>
+            </section>
+          </div>
+
+          <div class="sideView" data-article-panel="search">
+            <div class="paneHead">
+              <div class="paneHeadText"><div class="paneTitle"><!--portal-i18n:"Search"-->Search</div><div class="paneNote"><!--portal-i18n:"Search all project files"-->Search all project files</div></div>
+              <button class="portalButton is-icon is-quiet iconBtn" type="button" data-side-close aria-label="折叠 Search" data-portal-icon="close" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;折叠 Search&quot;}"></button>
+            </div>
+            <form class="articleGlobalSearch" id="articleGlobalSearch">
+              <div class="articleGlobalSearchRow" data-portal-search-field>
+                <label for="articleGlobalSearchInput"><!--portal-i18n:"Search all project files"-->Search all project files</label>
+                <input data-portal-search-input id="articleGlobalSearchInput" type="search" placeholder="Search all project files" autocomplete="off"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;Search all project files&quot;}"/>
+                <button class="portalButton is-compact is-primary" type="submit"><!--portal-i18n:"Search"-->Search</button>
+              </div>
+              <div class="articleSearchOptions"><span><!--portal-i18n:"Aa"-->Aa</span><span>[.*]</span><span>W</span></div>
+            </form>
+            <div class="paneBody articleSearchResults" id="articleSearchResults"><div class="portalAsyncState is-compact" data-state="empty" data-density="compact" role="status"><span class="portalAsyncStateIcon" aria-hidden="true"></span><span class="portalAsyncStateMessage"><!--portal-i18n:"Enter text to search the current Article project."-->Enter text to search the current Article project.</span></div></div>
+          </div>
+
+          <div class="sideView articleGitPanel" id="articleGitPanel" data-article-panel="git">
+            <div class="paneHead">
+              <div class="paneHeadText"><div class="paneTitle"><!--portal-i18n:"源代码管理"-->源代码管理</div><div class="paneNote" id="articleGitSummary"><!--portal-i18n:"当前 Article"-->当前 Article</div></div>
+              <div class="paneHeadActions actionGroup">
+                <button class="portalButton is-icon is-quiet iconBtn" id="articleGitRefresh" type="button" aria-label="刷新 Git 状态" title="刷新 Git 状态" data-portal-icon="refresh" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;刷新 Git 状态&quot;, &quot;title&quot;: &quot;刷新 Git 状态&quot;}"></button>
+                <button class="portalButton is-icon is-quiet iconBtn" type="button" data-side-close aria-label="折叠源代码管理" data-portal-icon="close" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;折叠源代码管理&quot;}"></button>
+              </div>
+            </div>
+            <div class="articleGitIdentity" id="articleGitIdentity">
+              <span data-portal-icon="branch" aria-hidden="true"></span><strong>—</strong><code>—</code>
+            </div>
+            <form class="articleGitCommit" id="articleGitCommitForm">
+              <label for="articleGitMessage"><!--portal-i18n:"提交信息"-->提交信息</label>
+              <textarea id="articleGitMessage" rows="3" maxlength="200" placeholder="说明本次稿件修改" required></textarea>
+              <button class="portalButton is-primary" id="articleGitCommit" type="submit"><!--portal-i18n:"提交已暂存更改"-->提交已暂存更改</button>
+            </form>
+            <div class="paneBody articleGitChanges" id="articleGitChanges"><div class="portalAsyncState is-compact" data-state="empty" data-density="compact" role="status"><span class="portalAsyncStateIcon" aria-hidden="true"></span><span class="portalAsyncStateMessage"><!--portal-i18n:"打开此面板以查看稿件变更。"-->打开此面板以查看稿件变更。</span></div></div>
+            <section class="articleGitHistorySection" id="articleGitHistorySection">
+              <div class="articleGitSectionHead"><strong><!--portal-i18n:"最近提交"-->最近提交</strong><small id="articleGitHistoryCount">0</small></div>
+              <div class="articleGitHistory" id="articleGitHistory"></div>
+            </section>
+          </div>
+
+          <div class="sideView articleChatPanel" data-article-panel="chat" id="articleChatWorkspace"></div>
+
+          <div class="sideView articleSettingsPanel" data-article-panel="settings">
+            <div class="paneHead">
+              <div class="paneHeadText"><div class="paneTitle"><!--portal-i18n:"设置"-->设置</div><div class="paneNote"><!--portal-i18n:"编辑器与 LaTeX 编译器"-->编辑器与 LaTeX 编译器</div></div>
+              <button class="portalButton is-icon is-quiet iconBtn" type="button" data-side-close aria-label="折叠设置" data-portal-icon="close" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;折叠设置&quot;}"></button>
+            </div>
+            <div class="articleSettingsTabs" role="tablist" aria-label="设置分类" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;设置分类&quot;}">
+              <button class="articleSettingsTab active" data-portal-icon="code" id="articleEditorSettingsTab" type="button" role="tab" aria-selected="true" aria-controls="articleEditorSettings" data-settings-section="editor">
+                <span><!--portal-i18n:"编辑器"-->编辑器</span>
+              </button>
+              <button class="articleSettingsTab" data-portal-icon="file-text" id="articleCompilerSettingsTab" type="button" role="tab" aria-selected="false" aria-controls="articleCompilerSettings" data-settings-section="compiler">
+                <span><!--portal-i18n:"LaTeX 编译器"-->LaTeX 编译器</span>
+              </button>
+            </div>
+
+            <section class="articleSettingsSection active" id="articleEditorSettings" role="tabpanel" aria-labelledby="articleEditorSettingsTab" data-settings-panel="editor">
+              <div class="articleSettingsGroup">
+                <div class="articleSettingsGroupTitle"><!--portal-i18n:"编辑行为"-->编辑行为</div>
+                <label class="articleSettingSwitch">
+                  <span><strong><!--portal-i18n:"自动闭合括号"-->自动闭合括号</strong><small><!--portal-i18n:"输入左括号时插入对应的右括号"-->输入左括号时插入对应的右括号</small></span>
+                  <input id="articleEditorAutoClose" type="checkbox" />
+                  <i aria-hidden="true"></i>
+                </label>
+                <label class="articleSettingSwitch">
+                  <span><strong><!--portal-i18n:"不闪烁光标"-->不闪烁光标</strong><small><!--portal-i18n:"保持文本光标常亮，减少视觉干扰"-->保持文本光标常亮，减少视觉干扰</small></span>
+                  <input id="articleEditorSolidCursor" type="checkbox" />
+                  <i aria-hidden="true"></i>
+                </label>
+                <label class="articleSettingSwitch">
+                  <span><strong><!--portal-i18n:"实时代码检查"-->实时代码检查</strong><small><!--portal-i18n:"输入时标出常见 LaTeX 语法问题"-->输入时标出常见 LaTeX 语法问题</small></span>
+                  <input id="articleEditorCodeCheck" type="checkbox" />
+                  <i aria-hidden="true"></i>
+                </label>
+                <label class="articleSettingSwitch">
+                  <span><strong><!--portal-i18n:"自动换行"-->自动换行</strong><small><!--portal-i18n:"按编辑区宽度换行，不修改源文件"-->按编辑区宽度换行，不修改源文件</small></span>
+                  <input id="articleEditorWordWrap" type="checkbox" />
+                  <i aria-hidden="true"></i>
+                </label>
+              </div>
+              <div class="articleSettingsGroup">
+                <div class="articleSettingsGroupTitle"><!--portal-i18n:"显示与缩进"-->显示与缩进</div>
+                <label class="articleSettingSelect"><span><strong><!--portal-i18n:"编辑器字号"-->编辑器字号</strong><small><!--portal-i18n:"只改变源码编辑区的显示大小"-->只改变源码编辑区的显示大小</small></span><select id="articleEditorFontSize"><option value="11"><!--portal-i18n:"11 px"-->11 px</option><option value="12"><!--portal-i18n:"12 px"-->12 px</option><option value="13"><!--portal-i18n:"13 px"-->13 px</option><option value="14"><!--portal-i18n:"14 px"-->14 px</option><option value="16"><!--portal-i18n:"16 px"-->16 px</option></select></label>
+                <label class="articleSettingSelect"><span><strong><!--portal-i18n:"Tab 宽度"-->Tab 宽度</strong><small><!--portal-i18n:"按 Tab 时插入对应数量的空格"-->按 Tab 时插入对应数量的空格</small></span><select id="articleEditorTabSize"><option value="2"><!--portal-i18n:"2 个空格"-->2 个空格</option><option value="4"><!--portal-i18n:"4 个空格"-->4 个空格</option><option value="8"><!--portal-i18n:"8 个空格"-->8 个空格</option></select></label>
+              </div>
+              <div class="articleEditorSettingsFooter">
+                <p><!--portal-i18n:"编辑器偏好保存在当前浏览器；实时代码检查跟随当前 Article。"-->编辑器偏好保存在当前浏览器；实时代码检查跟随当前 Article。</p>
+                <button class="portalButton" id="articleEditorSettingsReset" type="button"><!--portal-i18n:"恢复默认设置"-->恢复默认设置</button>
+              </div>
+            </section>
+
+            <section class="articleSettingsSection" id="articleCompilerSettings" role="tabpanel" aria-labelledby="articleCompilerSettingsTab" data-settings-panel="compiler" hidden>
+              <form class="articleSettingsForm" id="articleSettingsForm">
+                <label><span><!--portal-i18n:"编译器"-->编译器</span><select id="articleCompiler" name="compiler"></select></label>
+                <label><span><!--portal-i18n:"主文档"-->主文档</span><select id="articlePrimaryFile" name="primary_file"></select></label>
+                <label class="articleSettingSwitch">
+                  <span><strong><!--portal-i18n:"读取工程 latexmkrc"-->读取工程 latexmkrc</strong><small><!--portal-i18n:"仅显式读取工程根目录的 "-->仅显式读取工程根目录的 <code>.latexmkrc</code><!--portal-i18n:"，不读取用户级配置"-->，不读取用户级配置</small></span>
+                  <input id="articleUseLatexmkrc" type="checkbox" />
+                  <i aria-hidden="true"></i>
+                </label>
+                <label class="articleSettingSwitch">
+                  <span><strong><!--portal-i18n:"允许 Shell Escape"-->允许 Shell Escape</strong><small><!--portal-i18n:"仅在工程确实依赖 minted 等外部命令时启用"-->仅在工程确实依赖 minted 等外部命令时启用</small></span>
+                  <input id="articleShellEscape" type="checkbox" />
+                  <i aria-hidden="true"></i>
+                </label>
+                <div class="articleSettingsEnvironment"><span><!--portal-i18n:"TeX 环境"-->TeX 环境</span><strong id="articleTexLive">—</strong><code id="articleLatexmkPath">—</code></div>
+                <div class="articleSettingsEnvironment"><span><!--portal-i18n:"环境指纹"-->环境指纹</span><strong id="articleEnvironmentProfile">—</strong><code id="articleEnvironmentPolicy">—</code></div>
+                <div class="articleBuildPreflight" id="articleBuildPreflight" data-status="idle"><!--portal-i18n:"尚未检查构建条件"-->尚未检查构建条件</div>
+                <div class="articleSettingsHint"><strong><!--portal-i18n:"构建隔离"-->构建隔离</strong><p><!--portal-i18n:"PDF、日志和中间文件写入 Portal 构建缓存；LaTeX 工程目录只保存源文件。"-->PDF、日志和中间文件写入 Portal 构建缓存；LaTeX 工程目录只保存源文件。</p></div>
+                <button class="portalButton is-primary" type="submit"><!--portal-i18n:"保存编译配置"-->保存编译配置</button>
+              </form>
+            </section>
+          </div>
+
+          <div class="sideView" data-article-panel="library">
+            <div class="paneHead">
+              <div class="paneHeadText"><div class="paneTitle"><!--portal-i18n:"Article registry"-->Article registry</div><div class="paneNote" id="articleLibraryMeta"><!--portal-i18n:"0 registered"-->0 registered</div></div>
+              <button class="portalButton is-icon is-quiet iconBtn" type="button" data-side-close aria-label="折叠 Article registry" data-portal-icon="close" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;折叠 Article registry&quot;}"></button>
+            </div>
+            <div class="articleLibraryToolbar" data-portal-toolbar>
+              <div data-portal-search-field data-portal-toolbar-item data-portal-toolbar-priority="critical" data-portal-toolbar-grow="true">
+                <label for="articleLibrarySearch"><!--portal-i18n:"Search Article registry"-->Search Article registry</label>
+                <input data-portal-search-input id="articleLibrarySearch" type="search" placeholder="Search title, project or ID" autocomplete="off"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;Search title, project or ID&quot;}"/>
+              </div>
+              <button class="portalButton is-primary" data-portal-toolbar-item data-portal-toolbar-priority="high" id="articleLibraryRegister" type="button"><!--portal-i18n:"注册目录"-->注册目录</button>
+            </div>
+            <div class="paneBody articleLibraryList" id="articleLibraryList"></div>
+          </div>
+        </section>
+
+        <section class="pane articleEditorPane" id="articleEditorPane" aria-label="Article Editor" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Article Editor&quot;}">
+          <div class="portalDocumentTabsShell">
+            <div class="portalDocumentTabs" id="articleDocumentTabs" role="tablist" aria-label="Open files" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Open files&quot;}"><div class="portalDocumentTabsEmpty"><!--portal-i18n:"Open a file from File tree"-->Open a file from File tree</div></div>
+          </div>
+          <div class="articleEditorToolbar portalDocumentToolbar" id="articleEditorToolbar">
+            <div class="articleEditorTools portalDocumentToolbarTools" data-portal-toolbar>
+              <button class="portalButton is-icon is-quiet iconBtn" data-portal-toolbar-item data-portal-toolbar-priority="critical" id="articleSaveFile" type="button" aria-label="保存文件" title="保存文件" disabled data-portal-icon="save" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;保存文件&quot;, &quot;title&quot;: &quot;保存文件&quot;}">
+              </button>
+              <span class="articleEditorDivider portalDocumentToolbarDivider" data-portal-toolbar-item data-portal-toolbar-priority="normal"></span>
+              <button class="portalButton is-icon is-quiet iconBtn" data-portal-toolbar-item data-portal-toolbar-priority="normal" id="articleUndo" type="button" aria-label="撤销" title="撤销" data-portal-icon="undo" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;撤销&quot;, &quot;title&quot;: &quot;撤销&quot;}"></button>
+              <button class="portalButton is-icon is-quiet iconBtn" data-portal-toolbar-item data-portal-toolbar-priority="normal" id="articleRedo" type="button" aria-label="重做" title="重做" data-portal-icon="redo" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;重做&quot;, &quot;title&quot;: &quot;重做&quot;}"></button>
+              <button class="portalButton is-icon is-quiet iconBtn articleWordWrapButton" data-portal-toolbar-item data-portal-toolbar-priority="low" id="articleWordWrap" type="button" aria-label="自动换行" title="自动换行" aria-pressed="false" data-portal-icon="word-wrap" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;自动换行&quot;, &quot;title&quot;: &quot;自动换行&quot;}"></button>
+              <button class="portalButton is-icon is-quiet iconBtn" data-portal-toolbar-item data-portal-toolbar-priority="high" id="articleSyncToPdf" type="button" aria-label="在 PDF 中定位当前源码" title="在 PDF 中定位当前源码" disabled data-portal-icon="file-open-new" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;在 PDF 中定位当前源码&quot;, &quot;title&quot;: &quot;在 PDF 中定位当前源码&quot;}"></button>
+              <button class="portalButton is-icon is-quiet iconBtn" data-portal-toolbar-item data-portal-toolbar-priority="high" id="articleSendContext" type="button" aria-label="把当前稿件上下文发送到 Chat Workspace" title="把当前选区或光标上下文带到 Chat Workspace" disabled data-portal-icon="chat-check" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;把当前稿件上下文发送到 Chat Workspace&quot;, &quot;title&quot;: &quot;把当前选区或光标上下文带到 Chat Workspace&quot;}"></button>
+              <span class="articleEditorDivider portalDocumentToolbarDivider" data-portal-toolbar-item data-portal-toolbar-priority="normal"></span>
+              <button class="articleEditorMode portalDocumentMode active" data-portal-toolbar-item data-portal-toolbar-priority="critical" id="articleCodeMode" type="button" aria-pressed="true"><!--portal-i18n:"Code"-->Code</button>
+              <button class="articleEditorMode portalDocumentMode" data-portal-toolbar-item data-portal-toolbar-priority="critical" id="articleVisualMode" type="button" aria-pressed="false" disabled><!--portal-i18n:"Visual"-->Visual</button>
+            </div>
+            <div class="articleEditorState portalDocumentToolbarState" id="articleEditorState"><!--portal-i18n:"Select a file from File tree"-->Select a file from File tree</div>
+          </div>
+          <div class="articleCodeEditor" id="articleCodeEditor">
+            <div class="articleMonacoEditor" id="articleMonacoEditor" aria-label="LaTeX source editor" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;LaTeX source editor&quot;}"></div>
+            <div class="articleTextEditor" id="articleTextEditor">
+              <div class="articleLineNumbers" id="articleLineNumbers" aria-hidden="true"></div>
+              <div class="articleCodeViewport">
+                <pre class="articleSyntaxLayer" id="articleSyntaxLayer" aria-hidden="true"></pre>
+                <textarea id="articleSourceEditor" aria-label="LaTeX source editor fallback" autocomplete="off" autocapitalize="off" spellcheck="false" wrap="off" disabled></textarea>
+              </div>
+            </div>
+            <div class="articleVisualEditor" id="articleVisualEditor" hidden><div id="articleDocumentPreview"></div></div>
+            <div class="articleGitDiffView" id="articleGitDiffView" hidden>
+              <div class="articleGitDiffHead">
+                <span data-portal-icon="diff" aria-hidden="true"></span><strong id="articleGitDiffTitle"><!--portal-i18n:"Git diff"-->Git diff</strong>
+                <span class="articleGitDiffLegend"><span class="is-original"><!--portal-i18n:"旧版本"-->旧版本</span><span class="is-modified"><!--portal-i18n:"新版本"-->新版本</span></span>
+                <button class="portalButton is-quiet articleGitDiffLayout" id="articleGitDiffLayout" type="button" aria-pressed="true" title="切换并排或内联 Diff" data-portal-i18n-attrs="{&quot;title&quot;: &quot;切换并排或内联 Diff&quot;}"><!--portal-i18n:"并排"-->并排</button>
+                <button class="portalButton is-icon is-quiet iconBtn" id="articleGitDiffClose" type="button" aria-label="关闭 Git diff" data-portal-icon="close" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;关闭 Git diff&quot;}"></button>
+              </div>
+              <div class="articleGitDiffFiles" id="articleGitDiffFiles" role="tablist" aria-label="本次更改的文件" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;本次更改的文件&quot;}"></div>
+              <div class="articleGitDiffEditor" id="articleGitDiffEditor" aria-label="Git 左右对照 Diff" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Git 左右对照 Diff&quot;}"></div>
+              <div class="articleGitDiffEmpty" id="articleGitDiffEmpty" hidden></div>
+              <pre class="articleGitDiffFallback" id="articleGitDiff" hidden></pre>
+            </div>
+          </div>
+          <div class="articleEditorStatusbar">
+            <span id="articleCursorStatus"><!--portal-i18n:"Ln 1, Col 1"-->Ln 1, Col 1</span>
+            <span class="articleEditorStatusRight"><span class="articleLanguageStatus" id="articleLanguageStatus"><!--portal-i18n:"Monaco · TexLab 启动中"-->Monaco · TexLab 启动中</span><span class="articleSyntaxStatus" id="articleSyntaxStatus" hidden></span><span id="articleEncodingStatus"><!--portal-i18n:"UTF-8 · LaTeX"-->UTF-8 · LaTeX</span></span>
+          </div>
+        </section>
+
+        <section class="pane articleOutputPane" id="articleOutputPane" aria-label="Article PDF Output" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Article PDF Output&quot;}">
+          <div class="articleCompileBar">
+            <button class="portalButton articleBackToPdfTop" id="articleBackToPdf" type="button" hidden><!--portal-i18n:"返回 PDF"-->返回 PDF</button>
+            <div class="articleCompileMenuWrap" id="articleCompileMenuWrap">
+              <div class="articleCompilePrimary">
+                <button class="portalButton is-primary articleCompileButton" id="articleCompile" type="button" disabled><!--portal-i18n:"重新编译"-->重新编译</button>
+                <button class="portalButton is-primary articleCompileCaret" id="articleCompileSettings" type="button" aria-label="打开编译选项" title="编译选项" aria-haspopup="menu" aria-expanded="false" aria-controls="articleCompileMenu" data-portal-icon="chevron-down" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;打开编译选项&quot;, &quot;title&quot;: &quot;编译选项&quot;}"></button>
+              </div>
+              <div class="articleCompileMenu" id="articleCompileMenu" role="menu" aria-label="编译选项" hidden data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;编译选项&quot;}">
+                <section class="articleCompileMenuGroup" aria-labelledby="articleCompileAutoLabel">
+                  <div class="articleCompileMenuLabel" id="articleCompileAutoLabel"><!--portal-i18n:"自动编译"-->自动编译</div>
+                  <button class="articleCompileMenuItem" type="button" role="menuitemradio" data-compile-setting="auto_compile" data-compile-value="true">
+                    <span><!--portal-i18n:"开启"-->开启</span><span data-portal-icon="check" data-portal-icon-class="articleCompileMenuCheck" class="articleCompileMenuCheck" aria-hidden="true"></span>
+                  </button>
+                  <button class="articleCompileMenuItem" type="button" role="menuitemradio" data-compile-setting="auto_compile" data-compile-value="false">
+                    <span><!--portal-i18n:"关闭"-->关闭</span><span data-portal-icon="check" data-portal-icon-class="articleCompileMenuCheck" class="articleCompileMenuCheck" aria-hidden="true"></span>
+                  </button>
+                </section>
+                <section class="articleCompileMenuGroup" aria-labelledby="articleCompileModeLabel">
+                  <div class="articleCompileMenuLabel" id="articleCompileModeLabel"><!--portal-i18n:"编译模式"-->编译模式</div>
+                  <button class="articleCompileMenuItem" type="button" role="menuitemradio" data-compile-setting="compile_mode" data-compile-value="normal">
+                    <span><!--portal-i18n:"标准"-->标准</span><span data-portal-icon="check" data-portal-icon-class="articleCompileMenuCheck" class="articleCompileMenuCheck" aria-hidden="true"></span>
+                  </button>
+                  <button class="articleCompileMenuItem" type="button" role="menuitemradio" data-compile-setting="compile_mode" data-compile-value="draft">
+                    <span><!--portal-i18n:"快速 "-->快速 <small><!--portal-i18n:"[草稿]"-->[草稿]</small></span><span data-portal-icon="check" data-portal-icon-class="articleCompileMenuCheck" class="articleCompileMenuCheck" aria-hidden="true"></span>
+                  </button>
+                </section>
+                <section class="articleCompileMenuGroup" aria-labelledby="articleCompileSyntaxLabel">
+                  <div class="articleCompileMenuLabel" id="articleCompileSyntaxLabel"><!--portal-i18n:"语法检查"-->语法检查</div>
+                  <button class="articleCompileMenuItem" type="button" role="menuitemradio" data-compile-setting="syntax_check" data-compile-value="true">
+                    <span><!--portal-i18n:"开启语法检查"-->开启语法检查</span><span data-portal-icon="check" data-portal-icon-class="articleCompileMenuCheck" class="articleCompileMenuCheck" aria-hidden="true"></span>
+                  </button>
+                  <button class="articleCompileMenuItem" type="button" role="menuitemradio" data-compile-setting="syntax_check" data-compile-value="false">
+                    <span><!--portal-i18n:"不检查语法"-->不检查语法</span><span data-portal-icon="check" data-portal-icon-class="articleCompileMenuCheck" class="articleCompileMenuCheck" aria-hidden="true"></span>
+                  </button>
+                </section>
+                <section class="articleCompileMenuGroup" aria-labelledby="articleCompileErrorsLabel">
+                  <div class="articleCompileMenuLabel" id="articleCompileErrorsLabel"><!--portal-i18n:"编译错误处理"-->编译错误处理</div>
+                  <button class="articleCompileMenuItem" type="button" role="menuitemradio" data-compile-setting="error_handling" data-compile-value="stop">
+                    <span><!--portal-i18n:"遇到第一个错误时停止"-->遇到第一个错误时停止</span><span data-portal-icon="check" data-portal-icon-class="articleCompileMenuCheck" class="articleCompileMenuCheck" aria-hidden="true"></span>
+                  </button>
+                  <button class="articleCompileMenuItem" type="button" role="menuitemradio" data-compile-setting="error_handling" data-compile-value="continue">
+                    <span><!--portal-i18n:"出错后仍尝试编译"-->出错后仍尝试编译</span><span data-portal-icon="check" data-portal-icon-class="articleCompileMenuCheck" class="articleCompileMenuCheck" aria-hidden="true"></span>
+                  </button>
+                </section>
+                <div class="articleCompileMenuActions">
+                  <button class="articleCompileMenuItem" id="articleStopCompile" type="button" role="menuitem" disabled><span><!--portal-i18n:"停止编译"-->停止编译</span></button>
+                  <button class="articleCompileMenuItem" id="articleRecompileScratch" type="button" role="menuitem"><span><!--portal-i18n:"从头重新编译"-->从头重新编译</span></button>
+                </div>
+              </div>
+            </div>
+            <button class="articleLogButton" data-portal-icon="file-text" id="articleLogButton" type="button" aria-label="查看 LaTeX Log" title="LaTeX Log" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;查看 LaTeX Log&quot;, &quot;title&quot;: &quot;LaTeX Log&quot;}">
+              <span class="articleLogBadge" id="articleLogBadge" hidden>0</span>
+            </button>
+            <a class="portalButton is-icon is-quiet iconBtn articlePdfDownload" id="articlePdfDownload" href="#" download aria-label="下载 PDF" title="下载 PDF" hidden data-portal-icon="download" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;下载 PDF&quot;, &quot;title&quot;: &quot;下载 PDF&quot;}">
+            </a>
+            <div class="articlePdfZoomControls" id="articlePdfZoomControls" hidden aria-label="PDF 缩放控制" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;PDF 缩放控制&quot;}">
+              <button class="articlePdfZoomButton" id="articlePdfZoomOut" type="button" aria-label="缩小 PDF" title="缩小 PDF" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;缩小 PDF&quot;, &quot;title&quot;: &quot;缩小 PDF&quot;}">−</button>
+              <span class="articlePdfZoomValue" id="articlePdfZoomValue" aria-live="polite">100%</span>
+              <button class="articlePdfZoomButton" id="articlePdfZoomIn" type="button" aria-label="放大 PDF" title="放大 PDF" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;放大 PDF&quot;, &quot;title&quot;: &quot;放大 PDF&quot;}">+</button>
+              <button class="articlePdfZoomFit" id="articlePdfZoomFit" type="button" title="适合面板宽度" data-portal-i18n-attrs="{&quot;title&quot;: &quot;适合面板宽度&quot;}"><!--portal-i18n:"适宽"-->适宽</button>
+            </div>
+            <span class="articleSyncHint" id="articleSyncHint" hidden><!--portal-i18n:"双击 PDF 返回源码"-->双击 PDF 返回源码</span>
+            <code class="articlePdfIdentity" id="articlePdfIdentity" title="当前 Article Resource ID">未选择 Article</code>
+            <div class="articleBuildSummary" id="articleBuildSummary"><!--portal-i18n:"尚未编译"-->尚未编译</div>
+          </div>
+          <div class="articleOutputView articlePdfView active" id="articlePdfView">
+            <div class="articlePdfEmpty"><div class="articlePdfEmptyIcon"><!--portal-i18n:"PDF"-->PDF</div><h2><!--portal-i18n:"尚无 PDF"-->尚无 PDF</h2><p><!--portal-i18n:"编译 Article 后将在此显示文档。"-->编译 Article 后将在此显示文档。</p></div>
+          </div>
+          <div class="articleOutputView articleLogView" id="articleLogView">
+            <div class="articleLogTabs" id="articleLogTabs"></div>
+            <div class="articleDiagnostics" id="articleDiagnostics"></div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <input id="articleUploadInput" type="file" hidden />
+
+    <div class="portalDetailOverlay" data-portal-detail-overlay id="articleRegisterModal" hidden>
+      <form class="portalDetailSurface articleRegisterSurface" data-portal-detail-surface id="articleRegisterForm" role="dialog" aria-modal="true" aria-labelledby="articleRegisterTitle">
+        <div class="portalDetailHeader" data-portal-detail-header><div><span class="portalDetailEyebrow"><!--portal-i18n:"REGISTER MANUSCRIPT"-->REGISTER MANUSCRIPT</span><h2 id="articleRegisterTitle"><!--portal-i18n:"注册 Article 目录"-->注册 Article 目录</h2></div><button class="portalDetailClose" data-portal-detail-close type="button" id="articleRegisterClose" aria-label="关闭" data-portal-icon="close" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;关闭&quot;}"></button></div>
+        <div class="portalDetailBody articleModalBody" data-portal-detail-body>
+        <p><!--portal-i18n:"选择已注册 Project 内包含主稿的目录。系统会识别 `.tex`、`.md` 或 `.markdown`，并从主稿读取标题。"-->选择已注册 Project 内包含主稿的目录。系统会识别 `.tex`、`.md` 或 `.markdown`，并从主稿读取标题。</p>
+        <label class="portalField"><!--portal-i18n:"目录路径"-->目录路径<input id="articleRegisterPath" name="path" required placeholder="/share/Projects/Example/article" autocomplete="off"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;/share/Projects/Example/article&quot;}"/></label>
+        <button class="portalButton" id="articleRegisterInspect" type="button"><!--portal-i18n:"检查目录"-->检查目录</button>
+        <div class="articleRegisterPreflight" id="articleRegisterPreflight" data-status="idle"><!--portal-i18n:"输入目录后检查主文档、编译器与依赖。"-->输入目录后检查主文档、编译器与依赖。</div>
+        <label class="portalField" id="articleRegisterPrimaryField" hidden><!--portal-i18n:"主文档"-->主文档<select id="articleRegisterPrimary" name="primary_file"></select></label>
+        <label class="portalField" id="articleRegisterCompilerField" hidden><!--portal-i18n:"编译器"-->编译器<select id="articleRegisterCompiler" name="compiler"></select></label>
+        <label class="portalField"><!--portal-i18n:"所在 Project"-->所在 Project<input id="articleRegisterProjects" name="project_ids" readonly aria-required="true" placeholder="检查目录后按目录填入" autocomplete="off"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;检查目录后按目录填入&quot;}"/></label>
+        </div>
+        <div class="portalDetailFooter" data-portal-detail-footer><button class="portalButton" type="button" id="articleRegisterCancel"><!--portal-i18n:"取消"-->取消</button><button class="portalButton is-primary" type="submit"><!--portal-i18n:"注册目录"-->注册目录</button></div>
+      </form>
+    </div>
+
+    <div class="portalDetailOverlay" data-portal-detail-overlay id="articleEntryModal" hidden>
+      <form class="portalDetailSurface articleEntrySurface" data-portal-detail-surface id="articleEntryForm" role="dialog" aria-modal="true" aria-labelledby="articleEntryTitle">
+        <div class="portalDetailHeader" data-portal-detail-header><div><span class="portalDetailEyebrow" id="articleEntryEyebrow"><!--portal-i18n:"NEW FILE"-->NEW FILE</span><h2 id="articleEntryTitle"><!--portal-i18n:"创建新文件"-->创建新文件</h2></div><button class="portalDetailClose" data-portal-detail-close type="button" id="articleEntryClose" aria-label="关闭" data-portal-icon="close" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;关闭&quot;}"></button></div>
+        <div class="portalDetailBody" data-portal-detail-body><label class="portalField"><!--portal-i18n:"相对路径"-->相对路径<input id="articleEntryPath" name="path" required placeholder="sections/method.tex" autocomplete="off"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;sections/method.tex&quot;}"/></label></div>
+        <input id="articleEntryKind" name="kind" type="hidden" value="file" />
+        <div class="portalDetailFooter" data-portal-detail-footer><button class="portalButton" type="button" id="articleEntryCancel"><!--portal-i18n:"取消"-->取消</button><button class="portalButton is-primary" type="submit"><!--portal-i18n:"创建"-->创建</button></div>
+      </form>
+    </div>
+
+  </body>
+</html>

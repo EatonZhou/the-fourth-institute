@@ -1,0 +1,149 @@
+{
+  "native": 0,
+  "checks": [
+    {
+      "seed": 202610195601,
+      "shape": "ring",
+      "arm": "both",
+      "partition_error": 1.1368683772161603e-13,
+      "post256_balance_error": 7.105427357601002e-15,
+      "L256_balance_error": 0.0,
+      "readonly": false
+    },
+    {
+      "seed": 202610195601,
+      "shape": "ring",
+      "arm": "birth_gain_only",
+      "partition_error": 1.0658141036401503e-13,
+      "post256_balance_error": 3.552713678800501e-15,
+      "L256_balance_error": 0.0,
+      "readonly": false
+    },
+    {
+      "seed": 202610195601,
+      "shape": "ring",
+      "arm": "non_birth_gain_only",
+      "partition_error": 1.0658141036401503e-13,
+      "post256_balance_error": 3.552713678800501e-15,
+      "L256_balance_error": 0.0,
+      "readonly": false
+    },
+    {
+      "seed": 202610195601,
+      "shape": "ring",
+      "arm": "neither",
+      "partition_error": 9.237055564881302e-14,
+      "post256_balance_error": 0.0,
+      "L256_balance_error": -7.105427357601002e-15,
+      "readonly": false
+    },
+    {
+      "seed": 202610195601,
+      "shape": "separate_seeds",
+      "arm": "both",
+      "partition_error": 5.684341886080802e-14,
+      "post256_balance_error": 2.1316282072803006e-14,
+      "L256_balance_error": 1.4210854715202004e-14,
+      "readonly": false
+    },
+    {
+      "seed": 202610195601,
+      "shape": "separate_seeds",
+      "arm": "birth_gain_only",
+      "partition_error": 1.84297022087776e-14,
+      "post256_balance_error": 0.0,
+      "L256_balance_error": 1.4210854715202004e-14,
+      "readonly": false
+    },
+    {
+      "seed": 202610195601,
+      "shape": "separate_seeds",
+      "arm": "non_birth_gain_only",
+      "partition_error": 1.7763568394002505e-14,
+      "post256_balance_error": 1.4210854715202004e-14,
+      "L256_balance_error": -2.842170943040401e-14,
+      "readonly": false
+    },
+    {
+      "seed": 202610195601,
+      "shape": "separate_seeds",
+      "arm": "neither",
+      "partition_error": 2.4868995751603507e-14,
+      "post256_balance_error": 2.1316282072803006e-14,
+      "L256_balance_error": -2.1316282072803006e-14,
+      "readonly": false
+    },
+    {
+      "seed": 202610195602,
+      "shape": "ring",
+      "arm": "both",
+      "partition_error": 1.3855583347321954e-13,
+      "post256_balance_error": 1.0658141036401503e-14,
+      "L256_balance_error": 1.4210854715202004e-14,
+      "readonly": true
+    },
+    {
+      "seed": 202610195602,
+      "shape": "ring",
+      "arm": "birth_gain_only",
+      "partition_error": 1.2434497875801753e-13,
+      "post256_balance_error": -7.105427357601002e-15,
+      "L256_balance_error": 7.105427357601002e-15,
+      "readonly": false
+    },
+    {
+      "seed": 202610195602,
+      "shape": "ring",
+      "arm": "non_birth_gain_only",
+      "partition_error": 1.3145040611561853e-13,
+      "post256_balance_error": 0.0,
+      "L256_balance_error": -2.842170943040401e-14,
+      "readonly": false
+    },
+    {
+      "seed": 202610195602,
+      "shape": "ring",
+      "arm": "neither",
+      "partition_error": 1.1723955140041653e-13,
+      "post256_balance_error": 7.105427357601002e-15,
+      "L256_balance_error": -7.105427357601002e-15,
+      "readonly": false
+    },
+    {
+      "seed": 202610195602,
+      "shape": "separate_seeds",
+      "arm": "both",
+      "partition_error": 5.684341886080802e-14,
+      "post256_balance_error": 3.907985046680551e-14,
+      "L256_balance_error": -2.842170943040401e-14,
+      "readonly": true
+    },
+    {
+      "seed": 202610195602,
+      "shape": "separate_seeds",
+      "arm": "birth_gain_only",
+      "partition_error": 2.3092638912203256e-14,
+      "post256_balance_error": 2.1316282072803006e-14,
+      "L256_balance_error": -1.4210854715202004e-14,
+      "readonly": false
+    },
+    {
+      "seed": 202610195602,
+      "shape": "separate_seeds",
+      "arm": "non_birth_gain_only",
+      "partition_error": 2.3092638912203256e-14,
+      "post256_balance_error": 1.0658141036401503e-14,
+      "L256_balance_error": -2.1316282072803006e-14,
+      "readonly": false
+    },
+    {
+      "seed": 202610195602,
+      "shape": "separate_seeds",
+      "arm": "neither",
+      "partition_error": 3.197442310920451e-14,
+      "post256_balance_error": 2.1316282072803006e-14,
+      "L256_balance_error": -2.1316282072803006e-14,
+      "readonly": false
+    }
+  ]
+}

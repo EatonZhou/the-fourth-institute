@@ -1,0 +1,9 @@
+{
+  "native_calls": 0,
+  "single_hop": true,
+  "concurrent_target_scaling": true,
+  "old_energy_only": true,
+  "no_survivor_no_payer": true,
+  "impermeable_face": true,
+  "diffusion_symmetric": true
+}

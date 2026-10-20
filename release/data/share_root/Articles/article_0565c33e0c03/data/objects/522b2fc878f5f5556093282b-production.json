@@ -1,0 +1,71 @@
+{
+  "status": "stable_export_ready_for_author_embedding",
+  "completed_utc": "2026-10-19T13:26:09.411353+00:00",
+  "resident_id": "resident_a388058f90eb",
+  "title": "Scalar feedback supports acquired action with limited revision",
+  "intended_role": "v0.48 main Fig1 after the author reordered the manuscript; no figure number printed on the canvas",
+  "artifacts": {
+    "scalar_action.pptx": {
+      "sha256": "4e0bf55798cceec0d1b99e65988a75a5beda4cf4f88cfbe3ec397758d6492af8",
+      "bytes": 14028
+    },
+    "scalar_action.pdf": {
+      "sha256": "7036b6e0df3ab6e5ea252d194a258fcdc4b7c35ae4306bace5317233a5cbbdbe",
+      "bytes": 60621
+    },
+    "scalar_action.png": {
+      "sha256": "7648bc783530b6077e84554fbea2cef9b46f424147699441f07e2e8083b89ac4",
+      "bytes": 1106733
+    }
+  },
+  "authoring": {
+    "visible_display": ":96",
+    "native_editable_shapes": 109,
+    "bitmap_picture_objects": 0,
+    "native_point_plot": true,
+    "native_tables": true,
+    "page_cm": [
+      28,
+      34
+    ],
+    "png_pixels": [
+      3360,
+      4080
+    ],
+    "saved_closed_reopened": true,
+    "GUI_pdf_png_export": true
+  },
+  "verification": {
+    "displayed_score_records": 48,
+    "panels": {
+      "B": 30,
+      "C": 6,
+      "D": 12
+    },
+    "all_48_score_values_present_in_saved_PPTX_and_PDF": true,
+    "six_movement_totals_present": true,
+    "all_method_labels_preserved": true,
+    "all_source_copy_hashes_match": true,
+    "preexisting_acquired_gain_pptx_unchanged": true,
+    "final_PNG_and_PDF_personally_viewed": true,
+    "B_lower_row_occlusion_resolved": true,
+    "footer_complete": true
+  },
+  "scientific_limits": [
+    "Strict scalar policy boundary; K is physical transport only.",
+    "Reward reversal 1/2 cannot be repaired by aftereffect success 2/2.",
+    "Keep 2/2, clear 1/2, rotate 0/2 from two dependent actual-640 parents.",
+    "Changed-actuator continue and granted-heading fixed run/tumble both 2/2; fixed movement costs lower.",
+    "10 life0 + 10 dependent branches, not 20 independent repeats; no birth, dense feedback, prescribed actuator and unpriced computation/communication."
+  ],
+  "new_physics_steps": 0,
+  "source_handoff_sha256": "052eda8a60632e75a8d650a0de46bf0380bd63a2e5345f3b407c22308cf1dcab",
+  "captions": [
+    "caption_short.txt",
+    "caption_full.txt"
+  ],
+  "source_table": "source_data/plotted_values.csv",
+  "complete_cost_table": "source_data/all_phase_costs.csv",
+  "gui_record": "gui_record.json",
+  "integration": "Author will embed and check the manuscript page; this handoff does not claim publication or default-preview update."
+}

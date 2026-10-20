@@ -1,0 +1,189 @@
+{
+  "aggregates": [
+    {
+      "id": "g2_p0_c0",
+      "complete": true,
+      "eligible": true,
+      "pareto": [
+        53.43541310683334,
+        -2.741238089575232,
+        4.5261002354233355,
+        3.910036472641982
+      ],
+      "fallback": [
+        353.55115509752414,
+        52.034712144871094
+      ],
+      "contexts": [
+        "g2_p0_c0--compact--colocated--G2--pump",
+        "g2_p0_c0--compact--separated--G2--pump",
+        "g2_p0_c0--double_lobe--colocated--G2--pump",
+        "g2_p0_c0--double_lobe--separated--G2--pump"
+      ]
+    },
+    {
+      "id": "g2_p0_c1",
+      "complete": true,
+      "eligible": true,
+      "pareto": [
+        48.272027856358264,
+        -3.0420044264367943,
+        1.6252202850256339,
+        3.336638385748237
+      ],
+      "fallback": [
+        321.65859881236815,
+        46.69752742309352
+      ],
+      "contexts": [
+        "g2_p0_c1--compact--colocated--G2--pump",
+        "g2_p0_c1--compact--separated--G2--pump",
+        "g2_p0_c1--double_lobe--colocated--G2--pump",
+        "g2_p0_c1--double_lobe--separated--G2--pump"
+      ]
+    },
+    {
+      "id": "g2_p1_c0",
+      "complete": true,
+      "eligible": false,
+      "pareto": [
+        22.090439731901363,
+        -35.56674249574537,
+        -39.54687761757149,
+        0.8065701676251141
+      ],
+      "fallback": [
+        228.27494772196903,
+        2.922811376532982
+      ],
+      "contexts": [
+        "g2_p1_c0--compact--colocated--G2_completion--pump",
+        "g2_p1_c0--compact--separated--G2_completion--pump",
+        "g2_p1_c0--double_lobe--colocated--G2_completion--pump",
+        "g2_p1_c0--double_lobe--separated--G2_completion--pump"
+      ]
+    },
+    {
+      "id": "g2_p1_c1",
+      "complete": true,
+      "eligible": false,
+      "pareto": [
+        34.75065650733705,
+        -22.075489723758878,
+        -22.536030800073974,
+        3.167220598760511
+      ],
+      "fallback": [
+        280.94831264755675,
+        22.700358708030794
+      ],
+      "contexts": [
+        "g2_p1_c1--compact--colocated--G2_completion--pump",
+        "g2_p1_c1--compact--separated--G2_completion--pump",
+        "g2_p1_c1--double_lobe--colocated--G2_completion--pump",
+        "g2_p1_c1--double_lobe--separated--G2_completion--pump"
+      ]
+    }
+  ],
+  "qualified_ranking": [
+    "g2_p0_c0",
+    "g2_p0_c1"
+  ],
+  "proposal_ranking": [
+    "g2_p0_c0",
+    "g2_p0_c1",
+    "g2_p1_c1",
+    "g2_p1_c0"
+  ],
+  "qualified_pareto_layers": [
+    {
+      "id": "g2_p0_c0",
+      "complete": true,
+      "eligible": true,
+      "pareto": [
+        53.43541310683334,
+        -2.741238089575232,
+        4.5261002354233355,
+        3.910036472641982
+      ],
+      "fallback": [
+        353.55115509752414,
+        52.034712144871094
+      ],
+      "contexts": [
+        "g2_p0_c0--compact--colocated--G2--pump",
+        "g2_p0_c0--compact--separated--G2--pump",
+        "g2_p0_c0--double_lobe--colocated--G2--pump",
+        "g2_p0_c0--double_lobe--separated--G2--pump"
+      ]
+    },
+    {
+      "id": "g2_p0_c1",
+      "complete": true,
+      "eligible": true,
+      "pareto": [
+        48.272027856358264,
+        -3.0420044264367943,
+        1.6252202850256339,
+        3.336638385748237
+      ],
+      "fallback": [
+        321.65859881236815,
+        46.69752742309352
+      ],
+      "contexts": [
+        "g2_p0_c1--compact--colocated--G2--pump",
+        "g2_p0_c1--compact--separated--G2--pump",
+        "g2_p0_c1--double_lobe--colocated--G2--pump",
+        "g2_p0_c1--double_lobe--separated--G2--pump"
+      ]
+    }
+  ],
+  "fallback_proposal_layers": [
+    {
+      "id": "g2_p1_c1",
+      "complete": true,
+      "eligible": false,
+      "pareto": [
+        34.75065650733705,
+        -22.075489723758878,
+        -22.536030800073974,
+        3.167220598760511
+      ],
+      "fallback": [
+        280.94831264755675,
+        22.700358708030794
+      ],
+      "contexts": [
+        "g2_p1_c1--compact--colocated--G2_completion--pump",
+        "g2_p1_c1--compact--separated--G2_completion--pump",
+        "g2_p1_c1--double_lobe--colocated--G2_completion--pump",
+        "g2_p1_c1--double_lobe--separated--G2_completion--pump"
+      ]
+    },
+    {
+      "id": "g2_p1_c0",
+      "complete": true,
+      "eligible": false,
+      "pareto": [
+        22.090439731901363,
+        -35.56674249574537,
+        -39.54687761757149,
+        0.8065701676251141
+      ],
+      "fallback": [
+        228.27494772196903,
+        2.922811376532982
+      ],
+      "contexts": [
+        "g2_p1_c0--compact--colocated--G2_completion--pump",
+        "g2_p1_c0--compact--separated--G2_completion--pump",
+        "g2_p1_c0--double_lobe--colocated--G2_completion--pump",
+        "g2_p1_c0--double_lobe--separated--G2_completion--pump"
+      ]
+    }
+  ],
+  "old_selected": "g2_p0_c0",
+  "retrospective_only": true,
+  "new_continuations": 0
+}

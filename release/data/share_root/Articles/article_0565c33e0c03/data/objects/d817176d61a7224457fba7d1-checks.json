@@ -1,0 +1,44 @@
+{
+  "status": "passed",
+  "cases": [
+    {
+      "candidate": "genome_93e6148d32bbb0862163",
+      "T00_before_first_forward": true,
+      "T00_ready_exact": true
+    },
+    {
+      "branch_flags_exact": true,
+      "independent_children": true,
+      "full_fields_kernels_config_exact": true,
+      "inherited_clock": true,
+      "rejected": [
+        "inflight",
+        "sha",
+        "clock",
+        "candidate"
+      ],
+      "synthetic_clock_only": true
+    },
+    {
+      "candidate": "genome_d02e7f60565f83066e5d",
+      "T00_before_first_forward": true,
+      "T00_ready_exact": true
+    },
+    {
+      "candidate": "genome_8d60f7d250e8e9f2a25b",
+      "T00_before_first_forward": true,
+      "T00_ready_exact": true
+    },
+    {
+      "candidate": "genome_a6a821dffd4f4046c97a",
+      "T00_before_first_forward": true,
+      "T00_ready_exact": true
+    }
+  ],
+  "body": 0,
+  "energy": 0,
+  "prepare": 0,
+  "generation": 0,
+  "old_suite_repeated": false,
+  "synthetic_endpoints_not_scientific": true
+}

@@ -1,0 +1,2236 @@
+{
+  "schema": "tfi.architecture-component-relations.v1",
+  "revision": 2,
+  "owner": "resident_60ae6d0cdf74",
+  "status": "evidence_supplement",
+  "created_on": "2026-10-15T08:02:32.371038+00:00",
+  "purpose": "直接组件与根边界视图的正式事实补充；覆盖 ResourceService、SocietyService、Execution/Worker。",
+  "binding": {
+    "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1",
+    "base_manifest": {
+      "address": "workspace_13209cb6666b/file/architecture-evidence/objects/manifest-fa5bba171eedccad1820ce10a53c10713f97dfc9e26b8c2856ae6a637490cc45.json",
+      "sha256": "fa5bba171eedccad1820ce10a53c10713f97dfc9e26b8c2856ae6a637490cc45",
+      "size": 160886
+    },
+    "consumer_contract": {
+      "address": "workspace_13209cb6666b/file/architecture-evidence/objects/consumer-contract-d1f751c4f0426819e41fcfb6146a76391c8c9bc3d105b8764ce3ccbf758d1031.json",
+      "sha256": "d1f751c4f0426819e41fcfb6146a76391c8c9bc3d105b8764ce3ccbf758d1031",
+      "size": 302180
+    },
+    "map": {
+      "status": "available",
+      "address": "workspace_13209cb6666b/file/architecture-evidence/commits/d4f9b6202c631c8f11027ee8c2eeecd499278fa1/architecture/modules.yaml",
+      "sha256": "e96421eef799499d406502da20b44d39e9bc037c588bac0684dd582319ed6b49",
+      "size": 48777
+    },
+    "evolution_sha256": "6bc275ee5a2b8ce003e1563064654fb22d1e7468aaddc670fa23bb645003adc7",
+    "compatibility": "exact_base_manifest_and_map_hash",
+    "on_mismatch": "Keep the selected base batch; mark supplement unavailable. Do not silently transplant onto another batch."
+  },
+  "semantics": {
+    "fact_type": "design_and_code_grounded_architecture",
+    "execution_trace": false,
+    "global_order": null,
+    "complete_dependency_graph": false,
+    "new_modules": [],
+    "new_protocols": [],
+    "new_scenarios": [
+      "resident-submit-observe-project",
+      "codex-native-accepted-turn-recovery"
+    ],
+    "modifies_design_ownership": false,
+    "temporal_scope": {
+      "code": "at_exact_bound_git_commit",
+      "design": "previously_observed_frozen_versions_not_a_historical_commit_snapshot"
+    },
+    "design_roles": "source_basis cites normative evidence, not Design ownership; ownership remains base consumer design_assignments.",
+    "endpoint_roles": "module_id is a real map ID; role explains the participating responsibility. boundary_role with component_id=null is not a new module.",
+    "protocol_roles": "protocol_id identifies the limited protocol facet explained by the relation. related_protocol_ids are contextual links only; neither changes parent protocol endpoints.",
+    "order": "relations is an unordered set. Conditions explain local code branches only; do not derive a total event order or an execution trace."
+  },
+  "consumer_fields": {
+    "module_catalog": "base consumer_contract.modules[]",
+    "direct_children": "modules.filter(m => m.parent === scopeRoot)",
+    "relations": "relations.filter(r => r.scope_roots.includes(scopeRoot))",
+    "endpoint": "relations[].endpoints[]: {id,module_id,component_id,role,kind}",
+    "kind": "relations[].kind governs whether a line represents a call, callback, lease control, shared transaction or content write",
+    "evidence": "relations[].source_basis[] and code_evidence_ids -> code_evidence[]",
+    "missing": "missing[]: unavailable semantics, not proof that an interaction never exists",
+    "scenario_roles": "scenario_reuse.provider.participant_mapping_source; reuse participants[].module_id without deriving edges",
+    "scope": "scopes.find(s => s.root_module_id === scopeRoot)",
+    "edges": "scope.relation_ids -> relations[].id; aliases a canonical relation, never a separate edge truth",
+    "boundary_protocols": "scope.boundary_protocol_ids -> base consumer.protocols[].id; root boundary only",
+    "scenarios": "scenario_catalog[] resolves exact (protocol_id,scenario_id); reuse base entries or added simulated artifacts"
+  },
+  "rendering": {
+    "direct_children_only": true,
+    "parent_protocols": "Keep all base protocols incident to a root on that root boundary; do not inherit or multiply them onto its child components.",
+    "relation_policy": "Use only the explicitly authored endpoints of each relation. These relations are additional detail, not replacements for root-level protocol buses.",
+    "endpoints": [
+      {
+        "condition": "endpoint module.parent === scopeRoot",
+        "display": "direct_component",
+        "display_module": "endpoint.module_id"
+      },
+      {
+        "condition": "endpoint.module_id === scopeRoot",
+        "display": "root_boundary_role",
+        "display_module": "scopeRoot"
+      },
+      {
+        "condition": "endpoint belongs to another root and deployed_in contains scopeRoot",
+        "display": "shared_component_boundary",
+        "display_module": "endpoint.module_id",
+        "note": "Label owner parent and deployed_in; do not add to direct children."
+      },
+      {
+        "condition": "endpoint belongs to another root",
+        "display": "external_root_boundary",
+        "display_module": "endpoint ancestor runtime ID",
+        "note": "Keep actual endpoint.module_id as metadata/label; do not show its children as local children."
+      }
+    ],
+    "root_protocol_direction": "unchanged_unspecified",
+    "relation_ordered": false,
+    "shared_transaction_style": "undirected_consistency",
+    "role_node_invention": false
+  },
+  "components": [
+    {
+      "module_id": "resources.access",
+      "parent": "resources",
+      "level": "component",
+      "title": "资源解析、读取与索引",
+      "deployed_in": null,
+      "source": {
+        "status": "available",
+        "address": "workspace_13209cb6666b/file/architecture-evidence/commits/d4f9b6202c631c8f11027ee8c2eeecd499278fa1/architecture/modules.yaml",
+        "sha256": "e96421eef799499d406502da20b44d39e9bc037c588bac0684dd582319ed6b49",
+        "size": 48777,
+        "line": 365,
+        "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1"
+      }
+    },
+    {
+      "module_id": "resources.types",
+      "parent": "resources",
+      "level": "component",
+      "title": "资源类型适配器",
+      "deployed_in": null,
+      "source": {
+        "status": "available",
+        "address": "workspace_13209cb6666b/file/architecture-evidence/commits/d4f9b6202c631c8f11027ee8c2eeecd499278fa1/architecture/modules.yaml",
+        "sha256": "e96421eef799499d406502da20b44d39e9bc037c588bac0684dd582319ed6b49",
+        "size": 48777,
+        "line": 394,
+        "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1"
+      }
+    },
+    {
+      "module_id": "lineage.definition",
+      "parent": "lineage",
+      "level": "component",
+      "title": "定义、组合与组织配置",
+      "deployed_in": null,
+      "source": {
+        "status": "available",
+        "address": "workspace_13209cb6666b/file/architecture-evidence/commits/d4f9b6202c631c8f11027ee8c2eeecd499278fa1/architecture/modules.yaml",
+        "sha256": "e96421eef799499d406502da20b44d39e9bc037c588bac0684dd582319ed6b49",
+        "size": 48777,
+        "line": 411,
+        "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1"
+      }
+    },
+    {
+      "module_id": "lineage.conversation",
+      "parent": "lineage",
+      "level": "component",
+      "title": "输入、对话与上下文",
+      "deployed_in": null,
+      "source": {
+        "status": "available",
+        "address": "workspace_13209cb6666b/file/architecture-evidence/commits/d4f9b6202c631c8f11027ee8c2eeecd499278fa1/architecture/modules.yaml",
+        "sha256": "e96421eef799499d406502da20b44d39e9bc037c588bac0684dd582319ed6b49",
+        "size": 48777,
+        "line": 447,
+        "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1"
+      }
+    },
+    {
+      "module_id": "lineage.automation",
+      "parent": "lineage",
+      "level": "component",
+      "title": "事件源、图求值与 Effect 执行器",
+      "deployed_in": null,
+      "source": {
+        "status": "available",
+        "address": "workspace_13209cb6666b/file/architecture-evidence/commits/d4f9b6202c631c8f11027ee8c2eeecd499278fa1/architecture/modules.yaml",
+        "sha256": "e96421eef799499d406502da20b44d39e9bc037c588bac0684dd582319ed6b49",
+        "size": 48777,
+        "line": 473,
+        "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1"
+      }
+    },
+    {
+      "module_id": "execution.scheduling",
+      "parent": "execution",
+      "level": "component",
+      "title": "持久调度、账号与用量",
+      "deployed_in": null,
+      "source": {
+        "status": "available",
+        "address": "workspace_13209cb6666b/file/architecture-evidence/commits/d4f9b6202c631c8f11027ee8c2eeecd499278fa1/architecture/modules.yaml",
+        "sha256": "e96421eef799499d406502da20b44d39e9bc037c588bac0684dd582319ed6b49",
+        "size": 48777,
+        "line": 496,
+        "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1"
+      }
+    },
+    {
+      "module_id": "execution.providers",
+      "parent": "worker",
+      "level": "component",
+      "title": "会话管理与 Provider Adapter",
+      "deployed_in": null,
+      "source": {
+        "status": "available",
+        "address": "workspace_13209cb6666b/file/architecture-evidence/commits/d4f9b6202c631c8f11027ee8c2eeecd499278fa1/architecture/modules.yaml",
+        "sha256": "e96421eef799499d406502da20b44d39e9bc037c588bac0684dd582319ed6b49",
+        "size": 48777,
+        "line": 521,
+        "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1"
+      }
+    },
+    {
+      "module_id": "resources.permissions",
+      "parent": "resources",
+      "level": "component",
+      "title": "凭证与生命周期策略",
+      "deployed_in": null,
+      "source": {
+        "status": "available",
+        "address": "workspace_13209cb6666b/file/architecture-evidence/commits/d4f9b6202c631c8f11027ee8c2eeecd499278fa1/architecture/modules.yaml",
+        "sha256": "e96421eef799499d406502da20b44d39e9bc037c588bac0684dd582319ed6b49",
+        "size": 48777,
+        "line": 788,
+        "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1"
+      }
+    },
+    {
+      "module_id": "lineage.family",
+      "parent": "lineage",
+      "level": "component",
+      "title": "Family 门面与监督",
+      "deployed_in": null,
+      "source": {
+        "status": "available",
+        "address": "workspace_13209cb6666b/file/architecture-evidence/commits/d4f9b6202c631c8f11027ee8c2eeecd499278fa1/architecture/modules.yaml",
+        "sha256": "e96421eef799499d406502da20b44d39e9bc037c588bac0684dd582319ed6b49",
+        "size": 48777,
+        "line": 802,
+        "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1"
+      }
+    },
+    {
+      "module_id": "execution.agent-data",
+      "parent": "execution",
+      "level": "component",
+      "title": "AgentData 与对话投影",
+      "deployed_in": [
+        "execution",
+        "worker"
+      ],
+      "source": {
+        "status": "available",
+        "address": "workspace_13209cb6666b/file/architecture-evidence/commits/d4f9b6202c631c8f11027ee8c2eeecd499278fa1/architecture/modules.yaml",
+        "sha256": "e96421eef799499d406502da20b44d39e9bc037c588bac0684dd582319ed6b49",
+        "size": 48777,
+        "line": 814,
+        "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1"
+      }
+    },
+    {
+      "module_id": "worker.harness",
+      "parent": "worker",
+      "level": "component",
+      "title": "Agent Harness",
+      "deployed_in": null,
+      "source": {
+        "status": "available",
+        "address": "workspace_13209cb6666b/file/architecture-evidence/commits/d4f9b6202c631c8f11027ee8c2eeecd499278fa1/architecture/modules.yaml",
+        "sha256": "e96421eef799499d406502da20b44d39e9bc037c588bac0684dd582319ed6b49",
+        "size": 48777,
+        "line": 833,
+        "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1"
+      }
+    }
+  ],
+  "relations": [
+    {
+      "id": "worker-lease-control",
+      "title": "Worker 控制循环与 Scheduler 的领取及终态提交",
+      "kind": "lease_control",
+      "protocol_id": "worker-lease",
+      "related_protocol_ids": [],
+      "scope_roots": [
+        "execution",
+        "worker"
+      ],
+      "endpoints": [
+        {
+          "id": "execution.scheduling",
+          "module_id": "execution.scheduling",
+          "component_id": "execution.scheduling",
+          "role": "Scheduler：领取资格、租约、取消意图与权威终态",
+          "kind": "component"
+        },
+        {
+          "id": "worker",
+          "module_id": "worker",
+          "component_id": null,
+          "role": "ExecutionWorker：领取、心跳、控制循环与 finish 提交",
+          "kind": "boundary_role"
+        }
+      ],
+      "interaction": {
+        "direction": "request_response",
+        "initiator_module_id": "worker",
+        "responder_module_id": "execution.scheduling",
+        "operations": [
+          "领取请求并取得 claim token/lease",
+          "以当前资格报告心跳和处理控制",
+          "finish(result, claim_token) 提交结果"
+        ],
+        "conditions": [
+          "Worker 激活且具备所需能力才可领取",
+          "终态提交必须持有当前领取资格；资格丢失返回 claim_lost"
+        ],
+        "result": "Scheduler 校验领取资格并确定终态；Worker 提交结果不等于 Provider 原生返回。",
+        "transport": "not_asserted_by_this_supplement",
+        "ordered": false
+      },
+      "source_basis": [
+        {
+          "design_id": "decision_25eb93d803a4",
+          "version": "18",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf.md",
+            "sha256": "8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf",
+            "size": 27358
+          },
+          "line_start": 111,
+          "line_end": 113,
+          "section": "组件及其责任",
+          "line_numbering": "1-based inclusive in frozen UTF-8 body"
+        },
+        {
+          "design_id": "decision_25eb93d803a4",
+          "version": "18",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf.md",
+            "sha256": "8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf",
+            "size": 27358
+          },
+          "line_start": 155,
+          "line_end": 159,
+          "section": "一次工作怎样流过系统",
+          "line_numbering": "1-based inclusive in frozen UTF-8 body"
+        },
+        {
+          "design_id": "decision_425e428410e0",
+          "version": "38",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-a959010fc9b01df5e147557b43c47d9b144f90433ce88c39a11b6e5141a85dbe.md",
+            "sha256": "a959010fc9b01df5e147557b43c47d9b144f90433ce88c39a11b6e5141a85dbe",
+            "size": 43455
+          },
+          "line_start": 108,
+          "line_end": 114,
+          "section": "一次调用怎样流动",
+          "line_numbering": "1-based inclusive in frozen UTF-8 body"
+        }
+      ],
+      "code_evidence_ids": [
+        "worker-finish"
+      ],
+      "boundary": "Worker 控制循环没有独立组件 ID；worker 是角色所在边界，不把协议分摊给 execution.providers 或 worker.harness。"
+    },
+    {
+      "id": "runtime-session-adapter-call",
+      "title": "ExecutionRuntime 调用会话服务与 Adapter",
+      "kind": "in_process_call",
+      "protocol_id": "provider-capabilities",
+      "related_protocol_ids": [],
+      "scope_roots": [
+        "worker"
+      ],
+      "endpoints": [
+        {
+          "id": "worker",
+          "module_id": "worker",
+          "component_id": null,
+          "role": "ExecutionRuntime：构造 invocation/context、调用与收尾",
+          "kind": "boundary_role"
+        },
+        {
+          "id": "execution.providers",
+          "module_id": "execution.providers",
+          "component_id": "execution.providers",
+          "role": "AgentSessionService 与 Provider Adapter：会话/选项准备、原生调用与结果适配",
+          "kind": "component"
+        }
+      ],
+      "interaction": {
+        "direction": "request_response",
+        "initiator_module_id": "worker",
+        "responder_module_id": "execution.providers",
+        "operations": [
+          "service.execute(invocation, BackendContext)",
+          "Adapter.execute(invocation, context) 返回 BackendResult",
+          "经运行中控制请求 Adapter.interrupt"
+        ],
+        "conditions": [
+          "运行选项和能力支持满足调用前置条件",
+          "Runtime 在调用前后检查取消；调用期间 interrupt 仅尽力尝试"
+        ],
+        "result": "返回规范结果；Runtime 保存 Provider 已完成恢复点并处理内容/会话，Worker 另行提交 Scheduler 终态。",
+        "transport": "in_process",
+        "ordered": false
+      },
+      "source_basis": [
+        {
+          "design_id": "decision_425e428410e0",
+          "version": "38",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-a959010fc9b01df5e147557b43c47d9b144f90433ce88c39a11b6e5141a85dbe.md",
+            "sha256": "a959010fc9b01df5e147557b43c47d9b144f90433ce88c39a11b6e5141a85dbe",
+            "size": 43455
+          },
+          "line_start": 81,
+          "line_end": 89,
+          "section": "组件责任",
+          "line_numbering": "1-based inclusive in frozen UTF-8 body"
+        },
+        {
+          "design_id": "decision_425e428410e0",
+          "version": "38",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-a959010fc9b01df5e147557b43c47d9b144f90433ce88c39a11b6e5141a85dbe.md",
+            "sha256": "a959010fc9b01df5e147557b43c47d9b144f90433ce88c39a11b6e5141a85dbe",
+            "size": 43455
+          },
+          "line_start": 91,
+          "line_end": 125,
+          "section": "一次调用怎样流动 / Adapter 接口",
+          "line_numbering": "1-based inclusive in frozen UTF-8 body"
+        },
+        {
+          "design_id": "decision_25eb93d803a4",
+          "version": "18",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf.md",
+            "sha256": "8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf",
+            "size": 27358
+          },
+          "line_start": 155,
+          "line_end": 159,
+          "section": "一次工作怎样流过系统",
+          "line_numbering": "1-based inclusive in frozen UTF-8 body"
+        }
+      ],
+      "code_evidence_ids": [
+        "runtime-call",
+        "runtime-content"
+      ],
+      "boundary": "Runtime 属于 worker 边界，当前地图没有 Runtime 独立组件；不把它替换成 worker.harness，也不把全部 Provider 协议参与者展开成连线。"
+    },
+    {
+      "id": "session-harness-governance",
+      "title": "会话服务与 Harness 的可选治理及执行回调",
+      "kind": "in_process_call_with_callback",
+      "protocol_id": "provider-capabilities",
+      "related_protocol_ids": [],
+      "scope_roots": [
+        "worker"
+      ],
+      "endpoints": [
+        {
+          "id": "execution.providers",
+          "module_id": "execution.providers",
+          "component_id": "execution.providers",
+          "role": "AgentSessionService：应用选项、选择 Provider、提供执行回调",
+          "kind": "component"
+        },
+        {
+          "id": "worker.harness",
+          "module_id": "worker.harness",
+          "component_id": "worker.harness",
+          "role": "Agent Harness：准备本轮工具/上下文并按条件治理执行",
+          "kind": "component"
+        }
+      ],
+      "interaction": {
+        "direction": "call_with_callback",
+        "initiator_module_id": "execution.providers",
+        "responder_module_id": "worker.harness",
+        "operations": [
+          "harness.prepare_invocation(invocation, provider)",
+          "harness.should_run(invocation)",
+          "条件成立时 harness.execute(..., execute=execute_with_context_seed)"
+        ],
+        "conditions": [
+          "prepare_invocation 发生于 should_run 判定之前",
+          "should_run 为 false 时直接调用 Provider 执行回调；为 true 时将回调交给 Harness"
+        ],
+        "result": "治理后的执行结果回到 AgentSessionService；回调内调用 Provider Adapter。",
+        "transport": "in_process",
+        "ordered": false
+      },
+      "source_basis": [
+        {
+          "design_id": "decision_425e428410e0",
+          "version": "38",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-a959010fc9b01df5e147557b43c47d9b144f90433ce88c39a11b6e5141a85dbe.md",
+            "sha256": "a959010fc9b01df5e147557b43c47d9b144f90433ce88c39a11b6e5141a85dbe",
+            "size": 43455
+          },
+          "line_start": 97,
+          "line_end": 105,
+          "section": "一次调用怎样流动",
+          "line_numbering": "1-based inclusive in frozen UTF-8 body"
+        },
+        {
+          "design_id": "decision_25eb93d803a4",
+          "version": "18",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf.md",
+            "sha256": "8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf",
+            "size": 27358
+          },
+          "line_start": 117,
+          "line_end": 118,
+          "section": "组件及其责任",
+          "line_numbering": "1-based inclusive in frozen UTF-8 body"
+        },
+        {
+          "design_id": "decision_25eb93d803a4",
+          "version": "18",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf.md",
+            "sha256": "8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf",
+            "size": 27358
+          },
+          "line_start": 157,
+          "line_end": 157,
+          "section": "一次工作怎样流过系统",
+          "line_numbering": "1-based inclusive in frozen UTF-8 body"
+        }
+      ],
+      "code_evidence_ids": [
+        "session-harness"
+      ],
+      "boundary": "这是一次 Provider 调用内的治理协作；不代表所有执行必经 Harness.execute，也不代表 Harness 参与 worker-lease。"
+    },
+    {
+      "id": "scheduler-agentdata-lifecycle-transaction",
+      "title": "Scheduler 与 AgentData 生命周期的同事务一致性",
+      "kind": "shared_transaction",
+      "protocol_id": null,
+      "related_protocol_ids": [
+        "database-schema"
+      ],
+      "scope_roots": [
+        "execution"
+      ],
+      "endpoints": [
+        {
+          "id": "execution.scheduling",
+          "module_id": "execution.scheduling",
+          "component_id": "execution.scheduling",
+          "role": "Scheduler：维护队列状态并提交生命周期转移",
+          "kind": "component"
+        },
+        {
+          "id": "execution.agent-data",
+          "module_id": "execution.agent-data",
+          "component_id": "execution.agent-data",
+          "role": "AgentData：保存同一 execution_id 的生命周期记录",
+          "kind": "component"
+        }
+      ],
+      "interaction": {
+        "direction": "undirected_consistency",
+        "operations": [
+          "scheduler_transition 使用调用者 connection",
+          "队列状态与 agent.executions 生命周期状态在同一数据库事务提交"
+        ],
+        "conditions": [
+          "同一 execution_id 与不可变身份对应",
+          "Scheduler 已提交的状态必须与目标终态一致；不替换已有不同终态"
+        ],
+        "result": "调度队列与持久执行生命周期一致。AgentData 的内容投影不独立判定终态。",
+        "transport": "shared_postgresql_transaction",
+        "ordered": false
+      },
+      "source_basis": [
+        {
+          "design_id": "decision_25eb93d803a4",
+          "version": "18",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf.md",
+            "sha256": "8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf",
+            "size": 27358
+          },
+          "line_start": 97,
+          "line_end": 99,
+          "section": "持久事实与临时协调",
+          "line_numbering": "1-based inclusive in frozen UTF-8 body"
+        },
+        {
+          "design_id": "decision_25eb93d803a4",
+          "version": "18",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf.md",
+            "sha256": "8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf",
+            "size": 27358
+          },
+          "line_start": 111,
+          "line_end": 119,
+          "section": "组件及其责任",
+          "line_numbering": "1-based inclusive in frozen UTF-8 body"
+        }
+      ],
+      "code_evidence_ids": [
+        "scheduler-lifecycle",
+        "lifecycle-transaction"
+      ],
+      "boundary": "一致性关系，不画成两个独立服务之间的 RPC；database-schema 仅为关联协议，不新增或改写地图协议端点。"
+    },
+    {
+      "id": "runtime-agentdata-content",
+      "title": "Runtime 将执行内容交给 AgentDataProjector",
+      "kind": "in_process_content_write",
+      "protocol_id": null,
+      "related_protocol_ids": [
+        "provider-capabilities"
+      ],
+      "scope_roots": [
+        "worker"
+      ],
+      "endpoints": [
+        {
+          "id": "worker",
+          "module_id": "worker",
+          "component_id": null,
+          "role": "ExecutionRuntime：管理输入/结果投影及恢复",
+          "kind": "boundary_role"
+        },
+        {
+          "id": "execution.agent-data",
+          "module_id": "execution.agent-data",
+          "component_id": "execution.agent-data",
+          "role": "AgentDataProjector：输入、输出、Provider 观察和用量内容",
+          "kind": "component"
+        }
+      ],
+      "interaction": {
+        "direction": "call",
+        "initiator_module_id": "worker",
+        "responder_module_id": "execution.agent-data",
+        "operations": [
+          "记录本次输入",
+          "Provider 返回后保存已完成恢复点",
+          "agent_data_projector.complete 写入执行内容"
+        ],
+        "conditions": [
+          "已取消的执行可在调用 Provider 前结束",
+          "恢复点声明 Provider 已完成时可跳过再次调用而补写内容",
+          "内容完成与会话更新后仍由 Worker 单独提交 Scheduler 终态"
+        ],
+        "result": "保存内容轨迹并支持恢复；内容落盘不是 Scheduler 终态。",
+        "transport": "in_process",
+        "ordered": false
+      },
+      "source_basis": [
+        {
+          "design_id": "decision_25eb93d803a4",
+          "version": "18",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf.md",
+            "sha256": "8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf",
+            "size": 27358
+          },
+          "line_start": 115,
+          "line_end": 119,
+          "section": "组件及其责任",
+          "line_numbering": "1-based inclusive in frozen UTF-8 body"
+        },
+        {
+          "design_id": "decision_25eb93d803a4",
+          "version": "18",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf.md",
+            "sha256": "8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf",
+            "size": 27358
+          },
+          "line_start": 156,
+          "line_end": 162,
+          "section": "一次工作怎样流过系统",
+          "line_numbering": "1-based inclusive in frozen UTF-8 body"
+        },
+        {
+          "design_id": "decision_425e428410e0",
+          "version": "38",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-a959010fc9b01df5e147557b43c47d9b144f90433ce88c39a11b6e5141a85dbe.md",
+            "sha256": "a959010fc9b01df5e147557b43c47d9b144f90433ce88c39a11b6e5141a85dbe",
+            "size": 43455
+          },
+          "line_start": 108,
+          "line_end": 111,
+          "section": "一次调用怎样流动",
+          "line_numbering": "1-based inclusive in frozen UTF-8 body"
+        }
+      ],
+      "code_evidence_ids": [
+        "runtime-content"
+      ],
+      "boundary": "execution.agent-data 的归属 parent 仍为 execution，但 deployed_in 包含 worker；在 Worker 局部图按共享组件边界显示，不新增为 Worker 直接子组件。"
+    },
+    {
+      "id": "resource-facade-type-reader",
+      "title": "资源门面选择类型解析器与正文读取器",
+      "kind": "in_process_call",
+      "protocol_id": "resource-access",
+      "related_protocol_ids": [],
+      "scope_roots": [
+        "resources"
+      ],
+      "endpoints": [
+        {
+          "id": "resources",
+          "module_id": "resources",
+          "component_id": null,
+          "role": "ResourceService 门面",
+          "kind": "boundary_role"
+        },
+        {
+          "id": "resources.types",
+          "module_id": "resources.types",
+          "component_id": "resources.types",
+          "role": "按类型注册的解析器和 reader",
+          "kind": "component"
+        }
+      ],
+      "interaction": {
+        "direction": "request_response",
+        "initiator_module_id": "resources",
+        "responder_module_id": "resources.types",
+        "operations": [
+          "resolve(address,actor)",
+          "read_content(resolved,address,actor,max_bytes)"
+        ],
+        "conditions": [
+          "地址可解析，类型按需加载成功",
+          "正文读取能力存在；解析与当前身份/领域检查通过"
+        ],
+        "result": "返回类型的规范解析结果或正文字节；类型不支持正文、解析/权限/领域错误会中止请求。",
+        "transport": "in_process",
+        "ordered": false
+      },
+      "source_basis": [
+        {
+          "design_id": "decision_cf27d39e39cd",
+          "line_start": 170,
+          "line_end": 176,
+          "section": "按类型加载领域提供器",
+          "version": "13",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-d5a4dfc2808f4d204598728d8541086b4a7005347eb24b217b92e60f85618255.md",
+            "sha256": "d5a4dfc2808f4d204598728d8541086b4a7005347eb24b217b92e60f85618255",
+            "size": 22102
+          },
+          "line_numbering": "1-based inclusive in frozen UTF-8 body",
+          "excerpt": "### 按类型加载领域提供器\n\n- **第一次用到某个类型时，只加载负责这个类型的插件。** 解析、变更和动作三种能力分别加载，互不影响。\n- **同一类型的并发首次请求只加载一次。** 加载在每种能力各自的锁内进行。\n- **加载失败时整体撤回。** 一次加载中任一绑定失败，本次新增的全部绑定都撤回，这个类型保持未加载，下一次请求重新尝试。\n- **同一类型、同一能力只能有一个提供器。** 重复绑定默认报错，显式声明替换时才覆盖。提供器声明的资源类型必须已在共享类型注册表中登记。\n- **没有专门解析器的类型由通用解析器处理。** 只要资源索引收录了这个类型，就由基于索引的通用解析器解析。\n",
+          "excerpt_sha256": "d84b70b9f14a0c207a4c5a3b4800a404e92ad49179e8645b7befb14b56fa0a66"
+        },
+        {
+          "design_id": "decision_cf27d39e39cd",
+          "line_start": 180,
+          "line_end": 194,
+          "section": "读取流程",
+          "version": "13",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-d5a4dfc2808f4d204598728d8541086b4a7005347eb24b217b92e60f85618255.md",
+            "sha256": "d5a4dfc2808f4d204598728d8541086b4a7005347eb24b217b92e60f85618255",
+            "size": 22102
+          },
+          "line_numbering": "1-based inclusive in frozen UTF-8 body",
+          "excerpt": "### 读取一个地址\n\n```text\n调用方提交地址和访问者\n        ↓\nResourceService 校验地址语法，加载该类型的解析器\n        ↓\n领域解析器找到对象或内部目标\n        ↓\nResourceService 统一结果格式，检查读取权限\n        ↓\n返回解析结果或简短引用；读取正文时调用领域的正文读取函数\n```\n\n领域解析器返回的根 ID、类型和地址必须与请求一致，不一致的结果按错误处理（`decision_4a9ba5dfada6`）。\n",
+          "excerpt_sha256": "5bf6d06a1b01b816f50f678a7765c42abb0b27bd0ab9a9955790c9f64539f3aa"
+        }
+      ],
+      "code_evidence_ids": [
+        "resource-resolve-reader"
+      ],
+      "boundary": "门面是 resources 根边界，不将它命名为 resources.access；并发首次加载按能力锁，失败撤回绑定。"
+    },
+    {
+      "id": "resource-facade-access",
+      "title": "资源门面调用读取身份策略与查询索引",
+      "kind": "in_process_call",
+      "protocol_id": "resource-access",
+      "related_protocol_ids": [],
+      "scope_roots": [
+        "resources"
+      ],
+      "endpoints": [
+        {
+          "id": "resources",
+          "module_id": "resources",
+          "component_id": null,
+          "role": "ResourceService 门面",
+          "kind": "boundary_role"
+        },
+        {
+          "id": "resources.access",
+          "module_id": "resources.access",
+          "component_id": "resources.access",
+          "role": "读取身份检查、查询与资源索引",
+          "kind": "component"
+        }
+      ],
+      "interaction": {
+        "direction": "request_response",
+        "initiator_module_id": "resources",
+        "responder_module_id": "resources.access",
+        "operations": [
+          "ResourceAccessPolicy.authorize_read",
+          "index.query"
+        ],
+        "conditions": [
+          "每次读取携带认证 User 或 Resident",
+          "普通查询与精确地址查询走不同分支"
+        ],
+        "result": "认证身份不满足则拒绝；查询返回索引结果或精确地址引用。",
+        "transport": "in_process",
+        "ordered": false
+      },
+      "source_basis": [
+        {
+          "design_id": "decision_cf27d39e39cd",
+          "line_start": 108,
+          "line_end": 114,
+          "section": "权限在每次操作时由授权系统判断",
+          "version": "13",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-d5a4dfc2808f4d204598728d8541086b4a7005347eb24b217b92e60f85618255.md",
+            "sha256": "d5a4dfc2808f4d204598728d8541086b4a7005347eb24b217b92e60f85618255",
+            "size": 22102
+          },
+          "line_numbering": "1-based inclusive in frozen UTF-8 body",
+          "excerpt": "### 权限在每次操作时由授权系统判断\n\n- **每个 ISA 入口按当前策略判断访问者能否执行。** 资源门面校验已认证的 User 或 Resident 身份，并应用当前领域的读取限制；列表能力提示不构成独立的授权真值。\n- **资源授权只由动态 ISA 策略决定。** 免凭证集合中的指令对已认证的 Portal 用户和 Resident 开放；需要凭证集合中的指令按凭证内核检查调用者的凭证。策略与凭证规则见 `decision_707d2910d389`、`decision_67b7e8951599`。\n- **所需凭证由当前 ISA 策略声明。** 资源门面不再为普通修改硬编码另一套 Project contributor/admin 门槛；受保护的策略管理入口仍由权限系统要求 `portal_admin`。\n- **领域可以增加自己的限制，不能放宽 ResourceService 已经拒绝的权限。**\n- **能力提示只说明入口是否存在。** 解析结果和引用中的 `edit`、`save`、`download` 提示是否安装了相应能力；真正执行时重新检查权限和对象状态。\n",
+          "excerpt_sha256": "6beec3d6f2455862304beb9612aab5529fbd7f6ac893bece388ea4ed69b97aac"
+        },
+        {
+          "design_id": "decision_cf27d39e39cd",
+          "line_start": 140,
+          "line_end": 146,
+          "section": "内部组件职责",
+          "version": "13",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-d5a4dfc2808f4d204598728d8541086b4a7005347eb24b217b92e60f85618255.md",
+            "sha256": "d5a4dfc2808f4d204598728d8541086b4a7005347eb24b217b92e60f85618255",
+            "size": 22102
+          },
+          "line_numbering": "1-based inclusive in frozen UTF-8 body",
+          "excerpt": "| 门面 `ResourceService` | 校验地址和请求内容，检查权限，选择提供器，统一结果格式，发送变化提示 | `resources/service.py` |\n| 运行组合 | 按运行模式创建唯一的门面实例，并注入其他组件 | `resources/runtime.py` |\n| 领域插件目录 | 声明每个插件负责的类型和能力，按类型加载 | `resources/providers/__init__.py` |\n| ISA 指令实现 | 执行资源类、权限类指令和 Project 指令，以及上传与工作区文件写入 | `resources/isa.py` |\n| 授权存储与评估 | 保存类型化主体、权限关系和凭证，按当前 ISA 策略回答“能否执行” | `resources/authorization/`、`hatg/permissions.py` |\n| 资源索引 | 汇总各领域摘要，提供查询、建议和状态 | `resource_index_backend.py`、`resources/index.py` |\n| 登记账本 | 为服务托管登记保留 ID | `resources/registration.py` |\n",
+          "excerpt_sha256": "a936fc4279181cd233ff877fa28d17ddd89a81ef846fe18b0887e4e61169b845"
+        }
+      ],
+      "code_evidence_ids": [
+        "resource-resolve-reader",
+        "resource-read-policy",
+        "resource-query"
+      ],
+      "boundary": "当前 access.py 只作已认证身份检查；不要把它画成逐资源凭证存储，也不宣称 query 必定调用某一类型 reader。"
+    },
+    {
+      "id": "resource-indexed-provider-access",
+      "title": "通用类型适配器委托索引地址与内容解析",
+      "kind": "in_process_call",
+      "protocol_id": "resource-access",
+      "related_protocol_ids": [],
+      "scope_roots": [
+        "resources"
+      ],
+      "endpoints": [
+        {
+          "id": "resources.types",
+          "module_id": "resources.types",
+          "component_id": "resources.types",
+          "role": "indexed 类型适配器",
+          "kind": "component"
+        },
+        {
+          "id": "resources.access",
+          "module_id": "resources.access",
+          "component_id": "resources.access",
+          "role": "resource_identity_backend 索引地址/内容解析",
+          "kind": "component"
+        }
+      ],
+      "interaction": {
+        "direction": "request_response",
+        "initiator_module_id": "resources.types",
+        "responder_module_id": "resources.access",
+        "operations": [
+          "resolve_indexed_resource_address(address,actor,resource_service)",
+          "read_resolved_resource_content(resolved,address,actor,max_bytes)"
+        ],
+        "conditions": [
+          "类型没有专用解析器且已被索引收录",
+          "读取子文件需要 content_root 和合法相对路径"
+        ],
+        "result": "索引解析保留根资源身份；文件越界、缺失或大小超限失败。",
+        "transport": "in_process",
+        "ordered": false
+      },
+      "source_basis": [
+        {
+          "design_id": "decision_cf27d39e39cd",
+          "line_start": 172,
+          "line_end": 176,
+          "section": "按类型加载领域提供器",
+          "version": "13",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-d5a4dfc2808f4d204598728d8541086b4a7005347eb24b217b92e60f85618255.md",
+            "sha256": "d5a4dfc2808f4d204598728d8541086b4a7005347eb24b217b92e60f85618255",
+            "size": 22102
+          },
+          "line_numbering": "1-based inclusive in frozen UTF-8 body",
+          "excerpt": "- **第一次用到某个类型时，只加载负责这个类型的插件。** 解析、变更和动作三种能力分别加载，互不影响。\n- **同一类型的并发首次请求只加载一次。** 加载在每种能力各自的锁内进行。\n- **加载失败时整体撤回。** 一次加载中任一绑定失败，本次新增的全部绑定都撤回，这个类型保持未加载，下一次请求重新尝试。\n- **同一类型、同一能力只能有一个提供器。** 重复绑定默认报错，显式声明替换时才覆盖。提供器声明的资源类型必须已在共享类型注册表中登记。\n- **没有专门解析器的类型由通用解析器处理。** 只要资源索引收录了这个类型，就由基于索引的通用解析器解析。\n",
+          "excerpt_sha256": "7300c6abeeb713cbc35e61e4de5b8a29d8546f7d82e6c03ef9aee5104c6573a9"
+        },
+        {
+          "design_id": "decision_cf27d39e39cd",
+          "line_start": 180,
+          "line_end": 194,
+          "section": "读取流程",
+          "version": "13",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-d5a4dfc2808f4d204598728d8541086b4a7005347eb24b217b92e60f85618255.md",
+            "sha256": "d5a4dfc2808f4d204598728d8541086b4a7005347eb24b217b92e60f85618255",
+            "size": 22102
+          },
+          "line_numbering": "1-based inclusive in frozen UTF-8 body",
+          "excerpt": "### 读取一个地址\n\n```text\n调用方提交地址和访问者\n        ↓\nResourceService 校验地址语法，加载该类型的解析器\n        ↓\n领域解析器找到对象或内部目标\n        ↓\nResourceService 统一结果格式，检查读取权限\n        ↓\n返回解析结果或简短引用；读取正文时调用领域的正文读取函数\n```\n\n领域解析器返回的根 ID、类型和地址必须与请求一致，不一致的结果按错误处理（`decision_4a9ba5dfada6`）。\n",
+          "excerpt_sha256": "5bf6d06a1b01b816f50f678a7765c42abb0b27bd0ab9a9955790c9f64539f3aa"
+        }
+      ],
+      "code_evidence_ids": [
+        "resource-index-provider",
+        "resource-index-resolve"
+      ],
+      "boundary": "仅通用 indexed 提供器的具名调用，不代表所有类型均访问索引，更不代表权限由索引决定。"
+    },
+    {
+      "id": "resource-facade-authorization",
+      "title": "资源门面委托授权内核判断",
+      "kind": "in_process_call",
+      "protocol_id": "resource-authorization",
+      "related_protocol_ids": [],
+      "scope_roots": [
+        "resources"
+      ],
+      "endpoints": [
+        {
+          "id": "resources",
+          "module_id": "resources",
+          "component_id": null,
+          "role": "ResourceService 授权方法门面",
+          "kind": "boundary_role"
+        },
+        {
+          "id": "resources.permissions",
+          "module_id": "resources.permissions",
+          "component_id": "resources.permissions",
+          "role": "AuthorizationModule 凭证与授权上下文",
+          "kind": "component"
+        }
+      ],
+      "interaction": {
+        "direction": "request_response",
+        "initiator_module_id": "resources",
+        "responder_module_id": "resources.permissions",
+        "operations": [
+          "authorize(subject_ref,resource_id,level,context)",
+          "authorize_many(subject_ref,requests,context)"
+        ],
+        "conditions": [
+          "上游 ISA 按当前策略声明是否需要凭证",
+          "授权使用当前操作主体上下文"
+        ],
+        "result": "返回授权判定；普通读取认证与需要凭证的 ISA 校验分别表达。",
+        "transport": "in_process",
+        "ordered": false
+      },
+      "source_basis": [
+        {
+          "design_id": "decision_cf27d39e39cd",
+          "line_start": 108,
+          "line_end": 114,
+          "section": "权限在每次操作时由授权系统判断",
+          "version": "13",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-d5a4dfc2808f4d204598728d8541086b4a7005347eb24b217b92e60f85618255.md",
+            "sha256": "d5a4dfc2808f4d204598728d8541086b4a7005347eb24b217b92e60f85618255",
+            "size": 22102
+          },
+          "line_numbering": "1-based inclusive in frozen UTF-8 body",
+          "excerpt": "### 权限在每次操作时由授权系统判断\n\n- **每个 ISA 入口按当前策略判断访问者能否执行。** 资源门面校验已认证的 User 或 Resident 身份，并应用当前领域的读取限制；列表能力提示不构成独立的授权真值。\n- **资源授权只由动态 ISA 策略决定。** 免凭证集合中的指令对已认证的 Portal 用户和 Resident 开放；需要凭证集合中的指令按凭证内核检查调用者的凭证。策略与凭证规则见 `decision_707d2910d389`、`decision_67b7e8951599`。\n- **所需凭证由当前 ISA 策略声明。** 资源门面不再为普通修改硬编码另一套 Project contributor/admin 门槛；受保护的策略管理入口仍由权限系统要求 `portal_admin`。\n- **领域可以增加自己的限制，不能放宽 ResourceService 已经拒绝的权限。**\n- **能力提示只说明入口是否存在。** 解析结果和引用中的 `edit`、`save`、`download` 提示是否安装了相应能力；真正执行时重新检查权限和对象状态。\n",
+          "excerpt_sha256": "6beec3d6f2455862304beb9612aab5529fbd7f6ac893bece388ea4ed69b97aac"
+        },
+        {
+          "design_id": "decision_cf27d39e39cd",
+          "line_start": 140,
+          "line_end": 146,
+          "section": "内部组件职责",
+          "version": "13",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-d5a4dfc2808f4d204598728d8541086b4a7005347eb24b217b92e60f85618255.md",
+            "sha256": "d5a4dfc2808f4d204598728d8541086b4a7005347eb24b217b92e60f85618255",
+            "size": 22102
+          },
+          "line_numbering": "1-based inclusive in frozen UTF-8 body",
+          "excerpt": "| 门面 `ResourceService` | 校验地址和请求内容，检查权限，选择提供器，统一结果格式，发送变化提示 | `resources/service.py` |\n| 运行组合 | 按运行模式创建唯一的门面实例，并注入其他组件 | `resources/runtime.py` |\n| 领域插件目录 | 声明每个插件负责的类型和能力，按类型加载 | `resources/providers/__init__.py` |\n| ISA 指令实现 | 执行资源类、权限类指令和 Project 指令，以及上传与工作区文件写入 | `resources/isa.py` |\n| 授权存储与评估 | 保存类型化主体、权限关系和凭证，按当前 ISA 策略回答“能否执行” | `resources/authorization/`、`hatg/permissions.py` |\n| 资源索引 | 汇总各领域摘要，提供查询、建议和状态 | `resource_index_backend.py`、`resources/index.py` |\n| 登记账本 | 为服务托管登记保留 ID | `resources/registration.py` |\n",
+          "excerpt_sha256": "a936fc4279181cd233ff877fa28d17ddd89a81ef846fe18b0887e4e61169b845"
+        }
+      ],
+      "code_evidence_ids": [
+        "resource-authorization"
+      ],
+      "boundary": "不将 permissions 机械插入每次 read_content 的调用线。"
+    },
+    {
+      "id": "definition-program-compile",
+      "title": "定义指令读取 Lineage 后交 Program 编译器",
+      "kind": "in_process_call",
+      "protocol_id": "lineage-events-effects",
+      "related_protocol_ids": [],
+      "scope_roots": [
+        "lineage"
+      ],
+      "endpoints": [
+        {
+          "id": "lineage.definition",
+          "module_id": "lineage.definition",
+          "component_id": "lineage.definition",
+          "role": "CompileLineage 指令实现",
+          "kind": "component"
+        },
+        {
+          "id": "lineage.automation",
+          "module_id": "lineage.automation",
+          "component_id": "lineage.automation",
+          "role": "Program 编译与 Effect 脚本诊断",
+          "kind": "component"
+        }
+      ],
+      "interaction": {
+        "direction": "request_response",
+        "initiator_module_id": "lineage.definition",
+        "responder_module_id": "lineage.automation",
+        "operations": [
+          "compile_program(lineage.program,lineage.nodes)",
+          "effect_script_analysis"
+        ],
+        "conditions": [
+          "先经领域入口读取并授权 Lineage 定义",
+          "基于此次读到的 program/nodes 编译"
+        ],
+        "result": "返回编译结构；Effect 脚本诊断非空则返回编译失败。",
+        "transport": "in_process",
+        "ordered": false
+      },
+      "source_basis": [
+        {
+          "design_id": "decision_1b2bdf5c33d6",
+          "line_start": 202,
+          "line_end": 208,
+          "section": "一次指令怎样在 SocietyService 中执行",
+          "version": "25",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-732d856b78f6d25ba9d7df275caff2fc070f32242c0c2aba4d791c9a0b4caa95.md",
+            "sha256": "732d856b78f6d25ba9d7df275caff2fc070f32242c0c2aba4d791c9a0b4caa95",
+            "size": 34686
+          },
+          "line_numbering": "1-based inclusive in frozen UTF-8 body",
+          "excerpt": "1. 入口（Portal Web、Harness 工具或另一个服务）确认调用者身份，把调用按指令声明中的拥有服务送到 SocietyService 的 `instruction.execute`；Lineage 运行中的 Effect 在进程内直接调用。\n2. 指令内核取得指令声明，校验参数，并请权限系统判断调用者能否执行。Resident 与组件的权限以其所在 Lineage 为准。\n3. 只读指令直接调用 `isa/` 中的实现并返回；流式指令先送出当前数据，再持续送出后续变化。\n4. 改变状态的指令写入执行记录。以 Lineage 为目标的记录归入该 Lineage，其他记录归入调用者；带幂等键的重复请求直接返回原结果。\n5. SocietyService 拥有的对象没有版本令牌，调用者提供的 `expected_version` 不做比较；同一 Lineage 上的指令并发执行。\n6. `isa/` 中的实现调用领域模块读取、检查并计算修改，在数据库事务中锁定 Lineage 行，把修改合并到已经提交的定义上后提交（decision_d918ebebc062）。修改 Lineage 定义时，服务校验端口和连线、移除已经不兼容的连线、重新编译 Program 并产生新的图代次。\n7. 提交后，变化收集器在锁外发布一次变化通知；内核保存执行结果。投影未完成时按“领域已提交、投影待确认”返回。\n",
+          "excerpt_sha256": "4111e7258f7b575e9d4f16e6e7847ce914738dce2cf19a0c40a3f6fdc22d2ee9"
+        },
+        {
+          "design_id": "decision_1b2bdf5c33d6",
+          "line_start": 219,
+          "line_end": 226,
+          "section": "一次 Program 运行怎样流动",
+          "version": "25",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-732d856b78f6d25ba9d7df275caff2fc070f32242c0c2aba4d791c9a0b4caa95.md",
+            "sha256": "732d856b78f6d25ba9d7df275caff2fc070f32242c0c2aba4d791c9a0b4caa95",
+            "size": 34686
+          },
+          "line_numbering": "1-based inclusive in frozen UTF-8 body",
+          "excerpt": "1. 手动触发、计时、Resident 状态变化或其他事实进入事件源。协调器检查当前图代次、事件源的触发预算和事件源规则。\n2. Event 先保存，再按连线创建待投递记录。连线的并发策略决定目标忙碌时丢弃、只保留最新还是排队。\n3. 目标组件在租约内领取待办。Filter、Selector 和 Reducer 只处理本次激活时的候选；Effect 先保存调用记录，再按脚本逐条发出指令，每条完成并保存结果后再继续。\n4. Effect 的指令由 `hatg/routing.py` 路由：由 SocietyService 执行的指令在进程内交给内核，由其他服务执行的指令通过对方的 `instruction.execute` 转交。调用者是本次运行的发起者，幂等键由 Event ID、Effect ID 与调用在脚本中的位置生成，入口种类为 `lineage`。\n5. Resident 或其他系统在锁外工作。结束、失败或超时的事实写回后，协调器释放或完成这项待办，观察它的事件源决定是否产生下一项 Event。\n6. 重复回调、服务重启和网络重试按相同的因果身份和幂等键归并；旧图代次送来的结果只保留为诊断，不推进当前 Program。\n\n模板施加（`ApplyTemplate`）不创建临时运行结构：结构类模板通过定义提交写入新的 Resident、组件和连线；脚本类模板按施加者的权限直接执行一次 Effect 脚本，脚本发出的指令照常经过 ISA，Lineage 中不留下结构（decision_b04cac4188bb）。运行器因此总是按 Lineage 中已经保存的 Program 分发，不存在另一份只在内存中的执行计划。\n",
+          "excerpt_sha256": "89b02969894d89700b714560c57660073f8a709502516399983405ef686fb14e"
+        }
+      ],
+      "code_evidence_ids": [
+        "definition-compile"
+      ],
+      "boundary": "这里仅指 CompileLineage 的直接调用；不把编译场景画成新模块，也不从目录名称推导所有定义变更调用顺序。"
+    },
+    {
+      "id": "automation-resident-delivery",
+      "title": "Program Packet 经 ISA 投递进入 Resident 输入",
+      "kind": "instruction_dispatch",
+      "protocol_id": "lineage-events-effects",
+      "related_protocol_ids": [],
+      "scope_roots": [
+        "lineage"
+      ],
+      "endpoints": [
+        {
+          "id": "lineage.automation",
+          "module_id": "lineage.automation",
+          "component_id": "lineage.automation",
+          "role": "Program Resident 投递端口",
+          "kind": "component"
+        },
+        {
+          "id": "lineage.conversation",
+          "module_id": "lineage.conversation",
+          "component_id": "lineage.conversation",
+          "role": "DeliverMessage 输入对话实现",
+          "kind": "component"
+        }
+      ],
+      "interaction": {
+        "direction": "request_response",
+        "initiator_module_id": "lineage.automation",
+        "responder_module_id": "lineage.conversation",
+        "operations": [
+          "send_node_message → DeliverMessage",
+          "登记返回 message_id 对应的 Program invocation"
+        ],
+        "conditions": [
+          "当前路由允许消费；不允许则按路由策略延后",
+          "稳定消息身份与幂等键；携带恢复的调用者身份和附件"
+        ],
+        "result": "收到投递回执并登记关联；并不表示 Resident 已回复或执行成功。",
+        "transport": "in_process_HATG_dispatch",
+        "ordered": false,
+        "via": [
+          {
+            "module_id": "lineage",
+            "role": "ProgramResidentDelivery 装配与 _send_node_message ISA 桥"
+          }
+        ]
+      },
+      "source_basis": [
+        {
+          "design_id": "decision_1b2bdf5c33d6",
+          "line_start": 219,
+          "line_end": 224,
+          "section": "一次 Program 运行怎样流动",
+          "version": "25",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-732d856b78f6d25ba9d7df275caff2fc070f32242c0c2aba4d791c9a0b4caa95.md",
+            "sha256": "732d856b78f6d25ba9d7df275caff2fc070f32242c0c2aba4d791c9a0b4caa95",
+            "size": 34686
+          },
+          "line_numbering": "1-based inclusive in frozen UTF-8 body",
+          "excerpt": "1. 手动触发、计时、Resident 状态变化或其他事实进入事件源。协调器检查当前图代次、事件源的触发预算和事件源规则。\n2. Event 先保存，再按连线创建待投递记录。连线的并发策略决定目标忙碌时丢弃、只保留最新还是排队。\n3. 目标组件在租约内领取待办。Filter、Selector 和 Reducer 只处理本次激活时的候选；Effect 先保存调用记录，再按脚本逐条发出指令，每条完成并保存结果后再继续。\n4. Effect 的指令由 `hatg/routing.py` 路由：由 SocietyService 执行的指令在进程内交给内核，由其他服务执行的指令通过对方的 `instruction.execute` 转交。调用者是本次运行的发起者，幂等键由 Event ID、Effect ID 与调用在脚本中的位置生成，入口种类为 `lineage`。\n5. Resident 或其他系统在锁外工作。结束、失败或超时的事实写回后，协调器释放或完成这项待办，观察它的事件源决定是否产生下一项 Event。\n6. 重复回调、服务重启和网络重试按相同的因果身份和幂等键归并；旧图代次送来的结果只保留为诊断，不推进当前 Program。\n",
+          "excerpt_sha256": "bf546de73f315d962536f192e29d3700daad9bac10468f0879fa7843eb084847"
+        },
+        {
+          "design_id": "decision_edc470e09f5a",
+          "line_start": 85,
+          "line_end": 100,
+          "section": "一次输入怎样流动",
+          "version": "25",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-435875ef8b63a5df2b891f4fbb7815d99078ab22fe0f7dce5a22c32d63e93281.md",
+            "sha256": "435875ef8b63a5df2b891f4fbb7815d99078ab22fe0f7dce5a22c32d63e93281",
+            "size": 32175
+          },
+          "line_numbering": "1-based inclusive in frozen UTF-8 body",
+          "excerpt": "## 一次输入怎样流动\n\n```text\n调用方\n  │ 1. 投递：保存消息与 queued 输入状态\n  ▼\n对话存储\n  │ 2. 开始处理：同一消息 ID 加入可见对话记录，写入 activated_at\n  ▼\nSocietyService ──3. 提交执行请求──> ExecutionService\n                                        │ 4. 组装上下文，取得模型会话\n                                        ▼\n                                  模型 + AgentData\n                                        │ 5. 原始结果与用量\n                                        ▼\nConversation 投影 ──6. 回复消息、终态、事件──> 调用方 / 页面\n",
+          "excerpt_sha256": "38e9b627cee6f13a152ccf486dc9892ec971e78d52f494a127df448f2ee26f34"
+        }
+      ],
+      "code_evidence_ids": [
+        "packet-delivery",
+        "packet-isa-bridge",
+        "conversation-deliver"
+      ],
+      "boundary": "经过 lineage 根领域装配及 HATG 指令路由；不是 automation 直接改 conversation 数据库。"
+    },
+    {
+      "id": "resident-execution-submit",
+      "title": "Resident 输入执行调用 ExecutionService 门面",
+      "kind": "service_call",
+      "protocol_id": "resident-execution",
+      "related_protocol_ids": [],
+      "scope_roots": [
+        "lineage",
+        "execution"
+      ],
+      "endpoints": [
+        {
+          "id": "lineage.conversation",
+          "module_id": "lineage.conversation",
+          "component_id": "lineage.conversation",
+          "role": "Resident 执行请求调用方",
+          "kind": "component"
+        },
+        {
+          "id": "execution",
+          "module_id": "execution",
+          "component_id": null,
+          "role": "ExecutionService 请求准备和提交门面",
+          "kind": "boundary_role"
+        }
+      ],
+      "interaction": {
+        "direction": "request_response",
+        "initiator_module_id": "lineage.conversation",
+        "responder_module_id": "execution",
+        "operations": [
+          "service.submit(ExecutionRequest)",
+          "status / wait 观察对应 execution_id"
+        ],
+        "conditions": [
+          "输入工作记录和稳定 execution_id 已准备",
+          "提交前取消检查；相同 ID 重试请求摘要必须一致"
+        ],
+        "result": "首次请求持久入队；同 ID 同请求复用记录，同 ID 不同请求拒绝；观察不续租或更改状态。",
+        "transport": "ExecutionService_facade_mode_dependent",
+        "ordered": false
+      },
+      "source_basis": [
+        {
+          "design_id": "decision_edc470e09f5a",
+          "line_start": 126,
+          "line_end": 138,
+          "section": "执行请求与模型会话 / 结果与终态",
+          "version": "25",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-435875ef8b63a5df2b891f4fbb7815d99078ab22fe0f7dce5a22c32d63e93281.md",
+            "sha256": "435875ef8b63a5df2b891f4fbb7815d99078ab22fe0f7dce5a22c32d63e93281",
+            "size": 32175
+          },
+          "line_numbering": "1-based inclusive in frozen UTF-8 body",
+          "excerpt": "### 执行请求与模型会话\n\n- **执行请求绑定稳定的 Resident 身份。** 准备阶段在同一事务登记 agent.executions、execution_inputs 和 resident_execution_work。ExecutionService 沿用这个 execution_id 接收 Resident 身份、输入、调用者、路由、设置与上下文。提交重试保留 ID；终态后重新执行分配新 ID。Execution 不保存 Trigger Path 身份。\n- **模型会话优先复用。** SessionManager 优先复用这个 Resident 当前有效、后端匹配的模型会话；重启或绑定失效时创建新会话并更新绑定（decision_91eb3626d323）。对话和输入 ID 不随会话更换而改变。\n- **上下文在执行时组装。** 组装器把 Resident 初始说明、规则 Skill、当前对话、Fork 继承的上下文、调用方给出的上下文引用、工作目录信息和运行设置组成实际输入，最后加上所有者边界说明和 Resident 身份信封。系统指令清单 `SystemInstructions` 标明哪些系统 Skill 只在创建模型会话时注入一次，避免每轮重复发送。哪些来源被采用由入口和上下文策略决定（decision_c616d197abbb）。组装结果随执行请求写入 AgentData，可以通过 `GetSentPrompt` 查看；对话中的消息保持用户的原始表达。\n- **工作目录默认是 Resident 的默认工作区。** owner 可以为某一轮选择另一个已绑定的工作区根目录。Provider 不支持请求中的上下文、媒体或 Skill 时，组装阶段拒绝这次输入，不悄悄丢掉材料。\n\n### 结果与终态\n\n- **模型的所有事实先写入 AgentData。** 流式事件、工具交互、用量、最终文本和结构化响应都先写入 AgentData；执行失败也在这里留下执行和错误。即使对话投影暂时失败，实际的模型交互仍可以读回来。\n- **投影把结果写回对话。** 投影器把可显示的文本写成一条或多条 Agent 消息，把结构化响应保存为产物并在消息中引用，再把回复消息 ID 写入输入状态。之后输入推进为 `completed`；模型或执行出错为 `failed`；用户取消为 `cancelled`。\n- **终态顺序固定。** 先提交回复消息和它的“消息追加”事件，再提交带回复 ID 的输入终态，最后发布 Resident 回到空闲。模型已经结束但回复还没写入时，这条输入仍显示为处理中；仅凭模型的终态不能提前完成输入。\n- **终态不会被改回。** `completed`、`failed`、`cancelled` 写入后，迟到的事件不能把它改回排队、运行或另一个终态。\n",
+          "excerpt_sha256": "9c4641b02ece002cc6e9911797ca308e3ac969ebb411aa8dfedeb1d8e5fc3962"
+        },
+        {
+          "design_id": "decision_6ad0384e020d",
+          "line_start": 209,
+          "line_end": 213,
+          "section": "提交与观察",
+          "version": "33",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-9c449bd773b55bdf79c99237ee25d4fae9ce6c44590a37bc81fc0c3b7edf26fb.md",
+            "sha256": "9c449bd773b55bdf79c99237ee25d4fae9ce6c44590a37bc81fc0c3b7edf26fb",
+            "size": 34111
+          },
+          "line_numbering": "1-based inclusive in frozen UTF-8 body",
+          "excerpt": "### 提交与观察\n\n- **`execution.submit`**：接收完整请求，先按执行 ID 比较首次提交的请求摘要；只有新执行才解析执行账号和准备会话，再持久入队。相同 `execution_id` 与相同请求返回已有记录；相同 ID 与不同请求被拒绝。\n- **`execution.status`**：参数为 `execution_id`、可选 `actor`、非负 `after_sequence`（只返回这个序号之后的事件），以及 `include_events`、`include_result`。`actor` 非空时必须等于执行所有者，否则按“不存在”处理；可信内部调用方可以传空 `actor`。返回八个固定字段的快照；关闭事件时 `events` 为空数组，关闭结果时 `result` 为空对象。\n- **`execution.wait`**：参数为 `execution_id`、必填 `actor`、事件游标 `after_sequence`、Scheduler 更新时间 `after_updated_at`、单段等待秒数（限制在 0.1 到 60 秒，默认 30），以及事件和结果开关。出现新事件、更新时间变化、进入终态或本段超时时返回快照。等待不续租，也不改变执行状态。服务端除了接收本进程的即时通知，还监听 Scheduler 数据库的变化通知，并每 5 秒复查一次，所以另一个进程（例如另一个部署）提交的终态也能及时唤醒等待者。facade 的分段、重连和取消行为见 decision_25eb93d803a4。\n",
+          "excerpt_sha256": "3c70987526288e68dca6949d0e10b348513c291cde871d85e1da221297cf1744"
+        }
+      ],
+      "code_evidence_ids": [
+        "resident-submit"
+      ],
+      "boundary": "端点是 ExecutionService 根边界；不能将同一协议再分摊到 scheduling、agent-data、Worker 各组件。"
+    },
+    {
+      "id": "codex-native-session",
+      "title": "Codex Adapter 与 App Server 原生会话通信",
+      "kind": "provider_transport",
+      "protocol_id": "provider-native",
+      "related_protocol_ids": [],
+      "scope_roots": [
+        "worker"
+      ],
+      "endpoints": [
+        {
+          "id": "execution.providers",
+          "module_id": "execution.providers",
+          "component_id": "execution.providers",
+          "role": "CodexBackend 和原生客户端",
+          "kind": "component"
+        },
+        {
+          "id": "providers",
+          "module_id": "providers",
+          "component_id": null,
+          "role": "Codex App Server 原生进程",
+          "kind": "boundary_role"
+        }
+      ],
+      "interaction": {
+        "direction": "request_response",
+        "initiator_module_id": "execution.providers",
+        "responder_module_id": "providers",
+        "operations": [
+          "initialize / initialized",
+          "thread/start 或 thread/resume",
+          "turn/start 与指定 turn 的通知/快照",
+          "interrupt_turn(thread_id,turn_id)"
+        ],
+        "conditions": [
+          "绑定同一账号的 socket 与已有 thread/turn",
+          "控制目标必须仍是请求中指定的 turn"
+        ],
+        "result": "原生结果、通知与请求按 ID 交给 Adapter；断线返回错误或依既有 turn 恢复，Scheduler 的最终执行状态另行提交。",
+        "transport": "Codex_WebSocket_over_account_Unix_socket",
+        "ordered": false
+      },
+      "source_basis": [
+        {
+          "design_id": "decision_3e8c2a7f91d4",
+          "line_start": 61,
+          "line_end": 67,
+          "section": "设计点",
+          "version": "11",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-8ba213f246ce98c5358f046979adedbf1eb62153a6a38619272ceab8696621d5.md",
+            "sha256": "8ba213f246ce98c5358f046979adedbf1eb62153a6a38619272ceab8696621d5",
+            "size": 19782
+          },
+          "line_numbering": "1-based inclusive in frozen UTF-8 body",
+          "excerpt": "- **每个进程内，同一账号的会话共用一个连接。** Dev、Release 和各 Worker 进程分别持有自己的客户端。每个进程的账号路由对应一条长连接，已加载的 thread 在其中复用；不同账号的 socket、连接、锁和登录状态互相隔离。\n- **新会话先创建持久 thread；已有会话恢复原来的 thread。** 会话记录中的 thread 不在当前客户端里时，Portal 调用 `thread/resume` 加载同一个 thread，不会悄悄换成新对话。\n- **App Server 接受一轮输入后，Portal 立即保存 turn ID。** 此后发生连接中断或 Worker 换代，Portal 只观察这个 turn 直到终态，不重发用户输入；还没有拿到 turn ID 的请求按普通失败处理，不当作可恢复的执行。\n- **客户端统一选择最终回答。** 优先使用当前轮次的第一份 `final_answer`；缺少阶段标记时保留 Provider 的普通回答。完成通知遗漏正文时，客户端补入已经收到的真实最终回答条目，再交给执行层保存恢复检查点。没有正文的轮次可按恢复策略续接，连续尝试仍没有回答时失败。收到最终回答只关闭追加输入入口；执行仍等待真实终态，不在宽限期后主动中断并伪造完成。\n- **停止、追加输入和修改速度都针对确定的 turn。** 请求中带着目标 turn ID；正在运行的 turn 已经换成另一个时，控制请求被拒绝，不会影响后面的 turn。\n- **只有新 thread 创建前才可能换账号。** 首选账号的 App Server 不可用时，服务可以在创建 thread 前换到备用账号（decision_3dd52c0692c1）；thread 已存在、创建结果不确定或 turn 已被接受后，恢复始终留在原账号。\n- **App Server 的状态可以重建，Portal 的记录是依据。** App Server 进程退出后，客户端重新连接并按会话记录加载 thread；App Server 的内存和会话文件不作为 Portal 的规范历史或执行终态。\n",
+          "excerpt_sha256": "f4502ed57eabedd312e01307aecffa28f97b1ee60c1302a36ac3437e4d0b6a42"
+        },
+        {
+          "design_id": "decision_3e8c2a7f91d4",
+          "line_start": 89,
+          "line_end": 100,
+          "section": "组件职责 / 连接",
+          "version": "11",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-8ba213f246ce98c5358f046979adedbf1eb62153a6a38619272ceab8696621d5.md",
+            "sha256": "8ba213f246ce98c5358f046979adedbf1eb62153a6a38619272ceab8696621d5",
+            "size": 19782
+          },
+          "line_numbering": "1-based inclusive in frozen UTF-8 body",
+          "excerpt": "| 组件 | 负责什么 |\n| --- | --- |\n| `CodexBackend` | 统一请求与 Codex 操作之间的转换 |\n| `CodexAppServerClient` | 连接、消息配对、事件分发、thread 缓存、活动 turn 跟踪和空闲回收 |\n| 调度器（Scheduler） | 按账号控制并发和派发节奏，不解读 Codex 消息 |\n| ExecutionService 运行时 | 检查点、取消状态和最终执行结果 |\n| SessionManager 与 AgentData | 会话记录，以及规范历史、事件和终态 |\n| Codex App Server | Codex 自己的 thread、turn、原生工具循环和进程内状态 |\n\n## 连接\n\n客户端通过账号的 Unix socket 建立 WebSocket 连接（客户端发出的帧按 WebSocket 规定加掩码），然后先发送 `initialize` 请求，再发送 `initialized` 通知。请求用 ID 与响应配对；没有 ID 的通知和 App Server 主动发来的请求都由同一个读取线程分派。连接断开时，所有还没收到响应的请求都立即得到“连接丢失”的错误。socket 能连上只说明进程在运行，不说明某个 thread 已经加载。\n",
+          "excerpt_sha256": "c445f04e2ad4ddf17fba073739274b72d0f427a85c8fe53c236665902645d5c9"
+        },
+        {
+          "design_id": "decision_3e8c2a7f91d4",
+          "line_start": 158,
+          "line_end": 166,
+          "section": "运行中控制",
+          "version": "11",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-8ba213f246ce98c5358f046979adedbf1eb62153a6a38619272ceab8696621d5.md",
+            "sha256": "8ba213f246ce98c5358f046979adedbf1eb62153a6a38619272ceab8696621d5",
+            "size": 19782
+          },
+          "line_numbering": "1-based inclusive in frozen UTF-8 body",
+          "excerpt": "| 追加输入 | `turn/steer` | 把用户的新消息立即交给正在进行的这一轮（decision_2a3ff353165c 中的 `InjectQueueItem` 与 `DeliverMessage` 的 `inject_active_turn`） |\n| 修改速度 | `turn/settings/update` | 把运行设置中的速度（`priority` 或标准速度）立即应用到正在进行的这一轮；App Server 返回 `applied` 表示已生效，其他结果按未生效处理 |\n| 中断 | `turn/interrupt` | 停止这一轮，App Server 以“已中断”的错误结束它 |\n\n**合并重复的中断。** 同一 thread 与 turn 上并发发起的中断（例如 Worker 心跳和运行清理各发一次）共用同一个原生请求及其结果，不会重复发送或重复等待。只有没有在途中断、并且已经收到同一 turn 的明确终态时，才直接返回；空闲、普通输出或其他 turn 的终态都不算证据。已经发出的中断必须等到原请求返回后才释放对这次执行的占用，即使期间已收到终态。请求出错时保留原来的错误含义，同一次等待中不盲目重试不确定的控制；网络等待期间不持有客户端的全局状态锁。\n\n**原生工具结果与单一录入边界。** App Server 的 `turn/interrupt` 结束模型的等待，但不保证其所有子进程已经停止。只按原生真实 command/item ID 记录过程结果，不把模型 wrapper 的 aborted 返回改成成功，也不把进程完成归到新的 turn。计划移交保留原 turn，新 Worker 通过该 turn 的实时通知及精确快照投影回同一个 Agent trace；相同命令正文的独立调用仍是独立事实。\n\n**取消的终态。** 用户取消通过精确的 `interrupt_turn(thread_id, turn_id)` 送到 App Server。App Server 以“已中断”结束后，ExecutionService 根据取消请求和 Provider 终态确定这次执行的最终状态。\n",
+          "excerpt_sha256": "a71849bbb835bca8a131a3cb9573fb2c3def4430973bbf2cc90fc801e9a9d0e9"
+        }
+      ],
+      "code_evidence_ids": [
+        "codex-bridge",
+        "codex-handshake"
+      ],
+      "boundary": "只证明 Codex 原生协议分支；Claude/Kimi 等不据此继承 WebSocket 或 turn API。"
+    }
+  ],
+  "missing": [
+    {
+      "id": "worker-runtime-component-id",
+      "status": "missing",
+      "scope_roots": [
+        "worker"
+      ],
+      "subject": "ExecutionRuntime",
+      "reason": "Current map assigns runtime.py to worker root; no independently named Runtime component.",
+      "display": "worker boundary role; component_id=null"
+    },
+    {
+      "id": "worker-control-component-id",
+      "status": "missing",
+      "scope_roots": [
+        "worker",
+        "execution"
+      ],
+      "subject": "ExecutionWorker control loop",
+      "reason": "Current map assigns worker.py to worker root; no independent controller component.",
+      "display": "worker boundary role; component_id=null"
+    },
+    {
+      "id": "preparation-component-id",
+      "status": "missing",
+      "scope_roots": [
+        "execution"
+      ],
+      "subject": "ExecutionPreparation capability validation",
+      "reason": "Existing Provider scenario maps preparation to execution root; no component endpoint established here.",
+      "display": "execution boundary; do not map to scheduling by guess"
+    },
+    {
+      "id": "harness-worker-lease-endpoint",
+      "status": "not_established",
+      "scope_roots": [
+        "worker"
+      ],
+      "subject": "worker.harness under worker-lease",
+      "reason": "Frozen responsibilities and cited code do not establish Harness as a lease-control endpoint.",
+      "display": "root worker-lease boundary only"
+    },
+    {
+      "id": "scheduler-provider-direct-call",
+      "status": "not_established",
+      "scope_roots": [
+        "execution",
+        "worker"
+      ],
+      "subject": "scheduling directly invokes providers or harness",
+      "reason": "Selected evidence establishes Worker/Runtime control and invocation roles, not these direct component calls.",
+      "display": "no inferred component edge"
+    },
+    {
+      "id": "worker-lease-player",
+      "status": "evidence_missing",
+      "scope_roots": [
+        "execution",
+        "worker"
+      ],
+      "subject": "worker-lease frozen scenario",
+      "reason": "Bound consumer has no authored scenario_pairs for worker-lease.",
+      "display": "Existing missing state; this supplement creates no player scenario"
+    },
+    {
+      "id": "family-internal-relations",
+      "status": "evidence_missing",
+      "scope_roots": [
+        "lineage"
+      ],
+      "subject": "lineage.family 与其他组件的完整内部端点",
+      "reason": "本包未逐项冻结 Family 内部调用证据。现有 projection-family 场景只说明其原有范围。",
+      "display": "show_component_without_invented_edges"
+    },
+    {
+      "id": "non-codex-native-relations",
+      "status": "evidence_missing",
+      "scope_roots": [
+        "worker"
+      ],
+      "subject": "Claude/Kimi 等原生协议细化",
+      "reason": "本包新增 provider-native 只覆盖 Codex，不把同名协议推成相同传输。",
+      "display": "keep_parent_protocol_boundary"
+    },
+    {
+      "id": "complete-internal-topology",
+      "status": "partial",
+      "scope_roots": [
+        "resources",
+        "lineage",
+        "execution",
+        "worker"
+      ],
+      "subject": "全部内部调用覆盖",
+      "reason": "只登记逐边证实的协作；未登记关系不表示不存在。",
+      "display": "explicit_partial_coverage"
+    }
+  ],
+  "scenario_reuse": {
+    "policy": "The four base scenes remain byte-for-byte unchanged. Resolve two new simulated scenes only through this supplement catalog.",
+    "already_selected": [
+      {
+        "protocol_id": "resource-access",
+        "source": "base consumer.protocols[id=resource-access].scenario_pairs",
+        "purpose": "正文读取正常/异常解释"
+      },
+      {
+        "protocol_id": "projection-family",
+        "source": "base consumer.protocols[id=projection-family].scenario_pairs",
+        "purpose": "既有焦点乱序固定场景；按 scenario_id 选择"
+      }
+    ],
+    "provider": {
+      "protocol_id": "provider-capabilities",
+      "scenario_id": "resident-reply-provider-lifecycle",
+      "status": "simulated",
+      "artifact": {
+        "address": "workspace_13209cb6666b/file/architecture-evidence/objects/protocol-scenario-9c5293de820e6ac8a6681fbda50698630edac530737eb778d395505fbb982da5.json",
+        "sha256": "9c5293de820e6ac8a6681fbda50698630edac530737eb778d395505fbb982da5",
+        "size": 186335
+      },
+      "consumer_selector": "protocols[id=provider-capabilities].scenario_pairs[scenario_id=resident-reply-provider-lifecycle].artifact",
+      "participant_mapping_source": "artifact.participants[].{id,module_id,role}",
+      "participant_mappings": [
+        {
+          "id": "resident",
+          "module_id": "lineage.conversation",
+          "role": "Lineage中的Resident业务调用方"
+        },
+        {
+          "id": "preparation",
+          "module_id": "execution",
+          "role": "Execution请求准备与能力校验"
+        },
+        {
+          "id": "scheduler",
+          "module_id": "execution.scheduling",
+          "role": "Scheduler：领取资格、取消意图和权威终态"
+        },
+        {
+          "id": "worker",
+          "module_id": "worker",
+          "role": "ExecutionWorker：控制循环及finish提交"
+        },
+        {
+          "id": "runtime",
+          "module_id": "worker",
+          "role": "Worker内ExecutionRuntime及SessionManager"
+        },
+        {
+          "id": "adapter",
+          "module_id": "execution.providers",
+          "role": "Worker内Provider Adapter"
+        },
+        {
+          "id": "provider",
+          "module_id": "providers",
+          "role": "Provider原生运行时"
+        },
+        {
+          "id": "agentdata",
+          "module_id": "execution.agent-data",
+          "role": "AgentData执行内容存储"
+        }
+      ],
+      "read_only_reuse": true,
+      "limitations": [
+        "Eight roles are not eight distinct modules: worker and runtime both map to worker.",
+        "No worker.harness participant exists in this scene; do not add one.",
+        "preparation maps to execution root; adapter maps to execution.providers whose parent is worker.",
+        "Participant membership alone gives no directed relation, concurrency schedule or total order."
+      ]
+    }
+  },
+  "design_versions": [
+    {
+      "design_id": "decision_425e428410e0",
+      "version": "38",
+      "observed_at": "2026-10-15 03:39:36 UTC",
+      "temporal_scope": "observed_now_not_commit_snapshot",
+      "body": {
+        "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-a959010fc9b01df5e147557b43c47d9b144f90433ce88c39a11b6e5141a85dbe.md",
+        "sha256": "a959010fc9b01df5e147557b43c47d9b144f90433ce88c39a11b6e5141a85dbe",
+        "size": 43455
+      }
+    },
+    {
+      "design_id": "decision_25eb93d803a4",
+      "version": "18",
+      "observed_at": "2026-10-15 03:39:36 UTC",
+      "temporal_scope": "observed_now_not_commit_snapshot",
+      "body": {
+        "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf.md",
+        "sha256": "8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf",
+        "size": 27358
+      }
+    },
+    {
+      "design_id": "decision_cf27d39e39cd",
+      "version": "13",
+      "observed_at": "2026-10-15T08:02:32.371038+00:00",
+      "observation_note": "Read in this work round; frozen_at is the packaging timestamp, not a historical Git observation.",
+      "temporal_scope": "observed_now_not_commit_snapshot",
+      "body": {
+        "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-d5a4dfc2808f4d204598728d8541086b4a7005347eb24b217b92e60f85618255.md",
+        "sha256": "d5a4dfc2808f4d204598728d8541086b4a7005347eb24b217b92e60f85618255",
+        "size": 22102
+      }
+    },
+    {
+      "design_id": "decision_1b2bdf5c33d6",
+      "version": "25",
+      "observed_at": "2026-10-15T08:02:32.371038+00:00",
+      "observation_note": "Read in this work round; frozen_at is the packaging timestamp, not a historical Git observation.",
+      "temporal_scope": "observed_now_not_commit_snapshot",
+      "body": {
+        "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-732d856b78f6d25ba9d7df275caff2fc070f32242c0c2aba4d791c9a0b4caa95.md",
+        "sha256": "732d856b78f6d25ba9d7df275caff2fc070f32242c0c2aba4d791c9a0b4caa95",
+        "size": 34686
+      }
+    },
+    {
+      "design_id": "decision_edc470e09f5a",
+      "version": "25",
+      "observed_at": "2026-10-15T08:02:32.371038+00:00",
+      "observation_note": "Read in this work round; frozen_at is the packaging timestamp, not a historical Git observation.",
+      "temporal_scope": "observed_now_not_commit_snapshot",
+      "body": {
+        "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-435875ef8b63a5df2b891f4fbb7815d99078ab22fe0f7dce5a22c32d63e93281.md",
+        "sha256": "435875ef8b63a5df2b891f4fbb7815d99078ab22fe0f7dce5a22c32d63e93281",
+        "size": 32175
+      }
+    },
+    {
+      "design_id": "decision_6ad0384e020d",
+      "version": "33",
+      "observed_at": "2026-10-15T08:02:32.371038+00:00",
+      "observation_note": "Read in this work round; frozen_at is the packaging timestamp, not a historical Git observation.",
+      "temporal_scope": "observed_now_not_commit_snapshot",
+      "body": {
+        "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-9c449bd773b55bdf79c99237ee25d4fae9ce6c44590a37bc81fc0c3b7edf26fb.md",
+        "sha256": "9c449bd773b55bdf79c99237ee25d4fae9ce6c44590a37bc81fc0c3b7edf26fb",
+        "size": 34111
+      }
+    },
+    {
+      "design_id": "decision_3e8c2a7f91d4",
+      "version": "11",
+      "observed_at": "2026-10-15T08:02:32.371038+00:00",
+      "observation_note": "Read in this work round; frozen_at is the packaging timestamp, not a historical Git observation.",
+      "temporal_scope": "observed_now_not_commit_snapshot",
+      "body": {
+        "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-8ba213f246ce98c5358f046979adedbf1eb62153a6a38619272ceab8696621d5.md",
+        "sha256": "8ba213f246ce98c5358f046979adedbf1eb62153a6a38619272ceab8696621d5",
+        "size": 19782
+      }
+    }
+  ],
+  "code_evidence": [
+    {
+      "id": "session-harness",
+      "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1",
+      "path": "management_portal/execution/backends.py",
+      "git_blob": "5de7bafad0b17770a02d666279185c065bbd3808",
+      "sha256": "b56a7bb3e9e7cef5f816ce17f54298f3217efb639b09178eab7093be651ce124",
+      "size": 171655,
+      "line_start": 3971,
+      "line_end": 4001,
+      "excerpt": "    def execute(\n        self,\n        invocation: BackendInvocation,\n        context: BackendContext,\n    ) -> BackendResult:\n        try:\n            provider = self.providers[invocation.request.provider]\n        except KeyError as exc:\n            raise ValueError(\n                \"unsupported Agent Backend Provider: \"\n                f\"{invocation.request.provider}\"\n            ) from exc\n        from .native_options import prepare_invocation\n        invocation = prepare_invocation(invocation)\n        invocation = self.harness.prepare_invocation(invocation, provider)\n        def execute_with_context_seed(\n            prepared: BackendInvocation,\n            backend_context: BackendContext,\n        ) -> BackendResult:\n            return provider.execute(\n                prepare_backend_context_seed(provider, prepared),\n                backend_context,\n            )\n        if not self.harness.should_run(invocation):\n            return execute_with_context_seed(invocation, context)\n        return self.harness.execute(\n            provider=provider,\n            invocation=invocation,\n            context=context,\n            execute=execute_with_context_seed,\n        )\n",
+      "excerpt_sha256": "287e32658420445b6ee9e00b479cada01931eb3de4f1e9c5d03d3f6848bb4739",
+      "content_address": null,
+      "excerpt_normalization": "UTF-8 source splitlines, selected inclusive line range joined with LF and one final LF",
+      "historical_content_status": "content_address_missing; this package freezes only the quoted excerpt and whole-file hash/git blob, not a source body service"
+    },
+    {
+      "id": "scheduler-lifecycle",
+      "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1",
+      "path": "management_portal/execution/scheduler.py",
+      "git_blob": "6517c28a81a6cfd41f57d38d6451a2a224b46d6e",
+      "sha256": "48ecd9885d360e9c7beb4fd6756c3060748a9fd2c54bba78eab2a1e8806a3ea7",
+      "size": 181834,
+      "line_start": 1182,
+      "line_end": 1193,
+      "excerpt": "        )\n        event = {\n            \"execution_id\": execution_id,\n            \"sequence\": self._event_sequence,\n            \"type\": str(event_type or \"\"),\n            \"created_at\": execution_timestamp(),\n            \"details\": dict(details or {}),\n        }\n        from .execution_lifecycle import scheduler_transition\n        scheduler_transition(connection, execution_id, event_type, event[\"created_at\"])\n        if event_type == \"started\":\n            connection.execute(\n",
+      "excerpt_sha256": "0a3302bc6ba3be20854f1be72873b96d0ee65acd65e130aae8655fe2e9b85b9c",
+      "content_address": null,
+      "excerpt_normalization": "UTF-8 source splitlines, selected inclusive line range joined with LF and one final LF",
+      "historical_content_status": "content_address_missing; this package freezes only the quoted excerpt and whole-file hash/git blob, not a source body service"
+    },
+    {
+      "id": "lifecycle-transaction",
+      "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1",
+      "path": "management_portal/execution/execution_lifecycle.py",
+      "git_blob": "277595ad43ccbcfc04f5f57ebd0eeb5644d8f8ca",
+      "sha256": "f6499adf50c51d674f8c05fd0ec4bffeef06715029eff58a02a1fde5fefe1b28",
+      "size": 4509,
+      "line_start": 38,
+      "line_end": 82,
+      "excerpt": "def scheduler_transition(connection: Any, execution_id: str, event_type: str, at: str) -> None:\n    if event_type not in {\"queued\", \"completed\", \"failed\", \"cancelled\"}:\n        return\n    # Initialization is strict/versioned and cached by the domain owner.\n    from .agent_data_store import get_agent_data_store\n    get_agent_data_store()\n    table = '\"' + _database_schema(\"agent\") + '\".executions'\n    row = connection.execute(\n        \"SELECT request_json,status,created_at,result_json FROM executions WHERE execution_id=%s\",\n        (execution_id,),\n    ).fetchone()\n    if row is None:\n        raise KeyError(execution_id)\n    request = json.loads(row[\"request_json\"])\n    identity = (str(request[\"agent_id\"]), str(request[\"actor\"]), str(request[\"provider\"]))\n    connection.execute(\n        f\"INSERT INTO {table}(execution_id,agent_id,actor_ref,provider,provider_turn_id,created_at,\"\n        \"started_at,finished_at,status,usage_json) VALUES(%s,%s,%s,%s,'',%s,NULL,NULL,'preparing','{}') \"\n        \"ON CONFLICT(execution_id) DO NOTHING\",\n        (execution_id, *identity, row[\"created_at\"]),\n    )\n    current = connection.execute(f\"SELECT * FROM {table} WHERE execution_id=%s FOR UPDATE\", (execution_id,)).fetchone()\n    if (current[\"agent_id\"], current[\"actor_ref\"], current[\"provider\"]) != identity:\n        raise ValueError(\"Execution identity refers to different immutable provenance\")\n    if event_type == \"queued\":\n        if current[\"status\"] == \"preparing\":\n            connection.execute(f\"UPDATE {table} SET status='queued' WHERE execution_id=%s\", (execution_id,))\n        return\n    if row[\"status\"] != event_type:\n        raise ValueError(\"Scheduler outcome does not match its committed state\")\n    if current[\"status\"] in {\"completed\", \"failed\", \"cancelled\"}:\n        if current[\"status\"] != event_type:\n            raise ValueError(\"Scheduler cannot replace a terminal Execution outcome\")\n        return\n    result = json.loads(row[\"result_json\"] or \"{}\")\n    store = get_agent_data_store()\n    prior_path = connection.execute(\"SELECT current_setting('search_path')\").fetchone()[0]\n    try:\n        with connection.raw.transaction():\n            connection.execute(\"SELECT set_config('search_path',%s,true)\", ('\"' + _database_schema(\"agent\") + '\"',))\n            store.finish_execution_in(_AgentTransaction(connection.raw), execution_id, status=event_type,\n                                      finished_at=result.get(\"finished_at\") or at,\n                                      usage=result.get(\"usage\") or json.loads(current[\"usage_json\"] or \"{}\"))\n    finally:\n        connection.execute(\"SELECT set_config('search_path',%s,true)\", (prior_path,))\n",
+      "excerpt_sha256": "db4536a75be97acdeeaa9d031a091d586427b75d8e5053d144e909714fc9d5c2",
+      "content_address": null,
+      "excerpt_normalization": "UTF-8 source splitlines, selected inclusive line range joined with LF and one final LF",
+      "historical_content_status": "content_address_missing; this package freezes only the quoted excerpt and whole-file hash/git blob, not a source body service"
+    },
+    {
+      "id": "worker-finish",
+      "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1",
+      "path": "management_portal/execution/worker.py",
+      "git_blob": "b4bccfe9213086adc0dbcefa2fb5c4a47cb2d2f6",
+      "sha256": "14ed38d469ab45e1ccc5f624912eec379d1f96998946defb42af7632a764759f",
+      "size": 28633,
+      "line_start": 406,
+      "line_end": 427,
+      "excerpt": "            }\n        if deferred_reason:\n            heartbeat.join(timeout=2)\n            return {\n                \"execution_id\": execution_id,\n                \"status\": \"requeued\",\n                \"reason\": deferred_reason,\n            }\n        if result is None:\n            heartbeat.join(timeout=2)\n            raise RuntimeError(\"execution produced no terminal result\")\n        try:\n            snapshot = self.scheduler.finish(result, claim_token)\n        except ExecutionClaimOwnershipLost:\n            return {\n                \"execution_id\": execution_id,\n                \"status\": \"claim_lost\",\n                \"reason\": \"execution claim ownership changed\",\n            }\n        finally:\n            # Publishing the terminal state wakes the blocking control wait,\n            # so the heartbeat can be reclaimed without paying its join\n",
+      "excerpt_sha256": "c0e8806790956286586619bea6379b986793b5504112c21c1b1c4c9dfc8d469a",
+      "content_address": null,
+      "excerpt_normalization": "UTF-8 source splitlines, selected inclusive line range joined with LF and one final LF",
+      "historical_content_status": "content_address_missing; this package freezes only the quoted excerpt and whole-file hash/git blob, not a source body service"
+    },
+    {
+      "id": "runtime-call",
+      "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1",
+      "path": "management_portal/execution/runtime.py",
+      "git_blob": "679ce6a639ef3c909968ab4948d7bfe1750b6313",
+      "sha256": "b1484ec7694088c6fb531bb631b14d6f63d9c7d50b2b7d9a22fd3e3fab4400cf",
+      "size": 38577,
+      "line_start": 551,
+      "line_end": 573,
+      "excerpt": "                        ),\n                    },\n                )\n            else:\n                result = service.execute(\n                    invocation,\n                    BackendContext(\n                        emit_event=emit,\n                        execution_started_at=runtime_context.accepted_at,\n                        turn_start_reason=turn_start_reason,\n                        turn_start_reason_changed=set_turn_start_reason,\n                        cancellation_requested=runtime_context.is_cancelled,\n                        handover_requested=runtime_context.is_handover,\n                        set_interrupt_target=set_interrupt_target,\n                        reassign_backend_route=(\n                            runtime_context.reassign_backend_route\n                        ),\n                        update_context_usage=update_context_usage,\n                        set_provider_recovery_state=(\n                            set_provider_recovery_state\n                        ),\n                        harness_plan_observer=set_harness_plan,\n                        turn_control_provider=(\n",
+      "excerpt_sha256": "1707c361cd422a271a2e5d92fa1f648ec823092caa92c3007035339c98bfd086",
+      "content_address": null,
+      "excerpt_normalization": "UTF-8 source splitlines, selected inclusive line range joined with LF and one final LF",
+      "historical_content_status": "content_address_missing; this package freezes only the quoted excerpt and whole-file hash/git blob, not a source body service"
+    },
+    {
+      "id": "runtime-content",
+      "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1",
+      "path": "management_portal/execution/runtime.py",
+      "git_blob": "679ce6a639ef3c909968ab4948d7bfe1750b6313",
+      "sha256": "b1484ec7694088c6fb531bb631b14d6f63d9c7d50b2b7d9a22fd3e3fab4400cf",
+      "size": 38577,
+      "line_start": 630,
+      "line_end": 710,
+      "excerpt": "                            recovery_checkpoint.get(\n                                \"context_attached\"\n                            )\n                        )\n                    ),\n                    \"context_fingerprint\": (\n                        instructions_fingerprint\n                        if context_attached_now\n                        else str(\n                            recovery_checkpoint.get(\n                                \"context_fingerprint\"\n                            )\n                            or session.context_fingerprint\n                        )\n                    ),\n                    \"resumable\": True,\n                    \"provider_completed\": True,\n                    \"output\": dict(result.output),\n                    \"usage\": dict(result.usage),\n                    \"available_harness_tool_names\": sorted(\n                        result.available_harness_tool_names\n                    ),\n                }\n                if live_context_usage:\n                    completed_checkpoint[\"context_usage\"] = (\n                        live_context_usage\n                    )\n                    completed_checkpoint[\"context_usage_at\"] = (\n                        live_context_usage_at\n                    )\n                if live_context_window:\n                    completed_checkpoint[\"model_context_window\"] = (\n                        live_context_window\n                    )\n                runtime_context.checkpoint(completed_checkpoint)\n            if runtime_context.is_handover():\n                raise ExecutionRecoveryDeferred(\n                    \"worker handover deferred terminal reconciliation\"\n                )\n            self.agent_data_projector.complete(\n                execution_id=request.execution_id,\n                backend_route_id=result.backend_route_id,\n                backend_session_id=result.backend_session_id,\n                turn_id=str(\n                    result.output.get(\"turn_id\")\n                    or recovery_checkpoint.get(\"turn_id\")\n                    or \"\"\n                ),\n                response=str(result.output.get(\"message\") or \"\"),\n                usage=result.usage,\n            )\n            if runtime_context.is_cancelled():\n                raise ExecutionCancelled(\"execution cancelled during Backend call\")\n            self.sessions.complete(\n                request,\n                session,\n                result.backend_session_id,\n                backend_route_id=result.backend_route_id,\n                context_fingerprint=(\n                    instructions_fingerprint\n                    or str(\n                        recovery_checkpoint.get(\n                            \"context_fingerprint\"\n                        )\n                        or \"\"\n                    )\n                ),\n                context_attached=(\n                    context_attached_now\n                    or bool(\n                        recovery_checkpoint.get(\"context_attached\")\n                    )\n                ),\n                context_injected_at=injection_at,\n                harness_tool_names=(\n                    result.available_harness_tool_names\n                ),\n            )\n            emit(\n                \"service_completed\",\n                {\n",
+      "excerpt_sha256": "7f166cbb5574809ac5f39daba79fc5ddca7824daeb95ee7270b1d2ce16c43383",
+      "content_address": null,
+      "excerpt_normalization": "UTF-8 source splitlines, selected inclusive line range joined with LF and one final LF",
+      "historical_content_status": "content_address_missing; this package freezes only the quoted excerpt and whole-file hash/git blob, not a source body service"
+    },
+    {
+      "id": "resource-resolve-reader",
+      "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1",
+      "path": "management_portal/resources/service.py",
+      "git_blob": "a688a4bfa0142a97ef145483c32742cd0cb26c59",
+      "sha256": "39524ae858428ea450c461b13c746be382974cf80d17e8e16faa06324267036d",
+      "size": 77275,
+      "line_start": 1047,
+      "line_end": 1098,
+      "excerpt": "    def resolve(\n        self,\n        address: str,\n        *,\n        actor: str = \"\",\n    ) -> dict[str, Any]:\n        parsed = self.parse_address(address)\n        self._ensure_resolvers(parsed.resource_type)\n        resolver = self._resolvers.resolver_for(parsed.resource_type)\n        resolved = normalize_resolution(\n            parsed,\n            resolver.resolve(\n                parsed.value,\n                actor=str(actor or \"\"),\n            ),\n        )\n        self._access.authorize_read(resolved, actor=str(actor or \"\"))\n        if not parsed.suffix:\n            canonical_url = self.portal_url_for_resource(\n                parsed.root_id,\n                parsed.resource_type,\n                record=resolved.get(\"record\"),\n            )\n            if canonical_url:\n                # Root resource navigation is owned by the resource-type URL\n                # provider, so domain resolver output cannot override it.\n                resolved[\"portal_url\"] = canonical_url\n        return resolved\n\n    def read_content(\n        self,\n        address: str,\n        *,\n        actor: str = \"\",\n        max_bytes: int = 4 * 1024 * 1024,\n    ) -> tuple[bytes, str, dict[str, Any]]:\n        parsed = self.parse_address(address)\n        self._ensure_resolvers(parsed.resource_type)\n        resolver = self._resolvers.resolver_for(parsed.resource_type)\n        if resolver.read_content is None:\n            raise ValueError(f\"{parsed.resource_type} resources expose no byte content\")\n        resolved = self.resolve(\n            parsed.value,\n            actor=actor,\n        )\n        return resolver.read_content(\n            resolved,\n            address=parsed.value,\n            actor=str(actor or \"\"),\n            max_bytes=max_bytes,\n        )\n\n",
+      "excerpt_sha256": "da93ea9bc886689e03ea80fa19939daf3bb00a018c34cfde86e741ab954ce212",
+      "content_address": null,
+      "excerpt_normalization": "splitlines; LF joined; one trailing LF"
+    },
+    {
+      "id": "resource-query",
+      "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1",
+      "path": "management_portal/resources/service.py",
+      "git_blob": "a688a4bfa0142a97ef145483c32742cd0cb26c59",
+      "sha256": "39524ae858428ea450c461b13c746be382974cf80d17e8e16faa06324267036d",
+      "size": 77275,
+      "line_start": 1325,
+      "line_end": 1357,
+      "excerpt": "    def query(self, **kwargs: Any) -> dict[str, Any]:\n        query = ResourceQuery.from_kwargs(kwargs)\n        if query.q:\n            try:\n                parsed = self.parse_address(query.q)\n            except ValueError:\n                parsed = None\n            if parsed is not None and parsed.value == query.q.strip(\"/\"):\n                try:\n                    reference = self.reference(\n                        parsed.value,\n                        actor=query.actor,\n                    )\n                except (KeyError, FileNotFoundError):\n                    return query_records(\n                        (),\n                        query,\n                        exact_address=True,\n                        portal_access=self._portal_access,\n                    )\n                return query_records(\n                    (reference,),\n                    query,\n                    exact_address=True,\n                    portal_access=self._portal_access,\n                )\n        return self._index().query(\n            records_projector=self._collaboration_descriptors,\n            records_projector_types=COLLABORATION_RESOURCE_TYPES,\n            **kwargs,\n        )\n\n    def suggest(self, *, actor: str = \"\", q: str = \"\", limit: int = 30, resource_type: str = \"\") -> dict[str, Any]:\n",
+      "excerpt_sha256": "e01c88830711fcfe197d664232871eb79b33ac68838397454d5172ae36b61d65",
+      "content_address": null,
+      "excerpt_normalization": "splitlines; LF joined; one trailing LF"
+    },
+    {
+      "id": "resource-read-policy",
+      "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1",
+      "path": "management_portal/resources/access.py",
+      "git_blob": "eb25d7269e451a8d156492aec16a2a7009166a95",
+      "sha256": "fda7beb08c3c178ffb478e4d4b57be33447ced1bc74e82e0a41761c6af04f632",
+      "size": 902,
+      "line_start": 1,
+      "line_end": 21,
+      "excerpt": "from __future__ import annotations\n\nfrom collections.abc import Mapping\nfrom typing import Any\nfrom management_common.principal import is_user_or_resident\n\n\nclass ResourceAccessPolicy:\n    \"\"\"Every authenticated User or Resident reads resources.\n\n    No store supplies resource authorization: the dynamic ISA policy decides\n    resource credentials (decision_707d2910d389), the facade authenticates\n    actors and domain resolvers enforce their own business rules.\n    \"\"\"\n\n    def can_read(self, value: Mapping[str, Any], *, actor: str = \"\") -> bool:\n        # ``value`` is the record callers ask about; no read rule depends on it.\n        return is_user_or_resident(actor)\n\n    def authorize_read(self, value: Mapping[str, Any], *, actor: str = \"\") -> None:\n        if not self.can_read(value, actor=actor):\n",
+      "excerpt_sha256": "6473d380f9538f4ad339f596d8bc76f5f124ce262699c2a57b9f837dc4390d48",
+      "content_address": null,
+      "excerpt_normalization": "splitlines; LF joined; one trailing LF"
+    },
+    {
+      "id": "resource-authorization",
+      "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1",
+      "path": "management_portal/resources/service.py",
+      "git_blob": "a688a4bfa0142a97ef145483c32742cd0cb26c59",
+      "sha256": "39524ae858428ea450c461b13c746be382974cf80d17e8e16faa06324267036d",
+      "size": 77275,
+      "line_start": 494,
+      "line_end": 509,
+      "excerpt": "    def authorize(self, subject_ref: str, resource_id: str, level: str, context) -> dict[str, Any]:\n        return self._authorization_module().authorize(subject_ref, resource_id, level, context)\n\n    def authorize_many(self, subject_ref: str, requests: list[tuple[str, str]], context) -> list[dict[str, Any]]:\n        return self._authorization_module().authorize_many(subject_ref, requests, context)\n\n\n    def create_authorization_subject(self, context, *, idempotency_key: str) -> str:\n        return self._authorization_module().create_root(context, idempotency_key=idempotency_key)\n\n    def reaching_levels(self, principal_id: str, resource_ids: list[str], *, subject_ref: str = \"\", context=None) -> dict[str, int]:\n        return self._authorization_module().reaching_levels(principal_id, resource_ids, subject_ref=subject_ref, context=context)\n\n    def delegate_authorization_subject(self, parent_ref: str, source_context, context, *, idempotency_key: str, user_message: bool = False) -> str:\n        return self._authorization_module().delegate(parent_ref, source_context, context, idempotency_key=idempotency_key, user_message=user_message)\n\n",
+      "excerpt_sha256": "127fb3afc54cfdd5e3653f8ff6cdb8d6df21332c2be37c2c1c960f2c40ee9dca",
+      "content_address": null,
+      "excerpt_normalization": "splitlines; LF joined; one trailing LF"
+    },
+    {
+      "id": "resource-index-provider",
+      "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1",
+      "path": "management_portal/resources/providers/indexed.py",
+      "git_blob": "fedee39ff7935ca72a806494555f585e62cdc6c9",
+      "sha256": "2576b93d6accb8cb30cbe5710dbde182721ec34b735c12dfcc6b736d06ae1ed4",
+      "size": 886,
+      "line_start": 11,
+      "line_end": 32,
+      "excerpt": "def _read_indexed_content(resolved, **context):\n    from management_portal import resource_identity_backend\n\n    return resource_identity_backend.read_resolved_resource_content(\n        resolved,\n        **context,\n    )\n\n\ndef install_resolver(service: \"ResourceService\") -> None:\n    from management_portal import resource_identity_backend\n\n    service.register_index_backed_resolver(\n        lambda address, **context: canonical_resolution(\n            resource_identity_backend.resolve_indexed_resource_address(\n                address,\n                actor=str(context.get(\"actor\") or \"\"),\n                resource_service=service,\n            )\n        ),\n        read_content=_read_indexed_content,\n    )\n",
+      "excerpt_sha256": "cc0e6cbd390230f771df327f53d010a12065f05f222a7151f109b8c3d96908d8",
+      "content_address": null,
+      "excerpt_normalization": "splitlines; LF joined; one trailing LF"
+    },
+    {
+      "id": "resource-index-resolve",
+      "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1",
+      "path": "management_portal/resource_identity_backend.py",
+      "git_blob": "335957aed7231938521e782c51c9640b4224e4df",
+      "sha256": "ca80a8d790d00c817497c7347614a9fb5b52cdf057b2640ec81583c341907006",
+      "size": 34514,
+      "line_start": 785,
+      "line_end": 815,
+      "excerpt": "def resolve_indexed_resource_address(\n    clean_address: str,\n    *,\n    actor: str = \"\",\n    resource_service: Any,\n) -> dict[str, Any]:\n    root_id, separator, suffix = clean_address.partition(\"/\")\n    record = resource_service.get(root_id, actor=actor)\n    if \"knowledge\" in set(record.get(\"facets\") or []):\n        from knowledge_board_lan import knowledge_backend\n\n        return knowledge_backend.resolve_knowledge_address(clean_address, actor=actor)\n    source = record.get(\"source\") if isinstance(record.get(\"source\"), dict) else {}\n    attributes = record.get(\"attributes\") if isinstance(record.get(\"attributes\"), dict) else {}\n    deleted = any(\n        _clean(value.get(\"status\")) == \"deleted\" or _clean(value.get(\"deleted_at\"))\n        for value in (record, attributes)\n    )\n    source_path = Path(_clean(source.get(\"path\"))).expanduser().resolve(strict=False)\n    result: dict[str, Any] = {\n        \"schema\": \"tfi.resource_resolution.v2\",\n        \"address\": clean_address,\n        \"root_id\": root_id,\n        \"resource_type\": _clean(record.get(\"resource_type\")),\n        \"target_kind\": _clean(record.get(\"resource_type\")) or \"resource\",\n        \"record\": record,\n        \"portal_url\": _clean(record.get(\"url\")),\n        \"resolved_path\": str(source_path) if _clean(source.get(\"path\")) else \"\",\n        \"exists\": not deleted and (source_path.exists() if _clean(source.get(\"path\")) else True),\n    }\n    if not separator:\n",
+      "excerpt_sha256": "baa8a2a580dee31c88f23c56ff0a7dc696a40a315cedcc5c7b6643711714a50b",
+      "content_address": null,
+      "excerpt_normalization": "splitlines; LF joined; one trailing LF"
+    },
+    {
+      "id": "definition-compile",
+      "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1",
+      "path": "management_portal/society_service/isa/definition.py",
+      "git_blob": "8a67b6dd7dd4cd7d6f7e7a6ecf85be945d20d637",
+      "sha256": "b3cc814276ff4a334e1a6f0137d87550af4bb22093f519e08a8b8641ee6c9678",
+      "size": 22247,
+      "line_start": 296,
+      "line_end": 308,
+      "excerpt": "def compile_lineage(inv: Invocation) -> dict[str, Any]:\n    from management_portal.society_service import lineage_program\n\n    lineage = domain().get_lineage_definition_for_analysis(inv.argument(\"lineage_id\"), inv.caller)\n    plan = lineage_program.compile_program(lineage.get(\"program\"), lineage.get(\"nodes\") or [])\n    diagnostics = [\n        {\"code\": code, \"item_id\": effect_id, \"line\": line, \"message\": message}\n        for effect_id, effect in plan[\"effects\"].items()\n        for code, message, line in lineage_program.effect_script_analysis(effect).diagnostics\n    ]\n    if diagnostics:\n        raise invalid(\"Effect 脚本编译失败\", diagnostics=diagnostics)\n    return {\"program\": plan}\n",
+      "excerpt_sha256": "088dc6dbcf57ebca0f00a43597c3e7e052f41ced937a7a0270db18e3d7d172e5",
+      "content_address": null,
+      "excerpt_normalization": "splitlines; LF joined; one trailing LF"
+    },
+    {
+      "id": "packet-delivery",
+      "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1",
+      "path": "management_portal/society_service/lineage_program_execution.py",
+      "git_blob": "2ff583e089a0d6563054a0b1bcb3d7ea11021a39",
+      "sha256": "3444b7171c8d637960c0e44d79265c1e87b69226ecee55cc5e80fac65b1e8547",
+      "size": 33740,
+      "line_start": 842,
+      "line_end": 880,
+      "excerpt": "        raise ValueError(\"Packet Invoke 缺少 Prompt\")\n    source_wire_id = str(invocation.get(\"source_wire_id\") or \"\")\n    delivery_message_id = lineage_program_identity.delivery_message_id(\n        str(lineage.get(\"lineage_id\") or \"\"),\n        event.id,\n        source_wire_id,\n        target_id,\n        packet_id=str(packet.get(\"id\") or \"\"),\n    )\n    from .family_familize import facade_speaking_to\n    from .lineage_event_dispatch_rules import _program_event_delivery_profile\n    wire = next((wire for wire in _compiled_program(lineage)[\"wires\"] if wire[\"id\"] == source_wire_id), {})\n    profile = _program_event_delivery_profile(event, {\"config\": wire.get(\"config\") or {}})\n    if profile:\n        lineage_program_runtime.record_delivery_profile(str(lineage[\"lineage_id\"]), delivery_message_id, profile)\n    facade = facade_speaking_to(lineage, target_id)\n    response = ports.resident.send_node_message(\n        target,\n        prompt,\n        facade or actor,\n        message_id=delivery_message_id,\n        input_media=(packet.get(\"message\") or {}).get(\"content_parts\"),\n        instruction_context=lineage_instruction_context.resident_context(\n            str(lineage.get(\"lineage_id\") or \"\"), event, actor, target_id, sender=facade,\n        ),\n    )\n    expected_execution_id = resident_message_contract.delivered_message_id(response)\n    if not expected_execution_id:\n        raise RuntimeError(\"Packet 已发送，但无法确认目标 Resident job\")\n    ports.resident.register_program_agent_invocation(\n        str(lineage.get(\"lineage_id\") or \"\"),\n        target_id,\n        expected_execution_id,\n        event,\n        source_wire_id,\n        actor,\n    )\n    return {\n        \"status\": \"sent\",\n",
+      "excerpt_sha256": "7db417966016496c84c758a5b29ce28f2c63b0b1b5506f80ac23232a8df4bb1a",
+      "content_address": null,
+      "excerpt_normalization": "splitlines; LF joined; one trailing LF"
+    },
+    {
+      "id": "packet-isa-bridge",
+      "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1",
+      "path": "management_portal/society_service/lineage_domain.py",
+      "git_blob": "1292a718e291c1a685dde0e76710f5bca36a41bd",
+      "sha256": "8efe7585846570a812bb1e7d3114ecd2858c6c6cdae089457e5c44d6058b74e9",
+      "size": 236018,
+      "line_start": 3994,
+      "line_end": 4029,
+      "excerpt": "def _send_node_message(\n    node: dict[str, Any],\n    prompt: str,\n    actor: str,\n    *,\n    input_media: object = None,\n    message_id: str = \"\",\n    instruction_context: Any = None,\n) -> object:\n    \"\"\"Lower a Resident Invoke to the same ISA call used by an explicit Effect.\"\"\"\n    from management_portal.hatg import routing\n    from management_portal.hatg.contracts import InstructionContext\n\n    prompt = lineage_primitives.normalize_invocation_prompt(prompt)\n    content_parts: list[dict[str, Any]] = [{\"type\": \"text\", \"text\": prompt}]\n    if isinstance(input_media, list):\n        content_parts.extend(\n            dict(item) for item in input_media if isinstance(item, Mapping)\n        )\n    delivery_message_id = resident_message_contract.message_identity(message_id)\n    return routing.execute_or_raise(\n        {\n            \"instruction\": \"DeliverMessage\",\n            \"idempotency_key\": f\"lineage-delivery:{delivery_message_id}\",\n            \"arguments\": {\n                \"resident_id\": _node_resident_id(node),\n                \"message\": {\n                    \"message_id\": delivery_message_id,\n                    \"role\": \"user\",\n                    \"content_parts\": content_parts,\n                },\n                \"activation_policy\": \"enqueue_and_trigger\",\n            },\n        },\n        instruction_context or InstructionContext(caller=actor, entry=\"lineage\"),\n    )\n",
+      "excerpt_sha256": "c8dde699f2463a229eec4fdbf76af0a9d9cc272892e67b43ca34483d460b0c5e",
+      "content_address": null,
+      "excerpt_normalization": "splitlines; LF joined; one trailing LF"
+    },
+    {
+      "id": "conversation-deliver",
+      "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1",
+      "path": "management_portal/society_service/isa/conversation.py",
+      "git_blob": "b2596d9103d0e19f7f35c936e7c7442daa0f0265",
+      "sha256": "2e8cfd1594b5f14c69e78b94b074d4b686010b692a8dc32294b1d3f28bd4a038",
+      "size": 16439,
+      "line_start": 32,
+      "line_end": 61,
+      "excerpt": "def deliver(\n    inv: Invocation, resident_id: str, message: dict[str, Any], *, business_ref: str = \"\", reply_to: str = \"\",\n) -> dict[str, Any]:\n    from management_portal.society_service import outward_messages, resident_protocol\n\n    body = dict(message)\n    role = str(body.get(\"role\") or \"user\")\n    if role != \"user\":\n        raise invalid(\"message.role 只能是 user\")\n    body[\"role\"] = \"user\"\n    body[\"message_id\"] = _message_id(inv, body, resident_id)\n    payload: dict[str, Any] = {\n        \"resident_id\": resident_id,\n        \"message\": body,\n        \"activation_policy\": inv.argument(\"activation_policy\") or \"enqueue_and_trigger\",\n    }\n    context = resident_protocol.ResidentDeliveryContext(\n        lineage_id=lineage_of_resident(resident_id),\n\n        business_ref=business_ref,\n    )\n    # A Family member sending outside its Family speaks as the facade (decision_44cf587c1721).\n    result = outward_messages.deliver_to_resident(payload, inv.caller, delivery_context=context, reply_to=reply_to)\n    return {\n        **result,\n        \"resident_id\": resident_id,\n        \"message_id\": str(result.get(\"message_id\") or body[\"message_id\"]),\n        \"input_state\": result.get(\"input_state\") or {},\n    }\n\n",
+      "excerpt_sha256": "e68066685de8089803d28873e6ce4dcfe4946248dd26fad1ee7f2e657bce5cfd",
+      "content_address": null,
+      "excerpt_normalization": "splitlines; LF joined; one trailing LF"
+    },
+    {
+      "id": "resident-submit",
+      "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1",
+      "path": "management_portal/society_service/resident_execution_domain.py",
+      "git_blob": "00e925869967fa87e0d4a051568515a1b0f9615e",
+      "sha256": "bd6807f4fa413f3b508251bf4f1b7130f92ac5bd42d6a104c05762534a6924a9",
+      "size": 127909,
+      "line_start": 2290,
+      "line_end": 2310,
+      "excerpt": "    if _resident_execution_cancellation_requested(\n        _resident_id(record),\n        correlation_id,\n        str(job.get(\"user_message_id\") or \"\"),\n    ):\n        raise ResidentTurnCancelled(\n            \"Resident turn was stopped before Execution submission\"\n        )\n    submitted = service.submit(request)\n    execution_id = str(\n        submitted.get(\"execution_id\") or request.execution_id\n    )\n    _record_resident_execution(\n        record,\n        job,\n        execution_id,\n    )\n    bind_execution(\n        job,\n        execution_id=execution_id,\n        now=_now_iso(),\n",
+      "excerpt_sha256": "4ead33aa3f658fd2ec2869b16f86db8ab13c4e7799511ed1ad1af273a5e6eb0d",
+      "content_address": null,
+      "excerpt_normalization": "splitlines; LF joined; one trailing LF"
+    },
+    {
+      "id": "codex-bridge",
+      "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1",
+      "path": "management_portal/execution/backends.py",
+      "git_blob": "5de7bafad0b17770a02d666279185c065bbd3808",
+      "sha256": "b56a7bb3e9e7cef5f816ce17f54298f3217efb639b09178eab7093be651ce124",
+      "size": 171655,
+      "line_start": 2390,
+      "line_end": 2416,
+      "excerpt": "        if not backend_session_id or not turn_id or not backend_route_id:\n            if not (\n                backend_session_id\n                and backend_route_id\n                and (isinstance(runtime_options.get(\"goal\"), dict) or find_active_turn)\n            ):\n                return False\n        route = self.account_registry.get(backend_route_id)\n        client = self.client_factory(route.socket_path)\n        goal_command = runtime_options.get(\"goal\")\n        paused = False\n        try:\n            if not turn_id and find_active_turn:\n                turn_id = client.active_turn_id(backend_session_id)\n            if turn_id:\n                client.interrupt_turn(backend_session_id, turn_id)\n        finally:\n            if isinstance(goal_command, dict):\n                try:\n                    client.request(\n                        \"thread/goal/set\",\n                        {\"threadId\": backend_session_id, \"status\": \"paused\"},\n                        timeout=10.0,\n                    )\n                    paused = True\n                except Exception:\n                    paused = False\n",
+      "excerpt_sha256": "8e7bd9fe69c5c0ea9f482d24d52a602276bf2a1f8bd8844d2741f84045ae7d01",
+      "content_address": null,
+      "excerpt_normalization": "splitlines; LF joined; one trailing LF"
+    },
+    {
+      "id": "codex-handshake",
+      "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1",
+      "path": "management_portal/codex_app_server_client.py",
+      "git_blob": "99e837f3cdd06c62be72de6b9a2e451ca09e6b17",
+      "sha256": "12d85ee84a67a2896cefcf7c6d300bbcb9eeea5d641108be9fd2bf41e53303eb",
+      "size": 126419,
+      "line_start": 605,
+      "line_end": 632,
+      "excerpt": "                self._closing = False\n                self._reader_thread = threading.Thread(\n                    target=self._reader_loop,\n                    name=\"portal-codex-app-server-reader\",\n                    daemon=True,\n                )\n                self._reader_thread.start()\n            try:\n                self.request(\n                    \"initialize\",\n                    {\n                        \"clientInfo\": {\n                            \"name\": \"tfi-portal-execution-worker\",\n                            \"title\": \"TFI Portal\",\n                            \"version\": \"1\",\n                        },\n                        \"capabilities\": {\"experimentalApi\": True},\n                    },\n                    timeout=timeout,\n                    cancellation_requested=cancellation_requested,\n                )\n                self.notify(\"initialized\", {})\n            except Exception:\n                self._disconnect(CodexAppServerUnavailable(\"Codex app-server initialization failed\"))\n                raise\n            self._ensure_maintenance_thread()\n\n    def _ensure_maintenance_thread(self) -> None:\n",
+      "excerpt_sha256": "90fe1bbfb2683aa17963f4147f365ff86c920e969b16621538c7a674745a55e9",
+      "content_address": null,
+      "excerpt_normalization": "splitlines; LF joined; one trailing LF"
+    }
+  ],
+  "verification_contract": [
+    "Hash/size validate base manifest, consumer, map, frozen Design bodies and scenario artifact.",
+    "All module/protocol IDs must resolve in the exact bound consumer; parent and deployed_in remain unchanged.",
+    "Every relation has fixed Design lines and code excerpt provenance; code must match the exact bound commit.",
+    "Provider participant_mappings must equal the existing scene participants projection.",
+    "No rewrite of discovery, main manifest, modules bytes, evolution, historical snapshots or old scenarios."
+  ],
+  "supersedes": {
+    "manifest": {
+      "address": "workspace_13209cb6666b/file/architecture-evidence/component-relations/manifest-v1.json",
+      "sha256": "c4c9eec57855d6c5e132a5b9d8ec240bc71851a424f6447156fb7b393520993f",
+      "size": 2469
+    },
+    "preserve": true
+  },
+  "scopes": [
+    {
+      "root_module_id": "resources",
+      "direct_component_ids": [
+        "resources.access",
+        "resources.types",
+        "resources.permissions"
+      ],
+      "relation_ids": [
+        "resource-facade-type-reader",
+        "resource-facade-access",
+        "resource-indexed-provider-access",
+        "resource-facade-authorization"
+      ],
+      "boundary_protocol_ids": [
+        "hatg-isa",
+        "signed-rpc",
+        "resource-access",
+        "resource-authorization",
+        "operation-identity",
+        "society-service",
+        "projection-family",
+        "database-schema",
+        "file-storage",
+        "change-refresh",
+        "deployment-control"
+      ],
+      "missing_ids": [
+        "complete-internal-topology"
+      ],
+      "coverage": "partial_explicit_evidence"
+    },
+    {
+      "root_module_id": "lineage",
+      "direct_component_ids": [
+        "lineage.definition",
+        "lineage.conversation",
+        "lineage.automation",
+        "lineage.family"
+      ],
+      "relation_ids": [
+        "definition-program-compile",
+        "automation-resident-delivery",
+        "resident-execution-submit"
+      ],
+      "boundary_protocol_ids": [
+        "hatg-isa",
+        "signed-rpc",
+        "resource-access",
+        "resource-authorization",
+        "operation-identity",
+        "society-service",
+        "resident-execution",
+        "provider-capabilities",
+        "projection-family",
+        "lineage-events-effects",
+        "database-schema",
+        "file-storage",
+        "change-refresh",
+        "deployment-control",
+        "release-events",
+        "application-target"
+      ],
+      "missing_ids": [
+        "family-internal-relations",
+        "complete-internal-topology"
+      ],
+      "coverage": "partial_explicit_evidence"
+    },
+    {
+      "root_module_id": "execution",
+      "direct_component_ids": [
+        "execution.scheduling",
+        "execution.agent-data"
+      ],
+      "relation_ids": [
+        "worker-lease-control",
+        "scheduler-agentdata-lifecycle-transaction",
+        "resident-execution-submit"
+      ],
+      "boundary_protocol_ids": [
+        "hatg-isa",
+        "signed-rpc",
+        "resource-access",
+        "resource-authorization",
+        "operation-identity",
+        "society-service",
+        "resident-execution",
+        "worker-lease",
+        "provider-capabilities",
+        "model-api",
+        "database-schema",
+        "change-refresh",
+        "deployment-control"
+      ],
+      "missing_ids": [
+        "worker-control-component-id",
+        "preparation-component-id",
+        "scheduler-provider-direct-call",
+        "worker-lease-player",
+        "complete-internal-topology"
+      ],
+      "coverage": "partial_explicit_evidence"
+    },
+    {
+      "root_module_id": "worker",
+      "direct_component_ids": [
+        "execution.providers",
+        "worker.harness"
+      ],
+      "relation_ids": [
+        "worker-lease-control",
+        "runtime-session-adapter-call",
+        "session-harness-governance",
+        "runtime-agentdata-content",
+        "codex-native-session"
+      ],
+      "boundary_protocol_ids": [
+        "hatg-isa",
+        "signed-rpc",
+        "resource-access",
+        "resource-authorization",
+        "operation-identity",
+        "resident-execution",
+        "worker-lease",
+        "provider-capabilities",
+        "provider-native",
+        "model-api",
+        "database-schema",
+        "file-storage",
+        "deployment-control"
+      ],
+      "missing_ids": [
+        "worker-runtime-component-id",
+        "worker-control-component-id",
+        "harness-worker-lease-endpoint",
+        "scheduler-provider-direct-call",
+        "worker-lease-player",
+        "non-codex-native-relations",
+        "complete-internal-topology"
+      ],
+      "coverage": "partial_explicit_evidence"
+    }
+  ],
+  "scenario_catalog": [
+    {
+      "protocol_id": "resource-access",
+      "scenario_id": "resident-read-small-resource",
+      "status": "simulated",
+      "coverage": "normal_and_two_errors",
+      "temporal_scope": "observed_design_version_not_historical_commit",
+      "artifact": {
+        "address": "workspace_13209cb6666b/file/architecture-evidence/objects/protocol-scenario-9143b68237b0d6e696d2dea16b0abb06633f7df7380f49013af04083995330cf.json",
+        "sha256": "9143b68237b0d6e696d2dea16b0abb06633f7df7380f49013af04083995330cf",
+        "size": 7796
+      },
+      "source_versions": [
+        {
+          "ref": "decision_b6e74d78f7b6",
+          "response_version": "19",
+          "observed_at": "2026-10-14 18:52:01 UTC",
+          "body_version": "19",
+          "body_sha256": "1cefe656da64d306f5379e629d6fa25a408dc9ed593d770ad6a71364e49a3dce",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-1cefe656da64d306f5379e629d6fa25a408dc9ed593d770ad6a71364e49a3dce.md",
+            "sha256": "1cefe656da64d306f5379e629d6fa25a408dc9ed593d770ad6a71364e49a3dce",
+            "size": 29383
+          }
+        }
+      ],
+      "origin": "base_batch_unchanged"
+    },
+    {
+      "protocol_id": "provider-capabilities",
+      "scenario_id": "resident-reply-provider-lifecycle",
+      "status": "simulated",
+      "coverage": "normal_reply_unsupported_operation_cancel_before_return_cancel_after_return",
+      "temporal_scope": "observed_design_version_not_historical_commit",
+      "artifact": {
+        "address": "workspace_13209cb6666b/file/architecture-evidence/objects/protocol-scenario-9c5293de820e6ac8a6681fbda50698630edac530737eb778d395505fbb982da5.json",
+        "sha256": "9c5293de820e6ac8a6681fbda50698630edac530737eb778d395505fbb982da5",
+        "size": 186335
+      },
+      "source_versions": [
+        {
+          "ref": "decision_425e428410e0",
+          "response_version": "38",
+          "body_version": "38",
+          "observed_at": "2026-10-15 03:39:36 UTC",
+          "body_sha256": "a959010fc9b01df5e147557b43c47d9b144f90433ce88c39a11b6e5141a85dbe",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-a959010fc9b01df5e147557b43c47d9b144f90433ce88c39a11b6e5141a85dbe.md",
+            "sha256": "a959010fc9b01df5e147557b43c47d9b144f90433ce88c39a11b6e5141a85dbe",
+            "size": 43455
+          }
+        },
+        {
+          "ref": "decision_25eb93d803a4",
+          "response_version": "18",
+          "body_version": "18",
+          "observed_at": "2026-10-15 03:39:36 UTC",
+          "body_sha256": "8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf.md",
+            "sha256": "8d036d1efcfd55db915ade1f820025776b9a9a80f95587b2342d59723e069acf",
+            "size": 27358
+          }
+        }
+      ],
+      "origin": "base_batch_unchanged"
+    },
+    {
+      "protocol_id": "projection-family",
+      "scenario_id": "focus-revision-order",
+      "status": "simulated",
+      "coverage": "normal_arrival_and_late_old_response",
+      "temporal_scope": "observed_design_version_not_historical_commit",
+      "artifact": {
+        "address": "workspace_13209cb6666b/file/architecture-evidence/objects/protocol-scenario-c9284dbf9db0e9e080f9b0a7a277c8d0c8bc38f47971b868e77ef741f4e4b79b.json",
+        "sha256": "c9284dbf9db0e9e080f9b0a7a277c8d0c8bc38f47971b868e77ef741f4e4b79b",
+        "size": 25454
+      },
+      "source_versions": [
+        {
+          "ref": "decision_7a5ae487e2e9",
+          "response_version": "3",
+          "body_version": "3",
+          "observed_at": "2026-10-14 19:01:27 UTC",
+          "body_sha256": "fb5f55a53ad6ec1e40b94f80a7f23f2c12cbbcb0a3daa8251e6b351bb8d0079b",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-fb5f55a53ad6ec1e40b94f80a7f23f2c12cbbcb0a3daa8251e6b351bb8d0079b.md",
+            "sha256": "fb5f55a53ad6ec1e40b94f80a7f23f2c12cbbcb0a3daa8251e6b351bb8d0079b",
+            "size": 15795
+          }
+        },
+        {
+          "ref": "workspace_99815162505d/file/design/architecture.md",
+          "response_version": "c568e2e04d7d30cafbd12df053cd5512023126ba1d7808c07225bfe86015a1e7",
+          "body_version": "2",
+          "observed_at": "2026-10-14 19:01:27 UTC",
+          "body_sha256": "c568e2e04d7d30cafbd12df053cd5512023126ba1d7808c07225bfe86015a1e7",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-c568e2e04d7d30cafbd12df053cd5512023126ba1d7808c07225bfe86015a1e7.md",
+            "sha256": "c568e2e04d7d30cafbd12df053cd5512023126ba1d7808c07225bfe86015a1e7",
+            "size": 13027
+          }
+        }
+      ],
+      "origin": "base_batch_unchanged"
+    },
+    {
+      "protocol_id": "projection-family",
+      "scenario_id": "feedback-confirmation-budget",
+      "status": "simulated",
+      "coverage": "confirmed_rejected_activity_timeout_and_pending_budget",
+      "temporal_scope": "observed_design_version_not_historical_commit",
+      "artifact": {
+        "address": "workspace_13209cb6666b/file/architecture-evidence/objects/protocol-scenario-46f63e9cc5f80605dc7ec7dde9e589d93f10ff2b255f62230a00dfba141311e6.json",
+        "sha256": "46f63e9cc5f80605dc7ec7dde9e589d93f10ff2b255f62230a00dfba141311e6",
+        "size": 45043
+      },
+      "source_versions": [
+        {
+          "ref": "decision_7a5ae487e2e9",
+          "response_version": "3",
+          "body_version": "3",
+          "observed_at": "2026-10-14 19:01:27 UTC",
+          "body_sha256": "fb5f55a53ad6ec1e40b94f80a7f23f2c12cbbcb0a3daa8251e6b351bb8d0079b",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-fb5f55a53ad6ec1e40b94f80a7f23f2c12cbbcb0a3daa8251e6b351bb8d0079b.md",
+            "sha256": "fb5f55a53ad6ec1e40b94f80a7f23f2c12cbbcb0a3daa8251e6b351bb8d0079b",
+            "size": 15795
+          }
+        },
+        {
+          "ref": "decision_f67ae5e70793",
+          "response_version": "33",
+          "body_version": "33",
+          "observed_at": "2026-10-14 19:01:27 UTC",
+          "body_sha256": "86bc716215133297d347833970530d8182bbc470532acc83731ac6c16d656b3c",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-86bc716215133297d347833970530d8182bbc470532acc83731ac6c16d656b3c.md",
+            "sha256": "86bc716215133297d347833970530d8182bbc470532acc83731ac6c16d656b3c",
+            "size": 29438
+          }
+        },
+        {
+          "ref": "workspace_99815162505d/file/design/architecture.md",
+          "response_version": "c568e2e04d7d30cafbd12df053cd5512023126ba1d7808c07225bfe86015a1e7",
+          "body_version": "2",
+          "observed_at": "2026-10-14 19:01:27 UTC",
+          "body_sha256": "c568e2e04d7d30cafbd12df053cd5512023126ba1d7808c07225bfe86015a1e7",
+          "body": {
+            "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-c568e2e04d7d30cafbd12df053cd5512023126ba1d7808c07225bfe86015a1e7.md",
+            "sha256": "c568e2e04d7d30cafbd12df053cd5512023126ba1d7808c07225bfe86015a1e7",
+            "size": 13027
+          }
+        }
+      ],
+      "origin": "base_batch_unchanged"
+    },
+    {
+      "protocol_id": "resident-execution",
+      "scenario_id": "resident-submit-observe-project",
+      "status": "simulated",
+      "artifact": {
+        "address": "workspace_13209cb6666b/file/architecture-evidence/objects/protocol-scenario-1f8f7dbe4a4b3877e841d0e22ad9855462a72a3d4be58d979fa75c6fba868d41.json",
+        "sha256": "1f8f7dbe4a4b3877e841d0e22ad9855462a72a3d4be58d979fa75c6fba868d41",
+        "size": 14022
+      },
+      "origin": "supplement_v2",
+      "participant_mapping_source": "artifact.participants[].{id,module_id,role}"
+    },
+    {
+      "protocol_id": "provider-native",
+      "scenario_id": "codex-native-accepted-turn-recovery",
+      "status": "simulated",
+      "artifact": {
+        "address": "workspace_13209cb6666b/file/architecture-evidence/objects/protocol-scenario-e472f7cfdc0e48b5c5e2cb248095bed7403220b5bac4fc9b908132a04f7ac9fb.json",
+        "sha256": "e472f7cfdc0e48b5c5e2cb248095bed7403220b5bac4fc9b908132a04f7ac9fb",
+        "size": 15713
+      },
+      "origin": "supplement_v2",
+      "participant_mapping_source": "artifact.participants[].{id,module_id,role}"
+    }
+  ],
+  "loading": {
+    "selection": "pin exact supplement manifest plus exact base binding",
+    "atomicity": "Validate all selected relation/scenario/Design references before switching the supplement; mismatch leaves current batch intact.",
+    "current": "may silently revalidate discovery, but cannot attach this supplement to a different base without an explicit matching supplement",
+    "history_and_simulated": "pin selected immutable batch; current authorization still applies",
+    "no_global_discovery_mutation": true
+  }
+}

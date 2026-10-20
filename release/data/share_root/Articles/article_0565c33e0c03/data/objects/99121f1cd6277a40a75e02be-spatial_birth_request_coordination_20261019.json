@@ -1,0 +1,107 @@
+{
+  "task": "spatial_birth_request_coordination_20261019",
+  "status": "authorized_for_execution",
+  "owner": "resident_d3ccfa2d95b7",
+  "pi": "resident_afa3d4d6cf11",
+  "updated_at": "2026-10-18T20:27:35.544468+00:00",
+  "closes": {
+    "task": "resource_conditioned_growth_rule_20261019",
+    "handoff": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/handoff.json",
+    "sha256": "557f7c82043c06ce9db8edeb67ac042ff04cec6db991c98506aa1ac88778d2e2",
+    "conclusion": "四参数候选关闭；非零10提议均不合格，theta0与w0相同。greedy有身体收益但主要保旧体，0/8持续维护。余3484native/1533.025286worker秒封存。"
+  },
+  "evidence": {
+    "readout": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/growth_response_spatial_feasibility_readout_20261019.json",
+    "sha256": "1708eb7e69591bdf34501f456a6ee6b52340d0c8b09f8505a69ddba1b01c30dd",
+    "native_by_PI": 0,
+    "finding": "20实际保存贪心收据中11个在1e-12内、19个在1e-8内达到同after-actor状态的两核凸混合瞬时质量上界；第20个差.0003040074。19个中最大差3.4256e-9，不称逐值完全最优。15个上界为负。纯数组一跳支持源请求重分配20/20增加出生、18/20净正；它不是实际未来或能量上界。"
+  },
+  "question": "能否通过局部补生请求的空间协调，在保原规则删除与真实出生支付的条件下改善晚期组织替代？等量请求不同落点是否影响后续身体用途？",
+  "scope": "新的固定空间生成规则能力辨析；不是CEM续扫、寿命学习或已有因果机制已被证明。先将强greedy与此新动作比较，暂不训练writer。",
+  "budget": {
+    "native_cap": 3080,
+    "science_native": 3072,
+    "affected_native_checks_max": 8,
+    "worker_seconds_cap": 900,
+    "shutdown_reserve_worker_seconds": 120,
+    "cpu": 2,
+    "gpu": 0,
+    "unique_job": true,
+    "raw_cap_bytes": 1073741824,
+    "old_budget_used": 0,
+    "old_acquisition_replay": 0,
+    "baseline_native_replay": 0,
+    "science": "4个原128父×3新未来×256。4原greedy未来1024步仅精确只读；原别名不凑样本。非必要原生检查不运行。"
+  },
+  "control": "提交前读取research.desired_state/started，暂停停止不新增。由d3自己身份绑定runner控制；若同事项active/queued合并。无定时/自动重投，unknown native不重演。",
+  "parents": [
+    {
+      "seed": 202610195401,
+      "shape": "compact",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/validation_202610195401_compact_prefix/state128.bin",
+      "sha256": "ae5a5b26a48ff7565e9c0d6d4e30e50761d046e5a30a1667ce4060785dec2653",
+      "baseline": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/validation_202610195401_compact_prestate_greedy",
+      "configuration_sha256": "85a9db357df06a4ae6737d1051eb2797d676c9b4b79a566ff84b5234117b9db9"
+    },
+    {
+      "seed": 202610195401,
+      "shape": "double_lobe",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/validation_202610195401_double_lobe_prefix/state128.bin",
+      "sha256": "88132ae0098ca0d1c9f180792b0fd9ae563465e77d433642da783caf3c9c0e7f",
+      "baseline": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/validation_202610195401_double_lobe_prestate_greedy",
+      "configuration_sha256": "bb94731075a5a25b8744cfa4de5d2e1e506d057196a67c11c4bf44653d8053c0"
+    },
+    {
+      "seed": 202610195402,
+      "shape": "compact",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/validation_202610195402_compact_prefix/state128.bin",
+      "sha256": "0f1748036416d7e451e420d348b241ca2016e85cb609a0d99502909d5d93fc24",
+      "baseline": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/validation_202610195402_compact_prestate_greedy",
+      "configuration_sha256": "147f11701b452157f1c3e975ba8a8e8fd6b091a21301edb77f1660489f19ddde"
+    },
+    {
+      "seed": 202610195402,
+      "shape": "double_lobe",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/validation_202610195402_double_lobe_prefix/state128.bin",
+      "sha256": "1bf350e310f1a511d7ddc2fbcc2a125cac26b4cdabf578f25c3c275b487d51d1",
+      "baseline": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/validation_202610195402_double_lobe_prestate_greedy",
+      "configuration_sha256": "1e8a453d6b3fd70da928de13523e4120d181ad6bfe793bff6e5301c387395872"
+    }
+  ],
+  "fixed": {
+    "horizon": "clock128 ready→384；原输入tape、原有限供给/半衰/地图/gross不变。两已见seed×两初形为相关机制开发，不再称新留出。",
+    "old_physics": "原native actor、K、两核、dt、prestate_greedy的w、rule_death、出生物质来源/成本/热/新生E/模板继承、原独立joint-current-demand泵均不改。command0仍有被动运输。无回收/储备/额外P/F搬运。",
+    "allowed_change": "唯一改变是实际signed h生成rule_death和R=dt max(h,0)之后、原admit之前的正补生请求布局。死亡仍原D；所有新生继续真实消耗原P、F并用原survivor模板。",
+    "semantics": "请求只是生成指令，守恒请求量不等物质守恒。允许负h格同时接受邻居补生请求，这是明确新增生成能力。源需原neighborhood(survivor)>0，空格不是有经历的活发送者。",
+    "stage_information": "这是原生转换阶段的局部调节：只读已完成actor后的survivor、当前P、摄取后的F及原R，不读尚未发生的born或未来。与原prestate选择的信息时序不同，不把改进单归学习/预测。"
+  },
+  "local_rule": {
+    "quantities": "在同一次实际native的conversion前：s=after_actor_body−原D；support=原neighborhood(s)；C=支持存在时min(max(1−s,0),P,F/.42)，用原admit同一数值可支付规则；b0=min(R,C)（纯代数，不执行一次出生）；a=max(R−b0,0)且support>0，否则0；v=max(C−b0,0)。",
+    "proposals": "四邻周期格，一次同步Jacobi。定向每源i向j提a_i*v_j/sum_neighbor(v)，分母0不提；均匀每源向四邻各提a_i/4。各候选在接收者j按min(1,v_j/sum_incoming)同时缩放，拒绝留源；不迭代，不按边顺序抢占。",
+    "full_directed": "执行投影后定向fD。R_new=R−sum_out(fD)+sum_in(fD)，原admit只实际执行一次。",
+    "matched": "每个当前实际状态只算两个纯候选fD/fU。qD_i=sum_out fD、qU_i=sum_out fU，q_i=min(qD_i,qU_i)。分别按q_i/qD_i、q_i/qU_i缩放得mD/mU；零分母0。matched_directed或matched_uniform只执行所选m。",
+    "invariants": "所有边非负、每源out<=a、接收in<=v、sumR_new=sumR；原D不变。新admit可有舍入，量不增补，保拒绝/ULP差。匹配只指同一actual state的两个候选每源out相同，跨分化未来不称同流/同费。",
+    "expected_first_common_state": "matched D/U在共同首conversion的总born、全局M/E/热应相同至原数值容差，局部新生布局可不同。随后原泵可立即产生不同费用/后态，不要求post-settle E相同。此匹配后总量相等是代数设计，不作独立发现。",
+    "costs": "仍按原出生P/F、合成/模板热、原泵等实际收费。额外邻读/请求协调计算费0是显式模型假设，非全物理成本；实际runner时间全计。"
+  },
+  "arms": [
+    "baseline_prestate_greedy_readonly",
+    "full_directed",
+    "matched_directed",
+    "matched_uniform"
+  ],
+  "outcomes": {
+    "primary": "每条新轨4个预定64窗及末2窗：born>=death−1e-8、deltaE>=−1e-8、minM>=32；另报零容差。严格保旧门，不用末E/新生单项救维护。",
+    "comparisons": "fullD−旧greedy为新增空间能力整包效应，M/E/体时/真正post128留存/旧L128全列；matchedD−matchedU问同状态等量初始请求布局的后果。两者费用/未来q会分化，不给自然中介份额。fullD与matchedD分开报告，不能事后改主臂。",
+    "labels": "完整128父上L128=rho，实际K/keep推进、born0；三新臂和旧baseline共享此登记起点。旧founder和post128留存分列，累计born不是末留存。全死亡、欠付、失败、zero q与坏形态保留。",
+    "claims": "通过有限门不称无限稳态；fixed空间规则不是学得更新器。正效应不自动说明旧P缺乏是唯一原因，源/落点/未来组织与成本一同变化。"
+  },
+  "implementation": "使用隔离模块，冻结原源不回写；可以最小复制原conversion调用所在step并仅插入R变换，须逐段对齐原实现，或采取等效隔离hook。不要全局monkeypatch影响别的作业。复用旧保存实际收据检验关闭变换和纯重组，首正式科学步检验共同actor/rule/候选匹配；只有实有必要才用8步额外额度。",
+  "records": {
+    "every_step": "真实步标量M/E/输入/出口/全费用/出生/死亡/旧新存留及请求R总量、b0、headroom、两候选q、实际q、各守恒残差。记录attempted/returned/settled。",
+    "fields": "共同父128及各臂129/160/192/256/320/384真实场/收据，R/s/C/b0/a/v/fD/fU/mD/mU、所选路由、原/新R、actualborn、全部局部费用与L128。完整ready joint128/192/256/320/384，必要恢复每16步，不重复写所有完整大场。",
+    "visual": "亲看四context过程与预定首seed两形态请求/新组织/旧体，不将微小差异当新形态。图用于已有论文/投影在办项一次合并，不再广播旧包。"
+  },
+  "stop": "完成固定矩阵即收束并提交下一必要科学取舍；无自动延窗/改价/扩邻域/扫alpha/加CEM。若实现发现条件冲突或时间不足，保实际已完成和缺口，不重抽世界或借旧余额。",
+  "handoff": "d3一次enqueue_and_trigger直接承接实现和实际运行；成果需主理人继续科学选择时只提交一次具体请求。原论文/投影各合并现有在办请求，不逐层再报完成。"
+}

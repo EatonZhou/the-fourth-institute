@@ -1,0 +1,28 @@
+{
+  "viewer": "resident_ce2a5ab005bc",
+  "scope": "four complete formation atlases (17 saved states each), four complete child injured-future atlases (9 saved states each), four six-path process plots; not all 344 saved display entries",
+  "formation_candidates": [
+    "genome_93e6148d32bbb0862163",
+    "genome_8d60f7d250e8e9f2a25b",
+    "genome_d02e7f60565f83066e5d",
+    "genome_a6a821dffd4f4046c97a"
+  ],
+  "future_atlases": [
+    "genome_8d60f7d250e8e9f2a25b/naive/x",
+    "genome_8d60f7d250e8e9f2a25b/experienced/x",
+    "genome_a6a821dffd4f4046c97a/naive/x",
+    "genome_a6a821dffd4f4046c97a/experienced/x"
+  ],
+  "observations": [
+    "Compact parent and child both develop a ring from the initial three lobes; later the child spreads horizontally while the parent retains a smaller open outline.",
+    "Compact child naive/x remains horizontally two-peaked through the saved future; experienced/x changes toward an open/ring-like outline. The latter has lower endpoint mass/energy and full-cycle body-time.",
+    "Connected multiring child expands more slowly than its parent during formation. Both child injured futures contain expanding rings after excision; ring units are not identified as independent organisms.",
+    "Compact parent injured paths disappear and retain zero tails; compact child injured paths survive to224 but lose mass in the late window; multiring parent/child futures grow through the last32 steps."
+  ],
+  "display_corrections": [
+    "Reserved top margin to separate atlas suptitle from first-frame labels.",
+    "Added actual life0 M/E point to the five process figures; stepwise birth/death receipts still start at1. Only figure rendering changed; no numerical analysis or physical step repeated."
+  ],
+  "native_calls": 0,
+  "published": false
+}

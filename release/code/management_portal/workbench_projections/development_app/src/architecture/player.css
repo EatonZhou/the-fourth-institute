@@ -1,0 +1,80 @@
+.arch-player { color: var(--text, #e1e8ef); background: var(--panel, #17212b); border: 1px solid var(--border, #425164); border-radius: 12px; padding: 16px; min-width: 0; }
+.arch-player[hidden] { display: none; }
+.arch-player * { box-sizing: border-box; }
+.arch-player .arch-player-heading { display: flex; align-items: flex-start; flex-wrap: wrap; gap: 8px 16px; justify-content: space-between; }
+.arch-player h3 { margin: 0; font-size: 1.1rem; line-height: 1.5; }
+.arch-player .arch-player-badge { display: inline-block; border: 1px solid var(--accent, #6dc7f5); color: var(--accent, #6dc7f5); padding: 2px 8px; border-radius: 99px; font-size: .8rem; }
+.arch-player p { margin: 8px 0; line-height: 1.6; }
+.arch-player .arch-player-context { font-size: .85rem; opacity: .86; overflow-wrap: anywhere; }
+.arch-player .arch-player-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0; }
+.arch-player button, .arch-player select { font: inherit; color: var(--text, #e1e8ef); border: 1px solid var(--border, #425164); background: var(--bg, #101820); border-radius: 5px; padding: 6px 10px; }
+.arch-player button { cursor: pointer; }
+.arch-player button:disabled { opacity: .5; cursor: default; }
+.arch-player button:focus-visible, .arch-player select:focus-visible, .arch-player summary:focus-visible, .arch-player .arch-player-diagram:focus-visible { outline: 2px solid var(--accent, #6dc7f5); outline-offset: 2px; }
+.arch-player .arch-player-choice { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.arch-player select { max-width: 100%; }
+.arch-player .arch-player-motion { display: inline-flex; gap: 5px; align-items: center; font-size: .86rem; }
+.arch-player .arch-player-condition { border-left: 3px solid var(--accent, #6dc7f5); padding-left: 10px; }
+.arch-player .arch-player-diagram { max-height: 480px; overflow: auto; border: 1px solid var(--border, #425164); border-radius: 8px; background: var(--bg, #101820); }
+.arch-player .arch-player-diagram svg { display: block; width: 100%; min-width: 640px; height: auto; }
+.arch-player .arch-player-track { min-width: 640px; }
+.arch-player .arch-player-lane-header { position: sticky; top: 0; z-index: 1; display: grid; gap: 0; background: var(--bg, #101820); border-bottom: 1px solid var(--border, #425164); padding-top: 10px; padding-bottom: 10px; }
+.arch-player .arch-player-role-label { text-align: center; padding: 0 8px; overflow-wrap: anywhere; font-size: 12px; line-height: 1.5; }
+.arch-player .arch-player-role-label strong { display: block; margin-bottom: 6px; }
+.arch-player .arch-player-role-label span { display: block; font-size: 11px; opacity: .75; }
+.arch-player .arch-player-lane { stroke: var(--border, #425164); stroke-dasharray: 5 5; }
+.arch-player .arch-player-role { fill: var(--text, #e1e8ef); font-size: 12px; font-weight: 600; }
+.arch-player .arch-player-module { fill: var(--text, #e1e8ef); opacity: .7; font-size: 11px; }
+.arch-player .arch-player-message { stroke: var(--text, #e1e8ef); fill: none; stroke-width: 1.5; }
+.arch-player .arch-player-arrow { fill: var(--text, #e1e8ef); }
+.arch-player .arch-player-row { opacity: .76; }
+.arch-player .arch-player-row[data-state="future"] { opacity: .4; }
+.arch-player .arch-player-row[data-state="future"] .arch-player-message { stroke-dasharray: 5 4; }
+.arch-player .arch-player-row[data-state="active"] { opacity: 1; }
+.arch-player .arch-player-row[data-state="active"] .arch-player-message { stroke: var(--accent, #6dc7f5); stroke-width: 3; }
+.arch-player .arch-player-row[data-state="active"] .arch-player-arrow { fill: var(--accent, #6dc7f5); }
+.arch-player .arch-player-row[data-state="active"] .arch-player-caption { fill: var(--accent, #6dc7f5); font-weight: 700; }
+.arch-player .arch-player-caption { fill: var(--text, #e1e8ef); font-size: 12px; }
+.arch-player .arch-player-pulse { fill: var(--accent, #6dc7f5); }
+.arch-player .arch-player-legend { font-size: .8rem; opacity: .8; }
+.arch-player .arch-player-details { margin-top: 14px; }
+.arch-player .arch-player-details h4 { margin: 0 0 8px; font-size: 1rem; }
+.arch-player dl { margin: 0; display: grid; grid-template-columns: 5em minmax(0, 1fr); gap: 8px; }
+.arch-player dt { opacity: .7; }
+.arch-player dd { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; line-height: 1.5; }
+.arch-player .arch-player-state { margin-top: 12px; padding: 10px 12px; background: var(--bg, #101820); border-radius: 6px; border: 1px solid var(--border, #425164); }
+.arch-player .arch-player-budget { width: 100%; height: 7px; accent-color: var(--accent, #6dc7f5); }
+.arch-player .arch-player-evidence { border-top: 1px solid var(--border, #425164); margin-top: 14px; padding-top: 10px; }
+.arch-player details { margin-top: 8px; }
+.arch-player summary { cursor: pointer; line-height: 1.6; }
+.arch-player .arch-player-source { border-left: 2px solid var(--border, #425164); padding: 4px 10px; margin: 10px 0; overflow-wrap: anywhere; }
+.arch-player .arch-player-source pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; font-size: .85rem; line-height: 1.5; }
+.arch-player .arch-player-step-list { padding-left: 24px; line-height: 1.5; }
+.arch-player .arch-player-step-list li { margin: 8px 0; }
+.arch-player .arch-player-step-list button { text-align: left; }
+.arch-player .arch-player-step-list [aria-current="step"] { border-color: var(--accent, #6dc7f5); }
+.arch-player .arch-player-error { color: var(--text, #e1e8ef); border-left: 3px solid #dc6d67; padding-left: 10px; }
+@media (max-width: 600px) {
+  .arch-player { padding: 10px; }
+  .arch-player dl { grid-template-columns: 1fr; gap: 4px; }
+  .arch-player dd { margin-bottom: 8px; }
+  .arch-player .arch-player-controls { gap: 6px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .arch-player .arch-player-pulse { display: none; }
+}
+
+/* Keep the actual message and compact role lanes in the first viewport. */
+.arch-app .arch-player h3{margin:0;font-size:15px;line-height:1.4}
+.arch-player{padding:10px}
+.arch-player .arch-player-heading{align-items:center;gap:6px;margin-bottom:8px}
+.arch-player .arch-player-heading h3{flex:1 1 210px}
+.arch-player .arch-player-choice{flex-wrap:nowrap;font-size:13px}
+.arch-player .arch-player-choice select{min-width:0;flex:1}
+.arch-player .arch-player-controls{margin:8px 0;gap:6px}
+.arch-player .arch-player-condition{font-size:13px;line-height:1.5;margin:6px 0}
+.arch-player .arch-player-current{font-size:13px;font-weight:600;margin:6px 0}
+.arch-player .arch-player-role-label{padding:0 3px;overflow-wrap:normal;line-height:1.3;font-size:12px}
+.arch-player .arch-player-role-label strong{margin:0}
+.arch-player .arch-player-lane-header{padding-top:8px;padding-bottom:8px}
+.arch-player .arch-player-diagram{height:300px;max-height:45vh}

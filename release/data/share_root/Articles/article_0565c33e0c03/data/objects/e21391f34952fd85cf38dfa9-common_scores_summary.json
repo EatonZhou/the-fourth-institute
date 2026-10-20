@@ -1,0 +1,26 @@
+[
+  {
+    "world": "stable",
+    "events": 307,
+    "error_directed": 0.16832478565014417,
+    "error_random": 0.1632592429021994,
+    "scheduled_random": 0.16631339409489246,
+    "ema_greedy": 0.17539567662585517
+  },
+  {
+    "world": "persistent",
+    "events": 335,
+    "error_directed": 0.2315177396903021,
+    "error_random": 0.2333052703112091,
+    "scheduled_random": 0.22834708694978703,
+    "ema_greedy": 0.2224703391255279
+  },
+  {
+    "world": "iid",
+    "events": 156,
+    "error_directed": 0.3340846586427074,
+    "error_random": 0.3160229938797294,
+    "scheduled_random": 0.3315482203853564,
+    "ema_greedy": 0.3066689097861969
+  }
+]

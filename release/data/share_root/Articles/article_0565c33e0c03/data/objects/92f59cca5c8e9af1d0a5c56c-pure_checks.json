@@ -1,0 +1,7 @@
+{
+  "native": 0,
+  "transport_linear": true,
+  "conservative": true,
+  "full_death": true,
+  "birth_age0": "tested at every recorded birth; never deleted during its birth step"
+}

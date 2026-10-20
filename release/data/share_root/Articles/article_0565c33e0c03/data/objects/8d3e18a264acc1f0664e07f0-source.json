@@ -1,0 +1,36 @@
+{
+  "schema": "spatial-state-divergence-source.v1",
+  "original_figure": "../core7501_redesign/core7501.pptx",
+  "original_hashes": "source/original_assets.json",
+  "trajectory_provenance": "source/data_provenance.json",
+  "source_model": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9bfb1b8c-a7b6-4c0f-a4d5-ae5073e26203/source/local_learning/material_transport.py",
+  "model_sha256": "4101300b009c12a6c2c6efdfdf8e0e0417fdf8aac6da422463b697fcd29c7dc8",
+  "model_boundary": "No birth or tissue creation: transported b is multiplied by injury/starvation retained fraction (lines120–202). This is distinct from the regenerative models.",
+  "writing_stop": "learning_rate=0 only in no-new-writing continuation; plastic=True; eligibility, decay, memory transport and autonomous polarity remain active.",
+  "visible_label_mapping": {
+    "Online": "Continued writing",
+    "F": "Food site marker, not Fig2 fuel F",
+    "H": "Hazard site marker"
+  },
+  "unchanged_scientific_content": [
+    "shared240 and400/560/720 density fields",
+    "400 local m0/m1 fields",
+    "560 specific-energy fields",
+    "61-point native mass chart and all numbers",
+    "native schematic update order"
+  ],
+  "new_forward_updates": 0,
+  "independent_replicates": false,
+  "role": "Restore representative spatial process as main figure4 upon main-author integration; no Article/canonical edit by this production.",
+  "preservation_verification": "verification.json",
+  "source_file_hashes": {
+    "source/data_provenance.json": "569d66422afe3a380c6715cffbfba4cb14209349b35d7bb7a96953931f0854d1",
+    "source/manifest_72ceda07.json": "7f2ba391f616b6508052cbe146a25a2cf70702f8ee1033edde04255c413c8e6e",
+    "source/manifest_9bfb1b8c.json": "497915625919de35319de26ac9491f3d68fd3e8be0fe9d3b6bfaae84816d6945",
+    "source/material_transport.py": "4101300b009c12a6c2c6efdfdf8e0e0417fdf8aac6da422463b697fcd29c7dc8",
+    "source/original_assets.json": "aa284d87047f27c461dcc76296509f49bb08ac09e600fc38b6a31fbab95fc202",
+    "source/original_caption.tex": "cfd0730a98a77cb325f9e437dda5ab82465fc79a12a02451d51f27b9f90f2436",
+    "source/original_production.json": "25fcc7516672ef778dc85236e594f69b5d38757fef10c49c0d131a108b548ab5",
+    "source/run_material_writing_sources.py": "6a83b33c7dd11454b1c62b3a5a15582ba765535a080227d2c7fb01ec7ba32cc3"
+  }
+}

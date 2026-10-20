@@ -1,0 +1,238 @@
+{
+  "schema": "experience-rule-initial-factorial-authorization.v1",
+  "revision": 2,
+  "status": "authorized_prepare_then_single_native_run",
+  "scientific_owner": "resident_afa3d4d6cf11",
+  "algorithm_owner": "resident_d3ccfa2d95b7",
+  "native_host_owner": "resident_ce2a5ab005bc",
+  "shared_key": "research.experience_rule_initial_factorial_20261018",
+  "execution_key": "ce2-experience-rule-initial-factorial-20261018-v1",
+  "question": "Which lifetime-fixed rule package and neutral initial-state package account for the observed parent-offspring differences in formation, injury survival and the full cost of conditioning, and do their effects interact? This is an exploratory component intervention after observing the 2432 batch, not a confirmatory independent replication or pure morphology mediation.",
+  "source_handoff": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/handoff.json",
+  "source_handoff_sha256": "b167d527f0ba7ee39d4730221ee805d1b0212ff4a61767dd25d6bbe020cf00ee",
+  "source_manifest": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/candidate_manifest.json",
+  "source_manifest_sha256": "323671cef21d7992236fea957d4d16d5f0e39b478d3e20cc5f7a9ab1393c43b4",
+  "source_candidates": [
+    {
+      "id": "genome_93e6148d32bbb0862163",
+      "snapshot": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/candidates/genome_93e6148d32bbb0862163.npz",
+      "snapshot_sha256": "cfc25c642daa522c210b790b44ef1ac6ac9251e4d479a4ffd0e185d2e953aeeb",
+      "genome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/genomes/genome_93e6148d32bbb0862163.json",
+      "genome_sha256": "09bf2462010cb3e2041e06a9f04ae21c51e2a162e561c3d4adf1ba4bce23e2d5",
+      "reference96": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/references/genome_93e6148d32bbb0862163-embedded-life0.npz",
+      "reference96_sha256": "472e50b1c73e7cbfe4b68d73aaaf1e906d4544696d3a9f120ede04124626f9ec"
+    },
+    {
+      "id": "genome_8d60f7d250e8e9f2a25b",
+      "snapshot": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/candidates/genome_8d60f7d250e8e9f2a25b.npz",
+      "snapshot_sha256": "3fae7135bd9572011a4cdbf2bf174e96832481bca6f1de24277fc8894ea0d4a1",
+      "genome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/genomes/genome_8d60f7d250e8e9f2a25b.json",
+      "genome_sha256": "4c2cb8f434927c3c754e788ba270001e9b295fe1acd4f1fc715a422b6829d33e",
+      "reference96": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/references/genome_93e6148d32bbb0862163-embedded-life0.npz",
+      "reference96_sha256": "472e50b1c73e7cbfe4b68d73aaaf1e906d4544696d3a9f120ede04124626f9ec"
+    },
+    {
+      "id": "genome_d02e7f60565f83066e5d",
+      "snapshot": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/candidates/genome_d02e7f60565f83066e5d.npz",
+      "snapshot_sha256": "ff37d942c7168eeb4832aa42f0f94d14ceaa86ca8e454741efe4a183e049a185",
+      "genome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/genomes/genome_d02e7f60565f83066e5d.json",
+      "genome_sha256": "58891d508dbd892ad6fd2adc95b0416a250ba80b428139d4c1f7eb4d720cb507",
+      "reference96": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/references/genome_d02e7f60565f83066e5d-embedded-life0.npz",
+      "reference96_sha256": "c5f8ab0600edafb27bd5bb9e99796c2e66c4af059171835762542972d8f5a17a"
+    },
+    {
+      "id": "genome_a6a821dffd4f4046c97a",
+      "snapshot": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/candidates/genome_a6a821dffd4f4046c97a.npz",
+      "snapshot_sha256": "7efd847ad3efa0db001afe56a162b297d3a536ec48326890d4b09b6ceb793b4a",
+      "genome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/genomes/genome_a6a821dffd4f4046c97a.json",
+      "genome_sha256": "b788fa270a4c40f0e8a67f7efb304c40ef3133566e0a1d682a11d80948c907ad",
+      "reference96": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/references/genome_d02e7f60565f83066e5d-embedded-life0.npz",
+      "reference96_sha256": "c5f8ab0600edafb27bd5bb9e99796c2e66c4af059171835762542972d8f5a17a"
+    }
+  ],
+  "new_candidates": [
+    {
+      "family": "compact",
+      "slot": "compact__offspring_rule_parent_initial",
+      "rule_source": "genome_8d60f7d250e8e9f2a25b",
+      "initial_source": "genome_93e6148d32bbb0862163"
+    },
+    {
+      "family": "compact",
+      "slot": "compact__parent_rule_offspring_initial",
+      "rule_source": "genome_93e6148d32bbb0862163",
+      "initial_source": "genome_8d60f7d250e8e9f2a25b"
+    },
+    {
+      "family": "multi_ring",
+      "slot": "multi_ring__offspring_rule_parent_initial",
+      "rule_source": "genome_a6a821dffd4f4046c97a",
+      "initial_source": "genome_d02e7f60565f83066e5d"
+    },
+    {
+      "family": "multi_ring",
+      "slot": "multi_ring__parent_rule_offspring_initial",
+      "rule_source": "genome_d02e7f60565f83066e5d",
+      "initial_source": "genome_a6a821dffd4f4046c97a"
+    }
+  ],
+  "component_contract": {
+    "rule": "Copy the two authoritative kernel arrays and entire body_rule (both responses and their mixture) exactly from the declared rule source. No new kernel normalization, interpolation, radial mutation or parameter tuning.",
+    "initial": "Copy rho0 exactly from the initial source; use ce2 build_life0 for the original neutral energy=.8rho, founder_mass and polarity, requiring exact equality to the corresponding source initial fields. P/F and every other environmental/neutral field remain the family reference. Do not transplant an acquired state.",
+    "field_check": "Before any forward, compare all 18 fields/config to the declared source combination; incompatible non-target fields reject this candidate and are reported, not silently repaired or substituted. Equal total M/E, grid96, zero exterior and integer-offset kernels remain. Rule and initial source identity must both be recorded.",
+    "identity": "Use content-addressed IDs and record both source IDs/hashes plus explicit rule/initial selector and named gene provenance; snapshot arrays are authoritative. Do not pretend a generic rematerialization is byte-identical when it renormalizes unchanged components.",
+    "scope": "Initial intervention includes the associated neutral energy/founder/polarity distribution, not geometry alone; rule package is not separated into individual genes. Each individual keeps its rule fixed throughout life."
+  },
+  "body_cap": 1792,
+  "independent_energy_cap": 0,
+  "preview_cap": 0,
+  "replay_cap": 0,
+  "budget_decomposition": {
+    "new_candidates": 4,
+    "per_candidate": 448,
+    "formation": {
+      "branches": 4,
+      "steps_each": 128,
+      "total": 512
+    },
+    "acquisition": {
+      "branches": 8,
+      "steps_each": 32,
+      "total": 256
+    },
+    "future": {
+      "branches": 16,
+      "steps_each": 64,
+      "total": 1024
+    },
+    "new_stages": 28,
+    "new_full_paths": 16,
+    "old_selected_unique_steps_readonly": 1792,
+    "old_selected_full_paths": 16
+  },
+  "stage_template": [
+    {
+      "stage": "formation",
+      "start": 0,
+      "end": 128,
+      "transport": "T00",
+      "pulses": []
+    },
+    {
+      "stage": "acquisition",
+      "history": "naive",
+      "parent": "formation",
+      "start": 128,
+      "end": 160,
+      "transport": "T11",
+      "pulses": []
+    },
+    {
+      "stage": "acquisition",
+      "history": "experienced",
+      "parent": "formation",
+      "start": 128,
+      "end": 160,
+      "transport": "T11",
+      "pulses": [
+        {
+          "before_step": 129,
+          "fraction": 0.1,
+          "direction": "+x"
+        },
+        {
+          "before_step": 145,
+          "fraction": 0.1,
+          "direction": "+x"
+        }
+      ]
+    },
+    {
+      "stage": "future",
+      "histories": [
+        "naive",
+        "experienced"
+      ],
+      "challenges": [
+        "none",
+        "x"
+      ],
+      "start": 160,
+      "end": 224,
+      "transport": "T11",
+      "pulse_if_x": {
+        "before_step": 161,
+        "fraction": 0.2,
+        "direction": "+x"
+      }
+    }
+  ],
+  "physics": {
+    "lifetime_rule_fixed": true,
+    "policy": "fresh_brake",
+    "learn": false,
+    "uptake": "open_a1",
+    "dt": 0.05,
+    "transport": {
+      "D": 1.0,
+      "price_P": 0.02,
+      "price_F": 0.02
+    },
+    "grid": 96,
+    "seed": 202610180401,
+    "draws": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/draws001_224.npy",
+    "draws_sha256": "985ec671b00f346e7ba414e6460a68ac274f95fc4b317a100cc6399fad55a293",
+    "forcing": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/forcing001_224.npz",
+    "forcing_sha256": "65fb316a56a7b2b15123b954bfabe580a7d232ea544d3615cc669faeeba28993",
+    "host_interface": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/experience_adaptation_host/interface.py",
+    "host_interface_sha256": "b4ae75ca53bacb912a418d3e9fa4bcdc96cda17e5f6ff20cc96d5da83c1cb7bc",
+    "embedding": "Literal components from the already frozen new96 life0 exports; original central16:80/zero exterior and integer kernel offsets remain. Each new combination undergoes all128 formation steps; no reached-state prefix substitution."
+  },
+  "branch_semantics": [
+    "Each of four new rule/initial combinations starts at life0. Bind T00 before the first step and form once through128.",
+    "At128 independently restore full ready into naive and experienced T11 acquisitions129..160, preserving all carried fields and accounts. Only resource capability switches; lifetime rule remains fixed.",
+    "Experienced alone receives10%+x before129 and145; each history at160 independently forks none and20%+x before161 through224.",
+    "Two acquisitions and four futures per new candidate. No new low_cost_T00 acquisition/future. Old low_cost_T00 evidence remains sealed context.",
+    "Use original InteractionRuntime restoration for exact flags and atomic ready; no acquired-state reset, resupply, rule switch, shared mutable siblings or unknown-inflight replay."
+  ],
+  "execution_controls": {
+    "runner_owner": "resident_ce2a5ab005bc",
+    "single_execution_key": true,
+    "one_research_job_slot": true,
+    "cpu_threads": 2,
+    "gpu_slots": 0,
+    "read_control_before_submit": "research.desired_state must be running and research.started true; obey pause/stop at boundaries",
+    "raw_root": "/data dedicated per-job directory",
+    "min_free_bytes": 4294967296,
+    "no_preview_or_old_replay": true,
+    "attempt_accounting": "all attempted native steps count, failed attempts cannot be replaced outside cap; old completed caps untouched",
+    "new_binding_checks": "Only new component-combination identity/loader and necessary dispatch boundaries; reuse unchanged T00/T11/ready checks, do not rerun old suites.",
+    "restore_boundary": "complete atomic ready only; unknown inflight rejects, no automatic physical replay",
+    "early_extinction": "keep all scheduled absolute endpoints and zero tails; dead/invalid candidates retained as failures, no substitutes or rescue parameter changes"
+  },
+  "draws": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/draws001_224.npy",
+  "draws_sha256": "985ec671b00f346e7ba414e6460a68ac274f95fc4b317a100cc6399fad55a293",
+  "forcing": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/forcing001_224.npz",
+  "forcing_sha256": "65fb316a56a7b2b15123b954bfabe580a7d232ea544d3615cc669faeeba28993",
+  "old_controls": "For each family, rule-parent/initial-parent and rule-offspring/initial-offspring are the completed 2432 candidate paths. Reuse exactly their formation, naive/experienced acquisitions and none/x futures; no old path replay. Old low_cost_T00 paths remain archived context; no new T00 follow-up arm.",
+  "reporting": {
+    "factorial": "Within each family and matched history/challenge retain all four absolute trajectories, rule simple effects at each initial state, initial simple effects at each rule, and R1I1-R1I0-R0I1+R0I0. Keep endpoints M/E, 0..224 and128..224 body-time, birth/death, actual removed M/E and all EU/F accounts. Complete cumulative/fixed/negative windows stay in source; use a concise synthesis.",
+    "experience": "For every combination show experienced-minus-naive with the acquisition included, none and x separately. Differences of injury penalties remain diagnostics, not adaptive selection. Keep fixed frozen archive criteria unchanged; component effect does not establish memory/learning.",
+    "dynamic": "Keep original-coordinate common-scale formation and injured raw sequences; retain early failures and complete zero tails. Measure whether compact double-peak vs open/ring outcomes and multi-ring growth associate with rule or initialization; do not pre-label outcomes or select only favorable frames.",
+    "limits": "Shared tape, two deliberately selected families, dependent branches and actual cut-dose differences. Body-time includes scale; no independent replication, stable recovery or long-term safety inference."
+  },
+  "execution_handoff": "d3 exports the four exact combinations at cap0 and freezes SHA manifest; ce2 consumes that handoff, performs only necessary new loader/dispatch checks, records concrete candidate/plan/source SHA, then may submit the one1792 job under this authorization without another PI approval. Re-read research.desired_state and started before submission and each long stage. If source semantics or cost differ, stop and report; no replacement candidate/extra budget/retry outside cap.",
+  "result_root": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_rule_initial_factorial_20261018",
+  "sealed_predecessors": [
+    "experience_adaptation_outer_search cap0",
+    "experience_adaptation_outer_search_native2432",
+    "conditioning704",
+    "reciprocal448",
+    "all older independent budgets"
+  ],
+  "supersedes": {
+    "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/experience_rule_initial_factorial_20261018.v1.json",
+    "sha256": "10f7480e320828bbe119241edea29f30b6dfbe322ab4f67644c0e5f007c3dcba",
+    "reason": "Before any task dispatch, correct inherited prose mentioning three histories; this batch has only naive/experienced T11, as already specified by the stage template and1792 budget."
+  }
+}

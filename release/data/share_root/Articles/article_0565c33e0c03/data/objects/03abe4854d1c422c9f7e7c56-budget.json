@@ -1,0 +1,38 @@
+{
+  "cap_native": 6144,
+  "actual_native": 5186,
+  "committed": 5186,
+  "failed_native": 0,
+  "failed_jobs": 1,
+  "worker_seconds": 508.24962800000003,
+  "worker_cap": 1200,
+  "development_native": 1216,
+  "boundary_native": 2,
+  "heldout_native": 3968,
+  "raw_bytes": 628830175,
+  "raw_cap": 1073741824,
+  "old_prefix_replay": 0,
+  "missing_scalar_receipt_native": 1,
+  "missing_scope": "failed logging job development384->385; real full385 state retained and resumed",
+  "jobs": [
+    {
+      "id": "91308130-146d-4f81-942f-061cd2fabada",
+      "status": "failed",
+      "returncode": 1,
+      "started_at": "2026-10-18T16:53:28.926984+00:00",
+      "finished_at": "2026-10-18T16:53:31.037616+00:00",
+      "worker_seconds": 4.221264
+    },
+    {
+      "id": "3aaf67a7-25b8-4230-b8a6-d0eb3703d83e",
+      "status": "completed",
+      "returncode": 0,
+      "started_at": "2026-10-18T16:54:48.092804+00:00",
+      "finished_at": "2026-10-18T16:59:00.106986+00:00",
+      "worker_seconds": 504.028364
+    }
+  ],
+  "unused_native": 958,
+  "unused_worker_seconds": 691.750372,
+  "unused_sealed": true
+}

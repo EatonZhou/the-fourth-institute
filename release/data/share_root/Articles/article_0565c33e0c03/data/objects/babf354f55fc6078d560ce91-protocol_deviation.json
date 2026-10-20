@@ -1,0 +1,153 @@
+{
+  "status": "partial_protocol",
+  "runner_completed": true,
+  "defect": "Frozen rank() filtered all ineligible reproduction parents whenever any eligible parent existed. One eligible parent therefore yielded one parent, contrary to requested two distinct parents.",
+  "actual_parents": [
+    "g1_f2_c0"
+  ],
+  "requested_parent_count": 2,
+  "actual_children": 2,
+  "requested_children": 4,
+  "missing_native": 1024,
+  "correction_proposal": "Qualified Pareto order first, then fallback order among remaining complete rules until two reproduction slots filled. Deployment remains strictly qualified only.",
+  "corrected_proposal_parents": [
+    "g1_f2_c0",
+    "g1_f1_c0"
+  ],
+  "unexecuted_second_parent_children": [
+    {
+      "id": "g2_p1_c0",
+      "generation": 2,
+      "family": "ring",
+      "genome": {
+        "schema": "experience-adaptation-genome.v1",
+        "id": "genome_0b6c87f22ba6718d578e",
+        "family": "ring",
+        "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/core_ring--connected_trilobe.npz",
+        "source_sha256": "a878d57858176d7701fc00bc8b7e6e2fa6139a6c2e73047b5f69b7c9c0ea99cd",
+        "genes": [
+          0.03755708980765578,
+          -0.02619124974557332,
+          -0.04684321545633779,
+          0.01962503610844337,
+          -0.020346858952410136,
+          -0.05931794944299097,
+          -0.004806517083653566,
+          0.016209253859840594,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "parent_id": "genome_68dc2655fca077092477",
+        "generation": 1,
+        "mutation_seed": 202610193003,
+        "named_genes": {
+          "log_mu1": 0.03755708980765578,
+          "log_mu2": -0.02619124974557332,
+          "log_sigma1": -0.04684321545633779,
+          "log_sigma2": 0.01962503610844337,
+          "weight_shift": -0.020346858952410136,
+          "kernel_radial1": -0.05931794944299097,
+          "kernel_radial2": -0.004806517083653566,
+          "kernel_crossmix": 0.016209253859840594,
+          "log_stretch_y": 0.0,
+          "log_stretch_x": 0.0,
+          "neck_density": 0.0
+        },
+        "lifetime_rule": "fixed; only outer generations mutate"
+      },
+      "parent_candidate": "g1_f1_c0",
+      "kernel_log_scales": [
+        -0.06,
+        0.06
+      ],
+      "legal": true,
+      "mutation_seed": 202610193003,
+      "proposed_genes": [
+        0.03755708980765578,
+        -0.02619124974557332,
+        -0.04684321545633779,
+        0.01962503610844337,
+        -0.020346858952410136,
+        -0.05931794944299097,
+        -0.004806517083653566,
+        0.016209253859840594,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "id": "g2_p1_c1",
+      "generation": 2,
+      "family": "ring",
+      "genome": {
+        "schema": "experience-adaptation-genome.v1",
+        "id": "genome_d1c2ffb178c53a5cbf15",
+        "family": "ring",
+        "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/core_ring--connected_trilobe.npz",
+        "source_sha256": "a878d57858176d7701fc00bc8b7e6e2fa6139a6c2e73047b5f69b7c9c0ea99cd",
+        "genes": [
+          0.01893809175855024,
+          -0.018388119745427013,
+          -0.028849519744393988,
+          -0.0014397558237436536,
+          0.0038786280020760514,
+          0.08264235876522656,
+          0.036628039420373244,
+          0.04335723970989488,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "parent_id": "genome_68dc2655fca077092477",
+        "generation": 1,
+        "mutation_seed": 202610193004,
+        "named_genes": {
+          "log_mu1": 0.01893809175855024,
+          "log_mu2": -0.018388119745427013,
+          "log_sigma1": -0.028849519744393988,
+          "log_sigma2": -0.0014397558237436536,
+          "weight_shift": 0.0038786280020760514,
+          "kernel_radial1": 0.08264235876522656,
+          "kernel_radial2": 0.036628039420373244,
+          "kernel_crossmix": 0.04335723970989488,
+          "log_stretch_y": 0.0,
+          "log_stretch_x": 0.0,
+          "neck_density": 0.0
+        },
+        "lifetime_rule": "fixed; only outer generations mutate"
+      },
+      "parent_candidate": "g1_f1_c0",
+      "kernel_log_scales": [
+        -0.06,
+        0.06
+      ],
+      "legal": true,
+      "mutation_seed": 202610193004,
+      "proposed_genes": [
+        0.01893809175855024,
+        -0.018388119745427013,
+        -0.028849519744393988,
+        -0.0014397558237436536,
+        0.0038786280020760514,
+        0.08264235876522656,
+        0.036628039420373244,
+        0.04335723970989488,
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  ],
+  "original_frozen_source_unchanged": true,
+  "correction_source": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/turnover_compatible_morphogenesis/selection_completion.py",
+    "sha256": "d898c8113fca1cb1a7fe264e407931a9c5516bf9fb2562750cab5ec235a1c8fe",
+    "bytes": 1061
+  },
+  "pure_regression_passed": true,
+  "native_executed_by_correction": 0,
+  "limits": "Selected g2_p0_c0 is only first among TWO observed children. Missing children are not negative outcomes and may change selection. No population-wide best-rule claim.",
+  "continuation_requires_new_decision": "Single-job constraint has been used; no second job or retroactive selection change was performed. PI receives a concrete missing-branch decision request."
+}

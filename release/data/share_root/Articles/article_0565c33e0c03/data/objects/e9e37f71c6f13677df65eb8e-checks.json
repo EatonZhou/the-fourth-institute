@@ -1,0 +1,157 @@
+{
+  "status": "passed_cap0",
+  "candidates": [
+    {
+      "candidate": "genome_8a9ce6d23c3acf3e2fce",
+      "complete_18_field_roundtrip": true,
+      "host_config_roundtrip": true,
+      "one_materialize_call": true,
+      "neutral_clock": 0,
+      "M_error": 0.0,
+      "E_error": 0.0,
+      "kernel_sum_errors": [
+        0.0,
+        0.0
+      ],
+      "body_L1": 17.641035285718672,
+      "kernel_L1": 0.10509685910778069,
+      "all_outside_fields_zero": true,
+      "unchanged_inventories_and_neutral_fields": true
+    },
+    {
+      "candidate": "genome_263c8a617a8734da20b4",
+      "complete_18_field_roundtrip": true,
+      "host_config_roundtrip": true,
+      "one_materialize_call": true,
+      "neutral_clock": 0,
+      "M_error": 0.0,
+      "E_error": 1.4210854715202004e-14,
+      "kernel_sum_errors": [
+        0.0,
+        0.0
+      ],
+      "body_L1": 14.078390157207398,
+      "kernel_L1": 0.1593844923702658,
+      "all_outside_fields_zero": true,
+      "unchanged_inventories_and_neutral_fields": true
+    },
+    {
+      "candidate": "genome_009dfb62455ffa95b7af",
+      "complete_18_field_roundtrip": true,
+      "host_config_roundtrip": true,
+      "one_materialize_call": true,
+      "neutral_clock": 0,
+      "M_error": 0.0,
+      "E_error": 7.105427357601002e-15,
+      "kernel_sum_errors": [
+        0.0,
+        0.0
+      ],
+      "body_L1": 11.278869636233123,
+      "kernel_L1": 0.4903550487904607,
+      "all_outside_fields_zero": true,
+      "unchanged_inventories_and_neutral_fields": true
+    },
+    {
+      "candidate": "genome_31f3a3913b57bc13b2c0",
+      "complete_18_field_roundtrip": true,
+      "host_config_roundtrip": true,
+      "one_materialize_call": true,
+      "neutral_clock": 0,
+      "M_error": -1.4210854715202004e-14,
+      "E_error": -1.4210854715202004e-14,
+      "kernel_sum_errors": [
+        0.0,
+        0.0
+      ],
+      "body_L1": 9.695975893860943,
+      "kernel_L1": 0.39943797767386613,
+      "all_outside_fields_zero": true,
+      "unchanged_inventories_and_neutral_fields": true
+    },
+    {
+      "candidate": "genome_fa17a0d7ba9d7e8045f4",
+      "complete_18_field_roundtrip": true,
+      "host_config_roundtrip": true,
+      "one_materialize_call": true,
+      "neutral_clock": 0,
+      "M_error": -1.4210854715202004e-14,
+      "E_error": 0.0,
+      "kernel_sum_errors": [
+        -1.1102230246251565e-16,
+        0.0
+      ],
+      "body_L1": 4.2732660828177345,
+      "kernel_L1": 0.09041359397939161,
+      "all_outside_fields_zero": true,
+      "unchanged_inventories_and_neutral_fields": true
+    },
+    {
+      "candidate": "genome_0ac80448a534dc953505",
+      "complete_18_field_roundtrip": true,
+      "host_config_roundtrip": true,
+      "one_materialize_call": true,
+      "neutral_clock": 0,
+      "M_error": 0.0,
+      "E_error": 0.0,
+      "kernel_sum_errors": [
+        0.0,
+        0.0
+      ],
+      "body_L1": 7.396729665494922,
+      "kernel_L1": 0.18427441617398527,
+      "all_outside_fields_zero": true,
+      "unchanged_inventories_and_neutral_fields": true
+    },
+    {
+      "candidate": "genome_6bd5bfd2f629f9414376",
+      "complete_18_field_roundtrip": true,
+      "host_config_roundtrip": true,
+      "one_materialize_call": true,
+      "neutral_clock": 0,
+      "M_error": 0.0,
+      "E_error": 7.105427357601002e-15,
+      "kernel_sum_errors": [
+        0.0,
+        0.0
+      ],
+      "body_L1": 14.717729747725695,
+      "kernel_L1": 0.36077405109452343,
+      "all_outside_fields_zero": true,
+      "unchanged_inventories_and_neutral_fields": true
+    },
+    {
+      "candidate": "genome_85dffefe3eb5bacdfbf5",
+      "complete_18_field_roundtrip": true,
+      "host_config_roundtrip": true,
+      "one_materialize_call": true,
+      "neutral_clock": 0,
+      "M_error": 0.0,
+      "E_error": 7.105427357601002e-15,
+      "kernel_sum_errors": [
+        0.0,
+        2.220446049250313e-16
+      ],
+      "body_L1": 10.332981501055091,
+      "kernel_L1": 0.4223216425612574,
+      "all_outside_fields_zero": true,
+      "unchanged_inventories_and_neutral_fields": true
+    }
+  ],
+  "semantics": {
+    "single_invalid_call_no_retry": true,
+    "unused_budget_not_transferred": true,
+    "deterministic_PCG64_scaling_and_abs": true,
+    "invalid_genes_not_clamped": true,
+    "eight_unique_proposals": true,
+    "formation_only": true,
+    "old_suites_rerun": false
+  },
+  "body_steps": 0,
+  "energy_steps": 0,
+  "prepares": 0,
+  "potential_evaluations": 0,
+  "preview_steps": 0,
+  "permit_consumptions": 0,
+  "runner_jobs": 0
+}

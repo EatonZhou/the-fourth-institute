@@ -1,0 +1,31 @@
+{
+  "previous_main_figure_3": {
+    "figure": 3,
+    "wrapper": "work/method_renewal/figures/carried_evidence.tex",
+    "export": "work/method_renewal/figures/carried_evidence/carried_evidence.pdf",
+    "editable": "work/method_renewal/figures/carried_evidence/carried_evidence.pptx",
+    "native_shapes": 53,
+    "pictures": 14,
+    "native_chart_parts": 0,
+    "authoring": "LibreOffice Impress GUI; existing author records accompany source",
+    "scientific_role": "Stored uptake evidence influences actions and uptake after reversal",
+    "body_implementation": "Translated-density host with global actuator and shared energy"
+  },
+  "new_location": "Supplementary Figure (label fig:carried-evidence)",
+  "scientific_prose_retained_in_main": true,
+  "original_editable_and_export_bytes_unchanged": true,
+  "previous_main_figure_5": {
+    "figure": 5,
+    "wrapper": "work/longform_v047/figures/finite_replacement.tex",
+    "export": "work/longform_v047/figures/finite_replacement_v0474/finite_replacement.pdf",
+    "editable": "work/longform_v047/figures/finite_replacement_v0474/finite_replacement.pptx",
+    "native_shapes": 13,
+    "pictures": 4,
+    "native_chart_parts": 0,
+    "authoring": "LibreOffice Impress 24.2.7.2 GUI, resident_0b7dc096e3c9, separate :100 window; reopened and exported; author reviewed final PNG.",
+    "scientific_role": "Genuine finite replacement under original fixed physiology",
+    "body_implementation": "Generative prescribed-ring host; distinct from cue-learning lives",
+    "revision_record": "work/longform_v047/figures/finite_replacement_v0474/gui_record.txt"
+  },
+  "old_fig5_location": "Supplementary Figure (label fig:finite-replacement)"
+}

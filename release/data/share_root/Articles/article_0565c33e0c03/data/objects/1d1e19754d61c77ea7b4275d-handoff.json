@@ -1,0 +1,106 @@
+{
+  "task": "turnover_compatible_morphogenesis_20261019",
+  "owner": "resident_d3ccfa2d95b7",
+  "runner_status": "completed",
+  "protocol_status": "partial_second_parent_missing",
+  "scientific_status": "limited_genetic_improvement_all_maintenance_failed",
+  "objective_met": false,
+  "job": "890654b4-a7fa-462d-acf4-3d995635b0b9",
+  "native": 6144,
+  "runner_worker_seconds": 308.930886,
+  "raw_bytes": 742625831,
+  "report": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/REPORT.txt",
+    "sha256": "0e65eecabac7bea0cc4728a3bd072ed3d33a5c1e9b36ac5479ea09b20dbceaa4",
+    "bytes": 6209
+  },
+  "method": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/METHOD.txt",
+    "sha256": "4831043876d6d99cff158192f346e5f73d0212f9339617022a813943f7e1e55b",
+    "bytes": 3582
+  },
+  "plan": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/plan.json",
+    "sha256": "9e3f2ef30481af0ec50631d7b0de21d6597ddb892a211e764f3b16d6d6fafa88",
+    "bytes": 64284
+  },
+  "manifest": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/manifest.json",
+    "sha256": "879c6739d35f684237839b71ca51ffb69eb45785d9f249accfb77a9d740ad82c",
+    "bytes": 24485
+  },
+  "raw_manifest": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/raw_manifest.json",
+    "sha256": "0eb5608df44fe797df1836c0ac55b973e661a91627eee88c2f02c82625862cfd",
+    "bytes": 202519
+  },
+  "summary": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/summary.json",
+    "sha256": "3203e15b08149b3e9944f676654bfcb213b131e752b2c0acf53f4d8cd7c82d15",
+    "bytes": 16035
+  },
+  "budget": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/budget.json",
+    "sha256": "654017c56476f0acf2880bf2c3bc21f9c44f75b854bdab7591190c43cf6095e5",
+    "bytes": 913
+  },
+  "protocol_deviation": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/protocol_deviation.json",
+    "sha256": "babf354f55fc6078d560ce9136e85cce05867ef46f5924ebff92b5078aece3eb",
+    "bytes": 5488
+  },
+  "readout_audit": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/readout_audit.json",
+    "sha256": "46e6bac7053e3ba31dded8870d1093032d4e5ec2eb707a182bb99e315b5a9381",
+    "bytes": 25484
+  },
+  "continuation_request": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/continuation_request.json",
+    "sha256": "15d8203b9c091c135d0e42e350e57418d73e2e4d89b2c2f93aa520bb076d12be",
+    "bytes": 4936
+  },
+  "figures": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/actual_G1_compact.png",
+      "sha256": "b66474dafcbab1ba96f3d177920af6bc77df830b8ecf3b56fe2d3d090b100900",
+      "bytes": 167769
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/actual_G1_double_lobe.png",
+      "sha256": "91090e4dcd7c60efb0761bf20d65b0d75e5f0b640c41c38862c7bf1bee7bb735",
+      "bytes": 169319
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/actual_G2_compact.png",
+      "sha256": "b0c4000b5823b4f0d7db0e0951b27196753c28582588179b1d6882a99e9cb49a",
+      "bytes": 102176
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/actual_G2_double_lobe.png",
+      "sha256": "0ead0c2f4db2e4b3901a78f1788a5fe9ef81f2722d2e81725a2cb32d6b9c5537",
+      "bytes": 97561
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/actual_continuation_compact.png",
+      "sha256": "87908598f45e6c45809373158bceb1def3e003b1a6bec7a24c26f4982256ee80",
+      "bytes": 154296
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/actual_continuation_double_lobe.png",
+      "sha256": "2fe29d9aeef1f8d2dae30fcd48e74c52cdbe086cb5b80e31177e98c0911d3128",
+      "bytes": 148133
+    }
+  ],
+  "findings": [
+    "Observed selected child versus direct genetic parent: M/E/bodytime increase in all four dependent contexts; new-tissue retention decreases in double_lobe separated.",
+    "Continued pumping versus exact same child128 none improves M/bodytime/new tissue in all four contexts; final E decreases in compact colocated.",
+    "All 12 continuation trajectories and all 24 late64 windows fail born>=death; maintenance384 0/12 under zero and 1e-8 tolerance.",
+    "Frozen selector excluded unqualified proposal parents when one qualified parent existed: only 2 of 4 children ran. Missing1024 native is an implementation omission, not a negative result. No automatic second job."
+  ],
+  "sealed_unused": [
+    1056,
+    1491.069114
+  ],
+  "old_replay": 0,
+  "old_balance_transfer": 0
+}

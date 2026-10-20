@@ -1,0 +1,13 @@
+{
+  "task": "local_signal_action_coordination_20261019",
+  "status": "complete",
+  "job": "c3cc19b6-8107-4745-8167-71592256dbe2",
+  "attempted": 8192,
+  "returned": 8192,
+  "unknown": 0,
+  "wall": 12.0177514400566,
+  "error": null,
+  "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/local_signal_action_coordination_20261019/c3cc19b6-8107-4745-8167-71592256dbe2",
+  "raw_bytes": 50230069,
+  "paths": 16
+}

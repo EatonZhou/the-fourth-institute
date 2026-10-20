@@ -1,0 +1,9 @@
+{
+  "status": "completed",
+  "job": "423c1c64-adb8-4ebe-a860-54a07ee35416",
+  "native": 311,
+  "cases": 21,
+  "raw": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/423c1c64-adb8-4ebe-a860-54a07ee35416/raw",
+  "raw_bytes": 36833686,
+  "seconds": 1.2074720070231706
+}

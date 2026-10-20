@@ -1,0 +1,20 @@
+{
+  "attempted": 1029,
+  "committed": 1029,
+  "science": 1024,
+  "boundary": 5,
+  "cap_native": 1056,
+  "unused_native": 27,
+  "runner_worker_seconds": 61.589058,
+  "cap_worker": 600,
+  "unused_worker": 538.410942,
+  "old_steps_used": 0,
+  "reference_reused": 512,
+  "reference_forward": 0,
+  "one_job_id": true,
+  "attempts": 2,
+  "cpu_threads": 2,
+  "gpu": 0,
+  "raw_bytes": 138279043,
+  "unused_not_transferable": true
+}

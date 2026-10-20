@@ -1,0 +1,249 @@
+.portalSemanticPanel {
+  flex-basis: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 360px));
+  gap: 6px;
+  width: 100%;
+  padding: 0 0 10px;
+}
+
+.portalSemanticPanel[hidden],
+.portalSemanticPanel:empty { display: none; }
+
+.portalSemanticItem {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px;
+  padding: 5px;
+  border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--panel) 88%, transparent);
+  box-shadow: var(--shadow);
+  color: var(--text);
+}
+
+.portalSemanticItem.active {
+  border-color: color-mix(in srgb, var(--accent) 44%, var(--border));
+  background: color-mix(in srgb, var(--accent) 8%, var(--panel));
+}
+
+.portalSemanticMain {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+  padding: 2px 3px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.portalSemanticMain:disabled { cursor: default; opacity: 0.72; }
+.portalSemanticTop { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.portalSemanticQuery { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 650; }
+.portalSemanticMeta { overflow: hidden; color: var(--muted); font-size: 10.5px; line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; }
+.portalSemanticStatus { flex: 0 0 auto; color: var(--muted); font-size: 10.5px; }
+.portalSemanticStatus.done { color: var(--accent); }
+.portalSemanticStatus.error { color: var(--danger, var(--bad)); }
+.portalSemanticStatus.running,
+.portalSemanticStatus.queued { color: var(--accent); }
+.portalSemanticActions { display: flex; align-items: center; gap: 2px; }
+.portalSemanticAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.portalSemanticAction:hover { background: var(--panel); color: var(--accent); }
+.portalSemanticAction.danger:hover { color: var(--danger, var(--bad)); }
+.portalSemanticAction svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+.portalProjectCollection {
+  display: block;
+  min-width: 0;
+}
+
+.portalProjectGroup {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.portalProjectGroup + .portalProjectGroup { margin-top: 12px; }
+
+.portalProjectHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel-2);
+}
+
+.portalProjectGroup.collapsed .portalProjectHeader { border-bottom: 0; }
+.portalProjectGroup.collapsed .portalProjectItems { display: none; }
+
+.portalProjectTitle {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portalProjectActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.portalProjectCount { color: var(--muted); font-size: 12px; white-space: nowrap; }
+
+.portalProjectToggle {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  min-height: 30px;
+  height: 24px;
+  padding: 4px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.portalProjectToggle:hover { background: var(--panel); color: var(--accent); }
+.portalProjectToggle svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 120ms ease;
+}
+.portalProjectGroup.collapsed .portalProjectToggle svg { transform: rotate(-90deg); }
+
+.portalProjectItems {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: 10px;
+  padding: 12px;
+}
+
+.portalItemCard {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+  box-shadow: 0 1px 0 rgba(17, 24, 39, 0.02);
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+}
+
+.portalItemCard:hover {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-2px);
+}
+
+.portalItemCard:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline-offset: 2px;
+}
+
+.portalItemTitle {
+  min-width: 0;
+  margin: 0 0 6px;
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.portalItemPreview {
+  margin: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+}
+
+.portalRelevanceBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 9%, var(--panel));
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 650;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.portalCollectionFilterSummary { width: 100%; margin: -4px 0 10px; }
+.portalProjectToggle:focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent); outline-offset: 2px; }
+
+.portalCollectionFilterPanel {
+  position: absolute;
+  top: calc(100% + 7px);
+  left: 0;
+  width: min(280px, calc(100vw - 36px));
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: 0 16px 40px color-mix(in srgb, var(--text) 16%, transparent);
+}
+
+.portalCollectionFilterPanel[hidden] { display: none; }
+.portalCollectionFilterLabel { margin-bottom: 8px; color: var(--muted); font-size: 11px; font-weight: 650; }
+.portalCollectionFilterOptions { display: grid; max-height: min(360px, 60vh); overflow: auto; gap: 3px; }
+.portalCollectionFilterOption { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 7px 8px; border-radius: 7px; color: var(--text); cursor: pointer; font-size: 12px; }
+.portalCollectionFilterOption:hover { background: var(--panel-2); }
+.portalCollectionFilterOption input { flex: 0 0 auto; margin: 0; accent-color: var(--accent); }
+.portalCollectionFilterOption span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.portalCollectionCard { min-height: 128px; padding-bottom: 28px; user-select: none; }
+.portalCollectionCardMeta { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 0; margin-bottom: 8px; color: var(--muted); font-size: 12px; }
+.portalCollectionItemMeta { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.portalCollectionBadges { display: flex; min-width: 0; flex-wrap: wrap; justify-content: flex-end; gap: 4px; }
+.portalCollectionBadge { max-width: 160px; overflow: hidden; padding: 2px 8px; border: 1px solid var(--border); border-radius: 999px; background: var(--chip); color: var(--muted); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.portalCollectionCard.is-semantic-match { border-color: color-mix(in srgb, var(--accent) 42%, var(--border)); }
+.portalCollectionSemanticMatch { display: flex; min-width: 0; align-items: baseline; gap: 6px; margin-top: 8px; color: var(--muted); font-size: 10.5px; }
+.portalCollectionSemanticMatch strong { flex: 0 0 auto; color: var(--accent); font-size: 10px; }
+.portalCollectionSemanticMatch span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.portalCollectionTypeChip { position: absolute; right: 9px; bottom: 9px; padding: 2px 7px; border-radius: 999px; background: rgba(110, 118, 130, .42); color: #fff; font-size: 10px; font-weight: 600; letter-spacing: .02em; line-height: 1.2; pointer-events: none; white-space: nowrap; }

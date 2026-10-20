@@ -1,0 +1,30 @@
+{
+  "prior_native": 256,
+  "prior_job": "88644365-c43f-4faa-b720-d4d119e4ffac",
+  "path": {
+    "stage": "pilot",
+    "condition": 0,
+    "arm": "fixed",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/embodied_action_learning_20261019/88644365-c43f-4faa-b720-d4d119e4ffac/pilot_c0_fixed",
+    "steps": 256,
+    "alive": true,
+    "initial_sign": 1,
+    "endpoint_displacement": 11.478719900367235,
+    "first_feedback": 1.0,
+    "phases": {
+      "pilot": {
+        "steps": 256,
+        "last64_score": 0.7695361808149501,
+        "last64_positive_fraction": 0.9573968040481747,
+        "gain": 20.101131595254714,
+        "loss": 0.9226380483781015,
+        "movement": 0.927034994803586,
+        "end_energy": 154.87865855207303,
+        "end_mass": 24.000000000000007,
+        "gate": true
+      }
+    }
+  },
+  "native_replay": 0,
+  "prior_wall": 0.2674808669835329
+}

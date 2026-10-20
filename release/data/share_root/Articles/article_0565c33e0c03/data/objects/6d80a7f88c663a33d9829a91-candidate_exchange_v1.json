@@ -1,0 +1,301 @@
+{
+  "schema": "lenia.native-route-handoff.v1",
+  "source_route": "local_learning.multiscale_slow",
+  "full_screen_index": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/c2b1cd8d-ec7b-4738-8890-d07f88341c90/candidate_index.json",
+  "full_continuation_index": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/42f6f6c7-4ddb-4488-bc1d-13211891f8f4/candidate_index.json",
+  "event_files": [
+    "${share_root}/Projects/元胞自动机研究/src/runs/jobs/c2b1cd8d-ec7b-4738-8890-d07f88341c90/events.json",
+    "${share_root}/Projects/元胞自动机研究/src/runs/jobs/42f6f6c7-4ddb-4488-bc1d-13211891f8f4/events.json"
+  ],
+  "manifest_files": [
+    "${share_root}/Projects/元胞自动机研究/src/runs/jobs/c2b1cd8d-ec7b-4738-8890-d07f88341c90/manifest.json",
+    "${share_root}/Projects/元胞自动机研究/src/runs/jobs/42f6f6c7-4ddb-4488-bc1d-13211891f8f4/manifest.json"
+  ],
+  "summary": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261016/multiscale_slow/summary.json",
+  "representative_count": 6,
+  "screen_count": 24,
+  "candidates": [
+    {
+      "source_route": "local_learning.multiscale_slow",
+      "source_job_id": "c2b1cd8d-ec7b-4738-8890-d07f88341c90",
+      "continuation_job_id": "42f6f6c7-4ddb-4488-bc1d-13211891f8f4",
+      "candidate_id": "r4-native-w50-g0",
+      "source_candidate_id": "dk2026101619-r4-v5",
+      "source_initial": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/e5675e43-73f7-42af-b913-392217941cc8/candidates/dk2026101619-r4-v5/initial.npz",
+      "source_initial_sha256": "d21887d48255c88367c1326cdae22fc678e08a5eeec18f92439dfd4eef8c7ee6",
+      "body_origin": "three_blobs_local",
+      "initial_kind": "archived_life0",
+      "outer_generation": 2,
+      "optimizer_iteration": null,
+      "parent_event_id": "c2b1cd8d-ec7b-4738-8890-d07f88341c90:r4-native-w50-g0",
+      "continuation_event_id": "42f6f6c7-4ddb-4488-bc1d-13211891f8f4:r4-native-w50-g0",
+      "initial": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/c2b1cd8d-ec7b-4738-8890-d07f88341c90/candidates/r4-native-w50-g0/initial.npz",
+      "checkpoint": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/42f6f6c7-4ddb-4488-bc1d-13211891f8f4/candidates/r4-native-w50-g0/checkpoint.npz",
+      "loader": "local_learning.multiscale_slow.load_state",
+      "dynamic_fields": [
+        "body",
+        "slow"
+      ],
+      "static_fields": [
+        "kernel1",
+        "kernel2"
+      ],
+      "frame_axes": [
+        "sample",
+        "y",
+        "x"
+      ],
+      "grid": 64,
+      "dt": 0.05,
+      "Tq": 3.2,
+      "weight_second": 0.5,
+      "coupling": 0.0,
+      "initial_model_time": 0,
+      "continuation_start_model_time": 51.2,
+      "end_model_time": 204.8,
+      "lifetime_steps": [
+        0,
+        1024,
+        4096
+      ],
+      "screen_trajectory": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/c2b1cd8d-ec7b-4738-8890-d07f88341c90/candidates/r4-native-w50-g0/trajectory.npz",
+      "continuation_trajectory": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/42f6f6c7-4ddb-4488-bc1d-13211891f8f4/candidates/r4-native-w50-g0/trajectory.npz",
+      "scientific_result": "finite deterministic dynamics; not learning, stable species or adaptation"
+    },
+    {
+      "source_route": "local_learning.multiscale_slow",
+      "source_job_id": "c2b1cd8d-ec7b-4738-8890-d07f88341c90",
+      "continuation_job_id": "42f6f6c7-4ddb-4488-bc1d-13211891f8f4",
+      "candidate_id": "r2-native-w60-g0.35",
+      "source_candidate_id": "dk2026101619-r2-v5",
+      "source_initial": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/e5675e43-73f7-42af-b913-392217941cc8/candidates/dk2026101619-r2-v5/initial.npz",
+      "source_initial_sha256": "84280f2e350a6f862e0095e7db81d151aecf718400f5f5b01d8762c060eb5468",
+      "body_origin": "paired_orbium_source",
+      "initial_kind": "archived_life0",
+      "outer_generation": 4,
+      "optimizer_iteration": null,
+      "parent_event_id": "c2b1cd8d-ec7b-4738-8890-d07f88341c90:r2-native-w60-g0.35",
+      "continuation_event_id": "42f6f6c7-4ddb-4488-bc1d-13211891f8f4:r2-native-w60-g0.35",
+      "initial": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/c2b1cd8d-ec7b-4738-8890-d07f88341c90/candidates/r2-native-w60-g0.35/initial.npz",
+      "checkpoint": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/42f6f6c7-4ddb-4488-bc1d-13211891f8f4/candidates/r2-native-w60-g0.35/checkpoint.npz",
+      "loader": "local_learning.multiscale_slow.load_state",
+      "dynamic_fields": [
+        "body",
+        "slow"
+      ],
+      "static_fields": [
+        "kernel1",
+        "kernel2"
+      ],
+      "frame_axes": [
+        "sample",
+        "y",
+        "x"
+      ],
+      "grid": 64,
+      "dt": 0.05,
+      "Tq": 3.2,
+      "weight_second": 0.6,
+      "coupling": 0.35,
+      "initial_model_time": 0,
+      "continuation_start_model_time": 51.2,
+      "end_model_time": 204.8,
+      "lifetime_steps": [
+        0,
+        1024,
+        4096
+      ],
+      "screen_trajectory": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/c2b1cd8d-ec7b-4738-8890-d07f88341c90/candidates/r2-native-w60-g0.35/trajectory.npz",
+      "continuation_trajectory": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/42f6f6c7-4ddb-4488-bc1d-13211891f8f4/candidates/r2-native-w60-g0.35/trajectory.npz",
+      "scientific_result": "finite deterministic dynamics; not learning, stable species or adaptation"
+    },
+    {
+      "source_route": "local_learning.multiscale_slow",
+      "source_job_id": "c2b1cd8d-ec7b-4738-8890-d07f88341c90",
+      "continuation_job_id": "42f6f6c7-4ddb-4488-bc1d-13211891f8f4",
+      "candidate_id": "r2-newlocal-w50-g1",
+      "source_candidate_id": "dk2026101619-r2-v5",
+      "source_initial": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/e5675e43-73f7-42af-b913-392217941cc8/candidates/dk2026101619-r2-v5/initial.npz",
+      "source_initial_sha256": "84280f2e350a6f862e0095e7db81d151aecf718400f5f5b01d8762c060eb5468",
+      "body_origin": "paired_orbium_source",
+      "initial_kind": "new_analytic_unequal_two_peak",
+      "outer_generation": 4,
+      "optimizer_iteration": null,
+      "parent_event_id": "c2b1cd8d-ec7b-4738-8890-d07f88341c90:r2-newlocal-w50-g1",
+      "continuation_event_id": "42f6f6c7-4ddb-4488-bc1d-13211891f8f4:r2-newlocal-w50-g1",
+      "initial": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/c2b1cd8d-ec7b-4738-8890-d07f88341c90/candidates/r2-newlocal-w50-g1/initial.npz",
+      "checkpoint": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/42f6f6c7-4ddb-4488-bc1d-13211891f8f4/candidates/r2-newlocal-w50-g1/checkpoint.npz",
+      "loader": "local_learning.multiscale_slow.load_state",
+      "dynamic_fields": [
+        "body",
+        "slow"
+      ],
+      "static_fields": [
+        "kernel1",
+        "kernel2"
+      ],
+      "frame_axes": [
+        "sample",
+        "y",
+        "x"
+      ],
+      "grid": 64,
+      "dt": 0.05,
+      "Tq": 3.2,
+      "weight_second": 0.5,
+      "coupling": 1.0,
+      "initial_model_time": 0,
+      "continuation_start_model_time": 51.2,
+      "end_model_time": 204.8,
+      "lifetime_steps": [
+        0,
+        1024,
+        4096
+      ],
+      "screen_trajectory": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/c2b1cd8d-ec7b-4738-8890-d07f88341c90/candidates/r2-newlocal-w50-g1/trajectory.npz",
+      "continuation_trajectory": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/42f6f6c7-4ddb-4488-bc1d-13211891f8f4/candidates/r2-newlocal-w50-g1/trajectory.npz",
+      "scientific_result": "finite deterministic dynamics; not learning, stable species or adaptation"
+    },
+    {
+      "source_route": "local_learning.multiscale_slow",
+      "source_job_id": "c2b1cd8d-ec7b-4738-8890-d07f88341c90",
+      "continuation_job_id": "42f6f6c7-4ddb-4488-bc1d-13211891f8f4",
+      "candidate_id": "r2-native-w60-g1",
+      "source_candidate_id": "dk2026101619-r2-v5",
+      "source_initial": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/e5675e43-73f7-42af-b913-392217941cc8/candidates/dk2026101619-r2-v5/initial.npz",
+      "source_initial_sha256": "84280f2e350a6f862e0095e7db81d151aecf718400f5f5b01d8762c060eb5468",
+      "body_origin": "paired_orbium_source",
+      "initial_kind": "archived_life0",
+      "outer_generation": 4,
+      "optimizer_iteration": null,
+      "parent_event_id": "c2b1cd8d-ec7b-4738-8890-d07f88341c90:r2-native-w60-g1",
+      "continuation_event_id": "42f6f6c7-4ddb-4488-bc1d-13211891f8f4:r2-native-w60-g1",
+      "initial": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/c2b1cd8d-ec7b-4738-8890-d07f88341c90/candidates/r2-native-w60-g1/initial.npz",
+      "checkpoint": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/42f6f6c7-4ddb-4488-bc1d-13211891f8f4/candidates/r2-native-w60-g1/checkpoint.npz",
+      "loader": "local_learning.multiscale_slow.load_state",
+      "dynamic_fields": [
+        "body",
+        "slow"
+      ],
+      "static_fields": [
+        "kernel1",
+        "kernel2"
+      ],
+      "frame_axes": [
+        "sample",
+        "y",
+        "x"
+      ],
+      "grid": 64,
+      "dt": 0.05,
+      "Tq": 3.2,
+      "weight_second": 0.6,
+      "coupling": 1.0,
+      "initial_model_time": 0,
+      "continuation_start_model_time": 51.2,
+      "end_model_time": 204.8,
+      "lifetime_steps": [
+        0,
+        1024,
+        4096
+      ],
+      "screen_trajectory": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/c2b1cd8d-ec7b-4738-8890-d07f88341c90/candidates/r2-native-w60-g1/trajectory.npz",
+      "continuation_trajectory": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/42f6f6c7-4ddb-4488-bc1d-13211891f8f4/candidates/r2-native-w60-g1/trajectory.npz",
+      "scientific_result": "finite deterministic dynamics; not learning, stable species or adaptation"
+    },
+    {
+      "source_route": "local_learning.multiscale_slow",
+      "source_job_id": "c2b1cd8d-ec7b-4738-8890-d07f88341c90",
+      "continuation_job_id": "42f6f6c7-4ddb-4488-bc1d-13211891f8f4",
+      "candidate_id": "r2-newlocal-w60-g0",
+      "source_candidate_id": "dk2026101619-r2-v5",
+      "source_initial": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/e5675e43-73f7-42af-b913-392217941cc8/candidates/dk2026101619-r2-v5/initial.npz",
+      "source_initial_sha256": "84280f2e350a6f862e0095e7db81d151aecf718400f5f5b01d8762c060eb5468",
+      "body_origin": "paired_orbium_source",
+      "initial_kind": "new_analytic_unequal_two_peak",
+      "outer_generation": 4,
+      "optimizer_iteration": null,
+      "parent_event_id": "c2b1cd8d-ec7b-4738-8890-d07f88341c90:r2-newlocal-w60-g0",
+      "continuation_event_id": "42f6f6c7-4ddb-4488-bc1d-13211891f8f4:r2-newlocal-w60-g0",
+      "initial": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/c2b1cd8d-ec7b-4738-8890-d07f88341c90/candidates/r2-newlocal-w60-g0/initial.npz",
+      "checkpoint": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/42f6f6c7-4ddb-4488-bc1d-13211891f8f4/candidates/r2-newlocal-w60-g0/checkpoint.npz",
+      "loader": "local_learning.multiscale_slow.load_state",
+      "dynamic_fields": [
+        "body",
+        "slow"
+      ],
+      "static_fields": [
+        "kernel1",
+        "kernel2"
+      ],
+      "frame_axes": [
+        "sample",
+        "y",
+        "x"
+      ],
+      "grid": 64,
+      "dt": 0.05,
+      "Tq": 3.2,
+      "weight_second": 0.6,
+      "coupling": 0.0,
+      "initial_model_time": 0,
+      "continuation_start_model_time": 51.2,
+      "end_model_time": 204.8,
+      "lifetime_steps": [
+        0,
+        1024,
+        4096
+      ],
+      "screen_trajectory": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/c2b1cd8d-ec7b-4738-8890-d07f88341c90/candidates/r2-newlocal-w60-g0/trajectory.npz",
+      "continuation_trajectory": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/42f6f6c7-4ddb-4488-bc1d-13211891f8f4/candidates/r2-newlocal-w60-g0/trajectory.npz",
+      "scientific_result": "finite deterministic dynamics; not learning, stable species or adaptation"
+    },
+    {
+      "source_route": "local_learning.multiscale_slow",
+      "source_job_id": "c2b1cd8d-ec7b-4738-8890-d07f88341c90",
+      "continuation_job_id": "42f6f6c7-4ddb-4488-bc1d-13211891f8f4",
+      "candidate_id": "r2-native-w50-g0",
+      "source_candidate_id": "dk2026101619-r2-v5",
+      "source_initial": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/e5675e43-73f7-42af-b913-392217941cc8/candidates/dk2026101619-r2-v5/initial.npz",
+      "source_initial_sha256": "84280f2e350a6f862e0095e7db81d151aecf718400f5f5b01d8762c060eb5468",
+      "body_origin": "paired_orbium_source",
+      "initial_kind": "archived_life0",
+      "outer_generation": 4,
+      "optimizer_iteration": null,
+      "parent_event_id": "c2b1cd8d-ec7b-4738-8890-d07f88341c90:r2-native-w50-g0",
+      "continuation_event_id": "42f6f6c7-4ddb-4488-bc1d-13211891f8f4:r2-native-w50-g0",
+      "initial": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/c2b1cd8d-ec7b-4738-8890-d07f88341c90/candidates/r2-native-w50-g0/initial.npz",
+      "checkpoint": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/42f6f6c7-4ddb-4488-bc1d-13211891f8f4/candidates/r2-native-w50-g0/checkpoint.npz",
+      "loader": "local_learning.multiscale_slow.load_state",
+      "dynamic_fields": [
+        "body",
+        "slow"
+      ],
+      "static_fields": [
+        "kernel1",
+        "kernel2"
+      ],
+      "frame_axes": [
+        "sample",
+        "y",
+        "x"
+      ],
+      "grid": 64,
+      "dt": 0.05,
+      "Tq": 3.2,
+      "weight_second": 0.5,
+      "coupling": 0.0,
+      "initial_model_time": 0,
+      "continuation_start_model_time": 51.2,
+      "end_model_time": 204.8,
+      "lifetime_steps": [
+        0,
+        1024,
+        4096
+      ],
+      "screen_trajectory": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/c2b1cd8d-ec7b-4738-8890-d07f88341c90/candidates/r2-native-w50-g0/trajectory.npz",
+      "continuation_trajectory": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/42f6f6c7-4ddb-4488-bc1d-13211891f8f4/candidates/r2-native-w50-g0/trajectory.npz",
+      "scientific_result": "finite deterministic dynamics; not learning, stable species or adaptation"
+    }
+  ]
+}

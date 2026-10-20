@@ -1,0 +1,15 @@
+{
+  "personally_viewed": [
+    "actual_process.png",
+    "actual_fields_f1--colocated.png",
+    "actual_fields_f1--separated.png",
+    "actual_fields_f2--colocated.png",
+    "actual_fields_f2--separated.png"
+  ],
+  "observations": [
+    "Separated bundle/none show no new tissue in the saved endpoint views.",
+    "Independent cargo produces new tissue near the resource interface; total replacement and energy maintenance still fail.",
+    "Colocated fields retain the condition counterexample and distinct P/F stock patterns."
+  ],
+  "scope": "5 overview PNGs, not an assertion of visual inspection of every saved frame"
+}

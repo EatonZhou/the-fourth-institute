@@ -1,0 +1,40 @@
+{
+  "research": "anticipatory_material_allocation_20261018",
+  "status": "both_physical_jobs_completed_training_analysis_pending",
+  "host_step_limit": 200000,
+  "cpu_worker_seconds_limit": 600,
+  "jobs": [
+    {
+      "owner": "resident_ce2a5ab005bc",
+      "id": "5063bd49-7b65-4ec3-9338-92f5bd855747",
+      "status": "completed",
+      "returncode": 0,
+      "actual_host_steps": 18592,
+      "started_at": "2026-10-18T07:42:01.034605+00:00",
+      "finished_at": "2026-10-18T07:42:05.591064+00:00",
+      "cpu_threads": 2,
+      "slot_worker_seconds": 9.112918
+    },
+    {
+      "owner": "resident_d3ccfa2d95b7",
+      "id": "3786e0f1-73a7-4da8-9bdb-ae8fff7fb44e",
+      "status": "completed",
+      "returncode": 0,
+      "actual_host_steps": 100864,
+      "started_at": "2026-10-18T07:45:55.884833+00:00",
+      "finished_at": "2026-10-18T07:46:12.819369+00:00",
+      "cpu_threads": 2,
+      "slot_worker_seconds": 33.869072
+    }
+  ],
+  "total_host_steps": 119456,
+  "total_slot_worker_seconds": 42.98199,
+  "remaining_host_steps": 80544,
+  "remaining_cpu_worker_seconds": 557.01801,
+  "sources": [
+    "src/runs/runtime/jobs.json",
+    "src/runs/jobs/5063bd49-7b65-4ec3-9338-92f5bd855747/result.json",
+    "src/runs/jobs/3786e0f1-73a7-4da8-9bdb-ae8fff7fb44e/result.json"
+  ],
+  "note": "Slot wall duration times two threads; source results are separate, no repeated physical execution. This sidecar does not revise the ce2 frozen handoff or its as-of-first-job remaining budget."
+}

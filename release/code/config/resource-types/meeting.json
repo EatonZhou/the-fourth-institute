@@ -1,0 +1,16 @@
+{
+  "type": "meeting",
+  "category": "knowledge_entry",
+  "description": "A knowledge-base meeting entry.",
+  "title": {
+    "zh": "会议",
+    "en": "Meeting"
+  },
+  "provider": "management_portal.resources.providers.knowledge:install_resolver",
+  "catalog_section": "knowledge",
+  "catalog_order": 10,
+  "registerable": true,
+  "scope": "project",
+  "unit": "core",
+  "enabled_by_default": true
+}

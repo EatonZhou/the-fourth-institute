@@ -1,0 +1,12 @@
+{
+  "status": "all_physical_paths_complete_first_job_failed_operating_storage_guard",
+  "jobs": [
+    "88cfadaf-41a4-4ab2-9536-86902869abfe",
+    "fecb9eed-feb6-4c29-a883-2d0a7f462286"
+  ],
+  "native": 7928,
+  "paths": 8,
+  "raw_bytes": 130791699,
+  "worker_seconds": 11.495411,
+  "provenance": "Seven completed paths preserved; only unstarted final path executed once. First job remains failed; no prior source or output rewritten."
+}

@@ -1,0 +1,25 @@
+{
+  "task": "temporal_history_selected_action_20261019",
+  "status": "negative_comparison_and_content_causality_actual",
+  "report": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/temporal_history_selected_action_20261019.json",
+  "report_sha256": "59101305dcfd3b158ec90792f92bb26fc9b9a9d071260e1fd33183db3b499be9",
+  "report_text": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/temporal_history_selected_action_20261019.txt",
+  "native": 7236,
+  "worker_seconds": 10.552385000000001,
+  "main_result": "${share_root}/Projects/元胞自动机研究/src/research/results/temporal_history_selected_action_20261019/result.json",
+  "main_analysis": "${share_root}/Projects/元胞自动机研究/src/research/results/temporal_history_selected_action_20261019/analysis.json",
+  "main_plan_sha256": "d01c89c366b13ea7ad6f051d9b86e6424be6f8d3b84fcafd9b6e1be604a37694",
+  "content_recovery": "${share_root}/Projects/元胞自动机研究/src/research/results/temporal_history_selected_action_content_20261019/recovered_result.json",
+  "content_pairs": "${share_root}/Projects/元胞自动机研究/src/research/results/temporal_history_selected_action_content_20261019/pairs.json",
+  "content_plan_sha256": "83bb4c2c69a417342ef9a4dd837c2bed2173a06e51ad20fa5eb7b83c9b3986dc",
+  "manifests": [
+    "${share_root}/Projects/元胞自动机研究/src/research/results/temporal_history_selected_action_20261019/raw_manifest.json",
+    "${share_root}/Projects/元胞自动机研究/src/research/results/temporal_history_selected_action_content_20261019/raw_manifest.json"
+  ],
+  "animation": "${share_root}/Projects/元胞自动机研究/src/research/results/temporal_history_selected_action_20261019/continuous_body.gif",
+  "figures": [
+    "${share_root}/Projects/元胞自动机研究/src/research/results/temporal_history_selected_action_20261019/comparison.png",
+    "${share_root}/Projects/元胞自动机研究/src/research/results/temporal_history_selected_action_20261019/actual_middle_frame.png"
+  ],
+  "old_results_changed": false
+}

@@ -1,0 +1,8 @@
+{
+  "native_calls": 0,
+  "capacity_formula": true,
+  "P_unchanged": true,
+  "per_source_F_total_match": true,
+  "zero_u_recovers_birth_only": true,
+  "zero_support_no_fallback": true
+}

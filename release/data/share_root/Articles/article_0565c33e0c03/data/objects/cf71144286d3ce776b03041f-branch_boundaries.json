@@ -1,0 +1,282 @@
+[
+  {
+    "stage_id": "factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1/formation",
+    "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/candidates/factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1.npz",
+    "source_sha256": "9bcb6a35e77bde746492ba93ad02c4fe40220006fba1af8c6df5894c84ebeab5",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1--formation/initial0.npz",
+    "step": 0,
+    "fields_exact": true,
+    "transport_before": "T11",
+    "transport": "T00"
+  },
+  {
+    "stage_id": "factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1/naive/acquisition",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1--formation/transactions/000128.npz",
+    "source_sha256": "2373a1125ab13db4a4060a7180566ba26145b2ca47889dbd7f54bd95b395f347",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1--naive--acquisition/initial128.npz",
+    "step": 128,
+    "fields_exact": true,
+    "transport_before": "T00",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1/naive/none",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1--naive--acquisition/transactions/000160.npz",
+    "source_sha256": "695fd6b7239e655e04d078273eacd67badcc42ec67c40bdc32fcb39322a4cd2e",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1--naive--none/initial160.npz",
+    "step": 160,
+    "fields_exact": true,
+    "transport_before": "T11",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1/naive/x",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1--naive--acquisition/transactions/000160.npz",
+    "source_sha256": "695fd6b7239e655e04d078273eacd67badcc42ec67c40bdc32fcb39322a4cd2e",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1--naive--x/initial160.npz",
+    "step": 160,
+    "fields_exact": true,
+    "transport_before": "T11",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1/experienced/acquisition",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1--formation/transactions/000128.npz",
+    "source_sha256": "2373a1125ab13db4a4060a7180566ba26145b2ca47889dbd7f54bd95b395f347",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1--experienced--acquisition/initial128.npz",
+    "step": 128,
+    "fields_exact": true,
+    "transport_before": "T00",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1/experienced/none",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1--experienced--acquisition/transactions/000160.npz",
+    "source_sha256": "f4b795bbb215a93c9c17ea3fd1f11f08a047d94f131c61c4cc11b93ed2c0eb92",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1--experienced--none/initial160.npz",
+    "step": 160,
+    "fields_exact": true,
+    "transport_before": "T11",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1/experienced/x",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1--experienced--acquisition/transactions/000160.npz",
+    "source_sha256": "f4b795bbb215a93c9c17ea3fd1f11f08a047d94f131c61c4cc11b93ed2c0eb92",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1--experienced--x/initial160.npz",
+    "step": 160,
+    "fields_exact": true,
+    "transport_before": "T11",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e/formation",
+    "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/candidates/factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e.npz",
+    "source_sha256": "f6722aa1fbb1fd3fc68a55d6151a4b11fd9489bde6c5df67d85b0f6289eb351c",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e--formation/initial0.npz",
+    "step": 0,
+    "fields_exact": true,
+    "transport_before": "T11",
+    "transport": "T00"
+  },
+  {
+    "stage_id": "factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e/naive/acquisition",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e--formation/transactions/000128.npz",
+    "source_sha256": "a3a61b9c3287a81474b6cf74bd7b3b85e8a2d54419f74ca76904b8c18f4f175f",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e--naive--acquisition/initial128.npz",
+    "step": 128,
+    "fields_exact": true,
+    "transport_before": "T00",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e/naive/none",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e--naive--acquisition/transactions/000160.npz",
+    "source_sha256": "feb55722fba3fb1518ed198d496fb2a57648b3771876660d3aefdc500aa4966c",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e--naive--none/initial160.npz",
+    "step": 160,
+    "fields_exact": true,
+    "transport_before": "T11",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e/naive/x",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e--naive--acquisition/transactions/000160.npz",
+    "source_sha256": "feb55722fba3fb1518ed198d496fb2a57648b3771876660d3aefdc500aa4966c",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e--naive--x/initial160.npz",
+    "step": 160,
+    "fields_exact": true,
+    "transport_before": "T11",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e/experienced/acquisition",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e--formation/transactions/000128.npz",
+    "source_sha256": "a3a61b9c3287a81474b6cf74bd7b3b85e8a2d54419f74ca76904b8c18f4f175f",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e--experienced--acquisition/initial128.npz",
+    "step": 128,
+    "fields_exact": true,
+    "transport_before": "T00",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e/experienced/none",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e--experienced--acquisition/transactions/000160.npz",
+    "source_sha256": "308914c393a31335a1d542aea7df65d2ba097783340830097316b68002895c3e",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e--experienced--none/initial160.npz",
+    "step": 160,
+    "fields_exact": true,
+    "transport_before": "T11",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e/experienced/x",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e--experienced--acquisition/transactions/000160.npz",
+    "source_sha256": "308914c393a31335a1d542aea7df65d2ba097783340830097316b68002895c3e",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e--experienced--x/initial160.npz",
+    "step": 160,
+    "fields_exact": true,
+    "transport_before": "T11",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423/formation",
+    "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/candidates/factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423.npz",
+    "source_sha256": "c5f3d7dc36377b6ff0faaded0f34e2560b74cc225cfae067780e50e08957b962",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423--formation/initial0.npz",
+    "step": 0,
+    "fields_exact": true,
+    "transport_before": "T11",
+    "transport": "T00"
+  },
+  {
+    "stage_id": "factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423/naive/acquisition",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423--formation/transactions/000128.npz",
+    "source_sha256": "bd31712f368c6747aaa5a8d7394e2c2d5093bccafb2fc75c4e334e5279369f7f",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423--naive--acquisition/initial128.npz",
+    "step": 128,
+    "fields_exact": true,
+    "transport_before": "T00",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423/naive/none",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423--naive--acquisition/transactions/000160.npz",
+    "source_sha256": "77adc8c5e1fee0a3108c8953a834c29d961675453acf8d286d8c95cb9b8c0ba1",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423--naive--none/initial160.npz",
+    "step": 160,
+    "fields_exact": true,
+    "transport_before": "T11",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423/naive/x",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423--naive--acquisition/transactions/000160.npz",
+    "source_sha256": "77adc8c5e1fee0a3108c8953a834c29d961675453acf8d286d8c95cb9b8c0ba1",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423--naive--x/initial160.npz",
+    "step": 160,
+    "fields_exact": true,
+    "transport_before": "T11",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423/experienced/acquisition",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423--formation/transactions/000128.npz",
+    "source_sha256": "bd31712f368c6747aaa5a8d7394e2c2d5093bccafb2fc75c4e334e5279369f7f",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423--experienced--acquisition/initial128.npz",
+    "step": 128,
+    "fields_exact": true,
+    "transport_before": "T00",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423/experienced/none",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423--experienced--acquisition/transactions/000160.npz",
+    "source_sha256": "484170dfe14e83a95eff69c1dd01bad70b99bd0b4daee4dba69d7f60e502ab3a",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423--experienced--none/initial160.npz",
+    "step": 160,
+    "fields_exact": true,
+    "transport_before": "T11",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423/experienced/x",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423--experienced--acquisition/transactions/000160.npz",
+    "source_sha256": "484170dfe14e83a95eff69c1dd01bad70b99bd0b4daee4dba69d7f60e502ab3a",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423--experienced--x/initial160.npz",
+    "step": 160,
+    "fields_exact": true,
+    "transport_before": "T11",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e/formation",
+    "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_rule_initial_factorial_exports/candidates/factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e.npz",
+    "source_sha256": "06580223101081fbe20fc7d936791f5e4f55f44642408cb7a2e29ff2466bd859",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e--formation/initial0.npz",
+    "step": 0,
+    "fields_exact": true,
+    "transport_before": "T11",
+    "transport": "T00"
+  },
+  {
+    "stage_id": "factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e/naive/acquisition",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e--formation/transactions/000128.npz",
+    "source_sha256": "fcbb170f8356eb5affb103882438d3433a3df8ec5cd881fd84a8d826928a456e",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e--naive--acquisition/initial128.npz",
+    "step": 128,
+    "fields_exact": true,
+    "transport_before": "T00",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e/naive/none",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e--naive--acquisition/transactions/000160.npz",
+    "source_sha256": "f42c20e7874dac436ab9424c5e49d46fddcefab0cfc79158d179785db65d67ef",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e--naive--none/initial160.npz",
+    "step": 160,
+    "fields_exact": true,
+    "transport_before": "T11",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e/naive/x",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e--naive--acquisition/transactions/000160.npz",
+    "source_sha256": "f42c20e7874dac436ab9424c5e49d46fddcefab0cfc79158d179785db65d67ef",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e--naive--x/initial160.npz",
+    "step": 160,
+    "fields_exact": true,
+    "transport_before": "T11",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e/experienced/acquisition",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e--formation/transactions/000128.npz",
+    "source_sha256": "fcbb170f8356eb5affb103882438d3433a3df8ec5cd881fd84a8d826928a456e",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e--experienced--acquisition/initial128.npz",
+    "step": 128,
+    "fields_exact": true,
+    "transport_before": "T00",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e/experienced/none",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e--experienced--acquisition/transactions/000160.npz",
+    "source_sha256": "6e93c089fb0a0ba6570e27ec53aeedde990bbf34b720608f13d215bf5c65c623",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e--experienced--none/initial160.npz",
+    "step": 160,
+    "fields_exact": true,
+    "transport_before": "T11",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e/experienced/x",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e--experienced--acquisition/transactions/000160.npz",
+    "source_sha256": "6e93c089fb0a0ba6570e27ec53aeedde990bbf34b720608f13d215bf5c65c623",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_rule_initial_factorial_20261018/d7dcd928-7204-4e24-ab92-1bd791394e7e/factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e--experienced--x/initial160.npz",
+    "step": 160,
+    "fields_exact": true,
+    "transport_before": "T11",
+    "transport": "T11"
+  }
+]

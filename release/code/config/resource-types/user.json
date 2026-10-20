@@ -1,0 +1,17 @@
+{
+  "type": "user",
+  "category": "principal",
+  "format": "registered_portal_username",
+  "description": "A registered Portal username is the canonical User ID and is preserved exactly as registered.",
+  "title": {
+    "zh": "用户",
+    "en": "User"
+  },
+  "provider": "",
+  "catalog_section": "",
+  "catalog_order": 0,
+  "registerable": false,
+  "scope": "shared",
+  "unit": "core",
+  "enabled_by_default": true
+}

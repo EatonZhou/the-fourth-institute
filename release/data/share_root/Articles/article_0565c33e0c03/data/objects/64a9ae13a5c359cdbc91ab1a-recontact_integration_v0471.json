@@ -1,0 +1,36 @@
+{
+  "version": "0.47.1",
+  "updated_at": "2026-10-19T03:17:03.819661+00:00",
+  "scope": "Two actual source batches integrated into existing main Results, Methods, Discussion and SI S16-S18; seven final GUI figure assets unchanged.",
+  "data_scope": "All 32 dependent branches and four paused-readout write/freeze pairs. Positive and negative payments, motion/basal costs, mass loss and absolute contact retained.",
+  "actual_source_updates": 12712,
+  "paper_team_new_native_or_fits": 0,
+  "source_handoff": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/association_readout_recontact_20261019/direction_handoff.json",
+  "source_handoff_sha256": "edbc6aed09e09caafbb45eaddb5f6628627d1b9753c7806431f7ae0317995bdc",
+  "local_pdf": "${share_root}/Articles/article_0565c33e0c03/manuscript.pdf",
+  "local_pdf_sha256": "447df829c16d8197c3ed9beecd27ac299bb679855932b370580c79715eac08ce",
+  "pages": 109,
+  "main_pages": 32,
+  "main_figures": 7,
+  "references": 52,
+  "reviewed_actual_pages": [
+    11,
+    30,
+    108,
+    109
+  ],
+  "actual_sequence_images_reviewed": [
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_recontact_learning_20261019/actual_sequence.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/association_readout_recontact_20261019/actual_sequence.png"
+  ],
+  "review_limit": "Author reviewed changed composed pages and supplied all-branch sampled sequences; no new independent review, raw-array audit or full animation playback claimed.",
+  "compile_errors": 0,
+  "undefined_references_or_citations": 0,
+  "overfull_boxes": 0,
+  "engineering_request": "msg_59749b2f6e331a980039e2d5fc992174",
+  "freeze_manifest": "${share_root}/Articles/article_0565c33e0c03/work/longform_v047/data/default_preview_freeze_v0471.json",
+  "publication_status": "Published normal default; 109 pages exactly match frozen local layout",
+  "default_pdf_sha256": "133cb2690a40f8617790636a27934b30f8b0609055432e0674dfd3f4f305cc6b",
+  "actual_default_page_viewed": 11,
+  "publication_record": "${share_root}/Articles/article_0565c33e0c03/work/longform_v047/data/publication_record.json"
+}

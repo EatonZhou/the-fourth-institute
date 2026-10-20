@@ -1,0 +1,42 @@
+[
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_method_addendum_20261019/REPORT.txt",
+    "sha256": "3b3d9e3b8297532ed618f0047c09bf38e923e72ffc3c50f48e62a5e498270df6",
+    "bytes": 4596
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_method_addendum_20261019/document_refs.json",
+    "sha256": "fdd1c155d9e5e8ed92cd72929e6fb3df60d5cc2ddb19fdf864df204bc4693384",
+    "bytes": 1732
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_method_addendum_20261019/mixed_receiver_ratios.csv",
+    "sha256": "c7563e478e849d5354386b9a147cdfd2c57f52e5eb1722fcba0af2fa54dff623",
+    "bytes": 4924
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_method_addendum_20261019/plan.json",
+    "sha256": "4448e3baa1681a6eeb1d781956e463fc515615377ab26ce23d634e8f432852fe",
+    "bytes": 971
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_method_addendum_20261019/same_input_actual_first_requests.csv",
+    "sha256": "67b7f3856da3c02348a12654dead495d93ff855fe747d64420dbf6b8bf4d7ade",
+    "bytes": 1686
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_method_addendum_20261019/source.py",
+    "sha256": "417c924ff1ee10c70bd6bc091dbda2c52f53c9c879e79da6174c734e974b5af0",
+    "bytes": 6349
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_method_addendum_20261019/source_refs.json",
+    "sha256": "e8810e2fcfce4c14ab312468e973faff1374925106c4137fa45af6d482c49a15",
+    "bytes": 18139
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_method_addendum_20261019/summary.json",
+    "sha256": "f83dfd157de7d17fc1e42d73477da35d5b24f4e17a14dbfdd08681f8a10ab34f",
+    "bytes": 5044
+  }
+]

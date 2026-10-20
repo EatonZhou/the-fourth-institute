@@ -1,0 +1,100 @@
+{
+  "observer": {
+    "native": 0,
+    "transport": true,
+    "stage_deletion": true,
+    "births_N_only": true,
+    "terminal_death": true
+  },
+  "parents": [
+    {
+      "id": "202610195601_ring_both",
+      "base_exact": true,
+      "prior_tags_exact": true,
+      "OCN_exact": true,
+      "policy_exact": true,
+      "labels_policy_inert": true,
+      "roundtrip_exact": true,
+      "request_difference_cells": 31,
+      "C320": 11.142649306850988
+    },
+    {
+      "id": "202610195601_ring_birth_gain_only",
+      "base_exact": true,
+      "prior_tags_exact": true,
+      "OCN_exact": true,
+      "policy_exact": true,
+      "labels_policy_inert": true,
+      "roundtrip_exact": true,
+      "request_difference_cells": 7,
+      "C320": 11.282126370131564
+    },
+    {
+      "id": "202610195601_separate_seeds_both",
+      "base_exact": true,
+      "prior_tags_exact": true,
+      "OCN_exact": true,
+      "policy_exact": true,
+      "labels_policy_inert": true,
+      "roundtrip_exact": true,
+      "request_difference_cells": 17,
+      "C320": 12.240244718755427
+    },
+    {
+      "id": "202610195601_separate_seeds_birth_gain_only",
+      "base_exact": true,
+      "prior_tags_exact": true,
+      "OCN_exact": true,
+      "policy_exact": true,
+      "labels_policy_inert": true,
+      "roundtrip_exact": true,
+      "request_difference_cells": 12,
+      "C320": 10.701252079553988
+    },
+    {
+      "id": "202610195602_ring_both",
+      "base_exact": true,
+      "prior_tags_exact": true,
+      "OCN_exact": true,
+      "policy_exact": true,
+      "labels_policy_inert": true,
+      "roundtrip_exact": true,
+      "request_difference_cells": 34,
+      "C320": 11.44982888836389
+    },
+    {
+      "id": "202610195602_ring_birth_gain_only",
+      "base_exact": true,
+      "prior_tags_exact": true,
+      "OCN_exact": true,
+      "policy_exact": true,
+      "labels_policy_inert": true,
+      "roundtrip_exact": true,
+      "request_difference_cells": 8,
+      "C320": 11.492861391272662
+    },
+    {
+      "id": "202610195602_separate_seeds_both",
+      "base_exact": true,
+      "prior_tags_exact": true,
+      "OCN_exact": true,
+      "policy_exact": true,
+      "labels_policy_inert": true,
+      "roundtrip_exact": true,
+      "request_difference_cells": 21,
+      "C320": 12.018763442877265
+    },
+    {
+      "id": "202610195602_separate_seeds_birth_gain_only",
+      "base_exact": true,
+      "prior_tags_exact": true,
+      "OCN_exact": true,
+      "policy_exact": true,
+      "labels_policy_inert": true,
+      "roundtrip_exact": true,
+      "request_difference_cells": 15,
+      "C320": 11.063674791205514
+    }
+  ],
+  "native": 0
+}

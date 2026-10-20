@@ -1,0 +1,83 @@
+{
+  "task": "embodied_action_learning_20261019",
+  "owner": "resident_d3ccfa2d95b7",
+  "hypothesis": "One occupied-neighbor convex mixing of acquired motor parameters improves coherent movement and unannounced reversal over independent local score-trace learning; this is a fixed coordination test, not novel RL.",
+  "sources": {
+    "/share/Projects/元胞自动机研究/src/local_learning/embodied_action_learning/run.py": "a18a56d44c6e4a338ea7aaad742748f06502b364845264b309fa564149452c04",
+    "/share/Projects/元胞自动机研究/src/local_learning/embodied_action_learning/core.py": "bb519a2ca973ca40228041f47b44887b118bd192597f24759b47b21a252226cf",
+    "/share/Projects/元胞自动机研究/src/local_learning/material_transport.py": "dd5622a2df6a5d50642a31ad586215d5e30e33929cf8f57ee9efff36fdef08d5",
+    "/share/Projects/元胞自动机研究/src/local_learning/lifetime_cue_reversal/core.py": "3b1baedbb0f1f402526eb8b7478fbc2c4dd226a5fcbf88725073126ef0541406",
+    "/share/Projects/元胞自动机研究/src/local_learning/local_terminal_feedback/experiment.py": "1b820d4bed26a3c8452a2dd139fa29dedbb451c3d7f866835ed3b4d6890e1f7f"
+  },
+  "rule": {
+    "transport_scheme": "face_potential",
+    "dt": 0.1,
+    "mobility": 1.0,
+    "cohesion": 3.0,
+    "pressure": 1.5,
+    "interaction_sigma": 1.4,
+    "cue_gain": 0.0,
+    "learning_rate": 0.0,
+    "eligibility_time": 0.8,
+    "memory_time": 1e+30,
+    "uptake_rate": 0.2,
+    "energy_capacity": 8.0,
+    "basal_cost": 0.012,
+    "movement_cost": 0.002,
+    "starvation_rate": 0.15,
+    "starvation_energy": 0.08,
+    "food_sensor_scale": 5.0,
+    "injury_sensor_scale": 25.0,
+    "action_budget": "donor_energy",
+    "polarity_gain": 0.0,
+    "polarity_turn_rate": 0.04,
+    "polarity_relaxation_rate": 0.5,
+    "polarity_energy_gate": "none",
+    "energy_transfer_conductivity": 0.0,
+    "energy_transfer_loss": 0.01
+  },
+  "arms": [
+    "fixed",
+    "local_immediate",
+    "local_trace",
+    "neighbor_trace"
+  ],
+  "seeds": [
+    202610199101,
+    202610199102
+  ],
+  "signs": [
+    1,
+    -1
+  ],
+  "pilot": {
+    "arms": [
+      "fixed"
+    ],
+    "steps": 256,
+    "conditions": 2,
+    "go": "both alive; endpoint toroidal displacement >=2; actual paid contact occurred. No efficacy selection."
+  },
+  "science": {
+    "acquisition": 320,
+    "reversal": 320,
+    "no_feedback_unchanged_relation": 256,
+    "steps": 7168
+  },
+  "planned_native": 7680,
+  "native_cap": 8192,
+  "worker_cap": 240,
+  "cpu": 2,
+  "science_wall_cap": 95,
+  "total_wall_cap": 115,
+  "raw_cap": 134217728,
+  "information": "Only locally paid signed energy divided by fixed per-tissue tariff; previous observation and score transported with true K. No coordinate/cue gradient/map/clock/global reward to policy.",
+  "mechanism": "theta(2) initial0; Gaussian motor .8*tanh(theta+.6*epsilon), fresh iid epsilon each native; score epsilon/.6 carried once by actualK. theta clip[-2,2], alpha.4 times score*(paid_y-carried_previous_y). trace score EMA exp(-1/16). neighbor additionally one five-cell occupied mass-convex theta mixing every step.",
+  "baseline": "local_immediate uses same alpha and current transported score; local_trace standard local reward-modulated eligibility; fixed uses preset east theta=(0,1), same iid exploration, no reward update. Fixed directional prior disclosed; not an optimized oracle.",
+  "boundaries": "No birth; actual conservative soft deformable CA with paid movement and starvation. Symmetric local isotropic cohesion is preset; motor axes and stochastic actuator preset, not learned morphology. Neighbor communication and arithmetic unpriced. No unbiased organism policy-gradient claim from local material-mixed credit.",
+  "environment": "32x32 periodic finite substrate covers grid. y=sign*sin(2pi*(x-16)/32), tariff .005*rho, gain capped room and loss capped E; detector rho>=1e-4, no normalization by field amplitude. InitialE=6rho, capacity8rho. Native basal and motor prices unchanged. Reversal only environment at step321. Last256 no payment/write, transport and motor continue.",
+  "survival": "M>=12 and largest connected component fraction>=.75; failure retained, no revival",
+  "endpoint_gate": "alive and last64 mean tissue-weighted field>.25 and last64 mean fraction in positive field>=.6. All three phases reported; neither mean across lives nor cost-free status assumed.",
+  "records": "all scalar steps; actual frames every8, fullstate0/256/320/640/896; first16 motor/K/payment receipts; every attempt journalled. Never rerun unknown.",
+  "old_replay": 0
+}

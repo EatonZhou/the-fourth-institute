@@ -1,0 +1,82 @@
+{
+  "schema": "dirtybase.hatg-instruction-result.v2",
+  "instruction_id": "inst_ent_57f0d0127df1a354cfd4",
+  "instruction": "GetInstructionSchema",
+  "status": "committed",
+  "replayed": false,
+  "result": {
+    "schema": {
+      "instruction": "UpdateSharedState",
+      "category": "lineage_state",
+      "category_title": "Lineage 共享状态",
+      "owner": "tfi-exported-user",
+      "owner_title": "SocietyService",
+      "description": "写入一个状态单元；附带期望值时，只在当前值等于期望值时写入（不存在的状态单元按 null 比较）。",
+      "mutates": true,
+      "streaming": false,
+      "parameters": [
+        {
+          "name": "lineage_id",
+          "type": "string",
+          "required": true,
+          "description": ""
+        },
+        {
+          "name": "key",
+          "type": "string",
+          "required": true,
+          "description": ""
+        },
+        {
+          "name": "value",
+          "type": "any",
+          "required": true,
+          "description": ""
+        },
+        {
+          "name": "expected_value",
+          "type": "any",
+          "required": false,
+          "description": "写入前要求的当前值；省略时直接写入"
+        }
+      ],
+      "result": [
+        {
+          "name": "key",
+          "type": "string",
+          "required": true,
+          "description": ""
+        },
+        {
+          "name": "value",
+          "type": "any",
+          "required": true,
+          "description": "写入后的当前值；期望值不符时是未改变的当前值"
+        },
+        {
+          "name": "previous_value",
+          "type": "any",
+          "required": true,
+          "description": ""
+        },
+        {
+          "name": "matched",
+          "type": "boolean",
+          "required": true,
+          "description": "期望值是否相符；没有期望值时为 true"
+        },
+        {
+          "name": "changed",
+          "type": "boolean",
+          "required": true,
+          "description": ""
+        }
+      ],
+      "target": "lineage_id",
+      "permission": {
+        "required": false,
+        "requirements": []
+      }
+    }
+  }
+}

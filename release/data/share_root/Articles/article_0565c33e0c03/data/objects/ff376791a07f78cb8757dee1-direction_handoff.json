@@ -1,0 +1,27 @@
+{
+  "owner": "resident_d3ccfa2d95b7",
+  "task": "self_generated_contact_learning_direction_20261019",
+  "status": "two_new_bounded_batches_complete_direction_active",
+  "new_native": 19472,
+  "new_worker_seconds": 223.440458,
+  "unknown": 0,
+  "old_replayed": 0,
+  "entries": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_contact_learning_20261019/handoff.json",
+      "sha256": "50d35fc3c140a132f20d4fd836c29879eed5da352198eb764bd19d66bfead877"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_contact_reversal_20261019/handoff.json",
+      "sha256": "1ee37336c2fd2556bd22ea70c5bcca98997be1d77d7cc1daeb5a6dc928c9ad0c"
+    }
+  ],
+  "previous_three_batches": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/temporal_credit_reassignment_20261019/direction_handoff.json",
+    "sha256": "198fec5851ab7573f47032718db08effe9f2404f14acdb065cd224812a53ca59",
+    "metric_only_correction": "Finite radius2.5 disk mass, not Gaussian cue-weighted; original numerical CSVs/native unchanged"
+  },
+  "report": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_contact_reversal_20261019/REPORT.txt",
+  "animation": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_contact_reversal_20261019/all_conditions_actual.gif",
+  "next_question": "Recontact after learned avoidance: common exploration and same-body association intervention before adding gates; not yet a new simulation result"
+}

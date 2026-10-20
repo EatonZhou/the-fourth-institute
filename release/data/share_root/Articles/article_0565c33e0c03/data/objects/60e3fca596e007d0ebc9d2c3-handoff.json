@@ -1,0 +1,80 @@
+{
+  "schema": "d3-anticipatory-material-allocation-result-v1",
+  "status": "completed",
+  "job_id": "3786e0f1-73a7-4da8-9bdb-ae8fff7fb44e",
+  "manifest": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/manifest.json",
+    "sha256": "a70e2f4475dc552d890bb011ee1b677661666f232cf68f7744386de470f2ee00"
+  },
+  "result": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/result.json",
+    "sha256": "ab40bb146eadc33ac4e6e18500210d97c1751f0505612d1a88d8aae76d292364"
+  },
+  "analysis": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/analysis_summary.json",
+    "sha256": "a85a20a708451cac8817fa190d1ab2a05953222cfd321bbb582a941af3653d0f"
+  },
+  "trained_rule": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/trained_rule.json",
+    "sha256": "cace61819fa2cb144f409e54e333f0d7f164661e7d0dba848d9f341fb1b034bf"
+  },
+  "ce2_source": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/anticipatory_material_allocation_20261018/handoff.json",
+    "sha256": "d9a7c46e4c24f5d5e98b41f843665c35f81ccb0edcb20b52671bdd3c3b70ac30"
+  },
+  "counts": {
+    "d3_host_steps": 100864,
+    "joint_host_steps": 119456,
+    "heldout_paths": 56,
+    "new_seed_count": 4,
+    "unique_training_candidates": 22,
+    "training_proposals": 24,
+    "physical_stages": 126,
+    "saved_frames": 832
+  },
+  "joint_usage": {
+    "jobs": [
+      {
+        "job_id": "3786e0f1-73a7-4da8-9bdb-ae8fff7fb44e",
+        "host_steps": 100864,
+        "worker_seconds": 33.869072,
+        "started_at": "2026-10-18T07:45:55.884833+00:00",
+        "finished_at": "2026-10-18T07:46:12.819369+00:00",
+        "status": "completed",
+        "returncode": 0
+      },
+      {
+        "job_id": "5063bd49-7b65-4ec3-9338-92f5bd855747",
+        "host_steps": 18592,
+        "worker_seconds": 9.112918,
+        "started_at": "2026-10-18T07:42:01.034605+00:00",
+        "finished_at": "2026-10-18T07:42:05.591064+00:00",
+        "status": "completed",
+        "returncode": 0
+      }
+    ],
+    "host_steps": 119456,
+    "worker_seconds": 42.98199,
+    "host_cap": 200000,
+    "worker_cap": 600.0,
+    "remaining_host_steps": 80544,
+    "remaining_worker_seconds": 557.01801,
+    "new_analysis_host_steps": 0
+  },
+  "checks": {
+    "source_hashes": true,
+    "trained_phi_unchanged": true,
+    "exact_step_count": 100864,
+    "raw_files": 959,
+    "frames_hash_checked": 832,
+    "final_packets_checked": 126,
+    "scalar_totals_reconciled": true,
+    "stage_recomposition_error": 0.0,
+    "adaptation_metric_fixed_before_run": true,
+    "no_new_physics": true
+  },
+  "conclusion": "Learned updater loses heldout intake to last-contact on all four seeds in each condition; no extra method benefit established. Retain the real anticipation interface and all tradeoffs.",
+  "scope": "single engineered material body, real paid preparation and local receipts, global E, no movement; not Lenia",
+  "next_physical_job_submitted": false,
+  "published": false
+}

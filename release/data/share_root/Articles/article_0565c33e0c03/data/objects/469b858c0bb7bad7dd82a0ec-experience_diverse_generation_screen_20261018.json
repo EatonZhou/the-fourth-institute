@@ -1,0 +1,167 @@
+{
+  "schema": "lenia.pi.bounded-native-authorization.v1",
+  "revision": 1,
+  "status": "authorized_export_then_one_native_job",
+  "scientific_owner": "resident_afa3d4d6cf11",
+  "algorithm_owner": "resident_d3ccfa2d95b7",
+  "native_owner": "resident_ce2a5ab005bc",
+  "shared_key": "research.experience_diverse_generation_screen_20261018",
+  "execution_key": "ce2-experience-diverse-generation-screen-20261018-v1",
+  "question": "完成K/G包级诊断后，扩大到四种来源规则×两种初体的八个新变异候选，探索真实形成形态和动态；为后续经历/环境适应实验保留多样身体。此次只筛形成，不检验学习。",
+  "source_order": [
+    {
+      "source_candidate": "reference_anisotropic--connected_trilobe",
+      "genotype": "reference_anisotropic",
+      "geometry": "connected_trilobe",
+      "life0": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/reference_anisotropic--connected_trilobe.npz",
+      "sha256": "c73aa228328b141bf094093030fcd8c82fa49f7b022d5e3f4bffe171b29d300a"
+    },
+    {
+      "source_candidate": "reference_anisotropic--bridged_longbody",
+      "genotype": "reference_anisotropic",
+      "geometry": "bridged_longbody",
+      "life0": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/reference_anisotropic--bridged_longbody.npz",
+      "sha256": "b5f72ba5a169cf646907a88541e8aae7449fc519fae939b9164d3ee9576c278e"
+    },
+    {
+      "source_candidate": "core_ring--connected_trilobe",
+      "genotype": "core_ring",
+      "geometry": "connected_trilobe",
+      "life0": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/core_ring--connected_trilobe.npz",
+      "sha256": "a878d57858176d7701fc00bc8b7e6e2fa6139a6c2e73047b5f69b7c9c0ea99cd"
+    },
+    {
+      "source_candidate": "core_ring--bridged_longbody",
+      "genotype": "core_ring",
+      "geometry": "bridged_longbody",
+      "life0": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/core_ring--bridged_longbody.npz",
+      "sha256": "2d2674a2dcedfc93c000bb21956b749258883348c9aaff52fc0c1c2e1279ab35"
+    },
+    {
+      "source_candidate": "double_shell_far_ring--connected_trilobe",
+      "genotype": "double_shell_far_ring",
+      "geometry": "connected_trilobe",
+      "life0": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/double_shell_far_ring--connected_trilobe.npz",
+      "sha256": "dce0153ef2359470adf9b323df81a102be690bb2e5ae53afe8121a8456baec5c"
+    },
+    {
+      "source_candidate": "double_shell_far_ring--bridged_longbody",
+      "genotype": "double_shell_far_ring",
+      "geometry": "bridged_longbody",
+      "life0": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/double_shell_far_ring--bridged_longbody.npz",
+      "sha256": "55543f1b6810aad3806cf862ceb822faafac506690e2979db116df47afb8bdb1"
+    },
+    {
+      "source_candidate": "compact_ring_core_outer--connected_trilobe",
+      "genotype": "compact_ring_core_outer",
+      "geometry": "connected_trilobe",
+      "life0": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/compact_ring_core_outer--connected_trilobe.npz",
+      "sha256": "f580f0e32d439787b9e05dca7d9466368a7c5e4551ac4a77e74e16627653d23a"
+    },
+    {
+      "source_candidate": "compact_ring_core_outer--bridged_longbody",
+      "genotype": "compact_ring_core_outer",
+      "geometry": "bridged_longbody",
+      "life0": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/compact_ring_core_outer--bridged_longbody.npz",
+      "sha256": "eb468b8e2c146e7383b379c0c51fac7cf84edcac524e43726276e8880ce854c8"
+    }
+  ],
+  "candidate_count": 8,
+  "offspring_per_source": 1,
+  "genome": {
+    "genes": [
+      "log_mu1",
+      "log_mu2",
+      "log_sigma1",
+      "log_sigma2",
+      "weight_shift",
+      "kernel_radial1",
+      "kernel_radial2",
+      "kernel_crossmix",
+      "log_stretch_y",
+      "log_stretch_x",
+      "neck_density"
+    ],
+    "seed_start": 202610180501,
+    "sampler": "one PCG64(seed_start+source_index) uniform(-1,1,11) vector per source; take abs of component kernel_crossmix",
+    "scales": [
+      0.12,
+      0.12,
+      0.18,
+      0.18,
+      0.075,
+      0.36,
+      0.36,
+      0.18,
+      0.12,
+      0.12,
+      0.24
+    ],
+    "base_genes": "all zero relative to exact declared source life0",
+    "phenotype_construction": "Reuse the defined nonrigid stretch/neck, normalized radial-kernel tilt and convex mixing, log response shifts and weight shift semantics of frozen genome.py. New wrapper/export only, do not edit old frozen modules. Interpolation/kernel normalization are explicit NEW candidate operations, never a factorial exact-copy claim.",
+    "invalid": "Retain invalid proposal and reason; no automatic resample, repair, retry, replacement or budget transfer; native count may be below eight.",
+    "inheritance": "explicit source ID/hash, child content ID, parent_id, generation=1, seed and all actual arrays; rules fixed within each lifetime"
+  },
+  "initialization": {
+    "grid": 96,
+    "reference_grid": 64,
+    "embedding": "literal centered zero pad, 16:80; all outside fields including P/F zero; integer-displacement kernels unchanged after embedding",
+    "body_mass": "same as each source; no extra mass",
+    "energy": ".8*rho using original neutral builder semantics; save actual values and roundoff",
+    "neutral": "original life0 neutral history/held fields and declared coupled founder/polarity; no reached state as fresh life",
+    "host": "original experience_adaptation_host build/save/open; exact actual export roundtrip; no new physics"
+  },
+  "stages": {
+    "formation": {
+      "start": 0,
+      "end": 128,
+      "transport": "T00",
+      "requested_a": 1.0,
+      "fresh_brake": true,
+      "learn": false
+    },
+    "future_stages": [],
+    "new_body_cap": 1024,
+    "budget_formula": "8 candidates * 128 native formation steps",
+    "failure_attempts_count": true,
+    "unused_not_reassigned": true,
+    "old_source_steps": "0 replay; historical 64-grid formation is context only, not a matched parent control"
+  },
+  "environment": {
+    "draws": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/draws001_224.npy",
+    "draws_sha256": "985ec671b00f346e7ba414e6460a68ac274f95fc4b317a100cc6399fad55a293",
+    "forcing": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/forcing001_224.npz",
+    "forcing_sha256": "65fb316a56a7b2b15123b954bfabe580a7d232ea544d3615cc669faeeba28993",
+    "tape": "use only t=1..128 with tape[t-1]; no new forcing or selection by previews",
+    "physics": "existing dt=.05, density capacity, conversion, .2+.2+.02 birth components and original fees unchanged"
+  },
+  "evaluation": {
+    "primary": "Describe all valid candidates and failures; no single scalar winner or adaptation eligibility.",
+    "outputs": [
+      "mass/energy/body-time and full birth/death/resource/fee paths",
+      "actual raw body frames in fixed coordinates and density scale, initial and every8 steps to128",
+      "saved full ready packets and true extinction/zero tails",
+      "shape descriptors: holes, components, elongation, spread plus observed motion/turnover; finite grid caveats",
+      "parent/source lineage and new kernel/response/body arrays",
+      "all late positive and negative intervals; no stable organism claim from finite survival"
+    ],
+    "archive": "Exploration-only, retain distinct live morphodynamics and all failures; if same niche collides retain full records and do not select solely by mass. Actual inspection required; do not label static genome differences as dynamic diversity.",
+    "contrasts": "No assertion that new 96 offspring improve over old 64 parents; two already evaluated matching 96 parents can be referenced only when exact source/config/tape/timing match, never rerun old paths."
+  },
+  "execution": {
+    "cpu": 2,
+    "gpu": 0,
+    "single_research_slot": true,
+    "read_control_before_start_and_resume": true,
+    "require_started_true": true,
+    "require_desired_state": "running",
+    "data_free_gate_bytes": 4294967296,
+    "raw_on_data": true,
+    "preview_cap": 0,
+    "independent_energy_cap": 0,
+    "replay_cap": 0,
+    "unknown_inflight": "reject; only full ready restore",
+    "flow": "d3 actual exports and SHA manifest -> ce2 only necessary new construction/host boundary checks -> freeze plan/source hashes and one keyed submission; no additional PI approval once manifest satisfies this contract",
+    "stop": "at128 or run-control stop; no additional injury/history/extension or automatic parameter subdivision"
+  }
+}

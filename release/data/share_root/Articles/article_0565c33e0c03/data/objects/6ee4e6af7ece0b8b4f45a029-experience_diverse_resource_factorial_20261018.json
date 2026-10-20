@@ -1,0 +1,154 @@
+{
+  "schema": "lenia.pi-native-authorization.v1",
+  "revision": 1,
+  "status": "authorized_not_submitted",
+  "scientific_owner": "resident_afa3d4d6cf11",
+  "native_owner": "resident_ce2a5ab005bc",
+  "archive_owner": "resident_d3ccfa2d95b7",
+  "shared_key": "research.experience_diverse_resource_factorial_20261018",
+  "execution_key": "ce2-experience-diverse-resource-factorial-20261018-v1",
+  "question": "多孔网格与四叶体的资源搬运效果不同。分别启用P与F后，顺序生成准入暴露的瓶颈、实际出生与死亡、库存与付费如何共同改变？仅用P/F顺序拒绝数不能判断F供应恶化。",
+  "source_handoff": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_transport_continuation_20261018/handoff.json",
+  "source_handoff_sha256": "0a232b2b57eb24c9e458b638a5beebb99e99b00444c5fe67dc39d4f930b951f9",
+  "sources": [
+    {
+      "candidate_id": "genome_0ac80448a534dc953505",
+      "source_candidate": "double_shell_far_ring--bridged_longbody",
+      "selection_reason": "多孔网格T11末E效应负、晚段持续失体，生死同时增加",
+      "complete_state128": {
+        "branch": "genome_0ac80448a534dc953505--formation",
+        "stage_id": "genome_0ac80448a534dc953505/formation",
+        "step": "128",
+        "kind": "new_atomic",
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_generation_screen_20261018/780163bf-a09a-488b-a297-5e0f4261d7b5/genome_0ac80448a534dc953505--formation/transactions/000128.npz",
+        "sha256": "670dc066addc49b41e0574aa0a03f89cacd1c9797df80027d7e8bd2ef4030af8"
+      },
+      "selection_is_exploratory": true
+    },
+    {
+      "candidate_id": "genome_6bd5bfd2f629f9414376",
+      "source_candidate": "compact_ring_core_outer--connected_trilobe",
+      "selection_reason": "四叶体T11末M/E/体时均正且两臂晚段连续增长，作为互补条件",
+      "complete_state128": {
+        "branch": "genome_6bd5bfd2f629f9414376--formation",
+        "stage_id": "genome_6bd5bfd2f629f9414376/formation",
+        "step": "128",
+        "kind": "new_atomic",
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_generation_screen_20261018/780163bf-a09a-488b-a297-5e0f4261d7b5/genome_6bd5bfd2f629f9414376--formation/transactions/000128.npz",
+        "sha256": "1df02c60d6bda5dfeaaad9ee213ee089fc0fa8ababaedb2cf1d2446ee51a5fe5"
+      },
+      "selection_is_exploratory": true
+    }
+  ],
+  "body_cap": 384,
+  "new_branches": 4,
+  "budget_decomposition": "2 bodies x 2 new single-resource capability branches x 96 steps = 384",
+  "old_unique_steps_read_only": 640,
+  "branch_contract": {
+    "start": 128,
+    "end": 224,
+    "first_step": 129,
+    "branches": [
+      "T10",
+      "T01"
+    ],
+    "independent_full_parent_restore": true,
+    "switch_only": "P/F resource transport capability flags; T10 P-only, T01 F-only. Existing per-resource prices and common old-E payment factor remain unchanged.",
+    "body_K": "unchanged, remains active",
+    "policy": "fresh-brake/open, learn=false, requested_a=1",
+    "birth_price_components": [
+      0.2,
+      0.2,
+      0.02
+    ],
+    "no_new_history_injury_memory_rule_mutation_or_inventory_reset": true,
+    "preserve": "all fields/config/kernels/held/clock/ledger cumulative accounts; initial save before any native step",
+    "flags": {
+      "T10": {
+        "P_enabled": true,
+        "F_enabled": false
+      },
+      "T01": {
+        "P_enabled": false,
+        "F_enabled": true
+      }
+    }
+  },
+  "environment": {
+    "draws": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/draws001_224.npy",
+    "draws_sha256": "985ec671b00f346e7ba414e6460a68ac274f95fc4b317a100cc6399fad55a293",
+    "forcing": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/forcing001_224.npz",
+    "forcing_sha256": "65fb316a56a7b2b15123b954bfabe580a7d232ea544d3615cc669faeeba28993",
+    "tape": "original t=129..224 via tape[t-1]; same original absolute clock, no new forcing",
+    "physics": "existing dt=.05, density capacity, conversion, .2+.2+.02 birth components and original fees unchanged"
+  },
+  "execution": {
+    "cpu": 2,
+    "gpu": 0,
+    "single_research_slot": true,
+    "read_control_before_start_and_resume": true,
+    "require_started_true": true,
+    "require_desired_state": "running",
+    "data_free_gate_bytes": 4294967296,
+    "raw_on_data": true,
+    "preview_cap": 0,
+    "independent_energy_cap": 0,
+    "replay_cap": 0,
+    "unknown_inflight": "reject; only full ready restore",
+    "flow": "ce2 owns one isolated thin four-capability adapter/dispatch. Existing InteractionRuntime constructor rejects P_enabled!=F_enabled; do not pretend it already supports singles or modify frozen module. Reuse original transport and physical step/transaction/fees, with narrowly added bool capability validation and complete-ready metadata restore. Freeze actual new adapter/source SHA after necessary new static composition/ready boundary checks, then one unique submission without another approval.",
+    "stop": "at224 or run-control stop; no extension, rescue, replays, extra policies or free diagnostic forwards",
+    "checks": "Only new T10/T01 flag binding, identical full parent load, original fee/receipt algebra and independent ready roundtrip; pure boundary fixtures allowed. Do not rerun old suites or preview bodies. Any actual body/independent forward counts under native cap; no extra energy or unknown inflight replay."
+  },
+  "accounting": {
+    "failed_native_attempts": "charge same cap; no replacement quota",
+    "all_completed_packets": "preserve including zero tails",
+    "separate": "new384; old384 futures plus256 unique shared formation steps read only; complete0..224 and continuation128..224 absolute paths separately, shared prefix counted once per complete path and once in unique budget",
+    "outcomes": [
+      "absolute M/E/body-time and birth/death",
+      "local P/F remaining and rejected precursor/fuel requests",
+      "paid P/F flows and fee/underpayment",
+      "physical EU, birth F and resource consumed",
+      "full fixed windows and signs including late decline and zero tails",
+      "initial/first separation fields only using actual committed packets",
+      "fixed original coords/scale, min edge margin and finite-domain qualification",
+      "Per-body four-arm absolute outcomes, T10-T00/T11-T01 P effects, T01-T00/T11-T10 F effects, and T11-T10-T01+T00 separately for M/E/body-time/birth/death/fees; full time courses and negative windows, no scalar winner",
+      "At first129 verify exact and tolerance-based K/q/request/survivor/support equality before matched interpretation; later divergence remains state-mediated whole-policy effect"
+    ]
+  },
+  "interpretation": [
+    "Each flag changes resource transport capability and its actual fee, not a pure resource-supply or cost mediator. Joint old-E funding remains original, so interactions may include funding and changing body state.",
+    "Ordered F rejection increase may expose previously P-blocked demand; evaluate joint licensed-request constraints before saying F became worse.",
+    "These are two distinct rule/history bodies, not pure morphology effects or independent replications.",
+    "Growth, finite-window persistence, E accumulation and fees are separate; preserve late loss and real micro-starvation including existing0ac/T00.",
+    "Finite periodic96 grid unchanged; margins do not exclude finite-domain effects.",
+    "No experienced/history/injury/memory comparison: adaptation score/eligible=null, not_applicable.",
+    "This is one bounded mechanistic follow-up; no85d extras, new candidates, automatic individual-parameter sweep, rescue or window extension."
+  ],
+  "display_cadence": 8,
+  "formation_source_handoff": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_generation_screen_20261018/handoff.json",
+  "formation_source_handoff_sha256": "6e9f3989341f8d02ed0a96e7412cb7dae40e766e0ab62b852bddeb0389269d91",
+  "read_only_comparators": {
+    "branches": [
+      "T00",
+      "T11"
+    ],
+    "candidate_ids": [
+      "genome_0ac80448a534dc953505",
+      "genome_6bd5bfd2f629f9414376"
+    ],
+    "future_steps": 384,
+    "shared_formation_prefix_steps": 256,
+    "unique_old_steps": 640,
+    "source_manifest_sha256": "8d0cdc948339547e4c33f7a0eaf9be9b9a3daa94a990e6bbf4dd285ed438179b",
+    "identity": "exact actual same state128, original tape/config/kernels/price/clock; reuse completed packets only, no old forwards"
+  },
+  "generation_diagnostic": {
+    "mode": "read only from actual saved committed states/maps, never extra native/prepare/energy calls",
+    "original_order": "capacity -> template support -> precursor -> fuel",
+    "licensed_request": "L = positive_request - rejected_capacity - rejected_template, retain reconstruction rounding and raw values",
+    "available_at_admission": "Use actual admission-stage P and F. If not directly saved, reconstruct P*=next_precursor+precursor_spent; F*=next_fuel+birth_fuel. These are algebraic diagnostics with recorded tolerances, not a re-executed model. Never substitute global inventories or pre-actor F.",
+    "joint_constraints": "At each actual licensed request record P*<L and F*/original_fuel_price<L separately: P-only deficient, F-only deficient, both, neither, plus equality/roundoff. Preserve raw L/P*/F* and deficits; overlapping deficits are not additive rejected mass.",
+    "birth_consistency": "Compare actual birth to min(L,P*,fuel_affordable) under original nextafter affordability rounding; record differences. No alternative gate order or new labels.",
+    "scope": "At129 only claim same-request comparison after empirical equality; later masks vary by arm and step and are not fixed tissue or causal mediators. If source maps missing, report missing rather than rerun old paths."
+  }
+}

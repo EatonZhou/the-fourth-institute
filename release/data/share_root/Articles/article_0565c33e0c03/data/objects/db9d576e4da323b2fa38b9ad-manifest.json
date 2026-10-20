@@ -1,0 +1,77 @@
+[
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling_report/METHOD_AND_LIMITS.txt",
+    "sha256": "221c284ea0cfa58db5aec9b1e4e7136c4085d4a04f9bedd77b4ae2d373ef1919",
+    "bytes": 3262
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling_report/actual_state_atlas.png",
+    "sha256": "5e711ad6b8f6d7caa9c21e90fe70aefd0e195107dbc813dc6cf16233e2aee9ad",
+    "bytes": 86536
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling_report/actual_usage.json",
+    "sha256": "d6ea214e00107965e704e7301b9a9bee705cb30a723669cc09c8cd841de9a0d3",
+    "bytes": 562
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling_report/aggregate.csv",
+    "sha256": "2dbda6511fbd6c7d521edda529d22dfc9c67b4317e5c285587aa9d5b86397006",
+    "bytes": 6481
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling_report/all_outcomes.csv",
+    "sha256": "d96c16dd7aca3e2f3e264998ff28604d6c3050eaa21115ce50f31e0ab518d303",
+    "bytes": 57359
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling_report/analysis_source.py",
+    "sha256": "d45b31d038efda5268372f62f9a0fbe89a5a1eb0d4b8b0e3e57b93b91f7217f9",
+    "bytes": 12378
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling_report/checks.json",
+    "sha256": "29a37b08865048cd4ce88fc55df424c03bd05400a3abc107ee3e38f3cea5118a",
+    "bytes": 722
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling_report/first_divergences.json",
+    "sha256": "8b8eda609cc1136fcb05afbc6f8850d52e6771036a8c9e92197af55a504d6d0f",
+    "bytes": 58731
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling_report/key_results.json",
+    "sha256": "5822d33d78a8df35ee6f99397f43753bed1087d7b853b024e1da1c8a48f1a502",
+    "bytes": 2652
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling_report/paired_effects.csv",
+    "sha256": "2b9a33e23246c01eaab7a5adc14b74a0dfb57c54a69f97cf46ec7fde40fce1a0",
+    "bytes": 24553
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling_report/reversal_process.png",
+    "sha256": "602062aff7fcb3beebca601614792f1345a90fbcb36cb2df4e73b48b09a0fc4b",
+    "bytes": 296953
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling_report/runner_receipt.json",
+    "sha256": "fcb72c5afad9e5fc6cb5ab7d6336001bd355e9832dac5e2ae13d75cdbf8eb634",
+    "bytes": 524
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling_report/source_manifest.json",
+    "sha256": "149fc3ad7b99c2428658376cf6ed0f12ccd5402737c68cb955cb21aec2021256",
+    "bytes": 53870
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling_report/tape_diagnostics.json",
+    "sha256": "941a8344e9587c7389c21523c7e3f4cae0a597f7ab1cad3c7e58b83cc7a02805",
+    "bytes": 1451
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling_report/view_and_scope.json",
+    "sha256": "a0c1e29e3f5693a71229d0056816e5b530fbf2f4e358e2ddce4e3d030ab66a10",
+    "bytes": 968
+  }
+]

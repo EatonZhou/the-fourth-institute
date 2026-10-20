@@ -1,0 +1,77 @@
+\contentsline {chapter}{前言}{ii}{chapter*.1}%
+\contentsline {chapter}{符号与约定}{iv}{chapter*.3}%
+\contentsline {part}{第一部分\hspace {1em}对象与障碍}{1}{part.1}%
+\contentsline {chapter}{\numberline {第一章\hspace {.3em}}有限诊断中的思维过程}{2}{chapter.1}%
+\contentsline {section}{\numberline {1.1}一个持续的共同错误}{2}{section.1.1}%
+\contentsline {section}{\numberline {1.2}片段、操作与推理链模式}{2}{section.1.2}%
+\contentsline {section}{\numberline {1.3}受控的有限实验族}{3}{section.1.3}%
+\contentsline {section}{\numberline {1.4}完整组织类别与成本}{3}{section.1.4}%
+\contentsline {section}{\numberline {1.5}一个可以核对的运行}{4}{section.1.5}%
+\contentsline {chapter}{\numberline {第二章\hspace {.3em}}共同错误的不可辨别类}{5}{chapter.2}%
+\contentsline {section}{\numberline {2.1}把全部操作一起比较}{5}{section.2.1}%
+\contentsline {section}{\numberline {2.2}重复确认的极限}{6}{section.2.2}%
+\contentsline {section}{\numberline {2.3}关系与边界}{6}{section.2.3}%
+\contentsline {part}{第二部分\hspace {1em}组织能力的上下界}{7}{part.2}%
+\contentsline {chapter}{\numberline {第三章\hspace {.3em}}诊断覆盖率与可靠构造}{8}{chapter.3}%
+\contentsline {section}{\numberline {3.1}一次观察提供多少区别}{8}{section.3.1}%
+\contentsline {section}{\numberline {3.2}覆盖规划与反方证据}{9}{section.3.2}%
+\contentsline {section}{\numberline {3.3}一个无需知道真实情境的组织}{9}{section.3.3}%
+\contentsline {section}{\numberline {3.4}实现与近似}{10}{section.3.4}%
+\contentsline {chapter}{\numberline {第四章\hspace {.3em}}任意自适应组织的证据预算}{11}{chapter.4}%
+\contentsline {section}{\numberline {4.1}记录的似然比}{11}{section.4.1}%
+\contentsline {section}{\numberline {4.2}正确回答要求多少相对熵}{12}{section.4.2}%
+\contentsline {section}{\numberline {4.3}允许针对不同历史重新分配}{12}{section.4.3}%
+\contentsline {section}{\numberline {4.4}有了适应性是否一定更强}{13}{section.4.4}%
+\contentsline {chapter}{\numberline {第五章\hspace {.3em}}覆盖率的操作性含义}{14}{chapter.5}%
+\contentsline {section}{\numberline {5.1}同一个量何时控制两端}{14}{section.5.1}%
+\contentsline {section}{\numberline {5.2}这个结论实际解释什么}{15}{section.5.2}%
+\contentsline {section}{\numberline {5.3}不能从覆盖率中消去任务规模}{15}{section.5.3}%
+\contentsline {section}{\numberline {5.4}完整执行账本}{16}{section.5.4}%
+\contentsline {section}{\numberline {5.5}一个充分结果怎样变成研究工具}{16}{section.5.5}%
+\contentsline {part}{第三部分\hspace {1em}共同错误与通信}{17}{part.3}%
+\contentsline {chapter}{\numberline {第六章\hspace {.3em}}共同偏差、校准与可构造表示}{18}{chapter.6}%
+\contentsline {section}{\numberline {6.1}把持续失效因素写入情境}{18}{section.6.1}%
+\contentsline {section}{\numberline {6.2}区别强度与结构覆盖分离}{18}{section.6.2}%
+\contentsline {section}{\numberline {6.3}校准一个共同偏差}{19}{section.6.3}%
+\contentsline {section}{\numberline {6.4}表示怎样实际构造}{19}{section.6.4}%
+\contentsline {chapter}{\numberline {第七章\hspace {.3em}}通信：为另一个过程生成什么}{21}{chapter.7}%
+\contentsline {section}{\numberline {7.1}局部历史中的通信选择}{21}{section.7.1}%
+\contentsline {section}{\numberline {7.2}通信怎样改变诊断实验}{21}{section.7.2}%
+\contentsline {section}{\numberline {7.3}什么压缩完整保留了证据}{22}{section.7.3}%
+\contentsline {section}{\numberline {7.4}为接收者生成一份充分记录}{22}{section.7.4}%
+\contentsline {section}{\numberline {7.5}何时证据已经足够}{23}{section.7.5}%
+\contentsline {section}{\numberline {7.6}沉默与选择性公开}{24}{section.7.6}%
+\contentsline {section}{\numberline {7.7}消息信息与任务损失}{24}{section.7.7}%
+\contentsline {section}{\numberline {7.8}局部请求怎样改变内容}{25}{section.7.8}%
+\contentsline {chapter}{\numberline {第八章\hspace {.3em}}表示、计算与不准确的模型}{26}{chapter.8}%
+\contentsline {section}{\numberline {8.1}组织不能把未知答案藏进新操作}{26}{section.8.1}%
+\contentsline {section}{\numberline {8.2}同样的信息可以需要不同读出成本}{26}{section.8.2}%
+\contentsline {section}{\numberline {8.3}概率表估计错误会消耗多少余量}{27}{section.8.3}%
+\contentsline {section}{\numberline {8.4}模型失配的更深层问题}{27}{section.8.4}%
+\contentsline {part}{第四部分\hspace {1em}解释与研究边界}{28}{part.4}%
+\contentsline {chapter}{\numberline {第九章\hspace {.3em}}认知现象的结构解释}{29}{chapter.9}%
+\contentsline {section}{\numberline {9.1}无知、混淆与过度确信}{29}{section.9.1}%
+\contentsline {section}{\numberline {9.2}好奇、专注与无效重复}{29}{section.9.2}%
+\contentsline {section}{\numberline {9.3}理解与可迁移的组合}{30}{section.9.3}%
+\contentsline {section}{\numberline {9.4}发现、创新与新的可用区别}{30}{section.9.4}%
+\contentsline {section}{\numberline {9.5}社会组织与成员差异}{30}{section.9.5}%
+\contentsline {chapter}{\numberline {第十章\hspace {.3em}}从有限定理走向更强理论}{31}{chapter.10}%
+\contentsline {section}{\numberline {10.1}当前已经连接起来的结果}{31}{section.10.1}%
+\contentsline {section}{\numberline {10.2}问题一：规模增长时，覆盖率还缺少什么}{31}{section.10.2}%
+\contentsline {section}{\numberline {10.3}问题二：什么时候适应性具有不可替代收益}{31}{section.10.3}%
+\contentsline {section}{\numberline {10.4}问题三：共同错误在过程中变化}{32}{section.10.4}%
+\contentsline {section}{\numberline {10.5}问题四：观察模型怎样取得}{32}{section.10.5}%
+\contentsline {section}{\numberline {10.6}问题五：通信怎样内生改变组织}{32}{section.10.6}%
+\contentsline {section}{\numberline {10.7}研究成果的检验单位}{33}{section.10.7}%
+\contentsline {chapter}{\numberline {附录 A\hspace {.3em}}概率、信息与对偶工具}{34}{chapter.A}%
+\contentsline {section}{\numberline {A.1}事件数据处理}{34}{section.A.1}%
+\contentsline {section}{\numberline {A.2}独立有界和的集中}{34}{section.A.2}%
+\contentsline {section}{\numberline {A.3}非负鞅的随时界}{34}{section.A.3}%
+\contentsline {section}{\numberline {A.4}条件Fano界}{35}{section.A.4}%
+\contentsline {section}{\numberline {A.5}有限覆盖规划的对偶}{35}{section.A.5}%
+\contentsline {chapter}{\numberline {附录 B\hspace {.3em}}练习解答}{36}{chapter.B}%
+\contentsline {chapter}{\numberline {附录 C\hspace {.3em}}结论、归属与核验}{39}{chapter.C}%
+\contentsline {section}{\numberline {C.1}核心推导的依赖}{39}{section.C.1}%
+\contentsline {section}{\numberline {C.2}与已有数学的关系}{39}{section.C.2}%
+\contentsline {section}{\numberline {C.3}有限核验怎样使用}{40}{section.C.3}%
+\contentsline {section}{\numberline {C.4}报告数学进展}{40}{section.C.4}%

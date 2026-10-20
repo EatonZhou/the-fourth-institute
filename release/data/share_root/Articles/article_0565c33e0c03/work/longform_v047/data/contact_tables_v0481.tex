@@ -1,0 +1,379 @@
+\subsection*{Persistent contact parameters and a force-equivalent null model}
+This auxiliary host is a fifteen-unit elastic contact network, not a cellular automaton. The frozen handoff is \path{persistent_contact_remodeling_20261019/handoff.json}; all input hashes, full-precision values and whole-path accounts are in \path{work/longform_v047/data/contact_source_rows_v0481.json}. Batch O is the opportunity pair, M the three-history main comparison and C the three-history content comparison. Seed suffixes use prefix 202610199. Rules: P, plastic; FC, fixed material plus force compensation; F, fixed parameters; S, sign update; C, passive creep; T, persistent perturbation without long-term updating. A/H/R/HR denote acquisition, stopped writing, resource shift and stopped writing after the shift. Repeated paths and branches are dependent conditions.
+\begingroup\scriptsize\setlength{\tabcolsep}{3pt}
+\begin{longtable}{lllllllll}
+\caption{All 92 actual stages, including opportunity and structurally failed controls. Uptake, remodelling and movement are stage sums; energy is the terminal stock. B is batch. No stage is relabelled a successful complete lifetime.}\label{tab:contact-stages}\\
+\toprule
+B & Seed & Rule & Stage & Uptake & $E$ & Remodel & Move & Broken\\
+\midrule\endfirsthead
+\toprule
+B & Seed & Rule & Stage & Uptake & $E$ & Remodel & Move & Broken\\
+\midrule\endhead
+O & 861 & P & A & 3.36828 & 55.78514 & 6.73319 & 0.03995 & 0\\
+O & 861 & P & H & 2.40915 & 57.97537 & 0.00000 & 0.00292 & 0\\
+O & 861 & P & R & 2.46930 & 50.22605 & 9.37520 & 0.03343 & 0\\
+O & 861 & P & HR & 0.66909 & 50.67702 & 0.00000 & 0.00211 & 0\\
+O & 861 & FC & A & 3.36828 & 55.78514 & 6.73319 & 0.03995 & 0\\
+O & 861 & FC & H & 2.40915 & 57.97537 & 0.00000 & 0.00292 & 0\\
+O & 861 & FC & R & 2.46930 & 50.22605 & 9.37520 & 0.03343 & 0\\
+O & 861 & FC & HR & 0.66909 & 50.67702 & 0.00000 & 0.00211 & 0\\
+M & 871 & P & A & 3.62166 & 55.92537 & 6.84555 & 0.04073 & 0\\
+M & 871 & P & H & 2.20114 & 57.90848 & 0.00000 & 0.00202 & 0\\
+M & 871 & P & R & 2.45798 & 50.72310 & 8.80006 & 0.03330 & 0\\
+M & 871 & P & HR & 0.52598 & 51.03102 & 0.00000 & 0.00206 & 0\\
+M & 871 & S & A & 3.55637 & 57.07591 & 5.63068 & 0.03978 & 1\\
+M & 871 & S & H & 1.57389 & 58.43038 & 0.00000 & 0.00342 & 0\\
+M & 871 & S & R & 2.79238 & 51.08228 & 9.29554 & 0.03494 & 1\\
+M & 871 & S & HR & 1.29269 & 52.15052 & 0.00000 & 0.00845 & 2\\
+M & 871 & FC & A & 3.62166 & 55.92537 & 6.84555 & 0.04073 & 0\\
+M & 871 & FC & H & 2.20114 & 57.90848 & 0.00000 & 0.00202 & 0\\
+M & 871 & FC & R & 2.45798 & 50.72310 & 8.80006 & 0.03330 & 0\\
+M & 871 & FC & HR & 0.52598 & 51.03102 & 0.00000 & 0.00206 & 0\\
+M & 871 & C & A & 4.62497 & 63.78085 & 0.00686 & 0.02726 & 2\\
+M & 871 & C & H & 0.08889 & 63.64105 & 0.00000 & 0.01269 & 1\\
+M & 871 & C & R & 0.22511 & 63.01715 & 0.00042 & 0.03859 & 0\\
+M & 871 & C & HR & 0.04530 & 62.83664 & 0.00000 & 0.00981 & 0\\
+M & 871 & F & A & 3.16929 & 62.33928 & 0.00000 & 0.02001 & 0\\
+M & 871 & F & H & 2.11584 & 64.23708 & 0.00000 & 0.00204 & 0\\
+M & 871 & F & R & 1.90791 & 65.32864 & 0.00000 & 0.00636 & 0\\
+M & 871 & F & HR & 0.30019 & 65.41118 & 0.00000 & 0.00165 & 0\\
+M & 872 & P & A & 3.10805 & 55.12726 & 7.13111 & 0.03968 & 0\\
+M & 872 & P & H & 2.30801 & 57.21675 & 0.00000 & 0.00252 & 0\\
+M & 872 & P & R & 2.73269 & 49.15070 & 9.95427 & 0.03447 & 0\\
+M & 872 & P & HR & 0.88056 & 49.81339 & 0.00000 & 0.00187 & 0\\
+M & 872 & S & A & 2.57707 & 55.40768 & 6.32328 & 0.03611 & 0\\
+M & 872 & S & H & 2.02628 & 57.21558 & 0.00000 & 0.00239 & 0\\
+M & 872 & S & R & 4.57122 & 51.41356 & 9.53085 & 0.03239 & 0\\
+M & 872 & S & HR & 1.93819 & 53.13156 & 0.00000 & 0.00419 & 1\\
+M & 872 & FC & A & 3.10805 & 55.12726 & 7.13111 & 0.03968 & 0\\
+M & 872 & FC & H & 2.30801 & 57.21675 & 0.00000 & 0.00252 & 0\\
+M & 872 & FC & R & 2.73269 & 49.15070 & 9.95427 & 0.03447 & 0\\
+M & 872 & FC & HR & 0.88056 & 49.81339 & 0.00000 & 0.00187 & 0\\
+M & 872 & C & A & 4.62151 & 63.77709 & 0.00683 & 0.02759 & 3\\
+M & 872 & C & H & 0.01876 & 63.56681 & 0.00000 & 0.01305 & 0\\
+M & 872 & C & R & 0.18224 & 62.90054 & 0.00034 & 0.03817 & 0\\
+M & 872 & C & HR & 0.03936 & 62.71409 & 0.00000 & 0.00981 & 0\\
+M & 872 & F & A & 3.22113 & 62.39113 & 0.00000 & 0.02000 & 0\\
+M & 872 & F & H & 2.13753 & 64.31062 & 0.00000 & 0.00204 & 0\\
+M & 872 & F & R & 1.83500 & 65.32926 & 0.00000 & 0.00636 & 0\\
+M & 872 & F & HR & 0.30031 & 65.41191 & 0.00000 & 0.00165 & 0\\
+M & 873 & P & A & 3.30528 & 55.62885 & 6.82628 & 0.04015 & 0\\
+M & 873 & P & H & 2.31299 & 57.72305 & 0.00000 & 0.00278 & 0\\
+M & 873 & P & R & 2.63591 & 49.79627 & 9.71918 & 0.03352 & 0\\
+M & 873 & P & HR & 0.84447 & 50.42254 & 0.00000 & 0.00219 & 0\\
+M & 873 & S & A & 4.42767 & 57.83235 & 5.74703 & 0.03829 & 1\\
+M & 873 & S & H & 1.75225 & 59.36242 & 0.00000 & 0.00619 & 0\\
+M & 873 & S & R & 4.54192 & 52.66046 & 10.39587 & 0.03800 & 2\\
+M & 873 & S & HR & 1.20611 & 53.64733 & 0.00000 & 0.00324 & 0\\
+M & 873 & FC & A & 3.30528 & 55.62885 & 6.82628 & 0.04015 & 0\\
+M & 873 & FC & H & 2.31299 & 57.72305 & 0.00000 & 0.00278 & 0\\
+M & 873 & FC & R & 2.63591 & 49.79627 & 9.71918 & 0.03352 & 0\\
+M & 873 & FC & HR & 0.84447 & 50.42254 & 0.00000 & 0.00219 & 0\\
+M & 873 & C & A & 4.62295 & 63.77916 & 0.00689 & 0.02690 & 2\\
+M & 873 & C & H & 0.10077 & 63.65110 & 0.00000 & 0.01283 & 1\\
+M & 873 & C & R & 0.23259 & 63.03455 & 0.00044 & 0.03869 & 0\\
+M & 873 & C & HR & 0.04628 & 62.85503 & 0.00000 & 0.00981 & 0\\
+M & 873 & F & A & 2.96731 & 62.13732 & 0.00000 & 0.02000 & 0\\
+M & 873 & F & H & 2.04132 & 63.96060 & 0.00000 & 0.00204 & 0\\
+M & 873 & F & R & 2.15854 & 65.30277 & 0.00000 & 0.00636 & 0\\
+M & 873 & F & HR & 0.29225 & 65.37737 & 0.00000 & 0.00165 & 0\\
+C & 881 & P & A & 3.10430 & 55.74347 & 6.51115 & 0.03968 & 0\\
+C & 881 & P & H & 1.97234 & 57.49737 & 0.00000 & 0.00244 & 0\\
+C & 881 & P & R & 3.01144 & 50.15127 & 9.51402 & 0.03352 & 0\\
+C & 881 & P & HR & 1.00322 & 50.93636 & 0.00000 & 0.00213 & 0\\
+C & 881 & T & A & 3.00450 & 55.55671 & 6.59786 & 0.03993 & 0\\
+C & 881 & T & H & 1.92368 & 57.26198 & 0.00000 & 0.00241 & 0\\
+C & 881 & T & R & 2.86099 & 49.98255 & 9.29699 & 0.03343 & 0\\
+C & 881 & T & HR & 0.88874 & 50.65317 & 0.00000 & 0.00212 & 0\\
+C & 882 & P & A & 3.25506 & 55.05393 & 7.34950 & 0.04163 & 0\\
+C & 882 & P & H & 2.28816 & 57.12360 & 0.00000 & 0.00248 & 0\\
+C & 882 & P & R & 2.45820 & 49.33456 & 9.40421 & 0.03303 & 0\\
+C & 882 & P & HR & 0.74549 & 49.86197 & 0.00000 & 0.00208 & 0\\
+C & 882 & T & A & 3.04635 & 54.61301 & 7.58128 & 0.04207 & 0\\
+C & 882 & T & H & 2.09475 & 56.48931 & 0.00000 & 0.00245 & 0\\
+C & 882 & T & R & 3.06096 & 49.51196 & 9.19563 & 0.03267 & 0\\
+C & 882 & T & HR & 0.84687 & 50.14075 & 0.00000 & 0.00208 & 0\\
+C & 883 & P & A & 3.31954 & 54.95140 & 7.51757 & 0.04056 & 0\\
+C & 883 & P & H & 2.05656 & 56.78984 & 0.00000 & 0.00212 & 0\\
+C & 883 & P & R & 3.09099 & 49.46285 & 9.57393 & 0.03404 & 0\\
+C & 883 & P & HR & 0.94195 & 50.18686 & 0.00000 & 0.00194 & 0\\
+C & 883 & T & A & 3.22873 & 54.70763 & 7.67018 & 0.04092 & 0\\
+C & 883 & T & H & 1.98982 & 56.47935 & 0.00000 & 0.00210 & 0\\
+C & 883 & T & R & 3.10350 & 49.36024 & 9.37878 & 0.03384 & 0\\
+C & 883 & T & HR & 0.91389 & 50.05619 & 0.00000 & 0.00194 & 0\\
+\bottomrule
+\end{longtable}
+\begin{longtable}{lllllll}
+\caption{Actual stage-end material and geometry. All material can remain alive while the body loses connections; mass is not a connectivity criterion. Effective rest length in FC is the compensation target, not the reference spring.}\label{tab:contact-structure}\\
+\toprule
+B & Seed & Rule & Stage & $M$ & Right $x$ & Rest length\\
+\midrule\endfirsthead
+\toprule
+B & Seed & Rule & Stage & $M$ & Right $x$ & Rest length\\
+\midrule\endhead
+O & 861 & P & A & 15.00000 & 5.24308 & 1.03036\\
+O & 861 & P & H & 15.00000 & 5.38777 & 1.03036\\
+O & 861 & P & R & 15.00000 & 5.36033 & 1.01848\\
+O & 861 & P & HR & 15.00000 & 5.37040 & 1.01848\\
+O & 861 & FC & A & 15.00000 & 5.24308 & 1.03036\\
+O & 861 & FC & H & 15.00000 & 5.38777 & 1.03036\\
+O & 861 & FC & R & 15.00000 & 5.36033 & 1.01848\\
+O & 861 & FC & HR & 15.00000 & 5.37040 & 1.01848\\
+M & 871 & P & A & 15.00000 & 5.24378 & 0.99402\\
+M & 871 & P & H & 15.00000 & 5.25578 & 0.99402\\
+M & 871 & P & R & 15.00000 & 5.35372 & 1.02749\\
+M & 871 & P & HR & 15.00000 & 5.39163 & 1.02749\\
+M & 871 & S & A & 15.00000 & 5.76845 & 1.05212\\
+M & 871 & S & H & 15.00000 & 5.94490 & 1.05212\\
+M & 871 & S & R & 15.00000 & 6.37731 & 1.11975\\
+M & 871 & S & HR & 15.00000 & 6.96448 & 1.09359\\
+M & 871 & FC & A & 15.00000 & 5.24378 & 0.99402\\
+M & 871 & FC & H & 15.00000 & 5.25578 & 0.99402\\
+M & 871 & FC & R & 15.00000 & 5.35372 & 1.02749\\
+M & 871 & FC & HR & 15.00000 & 5.39163 & 1.02749\\
+M & 871 & C & A & 15.00000 & 6.05385 & 1.13183\\
+M & 871 & C & H & 15.00000 & 7.55846 & 1.11704\\
+M & 871 & C & R & 15.00000 & 13.62681 & 1.12789\\
+M & 871 & C & HR & 15.00000 & 15.25881 & 1.12789\\
+M & 871 & F & A & 15.00000 & 5.18513 & 1.00421\\
+M & 871 & F & H & 15.00000 & 5.24740 & 1.00421\\
+M & 871 & F & R & 15.00000 & 5.27804 & 1.00421\\
+M & 871 & F & HR & 15.00000 & 5.28272 & 1.00421\\
+M & 872 & P & A & 15.00000 & 5.22695 & 1.03281\\
+M & 872 & P & H & 15.00000 & 5.33282 & 1.03281\\
+M & 872 & P & R & 15.00000 & 5.25428 & 0.98453\\
+M & 872 & P & HR & 15.00000 & 5.22506 & 0.98453\\
+M & 872 & S & A & 15.00000 & 5.13819 & 1.01665\\
+M & 872 & S & H & 15.00000 & 5.24394 & 1.01665\\
+M & 872 & S & R & 15.00000 & 5.26836 & 0.98347\\
+M & 872 & S & HR & 15.00000 & 5.35745 & 0.96536\\
+M & 872 & FC & A & 15.00000 & 5.22695 & 1.03281\\
+M & 872 & FC & H & 15.00000 & 5.33282 & 1.03281\\
+M & 872 & FC & R & 15.00000 & 5.25428 & 0.98453\\
+M & 872 & FC & HR & 15.00000 & 5.22506 & 0.98453\\
+M & 872 & C & A & 15.00000 & 6.10462 & 1.11940\\
+M & 872 & C & H & 15.00000 & 7.73662 & 1.11940\\
+M & 872 & C & R & 15.00000 & 13.80496 & 1.12819\\
+M & 872 & C & HR & 15.00000 & 15.43696 & 1.12819\\
+M & 872 & F & A & 15.00000 & 5.18984 & 1.00713\\
+M & 872 & F & H & 15.00000 & 5.25208 & 1.00713\\
+M & 872 & F & R & 15.00000 & 5.28268 & 1.00713\\
+M & 872 & F & HR & 15.00000 & 5.28735 & 1.00713\\
+M & 873 & P & A & 15.00000 & 5.22152 & 0.99316\\
+M & 873 & P & H & 15.00000 & 5.34613 & 0.99316\\
+M & 873 & P & R & 15.00000 & 5.27522 & 0.98681\\
+M & 873 & P & HR & 15.00000 & 5.28018 & 0.98681\\
+M & 873 & S & A & 15.00000 & 5.39211 & 0.99411\\
+M & 873 & S & H & 15.00000 & 5.83444 & 1.00701\\
+M & 873 & S & R & 15.00000 & 6.53008 & 1.03776\\
+M & 873 & S & HR & 15.00000 & 6.65639 & 1.03776\\
+M & 873 & FC & A & 15.00000 & 5.22152 & 0.99316\\
+M & 873 & FC & H & 15.00000 & 5.34613 & 0.99316\\
+M & 873 & FC & R & 15.00000 & 5.27522 & 0.98681\\
+M & 873 & FC & HR & 15.00000 & 5.28018 & 0.98681\\
+M & 873 & C & A & 15.00000 & 5.98237 & 1.12802\\
+M & 873 & C & H & 15.00000 & 7.48840 & 1.11297\\
+M & 873 & C & R & 15.00000 & 13.55675 & 1.12419\\
+M & 873 & C & HR & 15.00000 & 15.18875 & 1.12419\\
+M & 873 & F & A & 15.00000 & 5.16712 & 0.99873\\
+M & 873 & F & H & 15.00000 & 5.22933 & 0.99873\\
+M & 873 & F & R & 15.00000 & 5.25990 & 0.99873\\
+M & 873 & F & HR & 15.00000 & 5.26458 & 0.99873\\
+C & 881 & P & A & 15.00000 & 5.16761 & 1.00826\\
+C & 881 & P & H & 15.00000 & 5.23414 & 1.00826\\
+C & 881 & P & R & 15.00000 & 5.18691 & 0.98861\\
+C & 881 & P & HR & 15.00000 & 5.16190 & 0.98861\\
+C & 881 & T & A & 15.00000 & 5.14732 & 0.99998\\
+C & 881 & T & H & 15.00000 & 5.21130 & 0.99998\\
+C & 881 & T & R & 15.00000 & 5.20933 & 0.99271\\
+C & 881 & T & HR & 15.00000 & 5.18663 & 0.99271\\
+C & 882 & P & A & 15.00000 & 5.22117 & 0.99604\\
+C & 882 & P & H & 15.00000 & 5.30680 & 0.99604\\
+C & 882 & P & R & 15.00000 & 5.30827 & 1.03955\\
+C & 882 & P & HR & 15.00000 & 5.32989 & 1.03955\\
+C & 882 & T & A & 15.00000 & 5.17577 & 0.98478\\
+C & 882 & T & H & 15.00000 & 5.25399 & 0.98478\\
+C & 882 & T & R & 15.00000 & 5.26414 & 1.02842\\
+C & 882 & T & HR & 15.00000 & 5.28647 & 1.02842\\
+C & 883 & P & A & 15.00000 & 5.18202 & 0.97595\\
+C & 883 & P & H & 15.00000 & 5.22657 & 0.97595\\
+C & 883 & P & R & 15.00000 & 5.21131 & 0.98715\\
+C & 883 & P & HR & 15.00000 & 5.22027 & 0.98715\\
+C & 883 & T & A & 15.00000 & 5.16900 & 0.98173\\
+C & 883 & T & H & 15.00000 & 5.21143 & 0.98173\\
+C & 883 & T & R & 15.00000 & 5.21469 & 0.99627\\
+C & 883 & T & HR & 15.00000 & 5.22365 & 0.99627\\
+\bottomrule
+\end{longtable}
+\begin{longtable}{lllllllll}
+\caption{All 23 complete strategy paths, with actual whole-path charges and final energy. These costs include initial exploration; they do not price all hardware or establish thermodynamic efficiency.}\label{tab:contact-ledgers}\\
+\toprule
+B & Seed & Rule & Steps & Uptake & Basal & Move & Remodel & $E$\\
+\midrule\endfirsthead
+\toprule
+B & Seed & Rule & Steps & Uptake & Basal & Move & Remodel & $E$\\
+\midrule\endhead
+O & 861 & P & 456 & 8.91582 & 2.05200 & 0.07842 & 16.10838 & 50.67702\\
+O & 861 & FC & 456 & 8.91582 & 2.05200 & 0.07842 & 16.10838 & 50.67702\\
+M & 871 & P & 456 & 8.80675 & 2.05200 & 0.07812 & 15.64562 & 51.03102\\
+M & 871 & S & 456 & 9.21534 & 2.05200 & 0.08660 & 14.92622 & 52.15052\\
+M & 871 & FC & 456 & 8.80675 & 2.05200 & 0.07812 & 15.64562 & 51.03102\\
+M & 871 & C & 456 & 4.98428 & 2.05200 & 0.08836 & 0.00728 & 62.83664\\
+M & 871 & F & 456 & 7.49323 & 2.05200 & 0.03006 & 0.00000 & 65.41118\\
+M & 872 & P & 456 & 9.02930 & 2.05200 & 0.07854 & 17.08537 & 49.81339\\
+M & 872 & S & 456 & 11.11277 & 2.05200 & 0.07508 & 15.85414 & 53.13156\\
+M & 872 & FC & 456 & 9.02930 & 2.05200 & 0.07854 & 17.08537 & 49.81339\\
+M & 872 & C & 456 & 4.86187 & 2.05200 & 0.08861 & 0.00716 & 62.71409\\
+M & 872 & F & 456 & 7.49396 & 2.05200 & 0.03005 & 0.00000 & 65.41191\\
+M & 873 & P & 456 & 9.09865 & 2.05200 & 0.07865 & 16.54546 & 50.42254\\
+M & 873 & S & 456 & 11.92795 & 2.05200 & 0.08572 & 16.14290 & 53.64733\\
+M & 873 & FC & 456 & 9.09865 & 2.05200 & 0.07865 & 16.54546 & 50.42254\\
+M & 873 & C & 456 & 5.00259 & 2.05200 & 0.08823 & 0.00733 & 62.85503\\
+M & 873 & F & 456 & 7.45941 & 2.05200 & 0.03005 & 0.00000 & 65.37737\\
+C & 881 & P & 456 & 9.09130 & 2.05200 & 0.07777 & 16.02517 & 50.93636\\
+C & 881 & T & 456 & 8.67791 & 2.05200 & 0.07789 & 15.89485 & 50.65317\\
+C & 882 & P & 456 & 8.74691 & 2.05200 & 0.07922 & 16.75372 & 49.86197\\
+C & 882 & T & 456 & 9.04893 & 2.05200 & 0.07926 & 16.77691 & 50.14075\\
+C & 883 & P & 456 & 9.40902 & 2.05200 & 0.07866 & 17.09151 & 50.18686\\
+C & 883 & T & 456 & 9.23594 & 2.05200 & 0.07880 & 17.04896 & 50.05619\\
+\bottomrule
+\end{longtable}
+\begin{longtable}{llllllll}
+\caption{Additional recorded releases, discrete external work and chemical-energy residuals. These quantities are not an established complete mechanical heat/work balance; releases must not be added as extra chemical income.}\label{tab:contact-ledger-extra}\\
+\toprule
+B & Seed & Rule & Remodel release & Break release & Ext. work & Death & Max residual\\
+\midrule\endfirsthead
+\toprule
+B & Seed & Rule & Remodel release & Break release & Ext. work & Death & Max residual\\
+\midrule\endhead
+O & 861 & P & 7.17339 & 0.00000 & 4.10455 & 0.00000 & 2.25098e-14\\
+O & 861 & FC & 7.17339 & 0.00000 & 4.10455 & 0.00000 & 2.25098e-14\\
+M & 871 & P & 6.74104 & 0.00000 & 4.16505 & 0.00000 & 2.63192e-14\\
+M & 871 & S & 8.56091 & 0.43074 & 8.31677 & 0.00000 & 2.20449e-14\\
+M & 871 & FC & 6.74104 & 0.00000 & 4.16505 & 0.00000 & 2.63192e-14\\
+M & 871 & C & 1.61126 & 0.23439 & 29.44570 & 0.00000 & 2.89421e-14\\
+M & 871 & F & 0.00000 & 0.00000 & 3.73481 & 0.00000 & 2.48759e-14\\
+M & 872 & P & 7.57574 & 0.00000 & 3.69851 & 0.00000 & 3.02328e-14\\
+M & 872 & S & 8.41849 & 0.09409 & 4.00833 & 0.00000 & 2.57190e-14\\
+M & 872 & FC & 7.57574 & 0.00000 & 3.69851 & 0.00000 & 3.02328e-14\\
+M & 872 & C & 1.59163 & 0.22631 & 29.86682 & 0.00000 & 2.55993e-14\\
+M & 872 & F & 0.00000 & 0.00000 & 3.73299 & 0.00000 & 2.97627e-14\\
+M & 873 & P & 6.99264 & 0.00000 & 3.84154 & 0.00000 & 2.58855e-14\\
+M & 873 & S & 8.86808 & 0.29395 & 7.33452 & 0.00000 & 2.81823e-14\\
+M & 873 & FC & 6.99264 & 0.00000 & 3.84154 & 0.00000 & 2.58855e-14\\
+M & 873 & C & 1.63011 & 0.24643 & 29.28538 & 0.00000 & 2.64918e-14\\
+M & 873 & F & 0.00000 & 0.00000 & 3.73293 & 0.00000 & 2.62056e-14\\
+C & 881 & P & 6.53741 & 0.00000 & 3.47409 & 0.00000 & 2.73843e-14\\
+C & 881 & T & 6.41252 & 0.00000 & 3.53981 & 0.00000 & 2.62394e-14\\
+C & 882 & P & 7.37834 & 0.00000 & 4.05374 & 0.00000 & 3.00107e-14\\
+C & 882 & T & 7.25212 & 0.00000 & 3.94546 & 0.00000 & 2.43763e-14\\
+C & 883 & P & 7.28439 & 0.00000 & 3.70770 & 0.00000 & 2.90393e-14\\
+C & 883 & T & 7.21260 & 0.00000 & 3.71660 & 0.00000 & 2.96638e-14\\
+\bottomrule
+\end{longtable}
+\begin{longtable}{llll}
+\caption{All twelve paired stage differences, plastic minus the same persistent perturbations without a long-term update. First hold favours plasticity in three histories; post-shift hold does so in only two. The negative changed-stage outcomes remain in the comparison.}\label{tab:contact-pairs}\\
+\toprule
+Seed & Stage & $\Delta$ uptake & $\Delta E$\\
+\midrule\endfirsthead
+\toprule
+Seed & Stage & $\Delta$ uptake & $\Delta E$\\
+\midrule\endhead
+881 & A & 0.09980 & 0.18676\\
+881 & H & 0.04866 & 0.23539\\
+881 & R & 0.15045 & 0.16873\\
+881 & HR & 0.11448 & 0.28319\\
+882 & A & 0.20871 & 0.44092\\
+882 & H & 0.19341 & 0.63429\\
+882 & R & -0.60275 & -0.17740\\
+882 & HR & -0.10138 & -0.27878\\
+883 & A & 0.09080 & 0.24377\\
+883 & H & 0.06673 & 0.31048\\
+883 & R & -0.01251 & 0.10261\\
+883 & HR & 0.02805 & 0.13067\\
+\bottomrule
+\end{longtable}
+\begin{longtable}{llllllll}
+\caption{All thirteen actual 48-step futures. Parents 0/1, 2/3 and 4/5 belong to seeds 881, 882 and 883; the two starts are acquired and revised states. Treatments R/C/S remove content, compensate its force or sham. U0 is recorded factual uptake, not a replay. Initial position change is zero, but immediate energy changes by minus the paid intervention fee. Every final mass is 15 and no probe breaks a bond.}\label{tab:contact-probes}\\
+\toprule
+Parent & Start & Arm & Uptake & U0 & Paid & Released & Final $E$\\
+\midrule\endfirsthead
+\toprule
+Parent & Start & Arm & Uptake & U0 & Paid & Released & Final $E$\\
+\midrule\endhead
+0 & 180 & R & 1.94483 & 1.97234 & 0.12857 & 0.02937 & 57.34104\\
+0 & 180 & C & 1.97234 & 1.97234 & 0.12857 & 0.02937 & 57.36880\\
+0 & 180 & S & 1.97234 & 1.97234 & 0.00000 & 0.00000 & 57.49737\\
+1 & 408 & R & 0.90972 & 1.00322 & 0.03281 & 0.08624 & 50.80994\\
+1 & 408 & C & 1.00322 & 1.00322 & 0.03281 & 0.08624 & 50.90355\\
+2 & 180 & R & 2.14608 & 2.28816 & 0.17900 & 0.00027 & 56.80215\\
+2 & 180 & C & 2.28816 & 2.28816 & 0.17900 & 0.00027 & 56.94460\\
+3 & 408 & R & 0.83369 & 0.74549 & 0.13748 & 0.01126 & 49.81253\\
+3 & 408 & C & 0.74549 & 0.74549 & 0.13748 & 0.01126 & 49.72449\\
+4 & 180 & R & 2.00726 & 2.05656 & 0.07075 & 0.00000 & 56.66957\\
+4 & 180 & C & 2.05656 & 2.05656 & 0.07075 & 0.00000 & 56.71909\\
+5 & 408 & R & 0.90807 & 0.94195 & 0.08511 & 0.05077 & 50.06762\\
+5 & 408 & C & 0.94195 & 0.94195 & 0.08511 & 0.05077 & 50.10175\\
+\bottomrule
+\end{longtable}
+\begin{longtable}{ll}
+\caption{Maximum complete-state discrepancy of main plastic paths and force-compensated fixed material. An exact sham also has zero error. Numerical equivalence does not establish equality of real hardware dissipation.}\label{tab:contact-null}\\
+\toprule
+Seed & Max discrepancy\\
+\midrule\endfirsthead
+\toprule
+Seed & Max discrepancy\\
+\midrule\endhead
+871 & 8.88178e-16\\
+872 & 8.88178e-16\\
+873 & 4.44089e-16\\
+\bottomrule
+\end{longtable}
+\begin{longtable}{lllllll}
+\caption{Whole-path contact changes, retaining initial formation separately. Creation after the initial update is zero for the main plastic and force-compensated candidates. Strong sign and passive controls can lose connectivity. Creation distances for all recorded paths remain within 1.15.}\label{tab:contact-contacts}\\
+\toprule
+B & Seed & Rule & Created total & Created later & Broken & Final bonds\\
+\midrule\endfirsthead
+\toprule
+B & Seed & Rule & Created total & Created later & Broken & Final bonds\\
+\midrule\endhead
+O & 861 & P & 22 & 0 & 0 & 22\\
+O & 861 & FC & 22 & 0 & 0 & 22\\
+M & 871 & P & 22 & 0 & 0 & 22\\
+M & 871 & S & 25 & 3 & 4 & 21\\
+M & 871 & FC & 22 & 0 & 0 & 22\\
+M & 871 & C & 22 & 0 & 3 & 19\\
+M & 871 & F & 22 & 0 & 0 & 22\\
+M & 872 & P & 22 & 0 & 0 & 22\\
+M & 872 & S & 24 & 2 & 1 & 23\\
+M & 872 & FC & 22 & 0 & 0 & 22\\
+M & 872 & C & 22 & 0 & 3 & 19\\
+M & 872 & F & 22 & 0 & 0 & 22\\
+M & 873 & P & 22 & 0 & 0 & 22\\
+M & 873 & S & 28 & 6 & 3 & 25\\
+M & 873 & FC & 22 & 0 & 0 & 22\\
+M & 873 & C & 22 & 0 & 3 & 19\\
+M & 873 & F & 22 & 0 & 0 & 22\\
+C & 881 & P & 22 & 0 & 0 & 22\\
+C & 881 & T & 22 & 0 & 0 & 22\\
+C & 882 & P & 22 & 0 & 0 & 22\\
+C & 882 & T & 22 & 0 & 0 & 22\\
+C & 883 & P & 22 & 0 & 0 & 22\\
+C & 883 & T & 22 & 0 & 0 & 22\\
+\bottomrule
+\end{longtable}
+\begin{longtable}{lllll}
+\caption{All original execution batches. There are 11,112 actual updates, 3.403083 occupied worker seconds and 30,865,906 raw bytes, with no failed job or replay. Seven independent initial states and perturbation streams share the supplied environment; thirteen dependent futures do not add independent replicates.}\label{tab:contact-jobs}\\
+\toprule
+Batch & Updates & Occupied s & Raw bytes & Status\\
+\midrule\endfirsthead
+\toprule
+Batch & Updates & Occupied s & Raw bytes & Status\\
+\midrule\endhead
+opportunity & 912 & 0.339834 & 2589296 & completed\\
+comparison & 6840 & 1.781069 & 18786884 & completed\\
+content control & 2736 & 0.818623 & 7756798 & completed\\
+content probe & 624 & 0.463557 & 1732928 & completed\\
+\bottomrule
+\end{longtable}
+\endgroup

@@ -1,0 +1,17 @@
+parent_id,tolerance,O_live_non_decreasing,C_live_non_decreasing,O_bodytime_non_decreasing,C_bodytime_non_decreasing,N_bodytime_non_decreasing,M_non_decreasing,E_non_decreasing,bodytime_non_decreasing,N_strict_increase,minM_ge32,born_ge_death,E_window_non_decreasing,useful_update
+202610195601_ring_birth_gain_only,1e-08,True,False,True,True,True,True,True,True,True,True,True,True,False
+202610195601_ring_birth_gain_only,0.0,True,False,True,True,True,True,True,True,True,True,True,True,False
+202610195601_ring_both,1e-08,False,False,True,True,True,True,True,True,True,True,True,True,False
+202610195601_ring_both,0.0,False,False,True,True,True,True,True,True,True,True,True,True,False
+202610195601_separate_seeds_birth_gain_only,1e-08,False,False,False,False,False,False,False,False,False,True,True,True,False
+202610195601_separate_seeds_birth_gain_only,0.0,False,False,False,False,False,False,False,False,False,True,True,True,False
+202610195601_separate_seeds_both,1e-08,False,False,False,False,False,False,False,False,False,True,True,True,False
+202610195601_separate_seeds_both,0.0,False,False,False,False,False,False,False,False,False,True,True,True,False
+202610195602_ring_birth_gain_only,1e-08,True,False,True,False,False,True,True,True,False,True,True,True,False
+202610195602_ring_birth_gain_only,0.0,True,False,True,False,False,True,True,True,False,True,True,True,False
+202610195602_ring_both,1e-08,True,True,True,True,False,True,False,False,True,True,True,True,False
+202610195602_ring_both,0.0,True,True,True,True,False,True,False,False,True,True,True,True,False
+202610195602_separate_seeds_birth_gain_only,1e-08,False,False,True,True,True,False,False,True,False,True,True,True,False
+202610195602_separate_seeds_birth_gain_only,0.0,False,False,True,True,True,False,False,True,False,True,True,True,False
+202610195602_separate_seeds_both,1e-08,False,False,False,False,False,False,False,False,False,True,True,True,False
+202610195602_separate_seeds_both,0.0,False,False,False,False,False,False,False,False,False,True,True,True,False

@@ -1,0 +1,71 @@
+{
+  "clock": 384,
+  "predictor": {
+    "omega": -0.008181230868723383,
+    "recent": -0.008181230868721386,
+    "fit_pairs": 46,
+    "dot": 0.07678020107665769,
+    "cross": -0.005032440254214405,
+    "den": 0.07694494611268647,
+    "anchor_t": 376,
+    "last_seen": [
+      15.959094301980311,
+      11.000167330412992
+    ],
+    "anchor": [
+      15.672984353849284,
+      11.010705383806982
+    ],
+    "v": [
+      0.04070191436869264,
+      -0.0040087886654958105
+    ],
+    "samples": [
+      [
+        376,
+        [
+          15.672984353849284,
+          11.010705383806982
+        ]
+      ]
+    ],
+    "velocities": [
+      [
+        376,
+        [
+          0.04070191436869264,
+          -0.0040087886654958105
+        ]
+      ]
+    ]
+  },
+  "arm": "hold",
+  "rule": {
+    "transport_scheme": "face_potential",
+    "dt": 0.1,
+    "mobility": 1.0,
+    "cohesion": 1.2,
+    "pressure": 3.0,
+    "interaction_sigma": 1.4,
+    "cue_gain": 18.0,
+    "learning_rate": 0.0,
+    "eligibility_time": 0.8,
+    "memory_time": 200.0,
+    "uptake_rate": 0.2,
+    "energy_capacity": 2.0,
+    "basal_cost": 0.012,
+    "movement_cost": 0.012,
+    "starvation_rate": 0.15,
+    "starvation_energy": 0.08,
+    "food_sensor_scale": 5.0,
+    "injury_sensor_scale": 25.0,
+    "action_budget": "donor_energy",
+    "polarity_gain": 1.2,
+    "polarity_turn_rate": 0.0,
+    "polarity_relaxation_rate": 0.0,
+    "polarity_energy_gate": "none",
+    "energy_transfer_conductivity": 0.0,
+    "energy_transfer_loss": 0.01
+  },
+  "native_total": 7296
+}

@@ -1,0 +1,16 @@
+{
+  "type": "paper",
+  "category": "resource",
+  "description": "A published or external paper in the Portal Paper library, independent of its files and provider identifiers.",
+  "title": {
+    "zh": "论文",
+    "en": "Paper"
+  },
+  "provider": "management_portal.resources.providers.paper:install_resolver",
+  "catalog_section": "",
+  "catalog_order": 0,
+  "registerable": false,
+  "scope": "shared",
+  "unit": "paper",
+  "enabled_by_default": true
+}

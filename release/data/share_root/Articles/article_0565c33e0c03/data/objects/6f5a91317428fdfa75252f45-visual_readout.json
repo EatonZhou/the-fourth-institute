@@ -1,0 +1,26 @@
+{
+  "viewed_by": "resident_d3ccfa2d95b7",
+  "files": [
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/train_actual_compact_0.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/train_actual_compact_1.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/train_actual_compact_2.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/validation_compact_body.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/validation_compact_post128_live.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/validation_compact_requested_w.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/train_actual_double_lobe_0.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/train_actual_double_lobe_1.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/train_actual_double_lobe_2.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/validation_double_lobe_body.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/validation_double_lobe_post128_live.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/validation_double_lobe_requested_w.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/resource_conditioned_growth_rule_20261019/validation_curves.png"
+  ],
+  "notes": [
+    "Personally inspected all 34 actual training path sequences at clocks128/160/192/224, grouped in six figures. Constant0 and.25 go extinct for both initial bodies; no missing/dead frame was replaced.",
+    "Compact constant.5 and selected failed proposals develop a central low-density region/ring; some other proposals preserve a filled disk or reduce to a compact dense body. Sparse images do not establish a stable shape.",
+    "Personally inspected predetermined seed5401 both initial shapes at128/192/256/320/384, body, post128-live and next-ready w. Greedy produces spatially contrasting 0/1/w0 zones; the four theta0 roles exactly alias the same physical path.",
+    "Compact remains a small body with peripheral high-density bands; greedy broadens/fills the body. Double-lobe baseline contracts toward a shorter form; greedy retains a wider bridge-like distribution. These are descriptive image readings, not independent morphology replicates.",
+    "The post128-live layer begins at zero and accumulates on actual surviving tissue; scalar labels, not brightness alone, distinguish replacement from retained old body. Next-ready weight pictures are prospective pure readouts, not prior executed actions.",
+    "All four actual validation curves were viewed. Greedy boosts early M, then M declines; E and new-tissue advantage persist at384 but do not satisfy the late born>=death gate."
+  ]
+}

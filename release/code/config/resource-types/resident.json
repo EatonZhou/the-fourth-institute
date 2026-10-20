@@ -1,0 +1,16 @@
+{
+  "type": "resident",
+  "category": "resource",
+  "description": "An independently addressable Resident; main and derived nodes share this identity type.",
+  "title": {
+    "zh": "Resident",
+    "en": "Resident"
+  },
+  "provider": "management_portal.resources.providers.collaboration:install_resolver",
+  "catalog_section": "",
+  "catalog_order": 0,
+  "registerable": false,
+  "scope": "lineage",
+  "unit": "core",
+  "enabled_by_default": true
+}

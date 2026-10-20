@@ -1,0 +1,66 @@
+[
+  {
+    "id": "202610197503_0_0_fast_delta_life_freeze",
+    "initial_exact": true,
+    "Q_transport_error": 0.0,
+    "max_energy_error": 2.4903690221123043e-14,
+    "no_feedback_payment": 0.0,
+    "no_feedback_writes": 0
+  },
+  {
+    "id": "202610197503_0_0_fast_delta_life_write",
+    "initial_exact": true,
+    "Q_transport_error": 0.0,
+    "max_energy_error": 3.1145225287687595e-14,
+    "no_feedback_payment": 0.0,
+    "no_feedback_writes": 0
+  },
+  {
+    "id": "202610197503_0_1_fast_delta_life_freeze",
+    "initial_exact": true,
+    "Q_transport_error": 0.0,
+    "max_energy_error": 3.5727172088828585e-14,
+    "no_feedback_payment": 0.0,
+    "no_feedback_writes": 0
+  },
+  {
+    "id": "202610197503_0_1_fast_delta_life_write",
+    "initial_exact": true,
+    "Q_transport_error": 0.0,
+    "max_energy_error": 4.227868055650674e-14,
+    "no_feedback_payment": 0.0,
+    "no_feedback_writes": 0
+  },
+  {
+    "id": "202610197504_1_0_fast_delta_life_freeze",
+    "initial_exact": true,
+    "Q_transport_error": 0.0,
+    "max_energy_error": 3.2356062273919406e-14,
+    "no_feedback_payment": 0.0,
+    "no_feedback_writes": 0
+  },
+  {
+    "id": "202610197504_1_0_fast_delta_life_write",
+    "initial_exact": true,
+    "Q_transport_error": 0.0,
+    "max_energy_error": 2.8716612421320065e-14,
+    "no_feedback_payment": 0.0,
+    "no_feedback_writes": 0
+  },
+  {
+    "id": "202610197504_1_1_fast_delta_life_freeze",
+    "initial_exact": true,
+    "Q_transport_error": 0.0,
+    "max_energy_error": 2.7746468317380035e-14,
+    "no_feedback_payment": 0.0,
+    "no_feedback_writes": 0
+  },
+  {
+    "id": "202610197504_1_1_fast_delta_life_write",
+    "initial_exact": true,
+    "Q_transport_error": 0.0,
+    "max_energy_error": 2.846030702774449e-14,
+    "no_feedback_payment": 0.0,
+    "no_feedback_writes": 0
+  }
+]

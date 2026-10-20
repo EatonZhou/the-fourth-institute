@@ -1,0 +1,113 @@
+{
+  "status": "completed_exact_information_diagnostic_only",
+  "host_steps": 0,
+  "controller_training_steps": 0,
+  "source_sha256": "7ae9aaa92936c425a176fa253ac63fdec7d3debdc08a0356eb5f5e7ac3d9f194",
+  "assumptions": [
+    "Binary hidden mapping flips independently at each cycle.",
+    "Two ports have conditionally independent real arrivals.",
+    "All paired events are completely and legally observed in this calculation.",
+    "Known model parameters; uniform initial belief; current cue is given."
+  ],
+  "regimes": [
+    {
+      "p_high": "7/10",
+      "p_low": "3/10",
+      "hazard": "1/25",
+      "paired_event_likelihood_ratio": "49/9",
+      "maximal_predicted_prior_odds": "24",
+      "any_exclusive_pair_overrides_prior": false,
+      "finite_tree": {
+        "events_per_history": 6,
+        "enumerated_histories": 4096,
+        "probability_mass": "1",
+        "bayes_next_mapping_accuracy": 0.8319084500687507,
+        "latest_informative_pair_accuracy": 0.7988715652860269,
+        "accuracy_gap_exact": "100820571236339841/3051757812500000000",
+        "accuracy_gap": 0.03303688478272384,
+        "selected_port_arrival_probability_gap": 0.013214753913089535
+      }
+    },
+    {
+      "p_high": "4/5",
+      "p_low": "1/5",
+      "hazard": "2/25",
+      "paired_event_likelihood_ratio": "16",
+      "maximal_predicted_prior_odds": "23/2",
+      "any_exclusive_pair_overrides_prior": true,
+      "finite_tree": {
+        "events_per_history": 6,
+        "enumerated_histories": 4096,
+        "probability_mass": "1",
+        "bayes_next_mapping_accuracy": 0.8445089506918938,
+        "latest_informative_pair_accuracy": 0.8445089506918938,
+        "accuracy_gap_exact": "0",
+        "accuracy_gap": 0.0,
+        "selected_port_arrival_probability_gap": 0.0
+      }
+    }
+  ],
+  "same_latest_event_different_history": [
+    {
+      "history": [
+        [
+          1,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "probability": 0.006193943568,
+      "posterior_fraction": "328533813/430134970",
+      "next_mapping_probability": 0.7426889907602723,
+      "next_side": "left"
+    },
+    {
+      "history": [
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "probability": 0.026025775632,
+      "posterior_fraction": "2073493/200816170",
+      "next_mapping_probability": 0.049499302571102716,
+      "next_side": "right"
+    }
+  ],
+  "information_scope": {
+    "paired_filter": "Both port outcomes may be combined; this is an additional information/integration reference if the learned local updater cannot combine ports.",
+    "matched_local_filter": "The direct local baseline must update only from the same cell/port lawful receipts as the candidate, retain cue and age, and use the same material transport interface.",
+    "local_negative_control": "For one binary port with p=.8/.2, likelihood ratio is 4, not 16. h=.08 does NOT force last-only optimality for that local information set. h=.25 gives prior odds bound 3, so each actually observed single-port outcome overrides the predicted prior; gaps with missing observations need their actual elapsed time.",
+    "event_multiplicity": "One port event exposed to 49 cells is one correlated event, not 49 independent Bernoulli observations."
+  },
+  "interpretation": [
+    "The first regime leaves information that the latest informative pair alone discards; it is therefore a defensible task for testing accumulated evidence.",
+    "The second paired-information regime is an explicit counterexample: a sophisticated predictor cannot improve the optimal side over the latest informative pair under these assumptions.",
+    "Neither prediction advantage establishes improved uptake, net energy, viable morphology, learned update-rule novelty, or optimal bodily control.",
+    "The two example histories share the latest observation, not an empirically matched physical body or maturation pipeline. Any bodily content intervention must match the full actual checkpoint.",
+    "No outcomes were flipped or re-labelled; physical experiments must generate real stochastic supply and use the original completion receipts."
+  ]
+}

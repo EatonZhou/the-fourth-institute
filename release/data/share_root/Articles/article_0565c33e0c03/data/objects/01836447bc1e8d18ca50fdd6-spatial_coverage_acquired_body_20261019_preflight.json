@@ -1,0 +1,150 @@
+{
+  "task": "spatial_coverage_acquired_body_20261019",
+  "native": 0,
+  "tests": [
+    {
+      "parent_index": 0,
+      "map_checks": {
+        "P": {
+          "per_step_gross": 0.2002696811987909,
+          "integrated_per_grid_error": 6.938893903907228e-18,
+          "blend_sha256": "5595ec614342230b5a5eb7dc1d13a48d51228907f3cb6b9f11084ca1247bf5cb"
+        },
+        "F": {
+          "per_step_gross": 0.8010787247951636,
+          "integrated_per_grid_error": 2.7755575615628914e-17,
+          "blend_sha256": "d7271c3f1bbf74d7c9d6be66895fc0a24602cd0f67ce9f389d96a79f69c2386d"
+        }
+      },
+      "HC_exchange_from_saved_body": {
+        "H_U": {
+          "material_external_net": -0.8149243947703234,
+          "energy_external_net": -0.33538108603661243,
+          "non_PF_preserved": true,
+          "sham": false
+        },
+        "H_D": {
+          "material_external_net": -0.8016775561296611,
+          "energy_external_net": -0.4502135688819848,
+          "non_PF_preserved": true,
+          "sham": false
+        },
+        "H_C": {
+          "material_external_net": 0.0,
+          "energy_external_net": 0.0,
+          "non_PF_preserved": true,
+          "sham": true
+        }
+      },
+      "native": 0
+    },
+    {
+      "parent_index": 1,
+      "map_checks": {
+        "P": {
+          "per_step_gross": 0.20026968119879088,
+          "integrated_per_grid_error": 1.3877787807814457e-17,
+          "blend_sha256": "93eb149abebf96b2166083c8e96006add06df927e39b7455f27cca28a02a4822"
+        },
+        "F": {
+          "per_step_gross": 0.8010787247951635,
+          "integrated_per_grid_error": 5.551115123125783e-17,
+          "blend_sha256": "ffcd894c653238f634d07ede5bd271f91feda3795c2aab6498933f829f3863f6"
+        }
+      },
+      "HC_exchange_from_saved_body": {
+        "H_U": {
+          "material_external_net": -0.9434645904065291,
+          "energy_external_net": 0.10864166868816483,
+          "non_PF_preserved": true,
+          "sham": false
+        },
+        "H_D": {
+          "material_external_net": -0.9005520892096492,
+          "energy_external_net": 0.03927297073047242,
+          "non_PF_preserved": true,
+          "sham": false
+        },
+        "H_C": {
+          "material_external_net": 0.0,
+          "energy_external_net": 0.0,
+          "non_PF_preserved": true,
+          "sham": true
+        }
+      },
+      "native": 0
+    },
+    {
+      "parent_index": 2,
+      "map_checks": {
+        "P": {
+          "per_step_gross": 0.2002696811987909,
+          "integrated_per_grid_error": 6.938893903907228e-18,
+          "blend_sha256": "5595ec614342230b5a5eb7dc1d13a48d51228907f3cb6b9f11084ca1247bf5cb"
+        },
+        "F": {
+          "per_step_gross": 0.8010787247951636,
+          "integrated_per_grid_error": 2.7755575615628914e-17,
+          "blend_sha256": "d7271c3f1bbf74d7c9d6be66895fc0a24602cd0f67ce9f389d96a79f69c2386d"
+        }
+      },
+      "HC_exchange_from_saved_body": {
+        "H_U": {
+          "material_external_net": -0.9394106865127069,
+          "energy_external_net": -0.6143459432268727,
+          "non_PF_preserved": true,
+          "sham": false
+        },
+        "H_D": {
+          "material_external_net": -0.8873443254205855,
+          "energy_external_net": -0.41619862086295356,
+          "non_PF_preserved": true,
+          "sham": false
+        },
+        "H_C": {
+          "material_external_net": 0.0,
+          "energy_external_net": 0.0,
+          "non_PF_preserved": true,
+          "sham": true
+        }
+      },
+      "native": 0
+    },
+    {
+      "parent_index": 3,
+      "map_checks": {
+        "P": {
+          "per_step_gross": 0.20026968119879088,
+          "integrated_per_grid_error": 1.3877787807814457e-17,
+          "blend_sha256": "93eb149abebf96b2166083c8e96006add06df927e39b7455f27cca28a02a4822"
+        },
+        "F": {
+          "per_step_gross": 0.8010787247951635,
+          "integrated_per_grid_error": 5.551115123125783e-17,
+          "blend_sha256": "ffcd894c653238f634d07ede5bd271f91feda3795c2aab6498933f829f3863f6"
+        }
+      },
+      "HC_exchange_from_saved_body": {
+        "H_U": {
+          "material_external_net": -0.7130274029668493,
+          "energy_external_net": -0.0432824042235076,
+          "non_PF_preserved": true,
+          "sham": false
+        },
+        "H_D": {
+          "material_external_net": -0.7382639288431652,
+          "energy_external_net": -0.11106499277331494,
+          "non_PF_preserved": true,
+          "sham": false
+        },
+        "H_C": {
+          "material_external_net": 0.0,
+          "energy_external_net": 0.0,
+          "non_PF_preserved": true,
+          "sham": true
+        }
+      },
+      "native": 0
+    }
+  ]
+}

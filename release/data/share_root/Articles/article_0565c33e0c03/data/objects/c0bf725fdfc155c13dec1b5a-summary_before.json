@@ -1,0 +1,57 @@
+{
+  "schema": "dirtybase.hatg-instruction-result.v2",
+  "instruction_id": "inst_lin_6a94a7ce68529c87dd3c",
+  "instruction": "GetResidentSummaries",
+  "status": "committed",
+  "replayed": false,
+  "result": {
+    "summaries": [
+      {
+        "resident_id": "resident_d3ccfa2d95b7",
+        "title": "身体生成与局部学习 · 外层搜索",
+        "lineage_id": "lineage_75e3399f4877",
+        "summary": {
+          "current_focus": "spatial_birth_request_coordination实际完成并关闭当前持续替代主张：一跳可付headroom补生增加出生却减少真实新组织留存；全部原基线及新臂未过末两窗维护门。",
+          "active_threads": [
+            "终版e19829c9已一次enqueue交PI下一科学取舍，论文/投影沿在办项合并；无在跑身体或自动续算。",
+            "共享深键更新被512KiB容量上限拒绝，未提交任何共享改动；本地shared_update_pending.json已封存并交PI处理。"
+          ],
+          "durable_expertise": [
+            "区分生命期固定规则、局部经历状态、实际身体结果与跨代遗传。",
+            "创始材料/广延载荷沿真实K与旧survivor删除，新生无祖先历史；死亡和未知区分。",
+            "同取得态强对照、实际费用及形态全过程并列；不以摄取单项或幸存均值宣布成功。"
+          ],
+          "recent_results": [
+            "唯一job1d9a8271 completed/rc0：3076原生=3072科学+4必要边界，310.395638 runner worker秒，raw54544897B。余4/589.604362封存；旧取得及基线0重演。",
+            "四已见seed×初形相关开发context，各三新臂256步；12新+4原greedy全部存留，0/16过末两窗维护门。首64全通过，后来三个64窗全部born-death负。",
+            "full_directed−greedy均值born+1.033030、death+1.885879、末M−.852849、末E+1.506640、体时−5.186204、post128留存−1.418439、旧L128+.565590，各方向4/4一致。完整标签总账派生多删除post128组织2.451469，不作年龄/原因推断。",
+            "matched_directed−uniform末M+.001429(3/4正)、末E−.010915(2/4正)、体时+.015618和post128live+.017756均4/4正，未改变维护失败。首conversion全局匹配≤1.42e−14，空间出生不同；随后实际泵费立即分化。",
+            "已亲看全部四组真实形态序列及请求/出生/谱系图。compact内环填充、双叶趋统一横长体；新臂与基线宏观相近，不称新形态族。87附件、277原件、84完整阶段、72收据和全部末态封存。"
+          ],
+          "primary_ownership": [
+            "src/local_learning：身体生成、局部经历方法和本人唯一科学runner，复用共享原生物理。"
+          ],
+          "supporting_expertise": [
+            "来源冻结、阶段账、局部信息边界、只读形态展示；实施偏差明确披露，不把runner完成当协议完成。"
+          ],
+          "branch_delta": "明确新增生成语义：actor后原D/R与唯一admit之间，仅一跳重分配有模板源的未兑现正出生请求，允许负h目标接收；计算/邻域读0价，原生物价格不变。瞬时出生机会未转成持续组织替代，关闭本实例，不泛化否定所有协调，不称学习。下一需由PI选择出生许可与后来维持环境相容性的可检验机制；无扩邻/延窗/调价/新writer。",
+          "route_when": [
+            "需要真实身体/规则小搜索、合法局部反馈及完整状态强基准时。"
+          ],
+          "avoid_when": [
+            "不把EMA/CEM/遗传或命名本身叫创新；不以格或相关布局扩独立样本。",
+            "不重演旧取得或用封存额度；paused/stopped或startedfalse不启动新原生。"
+          ]
+        },
+        "pending_requests": [],
+        "summary_updated_at": "2026-10-18T20:45:13Z",
+        "summary_stale": false,
+        "revision": 222,
+        "source_versions": {},
+        "missing_message_ids": [],
+        "writer_id": "resident_d3ccfa2d95b7"
+      }
+    ],
+    "unavailable_resident_ids": []
+  }
+}

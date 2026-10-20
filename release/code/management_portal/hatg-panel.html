@@ -1,0 +1,539 @@
+<main class="consoleShell agentLineageShell" id="agentLineageShell">
+      <section class="pane hatgPane" id="hatgPane" data-lineage-pane="hatg" aria-label="Lineage 编辑区" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Lineage 编辑区&quot;}">
+        <div class="hatgToolbar portalPanelHeadSurface">
+          <div class="hatgPaneRailControls">
+            <button class="portalButton is-icon is-quiet iconBtn paneToggle" data-portal-icon="chevron-left" id="hatgCollapseBtn" type="button" aria-label="折叠 HATG 编辑区" title="折叠 HATG 编辑区" aria-pressed="false" aria-controls="hatgPane" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;折叠 HATG 编辑区&quot;, &quot;title&quot;: &quot;折叠 HATG 编辑区&quot;}"></button>
+          </div>
+          <div class="hatgTitleBlock">
+            <div class="hatgTitleRow">
+              <div id="activeLineageIdentity"></div>
+              <button class="lineageSettingsBtn" data-portal-icon="settings" id="lineageSettingsBtn" type="button" aria-label="打开 Lineage Menu" title="Lineage 的设置、凭证、成员与工作摘要。" disabled data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;打开 Lineage Menu&quot;, &quot;title&quot;: &quot;Lineage 的设置、凭证、成员与工作摘要。&quot;}"></button>
+            </div>
+          </div>
+          <div class="hatgViewSwitch" role="tablist" aria-label="HATG 视图" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;HATG 视图&quot;}">
+            <button class="hatgViewTab active" id="graphContextViewBtn" type="button" role="tab" aria-selected="true" aria-controls="hatgViewport"><span><!--portal-i18n:"Context"-->Context</span></button>
+            <button class="hatgViewTab" id="graphWorkspaceViewBtn" type="button" role="tab" aria-selected="false" aria-controls="hatgViewport"><span><!--portal-i18n:"Workspace"-->Workspace</span></button>
+          </div>
+          <div class="graphActions" id="graphActions" data-portal-toolbar data-view-mode="context" role="toolbar" aria-label="Context 操作" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Context 操作&quot;}">
+            <button class="portalButton is-compact is-primary graphAction" data-portal-toolbar-item data-portal-toolbar-priority="critical" id="addNodeBtn" type="button" aria-label="新节点：创建独立 Agent，或通过 Resident ID 加入已有 Resident" data-portal-tooltip="新节点：创建独立 Agent，或通过 Resident ID 加入已有 Resident。" disabled data-portal-icon="plus" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;新节点：创建独立 Agent，或通过 Resident ID 加入已有 Resident&quot;}">
+              <span><!--portal-i18n:"新节点"-->新节点</span>
+            </button>
+            <button class="portalButton is-compact graphAction" data-portal-toolbar-item data-portal-toolbar-priority="critical" id="branchNodeBtn" type="button" aria-label="轨迹分支：对选中 Resident 执行 Fork 并继承上下文" data-portal-tooltip="轨迹分支：对选中 Resident 执行 Fork，创建继承上下文的普通 Resident。" disabled data-portal-icon="fork" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;轨迹分支：对选中 Resident 执行 Fork 并继承上下文&quot;}">
+              <span><!--portal-i18n:"轨迹分支"-->轨迹分支</span>
+            </button>
+            <button class="portalButton is-compact graphAction functionBlockWrapAction" data-canvas-selection-action data-portal-toolbar-item data-portal-toolbar-priority="critical" id="wrapFunctionBlockBtn" type="button" aria-label="Functionalize：封装选中的元素" data-portal-tooltip="将选中的 Resident、组件、连线和 Function Block 封装为一个 Function Block。" disabled data-portal-icon="component" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Functionalize：封装选中的元素&quot;, &quot;data-portal-tooltip&quot;: &quot;将选中的 Resident、组件、连线和 Function Block 封装为一个 Function Block。&quot;}">
+              <span><!--portal-i18n:"Functionalize"-->Functionalize</span>
+              <em id="wrapFunctionBlockCount">0</em>
+            </button>
+            <button class="portalButton is-compact graphAction" data-canvas-selection-action data-portal-toolbar-item data-portal-toolbar-priority="critical" id="saveSelectionTemplateBtn" type="button" aria-label="存为模板" data-portal-tooltip="存为模板" hidden disabled data-portal-icon="copy" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;存为模板&quot;, &quot;data-portal-tooltip&quot;: &quot;存为模板&quot;}"><span><!--portal-i18n:"存为模板"-->存为模板</span></button>
+            <button class="portalButton is-compact graphAction" data-canvas-selection-action data-portal-toolbar-item data-portal-toolbar-priority="critical" id="saveSelectionRewriteBtn" type="button" aria-label="做成改写模板" data-portal-tooltip="把选区作为已有结构，做成在它上面改动的模板" hidden disabled data-portal-icon="changes" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;做成改写模板&quot;, &quot;data-portal-tooltip&quot;: &quot;把选区作为已有结构，做成在它上面改动的模板&quot;}"><span><!--portal-i18n:"做成改写模板"-->做成改写模板</span></button>
+            <button class="portalButton is-compact graphAction familizeAction" data-canvas-selection-action data-portal-toolbar-item data-portal-toolbar-priority="critical" id="familizeBtn" type="button" aria-label="Familize：把选中的 Resident 组合为一个 Family" data-portal-tooltip="把选中的一个或多个 Resident 组合为一个 Family：单成员直接转交，多个成员由 Router 选择，steward 负责记忆同步与成员整理。" disabled data-portal-icon="users" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Familize：把选中的 Resident 组合为一个 Family&quot;}">
+              <span><!--portal-i18n:"Familize"-->Familize</span>
+            </button>
+            <button class="portalButton is-compact graphAction batchSelectionDeleteAction" data-canvas-selection-action data-portal-toolbar-item data-portal-toolbar-priority="critical" id="batchDeleteSelectionBtn" type="button" aria-label="批量删除选中的 HATG 元素" data-portal-tooltip="批量删除选中的 HATG 元素。" hidden disabled data-portal-icon="trash" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;批量删除选中的 HATG 元素&quot;}">
+              <span><!--portal-i18n:"批量删除"-->批量删除</span>
+            </button>
+            <button class="portalButton is-compact graphAction" data-canvas-selection-action data-portal-toolbar-item data-portal-toolbar-priority="critical" id="moveSubgraphBtn" type="button" hidden disabled aria-label="迁移选区到其他 Lineage" data-portal-tooltip="将选中的节点、组件与内部连线迁移到已有或新建 Lineage。" data-portal-icon="folder" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;迁移选区到其他 Lineage&quot;}"><span><!--portal-i18n:"迁移选区"-->迁移选区</span></button>
+            <button class="portalButton is-compact graphAction cancelSelectionAction" data-canvas-selection-action data-portal-toolbar-item data-portal-toolbar-priority="critical" id="cancelCanvasSelectionBtn" type="button" aria-label="取消多选" data-portal-tooltip="清空当前 HATG 多选。" hidden disabled data-portal-icon="close" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;取消多选&quot;}">
+              <span><!--portal-i18n:"取消多选"-->取消多选</span>
+            </button>
+            <button class="portalButton is-compact graphAction" data-portal-toolbar-item data-portal-toolbar-priority="normal" id="handoffModeBtn" type="button" aria-label="工作交接：选择来源和目标，明确传递工件与任务契约" data-portal-tooltip="工作交接：选择来源和目标，明确传递工件与任务契约。" disabled aria-pressed="false" data-portal-icon="handoff" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;工作交接：选择来源和目标，明确传递工件与任务契约&quot;}">
+              <span><!--portal-i18n:"工作交接"-->工作交接</span>
+            </button>
+            <button class="portalButton is-compact graphAction" data-portal-toolbar-item data-portal-toolbar-priority="normal" id="stopLineageBtn" type="button" aria-label="全局 Stop：停止当前 Lineage 所有正在运行的 Session" data-portal-tooltip="全局 Stop：对当前 Lineage 每个正在运行的节点执行一次与 Session 对话栏相同的 Stop。" disabled data-portal-icon="stop" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;全局 Stop：停止当前 Lineage 所有正在运行的 Session&quot;}">
+              <span><!--portal-i18n:"全局 Stop"-->全局 Stop</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="graphModeHint" id="graphModeHint" hidden>
+          <span id="graphModeHintText"></span>
+          <button id="cancelGraphModeBtn" type="button"><!--portal-i18n:"退出交接模式"-->退出交接模式</button>
+        </div>
+
+        <div class="lineageLoadError" id="lineageLoadError" role="alert" hidden></div>
+        <div class="hatgViewport" id="hatgViewport">
+          <div class="hatgCanvas" id="hatgCanvas" tabindex="0" aria-label="HATG 图编辑画布；按住 Shift 点击或拖出选框可多选节点" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;HATG 图编辑画布；按住 Shift 点击或拖出选框可多选节点&quot;}">
+            <div class="hatgWorld" id="hatgWorld" data-hatg-engine="d3">
+              <svg class="hatgEdges" data-portal-visualization="hatg-edges" id="hatgEdges" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                <defs>
+                  <marker id="inheritanceArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z"/></marker>
+                  <marker id="absorptionArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z"/></marker>
+                  <marker id="handoffArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z"/></marker>
+                  <marker id="programRouteArrow" class="programWireMarker route" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z"/></marker>
+                  <marker id="programTargetArrow" class="programWireMarker target" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z"/></marker>
+                  <marker id="programWatchArrow" class="programWireMarker watch" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z"/></marker>
+                </defs>
+                <g id="hatgEdgeLayer" data-hatg-layer="relations"></g>
+                <g id="hatgEffectLayer" data-hatg-layer="runtime-effects"></g>
+              </svg>
+              <div class="hatgEdgeLabels" id="hatgEdgeLabels" data-hatg-layer="relation-labels"></div>
+              <div class="hatgNodes" id="hatgNodes" data-hatg-layer="nodes"></div>
+            </div>
+            <div class="graphEmpty" id="graphEmpty">
+              <div class="graphEmptyIcon" data-portal-icon="network"></div>
+              <strong><!--portal-i18n:"这张 HATG 还没有节点"-->这张 HATG 还没有节点</strong>
+              <span><!--portal-i18n:"创建独立 Agent，或在“新节点”中通过 Resident ID 加入已有 Resident。"-->创建独立 Agent，或在“新节点”中通过 Resident ID 加入已有 Resident。</span>
+              <div><button class="portalButton is-primary" id="emptyAddNodeBtn" type="button"><!--portal-i18n:"创建第一个节点"-->创建第一个节点</button></div>
+            </div>
+          </div>
+          <aside
+            class="relationInspectorPanel"
+            id="relationInspectorPanel"
+            aria-label="HATG 关系详情"
+            aria-live="polite"
+            aria-hidden="true"
+            hidden
+           data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;HATG 关系详情&quot;}"></aside>
+          <aside
+            class="programInspectorPanel"
+            id="programInspectorPanel"
+            data-testid="program-inspector"
+            aria-label="HATG 编程对象设置"
+            aria-live="polite"
+            aria-hidden="true"
+            hidden
+           data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;HATG 编程对象设置&quot;}"></aside>
+          <div
+            class="programWireHint"
+            id="programWireHint"
+            data-testid="program-wire-hint"
+            role="status"
+            aria-live="polite"
+            hidden
+          >
+            <span class="programWireHintPulse" aria-hidden="true"></span>
+            <span class="programWireHintCopy">
+              <small id="programWireHintEyebrow"><!--portal-i18n:"正在连接"-->正在连接</small>
+              <strong id="programWireHintText"><!--portal-i18n:"请选择一个兼容的输入端口"-->请选择一个兼容的输入端口</strong>
+            </span>
+            <button
+              id="cancelProgramWireBtn"
+              data-program-wire-cancel
+              type="button"
+              aria-label="取消当前原语连线"
+              title="取消连线（Esc）"
+             data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;取消当前原语连线&quot;, &quot;title&quot;: &quot;取消连线（Esc）&quot;}"><span><!--portal-i18n:"取消"-->取消</span><kbd><!--portal-i18n:"Esc"-->Esc</kbd></button>
+          </div>
+          <div class="workspaceViewLoading" id="workspaceViewLoading" role="status" aria-live="polite" hidden>
+            <span class="workspaceViewLoadingSpinner" aria-hidden="true"></span>
+            <span class="workspaceViewLoadingCopy">
+              <strong><!--portal-i18n:"正在加载 Workspace 视图"-->正在加载 Workspace 视图</strong>
+              <small><!--portal-i18n:"读取真实 Workspace Binding；当前图保持不变。"-->读取真实 Workspace Binding；当前图保持不变。</small>
+            </span>
+          </div>
+          <div class="graphNavigationBar" id="graphNavigationBar" role="toolbar" aria-label="HATG 画布工具" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;HATG 画布工具&quot;}">
+            <div class="graphViewportCluster">
+              <div class="graphViewportControls" role="group" aria-label="HATG 画布导航" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;HATG 画布导航&quot;}">
+                <div class="graphSemanticZoom" id="graphSemanticZoom" role="group" aria-label="语义缩放层级" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;语义缩放层级&quot;}">
+                  <button type="button" data-semantic-zoom="overview" aria-label="切换到总览镜头" title="总览：只保留拓扑、状态与活动流" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;切换到总览镜头&quot;, &quot;title&quot;: &quot;总览：只保留拓扑、状态与活动流&quot;}"><i></i><span><!--portal-i18n:"总览"-->总览</span></button>
+                  <button type="button" data-semantic-zoom="operate" aria-label="切换到操作镜头" title="操作：显示目标与常用节点信息" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;切换到操作镜头&quot;, &quot;title&quot;: &quot;操作：显示目标与常用节点信息&quot;}"><i></i><span><!--portal-i18n:"操作"-->操作</span></button>
+                  <button type="button" data-semantic-zoom="inspect" aria-label="切换到检视镜头" title="检视：展开完整节点上下文" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;切换到检视镜头&quot;, &quot;title&quot;: &quot;检视：展开完整节点上下文&quot;}"><i></i><span><!--portal-i18n:"检视"-->检视</span></button>
+                </div>
+                <button class="graphViewportBtn" id="graphZoomOutBtn" type="button" aria-label="缩小 HATG" title="缩小（-）" aria-keyshortcuts="-" data-portal-icon="minus" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;缩小 HATG&quot;, &quot;title&quot;: &quot;缩小（-）&quot;}"></button>
+                <button class="graphZoomResetBtn" id="graphZoomResetBtn" type="button" aria-label="恢复 HATG 100% 视图" title="恢复 100%（0）" aria-keyshortcuts="0" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;恢复 HATG 100% 视图&quot;, &quot;title&quot;: &quot;恢复 100%（0）&quot;}"><span id="graphZoomValue">100%</span></button>
+                <button class="graphViewportBtn" id="graphZoomInBtn" type="button" aria-label="放大 HATG" title="放大（+）" aria-keyshortcuts="+" data-portal-icon="plus" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;放大 HATG&quot;, &quot;title&quot;: &quot;放大（+）&quot;}"></button>
+                <button class="graphViewportBtn graphFitBtn" data-portal-icon="fit-view" id="graphFitBtn" type="button" aria-label="适配全部 HATG 节点" title="适配全部节点（F）" aria-keyshortcuts="F" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;适配全部 HATG 节点&quot;, &quot;title&quot;: &quot;适配全部节点（F）&quot;}"></button>
+                <span class="graphViewportHint"><!--portal-i18n:"拖动画布 · 滚轮缩放"-->拖动画布 · 滚轮缩放</span>
+              </div>
+            </div>
+            <div class="graphNavigator" id="graphNavigator" aria-label="大图导航" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;大图导航&quot;}">
+              <div class="graphNodeSearchCluster">
+                <div class="graphNodeSearch" data-portal-search-field data-portal-search-density="micro">
+                  <input data-portal-search-input id="graphNodeSearchInput" type="search" autocomplete="off" placeholder="名称或自然语言" aria-label="按名称、目标、上下文摘要或 Agent id 查找节点" aria-controls="graphNodeSearchResults"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;名称或自然语言&quot;, &quot;aria-label&quot;: &quot;按名称、目标、上下文摘要或 Agent id 查找节点&quot;}"/>
+                  <div class="graphNodeSearchResults portalHatgOverlayComponent" id="graphNodeSearchResults" hidden></div>
+                </div>
+                <button class="graphNavigatorToolBtn graphDeepRerankBtn" id="graphDeepRerankBtn" type="button" title="深度重排当前 Lineage 节点" aria-label="深度重排当前 Lineage 节点" aria-busy="false" data-portal-i18n-attrs="{&quot;title&quot;: &quot;深度重排当前 Lineage 节点&quot;, &quot;aria-label&quot;: &quot;深度重排当前 Lineage 节点&quot;}"><!--portal-i18n:"深度"-->深度</button>
+              </div>
+              <select id="graphRelationFilter" aria-label="筛选关系类型" title="筛选关系类型" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;筛选关系类型&quot;, &quot;title&quot;: &quot;筛选关系类型&quot;}">
+                <option value="all"><!--portal-i18n:"全部关系"-->全部关系</option>
+                <option value="inheritance"><!--portal-i18n:"轨迹继承"-->轨迹继承</option>
+                <option value="handoff"><!--portal-i18n:"工作交接"-->工作交接</option>
+                <option value="program"><!--portal-i18n:"原语程序"-->原语程序</option>
+              </select>
+              <button class="graphNavigatorToolBtn autoLayoutAction graphNavigatorAction" data-portal-toolbar-item data-portal-toolbar-priority="critical" id="autoLayoutBtn" type="button" aria-label="自动整理：按分支归组节点，减少关系线交叉，并自动适配画布" data-portal-tooltip="自动整理：按分支归组节点，减少关系线交叉，并自动适配画布。" aria-busy="false" disabled data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;自动整理：按分支归组节点，减少关系线交叉，并自动适配画布&quot;}"><span><!--portal-i18n:"整理"-->整理</span></button>
+              <button class="graphNavigatorToolBtn graphLeaderJumpBtn" id="graphLeaderJumpBtn" type="button" aria-label="跳转到当前 Lineage 的 Leader" title="跳转到 Leader" disabled data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;跳转到当前 Lineage 的 Leader&quot;, &quot;title&quot;: &quot;跳转到 Leader&quot;}"><!--portal-i18n:"Leader"-->Leader</button>
+              <button class="graphNavigatorToolBtn graphFocusModeBtn" id="graphFocusModeBtn" type="button" aria-pressed="false" title="只显示选中节点与一跳邻居" data-portal-i18n-attrs="{&quot;title&quot;: &quot;只显示选中节点与一跳邻居&quot;}"><!--portal-i18n:"邻域"-->邻域</button>
+              <span class="graphVisibilitySummary" id="graphVisibilitySummary">0 / 0</span>
+            </div>
+          </div>
+          <aside class="seedInspector" id="seedInspector" hidden aria-live="polite">
+            <div class="seedInspectorHead"><span><!--portal-i18n:"种子节点"-->种子节点</span><em id="seedInspectorType"><!--portal-i18n:"候选"-->候选</em></div>
+            <strong id="seedInspectorTitle"><!--portal-i18n:"候选内容"-->候选内容</strong>
+            <small class="seedInspectorProducer" id="seedInspectorProducer"><!--portal-i18n:"由对应探索 Agent 持续规划"-->由对应探索 Agent 持续规划</small>
+            <small id="seedInspectorPath"></small>
+            <div class="seedInspectorActions">
+              <button class="portalButton is-compact is-primary" type="button" data-seed-promote-action="implement"><!--portal-i18n:"实现"-->实现</button>
+              <button class="portalButton is-compact" type="button" data-seed-promote-action="analyze"><!--portal-i18n:"继续分析"-->继续分析</button>
+              <button class="portalButton is-compact" type="button" data-seed-promote-action="validate"><!--portal-i18n:"验证"-->验证</button>
+              <button class="portalButton is-compact" id="seedSettingsBtn" type="button" title="名称、类型、候选文件和候选 Fork" data-portal-i18n-attrs="{&quot;title&quot;: &quot;名称、类型、候选文件和候选 Fork&quot;}"><!--portal-i18n:"设置"-->设置</button>
+              <button class="portalButton is-compact is-danger seedDismiss" id="seedDismissBtn" type="button"><!--portal-i18n:"抛弃"-->抛弃</button>
+            </div>
+          </aside>
+          <svg class="hatgMinimap" data-portal-visualization="hatg-minimap" id="hatgMinimap" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="HATG 小地图；点击可移动视口" hidden data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;HATG 小地图；点击可移动视口&quot;}"></svg>
+          <div class="graphLegend" id="collaborationGraphLegend" aria-label="HATG 协作关系图例" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;HATG 协作关系图例&quot;}">
+            <span><i class="legendLine inheritance"></i><!--portal-i18n:"Fork 继承"-->Fork 继承</span>
+            <span><i class="legendLine handoff"></i><!--portal-i18n:"Workspace Handoff"-->Workspace Handoff</span>
+            <span><i class="legendLine absorption"></i><!--portal-i18n:"节点吸收"-->节点吸收</span>
+            <span><i class="legendSeed"></i><!--portal-i18n:"种子节点"-->种子节点</span>
+          </div>
+          <div class="graphLegend" id="workspaceGraphLegend" aria-label="HATG Workspace 关系图例" hidden data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;HATG Workspace 关系图例&quot;}"><span><i class="legendLine workspace_binding"></i><!--portal-i18n:"Resident 绑定"-->Resident 绑定</span><span><i class="legendLine handoff"></i><!--portal-i18n:"工作区交接"-->工作区交接</span></div>
+          <div class="graphLegend programGraphLegend" id="programGraphLegend" aria-label="HATG 原语连线图例" hidden data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;HATG 原语连线图例&quot;}">
+            <span><i class="legendLine program-route"></i><!--portal-i18n:"路由包"-->路由包</span>
+            <span><i class="legendLine program-target"></i><!--portal-i18n:"动作目标"-->动作目标</span>
+          </div>
+          <div class="srOnly" id="graphSyncStatus" role="status" aria-live="polite"><!--portal-i18n:"等待选择 Lineage"-->等待选择 Lineage</div>
+        </div>
+
+        <div class="functionShelf" aria-label="HATG 快捷操作与运行记录" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;HATG 快捷操作与运行记录&quot;}">
+          <div class="componentLibrary" id="functionBlockShelf">
+            <div class="componentLibraryRail" aria-label="HATG 编程原语与功能组件" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;HATG 编程原语与功能组件&quot;}">
+              <section
+                class="componentLibraryGroup primitiveBlockShelf"
+                id="hatgPrimitiveLibrary"
+                data-testid="hatg-primitive-library"
+                aria-labelledby="primitiveBlockShelfTitle"
+              >
+                <div class="componentLibraryGroupHead">
+                  <span><small><!--portal-i18n:"PRIMITIVE"-->PRIMITIVE</small><strong id="primitiveBlockShelfTitle"><!--portal-i18n:"原语"-->原语</strong></span>
+                  <i class="primitiveLibraryConnector" aria-hidden="true"></i>
+                </div>
+                <div class="hatgPrimitiveBlocks" role="group" aria-label="可拖动原语" aria-describedby="primitiveLibraryInstruction" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;可拖动原语&quot;}">
+                  <button
+                    class="hatgPrimitiveCard event"
+                    id="hatgPrimitiveEvent"
+                    data-hatg-library-kind="event_source"
+                    data-primitive-kind="event_source"
+                    data-primitive-source="library"
+                    data-testid="hatg-primitive-event-source"
+                    draggable="true"
+                    type="button"
+                    aria-label="拖动事件到 HATG 画布"
+                    title="事件（Event）：当 Resident 完成、文件改变、到达时间或手动触发时，通知下游节点"
+                   data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;拖动事件到 HATG 画布&quot;, &quot;title&quot;: &quot;事件（Event）：当 Resident 完成、文件改变、到达时间或手动触发时，通知下游节点&quot;}">
+                    <span class="hatgPrimitiveGlyph" data-portal-icon="event" aria-hidden="true"></span>
+                    <span class="hatgPrimitiveCopy"><strong><!--portal-i18n:"事件"-->事件</strong><small><!--portal-i18n:"何时触发"-->何时触发</small></span>
+                  </button>
+                  <button
+                    class="hatgPrimitiveCard filter"
+                    id="hatgPrimitiveFilter"
+                    data-hatg-library-kind="filter"
+                    data-primitive-kind="filter"
+                    data-primitive-source="library"
+                    data-testid="hatg-primitive-filter"
+                    draggable="true"
+                    type="button"
+                    aria-label="拖动过滤器到 HATG 画布"
+                    title="过滤器（Filter）：按规则或语义保留一部分 Packet，内容与身份保持不变"
+                   data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;拖动过滤器到 HATG 画布&quot;, &quot;title&quot;: &quot;过滤器（Filter）：按规则或语义保留一部分 Packet，内容与身份保持不变&quot;}">
+                    <span class="hatgPrimitiveGlyph" data-portal-icon="filter" aria-hidden="true"></span>
+                    <span class="hatgPrimitiveCopy"><strong><!--portal-i18n:"过滤器"-->过滤器</strong><small><!--portal-i18n:"保留子集"-->保留子集</small></span>
+                  </button>
+                  <button
+                    class="hatgPrimitiveCard selector"
+                    id="hatgPrimitiveSelector"
+                    data-hatg-library-kind="selector"
+                    data-primitive-kind="selector"
+                    data-primitive-source="library"
+                    data-testid="hatg-primitive-selector"
+                    draggable="true"
+                    type="button"
+                    aria-label="拖动选择器到 HATG 画布"
+                    title="选择器（Selector）：把一次输入按分支规则路由到多个具名 Packet 出口"
+                   data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;拖动选择器到 HATG 画布&quot;, &quot;title&quot;: &quot;选择器（Selector）：把一次输入按分支规则路由到多个具名 Packet 出口&quot;}">
+                    <span class="hatgPrimitiveGlyph" data-portal-icon="branch" aria-hidden="true"></span>
+                    <span class="hatgPrimitiveCopy"><strong><!--portal-i18n:"选择器"-->选择器</strong><small><!--portal-i18n:"分支路由"-->分支路由</small></span>
+                  </button>
+                  <button
+                    class="hatgPrimitiveCard reducer"
+                    id="hatgPrimitiveReducer"
+                    data-hatg-library-kind="reducer"
+                    data-primitive-kind="reducer"
+                    data-primitive-source="library"
+                    data-testid="hatg-primitive-reducer"
+                    draggable="true"
+                    type="button"
+                    aria-label="拖动汇总者到 HATG 画布"
+                    title="汇总者（Reducer）：等待多条角色建议并合并，或直接处理事件"
+                   data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;拖动汇总者到 HATG 画布&quot;, &quot;title&quot;: &quot;汇总者（Reducer）：等待多条角色建议并合并，或直接处理事件&quot;}">
+                    <span class="hatgPrimitiveGlyph" data-portal-icon="reducer" aria-hidden="true"></span>
+                    <span class="hatgPrimitiveCopy"><strong><!--portal-i18n:"汇总者"-->汇总者</strong><small><!--portal-i18n:"等待并合并"-->等待并合并</small></span>
+                  </button>
+                  <button
+                    class="hatgPrimitiveCard effect"
+                    id="hatgPrimitiveEffect"
+                    data-hatg-library-kind="effect"
+                    data-primitive-kind="effect"
+                    data-primitive-source="library"
+                    data-testid="hatg-primitive-effect"
+                    draggable="true"
+                    type="button"
+                    aria-label="拖动动作到 HATG 画布"
+                    title="动作（Effect）：接收事件或角色建议，发送消息、产生事件、通过 Fork 创建 Resident 或交接 Workspace"
+                   data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;拖动动作到 HATG 画布&quot;, &quot;title&quot;: &quot;动作（Effect）：接收事件或角色建议，发送消息、产生事件、通过 Fork 创建 Resident 或交接 Workspace&quot;}">
+                    <span class="hatgPrimitiveGlyph" data-portal-icon="effect" aria-hidden="true"></span>
+                    <span class="hatgPrimitiveCopy"><strong><!--portal-i18n:"动作"-->动作</strong><small><!--portal-i18n:"执行操作"-->执行操作</small></span>
+                  </button>
+                  <button
+                    class="hatgPrimitiveCard seed"
+                    id="hatgPrimitiveSeed"
+                    data-hatg-library-kind="seed"
+                    data-primitive-kind="seed"
+                    data-primitive-source="library"
+                    data-testid="hatg-primitive-seed"
+                    draggable="true"
+                    type="button"
+                    aria-label="拖动种子到 HATG 画布"
+                    title="种子（Seed）：Program 中的候选，不会在创建时产生 Resident"
+                   data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;拖动种子到 HATG 画布&quot;, &quot;title&quot;: &quot;种子（Seed）：Program 中的候选，不会在创建时产生 Resident&quot;}">
+                    <span class="hatgPrimitiveGlyph" data-portal-icon="seed" aria-hidden="true"></span>
+                    <span class="hatgPrimitiveCopy"><strong><!--portal-i18n:"种子"-->种子</strong><small><!--portal-i18n:"候选产物"-->候选产物</small></span>
+                  </button>
+                </div>
+                <span class="srOnly" id="primitiveLibraryInstruction"><!--portal-i18n:"拖动原语到画布创建实例；在画布上连接相同类型的输出和输入端口。"-->拖动原语到画布创建实例；在画布上连接相同类型的输出和输入端口。</span>
+              </section>
+              <div class="componentLibrarySplitter" id="componentLibrarySplitter" role="separator" tabindex="0" aria-orientation="vertical" aria-controls="hatgPrimitiveLibrary hatgFunctionLibrary" aria-label="调整原语与模板区宽度" title="左右拖动调整宽度，双击恢复等宽" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;调整原语与模板区宽度&quot;, &quot;title&quot;: &quot;左右拖动调整宽度，双击恢复等宽&quot;}"></div>
+              <section class="componentLibraryGroup templateLibraryGroup" id="hatgFunctionLibrary" aria-labelledby="templateShelfTitle">
+                <div class="componentLibraryGroupHead">
+                  <span><small>TEMPLATE</small><strong id="templateShelfTitle"><!--portal-i18n:"模板"-->模板</strong></span>
+                  <button class="componentLibraryAdd" id="addTemplateBtn" type="button" aria-label="新建模板" title="新建模板" data-portal-icon="plus" data-portal-i18n-attrs="{&quot;aria-label&quot;:&quot;新建模板&quot;,&quot;title&quot;:&quot;新建模板&quot;}"></button>
+                </div>
+                <div class="templateShelf" id="templateShelf"></div>
+              </section>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <div class="portalDetailOverlay lineageDialogOverlay portalHatgOverlayComponent" data-portal-detail-overlay id="lineageModal" hidden aria-hidden="true">
+      <section data-portal-detail-surface class="portalDetailSurface" role="dialog" aria-modal="true" aria-labelledby="lineageModalTitle">
+        <div class="portalDetailHeader" data-portal-detail-header>
+          <div>
+            <span class="portalDetailEyebrow"><!--portal-i18n:"AGENT LINEAGE"-->AGENT LINEAGE</span>
+            <h2 id="lineageModalTitle"><!--portal-i18n:"新建 Lineage"-->新建 Lineage</h2>
+          </div>
+          <button class="portalDetailClose" data-portal-detail-close type="button" data-close-modal="lineageModal" aria-label="关闭" data-portal-icon="close" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;关闭&quot;}"></button>
+        </div>
+        <form id="lineageForm" class="portalDetailForm lineageForm">
+          <label><!--portal-i18n:"名称（可选）"-->名称（可选）<input id="lineageNameInput" maxlength="140" autocomplete="off" placeholder="留空时使用“未命名 Lineage”"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;留空时使用“未命名 Lineage”&quot;}"/></label>
+          <label><!--portal-i18n:"说明"-->说明<textarea id="lineageDescriptionInput" rows="3" maxlength="3000" placeholder="这个 Lineage 要共同解决什么问题？" data-portal-i18n-attrs="{&quot;placeholder&quot;:&quot;这个 Lineage 要共同解决什么问题？&quot;}"></textarea></label>
+          <label><!--portal-i18n:"所属项目\n            "-->所属项目
+            <select id="lineageProjectInput" required>
+              <option value="" disabled selected><!--portal-i18n:"请选择项目"-->请选择项目</option>
+            </select>
+            <small id="lineageProjectHint"><!--portal-i18n:"Lineage 必须属于一个 Project。"-->Lineage 必须属于一个 Project。</small>
+          </label>
+          <label id="lineageFamilizeField" class="lineageCheckField"><input id="lineageFamilizeInput" type="checkbox" checked /><span><strong><!--portal-i18n:"将 Lineage Familize"-->将 Lineage Familize</strong><small><!--portal-i18n:"建立统一门面；之后新建的成员自动加入。"-->建立统一门面；之后新建的成员自动加入。</small></span></label>
+          <label id="lineageLeaderField" hidden><!--portal-i18n:"Leader\n            "-->Leader
+            <select id="lineageLeaderInput"></select>
+            <small><!--portal-i18n:"选择负责协调的 Resident；保存设置不会向它发送消息。"-->选择负责协调的 Resident；保存设置不会向它发送消息。</small>
+          </label>
+          <label><span><!--portal-i18n:"自动运行 User（可选）"-->自动运行 User（可选）</span>
+            <select id="lineageRunAsInput" aria-describedby="lineageRunAsHint lineageRunAsCatalogStatus"></select>
+            <small id="lineageRunAsHint"><!--portal-i18n:"User 为可选配置。未指定时自动事件正常触发，Resident 使用自身身份和权限执行；指定后按该 User 的权限执行。"-->User 为可选配置。未指定时自动事件正常触发，Resident 使用自身身份和权限执行；指定后按该 User 的权限执行。</small>
+          </label>
+          <p id="lineageRunAsCatalogStatus" role="status"></p>
+          <p id="lineageFormError" role="alert" hidden></p>
+          <div class="dangerZone" id="lineageDeleteZone" hidden>
+            <div><strong><!--portal-i18n:"删除 Lineage"-->删除 Lineage</strong><span><!--portal-i18n:"Lineage 和成员标记为已删除，停止运行并清理自有工作区；对话与运行轨迹保留。"-->Lineage 和成员标记为已删除，停止运行并清理自有工作区；对话与运行轨迹保留。</span></div>
+            <button class="portalButton is-danger" id="deleteLineageBtn" type="button"><!--portal-i18n:"删除"-->删除</button>
+          </div>
+          <div class="portalDetailFooter" data-portal-detail-footer><button class="portalButton" type="button" data-close-modal="lineageModal"><!--portal-i18n:"取消"-->取消</button><button class="portalButton is-primary" id="lineageSubmitBtn" type="submit"><!--portal-i18n:"创建 Lineage"-->创建 Lineage</button></div>
+        </form>
+      </section>
+    </div>
+
+    <div class="portalDetailOverlay lineageDialogOverlay" data-portal-detail-overlay id="subgraphMoveModal" hidden aria-hidden="true">
+      <section data-portal-detail-surface class="portalDetailSurface" role="dialog" aria-modal="true" aria-labelledby="subgraphMoveTitle">
+        <div class="portalDetailHeader" data-portal-detail-header>
+          <h2 id="subgraphMoveTitle"><!--portal-i18n:"迁移 HATG 选区"-->迁移 HATG 选区</h2>
+          <button class="portalDetailClose" data-portal-detail-close type="button" data-close-modal="subgraphMoveModal" aria-label="关闭" data-portal-icon="close" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;关闭&quot;}"></button>
+        </div>
+        <form id="subgraphMoveForm" class="portalDetailForm lineageForm">
+          <p><!--portal-i18n:"选中的 Resident、Event、Effect 等组件和内部连线一起迁移。保留身份、会话与 Workspace；成员访问权限随目标 Lineage 生效。"-->选中的 Resident、Event、Effect 等组件和内部连线一起迁移。保留身份、会话与 Workspace；成员访问权限随目标 Lineage 生效。</p>
+          <label><!--portal-i18n:"目标 Lineage"-->目标 Lineage<select id="subgraphMoveTarget"><option value=""><!--portal-i18n:"请选择"-->请选择</option></select></label>
+          <p id="subgraphMoveTargetsStatus" role="status" aria-live="polite"></p>
+          <label id="subgraphMoveNameField" hidden><!--portal-i18n:"新 Lineage 名称"-->新 Lineage 名称<input id="subgraphMoveName" maxlength="140" autocomplete="off" /></label>
+          <label id="subgraphMoveProjectField" hidden><!--portal-i18n:"所属项目"-->所属项目<select id="subgraphMoveProject"></select></label>
+          <p id="subgraphMoveStatus" role="status" aria-live="polite"></p>
+          <div class="portalDetailFooter" data-portal-detail-footer>
+            <button class="portalButton" type="button" data-close-modal="subgraphMoveModal"><!--portal-i18n:"取消"-->取消</button>
+            <button class="portalButton" id="subgraphMovePreview" type="button"><!--portal-i18n:"刷新预览"-->刷新预览</button>
+            <button class="portalButton is-primary" id="subgraphMoveSubmit" type="submit" disabled><!--portal-i18n:"确认迁移"-->确认迁移</button>
+          </div>
+        </form>
+      </section>
+    </div>
+
+    <div class="portalDetailOverlay lineageDialogOverlay" data-portal-detail-overlay id="nodeModal" hidden aria-hidden="true">
+      <section data-portal-detail-surface class="portalDetailSurface nodeModal" role="dialog" aria-modal="true" aria-labelledby="nodeModalTitle">
+        <div class="portalDetailHeader" data-portal-detail-header>
+          <div><span class="portalDetailEyebrow"><!--portal-i18n:"NEW NODE"-->NEW NODE</span><h2 id="nodeModalTitle"><!--portal-i18n:"新节点"-->新节点</h2></div>
+          <button class="portalDetailClose" data-portal-detail-close type="button" data-close-modal="nodeModal" aria-label="关闭" data-portal-icon="close" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;关闭&quot;}"></button>
+        </div>
+        <form id="nodeForm" class="portalDetailForm lineageForm">
+          <div id="nodeFormError" class="lineageLoadError" role="alert" hidden></div>
+          <div id="newResidentFields">
+            <label><!--portal-i18n:"Agent 名称"-->Agent 名称<input id="nodeTitleInput" maxlength="120" autocomplete="off" placeholder="例如：交互方案探索 Agent"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;例如：交互方案探索 Agent&quot;}"/></label>
+            <label><!--portal-i18n:"后端"-->后端<select id="nodeBackendSelect"></select></label>
+            <label data-node-provider-setting hidden><!--portal-i18n:"Backend Account / Route"-->Backend Account / Route<select id="nodeRouteSelect" disabled></select></label>
+            <label data-node-provider-setting hidden><!--portal-i18n:"Model"-->Model<select id="nodeModelSelect" disabled></select></label>
+            <label data-node-provider-setting hidden><!--portal-i18n:"Effort"-->Effort<select id="nodeEffortSelect" disabled></select></label>
+            <label><!--portal-i18n:"Speed\n              "-->Speed
+              <select id="nodeServiceTierInput">
+                <option value=""><!--portal-i18n:"1x (default)"-->1x (default)</option>
+                <option value="fast"><!--portal-i18n:"Fast"-->Fast</option>
+              </select>
+              <small><!--portal-i18n:"用于这个 Resident 的后续消息；可在 Chat Workspace 中调整。"-->用于这个 Resident 的后续消息；可在 Chat Workspace 中调整。</small>
+            </label>
+          </div>
+          <div class="portalDetailFooter" data-portal-detail-footer><button class="portalButton" type="button" data-close-modal="nodeModal"><!--portal-i18n:"取消"-->取消</button><button class="portalButton is-primary" id="nodeSubmitBtn" type="submit"><!--portal-i18n:"创建 Resident"-->创建 Resident</button></div>
+        </form>
+      </section>
+    </div>
+
+    <div class="portalDetailOverlay lineageDialogOverlay" data-portal-detail-overlay id="branchModal" hidden aria-hidden="true">
+      <section data-portal-detail-surface class="portalDetailSurface" role="dialog" aria-modal="true" aria-labelledby="branchModalTitle">
+        <div class="portalDetailHeader" data-portal-detail-header>
+          <div><span class="portalDetailEyebrow"><!--portal-i18n:"TRAJECTORY INHERITANCE"-->TRAJECTORY INHERITANCE</span><h2 id="branchModalTitle"><!--portal-i18n:"从当前节点建立分支"-->从当前节点建立分支</h2></div>
+          <button class="portalDetailClose" data-portal-detail-close type="button" data-close-modal="branchModal" aria-label="关闭" data-portal-icon="close" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;关闭&quot;}"></button>
+        </div>
+        <form id="branchForm" class="portalDetailForm lineageForm">
+          <div class="sourceNodeSummary" id="branchSourceSummary"></div>
+          <div class="modalInfo" id="branchMessageAnchor" hidden><strong><!--portal-i18n:"从这条消息继续"-->从这条消息继续</strong><span id="branchMessageAnchorText"></span></div>
+          <fieldset class="choiceCards" id="branchModeChoices">
+            <legend><!--portal-i18n:"创建方式"-->创建方式</legend>
+            <label><input type="radio" name="branchMode" value="full" checked /><span><strong><!--portal-i18n:"完整上下文"-->完整上下文</strong><small><!--portal-i18n:"继承当前有效上下文，建立独立轨迹。"-->继承当前有效上下文，建立独立轨迹。</small></span></label>
+            <label><input type="radio" name="branchMode" value="compacted" /><span><strong><!--portal-i18n:"压缩继承"-->压缩继承</strong><small><!--portal-i18n:"先压缩继承的上下文，再开始工作；历史轨迹保留。"-->先压缩继承的上下文，再开始工作；历史轨迹保留。</small></span></label>
+            <label><input type="radio" name="branchMode" value="recent-5" /><span><strong><!--portal-i18n:"最近 5 轮"-->最近 5 轮</strong><small><!--portal-i18n:"继承当前节点最近五轮对话。"-->继承当前节点最近五轮对话。</small></span></label>
+            <label><input type="radio" name="branchMode" value="recent-10" /><span><strong><!--portal-i18n:"最近 10 轮"-->最近 10 轮</strong><small><!--portal-i18n:"继承当前节点最近十轮对话。"-->继承当前节点最近十轮对话。</small></span></label>
+            <label><input type="radio" name="branchMode" value="new-session" /><span><strong><!--portal-i18n:"new session"-->new session</strong><small><!--portal-i18n:"创建空白会话，不继承历史，也不创建继承边。"-->创建空白会话，不继承历史，也不创建继承边。</small></span></label>
+          </fieldset>
+          <label>AI Provider<select id="branchProviderInput" required></select></label>
+          <label id="branchAccountField"><!--portal-i18n:"账号"-->账号
+            <select id="branchAccountInput"></select>
+            <small class="branchAccountHint" id="branchAccountHint"></small>
+          </label>
+          <label><!--portal-i18n:"节点名称"-->节点名称<input id="branchTitleInput" maxlength="120" autocomplete="off" /></label>
+          <div class="portalDetailFooter" data-portal-detail-footer><button class="portalButton" type="button" data-close-modal="branchModal"><!--portal-i18n:"取消"-->取消</button><button class="portalButton is-primary" id="branchSubmitBtn" type="submit"><!--portal-i18n:"创建继承分支"-->创建继承分支</button></div>
+        </form>
+      </section>
+    </div>
+
+    <div class="portalDetailOverlay lineageDialogOverlay" data-portal-detail-overlay id="handoffModal" hidden aria-hidden="true">
+      <section data-portal-detail-surface class="portalDetailSurface handoffModalSurface" role="dialog" aria-modal="true" aria-labelledby="handoffModalTitle">
+        <div class="portalDetailHeader" data-portal-detail-header>
+          <div><span class="portalDetailEyebrow"><!--portal-i18n:"WORK HANDOFF"-->WORK HANDOFF</span><h2 id="handoffModalTitle"><!--portal-i18n:"建立工作交接"-->建立工作交接</h2></div>
+          <button class="portalDetailClose" data-portal-detail-close type="button" data-close-modal="handoffModal" aria-label="关闭" data-portal-icon="close" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;关闭&quot;}"></button>
+        </div>
+        <form id="handoffForm" class="portalDetailForm lineageForm">
+          <div class="handoffRoute" id="handoffRoute"></div>
+          <div class="modalInfo handoffTruthInfo" id="directHandoffWorkspaceInfo"><strong><!--portal-i18n:"这是一个 Handoff"-->这是一个 Handoff</strong><span id="directHandoffWorkspaceText"><!--portal-i18n:"方式决定如何准备 Workspace；需要继续触发 Agent 时，请在 HATG Program 中显式连接 Event 与 Effect。"-->方式决定如何准备 Workspace；需要继续触发 Agent 时，请在 HATG Program 中显式连接 Event 与 Effect。</span></div>
+          <section class="handoffItemsSection" aria-labelledby="handoffItemsTitle">
+            <div class="handoffItemsHeader">
+              <div><strong id="handoffItemsTitle"><!--portal-i18n:"交接范围"-->交接范围</strong><small><!--portal-i18n:"每一项可选择不同的 Workspace、文件范围与准备方式；最多 24 项。"-->每一项可选择不同的 Workspace、文件范围与准备方式；最多 24 项。<span id="handoffItemsCount">1 / 24</span></small></div>
+              <button class="portalButton handoffAddItemBtn" id="handoffAddItemBtn" type="button"><!--portal-i18n:"+ 添加交接项"-->+ 添加交接项</button>
+            </div>
+            <div class="handoffItemsEditor" id="handoffItemsEditor">
+              <section class="handoffItemCard" data-handoff-item data-handoff-item-id="workspace">
+                <div class="handoffItemHead"><strong><!--portal-i18n:"交接项 1"-->交接项 1</strong><button class="handoffItemRemoveBtn" type="button" data-remove-handoff-item hidden><!--portal-i18n:"移除"-->移除</button></div>
+                <label><!--portal-i18n:"来源 Workspace"-->来源 Workspace<select id="handoffSourceWorkspaceInput" data-handoff-field="source-workspace" required></select><small><!--portal-i18n:"只能选择来源节点已经绑定的 Workspace。"-->只能选择来源节点已经绑定的 Workspace。</small></label>
+                <label><!--portal-i18n:"交接内容范围"-->交接内容范围<input id="handoffSourceScopeInput" data-handoff-field="source-scope" maxlength="800" value="." spellcheck="false" placeholder="整个 Workspace 填 .；也可填写相对目录或文件"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;整个 Workspace 填 .；也可填写相对目录或文件&quot;}"/></label>
+                <div class="handoffMethodGrid">
+                  <label><!--portal-i18n:"交接方式"-->交接方式<select id="handoffMaterializerInput" data-handoff-field="materializer"><option value="direct"><!--portal-i18n:"共享同一目录"-->共享同一目录</option><option value="filesystem_copy"><!--portal-i18n:"复制为普通目录"-->复制为普通目录</option><option value="git_worktree"><!--portal-i18n:"创建 Git worktree"-->创建 Git worktree</option></select></label>
+                  <label><!--portal-i18n:"目标 Workspace 名称"-->目标 Workspace 名称<input id="handoffTargetLabelInput" data-handoff-field="target-label" maxlength="160" placeholder="例如：探索版 2 · Portal"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;例如：探索版 2 · Portal&quot;}"/></label>
+                </div>
+                <div class="handoffCopyFields" id="handoffCopyFields" data-handoff-field="copy-fields" hidden>
+                  <label><!--portal-i18n:"目标绝对路径"-->目标绝对路径<input id="handoffTargetPathInput" data-handoff-field="target-path" maxlength="4096" spellcheck="false" placeholder="留空时由 Lineage 在安全目录中生成"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;留空时由 Lineage 在安全目录中生成&quot;}"/></label>
+                  <div class="handoffGitFields" id="handoffGitFields" data-handoff-field="git-fields" hidden>
+                    <label><!--portal-i18n:"Git 分支"-->Git 分支<input id="handoffGitBranchInput" data-handoff-field="git-branch" maxlength="180" spellcheck="false" placeholder="例如：explore/2-lineage-ui"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;例如：explore/2-lineage-ui&quot;}"/></label>
+                    <label><!--portal-i18n:"基线 commit（可选）"-->基线 commit（可选）<input id="handoffGitBaseInput" data-handoff-field="git-base" maxlength="160" spellcheck="false" placeholder="留空使用创建 Handoff 时的来源 HEAD"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;留空使用创建 Handoff 时的来源 HEAD&quot;}"/></label>
+                    <label class="toggleField"><input id="handoffIncludeChangesInput" data-handoff-field="include-changes" type="checkbox" checked /><span><strong><!--portal-i18n:"带上来源当前未提交改动"-->带上来源当前未提交改动</strong><small><!--portal-i18n:"精确 commit 之外的 patch 与安全 untracked 文件也复制到新 worktree。"-->精确 commit 之外的 patch 与安全 untracked 文件也复制到新 worktree。</small></span></label>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </section>
+          <label id="handoffExplanationField"><!--portal-i18n:"交接解释（选填）"-->交接解释（选填）<textarea id="handoffExplanationInput" rows="4" maxlength="8000" placeholder="例如：research/summary.md 汇总了当前研究结论，设计节点可据此继续；也可在这里说明交接原因或如何判断文件可用。"></textarea><small><!--portal-i18n:"用于解释交接文件的含义；也可以自由写入交接原因或可用性判断，不要求拆分填写。"-->用于解释交接文件的含义；也可以自由写入交接原因或可用性判断，不要求拆分填写。</small></label>
+          <label class="toggleField"><input id="handoffSendNowInput" type="checkbox" checked /><span><strong><!--portal-i18n:"保存后立即准备 Workspace"-->保存后立即准备 Workspace</strong><small><!--portal-i18n:"成功后写入目标 Workspace Binding；失败则保留 attempt 和错误，可从关系详情重试。"-->成功后写入目标 Workspace Binding；失败则保留 attempt 和错误，可从关系详情重试。</small></span></label>
+          <div class="portalDetailFooter" data-portal-detail-footer><button class="portalButton is-danger" id="removeEdgeBtn" type="button" hidden><!--portal-i18n:"移除关系"-->移除关系</button><span class="modalActionSpacer"></span><button class="portalButton" type="button" data-close-modal="handoffModal"><!--portal-i18n:"取消"-->取消</button><button class="portalButton is-primary" id="handoffSubmitBtn" type="submit"><!--portal-i18n:"保存并执行交接"-->保存并执行交接</button></div>
+        </form>
+      </section>
+    </div>
+
+
+    <div class="portalDetailOverlay lineageDialogOverlay" data-portal-detail-overlay id="seedPromoteModal" hidden aria-hidden="true">
+      <section data-portal-detail-surface class="portalDetailSurface seedPromoteModal" role="dialog" aria-modal="true" aria-labelledby="seedPromoteModalTitle">
+        <div class="portalDetailHeader" data-portal-detail-header>
+          <div><span class="portalDetailEyebrow"><!--portal-i18n:"ADOPT SEED"-->ADOPT SEED</span><h2 id="seedPromoteModalTitle"><!--portal-i18n:"将 Seed 提升为 Resident"-->将 Seed 提升为 Resident</h2></div>
+          <button class="portalDetailClose" data-portal-detail-close type="button" data-close-modal="seedPromoteModal" aria-label="关闭" data-portal-icon="close" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;关闭&quot;}"></button>
+        </div>
+        <form id="seedPromoteForm" class="portalDetailForm lineageForm">
+          <div class="seedPromotionRoute" id="seedPromotionRoute"></div>
+          <div class="seedActionChoices" role="group" aria-label="行动目的" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;行动目的&quot;}">
+            <button type="button" data-seed-action-choice="implement"><!--portal-i18n:"实现"-->实现</button>
+            <button type="button" data-seed-action-choice="analyze"><!--portal-i18n:"继续分析"-->继续分析</button>
+            <button type="button" data-seed-action-choice="validate"><!--portal-i18n:"验证"-->验证</button>
+            <button type="button" data-seed-action-choice="custom"><!--portal-i18n:"自定义"-->自定义</button>
+          </div>
+          <input id="seedActionTypeInput" type="hidden" value="implement" />
+          <label><!--portal-i18n:"行动目的（可选）"-->行动目的（可选）<textarea id="seedActionPurposeInput" rows="4" maxlength="4000" placeholder="留空时根据所选行动和种子内容自动生成"></textarea></label>
+          <label><!--portal-i18n:"补充给新 Agent 的 prompt（可选）"-->补充给新 Agent 的 prompt（可选）<textarea id="seedActionPromptInput" rows="5" maxlength="8000" placeholder="种子 Markdown 路径、来源 Agent 和行动目的会由系统自动附加。"></textarea></label>
+          <div class="modalInfo seedPromotionTruth"><strong><!--portal-i18n:"显式提升"-->显式提升</strong><span><!--portal-i18n:"Seed 是 HATG Program 对象。提升后系统创建一个待命 Resident 并保留来源继承关系，但不会隐式发送消息或启动 Session；后续工作由 Event 与 Effect 明确触发。"-->Seed 是 HATG Program 对象。提升后系统创建一个待命 Resident 并保留来源继承关系，但不会隐式发送消息或启动 Session；后续工作由 Event 与 Effect 明确触发。</span></div>
+          <div class="portalDetailFooter" data-portal-detail-footer><button class="portalButton" type="button" data-close-modal="seedPromoteModal"><!--portal-i18n:"取消"-->取消</button><button class="portalButton is-primary" id="seedPromoteSubmitBtn" type="submit"><!--portal-i18n:"创建待命 Resident"-->创建待命 Resident</button></div>
+        </form>
+      </section>
+    </div>
+
+    <div class="portalDetailOverlay lineageDialogOverlay" data-portal-detail-overlay id="seedDismissModal" hidden aria-hidden="true">
+      <section data-portal-detail-surface class="portalDetailSurface seedDismissModal" role="dialog" aria-modal="true" aria-labelledby="seedDismissModalTitle">
+        <div class="portalDetailHeader" data-portal-detail-header>
+          <div><span class="portalDetailEyebrow"><!--portal-i18n:"DISMISS SEED"-->DISMISS SEED</span><h2 id="seedDismissModalTitle"><!--portal-i18n:"抛弃候选"-->抛弃候选</h2></div>
+          <button class="portalDetailClose" data-portal-detail-close type="button" data-close-modal="seedDismissModal" aria-label="关闭" data-portal-icon="close" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;关闭&quot;}"></button>
+        </div>
+        <form id="seedDismissForm" class="portalDetailForm lineageForm">
+          <div class="seedDismissRoute" id="seedDismissRoute"></div>
+          <label><!--portal-i18n:"抛弃原因（可选）"-->抛弃原因（可选）<textarea id="seedDismissReasonInput" rows="4" maxlength="2000" placeholder="如有需要，可以补充为什么不再保留这个候选。"></textarea></label>
+          <div class="modalInfo seedDismissTruth"><strong><!--portal-i18n:"更新 Program 状态"-->更新 Program 状态</strong><span><!--portal-i18n:"确认后，Seed 会在 HATG Program 中标记为已抛弃并退出活动候选；不会修改或删除工作区文件。"-->确认后，Seed 会在 HATG Program 中标记为已抛弃并退出活动候选；不会修改或删除工作区文件。</span></div>
+          <div class="portalDetailFooter" data-portal-detail-footer><button class="portalButton" type="button" data-close-modal="seedDismissModal"><!--portal-i18n:"取消"-->取消</button><button class="portalButton is-danger" id="seedDismissSubmitBtn" type="submit"><!--portal-i18n:"确认抛弃"-->确认抛弃</button></div>
+        </form>
+      </section>
+    </div>
+
+    <div class="portalDetailOverlay lineageDialogOverlay" data-portal-detail-overlay id="leaderModal" hidden aria-hidden="true">
+      <section data-portal-detail-surface class="portalDetailSurface" role="dialog" aria-modal="true" aria-labelledby="leaderModalTitle">
+        <div class="portalDetailHeader" data-portal-detail-header>
+          <div><span class="portalDetailEyebrow"><!--portal-i18n:"LEADER PACKET"-->LEADER PACKET</span><h2 id="leaderModalTitle"><!--portal-i18n:"请求 Leader 审视 HATG"-->请求 Leader 审视 HATG</h2></div>
+          <button class="portalDetailClose" data-portal-detail-close type="button" data-close-modal="leaderModal" aria-label="关闭" data-portal-icon="close" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;关闭&quot;}"></button>
+        </div>
+        <form id="leaderForm" class="portalDetailForm lineageForm">
+          <label><!--portal-i18n:"Leader 节点"-->Leader 节点<select id="leaderNodeSelect"></select></label>
+          <label><!--portal-i18n:"持续职责章程"-->持续职责章程<textarea id="leaderCharterInput" rows="4" maxlength="4000" placeholder="说明 Leader 持续关注什么，以及哪些操作必须由人确认。"></textarea></label>
+          <label><!--portal-i18n:"本次关注点"-->本次关注点<textarea id="leaderRequestInput" rows="4" maxlength="4000">请审视当前 HATG 的成员分工、实际活动和关系，提出值得继续探索、需要隔离或应建立交接的结构修改建议。不要直接修改图。</textarea></label>
+          <div class="modalInfo"><strong><!--portal-i18n:"每次读取最新图"-->每次读取最新图</strong><span><!--portal-i18n:"发送时会附上当前 HATG 快照与相对上次审视的结构变化。Leader 只提出建议；你仍通过本页的分支、交接、暂停和节点设置来应用修改。"-->发送时会附上当前 HATG 快照与相对上次审视的结构变化。Leader 只提出建议；你仍通过本页的分支、交接、暂停和节点设置来应用修改。</span></div>
+          <div class="leaderReviewHistory" id="leaderReviewHistory" aria-live="polite"></div>
+          <div class="portalDetailFooter" data-portal-detail-footer><button class="portalButton" type="button" data-close-modal="leaderModal"><!--portal-i18n:"取消"-->取消</button><button class="portalButton is-primary" id="leaderSubmitBtn" type="submit"><!--portal-i18n:"保存 Leader 并发送请求"-->保存 Leader 并发送请求</button></div>
+        </form>
+      </section>
+    </div>
+
+    <div class="portalDetailOverlay lineageDialogOverlay" data-portal-detail-overlay id="nodeAbsorptionModal" hidden aria-hidden="true">
+      <section data-portal-detail-surface class="portalDetailSurface nodeAbsorptionModal" role="dialog" aria-modal="true" aria-labelledby="nodeAbsorptionTitle">
+        <div class="portalDetailHeader" data-portal-detail-header>
+          <div><span class="portalDetailEyebrow"><!--portal-i18n:"CONTEXT ABSORPTION"-->CONTEXT ABSORPTION</span><h2 id="nodeAbsorptionTitle"><!--portal-i18n:"节点正在吸收上下文"-->节点正在吸收上下文</h2></div>
+          <button class="portalDetailClose" data-portal-detail-close type="button" data-close-modal="nodeAbsorptionModal" aria-label="保留来源节点并关闭" data-portal-icon="close" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;保留来源节点并关闭&quot;}"></button>
+        </div>
+        <div class="nodeAbsorptionBody">
+          <div class="nodeAbsorptionRoute" id="nodeAbsorptionRoute"></div>
+          <div class="nodeAbsorptionStatus" id="nodeAbsorptionStatus" role="status" aria-live="polite" data-state="preparing">
+            <span class="nodeAbsorptionSpinner" aria-hidden="true"></span>
+            <span><strong><!--portal-i18n:"正在向目标节点发送统一 ID 引用"-->正在向目标节点发送统一 ID 引用</strong><small><!--portal-i18n:"任务不会复制来源对话；目标 Agent 将在运行时自行读取。"-->任务不会复制来源对话；目标 Agent 将在运行时自行读取。</small></span>
+          </div>
+          <div class="modalInfo nodeAbsorptionMode" id="nodeAbsorptionMode"><strong><!--portal-i18n:"普通 Prompt"-->普通 Prompt</strong><span><!--portal-i18n:"目标节点只会收到一条包含来源 Resident 统一 ID 的普通消息；资源引用继续使用全局标准链路。"-->目标节点只会收到一条包含来源 Resident 统一 ID 的普通消息；资源引用继续使用全局标准链路。</span></div>
+          <div class="modalInfo"><strong><!--portal-i18n:"是否继续保留来源节点？"-->是否继续保留来源节点？</strong><span id="nodeAbsorptionRetentionHint"><!--portal-i18n:"保留后可继续独立讨论；删除会删除完整 Resident 身份、Session、图引用与自有 Workspace。"-->保留后可继续独立讨论；删除会删除完整 Resident 身份、Session、图引用与自有 Workspace。</span></div>
+          <div class="portalDetailFooter" data-portal-detail-footer><button class="portalButton" id="nodeAbsorptionKeepBtn" type="button"><!--portal-i18n:"保留来源节点"-->保留来源节点</button><button class="portalButton is-danger" id="nodeAbsorptionDeleteBtn" type="button" disabled><!--portal-i18n:"删除来源节点"-->删除来源节点</button></div>
+        </div>
+      </section>
+    </div>

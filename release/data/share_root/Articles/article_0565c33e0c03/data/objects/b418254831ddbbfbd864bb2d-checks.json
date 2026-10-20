@@ -1,0 +1,55 @@
+{
+  "status": "passed_cap0",
+  "candidates": [
+    {
+      "candidate": "genome_93e6148d32bbb0862163",
+      "all18_fields_match_proposal": true,
+      "ce2_loader_roundtrip": true,
+      "initial_time": 0,
+      "native_host": "existing InteractionRuntime",
+      "default_capability": "T11/open",
+      "body_steps": 0,
+      "energy_steps": 0,
+      "operator_evaluations": 0
+    },
+    {
+      "candidate": "genome_d02e7f60565f83066e5d",
+      "all18_fields_match_proposal": true,
+      "ce2_loader_roundtrip": true,
+      "initial_time": 0,
+      "native_host": "existing InteractionRuntime",
+      "default_capability": "T11/open",
+      "body_steps": 0,
+      "energy_steps": 0,
+      "operator_evaluations": 0
+    },
+    {
+      "candidate": "genome_8d60f7d250e8e9f2a25b",
+      "all18_fields_match_proposal": true,
+      "ce2_loader_roundtrip": true,
+      "initial_time": 0,
+      "native_host": "existing InteractionRuntime",
+      "default_capability": "T11/open",
+      "body_steps": 0,
+      "energy_steps": 0,
+      "operator_evaluations": 0
+    },
+    {
+      "candidate": "genome_a6a821dffd4f4046c97a",
+      "all18_fields_match_proposal": true,
+      "ce2_loader_roundtrip": true,
+      "initial_time": 0,
+      "native_host": "existing InteractionRuntime",
+      "default_capability": "T11/open",
+      "body_steps": 0,
+      "energy_steps": 0,
+      "operator_evaluations": 0
+    }
+  ],
+  "body_steps": 0,
+  "energy_steps": 0,
+  "operator_evaluations": 0,
+  "prepares": 0,
+  "runner_jobs": 0,
+  "host_sha256": "b4ae75ca53bacb912a418d3e9fa4bcdc96cda17e5f6ff20cc96d5da83c1cb7bc"
+}

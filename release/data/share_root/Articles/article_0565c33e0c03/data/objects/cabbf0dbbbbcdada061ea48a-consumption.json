@@ -1,0 +1,1730 @@
+{
+  "schema": "anticipatory-d3-once-readonly-consumption.v1",
+  "status": "completed_readonly",
+  "source_job": "3786e0f1-73a7-4da8-9bdb-ae8fff7fb44e",
+  "owner_result": {
+    "status": "completed",
+    "job_id": "3786e0f1-73a7-4da8-9bdb-ae8fff7fb44e",
+    "key": "d3-anticipatory-material-allocation-20261018-v1",
+    "budget": {
+      "attempted": 100864,
+      "committed": 100864,
+      "failed": 0,
+      "script_allocated_worker_seconds": 33.244626939995214,
+      "runner_slot_usage_finalized_separately": true
+    },
+    "elapsed_seconds": 16.627551806974225,
+    "cpu_seconds": 16.659848,
+    "plan_sha256": "2d74c0c87ccbc51f0a306a0f514ff700576c0ceab88100bdc1233b958d978aa8",
+    "trained_rule_sha256": "cace61819fa2cb144f409e54e333f0d7f164661e7d0dba848d9f341fb1b034bf",
+    "heldout_paths": 56,
+    "physical_stages": 126,
+    "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/anticipatory_material_allocation_20261018/3786e0f1-73a7-4da8-9bdb-ae8fff7fb44e",
+    "source_frozen": true,
+    "semantic_checks": {
+      "invalid_not_negative": true,
+      "unpaid_censored": true,
+      "actual_transport": true,
+      "newborn_no_history": true,
+      "cue_swap_preserves_values": true,
+      "freeze_preserves_content": true,
+      "host_steps": 0
+    },
+    "max_ledger_error": 5.968558980384842e-13
+  },
+  "owner_joint_usage": {
+    "jobs": [
+      {
+        "job_id": "3786e0f1-73a7-4da8-9bdb-ae8fff7fb44e",
+        "host_steps": 100864,
+        "worker_seconds": 33.869072,
+        "started_at": "2026-10-18T07:45:55.884833+00:00",
+        "finished_at": "2026-10-18T07:46:12.819369+00:00",
+        "status": "completed",
+        "returncode": 0
+      },
+      {
+        "job_id": "5063bd49-7b65-4ec3-9338-92f5bd855747",
+        "host_steps": 18592,
+        "worker_seconds": 9.112918,
+        "started_at": "2026-10-18T07:42:01.034605+00:00",
+        "finished_at": "2026-10-18T07:42:05.591064+00:00",
+        "status": "completed",
+        "returncode": 0
+      }
+    ],
+    "host_steps": 119456,
+    "worker_seconds": 42.98199,
+    "host_cap": 200000,
+    "worker_cap": 600.0,
+    "remaining_host_steps": 80544,
+    "remaining_worker_seconds": 557.01801,
+    "new_analysis_host_steps": 0
+  },
+  "refs": {
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/result.json": "ab40bb146eadc33ac4e6e18500210d97c1751f0505612d1a88d8aae76d292364",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/plan.json": "2d74c0c87ccbc51f0a306a0f514ff700576c0ceab88100bdc1233b958d978aa8",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/trained_rule.json": "cace61819fa2cb144f409e54e333f0d7f164661e7d0dba848d9f341fb1b034bf",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/analysis_summary.json": "a85a20a708451cac8817fa190d1ab2a05953222cfd321bbb582a941af3653d0f",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/grouped_contrasts.json": "fe7dc1b7ce5b3b350dcf0339165254b9da44d0e5e5308bf6df95750e11502dee",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/condition_means.csv": "73722b40747e24e5de4887f95f087f6b3137b37be1a933ce3a9c8e8da670cdb0",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/adaptation_lags.csv": "731742090f0e6cfc669ed23d30e41d7e74f52e39af15589ba05ea5e00b326bbe",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/joint_usage.json": "bcd3a3fd9bd029fded97bf156e73c3119d1ebd674b0f85882754be1254da2f56",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/frames.json": "6878951247c96369b3607e35aa8568f73609ff3f783e63727bb66b8c9c40c651",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/stages.json": "41f8aa45caf21e60fb2e9ef7795eb22875803771ff9f893df0f58eb16a4adf0f",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/paired_intake.png": "085de987dfba46cfda9d56f3636c362115e2864d319edcc33a1bbf8221ca65bc",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/figure_sources.json": "bb2910df3886ff634b5a1102d0749edd90ef2ffd791540c9801c4651fbbf3994",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/anticipatory_material_allocation_20261018/audit_record_contract.json": "6d8ab9525de1152b5ecd411fb2a521b57475de0867debbbd94e873e2e7723b5f"
+  },
+  "source_sha_checks": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/method_renewal_local_plasticity/anticipatory_experiment.py",
+      "expected_sha256": "aa78280712b6f1a190edfceba947bb011232e6acdd456970e05d5117cc04ff0a",
+      "actual_sha256": "aa78280712b6f1a190edfceba947bb011232e6acdd456970e05d5117cc04ff0a",
+      "matched": true
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/method_renewal_local_plasticity/anticipatory_rule.py",
+      "expected_sha256": "d8ab9323558e7d8b1e72522e0e20232faa600c5992767691778aea5bca619ae1",
+      "actual_sha256": "d8ab9323558e7d8b1e72522e0e20232faa600c5992767691778aea5bca619ae1",
+      "matched": true
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/method_renewal_local_plasticity/anticipatory_controller.py",
+      "expected_sha256": "3a9d7df3496b9857e552fc07eb6d52b2eb794cc0ee6bb26478056c9ed9affbfc",
+      "actual_sha256": "3a9d7df3496b9857e552fc07eb6d52b2eb794cc0ee6bb26478056c9ed9affbfc",
+      "matched": true
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/method_renewal_local_plasticity/anticipatory_search.py",
+      "expected_sha256": "d98733800aa52ef8b630dcef1d0c0bb7385e3732c2ae21f2d99a8bdd2ef0702b",
+      "actual_sha256": "d98733800aa52ef8b630dcef1d0c0bb7385e3732c2ae21f2d99a8bdd2ef0702b",
+      "matched": true
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/method_renewal_local_plasticity/anticipatory_io.py",
+      "expected_sha256": "341c04d4d2fcdfcc629892317021e286a5a4391b11ebe65cf3f713276113574d",
+      "actual_sha256": "341c04d4d2fcdfcc629892317021e286a5a4391b11ebe65cf3f713276113574d",
+      "matched": true
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/anticipatory_material_allocation/core.py",
+      "expected_sha256": "4ea2ebf8f3ec025624b30688122dbb3ea7f5717606f9eccb1ea5c4765b726817",
+      "actual_sha256": "4ea2ebf8f3ec025624b30688122dbb3ea7f5717606f9eccb1ea5c4765b726817",
+      "matched": true
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/seed_manifest.json",
+      "expected_sha256": "d0d9e8f2bceec82896aff0260d948a445773c4345207c132daa38ac2d857f27a",
+      "actual_sha256": "d0d9e8f2bceec82896aff0260d948a445773c4345207c132daa38ac2d857f27a",
+      "matched": true
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/analysis_spec.json",
+      "expected_sha256": "896b2b697c3b79b105000e6565d16bdf1196ff7217e0b3985f933ff4c15ca642",
+      "actual_sha256": "896b2b697c3b79b105000e6565d16bdf1196ff7217e0b3985f933ff4c15ca642",
+      "matched": true
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/feasibility_receipt.json",
+      "expected_sha256": "e3fce4cec7ecce09d719ecef6797790a8029cac9dbcf9d1776142b77e7ad61c3",
+      "actual_sha256": "e3fce4cec7ecce09d719ecef6797790a8029cac9dbcf9d1776142b77e7ad61c3",
+      "matched": true
+    }
+  ],
+  "review_scope": "consume owner tabulated results and frozen source; inspect two predetermined first-prefix phase4/phase12 array frames and one clock256 full checkpoint; view paired_intake.png only. No trajectory rescore or policy/host import/forward; no inferred prechoice fields.",
+  "actual_samples": [
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/anticipatory_material_allocation_20261018/3786e0f1-73a7-4da8-9bdb-ae8fff7fb44e/frame__test__202610187201__changed__prefix__000005.npz",
+      "sha256": "4926d5c19bcc48aead2428b0d69f48c45874817e99abffa5458d1356036e3b56",
+      "stage": "test__202610187201__changed__prefix",
+      "step": 5,
+      "read_scope": "actual saved NPZ SHA and field names/metadata inspected; no forward or reconstruction",
+      "phase": 4,
+      "completed_cells": 0,
+      "labels": [
+        -1
+      ],
+      "prediction_timing": "post-host/post-settle; not a pre-choice forecast",
+      "requested_semantics": "actual phase4 commit weights"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/anticipatory_material_allocation_20261018/3786e0f1-73a7-4da8-9bdb-ae8fff7fb44e/frame__test__202610187201__changed__prefix__000013.npz",
+      "sha256": "7993d5cd05ba0210fc79180c567f32d2aa493ad7fcb8beed25163b79abfae63b",
+      "stage": "test__202610187201__changed__prefix",
+      "step": 13,
+      "read_scope": "actual saved NPZ SHA and field names/metadata inspected; no forward or reconstruction",
+      "phase": 12,
+      "completed_cells": 98,
+      "labels": [
+        -1,
+        0,
+        1
+      ],
+      "prediction_timing": "post-host/post-settle; not a pre-choice forecast",
+      "requested_semantics": "previous last_requested, not a phase12 new commitment"
+    }
+  ],
+  "sampled_prefix_packet": {
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/anticipatory_material_allocation_20261018/3786e0f1-73a7-4da8-9bdb-ae8fff7fb44e/test__202610187201__changed__prefix__final.npz",
+    "sha256": "7a79dbf71ff35c7ab0396fe15cfcdddb9bd97eada0326ec4d4c99ebc1fe99abf"
+  },
+  "owner_condition_means": [
+    {
+      "condition": "stable",
+      "arm": "learned",
+      "n": "4",
+      "uptake": "166.30019567505857",
+      "M_end": "19.924136645083962",
+      "E_end": "31.026861790557007",
+      "body_time": "20417.623833103844",
+      "paid_cost": "54.45365399967133",
+      "min_E": "23.281810826870206",
+      "min_M": "19.876371281805802",
+      "negative_steps": "992.0",
+      "zero_steps": "0.0",
+      "commit_failures": "0.0",
+      "basal_paid": "44.91877243282845",
+      "movement_paid": "0.0",
+      "memory_paid": "1.1482069749476633",
+      "commit_paid": "8.323075358036377",
+      "detect_paid": "0.0635992338588296",
+      "spill": "48.72002504777173",
+      "heat": "159.27333388450202",
+      "rejected_material": "15.948362069302753"
+    },
+    {
+      "condition": "stable",
+      "arm": "last",
+      "n": "4",
+      "uptake": "168.3687460276654",
+      "M_end": "19.924136645083966",
+      "E_end": "31.026861790557007",
+      "body_time": "20417.623833103844",
+      "paid_cost": "54.628188224452586",
+      "min_E": "23.281810826870206",
+      "min_M": "19.876371281805802",
+      "negative_steps": "992.0",
+      "zero_steps": "0.0",
+      "commit_failures": "0.0",
+      "basal_paid": "44.91877243282836",
+      "movement_paid": "0.0",
+      "memory_paid": "1.1482069749476598",
+      "commit_paid": "8.497609582817635",
+      "detect_paid": "0.06359923385882961",
+      "spill": "49.97828368786406",
+      "heat": "161.3418842371089",
+      "rejected_material": "16.196588111615572"
+    },
+    {
+      "condition": "stable",
+      "arm": "ema",
+      "n": "4",
+      "uptake": "162.79963431433146",
+      "M_end": "19.924136645083966",
+      "E_end": "31.026861790557007",
+      "body_time": "20417.623833103844",
+      "paid_cost": "54.248488052660505",
+      "min_E": "23.281810826870206",
+      "min_M": "19.876371281805802",
+      "negative_steps": "992.0",
+      "zero_steps": "0.0",
+      "commit_failures": "0.0",
+      "basal_paid": "44.91877243282836",
+      "movement_paid": "0.0",
+      "memory_paid": "1.1482069749476598",
+      "commit_paid": "8.11790941102555",
+      "detect_paid": "0.0635992338588296",
+      "spill": "46.488228088334985",
+      "heat": "155.7727725237749",
+      "rejected_material": "15.528294706015497"
+    },
+    {
+      "condition": "stable",
+      "arm": "fixed",
+      "n": "4",
+      "uptake": "103.2002564143437",
+      "M_end": "19.887806150306695",
+      "E_end": "29.958345940804918",
+      "body_time": "20369.127571913734",
+      "paid_cost": "50.04854834927171",
+      "min_E": "22.544310956106656",
+      "min_M": "19.6527174528511",
+      "negative_steps": "992.0",
+      "zero_steps": "0.0",
+      "commit_failures": "0.0",
+      "basal_paid": "44.81208065821016",
+      "movement_paid": "0.0",
+      "memory_paid": "1.145484070025522",
+      "commit_paid": "4.027533284074481",
+      "detect_paid": "0.0634503369614926",
+      "spill": "10.34026665181969",
+      "heat": "97.24191047353877",
+      "rejected_material": "8.422399105032252"
+    },
+    {
+      "condition": "stable",
+      "arm": "instant",
+      "n": "4",
+      "uptake": "95.65910517317",
+      "M_end": "19.924136645083966",
+      "E_end": "31.026861790557007",
+      "body_time": "20417.623833103844",
+      "paid_cost": "50.006324112334426",
+      "min_E": "23.281810826870206",
+      "min_M": "19.876371281805802",
+      "negative_steps": "992.0",
+      "zero_steps": "0.0",
+      "commit_failures": "0.0",
+      "basal_paid": "44.91877243282836",
+      "movement_paid": "0.0",
+      "memory_paid": "1.1482069749476598",
+      "commit_paid": "3.8757454706994707",
+      "detect_paid": "0.06359923385882961",
+      "spill": "3.983211363926273",
+      "heat": "88.63224338261324",
+      "rejected_material": "7.4714312090761235"
+    },
+    {
+      "condition": "stable",
+      "arm": "frozen",
+      "n": "4",
+      "uptake": "159.7656886779676",
+      "M_end": "19.924136645083966",
+      "E_end": "31.026861790557007",
+      "body_time": "20417.623833103844",
+      "paid_cost": "54.0208127940389",
+      "min_E": "23.281810826870206",
+      "min_M": "19.876371281805802",
+      "negative_steps": "992.0",
+      "zero_steps": "0.0",
+      "commit_failures": "0.0",
+      "basal_paid": "44.91877243282845",
+      "movement_paid": "0.0",
+      "memory_paid": "1.1482069749476633",
+      "commit_paid": "7.890234152403948",
+      "detect_paid": "0.0635992338588296",
+      "spill": "44.57793286427085",
+      "heat": "152.73882688741094",
+      "rejected_material": "15.164221229651837"
+    },
+    {
+      "condition": "stable",
+      "arm": "permuted",
+      "n": "4",
+      "uptake": "156.86821755071875",
+      "M_end": "19.924136645083966",
+      "E_end": "31.026861790557007",
+      "body_time": "20413.2796550606",
+      "paid_cost": "54.87247468856049",
+      "min_E": "23.281810826870206",
+      "min_M": "19.785014490949976",
+      "negative_steps": "992.0",
+      "zero_steps": "0.0",
+      "commit_failures": "0.0",
+      "basal_paid": "44.909215241133296",
+      "movement_paid": "0.0",
+      "memory_paid": "1.147962677352287",
+      "commit_paid": "8.751711067019395",
+      "detect_paid": "0.06358570305548328",
+      "spill": "41.7312517911394",
+      "heat": "149.8413557601621",
+      "rejected_material": "14.817393529990627"
+    },
+    {
+      "condition": "changed",
+      "arm": "learned",
+      "n": "4",
+      "uptake": "146.53832313728816",
+      "M_end": "19.924136645083966",
+      "E_end": "31.026861790557007",
+      "body_time": "20409.132946828326",
+      "paid_cost": "54.9860560992703",
+      "min_E": "23.281810826870206",
+      "min_M": "19.785132391303662",
+      "negative_steps": "992.0",
+      "zero_steps": "0.0",
+      "commit_failures": "0.0",
+      "basal_paid": "44.900092483022306",
+      "movement_paid": "0.0",
+      "memory_paid": "1.147729484596423",
+      "commit_paid": "8.874661344340565",
+      "detect_paid": "0.0635727873109933",
+      "spill": "34.40211808725998",
+      "heat": "139.51146134673132",
+      "rejected_material": "13.578635542025399"
+    },
+    {
+      "condition": "changed",
+      "arm": "last",
+      "n": "4",
+      "uptake": "149.07258382707957",
+      "M_end": "19.92413664508397",
+      "E_end": "31.026861790557007",
+      "body_time": "20409.058596105",
+      "paid_cost": "55.18616414961448",
+      "min_E": "23.281810826870206",
+      "min_M": "19.78474103388111",
+      "negative_steps": "992.0",
+      "zero_steps": "0.0",
+      "commit_failures": "0.0",
+      "basal_paid": "44.899928911430905",
+      "movement_paid": "0.0",
+      "memory_paid": "1.147725303436545",
+      "commit_paid": "9.074937379016003",
+      "detect_paid": "0.06357255573093237",
+      "spill": "35.96073287058711",
+      "heat": "142.04572203652276",
+      "rejected_material": "13.882761694945032"
+    },
+    {
+      "condition": "changed",
+      "arm": "ema",
+      "n": "4",
+      "uptake": "127.561834468464",
+      "M_end": "19.924136645083966",
+      "E_end": "31.026861790557007",
+      "body_time": "20411.743250635904",
+      "paid_cost": "53.75468550282687",
+      "min_E": "23.281810826870206",
+      "min_M": "19.807310503943782",
+      "negative_steps": "992.0",
+      "zero_steps": "0.0",
+      "commit_failures": "0.0",
+      "basal_paid": "44.905835151398904",
+      "movement_paid": "0.0",
+      "memory_paid": "1.1478762766793054",
+      "commit_paid": "7.6373931571291065",
+      "detect_paid": "0.06358091761945281",
+      "spill": "22.42223359847697",
+      "heat": "120.53497267790718",
+      "rejected_material": "11.300934841004981"
+    },
+    {
+      "condition": "changed",
+      "arm": "fixed",
+      "n": "4",
+      "uptake": "103.23257102570722",
+      "M_end": "19.887528194711063",
+      "E_end": "29.65150504711542",
+      "body_time": "20368.38943790686",
+      "paid_cost": "50.04688366728074",
+      "min_E": "22.194607083182316",
+      "min_M": "19.642201594060005",
+      "negative_steps": "992.0",
+      "zero_steps": "0.0",
+      "commit_failures": "0.0",
+      "basal_paid": "44.81045676339503",
+      "movement_paid": "0.0",
+      "memory_paid": "1.1454425935908523",
+      "commit_paid": "4.027536255915769",
+      "detect_paid": "0.06344805437901394",
+      "spill": "10.653444872684346",
+      "heat": "97.58106597859191",
+      "rejected_material": "8.426702440792887"
+    },
+    {
+      "condition": "changed",
+      "arm": "instant",
+      "n": "4",
+      "uptake": "95.69816640187183",
+      "M_end": "19.924136645083962",
+      "E_end": "31.026861790557007",
+      "body_time": "20417.623833103844",
+      "paid_cost": "50.006324112334426",
+      "min_E": "23.281810826870206",
+      "min_M": "19.876371281805802",
+      "negative_steps": "992.0",
+      "zero_steps": "0.0",
+      "commit_failures": "0.0",
+      "basal_paid": "44.91877243282836",
+      "movement_paid": "0.0",
+      "memory_paid": "1.1482069749476598",
+      "commit_paid": "3.8757454706994703",
+      "detect_paid": "0.06359923385882961",
+      "spill": "4.012699039048512",
+      "heat": "88.67130461131508",
+      "rejected_material": "7.476118556520338"
+    },
+    {
+      "condition": "changed",
+      "arm": "frozen",
+      "n": "4",
+      "uptake": "111.37018121010586",
+      "M_end": "19.924136645083966",
+      "E_end": "31.026861790557007",
+      "body_time": "20331.371317847457",
+      "paid_cost": "53.856439441657784",
+      "min_E": "16.005045992802916",
+      "min_M": "19.437887738084548",
+      "negative_steps": "992.0",
+      "zero_steps": "0.0",
+      "commit_failures": "0.0",
+      "basal_paid": "44.729016899264394",
+      "movement_paid": "0.0",
+      "memory_paid": "1.1433565102884051",
+      "commit_paid": "7.920735448796462",
+      "detect_paid": "0.0633305833084973",
+      "spill": "11.756351598975336",
+      "heat": "104.34331941954875",
+      "rejected_material": "9.37401083655969"
+    },
+    {
+      "condition": "changed",
+      "arm": "permuted",
+      "n": "4",
+      "uptake": "139.92706630618267",
+      "M_end": "19.92413664508397",
+      "E_end": "31.026861790557007",
+      "body_time": "20403.90533961092",
+      "paid_cost": "55.24436963505726",
+      "min_E": "23.281810826870206",
+      "min_M": "19.73387815962083",
+      "negative_steps": "992.0",
+      "zero_steps": "0.0",
+      "commit_failures": "0.0",
+      "basal_paid": "44.88859174714402",
+      "movement_paid": "0.0",
+      "memory_paid": "1.1474355068036002",
+      "commit_paid": "9.144785876217211",
+      "detect_paid": "0.06355650489242612",
+      "spill": "29.59205132132901",
+      "heat": "132.9002045156258",
+      "rejected_material": "12.78633024373622"
+    }
+  ],
+  "owner_full_window_contrasts": [
+    {
+      "condition": "stable",
+      "window": "full",
+      "contrast": "learned-last",
+      "n_seeds": 4,
+      "metrics": {
+        "uptake": {
+          "mean": -2.0685503526068416,
+          "min": -2.1152808453370824,
+          "max": -2.0417834871070966,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 4
+        },
+        "M_end": {
+          "mean": -1.7763568394002505e-15,
+          "min": -3.552713678800501e-15,
+          "max": 0.0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "E_end": {
+          "mean": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "body_time": {
+          "mean": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "paid_cost": {
+          "mean": -0.17453422478126157,
+          "min": -0.22388555973235924,
+          "max": -0.11340386531368551,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 4
+        },
+        "min_E": {
+          "mean": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "min_M": {
+          "mean": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "negative_steps": {
+          "mean": 0.0,
+          "min": 0,
+          "max": 0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "zero_steps": {
+          "mean": 0.0,
+          "min": 0,
+          "max": 0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "commit_failures": {
+          "mean": 0.0,
+          "min": 0,
+          "max": 0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        }
+      }
+    },
+    {
+      "condition": "stable",
+      "window": "full",
+      "contrast": "learned-ema",
+      "n_seeds": 4,
+      "metrics": {
+        "uptake": {
+          "mean": 3.5005613607271115,
+          "min": 3.4566437404148758,
+          "max": 3.528048641824398,
+          "positive_exact": 4,
+          "positive_1e12": 4,
+          "negative_1e12": 0
+        },
+        "M_end": {
+          "mean": -8.881784197001252e-16,
+          "min": -3.552713678800501e-15,
+          "max": 0.0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "E_end": {
+          "mean": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "body_time": {
+          "mean": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "paid_cost": {
+          "mean": 0.2051659470108227,
+          "min": 0.1678257602573865,
+          "max": 0.2654186888352754,
+          "positive_exact": 4,
+          "positive_1e12": 4,
+          "negative_1e12": 0
+        },
+        "min_E": {
+          "mean": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "min_M": {
+          "mean": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "negative_steps": {
+          "mean": 0.0,
+          "min": 0,
+          "max": 0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "zero_steps": {
+          "mean": 0.0,
+          "min": 0,
+          "max": 0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "commit_failures": {
+          "mean": 0.0,
+          "min": 0,
+          "max": 0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        }
+      }
+    },
+    {
+      "condition": "stable",
+      "window": "full",
+      "contrast": "learned-fixed",
+      "n_seeds": 4,
+      "metrics": {
+        "uptake": {
+          "mean": 63.09993926071486,
+          "min": 55.78565431949794,
+          "max": 70.33389124603639,
+          "positive_exact": 4,
+          "positive_1e12": 4,
+          "negative_1e12": 0
+        },
+        "M_end": {
+          "mean": 0.03633049477726846,
+          "min": -3.552713678800501e-15,
+          "max": 0.14532197910907385,
+          "positive_exact": 2,
+          "positive_1e12": 1,
+          "negative_1e12": 0
+        },
+        "E_end": {
+          "mean": 1.0685158497520861,
+          "min": 0.0,
+          "max": 2.8572118347652165,
+          "positive_exact": 2,
+          "positive_1e12": 2,
+          "negative_1e12": 0
+        },
+        "body_time": {
+          "mean": 48.496261190111,
+          "min": 42.32535422529327,
+          "max": 56.632804716504324,
+          "positive_exact": 4,
+          "positive_1e12": 4,
+          "negative_1e12": 0
+        },
+        "paid_cost": {
+          "mean": 4.4051056503996175,
+          "min": 3.9447408361042378,
+          "max": 4.892552894928755,
+          "positive_exact": 4,
+          "positive_1e12": 4,
+          "negative_1e12": 0
+        },
+        "min_E": {
+          "mean": 0.7374998707635498,
+          "min": 0.1468935291525426,
+          "max": 1.4736133178745554,
+          "positive_exact": 4,
+          "positive_1e12": 4,
+          "negative_1e12": 0
+        },
+        "min_M": {
+          "mean": 0.22365382895470365,
+          "min": 0.20900108429253095,
+          "max": 0.25827118659698556,
+          "positive_exact": 4,
+          "positive_1e12": 4,
+          "negative_1e12": 0
+        },
+        "negative_steps": {
+          "mean": 0.0,
+          "min": 0,
+          "max": 0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "zero_steps": {
+          "mean": 0.0,
+          "min": 0,
+          "max": 0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "commit_failures": {
+          "mean": 0.0,
+          "min": 0,
+          "max": 0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        }
+      }
+    },
+    {
+      "condition": "stable",
+      "window": "full",
+      "contrast": "learned-instant",
+      "n_seeds": 4,
+      "metrics": {
+        "uptake": {
+          "mean": 70.64109050188857,
+          "min": 70.57811855204832,
+          "max": 70.715104722897,
+          "positive_exact": 4,
+          "positive_1e12": 4,
+          "negative_1e12": 0
+        },
+        "M_end": {
+          "mean": -8.881784197001252e-16,
+          "min": -3.552713678800501e-15,
+          "max": 0.0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "E_end": {
+          "mean": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "body_time": {
+          "mean": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "paid_cost": {
+          "mean": 4.447329887336906,
+          "min": 3.981519084336256,
+          "max": 4.916628324796605,
+          "positive_exact": 4,
+          "positive_1e12": 4,
+          "negative_1e12": 0
+        },
+        "min_E": {
+          "mean": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "min_M": {
+          "mean": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "negative_steps": {
+          "mean": 0.0,
+          "min": 0,
+          "max": 0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "zero_steps": {
+          "mean": 0.0,
+          "min": 0,
+          "max": 0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "commit_failures": {
+          "mean": 0.0,
+          "min": 0,
+          "max": 0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        }
+      }
+    },
+    {
+      "condition": "stable",
+      "window": "full",
+      "contrast": "learned-frozen",
+      "n_seeds": 4,
+      "metrics": {
+        "uptake": {
+          "mean": 6.534506997090979,
+          "min": 3.94250785562366,
+          "max": 14.263380753820655,
+          "positive_exact": 4,
+          "positive_1e12": 4,
+          "negative_1e12": 0
+        },
+        "M_end": {
+          "mean": -8.881784197001252e-16,
+          "min": -3.552713678800501e-15,
+          "max": 0.0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "E_end": {
+          "mean": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "body_time": {
+          "mean": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "paid_cost": {
+          "mean": 0.43284120563242645,
+          "min": 0.21014177291009162,
+          "max": 0.9328397308128089,
+          "positive_exact": 4,
+          "positive_1e12": 4,
+          "negative_1e12": 0
+        },
+        "min_E": {
+          "mean": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "min_M": {
+          "mean": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "negative_steps": {
+          "mean": 0.0,
+          "min": 0,
+          "max": 0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "zero_steps": {
+          "mean": 0.0,
+          "min": 0,
+          "max": 0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "commit_failures": {
+          "mean": 0.0,
+          "min": 0,
+          "max": 0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        }
+      }
+    },
+    {
+      "condition": "stable",
+      "window": "full",
+      "contrast": "learned-permuted",
+      "n_seeds": 4,
+      "metrics": {
+        "uptake": {
+          "mean": 9.431978124339807,
+          "min": 7.86497366035735,
+          "max": 9.986584270482496,
+          "positive_exact": 4,
+          "positive_1e12": 4,
+          "negative_1e12": 0
+        },
+        "M_end": {
+          "mean": 0.0,
+          "min": -3.552713678800501e-15,
+          "max": 3.552713678800501e-15,
+          "positive_exact": 1,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "E_end": {
+          "mean": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "body_time": {
+          "mean": 4.344178043244938,
+          "min": 2.109947657074372,
+          "max": 5.726792712604947,
+          "positive_exact": 4,
+          "positive_1e12": 4,
+          "negative_1e12": 0
+        },
+        "paid_cost": {
+          "mean": -0.41882068888915924,
+          "min": -0.5579965015799502,
+          "max": -0.005527863832490709,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 4
+        },
+        "min_E": {
+          "mean": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "min_M": {
+          "mean": 0.09135679085582638,
+          "min": 0.06247334374223712,
+          "max": 0.11865982917610296,
+          "positive_exact": 4,
+          "positive_1e12": 4,
+          "negative_1e12": 0
+        },
+        "negative_steps": {
+          "mean": 0.0,
+          "min": 0,
+          "max": 0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "zero_steps": {
+          "mean": 0.0,
+          "min": 0,
+          "max": 0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "commit_failures": {
+          "mean": 0.0,
+          "min": 0,
+          "max": 0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        }
+      }
+    },
+    {
+      "condition": "changed",
+      "window": "full",
+      "contrast": "learned-last",
+      "n_seeds": 4,
+      "metrics": {
+        "uptake": {
+          "mean": -2.5342606897914095,
+          "min": -2.5540319433881677,
+          "max": -2.4866832307426705,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 4
+        },
+        "M_end": {
+          "mean": -1.7763568394002505e-15,
+          "min": -3.552713678800501e-15,
+          "max": 0.0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "E_end": {
+          "mean": -1.7763568394002505e-15,
+          "min": -7.105427357601002e-15,
+          "max": 0.0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "body_time": {
+          "mean": 0.07435072332737036,
+          "min": 0.036808642238611355,
+          "max": 0.17650927930662874,
+          "positive_exact": 4,
+          "positive_1e12": 4,
+          "negative_1e12": 0
+        },
+        "paid_cost": {
+          "mean": -0.20010805034418588,
+          "min": -0.2462732732977173,
+          "max": -0.143086231409157,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 4
+        },
+        "min_E": {
+          "mean": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "min_M": {
+          "mean": 0.0003913574225515859,
+          "min": 0.0003077943350930923,
+          "max": 0.0004992910498096137,
+          "positive_exact": 4,
+          "positive_1e12": 4,
+          "negative_1e12": 0
+        },
+        "negative_steps": {
+          "mean": 0.0,
+          "min": 0,
+          "max": 0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "zero_steps": {
+          "mean": 0.0,
+          "min": 0,
+          "max": 0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "commit_failures": {
+          "mean": 0.0,
+          "min": 0,
+          "max": 0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        }
+      }
+    },
+    {
+      "condition": "changed",
+      "window": "full",
+      "contrast": "learned-ema",
+      "n_seeds": 4,
+      "metrics": {
+        "uptake": {
+          "mean": 18.976488668824146,
+          "min": 17.87586937480509,
+          "max": 19.572257154045715,
+          "positive_exact": 4,
+          "positive_1e12": 4,
+          "negative_1e12": 0
+        },
+        "M_end": {
+          "mean": 8.881784197001252e-16,
+          "min": -3.552713678800501e-15,
+          "max": 7.105427357601002e-15,
+          "positive_exact": 1,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "E_end": {
+          "mean": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "body_time": {
+          "mean": -2.6103038075798395,
+          "min": -3.4709436912162346,
+          "max": -1.9427711263451783,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 4
+        },
+        "paid_cost": {
+          "mean": 1.2313705964434298,
+          "min": 0.8508460298918692,
+          "max": 1.4557387461847853,
+          "positive_exact": 4,
+          "positive_1e12": 4,
+          "negative_1e12": 0
+        },
+        "min_E": {
+          "mean": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "min_M": {
+          "mean": -0.022178112640116154,
+          "min": -0.04258486310607168,
+          "max": -0.00489183507097124,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 4
+        },
+        "negative_steps": {
+          "mean": 0.0,
+          "min": 0,
+          "max": 0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "zero_steps": {
+          "mean": 0.0,
+          "min": 0,
+          "max": 0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "commit_failures": {
+          "mean": 0.0,
+          "min": 0,
+          "max": 0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        }
+      }
+    },
+    {
+      "condition": "changed",
+      "window": "full",
+      "contrast": "learned-fixed",
+      "n_seeds": 4,
+      "metrics": {
+        "uptake": {
+          "mean": 43.30575211158093,
+          "min": 30.994684257237708,
+          "max": 55.746537105945634,
+          "positive_exact": 4,
+          "positive_1e12": 4,
+          "negative_1e12": 0
+        },
+        "M_end": {
+          "mean": 0.03660845037290095,
+          "min": -3.552713678800501e-15,
+          "max": 0.1464338014916038,
+          "positive_exact": 2,
+          "positive_1e12": 1,
+          "negative_1e12": 0
+        },
+        "E_end": {
+          "mean": 1.375356743441583,
+          "min": 0.0,
+          "max": 2.8648874504698867,
+          "positive_exact": 2,
+          "positive_1e12": 2,
+          "negative_1e12": 0
+        },
+        "body_time": {
+          "mean": 40.743508921465946,
+          "min": 30.12725060991943,
+          "max": 49.46348315290743,
+          "positive_exact": 4,
+          "positive_1e12": 4,
+          "negative_1e12": 0
+        },
+        "paid_cost": {
+          "mean": 4.939172431989563,
+          "min": 4.4824274174012615,
+          "max": 5.401746121560102,
+          "positive_exact": 4,
+          "positive_1e12": 4,
+          "negative_1e12": 0
+        },
+        "min_E": {
+          "mean": 1.0872037436878887,
+          "min": 0.1468935291525426,
+          "max": 2.5814145985719144,
+          "positive_exact": 4,
+          "positive_1e12": 4,
+          "negative_1e12": 0
+        },
+        "min_M": {
+          "mean": 0.1429307972436593,
+          "min": 0.09355116520792706,
+          "max": 0.19493936572744275,
+          "positive_exact": 4,
+          "positive_1e12": 4,
+          "negative_1e12": 0
+        },
+        "negative_steps": {
+          "mean": 0.0,
+          "min": 0,
+          "max": 0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "zero_steps": {
+          "mean": 0.0,
+          "min": 0,
+          "max": 0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "commit_failures": {
+          "mean": 0.0,
+          "min": 0,
+          "max": 0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        }
+      }
+    },
+    {
+      "condition": "changed",
+      "window": "full",
+      "contrast": "learned-instant",
+      "n_seeds": 4,
+      "metrics": {
+        "uptake": {
+          "mean": 50.840156735416315,
+          "min": 50.655052951369925,
+          "max": 50.96644356499543,
+          "positive_exact": 4,
+          "positive_1e12": 4,
+          "negative_1e12": 0
+        },
+        "M_end": {
+          "mean": 0.0,
+          "min": -3.552713678800501e-15,
+          "max": 3.552713678800501e-15,
+          "positive_exact": 1,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "E_end": {
+          "mean": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "body_time": {
+          "mean": -8.490886275520097,
+          "min": -9.384257454439648,
+          "max": -7.551729692288063,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 4
+        },
+        "paid_cost": {
+          "mean": 4.979731986935871,
+          "min": 4.534133811823821,
+          "max": 5.426628519099111,
+          "positive_exact": 4,
+          "positive_1e12": 4,
+          "negative_1e12": 0
+        },
+        "min_E": {
+          "mean": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "min_M": {
+          "mean": -0.0912388905021384,
+          "min": -0.11904025418142083,
+          "max": -0.06454467295419875,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 4
+        },
+        "negative_steps": {
+          "mean": 0.0,
+          "min": 0,
+          "max": 0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "zero_steps": {
+          "mean": 0.0,
+          "min": 0,
+          "max": 0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "commit_failures": {
+          "mean": 0.0,
+          "min": 0,
+          "max": 0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        }
+      }
+    },
+    {
+      "condition": "changed",
+      "window": "full",
+      "contrast": "learned-frozen",
+      "n_seeds": 4,
+      "metrics": {
+        "uptake": {
+          "mean": 35.16814192718229,
+          "min": 33.82308149542223,
+          "max": 35.94698432756425,
+          "positive_exact": 4,
+          "positive_1e12": 4,
+          "negative_1e12": 0
+        },
+        "M_end": {
+          "mean": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "E_end": {
+          "mean": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "body_time": {
+          "mean": 77.76162898086295,
+          "min": 5.511730630572856,
+          "max": 102.50856576825026,
+          "positive_exact": 4,
+          "positive_1e12": 4,
+          "negative_1e12": 0
+        },
+        "paid_cost": {
+          "mean": 1.1296166576125088,
+          "min": 0.9717009760139419,
+          "max": 1.4818272193975304,
+          "positive_exact": 4,
+          "positive_1e12": 4,
+          "negative_1e12": 0
+        },
+        "min_E": {
+          "mean": 7.27676483406729,
+          "min": 4.3837786189621575,
+          "max": 8.365984952500208,
+          "positive_exact": 4,
+          "positive_1e12": 4,
+          "negative_1e12": 0
+        },
+        "min_M": {
+          "mean": 0.34724465321911424,
+          "min": 0.05525133211703803,
+          "max": 0.4782553986271303,
+          "positive_exact": 4,
+          "positive_1e12": 4,
+          "negative_1e12": 0
+        },
+        "negative_steps": {
+          "mean": 0.0,
+          "min": 0,
+          "max": 0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "zero_steps": {
+          "mean": 0.0,
+          "min": 0,
+          "max": 0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "commit_failures": {
+          "mean": 0.0,
+          "min": 0,
+          "max": 0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        }
+      }
+    },
+    {
+      "condition": "changed",
+      "window": "full",
+      "contrast": "learned-permuted",
+      "n_seeds": 4,
+      "metrics": {
+        "uptake": {
+          "mean": 6.611256831105493,
+          "min": 0.12934511057920872,
+          "max": 9.425887212372999,
+          "positive_exact": 4,
+          "positive_1e12": 4,
+          "negative_1e12": 0
+        },
+        "M_end": {
+          "mean": -3.552713678800501e-15,
+          "min": -7.105427357601002e-15,
+          "max": 0.0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "E_end": {
+          "mean": -1.7763568394002505e-15,
+          "min": -7.105427357601002e-15,
+          "max": 0.0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "body_time": {
+          "mean": 5.227607217403602,
+          "min": 0.2222644954781572,
+          "max": 8.547685895886389,
+          "positive_exact": 4,
+          "positive_1e12": 4,
+          "negative_1e12": 0
+        },
+        "paid_cost": {
+          "mean": -0.25831353578697147,
+          "min": -0.5234698763225794,
+          "max": 0.01429561713667482,
+          "positive_exact": 1,
+          "positive_1e12": 1,
+          "negative_1e12": 3
+        },
+        "min_E": {
+          "mean": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "min_M": {
+          "mean": 0.05125423168283394,
+          "min": -1.4363040463649668e-06,
+          "max": 0.09993467325939065,
+          "positive_exact": 3,
+          "positive_1e12": 3,
+          "negative_1e12": 1
+        },
+        "negative_steps": {
+          "mean": 0.0,
+          "min": 0,
+          "max": 0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "zero_steps": {
+          "mean": 0.0,
+          "min": 0,
+          "max": 0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        },
+        "commit_failures": {
+          "mean": 0.0,
+          "min": 0,
+          "max": 0,
+          "positive_exact": 0,
+          "positive_1e12": 0,
+          "negative_1e12": 0
+        }
+      }
+    }
+  ],
+  "owner_recovery_records": [
+    {
+      "seed": 202610187201,
+      "arm": "learned",
+      "change_cycle": 10,
+      "lag_cycles": 3,
+      "censored": false,
+      "window_cycles": 11,
+      "threshold": 4.0
+    },
+    {
+      "seed": 202610187201,
+      "arm": "learned",
+      "change_cycle": 21,
+      "lag_cycles": 2,
+      "censored": false,
+      "window_cycles": 11,
+      "threshold": 4.0
+    },
+    {
+      "seed": 202610187201,
+      "arm": "last",
+      "change_cycle": 10,
+      "lag_cycles": 3,
+      "censored": false,
+      "window_cycles": 11,
+      "threshold": 4.0
+    },
+    {
+      "seed": 202610187201,
+      "arm": "last",
+      "change_cycle": 21,
+      "lag_cycles": 2,
+      "censored": false,
+      "window_cycles": 11,
+      "threshold": 4.0
+    },
+    {
+      "seed": 202610187202,
+      "arm": "learned",
+      "change_cycle": 10,
+      "lag_cycles": 3,
+      "censored": false,
+      "window_cycles": 11,
+      "threshold": 4.0
+    },
+    {
+      "seed": 202610187202,
+      "arm": "learned",
+      "change_cycle": 21,
+      "lag_cycles": 1,
+      "censored": false,
+      "window_cycles": 11,
+      "threshold": 4.0
+    },
+    {
+      "seed": 202610187202,
+      "arm": "last",
+      "change_cycle": 10,
+      "lag_cycles": 3,
+      "censored": false,
+      "window_cycles": 11,
+      "threshold": 4.0
+    },
+    {
+      "seed": 202610187202,
+      "arm": "last",
+      "change_cycle": 21,
+      "lag_cycles": 1,
+      "censored": false,
+      "window_cycles": 11,
+      "threshold": 4.0
+    },
+    {
+      "seed": 202610187203,
+      "arm": "learned",
+      "change_cycle": 10,
+      "lag_cycles": 3,
+      "censored": false,
+      "window_cycles": 11,
+      "threshold": 4.0
+    },
+    {
+      "seed": 202610187203,
+      "arm": "learned",
+      "change_cycle": 21,
+      "lag_cycles": 3,
+      "censored": false,
+      "window_cycles": 11,
+      "threshold": 4.0
+    },
+    {
+      "seed": 202610187203,
+      "arm": "last",
+      "change_cycle": 10,
+      "lag_cycles": 3,
+      "censored": false,
+      "window_cycles": 11,
+      "threshold": 4.0
+    },
+    {
+      "seed": 202610187203,
+      "arm": "last",
+      "change_cycle": 21,
+      "lag_cycles": 3,
+      "censored": false,
+      "window_cycles": 11,
+      "threshold": 4.0
+    },
+    {
+      "seed": 202610187204,
+      "arm": "learned",
+      "change_cycle": 10,
+      "lag_cycles": 3,
+      "censored": false,
+      "window_cycles": 11,
+      "threshold": 4.0
+    },
+    {
+      "seed": 202610187204,
+      "arm": "learned",
+      "change_cycle": 21,
+      "lag_cycles": 2,
+      "censored": false,
+      "window_cycles": 11,
+      "threshold": 4.0
+    },
+    {
+      "seed": 202610187204,
+      "arm": "last",
+      "change_cycle": 10,
+      "lag_cycles": 3,
+      "censored": false,
+      "window_cycles": 11,
+      "threshold": 4.0
+    },
+    {
+      "seed": 202610187204,
+      "arm": "last",
+      "change_cycle": 21,
+      "lag_cycles": 2,
+      "censored": false,
+      "window_cycles": 11,
+      "threshold": 4.0
+    }
+  ],
+  "recoveries_interpretation": "learned and last reported lags agree at all eight changed-seed/change windows; two changes in each seed are not eight independent worlds",
+  "training": "CEM 24 proposed/22 unique physical candidate evaluations, two training worlds and one optimizer seed; phi frozen before four heldout seeds, local state continues online; raw training objective U minus payments is not all-body net fitness",
+  "comparison_semantics": "learned/frozen/permuted share actual 8-cycle parent. last/EMA/fixed/instant start separately at the same initial host with same tape; their post-prefix summaries do not imply same acquired prefix.",
+  "finding": "learned feedback update supports higher changed-world intake than frozen/EMA, but not last. Stable and changed learned-last intake negative in all four seeds; terminal energies tied for learned/last/EMA/frozen/instant. Body-time differences are not uniformly favorable.",
+  "limits": [
+    "global energy and M20 are imposed, not learned homeostasis",
+    "single engineered two-leaf body, no movement, no Lenia dynamics",
+    "one outer optimization seed and two training worlds; four heldout worlds, two repeated schedules",
+    "instant sees empty precommit inventory and is uniform by design",
+    "state permutation swaps cue associations, not space",
+    "learned/frozen/permuted share one actual prefix; do not count it three times",
+    "combined path training_objective inherited suffix value: not used as full outcome; use recomputed vectors",
+    "memory package has identical tariff; actual state amount/computation is not fully hardware-priced",
+    "late event samples alone do not establish steady state or morphology novelty",
+    "Complete native information partition unavailable; no full public or body-conditioned residual information claim.",
+    "Only the declared fixed cue family was compared, not every possible fixed policy using full public phenotype.",
+    "Last used actual per-cell labels and same material interface; it does not infer unobserved opposite-side events.",
+    "Known environment prediction optimality is not an optimized body-return bound."
+  ],
+  "own_usage": {
+    "new_host_steps": 0,
+    "new_training_calls": 0,
+    "new_controller_calls": 0,
+    "runner_submissions": 0,
+    "cap0_synthetic_retests": 0
+  },
+  "previous_handoff_unchanged": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/anticipatory_information_audit_20261018/handoff.json",
+    "sha256": "08c69b6a3d225ddfd99d6cec3ce1613a41a67754dcb4089a6eea6c5de8908345"
+  }
+}

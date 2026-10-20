@@ -1,0 +1,8 @@
+{
+  "PI": "msg_83bac94d3306ed5baab576b08770571f",
+  "paper_merge": "msg_e3348b755628a4a6e8f4f663cdf939f9",
+  "projection_merge": "msg_e1872315e8dd1f4f55019a78a798c8e9",
+  "state": "direction_active_two_batches_delivered",
+  "no_periodic_tasks": true,
+  "handoff_sha256": "642f3c7736a647b242174d71bcf0e23a243bbd2a3a9d3fbe13d4bba61803fbf3"
+}

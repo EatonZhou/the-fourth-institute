@@ -1,0 +1,637 @@
+{
+  "task": "energetic_cue_regenerative_learning_20261019",
+  "native": 5632,
+  "committed": 5632,
+  "unknown": 0,
+  "runner_worker_seconds": 151.45059,
+  "raw_bytes": 139087277,
+  "summary": {
+    "i0_g0_fast": {
+      "steps": 640,
+      "last_t": 640,
+      "status": "complete",
+      "final_M": 138.06054009904602,
+      "final_E": 104.56081781292534,
+      "new_fraction": 0.9949207741295416,
+      "post_reversal_fraction": 0.9659881731685382,
+      "total_birth": 521.157035210108,
+      "total_death": 322.9244045067096,
+      "external_P": 519.9476563538569,
+      "external_F": 862.1863737394794,
+      "U": 645.1866106367798,
+      "motor": 84.28015582222208,
+      "basal": 38.8297809614297,
+      "injury": 0.0,
+      "holding": 3.233195433157689,
+      "copy": 0.6582678331074598,
+      "written": 47819.041539350816,
+      "positive_feedback": 46331.18442318266,
+      "negative_feedback": 18253.69647811896,
+      "material_error": 4.547473508864641e-13,
+      "energy_error": 4.547473508864641e-13,
+      "windows": {
+        "acquire": {
+          "n": 64,
+          "contact": 75.13645303705836,
+          "fraction": 0.8163205816759656,
+          "pass_gate": true
+        },
+        "reverse": {
+          "n": 64,
+          "contact": 52.06391395221334,
+          "fraction": 0.4933306035394697,
+          "pass_gate": false
+        },
+        "hold": {
+          "n": 64,
+          "contact": 80.11096114562477,
+          "fraction": 0.6381310645370724,
+          "pass_gate": false
+        }
+      }
+    },
+    "i0_g0_fast_freeze_reversal": {
+      "steps": 256,
+      "last_t": 512,
+      "status": "complete",
+      "final_M": 98.33800819592969,
+      "final_E": 36.65008029824009,
+      "new_fraction": 0.9798751768375674,
+      "post_reversal_fraction": 0.8808492095009282,
+      "total_birth": 207.17241943794335,
+      "total_death": 128.65841144488522,
+      "external_P": 206.94405166283175,
+      "external_F": 344.94972565418027,
+      "U": 258.0669682613481,
+      "motor": 19.88133312799676,
+      "basal": 15.48487181153218,
+      "injury": 0.0,
+      "holding": 1.2892567919926479,
+      "copy": 0.20624284181574762,
+      "written": 0.0,
+      "positive_feedback": 10434.869743594823,
+      "negative_feedback": 15296.812545361388,
+      "material_error": 2.2737367544323206e-13,
+      "energy_error": 4.547473508864641e-13,
+      "windows": {
+        "acquire": {
+          "n": 0,
+          "contact": null,
+          "fraction": null,
+          "pass_gate": false
+        },
+        "reverse": {
+          "n": 64,
+          "contact": 27.707115818921984,
+          "fraction": 0.3082168288644267,
+          "pass_gate": false
+        },
+        "hold": {
+          "n": 0,
+          "contact": null,
+          "fraction": null,
+          "pass_gate": false
+        }
+      }
+    },
+    "i0_g0_frozen": {
+      "steps": 640,
+      "last_t": 640,
+      "status": "complete",
+      "final_M": 132.89223813442487,
+      "final_E": 101.03902696468188,
+      "new_fraction": 0.994627466316128,
+      "post_reversal_fraction": 0.9650418119512755,
+      "total_birth": 498.0890992518963,
+      "total_death": 304.6322357607945,
+      "external_P": 496.9129027005519,
+      "external_F": 817.0696062572898,
+      "U": 609.6923363229403,
+      "motor": 83.98437422716269,
+      "basal": 36.63495623277129,
+      "injury": 0.0,
+      "holding": 3.0326622972270645,
+      "copy": 0.6142193901795424,
+      "written": 0.0,
+      "positive_feedback": 42360.6691600819,
+      "negative_feedback": 18565.77799203559,
+      "material_error": 2.2737367544323206e-13,
+      "energy_error": 4.547473508864641e-13,
+      "windows": {
+        "acquire": {
+          "n": 64,
+          "contact": 49.45679351084486,
+          "fraction": 0.5856112903525565,
+          "pass_gate": false
+        },
+        "reverse": {
+          "n": 64,
+          "contact": 50.773631306182125,
+          "fraction": 0.5140713533997056,
+          "pass_gate": false
+        },
+        "hold": {
+          "n": 64,
+          "contact": 81.55774839863172,
+          "fraction": 0.682750343932844,
+          "pass_gate": true
+        }
+      }
+    },
+    "i0_g1_fast": {
+      "steps": 640,
+      "last_t": 640,
+      "status": "complete",
+      "final_M": 151.67152883275807,
+      "final_E": 129.51737046759678,
+      "new_fraction": 0.993825430506902,
+      "post_reversal_fraction": 0.9592398040055539,
+      "total_birth": 529.5700065020603,
+      "total_death": 333.77321232269253,
+      "external_P": 528.3146346037202,
+      "external_F": 887.7298492053201,
+      "U": 667.3517071393644,
+      "motor": 98.56774239958123,
+      "basal": 40.12200980419301,
+      "injury": 0.0,
+      "holding": 3.3370534023462044,
+      "copy": 0.7273872355112218,
+      "written": 48120.64795668548,
+      "positive_feedback": 51559.99716179195,
+      "negative_feedback": 15194.645302707077,
+      "material_error": 2.2737367544323206e-13,
+      "energy_error": 4.547473508864641e-13,
+      "windows": {
+        "acquire": {
+          "n": 64,
+          "contact": 68.96298091018363,
+          "fraction": 0.7620849943764516,
+          "pass_gate": true
+        },
+        "reverse": {
+          "n": 64,
+          "contact": 71.77719348061163,
+          "fraction": 0.6278050237548671,
+          "pass_gate": false
+        },
+        "hold": {
+          "n": 64,
+          "contact": 100.02430731631696,
+          "fraction": 0.7309604822400206,
+          "pass_gate": true
+        }
+      }
+    },
+    "i0_g1_fast_freeze_reversal": {
+      "steps": 256,
+      "last_t": 512,
+      "status": "complete",
+      "final_M": 105.13613249199153,
+      "final_E": 35.34373539034273,
+      "new_fraction": 0.9825081785000214,
+      "post_reversal_fraction": 0.8891009562595732,
+      "total_birth": 216.1761462044533,
+      "total_death": 131.47703287614112,
+      "external_P": 215.8993008304409,
+      "external_F": 354.2425158373235,
+      "U": 263.68393194127214,
+      "motor": 33.528456071827975,
+      "basal": 15.821438031546993,
+      "injury": 0.0,
+      "holding": 1.2975737734804011,
+      "copy": 0.2388885146611857,
+      "written": 0.0,
+      "positive_feedback": 13464.521518997455,
+      "negative_feedback": 12830.885056210785,
+      "material_error": 4.547473508864641e-13,
+      "energy_error": 4.547473508864641e-13,
+      "windows": {
+        "acquire": {
+          "n": 0,
+          "contact": null,
+          "fraction": null,
+          "pass_gate": false
+        },
+        "reverse": {
+          "n": 64,
+          "contact": 26.52797245447868,
+          "fraction": 0.2909734106914566,
+          "pass_gate": false
+        },
+        "hold": {
+          "n": 0,
+          "contact": null,
+          "fraction": null,
+          "pass_gate": false
+        }
+      }
+    },
+    "i0_g1_frozen": {
+      "steps": 640,
+      "last_t": 640,
+      "status": "complete",
+      "final_M": 135.30660380067263,
+      "final_E": 104.7527676308674,
+      "new_fraction": 0.9944311219479272,
+      "post_reversal_fraction": 0.9617385204570603,
+      "total_birth": 501.53384842958314,
+      "total_death": 310.9837197142453,
+      "external_P": 500.35890042698173,
+      "external_F": 831.1503968923266,
+      "U": 622.3499635915193,
+      "motor": 88.83266481391388,
+      "basal": 37.393941646920176,
+      "injury": 0.0,
+      "holding": 3.115690029149331,
+      "copy": 0.6410024733657856,
+      "written": 0.0,
+      "positive_feedback": 44272.299643065184,
+      "negative_feedback": 17924.444299742492,
+      "material_error": 4.547473508864641e-13,
+      "energy_error": 4.547473508864641e-13,
+      "windows": {
+        "acquire": {
+          "n": 64,
+          "contact": 51.44477731522667,
+          "fraction": 0.6064354626302993,
+          "pass_gate": false
+        },
+        "reverse": {
+          "n": 64,
+          "contact": 58.97684827427008,
+          "fraction": 0.5722402243210585,
+          "pass_gate": false
+        },
+        "hold": {
+          "n": 64,
+          "contact": 85.66347089352297,
+          "fraction": 0.6957365469490905,
+          "pass_gate": true
+        }
+      }
+    },
+    "i1_g0_fast": {
+      "steps": 512,
+      "last_t": 512,
+      "status": "raw_partial",
+      "final_M": 116.04940871679904,
+      "final_E": 73.34640949120383,
+      "new_fraction": 0.9815067338408393,
+      "post_reversal_fraction": 0.887112030897748,
+      "total_birth": 351.19258112634407,
+      "total_death": 226.7996196208174,
+      "external_P": 350.17764988457526,
+      "external_F": 593.8823909249012,
+      "U": 447.96627291679994,
+      "motor": 73.03613285999474,
+      "basal": 27.263709652433267,
+      "injury": 0.0,
+      "holding": 2.2589483406648596,
+      "copy": 0.4848301686012341,
+      "written": 42242.31668550248,
+      "positive_feedback": 32458.515614637592,
+      "negative_feedback": 12901.408309496028,
+      "material_error": 4.547473508864641e-13,
+      "energy_error": 2.2737367544323206e-13,
+      "windows": {
+        "acquire": {
+          "n": 64,
+          "contact": 47.65355698814142,
+          "fraction": 0.6185184755497286,
+          "pass_gate": false
+        },
+        "reverse": {
+          "n": 64,
+          "contact": 57.00855539780955,
+          "fraction": 0.5893466649707694,
+          "pass_gate": false
+        },
+        "hold": {
+          "n": 0,
+          "contact": null,
+          "fraction": null,
+          "pass_gate": false
+        }
+      }
+    },
+    "i1_g0_fast_freeze_reversal": {
+      "steps": 256,
+      "last_t": 512,
+      "status": "complete",
+      "final_M": 116.01006881609624,
+      "final_E": 72.35145465629874,
+      "new_fraction": 0.981307828794056,
+      "post_reversal_fraction": 0.8858429393272029,
+      "total_birth": 210.86940226882382,
+      "total_death": 128.32138326816118,
+      "external_P": 210.52890247106714,
+      "external_F": 345.1531214435619,
+      "U": 257.10045087880394,
+      "motor": 36.116835468215996,
+      "basal": 15.427241765487835,
+      "injury": 0.0,
+      "holding": 1.269970617537743,
+      "copy": 0.29061914928062255,
+      "written": 0.0,
+      "positive_feedback": 17529.061173367845,
+      "negative_feedback": 8135.215480246843,
+      "material_error": 2.2737367544323206e-13,
+      "energy_error": 4.547473508864641e-13,
+      "windows": {
+        "acquire": {
+          "n": 0,
+          "contact": null,
+          "fraction": null,
+          "pass_gate": false
+        },
+        "reverse": {
+          "n": 64,
+          "contact": 57.41870416860443,
+          "fraction": 0.5811476367926298,
+          "pass_gate": false
+        },
+        "hold": {
+          "n": 0,
+          "contact": null,
+          "fraction": null,
+          "pass_gate": false
+        }
+      }
+    },
+    "i1_g0_frozen": {
+      "steps": 512,
+      "last_t": 512,
+      "status": "raw_partial",
+      "final_M": 105.99139069957374,
+      "final_E": 79.9154368255777,
+      "new_fraction": 0.9786910957888642,
+      "post_reversal_fraction": 0.8778356946823594,
+      "total_birth": 326.8219048623488,
+      "total_death": 218.1853621943548,
+      "external_P": 325.936848960164,
+      "external_F": 563.4489691543369,
+      "U": 427.6140278689043,
+      "motor": 47.45438237124496,
+      "basal": 26.22657972076557,
+      "injury": 0.0,
+      "holding": 2.1776259391448045,
+      "copy": 0.44905622039430765,
+      "written": 0.0,
+      "positive_feedback": 28243.80753336993,
+      "negative_feedback": 15393.264905470429,
+      "material_error": 2.2737367544323206e-13,
+      "energy_error": 2.2737367544323206e-13,
+      "windows": {
+        "acquire": {
+          "n": 64,
+          "contact": 47.79393460406111,
+          "fraction": 0.6286206495669053,
+          "pass_gate": false
+        },
+        "reverse": {
+          "n": 64,
+          "contact": 57.310869266757834,
+          "fraction": 0.6155656293567722,
+          "pass_gate": false
+        },
+        "hold": {
+          "n": 0,
+          "contact": null,
+          "fraction": null,
+          "pass_gate": false
+        }
+      }
+    },
+    "i1_g1_fast": {
+      "steps": 512,
+      "last_t": 512,
+      "status": "raw_partial",
+      "final_M": 104.55449438452936,
+      "final_E": 68.76076737103172,
+      "new_fraction": 0.9790850676420902,
+      "post_reversal_fraction": 0.8822641811049963,
+      "total_birth": 319.3273779435878,
+      "total_death": 212.5703389662765,
+      "external_P": 318.4196670774431,
+      "external_F": 548.1485648283067,
+      "U": 415.4560664300661,
+      "motor": 60.714514736038566,
+      "basal": 25.552511368970787,
+      "injury": 0.0,
+      "holding": 2.1192965829854766,
+      "copy": 0.4415377809442039,
+      "written": 39880.63639492474,
+      "positive_feedback": 28775.237051698743,
+      "negative_feedback": 13738.830741529766,
+      "material_error": 4.547473508864641e-13,
+      "energy_error": 2.2737367544323206e-13,
+      "windows": {
+        "acquire": {
+          "n": 64,
+          "contact": 44.833865000994635,
+          "fraction": 0.6099506792950766,
+          "pass_gate": false
+        },
+        "reverse": {
+          "n": 64,
+          "contact": 51.61358626727686,
+          "fraction": 0.5974361462947262,
+          "pass_gate": false
+        },
+        "hold": {
+          "n": 0,
+          "contact": null,
+          "fraction": null,
+          "pass_gate": false
+        }
+      }
+    },
+    "i1_g1_fast_freeze_reversal": {
+      "steps": 256,
+      "last_t": 512,
+      "status": "complete",
+      "final_M": 104.18542716981908,
+      "final_E": 71.19044444043448,
+      "new_fraction": 0.9783679161095379,
+      "post_reversal_fraction": 0.8781395657307447,
+      "total_birth": 184.92265811369083,
+      "total_death": 115.65090078805625,
+      "external_P": 184.60566187848053,
+      "external_F": 308.8310725585127,
+      "U": 231.64559265679435,
+      "motor": 33.79612859280675,
+      "basal": 13.902465495925357,
+      "injury": 0.0,
+      "holding": 1.1508177762305836,
+      "copy": 0.2598976167474411,
+      "written": 0.0,
+      "positive_feedback": 16512.205184472343,
+      "negative_feedback": 6617.974973123409,
+      "material_error": 2.2737367544323206e-13,
+      "energy_error": 4.547473508864641e-13,
+      "windows": {
+        "acquire": {
+          "n": 0,
+          "contact": null,
+          "fraction": null,
+          "pass_gate": false
+        },
+        "reverse": {
+          "n": 64,
+          "contact": 49.858436134881,
+          "fraction": 0.6075047840112792,
+          "pass_gate": false
+        },
+        "hold": {
+          "n": 0,
+          "contact": null,
+          "fraction": null,
+          "pass_gate": false
+        }
+      }
+    },
+    "i1_g1_frozen": {
+      "steps": 512,
+      "last_t": 512,
+      "status": "raw_partial",
+      "final_M": 101.13336892315598,
+      "final_E": 71.67625760334195,
+      "new_fraction": 0.976852404113252,
+      "post_reversal_fraction": 0.8756637130795504,
+      "total_birth": 304.9441098431713,
+      "total_death": 208.14224219318757,
+      "external_P": 304.09200819765107,
+      "external_F": 530.9939597239512,
+      "U": 404.2849734825803,
+      "motor": 55.005076134582076,
+      "basal": 25.017219328680547,
+      "injury": 0.0,
+      "holding": 2.0765932081383336,
+      "copy": 0.4274058062395264,
+      "written": 0.0,
+      "positive_feedback": 29587.944903445084,
+      "negative_feedback": 12040.503535166008,
+      "material_error": 2.2737367544323206e-13,
+      "energy_error": 4.547473508864641e-13,
+      "windows": {
+        "acquire": {
+          "n": 64,
+          "contact": 43.84386070429345,
+          "fraction": 0.6076582632340921,
+          "pass_gate": false
+        },
+        "reverse": {
+          "n": 64,
+          "contact": 52.07772761468506,
+          "fraction": 0.6347311144185233,
+          "pass_gate": false
+        },
+        "hold": {
+          "n": 0,
+          "contact": null,
+          "fraction": null,
+          "pass_gate": false
+        }
+      }
+    }
+  },
+  "paired": {
+    "i0_g0_fast": {
+      "life0_frozen": {
+        "common_steps": 640,
+        "last_t": 640,
+        "M": 5.1683019646211505,
+        "E": 3.5217908482434552,
+        "U": 35.49427431383959,
+        "motor": 0.2957815950593995,
+        "action_different": 336,
+        "safe_contact_mean": 4.644947091182922,
+        "new_fraction": 0.00029330781341363465
+      },
+      "same_parent_future_frozen": {
+        "common_steps": 256,
+        "last_t": 512,
+        "M": 13.370501870863706,
+        "E": 17.002959098672967,
+        "U": 11.662213734216975,
+        "motor": 19.424911245269858,
+        "action_different": 192,
+        "safe_contact_mean": 12.026261303710555,
+        "new_fraction": 0.0018829026807022364
+      }
+    },
+    "i0_g1_fast": {
+      "life0_frozen": {
+        "common_steps": 640,
+        "last_t": 640,
+        "M": 16.364925032085438,
+        "E": 24.76460283672938,
+        "U": 45.00174354784507,
+        "motor": 9.735077585667364,
+        "action_different": 272,
+        "safe_contact_mean": 9.492370811299645,
+        "new_fraction": -0.0006056914410251801
+      },
+      "same_parent_future_frozen": {
+        "common_steps": 256,
+        "last_t": 512,
+        "M": 16.241900485032517,
+        "E": 41.12567394182746,
+        "U": 14.430201801310773,
+        "motor": 8.500473945809485,
+        "action_different": 224,
+        "safe_contact_mean": 23.34562913509325,
+        "new_fraction": -0.0013373622851724498
+      }
+    },
+    "i1_g0_fast": {
+      "life0_frozen": {
+        "common_steps": 512,
+        "last_t": 512,
+        "M": 10.058018017225294,
+        "E": -6.569027334373871,
+        "U": 20.352245047895586,
+        "motor": 25.581750488749776,
+        "action_different": 272,
+        "safe_contact_mean": -0.24001516500689604,
+        "new_fraction": 0.0028156380519751556
+      },
+      "same_parent_future_frozen": {
+        "common_steps": 256,
+        "last_t": 512,
+        "M": 0.03933990070279947,
+        "E": 0.9949548349050872,
+        "U": -0.4917837053491936,
+        "motor": 3.5511205149475553,
+        "action_different": 112,
+        "safe_contact_mean": -0.39180022371094947,
+        "new_fraction": 0.00019890504678332643
+      }
+    },
+    "i1_g1_fast": {
+      "life0_frozen": {
+        "common_steps": 512,
+        "last_t": 512,
+        "M": 3.4211254613733786,
+        "E": -2.9154902323102334,
+        "U": 11.171092947485722,
+        "motor": 5.709438601456489,
+        "action_different": 320,
+        "safe_contact_mean": -0.9875842394040799,
+        "new_fraction": 0.002232663528838219
+      },
+      "same_parent_future_frozen": {
+        "common_steps": 256,
+        "last_t": 512,
+        "M": 0.3690672147102845,
+        "E": -2.429677069402757,
+        "U": 0.47394162014434205,
+        "motor": 2.0886990382256716,
+        "action_different": 160,
+        "safe_contact_mean": -0.3498330049282752,
+        "new_fraction": 0.0007171515325523625
+      }
+    }
+  },
+  "old_native_replay": 0
+}

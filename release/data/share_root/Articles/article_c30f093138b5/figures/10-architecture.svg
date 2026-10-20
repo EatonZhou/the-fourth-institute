@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600" viewBox="0 0 1200 600">
+<rect width="1200" height="600" fill="white"/>
+<text x="28" y="41.56" text-anchor="start" font-family="Noto Sans CJK SC" font-size="26" font-weight="700" fill="#275D85">架构理解指南：层次展开与协议探索</text>
+<polyline points="28,62 1172,62" fill="none" stroke="#91A2AE" stroke-width="1.7"/>
+<text x="30" y="583.0300000000001" text-anchor="start" font-family="Noto Sans CJK SC" font-size="13" font-weight="400" fill="#61717E">设计示意 · 实线：工作或依赖关系；虚线：反馈或关联；不表示实验测量</text>
+<rect x="35" y="90" width="690" height="445" fill="#FFFFFF" stroke="#91A2AE" stroke-width="1.5"/>
+<text x="380.0" y="318.39" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#91A2AE"></text>
+<text x="43" y="115.7" text-anchor="start" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">系统 &gt; 任务服务 &gt; 取消协议</text>
+<rect x="55" y="145" width="650" height="100" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="380.0" y="171.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">顶层：任务平台</text>
+<text x="380.0" y="216.27" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">界面、任务服务、执行器、结果存储</text>
+<polyline points="380,245 380,275" fill="none" stroke="#275D85" stroke-width="1.7"/>
+<polygon points="380,275 376.66171577528314,266.6420182798114 383.33828422471686,266.6420182798114" fill="#275D85"/>
+<rect x="55" y="280" width="195" height="95" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="152.5" y="306.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">请求处理</text>
+<text x="152.5" y="348.77000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">权限／幂等</text>
+<rect x="280" y="280" width="195" height="95" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="377.5" y="306.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">状态协调</text>
+<text x="377.5" y="348.77000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">接收／停止确认</text>
+<rect x="510" y="280" width="195" height="95" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="607.5" y="306.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">执行适配</text>
+<text x="607.5" y="348.77000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">实际停止</text>
+<polyline points="250,327 280,327" fill="none" stroke="#275D85" stroke-width="1.7"/>
+<polygon points="280,327 271.6420182798114,330.33828422471686 271.6420182798114,323.66171577528314" fill="#275D85"/>
+<polyline points="475,327 510,327" fill="none" stroke="#275D85" stroke-width="1.7"/>
+<polygon points="510,327 501.6420182798114,330.33828422471686 501.6420182798114,323.66171577528314" fill="#275D85"/>
+<rect x="55" y="420" width="650" height="80" fill="#FAF3E7" stroke="#99651B" stroke-width="1.5"/>
+<text x="380.0" y="465.89000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#99651B">关联改进：请求接收与实际停止分别呈现</text>
+<rect x="770" y="90" width="395" height="445" fill="#FFFFFF" stroke="#91A2AE" stroke-width="1.5"/>
+<text x="967.5" y="318.39" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#91A2AE"></text>
+<text x="778" y="115.7" text-anchor="start" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">点击协议：用具体过程解释</text>
+<rect x="790" y="150" width="155" height="60" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="867.5" y="185.89" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#275D85">任务服务</text>
+<rect x="985" y="150" width="155" height="60" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="1062.5" y="185.89" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#275D85">执行器</text>
+<polyline points="867,220 867,495" fill="none" stroke="#91A2AE" stroke-width="1.7"/>
+<polyline points="1062,220 1062,495" fill="none" stroke="#91A2AE" stroke-width="1.7"/>
+<polyline points="867,260 1062,260" fill="none" stroke="#275D85" stroke-width="1.7"/>
+<polygon points="1062,260 1053.6420182798115,263.33828422471686 1053.6420182798115,256.66171577528314" fill="#275D85"/>
+<text x="967.5" y="248.96" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="16" font-weight="400" fill="#263442">停止请求</text>
+<polyline points="1062,330 867,330" fill="none" stroke="#26756C" stroke-width="1.7"/>
+<polygon points="867,330 875.3579817201886,326.66171577528314 875.3579817201886,333.33828422471686" fill="#26756C"/>
+<text x="967.5" y="318.96" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="16" font-weight="400" fill="#263442">请求已接收</text>
+<polyline points="1062,425 867,425" fill="none" stroke="#26756C" stroke-width="1.7"/>
+<polygon points="867,425 875.3579817201886,421.66171577528314 875.3579817201886,428.33828422471686" fill="#26756C"/>
+<text x="967.5" y="413.96" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="16" font-weight="400" fill="#263442">停止已确认</text>
+</svg>

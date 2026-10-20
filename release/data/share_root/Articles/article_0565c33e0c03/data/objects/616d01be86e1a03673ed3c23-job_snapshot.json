@@ -1,0 +1,39 @@
+{
+  "id": "3099d6b9-f83e-45c6-95ff-d82d354375d0",
+  "name": "developmental_history_rule_swap_20261019",
+  "command": [
+    "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+    "-m",
+    "local_learning.developmental_history_rule_swap.run"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "d3-developmental-history-rule-swap-20261019-v1",
+  "status": "completed",
+  "created_at": "2026-10-18T18:28:35.887765+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/3099d6b9-f83e-45c6-95ff-d82d354375d0",
+  "pid": 2374117,
+  "manual_pause": false,
+  "create_time": 1792348115.34,
+  "started_at": "2026-10-18T18:28:35.956126+00:00",
+  "returncode": 0,
+  "finished_at": "2026-10-18T18:29:00.780839+00:00",
+  "result": {
+    "task": "developmental_history_rule_swap_20261019",
+    "status": "completed",
+    "job": "3099d6b9-f83e-45c6-95ff-d82d354375d0",
+    "attempted": 1028,
+    "committed": 1028,
+    "settled": 1028,
+    "science_native": 1024,
+    "boundary_native": 4,
+    "wall_seconds": 24.541093626990914,
+    "failure": null,
+    "complete_paths": 8,
+    "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/developmental_history_rule_swap_20261019/3099d6b9-f83e-45c6-95ff-d82d354375d0",
+    "raw_bytes": 236791515,
+    "objective_met": false,
+    "old_science_replayed": 0,
+    "old_budget_used": 0
+  }
+}

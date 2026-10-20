@@ -1,0 +1,10 @@
+{
+  "native_execution": "complete",
+  "scientific_status": "invalid_calibration_intervention_no_updates",
+  "eligible": 0,
+  "total_native": 7936,
+  "calibration_updates": 0,
+  "cause": "Frozen implementation conflated pre-execution source budget limiting with unpaid executed work; every record was rejected. Actual displacement is nonzero and motor_unpaid zero. Do not infer biological unidentifiability or learning-null.",
+  "prospective_fix": "Distinguish actual motor_unpaid from pre-limited request; new helper only, not applied retrospectively to physical results.",
+  "next": "Independent reduced actual-response closed-loop check with first16 readiness guard; no repeat of full matrix; no next run inside remaining old budget."
+}

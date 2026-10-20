@@ -1,0 +1,20 @@
+{
+  "task": "birth_site_compatibility_cohort_20261019",
+  "status": "completed",
+  "job": "8de86188-a832-4e73-af13-b5bac20826a1",
+  "attempted": 836,
+  "committed": 836,
+  "settled": 836,
+  "science_native": 832,
+  "boundary_native": 4,
+  "wall_seconds": 23.845805736025795,
+  "failure": null,
+  "actual_paths": 13,
+  "logical_paths": 16,
+  "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1",
+  "raw_bytes": 43502828,
+  "old_budget_used": 0,
+  "old_acquisition_replayed": 0,
+  "baseline_replayed": 0,
+  "objective_met": false
+}

@@ -1,0 +1,1216 @@
+[
+  {
+    "stage_id": "genome_93e6148d32bbb0862163/formation",
+    "net_M_negative": [
+      [
+        1,
+        9
+      ],
+      [
+        29,
+        66
+      ],
+      [
+        70,
+        70
+      ],
+      [
+        80,
+        80
+      ],
+      [
+        91,
+        105
+      ],
+      [
+        113,
+        121
+      ]
+    ],
+    "physical_M_negative": [
+      [
+        1,
+        9
+      ],
+      [
+        29,
+        66
+      ],
+      [
+        70,
+        70
+      ],
+      [
+        80,
+        80
+      ],
+      [
+        91,
+        105
+      ],
+      [
+        113,
+        121
+      ]
+    ],
+    "net_E_negative": [
+      [
+        1,
+        15
+      ],
+      [
+        29,
+        29
+      ],
+      [
+        31,
+        44
+      ],
+      [
+        88,
+        89
+      ],
+      [
+        91,
+        128
+      ]
+    ],
+    "physical_E_negative": [
+      [
+        1,
+        15
+      ],
+      [
+        29,
+        29
+      ],
+      [
+        31,
+        44
+      ],
+      [
+        88,
+        89
+      ],
+      [
+        91,
+        128
+      ]
+    ],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_93e6148d32bbb0862163/naive/acquisition",
+    "net_M_negative": [
+      [
+        135,
+        143
+      ],
+      [
+        150,
+        160
+      ]
+    ],
+    "physical_M_negative": [
+      [
+        135,
+        143
+      ],
+      [
+        150,
+        160
+      ]
+    ],
+    "net_E_negative": [
+      [
+        132,
+        143
+      ],
+      [
+        149,
+        160
+      ]
+    ],
+    "physical_E_negative": [
+      [
+        132,
+        143
+      ],
+      [
+        149,
+        160
+      ]
+    ],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_93e6148d32bbb0862163/naive/none",
+    "net_M_negative": [
+      [
+        161,
+        179
+      ],
+      [
+        213,
+        215
+      ],
+      [
+        223,
+        224
+      ]
+    ],
+    "physical_M_negative": [
+      [
+        161,
+        179
+      ],
+      [
+        213,
+        215
+      ],
+      [
+        223,
+        224
+      ]
+    ],
+    "net_E_negative": [
+      [
+        161,
+        180
+      ],
+      [
+        187,
+        194
+      ],
+      [
+        197,
+        215
+      ]
+    ],
+    "physical_E_negative": [
+      [
+        161,
+        180
+      ],
+      [
+        187,
+        194
+      ],
+      [
+        197,
+        215
+      ]
+    ],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_93e6148d32bbb0862163/naive/x",
+    "net_M_negative": [
+      [
+        161,
+        178
+      ]
+    ],
+    "physical_M_negative": [
+      [
+        161,
+        178
+      ]
+    ],
+    "net_E_negative": [
+      [
+        161,
+        178
+      ]
+    ],
+    "physical_E_negative": [
+      [
+        161,
+        178
+      ]
+    ],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_93e6148d32bbb0862163/experienced/acquisition",
+    "net_M_negative": [
+      [
+        129,
+        133
+      ],
+      [
+        145,
+        145
+      ]
+    ],
+    "physical_M_negative": [
+      [
+        129,
+        133
+      ]
+    ],
+    "net_E_negative": [
+      [
+        129,
+        135
+      ],
+      [
+        145,
+        145
+      ],
+      [
+        157,
+        160
+      ]
+    ],
+    "physical_E_negative": [
+      [
+        129,
+        135
+      ],
+      [
+        157,
+        160
+      ]
+    ],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_93e6148d32bbb0862163/experienced/none",
+    "net_M_negative": [
+      [
+        163,
+        164
+      ],
+      [
+        166,
+        170
+      ],
+      [
+        178,
+        178
+      ],
+      [
+        180,
+        183
+      ],
+      [
+        190,
+        224
+      ]
+    ],
+    "physical_M_negative": [
+      [
+        163,
+        164
+      ],
+      [
+        166,
+        170
+      ],
+      [
+        178,
+        178
+      ],
+      [
+        180,
+        183
+      ],
+      [
+        190,
+        224
+      ]
+    ],
+    "net_E_negative": [
+      [
+        161,
+        168
+      ],
+      [
+        211,
+        222
+      ]
+    ],
+    "physical_E_negative": [
+      [
+        161,
+        168
+      ],
+      [
+        211,
+        222
+      ]
+    ],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_93e6148d32bbb0862163/experienced/x",
+    "net_M_negative": [
+      [
+        161,
+        183
+      ]
+    ],
+    "physical_M_negative": [
+      [
+        161,
+        183
+      ]
+    ],
+    "net_E_negative": [
+      [
+        161,
+        183
+      ]
+    ],
+    "physical_E_negative": [
+      [
+        161,
+        183
+      ]
+    ],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_93e6148d32bbb0862163/low_cost_T00/acquisition",
+    "net_M_negative": [
+      [
+        134,
+        144
+      ],
+      [
+        150,
+        160
+      ]
+    ],
+    "physical_M_negative": [
+      [
+        134,
+        144
+      ],
+      [
+        150,
+        160
+      ]
+    ],
+    "net_E_negative": [
+      [
+        129,
+        160
+      ]
+    ],
+    "physical_E_negative": [
+      [
+        129,
+        160
+      ]
+    ],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_93e6148d32bbb0862163/low_cost_T00/none",
+    "net_M_negative": [
+      [
+        161,
+        176
+      ],
+      [
+        191,
+        191
+      ],
+      [
+        208,
+        208
+      ],
+      [
+        219,
+        224
+      ]
+    ],
+    "physical_M_negative": [
+      [
+        161,
+        176
+      ],
+      [
+        191,
+        191
+      ],
+      [
+        208,
+        208
+      ],
+      [
+        219,
+        224
+      ]
+    ],
+    "net_E_negative": [
+      [
+        161,
+        177
+      ],
+      [
+        182,
+        209
+      ]
+    ],
+    "physical_E_negative": [
+      [
+        161,
+        177
+      ],
+      [
+        182,
+        209
+      ]
+    ],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_93e6148d32bbb0862163/low_cost_T00/x",
+    "net_M_negative": [
+      [
+        161,
+        177
+      ]
+    ],
+    "physical_M_negative": [
+      [
+        161,
+        177
+      ]
+    ],
+    "net_E_negative": [
+      [
+        161,
+        177
+      ]
+    ],
+    "physical_E_negative": [
+      [
+        161,
+        177
+      ]
+    ],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_d02e7f60565f83066e5d/formation",
+    "net_M_negative": [],
+    "physical_M_negative": [],
+    "net_E_negative": [
+      [
+        10,
+        15
+      ]
+    ],
+    "physical_E_negative": [
+      [
+        10,
+        15
+      ]
+    ],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_d02e7f60565f83066e5d/naive/acquisition",
+    "net_M_negative": [],
+    "physical_M_negative": [],
+    "net_E_negative": [],
+    "physical_E_negative": [],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_d02e7f60565f83066e5d/naive/none",
+    "net_M_negative": [],
+    "physical_M_negative": [],
+    "net_E_negative": [],
+    "physical_E_negative": [],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_d02e7f60565f83066e5d/naive/x",
+    "net_M_negative": [
+      [
+        161,
+        163
+      ]
+    ],
+    "physical_M_negative": [
+      [
+        161,
+        163
+      ]
+    ],
+    "net_E_negative": [
+      [
+        161,
+        161
+      ]
+    ],
+    "physical_E_negative": [],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_d02e7f60565f83066e5d/experienced/acquisition",
+    "net_M_negative": [
+      [
+        129,
+        129
+      ],
+      [
+        145,
+        145
+      ]
+    ],
+    "physical_M_negative": [],
+    "net_E_negative": [
+      [
+        129,
+        129
+      ],
+      [
+        145,
+        145
+      ]
+    ],
+    "physical_E_negative": [],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_d02e7f60565f83066e5d/experienced/none",
+    "net_M_negative": [],
+    "physical_M_negative": [],
+    "net_E_negative": [],
+    "physical_E_negative": [],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_d02e7f60565f83066e5d/experienced/x",
+    "net_M_negative": [
+      [
+        161,
+        162
+      ]
+    ],
+    "physical_M_negative": [
+      [
+        161,
+        162
+      ]
+    ],
+    "net_E_negative": [
+      [
+        161,
+        161
+      ]
+    ],
+    "physical_E_negative": [],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_d02e7f60565f83066e5d/low_cost_T00/acquisition",
+    "net_M_negative": [],
+    "physical_M_negative": [],
+    "net_E_negative": [],
+    "physical_E_negative": [],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_d02e7f60565f83066e5d/low_cost_T00/none",
+    "net_M_negative": [],
+    "physical_M_negative": [],
+    "net_E_negative": [],
+    "physical_E_negative": [],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_d02e7f60565f83066e5d/low_cost_T00/x",
+    "net_M_negative": [
+      [
+        161,
+        163
+      ]
+    ],
+    "physical_M_negative": [
+      [
+        161,
+        163
+      ]
+    ],
+    "net_E_negative": [
+      [
+        161,
+        161
+      ]
+    ],
+    "physical_E_negative": [],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_8d60f7d250e8e9f2a25b/formation",
+    "net_M_negative": [
+      [
+        1,
+        9
+      ],
+      [
+        28,
+        55
+      ],
+      [
+        58,
+        59
+      ]
+    ],
+    "physical_M_negative": [
+      [
+        1,
+        9
+      ],
+      [
+        28,
+        55
+      ],
+      [
+        58,
+        59
+      ]
+    ],
+    "net_E_negative": [
+      [
+        1,
+        14
+      ],
+      [
+        28,
+        38
+      ]
+    ],
+    "physical_E_negative": [
+      [
+        1,
+        14
+      ],
+      [
+        28,
+        38
+      ]
+    ],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_8d60f7d250e8e9f2a25b/naive/acquisition",
+    "net_M_negative": [
+      [
+        149,
+        160
+      ]
+    ],
+    "physical_M_negative": [
+      [
+        149,
+        160
+      ]
+    ],
+    "net_E_negative": [
+      [
+        149,
+        160
+      ]
+    ],
+    "physical_E_negative": [
+      [
+        149,
+        160
+      ]
+    ],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_8d60f7d250e8e9f2a25b/naive/none",
+    "net_M_negative": [
+      [
+        161,
+        199
+      ]
+    ],
+    "physical_M_negative": [
+      [
+        161,
+        199
+      ]
+    ],
+    "net_E_negative": [
+      [
+        161,
+        203
+      ],
+      [
+        224,
+        224
+      ]
+    ],
+    "physical_E_negative": [
+      [
+        161,
+        203
+      ],
+      [
+        224,
+        224
+      ]
+    ],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_8d60f7d250e8e9f2a25b/naive/x",
+    "net_M_negative": [
+      [
+        161,
+        161
+      ],
+      [
+        194,
+        224
+      ]
+    ],
+    "physical_M_negative": [
+      [
+        194,
+        224
+      ]
+    ],
+    "net_E_negative": [
+      [
+        161,
+        164
+      ],
+      [
+        198,
+        224
+      ]
+    ],
+    "physical_E_negative": [
+      [
+        161,
+        164
+      ],
+      [
+        198,
+        224
+      ]
+    ],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_8d60f7d250e8e9f2a25b/experienced/acquisition",
+    "net_M_negative": [
+      [
+        129,
+        129
+      ],
+      [
+        145,
+        145
+      ]
+    ],
+    "physical_M_negative": [],
+    "net_E_negative": [
+      [
+        129,
+        129
+      ],
+      [
+        145,
+        146
+      ]
+    ],
+    "physical_E_negative": [
+      [
+        145,
+        146
+      ]
+    ],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_8d60f7d250e8e9f2a25b/experienced/none",
+    "net_M_negative": [
+      [
+        180,
+        224
+      ]
+    ],
+    "physical_M_negative": [
+      [
+        180,
+        224
+      ]
+    ],
+    "net_E_negative": [
+      [
+        181,
+        224
+      ]
+    ],
+    "physical_E_negative": [
+      [
+        181,
+        224
+      ]
+    ],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_8d60f7d250e8e9f2a25b/experienced/x",
+    "net_M_negative": [
+      [
+        161,
+        170
+      ],
+      [
+        186,
+        197
+      ],
+      [
+        200,
+        200
+      ],
+      [
+        202,
+        207
+      ],
+      [
+        211,
+        215
+      ],
+      [
+        218,
+        224
+      ]
+    ],
+    "physical_M_negative": [
+      [
+        161,
+        170
+      ],
+      [
+        186,
+        197
+      ],
+      [
+        200,
+        200
+      ],
+      [
+        202,
+        207
+      ],
+      [
+        211,
+        215
+      ],
+      [
+        218,
+        224
+      ]
+    ],
+    "net_E_negative": [
+      [
+        161,
+        173
+      ],
+      [
+        183,
+        224
+      ]
+    ],
+    "physical_E_negative": [
+      [
+        161,
+        173
+      ],
+      [
+        183,
+        224
+      ]
+    ],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_8d60f7d250e8e9f2a25b/low_cost_T00/acquisition",
+    "net_M_negative": [
+      [
+        154,
+        160
+      ]
+    ],
+    "physical_M_negative": [
+      [
+        154,
+        160
+      ]
+    ],
+    "net_E_negative": [
+      [
+        157,
+        160
+      ]
+    ],
+    "physical_E_negative": [
+      [
+        157,
+        160
+      ]
+    ],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_8d60f7d250e8e9f2a25b/low_cost_T00/none",
+    "net_M_negative": [
+      [
+        161,
+        191
+      ]
+    ],
+    "physical_M_negative": [
+      [
+        161,
+        191
+      ]
+    ],
+    "net_E_negative": [
+      [
+        161,
+        177
+      ],
+      [
+        186,
+        191
+      ]
+    ],
+    "physical_E_negative": [
+      [
+        161,
+        177
+      ],
+      [
+        186,
+        191
+      ]
+    ],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_8d60f7d250e8e9f2a25b/low_cost_T00/x",
+    "net_M_negative": [
+      [
+        161,
+        201
+      ],
+      [
+        205,
+        207
+      ],
+      [
+        211,
+        215
+      ],
+      [
+        220,
+        224
+      ]
+    ],
+    "physical_M_negative": [
+      [
+        161,
+        201
+      ],
+      [
+        205,
+        207
+      ],
+      [
+        211,
+        215
+      ],
+      [
+        220,
+        224
+      ]
+    ],
+    "net_E_negative": [
+      [
+        161,
+        224
+      ]
+    ],
+    "physical_E_negative": [
+      [
+        161,
+        224
+      ]
+    ],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_a6a821dffd4f4046c97a/formation",
+    "net_M_negative": [],
+    "physical_M_negative": [],
+    "net_E_negative": [
+      [
+        9,
+        18
+      ]
+    ],
+    "physical_E_negative": [
+      [
+        9,
+        18
+      ]
+    ],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_a6a821dffd4f4046c97a/naive/acquisition",
+    "net_M_negative": [],
+    "physical_M_negative": [],
+    "net_E_negative": [
+      [
+        137,
+        137
+      ]
+    ],
+    "physical_E_negative": [
+      [
+        137,
+        137
+      ]
+    ],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_a6a821dffd4f4046c97a/naive/none",
+    "net_M_negative": [],
+    "physical_M_negative": [],
+    "net_E_negative": [],
+    "physical_E_negative": [],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_a6a821dffd4f4046c97a/naive/x",
+    "net_M_negative": [
+      [
+        161,
+        161
+      ]
+    ],
+    "physical_M_negative": [],
+    "net_E_negative": [
+      [
+        161,
+        161
+      ]
+    ],
+    "physical_E_negative": [],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_a6a821dffd4f4046c97a/experienced/acquisition",
+    "net_M_negative": [
+      [
+        129,
+        129
+      ],
+      [
+        145,
+        145
+      ]
+    ],
+    "physical_M_negative": [],
+    "net_E_negative": [
+      [
+        129,
+        129
+      ],
+      [
+        145,
+        145
+      ]
+    ],
+    "physical_E_negative": [],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_a6a821dffd4f4046c97a/experienced/none",
+    "net_M_negative": [],
+    "physical_M_negative": [],
+    "net_E_negative": [],
+    "physical_E_negative": [],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_a6a821dffd4f4046c97a/experienced/x",
+    "net_M_negative": [
+      [
+        161,
+        161
+      ]
+    ],
+    "physical_M_negative": [],
+    "net_E_negative": [
+      [
+        161,
+        161
+      ]
+    ],
+    "physical_E_negative": [],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_a6a821dffd4f4046c97a/low_cost_T00/acquisition",
+    "net_M_negative": [],
+    "physical_M_negative": [],
+    "net_E_negative": [
+      [
+        137,
+        137
+      ]
+    ],
+    "physical_E_negative": [
+      [
+        137,
+        137
+      ]
+    ],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_a6a821dffd4f4046c97a/low_cost_T00/none",
+    "net_M_negative": [],
+    "physical_M_negative": [],
+    "net_E_negative": [],
+    "physical_E_negative": [],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_a6a821dffd4f4046c97a/low_cost_T00/x",
+    "net_M_negative": [
+      [
+        161,
+        161
+      ]
+    ],
+    "physical_M_negative": [],
+    "net_E_negative": [
+      [
+        161,
+        161
+      ]
+    ],
+    "physical_E_negative": [],
+    "starvation": []
+  }
+]

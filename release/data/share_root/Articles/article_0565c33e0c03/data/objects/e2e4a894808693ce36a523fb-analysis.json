@@ -1,0 +1,753 @@
+{
+  "rows": [
+    {
+      "seed": 202610199741,
+      "arm": "adaptive_gain",
+      "stage": "acquire",
+      "n": 32,
+      "correct": 5,
+      "full_six_contacts": 12,
+      "go_completed": 12,
+      "feedback_completed": 11,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 58.55595247098621,
+      "gain_mean": 0.6723577131857993,
+      "gain_range": [
+        0.45884166384045877,
+        0.7999999358516104
+      ]
+    },
+    {
+      "seed": 202610199741,
+      "arm": "adaptive_gain",
+      "stage": "unseen_gap",
+      "n": 8,
+      "correct": 0,
+      "full_six_contacts": 0,
+      "go_completed": 0,
+      "feedback_completed": 0,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 53.96764383530149,
+      "gain_mean": 0.6723577131857995,
+      "gain_range": [
+        0.45924921564274035,
+        0.7999999356513846
+      ]
+    },
+    {
+      "seed": 202610199741,
+      "arm": "adaptive_gain",
+      "stage": "reverse",
+      "n": 16,
+      "correct": 0,
+      "full_six_contacts": 0,
+      "go_completed": 0,
+      "feedback_completed": 0,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 48.06126804466763,
+      "gain_mean": 0.6723577131857993,
+      "gain_range": [
+        0.460008557875502,
+        0.7999999353957212
+      ]
+    },
+    {
+      "seed": 202610199741,
+      "arm": "adaptive_gain",
+      "stage": "retained_gap",
+      "n": 8,
+      "correct": 0,
+      "full_six_contacts": 0,
+      "go_completed": 0,
+      "feedback_completed": 0,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 43.4339120283081,
+      "gain_mean": 0.6723577131857993,
+      "gain_range": [
+        0.46056421690122723,
+        0.7999999352037084
+      ]
+    },
+    {
+      "seed": 202610199741,
+      "arm": "fixed_tick",
+      "stage": "acquire",
+      "n": 32,
+      "correct": 4,
+      "full_six_contacts": 10,
+      "go_completed": 10,
+      "feedback_completed": 9,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 59.114751314976004,
+      "gain_mean": 0.79999999999997,
+      "gain_range": [
+        0.7999993853906783,
+        0.8000000000000049
+      ]
+    },
+    {
+      "seed": 202610199741,
+      "arm": "fixed_tick",
+      "stage": "unseen_gap",
+      "n": 8,
+      "correct": 0,
+      "full_six_contacts": 0,
+      "go_completed": 0,
+      "feedback_completed": 0,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 54.526193186355684,
+      "gain_mean": 0.79999999999997,
+      "gain_range": [
+        0.7999993847755801,
+        0.8000000000000047
+      ]
+    },
+    {
+      "seed": 202610199741,
+      "arm": "fixed_tick",
+      "stage": "reverse",
+      "n": 16,
+      "correct": 0,
+      "full_six_contacts": 0,
+      "go_completed": 0,
+      "feedback_completed": 0,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 48.6277107188489,
+      "gain_mean": 0.7999999999999695,
+      "gain_range": [
+        0.7999997126412813,
+        0.8000000000000054
+      ]
+    },
+    {
+      "seed": 202610199741,
+      "arm": "fixed_tick",
+      "stage": "retained_gap",
+      "n": 8,
+      "correct": 0,
+      "full_six_contacts": 0,
+      "go_completed": 0,
+      "feedback_completed": 0,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 44.002152945991185,
+      "gain_mean": 0.7999999999999697,
+      "gain_range": [
+        0.7999997124683509,
+        0.8000000000000071
+      ]
+    },
+    {
+      "seed": 202610199741,
+      "arm": "fixed_event",
+      "stage": "acquire",
+      "n": 32,
+      "correct": 5,
+      "full_six_contacts": 12,
+      "go_completed": 12,
+      "feedback_completed": 11,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 58.55595247098621,
+      "gain_mean": 0.7999999999999693,
+      "gain_range": [
+        0.7999995512197969,
+        0.800000000000005
+      ]
+    },
+    {
+      "seed": 202610199741,
+      "arm": "fixed_event",
+      "stage": "unseen_gap",
+      "n": 8,
+      "correct": 0,
+      "full_six_contacts": 0,
+      "go_completed": 0,
+      "feedback_completed": 0,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 53.96764383530149,
+      "gain_mean": 0.7999999999999695,
+      "gain_range": [
+        0.799999550724753,
+        0.8000000000000054
+      ]
+    },
+    {
+      "seed": 202610199741,
+      "arm": "fixed_event",
+      "stage": "reverse",
+      "n": 16,
+      "correct": 0,
+      "full_six_contacts": 0,
+      "go_completed": 0,
+      "feedback_completed": 0,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 48.06126804466763,
+      "gain_mean": 0.7999999999999693,
+      "gain_range": [
+        0.7999995501766274,
+        0.8000000000000066
+      ]
+    },
+    {
+      "seed": 202610199741,
+      "arm": "fixed_event",
+      "stage": "retained_gap",
+      "n": 8,
+      "correct": 0,
+      "full_six_contacts": 0,
+      "go_completed": 0,
+      "feedback_completed": 0,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 43.4339120283081,
+      "gain_mean": 0.7999999999999694,
+      "gain_range": [
+        0.7999995498033481,
+        0.8000000000000057
+      ]
+    },
+    {
+      "seed": 202610199741,
+      "arm": "history_table",
+      "stage": "acquire",
+      "n": 32,
+      "correct": 28,
+      "full_six_contacts": 32,
+      "go_completed": 32,
+      "feedback_completed": 32,
+      "minimum_feedback_mass": 4.330239198060094,
+      "E_end": 60.00002483462589,
+      "gain_mean": 0.7999999999999579,
+      "gain_range": [
+        0.7999993273720422,
+        0.8000000000000033
+      ]
+    },
+    {
+      "seed": 202610199741,
+      "arm": "history_table",
+      "stage": "unseen_gap",
+      "n": 8,
+      "correct": 8,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 4.507980136845346,
+      "E_end": 55.54024112406273,
+      "gain_mean": 0.7999999999999539,
+      "gain_range": [
+        0.7999996263646141,
+        0.8000000000000043
+      ]
+    },
+    {
+      "seed": 202610199741,
+      "arm": "history_table",
+      "stage": "reverse",
+      "n": 16,
+      "correct": 8,
+      "full_six_contacts": 16,
+      "go_completed": 16,
+      "feedback_completed": 16,
+      "minimum_feedback_mass": 8.336651416246447,
+      "E_end": 48.636170315845675,
+      "gain_mean": 0.7999999999999504,
+      "gain_range": [
+        0.7999993575147765,
+        0.8000000000000054
+      ]
+    },
+    {
+      "seed": 202610199741,
+      "arm": "history_table",
+      "stage": "retained_gap",
+      "n": 8,
+      "correct": 8,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 6.741824334934181,
+      "E_end": 44.242920926861245,
+      "gain_mean": 0.7999999999999493,
+      "gain_range": [
+        0.7999996357490162,
+        0.800000000000006
+      ]
+    },
+    {
+      "seed": 202610199742,
+      "arm": "adaptive_gain",
+      "stage": "acquire",
+      "n": 32,
+      "correct": 22,
+      "full_six_contacts": 32,
+      "go_completed": 32,
+      "feedback_completed": 32,
+      "minimum_feedback_mass": 12.337988964195494,
+      "E_end": 59.68483295405813,
+      "gain_mean": 1.2189214416694516,
+      "gain_range": [
+        0.7997561859856575,
+        1.3
+      ]
+    },
+    {
+      "seed": 202610199742,
+      "arm": "adaptive_gain",
+      "stage": "unseen_gap",
+      "n": 8,
+      "correct": 4,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 3.0420764060836953,
+      "E_end": 54.6516095120221,
+      "gain_mean": 1.218921441669447,
+      "gain_range": [
+        0.7998402451164207,
+        1.282672564153269
+      ]
+    },
+    {
+      "seed": 202610199742,
+      "arm": "adaptive_gain",
+      "stage": "reverse",
+      "n": 16,
+      "correct": 2,
+      "full_six_contacts": 3,
+      "go_completed": 3,
+      "feedback_completed": 2,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 48.497844415201314,
+      "gain_mean": 1.2141954794258445,
+      "gain_range": [
+        0.7998449956669885,
+        1.2580719211288434
+      ]
+    },
+    {
+      "seed": 202610199742,
+      "arm": "adaptive_gain",
+      "stage": "retained_gap",
+      "n": 8,
+      "correct": 0,
+      "full_six_contacts": 0,
+      "go_completed": 0,
+      "feedback_completed": 0,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 43.910510124739744,
+      "gain_mean": 1.2141954794258445,
+      "gain_range": [
+        0.7998450080484582,
+        1.2580674854396035
+      ]
+    },
+    {
+      "seed": 202610199742,
+      "arm": "fixed_tick",
+      "stage": "acquire",
+      "n": 32,
+      "correct": 9,
+      "full_six_contacts": 13,
+      "go_completed": 13,
+      "feedback_completed": 12,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 59.58689525266311,
+      "gain_mean": 0.7999999999999698,
+      "gain_range": [
+        0.7999995682192659,
+        0.8000000000000037
+      ]
+    },
+    {
+      "seed": 202610199742,
+      "arm": "fixed_tick",
+      "stage": "unseen_gap",
+      "n": 8,
+      "correct": 0,
+      "full_six_contacts": 0,
+      "go_completed": 0,
+      "feedback_completed": 0,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 54.99965349281289,
+      "gain_mean": 0.7999999999999698,
+      "gain_range": [
+        0.7999995677571193,
+        0.8000000000000047
+      ]
+    },
+    {
+      "seed": 202610199742,
+      "arm": "fixed_tick",
+      "stage": "reverse",
+      "n": 16,
+      "correct": 0,
+      "full_six_contacts": 0,
+      "go_completed": 0,
+      "feedback_completed": 0,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 48.969042604750626,
+      "gain_mean": 0.7999999999999694,
+      "gain_range": [
+        0.7999995672345852,
+        0.8000000000000065
+      ]
+    },
+    {
+      "seed": 202610199742,
+      "arm": "fixed_tick",
+      "stage": "retained_gap",
+      "n": 8,
+      "correct": 0,
+      "full_six_contacts": 0,
+      "go_completed": 0,
+      "feedback_completed": 0,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 44.39957578246856,
+      "gain_mean": 0.7999999999999694,
+      "gain_range": [
+        0.7999995668898371,
+        0.8000000000000063
+      ]
+    },
+    {
+      "seed": 202610199742,
+      "arm": "fixed_event",
+      "stage": "acquire",
+      "n": 32,
+      "correct": 10,
+      "full_six_contacts": 16,
+      "go_completed": 16,
+      "feedback_completed": 15,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 59.697147289380055,
+      "gain_mean": 0.7999999999999675,
+      "gain_range": [
+        0.799999474246633,
+        0.8000000000000045
+      ]
+    },
+    {
+      "seed": 202610199742,
+      "arm": "fixed_event",
+      "stage": "unseen_gap",
+      "n": 8,
+      "correct": 0,
+      "full_six_contacts": 0,
+      "go_completed": 0,
+      "feedback_completed": 0,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 55.10880274029313,
+      "gain_mean": 0.7999999999999673,
+      "gain_range": [
+        0.7999994737050091,
+        0.8000000000000063
+      ]
+    },
+    {
+      "seed": 202610199742,
+      "arm": "fixed_event",
+      "stage": "reverse",
+      "n": 16,
+      "correct": 0,
+      "full_six_contacts": 0,
+      "go_completed": 0,
+      "feedback_completed": 0,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 49.07168313203326,
+      "gain_mean": 0.7999999999999677,
+      "gain_range": [
+        0.7999994730992741,
+        0.800000000000008
+      ]
+    },
+    {
+      "seed": 202610199742,
+      "arm": "fixed_event",
+      "stage": "retained_gap",
+      "n": 8,
+      "correct": 0,
+      "full_six_contacts": 0,
+      "go_completed": 0,
+      "feedback_completed": 0,
+      "minimum_feedback_mass": 0.0,
+      "E_end": 44.49605984086821,
+      "gain_mean": 0.7999999999999676,
+      "gain_range": [
+        0.7999994727019775,
+        0.8000000000000078
+      ]
+    },
+    {
+      "seed": 202610199742,
+      "arm": "history_table",
+      "stage": "acquire",
+      "n": 32,
+      "correct": 28,
+      "full_six_contacts": 32,
+      "go_completed": 32,
+      "feedback_completed": 32,
+      "minimum_feedback_mass": 5.4542981741788426,
+      "E_end": 60.31942214617644,
+      "gain_mean": 0.7999999999999577,
+      "gain_range": [
+        0.7999994029110586,
+        0.800000000000004
+      ]
+    },
+    {
+      "seed": 202610199742,
+      "arm": "history_table",
+      "stage": "unseen_gap",
+      "n": 8,
+      "correct": 8,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 7.231299601897519,
+      "E_end": 56.0571901096818,
+      "gain_mean": 0.7999999999999544,
+      "gain_range": [
+        0.7999993704762796,
+        0.8000000000000057
+      ]
+    },
+    {
+      "seed": 202610199742,
+      "arm": "history_table",
+      "stage": "reverse",
+      "n": 16,
+      "correct": 8,
+      "full_six_contacts": 16,
+      "go_completed": 16,
+      "feedback_completed": 16,
+      "minimum_feedback_mass": 6.078366988233849,
+      "E_end": 49.17324059204299,
+      "gain_mean": 0.7999999999999508,
+      "gain_range": [
+        0.799999474713914,
+        0.8000000000000046
+      ]
+    },
+    {
+      "seed": 202610199742,
+      "arm": "history_table",
+      "stage": "retained_gap",
+      "n": 8,
+      "correct": 8,
+      "full_six_contacts": 8,
+      "go_completed": 8,
+      "feedback_completed": 8,
+      "minimum_feedback_mass": 5.433650617720926,
+      "E_end": 44.818330719318226,
+      "gain_mean": 0.7999999999999496,
+      "gain_range": [
+        0.7999994671637924,
+        0.8000000000000044
+      ]
+    }
+  ],
+  "paths": [
+    {
+      "seed": 202610199741,
+      "arm": "adaptive_gain",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5f08b6b0-ceb7-4dc1-a70e-ee5d0052e9aa/raw/202610199741_adaptive_gain",
+      "native": 902,
+      "failed": false,
+      "events": 64,
+      "M": 23.999999999999996,
+      "E": 43.4339120283081,
+      "costs": {
+        "sensor": 0.1802810576800697,
+        "sensor_unpaid": 0.0,
+        "internal": 1.0824,
+        "internal_unpaid": 0.0,
+        "movement": 0.6589869250628194,
+        "basal": 25.977600000000002,
+        "basal_unpaid": 4.6311227348060147e-17,
+        "fee": 0.11095427600574254,
+        "gain": 0.373195656229804,
+        "loss": 0.9290613691730358
+      },
+      "minimum_mass": 23.999999999999996,
+      "minimum_energy": 43.4339120283081,
+      "residual": 2.22218077272629e-14
+    },
+    {
+      "seed": 202610199741,
+      "arm": "fixed_tick",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5f08b6b0-ceb7-4dc1-a70e-ee5d0052e9aa/raw/202610199741_fixed_tick",
+      "native": 902,
+      "failed": false,
+      "events": 64,
+      "M": 24.000000000000007,
+      "E": 44.002152945991185,
+      "costs": {
+        "sensor": 0.13775078144283548,
+        "sensor_unpaid": 0.0,
+        "internal": 1.0824,
+        "internal_unpaid": 0.0,
+        "movement": 0.5678649842168991,
+        "basal": 25.977600000000006,
+        "basal_unpaid": 4.257619284448501e-17,
+        "fee": 0.08089305372274012,
+        "gain": 0.391985865277081,
+        "loss": 0.5433240999034034
+      },
+      "minimum_mass": 23.999999999999993,
+      "minimum_energy": 44.002152945991185,
+      "residual": 2.8048093361765503e-14
+    },
+    {
+      "seed": 202610199741,
+      "arm": "fixed_event",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5f08b6b0-ceb7-4dc1-a70e-ee5d0052e9aa/raw/202610199741_fixed_event",
+      "native": 902,
+      "failed": false,
+      "events": 64,
+      "M": 23.999999999999996,
+      "E": 43.4339120283081,
+      "costs": {
+        "sensor": 0.1802810576800697,
+        "sensor_unpaid": 0.0,
+        "internal": 1.0824,
+        "internal_unpaid": 0.0,
+        "movement": 0.6589869250628194,
+        "basal": 25.977600000000002,
+        "basal_unpaid": 4.6311227348060147e-17,
+        "fee": 0.11095427600574254,
+        "gain": 0.373195656229804,
+        "loss": 0.9290613691730358
+      },
+      "minimum_mass": 23.999999999999996,
+      "minimum_energy": 43.4339120283081,
+      "residual": 2.22218077272629e-14
+    },
+    {
+      "seed": 202610199741,
+      "arm": "history_table",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5f08b6b0-ceb7-4dc1-a70e-ee5d0052e9aa/raw/202610199741_history_table",
+      "native": 902,
+      "failed": false,
+      "events": 64,
+      "M": 24.0,
+      "E": 44.242920926861245,
+      "costs": {
+        "sensor": 0.7920897298145819,
+        "sensor_unpaid": 0.0,
+        "internal": 1.0823999999999998,
+        "internal_unpaid": 0.0,
+        "movement": 2.863601660750184,
+        "basal": 25.9776,
+        "basal_unpaid": 2.0539337379470894e-16,
+        "fee": 0.5575236731205285,
+        "gain": 5.103210033996449,
+        "loss": 1.5870740434498924
+      },
+      "minimum_mass": 23.999999999999986,
+      "minimum_energy": 44.18004527602143,
+      "residual": 2.4085984942634475e-14
+    },
+    {
+      "seed": 202610199742,
+      "arm": "adaptive_gain",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5f08b6b0-ceb7-4dc1-a70e-ee5d0052e9aa/raw/202610199742_adaptive_gain",
+      "native": 900,
+      "failed": false,
+      "events": 64,
+      "M": 24.00000000000001,
+      "E": 43.910510124739744,
+      "costs": {
+        "sensor": 0.8545229503054568,
+        "sensor_unpaid": 0.0,
+        "internal": 1.08,
+        "internal_unpaid": 0.0,
+        "movement": 2.0258971372979957,
+        "basal": 25.92,
+        "basal_unpaid": 1.4387813539179573e-16,
+        "fee": 0.5855478261929127,
+        "gain": 4.692931021635177,
+        "loss": 2.3164529830990137
+      },
+      "minimum_mass": 23.99999999999999,
+      "minimum_energy": 43.910510124739744,
+      "residual": 3.2837014357633976e-14
+    },
+    {
+      "seed": 202610199742,
+      "arm": "fixed_tick",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5f08b6b0-ceb7-4dc1-a70e-ee5d0052e9aa/raw/202610199742_fixed_tick",
+      "native": 900,
+      "failed": false,
+      "events": 64,
+      "M": 24.000000000000014,
+      "E": 44.39957578246856,
+      "costs": {
+        "sensor": 0.22022979341609727,
+        "sensor_unpaid": 0.0,
+        "internal": 1.08,
+        "internal_unpaid": 0.0,
+        "movement": 0.7057416832715421,
+        "basal": 25.920000000000005,
+        "basal_unpaid": 5.0475512981136574e-17,
+        "fee": 0.13933076223610952,
+        "gain": 1.0496957982449715,
+        "loss": 0.5848177768527109
+      },
+      "minimum_mass": 23.999999999999993,
+      "minimum_energy": 44.39957578246856,
+      "residual": 3.2837014357633976e-14
+    },
+    {
+      "seed": 202610199742,
+      "arm": "fixed_event",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5f08b6b0-ceb7-4dc1-a70e-ee5d0052e9aa/raw/202610199742_fixed_event",
+      "native": 900,
+      "failed": false,
+      "events": 64,
+      "M": 23.99999999999998,
+      "E": 44.49605984086821,
+      "costs": {
+        "sensor": 0.24520032852489926,
+        "sensor_unpaid": 0.0,
+        "internal": 1.0799999999999996,
+        "internal_unpaid": 0.0,
+        "movement": 0.839670107689076,
+        "basal": 25.919999999999995,
+        "basal_unpaid": 5.837929369011979e-17,
+        "fee": 0.1569030088970395,
+        "gain": 1.2967751297786143,
+        "loss": 0.5589418437993777
+      },
+      "minimum_mass": 23.99999999999998,
+      "minimum_energy": 44.49605984086821,
+      "residual": 3.2837014357633976e-14
+    },
+    {
+      "seed": 202610199742,
+      "arm": "history_table",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5f08b6b0-ceb7-4dc1-a70e-ee5d0052e9aa/raw/202610199742_history_table",
+      "native": 900,
+      "failed": false,
+      "events": 64,
+      "M": 24.0,
+      "E": 44.818330719318226,
+      "costs": {
+        "sensor": 0.8235997170231341,
+        "sensor_unpaid": 0.0,
+        "internal": 1.08,
+        "internal_unpaid": 0.0,
+        "movement": 2.871341763381733,
+        "basal": 25.920000000000005,
+        "basal_unpaid": 2.034454229303991e-16,
+        "fee": 0.579432141996367,
+        "gain": 5.522945022837933,
+        "loss": 1.4302406811184705
+      },
+      "minimum_mass": 23.999999999999993,
+      "minimum_energy": 44.756903870766195,
+      "residual": 2.9766770645589524e-14
+    }
+  ],
+  "worker_seconds": 9.323677,
+  "native": 7208,
+  "new_analysis_native": 0
+}

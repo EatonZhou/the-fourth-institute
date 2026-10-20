@@ -1,0 +1,524 @@
+[
+  {
+    "context": "compact_p512",
+    "angle": "zero",
+    "comparison": "last-fixed",
+    "post": {
+      "M": 0.0,
+      "E": -7.105427357601002e-15,
+      "body_time": 0.0,
+      "U": 0.0,
+      "motor": -4.440892098500626e-16,
+      "basal": -8.881784197001252e-16,
+      "death": -3.552713678800501e-15,
+      "lost_E": 8.673617379884035e-19,
+      "distance": 0.0,
+      "blind_error": 0.0
+    },
+    "full": {
+      "M": 0.0,
+      "E": -7.105427357601002e-15,
+      "body_time": -1.1368683772161603e-13,
+      "U": -5.329070518200751e-15,
+      "motor": 0.0,
+      "basal": -1.7763568394002505e-15,
+      "death": 0.0,
+      "lost_E": 0.0,
+      "distance": 2.220446049250313e-16,
+      "blind_error": 0.0
+    }
+  },
+  {
+    "context": "compact_p512",
+    "angle": "zero",
+    "comparison": "fit-fixed",
+    "post": {
+      "M": 0.0,
+      "E": -7.105427357601002e-15,
+      "body_time": 0.0,
+      "U": 0.0,
+      "motor": -4.440892098500626e-16,
+      "basal": -8.881784197001252e-16,
+      "death": -3.552713678800501e-15,
+      "lost_E": 8.673617379884035e-19,
+      "distance": 0.0,
+      "blind_error": 0.0
+    },
+    "full": {
+      "M": 0.0,
+      "E": -7.105427357601002e-15,
+      "body_time": -1.1368683772161603e-13,
+      "U": -5.329070518200751e-15,
+      "motor": 0.0,
+      "basal": -1.7763568394002505e-15,
+      "death": 0.0,
+      "lost_E": 0.0,
+      "distance": 2.220446049250313e-16,
+      "blind_error": 0.0
+    }
+  },
+  {
+    "context": "compact_p512",
+    "angle": "zero",
+    "comparison": "fit-last",
+    "post": {
+      "M": 0.0,
+      "E": 0.0,
+      "body_time": 0.0,
+      "U": 0.0,
+      "motor": 0.0,
+      "basal": 0.0,
+      "death": 0.0,
+      "lost_E": 0.0,
+      "distance": 0.0,
+      "blind_error": 0.0
+    },
+    "full": {
+      "M": 0.0,
+      "E": 0.0,
+      "body_time": 0.0,
+      "U": 0.0,
+      "motor": 0.0,
+      "basal": 0.0,
+      "death": 0.0,
+      "lost_E": 0.0,
+      "distance": 0.0,
+      "blind_error": 0.0
+    }
+  },
+  {
+    "context": "compact_p512",
+    "angle": "plus",
+    "comparison": "last-fixed",
+    "post": {
+      "M": 0.0,
+      "E": 7.105427357601002e-15,
+      "body_time": 0.0,
+      "U": 1.7763568394002505e-15,
+      "motor": 0.0,
+      "basal": 0.0,
+      "death": -3.552713678800501e-15,
+      "lost_E": 0.0,
+      "distance": 2.220446049250313e-16,
+      "blind_error": 0.0
+    },
+    "full": {
+      "M": 0.0,
+      "E": 7.105427357601002e-15,
+      "body_time": 0.0,
+      "U": -7.105427357601002e-15,
+      "motor": 8.881784197001252e-16,
+      "basal": -1.7763568394002505e-15,
+      "death": 0.0,
+      "lost_E": 1.734723475976807e-18,
+      "distance": 0.0,
+      "blind_error": 0.0
+    }
+  },
+  {
+    "context": "compact_p512",
+    "angle": "plus",
+    "comparison": "fit-fixed",
+    "post": {
+      "M": 0.0,
+      "E": 7.105427357601002e-15,
+      "body_time": 0.0,
+      "U": 1.7763568394002505e-15,
+      "motor": 0.0,
+      "basal": 0.0,
+      "death": -3.552713678800501e-15,
+      "lost_E": 0.0,
+      "distance": 2.220446049250313e-16,
+      "blind_error": 0.0
+    },
+    "full": {
+      "M": 0.0,
+      "E": 7.105427357601002e-15,
+      "body_time": 0.0,
+      "U": -7.105427357601002e-15,
+      "motor": 8.881784197001252e-16,
+      "basal": -1.7763568394002505e-15,
+      "death": 0.0,
+      "lost_E": 1.734723475976807e-18,
+      "distance": 0.0,
+      "blind_error": 0.0
+    }
+  },
+  {
+    "context": "compact_p512",
+    "angle": "plus",
+    "comparison": "fit-last",
+    "post": {
+      "M": 0.0,
+      "E": 0.0,
+      "body_time": 0.0,
+      "U": 0.0,
+      "motor": 0.0,
+      "basal": 0.0,
+      "death": 0.0,
+      "lost_E": 0.0,
+      "distance": 0.0,
+      "blind_error": 0.0
+    },
+    "full": {
+      "M": 0.0,
+      "E": 0.0,
+      "body_time": 0.0,
+      "U": 0.0,
+      "motor": 0.0,
+      "basal": 0.0,
+      "death": 0.0,
+      "lost_E": 0.0,
+      "distance": 0.0,
+      "blind_error": 0.0
+    }
+  },
+  {
+    "context": "compact_p512",
+    "angle": "minus",
+    "comparison": "last-fixed",
+    "post": {
+      "M": 7.105427357601002e-15,
+      "E": 7.105427357601002e-15,
+      "body_time": 1.1368683772161603e-13,
+      "U": 3.552713678800501e-15,
+      "motor": 8.881784197001252e-16,
+      "basal": 1.7763568394002505e-15,
+      "death": -1.0658141036401503e-14,
+      "lost_E": 8.673617379884035e-19,
+      "distance": 0.0,
+      "blind_error": 0.0
+    },
+    "full": {
+      "M": 7.105427357601002e-15,
+      "E": 7.105427357601002e-15,
+      "body_time": 1.1368683772161603e-13,
+      "U": -3.552713678800501e-15,
+      "motor": 8.881784197001252e-16,
+      "basal": 1.7763568394002505e-15,
+      "death": -7.105427357601002e-15,
+      "lost_E": 0.0,
+      "distance": 0.0,
+      "blind_error": 0.0
+    }
+  },
+  {
+    "context": "compact_p512",
+    "angle": "minus",
+    "comparison": "fit-fixed",
+    "post": {
+      "M": 7.105427357601002e-15,
+      "E": 7.105427357601002e-15,
+      "body_time": 1.1368683772161603e-13,
+      "U": 3.552713678800501e-15,
+      "motor": 8.881784197001252e-16,
+      "basal": 1.7763568394002505e-15,
+      "death": -1.0658141036401503e-14,
+      "lost_E": 8.673617379884035e-19,
+      "distance": 0.0,
+      "blind_error": 0.0
+    },
+    "full": {
+      "M": 7.105427357601002e-15,
+      "E": 7.105427357601002e-15,
+      "body_time": 1.1368683772161603e-13,
+      "U": -3.552713678800501e-15,
+      "motor": 8.881784197001252e-16,
+      "basal": 1.7763568394002505e-15,
+      "death": -7.105427357601002e-15,
+      "lost_E": 0.0,
+      "distance": 0.0,
+      "blind_error": 0.0
+    }
+  },
+  {
+    "context": "compact_p512",
+    "angle": "minus",
+    "comparison": "fit-last",
+    "post": {
+      "M": 0.0,
+      "E": 0.0,
+      "body_time": 0.0,
+      "U": 0.0,
+      "motor": 0.0,
+      "basal": 0.0,
+      "death": 0.0,
+      "lost_E": 0.0,
+      "distance": 0.0,
+      "blind_error": 0.0
+    },
+    "full": {
+      "M": 0.0,
+      "E": 0.0,
+      "body_time": 0.0,
+      "U": 0.0,
+      "motor": 0.0,
+      "basal": 0.0,
+      "death": 0.0,
+      "lost_E": 0.0,
+      "distance": 0.0,
+      "blind_error": 0.0
+    }
+  },
+  {
+    "context": "soft_p512",
+    "angle": "zero",
+    "comparison": "last-fixed",
+    "post": {
+      "M": 0.0,
+      "E": 3.552713678800501e-15,
+      "body_time": 0.0,
+      "U": 3.552713678800501e-15,
+      "motor": -4.440892098500626e-16,
+      "basal": 0.0,
+      "death": 0.0,
+      "lost_E": 1.3877787807814457e-17,
+      "distance": -4.440892098500626e-16,
+      "blind_error": 0.0
+    },
+    "full": {
+      "M": 0.0,
+      "E": 3.552713678800501e-15,
+      "body_time": 0.0,
+      "U": 3.552713678800501e-15,
+      "motor": 8.881784197001252e-16,
+      "basal": 0.0,
+      "death": 0.0,
+      "lost_E": 1.3877787807814457e-17,
+      "distance": 0.0,
+      "blind_error": 0.0
+    }
+  },
+  {
+    "context": "soft_p512",
+    "angle": "zero",
+    "comparison": "fit-fixed",
+    "post": {
+      "M": 0.0,
+      "E": 3.552713678800501e-15,
+      "body_time": 0.0,
+      "U": 3.552713678800501e-15,
+      "motor": -4.440892098500626e-16,
+      "basal": 0.0,
+      "death": 0.0,
+      "lost_E": 1.3877787807814457e-17,
+      "distance": -4.440892098500626e-16,
+      "blind_error": 0.0
+    },
+    "full": {
+      "M": 0.0,
+      "E": 3.552713678800501e-15,
+      "body_time": 0.0,
+      "U": 3.552713678800501e-15,
+      "motor": 8.881784197001252e-16,
+      "basal": 0.0,
+      "death": 0.0,
+      "lost_E": 1.3877787807814457e-17,
+      "distance": 0.0,
+      "blind_error": 0.0
+    }
+  },
+  {
+    "context": "soft_p512",
+    "angle": "zero",
+    "comparison": "fit-last",
+    "post": {
+      "M": 0.0,
+      "E": 0.0,
+      "body_time": 0.0,
+      "U": 0.0,
+      "motor": 0.0,
+      "basal": 0.0,
+      "death": 0.0,
+      "lost_E": 0.0,
+      "distance": 0.0,
+      "blind_error": 0.0
+    },
+    "full": {
+      "M": 0.0,
+      "E": 0.0,
+      "body_time": 0.0,
+      "U": 0.0,
+      "motor": 0.0,
+      "basal": 0.0,
+      "death": 0.0,
+      "lost_E": 0.0,
+      "distance": 0.0,
+      "blind_error": 0.0
+    }
+  },
+  {
+    "context": "soft_p512",
+    "angle": "plus",
+    "comparison": "last-fixed",
+    "post": {
+      "M": 3.552713678800501e-15,
+      "E": -7.105427357601002e-15,
+      "body_time": 0.0,
+      "U": 1.509903313490213e-14,
+      "motor": 1.509903313490213e-14,
+      "basal": 0.0,
+      "death": -3.552713678800501e-15,
+      "lost_E": 3.469446951953614e-17,
+      "distance": 3.3306690738754696e-15,
+      "blind_error": -1.837419105754634e-14
+    },
+    "full": {
+      "M": 3.552713678800501e-15,
+      "E": -7.105427357601002e-15,
+      "body_time": 0.0,
+      "U": 1.4210854715202004e-14,
+      "motor": 1.5987211554602254e-14,
+      "basal": 0.0,
+      "death": -3.552713678800501e-15,
+      "lost_E": 3.469446951953614e-17,
+      "distance": 2.4424906541753444e-15,
+      "blind_error": -1.2323475573339238e-14
+    }
+  },
+  {
+    "context": "soft_p512",
+    "angle": "plus",
+    "comparison": "fit-fixed",
+    "post": {
+      "M": 3.552713678800501e-15,
+      "E": -7.105427357601002e-15,
+      "body_time": 0.0,
+      "U": 1.509903313490213e-14,
+      "motor": 1.509903313490213e-14,
+      "basal": 0.0,
+      "death": -3.552713678800501e-15,
+      "lost_E": 3.469446951953614e-17,
+      "distance": 3.3306690738754696e-15,
+      "blind_error": -1.837419105754634e-14
+    },
+    "full": {
+      "M": 3.552713678800501e-15,
+      "E": -7.105427357601002e-15,
+      "body_time": 0.0,
+      "U": 1.4210854715202004e-14,
+      "motor": 1.5987211554602254e-14,
+      "basal": 0.0,
+      "death": -3.552713678800501e-15,
+      "lost_E": 3.469446951953614e-17,
+      "distance": 2.4424906541753444e-15,
+      "blind_error": -1.2323475573339238e-14
+    }
+  },
+  {
+    "context": "soft_p512",
+    "angle": "plus",
+    "comparison": "fit-last",
+    "post": {
+      "M": 0.0,
+      "E": 0.0,
+      "body_time": 0.0,
+      "U": 0.0,
+      "motor": 0.0,
+      "basal": 0.0,
+      "death": 0.0,
+      "lost_E": 0.0,
+      "distance": 0.0,
+      "blind_error": 0.0
+    },
+    "full": {
+      "M": 0.0,
+      "E": 0.0,
+      "body_time": 0.0,
+      "U": 0.0,
+      "motor": 0.0,
+      "basal": 0.0,
+      "death": 0.0,
+      "lost_E": 0.0,
+      "distance": 0.0,
+      "blind_error": 0.0
+    }
+  },
+  {
+    "context": "soft_p512",
+    "angle": "minus",
+    "comparison": "last-fixed",
+    "post": {
+      "M": 0.0,
+      "E": -3.552713678800501e-15,
+      "body_time": -1.1368683772161603e-13,
+      "U": 6.217248937900877e-15,
+      "motor": 1.4654943925052066e-14,
+      "basal": 0.0,
+      "death": 0.0,
+      "lost_E": -6.938893903907228e-18,
+      "distance": 3.1086244689504383e-15,
+      "blind_error": -4.6074255521944e-15
+    },
+    "full": {
+      "M": 0.0,
+      "E": -3.552713678800501e-15,
+      "body_time": 0.0,
+      "U": 5.329070518200751e-15,
+      "motor": 1.4210854715202004e-14,
+      "basal": -1.7763568394002505e-15,
+      "death": 0.0,
+      "lost_E": -1.3877787807814457e-17,
+      "distance": 2.220446049250313e-15,
+      "blind_error": -2.9976021664879227e-15
+    }
+  },
+  {
+    "context": "soft_p512",
+    "angle": "minus",
+    "comparison": "fit-fixed",
+    "post": {
+      "M": 0.0,
+      "E": -3.552713678800501e-15,
+      "body_time": -1.1368683772161603e-13,
+      "U": 6.217248937900877e-15,
+      "motor": 1.4654943925052066e-14,
+      "basal": 0.0,
+      "death": 0.0,
+      "lost_E": -6.938893903907228e-18,
+      "distance": 3.1086244689504383e-15,
+      "blind_error": -4.6074255521944e-15
+    },
+    "full": {
+      "M": 0.0,
+      "E": -3.552713678800501e-15,
+      "body_time": 0.0,
+      "U": 5.329070518200751e-15,
+      "motor": 1.4210854715202004e-14,
+      "basal": -1.7763568394002505e-15,
+      "death": 0.0,
+      "lost_E": -1.3877787807814457e-17,
+      "distance": 2.220446049250313e-15,
+      "blind_error": -2.9976021664879227e-15
+    }
+  },
+  {
+    "context": "soft_p512",
+    "angle": "minus",
+    "comparison": "fit-last",
+    "post": {
+      "M": 0.0,
+      "E": 0.0,
+      "body_time": 0.0,
+      "U": 0.0,
+      "motor": 0.0,
+      "basal": 0.0,
+      "death": 0.0,
+      "lost_E": 0.0,
+      "distance": 0.0,
+      "blind_error": 0.0
+    },
+    "full": {
+      "M": 0.0,
+      "E": 0.0,
+      "body_time": 0.0,
+      "U": 0.0,
+      "motor": 0.0,
+      "basal": 0.0,
+      "death": 0.0,
+      "lost_E": 0.0,
+      "distance": 0.0,
+      "blind_error": 0.0
+    }
+  }
+]

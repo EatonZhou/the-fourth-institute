@@ -1,0 +1,106 @@
+{
+  "schema": "lenia.formation-donor-handoff.v1",
+  "scope": "内部科研状态交接，不扩大投影src读取权限；各候选在自身固定规则内比较。",
+  "donors": [
+    {
+      "id": "m2026101607-g2-0161",
+      "owner": "resident_ce2a5ab005bc",
+      "origin": "paired_orbium",
+      "parent_id": "m2026101607-g1-0062",
+      "outer_generation": 2,
+      "description": "localized motile",
+      "phase": "long_terminal",
+      "lifetime_step": 4096,
+      "state_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/d4fa3c8b-aeb4-4f96-83f4-1e4b5bc0af3b/candidates/m2026101607-g2-0161/long/restart.npz",
+      "sha256": "ae24891f803a6c30009b12d81a07bdf842b4d926ae0f9de83727fc32f2d1293e",
+      "loader": "simulation.load_snapshot",
+      "config": {
+        "size": 64,
+        "radius": 9.198894039746325,
+        "mu": 0.1203104356754759,
+        "sigma": 0.013121955472950973,
+        "dt": 0.08057164350344485,
+        "dtype": "float64"
+      },
+      "interpretation": "规则变异的Orbium相关候选，不是已确认的非Orbium新形态类。保持该候选自身规则，不与另一基因组拼接。",
+      "loader_kwargs": {
+        "required_fields": [
+          "body"
+        ]
+      },
+      "loaded_state_type": "simulation.StateSnapshot",
+      "body_access": "snapshot.fields['body']",
+      "step_access": "snapshot.step",
+      "metadata_access": "snapshot.metadata"
+    },
+    {
+      "id": "m2026101607-g1-0060",
+      "owner": "resident_ce2a5ab005bc",
+      "origin": "paired_orbium",
+      "parent_id": "founder:paired_orbium",
+      "outer_generation": 1,
+      "description": "multiple smooth bodies",
+      "phase": "long_terminal",
+      "lifetime_step": 4096,
+      "state_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidates/m2026101607-g1-0060/long/restart.npz",
+      "sha256": "63c1ba80d905c027ed34e2c60d7961fee0857f71d25434e186ac9b894999cf84",
+      "loader": "simulation.load_snapshot",
+      "config": {
+        "size": 64,
+        "radius": 17.312394884565038,
+        "mu": 0.15816724304290594,
+        "sigma": 0.01736313349689692,
+        "dt": 0.09236343019463927,
+        "dtype": "float64"
+      },
+      "interpretation": "规则变异的Orbium相关候选，不是已确认的非Orbium新形态类。保持该候选自身规则，不与另一基因组拼接。",
+      "loader_kwargs": {
+        "required_fields": [
+          "body"
+        ]
+      },
+      "loaded_state_type": "simulation.StateSnapshot",
+      "body_access": "snapshot.fields['body']",
+      "step_access": "snapshot.step",
+      "metadata_access": "snapshot.metadata"
+    },
+    {
+      "id": "ls-12d8620a-b04-i036",
+      "owner": "resident_d3ccfa2d95b7",
+      "origin": "smooth random localized seed",
+      "parent_id": "ls-12d8620a-b04-i032",
+      "optimization_step": 36,
+      "grid": [
+        32,
+        32
+      ],
+      "state_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/12d8620a-dcaf-43dc-a20f-1802c06be7f2/candidates/ls-12d8620a-b04-i036.npz",
+      "sha256": "baafe4150e61b111626606ec667c256fbd964e47ed3211bc3b282a08b432c2bf",
+      "loader": "local_learning.outer_search.load_candidate",
+      "phases": {
+        "initial": 0,
+        "trained": 64,
+        "final": 448
+      },
+      "requires_explicit_kernel": true,
+      "requires_memory_state_for_continuation": true,
+      "long_replay": {
+        "life_end_step": 2112,
+        "final_mass_long": 193.2724738228952,
+        "tail_activity_long": 2.2350095130801648e-06,
+        "long_status": "near_stationary",
+        "loader_max_error": 0.0,
+        "job_id": "50a1ca66-ba15-47a5-8b50-3494d49e4589",
+        "trajectory_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/50a1ca66-ba15-47a5-8b50-3494d49e4589/ls-12d8620a-b04-i036_long.npz",
+        "preview_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/50a1ca66-ba15-47a5-8b50-3494d49e4589/ls-12d8620a-b04-i036_long.gif"
+      },
+      "interpretation": "环带至斑点暂态；2112步已近静止。初态组织实验可用，不能当已确认的稳定活动体。"
+    }
+  ],
+  "suggested_next": "优先选择一个规则，复用精确状态做少量初态空间组织比较；若从initial改变组织，记忆用同一中性初始化。原始布局及完整未干预供体保留。新动态有差异才延长，不扫描Orbium间距。",
+  "excluded_claims": [
+    "候选数不等于物种数",
+    "初态组装不等于外层优化或自然繁殖",
+    "跨基因组直接拼接不是同规则相遇"
+  ]
+}

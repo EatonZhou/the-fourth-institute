@@ -1,0 +1,378 @@
+{
+  "task": "predictive_strong_physiology_20261019",
+  "owner": "resident_ce2a5ab005bc",
+  "status": "two_actual_followups_complete",
+  "generated_at": "2026-10-19T12:33:08.179649+00:00",
+  "core_goal_achieved": false,
+  "total_native": 3072,
+  "total_runner_worker_seconds": 103.915548,
+  "unknown": 0,
+  "old_trajectory_replay": 0,
+  "runs": [
+    {
+      "task": "predictive_strong_physiology_20261019",
+      "native": 2304,
+      "worker_seconds": 71.58709,
+      "unknown": 0,
+      "job": "41b7b410-5e39-4abc-8f15-8290b80ed1d4",
+      "native_cap": 2560,
+      "worker_cap": 180,
+      "raw_bytes": 41930129,
+      "worker_all_files_bytes": 43822515,
+      "execution_sha": "7b11110bfc499990130392bb9ef876be9e6ce68224876cfdabdedb6dd699fc22",
+      "plan_sha": "92fcabcf87950a60964e018441337bc90a2b9f5635c933fe42201a6398d8c340",
+      "incomplete": {}
+    },
+    {
+      "task": "predictive_contact_timescale_20261019",
+      "native": 768,
+      "worker_seconds": 32.328458,
+      "unknown": 0,
+      "job": "5b23ab89-9a5b-469a-b540-b14ad2a6646a",
+      "native_cap": 1024,
+      "worker_cap": 90,
+      "raw_bytes": 14257123,
+      "worker_all_files_bytes": 17843380,
+      "execution_sha": "f33ae484b0e8452a48871b6f13edb251212773f7937a9b154b94a79aed10b131",
+      "plan_sha": "b26b8967c7e5f6620f48ab0f6c0a492e29e54a2110c03d1b3a12f1911cba6ca6",
+      "incomplete": {}
+    }
+  ],
+  "conclusion": "标准delta能随矛盾反馈减少相对冻结的损失，但未知反转后的净身体功能不一致、未胜即时生理。已学关系稳定时，冻结条件内容在等购料下优于即时规则；集中冲击使绝对减损差额略增，但不支持新预测器或普遍改学优势。",
+  "prior_handoff": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/predictive_tissue_maintenance_20261019/final_handoff.json",
+  "prior_handoff_sha": "fad231bf27578e5720f88a29717009d0c1a42542894a75441aae62fb7a41b14a",
+  "direction_total_native": 10560,
+  "direction_worker_seconds": 269.135676,
+  "reviewer_record": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/method_renewal/lifetime_plasticity_v12_20261019/parallel_method_renewal_20261019/action_history_maintenance_primary_review.json",
+  "reviewer_record_sha": "1b9524ecbcab05da257f25b615034f52a9c01e1376cd41d8165cd18fe5f007bc",
+  "results": {
+    "strong_controls": {
+      "g0": {
+        "freeze": {
+          "stable": {
+            "injury_reduction": -0.00027745317271499204,
+            "uptake_difference": -0.022582577674157278,
+            "final_energy_difference": -0.07056557610903269,
+            "final_mass_difference": 0.016926794132970713,
+            "cohort_death_difference": 0.00047518048924016787,
+            "fee_difference": 0.0003873035225341326
+          },
+          "changed": {
+            "injury_reduction": 0.0916991401787225,
+            "uptake_difference": 0.2934879264284973,
+            "final_energy_difference": -0.2903854957113907,
+            "final_mass_difference": 1.1838525229022423,
+            "cohort_death_difference": -0.0018532638837013005,
+            "fee_difference": -0.004648039874790122
+          },
+          "all": {
+            "injury_reduction": 0.053932757065314085,
+            "uptake_difference": 0.27090534875435424,
+            "final_energy_difference": -0.2903854957113907,
+            "final_mass_difference": 1.1838525229022423,
+            "cohort_death_difference": -0.0013780833944611048,
+            "fee_difference": -0.004260736352255989
+          }
+        },
+        "fixed0": {
+          "stable": {
+            "injury_reduction": -0.04695962154031652,
+            "uptake_difference": -0.059090560998882324,
+            "final_energy_difference": -0.11338135987386977,
+            "final_mass_difference": -0.27475881191581664,
+            "cohort_death_difference": 0.0011195746027664044,
+            "fee_difference": 0.0036827290095473586
+          },
+          "changed": {
+            "injury_reduction": 0.13791178064637877,
+            "uptake_difference": 0.3801609174188201,
+            "final_energy_difference": 0.7095936456392167,
+            "final_mass_difference": 1.2056439453869814,
+            "cohort_death_difference": -0.0054107917166329456,
+            "fee_difference": -0.008457148001107306
+          },
+          "all": {
+            "injury_reduction": 0.0663376293259137,
+            "uptake_difference": 0.32107035641993775,
+            "final_energy_difference": 0.7095936456392167,
+            "final_mass_difference": 1.2056439453869814,
+            "cohort_death_difference": -0.004291217113866486,
+            "fee_difference": -0.004774418991557283
+          }
+        },
+        "fixed1": {
+          "stable": {
+            "injury_reduction": 0.27132766587477586,
+            "uptake_difference": 0.8717741185006531,
+            "final_energy_difference": 2.683767939933219,
+            "final_mass_difference": 1.709524133839821,
+            "cohort_death_difference": -0.01744409622960308,
+            "fee_difference": -0.03255769750250437
+          },
+          "changed": {
+            "injury_reduction": -0.3018856949235458,
+            "uptake_difference": 0.15271829670794546,
+            "final_energy_difference": 0.2730712359354044,
+            "final_mass_difference": -0.497859320558959,
+            "cohort_death_difference": 0.01382192689518838,
+            "fee_difference": 0.022399202341399693
+          },
+          "all": {
+            "injury_reduction": 0.029541158413113666,
+            "uptake_difference": 1.0244924152085844,
+            "final_energy_difference": 0.2730712359354044,
+            "final_mass_difference": -0.497859320558959,
+            "cohort_death_difference": -0.0036221693344147265,
+            "fee_difference": -0.010158495161103787
+          }
+        },
+        "instant": {
+          "stable": {
+            "injury_reduction": 0.10778968994821103,
+            "uptake_difference": 0.2753153915225113,
+            "final_energy_difference": 0.8994139308791205,
+            "final_mass_difference": 0.6014059823158533,
+            "cohort_death_difference": -0.005995022190159238,
+            "fee_difference": -0.009979313669811418
+          },
+          "changed": {
+            "injury_reduction": -0.07514095006429433,
+            "uptake_difference": 0.10876114854427499,
+            "final_energy_difference": -0.7179021593015591,
+            "final_mass_difference": 0.3397189723490186,
+            "cohort_death_difference": 0.004704643069975173,
+            "fee_difference": 0.012615883148879625
+          },
+          "all": {
+            "injury_reduction": 0.012736760019587678,
+            "uptake_difference": 0.38407654006678627,
+            "final_energy_difference": -0.7179021593015591,
+            "final_mass_difference": 0.3397189723490186,
+            "cohort_death_difference": -0.0012903791201840376,
+            "fee_difference": 0.0026365694790690952
+          }
+        },
+        "uniform": {
+          "stable": {
+            "injury_reduction": 0.1515101435418883,
+            "uptake_difference": 0.3905622814459946,
+            "final_energy_difference": 1.216972213499929,
+            "final_mass_difference": 0.9140846941189409,
+            "cohort_death_difference": -0.008282108920674602,
+            "fee_difference": -0.014533832619603615
+          },
+          "changed": {
+            "injury_reduction": -0.046786831805422535,
+            "uptake_difference": 0.3874647424473494,
+            "final_energy_difference": -0.34072768064662284,
+            "final_mass_difference": 0.7817324643879715,
+            "cohort_death_difference": 0.005389380606499655,
+            "fee_difference": 0.008419633481804745
+          },
+          "all": {
+            "injury_reduction": 0.049637225247390115,
+            "uptake_difference": 0.778027023893344,
+            "final_energy_difference": -0.34072768064662284,
+            "final_mass_difference": 0.7817324643879715,
+            "cohort_death_difference": -0.002892728314174975,
+            "fee_difference": -0.006114199137797982
+          }
+        }
+      },
+      "g1": {
+        "freeze": {
+          "stable": {
+            "injury_reduction": -0.007470706962793949,
+            "uptake_difference": -0.011262106152557294,
+            "final_energy_difference": -0.1799049955788803,
+            "final_mass_difference": -0.17208688484657841,
+            "cohort_death_difference": 0.000862715435911654,
+            "fee_difference": -0.0016726171102989795
+          },
+          "changed": {
+            "injury_reduction": 0.10237497241230842,
+            "uptake_difference": -0.09835029214831081,
+            "final_energy_difference": -0.21586692805564667,
+            "final_mass_difference": 0.498686804797444,
+            "cohort_death_difference": -0.00043319798495886075,
+            "fee_difference": -0.00454044969703471
+          },
+          "all": {
+            "injury_reduction": 0.03333186471000116,
+            "uptake_difference": -0.10961239830089653,
+            "final_energy_difference": -0.21586692805564667,
+            "final_mass_difference": 0.498686804797444,
+            "cohort_death_difference": 0.00042951745095298755,
+            "fee_difference": -0.006213066807331913
+          }
+        },
+        "fixed0": {
+          "stable": {
+            "injury_reduction": 0.1257842674732066,
+            "uptake_difference": 0.41901334624157016,
+            "final_energy_difference": 1.0906545885314074,
+            "final_mass_difference": 0.32561599135866004,
+            "cohort_death_difference": -0.006823546137894598,
+            "fee_difference": -0.024892918572199996
+          },
+          "changed": {
+            "injury_reduction": -0.17148184886017215,
+            "uptake_difference": -0.5012960768191164,
+            "final_energy_difference": 0.6000387879299183,
+            "final_mass_difference": -0.8019748041462265,
+            "cohort_death_difference": 0.005142439658362585,
+            "fee_difference": 0.009810216015780249
+          },
+          "all": {
+            "injury_reduction": 0.041929148417758744,
+            "uptake_difference": -0.08228273057756041,
+            "final_energy_difference": 0.6000387879299183,
+            "final_mass_difference": -0.8019748041462265,
+            "cohort_death_difference": -0.001681106479531791,
+            "fee_difference": -0.015082702556416194
+          }
+        },
+        "fixed1": {
+          "stable": {
+            "injury_reduction": -0.007242594258128898,
+            "uptake_difference": -0.039951835616449216,
+            "final_energy_difference": 0.12139938718244991,
+            "final_mass_difference": -0.08891073864222676,
+            "cohort_death_difference": -0.00014914277107336282,
+            "fee_difference": 0.00211343872574421
+          },
+          "changed": {
+            "injury_reduction": 0.11194704433741975,
+            "uptake_difference": 0.11067839169119509,
+            "final_energy_difference": 0.7537399434750398,
+            "final_mass_difference": 0.6833013566630797,
+            "cohort_death_difference": -0.0016253664678569368,
+            "fee_difference": -0.005061310440502176
+          },
+          "all": {
+            "injury_reduction": 0.03732325891880606,
+            "uptake_difference": 0.07072655607473166,
+            "final_energy_difference": 0.7537399434750398,
+            "final_mass_difference": 0.6833013566630797,
+            "cohort_death_difference": -0.0017745092389301886,
+            "fee_difference": -0.0029478717147561895
+          }
+        },
+        "instant": {
+          "stable": {
+            "injury_reduction": 0.026924569558289813,
+            "uptake_difference": 0.10678492049137844,
+            "final_energy_difference": 0.3529628486729166,
+            "final_mass_difference": -0.04317665916215674,
+            "cohort_death_difference": -0.0017736161332037037,
+            "fee_difference": -0.00624136384772811
+          },
+          "changed": {
+            "injury_reduction": -0.04826708282406167,
+            "uptake_difference": -0.3883026033494872,
+            "final_energy_difference": 0.2501304489154563,
+            "final_mass_difference": -0.2578107775882046,
+            "cohort_death_difference": 0.0011306853294747732,
+            "fee_difference": 0.007007384766104963
+          },
+          "all": {
+            "injury_reduction": 0.0022388158259862845,
+            "uptake_difference": -0.28151768285812295,
+            "final_energy_difference": 0.2501304489154563,
+            "final_mass_difference": -0.2578107775882046,
+            "cohort_death_difference": -0.0006429308037287917,
+            "fee_difference": 0.0007660209183786293
+          }
+        },
+        "uniform": {
+          "stable": {
+            "injury_reduction": 0.046976509553105616,
+            "uptake_difference": 0.1860414662772314,
+            "final_energy_difference": 0.45597053665838416,
+            "final_mass_difference": 0.060703931807779554,
+            "cohort_death_difference": -0.002615367083349085,
+            "fee_difference": -0.010106069622136005
+          },
+          "changed": {
+            "injury_reduction": -0.001845528900263016,
+            "uptake_difference": -0.2696122156890226,
+            "final_energy_difference": 0.4007131410022282,
+            "final_mass_difference": -0.023979238784448853,
+            "cohort_death_difference": 0.0013547873393500998,
+            "fee_difference": 0.0036590698429934676
+          },
+          "all": {
+            "injury_reduction": 0.030683441060272543,
+            "uptake_difference": -0.08357074941181963,
+            "final_energy_difference": 0.4007131410022282,
+            "final_mass_difference": -0.023979238784448853,
+            "cohort_death_difference": -0.0012605797439987354,
+            "fee_difference": -0.0064469997791398725
+          }
+        }
+      }
+    },
+    "timescale": {
+      "g0": {
+        "block": {
+          "injury_reduction": 0.054218364113511,
+          "absolute_injury_avoided": 0.3180324783008386,
+          "uptake_difference": 0.06175542127802203,
+          "final_mass_difference": 0.14000981457785144,
+          "final_energy_difference": 1.8171781651411436,
+          "registered_death_difference": -0.0018538893122090894,
+          "fee_difference": -0.005525274323162854
+        },
+        "impulse": {
+          "injury_reduction": 0.08688541559104557,
+          "absolute_injury_avoided": 0.5889744589093233,
+          "uptake_difference": 0.14323391715618072,
+          "final_mass_difference": 0.3923081419173542,
+          "final_energy_difference": 1.9188060302275716,
+          "registered_death_difference": -0.0029715557010548954,
+          "fee_difference": -0.00882654547029027
+        },
+        "temporal_interaction": 0.27094198060848473
+      },
+      "g1": {
+        "block": {
+          "injury_reduction": 0.06509489734020679,
+          "absolute_injury_avoided": 0.17799300397093143,
+          "uptake_difference": 0.16261836830415177,
+          "final_mass_difference": 0.30164824965707737,
+          "final_energy_difference": 0.5205037472678953,
+          "registered_death_difference": -0.0020654091090371862,
+          "fee_difference": -0.0023117325636254904
+        },
+        "impulse": {
+          "injury_reduction": 0.05982798676724854,
+          "absolute_injury_avoided": 0.20557547858960534,
+          "uptake_difference": 0.15832723612133748,
+          "final_mass_difference": 0.3100190043585087,
+          "final_energy_difference": 0.4921739117235546,
+          "registered_death_difference": -0.0020521863683006236,
+          "fee_difference": -0.002329483719105241
+        },
+        "temporal_interaction": 0.027582474618673913
+      }
+    }
+  },
+  "audit": {
+    "incident_strain_label": true,
+    "registered_initial_cohort": true,
+    "all_branches_retained": true,
+    "equal_synthesis_max_error": 5.551115123125783e-17,
+    "complex_predictor_retained": false,
+    "new_method_claim": false,
+    "full_reversal_claim": false
+  },
+  "artifacts": {
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/predictive_strong_physiology_20261019/REPORT.txt": "dd3fdd55ecf6797608f4c9129e072080ede88e00ecdf10b19851258d71565cc8",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/predictive_strong_physiology_20261019/discussion_insert.tex": "758ffddde87b2c5f6cf1c9f0a1fea1974ac5fce79fe7a6d8e90cac6568de317f",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/predictive_strong_physiology_20261019/analysis.json": "cf73ab0ddfafb3a3fe21d89f2dccc10bf8e9d950aca8a29fd73fb3d9bb25526b",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/predictive_strong_physiology_20261019/actual_continuous.gif": "0e81f5febb3060995e3cb7ddffa8126ff1ac48839945647fa174c70bcbe9ac6c",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/predictive_contact_timescale_20261019/analysis.json": "87a9022665387b4125931a66ef48e2b916127940e28cfc06dd277a820508b4ea",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/predictive_contact_timescale_20261019/actual_continuous.gif": "f1928857b3e5501b722bbc9ee28caffb24c45b373aa72db12b6ad70e897c838e"
+  },
+  "continuation": "Two distinct within-direction questions were actually executed. No unfinished experiment is represented as running; no cross-direction choice requested."
+}

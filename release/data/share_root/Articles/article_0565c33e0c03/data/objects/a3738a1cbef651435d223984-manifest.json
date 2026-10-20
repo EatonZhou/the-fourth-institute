@@ -1,0 +1,217 @@
+[
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/METHOD.txt",
+    "sha256": "4af18bc7acbfd9ee9b012c034557d82b30f4bc1708453987ff95d53145bad981",
+    "bytes": 4404
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/REPORT.txt",
+    "sha256": "ea41858f521ef554f9d8a731a760605db78c786cba1858cf3a0b2a4955bb864e",
+    "bytes": 5544
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/VISUAL_REVIEW.txt",
+    "sha256": "b4eced21db9f5d73f77b938793b6efaf0a73bb84a981eb6ab6fc83fbc737233a",
+    "bytes": 1132
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/actual_final_matrix.png",
+    "sha256": "4d9a2eb165ea09a797e02f9116c11f415e3d6de94625c321657cf17db5fd4b2d",
+    "bytes": 129872
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/actual_mass_energy.png",
+    "sha256": "912f6b63841db039b4a019d250eb1c98f3b3210eed9c96524b0da82da4aec089",
+    "bytes": 322270
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/actual_material_retention.png",
+    "sha256": "cdae538967fda0e6731cbf7ff461592537085cb014a915f8df45d1ac7216c634",
+    "bytes": 140239
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/actual_sequence_g1_f0_c0.png",
+    "sha256": "abcdf2552be61fcf6ac0256633f4121667f9bdf875c791e5879a6df012e5341c",
+    "bytes": 166848
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/actual_sequence_g1_f1_c0.png",
+    "sha256": "4edfcd0ee326525feca29f3dd829779048ce16704720ef160fefdeb0fd625ecd",
+    "bytes": 232549
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/actual_sequence_g1_f2_c0.png",
+    "sha256": "11a2bc192aed5860e5041166c636c0b61e175328be9188c3e9396826de0c70de",
+    "bytes": 300903
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/actual_sequence_g1_f3_c0.png",
+    "sha256": "9e9d78f776ea21f7802c76831dd9434e77da61cf335cb79b1ef59d033ba3be8c",
+    "bytes": 207797
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/all_combinations.csv",
+    "sha256": "168216b54e9cc15da853290f67939374e8fee714c967c3c62f5edf06819cd9b1",
+    "bytes": 30649
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/budget.json",
+    "sha256": "7141750baed7749ff305ea8ea864efb11d5144c325bdee6fd12baff14b8bbff2",
+    "bytes": 369
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/conservation.csv",
+    "sha256": "a32e01888027dbe0cc71a0582ddabd3195d47bcfcf2963b7b520fc26ce245a03",
+    "bytes": 2577
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/continuation_request.json",
+    "sha256": "8bccd65fadb1134983e30f6a9e0573218858b493e2f45d5f191f654e132fae3a",
+    "bytes": 1366
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/control_before_job.json",
+    "sha256": "ca4c6a5668b5ded8ebaa79d71d1eac806b9fd8591dcc15c978b84eb220020df8",
+    "bytes": 70
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/extensions.json",
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "bytes": 3
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/frames.json",
+    "sha256": "989e8cabe3710801689b4010665634b29be5b6f261406be03a0706b4b606f7b1",
+    "bytes": 82627
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/old_manifest_identity.json",
+    "sha256": "091b400cc22a2b6b7016cf87616d19aec202ecb8f4228bc8d6edd4007c8c9520",
+    "bytes": 195
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/outcomes.json",
+    "sha256": "03efa8c6ee9fe9e7956d6779d8ae67e800b9fe1f8ddd1acbd2aaf6a8b906a24f",
+    "bytes": 63081
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/paired_supply.csv",
+    "sha256": "8d2b3e2b1ada8309e094782c56e8af4ea51bf476afd443023fd3f552bffb5bd4",
+    "bytes": 4764
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/plan.json",
+    "sha256": "5b9f81981f6a9128364d23969fc15f1e08eb7e1a23350a9faea9af87ecea040d",
+    "bytes": 23845
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/pure_checks.json",
+    "sha256": "ff96561fb79f2d7ace2f3f86d252630e7476ba030cafb2c8bebad0c100778804",
+    "bytes": 1185
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/raw_manifest.json",
+    "sha256": "b7152f66fcabf12fd19188ffabd1ea08bed1059d305145989487d77c6b247b38",
+    "bytes": 277088
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/readout_analyze.py",
+    "sha256": "d40305a0a5ee41966f5a5340dcf345f165bdaf3bfcd302a6e7d7a6b33a68a724",
+    "bytes": 9891
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/readout_finalize.py",
+    "sha256": "fdc20a327d6fccd73a26757f5730bbaf0ff680eb1a1d4eecd0fd1872a47bc907",
+    "bytes": 13845
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/readout_validation.json",
+    "sha256": "cc3c9b14a0d47946f491c3d35dfb121f06852f5326678c6424cf6c06ad434300",
+    "bytes": 263
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/restore_array_check.json",
+    "sha256": "748c5bd6565e515499ca539c7968e4821712da74c1533882991d18a7bf5793ec",
+    "bytes": 61
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/result.json",
+    "sha256": "fa985eb40dd6595d20796a0003aeaddb8af283d32c03ac1aa827db58980f8963",
+    "bytes": 833
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/runner_receipt.json",
+    "sha256": "6df490d0a5c7d3d0907662fba5fc2908c152af2a26fcf11aeb6c13e7a280d95b",
+    "bytes": 450
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/selection.json",
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "bytes": 3
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/source/environment_evolution/material_action_response/core.py",
+    "sha256": "15691ada9fd805c076f7c5770ba955dbf6cc454ea3af129b1ba03fe958467b5b",
+    "bytes": 9751
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/source/environment_evolution/regenerative_actor/conversion.py",
+    "sha256": "d2b73ccf44d6720e01e2166c055f9a427406dc483b21746476b9f8cc5f95189a",
+    "bytes": 2821
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/source/environment_evolution/regenerative_actor/model.py",
+    "sha256": "3941450e97d2311f833d1c9c8964f348218467d4cd8d41a68b6584b72b24b5b0",
+    "bytes": 8610
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/source/environment_evolution/resource_wave_actionability/core.py",
+    "sha256": "fcfb8954f7fa94e21954657545d3e0d4dd3155cf20adef2a87851a129c85726d",
+    "bytes": 6324
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/source/local_learning/material_transport.py",
+    "sha256": "dd5622a2df6a5d50642a31ad586215d5e30e33929cf8f57ee9efff36fdef08d5",
+    "bytes": 17572
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/source/local_learning/resource_matched_morphogenesis/core.py",
+    "sha256": "dae6fbd6db1fe1a83f34a6039aee8e292f6d63717270095db981d1e808928a83",
+    "bytes": 6767
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/source/local_learning/resource_matched_morphogenesis/run.py",
+    "sha256": "327dcf4c234b52023767c8d63f48546aa755edd14650025cc850edaeec4c1e3c",
+    "bytes": 16657
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/source/local_learning/rule_geometry_resource_support/core.py",
+    "sha256": "006c505f6e388d132f75466b21b8a5ec355e8cc5c0e64b8b5218f3f73e196d39",
+    "bytes": 3149
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/source/local_learning/rule_geometry_resource_support/run.py",
+    "sha256": "f71fbfd5c1536a4d6a37494d80f3df5a552c19dfc9f702c96211a3e84e64abc4",
+    "bytes": 14888
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/source/morphology_evolution/dual_kernel.py",
+    "sha256": "529d42e50876a68bce54a512f8a9cafd48a8f68276cf8507a0e2243b3f450d6e",
+    "bytes": 2922
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/source/simulation/snapshot.py",
+    "sha256": "e99d3eccee47ded2abe1518e3fb80d2d630a8ff21a2a339ff6723c2878dfc382",
+    "bytes": 6192
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/steps.csv",
+    "sha256": "90a39b8c2c451c001014a8c70a2073a6969655dcc67a9f9f108f22544953099b",
+    "bytes": 3060016
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/rule_geometry_resource_support_20261018/summary.json",
+    "sha256": "d992ccda8d20d71c000da280228af829bae048ecf569bab40f63952dbe88fd09",
+    "bytes": 14788
+  }
+]

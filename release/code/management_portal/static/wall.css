@@ -1,0 +1,161 @@
+.wallPage { margin: 0; height: 100dvh; min-height: 640px; overflow: auto; display: flex; flex-direction: column; background: var(--bg); color: var(--text); font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+.wallPage, .wallPage * { box-sizing: border-box; }
+.wallPage [hidden] { display: none !important; }
+.wallHeader { flex: none; border-bottom: 1px solid var(--border); background: var(--panel); }
+.wallWorkspace { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 10px; flex: 1; min-height: 0; overflow: hidden; }
+.wallWorkspace > .portalActivityRail { position: relative; inset: auto; width: 52px; height: 100%; min-height: 0; }
+.wallWorkspaceViews, .wallWorkspaceView { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
+.wallWorkspaceView { flex: 1; }
+.wallWorkspaceView > .wallToolbar { border-bottom: 1px solid var(--border); background: var(--panel); }
+@media (max-width: 640px) { .wallWorkspace { gap: 6px; } }
+.wallToolbar { padding: 10px 18px 12px; display: grid; gap: 10px; }
+.wallCommandRow { --wall-command-height: 38px; display: grid; grid-template-columns: minmax(120px, 170px) minmax(0, 1fr); align-items: start; gap: 8px; }
+.wallCommandRow > .wallField select { width: 100%; height: var(--wall-command-height); }
+.wallCommandRow [data-portal-board-search] { height: var(--wall-command-height); }
+.wallViewRow, .wallViewControls, .wallField { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.wallViewRow { flex-wrap: wrap; justify-content: space-between; }
+.wallViewControls { flex-wrap: wrap; gap: 12px; }
+.wallField { font-size: 12px; color: var(--muted); gap: 6px; }
+.wallModuleField select { width: 230px; max-width: 100%; text-overflow: ellipsis; }
+.wallModuleField { max-width: 100%; }
+.wallPage select, .wallForm input, .wallForm textarea { color: var(--text); background: var(--panel); border: 1px solid var(--border); border-radius: 5px; font: inherit; padding: 6px 8px; min-width: 0; }
+.wallPage select { min-height: 32px; }
+.wallPage :where(button, a, input, select, textarea):focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.wallPage button:disabled { cursor: not-allowed; opacity: .5; }
+.wallFilters { display: flex; gap: 5px; flex-wrap: wrap; }
+.wallFilters button { display: inline-flex; align-items: center; gap: 7px; min-height: 32px; padding: 5px 9px; border: 1px solid var(--border); border-radius: 4px; background: var(--panel); color: var(--text); cursor: pointer; font: inherit; font-size: 12px; }
+.wallFilters button::before { content: ''; width: 7px; height: 7px; background: var(--wall-category, var(--muted)); }
+.wallFilters button[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--panel)); }
+.wallFilters [data-count] { color: var(--muted); font-variant-numeric: tabular-nums; }
+.wallPage [data-kind="design"] { --wall-category: color-mix(in srgb, #16834b 78%, var(--success)); }
+.wallPage [data-kind="improvement"] { --wall-category: color-mix(in srgb, #db7620 85%, var(--warn)); }
+.wallPage [data-kind="dev"] { --wall-category: color-mix(in srgb, #2674d9 90%, var(--accent)); }
+.wallPage [data-kind="inconsistency"] { --wall-category: color-mix(in srgb, #965ed0 90%, var(--accent)); }
+.wallPage [data-kind="direction"] { --wall-category: var(--accent); }
+.wallMain { flex: 1; min-height: 0; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
+.wallSemantic { flex: none; max-height: 25vh; overflow: auto; }
+.wallSemantic:has(.portalSemanticItem) { padding: 8px 10px 0; }
+.wallBoard { display: flex; flex: 1; min-height: 0; gap: 0; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; overflow-anchor: none; }
+.wallStage { display: flex; flex-direction: column; flex: none; min-width: 0; }
+.wallStageBody { position: relative; flex: 1; min-height: 0; }
+.wallGroup { position: absolute; min-width: 0; display: flex; flex-direction: column; }
+.wallGroupHeader { display: flex; align-items: center; height: 28px; flex: none; padding: 0 10px; color: var(--muted); border-right: 1px solid var(--border); border-bottom: 2px solid var(--wall-category); contain: inline-size; }
+.wallGroupHeading { display: flex; align-items: center; gap: 8px; min-width: 0; max-width: calc(100vw - 20px); position: sticky; left: 10px; }
+.wallGroupHeader h2 { min-width: 0; max-width: 560px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wallGroupHeader h2 { color: var(--text); font-size: 12px; font-weight: 650; margin: 0; overflow-wrap: anywhere; }
+.wallGroupHeader span { flex: none; font-size: 11px; white-space: nowrap; }
+.wallGroupStage { color: var(--wall-category); font-weight: 650; }
+.wallGrid { position: relative; flex: none; min-height: 0; gap: 0; contain: layout style; }
+/* Keep two title/preview lines and the footer readable in minimum-height tiles. */
+.wallCard { position: absolute; border: 0; box-shadow: inset -1px -1px color-mix(in srgb, var(--wall-category) 45%, var(--border)); background: color-mix(in srgb, var(--wall-category) var(--wall-depth, 14%), var(--panel)); border-radius: 0; padding: 6px 8px; display: flex; flex-direction: column; gap: 2px; min-width: 0; min-height: 0; overflow: hidden; cursor: pointer; }
+.wallCard:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.wallCard:hover { border-color: var(--wall-category); }
+.wallCard:is([data-work-state="submitting"], [data-work-state="queued"], [data-work-state="routing"], [data-work-state="preparing"], [data-work-state="running"], [data-work-state="stopping"])::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: color-mix(in srgb, var(--accent) 18%, transparent); pointer-events: none; }
+.wallCard[data-work-state="running"]::before { content: ""; position: absolute; bottom: 0; left: 0; width: 30%; height: 3px; background: var(--accent); z-index: 1; pointer-events: none; animation: wallWorkTravel 1.8s cubic-bezier(.4, 0, .2, 1) infinite; }
+.wallCard[data-work-state="running"] .wallCardResident { font-weight: 650; }
+@keyframes wallWorkTravel { from { transform: translateX(-110%); } to { transform: translateX(350%); } }
+:root[data-portal-motion="reduced"] .wallCard[data-work-state="running"]::before { animation: none; transform: none; width: 100%; opacity: .65; }
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-portal-motion="full"]) .wallCard[data-work-state="running"]::before { animation: none; transform: none; width: 100%; opacity: .65; }
+}
+.wallCardTop { display: flex; flex: none; align-items: center; gap: 5px; color: var(--text); font-size: 11px; }
+.wallMetaness { flex: none; font-size: 10px; font-variant-numeric: tabular-nums; }
+.wallCardCategory { flex: none; color: var(--text); }
+.wallCardResident { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); text-decoration: underline; text-underline-offset: 2px; }
+.wallImportance { flex: none; margin-left: auto; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.wallUnreadDot { flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--accent-2); box-shadow: 0 0 0 2px var(--panel); visibility: hidden; pointer-events: none; }
+.wallCard.unread .wallUnreadDot { visibility: visible; }
+.wallReview { display: inline-flex; align-items: center; flex: none; gap: 4px; color: var(--text); font-size: 11px; white-space: nowrap; cursor: pointer; }
+.wallReview input { width: 13px; height: 13px; margin: 0; accent-color: var(--accent); cursor: inherit; }
+.wallReview:has(input:disabled) { opacity: .55; cursor: default; }
+.wallDetailTools { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+.wallCard h3 { flex: none; margin: 0; font-size: 13px; line-height: 1.3; overflow-wrap: anywhere; }
+.wallCardTitle { text-align: left; padding: 0; background: transparent; border: 0; color: var(--text); font: inherit; cursor: pointer; width: 100%; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.wallCardTitle:hover { text-decoration: underline; text-underline-offset: 3px; }
+.wallCard:is([data-metaness="7"], [data-metaness="8"], [data-metaness="9"], [data-metaness="10"]) h3 { font-size: 16px; }
+.wallCardPreview { margin: 0; min-height: 0; font-size: 11px; line-height: 1.35; color: var(--text); display: -webkit-box; -webkit-line-clamp: var(--wall-preview-lines, 2); -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; white-space: pre-line; }
+.wallCardFooter { display: flex; flex: none; align-items: center; gap: 6px; }
+.wallCardSource { flex: 1; min-width: 0; font-size: 10px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wallCardFooter .wallActions { flex: 0 1 auto; min-width: 0; max-width: 100%; flex-wrap: wrap; gap: 3px; }
+.wallCardFooter .wallActions button { min-height: 24px; padding: 3px 5px; font-size: 11px; }
+.wallCard > .wallRelated { flex: 1 1 0; min-height: 28px; overflow: auto; align-content: flex-start; }
+.wallCard > .wallRelated button { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; }
+.wallCardSource button { border: 0; background: transparent; padding: 0; color: inherit; font: inherit; cursor: pointer; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-decoration: underline; text-underline-offset: 2px; }
+.wallCardSource button:hover { text-decoration: underline; }
+.wallActions { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+.wallActions button, .wallRelated button, .wallJobs button { min-height: 28px; padding: 4px 7px; color: var(--text); border: 1px solid color-mix(in srgb, var(--wall-category, var(--accent)) 35%, var(--border)); border-radius: 4px; background: color-mix(in srgb, var(--panel) 75%, transparent); font: inherit; font-size: 11px; cursor: pointer; }
+.wallActions button:hover, .wallRelated button:hover, .wallJobs button:hover { background: var(--panel-2); }
+.wallActions button[data-primary="true"] { font-weight: 650; }
+.wallActions button[data-action="retire"], .wallActions button[data-action="reject"] { color: var(--muted); }
+.wallJobStatus { font-size: 11px; color: var(--muted); overflow-wrap: anywhere; }
+.wallJobStatus[data-error="true"], .wallFormError { color: var(--danger); }
+.wallRelated { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px; }
+.wallRelated button { text-align: left; overflow-wrap: anywhere; }
+.wallBoard[data-zoom="detail"] .wallCardTitle { -webkit-line-clamp: 3; }
+.wallBoard[data-zoom="detail"] .wallCardPreview { -webkit-line-clamp: var(--wall-preview-lines, 12); }
+.wallErrors { border: 1px solid var(--danger); padding: 10px 12px; border-radius: 4px; margin-bottom: 12px; color: var(--danger); font-size: 12px; white-space: pre-line; overflow-wrap: anywhere; }
+.wallWarnings { border: 1px solid var(--warn); padding: 10px 12px; border-radius: 4px; margin-bottom: 12px; color: var(--text); font-size: 12px; white-space: pre-line; overflow-wrap: anywhere; }
+#wallEmpty { white-space: pre-line; overflow-wrap: anywhere; }
+.wallJobs { display: flex; flex: none; overflow: auto; max-height: 90px; gap: 8px; padding: 6px 10px; font-size: 12px; }
+.wallErrors, .wallWarnings { flex: none; max-height: 90px; overflow: auto; margin: 6px 10px; }
+.wallProjectJob { flex-shrink: 0; max-width: min(640px, 90vw); }
+.wallProjectJob { display: flex; align-items: center; gap: 8px; background: var(--panel-2); padding: 6px 10px; border: 1px solid var(--border); border-radius: 4px; overflow-wrap: anywhere; }
+.wallProjectJob a, .wallJobStatus a { color: var(--accent); }
+.wallProjectJob a { flex: none; white-space: nowrap; }
+.wallDetailSurface { width: min(1440px, calc(100vw - 32px)); height: min(900px, calc(100dvh - 40px)); }
+.wallDetailBody { display: grid; grid-template-columns: minmax(0, 1fr) minmax(340px, .95fr); padding: 0; min-height: 0; overflow: hidden; }
+.wallDocument { padding: 18px; overflow: auto; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+.wallDetailSource { font-size: 12px; color: var(--muted); overflow-wrap: anywhere; display: grid; gap: 5px; }
+.wallDetailSource a { color: var(--accent); }
+.wallDetailSource button { border: 0; padding: 0; background: transparent; color: var(--accent); font: inherit; line-height: 1.6; text-align: left; overflow-wrap: anywhere; cursor: pointer; }
+.wallDetailSource button:hover { text-decoration: underline; }
+.wallMarkdown { font-size: 13px; line-height: 1.75; overflow-wrap: anywhere; }
+.wallMarkdown > :first-child { margin-top: 0; }
+.wallMarkdown pre { overflow: auto; background: var(--panel-2); padding: 10px; }
+.wallMarkdown img { max-width: 100%; }
+.wallMarkdown table { display: block; max-width: 100%; overflow: auto; }
+.wallConversation { border-left: 1px solid var(--border); min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.wallChat { flex: 1; min-height: 0; overflow: hidden; }
+.wallChat[hidden], .wallChatTabs[hidden] { display: none; }
+.wallChatTabs { display: flex; gap: 6px; padding: 8px 12px; background: var(--panel); border-bottom: 1px solid var(--border); }
+.wallChatTabs button { padding: 5px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--panel); color: var(--muted); font: inherit; font-size: 12px; cursor: pointer; }
+.wallChatTabs button[aria-selected="true"] { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--panel)); font-weight: 600; }
+.wallChatTabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.wallFormSurface { width: min(740px, calc(100vw - 24px)); max-height: calc(100dvh - 32px); }
+.wallRecentSurface { --portal-detail-width: 640px; --portal-detail-max-height: min(760px, calc(100dvh - 32px)); }
+.wallCompletedList { padding: 0; margin: 0; list-style: none; }
+.wallCompletedEntry { padding: 14px 18px; border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }
+.wallCompletedEntry:last-child { border-bottom: 0; }
+.wallCompletedEntry h3 { margin: 0 0 5px; font-size: 14px; line-height: 1.5; }
+.wallCompletedMeta { display: flex; flex-wrap: wrap; gap: 8px; color: var(--muted); font-size: 11px; }
+.wallCompletedSummary { margin: 8px 0; font-size: 12px; line-height: 1.6; white-space: pre-line; }
+.wallCompletedLinks { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 8px; font-size: 12px; }
+.wallCompletedLinks button { max-width: 100%; white-space: normal; text-align: left; }
+.wallCompletedLinks a { color: var(--accent); }
+.wallCompletedEmpty { padding: 24px 18px; margin: 0; color: var(--muted); font-size: 13px; }
+.wallForm { display: grid; gap: 16px; }
+.wallForm #wallFormFields { display: grid; gap: 14px; }
+.wallForm label { display: grid; gap: 6px; font-size: 13px; }
+.wallForm label.wallCheck { display: flex; gap: 8px; align-items: center; }
+.wallForm input:not([type="checkbox"]), .wallForm textarea, .wallForm select { width: 100%; box-sizing: border-box; }
+.wallForm .portalSearchField input { border: 0; background: transparent; box-shadow: none; outline: none; }
+.wallForm input[type="checkbox"] { accent-color: var(--accent); }
+.wallForm textarea { resize: vertical; min-height: 220px; line-height: 1.6; }
+.wallForm select[multiple] { min-height: 120px; }
+.wallFormFooter { display: flex; justify-content: flex-end; gap: 8px; }
+.wallFormSurface .wallForm { grid-template-rows: minmax(0, 1fr) auto auto; overflow: hidden; }
+.wallFormSurface #wallFormFields { min-height: 0; overflow: auto; align-content: start; padding: 2px; }
+.wallFormSurface .wallFormError { grid-row: 2; margin: 0; }
+.wallFormSurface .wallFormFooter { grid-row: 3; }
+#wallDetailEditor .wallForm { padding: 0; overflow: visible; }
+#wallDetailEditor .wallFormFooter { position: sticky; bottom: -18px; padding: 12px 0; background: var(--panel); z-index: 1; }
+.wallSrOnly { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+@media (max-width: 900px) { .wallViewControls { width: 100%; } .wallDetailBody { grid-template-columns: minmax(0, 1fr); overflow: auto; } .wallDocument { overflow: visible; } .wallConversation { border-left: 0; border-top: 1px solid var(--border); min-height: 420px; } .wallChat { height: 520px; flex: auto; } }
+@media (max-width: 600px) { .wallToolbar { padding: 8px 10px; } .wallCommandRow { grid-template-columns: 112px minmax(0, 1fr); } .wallFilters { gap: 4px; } .wallFilters button { padding: 5px 7px; } .wallViewControls { gap: 7px; } .wallField { gap: 4px; } .wallField select { padding: 5px 4px; } .wallActions button, .wallRelated button { min-height: 30px; } .wallDetailSurface { width: 100vw; height: 100dvh; max-height: 100dvh; } .wallDocument { padding: 14px; } }
+@media (prefers-reduced-motion: reduce) { .wallCard { transition: none; } }
+.wallDocumentationContent {
+  max-height: 60vh;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

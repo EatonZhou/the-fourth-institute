@@ -1,0 +1,18 @@
+{
+  "task": "turnover_second_parent_completion_20261019",
+  "status": "completed",
+  "job": "2b392f3c-1942-48c9-9622-df7fe47271db",
+  "attempted": 1024,
+  "committed": 1024,
+  "settled": 1024,
+  "extra_boundary_native": 0,
+  "wall_seconds": 33.73402527498547,
+  "failure": null,
+  "complete_paths": 8,
+  "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_second_parent_completion_20261019/2b392f3c-1942-48c9-9622-df7fe47271db",
+  "raw_bytes": 166123241,
+  "objective_met": false,
+  "old_steps_replayed": 0,
+  "old_budget_used": 0,
+  "new_continuations": 0
+}

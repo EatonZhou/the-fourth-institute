@@ -1,0 +1,4860 @@
+{
+  "stages": [
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "stage": "acquire",
+      "n": 24,
+      "correct": 18,
+      "completed": 24,
+      "E_end": 65.05667874708858,
+      "signed_displacement": 6.2042602734034205,
+      "costs": {
+        "movement": 0.9529212529114367,
+        "basal": 7.603200000000001,
+        "sensor": 0.6912,
+        "feedback_fee": 0.5760000000000001,
+        "gain": 4.32,
+        "loss": 1.4400000000000002,
+        "basal_unpaid": 6.270065841779321e-17
+      }
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "stage": "retention",
+      "n": 12,
+      "correct": 12,
+      "completed": 12,
+      "E_end": 62.98563873124091,
+      "signed_displacement": 6.073055962302643,
+      "costs": {
+        "movement": 0.515840015847672,
+        "basal": 3.801600000000001,
+        "sensor": 0.3456000000000001,
+        "feedback_fee": 0.2880000000000001,
+        "gain": 2.880000000000001,
+        "loss": 0.0,
+        "basal_unpaid": 3.745214501541667e-17
+      }
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "stage": "changed",
+      "n": 24,
+      "correct": 12,
+      "completed": 24,
+      "E_end": 53.10955252846062,
+      "signed_displacement": 0.2269906824971244,
+      "costs": {
+        "movement": 1.0056862027802778,
+        "basal": 7.603200000000003,
+        "sensor": 0.6912000000000003,
+        "feedback_fee": 0.5760000000000002,
+        "gain": 2.880000000000001,
+        "loss": 2.880000000000001,
+        "basal_unpaid": 7.153464536971441e-17
+      }
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "stage": "retention_changed",
+      "n": 12,
+      "correct": 12,
+      "completed": 12,
+      "E_end": 51.04947087827623,
+      "signed_displacement": 5.86087058350568,
+      "costs": {
+        "movement": 0.5048816501843826,
+        "basal": 3.801600000000002,
+        "sensor": 0.34560000000000013,
+        "feedback_fee": 0.2880000000000001,
+        "gain": 2.8800000000000012,
+        "loss": 0.0,
+        "basal_unpaid": 3.645670654805315e-17
+      }
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "stage": "acquire",
+      "n": 24,
+      "correct": 21,
+      "completed": 24,
+      "E_end": 66.44494207807138,
+      "signed_displacement": 9.282877417060767,
+      "costs": {
+        "movement": 1.0046579219286207,
+        "basal": 7.603200000000001,
+        "sensor": 0.6912,
+        "feedback_fee": 0.5760000000000001,
+        "gain": 5.04,
+        "loss": 0.7200000000000001,
+        "basal_unpaid": 7.252056659010093e-17
+      }
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "stage": "retention",
+      "n": 12,
+      "correct": 12,
+      "completed": 12,
+      "E_end": 64.36716527752941,
+      "signed_displacement": 6.010164254785558,
+      "costs": {
+        "movement": 0.5225768005419529,
+        "basal": 3.8015999999999996,
+        "sensor": 0.34559999999999996,
+        "feedback_fee": 0.288,
+        "gain": 2.8799999999999994,
+        "loss": 0.0,
+        "basal_unpaid": 3.8053989711795215e-17
+      }
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "stage": "changed",
+      "n": 24,
+      "correct": 18,
+      "completed": 24,
+      "E_end": 57.345061146868844,
+      "signed_displacement": 5.796872395009544,
+      "costs": {
+        "movement": 1.0317041306605754,
+        "basal": 7.603199999999998,
+        "sensor": 0.6911999999999998,
+        "feedback_fee": 0.5759999999999998,
+        "gain": 4.3199999999999985,
+        "loss": 1.4399999999999997,
+        "basal_unpaid": 7.355068540774707e-17
+      }
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "stage": "retention_changed",
+      "n": 12,
+      "correct": 12,
+      "completed": 12,
+      "E_end": 55.27876546438357,
+      "signed_displacement": 5.789617170027341,
+      "costs": {
+        "movement": 0.5110956824852695,
+        "basal": 3.8015999999999988,
+        "sensor": 0.3455999999999999,
+        "feedback_fee": 0.28799999999999987,
+        "gain": 2.879999999999999,
+        "loss": 0.0,
+        "basal_unpaid": 3.496820456831222e-17
+      }
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "stage": "acquire",
+      "n": 24,
+      "correct": 11,
+      "completed": 24,
+      "E_end": 61.60151024988336,
+      "signed_displacement": -1.0348452277591633,
+      "costs": {
+        "movement": 1.0480897501166315,
+        "basal": 7.603200000000002,
+        "sensor": 0.6912000000000001,
+        "feedback_fee": 0.5760000000000001,
+        "gain": 2.6400000000000006,
+        "loss": 3.1200000000000006,
+        "basal_unpaid": 7.137826450783878e-17
+      }
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "stage": "retention",
+      "n": 12,
+      "correct": 5,
+      "completed": 12,
+      "E_end": 56.18642093130758,
+      "signed_displacement": -0.9786585414272881,
+      "costs": {
+        "movement": 0.499889318575787,
+        "basal": 3.8016000000000005,
+        "sensor": 0.3456,
+        "feedback_fee": 0.28800000000000003,
+        "gain": 1.2000000000000002,
+        "loss": 1.6800000000000002,
+        "basal_unpaid": 3.4062678524269933e-17
+      }
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "stage": "changed",
+      "n": 24,
+      "correct": 13,
+      "completed": 24,
+      "E_end": 46.78967342272374,
+      "signed_displacement": 1.002808095392833,
+      "costs": {
+        "movement": 1.0063475085838653,
+        "basal": 7.6032,
+        "sensor": 0.6912,
+        "feedback_fee": 0.576,
+        "gain": 3.1199999999999997,
+        "loss": 2.64,
+        "basal_unpaid": 7.246281407117928e-17
+      }
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "stage": "retention_changed",
+      "n": 12,
+      "correct": 8,
+      "completed": 12,
+      "E_end": 42.81112237372922,
+      "signed_displacement": 1.9279571335554273,
+      "costs": {
+        "movement": 0.5033510489945144,
+        "basal": 3.8016,
+        "sensor": 0.3456,
+        "feedback_fee": 0.288,
+        "gain": 1.92,
+        "loss": 0.96,
+        "basal_unpaid": 3.9004334894926144e-17
+      }
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "stage": "acquire",
+      "n": 24,
+      "correct": 18,
+      "completed": 24,
+      "E_end": 65.0494170033002,
+      "signed_displacement": 6.237416981980537,
+      "costs": {
+        "movement": 0.9601829966998084,
+        "basal": 7.603200000000001,
+        "sensor": 0.6912,
+        "feedback_fee": 0.5760000000000001,
+        "gain": 4.32,
+        "loss": 1.4400000000000002,
+        "basal_unpaid": 7.076439199477715e-17
+      }
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "stage": "retention",
+      "n": 12,
+      "correct": 12,
+      "completed": 12,
+      "E_end": 62.97188062751772,
+      "signed_displacement": 6.102869583621203,
+      "costs": {
+        "movement": 0.5223363757824878,
+        "basal": 3.801600000000001,
+        "sensor": 0.3456,
+        "feedback_fee": 0.28800000000000003,
+        "gain": 2.8800000000000003,
+        "loss": 0.0,
+        "basal_unpaid": 3.7802933167874326e-17
+      }
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "stage": "changed",
+      "n": 24,
+      "correct": 12,
+      "completed": 24,
+      "E_end": 53.06316340576316,
+      "signed_displacement": 0.06955358422620606,
+      "costs": {
+        "movement": 1.0383172217545487,
+        "basal": 7.603200000000001,
+        "sensor": 0.6912,
+        "feedback_fee": 0.5760000000000001,
+        "gain": 2.8800000000000003,
+        "loss": 2.8800000000000003,
+        "basal_unpaid": 6.924751512378545e-17
+      }
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "stage": "retention_changed",
+      "n": 12,
+      "correct": 12,
+      "completed": 12,
+      "E_end": 50.99178042270252,
+      "signed_displacement": 5.974827624927009,
+      "costs": {
+        "movement": 0.5161829830606532,
+        "basal": 3.8016000000000005,
+        "sensor": 0.3456,
+        "feedback_fee": 0.28800000000000003,
+        "gain": 2.8800000000000003,
+        "loss": 0.0,
+        "basal_unpaid": 3.639859225129446e-17
+      }
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "stage": "acquire",
+      "n": 24,
+      "correct": 21,
+      "completed": 24,
+      "E_end": 66.44040186965604,
+      "signed_displacement": 9.288211444741378,
+      "costs": {
+        "movement": 1.0091981303439872,
+        "basal": 7.603199999999999,
+        "sensor": 0.6911999999999999,
+        "feedback_fee": 0.576,
+        "gain": 5.039999999999999,
+        "loss": 0.72,
+        "basal_unpaid": 7.691673825167902e-17
+      }
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "stage": "retention",
+      "n": 12,
+      "correct": 12,
+      "completed": 12,
+      "E_end": 64.359770186124,
+      "signed_displacement": 5.99644535515219,
+      "costs": {
+        "movement": 0.5254316835320474,
+        "basal": 3.801599999999999,
+        "sensor": 0.3455999999999999,
+        "feedback_fee": 0.2879999999999999,
+        "gain": 2.879999999999999,
+        "loss": 0.0,
+        "basal_unpaid": 3.638743991579211e-17
+      }
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "stage": "changed",
+      "n": 24,
+      "correct": 18,
+      "completed": 24,
+      "E_end": 57.32631891969567,
+      "signed_displacement": 5.957651794119851,
+      "costs": {
+        "movement": 1.0430512664283205,
+        "basal": 7.6031999999999975,
+        "sensor": 0.6911999999999997,
+        "feedback_fee": 0.5759999999999997,
+        "gain": 4.319999999999998,
+        "loss": 1.4399999999999995,
+        "basal_unpaid": 7.212657010017636e-17
+      }
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "stage": "retention_changed",
+      "n": 12,
+      "correct": 12,
+      "completed": 12,
+      "E_end": 55.25412567016712,
+      "signed_displacement": 5.878640588956532,
+      "costs": {
+        "movement": 0.5169932495285474,
+        "basal": 3.8015999999999983,
+        "sensor": 0.3455999999999998,
+        "feedback_fee": 0.28799999999999987,
+        "gain": 2.8799999999999986,
+        "loss": 0.0,
+        "basal_unpaid": 3.6594731769249453e-17
+      }
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "stage": "acquire",
+      "n": 24,
+      "correct": 12,
+      "completed": 24,
+      "E_end": 62.08054609714661,
+      "signed_displacement": 0.12960685433077934,
+      "costs": {
+        "movement": 1.0490539028534012,
+        "basal": 7.6032,
+        "sensor": 0.6912,
+        "feedback_fee": 0.576,
+        "gain": 2.88,
+        "loss": 2.88,
+        "basal_unpaid": 7.70112489715618e-17
+      }
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "stage": "retention",
+      "n": 12,
+      "correct": 5,
+      "completed": 12,
+      "E_end": 56.650385223271876,
+      "signed_displacement": -1.0004274997333837,
+      "costs": {
+        "movement": 0.5149608738747563,
+        "basal": 3.8015999999999996,
+        "sensor": 0.34559999999999996,
+        "feedback_fee": 0.288,
+        "gain": 1.2,
+        "loss": 1.68,
+        "basal_unpaid": 3.411246354978378e-17
+      }
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "stage": "changed",
+      "n": 24,
+      "correct": 9,
+      "completed": 24,
+      "E_end": 45.3055091663174,
+      "signed_displacement": -2.8822904132854177,
+      "costs": {
+        "movement": 1.0344760569544915,
+        "basal": 7.603199999999999,
+        "sensor": 0.6911999999999998,
+        "feedback_fee": 0.5759999999999998,
+        "gain": 2.1599999999999997,
+        "loss": 3.599999999999999,
+        "basal_unpaid": 7.836257370775067e-17
+      }
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "stage": "retention_changed",
+      "n": 12,
+      "correct": 6,
+      "completed": 12,
+      "E_end": 40.35288141252724,
+      "signed_displacement": -0.00024022064437190238,
+      "costs": {
+        "movement": 0.517427753790157,
+        "basal": 3.8015999999999996,
+        "sensor": 0.34559999999999996,
+        "feedback_fee": 0.288,
+        "gain": 1.4399999999999997,
+        "loss": 1.4399999999999997,
+        "basal_unpaid": 3.460643330167421e-17
+      }
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "stage": "acquire",
+      "n": 24,
+      "correct": 18,
+      "completed": 24,
+      "E_end": 65.05366874620697,
+      "signed_displacement": 6.3484060415733765,
+      "costs": {
+        "movement": 0.9559312537930391,
+        "basal": 7.6032,
+        "sensor": 0.6911999999999999,
+        "feedback_fee": 0.576,
+        "gain": 4.319999999999999,
+        "loss": 1.44,
+        "basal_unpaid": 6.403206379578262e-17
+      }
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "stage": "retention",
+      "n": 12,
+      "correct": 12,
+      "completed": 12,
+      "E_end": 62.977935484424684,
+      "signed_displacement": 6.004661426561608,
+      "costs": {
+        "movement": 0.5205332617822723,
+        "basal": 3.8016,
+        "sensor": 0.34559999999999996,
+        "feedback_fee": 0.288,
+        "gain": 2.88,
+        "loss": 0.0,
+        "basal_unpaid": 3.982938805911033e-17
+      }
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "stage": "changed",
+      "n": 24,
+      "correct": 12,
+      "completed": 24,
+      "E_end": 53.07759644560926,
+      "signed_displacement": -0.42245442962053303,
+      "costs": {
+        "movement": 1.0299390388154168,
+        "basal": 7.603199999999999,
+        "sensor": 0.6911999999999999,
+        "feedback_fee": 0.5759999999999998,
+        "gain": 2.8799999999999994,
+        "loss": 2.88,
+        "basal_unpaid": 7.145383292785313e-17
+      }
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "stage": "retention_changed",
+      "n": 12,
+      "correct": 12,
+      "completed": 12,
+      "E_end": 51.01083585526841,
+      "signed_displacement": 5.8389685342215465,
+      "costs": {
+        "movement": 0.5115605903408524,
+        "basal": 3.8015999999999996,
+        "sensor": 0.34559999999999996,
+        "feedback_fee": 0.2879999999999999,
+        "gain": 2.8799999999999994,
+        "loss": 0.0,
+        "basal_unpaid": 3.399406367963365e-17
+      }
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "stage": "acquire",
+      "n": 24,
+      "correct": 21,
+      "completed": 24,
+      "E_end": 66.43915742812905,
+      "signed_displacement": 9.400264988922501,
+      "costs": {
+        "movement": 1.0104425718709675,
+        "basal": 7.603200000000001,
+        "sensor": 0.6912,
+        "feedback_fee": 0.576,
+        "gain": 5.04,
+        "loss": 0.72,
+        "basal_unpaid": 6.73942281958321e-17
+      }
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "stage": "retention",
+      "n": 12,
+      "correct": 12,
+      "completed": 12,
+      "E_end": 64.35710556678424,
+      "signed_displacement": 5.954159983921876,
+      "costs": {
+        "movement": 0.5268518613448094,
+        "basal": 3.8016000000000005,
+        "sensor": 0.3456,
+        "feedback_fee": 0.28800000000000003,
+        "gain": 2.8800000000000003,
+        "loss": 0.0,
+        "basal_unpaid": 3.910671057654864e-17
+      }
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "stage": "changed",
+      "n": 24,
+      "correct": 18,
+      "completed": 24,
+      "E_end": 57.32790407109407,
+      "signed_displacement": 5.760164180157467,
+      "costs": {
+        "movement": 1.038801495690156,
+        "basal": 7.603200000000002,
+        "sensor": 0.6912000000000001,
+        "feedback_fee": 0.5760000000000002,
+        "gain": 4.320000000000001,
+        "loss": 1.4400000000000004,
+        "basal_unpaid": 7.203213001315874e-17
+      }
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "stage": "retention_changed",
+      "n": 12,
+      "correct": 12,
+      "completed": 12,
+      "E_end": 55.2564191827387,
+      "signed_displacement": 5.876496330534945,
+      "costs": {
+        "movement": 0.5162848883553792,
+        "basal": 3.801600000000001,
+        "sensor": 0.3456000000000001,
+        "feedback_fee": 0.28800000000000003,
+        "gain": 2.8800000000000003,
+        "loss": 0.0,
+        "basal_unpaid": 3.3802380990501165e-17
+      }
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "stage": "acquire",
+      "n": 24,
+      "correct": 12,
+      "completed": 24,
+      "E_end": 62.07464236398356,
+      "signed_displacement": 0.020930704407607692,
+      "costs": {
+        "movement": 1.0549576360164548,
+        "basal": 7.603200000000001,
+        "sensor": 0.6912,
+        "feedback_fee": 0.5760000000000001,
+        "gain": 2.8800000000000003,
+        "loss": 2.8800000000000003,
+        "basal_unpaid": 7.3540093635391e-17
+      }
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "stage": "retention",
+      "n": 12,
+      "correct": 9,
+      "completed": 12,
+      "E_end": 58.55977040141093,
+      "signed_displacement": 2.9859847508675443,
+      "costs": {
+        "movement": 0.5196719625726134,
+        "basal": 3.801600000000001,
+        "sensor": 0.3456000000000001,
+        "feedback_fee": 0.2880000000000001,
+        "gain": 2.1600000000000006,
+        "loss": 0.7200000000000002,
+        "basal_unpaid": 3.708457844197791e-17
+      }
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "stage": "changed",
+      "n": 24,
+      "correct": 12,
+      "completed": 24,
+      "E_end": 48.65910075373718,
+      "signed_displacement": -0.012822690094694167,
+      "costs": {
+        "movement": 1.0302696476737543,
+        "basal": 7.603200000000001,
+        "sensor": 0.6912,
+        "feedback_fee": 0.5760000000000001,
+        "gain": 2.8800000000000003,
+        "loss": 2.8800000000000003,
+        "basal_unpaid": 7.372565556124831e-17
+      }
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "stage": "retention_changed",
+      "n": 12,
+      "correct": 3,
+      "completed": 12,
+      "E_end": 42.26660199168545,
+      "signed_displacement": -2.8965076039543263,
+      "costs": {
+        "movement": 0.5172987620517304,
+        "basal": 3.8016000000000005,
+        "sensor": 0.3456,
+        "feedback_fee": 0.28800000000000003,
+        "gain": 0.7200000000000001,
+        "loss": 2.16,
+        "basal_unpaid": 3.3753639184141456e-17
+      }
+    }
+  ],
+  "blocks": [
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "block": 0,
+      "n": 12,
+      "correct": 6
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "block": 1,
+      "n": 12,
+      "correct": 12
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "block": 2,
+      "n": 12,
+      "correct": 12
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "block": 3,
+      "n": 12,
+      "correct": 0
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "block": 4,
+      "n": 12,
+      "correct": 12
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "block": 5,
+      "n": 12,
+      "correct": 12
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "block": 0,
+      "n": 12,
+      "correct": 9
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "block": 1,
+      "n": 12,
+      "correct": 12
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "block": 2,
+      "n": 12,
+      "correct": 12
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "block": 3,
+      "n": 12,
+      "correct": 6
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "block": 4,
+      "n": 12,
+      "correct": 12
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "block": 5,
+      "n": 12,
+      "correct": 12
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "block": 0,
+      "n": 12,
+      "correct": 4
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "block": 1,
+      "n": 12,
+      "correct": 7
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "block": 2,
+      "n": 12,
+      "correct": 5
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "block": 3,
+      "n": 12,
+      "correct": 7
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "block": 4,
+      "n": 12,
+      "correct": 6
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "block": 5,
+      "n": 12,
+      "correct": 8
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "block": 0,
+      "n": 12,
+      "correct": 6
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "block": 1,
+      "n": 12,
+      "correct": 12
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "block": 2,
+      "n": 12,
+      "correct": 12
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "block": 3,
+      "n": 12,
+      "correct": 0
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "block": 4,
+      "n": 12,
+      "correct": 12
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "block": 5,
+      "n": 12,
+      "correct": 12
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "block": 0,
+      "n": 12,
+      "correct": 9
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "block": 1,
+      "n": 12,
+      "correct": 12
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "block": 2,
+      "n": 12,
+      "correct": 12
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "block": 3,
+      "n": 12,
+      "correct": 6
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "block": 4,
+      "n": 12,
+      "correct": 12
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "block": 5,
+      "n": 12,
+      "correct": 12
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "block": 0,
+      "n": 12,
+      "correct": 7
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "block": 1,
+      "n": 12,
+      "correct": 5
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "block": 2,
+      "n": 12,
+      "correct": 5
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "block": 3,
+      "n": 12,
+      "correct": 7
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "block": 4,
+      "n": 12,
+      "correct": 2
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "block": 5,
+      "n": 12,
+      "correct": 6
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "block": 0,
+      "n": 12,
+      "correct": 6
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "block": 1,
+      "n": 12,
+      "correct": 12
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "block": 2,
+      "n": 12,
+      "correct": 12
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "block": 3,
+      "n": 12,
+      "correct": 0
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "block": 4,
+      "n": 12,
+      "correct": 12
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "block": 5,
+      "n": 12,
+      "correct": 12
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "block": 0,
+      "n": 12,
+      "correct": 9
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "block": 1,
+      "n": 12,
+      "correct": 12
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "block": 2,
+      "n": 12,
+      "correct": 12
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "block": 3,
+      "n": 12,
+      "correct": 6
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "block": 4,
+      "n": 12,
+      "correct": 12
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "block": 5,
+      "n": 12,
+      "correct": 12
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "block": 0,
+      "n": 12,
+      "correct": 8
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "block": 1,
+      "n": 12,
+      "correct": 4
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "block": 2,
+      "n": 12,
+      "correct": 9
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "block": 3,
+      "n": 12,
+      "correct": 5
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "block": 4,
+      "n": 12,
+      "correct": 7
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "block": 5,
+      "n": 12,
+      "correct": 3
+    }
+  ],
+  "paired_orders": [
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "group": [
+        3,
+        0,
+        1,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "group": [
+        4,
+        1,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "group": [
+        5,
+        0,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "group": [
+        1,
+        0,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "group": [
+        4,
+        0,
+        1,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "group": [
+        5,
+        0,
+        1,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "group": [
+        2,
+        0,
+        1,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "group": [
+        2,
+        0,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "group": [
+        3,
+        1,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "group": [
+        2,
+        1,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "group": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "group": [
+        5,
+        1,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "group": [
+        1,
+        1,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "group": [
+        0,
+        1,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "group": [
+        3,
+        0,
+        1,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "group": [
+        4,
+        1,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "group": [
+        1,
+        0,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "group": [
+        4,
+        0,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "group": [
+        3,
+        1,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "group": [
+        5,
+        0,
+        1,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "group": [
+        2,
+        0,
+        1,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "group": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "group": [
+        3,
+        0,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "group": [
+        0,
+        0,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "group": [
+        1,
+        0,
+        1,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "group": [
+        5,
+        1,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "group": [
+        0,
+        1,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "group": [
+        5,
+        0,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "group": [
+        4,
+        0,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "group": [
+        4,
+        0,
+        1,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "group": [
+        2,
+        0,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "group": [
+        1,
+        0,
+        1,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "group": [
+        2,
+        1,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "group": [
+        0,
+        0,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "group": [
+        3,
+        0,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "group": [
+        1,
+        1,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "group": [
+        3,
+        0,
+        1,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "group": [
+        4,
+        1,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "group": [
+        5,
+        0,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "group": [
+        1,
+        0,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "group": [
+        4,
+        0,
+        1,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "group": [
+        5,
+        0,
+        1,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "group": [
+        2,
+        0,
+        1,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "group": [
+        2,
+        0,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "group": [
+        3,
+        1,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "group": [
+        2,
+        1,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "group": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "group": [
+        5,
+        1,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "group": [
+        1,
+        1,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "group": [
+        0,
+        1,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "group": [
+        3,
+        0,
+        1,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "group": [
+        4,
+        1,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "group": [
+        1,
+        0,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "group": [
+        4,
+        0,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "group": [
+        3,
+        1,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "group": [
+        5,
+        0,
+        1,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "group": [
+        2,
+        0,
+        1,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "group": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "group": [
+        3,
+        0,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "group": [
+        0,
+        0,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "group": [
+        1,
+        0,
+        1,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "group": [
+        5,
+        1,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "group": [
+        0,
+        1,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "group": [
+        5,
+        0,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "group": [
+        4,
+        0,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "group": [
+        4,
+        0,
+        1,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "group": [
+        2,
+        0,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "group": [
+        1,
+        0,
+        1,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "group": [
+        2,
+        1,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "group": [
+        0,
+        0,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "group": [
+        3,
+        0,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "group": [
+        1,
+        1,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "group": [
+        3,
+        0,
+        1,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "group": [
+        4,
+        1,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "group": [
+        5,
+        0,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "group": [
+        1,
+        0,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "group": [
+        4,
+        0,
+        1,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "group": [
+        5,
+        0,
+        1,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "group": [
+        2,
+        0,
+        1,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "group": [
+        2,
+        0,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "group": [
+        3,
+        1,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "group": [
+        2,
+        1,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "group": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "group": [
+        5,
+        1,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "group": [
+        1,
+        1,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "group": [
+        0,
+        1,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "group": [
+        3,
+        0,
+        1,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "group": [
+        4,
+        1,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "group": [
+        1,
+        0,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "group": [
+        4,
+        0,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "group": [
+        3,
+        1,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "group": [
+        5,
+        0,
+        1,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "group": [
+        2,
+        0,
+        1,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "group": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "group": [
+        3,
+        0,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "group": [
+        0,
+        0,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "group": [
+        1,
+        0,
+        1,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "group": [
+        5,
+        1,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "group": [
+        0,
+        1,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "group": [
+        5,
+        0,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "group": [
+        4,
+        0,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "group": [
+        4,
+        0,
+        1,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "group": [
+        2,
+        0,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "group": [
+        1,
+        0,
+        1,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "group": [
+        2,
+        1,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "group": [
+        0,
+        0,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "group": [
+        3,
+        0,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "group": [
+        1,
+        1,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "group": [
+        3,
+        0,
+        1,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "group": [
+        4,
+        1,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "group": [
+        5,
+        0,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "group": [
+        1,
+        0,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "group": [
+        4,
+        0,
+        1,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "group": [
+        5,
+        0,
+        1,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "group": [
+        2,
+        0,
+        1,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "group": [
+        2,
+        0,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "group": [
+        3,
+        1,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "group": [
+        2,
+        1,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "group": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "group": [
+        5,
+        1,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "group": [
+        1,
+        1,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "group": [
+        0,
+        1,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "group": [
+        3,
+        0,
+        1,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "group": [
+        4,
+        1,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "group": [
+        1,
+        0,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "group": [
+        4,
+        0,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "group": [
+        3,
+        1,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "group": [
+        5,
+        0,
+        1,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "group": [
+        2,
+        0,
+        1,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "group": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "group": [
+        3,
+        0,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "group": [
+        0,
+        0,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "group": [
+        1,
+        0,
+        1,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "group": [
+        5,
+        1,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "group": [
+        0,
+        1,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "group": [
+        5,
+        0,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "group": [
+        4,
+        0,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "group": [
+        4,
+        0,
+        1,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "group": [
+        2,
+        0,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "group": [
+        1,
+        0,
+        1,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "group": [
+        2,
+        1,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "group": [
+        0,
+        0,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "group": [
+        3,
+        0,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "group": [
+        1,
+        1,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "group": [
+        3,
+        0,
+        1,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "group": [
+        4,
+        1,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "group": [
+        5,
+        0,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "group": [
+        1,
+        0,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "group": [
+        4,
+        0,
+        1,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "group": [
+        5,
+        0,
+        1,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "group": [
+        2,
+        0,
+        1,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "group": [
+        2,
+        0,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "group": [
+        3,
+        1,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "group": [
+        2,
+        1,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "group": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "group": [
+        5,
+        1,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "group": [
+        1,
+        1,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "group": [
+        0,
+        1,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "group": [
+        3,
+        0,
+        1,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "group": [
+        4,
+        1,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "group": [
+        1,
+        0,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "group": [
+        4,
+        0,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "group": [
+        3,
+        1,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "group": [
+        5,
+        0,
+        1,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "group": [
+        2,
+        0,
+        1,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "group": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "group": [
+        3,
+        0,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "group": [
+        0,
+        0,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "group": [
+        1,
+        0,
+        1,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "group": [
+        5,
+        1,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "group": [
+        0,
+        1,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "group": [
+        5,
+        0,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "group": [
+        4,
+        0,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "group": [
+        4,
+        0,
+        1,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "group": [
+        2,
+        0,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "group": [
+        1,
+        0,
+        1,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "group": [
+        2,
+        1,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "group": [
+        0,
+        0,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "group": [
+        3,
+        0,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "group": [
+        1,
+        1,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "group": [
+        3,
+        0,
+        1,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "group": [
+        4,
+        1,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "group": [
+        5,
+        0,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "group": [
+        1,
+        0,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "group": [
+        4,
+        0,
+        1,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "group": [
+        5,
+        0,
+        1,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "group": [
+        2,
+        0,
+        1,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "group": [
+        2,
+        0,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "group": [
+        3,
+        1,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "group": [
+        2,
+        1,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "group": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "group": [
+        5,
+        1,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "group": [
+        1,
+        1,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "group": [
+        0,
+        1,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "group": [
+        3,
+        0,
+        1,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "group": [
+        4,
+        1,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "group": [
+        1,
+        0,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "group": [
+        4,
+        0,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "group": [
+        3,
+        1,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "group": [
+        5,
+        0,
+        1,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "group": [
+        2,
+        0,
+        1,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "group": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "group": [
+        3,
+        0,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "group": [
+        0,
+        0,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "group": [
+        1,
+        0,
+        1,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "group": [
+        5,
+        1,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "group": [
+        0,
+        1,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "group": [
+        5,
+        0,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "group": [
+        4,
+        0,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "group": [
+        4,
+        0,
+        1,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "group": [
+        2,
+        0,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "group": [
+        1,
+        0,
+        1,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "group": [
+        2,
+        1,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "group": [
+        0,
+        0,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "group": [
+        3,
+        0,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "group": [
+        1,
+        1,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "group": [
+        3,
+        0,
+        1,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "group": [
+        4,
+        1,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "group": [
+        5,
+        0,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "group": [
+        1,
+        0,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "group": [
+        4,
+        0,
+        1,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "group": [
+        5,
+        0,
+        1,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "group": [
+        2,
+        0,
+        1,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "group": [
+        2,
+        0,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "group": [
+        3,
+        1,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "group": [
+        2,
+        1,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "group": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "group": [
+        5,
+        1,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "group": [
+        1,
+        1,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "group": [
+        0,
+        1,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "group": [
+        3,
+        0,
+        1,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "group": [
+        4,
+        1,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "group": [
+        1,
+        0,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "group": [
+        4,
+        0,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "group": [
+        3,
+        1,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "group": [
+        5,
+        0,
+        1,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "group": [
+        2,
+        0,
+        1,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "group": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "group": [
+        3,
+        0,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "group": [
+        0,
+        0,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "group": [
+        1,
+        0,
+        1,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "group": [
+        5,
+        1,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "group": [
+        0,
+        1,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "group": [
+        5,
+        0,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "group": [
+        4,
+        0,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "group": [
+        4,
+        0,
+        1,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "group": [
+        2,
+        0,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "group": [
+        1,
+        0,
+        1,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "group": [
+        2,
+        1,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "group": [
+        0,
+        0,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "group": [
+        3,
+        0,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "group": [
+        1,
+        1,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "group": [
+        3,
+        0,
+        1,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "group": [
+        4,
+        1,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "group": [
+        5,
+        0,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "group": [
+        1,
+        0,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "group": [
+        4,
+        0,
+        1,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "group": [
+        5,
+        0,
+        1,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "group": [
+        2,
+        0,
+        1,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "group": [
+        2,
+        0,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "group": [
+        3,
+        1,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "group": [
+        2,
+        1,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "group": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "group": [
+        5,
+        1,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "group": [
+        1,
+        1,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "group": [
+        0,
+        1,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "group": [
+        3,
+        0,
+        1,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "group": [
+        4,
+        1,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "group": [
+        1,
+        0,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "group": [
+        4,
+        0,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "group": [
+        3,
+        1,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "group": [
+        5,
+        0,
+        1,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "group": [
+        2,
+        0,
+        1,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "group": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "group": [
+        3,
+        0,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "group": [
+        0,
+        0,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "group": [
+        1,
+        0,
+        1,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "group": [
+        5,
+        1,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "group": [
+        0,
+        1,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "group": [
+        5,
+        0,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "group": [
+        4,
+        0,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "group": [
+        4,
+        0,
+        1,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "group": [
+        2,
+        0,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "group": [
+        1,
+        0,
+        1,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "group": [
+        2,
+        1,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "group": [
+        0,
+        0,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "group": [
+        3,
+        0,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "group": [
+        1,
+        1,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "group": [
+        3,
+        0,
+        1,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "group": [
+        4,
+        1,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "group": [
+        5,
+        0,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "group": [
+        1,
+        0,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "group": [
+        4,
+        0,
+        1,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "group": [
+        5,
+        0,
+        1,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "group": [
+        2,
+        0,
+        1,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "group": [
+        2,
+        0,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "group": [
+        3,
+        1,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "group": [
+        2,
+        1,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "group": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "group": [
+        5,
+        1,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "group": [
+        1,
+        1,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "group": [
+        0,
+        1,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "group": [
+        3,
+        0,
+        1,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "group": [
+        4,
+        1,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "group": [
+        1,
+        0,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "group": [
+        4,
+        0,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "group": [
+        3,
+        1,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "group": [
+        5,
+        0,
+        1,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "group": [
+        2,
+        0,
+        1,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "group": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "group": [
+        3,
+        0,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "group": [
+        0,
+        0,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "group": [
+        1,
+        0,
+        1,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "group": [
+        5,
+        1,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "group": [
+        0,
+        1,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "group": [
+        5,
+        0,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "group": [
+        4,
+        0,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "group": [
+        4,
+        0,
+        1,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "group": [
+        2,
+        0,
+        2,
+        1
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "group": [
+        1,
+        0,
+        1,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "group": [
+        2,
+        1,
+        2,
+        1
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "group": [
+        0,
+        0,
+        2,
+        0
+      ],
+      "both_correct": false
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "group": [
+        3,
+        0,
+        2,
+        0
+      ],
+      "both_correct": true
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "group": [
+        1,
+        1,
+        2,
+        1
+      ],
+      "both_correct": false
+    }
+  ],
+  "paths": [
+    {
+      "seed": 202610199721,
+      "arm": "literal_q",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/f20a1e36-a713-4e82-8b87-bac39e29c07b/raw/202610199721_literal_q",
+      "steps": 792,
+      "failed": false,
+      "events": 72,
+      "M": 24.000000000000014,
+      "E": 51.04947087827623,
+      "minimum_mass": 23.999999999999996,
+      "minimum_energy": 50.869043047766596,
+      "maximum_energy_residual": 2.525757381022231e-14,
+      "completed": 72,
+      "costs": {
+        "movement": 2.979329121723769,
+        "basal": 22.809600000000007,
+        "sensor": 2.0736000000000003,
+        "sensor_unpaid": 0.0,
+        "feedback_fee": 1.7280000000000004,
+        "gain": 12.960000000000003,
+        "loss": 4.320000000000001,
+        "basal_unpaid": 2.0814415535097744e-16
+      }
+    },
+    {
+      "seed": 202610199721,
+      "arm": "pair_q",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/f20a1e36-a713-4e82-8b87-bac39e29c07b/raw/202610199721_pair_q",
+      "steps": 792,
+      "failed": false,
+      "events": 72,
+      "M": 23.999999999999993,
+      "E": 55.27876546438357,
+      "minimum_mass": 23.999999999999986,
+      "minimum_energy": 55.098385948124104,
+      "maximum_energy_residual": 2.6700863742235015e-14,
+      "completed": 72,
+      "costs": {
+        "movement": 3.0700345356164185,
+        "basal": 22.809599999999996,
+        "sensor": 2.0736,
+        "sensor_unpaid": 0.0,
+        "feedback_fee": 1.7279999999999998,
+        "gain": 15.119999999999997,
+        "loss": 2.1599999999999997,
+        "basal_unpaid": 2.1909344627795543e-16
+      }
+    },
+    {
+      "seed": 202610199721,
+      "arm": "body_q",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/f20a1e36-a713-4e82-8b87-bac39e29c07b/raw/202610199721_body_q",
+      "steps": 792,
+      "failed": false,
+      "events": 72,
+      "M": 24.0,
+      "E": 42.81112237372922,
+      "minimum_mass": 23.999999999999993,
+      "minimum_energy": 42.63058521859995,
+      "maximum_energy_residual": 2.3344173816219893e-14,
+      "completed": 72,
+      "costs": {
+        "movement": 3.0576776262707983,
+        "basal": 22.809600000000003,
+        "sensor": 2.0736000000000003,
+        "sensor_unpaid": 0.0,
+        "feedback_fee": 1.728,
+        "gain": 8.88,
+        "loss": 8.4,
+        "basal_unpaid": 2.1690809199821414e-16
+      }
+    },
+    {
+      "seed": 202610199722,
+      "arm": "literal_q",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/f20a1e36-a713-4e82-8b87-bac39e29c07b/raw/202610199722_literal_q",
+      "steps": 792,
+      "failed": false,
+      "events": 72,
+      "M": 24.0,
+      "E": 50.99178042270252,
+      "minimum_mass": 23.999999999999993,
+      "minimum_energy": 50.811565266642795,
+      "maximum_energy_residual": 2.8346248959199016e-14,
+      "completed": 72,
+      "costs": {
+        "movement": 3.037019577297498,
+        "basal": 22.809600000000003,
+        "sensor": 2.0736000000000003,
+        "sensor_unpaid": 0.0,
+        "feedback_fee": 1.7280000000000002,
+        "gain": 12.96,
+        "loss": 4.32,
+        "basal_unpaid": 2.1421343253773137e-16
+      }
+    },
+    {
+      "seed": 202610199722,
+      "arm": "pair_q",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/f20a1e36-a713-4e82-8b87-bac39e29c07b/raw/202610199722_pair_q",
+      "steps": 792,
+      "failed": false,
+      "events": 72,
+      "M": 23.99999999999999,
+      "E": 55.25412567016712,
+      "minimum_mass": 23.999999999999982,
+      "minimum_energy": 55.07389345958717,
+      "maximum_energy_residual": 2.4349446070548453e-14,
+      "completed": 72,
+      "costs": {
+        "movement": 3.0946743298329022,
+        "basal": 22.809599999999993,
+        "sensor": 2.0735999999999994,
+        "sensor_unpaid": 0.0,
+        "feedback_fee": 1.7279999999999993,
+        "gain": 15.119999999999994,
+        "loss": 2.1599999999999993,
+        "basal_unpaid": 2.2202548003689695e-16
+      }
+    },
+    {
+      "seed": 202610199722,
+      "arm": "body_q",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/f20a1e36-a713-4e82-8b87-bac39e29c07b/raw/202610199722_body_q",
+      "steps": 792,
+      "failed": false,
+      "events": 72,
+      "M": 23.999999999999996,
+      "E": 40.35288141252724,
+      "minimum_mass": 23.99999999999999,
+      "minimum_energy": 40.35288141252724,
+      "maximum_energy_residual": 2.8956004261004864e-14,
+      "completed": 72,
+      "costs": {
+        "movement": 3.115918587472806,
+        "basal": 22.8096,
+        "sensor": 2.0736,
+        "sensor_unpaid": 0.0,
+        "feedback_fee": 1.7279999999999998,
+        "gain": 7.68,
+        "loss": 9.6,
+        "basal_unpaid": 2.2409271953077046e-16
+      }
+    },
+    {
+      "seed": 202610199723,
+      "arm": "literal_q",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/f20a1e36-a713-4e82-8b87-bac39e29c07b/raw/202610199723_literal_q",
+      "steps": 792,
+      "failed": false,
+      "events": 72,
+      "M": 23.999999999999996,
+      "E": 51.01083585526841,
+      "minimum_mass": 23.99999999999999,
+      "minimum_energy": 50.829872725813374,
+      "maximum_energy_residual": 2.4898486050695112e-14,
+      "completed": 72,
+      "costs": {
+        "movement": 3.0179641447315806,
+        "basal": 22.8096,
+        "sensor": 2.0736,
+        "sensor_unpaid": 0.0,
+        "feedback_fee": 1.7279999999999998,
+        "gain": 12.959999999999999,
+        "loss": 4.319999999999999,
+        "basal_unpaid": 2.0930934846237972e-16
+      }
+    },
+    {
+      "seed": 202610199723,
+      "arm": "pair_q",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/f20a1e36-a713-4e82-8b87-bac39e29c07b/raw/202610199723_pair_q",
+      "steps": 792,
+      "failed": false,
+      "events": 72,
+      "M": 24.0,
+      "E": 55.2564191827387,
+      "minimum_mass": 23.999999999999993,
+      "minimum_energy": 55.07550666946167,
+      "maximum_energy_residual": 3.063695130922639e-14,
+      "completed": 72,
+      "costs": {
+        "movement": 3.0923808172613123,
+        "basal": 22.809600000000003,
+        "sensor": 2.0736000000000003,
+        "sensor_unpaid": 0.0,
+        "feedback_fee": 1.7280000000000002,
+        "gain": 15.120000000000003,
+        "loss": 2.16,
+        "basal_unpaid": 2.1233544977604063e-16
+      }
+    },
+    {
+      "seed": 202610199723,
+      "arm": "body_q",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/f20a1e36-a713-4e82-8b87-bac39e29c07b/raw/202610199723_body_q",
+      "steps": 792,
+      "failed": false,
+      "events": 72,
+      "M": 24.000000000000004,
+      "E": 42.26660199168545,
+      "minimum_mass": 23.999999999999993,
+      "minimum_energy": 42.26660199168545,
+      "maximum_energy_residual": 2.6438920497362517e-14,
+      "completed": 72,
+      "costs": {
+        "movement": 3.122198008314553,
+        "basal": 22.809600000000003,
+        "sensor": 2.0736000000000003,
+        "sensor_unpaid": 0.0,
+        "feedback_fee": 1.7280000000000002,
+        "gain": 8.64,
+        "loss": 8.64,
+        "basal_unpaid": 2.1810396682275868e-16
+      }
+    }
+  ],
+  "worker_seconds": 9.617316,
+  "checks": {
+    "pre_action_values_replayed": true,
+    "selected_action_writes_replayed": true,
+    "frozen_writer_content_unchanged": true,
+    "matched_opposite_sequences": 324
+  },
+  "new_native": 0
+}

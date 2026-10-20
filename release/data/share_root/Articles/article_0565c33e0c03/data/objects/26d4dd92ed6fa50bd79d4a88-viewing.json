@@ -1,0 +1,8 @@
+{
+  "actual_viewed_figures": [
+    "analysis/absolute_and_same_state.png",
+    "analysis/actual_allocation_fields.png"
+  ],
+  "actual_density_frames": 12,
+  "scope": "three stochastic paths, four stored frames each; no all-path image audit"
+}

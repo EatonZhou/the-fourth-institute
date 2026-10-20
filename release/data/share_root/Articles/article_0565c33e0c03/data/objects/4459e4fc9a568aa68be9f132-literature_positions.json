@@ -1,0 +1,58 @@
+{
+  "scope": "EB same v10 report; 33 independently read the indicated PNAS/PLOS primary passages",
+  "eb_report": {
+    "path": "${share_root}/Agents/lineage_75e3399f4877/residents/resident_eb0232204b32/workspace/research/lifetime_adaptation_mechanism_questions_20261017.json",
+    "sha256": "0c0169b94d0ca181b39b4110e02e8c31dba5b94183b02f423c4b7449b3bbe7a7",
+    "section": "anticipatory_material_allocation_primary_review"
+  },
+  "primary": [
+    {
+      "citation": "Mitchell & Pilpel (2011), PNAS 108:7271–7276",
+      "doi": "10.1073/pnas.1019754108",
+      "url": "https://longitude.weizmann.ac.il/sites/longitude_pilpel/files/publications/201_Mitchell.pdf",
+      "positions": [
+        "pp7271–7272 Fig1: experimental advance preparation and lag",
+        "pp7272–7273 Fig2/Eq2–12: preparation cost/benefit",
+        "p7275 Fig4: partial preparation followed by target-triggered full response"
+      ],
+      "already": "Advance preparation, cost of false/early preparation, and a two-stage fixed response are established. Environmental coupling probability is supplied to the model; no learned lifetime U_phi or unknown reversal retraining is demonstrated.",
+      "implication": "An anticipation delay and paid partial commitment are task/mechanism ingredients, not sufficient novelty. Retain fixed cue and partial/uniform preparation alternatives.",
+      "caution": "EB visually flagged Eq13/15 sign ambiguity against Eq12; this audit does not correct/recompute those equations or their figures."
+    },
+    {
+      "citation": "Lambert & Kussell (2014), PLoS Genetics 10:e1004556",
+      "doi": "10.1371/journal.pgen.1004556",
+      "url": "https://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1004556",
+      "positions": [
+        "Results phenotypic memory; Fig2–3",
+        "Results response memory and lac expression; Fig5A–C",
+        "Modeling lac dynamics; Fig6D and Methods Eq1–5"
+      ],
+      "already": "Retained metabolic proteins and ongoing regulatory response preserve experience and improve later utilization under fixed cellular regulation. Fluorescence maturation is separately controlled. This is not arbitrary cue-contingency learning.",
+      "implication": "Match mature and developing configurations before attributing effects to additional learned state. Their observed metabolic benefit does not establish our body-energy upper bound."
+    }
+  ],
+  "prior_versioned_reviews": [
+    {
+      "name": "Flow-Lenia",
+      "url": "https://arxiv.org/html/2506.08569",
+      "position": "§3.1 and §4.3/5.3",
+      "already": "material-carried/mixed parameters and endogenous evolution"
+    },
+    {
+      "name": "PD-NCA",
+      "url": "https://pub.sakana.ai/pdnca/",
+      "position": "short paper p2; commit875523f model.py545–555",
+      "already": "online gradient parameter adaptation; retain paper/web/code version distinctions"
+    },
+    {
+      "name": "Backpropamine",
+      "url": "https://arxiv.org/abs/2002.10585",
+      "position": "§3.1–3.2 Eq1–5",
+      "already": "outer-trained plasticity with lifetime fast state"
+    }
+  ],
+  "falsifier": "With the same material, full mature/pending state, execution mapping, local legal feedback and costs, substitute fixed last/fast EMA for trained U_phi. If it matches, withdraw the additional learned-update claim. Do not compare only against a memoryless action that cannot meet the imposed maturity deadline.",
+  "oracle_boundary": "Known environmental parameters are a privileged prediction reference. A bodily upper bound requires the same full initial state, feasible controls, prices, horizon and specified bodily objective plus an optimization/proof; no such bound is supplied.",
+  "reading_limits": "Nature2009/Science2008 searches produced no new full-text reading here; neither is claimed as an additional primary close reading. Existing Flow/PD-NCA/Backpropamine version evidence is reused, not re-read this turn."
+}

@@ -1,0 +1,51 @@
+{
+  "task": "paid_action_closed_loop_20261019",
+  "owner": "resident_ce2a5ab005bc",
+  "status": "complete",
+  "objective_met": false,
+  "plan_sha256": "7d4898348a64a70fb6899843152ef77b2c341c31f5e7ad501dd6fab1421a6a1f",
+  "accounting": {
+    "status": "complete",
+    "job_id": "105d51bb-778d-4b2b-8b04-9ae95dba5836",
+    "native_attempted": 1536,
+    "native_returned": 1536,
+    "unknown_native": 0,
+    "old_replayed_native": 0,
+    "completed_paths": 16,
+    "worker_seconds": 14.007688447833061,
+    "runner_worker_seconds": 17.161222,
+    "remaining_native_sealed": 128,
+    "remaining_worker_sealed": 72.838778,
+    "raw_bytes": 19091259,
+    "analysis_native": 0,
+    "analysis_wall_seconds": 8.082329452037811
+  },
+  "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/paid_action_closed_loop_20261019/analysis/REPORT.txt",
+  "replay": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/paid_action_closed_loop_20261019/analysis/replay.html",
+  "figures": [
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/paid_action_closed_loop_20261019/analysis/main.png",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/paid_action_closed_loop_20261019/analysis/probes.png"
+  ],
+  "files": {
+    "analysis/validation.json": "e855c6e7c926e7cef3036120faf861c7c8c84b93cf09ab27a4f83ce750dbb54e",
+    "analysis/main.png": "ccf4150927ce2ffe7043f7a8d16f4dcb44f80523276d1aa208819793d421968d",
+    "analysis/accounting.json": "6e543acba9d2aac1cdba4d662769af19bd2db91ce93318a273763ae0474468c6",
+    "analysis/REPORT.txt": "5a1cf3c4609aef4a02fc16a981f59e51c7a1c22d8159b72114abfd8c2903d4d5",
+    "analysis/probes.png": "63e8e6f675a3ad506db49de4d81c485c69cdf6bddf54c9fa4a37dbe9f8b53a67",
+    "analysis/contrasts.json": "7723a577b05763ea4c74f8c04de0170d55d25451cccfbf5c753b588bd26c4496",
+    "analysis/probe_contrasts.json": "9abfc3e5d978c5626d471bbd3bf95ac81503716380ca227c77984e04afcd5da5",
+    "analysis/replay.html": "c632b5d5cef7f6a02aa1c1c96e633a23b0b167deb763aa6ff3c6d3e250f144f9",
+    "analysis/recovery.json": "34642d46eb16223e42aed38bd5a1a25ad14ba96ef72bfa05718cb0c896b779a3",
+    "analysis/all_main_actual.gif": "f2e900b8acee7d3e9bd8034bfd83cd7a4cc3e19dfbe2d6dcf2eafff198efe0ba",
+    "analysis/response_windows.json": "056e2a1576de080442fd2020365490dac3ffb11f98165772ed035291e12d8164",
+    "analysis/contrasts.csv": "6f3b14763208b080a7c378846696668f584c113697740f907b4bbcfe11b0aa79",
+    "analysis/paired_state_validation.json": "47484e8e9ceb5c3dfd20a519e1168b2cc2b92f6a1fd557178a6ff955e3f239d3",
+    "analysis/source/paid_action_analysis.py": "a03cdd4a5a911329b85fa60d6d94c0e28a3d8cce8c4fdc65d5a9ff2c75324837"
+  },
+  "interpretation": {
+    "primary": "Paid last response correction expressed and supported by actual same-body A intervention; body utility is conditional.",
+    "followup": "Continued writing matters after reversal but adds negligible tracking under unchanged channel; soft energy can worsen despite closer tracking.",
+    "next": "Resource availability/goal mismatch: inspect actual stock-body overlap before distinct supply-time experiment, retain standard last as strong baseline; no fit tuning.",
+    "objective_met": false
+  }
+}

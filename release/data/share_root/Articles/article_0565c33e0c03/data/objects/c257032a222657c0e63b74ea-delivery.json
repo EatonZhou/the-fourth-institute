@@ -1,0 +1,12 @@
+{
+  "task": "complementary_cargo_exchange_20261019",
+  "handoff_sha256": "cc00f42e34a321b2c19c2e4bded840e81d8ef04c25fc4fdae26d5a2c115cf4f2",
+  "pi_delivery": {
+    "resident_id": "resident_afa3d4d6cf11",
+    "message_id": "msg_d7d1035325c559ef6d72801e4c91c079",
+    "accepted": true,
+    "sender_id": "resident_ce2a5ab005bc",
+    "input_state": {}
+  },
+  "scope": "communication sidecar; scientific manifest unchanged"
+}

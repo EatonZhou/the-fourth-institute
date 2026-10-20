@@ -1,0 +1,530 @@
+[
+  {
+    "id": "202610197401_0_paired_reactor_life",
+    "change_boundary": 512,
+    "first_completed_new_feedback": 545,
+    "updates_from_boundary": 33,
+    "no_feedback_updates": 32,
+    "first_reversal_choice_window": [
+      609,
+      672
+    ],
+    "first_reversal_endpoint": 672,
+    "completed_pulses_before_first_probe": 8,
+    "endpoint_delay_after_first_feedback": 127,
+    "first_probe_ge_065": false,
+    "wait_through_first_feedback_cost": {
+      "movement_paid": 0.09169738180727477,
+      "basal_paid": 0.9503999999999996,
+      "feedback_gain": 0.0,
+      "feedback_loss": 1.798033182713004
+    },
+    "choice_before_feedback": null
+  },
+  {
+    "id": "202610197401_0_paired_fast_delta_life",
+    "change_boundary": 512,
+    "first_completed_new_feedback": 545,
+    "updates_from_boundary": 33,
+    "no_feedback_updates": 32,
+    "first_reversal_choice_window": [
+      609,
+      672
+    ],
+    "first_reversal_endpoint": 672,
+    "completed_pulses_before_first_probe": 8,
+    "endpoint_delay_after_first_feedback": 127,
+    "first_probe_ge_065": true,
+    "wait_through_first_feedback_cost": {
+      "movement_paid": 0.19177666981530944,
+      "basal_paid": 0.9504,
+      "feedback_gain": 0.0,
+      "feedback_loss": 1.7185851360784232
+    },
+    "choice_before_feedback": null
+  },
+  {
+    "id": "202610197401_0_paired_eligibility_life",
+    "change_boundary": 512,
+    "first_completed_new_feedback": 545,
+    "updates_from_boundary": 33,
+    "no_feedback_updates": 32,
+    "first_reversal_choice_window": [
+      609,
+      672
+    ],
+    "first_reversal_endpoint": 672,
+    "completed_pulses_before_first_probe": 8,
+    "endpoint_delay_after_first_feedback": 127,
+    "first_probe_ge_065": true,
+    "wait_through_first_feedback_cost": {
+      "movement_paid": 0.19040088606432967,
+      "basal_paid": 0.9504,
+      "feedback_gain": 0.0,
+      "feedback_loss": 1.7175598887256243
+    },
+    "choice_before_feedback": null
+  },
+  {
+    "id": "202610197401_0_unpaired_reactor_life",
+    "change_boundary": 512,
+    "first_completed_new_feedback": 545,
+    "updates_from_boundary": 33,
+    "no_feedback_updates": 32,
+    "first_reversal_choice_window": [
+      609,
+      672
+    ],
+    "first_reversal_endpoint": 672,
+    "completed_pulses_before_first_probe": 8,
+    "endpoint_delay_after_first_feedback": 127,
+    "first_probe_ge_065": false,
+    "wait_through_first_feedback_cost": {
+      "movement_paid": 0.09169738180727477,
+      "basal_paid": 0.9503999999999996,
+      "feedback_gain": 1.798033182713004,
+      "feedback_loss": 0.0
+    },
+    "choice_before_feedback": null
+  },
+  {
+    "id": "202610197401_0_unpaired_fast_delta_life",
+    "change_boundary": 512,
+    "first_completed_new_feedback": 545,
+    "updates_from_boundary": 33,
+    "no_feedback_updates": 32,
+    "first_reversal_choice_window": [
+      609,
+      672
+    ],
+    "first_reversal_endpoint": 672,
+    "completed_pulses_before_first_probe": 8,
+    "endpoint_delay_after_first_feedback": 127,
+    "first_probe_ge_065": false,
+    "wait_through_first_feedback_cost": {
+      "movement_paid": 0.2161844650356886,
+      "basal_paid": 0.9503999999999999,
+      "feedback_gain": 1.7748956070186128,
+      "feedback_loss": 0.0
+    },
+    "choice_before_feedback": null
+  },
+  {
+    "id": "202610197401_0_unpaired_eligibility_life",
+    "change_boundary": 512,
+    "first_completed_new_feedback": 545,
+    "updates_from_boundary": 33,
+    "no_feedback_updates": 32,
+    "first_reversal_choice_window": [
+      609,
+      672
+    ],
+    "first_reversal_endpoint": 672,
+    "completed_pulses_before_first_probe": 8,
+    "endpoint_delay_after_first_feedback": 127,
+    "first_probe_ge_065": true,
+    "wait_through_first_feedback_cost": {
+      "movement_paid": 0.06017717156810819,
+      "basal_paid": 0.9504,
+      "feedback_gain": 1.7662291102222465,
+      "feedback_loss": 0.0
+    },
+    "choice_before_feedback": null
+  },
+  {
+    "id": "202610197401_1_paired_reactor_life",
+    "change_boundary": 512,
+    "first_completed_new_feedback": 545,
+    "updates_from_boundary": 33,
+    "no_feedback_updates": 32,
+    "first_reversal_choice_window": [
+      609,
+      672
+    ],
+    "first_reversal_endpoint": 672,
+    "completed_pulses_before_first_probe": 8,
+    "endpoint_delay_after_first_feedback": 127,
+    "first_probe_ge_065": false,
+    "wait_through_first_feedback_cost": {
+      "movement_paid": 0.09169738180727477,
+      "basal_paid": 0.9503999999999996,
+      "feedback_gain": 1.798033182713004,
+      "feedback_loss": 0.0
+    },
+    "choice_before_feedback": null
+  },
+  {
+    "id": "202610197401_1_paired_fast_delta_life",
+    "change_boundary": 512,
+    "first_completed_new_feedback": 545,
+    "updates_from_boundary": 33,
+    "no_feedback_updates": 32,
+    "first_reversal_choice_window": [
+      609,
+      672
+    ],
+    "first_reversal_endpoint": 672,
+    "completed_pulses_before_first_probe": 8,
+    "endpoint_delay_after_first_feedback": 127,
+    "first_probe_ge_065": true,
+    "wait_through_first_feedback_cost": {
+      "movement_paid": 0.1692950115574828,
+      "basal_paid": 0.9503999999999997,
+      "feedback_gain": 1.4746170869522472,
+      "feedback_loss": 0.0
+    },
+    "choice_before_feedback": null
+  },
+  {
+    "id": "202610197401_1_paired_eligibility_life",
+    "change_boundary": 512,
+    "first_completed_new_feedback": 545,
+    "updates_from_boundary": 33,
+    "no_feedback_updates": 32,
+    "first_reversal_choice_window": [
+      609,
+      672
+    ],
+    "first_reversal_endpoint": 672,
+    "completed_pulses_before_first_probe": 8,
+    "endpoint_delay_after_first_feedback": 127,
+    "first_probe_ge_065": true,
+    "wait_through_first_feedback_cost": {
+      "movement_paid": 0.16764891764578801,
+      "basal_paid": 0.9503999999999995,
+      "feedback_gain": 1.4807191802723918,
+      "feedback_loss": 0.0
+    },
+    "choice_before_feedback": null
+  },
+  {
+    "id": "202610197401_1_unpaired_reactor_life",
+    "change_boundary": 512,
+    "first_completed_new_feedback": 545,
+    "updates_from_boundary": 33,
+    "no_feedback_updates": 32,
+    "first_reversal_choice_window": [
+      609,
+      672
+    ],
+    "first_reversal_endpoint": 672,
+    "completed_pulses_before_first_probe": 8,
+    "endpoint_delay_after_first_feedback": 127,
+    "first_probe_ge_065": false,
+    "wait_through_first_feedback_cost": {
+      "movement_paid": 0.09169738180727477,
+      "basal_paid": 0.9503999999999996,
+      "feedback_gain": 1.798033182713004,
+      "feedback_loss": 0.0
+    },
+    "choice_before_feedback": null
+  },
+  {
+    "id": "202610197401_1_unpaired_fast_delta_life",
+    "change_boundary": 512,
+    "first_completed_new_feedback": 545,
+    "updates_from_boundary": 33,
+    "no_feedback_updates": 32,
+    "first_reversal_choice_window": [
+      609,
+      672
+    ],
+    "first_reversal_endpoint": 672,
+    "completed_pulses_before_first_probe": 8,
+    "endpoint_delay_after_first_feedback": 127,
+    "first_probe_ge_065": false,
+    "wait_through_first_feedback_cost": {
+      "movement_paid": 0.2161844650356886,
+      "basal_paid": 0.9503999999999999,
+      "feedback_gain": 1.7748956070186128,
+      "feedback_loss": 0.0
+    },
+    "choice_before_feedback": null
+  },
+  {
+    "id": "202610197401_1_unpaired_eligibility_life",
+    "change_boundary": 512,
+    "first_completed_new_feedback": 545,
+    "updates_from_boundary": 33,
+    "no_feedback_updates": 32,
+    "first_reversal_choice_window": [
+      609,
+      672
+    ],
+    "first_reversal_endpoint": 672,
+    "completed_pulses_before_first_probe": 8,
+    "endpoint_delay_after_first_feedback": 127,
+    "first_probe_ge_065": false,
+    "wait_through_first_feedback_cost": {
+      "movement_paid": 0.06017717156810819,
+      "basal_paid": 0.9504,
+      "feedback_gain": 1.7662291102222465,
+      "feedback_loss": 0.0
+    },
+    "choice_before_feedback": null
+  },
+  {
+    "id": "202610197402_0_paired_reactor_life",
+    "change_boundary": 512,
+    "first_completed_new_feedback": 545,
+    "updates_from_boundary": 33,
+    "no_feedback_updates": 32,
+    "first_reversal_choice_window": [
+      609,
+      672
+    ],
+    "first_reversal_endpoint": 672,
+    "completed_pulses_before_first_probe": 8,
+    "endpoint_delay_after_first_feedback": 127,
+    "first_probe_ge_065": false,
+    "wait_through_first_feedback_cost": {
+      "movement_paid": 0.09170350157086968,
+      "basal_paid": 0.9504000000000005,
+      "feedback_gain": 0.0,
+      "feedback_loss": 1.7980282106263958
+    },
+    "choice_before_feedback": null
+  },
+  {
+    "id": "202610197402_0_paired_fast_delta_life",
+    "change_boundary": 512,
+    "first_completed_new_feedback": 545,
+    "updates_from_boundary": 33,
+    "no_feedback_updates": 32,
+    "first_reversal_choice_window": [
+      609,
+      672
+    ],
+    "first_reversal_endpoint": 672,
+    "completed_pulses_before_first_probe": 8,
+    "endpoint_delay_after_first_feedback": 127,
+    "first_probe_ge_065": true,
+    "wait_through_first_feedback_cost": {
+      "movement_paid": 0.19180272752421165,
+      "basal_paid": 0.9503999999999998,
+      "feedback_gain": 0.0,
+      "feedback_loss": 1.7184830293129074
+    },
+    "choice_before_feedback": null
+  },
+  {
+    "id": "202610197402_0_paired_eligibility_life",
+    "change_boundary": 512,
+    "first_completed_new_feedback": 545,
+    "updates_from_boundary": 33,
+    "no_feedback_updates": 32,
+    "first_reversal_choice_window": [
+      609,
+      672
+    ],
+    "first_reversal_endpoint": 672,
+    "completed_pulses_before_first_probe": 8,
+    "endpoint_delay_after_first_feedback": 127,
+    "first_probe_ge_065": true,
+    "wait_through_first_feedback_cost": {
+      "movement_paid": 0.19052282900331377,
+      "basal_paid": 0.9503999999999999,
+      "feedback_gain": 0.0,
+      "feedback_loss": 1.7175445584782776
+    },
+    "choice_before_feedback": null
+  },
+  {
+    "id": "202610197402_0_unpaired_reactor_life",
+    "change_boundary": 512,
+    "first_completed_new_feedback": 545,
+    "updates_from_boundary": 33,
+    "no_feedback_updates": 32,
+    "first_reversal_choice_window": [
+      609,
+      672
+    ],
+    "first_reversal_endpoint": 672,
+    "completed_pulses_before_first_probe": 8,
+    "endpoint_delay_after_first_feedback": 127,
+    "first_probe_ge_065": false,
+    "wait_through_first_feedback_cost": {
+      "movement_paid": 0.09170350157086968,
+      "basal_paid": 0.9504000000000005,
+      "feedback_gain": 0.0,
+      "feedback_loss": 1.7980282106263958
+    },
+    "choice_before_feedback": null
+  },
+  {
+    "id": "202610197402_0_unpaired_fast_delta_life",
+    "change_boundary": 512,
+    "first_completed_new_feedback": 545,
+    "updates_from_boundary": 33,
+    "no_feedback_updates": 32,
+    "first_reversal_choice_window": [
+      609,
+      672
+    ],
+    "first_reversal_endpoint": 672,
+    "completed_pulses_before_first_probe": 8,
+    "endpoint_delay_after_first_feedback": 127,
+    "first_probe_ge_065": true,
+    "wait_through_first_feedback_cost": {
+      "movement_paid": 0.19180263421289637,
+      "basal_paid": 0.9503999999999999,
+      "feedback_gain": 0.0,
+      "feedback_loss": 1.7184828459516586
+    },
+    "choice_before_feedback": null
+  },
+  {
+    "id": "202610197402_0_unpaired_eligibility_life",
+    "change_boundary": 512,
+    "first_completed_new_feedback": 545,
+    "updates_from_boundary": 33,
+    "no_feedback_updates": 32,
+    "first_reversal_choice_window": [
+      609,
+      672
+    ],
+    "first_reversal_endpoint": 672,
+    "completed_pulses_before_first_probe": 8,
+    "endpoint_delay_after_first_feedback": 127,
+    "first_probe_ge_065": true,
+    "wait_through_first_feedback_cost": {
+      "movement_paid": 0.12166362427441389,
+      "basal_paid": 0.9504000000000004,
+      "feedback_gain": 0.0,
+      "feedback_loss": 1.7594010024555753
+    },
+    "choice_before_feedback": null
+  },
+  {
+    "id": "202610197402_1_paired_reactor_life",
+    "change_boundary": 512,
+    "first_completed_new_feedback": 545,
+    "updates_from_boundary": 33,
+    "no_feedback_updates": 32,
+    "first_reversal_choice_window": [
+      609,
+      672
+    ],
+    "first_reversal_endpoint": 672,
+    "completed_pulses_before_first_probe": 8,
+    "endpoint_delay_after_first_feedback": 127,
+    "first_probe_ge_065": false,
+    "wait_through_first_feedback_cost": {
+      "movement_paid": 0.09170350157086968,
+      "basal_paid": 0.9504000000000005,
+      "feedback_gain": 1.7980282106263958,
+      "feedback_loss": 0.0
+    },
+    "choice_before_feedback": null
+  },
+  {
+    "id": "202610197402_1_paired_fast_delta_life",
+    "change_boundary": 512,
+    "first_completed_new_feedback": 545,
+    "updates_from_boundary": 33,
+    "no_feedback_updates": 32,
+    "first_reversal_choice_window": [
+      609,
+      672
+    ],
+    "first_reversal_endpoint": 672,
+    "completed_pulses_before_first_probe": 8,
+    "endpoint_delay_after_first_feedback": 127,
+    "first_probe_ge_065": true,
+    "wait_through_first_feedback_cost": {
+      "movement_paid": 0.16924019874994553,
+      "basal_paid": 0.9503999999999998,
+      "feedback_gain": 1.4744549552499442,
+      "feedback_loss": 0.0
+    },
+    "choice_before_feedback": null
+  },
+  {
+    "id": "202610197402_1_paired_eligibility_life",
+    "change_boundary": 512,
+    "first_completed_new_feedback": 545,
+    "updates_from_boundary": 33,
+    "no_feedback_updates": 32,
+    "first_reversal_choice_window": [
+      609,
+      672
+    ],
+    "first_reversal_endpoint": 672,
+    "completed_pulses_before_first_probe": 8,
+    "endpoint_delay_after_first_feedback": 127,
+    "first_probe_ge_065": true,
+    "wait_through_first_feedback_cost": {
+      "movement_paid": 0.16744628601174105,
+      "basal_paid": 0.9504000000000002,
+      "feedback_gain": 1.4804331303118392,
+      "feedback_loss": 0.0
+    },
+    "choice_before_feedback": null
+  },
+  {
+    "id": "202610197402_1_unpaired_reactor_life",
+    "change_boundary": 512,
+    "first_completed_new_feedback": 545,
+    "updates_from_boundary": 33,
+    "no_feedback_updates": 32,
+    "first_reversal_choice_window": [
+      609,
+      672
+    ],
+    "first_reversal_endpoint": 672,
+    "completed_pulses_before_first_probe": 8,
+    "endpoint_delay_after_first_feedback": 127,
+    "first_probe_ge_065": false,
+    "wait_through_first_feedback_cost": {
+      "movement_paid": 0.09170350157086968,
+      "basal_paid": 0.9504000000000005,
+      "feedback_gain": 0.0,
+      "feedback_loss": 1.7980282106263958
+    },
+    "choice_before_feedback": null
+  },
+  {
+    "id": "202610197402_1_unpaired_fast_delta_life",
+    "change_boundary": 512,
+    "first_completed_new_feedback": 545,
+    "updates_from_boundary": 33,
+    "no_feedback_updates": 32,
+    "first_reversal_choice_window": [
+      609,
+      672
+    ],
+    "first_reversal_endpoint": 672,
+    "completed_pulses_before_first_probe": 8,
+    "endpoint_delay_after_first_feedback": 127,
+    "first_probe_ge_065": false,
+    "wait_through_first_feedback_cost": {
+      "movement_paid": 0.19180263421289637,
+      "basal_paid": 0.9503999999999999,
+      "feedback_gain": 0.0,
+      "feedback_loss": 1.7184828459516586
+    },
+    "choice_before_feedback": null
+  },
+  {
+    "id": "202610197402_1_unpaired_eligibility_life",
+    "change_boundary": 512,
+    "first_completed_new_feedback": 545,
+    "updates_from_boundary": 33,
+    "no_feedback_updates": 32,
+    "first_reversal_choice_window": [
+      609,
+      672
+    ],
+    "first_reversal_endpoint": 672,
+    "completed_pulses_before_first_probe": 8,
+    "endpoint_delay_after_first_feedback": 127,
+    "first_probe_ge_065": false,
+    "wait_through_first_feedback_cost": {
+      "movement_paid": 0.12166362427441389,
+      "basal_paid": 0.9504000000000004,
+      "feedback_gain": 0.0,
+      "feedback_loss": 1.7594010024555753
+    },
+    "choice_before_feedback": null
+  }
+]

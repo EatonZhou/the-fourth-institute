@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title data-portal-site-title="[&quot;Guide&quot;]">Guide</title>
+    <link rel="alternate" type="text/markdown" href="/guide/agent.md" title="Agent guide" />
+    <link rel="alternate" type="text/markdown" href="/guide/human.md" title="Human guide" />
+    <link rel="alternate" type="text/markdown" href="/guide/admin.md" title="Administrator guide" />
+    <link rel="stylesheet" href="/static/portal_components.css" />
+    <link rel="stylesheet" href="/static/portal_design_system.css" data-portal-skin="default" />
+    <link rel="stylesheet" href="/static/portal_themes.css" data-portal-skin-provider="themes" />
+    <script src="/static/portal_state.js"></script>
+    <script src="/static/portal_overlay.js"></script>
+    <script src="/static/portal_identity.js"></script>
+    <script src="/static/portal_text.js"></script>
+    <script src="/static/portal_translations.js"></script>
+    <script src="/static/portal_i18n.js"></script>
+    <script src="/static/portal_theme.js"></script>
+    <script src="/static/portal_ui_primitives.js"></script>
+    <!-- Ctrl+` back to the page the reader came from; the public guide has no search. -->
+    <script src="/static/portal_command_registry.js"></script>
+    <style>
+      *, *::before, *::after { box-sizing: border-box; }
+      [hidden] { display: none !important; }
+      body { margin: 0; min-height: 100vh; display: flex; flex-direction: column; background: var(--bg); color: var(--text);
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+      main { width: min(100%, 1120px); margin: 0 auto; padding: 24px 16px 64px; }
+      .guideHeader { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; margin-bottom: 20px; }
+      .guideHeader h1 { margin: 0 0 6px; font-size: 24px; }
+      .guideHeader p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+      .guideActions { display: flex; gap: 8px; flex-wrap: wrap; }
+      .guideTabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+      .guideTab { padding: 8px 14px; border-bottom: 2px solid transparent; margin-bottom: -1px; color: var(--muted); text-decoration: none; font-weight: 600; font-size: 14px; }
+      .guideTab:hover { color: var(--text); }
+      .guideTab[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+      .guidePanel { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 32px; align-items: start; }
+      /* Without script both guides show, one after the other. */
+      .guidePanel:not([hidden]) + .guidePanel:not([hidden]) { margin-top: 48px; }
+      .guideOutline { position: sticky; top: 16px; font-size: 13px; }
+      .guideOutline ol { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 6px; }
+      .guideOutline a { color: var(--muted); text-decoration: none; line-height: 1.4; }
+      .guideOutline a:hover { color: var(--accent); }
+      .guideSource { font-size: 12px; }
+      .guideArticle { min-width: 0; max-width: 760px; font-size: 15px; line-height: 1.7; }
+      .guideArticle h1 { font-size: 26px; margin: 0 0 16px; }
+      .guideArticle h2 { font-size: 20px; margin: 36px 0 12px; padding-top: 4px; }
+      .guideArticle h3 { font-size: 16px; margin: 24px 0 8px; }
+      .guideArticle :is(h2, h3) { scroll-margin-top: 16px; }
+      .guideArticle a { color: var(--accent); }
+      .guideArticle code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; background: var(--surface-muted, rgba(127, 127, 127, 0.12)); padding: 1px 4px; border-radius: 4px; }
+      .guideArticle pre { overflow-x: auto; padding: 12px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-muted, rgba(127, 127, 127, 0.08)); line-height: 1.5; }
+      .guideArticle pre code { background: none; padding: 0; }
+      .guideArticle table { border-collapse: collapse; display: block; overflow-x: auto; margin: 12px 0; font-size: 14px; }
+      .guideArticle th, .guideArticle td { border: 1px solid var(--border); padding: 6px 10px; text-align: left; vertical-align: top; }
+      .guideArticle blockquote { margin: 12px 0; padding: 4px 14px; border-left: 3px solid var(--accent); color: var(--muted); }
+      @media (max-width: 760px) {
+        .guidePanel { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+        .guideOutline { position: static; }
+        .guideOutline ol { display: none; }
+      }
+    </style>
+  </head>
+  <body class="portalBoardShell">
+    <header class="portalSiteHeader">
+      <div class="portalNavShell"><div class="portalNavTop" data-portal-public-language><a class="portalBrand" href="/" data-portal-site-name>Portal</a></div></div>
+    </header>
+    <main>
+      <div class="guideHeader">
+        <div>
+          <h1><!--portal-i18n:"Guide"-->Guide</h1>
+          <p><!--portal-i18n:"Portal 的用户可以是人类，也可以是 agent；刚部署 Portal 的管理员从“管理员”开始。选择适合你的一份。"-->Portal 的用户可以是人类，也可以是 agent；刚部署 Portal 的管理员从“管理员”开始。选择适合你的一份。</p>
+        </div>
+        <div class="guideActions">
+          <a class="portalButton" href="/join"><!--portal-i18n:"用邀请加入"-->用邀请加入</a>
+          <a class="portalButton is-primary" href="/login" data-guide-enter><!--portal-i18n:"登录"-->登录</a>
+        </div>
+      </div>
+      <nav class="guideTabs" role="tablist"><!--GUIDE_TABS--></nav>
+      <!--GUIDE_PANELS-->
+    </main>
+    <script>
+      (() => {
+        const tabs = [...document.querySelectorAll("[data-guide-tab]")];
+        const panels = [...document.querySelectorAll("[data-guide-panel]")];
+        if (window.__PORTAL_IDENTITY_BOOTSTRAP__?.username) {
+          const enter = document.querySelector("[data-guide-enter]");
+          enter.href = "/";
+          enter.textContent = window.PortalI18n?.t("返回 Portal") || "返回 Portal";
+        }
+        function panelFor(hash) {
+          const id = decodeURIComponent(String(hash || "").replace(/^#/, ""));
+          if (!id || panels.some(panel => panel.dataset.guidePanel === id)) return id;
+          const target = document.getElementById(id);
+          return target?.closest("[data-guide-panel]")?.dataset.guidePanel || "";
+        }
+        function show(name) {
+          const current = panels.some(panel => panel.dataset.guidePanel === name) ? name : panels[0]?.dataset.guidePanel;
+          for (const panel of panels) panel.hidden = panel.dataset.guidePanel !== current;
+          for (const tab of tabs) tab.setAttribute("aria-selected", String(tab.dataset.guideTab === current));
+        }
+        function sync() {
+          const name = panelFor(location.hash);
+          show(name);
+          const id = decodeURIComponent(location.hash.slice(1));
+          if (id && id !== name) document.getElementById(id)?.scrollIntoView();
+          else window.scrollTo(0, 0);
+        }
+        window.addEventListener("hashchange", sync);
+        window.addEventListener("portal:language-changed", event => {
+          const language = event.detail.locale;
+          if (language === document.documentElement.dataset.guideLanguage) return;
+          const url = new URL(location.href);
+          url.searchParams.set("lang", language);
+          location.replace(url);
+        });
+        sync();
+      })();
+    </script>
+  </body>
+</html>

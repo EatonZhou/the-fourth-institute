@@ -1,0 +1,422 @@
+{
+  "/data 可用于快速恢复本机数据，但不能覆盖整机或磁盘同时损坏。": {
+    "en": "/data can be used to quickly restore local data, but it cannot cover a whole machine or simultaneous disk failure.",
+    "zh-CN": "/data 可用于快速恢复本机数据，但不能覆盖整机或磁盘同时损坏。"
+  },
+  "BACKUP RUN": {
+    "en": "BACKUP RUN",
+    "zh-CN": "备份运行"
+  },
+  "Backup Center 不直接覆盖生产数据。需要恢复时，请先按知识库中的依赖顺序验证 Snapshot 和数据库。": {
+    "en": "Backup Center does not directly overwrite production data. When recovery is needed, first verify the Snapshot and database according to the dependency order in the knowledge base.",
+    "zh-CN": "Backup Center 不直接覆盖生产数据。需要恢复时，请先按知识库中的依赖顺序验证 Snapshot 和数据库。"
+  },
+  "Backup controls": {
+    "en": "Backup controls",
+    "zh-CN": "备份控制"
+  },
+  "Backup status has not been initialized.": {
+    "en": "Backup status has not been initialized.",
+    "zh-CN": "备份状态尚未初始化。"
+  },
+  "Backup status is unavailable.": {
+    "en": "Backup status is unavailable.",
+    "zh-CN": "备份状态不可用。"
+  },
+  "Resource Backup Center": {
+    "en": "Resource Backup Center",
+    "zh-CN": "资源备份中心"
+  },
+  "Resource 系统恢复顺序": {
+    "en": "Resource system recovery order",
+    "zh-CN": "Resource 系统恢复顺序"
+  },
+  "Restic AES-256": {
+    "en": "Restic AES-256",
+    "zh-CN": "Restic AES-256"
+  },
+  "The Resource Backup operation did not complete.": {
+    "en": "The Resource Backup operation did not complete.",
+    "zh-CN": "Resource Backup 操作未完成。"
+  },
+  "mode must be check or deep-check": {
+    "en": "mode must be check or deep-check",
+    "zh-CN": "mode 必须是 check 或 deep-check"
+  },
+  "profile must be critical or content": {
+    "en": "profile must be critical or content",
+    "zh-CN": "profile 必须是 critical 或 content"
+  },
+  "下次自动同步": {
+    "en": "Next auto-sync",
+    "zh-CN": "下次自动同步"
+  },
+  "不生成恢复点": {
+    "en": "Do not generate a recovery point",
+    "zh-CN": "不生成恢复点"
+  },
+  "仓库校验已进入后台队列。": {
+    "en": "Repository validation has entered the background queue.",
+    "zh-CN": "仓库校验已进入后台队列。"
+  },
+  "仓库状态": {
+    "en": "Repository status",
+    "zh-CN": "仓库状态"
+  },
+  "任务会在后台执行；大目录只做增量上传，但首次运行可能需要较长时间。": {
+    "en": "The task will run in the background; large directories are uploaded incrementally only, but the first run may take a long time.",
+    "zh-CN": "任务会在后台执行；大目录只做增量上传，但首次运行可能需要较长时间。"
+  },
+  "保留策略": {
+    "en": "Retention policy",
+    "zh-CN": "保留策略"
+  },
+  "关键状态": {
+    "en": "Key status",
+    "zh-CN": "关键状态"
+  },
+  "关键状态、Resource 内容和一致性数据库副本都由后台计划任务维护。": {
+    "en": "Key status, Resource content, and consistency database copies are all maintained by background scheduled tasks.",
+    "zh-CN": "关键状态、Resource 内容和一致性数据库副本都由后台计划任务维护。"
+  },
+  "关键状态备份已进入后台队列。": {
+    "en": "Key status backup has entered the background queue.",
+    "zh-CN": "关键状态备份已进入后台队列。"
+  },
+  "关键状态高频同步，完整内容错峰增量备份。": {
+    "en": "Key states sync frequently; full content is backed up incrementally off-peak.",
+    "zh-CN": "关键状态高频同步，完整内容错峰增量备份。"
+  },
+  "关闭运行详情": {
+    "en": "Close run details",
+    "zh-CN": "关闭运行详情"
+  },
+  "刷新备份状态": {
+    "en": "Refresh Backup Status",
+    "zh-CN": "刷新备份状态"
+  },
+  "加密仓库": {
+    "en": "Encrypt Repository",
+    "zh-CN": "加密仓库"
+  },
+  "区分已覆盖、策略排除和需要异地介质的数据。": {
+    "en": "Distinguish data that is covered, excluded by policy, and requires offsite media.",
+    "zh-CN": "区分已覆盖、策略排除和需要异地介质的数据。"
+  },
+  "可以在排除后台错误后重新发起对应备份。": {
+    "en": "You can retry the corresponding backup after resolving the background error.",
+    "zh-CN": "可以在排除后台错误后重新发起对应备份。"
+  },
+  "后台任务运行中": {
+    "en": "Background task running",
+    "zh-CN": "后台任务运行中"
+  },
+  "后台执行器当前无法访问备份目标。": {
+    "en": "The background executor currently cannot access the backup target.",
+    "zh-CN": "后台执行器当前无法访问备份目标。"
+  },
+  "后台执行，不会阻塞 Resource 页面。": {
+    "en": "Runs in the background and will not block the Resource page.",
+    "zh-CN": "后台执行，不会阻塞 Resource 页面。"
+  },
+  "备份健康状态": {
+    "en": "Backup health status",
+    "zh-CN": "备份健康状态"
+  },
+  "备份摘要": {
+    "en": "Backup summary",
+    "zh-CN": "备份摘要"
+  },
+  "备份服务完成一次 inventory 后会显示。": {
+    "en": "Displayed after the backup service completes an inventory.",
+    "zh-CN": "备份服务完成一次 inventory 后会显示。"
+  },
+  "备份服务完成初始化后，这里会显示计划任务。": {
+    "en": "After the backup service completes initialization, scheduled tasks will be displayed here.",
+    "zh-CN": "备份服务完成初始化后，这里会显示计划任务。"
+  },
+  "备份服务尚未完成初始化。完成后会自动生成关键状态与完整内容快照。": {
+    "en": "The backup service has not completed initialization yet. After completion, key status and full content snapshots will be generated automatically.",
+    "zh-CN": "备份服务尚未完成初始化。完成后会自动生成关键状态与完整内容快照。"
+  },
+  "备份服务的状态文件需要修复。": {
+    "en": "The backup service status file needs repair.",
+    "zh-CN": "备份服务的状态文件需要修复。"
+  },
+  "备份计划": {
+    "en": "Backup plan",
+    "zh-CN": "备份计划"
+  },
+  "外部介质": {
+    "en": "External media",
+    "zh-CN": "外部介质"
+  },
+  "它们已位于 /data；同盘复制不构成备份，需要另一块磁盘或对象存储。": {
+    "en": "They are already located in /data; copying on the same disk does not constitute a backup and requires another disk or object storage.",
+    "zh-CN": "它们已位于 /data；同盘复制不构成备份，需要另一块磁盘或对象存储。"
+  },
+  "完成首次配置与运行后会生成状态投影。": {
+    "en": "After completing initial configuration and running, a status projection will be generated.",
+    "zh-CN": "完成首次配置与运行后会生成状态投影。"
+  },
+  "完整 Resource 备份已进入后台队列。": {
+    "en": "Full Resource backup has entered the background queue.",
+    "zh-CN": "完整 Resource 备份已进入后台队列。"
+  },
+  "完整备份会扫描 Resource 内容、Git 工作区和 Resident 会话。": {
+    "en": "A full backup scans Resource content, Git workspaces, and Resident sessions.",
+    "zh-CN": "完整备份会扫描 Resource 内容、Git 工作区和 Resident 会话。"
+  },
+  "尚无 Snapshot": {
+    "en": "No Snapshot yet",
+    "zh-CN": "尚无 Snapshot"
+  },
+  "尚未生成覆盖清单": {
+    "en": "Coverage list not yet generated",
+    "zh-CN": "尚未生成覆盖清单"
+  },
+  "尚未配置同步策略": {
+    "en": "Sync policy not yet configured",
+    "zh-CN": "尚未配置同步策略"
+  },
+  "已写入恢复清单": {
+    "en": "Recovery list written",
+    "zh-CN": "已写入恢复清单"
+  },
+  "已纳入 Resource 恢复清单。": {
+    "en": "Added to the Resource recovery list.",
+    "zh-CN": "已纳入 Resource 恢复清单。"
+  },
+  "已覆盖": {
+    "en": "Overwritten",
+    "zh-CN": "已覆盖"
+  },
+  "已跳过": {
+    "en": "Skipped",
+    "zh-CN": "已跳过"
+  },
+  "开始完整备份": {
+    "en": "Start full backup",
+    "zh-CN": "开始完整备份"
+  },
+  "当前没有需要处理的告警。": {
+    "en": "There are currently no alerts to handle.",
+    "zh-CN": "当前没有需要处理的告警。"
+  },
+  "待初始化": {
+    "en": "Pending initialization",
+    "zh-CN": "待初始化"
+  },
+  "待调度": {
+    "en": "Pending scheduling",
+    "zh-CN": "待调度"
+  },
+  "恢复指南": {
+    "en": "Restore guide",
+    "zh-CN": "恢复指南"
+  },
+  "恢复是高风险操作，当前只提供经过确认的顺序。": {
+    "en": "Restore is a high-risk operation; currently only confirmed sequences are provided.",
+    "zh-CN": "恢复是高风险操作，当前只提供经过确认的顺序。"
+  },
+  "恢复点过期": {
+    "en": "Restore point expired",
+    "zh-CN": "恢复点过期"
+  },
+  "打开恢复指南": {
+    "en": "Open restore guide",
+    "zh-CN": "打开恢复指南"
+  },
+  "按策略排除": {
+    "en": "Exclude by policy",
+    "zh-CN": "按策略排除"
+  },
+  "按计划生成加密、增量的 Resource 快照。": {
+    "en": "Generate encrypted, incremental Resource snapshots on schedule.",
+    "zh-CN": "按计划生成加密、增量的 Resource 快照。"
+  },
+  "换一个关键词试试。": {
+    "en": "Try a different keyword.",
+    "zh-CN": "换一个关键词试试。"
+  },
+  "搜索备份状态": {
+    "en": "Search backup status",
+    "zh-CN": "搜索备份状态"
+  },
+  "搜索覆盖域 / 运行记录": {
+    "en": "Search coverage domain / run records",
+    "zh-CN": "搜索覆盖域 / 运行记录"
+  },
+  "数据域": {
+    "en": "Data domain",
+    "zh-CN": "数据域"
+  },
+  "数据覆盖": {
+    "en": "Data coverage",
+    "zh-CN": "数据覆盖"
+  },
+  "新恢复点正在生成": {
+    "en": "New recovery point is being generated",
+    "zh-CN": "新恢复点正在生成"
+  },
+  "无告警": {
+    "en": "No alerts",
+    "zh-CN": "无告警"
+  },
+  "无法读取 Backup Center": {
+    "en": "Unable to read Backup Center",
+    "zh-CN": "无法读取 Backup Center"
+  },
+  "最近恢复点": {
+    "en": "Latest recovery point",
+    "zh-CN": "最近恢复点"
+  },
+  "最近校验": {
+    "en": "Recently verified",
+    "zh-CN": "最近校验"
+  },
+  "未加密": {
+    "en": "Unencrypted",
+    "zh-CN": "未加密"
+  },
+  "本机 /data": {
+    "en": "Local /data",
+    "zh-CN": "本机 /data"
+  },
+  "本机备份之外仍需处理的灾备缺口。": {
+    "en": "Disaster recovery gaps still to be addressed beyond local backups.",
+    "zh-CN": "本机备份之外仍需处理的灾备缺口。"
+  },
+  "本机快速恢复层，使用 Restic 加密和去重。": {
+    "en": "Local fast recovery layer using Restic encryption and deduplication.",
+    "zh-CN": "本机快速恢复层，使用 Restic 加密和去重。"
+  },
+  "校验 Restic 仓库元数据": {
+    "en": "Verify Restic repository metadata",
+    "zh-CN": "校验 Restic 仓库元数据"
+  },
+  "正在同步": {
+    "en": "Syncing",
+    "zh-CN": "正在同步"
+  },
+  "正在备份": {
+    "en": "Backing up",
+    "zh-CN": "正在备份"
+  },
+  "正在校验": {
+    "en": "Validating",
+    "zh-CN": "正在校验"
+  },
+  "正在核对备份库、定时策略和最近运行。": {
+    "en": "Checking backup repositories, schedules, and recent runs.",
+    "zh-CN": "正在核对备份库、定时策略和最近运行。"
+  },
+  "正在读取 Backup Center": {
+    "en": "Reading Backup Center",
+    "zh-CN": "正在读取 Backup Center"
+  },
+  "没有匹配的覆盖域": {
+    "en": "No matching coverage domains",
+    "zh-CN": "没有匹配的覆盖域"
+  },
+  "没有匹配的运行记录。": {
+    "en": "No matching run records.",
+    "zh-CN": "没有匹配的运行记录。"
+  },
+  "点击一行查看 Snapshot、耗时和失败原因。": {
+    "en": "Click a row to view the Snapshot, duration, and failure reason.",
+    "zh-CN": "点击一行查看 Snapshot、耗时和失败原因。"
+  },
+  "状态已同步": {
+    "en": "Status synced",
+    "zh-CN": "状态已同步"
+  },
+  "立即同步统一 ID、Lineage、附件、配置和一致性数据库副本": {
+    "en": "Immediately sync unified ID, Lineage, attachments, configuration, and consistency database copy",
+    "zh-CN": "立即同步统一 ID、Lineage、附件、配置和一致性数据库副本"
+  },
+  "立即完整备份": {
+    "en": "Full backup now",
+    "zh-CN": "立即完整备份"
+  },
+  "立即执行完整备份？": {
+    "en": "Run a full backup now?",
+    "zh-CN": "立即执行完整备份？"
+  },
+  "等待其他任务": {
+    "en": "Waiting for other tasks",
+    "zh-CN": "等待其他任务"
+  },
+  "等待首份快照": {
+    "en": "Waiting for the first snapshot",
+    "zh-CN": "等待首份快照"
+  },
+  "等待首次校验": {
+    "en": "Waiting for first validation",
+    "zh-CN": "等待首次校验"
+  },
+  "结束时间": {
+    "en": "End time",
+    "zh-CN": "结束时间"
+  },
+  "自动同步策略": {
+    "en": "Auto-sync policy",
+    "zh-CN": "自动同步策略"
+  },
+  "自动策略": {
+    "en": "Auto policy",
+    "zh-CN": "自动策略"
+  },
+  "自动策略定义节奏，覆盖清单说明哪些数据能够恢复。": {
+    "en": "Auto policy defines the rhythm; the coverage list explains which data can be recovered.",
+    "zh-CN": "自动策略定义节奏，覆盖清单说明哪些数据能够恢复。"
+  },
+  "覆盖范围": {
+    "en": "Coverage",
+    "zh-CN": "覆盖范围"
+  },
+  "计划任务尚未启用": {
+    "en": "Scheduled task is not enabled yet",
+    "zh-CN": "计划任务尚未启用"
+  },
+  "请检查 /share/Services/resource-backup/config/config.yaml。": {
+    "en": "Please check /share/Services/resource-backup/config/config.yaml.",
+    "zh-CN": "请检查 /share/Services/resource-backup/config/config.yaml。"
+  },
+  "请检查备份配置。": {
+    "en": "Please check the backup configuration.",
+    "zh-CN": "请检查备份配置。"
+  },
+  "运行详情": {
+    "en": "Run details",
+    "zh-CN": "运行详情"
+  },
+  "首轮备份完成后，运行记录会出现在这里。": {
+    "en": "After the first backup completes, run records will appear here.",
+    "zh-CN": "首轮备份完成后，运行记录会出现在这里。"
+  },
+  "备份健康": {
+    "en": "Backup health",
+    "zh-CN": "备份健康"
+  },
+  "关键状态和 Resource 内容都有可用恢复点。": {
+    "en": "Recovery points are available for critical state and Resource content.",
+    "zh-CN": "关键状态和 Resource 内容都有可用恢复点。"
+  },
+  "加密 Restic 仓库": {
+    "en": "Encrypted Restic repository",
+    "zh-CN": "加密 Restic 仓库"
+  },
+  "仓库校验": {
+    "en": "Repository verification",
+    "zh-CN": "仓库校验"
+  },
+  "校验已完成": {
+    "en": "Verification complete",
+    "zh-CN": "校验已完成"
+  },
+  "深度校验": {
+    "en": "Deep verification",
+    "zh-CN": "深度校验"
+  }
+}

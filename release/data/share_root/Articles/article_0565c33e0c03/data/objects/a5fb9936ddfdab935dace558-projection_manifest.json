@@ -1,0 +1,231 @@
+{
+  "schema": "lenia.lifetime-state-branches.v1",
+  "candidate_id": "m2026101607-g1-0060",
+  "genotype_unchanged": true,
+  "branches": [
+    {
+      "branch_id": "unperturbed/sham",
+      "candidate_id": "m2026101607-g1-0060",
+      "source_segments": [
+        "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidates/m2026101607-g1-0060/control/trajectory.npz",
+        "${share_root}/Projects/元胞自动机研究/src/runs/jobs/fe2335cd-d69c-4fbc-9ebd-93c6a42d359f/unperturbed/free/trajectory.npz",
+        "${share_root}/Projects/元胞自动机研究/src/runs/jobs/fe2335cd-d69c-4fbc-9ebd-93c6a42d359f/unperturbed/sham/trajectory.npz"
+      ],
+      "frames": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/fe2335cd-d69c-4fbc-9ebd-93c6a42d359f/lifetime_branches/unperturbed_sham.npz",
+      "keys": [
+        "frames",
+        "lifetime_steps"
+      ],
+      "shape": [
+        177,
+        64,
+        64
+      ],
+      "grid": [
+        64,
+        64
+      ],
+      "actual_lifetime_range": [
+        4096,
+        7168
+      ],
+      "config": {
+        "size": 64,
+        "radius": 17.312394884565038,
+        "mu": 0.15816724304290594,
+        "sigma": 0.01736313349689692,
+        "dt": 0.09236343019463927,
+        "dtype": "float64"
+      },
+      "coordinate_transform": "none",
+      "inherited_genome_unchanged": true,
+      "outer_generation": 1,
+      "first_pulse": {
+        "intensity": 0.0,
+        "start": 4096,
+        "updates": 8
+      },
+      "second_pulse": {
+        "intensity": 0.0,
+        "start": 6656,
+        "updates": 8
+      },
+      "interpretation": "lifetime environment branches; different initial bodies, no learning claim"
+    },
+    {
+      "branch_id": "unperturbed/probe",
+      "candidate_id": "m2026101607-g1-0060",
+      "source_segments": [
+        "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidates/m2026101607-g1-0060/control/trajectory.npz",
+        "${share_root}/Projects/元胞自动机研究/src/runs/jobs/fe2335cd-d69c-4fbc-9ebd-93c6a42d359f/unperturbed/free/trajectory.npz",
+        "${share_root}/Projects/元胞自动机研究/src/runs/jobs/fe2335cd-d69c-4fbc-9ebd-93c6a42d359f/unperturbed/probe/trajectory.npz"
+      ],
+      "frames": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/fe2335cd-d69c-4fbc-9ebd-93c6a42d359f/lifetime_branches/unperturbed_probe.npz",
+      "keys": [
+        "frames",
+        "lifetime_steps"
+      ],
+      "shape": [
+        177,
+        64,
+        64
+      ],
+      "grid": [
+        64,
+        64
+      ],
+      "actual_lifetime_range": [
+        4096,
+        7168
+      ],
+      "config": {
+        "size": 64,
+        "radius": 17.312394884565038,
+        "mu": 0.15816724304290594,
+        "sigma": 0.01736313349689692,
+        "dt": 0.09236343019463927,
+        "dtype": "float64"
+      },
+      "coordinate_transform": "none",
+      "inherited_genome_unchanged": true,
+      "outer_generation": 1,
+      "first_pulse": {
+        "intensity": 0.0,
+        "start": 4096,
+        "updates": 8
+      },
+      "second_pulse": {
+        "intensity": 0.45,
+        "start": 6656,
+        "updates": 8
+      },
+      "interpretation": "lifetime environment branches; different initial bodies, no learning claim"
+    },
+    {
+      "branch_id": "first_pulse/sham",
+      "candidate_id": "m2026101607-g1-0060",
+      "source_segments": [
+        "${share_root}/Projects/元胞自动机研究/src/runs/jobs/41a0e2a0-44ab-450a-800e-d71176365daa/m2026101607-g1-0060/0.45/trajectory.npz",
+        "${share_root}/Projects/元胞自动机研究/src/runs/jobs/fe2335cd-d69c-4fbc-9ebd-93c6a42d359f/first_pulse/free/trajectory.npz",
+        "${share_root}/Projects/元胞自动机研究/src/runs/jobs/fe2335cd-d69c-4fbc-9ebd-93c6a42d359f/first_pulse/sham/trajectory.npz"
+      ],
+      "frames": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/fe2335cd-d69c-4fbc-9ebd-93c6a42d359f/lifetime_branches/first_pulse_sham.npz",
+      "keys": [
+        "frames",
+        "lifetime_steps"
+      ],
+      "shape": [
+        193,
+        64,
+        64
+      ],
+      "grid": [
+        64,
+        64
+      ],
+      "actual_lifetime_range": [
+        4096,
+        7168
+      ],
+      "config": {
+        "size": 64,
+        "radius": 17.312394884565038,
+        "mu": 0.15816724304290594,
+        "sigma": 0.01736313349689692,
+        "dt": 0.09236343019463927,
+        "dtype": "float64"
+      },
+      "coordinate_transform": "none",
+      "inherited_genome_unchanged": true,
+      "outer_generation": 1,
+      "first_pulse": {
+        "intensity": 0.45,
+        "start": 4096,
+        "updates": 8
+      },
+      "second_pulse": {
+        "intensity": 0.0,
+        "start": 6656,
+        "updates": 8
+      },
+      "interpretation": "lifetime environment branches; different initial bodies, no learning claim"
+    },
+    {
+      "branch_id": "first_pulse/probe",
+      "candidate_id": "m2026101607-g1-0060",
+      "source_segments": [
+        "${share_root}/Projects/元胞自动机研究/src/runs/jobs/41a0e2a0-44ab-450a-800e-d71176365daa/m2026101607-g1-0060/0.45/trajectory.npz",
+        "${share_root}/Projects/元胞自动机研究/src/runs/jobs/fe2335cd-d69c-4fbc-9ebd-93c6a42d359f/first_pulse/free/trajectory.npz",
+        "${share_root}/Projects/元胞自动机研究/src/runs/jobs/fe2335cd-d69c-4fbc-9ebd-93c6a42d359f/first_pulse/probe/trajectory.npz"
+      ],
+      "frames": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/fe2335cd-d69c-4fbc-9ebd-93c6a42d359f/lifetime_branches/first_pulse_probe.npz",
+      "keys": [
+        "frames",
+        "lifetime_steps"
+      ],
+      "shape": [
+        193,
+        64,
+        64
+      ],
+      "grid": [
+        64,
+        64
+      ],
+      "actual_lifetime_range": [
+        4096,
+        7168
+      ],
+      "config": {
+        "size": 64,
+        "radius": 17.312394884565038,
+        "mu": 0.15816724304290594,
+        "sigma": 0.01736313349689692,
+        "dt": 0.09236343019463927,
+        "dtype": "float64"
+      },
+      "coordinate_transform": "none",
+      "inherited_genome_unchanged": true,
+      "outer_generation": 1,
+      "first_pulse": {
+        "intensity": 0.45,
+        "start": 4096,
+        "updates": 8
+      },
+      "second_pulse": {
+        "intensity": 0.45,
+        "start": 6656,
+        "updates": 8
+      },
+      "interpretation": "lifetime environment branches; different initial bodies, no learning claim"
+    }
+  ],
+  "events": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/fe2335cd-d69c-4fbc-9ebd-93c6a42d359f/events.json",
+  "limits": [
+    "Same genome and dt; two histories and different bodies, not independent worlds.",
+    "Finite state-branch persistence, not proof of attractors, learning, improved resistance or natural reproduction.",
+    "Distributed/multiple bodies have no reported centroid speed."
+  ],
+  "sourceRef": null,
+  "publication": {
+    "project_readers_allowed": true,
+    "scope": "true trajectory frames and selected metadata"
+  },
+  "replay": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/fe2335cd-d69c-4fbc-9ebd-93c6a42d359f/state_branches.gif",
+    "actual_updates_per_frame": 32,
+    "coordinate_transform": "none",
+    "interpolated": false
+  },
+  "note": "Panel histories share exact prefixes; panels are counterfactual branches, not independent organisms or generations.",
+  "common_ancestor": {
+    "frames": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidates/m2026101607-g1-0060/long/trajectory.npz",
+    "restart": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidates/m2026101607-g1-0060/long/restart.npz",
+    "genome": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidates/m2026101607-g1-0060/genome.json",
+    "lifetime_range": [
+      0,
+      4096
+    ],
+    "first_environment_fork_step": 4096
+  }
+}

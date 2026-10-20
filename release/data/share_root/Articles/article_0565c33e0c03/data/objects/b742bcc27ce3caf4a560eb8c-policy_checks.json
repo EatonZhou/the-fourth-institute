@@ -1,0 +1,28 @@
+{
+  "status": "passed",
+  "checks": {
+    "censored_no_update_or_trigger": true,
+    "negative_completed_event_then_directed_probe": true,
+    "unpaid_write_no_update": true,
+    "unpaid_cue_not_inferred": true,
+    "preset_budget_without_feedback": [
+      7,
+      15,
+      23,
+      31,
+      39,
+      47,
+      55,
+      63,
+      71,
+      79,
+      87,
+      95
+    ],
+    "last_pair_switch_not_other_port_sample": true,
+    "invalid_receipt_rejected_before_mutation": true
+  },
+  "body_steps": 0,
+  "environment_calls": 0,
+  "scope": "pure local receipt/acquisition boundaries"
+}

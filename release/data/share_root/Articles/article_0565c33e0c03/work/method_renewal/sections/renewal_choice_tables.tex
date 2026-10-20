@@ -1,0 +1,65 @@
+\begin{table}[p]
+\centering
+\small
+\setlength{\tabcolsep}{3.5pt}
+\begin{tabular}{llrrrrrc}
+\toprule
+Condition & Policy & $M$ & $E$ & Body-time & $L_{256}$ & Post-256 & Maint. \\
+\midrule
+5601 ring & Both & 99.142 & 165.431 & 616.013 & 78.775 & 20.367 & Yes \\
+ & $G$ & 86.503 & 148.426 & 559.523 & 65.835 & 20.669 & No \\
+ & $R$ & 95.420 & 157.671 & 604.672 & 75.119 & 20.301 & Yes \\
+ & Neither & 85.148 & 143.782 & 552.675 & 63.957 & 21.190 & No \\
+\midrule
+5601 sep. & Both & 84.264 & 143.407 & 503.481 & 61.881 & 22.383 & Yes \\
+ & $G$ & 56.741 & 82.546 & 394.898 & 38.532 & 18.210 & No \\
+ & $R$ & 55.964 & 78.086 & 377.855 & 36.623 & 19.341 & No \\
+ & Neither & 55.102 & 76.653 & 360.764 & 36.064 & 19.037 & No \\
+\midrule
+5602 ring & Both & 98.102 & 164.215 & 610.510 & 77.089 & 21.013 & Yes \\
+ & $G$ & 83.451 & 143.121 & 540.466 & 62.275 & 21.176 & No \\
+ & $R$ & 89.201 & 146.663 & 583.045 & 68.501 & 20.700 & No \\
+ & Neither & 79.506 & 133.022 & 521.235 & 58.044 & 21.462 & No \\
+\midrule
+5602 sep. & Both & 85.678 & 147.950 & 518.426 & 64.059 & 21.619 & Yes \\
+ & $G$ & 61.543 & 96.014 & 427.408 & 42.543 & 19.000 & No \\
+ & $R$ & 68.274 & 109.880 & 436.783 & 48.723 & 19.551 & No \\
+ & Neither & 55.830 & 81.323 & 373.530 & 36.971 & 18.859 & No \\
+\bottomrule
+\end{tabular}
+\caption{\textbf{Combined choice classes support finite maintenance.} Absolute outcomes at step 384 from the same complete step-256 parent within each condition. Seed suffixes 5601 and 5602 denote 202610195601 and 202610195602; sep., separated seeds. Both retains $G$ and $R$; the single-class policies retain only the indicated class. Body-time integrates steps 257--384. $L_{256}$ is surviving fork material, whereas post-256 is surviving tissue genuinely born afterwards. Maint. requires both fixed 64-step windows to pass; zero-tolerance decisions agree. The second-seed Both futures are exact read-only references. These sixteen roles are related comparisons, not sixteen independent environments. Values are rounded; full precision is retained in the source tables.}
+\label{tab:renewal-choice-outcomes}
+\end{table}
+
+\begin{table}[p]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{llrrrrrr}
+\toprule
+Condition & Policy & Pump & Motion & Basal & Synthesis & Template & Birth F \\
+\midrule
+5601 ring & Both & 5.472 & 3.117 & 7.388 & 4.603 & 0.460 & 9.666 \\
+ & $G$ & 3.536 & 3.569 & 6.718 & 4.921 & 0.492 & 10.334 \\
+ & $R$ & 4.283 & 3.255 & 7.254 & 4.661 & 0.466 & 9.788 \\
+ & Neither & 2.873 & 3.857 & 6.637 & 4.971 & 0.497 & 10.440 \\
+\midrule
+5601 sep. & Both & 0.641 & 2.167 & 6.034 & 4.858 & 0.486 & 10.203 \\
+ & $G$ & 0.379 & 4.432 & 4.747 & 5.013 & 0.501 & 10.528 \\
+ & $R$ & 1.119 & 4.456 & 4.543 & 4.959 & 0.496 & 10.415 \\
+ & Neither & 0.499 & 4.549 & 4.339 & 4.701 & 0.470 & 9.873 \\
+\midrule
+5602 ring & Both & 6.336 & 3.066 & 7.322 & 4.721 & 0.472 & 9.913 \\
+ & $G$ & 3.868 & 3.687 & 6.490 & 5.016 & 0.502 & 10.533 \\
+ & $R$ & 3.706 & 3.610 & 6.998 & 4.846 & 0.485 & 10.176 \\
+ & Neither & 3.324 & 4.134 & 6.262 & 5.001 & 0.500 & 10.501 \\
+\midrule
+5602 sep. & Both & 0.774 & 2.343 & 6.214 & 4.742 & 0.474 & 9.957 \\
+ & $G$ & 0.397 & 4.553 & 5.137 & 5.096 & 0.510 & 10.701 \\
+ & $R$ & 1.000 & 3.020 & 5.245 & 4.664 & 0.466 & 9.795 \\
+ & Neither & 0.542 & 4.911 & 4.493 & 4.747 & 0.475 & 9.968 \\
+\bottomrule
+\end{tabular}
+\caption{\textbf{Realized costs differ across the choice policies.} Cumulative quantities over steps 257--384 for every arm in Table~\ref{tab:renewal-choice-outcomes}. Pump, motion and basal columns are actual paid charges; synthesis and template columns report dissipated energy. Birth F is total birth-related fuel expenditure, including newborn energy and the synthesis/template components, so these columns must not be summed as independent charges. All rows retain the original prices. Across the sixteen logical futures, including the two reused references, unpaid basal charges total $2.092992\times10^{-6}$ and unaffordable pump charges $2.367656\times10^{-5}$; these are not rounded to zero in the records. Complete request, rejection, export, death-energy and cohort accounts remain available. Additional policy arithmetic and observation storage are unpriced.}
+\label{tab:renewal-choice-costs}
+\end{table}

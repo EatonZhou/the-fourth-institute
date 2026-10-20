@@ -1,0 +1,50 @@
+{
+  "native": 0,
+  "checks": [
+    {
+      "parent_index": 0,
+      "integration_error": [
+        0.0,
+        0.0
+      ],
+      "max_gross_error": 1.1102230246251565e-16,
+      "restore_exact": true,
+      "common_PF_exact": true,
+      "native": 0
+    },
+    {
+      "parent_index": 1,
+      "integration_error": [
+        0.0,
+        0.0
+      ],
+      "max_gross_error": 1.1102230246251565e-16,
+      "restore_exact": true,
+      "common_PF_exact": true,
+      "native": 0
+    },
+    {
+      "parent_index": 2,
+      "integration_error": [
+        0.0,
+        0.0
+      ],
+      "max_gross_error": 1.1102230246251565e-16,
+      "restore_exact": true,
+      "common_PF_exact": true,
+      "native": 0
+    },
+    {
+      "parent_index": 3,
+      "integration_error": [
+        0.0,
+        0.0
+      ],
+      "max_gross_error": 1.1102230246251565e-16,
+      "restore_exact": true,
+      "common_PF_exact": true,
+      "native": 0
+    }
+  ],
+  "reference_full_state_exact": 8
+}

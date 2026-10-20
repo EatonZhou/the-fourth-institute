@@ -1,0 +1,37 @@
+{
+  "task": "replacement_history_carrier_20261019",
+  "owner": "resident_d3ccfa2d95b7",
+  "status": "completed",
+  "job": "325b618a-c145-4529-8c24-f93b81d375f5",
+  "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/replacement_history_carrier_20261019/REPORT.txt",
+  "method": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/replacement_history_carrier_20261019/METHOD.txt",
+  "plan": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/replacement_history_carrier_20261019/plan.json",
+    "sha256": "67e57f6b6c1a531981088d8b03c22ebb7c6db7c5ab440c59d02e6d92d2715a59"
+  },
+  "manifest": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/replacement_history_carrier_20261019/manifest.json",
+    "sha256": "22d2c4a4a19215bffeed0919a3ada91b4aa4298f8b768cf51c2bf0d3a4e68c8f",
+    "files": 98
+  },
+  "budget": {
+    "native": 6664,
+    "science": 6656,
+    "boundaries": 8,
+    "worker_seconds": 369.899856,
+    "unused_native": 0,
+    "unused_worker_seconds": 830.100144,
+    "attempts": 1,
+    "old_acquisition": 0,
+    "old_future_replay": 0,
+    "old_budget_used": 0,
+    "raw_bytes": 151184357
+  },
+  "analysis": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/replacement_history_carrier_20261019/analysis.json",
+  "raw_manifest": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/replacement_history_carrier_20261019/raw_manifest.json",
+  "histories": 12,
+  "futures": 40,
+  "observed": "关闭本协议的跨seed身体史正向匹配/净适应优势主张。环5601在两PF donor下IB体时−1.422284/−1.469346、post256−.021868/−.023599，均反匹配；环5602体时+.222729/+.198940而post256−.052073/−.053740，符号冲突。PF史IR的体时及post256在8个固定身体条件均为正，但末E交互8/8负，不能把PF库存效应称全面收益。环匹配−中性M/E/体时四对都正，但5601-D post256−.124229、5602-U−.678986使两父均未过双方向净门。分离两父四方向净门均过，但身体IB为一父反匹配、一父符号不稳；保留非中心历史相对中性的条件收益，不冒作定向身体记忆。当前20/20环probe与16/20分离probe过两个64窗维护，0/1e−8一致；四失败全为分离中性支，不能继续称所有分离未来都是负例，也不能据有限384叫稳态。",
+  "objective_met": false,
+  "next_request": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/replacement_history_carrier_20261019/scientific_next_request.json"
+}

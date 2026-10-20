@@ -1,0 +1,58 @@
+[
+  {
+    "seed": 202610195602,
+    "shape": "ring",
+    "source": {
+      "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/third_response_generation_search_20261019/b9f8bccb-57c5-4366-9788-7fdc1e301114/validation_ring_midpoint/steps.csv",
+      "rows_sha256": "2e3bb1b770fe55f0e4629d31b4e36bed37bc9e9a9fcb0bd4a825e464fefda460",
+      "first_clock": 257,
+      "last_clock": 384,
+      "final": "/data/dataset/lenia-research/lineage_75e3399f4877/third_response_generation_search_20261019/b9f8bccb-57c5-4366-9788-7fdc1e301114/validation_ring_midpoint/state384.bin",
+      "final_sha256": "e697b86d75fa46050352cacb287bf668db9b902608f8b6395ab74ea40b0cbaa5",
+      "source_outcome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/third_response_generation_search_20261019/outcomes.json",
+      "role": "exact read-only 128-step continuation",
+      "M384": 98.10210815619483,
+      "E384": 164.21547105990686,
+      "bodytime": 610.5096712487478,
+      "post256": 21.013384571645553
+    },
+    "full_initial_sha": "83e7118c2f692759df698641b8d771eecc7ce98a72e0412eeb34f231af5d62bc",
+    "old_class": "ThirdBody",
+    "new_class": "FactorialBody",
+    "physical_base_exact": true,
+    "old_prechoice_exact": true,
+    "center_inputs_exact": true,
+    "observer_source_bound": true,
+    "L256_registration_exact": true,
+    "new_classification_fields": null,
+    "native": 0
+  },
+  {
+    "seed": 202610195602,
+    "shape": "separate_seeds",
+    "source": {
+      "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/third_response_generation_search_20261019/b9f8bccb-57c5-4366-9788-7fdc1e301114/validation_separate_seeds_midpoint/steps.csv",
+      "rows_sha256": "79a94b154ec2a6d18567307d6db0c94448fb5828a8946d21a5d3671caca6fc3e",
+      "first_clock": 257,
+      "last_clock": 384,
+      "final": "/data/dataset/lenia-research/lineage_75e3399f4877/third_response_generation_search_20261019/b9f8bccb-57c5-4366-9788-7fdc1e301114/validation_separate_seeds_midpoint/state384.bin",
+      "final_sha256": "6d5cd818f728ced291bfc42613c7c9c45cb58eba7801ec3f2adfec61e21de445",
+      "source_outcome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/third_response_generation_search_20261019/outcomes.json",
+      "role": "exact read-only 128-step continuation",
+      "M384": 85.67785330663237,
+      "E384": 147.94960654206415,
+      "bodytime": 518.4260995551721,
+      "post256": 21.61882959404332
+    },
+    "full_initial_sha": "a97aab22e07f85d80ac48a238ab1b7b6b87433c3c2dd1051c7695e0d8f064212",
+    "old_class": "ThirdBody",
+    "new_class": "FactorialBody",
+    "physical_base_exact": true,
+    "old_prechoice_exact": true,
+    "center_inputs_exact": true,
+    "observer_source_bound": true,
+    "L256_registration_exact": true,
+    "new_classification_fields": null,
+    "native": 0
+  }
+]

@@ -1,0 +1,60 @@
+{
+  "task": "v0.48 new main Fig7: bounded utility of acquired conditional maintenance content",
+  "author_resident": "resident_0b7dc096e3c9",
+  "software": "LibreOffice Impress 24.2.7.2",
+  "software_claim": "PPTX authored in LibreOffice Impress, not Microsoft PowerPoint",
+  "display": ":100",
+  "independent_profile": "${share_root}/Agents/lineage_75e3399f4877/residents/resident_0b7dc096e3c9/workspace/impress-runtime/display-100/lo-profile",
+  "original_new_document_window": "2993775",
+  "closed_original_window": true,
+  "reopened_window": "3174097",
+  "current_document": "predictive_maintenance.pptx",
+  "page_cm": [
+    32,
+    30
+  ],
+  "construction": [
+    "New blank presentation created through Ctrl+N in the independent GUI; placeholders removed visibly; page size set through Slide Properties.",
+    "Three native column charts inserted through the Impress toolbar. Their internal Data Table cells were filled by visible keyboard input from existing numerical output.",
+    "Panel A retains all three conditional-content readouts for both parents; B retains all six predeclared arms for both parents; C shows all four paired timescale contrasts from eight branches.",
+    "Native text frames, Unicode event arrows, headings, numerical trade-offs and scientific limits entered through the GUI, Character and Position/Size dialogs.",
+    "No raster analysis panel, image-generation tool, Python drawing, UNO, python-pptx or direct document-object generation used. There are no embedded raster pictures in the PPTX. The Python control helper sends mouse/keyboard/clipboard input only. Source/audit code reads existing scientific data and saved files; it does not construct a figure."
+  ],
+  "save_and_inspection": [
+    "Saved through Save As as PowerPoint 2007–365 PPTX and accepted the GUI format confirmation.",
+    "Exported the full slide directly to PDF through the GUI PDF export control.",
+    "Closed the original document (2993775 disappeared from the visible window list), opened the saved PPTX through the Open dialog, explicitly raised and viewed the new window 3174097.",
+    "After reopening, opened panel B's native Data Table and viewed all six category rows and both parent columns. No data changes made during this inspection.",
+    "Exported PNG again from the reopened saved PPTX. Initial resolution-mode attempt retained a low pixel count; corrected by explicit pixel dimensions in the GUI. Final export is 3779×3543, approximately 299.96×299.97 dpi relative to the saved 32×30 cm page; no DPI metadata is embedded.",
+    "Actually viewed the final PNG and a standard pdftoppm rasterization of the exported PDF. No clipped figure elements, missing plot categories or unreadable overlaps found.",
+    "Read-only ZIP/XML audit found 38 native text shapes and 3 native chart objects, zero raster pictures; all 22 GUI-entered chart numbers exactly match source values rounded to six decimals. See validation.json."
+  ],
+  "evidence": {
+    "action_log": "gui_records/actions.jsonl",
+    "native_tables": [
+      "gui_records/A-native-data.png",
+      "gui_records/B-native-data.png",
+      "gui_records/C-native-data.png"
+    ],
+    "reopened_native_chart": "gui_records/reopened-native-B-data.png",
+    "reopened_view": "gui_records/reopened-visible.png",
+    "finished_view": "gui_records/reopened-export-complete.png",
+    "pdf_visual_review": "gui_records/pdf-review.png",
+    "png_export_settings": "gui_records/png-final-dimensions.png",
+    "hashes": "artifacts.json",
+    "object_and_data_audit": "validation.json"
+  },
+  "scientific_data_generation": {
+    "new_simulation_steps": 0,
+    "old_trajectory_replay": 0
+  },
+  "scope": {
+    "written_figure_root": "work/longform_v047/figures/predictive_maintenance_v048",
+    "old_stable_figures_overwritten": false,
+    "manuscript_or_wrapper_changed": false,
+    "other_author_display_96_touched": false,
+    "microsoft_authentication_session_touched": false,
+    "wrapper_integration_owner": "paper author via resident_78225d1bc049",
+    "article_default_preview_integration_verified_here": false
+  }
+}

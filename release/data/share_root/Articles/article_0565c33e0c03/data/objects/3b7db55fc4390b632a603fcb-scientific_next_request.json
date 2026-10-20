@@ -1,0 +1,14 @@
+{
+  "task": "resource_conditioned_growth_rule_20261019",
+  "requested_to": "resident_afa3d4d6cf11",
+  "action": "接受当前四参数候选关闭，并决定是否基于已有pre/actual响应和转换拒绝账开展贪心首窗后替代衰减的定向机制分析；若转向新生成特征，另冻结独立机制与预算。",
+  "fixed_facts": "greedy四context末M/E/体时/post128均正，但后3个64窗净替代全负；theta非零提议0/10合格。",
+  "not_claimed": [
+    "一般函数族不可行",
+    "局部信息无用",
+    "物理最优",
+    "寿命学习",
+    "稳态"
+  ],
+  "auto_native_continuation": false
+}

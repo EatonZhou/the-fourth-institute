@@ -1,0 +1,1343 @@
+{
+  "files": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/METHOD.txt",
+      "relative": "METHOD.txt",
+      "sha256": "03bcf61eda80b92cba7e007dd74d5b14489b1dc4b0e4f9c9ae9751eaf59189cf",
+      "bytes": 3528
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/REPORT.txt",
+      "relative": "REPORT.txt",
+      "sha256": "b1906658fea3c45a352784e702e2582c76ec7d7ce6f648db821bcb5b2d298374",
+      "bytes": 8335
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/accounting.json",
+      "relative": "accounting.json",
+      "sha256": "865844cb7608ca22e45b16d603268887d681837499d07d307aaac4ef42021a3a",
+      "bytes": 418
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/analysis_checks.json",
+      "relative": "analysis_checks.json",
+      "sha256": "38346fbcdb5bed6e8851dc5acb3891b9b5db501357c25572d47c5e5d2d19247d",
+      "bytes": 359
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/compact_ring_core_outer--bridged_longbody--open_T11-atlas.pdf",
+      "relative": "compact_ring_core_outer--bridged_longbody--open_T11-atlas.pdf",
+      "sha256": "084aa4c6da16d059a80b87c8fa6dc31e0c4ad824280995638afab611f1aa4fb0",
+      "bytes": 872526
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/compact_ring_core_outer--bridged_longbody--open_T11-atlas.png",
+      "relative": "compact_ring_core_outer--bridged_longbody--open_T11-atlas.png",
+      "sha256": "a19d5aece9e323d2a90dd28cdb20120e246b1281fb61c01e2eac726135c2a246",
+      "bytes": 1002773
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/compact_ring_core_outer--bridged_longbody--open_T11-atlas.svg",
+      "relative": "compact_ring_core_outer--bridged_longbody--open_T11-atlas.svg",
+      "sha256": "f5bbea59f0b57c4b8c2e75809637a4767fec808d02f722eb57ac58ab7e57ae96",
+      "bytes": 1465017
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/compact_ring_core_outer--bridged_longbody--open_T11-frames.npz",
+      "relative": "compact_ring_core_outer--bridged_longbody--open_T11-frames.npz",
+      "sha256": "3008aa6d29555c2ad1421bd31ba162751c45a76eacdb33a87b6f911eac8d4c01",
+      "bytes": 2284003
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/compact_ring_core_outer--bridged_longbody--open_T11-initial128.npz",
+      "relative": "compact_ring_core_outer--bridged_longbody--open_T11-initial128.npz",
+      "sha256": "f3d1d876232bda1f028f1de5a3d294d4d36da00133b3507ea37cf54f76165965",
+      "bytes": 99065
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/compact_ring_core_outer--bridged_longbody--open_T11.gif",
+      "relative": "compact_ring_core_outer--bridged_longbody--open_T11.gif",
+      "sha256": "1a5cd873d43a6daa7e5e03acd6852792df69b06dc0d549dd6d040f2fc0c6cb33",
+      "bytes": 565319
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/compact_ring_core_outer--bridged_longbody--reserve_T11-atlas.pdf",
+      "relative": "compact_ring_core_outer--bridged_longbody--reserve_T11-atlas.pdf",
+      "sha256": "faaf4a457b1e4c141851952527ca496862711145eeabc155264692b2e3593049",
+      "bytes": 875400
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/compact_ring_core_outer--bridged_longbody--reserve_T11-atlas.png",
+      "relative": "compact_ring_core_outer--bridged_longbody--reserve_T11-atlas.png",
+      "sha256": "cb0f4e34c71d48cc243684e119c40324958cb48130d07aaa06a4b67d342a16d3",
+      "bytes": 1005085
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/compact_ring_core_outer--bridged_longbody--reserve_T11-atlas.svg",
+      "relative": "compact_ring_core_outer--bridged_longbody--reserve_T11-atlas.svg",
+      "sha256": "38416c5bfd99778da5ee3be0c52af376ee956bee05d63532c8638aab458f73ee",
+      "bytes": 1469902
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/compact_ring_core_outer--bridged_longbody--reserve_T11-frames.npz",
+      "relative": "compact_ring_core_outer--bridged_longbody--reserve_T11-frames.npz",
+      "sha256": "f050b33900a6d1a6d51ba667578723c590f8901f1546853147175132392f2a4c",
+      "bytes": 2325727
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/compact_ring_core_outer--bridged_longbody--reserve_T11-initial128.npz",
+      "relative": "compact_ring_core_outer--bridged_longbody--reserve_T11-initial128.npz",
+      "sha256": "21f6b94ed66a4c73756fce6da8b58ccc312e8670734c2ad63eebfca4222b787f",
+      "bytes": 99087
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/compact_ring_core_outer--bridged_longbody--reserve_T11.gif",
+      "relative": "compact_ring_core_outer--bridged_longbody--reserve_T11.gif",
+      "sha256": "7c744383a0031fcf24b598f12616d02196deb777178b0b7080bb3500e8b88d0e",
+      "bytes": 562546
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/compact_ring_core_outer--bridged_longbody--reserve_T11_minus_open_T11-step129.npz",
+      "relative": "compact_ring_core_outer--bridged_longbody--reserve_T11_minus_open_T11-step129.npz",
+      "sha256": "de9a0a764644cccef972bbf27fe832aad5e3d4ee4e9daaf61c36f17d028d080c",
+      "bytes": 1319777
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/compact_ring_core_outer--bridged_longbody--reserve_T11_minus_open_T11-step129.pdf",
+      "relative": "compact_ring_core_outer--bridged_longbody--reserve_T11_minus_open_T11-step129.pdf",
+      "sha256": "58dce61b5fed652d54b63b104791c6641e776dfeb2720864050c5107a976e644",
+      "bytes": 128292
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/compact_ring_core_outer--bridged_longbody--reserve_T11_minus_open_T11-step129.png",
+      "relative": "compact_ring_core_outer--bridged_longbody--reserve_T11_minus_open_T11-step129.png",
+      "sha256": "de394e7b993bb8b9ccc8a7744aad137cc4ab278989056f562fca99a07b2ec4de",
+      "bytes": 236461
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/compact_ring_core_outer--bridged_longbody--reserve_T11_minus_open_T11-step129.svg",
+      "relative": "compact_ring_core_outer--bridged_longbody--reserve_T11_minus_open_T11-step129.svg",
+      "sha256": "569303f6aa1482827715dfa947fc97447533ba97d54cfaa54eda430ace2223d3",
+      "bytes": 266867
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/compact_ring_core_outer--bridged_longbody--reserve_T11_minus_suppress_T11-step129.npz",
+      "relative": "compact_ring_core_outer--bridged_longbody--reserve_T11_minus_suppress_T11-step129.npz",
+      "sha256": "5890cb8511964a62cb151b2e69be7162d85415e26be215001f8935edf40f7a00",
+      "bytes": 1329871
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/compact_ring_core_outer--bridged_longbody--reserve_T11_minus_suppress_T11-step129.pdf",
+      "relative": "compact_ring_core_outer--bridged_longbody--reserve_T11_minus_suppress_T11-step129.pdf",
+      "sha256": "dfef8ffeb2d78c27d00aa8ab116965318b2f1ce3c36c3f006cb6ec4e3a805580",
+      "bytes": 41423
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/compact_ring_core_outer--bridged_longbody--reserve_T11_minus_suppress_T11-step129.png",
+      "relative": "compact_ring_core_outer--bridged_longbody--reserve_T11_minus_suppress_T11-step129.png",
+      "sha256": "5e160254efd387aa33498fd3074a5b9f91240609813e7125b0ad9ce42f969f3b",
+      "bytes": 158533
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/compact_ring_core_outer--bridged_longbody--reserve_T11_minus_suppress_T11-step129.svg",
+      "relative": "compact_ring_core_outer--bridged_longbody--reserve_T11_minus_suppress_T11-step129.svg",
+      "sha256": "1354b7ad4340656cbff9132e92f26adaee8e733b3d600ea2eee3c97fbbdd8fd2",
+      "bytes": 158896
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/compact_ring_core_outer--bridged_longbody--reserve_T11_minus_suppress_T11-step156.npz",
+      "relative": "compact_ring_core_outer--bridged_longbody--reserve_T11_minus_suppress_T11-step156.npz",
+      "sha256": "105ed860b16c41d930070358f97fe39a1183ec3857ab7ef7b63d2180a6362c21",
+      "bytes": 1564251
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/compact_ring_core_outer--bridged_longbody--reserve_T11_minus_suppress_T11-step156.pdf",
+      "relative": "compact_ring_core_outer--bridged_longbody--reserve_T11_minus_suppress_T11-step156.pdf",
+      "sha256": "f889829923126b23a3d426b6dfbb490232296940259dcb6b87a25b19bc41e2ae",
+      "bytes": 101746
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/compact_ring_core_outer--bridged_longbody--reserve_T11_minus_suppress_T11-step156.png",
+      "relative": "compact_ring_core_outer--bridged_longbody--reserve_T11_minus_suppress_T11-step156.png",
+      "sha256": "4b056e09c5c216aa93297e10042e3b7edf054f43707eaff9456522e8043b9403",
+      "bytes": 189780
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/compact_ring_core_outer--bridged_longbody--reserve_T11_minus_suppress_T11-step156.svg",
+      "relative": "compact_ring_core_outer--bridged_longbody--reserve_T11_minus_suppress_T11-step156.svg",
+      "sha256": "8dfc693f898fe7886d057aa1a301466fdf45d6db302b65b3dd22924abdbc9456",
+      "bytes": 229351
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/compact_ring_core_outer--bridged_longbody--suppress_T11-atlas.pdf",
+      "relative": "compact_ring_core_outer--bridged_longbody--suppress_T11-atlas.pdf",
+      "sha256": "6757ad6594128811f93f8332b8778663569b7b1b9633a3dec86d51f973f676ef",
+      "bytes": 876655
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/compact_ring_core_outer--bridged_longbody--suppress_T11-atlas.png",
+      "relative": "compact_ring_core_outer--bridged_longbody--suppress_T11-atlas.png",
+      "sha256": "fcc403fdd98862056135e25be2f500eed2b6eab52fb66f5595d2b98198054e0c",
+      "bytes": 1008882
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/compact_ring_core_outer--bridged_longbody--suppress_T11-atlas.svg",
+      "relative": "compact_ring_core_outer--bridged_longbody--suppress_T11-atlas.svg",
+      "sha256": "f13e3133e61f7edd7a1b2050d5e49264109fe5b273935f76ab7db495dd01fd16",
+      "bytes": 1472001
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/compact_ring_core_outer--bridged_longbody--suppress_T11-frames.npz",
+      "relative": "compact_ring_core_outer--bridged_longbody--suppress_T11-frames.npz",
+      "sha256": "a9f199e9604e25c6d05b88767d5ad5133889ea48b1e27adf19d1de96483611b6",
+      "bytes": 2333252
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/compact_ring_core_outer--bridged_longbody--suppress_T11-initial128.npz",
+      "relative": "compact_ring_core_outer--bridged_longbody--suppress_T11-initial128.npz",
+      "sha256": "a0765f8e6510ab4bb5971c81d991b770a81d25ad372efce8bcdf7205f723f079",
+      "bytes": 99064
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/compact_ring_core_outer--bridged_longbody--suppress_T11.gif",
+      "relative": "compact_ring_core_outer--bridged_longbody--suppress_T11.gif",
+      "sha256": "213a24aa3d584108ea52ca4ac95bec1cd67b0eee709668299be0a0e31be8feac",
+      "bytes": 571637
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/compact_ring_core_outer--bridged_longbody--suppress_T11_minus_open_T11-step129.npz",
+      "relative": "compact_ring_core_outer--bridged_longbody--suppress_T11_minus_open_T11-step129.npz",
+      "sha256": "ea335b118d0c2bbe8b4125efd44e331fda7c5437844c4e47ce2b0c9efd290d45",
+      "bytes": 1297598
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/compact_ring_core_outer--bridged_longbody--suppress_T11_minus_open_T11-step129.pdf",
+      "relative": "compact_ring_core_outer--bridged_longbody--suppress_T11_minus_open_T11-step129.pdf",
+      "sha256": "f762600a0797c090753e6ed296efab4e0404ad1af13f2bdcb87ffb5fe49e7aaf",
+      "bytes": 120258
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/compact_ring_core_outer--bridged_longbody--suppress_T11_minus_open_T11-step129.png",
+      "relative": "compact_ring_core_outer--bridged_longbody--suppress_T11_minus_open_T11-step129.png",
+      "sha256": "c5c91991bde895437f0043107c5ce200b6884b0e510ba24b89d5608432406a67",
+      "bytes": 230954
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/compact_ring_core_outer--bridged_longbody--suppress_T11_minus_open_T11-step129.svg",
+      "relative": "compact_ring_core_outer--bridged_longbody--suppress_T11_minus_open_T11-step129.svg",
+      "sha256": "5b0fffe455b4c462d99f84e7c45b3bb5b7ef7644b29e91eef9afd7c1b6f9f49e",
+      "bytes": 256717
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/compact_ring_core_outer--bridged_longbody-effects.pdf",
+      "relative": "compact_ring_core_outer--bridged_longbody-effects.pdf",
+      "sha256": "85e66cddde60d59f471b45ab4f0f76963aacd1aaf0f11f1ca7b46be572c2f463",
+      "bytes": 29167
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/compact_ring_core_outer--bridged_longbody-effects.png",
+      "relative": "compact_ring_core_outer--bridged_longbody-effects.png",
+      "sha256": "5f98b589a9197114024b4f7740fc05c7b748af91a60d380271f8514bd4c3ab81",
+      "bytes": 198386
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/compact_ring_core_outer--bridged_longbody-effects.svg",
+      "relative": "compact_ring_core_outer--bridged_longbody-effects.svg",
+      "sha256": "71130c7f2d208752939a3a4737d754f5295d4df16e92fdbd1bd2a5952770c082",
+      "bytes": 157057
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/compact_ring_core_outer--bridged_longbody-embedded128.npz",
+      "relative": "compact_ring_core_outer--bridged_longbody-embedded128.npz",
+      "sha256": "e68ef427eeb2581efc05c64f0f5230100cd240b2880aa1c7ee5e733be5421aff",
+      "bytes": 99163
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/compact_ring_core_outer--bridged_longbody-process.pdf",
+      "relative": "compact_ring_core_outer--bridged_longbody-process.pdf",
+      "sha256": "30a904e4033efedabf08fffad8055ed88da4b22e5655ac264fa569a8695cc8c2",
+      "bytes": 56813
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/compact_ring_core_outer--bridged_longbody-process.png",
+      "relative": "compact_ring_core_outer--bridged_longbody-process.png",
+      "sha256": "ab2f5b7733c671f8ee6c66f29fe97a76d58524d963512bcd340a5705a64de412",
+      "bytes": 394714
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/compact_ring_core_outer--bridged_longbody-process.svg",
+      "relative": "compact_ring_core_outer--bridged_longbody-process.svg",
+      "sha256": "e1c567d83f397dd8d57feab23a2d0cbeaea509ce7f438f3668dc15f16c88364d",
+      "bytes": 290739
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/completion.json",
+      "relative": "completion.json",
+      "sha256": "ade6eee2d203906845db868044ec4d7a2d1cff47a55543740a20d36ee021d7bb",
+      "bytes": 6557
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/effect_sign_intervals.json",
+      "relative": "effect_sign_intervals.json",
+      "sha256": "68405ea005e1ff9fd35e737ae3c3ef9da28e0b63fd06d3cd3d226408530e84b0",
+      "bytes": 5594
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/effects.csv",
+      "relative": "effects.csv",
+      "sha256": "d4f9ed0b15bdebd203a03fb317f477a54171937b9cd306a6d92cd6641c5c79d7",
+      "bytes": 7650
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/effects.json",
+      "relative": "effects.json",
+      "sha256": "37c066b013b0f166498093853e77ff3b75f420cb3604dc940e5757d1b6e53fc1",
+      "bytes": 14962
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/effects_per_step.csv",
+      "relative": "effects_per_step.csv",
+      "sha256": "3180d10628372d01f9241024ce57f13bb8d12b155de1bfc12d540ec9a2038809",
+      "bytes": 1426122
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/first_separation.json",
+      "relative": "first_separation.json",
+      "sha256": "fd54ec1f82466562761cac513cb755efac7c408c373d12d38facdce5a3263c22",
+      "bytes": 15694
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/fixed_effects.csv",
+      "relative": "fixed_effects.csv",
+      "sha256": "b32efbef9f13e7d03428b4e26742d3c567f664e06e01bc0d243669c05d9988f0",
+      "bytes": 60567
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/fixed_segments.csv",
+      "relative": "fixed_segments.csv",
+      "sha256": "07a7cddf95cf7a580feda499909bc619368a1ef32a68cb24caddd1f9b5efc25f",
+      "bytes": 31734
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/fixed_windows.csv",
+      "relative": "fixed_windows.csv",
+      "sha256": "fd248a256eee32c80fe386ed94c4391473f655a5a67c90905e43e9224fa683b3",
+      "bytes": 31933
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/frame_coverage.csv",
+      "relative": "frame_coverage.csv",
+      "sha256": "e3550b9b1ae83900c1930184182317b01bbd4d2a7102ddb3b9426c8f0a5e1b2a",
+      "bytes": 26013
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/interpretation.json",
+      "relative": "interpretation.json",
+      "sha256": "20347d6e75de31379bace1f3a833a36248a61de68fba7a589cfb2f5d802af530",
+      "bytes": 5013
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/negative_intervals.json",
+      "relative": "negative_intervals.json",
+      "sha256": "f3ae0dc6faff4052bd3497d789dd36d86c3078c00f2e1a88e58c17acbc492712",
+      "bytes": 7742
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/outcomes.csv",
+      "relative": "outcomes.csv",
+      "sha256": "f93107559506335b313c2d1e8ecf7ea55c4c9f55c7912f0267a4804fcb1065d3",
+      "bytes": 7446
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/outcomes.json",
+      "relative": "outcomes.json",
+      "sha256": "41e00a5bab99b4eded53fa86f83d989f0bf34a2b305c2c41d071958e8249786b",
+      "bytes": 16419
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/packet_recovery.json",
+      "relative": "packet_recovery.json",
+      "sha256": "77f43480e50567d0707f187446061eb83c3edba43c87b4f115437a70ba993966",
+      "bytes": 2413
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/paper_insert.tex",
+      "relative": "paper_insert.tex",
+      "sha256": "53e5ca006a5d6f2d5f8d6fe2247b7df256edea89727003c2e2b31ea7de48cadd",
+      "bytes": 2908
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/path_closure.csv",
+      "relative": "path_closure.csv",
+      "sha256": "c3a50960545fdd947e74425a1779973a088030c449e7375bb44b60db30caae13",
+      "bytes": 1235
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/per_step.csv",
+      "relative": "per_step.csv",
+      "sha256": "a20373243a93bb364a5b0ff1f592fd082a87be0e721973943ff3b784cd617306",
+      "bytes": 1745412
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/plan.json",
+      "relative": "plan.json",
+      "sha256": "d2b89ede91d4bb1054539ebf3deb602e4b54ba58a07ee05f915598b78292f58b",
+      "bytes": 28445
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/postprocessing_source/analyze.py",
+      "relative": "postprocessing_source/analyze.py",
+      "sha256": "71cc63899374ba04fac9529dc41afc7dee253fbcd12872155e6a306dbf7bf606",
+      "bytes": 18758
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/postprocessing_source/package.py",
+      "relative": "postprocessing_source/package.py",
+      "sha256": "2449b438eb152d34dd080c3c531cfa84f145f781b689cdf73df38d0e8db22240",
+      "bytes": 9968
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/projection.json",
+      "relative": "projection.json",
+      "sha256": "d1427cf527041584d0fee3c130d6921b9be8f35f7ddb5286c45db022329ee7c7",
+      "bytes": 14922
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/reference_anisotropic--connected_trilobe--open_T11-atlas.pdf",
+      "relative": "reference_anisotropic--connected_trilobe--open_T11-atlas.pdf",
+      "sha256": "db7299ced0d87bf46a3783ee84a6a5f4194ae57bad97745776d0afcd4d243050",
+      "bytes": 114426
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/reference_anisotropic--connected_trilobe--open_T11-atlas.png",
+      "relative": "reference_anisotropic--connected_trilobe--open_T11-atlas.png",
+      "sha256": "8873860f71b487de2052a016144d0ec21c94e2be146895f88116de4a4f99029b",
+      "bytes": 141943
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/reference_anisotropic--connected_trilobe--open_T11-atlas.svg",
+      "relative": "reference_anisotropic--connected_trilobe--open_T11-atlas.svg",
+      "sha256": "35f36fae408775a8e7af823ebb77316afa7444e4be2e145d0b33c46349a8340a",
+      "bytes": 314827
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/reference_anisotropic--connected_trilobe--open_T11-frames.npz",
+      "relative": "reference_anisotropic--connected_trilobe--open_T11-frames.npz",
+      "sha256": "41a27587fcdbf4c164041227e508e2900029d6cde9391a6a0e2c3be465ec152d",
+      "bytes": 221860
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/reference_anisotropic--connected_trilobe--open_T11-initial128.npz",
+      "relative": "reference_anisotropic--connected_trilobe--open_T11-initial128.npz",
+      "sha256": "18d1f5e01ad5566fca97441e75ebef7d39e9937daea62e2009944db259ba574b",
+      "bytes": 38072
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/reference_anisotropic--connected_trilobe--open_T11.gif",
+      "relative": "reference_anisotropic--connected_trilobe--open_T11.gif",
+      "sha256": "025d74b5a69da0f2dffde849305b126658e9f017d9d49ba7495cb54895649595",
+      "bytes": 69598
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/reference_anisotropic--connected_trilobe--reserve_T11-atlas.pdf",
+      "relative": "reference_anisotropic--connected_trilobe--reserve_T11-atlas.pdf",
+      "sha256": "41d81a06bfefa1b122503b6343ce15a21b93d18a71d44f724f3cff70cbaa78ad",
+      "bytes": 113359
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/reference_anisotropic--connected_trilobe--reserve_T11-atlas.png",
+      "relative": "reference_anisotropic--connected_trilobe--reserve_T11-atlas.png",
+      "sha256": "bb524b854e869432a4dfcd1a743e6c013d964c2b9c2a29ab01c65a6614904400",
+      "bytes": 140262
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/reference_anisotropic--connected_trilobe--reserve_T11-atlas.svg",
+      "relative": "reference_anisotropic--connected_trilobe--reserve_T11-atlas.svg",
+      "sha256": "118fb9b2bcebe626c11ad1b8c650bf9e2c3e1bb474adb5fd14016774f626d712",
+      "bytes": 313266
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/reference_anisotropic--connected_trilobe--reserve_T11-frames.npz",
+      "relative": "reference_anisotropic--connected_trilobe--reserve_T11-frames.npz",
+      "sha256": "6168259389c3a5978085200156db157dc6027dff496165b60f57b6d751e116dc",
+      "bytes": 222713
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/reference_anisotropic--connected_trilobe--reserve_T11-initial128.npz",
+      "relative": "reference_anisotropic--connected_trilobe--reserve_T11-initial128.npz",
+      "sha256": "891939bdee2e8ace63f9f5e6856382f2c854ec8ce3e53f55f805960274f03ce0",
+      "bytes": 38093
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/reference_anisotropic--connected_trilobe--reserve_T11.gif",
+      "relative": "reference_anisotropic--connected_trilobe--reserve_T11.gif",
+      "sha256": "4d15afb08545c947a7ff0e8c9f4c420afe3e9d7260b092e3240a3ee4a065fa66",
+      "bytes": 67576
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/reference_anisotropic--connected_trilobe--reserve_T11_minus_open_T11-step129.npz",
+      "relative": "reference_anisotropic--connected_trilobe--reserve_T11_minus_open_T11-step129.npz",
+      "sha256": "07d770bf6566c5083c0347d4600bf026fa2300d914378e9af245ef9d01c5e4b9",
+      "bytes": 393577
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/reference_anisotropic--connected_trilobe--reserve_T11_minus_open_T11-step129.pdf",
+      "relative": "reference_anisotropic--connected_trilobe--reserve_T11_minus_open_T11-step129.pdf",
+      "sha256": "cf54576c3a683ff2d380104f75cb6502c1dcc80638ad148074fa711a608f5145",
+      "bytes": 52552
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/reference_anisotropic--connected_trilobe--reserve_T11_minus_open_T11-step129.png",
+      "relative": "reference_anisotropic--connected_trilobe--reserve_T11_minus_open_T11-step129.png",
+      "sha256": "7ab33ea96dd840af37e82151fd5adfc128cd83a155e8d67799a905710ed2a5a0",
+      "bytes": 124935
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/reference_anisotropic--connected_trilobe--reserve_T11_minus_open_T11-step129.svg",
+      "relative": "reference_anisotropic--connected_trilobe--reserve_T11_minus_open_T11-step129.svg",
+      "sha256": "a9b766aaf23b109ec65e8e50f8b91252482e12f772e86585375415ab3ea135a3",
+      "bytes": 152772
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/reference_anisotropic--connected_trilobe--reserve_T11_minus_suppress_T11-step129.npz",
+      "relative": "reference_anisotropic--connected_trilobe--reserve_T11_minus_suppress_T11-step129.npz",
+      "sha256": "a55af7672b1e0e51e4eec87b5f3ec03d09bc8bd66b59b78c3364ae8cb3be0285",
+      "bytes": 395013
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/reference_anisotropic--connected_trilobe--reserve_T11_minus_suppress_T11-step129.pdf",
+      "relative": "reference_anisotropic--connected_trilobe--reserve_T11_minus_suppress_T11-step129.pdf",
+      "sha256": "35eaef2fc59a9d53a511bc4f0b58fd0cbf0eb05abc8d6c9f02c2af245fcbfb05",
+      "bytes": 37316
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/reference_anisotropic--connected_trilobe--reserve_T11_minus_suppress_T11-step129.png",
+      "relative": "reference_anisotropic--connected_trilobe--reserve_T11_minus_suppress_T11-step129.png",
+      "sha256": "04c9a96089ca4e7038cb73f8d2edd0fb26211782e9a710cc47f5b813d6b3111e",
+      "bytes": 145205
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/reference_anisotropic--connected_trilobe--reserve_T11_minus_suppress_T11-step129.svg",
+      "relative": "reference_anisotropic--connected_trilobe--reserve_T11_minus_suppress_T11-step129.svg",
+      "sha256": "28a5f470e623f9d3d806bc31e830e7c95d7d8f52c38c36087c51c03f268bcca4",
+      "bytes": 143008
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/reference_anisotropic--connected_trilobe--reserve_T11_minus_suppress_T11-step150.npz",
+      "relative": "reference_anisotropic--connected_trilobe--reserve_T11_minus_suppress_T11-step150.npz",
+      "sha256": "df433fbae1b160e008e82e5c4b3fc9399beeba59bf26a6aa6d5f7897b7f622a8",
+      "bytes": 404698
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/reference_anisotropic--connected_trilobe--reserve_T11_minus_suppress_T11-step150.pdf",
+      "relative": "reference_anisotropic--connected_trilobe--reserve_T11_minus_suppress_T11-step150.pdf",
+      "sha256": "8545cbaaf1ecfea8c5fecf6a217341da6bda599b8f6047a06eb0f56826a6268b",
+      "bytes": 44953
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/reference_anisotropic--connected_trilobe--reserve_T11_minus_suppress_T11-step150.png",
+      "relative": "reference_anisotropic--connected_trilobe--reserve_T11_minus_suppress_T11-step150.png",
+      "sha256": "5610fd1ed90a020617e63527381db9185fabc612c4a943bab8bc88c6ae9ad0f6",
+      "bytes": 124209
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/reference_anisotropic--connected_trilobe--reserve_T11_minus_suppress_T11-step150.svg",
+      "relative": "reference_anisotropic--connected_trilobe--reserve_T11_minus_suppress_T11-step150.svg",
+      "sha256": "2cbf126a9bfb0f60321f1a4234bd8615f2ec3398fe8ac29bcf396f1c28e00c15",
+      "bytes": 145685
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/reference_anisotropic--connected_trilobe--suppress_T11-atlas.pdf",
+      "relative": "reference_anisotropic--connected_trilobe--suppress_T11-atlas.pdf",
+      "sha256": "b452cfc7899cb1c6cfe3427940195b6c0d49b134bf74321429196564f44850af",
+      "bytes": 114938
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/reference_anisotropic--connected_trilobe--suppress_T11-atlas.png",
+      "relative": "reference_anisotropic--connected_trilobe--suppress_T11-atlas.png",
+      "sha256": "0a1fc96f16f34e2f5a8032fb1214f08084653a6945961ffba79feea5c0387e83",
+      "bytes": 141778
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/reference_anisotropic--connected_trilobe--suppress_T11-atlas.svg",
+      "relative": "reference_anisotropic--connected_trilobe--suppress_T11-atlas.svg",
+      "sha256": "23380dbb954e1f70e8489c735a6a6c03847b26a1f7e8959c38382d44bb53e869",
+      "bytes": 315991
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/reference_anisotropic--connected_trilobe--suppress_T11-frames.npz",
+      "relative": "reference_anisotropic--connected_trilobe--suppress_T11-frames.npz",
+      "sha256": "03b3464c17e17f591a3fe5a915bf1805fac0ba782ec49330e13570f8dec5b598",
+      "bytes": 234952
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/reference_anisotropic--connected_trilobe--suppress_T11-initial128.npz",
+      "relative": "reference_anisotropic--connected_trilobe--suppress_T11-initial128.npz",
+      "sha256": "03f06401a59adee4e63fa08a771366c6fdb56d625fe08c321aec809b0ac41e1e",
+      "bytes": 38073
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/reference_anisotropic--connected_trilobe--suppress_T11.gif",
+      "relative": "reference_anisotropic--connected_trilobe--suppress_T11.gif",
+      "sha256": "9aa8d0f50436285a4d164e511866f6dc42d3a1169c80d27681aa23a35f284daa",
+      "bytes": 69266
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/reference_anisotropic--connected_trilobe--suppress_T11_minus_open_T11-step129.npz",
+      "relative": "reference_anisotropic--connected_trilobe--suppress_T11_minus_open_T11-step129.npz",
+      "sha256": "0250db08744be7af4d46b26c9e1eec7c5243936990796c2cb4fb24359ac7ba63",
+      "bytes": 389476
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/reference_anisotropic--connected_trilobe--suppress_T11_minus_open_T11-step129.pdf",
+      "relative": "reference_anisotropic--connected_trilobe--suppress_T11_minus_open_T11-step129.pdf",
+      "sha256": "1fe6484616febcb1fcd3c09f7e9c344438fd993d76362e57d54bd6ee519eb255",
+      "bytes": 50700
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/reference_anisotropic--connected_trilobe--suppress_T11_minus_open_T11-step129.png",
+      "relative": "reference_anisotropic--connected_trilobe--suppress_T11_minus_open_T11-step129.png",
+      "sha256": "6b90acb72eeeb571175eb14f1a37a56fcea0714ce11e953be15d4233f5d4e03e",
+      "bytes": 124190
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/reference_anisotropic--connected_trilobe--suppress_T11_minus_open_T11-step129.svg",
+      "relative": "reference_anisotropic--connected_trilobe--suppress_T11_minus_open_T11-step129.svg",
+      "sha256": "305fb0952a089fe62a839cad138084a1f83212dbacd27639adf40557da1053c3",
+      "bytes": 150966
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/reference_anisotropic--connected_trilobe-effects.pdf",
+      "relative": "reference_anisotropic--connected_trilobe-effects.pdf",
+      "sha256": "df21695a2a5eb90986f28f6b9ca96a5a59549ba8d8f830e60a55a41d29400e10",
+      "bytes": 41074
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/reference_anisotropic--connected_trilobe-effects.png",
+      "relative": "reference_anisotropic--connected_trilobe-effects.png",
+      "sha256": "b4af5cc92464bb6b453ca8c69b984ba8280df4ccfb3cd4556af820f37a7af91b",
+      "bytes": 276731
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/reference_anisotropic--connected_trilobe-effects.svg",
+      "relative": "reference_anisotropic--connected_trilobe-effects.svg",
+      "sha256": "f6a9b88f1580bde1476db82c88a6c443d7da2ac3b60b29508bbfee431276698e",
+      "bytes": 186329
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/reference_anisotropic--connected_trilobe-embedded128.npz",
+      "relative": "reference_anisotropic--connected_trilobe-embedded128.npz",
+      "sha256": "6d5cbd0e8c75a23ccd7585056649bdaeda2c434038910716fd754330ca9a5d4d",
+      "bytes": 38164
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/reference_anisotropic--connected_trilobe-process.pdf",
+      "relative": "reference_anisotropic--connected_trilobe-process.pdf",
+      "sha256": "da9403b9a4e68273be872fbaf945a047c1aa9f394170fa409bef77de7efaf606",
+      "bytes": 66947
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/reference_anisotropic--connected_trilobe-process.png",
+      "relative": "reference_anisotropic--connected_trilobe-process.png",
+      "sha256": "64d7536f44b5079fceba49c6f89d2cd09d6b710997af8b4499f879356898daff",
+      "bytes": 542979
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/reference_anisotropic--connected_trilobe-process.svg",
+      "relative": "reference_anisotropic--connected_trilobe-process.svg",
+      "sha256": "22b84a0b2e5151e33394eba48e9c34f64b05b8e7ed5d8391df3f855ede2d1fb4",
+      "bytes": 318380
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/prepare_regenerative_pilot.py",
+      "relative": "source/environment_evolution/prepare_regenerative_pilot.py",
+      "sha256": "f07e03d196cd28366064d6ec9591b1128d0f83a75e762e956be3b312b733c2de",
+      "bytes": 4764
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_action_capability/__init__.py",
+      "relative": "source/environment_evolution/regenerative_action_capability/__init__.py",
+      "sha256": "085cfdf3682cf112fd03129e6366c4f26a8b261ef0c83b0da5002580a0599fb3",
+      "bytes": 84
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_action_capability/check_policy.py",
+      "relative": "source/environment_evolution/regenerative_action_capability/check_policy.py",
+      "sha256": "3c047f47aa94719511a176563b90e05a577cb50a3f1b849a0ceaf2fed61c3e3e",
+      "bytes": 2184
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_action_capability/policy.py",
+      "relative": "source/environment_evolution/regenerative_action_capability/policy.py",
+      "sha256": "de581bd0ef63548883dbf7d08e6139bd3b11a31e6d4e07b1695829a0b8d2d840",
+      "bytes": 2747
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_action_capability/prepare.py",
+      "relative": "source/environment_evolution/regenerative_action_capability/prepare.py",
+      "sha256": "8dffc115a6236f39bf8a693a8bdcf5e022cd7455a50ee017ff7a21f9075ee249",
+      "bytes": 3917
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_action_capability/run.py",
+      "relative": "source/environment_evolution/regenerative_action_capability/run.py",
+      "sha256": "9a59900b20a0cb920d5cf9f2e6ceba57d9e577af4d72a753eea5755ddab67194",
+      "bytes": 4583
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_actor/__init__.py",
+      "relative": "source/environment_evolution/regenerative_actor/__init__.py",
+      "sha256": "b9438b684a84e8b7868c892b912a638023c8afa18ad426135b0a4c5dc6369b66",
+      "bytes": 154
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_actor/check_algebra.py",
+      "relative": "source/environment_evolution/regenerative_actor/check_algebra.py",
+      "sha256": "b6566787ca6f7b245603533bb92a86179d69c0c276a70bbfce1f7418482c22ee",
+      "bytes": 5470
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_actor/check_interface.py",
+      "relative": "source/environment_evolution/regenerative_actor/check_interface.py",
+      "sha256": "c7b48b4117afc793a01e091bdcc53d922e1b69fca75a74788248552649e80915",
+      "bytes": 2545
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_actor/conversion.py",
+      "relative": "source/environment_evolution/regenerative_actor/conversion.py",
+      "sha256": "d2b73ccf44d6720e01e2166c055f9a427406dc483b21746476b9f8cc5f95189a",
+      "bytes": 2821
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_actor/model.py",
+      "relative": "source/environment_evolution/regenerative_actor/model.py",
+      "sha256": "3941450e97d2311f833d1c9c8964f348218467d4cd8d41a68b6584b72b24b5b0",
+      "bytes": 8610
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_actor/prepare.py",
+      "relative": "source/environment_evolution/regenerative_actor/prepare.py",
+      "sha256": "dfeac30fd839c0fda9e88398b4ed4446bc332b2be54c4d7287e7c6ad84317620",
+      "bytes": 8045
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_actor/runner.py",
+      "relative": "source/environment_evolution/regenerative_actor/runner.py",
+      "sha256": "4d48a7a9fe11bda60fcf743753a733ef0e574feabb5f0e2192c9b3bb4e7f419d",
+      "bytes": 6011
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_domain_embedding/__init__.py",
+      "relative": "source/environment_evolution/regenerative_domain_embedding/__init__.py",
+      "sha256": "729b06624194a9f116124ec689bc8b12312b792e94f2307cb0ed4b964273a9ce",
+      "bytes": 69
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_domain_embedding/common.py",
+      "relative": "source/environment_evolution/regenerative_domain_embedding/common.py",
+      "sha256": "b301e92fc3a708b1a01222303edc8cd7994576091f3339ef015236baa1c628ce",
+      "bytes": 1130
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_domain_embedding/prepare.py",
+      "relative": "source/environment_evolution/regenerative_domain_embedding/prepare.py",
+      "sha256": "2b780debc0db0957fd77215768f77809edb351b80c1778dcccdc84f4c5407f01",
+      "bytes": 7372
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_domain_embedding/run.py",
+      "relative": "source/environment_evolution/regenerative_domain_embedding/run.py",
+      "sha256": "5b1755a6ad57e1b5b8f22f12691d4c6fcc0a98e0a0653a1997059b3f55d356be",
+      "bytes": 4644
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_domain_embedding/submit.py",
+      "relative": "source/environment_evolution/regenerative_domain_embedding/submit.py",
+      "sha256": "e62433a5e33acce2d170bee6d1a2986e02f05e39179d40bd5423caf1c5589e0a",
+      "bytes": 835
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_fuel_allocation/__init__.py",
+      "relative": "source/environment_evolution/regenerative_fuel_allocation/__init__.py",
+      "sha256": "6e4ff249f6e6e46946a3c077a54b8245d720e1fafdd0fdaa3e5afff90588911c",
+      "bytes": 379
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_fuel_allocation/adapter.py",
+      "relative": "source/environment_evolution/regenerative_fuel_allocation/adapter.py",
+      "sha256": "34dadde16dd27757d9d439fcfa47169114b808ec6e632f62fdc32a837f7923b7",
+      "bytes": 5351
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_fuel_allocation/allocation.py",
+      "relative": "source/environment_evolution/regenerative_fuel_allocation/allocation.py",
+      "sha256": "8ae962b37eb07a65867d7d2ce0139caab969a17c688a93a32a5aab0f52d75d81",
+      "bytes": 4872
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_fuel_allocation/check_cap0.py",
+      "relative": "source/environment_evolution/regenerative_fuel_allocation/check_cap0.py",
+      "sha256": "61e2be882d6bf29d414146b03e587d502346972d1763b2eef9261c42d0c32d8b",
+      "bytes": 14378
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_fuel_allocation/package.py",
+      "relative": "source/environment_evolution/regenerative_fuel_allocation/package.py",
+      "sha256": "efbbec1b17cc13c1767a94b5fa6c8acf2492aba160ed949cd514ee93754c9824",
+      "bytes": 5781
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_fuel_allocation/runtime.py",
+      "relative": "source/environment_evolution/regenerative_fuel_allocation/runtime.py",
+      "sha256": "122b0ead498e0b78854aad48927784a1f65a635672043efb1a7ee36658b735b6",
+      "bytes": 3135
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_fuel_allocation_native/__init__.py",
+      "relative": "source/environment_evolution/regenerative_fuel_allocation_native/__init__.py",
+      "sha256": "b6a52497b223661424d1b96b6d64add0bf655e119521cf7239baa2a1f9fcbd8a",
+      "bytes": 54
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_fuel_allocation_native/adapter.py",
+      "relative": "source/environment_evolution/regenerative_fuel_allocation_native/adapter.py",
+      "sha256": "e2667470c9a268bd3c4897dc8d7f666590cbd5d4f61062ec7e5b86c84750927f",
+      "bytes": 6183
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_fuel_allocation_native/check.py",
+      "relative": "source/environment_evolution/regenerative_fuel_allocation_native/check.py",
+      "sha256": "1c60bfac8ce7979dd1d23c1bfb65cfa1038cba1da706f016dcc04380042d022a",
+      "bytes": 4845
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_fuel_allocation_native/prepare.py",
+      "relative": "source/environment_evolution/regenerative_fuel_allocation_native/prepare.py",
+      "sha256": "3542bed95b2e4057abfa403a5da65e2d6352a2238956252ed87aa03b463208f4",
+      "bytes": 4294
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_fuel_allocation_native/run.py",
+      "relative": "source/environment_evolution/regenerative_fuel_allocation_native/run.py",
+      "sha256": "a54bf2b10615567d348cb65e3512408972ca02d0829d7546d6d425bd92143810",
+      "bytes": 4836
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_fuel_allocation_native/runtime.py",
+      "relative": "source/environment_evolution/regenerative_fuel_allocation_native/runtime.py",
+      "sha256": "f8b1196735277fa02cfc2b9ce1b6f292136a265ea726df790028a651ff2e6d0b",
+      "bytes": 2047
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_homeostatic_allocation/__init__.py",
+      "relative": "source/environment_evolution/regenerative_homeostatic_allocation/__init__.py",
+      "sha256": "ab1c5b1fac15aed084205e336fd7c78e14c7199150a3a8cd789d9ac474f25049",
+      "bytes": 76
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_homeostatic_allocation/checks.py",
+      "relative": "source/environment_evolution/regenerative_homeostatic_allocation/checks.py",
+      "sha256": "828eaa10993ec261ededc819d54923db18fe6482e01ebbb10be4cb381636223f",
+      "bytes": 6352
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_homeostatic_allocation/common.py",
+      "relative": "source/environment_evolution/regenerative_homeostatic_allocation/common.py",
+      "sha256": "ccdcd73fe0860f189d6ded29c94ce39c190ef85ecc763695ba220f4d5de08356",
+      "bytes": 463
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_homeostatic_allocation/policy.py",
+      "relative": "source/environment_evolution/regenerative_homeostatic_allocation/policy.py",
+      "sha256": "bee98b8d30e65e9fe1fdc8e0a6483d7594c620fb7b94a587ae69a2485c49672f",
+      "bytes": 586
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_homeostatic_allocation/prepare.py",
+      "relative": "source/environment_evolution/regenerative_homeostatic_allocation/prepare.py",
+      "sha256": "316a19478fece768dbe74beaf6fd491468ae2255aa56b8715f32c8f51479712e",
+      "bytes": 3200
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_homeostatic_allocation/run.py",
+      "relative": "source/environment_evolution/regenerative_homeostatic_allocation/run.py",
+      "sha256": "ed63e56206b664a531d1f866ad36fa871e92d3757d802f0077b54c0c156d0b16",
+      "bytes": 4256
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_homeostatic_allocation/runtime.py",
+      "relative": "source/environment_evolution/regenerative_homeostatic_allocation/runtime.py",
+      "sha256": "c464049636d5dd3d6885bd24669baa77356f6ae1e2bd2caf29f01dcda86f7b93",
+      "bytes": 5102
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_homeostatic_allocation/submit.py",
+      "relative": "source/environment_evolution/regenerative_homeostatic_allocation/submit.py",
+      "sha256": "b76c83a4f77b80b3264693850af36a1a79273231d0e7b940947469795c07e920",
+      "bytes": 734
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_joint_resource_transport/__init__.py",
+      "relative": "source/environment_evolution/regenerative_joint_resource_transport/__init__.py",
+      "sha256": "ccdcfe8ddcb025f044f6d72b121aabc7858551b4736dd4e4db36c7fd7056f9b3",
+      "bytes": 79
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_joint_resource_transport/checks.py",
+      "relative": "source/environment_evolution/regenerative_joint_resource_transport/checks.py",
+      "sha256": "dd9f839b4d046a605b2017c8634eb1aeb8fbb8fabf5b295632814ab2509ec1fb",
+      "bytes": 7851
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_joint_resource_transport/common.py",
+      "relative": "source/environment_evolution/regenerative_joint_resource_transport/common.py",
+      "sha256": "1eff162e931e9a4c1ba580ae5820c74355733913ab39bf2ea72559bf8b7b9b96",
+      "bytes": 714
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_joint_resource_transport/prepare.py",
+      "relative": "source/environment_evolution/regenerative_joint_resource_transport/prepare.py",
+      "sha256": "60c42182075a0443f17170612ec84f3877d690f863e62fffa4f5ed8bbf387798",
+      "bytes": 3137
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_joint_resource_transport/run.py",
+      "relative": "source/environment_evolution/regenerative_joint_resource_transport/run.py",
+      "sha256": "c378b648a58338111cb15fe48546fcef00fe830fc9407b229dbe2d1b3a050e6c",
+      "bytes": 4332
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_joint_resource_transport/runtime.py",
+      "relative": "source/environment_evolution/regenerative_joint_resource_transport/runtime.py",
+      "sha256": "afe0c82fdd06265566fcd1fd614146bcfeacfa980c516e101a651731911f6f9a",
+      "bytes": 4092
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_joint_resource_transport/submit.py",
+      "relative": "source/environment_evolution/regenerative_joint_resource_transport/submit.py",
+      "sha256": "1869f8768de509f6077ac52d927eac0195c93a068b071912da78eca65c573b9c",
+      "bytes": 731
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_joint_resource_transport/transport.py",
+      "relative": "source/environment_evolution/regenerative_joint_resource_transport/transport.py",
+      "sha256": "19cf10d64d52fad045d4b373ba6d8205b338b520e1ef60bcab6a90463031a6d6",
+      "bytes": 3489
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_local_fuel_transport/__init__.py",
+      "relative": "source/environment_evolution/regenerative_local_fuel_transport/__init__.py",
+      "sha256": "403b134646c8b20111cf5c48fce7bb4057ee02d0892ccb119777dd5ef84d1376",
+      "bytes": 83
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_local_fuel_transport/check.py",
+      "relative": "source/environment_evolution/regenerative_local_fuel_transport/check.py",
+      "sha256": "b889b63a5d132606142d2ca0270d60b906a527ae1d4607c43abde832c6f79e76",
+      "bytes": 7932
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_local_fuel_transport/prepare.py",
+      "relative": "source/environment_evolution/regenerative_local_fuel_transport/prepare.py",
+      "sha256": "522b6c58fa1ecfc479660b236106aef6711792d9c354a34ee4ad275d30372012",
+      "bytes": 4290
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_local_fuel_transport/run.py",
+      "relative": "source/environment_evolution/regenerative_local_fuel_transport/run.py",
+      "sha256": "f715c1c45ca1de792324767c8e937227cfd50fb0722402f9932f97a768517d8f",
+      "bytes": 4812
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_local_fuel_transport/runtime.py",
+      "relative": "source/environment_evolution/regenerative_local_fuel_transport/runtime.py",
+      "sha256": "c05e5ca199fc29085f74b97a832f52c99d729f4281b82c105b27699ef4a74d7a",
+      "bytes": 5697
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_local_fuel_transport/submit.py",
+      "relative": "source/environment_evolution/regenerative_local_fuel_transport/submit.py",
+      "sha256": "0212ceeb52d5e3a808e4eb0172de433a08cee43adc2402018cd1d154c099001c",
+      "bytes": 963
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_local_fuel_transport/transport.py",
+      "relative": "source/environment_evolution/regenerative_local_fuel_transport/transport.py",
+      "sha256": "67c16127790b782f6b4cab6d45b27cba36408fb0f0a87cf3bad8305179714d6b",
+      "bytes": 3484
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_morphology_transport_search/__init__.py",
+      "relative": "source/environment_evolution/regenerative_morphology_transport_search/__init__.py",
+      "sha256": "0701540667e63bf983b2ba70b7a6c4a5be84af681f0c95811d7f2fc6b5bc23ba",
+      "bytes": 83
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_morphology_transport_search/common.py",
+      "relative": "source/environment_evolution/regenerative_morphology_transport_search/common.py",
+      "sha256": "02602cc25a29ba9c67c4f956158dee0148869d6d23660acfdf59a73db40f6b6f",
+      "bytes": 1390
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_morphology_transport_search/observe.py",
+      "relative": "source/environment_evolution/regenerative_morphology_transport_search/observe.py",
+      "sha256": "e49c3e65b1c590b9120652702196136081f67eb3887795da5757683762200e4c",
+      "bytes": 17196
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_morphology_transport_search/prepare.py",
+      "relative": "source/environment_evolution/regenerative_morphology_transport_search/prepare.py",
+      "sha256": "3be4e99241bf79b0edce71bab2a083270a768d4cc7a57b321c852f51423c3a51",
+      "bytes": 8675
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_morphology_transport_search/run.py",
+      "relative": "source/environment_evolution/regenerative_morphology_transport_search/run.py",
+      "sha256": "30e41997888e4110c161a3dbf78816b7aebcae2d8bda210bcbf3725eb61888c9",
+      "bytes": 5105
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_morphology_transport_search/select.py",
+      "relative": "source/environment_evolution/regenerative_morphology_transport_search/select.py",
+      "sha256": "4cff1fe82f2cf4fbe34faa3dbb8baacb3421c7a627418ce42a9f31a975dced1e",
+      "bytes": 7719
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_morphology_transport_search/submit.py",
+      "relative": "source/environment_evolution/regenerative_morphology_transport_search/submit.py",
+      "sha256": "10d5bd2c16c07cb10e7d82ce01ef559d5079b070487b6db10bb1a65ba0e66820",
+      "bytes": 1043
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_reserve_morphology_transfer/__init__.py",
+      "relative": "source/environment_evolution/regenerative_reserve_morphology_transfer/__init__.py",
+      "sha256": "7b374adb2924a398824c1e23382408788a10a7ec66cb2e41c059d70de9df7553",
+      "bytes": 73
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_reserve_morphology_transfer/common.py",
+      "relative": "source/environment_evolution/regenerative_reserve_morphology_transfer/common.py",
+      "sha256": "e1569199347ddfb8cab71e0965536e479d8fc6078b7e030687fa53f6f586f396",
+      "bytes": 556
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_reserve_morphology_transfer/prepare.py",
+      "relative": "source/environment_evolution/regenerative_reserve_morphology_transfer/prepare.py",
+      "sha256": "e97d50f041d27c3cfb0cdb612b4123f25680e98e97b4f6ed8ec5129110e75ab7",
+      "bytes": 6919
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_reserve_morphology_transfer/run.py",
+      "relative": "source/environment_evolution/regenerative_reserve_morphology_transfer/run.py",
+      "sha256": "157b114a94e953e7e40825f9f2fd7a2a58eef0f4b1a9517001438280e76196a9",
+      "bytes": 4238
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_reserve_morphology_transfer/runtime.py",
+      "relative": "source/environment_evolution/regenerative_reserve_morphology_transfer/runtime.py",
+      "sha256": "8626cd0ea0f8e9709a2215c33d6af6fd56ea1934cbf72d4ccc4ffe84b6b67ea5",
+      "bytes": 2930
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_reserve_morphology_transfer/submit.py",
+      "relative": "source/environment_evolution/regenerative_reserve_morphology_transfer/submit.py",
+      "sha256": "d90e631edf8b01f52144391d5e19013d86c0f7688e3b3df2a979e68bcde88fdc",
+      "bytes": 736
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_resource_opportunity/__init__.py",
+      "relative": "source/environment_evolution/regenerative_resource_opportunity/__init__.py",
+      "sha256": "7f71bbfb5062ebbb094b9c8ee5ae961f88decf5569711a9dbae0340685eb711e",
+      "bytes": 78
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_resource_opportunity/check.py",
+      "relative": "source/environment_evolution/regenerative_resource_opportunity/check.py",
+      "sha256": "609f6ae67673cf8a7ddd8f7288eb7d471c842c09290eafe1c99c4ffcd05d0556",
+      "bytes": 2823
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_resource_opportunity/packet.py",
+      "relative": "source/environment_evolution/regenerative_resource_opportunity/packet.py",
+      "sha256": "ec4b3d612c6bf3c98e6c41167259c89c6722e7f4ee0ba89a33832bafaa14c40a",
+      "bytes": 1240
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_resource_opportunity/policy.py",
+      "relative": "source/environment_evolution/regenerative_resource_opportunity/policy.py",
+      "sha256": "c19a4f72a2b34f3ddd5c5801e2a398f5cf0b444b46f11d758f1f6d16348b5ad0",
+      "bytes": 2743
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_resource_opportunity/prepare.py",
+      "relative": "source/environment_evolution/regenerative_resource_opportunity/prepare.py",
+      "sha256": "be9d2d5cdf006e1a1d4c28eeb7bcd214c30e1145013faba9de7e96d3b8ea450c",
+      "bytes": 4965
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_resource_opportunity/run.py",
+      "relative": "source/environment_evolution/regenerative_resource_opportunity/run.py",
+      "sha256": "894506acb8cfc98f9f4a4015dcb8d68c267d342b362c71748bb3e9f9c14677ae",
+      "bytes": 4097
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_supply_factorial/__init__.py",
+      "relative": "source/environment_evolution/regenerative_supply_factorial/__init__.py",
+      "sha256": "43a9f20450ddd01c2f7664a3e78bdf5b2e500edbe62d833095ce1c806e7e77ce",
+      "bytes": 71
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_supply_factorial/prepare.py",
+      "relative": "source/environment_evolution/regenerative_supply_factorial/prepare.py",
+      "sha256": "8cd9464d7300506256801d71ced75d806a95578b26d2ab8bdce5e5c64f799345",
+      "bytes": 6608
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_supply_factorial/run.py",
+      "relative": "source/environment_evolution/regenerative_supply_factorial/run.py",
+      "sha256": "35a4daed8abff2dd3af5ee0ffba3a8d65b9dee2c6006ddbb37fe5f32f39341f1",
+      "bytes": 359
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_supply_recovery/__init__.py",
+      "relative": "source/environment_evolution/regenerative_supply_recovery/__init__.py",
+      "sha256": "59e09546ab763578815e115fa6dd978d84b38f602320bff6197f129af573c509",
+      "bytes": 84
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_supply_recovery/prepare.py",
+      "relative": "source/environment_evolution/regenerative_supply_recovery/prepare.py",
+      "sha256": "ee68aa1a88c6cc048af667abd98db22130a1abb8ae432ca72562a56c41aab749",
+      "bytes": 6575
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_supply_recovery/run.py",
+      "relative": "source/environment_evolution/regenerative_supply_recovery/run.py",
+      "sha256": "9e4949e0c8c3ee61db303effd20302b97cc491d95cb503100f7d9fec1fda5f66",
+      "bytes": 4571
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_transport_allocation_interaction/__init__.py",
+      "relative": "source/environment_evolution/regenerative_transport_allocation_interaction/__init__.py",
+      "sha256": "0eaaac2944d6f3a000e5a20d78d6f83db0981c037d092cd9e5217db3d50fd2e3",
+      "bytes": 74
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_transport_allocation_interaction/checks.py",
+      "relative": "source/environment_evolution/regenerative_transport_allocation_interaction/checks.py",
+      "sha256": "e2cffbc49109c43e11ab312bd6444c0ad2a70b26af272341f9236a718c93ac3d",
+      "bytes": 6946
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_transport_allocation_interaction/common.py",
+      "relative": "source/environment_evolution/regenerative_transport_allocation_interaction/common.py",
+      "sha256": "79790b162ebabe68b210f5dfb9642fa86f988fda7a91c6542f96ac067652431a",
+      "bytes": 744
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_transport_allocation_interaction/prepare.py",
+      "relative": "source/environment_evolution/regenerative_transport_allocation_interaction/prepare.py",
+      "sha256": "c838bc191d34119c32573e19f1e3666cb4b714ae8994f887d1039cb67c66e864",
+      "bytes": 3272
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_transport_allocation_interaction/run.py",
+      "relative": "source/environment_evolution/regenerative_transport_allocation_interaction/run.py",
+      "sha256": "e1ceb67dd95bc1e2bbb441e92b2087eec4247c807c9b2140c8a4a2e1d415e186",
+      "bytes": 4242
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_transport_allocation_interaction/runtime.py",
+      "relative": "source/environment_evolution/regenerative_transport_allocation_interaction/runtime.py",
+      "sha256": "69058e166b723146b0086b5359d111079fb499a5fd9168751f944175a61c0d97",
+      "bytes": 5283
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/regenerative_transport_allocation_interaction/submit.py",
+      "relative": "source/environment_evolution/regenerative_transport_allocation_interaction/submit.py",
+      "sha256": "cd550e5bcb84c98cc195b392f3d880ee6b0e4c76f3cc35caa875a9d81982e7d3",
+      "bytes": 754
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/results/regenerative_actor_pilot/source/environment_evolution/prepare_regenerative_pilot.py",
+      "relative": "source/environment_evolution/results/regenerative_actor_pilot/source/environment_evolution/prepare_regenerative_pilot.py",
+      "sha256": "f07e03d196cd28366064d6ec9591b1128d0f83a75e762e956be3b312b733c2de",
+      "bytes": 4764
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/results/regenerative_actor_pilot/source/environment_evolution/regenerative_actor/__init__.py",
+      "relative": "source/environment_evolution/results/regenerative_actor_pilot/source/environment_evolution/regenerative_actor/__init__.py",
+      "sha256": "b9438b684a84e8b7868c892b912a638023c8afa18ad426135b0a4c5dc6369b66",
+      "bytes": 154
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/results/regenerative_actor_pilot/source/environment_evolution/regenerative_actor/check_algebra.py",
+      "relative": "source/environment_evolution/results/regenerative_actor_pilot/source/environment_evolution/regenerative_actor/check_algebra.py",
+      "sha256": "b6566787ca6f7b245603533bb92a86179d69c0c276a70bbfce1f7418482c22ee",
+      "bytes": 5470
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/results/regenerative_actor_pilot/source/environment_evolution/regenerative_actor/check_interface.py",
+      "relative": "source/environment_evolution/results/regenerative_actor_pilot/source/environment_evolution/regenerative_actor/check_interface.py",
+      "sha256": "c7b48b4117afc793a01e091bdcc53d922e1b69fca75a74788248552649e80915",
+      "bytes": 2545
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/results/regenerative_actor_pilot/source/environment_evolution/regenerative_actor/conversion.py",
+      "relative": "source/environment_evolution/results/regenerative_actor_pilot/source/environment_evolution/regenerative_actor/conversion.py",
+      "sha256": "d2b73ccf44d6720e01e2166c055f9a427406dc483b21746476b9f8cc5f95189a",
+      "bytes": 2821
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/results/regenerative_actor_pilot/source/environment_evolution/regenerative_actor/model.py",
+      "relative": "source/environment_evolution/results/regenerative_actor_pilot/source/environment_evolution/regenerative_actor/model.py",
+      "sha256": "3941450e97d2311f833d1c9c8964f348218467d4cd8d41a68b6584b72b24b5b0",
+      "bytes": 8610
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/results/regenerative_actor_pilot/source/environment_evolution/regenerative_actor/prepare.py",
+      "relative": "source/environment_evolution/results/regenerative_actor_pilot/source/environment_evolution/regenerative_actor/prepare.py",
+      "sha256": "dfeac30fd839c0fda9e88398b4ed4446bc332b2be54c4d7287e7c6ad84317620",
+      "bytes": 8045
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/results/regenerative_actor_pilot/source/environment_evolution/regenerative_actor/runner.py",
+      "relative": "source/environment_evolution/results/regenerative_actor_pilot/source/environment_evolution/regenerative_actor/runner.py",
+      "sha256": "4d48a7a9fe11bda60fcf743753a733ef0e574feabb5f0e2192c9b3bb4e7f419d",
+      "bytes": 6011
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/results/regenerative_actor_pilot/source/local_learning/adaptive_action_renewal/controller.py",
+      "relative": "source/environment_evolution/results/regenerative_actor_pilot/source/local_learning/adaptive_action_renewal/controller.py",
+      "sha256": "82ce81c7e382119e74ef8f17fe002dfd74d05f8ba87005a6fdaf73b2540bbeb6",
+      "bytes": 3576
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/results/regenerative_actor_pilot/source/local_learning/material_transport.py",
+      "relative": "source/environment_evolution/results/regenerative_actor_pilot/source/local_learning/material_transport.py",
+      "sha256": "dd5622a2df6a5d50642a31ad586215d5e30e33929cf8f57ee9efff36fdef08d5",
+      "bytes": 17572
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/results/regenerative_actor_pilot/source/local_learning/regenerative_actor_adapter.py",
+      "relative": "source/environment_evolution/results/regenerative_actor_pilot/source/local_learning/regenerative_actor_adapter.py",
+      "sha256": "3004fc43d26ce781d8a1945f7f399d238114d623509001855005a6d087b7418e",
+      "bytes": 2131
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/results/regenerative_actor_pilot/source/morphology_evolution/dual_kernel.py",
+      "relative": "source/environment_evolution/results/regenerative_actor_pilot/source/morphology_evolution/dual_kernel.py",
+      "sha256": "529d42e50876a68bce54a512f8a9cafd48a8f68276cf8507a0e2243b3f450d6e",
+      "bytes": 2922
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/results/regenerative_actor_pilot/source/simulation/__init__.py",
+      "relative": "source/environment_evolution/results/regenerative_actor_pilot/source/simulation/__init__.py",
+      "sha256": "564809e49203a4dc2f071ada201b8ac8bc142d83583a4ff3b4fa861bdeae79da",
+      "bytes": 389
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/results/regenerative_actor_pilot/source/simulation/core.py",
+      "relative": "source/environment_evolution/results/regenerative_actor_pilot/source/simulation/core.py",
+      "sha256": "0e832298f01c53a5774df1fbd144d40a816529907fcc6ac58ea6dcf9296d4974",
+      "bytes": 2976
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/results/regenerative_actor_pilot/source/simulation/data.py",
+      "relative": "source/environment_evolution/results/regenerative_actor_pilot/source/simulation/data.py",
+      "sha256": "dfcec89a87caecf81836582b4639b01f8ab14edeec154d7f2e769356547805e5",
+      "bytes": 4960
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/environment_evolution/results/regenerative_actor_pilot/source/simulation/snapshot.py",
+      "relative": "source/environment_evolution/results/regenerative_actor_pilot/source/simulation/snapshot.py",
+      "sha256": "e99d3eccee47ded2abe1518e3fb80d2d630a8ff21a2a339ff6723c2878dfc382",
+      "bytes": 6192
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/local_learning/adaptive_action_renewal/controller.py",
+      "relative": "source/local_learning/adaptive_action_renewal/controller.py",
+      "sha256": "82ce81c7e382119e74ef8f17fe002dfd74d05f8ba87005a6fdaf73b2540bbeb6",
+      "bytes": 3576
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/local_learning/material_transport.py",
+      "relative": "source/local_learning/material_transport.py",
+      "sha256": "dd5622a2df6a5d50642a31ad586215d5e30e33929cf8f57ee9efff36fdef08d5",
+      "bytes": 17572
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/local_learning/regenerative_actor_adapter.py",
+      "relative": "source/local_learning/regenerative_actor_adapter.py",
+      "sha256": "3004fc43d26ce781d8a1945f7f399d238114d623509001855005a6d087b7418e",
+      "bytes": 2131
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/morphology_evolution/dual_kernel.py",
+      "relative": "source/morphology_evolution/dual_kernel.py",
+      "sha256": "529d42e50876a68bce54a512f8a9cafd48a8f68276cf8507a0e2243b3f450d6e",
+      "bytes": 2922
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/simulation/__init__.py",
+      "relative": "source/simulation/__init__.py",
+      "sha256": "564809e49203a4dc2f071ada201b8ac8bc142d83583a4ff3b4fa861bdeae79da",
+      "bytes": 389
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/simulation/core.py",
+      "relative": "source/simulation/core.py",
+      "sha256": "0e832298f01c53a5774df1fbd144d40a816529907fcc6ac58ea6dcf9296d4974",
+      "bytes": 2976
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/simulation/data.py",
+      "relative": "source/simulation/data.py",
+      "sha256": "dfcec89a87caecf81836582b4639b01f8ab14edeec154d7f2e769356547805e5",
+      "bytes": 4960
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source/simulation/snapshot.py",
+      "relative": "source/simulation/snapshot.py",
+      "sha256": "e99d3eccee47ded2abe1518e3fb80d2d630a8ff21a2a339ff6723c2878dfc382",
+      "bytes": 6192
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source_archive.json",
+      "relative": "source_archive.json",
+      "sha256": "d712bfc0d5a69eeb4bfba5ec36bfc0058ae1eb7fdb5008784a2ba41d145843b7",
+      "bytes": 47287
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source_packets.csv",
+      "relative": "source_packets.csv",
+      "sha256": "0942c9b07e6973cb3852893eab1d405d9321494664d9cc8e65d800b6b5793cfb",
+      "bytes": 526808
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/static_checks.json",
+      "relative": "static_checks.json",
+      "sha256": "3786229e92aa6358edea5c610371a91f923b41ee20c7f0f8e3a96131c8154aa9",
+      "bytes": 21355
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/storage.json",
+      "relative": "storage.json",
+      "sha256": "1d5e726f1201f9d1c51eea01be7180ff5b4a6f31ea43d8c87bc07cc84f65e300",
+      "bytes": 235
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/submission-control.json",
+      "relative": "submission-control.json",
+      "sha256": "ca4c6a5668b5ded8ebaa79d71d1eac806b9fd8591dcc15c978b84eb220020df8",
+      "bytes": 70
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/submission.json",
+      "relative": "submission.json",
+      "sha256": "8cf032c9cfa5b4accf6ed8f0b85c8dd8c7d60037384d5264368a98f97a5e2db4",
+      "bytes": 889
+    }
+  ],
+  "raw_packet_index": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/source_packets.csv"
+}

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 112 36" fill="none">
+  <defs>
+    <g id="left-foot">
+      <ellipse cx="-.9" cy="-5" rx="4.7" ry="7.4"/>
+      <rect x="-4.1" y="1" width="7.6" height="5.8" rx="2.4"/>
+    </g>
+    <g id="right-foot">
+      <ellipse cx=".9" cy="-5" rx="4.7" ry="7.4"/>
+      <rect x="-3.5" y="1" width="7.6" height="5.8" rx="2.4"/>
+    </g>
+  </defs>
+  <g fill="#f5f6f7" fill-opacity=".82" stroke="#ffffff" stroke-opacity=".42" stroke-width=".7">
+    <use href="#left-foot" transform="translate(13 26) rotate(54)"/>
+    <use href="#right-foot" transform="translate(38 15) rotate(54)"/>
+    <use href="#left-foot" transform="translate(64 20) rotate(54)"/>
+    <use href="#right-foot" transform="translate(90 9) rotate(54)"/>
+  </g>
+</svg>

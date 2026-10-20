@@ -1,0 +1,400 @@
+{
+  "task": "consumption_qualified_transport_20261019",
+  "attachments": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/API.txt",
+      "sha256": "751e21d4cdc73bc709642a1c2413d842aaa8f37cc9098b4e8f2dd856444f2363",
+      "bytes": 1873
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/INTERPRETATION.json",
+      "sha256": "8313d4f288a2e539f58162b93a9e82447450ce561057bd5bc74a539bdd90ce57",
+      "bytes": 1363
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/METHOD.txt",
+      "sha256": "4bc3cbb18f42495bb6ba6f20d3a6c30b4c79e0437586bf421bfabad1eaa746a6",
+      "bytes": 4638
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/REPORT.txt",
+      "sha256": "05f0e2acca7d4c8211d74f0cf147b953f66252691d9811cb8bf727412388c3a2",
+      "bytes": 7121
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/actual_body_f1.png",
+      "sha256": "2fbfac933400cb29bedbbfbe971027633136e0c7d2b1e05e076cfbbb8d0cc845",
+      "bytes": 457535
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/actual_body_f2.png",
+      "sha256": "967025100176dd2e56b32262c02b68bddf7bd782b9d905e9be154360b6d5c559",
+      "bytes": 444755
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/actual_history_action_differences.csv",
+      "sha256": "8ef9773a6c96bc1aa97dd06afb945357744d845fd636c0018afd8c60aaef0c54",
+      "bytes": 2123
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/analysis_source.py",
+      "sha256": "6b56030465bb5b73bbbda7d6fe6b7558b9df44956786e9e8c6b25f9b666dbdc5",
+      "bytes": 12105
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/assembly_check_0.joint",
+      "sha256": "11368504c087bbd5da3f460f6b879c422b6263fd284926934a8961f1e4196a67",
+      "bytes": 6350402
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/assembly_check_1.joint",
+      "sha256": "a2ff050115e16580f2993cbcb9d5e7ebada09b1a9f6f1eed18cfa55b8ffbaf63",
+      "bytes": 6350396
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/boundary.json",
+      "sha256": "d10db71ab249e052a26c432b36a67ee70cb3f2217ead429f4c6d41664d0393ae",
+      "bytes": 100
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/budget.json",
+      "sha256": "03abe4854d1c422c9f7e7c56bf770398bb5af4588ff4018d2915e222324d51e4",
+      "bytes": 1101
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/control_before_job.json",
+      "sha256": "ca4c6a5668b5ded8ebaa79d71d1eac806b9fd8591dcc15c978b84eb220020df8",
+      "bytes": 70
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/failed_logging_job_91308130/boundary.json",
+      "sha256": "d10db71ab249e052a26c432b36a67ee70cb3f2217ead429f4c6d41664d0393ae",
+      "bytes": 100
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/failed_logging_job_91308130/control_before_job.json",
+      "sha256": "ca4c6a5668b5ded8ebaa79d71d1eac806b9fd8591dcc15c978b84eb220020df8",
+      "bytes": 70
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/failed_logging_job_91308130/failure.json",
+      "sha256": "11af4bd0d79a9bf90f6a09c5bd5ed20b333f9a516908233cf2a95b37d8f65b94",
+      "bytes": 813
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/failed_logging_job_91308130/plan.json",
+      "sha256": "32a6734348d8697c698135d114f4a275b6fceff8b3a9dfd167ec2b17e40c030a",
+      "bytes": 13728
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/failed_logging_job_91308130/result.json",
+      "sha256": "3f2cb1cf12ace7272767d4c1291729be9f4ba0823fe49271847c73622ea46085",
+      "bytes": 1384
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/failed_logging_job_91308130/segments.json",
+      "sha256": "07372d3a2746f7277bd5cf65e5af0ad0140a3821007bd49ee621b3919045437c",
+      "bytes": 1766
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/failed_logging_job_91308130/source/environment_evolution/local_metabolic_translocation/core.py",
+      "sha256": "14917689b4a891b8ed27a1574630331b56a64d1538cf785e505b5a8fab3e393e",
+      "bytes": 8342
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/failed_logging_job_91308130/source/environment_evolution/local_metabolic_translocation/run.py",
+      "sha256": "ea3e60da9d111cb393582aa6ddb39eea991e186d12ea6b40c79b7df35f1ed06f",
+      "bytes": 16792
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/failed_logging_job_91308130/source/environment_evolution/material_action_response/core.py",
+      "sha256": "15691ada9fd805c076f7c5770ba955dbf6cc454ea3af129b1ba03fe958467b5b",
+      "bytes": 9751
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/failed_logging_job_91308130/source/environment_evolution/metabolic_maintenance_withdrawal/core.py",
+      "sha256": "c8260577edb1cec138f3f3869d889860ae93ff3d45fe212ff3cc08c1b2249a12",
+      "bytes": 8461
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/failed_logging_job_91308130/source/environment_evolution/metabolic_maintenance_withdrawal/run.py",
+      "sha256": "de568f32e51efe21f42a0188bd301ddbf0904c78bfad8f066eec5e02b7596445",
+      "bytes": 13493
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/failed_logging_job_91308130/source/environment_evolution/pump_gradient_feedback/planner.py",
+      "sha256": "5d36a87e619b20af3977f8808987f4de6898ae510158552d881989dd31c0cbc6",
+      "bytes": 5382
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/failed_logging_job_91308130/source/environment_evolution/regenerative_actor/conversion.py",
+      "sha256": "d2b73ccf44d6720e01e2166c055f9a427406dc483b21746476b9f8cc5f95189a",
+      "bytes": 2821
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/failed_logging_job_91308130/source/environment_evolution/regenerative_actor/model.py",
+      "sha256": "3941450e97d2311f833d1c9c8964f348218467d4cd8d41a68b6584b72b24b5b0",
+      "bytes": 8610
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/failed_logging_job_91308130/source/environment_evolution/resource_wave_actionability/core.py",
+      "sha256": "fcfb8954f7fa94e21954657545d3e0d4dd3155cf20adef2a87851a129c85726d",
+      "bytes": 6324
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/failed_logging_job_91308130/source/local_learning/consumption_qualified_transport/core.py",
+      "sha256": "751e06baaed88a15470aeb98817f018edbab9afab69aace9cc1001c473b7bcb6",
+      "bytes": 10194
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/failed_logging_job_91308130/source/local_learning/consumption_qualified_transport/run.py",
+      "sha256": "dc4ce07c6dd6ddbe0d1c35b8909113d84535c373cdeace9387f2b03875fe878e",
+      "bytes": 16078
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/failed_logging_job_91308130/source/local_learning/local_terminal_feedback/experiment.py",
+      "sha256": "1b820d4bed26a3c8452a2dd139fa29dedbb451c3d7f866835ed3b4d6890e1f7f",
+      "bytes": 15185
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/failed_logging_job_91308130/source/local_learning/material_transport.py",
+      "sha256": "dd5622a2df6a5d50642a31ad586215d5e30e33929cf8f57ee9efff36fdef08d5",
+      "bytes": 17572
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/failed_logging_job_91308130/source/local_learning/resource_matched_morphogenesis/core.py",
+      "sha256": "dae6fbd6db1fe1a83f34a6039aee8e292f6d63717270095db981d1e808928a83",
+      "bytes": 6767
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/failed_logging_job_91308130/source/local_learning/resource_matched_morphogenesis/run.py",
+      "sha256": "327dcf4c234b52023767c8d63f48546aa755edd14650025cc850edaeec4c1e3c",
+      "bytes": 16657
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/failed_logging_job_91308130/source/local_learning/rule_geometry_resource_support/core.py",
+      "sha256": "006c505f6e388d132f75466b21b8a5ec355e8cc5c0e64b8b5218f3f73e196d39",
+      "bytes": 3149
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/failed_logging_job_91308130/source/local_learning/rule_geometry_resource_support/run.py",
+      "sha256": "f71fbfd5c1536a4d6a37494d80f3df5a552c19dfc9f702c96211a3e84e64abc4",
+      "bytes": 14888
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/failed_logging_job_91308130/source/local_learning/tissue_replacement_pf_location/core.py",
+      "sha256": "adf452a8599221a1a21bf9aab22754576a39f5bea357e5f1630d447250ca721f",
+      "bytes": 4398
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/failed_logging_job_91308130/source/local_learning/tissue_replacement_pf_location/run.py",
+      "sha256": "119021f849311b93549f71b3dbdcef2859d52c4a1210ed3bb8299314a26a61a9",
+      "bytes": 12372
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/failed_logging_job_91308130/source/morphology_evolution/dual_kernel.py",
+      "sha256": "529d42e50876a68bce54a512f8a9cafd48a8f68276cf8507a0e2243b3f450d6e",
+      "bytes": 2922
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/failed_logging_job_91308130/source/simulation/snapshot.py",
+      "sha256": "e99d3eccee47ded2abe1518e3fb80d2d630a8ff21a2a339ff6723c2878dfc382",
+      "bytes": 6192
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/failure.json",
+      "sha256": "11af4bd0d79a9bf90f6a09c5bd5ed20b333f9a516908233cf2a95b37d8f65b94",
+      "bytes": 813
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/figure_sources.json",
+      "sha256": "9edd2dbf09f9371eb5f8bbe3a92fac253a036008d711758a907a0fe5f977aa1b",
+      "bytes": 17463
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/figure_windows.json",
+      "sha256": "429106a0d5edcfa7500134cdbf279cd2d8f378b827bb05a07c5b6ca615570883",
+      "bytes": 629
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/heldout_freeze.json",
+      "sha256": "27d31f24c43d4ef23eff50ce38b96e28ce163ff16e0b90ce6d36bea7aaf93fa9",
+      "bytes": 8661
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/outcomes.csv",
+      "sha256": "1eb23e935feefebc205039d3b0ff302668ba8e91d61df7540fb824272370b26f",
+      "bytes": 20533
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/paired_body_results.png",
+      "sha256": "54b3b9060c61d60d0243346707453a44f8768cc62d7e3d16174fc3652460fe8d",
+      "bytes": 130608
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/paired_differences.csv",
+      "sha256": "9d45381545bb119aa1f0d7a4b27341baf3919f634fbc0dd97ab58e1c88bb88ab",
+      "bytes": 5288
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/plan.json",
+      "sha256": "ccca0c7467d7b54a9e037912b358aed0f53cc14f6ddec6bad169ff73c6be5dcf",
+      "bytes": 14455
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/pure_checks.json",
+      "sha256": "a266bc0c8558468aef014f2b8bcc3b2c776458fc7a784aaee161f7432b6fadda",
+      "bytes": 135
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/raw_manifest.json",
+      "sha256": "97473139b03c31c940fa953638676cc2ad4ff5742f2dcafa1a4287f872861d17",
+      "bytes": 107229
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/redundant_recovery_copies_removed.json",
+      "sha256": "e97e0c6187c79088caf9fe607b23a2fa9bd069e03e6572b1d5e0197522030969",
+      "bytes": 18522
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/result.json",
+      "sha256": "deaa40a20271eca9d274530c7d82003b9c789d16701dafc2c1bd78b25e3dd845",
+      "bytes": 663
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/segments.json",
+      "sha256": "90d615f96aba43f56446d9aead40b2d7ef6e5eb8b4c92f6e5622dde2b79b6528",
+      "bytes": 76695
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/source/environment_evolution/local_metabolic_translocation/core.py",
+      "sha256": "14917689b4a891b8ed27a1574630331b56a64d1538cf785e505b5a8fab3e393e",
+      "bytes": 8342
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/source/environment_evolution/local_metabolic_translocation/run.py",
+      "sha256": "ea3e60da9d111cb393582aa6ddb39eea991e186d12ea6b40c79b7df35f1ed06f",
+      "bytes": 16792
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/source/environment_evolution/material_action_response/core.py",
+      "sha256": "15691ada9fd805c076f7c5770ba955dbf6cc454ea3af129b1ba03fe958467b5b",
+      "bytes": 9751
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/source/environment_evolution/metabolic_maintenance_withdrawal/core.py",
+      "sha256": "c8260577edb1cec138f3f3869d889860ae93ff3d45fe212ff3cc08c1b2249a12",
+      "bytes": 8461
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/source/environment_evolution/metabolic_maintenance_withdrawal/run.py",
+      "sha256": "de568f32e51efe21f42a0188bd301ddbf0904c78bfad8f066eec5e02b7596445",
+      "bytes": 13493
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/source/environment_evolution/pump_gradient_feedback/planner.py",
+      "sha256": "5d36a87e619b20af3977f8808987f4de6898ae510158552d881989dd31c0cbc6",
+      "bytes": 5382
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/source/environment_evolution/regenerative_actor/conversion.py",
+      "sha256": "d2b73ccf44d6720e01e2166c055f9a427406dc483b21746476b9f8cc5f95189a",
+      "bytes": 2821
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/source/environment_evolution/regenerative_actor/model.py",
+      "sha256": "3941450e97d2311f833d1c9c8964f348218467d4cd8d41a68b6584b72b24b5b0",
+      "bytes": 8610
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/source/environment_evolution/resource_wave_actionability/core.py",
+      "sha256": "fcfb8954f7fa94e21954657545d3e0d4dd3155cf20adef2a87851a129c85726d",
+      "bytes": 6324
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/source/local_learning/consumption_qualified_transport/core.py",
+      "sha256": "751e06baaed88a15470aeb98817f018edbab9afab69aace9cc1001c473b7bcb6",
+      "bytes": 10194
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/source/local_learning/consumption_qualified_transport/run.py",
+      "sha256": "816d89cab3dc1c74b59311a3a3d3362d7fddbf569f6caed8fd03872c1f24618f",
+      "bytes": 15380
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/source/local_learning/local_terminal_feedback/experiment.py",
+      "sha256": "1b820d4bed26a3c8452a2dd139fa29dedbb451c3d7f866835ed3b4d6890e1f7f",
+      "bytes": 15185
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/source/local_learning/material_transport.py",
+      "sha256": "dd5622a2df6a5d50642a31ad586215d5e30e33929cf8f57ee9efff36fdef08d5",
+      "bytes": 17572
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/source/local_learning/resource_matched_morphogenesis/core.py",
+      "sha256": "dae6fbd6db1fe1a83f34a6039aee8e292f6d63717270095db981d1e808928a83",
+      "bytes": 6767
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/source/local_learning/resource_matched_morphogenesis/run.py",
+      "sha256": "327dcf4c234b52023767c8d63f48546aa755edd14650025cc850edaeec4c1e3c",
+      "bytes": 16657
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/source/local_learning/rule_geometry_resource_support/core.py",
+      "sha256": "006c505f6e388d132f75466b21b8a5ec355e8cc5c0e64b8b5218f3f73e196d39",
+      "bytes": 3149
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/source/local_learning/rule_geometry_resource_support/run.py",
+      "sha256": "f71fbfd5c1536a4d6a37494d80f3df5a552c19dfc9f702c96211a3e84e64abc4",
+      "bytes": 14888
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/source/local_learning/tissue_replacement_pf_location/core.py",
+      "sha256": "adf452a8599221a1a21bf9aab22754576a39f5bea357e5f1630d447250ca721f",
+      "bytes": 4398
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/source/local_learning/tissue_replacement_pf_location/run.py",
+      "sha256": "119021f849311b93549f71b3dbdcef2859d52c4a1210ed3bb8299314a26a61a9",
+      "bytes": 12372
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/source/morphology_evolution/dual_kernel.py",
+      "sha256": "529d42e50876a68bce54a512f8a9cafd48a8f68276cf8507a0e2243b3f450d6e",
+      "bytes": 2922
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/source/simulation/snapshot.py",
+      "sha256": "e99d3eccee47ded2abe1518e3fb80d2d630a8ff21a2a339ff6723c2878dfc382",
+      "bytes": 6192
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/steps.csv",
+      "sha256": "81356757294f386b8bac00b69cb7a86ad097d8a4c4b68f767ae764fbbec9ea78",
+      "bytes": 9331843
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/summary.json",
+      "sha256": "8b2625a6d31c0557fa4d5b7ded6f0ee929ef18de388cd2608d50c4ad685e9dad",
+      "bytes": 19369
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/visual_inspection.json",
+      "sha256": "fdbe4d9c0317a4e420c75d59a5bbdbd8ac251d203b311a67d8bf5e760a1012f3",
+      "bytes": 591
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/windows.csv",
+      "sha256": "715ed595439769a658249298fc6ff5c7f7a27e31b46c5d05bc5f61c3f603dc4a",
+      "bytes": 16673
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/writer_checks.csv",
+      "sha256": "63a79e80b7d13750e2184a1c5353bca18d938d6e32d40653d6ebe27e75469f86",
+      "bytes": 1313
+    }
+  ]
+}

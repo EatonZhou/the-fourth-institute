@@ -1,0 +1,20 @@
+{
+  "task": "response_pooling_order_20261019",
+  "status": "complete",
+  "job": "191e27ad-3229-4cfd-9149-d776628c19d4",
+  "attempted": 516,
+  "committed": 516,
+  "settled": 516,
+  "science_native": 512,
+  "boundary_native": 4,
+  "unknown_native": 0,
+  "wall_seconds": 24.622903091018088,
+  "failure": null,
+  "logical_paths": 4,
+  "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/response_pooling_order_20261019/191e27ad-3229-4cfd-9149-d776628c19d4",
+  "raw_bytes": 59086832,
+  "objective_met": false,
+  "acquisition_replay": 0,
+  "old_tail_replay": 0,
+  "old_budget_used": 0
+}

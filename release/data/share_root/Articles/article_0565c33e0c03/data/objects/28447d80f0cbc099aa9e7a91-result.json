@@ -1,0 +1,19 @@
+{
+  "task": "spatial_birth_request_coordination_20261019",
+  "status": "completed",
+  "job": "1d9a8271-7d8f-4b47-b278-ceddb02d049a",
+  "attempted": 3076,
+  "committed": 3076,
+  "settled": 3076,
+  "science_native": 3072,
+  "boundary_native": 4,
+  "wall_seconds": 154.8396201550495,
+  "failure": null,
+  "actual_paths": 12,
+  "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/spatial_birth_request_coordination_20261019/1d9a8271-7d8f-4b47-b278-ceddb02d049a",
+  "raw_bytes": 54544897,
+  "objective_met": false,
+  "baseline_replayed": 0,
+  "old_acquisition_replayed": 0,
+  "old_budget_used": 0
+}

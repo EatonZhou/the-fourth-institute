@@ -1,0 +1,47 @@
+{
+  "schema": "tfi.architecture-test-fixtures.v1",
+  "purpose": "Sanitized fixture copies with regenerated local content addresses. They do not select production discovery or mutate historical records.",
+  "scope_notes": {
+    "mechanism-increment": "Local mechanism evidence only. Original capture 073dd failed parent admission on harness.offload.retain; preserve that failure, do not use as a production candidate."
+  },
+  "fixtures": {
+    "provider": {
+      "file": "provider.json.gz",
+      "sha256": "1bb21129ee61d00c4f48b80946086980fa70ff8f2796820160c1ef5d422db3bc",
+      "size": 16046999,
+      "gzip_sha256": "c79ed27bbf718b6b24781146fed5a75ceb6e64e9ace1ff089898aafe1dae3a23"
+    },
+    "projection": {
+      "file": "projection.json.gz",
+      "sha256": "7cb53b6cbb4a2adaa7b3588e9a4d0d7d19d678c99971ab0eab0290b5c70e374e",
+      "size": 15790070,
+      "gzip_sha256": "33cc5299220883f255b1a2e2e0b96acb28a4677f32fb959f853544ce3729da5d"
+    },
+    "mechanism-increment": {
+      "file": "mechanism-increment.json.gz",
+      "sha256": "fb5f52c59c251d204a750213104c670761636e5a82e1a67a47954811cb476b74",
+      "size": 17289480,
+      "gzip_sha256": "f55c2d48bd238583c040f15381ec8461076d3fad3ee3d6c932cb122af7ec7d4d"
+    },
+    "model": {
+      "file": "model.json.gz",
+      "sha256": "93b35d886b59c2464df1adf2de28e428299338f1e7c24533a41536b5460c3e7c",
+      "size": 4158818,
+      "gzip_sha256": "b8e6652caaf69ec61912628aa754452ac86a78f493215d4f713933f6a14016e1",
+      "address": "workspace_13209cb6666b/file/deep-architecture/objects/model-93b35d886b59c2464df1adf2de28e428299338f1e7c24533a41536b5460c3e7c.json"
+    },
+    "provider-feedback": {
+      "file": "provider-feedback.json.gz",
+      "sha256": "6fd44e5d04c3e202c66852a0cfed0badc90bff83fd58c57244885036e3b8832a",
+      "size": 16755590,
+      "gzip_sha256": "d504e471499faf263d832b9ef9e03f0df5aa48e7771c20b665f0ef6baf6718ed"
+    },
+    "lineage-model": {
+      "file": "lineage-model.json.gz",
+      "sha256": "fb2a1e4ffbe05ce4da5002076219c0b2f360b08a3d13aabdec4a43228df1835f",
+      "size": 4545008,
+      "gzip_sha256": "7da3e38ee2bb3e948a15cab93660e8e14bd3990fc0c262901f15ba2841aeff4f",
+      "address": "workspace_13209cb6666b/file/deep-architecture/objects/model-fb2a1e4ffbe05ce4da5002076219c0b2f360b08a3d13aabdec4a43228df1835f.json"
+    }
+  }
+}

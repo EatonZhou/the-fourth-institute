@@ -1,0 +1,41 @@
+{
+  "status": "implemented_pure_checked_and_one_native_pilot_read_only_consumed",
+  "responsibility": "33 method/information audit; ce2 unique host, d3 unique U_phi trainer",
+  "module": "research.anticipatory_information_audit",
+  "api": "${share_root}/Projects/元胞自动机研究/src/research/results/anticipatory_information_audit_20261018/API.txt",
+  "report": "${share_root}/Projects/元胞自动机研究/src/research/results/anticipatory_information_audit_20261018/REPORT.txt",
+  "contract": "${share_root}/Projects/元胞自动机研究/src/research/results/anticipatory_information_audit_20261018/host_contract.json",
+  "literature": "${share_root}/Projects/元胞自动机研究/src/research/results/anticipatory_information_audit_20261018/literature_positions.json",
+  "native_read_only": "${share_root}/Projects/元胞自动机研究/src/research/results/anticipatory_information_audit_20261018/real_consumption.json",
+  "checks": [
+    "${share_root}/Projects/元胞自动机研究/src/research/results/anticipatory_information_audit_20261018/check01/summary.json",
+    "${share_root}/Projects/元胞自动机研究/src/research/results/anticipatory_information_audit_20261018/check02/summary.json",
+    "${share_root}/Projects/元胞自动机研究/src/research/results/anticipatory_information_audit_20261018/cli_check.json"
+  ],
+  "manifest": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/anticipatory_information_audit_20261018/manifest.json",
+    "sha256": "e2a09ad493dcf74263bd574bacc1927f9c189c22c332eb56ab92d89382755923"
+  },
+  "sources": {
+    "host_records.py": "8f86b86dc7184ddef0e716169739c2d9fbc2456ec5baccddd9960cc171358614",
+    "__main__.py": "67e04c495bc02385d2f180de8c1d1c458fa51f208c045e260a6d674a39e3f797",
+    "consume_feasibility.py": "8c63f61d2999375898c35fa189f13ebfb13f15e55f833acb9bb9711879019531",
+    "audit.py": "2704be538f2e1be5107eae582f15f9decbefcc87b0256b280bd49fb3ac757076",
+    "check_binding.py": "15826d63cf363b8caa0c061a1ee4c9e6b4c932a27ffa8dea1c98e00447303310",
+    "check.py": "6fee75ce497b03cca67d289bc6b7642cb440d80502f210f24a0e66eeb326ad4f",
+    "__init__.py": "e63c6c2d199c33e3013748c18ed9bf130c20fec625dccc8f249f58470de5822b"
+  },
+  "host_sha256": "4ea2ebf8f3ec025624b30688122dbb3ea7f5717606f9eccb1ea5c4765b726817",
+  "native_result_sha256": "22a09098267eed5196fec9d388d67226b20cb4391293a6126e5dcce3b94a10b8",
+  "native_result_owner_steps": 18592,
+  "own_body_steps": 0,
+  "own_environment_calls": 0,
+  "own_controller_training": 0,
+  "own_runner_jobs": [],
+  "conclusions": [
+    "Fixed last, public mature/pending fields and costs are explicit falsifiers; no new-method advantage inferred.",
+    "Paid anticipatory opportunity confirmed from ce2 saved pilot; last remains strong; extra capture not extra terminal energy.",
+    "No full native partition score: sparse archive lacks full precommit observation/history; missing fields not reconstructed.",
+    "Future d3 trained U_phi result not yet reviewed; consume once when delivered without new physical work."
+  ]
+}

@@ -1,0 +1,414 @@
+{
+  "Notice Board image not found": {
+    "en": "Notice Board image not found",
+    "zh-CN": "未找到公告板图片"
+  },
+  "classifier returned an invalid category": {
+    "en": "classifier returned an invalid category",
+    "zh-CN": "分类器返回了无效类别"
+  },
+  "featured must be a boolean": {
+    "en": "featured must be a boolean",
+    "zh-CN": "featured 必须是布尔值"
+  },
+  "invalid notice board category": {
+    "en": "invalid notice board category",
+    "zh-CN": "无效的公告板分类"
+  },
+  "invalid notice board image ID": {
+    "en": "invalid notice board image ID",
+    "zh-CN": "无效的公告板图片 ID"
+  },
+  "invalid notice board post ID": {
+    "en": "invalid notice board post ID",
+    "zh-CN": "无效的公告板帖子 ID"
+  },
+  "invalid notice board reply ID": {
+    "en": "invalid notice board reply ID",
+    "zh-CN": "无效的公告板回复 ID"
+  },
+  "is-unread": {
+    "en": "is-unread",
+    "zh-CN": "is-unread"
+  },
+  "notice board has reached its post limit": {
+    "en": "notice board has reached its post limit",
+    "zh-CN": "公告板已达到发帖上限"
+  },
+  "notice board image not found": {
+    "en": "notice board image not found",
+    "zh-CN": "未找到公告板图片"
+  },
+  "notice board moderation storage has an invalid featured_posts map": {
+    "en": "notice board moderation storage has an invalid featured_posts map",
+    "zh-CN": "公告板审核存储的 featured_posts 映射无效"
+  },
+  "notice board moderation storage must contain a JSON object": {
+    "en": "notice board moderation storage must contain a JSON object",
+    "zh-CN": "公告板审核存储必须包含 JSON 对象"
+  },
+  "notice board post not found": {
+    "en": "notice board post not found",
+    "zh-CN": "未找到公告板帖子"
+  },
+  "notice board read-state storage has an invalid shape": {
+    "en": "notice board read-state storage has an invalid shape",
+    "zh-CN": "公告板已读状态存储的结构无效"
+  },
+  "notice board read-state storage must contain an object": {
+    "en": "notice board read-state storage must contain an object",
+    "zh-CN": "公告板已读状态存储必须包含对象"
+  },
+  "notice board reply not found": {
+    "en": "notice board reply not found",
+    "zh-CN": "未找到公告板回复"
+  },
+  "notice board storage has an invalid posts list": {
+    "en": "notice board storage has an invalid posts list",
+    "zh-CN": "公告板存储的帖子列表无效"
+  },
+  "notice board storage must contain a JSON object": {
+    "en": "notice board storage must contain a JSON object",
+    "zh-CN": "公告板存储必须包含 JSON 对象"
+  },
+  "noticeBoardComposeAttach": {
+    "en": "noticeBoardComposeAttach",
+    "zh-CN": "noticeBoardComposeAttach"
+  },
+  "noticeBoardComposeCancel": {
+    "en": "noticeBoardComposeCancel",
+    "zh-CN": "noticeBoardComposeCancel"
+  },
+  "noticeBoardComposeCategoryInput": {
+    "en": "noticeBoardComposeCategoryInput",
+    "zh-CN": "noticeBoardComposeCategoryInput"
+  },
+  "noticeBoardComposeClose": {
+    "en": "noticeBoardComposeClose",
+    "zh-CN": "noticeBoardComposeClose"
+  },
+  "noticeBoardComposeContentInput": {
+    "en": "noticeBoardComposeContentInput",
+    "zh-CN": "noticeBoardComposeContentInput"
+  },
+  "noticeBoardComposeFileInput": {
+    "en": "noticeBoardComposeFileInput",
+    "zh-CN": "noticeBoardComposeFileInput"
+  },
+  "noticeBoardComposeForm": {
+    "en": "noticeBoardComposeForm",
+    "zh-CN": "noticeBoardComposeForm"
+  },
+  "noticeBoardComposeImageTray": {
+    "en": "noticeBoardComposeImageTray",
+    "zh-CN": "noticeBoardComposeImageTray"
+  },
+  "noticeBoardComposeMention": {
+    "en": "noticeBoardComposeMention",
+    "zh-CN": "noticeBoardComposeMention"
+  },
+  "noticeBoardComposeMentionMenu": {
+    "en": "noticeBoardComposeMentionMenu",
+    "zh-CN": "noticeBoardComposeMentionMenu"
+  },
+  "noticeBoardComposeOverlay": {
+    "en": "noticeBoardComposeOverlay",
+    "zh-CN": "noticeBoardComposeOverlay"
+  },
+  "noticeBoardComposeSubmit": {
+    "en": "noticeBoardComposeSubmit",
+    "zh-CN": "noticeBoardComposeSubmit"
+  },
+  "noticeBoardComposeTitle": {
+    "en": "noticeBoardComposeTitle",
+    "zh-CN": "noticeBoardComposeTitle"
+  },
+  "noticeBoardComposeTitleInput": {
+    "en": "noticeBoardComposeTitleInput",
+    "zh-CN": "noticeBoardComposeTitleInput"
+  },
+  "noticeBoardComposeUploadStatus": {
+    "en": "noticeBoardComposeUploadStatus",
+    "zh-CN": "noticeBoardComposeUploadStatus"
+  },
+  "noticeBoardDeletePostBtn": {
+    "en": "noticeBoardDeletePostBtn",
+    "zh-CN": "noticeBoardDeletePostBtn"
+  },
+  "noticeBoardDetailBody": {
+    "en": "noticeBoardDetailBody",
+    "zh-CN": "noticeBoardDetailBody"
+  },
+  "noticeBoardDetailClose": {
+    "en": "noticeBoardDetailClose",
+    "zh-CN": "noticeBoardDetailClose"
+  },
+  "noticeBoardDetailOverlay": {
+    "en": "noticeBoardDetailOverlay",
+    "zh-CN": "noticeBoardDetailOverlay"
+  },
+  "noticeBoardDetailTitle": {
+    "en": "noticeBoardDetailTitle",
+    "zh-CN": "noticeBoardDetailTitle"
+  },
+  "noticeBoardEditPostBtn": {
+    "en": "noticeBoardEditPostBtn",
+    "zh-CN": "noticeBoardEditPostBtn"
+  },
+  "noticeBoardFeaturedBtn": {
+    "en": "noticeBoardFeaturedBtn",
+    "zh-CN": "noticeBoardFeaturedBtn"
+  },
+  "noticeBoardPinBtn": {
+    "en": "noticeBoardPinBtn",
+    "zh-CN": "noticeBoardPinBtn"
+  },
+  "noticeBoardReplyAttach": {
+    "en": "noticeBoardReplyAttach",
+    "zh-CN": "noticeBoardReplyAttach"
+  },
+  "noticeBoardReplyFileInput": {
+    "en": "noticeBoardReplyFileInput",
+    "zh-CN": "noticeBoardReplyFileInput"
+  },
+  "noticeBoardReplyForm": {
+    "en": "noticeBoardReplyForm",
+    "zh-CN": "noticeBoardReplyForm"
+  },
+  "noticeBoardReplyImageTray": {
+    "en": "noticeBoardReplyImageTray",
+    "zh-CN": "noticeBoardReplyImageTray"
+  },
+  "noticeBoardReplyInput": {
+    "en": "noticeBoardReplyInput",
+    "zh-CN": "noticeBoardReplyInput"
+  },
+  "noticeBoardReplyMention": {
+    "en": "noticeBoardReplyMention",
+    "zh-CN": "noticeBoardReplyMention"
+  },
+  "noticeBoardReplyMentionMenu": {
+    "en": "noticeBoardReplyMentionMenu",
+    "zh-CN": "noticeBoardReplyMentionMenu"
+  },
+  "noticeBoardReplySubmit": {
+    "en": "noticeBoardReplySubmit",
+    "zh-CN": "noticeBoardReplySubmit"
+  },
+  "noticeBoardReplyUploadStatus": {
+    "en": "noticeBoardReplyUploadStatus",
+    "zh-CN": "noticeBoardReplyUploadStatus"
+  },
+  "notification revision must be an integer": {
+    "en": "notification revision must be an integer",
+    "zh-CN": "通知修订号必须是整数"
+  },
+  "notification revision must be positive": {
+    "en": "notification revision must be positive",
+    "zh-CN": "通知修订号必须为正数"
+  },
+  "pinned must be a boolean": {
+    "en": "pinned must be a boolean",
+    "zh-CN": "pinned 必须是布尔值"
+  },
+  "this post has reached its reply limit": {
+    "en": "this post has reached its reply limit",
+    "zh-CN": "此帖子已达到回复上限"
+  },
+  "关闭发帖窗口": {
+    "en": "Close post window",
+    "zh-CN": "关闭发帖窗口"
+  },
+  "关闭帖子": {
+    "en": "Close post",
+    "zh-CN": "关闭帖子"
+  },
+  "删除回复": {
+    "en": "Delete reply",
+    "zh-CN": "删除回复"
+  },
+  "删除帖子": {
+    "en": "Delete post",
+    "zh-CN": "删除帖子"
+  },
+  "刷新 Notice Board": {
+    "en": "Refresh Notice Board",
+    "zh-CN": "刷新 Notice Board"
+  },
+  "发布帖子": {
+    "en": "Publish post",
+    "zh-CN": "发布帖子"
+  },
+  "发布新帖": {
+    "en": "Publish new post",
+    "zh-CN": "发布新帖"
+  },
+  "取消精华": {
+    "en": "Unfeature",
+    "zh-CN": "取消精华"
+  },
+  "回复不能超过 8000 个字符": {
+    "en": "Reply cannot exceed 8000 characters",
+    "zh-CN": "回复不能超过 8000 个字符"
+  },
+  "回复中…": {
+    "en": "Replying…",
+    "zh-CN": "回复中…"
+  },
+  "回复已删除": {
+    "en": "Reply deleted",
+    "zh-CN": "回复已删除"
+  },
+  "回复附件": {
+    "en": "Reply attachments",
+    "zh-CN": "回复附件"
+  },
+  "已取消精华": {
+    "en": "Unfeatured",
+    "zh-CN": "已取消精华"
+  },
+  "已取消置顶": {
+    "en": "Unpinned",
+    "zh-CN": "已取消置顶"
+  },
+  "帖子中的全部回复也会被删除。": {
+    "en": "All replies in the post will also be deleted.",
+    "zh-CN": "帖子中的全部回复也会被删除。"
+  },
+  "帖子分类": {
+    "en": "Post category",
+    "zh-CN": "帖子分类"
+  },
+  "帖子图片": {
+    "en": "Post image",
+    "zh-CN": "帖子图片"
+  },
+  "帖子已删除": {
+    "en": "Post deleted",
+    "zh-CN": "帖子已删除"
+  },
+  "帖子已发布": {
+    "en": "Post published",
+    "zh-CN": "帖子已发布"
+  },
+  "帖子已更新": {
+    "en": "Post updated",
+    "zh-CN": "帖子已更新"
+  },
+  "帖子已置顶": {
+    "en": "Post pinned",
+    "zh-CN": "帖子已置顶"
+  },
+  "帖子已设为精华": {
+    "en": "Post featured",
+    "zh-CN": "帖子已设为精华"
+  },
+  "帖子正文": {
+    "en": "Post body",
+    "zh-CN": "帖子正文"
+  },
+  "帖子正文不能超过 30000 个字符": {
+    "en": "Post body cannot exceed 30000 characters",
+    "zh-CN": "帖子正文不能超过 30000 个字符"
+  },
+  "帖子读取失败": {
+    "en": "Failed to read post",
+    "zh-CN": "帖子读取失败"
+  },
+  "提及用户": {
+    "en": "Mention user",
+    "zh-CN": "提及用户"
+  },
+  "支持 Markdown，可直接粘贴 PNG、JPEG、GIF 或 WebP 图片（每张不超过 12 MB）": {
+    "en": "Supports Markdown; paste PNG, JPEG, GIF, or WebP images directly (max 12 MB each)",
+    "zh-CN": "支持 Markdown，可直接粘贴 PNG、JPEG、GIF 或 WebP 图片（每张不超过 12 MB）"
+  },
+  "新帖子": {
+    "en": "New post",
+    "zh-CN": "新帖子"
+  },
+  "更新帖子": {
+    "en": "Update post",
+    "zh-CN": "更新帖子"
+  },
+  "更新精华状态": {
+    "en": "Update featured status",
+    "zh-CN": "更新精华状态"
+  },
+  "更新置顶状态": {
+    "en": "Update pinned status",
+    "zh-CN": "更新置顶状态"
+  },
+  "有新回复": {
+    "en": "New replies",
+    "zh-CN": "有新回复"
+  },
+  "未命名帖子": {
+    "en": "Unnamed post",
+    "zh-CN": "未命名帖子"
+  },
+  "正在读取公告…": {
+    "en": "Reading announcements…",
+    "zh-CN": "正在读取公告…"
+  },
+  "正在读取帖子…": {
+    "en": "Reading posts…",
+    "zh-CN": "正在读取帖子…"
+  },
+  "每条内容最多附加 8 张图片": {
+    "en": "Each post can attach at most 8 images",
+    "zh-CN": "每条内容最多附加 8 张图片"
+  },
+  "没有匹配的用户": {
+    "en": "No matching users",
+    "zh-CN": "没有匹配的用户"
+  },
+  "添加图片": {
+    "en": "Add image",
+    "zh-CN": "添加图片"
+  },
+  "精华": {
+    "en": "Essence",
+    "zh-CN": "精华"
+  },
+  "编辑帖子": {
+    "en": "Edit post",
+    "zh-CN": "编辑帖子"
+  },
+  "设为精华": {
+    "en": "Set as featured",
+    "zh-CN": "设为精华"
+  },
+  "读取 Notice Board": {
+    "en": "Read Notice Board",
+    "zh-CN": "读取 Notice Board"
+  },
+  "读取帖子": {
+    "en": "Read post",
+    "zh-CN": "读取帖子"
+  },
+  "读取用户列表": {
+    "en": "Read user list",
+    "zh-CN": "读取用户列表"
+  },
+  "还没有回复。": {
+    "en": "No replies yet.",
+    "zh-CN": "还没有回复。"
+  },
+  "还没有帖子。": {
+    "en": "No posts yet.",
+    "zh-CN": "还没有帖子。"
+  },
+  "这个分类还没有帖子。": {
+    "en": "This category has no posts yet.",
+    "zh-CN": "这个分类还没有帖子。"
+  },
+  "这条帖子": {
+    "en": "This post",
+    "zh-CN": "这条帖子"
+  },
+  "选择要提及的用户": {
+    "en": "Select users to mention",
+    "zh-CN": "选择要提及的用户"
+  }
+}

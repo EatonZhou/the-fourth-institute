@@ -1,0 +1,82 @@
+[
+  {
+    "seed": 202610199751,
+    "arm": "adaptive_gain",
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_adaptive_gain",
+    "native": 992,
+    "failed": false,
+    "events": 48,
+    "M": 23.999999999999982,
+    "E": 36.77851452710415
+  },
+  {
+    "seed": 202610199751,
+    "arm": "fixed_event",
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_fixed_event",
+    "native": 992,
+    "failed": false,
+    "events": 48,
+    "M": 23.999999999999993,
+    "E": 36.36259768951987
+  },
+  {
+    "seed": 202610199751,
+    "arm": "local_delay",
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_local_delay",
+    "native": 992,
+    "failed": false,
+    "events": 48,
+    "M": 24.00000000000002,
+    "E": 41.62026861924414
+  },
+  {
+    "seed": 202610199751,
+    "arm": "history_table",
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199751_history_table",
+    "native": 992,
+    "failed": false,
+    "events": 48,
+    "M": 23.99999999999997,
+    "E": 41.96348829549577
+  },
+  {
+    "seed": 202610199752,
+    "arm": "adaptive_gain",
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199752_adaptive_gain",
+    "native": 990,
+    "failed": false,
+    "events": 48,
+    "M": 24.000000000000007,
+    "E": 37.72307178280286
+  },
+  {
+    "seed": 202610199752,
+    "arm": "fixed_event",
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199752_fixed_event",
+    "native": 990,
+    "failed": false,
+    "events": 48,
+    "M": 24.000000000000007,
+    "E": 37.31103135006106
+  },
+  {
+    "seed": 202610199752,
+    "arm": "local_delay",
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/88cfadaf-41a4-4ab2-9536-86902869abfe/raw/202610199752_local_delay",
+    "native": 990,
+    "failed": false,
+    "events": 48,
+    "M": 23.999999999999993,
+    "E": 41.66525097879946
+  },
+  {
+    "seed": 202610199752,
+    "arm": "history_table",
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/fecb9eed-feb6-4c29-a883-2d0a7f462286/raw/202610199752_history_table",
+    "native": 990,
+    "failed": false,
+    "events": 48,
+    "M": 23.99999999999999,
+    "E": 41.97581355380045
+  }
+]

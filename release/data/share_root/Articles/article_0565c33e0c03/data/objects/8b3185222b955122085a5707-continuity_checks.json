@@ -1,0 +1,130 @@
+[
+  {
+    "id": "202610197503_0_0_fast_delta_life_turn_once_write_original_write",
+    "initial_exact": true,
+    "frozen_bank_error": 0.0,
+    "max_energy_error": 5.485195631038664e-15,
+    "nofeedback_total_payment": 0.0,
+    "frozen_association_updates": null
+  },
+  {
+    "id": "202610197503_0_0_fast_delta_life_turn_once_write_original_freeze",
+    "initial_exact": true,
+    "frozen_bank_error": 0.0,
+    "max_energy_error": 5.485195631038664e-15,
+    "nofeedback_total_payment": 0.0,
+    "frozen_association_updates": 0
+  },
+  {
+    "id": "202610197503_0_0_fast_delta_life_turn_once_write_readout_pause_write",
+    "initial_exact": true,
+    "frozen_bank_error": 0.0,
+    "max_energy_error": 5.207856715316872e-15,
+    "nofeedback_total_payment": 0.0,
+    "frozen_association_updates": null
+  },
+  {
+    "id": "202610197503_0_0_fast_delta_life_turn_once_write_readout_pause_freeze",
+    "initial_exact": true,
+    "frozen_bank_error": 0.0,
+    "max_energy_error": 5.207856715316872e-15,
+    "nofeedback_total_payment": 0.0,
+    "frozen_association_updates": 0
+  },
+  {
+    "id": "202610197503_0_0_joint_delta_life_turn_once_write_original_write",
+    "initial_exact": true,
+    "frozen_bank_error": 0.0,
+    "max_energy_error": 6.512151928816934e-15,
+    "nofeedback_total_payment": 0.0,
+    "frozen_association_updates": null
+  },
+  {
+    "id": "202610197503_0_0_joint_delta_life_turn_once_write_original_freeze",
+    "initial_exact": true,
+    "frozen_bank_error": 0.0,
+    "max_energy_error": 6.512151928816934e-15,
+    "nofeedback_total_payment": 0.0,
+    "frozen_association_updates": 0
+  },
+  {
+    "id": "202610197503_0_0_joint_delta_life_turn_once_write_readout_pause_write",
+    "initial_exact": true,
+    "frozen_bank_error": 0.0,
+    "max_energy_error": 7.509184246634604e-15,
+    "nofeedback_total_payment": 0.0,
+    "frozen_association_updates": null
+  },
+  {
+    "id": "202610197503_0_0_joint_delta_life_turn_once_write_readout_pause_freeze",
+    "initial_exact": true,
+    "frozen_bank_error": 0.0,
+    "max_energy_error": 7.509184246634604e-15,
+    "nofeedback_total_payment": 0.0,
+    "frozen_association_updates": 0
+  },
+  {
+    "id": "202610197504_1_0_fast_delta_life_turn_once_write_original_write",
+    "initial_exact": true,
+    "frozen_bank_error": 0.0,
+    "max_energy_error": 5.630912403020716e-15,
+    "nofeedback_total_payment": 0.0,
+    "frozen_association_updates": null
+  },
+  {
+    "id": "202610197504_1_0_fast_delta_life_turn_once_write_original_freeze",
+    "initial_exact": true,
+    "frozen_bank_error": 0.0,
+    "max_energy_error": 5.630912403020716e-15,
+    "nofeedback_total_payment": 0.0,
+    "frozen_association_updates": 0
+  },
+  {
+    "id": "202610197504_1_0_fast_delta_life_turn_once_write_readout_pause_write",
+    "initial_exact": true,
+    "frozen_bank_error": 0.0,
+    "max_energy_error": 7.461425140936617e-15,
+    "nofeedback_total_payment": 0.0,
+    "frozen_association_updates": null
+  },
+  {
+    "id": "202610197504_1_0_fast_delta_life_turn_once_write_readout_pause_freeze",
+    "initial_exact": true,
+    "frozen_bank_error": 0.0,
+    "max_energy_error": 7.461425140936617e-15,
+    "nofeedback_total_payment": 0.0,
+    "frozen_association_updates": 0
+  },
+  {
+    "id": "202610197504_1_0_joint_delta_life_turn_once_write_original_write",
+    "initial_exact": true,
+    "frozen_bank_error": 0.0,
+    "max_energy_error": 7.667477763817487e-15,
+    "nofeedback_total_payment": 0.0,
+    "frozen_association_updates": null
+  },
+  {
+    "id": "202610197504_1_0_joint_delta_life_turn_once_write_original_freeze",
+    "initial_exact": true,
+    "frozen_bank_error": 0.0,
+    "max_energy_error": 7.667477763817487e-15,
+    "nofeedback_total_payment": 0.0,
+    "frozen_association_updates": 0
+  },
+  {
+    "id": "202610197504_1_0_joint_delta_life_turn_once_write_readout_pause_write",
+    "initial_exact": true,
+    "frozen_bank_error": 0.0,
+    "max_energy_error": 7.261552470438914e-15,
+    "nofeedback_total_payment": 0.0,
+    "frozen_association_updates": null
+  },
+  {
+    "id": "202610197504_1_0_joint_delta_life_turn_once_write_readout_pause_freeze",
+    "initial_exact": true,
+    "frozen_bank_error": 0.0,
+    "max_energy_error": 7.261552470438914e-15,
+    "nofeedback_total_payment": 0.0,
+    "frozen_association_updates": 0
+  }
+]

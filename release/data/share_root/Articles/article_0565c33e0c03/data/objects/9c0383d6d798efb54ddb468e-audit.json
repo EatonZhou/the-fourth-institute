@@ -1,0 +1,204 @@
+{
+  "saved_receipts": 56,
+  "receipt_max_errors": {
+    "holding_fee": 4.235164736271502e-22,
+    "holding_pay_excess": 0.0,
+    "release_fee": 0.0,
+    "release_pay_excess": 0.0,
+    "binding_fee": 0.0,
+    "binding_pay_excess": 0.0,
+    "S": 0.0,
+    "capacity": 0.0,
+    "new_tissue": 5.551115123125783e-17,
+    "P": 3.608224830031759e-16,
+    "E": 1.1102230246251565e-16,
+    "F": 0.0,
+    "no_newborn_borrow": 0.0,
+    "r_prev": 0.0
+  },
+  "per_step_max_checks": {
+    "check_material_error": 2.8421709430404014e-14,
+    "check_energy_error": 1.1368683772161605e-13,
+    "check_max_density": 0.9953485242931562,
+    "check_attempted_body_steps": 2048.0,
+    "check_reconstruction_error": 5.551115123125783e-17,
+    "check_K_column_error": 0.0,
+    "check_transport_error": 1.4210854715202004e-14,
+    "check_whole_material_error": 3.9912517735274384e-14,
+    "check_whole_energy_error": 1.2101430968414206e-13,
+    "check_input_material_array_error": 0.0,
+    "check_input_energy_array_error": 0.0,
+    "check_cargo_P_error": 7.105427357601002e-15,
+    "check_cargo_F_error": 1.4210854715202004e-14,
+    "check_cargo_E_heat_error": 1.4210854715202004e-14,
+    "check_cargo_capacity_excess": 0.0,
+    "check_cargo_payable_excess": 0.0,
+    "check_cargo_negative": 0.0,
+    "check_cargo_newborn_payer": 0.0,
+    "check_request_partition_error": 6.938893903907228e-18,
+    "check_founder_excess": 0.0,
+    "check_recycle_material_error": 2.8421709430404014e-14,
+    "check_recycle_energy_error": 5.684341886080803e-14,
+    "check_recycle_payable_excess": 0.0,
+    "check_recycle_capacity_excess": 0.0,
+    "check_recycle_eligible_excess": 1.0408340855860844e-17,
+    "check_recycle_negative": 9.75781955236954e-19,
+    "check_recycle_newborn_payer": 0.0,
+    "check_recycle_no_F_or_deathE_change": 0.0,
+    "check_L256_excess": 3.469446951953614e-18,
+    "check_L256_balance_error": 6.039613253960853e-14,
+    "check_eligible_balance_error": 6.994405055138486e-14,
+    "check_native_and_pump_material_error": 4.263256414560601e-14,
+    "check_native_and_pump_energy_error": 1.1612932837579137e-13,
+    "check_A_balance_error": 4.0495384823202585e-14,
+    "check_reserve_stock_error": 2.664535259100376e-15,
+    "check_reserve_whole_material_error": 3.9912517735274384e-14,
+    "check_reserve_whole_energy_error": 1.2101430968414206e-13,
+    "check_reserve_capacity_excess": 0.0,
+    "check_reserve_negative": 0.0,
+    "check_L384_balance_error": 4.263256414560601e-14,
+    "check_L384_excess": 3.469446951953614e-18,
+    "check_continuation_F_array_error": 0.0,
+    "check_continuation_P_array_error": 0.0,
+    "check_exchange_material_error": 1.859623566247137e-14,
+    "check_exchange_energy_error": 6.394884621840903e-14
+  },
+  "whole_balance_max": {
+    "M": 4.263256414560601e-14,
+    "L256": 1.7763568394002505e-14,
+    "L384": 2.842170943040401e-14,
+    "post256": 3.907985046680551e-14,
+    "post384": 3.907985046680551e-14,
+    "eligible": 7.105427357601002e-15,
+    "P": 1.9184653865522705e-13,
+    "S": 4.263256414560601e-14,
+    "waste": 1.4210854715202004e-14,
+    "heat": 1.2079226507921703e-13,
+    "energy_all": 1.2789769243681803e-13,
+    "A": 1.949551631241775e-13
+  },
+  "source_bytes_unchanged": true,
+  "pure_checks": {
+    "native": 0,
+    "zero_capacity_rate_identity": true,
+    "holding_unpaid_returns_P": true,
+    "release_pre_input": true,
+    "no_newborn_payer": true,
+    "carriage_conservation": true,
+    "actor_rule_returns_separate": true,
+    "capacity_overflow_returns": true,
+    "leak_to_sink": true,
+    "forks": [
+      {
+        "id": "b2--paid_recycle",
+        "arm": "P_on_protected",
+        "inheritance": true,
+        "pre_native_zero_S_exact": true,
+        "stage_roundtrips": true
+      },
+      {
+        "id": "b2--paid_recycle",
+        "arm": "P_on_leaky",
+        "inheritance": true,
+        "pre_native_zero_S_exact": true,
+        "stage_roundtrips": true
+      },
+      {
+        "id": "b2--paid_recycle",
+        "arm": "P_off_protected",
+        "inheritance": true,
+        "pre_native_zero_S_exact": true,
+        "stage_roundtrips": true
+      },
+      {
+        "id": "b2--paid_recycle",
+        "arm": "P_off_leaky",
+        "inheritance": true,
+        "pre_native_zero_S_exact": true,
+        "stage_roundtrips": true
+      },
+      {
+        "id": "b6--paid_recycle",
+        "arm": "P_on_protected",
+        "inheritance": true,
+        "pre_native_zero_S_exact": true,
+        "stage_roundtrips": true
+      },
+      {
+        "id": "b6--paid_recycle",
+        "arm": "P_on_leaky",
+        "inheritance": true,
+        "pre_native_zero_S_exact": true,
+        "stage_roundtrips": true
+      },
+      {
+        "id": "b6--paid_recycle",
+        "arm": "P_off_protected",
+        "inheritance": true,
+        "pre_native_zero_S_exact": true,
+        "stage_roundtrips": true
+      },
+      {
+        "id": "b6--paid_recycle",
+        "arm": "P_off_leaky",
+        "inheritance": true,
+        "pre_native_zero_S_exact": true,
+        "stage_roundtrips": true
+      }
+    ]
+  },
+  "integrated_checks": {
+    "extra_native": 0,
+    "integrated_first_steps": [
+      {
+        "id": "b2--P_on_protected",
+        "baseline_first_native_pump_recycle_exact": true,
+        "error": 0.0,
+        "extra_native": 0
+      },
+      {
+        "id": "b2--P_on_leaky",
+        "baseline_first_native_pump_recycle_exact": true,
+        "error": 0.0,
+        "extra_native": 0
+      },
+      {
+        "id": "b2--P_off_protected",
+        "baseline_first_native_pump_recycle_exact": true,
+        "error": 0.0,
+        "extra_native": 0
+      },
+      {
+        "id": "b2--P_off_leaky",
+        "baseline_first_native_pump_recycle_exact": true,
+        "error": 0.0,
+        "extra_native": 0
+      },
+      {
+        "id": "b6--P_on_protected",
+        "baseline_first_native_pump_recycle_exact": true,
+        "error": 0.0,
+        "extra_native": 0
+      },
+      {
+        "id": "b6--P_on_leaky",
+        "baseline_first_native_pump_recycle_exact": true,
+        "error": 0.0,
+        "extra_native": 0
+      },
+      {
+        "id": "b6--P_off_protected",
+        "baseline_first_native_pump_recycle_exact": true,
+        "error": 0.0,
+        "extra_native": 0
+      },
+      {
+        "id": "b6--P_off_leaky",
+        "baseline_first_native_pump_recycle_exact": true,
+        "error": 0.0,
+        "extra_native": 0
+      }
+    ]
+  },
+  "native_boundary": 0
+}

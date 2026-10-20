@@ -1,0 +1,20 @@
+{
+  "task": "material_carried_generation_choice_20261019",
+  "status": "complete",
+  "job": "6a572590-d816-4d2c-9fc7-b146411e0a3e",
+  "attempted": 520,
+  "committed": 520,
+  "settled": 520,
+  "science_native": 512,
+  "boundary_native": 8,
+  "unknown_native": 0,
+  "wall_seconds": 22.90057789196726,
+  "failure": null,
+  "logical_paths": 8,
+  "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e",
+  "raw_bytes": 110906639,
+  "objective_met": false,
+  "acquisition_replay": 0,
+  "old_tail_replay": 0,
+  "old_budget_used": 0
+}

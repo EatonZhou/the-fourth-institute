@@ -1,0 +1,36 @@
+{
+  "native_cap": 520,
+  "native_attempted": 520,
+  "native_committed": 520,
+  "native_settled": 520,
+  "science_native": 512,
+  "boundary_native": 8,
+  "unknown_native": 0,
+  "physical_native_failures": 0,
+  "old_acquisition_replay": 0,
+  "old_tail_replay": 0,
+  "old_readonly_baseline_steps": 512,
+  "job": "a2de8da7-8ed8-46ac-bf42-fca0b7cb8a49",
+  "job_count": 1,
+  "attempts": 2,
+  "attempt_native": [
+    0,
+    520
+  ],
+  "attempt_runner_worker_seconds": [
+    0.68812,
+    48.156216
+  ],
+  "runner_worker_seconds": 48.844336,
+  "worker_cap": 450,
+  "remaining_native": 0,
+  "remaining_worker_seconds": 401.155664,
+  "cpu_threads": 2,
+  "gpu": 0,
+  "shutdown_reserve_worker_seconds": 60,
+  "raw_cap_bytes": 536870912,
+  "actual_raw_bytes": 125288663,
+  "old_balances_used": 0,
+  "remaining_status": "封存，不转入新任务",
+  "failure": "attempt1 resolved venv symlink to base interpreter, numpy import failed before main/ForwardPermit, native0; same-job attempt2 re-exec literal venv. Immutable failure archive/evidence and pre-fix plan preserved."
+}

@@ -1,0 +1,55 @@
+paid_material_precursor_reserve_20261019 — 有价随体前体储备
+本批已完成两实际384父×P_on/P_off×protected/leaky的8条256步轨，至640。2048科学native、0额外边界、0旧取得/未来重演、0失败；四条原位回收旧轨1024步精确只读。
+唯一job 440ea9a4-ed51-45bf-8650-823d4e3abd1c，runner 51.850083秒×CPU2=103.700166worker秒，GPU0。原件237146030bytes（226.160MiB）。余额4native/496.299834worker秒封存，不转用。
+
+结论：保护相对泄漏，在4/4情境提高末M、post384真实新组织留存和体时，但末E全部更低。相对原位回收，两种储备在8/8比较中末M、post384留存和体时均低。全四窗及末两窗维护0/8、零容差同，32个预定64窗全部失败。关闭本固定价/容量/释放规则足以维护身体的候选；保留保护比泄漏的条件性组织差，不升级经验学习目标。
+protected−leaky：末M +0.434823..+0.551801；post384 +0.881983..+1.727139；体时 +3.344982..+3.836347；末E −1.077315..−0.025007。四项不能合成胜分，储备S不计M或体时。
+protected−local，b2/b6 P_on：末M−2.054142/−1.971030；末E+0.877214/+0.665800；体时−19.160161/−19.077117；post384−2.165106/−2.030035。P_off：末M−0.150655/−0.141772；E−0.338086/−0.579747；体时−7.476123/−6.921716；post384−2.355799/−2.259733。
+leaky−local同样四情境身体指标为负；全部12个预定逐指标对照见contrasts.csv，未择情境、窗口或正指标。
+
+方法与时序：先支付旧E holding并预留basal，未保S退P；原P/F外排、leaky独立S外排；再用上一完成的当地licensed request及当前预输入P/F付费释放S→P；原native/原输入一次。未释放S沿同一次真实K和旧survivor推进，actor/规则删除携带S及容量溢出在native后退P；原pump/recycling各一次后旧E付费binding。出生本步S0，不借newborn E付款，不开fresh-P额外路由。
+固定参数：S容量.5旧survivor，binding/release上限.05旧体，价格各.08；holding每步.0006/S并保.0006旧体basal。保护/泄漏只有S的半衰64外排差异，但分化后实际S、流量、收费可不同。原规则/死亡/出生/泵/回收费、外部P/F半衰、有限供给图和640期限不变。
+明示模型假设：S按K被动携带，没有新增负载惯性或运载热。binding/release/holding显式有价，但不是全物理定价；这是一项额外固定生理能力，不是学习或可遗传经验。r_prev是Euler当地已完成请求，不是未来标签。
+实际执行了储存与释放：单轨累计binding26.682750..52.136522，release9.729614..17.389107；终S2.171187..5.850932。循环量不等于新增资源，也不证明某次释放被出生利用。
+各轨binding/release/holding合计拒付请求费0.309511..0.425990，三阶段分别保留，未强行消费欠付量。全部实际费用进heat；actor伤害/饥饿与规则删除的S退回、未保退回、容量退回和S外排分列。泄漏额外外排8.806442..13.153962；保护无该项。
+A=M+P+S+eligible，DeltaA=grossP−outP−outS−actor伤害/饥饿；eligible不是即可用库存，S不是组织。life0/L256/L384保留，新生标签0。S死亡退回不增加eligible，也不追溯资助已完成native。
+全轨A残差≤1.95e-13；S残差≤4.26e-14；全能量残差≤1.28e-13。56个预定新收据/真实场已逐格核，最大检查残差3.61e-16。原生与泵、回收所有冻结源SHA保持。
+八个首科学步在本步binding之前，与同父旧首native/pump/recycle逐值相同；S0路径等价在首科学步内验证，0额外native。纯数组检查涵盖欠付退P、零能力、排新生E、K守恒、actor/规则删除分账、容量返回、泄漏sink。ready/holding_done/exchange_done/release_done及native_done完整断点已检；unknown native不自动重演。
+
+八条轨四个固定64窗（born−death、DeltaE；M始终>32）：
+b2--P_on_protected 385..448: born−death=-1.032822799, DeltaE=+0.850754332, pass=False, zero=False
+b2--P_on_protected 449..512: born−death=-0.441075954, DeltaE=+1.306040825, pass=False, zero=False
+b2--P_on_protected 513..576: born−death=-0.180124224, DeltaE=+0.557205840, pass=False, zero=False
+b2--P_on_protected 577..640: born−death=-0.277872502, DeltaE=+0.892812104, pass=False, zero=False
+b2--P_on_leaky 385..448: born−death=-1.115154884, DeltaE=+0.994458156, pass=False, zero=False
+b2--P_on_leaky 449..512: born−death=-0.617797728, DeltaE=+1.594264191, pass=False, zero=False
+b2--P_on_leaky 513..576: born−death=-0.477760738, DeltaE=+1.090141671, pass=False, zero=False
+b2--P_on_leaky 577..640: born−death=-0.272982852, DeltaE=+1.005264114, pass=False, zero=False
+b2--P_off_protected 385..448: born−death=-5.460344091, DeltaE=+0.664540319, pass=False, zero=False
+b2--P_off_protected 449..512: born−death=-3.428737273, DeltaE=-1.787648218, pass=False, zero=False
+b2--P_off_protected 513..576: born−death=-2.322719512, DeltaE=-1.192440184, pass=False, zero=False
+b2--P_off_protected 577..640: born−death=-1.371840579, DeltaE=+0.564132856, pass=False, zero=False
+b2--P_off_leaky 385..448: born−death=-5.615498221, DeltaE=+0.708158643, pass=False, zero=False
+b2--P_off_leaky 449..512: born−death=-3.577961445, DeltaE=-1.473968736, pass=False, zero=False
+b2--P_off_leaky 513..576: born−death=-2.522420388, DeltaE=-0.367042581, pass=False, zero=False
+b2--P_off_leaky 577..640: born−death=-1.315100798, DeltaE=-0.593555944, pass=False, zero=False
+b6--P_on_protected 385..448: born−death=-0.976067330, DeltaE=+1.200648954, pass=False, zero=False
+b6--P_on_protected 449..512: born−death=-0.369932116, DeltaE=+1.216549659, pass=False, zero=False
+b6--P_on_protected 513..576: born−death=-0.175818439, DeltaE=+0.668627902, pass=False, zero=False
+b6--P_on_protected 577..640: born−death=-0.233706659, DeltaE=+0.971557539, pass=False, zero=False
+b6--P_on_leaky 385..448: born−death=-1.053165178, DeltaE=+1.260918866, pass=False, zero=False
+b6--P_on_leaky 449..512: born−death=-0.567811747, DeltaE=+1.522663381, pass=False, zero=False
+b6--P_on_leaky 513..576: born−death=-0.413621636, DeltaE=+1.149072608, pass=False, zero=False
+b6--P_on_leaky 577..640: born−death=-0.230448728, DeltaE=+1.085638194, pass=False, zero=False
+b6--P_off_protected 385..448: born−death=-5.443913475, DeltaE=+0.836954540, pass=False, zero=False
+b6--P_off_protected 449..512: born−death=-3.347045853, DeltaE=-1.749842510, pass=False, zero=False
+b6--P_off_protected 513..576: born−death=-2.206806430, DeltaE=-0.782347964, pass=False, zero=False
+b6--P_off_protected 577..640: born−death=-1.311468604, DeltaE=+0.348297850, pass=False, zero=False
+b6--P_off_leaky 385..448: born−death=-5.573263448, DeltaE=+0.894309817, pass=False, zero=False
+b6--P_off_leaky 449..512: born−death=-3.477514880, DeltaE=-1.399020537, pass=False, zero=False
+b6--P_off_leaky 513..576: born−death=-2.395900037, DeltaE=+0.061784222, pass=False, zero=False
+b6--P_off_leaky 577..640: born−death=-1.297378562, DeltaE=-0.650094430, pass=False, zero=False
+
+已查看actual_process.png全部12条实际/引用轨，和预定首context b2 P_on的385/392/416/448/512/576/640两储备模式S/P/新旧组织场。S集中在少量位置，旧组织逐渐降低、新组织增长；场图相似不能替代标量比较。审看仅此预定范围，全56新场保留。
+两父为事后选择的相关形成史，不是独立世界或新形态。结论仅在此价格/容量/时序/有限256窗有效；保护改变库存可用性、外排和实际费用，不能单独解释原损失原因。
+下一取舍请求：收束这一固定储备策略作为维护解，不继续扫价/容量/时窗。若PI继续，应据已有真实释放/退回/绑定账选择新的具体机制问题；本批不自行扩窗或训练writer。

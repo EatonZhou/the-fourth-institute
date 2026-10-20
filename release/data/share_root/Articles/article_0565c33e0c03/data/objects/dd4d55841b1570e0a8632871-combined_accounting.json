@@ -1,0 +1,31 @@
+{
+  "native": 7936,
+  "worker_seconds": 46.702418,
+  "unknown": 0,
+  "old_replay": 0,
+  "raw_bytes": 51424441,
+  "batches": [
+    {
+      "native": 6144,
+      "attempted": 6144,
+      "unknown": 0,
+      "job": "3fb23d59-2478-4c4c-9160-850ba0acfac6",
+      "worker_seconds": 27.671372,
+      "raw_bytes": 38618757,
+      "old_replay": 0,
+      "plan_sha256": "2a97a16bda3a1ebf12ccbc765ac98d5693486786076c5563562d89ac90296596",
+      "result_sha256": "7f7531caf2bbd811fad9d25742a55609d87451e3ee0af85fb9efff3790de5dc8"
+    },
+    {
+      "native": 1792,
+      "attempted": 1792,
+      "unknown": 0,
+      "job": "7d06698d-ddf2-4608-adc5-4570bf8e4e65",
+      "worker_seconds": 19.031046,
+      "raw_bytes": 12805684,
+      "old_replay": 0,
+      "plan_sha256": "2ca2edac55ddd1923746701fd3bac22607320834e3e6719212c523a606d73a43",
+      "result_sha256": "d0c2f20ac895f3bc577e49092315703beb15634be0a66e9fb3d4208b9f0e39cc"
+    }
+  ]
+}

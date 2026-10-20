@@ -1,0 +1,33 @@
+{
+  "job_id": "9260107c-4e4f-4914-9b3a-4281c260a90e",
+  "status": "completed",
+  "runs": 12,
+  "attempted": 18432,
+  "committed": 18432,
+  "elapsed_seconds": 5.020761871011928,
+  "max_material_residual": 1.1368683772161603e-12,
+  "max_energy_residual": 9.094947017729282e-13,
+  "controls": [
+    {
+      "research.desired_state": "running",
+      "research.started": true
+    },
+    {
+      "research.desired_state": "running",
+      "research.started": true
+    },
+    {
+      "research.desired_state": "running",
+      "research.started": true
+    },
+    {
+      "research.desired_state": "running",
+      "research.started": true
+    }
+  ],
+  "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_probe_20261018/9260107c-4e4f-4914-9b3a-4281c260a90e",
+  "raw_bytes": 15718860,
+  "old_223_used": 0,
+  "physical_model": "ce2 reduced controlled density ecology, NOT Lenia",
+  "controller": "auxiliary dynamic event state, not learned tissue"
+}

@@ -1,0 +1,13 @@
+{
+  "task": "association_readout_recontact_20261019",
+  "status": "complete",
+  "job": "ad4ac8e6-8d32-47e7-b7fd-8a14dc557161",
+  "attempted": 8192,
+  "returned": 8192,
+  "unknown": 0,
+  "wall": 24.14711573999375,
+  "error": null,
+  "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/association_readout_recontact_20261019/ad4ac8e6-8d32-47e7-b7fd-8a14dc557161",
+  "raw_bytes": 43654859,
+  "paths": 16
+}

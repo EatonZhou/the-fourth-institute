@@ -1,0 +1,37 @@
+{
+  "direction": "individual_experience_learning",
+  "owner": "resident_d3ccfa2d95b7",
+  "status": "two_distinct_batches_complete_direction_active",
+  "entries": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_recontact_learning_20261019/handoff.json",
+      "sha256": "249521e1ec870d2df34cdb6aab4347851d29d6fe734c27067fb76b37bd678967"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/association_readout_recontact_20261019/handoff.json",
+      "sha256": "91527a270b6825b8b063263eee5cdef1a7bd7ab6e553c1f687d0a4274bd06a4f"
+    }
+  ],
+  "actual_new_native": 12712,
+  "actual_new_runner_worker_seconds": 84.96354,
+  "unknown_native": 0,
+  "old_acquisition_replay": 0,
+  "old_future_replay": 0,
+  "no_unspent_budget_transfer": true,
+  "results": [
+    "recontact: 4520 steps/16branches; original8 connectivity failures M24, turned8 complete; all zero payment, write/freeze exact so learning not assessed.",
+    "motor-readout:8192 steps/16branches;4pausepairs regain124/125 meaningful total-contact updates; observed body/E/sensory identical at readout restoration, association-state expression changes microcontact;0/16 final behavior gates;fast andjoint both."
+  ],
+  "next": "研究局部反馈如何协调整身体行动/自主接触，保强简单控制；当前不加门/训练，不继续延长已低能父。",
+  "paper_and_projection": "合并既有lifetime_cue_reversal在办事项；原三批controlled能力/代价不改判。",
+  "raw_manifest": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/association_readout_recontact_20261019/raw_manifest.json",
+    "sha256": "44260ba2caf95a5e273bb089d57ba3c89dee740cf6c2c5de6920941182b318e5"
+  },
+  "verification": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/association_readout_recontact_20261019/verification.json",
+    "sha256": "f0c8df7166b1a2ce6e79b1830dfbd5fea3f2c66dc5abf25f2b173de13a67447f"
+  },
+  "raw_files": 312,
+  "raw_bytes": 66596297
+}

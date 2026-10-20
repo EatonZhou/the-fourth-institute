@@ -1,0 +1,152 @@
+[
+  {
+    "seed": 202610199841,
+    "arm": "plastic_delta",
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199841_plastic_delta",
+    "native": 361,
+    "failed": false,
+    "M": 23.999999999999996,
+    "E": 69.4419419174773,
+    "trials": 24
+  },
+  {
+    "seed": 202610199841,
+    "arm": "plastic_last",
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199841_plastic_last",
+    "native": 361,
+    "failed": false,
+    "M": 24.000000000000004,
+    "E": 69.59852363030946,
+    "trials": 24
+  },
+  {
+    "seed": 202610199841,
+    "arm": "fixed_readout",
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199841_fixed_readout",
+    "native": 361,
+    "failed": false,
+    "M": 23.999999999999986,
+    "E": 69.44194191747731,
+    "trials": 24
+  },
+  {
+    "seed": 202610199841,
+    "arm": "instant_feedback",
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199841_instant_feedback",
+    "native": 361,
+    "failed": false,
+    "M": 24.0,
+    "E": 67.17772492421297,
+    "trials": 24
+  },
+  {
+    "seed": 202610199841,
+    "arm": "passive_hysteresis",
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199841_passive_hysteresis",
+    "native": 361,
+    "failed": false,
+    "M": 23.999999999999993,
+    "E": 54.93093141099572,
+    "trials": 24
+  },
+  {
+    "seed": 202610199842,
+    "arm": "plastic_delta",
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199842_plastic_delta",
+    "native": 360,
+    "failed": false,
+    "M": 24.000000000000007,
+    "E": 69.72116783709419,
+    "trials": 24
+  },
+  {
+    "seed": 202610199842,
+    "arm": "plastic_last",
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199842_plastic_last",
+    "native": 360,
+    "failed": false,
+    "M": 24.000000000000004,
+    "E": 69.88898139982878,
+    "trials": 24
+  },
+  {
+    "seed": 202610199842,
+    "arm": "fixed_readout",
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199842_fixed_readout",
+    "native": 360,
+    "failed": false,
+    "M": 24.000000000000014,
+    "E": 69.72116783709419,
+    "trials": 24
+  },
+  {
+    "seed": 202610199842,
+    "arm": "instant_feedback",
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199842_instant_feedback",
+    "native": 360,
+    "failed": false,
+    "M": 24.000000000000007,
+    "E": 68.64644155912387,
+    "trials": 24
+  },
+  {
+    "seed": 202610199842,
+    "arm": "passive_hysteresis",
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199842_passive_hysteresis",
+    "native": 360,
+    "failed": false,
+    "M": 23.999999999999996,
+    "E": 62.582804285470615,
+    "trials": 24
+  },
+  {
+    "seed": 202610199843,
+    "arm": "plastic_delta",
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199843_plastic_delta",
+    "native": 368,
+    "failed": false,
+    "M": 24.0,
+    "E": 68.26973796610247,
+    "trials": 24
+  },
+  {
+    "seed": 202610199843,
+    "arm": "plastic_last",
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199843_plastic_last",
+    "native": 368,
+    "failed": false,
+    "M": 24.000000000000014,
+    "E": 68.42084976400923,
+    "trials": 24
+  },
+  {
+    "seed": 202610199843,
+    "arm": "fixed_readout",
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199843_fixed_readout",
+    "native": 368,
+    "failed": false,
+    "M": 24.0,
+    "E": 68.2697379661025,
+    "trials": 24
+  },
+  {
+    "seed": 202610199843,
+    "arm": "instant_feedback",
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199843_instant_feedback",
+    "native": 368,
+    "failed": false,
+    "M": 23.999999999999996,
+    "E": 66.38986642707309,
+    "trials": 24
+  },
+  {
+    "seed": 202610199843,
+    "arm": "passive_hysteresis",
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199843_passive_hysteresis",
+    "native": 368,
+    "failed": false,
+    "M": 24.000000000000007,
+    "E": 55.385879233576915,
+    "trials": 24
+  }
+]

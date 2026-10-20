@@ -1,0 +1,8 @@
+{
+  "resident_id": "resident_afa3d4d6cf11",
+  "message_id": "msg_9c3bdea4ba5c8aac9022bfe05c11434a",
+  "instruction_id": "inst_lin_e9a22ad6f8be4b9ea1d4",
+  "activation_policy": "enqueue_and_trigger",
+  "accepted": true,
+  "handoff_sha256": "cc471ef3be1e67ce529e94350e8bf79ca2ba898ed4ab35a10d2618a19950d43b"
+}

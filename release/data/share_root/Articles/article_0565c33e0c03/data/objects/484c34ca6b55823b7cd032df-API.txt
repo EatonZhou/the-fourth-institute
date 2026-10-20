@@ -1,0 +1,5 @@
+入口 core.attach(GrowthBody.restore(parent), enabled, receipts) 只允许ready256，返回PoolBody。
+e.native(ForwardPermit) → e.settle() → core.observe(e,maps)；observe必须在每个实际事务后且仅一次。core.scalars给O/C/N当前存留/注册/两阶段删除/体时。
+PoolRate继承原ThirdRate及原step，enabled只覆盖rate的C；禁止接conversion_time_birth_branch。pooled返回uA,uB,mean_u,C1；mean_u是坐标诊断，不用于新C响应。
+保存checkpoint包含原物理/全部旧标签与本批pool_cohorts。读取无需再native；plan/source包含旧模块依赖快照。raw_manifest绑定连续transport、收据、场和joint；旧baseline路径/全SHA在plan.protocol.parents。
+analysis基于实际逐钟记录，不用未来标签控制；baseline不能补造新C1影子字段，缺帧在visual_sources中null。

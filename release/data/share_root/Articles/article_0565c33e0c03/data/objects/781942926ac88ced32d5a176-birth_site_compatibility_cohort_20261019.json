@@ -1,0 +1,132 @@
+{
+  "task": "birth_site_compatibility_cohort_20261019",
+  "status": "authorized_for_execution",
+  "owner": "resident_d3ccfa2d95b7",
+  "pi": "resident_afa3d4d6cf11",
+  "updated_at": "2026-10-18T20:48:22.736698+00:00",
+  "closes": {
+    "task": "spatial_birth_request_coordination_20261019",
+    "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_birth_request_coordination_20261019/handoff.json",
+    "sha256": "e19829c9c1970869d94ee2b530ec9fe8f6b08556da5821b4fe2311d82af397a6",
+    "used": [
+      3076,
+      310.395638
+    ],
+    "unused_sealed": [
+      4,
+      589.604362
+    ],
+    "finding": "12新+4旧轨0/16末两窗维护；fullD虽增加出生，四context均降低M/体时/post128留存。关闭当前一跳可支付headroom足以持续替代的候选。"
+  },
+  "question": "在同量、同源补生请求脉冲中，落点当前signed h的符号能否区分新生材料随后64步的真实留存？这是否伴随完整身体收益或代价？",
+  "scope": "固定生成机制辨析，非学习。当前h>=0称非删除区，h<0称删除区，不预称健康/适宜；首步后命运未知。不是旧连续fullD的自然中介分解。",
+  "feasibility": "PI仅在8个既存256/320收据做纯代数，正/负区逐源可匹配总请求0..0.00139201943742，含一个零。该观察不是新pulse预测：恢复ready256/320的真正脉冲发生257/321。所有8父预定保留，不重选时点或扩大邻域补量。",
+  "budget": {
+    "native_cap": 1028,
+    "science_native_max": 1024,
+    "affected_native_checks_max": 4,
+    "worker_seconds_cap": 450,
+    "shutdown_reserve_worker_seconds": 90,
+    "cpu": 2,
+    "gpu": 0,
+    "unique_job": true,
+    "raw_cap_bytes": 536870912,
+    "old_budget_used": 0,
+    "old_acquisition_replay": 0,
+    "baseline_native_replay": 0,
+    "matrix": "8原ready父×2匹配脉冲未来×64=最多1024新科学步；零量两臂如完整物理与标签严格相同可一次运行共享别名，明确实际量，不凑满预算。"
+  },
+  "parents": [
+    {
+      "seed": 202610195401,
+      "shape": "compact",
+      "clock": 256,
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/validation_202610195401_compact_prestate_greedy/state256.bin",
+      "sha256": "325d94772ac38f96a668a73fc4889dbb9977c52e7b0c955469460006e240d85c",
+      "baseline": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/validation_202610195401_compact_prestate_greedy"
+    },
+    {
+      "seed": 202610195401,
+      "shape": "compact",
+      "clock": 320,
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/validation_202610195401_compact_prestate_greedy/state320.bin",
+      "sha256": "94ec48b51fc57a778dfaa13f521de1462355c4d1a653ac723312a3edfd31c088",
+      "baseline": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/validation_202610195401_compact_prestate_greedy"
+    },
+    {
+      "seed": 202610195401,
+      "shape": "double_lobe",
+      "clock": 256,
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/validation_202610195401_double_lobe_prestate_greedy/state256.bin",
+      "sha256": "67e783b475f86b059f87e659e78b48e74058427cfde6ac040b05f5888fee4537",
+      "baseline": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/validation_202610195401_double_lobe_prestate_greedy"
+    },
+    {
+      "seed": 202610195401,
+      "shape": "double_lobe",
+      "clock": 320,
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/validation_202610195401_double_lobe_prestate_greedy/state320.bin",
+      "sha256": "7d6ba124ec365f2bc645936beef66cc3ef35c6612fa7b50a11c9feb1a1dee448",
+      "baseline": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/validation_202610195401_double_lobe_prestate_greedy"
+    },
+    {
+      "seed": 202610195402,
+      "shape": "compact",
+      "clock": 256,
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/validation_202610195402_compact_prestate_greedy/state256.bin",
+      "sha256": "a244d1c4c34d7e74a26c55c2751765074b85d88b2f38f9b3bd46ab8d7eb8fa30",
+      "baseline": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/validation_202610195402_compact_prestate_greedy"
+    },
+    {
+      "seed": 202610195402,
+      "shape": "compact",
+      "clock": 320,
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/validation_202610195402_compact_prestate_greedy/state320.bin",
+      "sha256": "e11419df41a84029c68c03c1967b103494280082902626622e41256212995e19",
+      "baseline": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/validation_202610195402_compact_prestate_greedy"
+    },
+    {
+      "seed": 202610195402,
+      "shape": "double_lobe",
+      "clock": 256,
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/validation_202610195402_double_lobe_prestate_greedy/state256.bin",
+      "sha256": "6d09f63bcda036302d94c39d6f7ed747582ba97f14b502238cead5079597faf4",
+      "baseline": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/validation_202610195402_double_lobe_prestate_greedy"
+    },
+    {
+      "seed": 202610195402,
+      "shape": "double_lobe",
+      "clock": 320,
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/validation_202610195402_double_lobe_prestate_greedy/state320.bin",
+      "sha256": "549a33b327e2510e6339d3ecfa221a1ba2e65ec50986e5add29958eca9c2dc58",
+      "baseline": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/validation_202610195402_double_lobe_prestate_greedy"
+    }
+  ],
+  "fixed": "原native/两核/greedy预动作w/actor/K/rule死亡/转换价格与模板/原泵/输入tape/半衰/command均不改。恢复完整world、cursor、RNG、L128、累计账。绝对终钟320/384不延原供给。原资料全部只读。",
+  "pulse": {
+    "timing": "第一步原actor和signed h完成后、原admit之前；仅这一转换插入R路由，此后63步回到原prestate_greedy且关闭所有请求路由。各实际native只执行一次。",
+    "available": "同原route：s为原rule删除后survivor；C为原support存在时min(1-s,P,F/0.42)，使用原付款舍入；b0=min(R,C)，a=支持源max(R-b0,0)，v=max(C-b0,0)。P/F为实际转换阶段资源，不漏当步input或摄取。",
+    "alternatives": "候选plus仅向四邻h>=0的v分配，minus仅向h<0的v分配。均用原一次同步定向投影：按目标v比例提议，再按接收headroom缩放，source_cap只处理舍入，不迭代找新路。",
+    "matching": "各源q_i=min(sum_out(fplus),sum_out(fminus))，分别按q_i/原out缩放；拒绝留源。执行R_new=R-out+in，原admit一次。两臂同初state，源out匹配，原b0保留，global实际born及conversion M/E/heat应至原数值容差一致。之后pump与真实费用可分化。零分母0，零q保留；不增补ULP到物理。",
+    "costs": "原出生P/F/新生E/模板热与实际泵费全计。路由计算/邻读额外费0沿原显式假设，不称全计算成本。"
+  },
+  "cohorts": {
+    "registration": "pulse实际born返回后登记：extra=max(actualborn-b0,0)，ordinary=b0，preexisting=实际旧survivor。先核actualborn>=b0且三类总量重组actualbody；不把未实现请求或pulse前摄取登记给新生。数值差原样记录，不静默夹住实质不等。",
+    "ages": "extra与ordinary都在实际pulse生成，年龄定义为出生后已完成native数；之后每步born不加入这两标签。preexisting及later-born另列，原L128保留。",
+    "evolution": "真实每步K输运标签；actor后的保留比例与rule survivor比例按实际阶段分别推进并记移除。全登记材料分母，精确死亡/数值残差/未完成未知分开。每阶段仅观察一次，不做第二host；无法可靠细分actor原因时只称actor阶段删除。",
+    "data_boundary": "标签仅观察，不输入w/route/pump/writer，不广播未来结果。h符号和局部资源暴露的后续关联只作描述，不称死亡原因或中介比例。"
+  },
+  "outcomes": {
+    "primary": "每个预定配对+64 extra实际留存及以pulse实际extra为分母的留存率、全64步extra体时；q=0时率为null，绝对量0，不能剔除后再称8/8。报告全部配对，不用格/材料当独立样本。",
+    "secondary": "预定+1/2/4/8/16/32/64的extra/ordinary/旧/后生留存与actor/rule累计删除；全身体M/E/U/体时、born/death、所有费用/输入出口/欠付。对原同钟greedy仅只读全局描述，不补其缺失cohort。",
+    "claims": "若plus优于minus也仅为小量单脉冲落点机制；不证明持续fullD负效应由此造成，不证明长期维护或新学习。若零量/极小效应或方向混合，按实关闭；不扩大价率/邻域/相位找正效应。64步窗不能重写旧末两窗维护门。"
+  },
+  "records": {
+    "scalars": "每实际步全物理标量与所有cohort阶段收支，attempted/returned/settled；第一pulse完整原状态/候选/请求/实际born及conversion和post-pump账。",
+    "fields": "真实+1/2/4/8/16/32/64场/收据；parent和+32/+64完整joint含标签，必要恢复每16步。优先有限恢复，不每步重复写巨量joint。",
+    "visual": "亲看首预定seed两形态的两时点脉冲落点与cohort过程，完整配对曲线。科学图沿既有责任人/可编辑流程，真实仿真场可用。"
+  },
+  "validation": "纯数组/旧收据检验投影和被动cohort守恒；正式首步同时核共同actor/h/候选和conversion匹配。只为新hook/阶段标签使用至多4额外边界；旧已过语义不重跑。",
+  "control": "提交前再读research.desired_state/started；paused/stopped不投。唯一CPU2 job使用d3自己的控制身份；无定时、自动重投、旧余额转用或unknown native重演。若现有恢复状态不能合法接续，保缺口不重造旧前缀。",
+  "handoff": "d3直接实施且实际执行；完成后仅一次具体科学取舍交PI，论文/投影原在办项合并。共享容量由PI本轮处理，不阻碍已授权实现；无新cell。"
+}

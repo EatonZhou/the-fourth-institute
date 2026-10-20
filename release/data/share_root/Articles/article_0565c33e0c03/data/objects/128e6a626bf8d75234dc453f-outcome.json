@@ -1,0 +1,57 @@
+{
+  "source": "genome_0ac80448a534dc953505",
+  "mode": "none",
+  "steps": 256,
+  "initial": {
+    "body": 981.5779761248489,
+    "energy": 444.4763946626209,
+    "fuel": 2678.1982487642003,
+    "precursor": 2090.5543895314595,
+    "waste": 1095.1162447802676,
+    "heat": 517.2603863836741,
+    "dead_energy": 513.0638585387651
+  },
+  "final": {
+    "step": 384,
+    "offset": 256,
+    "active": false,
+    "M": 941.4976785958888,
+    "E": 737.1819345575867,
+    "U": 1.9627250651586285,
+    "born": 1.710936548518739,
+    "death": 1.9171157462836437,
+    "moved": 4.824755761712106,
+    "requested_work": 0.38598046328002794,
+    "denied_work": 2.343059431175499e-09,
+    "movement_paid": 0.3859804609369685,
+    "basal_paid": 0.5650223135777643,
+    "basal_unpaid": 1.0984278839060804e-09,
+    "heat": 1098.6609242230065,
+    "waste": 2358.1953762632534,
+    "dead_energy": 1402.874737984057,
+    "fuel": 1119.3574451321701,
+    "precursor": 918.8245939643239,
+    "input_E": 205.07615354756138,
+    "input_M": 51.269038386890344,
+    "founder": 1.235779314759236
+  },
+  "totals": {
+    "U": 1250.2574469188996,
+    "born": 1222.9988339540257,
+    "death": 1263.0791314829858,
+    "moved": 2022.3402671803724,
+    "movement_paid": 161.7872213744298,
+    "basal_paid": 150.55357299501722,
+    "basal_unpaid": 1.9213858732629785e-07
+  },
+  "recovery_U": 351.3251320356406,
+  "body_time": 12544.127084053203,
+  "max_errors": {
+    "material_error": 9.094947017729282e-13,
+    "energy_error": 9.094947017729282e-13,
+    "reconstruction_error": 5.551115123125783e-17,
+    "K_column_error": 0,
+    "transport_error": 2.2737367544323206e-13
+  },
+  "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018/0eb661f2-b286-43c6-b27e-ee8f3f2da135/genome_0ac80448a534dc953505--none"
+}

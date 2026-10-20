@@ -1,0 +1,16 @@
+{
+  "viewed": [
+    "cohort_retention_pairs.png",
+    "pulse_compact_256.png",
+    "pulse_compact_320.png",
+    "pulse_double_lobe_256.png",
+    "pulse_double_lobe_320.png"
+  ],
+  "findings": [
+    "首预定seed compact两钟均零脉冲，图中留存率明确null而非0。",
+    "双叶256只少量离散落点，标签沿真实运输扩散/消失，plus最终留存更多。",
+    "双叶320若干离散落点，plus先占优后在末段被minus超过。",
+    "第二seed双叶256曲线也从plus略优转为minus更优；不是只由第一时刻符号决定未来命运。"
+  ],
+  "display": "True arrays; shared per-case crop and color limit, nearest interpolation; signed h -1..1. Zero cohort panels blank. Full-grid original arrays preserved."
+}

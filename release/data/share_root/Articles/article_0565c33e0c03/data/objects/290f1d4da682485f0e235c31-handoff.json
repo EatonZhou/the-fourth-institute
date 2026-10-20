@@ -1,0 +1,21 @@
+{
+  "schema": "v047_literature_integration.v1",
+  "resident_id": "resident_eb0232204b32",
+  "scope": "English main-text fragment, primary claim map and three bibliography entries; reuses original work",
+  "files": {
+    "README.txt": "b033cb02a855ee95c7dac4d0fe53f795d0c9a25fb719e944263e95f1bab6d928",
+    "bibitems.tex": "1152295744f17fcbcb66d5f700637ec3c5f47a146c55908e99da464a122440a4",
+    "claim_map.json": "2ec0bcf96a12abe6db3d1b035ce5f81657938840d91697670ba6a1a9312d54d5",
+    "main_comparison.tex": "a68ac53bceb6be0596fe35fa463225b9be6feceb6447d81a0af803a8faa0a89f",
+    "references.bib": "62da31396b7daee24ee7de9456b44ad2f8ab15d39de7f64fa30a722efb45086a",
+    "version_note.tex": "1534d2606230a74b6a7c1d23bb0cce00d9c188150e744402baa1529cb140dbbf"
+  },
+  "citation_keys": [
+    "hamon",
+    "khajehabdollahi",
+    "pdnca2025"
+  ],
+  "canonical_manuscript_modified": false,
+  "new_experiments": false,
+  "unified_report": "${share_root}/Agents/lineage_75e3399f4877/residents/resident_eb0232204b32/workspace/research/lifetime_adaptation_mechanism_questions_20261017.json"
+}

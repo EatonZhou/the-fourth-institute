@@ -1,0 +1,111 @@
+{
+  "candidate_id": "factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e",
+  "kind": "rule_neutral_initial_package_recombination",
+  "parents": [
+    "genome_d02e7f60565f83066e5d",
+    "genome_a6a821dffd4f4046c97a"
+  ],
+  "identity": {
+    "schema": "rule-initial-package-combination.v1",
+    "family": "multi_ring",
+    "slot": "multi_ring__parent_rule_offspring_initial",
+    "rule_source_id": "genome_d02e7f60565f83066e5d",
+    "rule_source_sha256": "ff37d942c7168eeb4832aa42f0f94d14ceaa86ca8e454741efe4a183e049a185",
+    "initial_source_id": "genome_a6a821dffd4f4046c97a",
+    "initial_source_sha256": "7efd847ad3efa0db001afe56a162b297d3a536ec48326890d4b09b6ceb793b4a",
+    "reference_sha256": "c5f8ab0600edafb27bd5bb9e99796c2e66c4af059171835762542972d8f5a17a",
+    "rule_selector": [
+      "kernels",
+      "config.body_rule"
+    ],
+    "initial_selector": [
+      "body",
+      "energy",
+      "founder_mass",
+      "polarity"
+    ],
+    "rule_config_sha256": "5be6f88188a01cb1f15099b7df122cf35c77ab18391979f9b1091cede60c6536",
+    "kernel": {
+      "shape": [
+        2,
+        96,
+        96
+      ],
+      "dtype": "<f8",
+      "payload_sha256": "607fe48cf9e729070ef229160ec6491d14c8bdbd79945e6d786c02f95b443967"
+    },
+    "initial": {
+      "body": {
+        "shape": [
+          96,
+          96
+        ],
+        "dtype": "<f8",
+        "payload_sha256": "55123472b90493df888191256c2e65a6ab61dcf2572efadb801656a1639c3ea7"
+      },
+      "energy": {
+        "shape": [
+          96,
+          96
+        ],
+        "dtype": "<f8",
+        "payload_sha256": "0f2fdfd902bcb79362436a53f43de8fe07113c8227ac72bbfcc88d806bc9e28b"
+      },
+      "founder_mass": {
+        "shape": [
+          96,
+          96
+        ],
+        "dtype": "<f8",
+        "payload_sha256": "55123472b90493df888191256c2e65a6ab61dcf2572efadb801656a1639c3ea7"
+      },
+      "polarity": {
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "dtype": "<f8",
+        "payload_sha256": "5f0e7cb9eaade0ceb5d4f84f9db94db36122fd0f10455506288699e07af1a605"
+      }
+    }
+  },
+  "identity_sha256": "a48f1041422aca0ebaff2c9e356401c216d702d546ef80e33b678211c3e9941b",
+  "named_gene_provenance": {
+    "rule": {
+      "log_mu1": 0.0,
+      "log_mu2": 0.0,
+      "log_sigma1": 0.0,
+      "log_sigma2": 0.0,
+      "weight_shift": 0.0,
+      "kernel_radial1": 0.0,
+      "kernel_radial2": 0.0,
+      "kernel_crossmix": 0.0
+    },
+    "initial": {
+      "log_stretch_y": -0.014543247866993942,
+      "log_stretch_x": -0.03903999518880559,
+      "neck_density": 0.05468291566045089
+    },
+    "scope": "descriptive gene provenance only; exact frozen arrays/config are authoritative"
+  },
+  "rule_source": {
+    "id": "genome_d02e7f60565f83066e5d",
+    "snapshot": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/candidates/genome_d02e7f60565f83066e5d.npz",
+    "snapshot_sha256": "ff37d942c7168eeb4832aa42f0f94d14ceaa86ca8e454741efe4a183e049a185",
+    "genome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/genomes/genome_d02e7f60565f83066e5d.json",
+    "genome_sha256": "58891d508dbd892ad6fd2adc95b0416a250ba80b428139d4c1f7eb4d720cb507",
+    "reference96": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/references/genome_d02e7f60565f83066e5d-embedded-life0.npz",
+    "reference96_sha256": "c5f8ab0600edafb27bd5bb9e99796c2e66c4af059171835762542972d8f5a17a"
+  },
+  "initial_source": {
+    "id": "genome_a6a821dffd4f4046c97a",
+    "snapshot": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/candidates/genome_a6a821dffd4f4046c97a.npz",
+    "snapshot_sha256": "7efd847ad3efa0db001afe56a162b297d3a536ec48326890d4b09b6ceb793b4a",
+    "genome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/genomes/genome_a6a821dffd4f4046c97a.json",
+    "genome_sha256": "b788fa270a4c40f0e8a67f7efb304c40ef3133566e0a1d682a11d80948c907ad",
+    "reference96": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/references/genome_d02e7f60565f83066e5d-embedded-life0.npz",
+    "reference96_sha256": "c5f8ab0600edafb27bd5bb9e99796c2e66c4af059171835762542972d8f5a17a"
+  },
+  "biological_scope": "experimental package provenance, not material genealogy or pure morphology mediation"
+}

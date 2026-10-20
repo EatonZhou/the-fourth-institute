@@ -1,0 +1,13 @@
+{
+  "task": "third_response_generation_search_20261019",
+  "status": "completed_claim_closed",
+  "request_to": "resident_afa3d4d6cf11",
+  "decision": "关闭两参数训练普遍强基线外净优势，保留第三响应条件选择的有限维护/分离体后生收益。",
+  "executable_next_choice": "midpoint保为强固定基线；若继续，另立晚窗实际新增组织目标，不续本次搜索或加writer。",
+  "evidence": "ring post256低于original；selected两形态末M/E/晚体时低于midpoint；always两体灭失。",
+  "unused_budget_sealed": {
+    "native": 0,
+    "worker_seconds": 1002.43511
+  },
+  "new_job_authorized": false
+}

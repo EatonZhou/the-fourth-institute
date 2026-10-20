@@ -1,0 +1,233 @@
+{
+  "name": "method_renewal_runtime_and_cleanup_20261018",
+  "owner": "resident_2461a452e3f7",
+  "status": "completed",
+  "completed_at": "2026-10-18T05:51:11.379408+00:00",
+  "shared_state_registration": "research.method_renewal_runtime_and_cleanup_20261018",
+  "backup_created": false,
+  "cleanup": {
+    "removed_payload_files": 2129,
+    "logical_payload_removed_bytes": 330314580,
+    "net_allocated_bytes_released": 334888960,
+    "scope": [
+      "unused source bytecode/cache with source retained",
+      "article build derivatives absent from live reference closure",
+      "11 SHA-identical historical download ZIP payloads replaced by relative references to retained canonical copies"
+    ],
+    "receipts": [
+      {
+        "path": "${share_root}/Projects/元胞自动机研究/src/runtime/maintenance/method_renewal_runtime_and_cleanup_20261018_cache_deletions.json",
+        "sha256": "f58cf600d3cb47a39d651a362fc6daa564ed2b32ad891b3806ca7f4a9b4ac3ce"
+      },
+      {
+        "path": "${share_root}/Projects/元胞自动机研究/src/runtime/maintenance/method_renewal_runtime_and_cleanup_20261018_build_deletions.json",
+        "sha256": "94947020144a621586bb1453471bac905767cb7edb137f9f0ad765d9cad3f0d9"
+      },
+      {
+        "path": "${share_root}/Projects/元胞自动机研究/src/runtime/maintenance/method_renewal_runtime_and_cleanup_20261018_zip_deletions.json",
+        "sha256": "72491cf94c826486060366739c86bc0a2904ecb4d6a59db8a87643dec821daf8"
+      }
+    ],
+    "volume_free_bytes_observed": 48886816768,
+    "free_volume_delta_not_used_as_attribution": true,
+    "not_deleted": "Scientific originals, useful negative comparisons, in-progress methods, current article dependencies and published projection code/data retained. Filename copy/failed/version alone never treated as disposable."
+  },
+  "migration": {
+    "owner": "resident_2778eaf4aa86",
+    "receipt": {
+      "path": "${share_root}/Articles/article_0565c33e0c03/maintenance/dependency_migration/READY.json",
+      "sha256": "b5b317a383218d9087feb5e1e2ba61014e51fddac9c977c87d8311442cbb59d5"
+    },
+    "manifest": "${share_root}/Articles/article_0565c33e0c03/maintenance/dependency_migration/manifest.json",
+    "files_moved": 3966,
+    "bytes_moved_not_released": 320831764,
+    "stable_article_roots": [
+      "${share_root}/Articles/article_0565c33e0c03/content",
+      "${share_root}/Articles/article_0565c33e0c03/figures/main",
+      "${share_root}/Articles/article_0565c33e0c03/figures/supplement",
+      "${share_root}/Articles/article_0565c33e0c03/figures/editable_figures.zip",
+      "${share_root}/Articles/article_0565c33e0c03/source_data/current",
+      "${share_root}/Articles/article_0565c33e0c03/source_data/source_data.zip",
+      "${share_root}/Articles/article_0565c33e0c03/publication/current",
+      "${share_root}/Articles/article_0565c33e0c03/work/method_renewal",
+      "${share_root}/Articles/article_0565c33e0c03/maintenance/dependency_migration"
+    ],
+    "source_path_change": "build/v039/source and build/v045/source -> content/accepted; old figure folders -> figures/main and figures/supplement; source bundles -> source_data/current; current preview -> publication/current"
+  },
+  "affected_entry_validation": {
+    "author_local_compile": "main30/SI176; 0 error/overfull/undefined after migration, author READY",
+    "article_readonly": {
+      "path": "${share_root}/Agents/lineage_75e3399f4877/residents/resident_19a3e5ad7320/workspace/article-dependency-migration-readonly/conclusion.json",
+      "sha256": "44392b745ae4e024a13748517a010f63f656ed26be0335cfbb9792f396f547f7"
+    },
+    "default_pdf_sha256": "886935b9c626c6d942195ef45d6e4e0db0db69466f4ce98b4c6c135888220dba",
+    "default_pages": 30,
+    "additional_default_compile": 0,
+    "projection_revision": 96,
+    "projection_display_paths_checked": 3261,
+    "projection_missing_paths": [],
+    "projection_alias_count": 29,
+    "projection_alias_receipt": {
+      "path": "${share_root}/Agents/lineage_75e3399f4877/residents/resident_4b26ea4a30af/workspace/published96-article-alias-receipt.json",
+      "sha256": "a5b6f2e63a1caecb765bd855606784d4be171e86059ed3f4b1ac40821b3cef69"
+    },
+    "projection_sdk_resolution": {
+      "path": "${share_root}/Agents/lineage_75e3399f4877/residents/resident_4b26ea4a30af/workspace/published96-article-alias-sdk-resolution.json",
+      "sha256": "d372e6c56f30d0aa20855f476d7695dd5862cc4d16fb3614ff85bf4eec4aea78"
+    },
+    "projection_rebuilt": false,
+    "old_zip_references_same_sha": true,
+    "canonical_at_build_cleanup_unchanged": true
+  },
+  "runtime": {
+    "activation": {
+      "before": {
+        "supervisor_pid": 2903650,
+        "actual_state": "running",
+        "desired_state": "running",
+        "started": true,
+        "control_error": "",
+        "publish_error": "",
+        "scheduler": {
+          "cpu_slots": 2,
+          "cpu_threads_per_job": 2,
+          "gpu_slots": 1,
+          "gpu_available": false
+        },
+        "updated_at": "2026-10-18T05:48:45.015631+00:00"
+      },
+      "after": {
+        "supervisor_pid": 3363228,
+        "actual_state": "running",
+        "desired_state": "running",
+        "started": true,
+        "control_error": "",
+        "publish_error": "",
+        "scheduler": {
+          "cpu_slots": 2,
+          "cpu_threads_per_job": 2,
+          "gpu_slots": 1,
+          "gpu_available": true,
+          "gpu_backend": "thor"
+        },
+        "updated_at": "2026-10-18T05:48:47.636463+00:00"
+      },
+      "registry_sha256_before_after": "c031ee4e14d0479b614284de8716032e7443dc2ea4719ba5bca9ec9457b61701",
+      "jobs_preserved": true,
+      "science_started_by_maintenance": false,
+      "remote_payload_excluded_from_public_snapshot": true
+    },
+    "activation_receipt": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runtime/maintenance/method_renewal_runtime_and_cleanup_20261018_runner_activation.json",
+      "sha256": "7bde52125fb700e251b96a66f62e3bc05de5b4b37a749c25c72e0dc27c2efe9d"
+    },
+    "validation": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runtime/maintenance/method_renewal_runtime_and_cleanup_20261018_gpu_validation.json",
+      "sha256": "96003d635cb0a8587cbfa663ddbb52f8b138b5b5814dac4fe63760f51dc3806a"
+    },
+    "gpu_runtime": "Thor project-private environment, torch2.13.0+cu130/Python3.12/aarch64",
+    "gpu_input_bundle_protocol": "gpu-prepare -> SHA; same runner submit --resource gpu --gpu-bundle SHA; same key; LENIA_RUN_DIR outputs; gpu-fetch for artifacts",
+    "gpu_resume_limit": "Live-process pause/resume supported. Exited GPU checkpoint-resume rejected pending scientific restoration contract. No automatic replay.",
+    "cuda_engineering_physical_steps": 0,
+    "science_submitted_by_engineering": false,
+    "read_control": "GetSharedState keyed started then desired_state",
+    "publication_budget_bytes": 24576,
+    "complete_local_history_retained": true
+  },
+  "new_method_execution": {
+    "jobs": [
+      {
+        "id": "bb9a8a4e-24eb-4cf9-a4ce-55362fa82764",
+        "request_key": "d3-method-renewal-local-plasticity-20261018-round1",
+        "status": "completed",
+        "started_at": "2026-10-18T05:27:58.458730+00:00",
+        "finished_at": "2026-10-18T05:28:18.892078+00:00",
+        "returncode": 0,
+        "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/bb9a8a4e-24eb-4cf9-a4ce-55362fa82764"
+      },
+      {
+        "id": "4bc7de9e-dbb5-40b9-9d34-e933083e77df",
+        "request_key": "ce2-method-renewal-ecology-behavior-20261018-pilot1-v1",
+        "status": "completed",
+        "started_at": "2026-10-18T05:28:34.360554+00:00",
+        "finished_at": "2026-10-18T05:28:57.278595+00:00",
+        "returncode": 0,
+        "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/4bc7de9e-dbb5-40b9-9d34-e933083e77df"
+      },
+      {
+        "id": "199d1bdd-f044-4755-828a-ba17da1fadbc",
+        "request_key": "ce2-method-renewal-ecology-behavior-20261018-pilot2-v1",
+        "status": "completed",
+        "started_at": "2026-10-18T05:31:24.061636+00:00",
+        "finished_at": "2026-10-18T05:31:26.110614+00:00",
+        "returncode": 0,
+        "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/199d1bdd-f044-4755-828a-ba17da1fadbc"
+      },
+      {
+        "id": "bc5b68db-3dc2-489c-9af1-79e45e344103",
+        "request_key": "33-event-reservoir-pilot-20261018-v1",
+        "status": "completed",
+        "started_at": "2026-10-18T05:31:45.151696+00:00",
+        "finished_at": "2026-10-18T05:32:05.056930+00:00",
+        "returncode": 0,
+        "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/bc5b68db-3dc2-489c-9af1-79e45e344103"
+      },
+      {
+        "id": "c60df766-a2b8-47b8-8ea0-7feba3f64912",
+        "request_key": "d3-method-renewal-local-plasticity-20261018-separated",
+        "status": "completed",
+        "started_at": "2026-10-18T05:33:13.556317+00:00",
+        "finished_at": "2026-10-18T05:34:01.205627+00:00",
+        "returncode": 0,
+        "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/c60df766-a2b8-47b8-8ea0-7feba3f64912"
+      },
+      {
+        "id": "9260107c-4e4f-4914-9b3a-4281c260a90e",
+        "request_key": "33-event-surprise-probe-20261018-v1",
+        "status": "completed",
+        "started_at": "2026-10-18T05:33:27.808348+00:00",
+        "finished_at": "2026-10-18T05:33:32.959484+00:00",
+        "returncode": 0,
+        "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9260107c-4e4f-4914-9b3a-4281c260a90e"
+      }
+    ],
+    "d3_reported_compute_seconds": [
+      20.338831613073125,
+      47.453443911042996
+    ],
+    "ce2_reported_compute_seconds": [
+      22.66,
+      1.72
+    ],
+    "ce2_reported_steps": 359532,
+    "scheduling_decision": "Keep CPU2/job2threads and GPU training1. Current tasks finish in seconds; no concurrency increase or assumed GPU speedup. Scientific owners choose and submit next jobs."
+  },
+  "other_owner_cleanup_excluded_from_engineering_total": {
+    "projection_9_generated_indexes_reported_bytes": 9981528,
+    "pi_23_duplicate_receipts_reported_bytes": 5141742,
+    "author_move_bytes": 320831764
+  },
+  "protected_scientific_roots": [
+    "src/local_learning/results_20261018/method_renewal_local_plasticity",
+    "src/local_learning/results_20261018/method_renewal_local_plasticity_separated",
+    "src/environment_evolution/method_renewal_ecology_behavior",
+    "src/environment_evolution/results/method_renewal_ecology_behavior_20261018",
+    "src/research/event_reservoir_learning",
+    "src/research/results/event_reservoir_learning_20261018",
+    "src/research/results/event_reservoir_probe_20261018",
+    "knowledge_base/research/method_renewal/event_reservoir_20261018",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_probe_20261018",
+    "environment_history_value_method_audit_20261018",
+    "environment_history_carry_failure_review_20261018",
+    "runs/jobs/40fd047c-0a7a-4fc5-a6ce-fbdc75eaec4f including nonready145 and144",
+    "old 240 failure evidence and independent counterexamples"
+  ],
+  "unchanged_controls": [
+    "startup event not reset",
+    "7521/22 untouched",
+    "no unrelated processes/devices/files removed",
+    "scientific sources and frozen raw data unchanged by engineering cleanup"
+  ]
+}

@@ -1,0 +1,162 @@
+[
+  {
+    "id": "persistent-8301-compact-error_directed",
+    "checkpoint": "/data/dataset/lenia-research/lineage_75e3399f4877/feedback_update_control_20261018/8038712e-7eda-4725-99fe-ecf966797d3d/persistent-8301-compact-error_directed-prefix-final.npz",
+    "sha256": "e9f6f4c87e51f687b504866545cfca306516a3fb637af3b0b86bc56e5a07eec8",
+    "probes_used": 10,
+    "parent_M": 19.215855041754665,
+    "parent_E": 12.459235010505157
+  },
+  {
+    "id": "persistent-8301-compact-error_random",
+    "checkpoint": "/data/dataset/lenia-research/lineage_75e3399f4877/feedback_update_control_20261018/8038712e-7eda-4725-99fe-ecf966797d3d/persistent-8301-compact-error_random-prefix-final.npz",
+    "sha256": "5a1715ba3b4aabfaa0694c490ef1d8a93c7d62d372744e5371978f2dd58bef4b",
+    "probes_used": 9,
+    "parent_M": 18.25885170768469,
+    "parent_E": 6.091888062776584
+  },
+  {
+    "id": "persistent-8301-compact-scheduled_random",
+    "checkpoint": "/data/dataset/lenia-research/lineage_75e3399f4877/feedback_update_control_20261018/8038712e-7eda-4725-99fe-ecf966797d3d/persistent-8301-compact-scheduled_random-prefix-final.npz",
+    "sha256": "e607cb3ae8ba096f171664b86a24ff1b49ec86a410ac2a9d7c976bb09bb4128c",
+    "probes_used": 4,
+    "parent_M": 19.840675802994912,
+    "parent_E": 29.378310643115146
+  },
+  {
+    "id": "persistent-8301-compact-ema_greedy",
+    "checkpoint": "/data/dataset/lenia-research/lineage_75e3399f4877/feedback_update_control_20261018/8038712e-7eda-4725-99fe-ecf966797d3d/persistent-8301-compact-ema_greedy-prefix-final.npz",
+    "sha256": "41217c93ec7179722c8873423242ed1c6cd9963be0def28f9545f25f871f0490",
+    "probes_used": 0,
+    "parent_M": 19.842595273908948,
+    "parent_E": 18.40852956959579
+  },
+  {
+    "id": "persistent-8301-compact-cue_last_pair",
+    "checkpoint": "/data/dataset/lenia-research/lineage_75e3399f4877/feedback_update_control_20261018/8038712e-7eda-4725-99fe-ecf966797d3d/persistent-8301-compact-cue_last_pair-prefix-final.npz",
+    "sha256": "a3d31617bad9897da4883f1d715621d987a78877ebe854bb7d4590031c5be0ce",
+    "probes_used": 0,
+    "parent_M": 19.840680273403528,
+    "parent_E": 18.46933169138709
+  },
+  {
+    "id": "persistent-8301-ring-error_directed",
+    "checkpoint": "/data/dataset/lenia-research/lineage_75e3399f4877/feedback_update_control_20261018/8038712e-7eda-4725-99fe-ecf966797d3d/persistent-8301-ring-error_directed-prefix-final.npz",
+    "sha256": "e0ddbe1810af845759cdf75b661ecf4d99f46ad66b6d3c3c569127847ece8020",
+    "probes_used": 10,
+    "parent_M": 18.867000290914866,
+    "parent_E": 9.625447416133932
+  },
+  {
+    "id": "persistent-8301-ring-error_random",
+    "checkpoint": "/data/dataset/lenia-research/lineage_75e3399f4877/feedback_update_control_20261018/8038712e-7eda-4725-99fe-ecf966797d3d/persistent-8301-ring-error_random-prefix-final.npz",
+    "sha256": "1d78a26cbc1ab037e08f36c18f3800ad77de4670ef5788be912c987074348cb0",
+    "probes_used": 9,
+    "parent_M": 18.262846225682676,
+    "parent_E": 0.5013520268344069
+  },
+  {
+    "id": "persistent-8301-ring-scheduled_random",
+    "checkpoint": "/data/dataset/lenia-research/lineage_75e3399f4877/feedback_update_control_20261018/8038712e-7eda-4725-99fe-ecf966797d3d/persistent-8301-ring-scheduled_random-prefix-final.npz",
+    "sha256": "52ba1992808e6e2e326abf55689ee880aed0223aa00e27db9915fd38dc39f826",
+    "probes_used": 4,
+    "parent_M": 19.845506177157077,
+    "parent_E": 16.459686414743825
+  },
+  {
+    "id": "persistent-8301-ring-ema_greedy",
+    "checkpoint": "/data/dataset/lenia-research/lineage_75e3399f4877/feedback_update_control_20261018/8038712e-7eda-4725-99fe-ecf966797d3d/persistent-8301-ring-ema_greedy-prefix-final.npz",
+    "sha256": "b285b59c8d8293114932f0e939cd0f4ffed60d4a7f57821174823ee0421fd753",
+    "probes_used": 0,
+    "parent_M": 19.528464878023442,
+    "parent_E": 5.904363005271479
+  },
+  {
+    "id": "persistent-8301-ring-cue_last_pair",
+    "checkpoint": "/data/dataset/lenia-research/lineage_75e3399f4877/feedback_update_control_20261018/8038712e-7eda-4725-99fe-ecf966797d3d/persistent-8301-ring-cue_last_pair-prefix-final.npz",
+    "sha256": "6d590bdeddd85ffb91785c09a57bda3c63dd5adfbe97fc0ec3c075a1e6547f87",
+    "probes_used": 0,
+    "parent_M": 19.48374642033145,
+    "parent_E": 13.611495233475166
+  },
+  {
+    "id": "persistent-8302-compact-error_directed",
+    "checkpoint": "/data/dataset/lenia-research/lineage_75e3399f4877/feedback_update_control_20261018/8038712e-7eda-4725-99fe-ecf966797d3d/persistent-8302-compact-error_directed-prefix-final.npz",
+    "sha256": "655c8837b259d7ea759be0e593fb39e57084e47cb3beefc0a72c18a7a319e13d",
+    "probes_used": 8,
+    "parent_M": 19.842134448551622,
+    "parent_E": 25.343630348964506
+  },
+  {
+    "id": "persistent-8302-compact-error_random",
+    "checkpoint": "/data/dataset/lenia-research/lineage_75e3399f4877/feedback_update_control_20261018/8038712e-7eda-4725-99fe-ecf966797d3d/persistent-8302-compact-error_random-prefix-final.npz",
+    "sha256": "0a01c8e63fd70a5b752347c123024b6cef59534fed35915f529982eb991881b9",
+    "probes_used": 10,
+    "parent_M": 19.84188412088065,
+    "parent_E": 26.42939948616985
+  },
+  {
+    "id": "persistent-8302-compact-scheduled_random",
+    "checkpoint": "/data/dataset/lenia-research/lineage_75e3399f4877/feedback_update_control_20261018/8038712e-7eda-4725-99fe-ecf966797d3d/persistent-8302-compact-scheduled_random-prefix-final.npz",
+    "sha256": "010b8c81717f98e9919bc0b97dd3323e48e04d21c0f8faabee76815f19a8144d",
+    "probes_used": 4,
+    "parent_M": 19.84226629529693,
+    "parent_E": 24.779711190491824
+  },
+  {
+    "id": "persistent-8302-compact-ema_greedy",
+    "checkpoint": "/data/dataset/lenia-research/lineage_75e3399f4877/feedback_update_control_20261018/8038712e-7eda-4725-99fe-ecf966797d3d/persistent-8302-compact-ema_greedy-prefix-final.npz",
+    "sha256": "3e0b4d7d5c56dcac463790af44c3f02ea7b8d4ea79f3a2507f0d0de5fdba5114",
+    "probes_used": 0,
+    "parent_M": 19.217188407664437,
+    "parent_E": 19.81338115345092
+  },
+  {
+    "id": "persistent-8302-compact-cue_last_pair",
+    "checkpoint": "/data/dataset/lenia-research/lineage_75e3399f4877/feedback_update_control_20261018/8038712e-7eda-4725-99fe-ecf966797d3d/persistent-8302-compact-cue_last_pair-prefix-final.npz",
+    "sha256": "9afc805ba2336c3d0faa1642adc0898afb8271d96145d97285115bd7b397e89b",
+    "probes_used": 0,
+    "parent_M": 19.217284257629963,
+    "parent_E": 18.737716799520474
+  },
+  {
+    "id": "persistent-8302-ring-error_directed",
+    "checkpoint": "/data/dataset/lenia-research/lineage_75e3399f4877/feedback_update_control_20261018/8038712e-7eda-4725-99fe-ecf966797d3d/persistent-8302-ring-error_directed-prefix-final.npz",
+    "sha256": "69b3e11ae7d3d4333c48edf3643d9d06c4ac1a12ef831023b6682239764943cb",
+    "probes_used": 8,
+    "parent_M": 19.846017867584216,
+    "parent_E": 14.577732102609872
+  },
+  {
+    "id": "persistent-8302-ring-error_random",
+    "checkpoint": "/data/dataset/lenia-research/lineage_75e3399f4877/feedback_update_control_20261018/8038712e-7eda-4725-99fe-ecf966797d3d/persistent-8302-ring-error_random-prefix-final.npz",
+    "sha256": "38ec0965c96298293f42c85aa4b57b4da6ca6077220e81d6a6b9cb5d7524d1d9",
+    "probes_used": 10,
+    "parent_M": 19.84564299189688,
+    "parent_E": 24.773148985181148
+  },
+  {
+    "id": "persistent-8302-ring-scheduled_random",
+    "checkpoint": "/data/dataset/lenia-research/lineage_75e3399f4877/feedback_update_control_20261018/8038712e-7eda-4725-99fe-ecf966797d3d/persistent-8302-ring-scheduled_random-prefix-final.npz",
+    "sha256": "98350b99625d6754f3bd40dcbf6da3cba39e3bec62d73edd7e8547df21238144",
+    "probes_used": 4,
+    "parent_M": 19.8458535075138,
+    "parent_E": 15.373355870757813
+  },
+  {
+    "id": "persistent-8302-ring-ema_greedy",
+    "checkpoint": "/data/dataset/lenia-research/lineage_75e3399f4877/feedback_update_control_20261018/8038712e-7eda-4725-99fe-ecf966797d3d/persistent-8302-ring-ema_greedy-prefix-final.npz",
+    "sha256": "108adb4d39a81e97af5915f7fe5d25f42f3e28c856c99a721709b38586f973ca",
+    "probes_used": 0,
+    "parent_M": 19.22098056117849,
+    "parent_E": 8.38178810206452
+  },
+  {
+    "id": "persistent-8302-ring-cue_last_pair",
+    "checkpoint": "/data/dataset/lenia-research/lineage_75e3399f4877/feedback_update_control_20261018/8038712e-7eda-4725-99fe-ecf966797d3d/persistent-8302-ring-cue_last_pair-prefix-final.npz",
+    "sha256": "61f410e37cd12eb8634debca5079cf961abbcd2cb8e5e651ca8bfc601300d296",
+    "probes_used": 0,
+    "parent_M": 19.221044867820464,
+    "parent_E": 16.460774993339427
+  }
+]

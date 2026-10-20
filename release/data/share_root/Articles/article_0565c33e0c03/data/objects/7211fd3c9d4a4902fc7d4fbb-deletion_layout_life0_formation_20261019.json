@@ -1,0 +1,258 @@
+{
+  "task": "deletion_layout_life0_formation_20261019",
+  "owner": "resident_d3ccfa2d95b7",
+  "decision": "Execute an applicability test from fresh life0 before any generation-rule search.",
+  "objective_met": false,
+  "evidence": {
+    "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/fixed_amount_rule_deletion_layout_20261019/handoff.json",
+    "sha256": "4c8022c30feb3f7cf313d226a731a6e191149e8dcc08a75c7b565cdbf86a7b74",
+    "retained": "Both matched layouts improve M/E/bodytime/post256 in all four mature-state contexts; uniform is the stronger simple comparator overall.",
+    "closed": [
+      "mass universally exceeds uniform",
+      "maintenance success in the completed 12 trajectories"
+    ],
+    "old_usage": {
+      "native": 1540,
+      "worker_seconds": 79.087806,
+      "unused_sealed": [
+        4,
+        520.912194
+      ],
+      "authorized_reference_native": 512
+    }
+  },
+  "question": "Does the exact matched_uniform deletion operator retain its finite body and replacement benefit when it acts throughout formation, rather than beginning at mature clock256?",
+  "source_bindings": [
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g2_p0_c0--compact--colocated--G2--pump/candidate.json",
+      "sha256": "841dd80fe833d7783ee3a837fc77e85b1b4e03a7dd18009bd26fff7fc2030d78"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/fixed_amount_rule_deletion_layout_20261019/handoff.json",
+      "sha256": "4c8022c30feb3f7cf313d226a731a6e191149e8dcc08a75c7b565cdbf86a7b74"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/fixed_amount_rule_deletion_layout/core.py",
+      "sha256": "71277e88c480cb81b9b602a85dab641c5e4e61b661b4d74f67fe19a36b5914a5"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/resource_conditioned_growth_rule/core.py",
+      "sha256": "bad674f254644c8fc00caa6fd50ccd45bbebdd65a229c11125ca3765df981a44"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/turnover_compatible_morphogenesis/core.py",
+      "sha256": "dbfea17ca9e68833d2e0fe7f33c37cac6111a4c441f51fb23a6a78f458886a84"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/resource_matched_morphogenesis/core.py",
+      "sha256": "dae6fbd6db1fe1a83f34a6039aee8e292f6d63717270095db981d1e808928a83"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/regenerative_actor/model.py",
+      "sha256": "3941450e97d2311f833d1c9c8964f348218467d4cd8d41a68b6584b72b24b5b0"
+    }
+  ],
+  "candidate": {
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g2_p0_c0--compact--colocated--G2--pump/candidate.json",
+    "sha256": "841dd80fe833d7783ee3a837fc77e85b1b4e03a7dd18009bd26fff7fc2030d78",
+    "id": "g2_p0_c0"
+  },
+  "construction": {
+    "shapes": [
+      "compact",
+      "ring",
+      "double_lobe",
+      "separate_seeds"
+    ],
+    "seeds": [
+      202610195601,
+      202610195602
+    ],
+    "condition": "colocated",
+    "grid": 96,
+    "life0": {
+      "M": 64,
+      "E": 64,
+      "P": 0,
+      "F": 0
+    },
+    "constructor": "GrowthBody(TurnoverBody(original_record, shape, colocated), frozen_tape, kind=greedy)",
+    "pure_checks": [
+      {
+        "shape": "compact",
+        "clock": 0,
+        "M": 63.999999999999986,
+        "E": 63.999999999999986,
+        "max_density": 0.534739936498156,
+        "state_digest": "3fdd29d882dd2864c4eadbbdcd49f1e1e7a2eaad5043fc3c950c1269c2195040",
+        "rule_sha": "49dc4c5f9528b21b65bd4f8b0838e5100f534c517527d534feac395d96c226c1",
+        "kernel_sha": "bf6b12c622fe17517f52b75e1b9a2e820bc91874d646f6398e7c3c691ad74bf6",
+        "w0": 0.5442572838640933,
+        "native": 0
+      },
+      {
+        "shape": "ring",
+        "clock": 0,
+        "M": 63.99999999999999,
+        "E": 63.99999999999999,
+        "max_density": 0.35555555555555557,
+        "state_digest": "dfe63ef9c29c0c9478b17e97d3a7fb4905fc69e6bf967ee1de3c452aef51bc8b",
+        "rule_sha": "49dc4c5f9528b21b65bd4f8b0838e5100f534c517527d534feac395d96c226c1",
+        "kernel_sha": "bf6b12c622fe17517f52b75e1b9a2e820bc91874d646f6398e7c3c691ad74bf6",
+        "w0": 0.5442572838640933,
+        "native": 0
+      },
+      {
+        "shape": "double_lobe",
+        "clock": 0,
+        "M": 64.0,
+        "E": 64.0,
+        "max_density": 0.5765765765765766,
+        "state_digest": "89117cbe52ed0767aa2acee362fdf42088ca0e4216f6a0ff86f834a3634b243d",
+        "rule_sha": "49dc4c5f9528b21b65bd4f8b0838e5100f534c517527d534feac395d96c226c1",
+        "kernel_sha": "bf6b12c622fe17517f52b75e1b9a2e820bc91874d646f6398e7c3c691ad74bf6",
+        "w0": 0.5442572838640933,
+        "native": 0
+      },
+      {
+        "shape": "separate_seeds",
+        "clock": 0,
+        "M": 64.0,
+        "E": 64.0,
+        "max_density": 0.43243243243243246,
+        "state_digest": "38f6dc1079a09f5702546d69a8e1ab9fe7e2656b24d7bfb5796084bc584bb08e",
+        "rule_sha": "49dc4c5f9528b21b65bd4f8b0838e5100f534c517527d534feac395d96c226c1",
+        "kernel_sha": "bf6b12c622fe17517f52b75e1b9a2e820bc91874d646f6398e7c3c691ad74bf6",
+        "w0": 0.5442572838640933,
+        "native": 0
+      }
+    ],
+    "native_by_PI": 0,
+    "rule": "Same frozen g2_p0_c0 record, kernels and ready-state greedy in both arms and all four shapes; no rule or shape mutation, no initial acquired state.",
+    "paired": "Each seed/shape creates one complete life0 state then makes exact full-state copies into both arms; hash state/world/input maps/cursors/RNG. Each arm independently runs all 256 native steps. No acquired prefix and no old future replay."
+  },
+  "environment": {
+    "tapes": {
+      "202610195601": [
+        [
+          0,
+          -1
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          -1,
+          -1
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "202610195602": [
+        [
+          1,
+          0
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          -1,
+          0
+        ],
+        [
+          1,
+          -1
+        ],
+        [
+          0,
+          -1
+        ],
+        [
+          1,
+          -1
+        ]
+      ]
+    },
+    "scheme": "Original colocated map from TurnoverBody, each 64 steps absolute dy/dx from frozen tape; input is rolled, existing inventory is not. P/F share displacement and original gross input. No redraw/rejection of repeated or stationary tape. Use only first four blocks, stop at256.",
+    "interpretation": "Two new input tapes crossed with four prescribed initial geometries under one previously selected rule. Eight related contexts, not eight independent ecological worlds or a new morphology search."
+  },
+  "arms": [
+    "original_prestate_greedy_reference",
+    "matched_uniform"
+  ],
+  "mechanism": {
+    "exact": "Reuse pinned route_deletion unchanged. Both mass and uniform proposals are still computed, receiver-projected, and source-out matched by minimum; only matched_uniform is executed. Do not substitute unmatched uniform.",
+    "stage": "Replace D0 only after actual after-actor response and before survivor, death energy, template support and admit. All physical consequences use actual Dnew.",
+    "invariants": "Per actual state sum(Dnew)=sum(D0), 0<=Dnew<=rho; no death multiplier reduction. Preserve h, positive request, original greedy scoring, native and pump prices, basal fees and input.",
+    "cost": "The existing extra local computation is unpriced. This remains an explicit fixed-rule model assumption, not learned regulation or fully costed implementation."
+  },
+  "execution": {
+    "science_native": 4096,
+    "trajectories": 16,
+    "steps_each": 256,
+    "order": "For each seed in declared order and each shape in declared order run both arms in declared order; retain all failures and do not select children.",
+    "boundary": "Exactly four fresh shape states at seed5601: one original GrowthBody step and one off-hook LayoutRate step each, 8 affected-check native. Compare actual states/receipts/accounts; this explicitly budgeted check is separate from 4096 science. All other tests pure arrays/roundtrip.",
+    "native_cap": 4104,
+    "worker_seconds": 900,
+    "cpu": 2,
+    "gpu": 0,
+    "jobs": 1,
+    "raw_cap_bytes": 1073741824,
+    "shutdown_reserve_worker_seconds": 120,
+    "old_balances": "sealed; not transferred",
+    "control": "Re-read research.desired_state/started immediately before job submission; paused/stopped prohibits starting. Aggregate all attempts/time; no unknown native replay. Freeze plan and sources before first native.",
+    "completion": "Keep complete checkpoints at stage boundaries and final recovery state. Reporting/logging failure may use same-job explicit recovery only when actual completed native is known; no replay or extra job without a new decision. End at256 even if negative; no parameter/price/tape/window rescue."
+  },
+  "measurements": {
+    "labels": "Observer-only founder and actual post-life0 tissue throughout. At128 register L128=rho once, track via actual K and actor/rule survival with born0; post128 actual retained newborn tissue independently reconstructs body. No cohort/future input to rule.",
+    "clocks": [
+      0,
+      1,
+      8,
+      32,
+      64,
+      96,
+      128,
+      160,
+      192,
+      224,
+      256
+    ],
+    "receipts": [
+      1,
+      8,
+      64,
+      128,
+      129,
+      192,
+      256
+    ],
+    "joint": [
+      0,
+      128,
+      256
+    ],
+    "every_step": "M/E/U/bodytime, requested/paid/actual birth, actor/rule death, registered labels and retained tissue, all original costs/heat/input/export/arrears, per-state deletion match, physical and label balances. All cells are dependent, not samples.",
+    "views": "Inspect actual time sequences for all four shapes and both arms, including failed formation; separate predefined initial geometry from observed emergent form."
+  },
+  "evaluation": {
+    "formation": "Report M128 and M256>=32 counts and exact extinction for every arm; no survivor-only analysis or deployment selection.",
+    "finite_transfer": "For each of eight pairs report M256,E256,whole-window bodytime, actual post128 retained tissue, founder/L128, and costs. A common benefit claim requires no worse M/E/bodytime/post128 in all eight pairs within1e-8 and at least one strictly positive substantive metric in each pair; report mixed signs without collapsing to a score.",
+    "maintenance": "Predeclared windows1..64,65..128,129..192,193..256. Original joint gate: born-death>=-1e-8, deltaE>=-1e-8,minM>=32 in every tested window; separately report all-four and last-two gates and zero-tolerance sensitivity. No alternate endpoint selection.",
+    "boundary": "Finite256 applicability, not steady state, generalized adaptation, experience learning or novel trained method. Do not equate founder preservation with replacement."
+  },
+  "handoff": "Owner implements and actually runs this single batch, then reports exact scientific outcome/next actionable choice once to PI. Merge paper/projection evidence in existing items; routine updates only shared state, no broadcasts/timers. No autonomous scan or training on remaining balance."
+}

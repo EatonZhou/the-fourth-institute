@@ -1,0 +1,61 @@
+{
+  "mutation": {
+    "genes": [
+      "log_mu1",
+      "log_mu2",
+      "log_sigma1",
+      "log_sigma2",
+      "weight_shift",
+      "kernel_radial1",
+      "kernel_radial2",
+      "kernel_crossmix",
+      "log_stretch_y",
+      "log_stretch_x",
+      "neck_density"
+    ],
+    "seed_start": 202610180501,
+    "sampler": "one PCG64(seed_start+source_index) uniform(-1,1,11) vector per source; take abs of component kernel_crossmix",
+    "scales": [
+      0.12,
+      0.12,
+      0.18,
+      0.18,
+      0.075,
+      0.36,
+      0.36,
+      0.18,
+      0.12,
+      0.12,
+      0.24
+    ],
+    "base_genes": "all zero relative to exact declared source life0",
+    "phenotype_construction": "Reuse the defined nonrigid stretch/neck, normalized radial-kernel tilt and convex mixing, log response shifts and weight shift semantics of frozen genome.py. New wrapper/export only, do not edit old frozen modules. Interpolation/kernel normalization are explicit NEW candidate operations, never a factorial exact-copy claim.",
+    "invalid": "Retain invalid proposal and reason; no automatic resample, repair, retry, replacement or budget transfer; native count may be below eight.",
+    "inheritance": "explicit source ID/hash, child content ID, parent_id, generation=1, seed and all actual arrays; rules fixed within each lifetime"
+  },
+  "initialization": {
+    "grid": 96,
+    "reference_grid": 64,
+    "embedding": "literal centered zero pad, 16:80; all outside fields including P/F zero; integer-displacement kernels unchanged after embedding",
+    "body_mass": "same as each source; no extra mass",
+    "energy": ".8*rho using original neutral builder semantics; save actual values and roundoff",
+    "neutral": "original life0 neutral history/held fields and declared coupled founder/polarity; no reached state as fresh life",
+    "host": "original experience_adaptation_host build/save/open; exact actual export roundtrip; no new physics"
+  },
+  "evaluation": {
+    "primary": "Describe all valid candidates and failures; no single scalar winner or adaptation eligibility.",
+    "outputs": [
+      "mass/energy/body-time and full birth/death/resource/fee paths",
+      "actual raw body frames in fixed coordinates and density scale, initial and every8 steps to128",
+      "saved full ready packets and true extinction/zero tails",
+      "shape descriptors: holes, components, elongation, spread plus observed motion/turnover; finite grid caveats",
+      "parent/source lineage and new kernel/response/body arrays",
+      "all late positive and negative intervals; no stable organism claim from finite survival"
+    ],
+    "archive": "Exploration-only, retain distinct live morphodynamics and all failures; if same niche collides retain full records and do not select solely by mass. Actual inspection required; do not label static genome differences as dynamic diversity.",
+    "contrasts": "No assertion that new 96 offspring improve over old 64 parents; two already evaluated matching 96 parents can be referenced only when exact source/config/tape/timing match, never rerun old paths."
+  },
+  "scope": "New candidate construction only; no formed-body, learning, adaptation or search superiority evidence.",
+  "native_binding": "existing ce2 host and runner; T00 before first real step; original tape indices0..127",
+  "old_diagnostic_clarification": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_diverse_generation_screen_exports/prior_KG_scope_clarification.json"
+}

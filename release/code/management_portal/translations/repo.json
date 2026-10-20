@@ -1,0 +1,1058 @@
+{
+  "Repo — Resource": {
+    "en": "Repo — Resource",
+    "zh-CN": "仓库 — 资源"
+  },
+  "/share/Projects/Example/src/repo": {
+    "en": "/share/Projects/Example/src/repo",
+    "zh-CN": "/share/Projects/Example/src/repo"
+  },
+  "<div class=\"repoCommitDiffEmpty\">二进制文件已变更。</div>": {
+    "en": "<div class=\"repoCommitDiffEmpty\">The binary file has changed.</div>",
+    "zh-CN": "<div class=\"repoCommitDiffEmpty\">二进制文件已变更。</div>"
+  },
+  "<div class=\"repoCommitDiffEmpty\">该文件的 diff 未在当前响应中展开。</div>": {
+    "en": "<div class=\"repoCommitDiffEmpty\">The diff for this file was not expanded in the current response.</div>",
+    "zh-CN": "<div class=\"repoCommitDiffEmpty\">该文件的 diff 未在当前响应中展开。</div>"
+  },
+  "<div class=\"repoDiffEmpty\">该变更没有可显示的文本 Diff。</div>": {
+    "en": "<div class=\"repoDiffEmpty\">This change has no displayable text Diff.</div>",
+    "zh-CN": "<div class=\"repoDiffEmpty\">该变更没有可显示的文本 Diff。</div>"
+  },
+  "<div class=\"repoFileFinderHint\">没有匹配文件。</div>": {
+    "en": "<div class=\"repoFileFinderHint\">No matching files.</div>",
+    "zh-CN": "<div class=\"repoFileFinderHint\">没有匹配文件。</div>"
+  },
+  "<div class=\"repoFileFinderHint\">输入关键词，在当前 checkout 中查找文件。</div>": {
+    "en": "<div class=\"repoFileFinderHint\">Enter keywords to find files in the current checkout.</div>",
+    "zh-CN": "<div class=\"repoFileFinderHint\">输入关键词，在当前 checkout 中查找文件。</div>"
+  },
+  "<div class=\"repoTreeTruncated\">目录内容较多，仅显示前 1000 项。</div>": {
+    "en": "<div class=\"repoTreeTruncated\">The directory has many items; only the first 1000 are shown.</div>",
+    "zh-CN": "<div class=\"repoTreeTruncated\">目录内容较多，仅显示前 1000 项。</div>"
+  },
+  "<p class=\"repoMuted\">尚未配置 remote。</p>": {
+    "en": "<p class=\"repoMuted\">No remote configured yet.</p>",
+    "zh-CN": "<p class=\"repoMuted\">尚未配置 remote。</p>"
+  },
+  "<p class=\"repoSettingsNotice\">现有 URL 中的凭据已隐藏。只有重新输入完整 URL 并保存时才会更新 remote。</p>": {
+    "en": "<p class=\"repoSettingsNotice\">Credentials in the existing URL have been hidden. The remote will only be updated when you re-enter the full URL and save.</p>",
+    "zh-CN": "<p class=\"repoSettingsNotice\">现有 URL 中的凭据已隐藏。只有重新输入完整 URL 并保存时才会更新 remote。</p>"
+  },
+  "<p>当前仓库没有 tag。</p>": {
+    "en": "<p>The current repository has no tags.</p>",
+    "zh-CN": "<p>当前仓库没有 tag。</p>"
+  },
+  "<span class=\"repoDescriptionPulse\" aria-hidden=\"true\"></span><span>正在生成一句话简介…</span>": {
+    "en": "<span class=\"repoDescriptionPulse\" aria-hidden=\"true\"></span><span>Generating a one-sentence summary…</span>",
+    "zh-CN": "<span class=\"repoDescriptionPulse\" aria-hidden=\"true\"></span><span>正在生成一句话简介…</span>"
+  },
+  "<span class=\"repoSyncState clean\">工作区干净</span>": {
+    "en": "<span class=\"repoSyncState clean\">Working tree clean</span>",
+    "zh-CN": "<span class=\"repoSyncState clean\">工作区干净</span>"
+  },
+  "<span class=\"repoSyncState muted\">无 upstream</span>": {
+    "en": "<span class=\"repoSyncState muted\">No upstream</span>",
+    "zh-CN": "<span class=\"repoSyncState muted\">无 upstream</span>"
+  },
+  "<span class=\"repoSyncState pull-only\">仅拉取</span>": {
+    "en": "<span class=\"repoSyncState pull-only\">Pull only</span>",
+    "zh-CN": "<span class=\"repoSyncState pull-only\">仅拉取</span>"
+  },
+  "AI Commit": {
+    "en": "AI Commit",
+    "zh-CN": "AI 提交"
+  },
+  "AI · GIT AUTOMATION": {
+    "en": "AI · GIT AUTOMATION",
+    "zh-CN": "AI · GIT 自动化"
+  },
+  "AI 分析中": {
+    "en": "AI analyzing",
+    "zh-CN": "AI 分析中"
+  },
+  "AI 提交": {
+    "en": "AI submissions",
+    "zh-CN": "AI 提交"
+  },
+  "AI 提交 Repo": {
+    "en": "AI commit Repo",
+    "zh-CN": "AI 提交 Repo"
+  },
+  "AI 提交全部": {
+    "en": "AI commit all",
+    "zh-CN": "AI 提交全部"
+  },
+  "AI 提交已完成": {
+    "en": "AI commit completed",
+    "zh-CN": "AI 提交已完成"
+  },
+  "AI 提交所有 Repo": {
+    "en": "AI commit all Repos",
+    "zh-CN": "AI 提交所有 Repo"
+  },
+  "AI 提交进度": {
+    "en": "AI submission progress",
+    "zh-CN": "AI 提交进度"
+  },
+  "Article storage uses article_* and cannot be registered as repo_*": {
+    "en": "Article storage uses article_* and cannot be registered as repo_*",
+    "zh-CN": "Article 存储使用 article_*，不能注册为 repo_*"
+  },
+  "Blame": {
+    "en": "Blame",
+    "zh-CN": "追溯"
+  },
+  "Changed Files": {
+    "en": "Changed Files",
+    "zh-CN": "变更文件"
+  },
+  "Checkout 路径": {
+    "en": "Checkout Path",
+    "zh-CN": "Checkout 路径"
+  },
+  "Commit Changes": {
+    "en": "Commit Changes",
+    "zh-CN": "提交更改"
+  },
+  "Commit message": {
+    "en": "Commit message",
+    "zh-CN": "提交信息"
+  },
+  "Ctrl/⌘ Enter": {
+    "en": "Ctrl/⌘ Enter",
+    "zh-CN": "Ctrl/⌘ Enter"
+  },
+  "Current branch": {
+    "en": "Current branch",
+    "zh-CN": "当前分支"
+  },
+  "DANGER ZONE": {
+    "en": "DANGER ZONE",
+    "zh-CN": "危险区域"
+  },
+  "Diff Preview": {
+    "en": "Diff Preview",
+    "zh-CN": "差异预览"
+  },
+  "Diff 显示方式": {
+    "en": "Diff Display Mode",
+    "zh-CN": "Diff 显示方式"
+  },
+  "Extended description（可选）": {
+    "en": "Extended description (optional)",
+    "zh-CN": "Extended description（可选）"
+  },
+  "Fetch URL": {
+    "en": "Fetch URL",
+    "zh-CN": "获取 URL"
+  },
+  "Git remote": {
+    "en": "Git remote",
+    "zh-CN": "Git 远程"
+  },
+  "Git 凭据已删除。": {
+    "en": "Git credential deleted.",
+    "zh-CN": "Git 凭据已删除。"
+  },
+  "Git 同步": {
+    "en": "Git sync",
+    "zh-CN": "Git 同步"
+  },
+  "KEYBOARD": {
+    "en": "KEYBOARD",
+    "zh-CN": "KEYBOARD"
+  },
+  "MY ACCOUNT": {
+    "en": "MY ACCOUNT",
+    "zh-CN": "我的账户"
+  },
+  "New file": {
+    "en": "New file",
+    "zh-CN": "新建文件"
+  },
+  "No upstream": {
+    "en": "No upstream",
+    "zh-CN": "无上游"
+  },
+  "Portal host 上注册的 Git checkout。": {
+    "en": "Git checkout registered on the Portal host.",
+    "zh-CN": "Portal host 上注册的 Git checkout。"
+  },
+  "Portal 会执行": {
+    "en": "Portal will execute",
+    "zh-CN": "Portal 会执行"
+  },
+  "Project（逗号分隔）": {
+    "en": "Projects (comma-separated)",
+    "zh-CN": "Project（逗号分隔）"
+  },
+  "Push URL": {
+    "en": "Push URL",
+    "zh-CN": "推送 URL"
+  },
+  "Push 到 remote？": {
+    "en": "Push to remote?",
+    "zh-CN": "Push 到 remote？"
+  },
+  "Push 行为": {
+    "en": "Push behavior",
+    "zh-CN": "Push 行为"
+  },
+  "REGISTER CHECKOUT": {
+    "en": "REGISTER CHECKOUT",
+    "zh-CN": "注册结账"
+  },
+  "Remote / Push source": {
+    "en": "Remote / Push source",
+    "zh-CN": "远程 / 推送源"
+  },
+  "Remote 已保存。": {
+    "en": "Remote saved.",
+    "zh-CN": "Remote 已保存。"
+  },
+  "Repo Resource filters": {
+    "en": "Repo Resource filters",
+    "zh-CN": "仓库资源筛选器"
+  },
+  "Repo path": {
+    "en": "Repo path",
+    "zh-CN": "仓库路径"
+  },
+  "Repo workspace": {
+    "en": "Repo workspace",
+    "zh-CN": "仓库工作区"
+  },
+  "Repo 已注册并打开。": {
+    "en": "Repo registered and opened.",
+    "zh-CN": "Repo 已注册并打开。"
+  },
+  "Repo 快捷键": {
+    "en": "Repo shortcuts",
+    "zh-CN": "Repo 快捷键"
+  },
+  "Repo 标题 / 路径 / ID": {
+    "en": "Repo title / path / ID",
+    "zh-CN": "Repo 标题 / 路径 / ID"
+  },
+  "Repo 注册已解除；checkout 保持不变。": {
+    "en": "Repo registration removed; checkout remains unchanged.",
+    "zh-CN": "Repo 注册已解除；checkout 保持不变。"
+  },
+  "Repo 状态": {
+    "en": "Repo status",
+    "zh-CN": "Repo 状态"
+  },
+  "Repo 状态已刷新。": {
+    "en": "Repo status refreshed.",
+    "zh-CN": "Repo 状态已刷新。"
+  },
+  "Repo 视图": {
+    "en": "Repo view",
+    "zh-CN": "Repo 视图"
+  },
+  "Repo 语义检索任务": {
+    "en": "Repo semantic search task",
+    "zh-CN": "Repo 语义检索任务"
+  },
+  "Repo 资源不可用": {
+    "en": "Repo resource unavailable",
+    "zh-CN": "Repo 资源不可用"
+  },
+  "Repo 资源与 checkout 状态已刷新。": {
+    "en": "Repo resource and checkout status refreshed.",
+    "zh-CN": "Repo 资源与 checkout 状态已刷新。"
+  },
+  "Repository About": {
+    "en": "Repository About",
+    "zh-CN": "仓库简介"
+  },
+  "Repository Files": {
+    "en": "Repository Files",
+    "zh-CN": "仓库文件"
+  },
+  "Repository size": {
+    "en": "Repository size",
+    "zh-CN": "仓库大小"
+  },
+  "SECURE GIT AUTHENTICATION": {
+    "en": "SECURE GIT AUTHENTICATION",
+    "zh-CN": "安全 GIT 身份验证"
+  },
+  "Symbolic link": {
+    "en": "Symbolic link",
+    "zh-CN": "符号链接"
+  },
+  "Unified ID": {
+    "en": "Unified ID",
+    "zh-CN": "统一 ID"
+  },
+  "Unstaged": {
+    "en": "Unstaged",
+    "zh-CN": "未暂存"
+  },
+  "Untracked": {
+    "en": "Untracked",
+    "zh-CN": "未跟踪"
+  },
+  "credential operation must be delete": {
+    "en": "credential operation must be delete",
+    "zh-CN": "凭据操作必须为 delete"
+  },
+  "disabled title=\"存在未提交改动时不能切换分支\"": {
+    "en": "disabled title=\"Cannot switch branches with uncommitted changes\"",
+    "zh-CN": "disabled title=\"存在未提交改动时不能切换分支\""
+  },
+  "disabled title=\"存在未提交改动时不能创建并切换分支\"": {
+    "en": "disabled title=\"Cannot create and switch branches with uncommitted changes\"",
+    "zh-CN": "disabled title=\"存在未提交改动时不能创建并切换分支\""
+  },
+  "entry operation must be create or delete": {
+    "en": "entry operation must be create or delete",
+    "zh-CN": "条目操作必须是 create 或 delete"
+  },
+  "feature/new-workspace": {
+    "en": "feature/new-workspace",
+    "zh-CN": "feature/new-workspace"
+  },
+  "git@host:owner/repo.git": {
+    "en": "git@host:owner/repo.git",
+    "zh-CN": "git@host:owner/repo.git"
+  },
+  "repo checkout path required": {
+    "en": "repo checkout path required",
+    "zh-CN": "repo checkout 路径必填"
+  },
+  "repo not found": {
+    "en": "repo not found",
+    "zh-CN": "未找到仓库"
+  },
+  "repo_ids must be an array": {
+    "en": "repo_ids must be an array",
+    "zh-CN": "repo_ids 必须是数组"
+  },
+  "root commit": {
+    "en": "root commit",
+    "zh-CN": "根提交"
+  },
+  "· Diff 已截断": {
+    "en": "· Diff truncated",
+    "zh-CN": "· Diff 已截断"
+  },
+  "不含 .git": {
+    "en": "Excludes .git",
+    "zh-CN": "不含 .git"
+  },
+  "仅保存密钥文件名。私钥内容不会进入 Repo 注册记录，也不会返回到浏览器。": {
+    "en": "Only the key filename is saved. The private key content will not enter the Repo registration record, nor be returned to the browser.",
+    "zh-CN": "仅保存密钥文件名。私钥内容不会进入 Repo 注册记录，也不会返回到浏览器。"
+  },
+  "仅拉取": {
+    "en": "Pull only",
+    "zh-CN": "仅拉取"
+  },
+  "从 Resource 中移除此 Repo": {
+    "en": "Remove this Repo from Resource",
+    "zh-CN": "从 Resource 中移除此 Repo"
+  },
+  "仓库总大小": {
+    "en": "Total repository size",
+    "zh-CN": "仓库总大小"
+  },
+  "仓库语言占比": {
+    "en": "Repository language breakdown",
+    "zh-CN": "仓库语言占比"
+  },
+  "例如 42": {
+    "en": "For example, 42",
+    "zh-CN": "例如 42"
+  },
+  "保存 Remote": {
+    "en": "Save Remote",
+    "zh-CN": "保存 Remote"
+  },
+  "保存到 Changes": {
+    "en": "Save to Changes",
+    "zh-CN": "保存到 Changes"
+  },
+  "保存后进入 Changes，可与其他改动一起提交。": {
+    "en": "After saving, go to Changes to submit it together with other changes.",
+    "zh-CN": "保存后进入 Changes，可与其他改动一起提交。"
+  },
+  "保存密钥": {
+    "en": "Save key",
+    "zh-CN": "保存密钥"
+  },
+  "停止后续仓库": {
+    "en": "Stop subsequent repositories",
+    "zh-CN": "停止后续仓库"
+  },
+  "全部提交": {
+    "en": "All commits",
+    "zh-CN": "全部提交"
+  },
+  "公共内容（不属于任何 Project）": {
+    "en": "Public content (in no Project)",
+    "zh-CN": "公共内容（不属于任何 Project）"
+  },
+  "关闭 Repo 注册": {
+    "en": "Close Repo registration",
+    "zh-CN": "关闭 Repo 注册"
+  },
+  "关闭分支对话框": {
+    "en": "Close branch dialog",
+    "zh-CN": "关闭分支对话框"
+  },
+  "关闭后，工具栏 Push 会停用；AI 一键提交只执行 git add 和 commit。": {
+    "en": "After closing, Push in the toolbar is disabled; AI one-click commit only runs git add and commit.",
+    "zh-CN": "关闭后，工具栏 Push 会停用；AI 一键提交只执行 git add 和 commit。"
+  },
+  "关闭快捷键帮助": {
+    "en": "Close keyboard shortcut help",
+    "zh-CN": "关闭快捷键帮助"
+  },
+  "关闭编辑器": {
+    "en": "Close editor",
+    "zh-CN": "关闭编辑器"
+  },
+  "准备读取变更…": {
+    "en": "Preparing to read changes…",
+    "zh-CN": "准备读取变更…"
+  },
+  "凭据已隐藏；请输入完整的新 URL": {
+    "en": "Credentials are hidden; enter the full new URL",
+    "zh-CN": "凭据已隐藏；请输入完整的新 URL"
+  },
+  "凭据按当前 Portal 用户和 Git 主机隔离。页面只显示类型与使用状态，不会返回令牌、密码或私钥口令。": {
+    "en": "Credentials are isolated by the current Portal user and Git host. The page only shows type and usage status, and does not return tokens, passwords, or private key passphrases.",
+    "zh-CN": "凭据按当前 Portal 用户和 Git 主机隔离。页面只显示类型与使用状态，不会返回令牌、密码或私钥口令。"
+  },
+  "凭据按当前用户和 Git 主机隔离；取消勾选后只用于本次重试。": {
+    "en": "Credentials are isolated by the current user and Git host; when unchecked, they are used only for this retry.",
+    "zh-CN": "凭据按当前用户和 Git 主机隔离；取消勾选后只用于本次重试。"
+  },
+  "分支名称": {
+    "en": "Branch name",
+    "zh-CN": "分支名称"
+  },
+  "刚才的凭据未被远程接受。请检查凭据是否已更新、过期或被撤销。": {
+    "en": "The previous credential was not accepted remotely. Check whether the credential has been updated, expired, or revoked.",
+    "zh-CN": "刚才的凭据未被远程接受。请检查凭据是否已更新、过期或被撤销。"
+  },
+  "创建并切换": {
+    "en": "Create and switch",
+    "zh-CN": "创建并切换"
+  },
+  "创建成功后会切换到新分支。存在未提交改动时，Portal 会阻止切换。": {
+    "en": "After successful creation, it switches to the new branch. If there are uncommitted changes, Portal will block the switch.",
+    "zh-CN": "创建成功后会切换到新分支。存在未提交改动时，Portal 会阻止切换。"
+  },
+  "创建新分支": {
+    "en": "Create new branch",
+    "zh-CN": "创建新分支"
+  },
+  "初始化 Git 仓库？": {
+    "en": "Initialize Git repository?",
+    "zh-CN": "初始化 Git 仓库？"
+  },
+  "初始化并注册": {
+    "en": "Initialize and register",
+    "zh-CN": "初始化并注册"
+  },
+  "删除 Git 凭据？": {
+    "en": "Delete Git credential?",
+    "zh-CN": "删除 Git 凭据？"
+  },
+  "删除文件？": {
+    "en": "Delete file?",
+    "zh-CN": "删除文件？"
+  },
+  "刷新 Repo": {
+    "en": "Refresh Repo",
+    "zh-CN": "刷新 Repo"
+  },
+  "刷新 Repo 状态": {
+    "en": "Refresh Repo Status",
+    "zh-CN": "刷新 Repo 状态"
+  },
+  "加载 Repo 语义搜索": {
+    "en": "Load Repo semantic search",
+    "zh-CN": "加载 Repo 语义搜索"
+  },
+  "取消 Git 认证": {
+    "en": "Cancel Git Authentication",
+    "zh-CN": "取消 Git 认证"
+  },
+  "变更类型筛选": {
+    "en": "Change Type Filter",
+    "zh-CN": "变更类型筛选"
+  },
+  "只删除注册记录。Git checkout、分支、提交和工作文件都会保留。": {
+    "en": "Only delete the registration record. Git checkout, branches, commits, and working files will be preserved.",
+    "zh-CN": "只删除注册记录。Git checkout、分支、提交和工作文件都会保留。"
+  },
+  "可以直接在当前目录创建第一个文件。": {
+    "en": "You can create the first file directly in the current directory.",
+    "zh-CN": "可以直接在当前目录创建第一个文件。"
+  },
+  "可提交。": {
+    "en": "Can submit.",
+    "zh-CN": "可提交。"
+  },
+  "后续 Remote 再次要求认证时，Portal 会重新提示。": {
+    "en": "When a Remote later requires authentication again, Portal will prompt again.",
+    "zh-CN": "后续 Remote 再次要求认证时，Portal 会重新提示。"
+  },
+  "在 Changes 中创建第一个 commit。": {
+    "en": "Create the first commit in Changes.",
+    "zh-CN": "在 Changes 中创建第一个 commit。"
+  },
+  "在 diff 中搜索…": {
+    "en": "Search in diff…",
+    "zh-CN": "在 diff 中搜索…"
+  },
+  "在浏览器打开 Remote": {
+    "en": "Open Remote in browser",
+    "zh-CN": "在浏览器打开 Remote"
+  },
+  "填写 Project，或把位置选为公共内容。": {
+    "en": "Enter a Project, or choose public content as the place.",
+    "zh-CN": "填写 Project，或把位置选为公共内容。"
+  },
+  "复制 ID": {
+    "en": "Copy ID",
+    "zh-CN": "复制 ID"
+  },
+  "复制 Remote URL": {
+    "en": "Copy Remote URL",
+    "zh-CN": "复制 Remote URL"
+  },
+  "复制 checkout 路径": {
+    "en": "Copy checkout path",
+    "zh-CN": "复制 checkout 路径"
+  },
+  "复制 commit SHA": {
+    "en": "Copy commit SHA",
+    "zh-CN": "复制 commit SHA"
+  },
+  "复制内容": {
+    "en": "Copy content",
+    "zh-CN": "复制内容"
+  },
+  "复制分支名": {
+    "en": "Copy branch name",
+    "zh-CN": "复制分支名"
+  },
+  "复制完整 commit SHA": {
+    "en": "Copy full commit SHA",
+    "zh-CN": "复制完整 commit SHA"
+  },
+  "复制路径": {
+    "en": "Copy path",
+    "zh-CN": "复制路径"
+  },
+  "存在未提交改动，不能切换分支": {
+    "en": "There are uncommitted changes; cannot switch branches",
+    "zh-CN": "存在未提交改动，不能切换分支"
+  },
+  "存在未提交改动，当前不能切换分支。": {
+    "en": "There are uncommitted changes; cannot switch branches currently.",
+    "zh-CN": "存在未提交改动，当前不能切换分支。"
+  },
+  "安全保存到我的 Portal 账号": {
+    "en": "Securely save to my Portal account",
+    "zh-CN": "安全保存到我的 Portal 账号"
+  },
+  "尚无 commit message": {
+    "en": "No commit message yet",
+    "zh-CN": "尚无 commit message"
+  },
+  "尚无提交记录": {
+    "en": "No submission records yet",
+    "zh-CN": "尚无提交记录"
+  },
+  "尚未保存 Git 凭据。Remote 要求认证时，Portal 会自动打开安全认证窗口。": {
+    "en": "Git credentials not saved yet. When the Remote requires authentication, Portal will automatically open the secure authentication window.",
+    "zh-CN": "尚未保存 Git 凭据。Remote 要求认证时，Portal 会自动打开安全认证窗口。"
+  },
+  "工作区没有需要提交的变更。": {
+    "en": "No changes to submit in the workspace.",
+    "zh-CN": "工作区没有需要提交的变更。"
+  },
+  "已 commit · push 失败": {
+    "en": "Committed · push failed",
+    "zh-CN": "已 commit · push 失败"
+  },
+  "已停止后续仓库": {
+    "en": "Stopped subsequent repositories",
+    "zh-CN": "已停止后续仓库"
+  },
+  "已允许 Portal Push。": {
+    "en": "Portal Push has been allowed.",
+    "zh-CN": "已允许 Portal Push。"
+  },
+  "已分叉": {
+    "en": "Forked",
+    "zh-CN": "已分叉"
+  },
+  "已取消批量 AI 提交。": {
+    "en": "Batch AI submission canceled.",
+    "zh-CN": "已取消批量 AI 提交。"
+  },
+  "已恢复 SSH 默认密钥。": {
+    "en": "Restored SSH default key.",
+    "zh-CN": "已恢复 SSH 默认密钥。"
+  },
+  "已禁用此 Repo 的 Push。": {
+    "en": "Push disabled for this Repo.",
+    "zh-CN": "已禁用此 Repo 的 Push。"
+  },
+  "已签出": {
+    "en": "Checked out",
+    "zh-CN": "已签出"
+  },
+  "已跟踪及未忽略的工作区文件，不含 .git": {
+    "en": "Tracked and non-ignored workspace files, excluding .git",
+    "zh-CN": "已跟踪及未忽略的工作区文件，不含 .git"
+  },
+  "开始 AI 提交": {
+    "en": "Start AI submission",
+    "zh-CN": "开始 AI 提交"
+  },
+  "当前 Repo 工作区干净。": {
+    "en": "The current Repo workspace is clean.",
+    "zh-CN": "当前 Repo 工作区干净。"
+  },
+  "当前 Repo 没有 remote，无需配置认证。": {
+    "en": "The current Repo has no remote, so no authentication is needed.",
+    "zh-CN": "当前 Repo 没有 remote，无需配置认证。"
+  },
+  "当前 checkout 与 HEAD 一致。编辑或新建文件后，改动会出现在这里。": {
+    "en": "The current checkout matches HEAD. After you edit or create a file, changes will appear here.",
+    "zh-CN": "当前 checkout 与 HEAD 一致。编辑或新建文件后，改动会出现在这里。"
+  },
+  "当前分支": {
+    "en": "Current branch",
+    "zh-CN": "当前分支"
+  },
+  "当前没有需要提交的变更。": {
+    "en": "There are currently no changes to submit.",
+    "zh-CN": "当前没有需要提交的变更。"
+  },
+  "待认证的 Git remote": {
+    "en": "Git remote pending authentication",
+    "zh-CN": "待认证的 Git remote"
+  },
+  "快捷键 (?)": {
+    "en": "Shortcuts (?)",
+    "zh-CN": "快捷键 (?)"
+  },
+  "所有 Repo 工作区均无本地变更。": {
+    "en": "No local changes in any Repo workspace.",
+    "zh-CN": "所有 Repo 工作区均无本地变更。"
+  },
+  "所有 Repo 检查": {
+    "en": "Check all Repos",
+    "zh-CN": "所有 Repo 检查"
+  },
+  "所有 Repo 的 AI 提交正在执行。": {
+    "en": "AI commits are in progress for all Repos.",
+    "zh-CN": "所有 Repo 的 AI 提交正在执行。"
+  },
+  "所有已检查工作区均无本地变更": {
+    "en": "No local changes in any checked workspace",
+    "zh-CN": "所有已检查工作区均无本地变更"
+  },
+  "打开 Remote": {
+    "en": "Open Remote",
+    "zh-CN": "打开 Remote"
+  },
+  "打开 Repo 卡片列表": {
+    "en": "Open Repo card list",
+    "zh-CN": "打开 Repo 卡片列表"
+  },
+  "打开 Repo 工作台": {
+    "en": "Open Repo workbench",
+    "zh-CN": "打开 Repo 工作台"
+  },
+  "打开或关闭此帮助": {
+    "en": "Open or close this help",
+    "zh-CN": "打开或关闭此帮助"
+  },
+  "按 Project 筛选 Repo": {
+    "en": "Filter Repos by Project",
+    "zh-CN": "按 Project 筛选 Repo"
+  },
+  "搜索 Repo": {
+    "en": "Search Repo",
+    "zh-CN": "搜索 Repo"
+  },
+  "搜索标题、作者或 SHA…": {
+    "en": "Search title, author, or SHA…",
+    "zh-CN": "搜索标题、作者或 SHA…"
+  },
+  "搜索索引尚未确认更新，搜索结果可能暂时显示旧信息，无需重复保存。": {
+    "en": "Search index refresh is not yet confirmed. Search results may briefly show old information; you do not need to save again.",
+    "zh-CN": "搜索索引尚未确认更新，搜索结果可能暂时显示旧信息，无需重复保存。"
+  },
+  "放弃全部 staged、unstaged 和 untracked changes": {
+    "en": "Discard all staged, unstaged, and untracked changes",
+    "zh-CN": "放弃全部 staged、unstaged 和 untracked changes"
+  },
+  "放弃改动": {
+    "en": "Discard changes",
+    "zh-CN": "放弃改动"
+  },
+  "放弃未提交改动？": {
+    "en": "Discard uncommitted changes?",
+    "zh-CN": "放弃未提交改动？"
+  },
+  "文件已保存到工作区；可在 Changes 中统一提交。": {
+    "en": "File saved to the workspace; you can commit it together in Changes.",
+    "zh-CN": "文件已保存到工作区；可在 Changes 中统一提交。"
+  },
+  "文件已删除；可在 Changes 中检查并提交。": {
+    "en": "File deleted; you can review and commit it in Changes.",
+    "zh-CN": "文件已删除；可在 Changes 中检查并提交。"
+  },
+  "文件显示方式": {
+    "en": "File display mode",
+    "zh-CN": "文件显示方式"
+  },
+  "新建分支": {
+    "en": "New branch",
+    "zh-CN": "新建分支"
+  },
+  "新建文件": {
+    "en": "New file",
+    "zh-CN": "新建文件"
+  },
+  "新建文件后可在 Changes 中创建首个 commit。": {
+    "en": "After creating a file, you can create the first commit in Changes.",
+    "zh-CN": "新建文件后可在 Changes 中创建首个 commit。"
+  },
+  "无变更": {
+    "en": "No changes",
+    "zh-CN": "无变更"
+  },
+  "无法打开 Repo 工作台": {
+    "en": "Unable to open Repo workbench",
+    "zh-CN": "无法打开 Repo 工作台"
+  },
+  "无法读取 Diff": {
+    "en": "Unable to read Diff",
+    "zh-CN": "无法读取 Diff"
+  },
+  "无法读取提交记录": {
+    "en": "Unable to read commit history",
+    "zh-CN": "无法读取提交记录"
+  },
+  "有 Repo 需要先处理冲突或权限问题。": {
+    "en": "Some Repos need conflict or permission issues resolved first.",
+    "zh-CN": "有 Repo 需要先处理冲突或权限问题。"
+  },
+  "有 remote 的 Repo 会在提交后继续 push": {
+    "en": "Repos with remote will continue to push after commit",
+    "zh-CN": "有 remote 的 Repo 会在提交后继续 push"
+  },
+  "未配置 upstream": {
+    "en": "Upstream not configured",
+    "zh-CN": "未配置 upstream"
+  },
+  "本地 commit": {
+    "en": "Local commit",
+    "zh-CN": "本地 commit"
+  },
+  "本地 commit 已保留。认证成功后，Portal 只会重试 Push。": {
+    "en": "The local commit has been retained. After authentication succeeds, Portal will only retry the Push.",
+    "zh-CN": "本地 commit 已保留。认证成功后，Portal 只会重试 Push。"
+  },
+  "本地 remote": {
+    "en": "Local remote",
+    "zh-CN": "本地 remote"
+  },
+  "查找文件": {
+    "en": "Find file",
+    "zh-CN": "查找文件"
+  },
+  "查看 Repo 快捷键": {
+    "en": "View Repo shortcuts",
+    "zh-CN": "查看 Repo 快捷键"
+  },
+  "查看当前文件 Blame": {
+    "en": "View current file Blame",
+    "zh-CN": "查看当前文件 Blame"
+  },
+  "查看提交进度": {
+    "en": "View submission progress",
+    "zh-CN": "查看提交进度"
+  },
+  "根据输入内容发起 Repo 语义检索": {
+    "en": "Initiate Repo semantic search based on input content",
+    "zh-CN": "根据输入内容发起 Repo 语义检索"
+  },
+  "检查当前筛选的 Repo；有 remote 的仓库会在提交后继续 push": {
+    "en": "Check the currently filtered Repos; push after committing when a remote exists",
+    "zh-CN": "检查当前筛选的 Repo；有 remote 的仓库会在提交后继续 push"
+  },
+  "正在准备 Repo 变更…": {
+    "en": "Preparing Repo changes…",
+    "zh-CN": "正在准备 Repo 变更…"
+  },
+  "正在准备一句话简介…": {
+    "en": "Preparing one-sentence summary…",
+    "zh-CN": "正在准备一句话简介…"
+  },
+  "正在打开 Repo 工作台。": {
+    "en": "Opening Repo workbench.",
+    "zh-CN": "正在打开 Repo 工作台。"
+  },
+  "正在检查当前筛选的 Repo…": {
+    "en": "Checking the currently filtered Repos…",
+    "zh-CN": "正在检查当前筛选的 Repo…"
+  },
+  "正在读取 Git 状态…": {
+    "en": "Reading Git status…",
+    "zh-CN": "正在读取 Git 状态…"
+  },
+  "正在读取当前账号的 Git 凭据…": {
+    "en": "Reading Git credentials for the current account…",
+    "zh-CN": "正在读取当前账号的 Git 凭据…"
+  },
+  "此 Repo 使用的密钥": {
+    "en": "Keys used by this Repo",
+    "zh-CN": "此 Repo 使用的密钥"
+  },
+  "没有 Repo 需要提交。": {
+    "en": "No Repo to submit.",
+    "zh-CN": "没有 Repo 需要提交。"
+  },
+  "没有匹配的 Repo": {
+    "en": "No matching Repo",
+    "zh-CN": "没有匹配的 Repo"
+  },
+  "没有匹配的 commit。": {
+    "en": "No matching commit.",
+    "zh-CN": "没有匹配的 commit。"
+  },
+  "没有匹配的分支。": {
+    "en": "No matching branch.",
+    "zh-CN": "没有匹配的分支。"
+  },
+  "没有匹配的变更。": {
+    "en": "No matching changes.",
+    "zh-CN": "没有匹配的变更。"
+  },
+  "没有可显示的文本 diff。": {
+    "en": "No text diff to display.",
+    "zh-CN": "没有可显示的文本 diff。"
+  },
+  "没有开始处理该仓库。": {
+    "en": "Processing of this repository has not started.",
+    "zh-CN": "没有开始处理该仓库。"
+  },
+  "没有本地变更": {
+    "en": "No local changes",
+    "zh-CN": "没有本地变更"
+  },
+  "没有需要提交的 Repo": {
+    "en": "No Repo to submit",
+    "zh-CN": "没有需要提交的 Repo"
+  },
+  "注册 Portal host 上的 Git checkout 后，可以在这里浏览、编辑和提交代码。": {
+    "en": "After registering a Git checkout on the Portal host, you can browse, edit, and submit code here.",
+    "zh-CN": "注册 Portal host 上的 Git checkout 后，可以在这里浏览、编辑和提交代码。"
+  },
+  "注册 Repo": {
+    "en": "Register Repo",
+    "zh-CN": "注册 Repo"
+  },
+  "注册新 Repo": {
+    "en": "Register new Repo",
+    "zh-CN": "注册新 Repo"
+  },
+  "浏览分支提交": {
+    "en": "Browse branch commits",
+    "zh-CN": "浏览分支提交"
+  },
+  "浏览当前工作区": {
+    "en": "Browse current workspace",
+    "zh-CN": "浏览当前工作区"
+  },
+  "由 AI 生成 commit 标题和原因": {
+    "en": "Generate commit title and reason by AI",
+    "zh-CN": "由 AI 生成 commit 标题和原因"
+  },
+  "由 AI 生成 commit 标题和原因，然后提交当前全部变更": {
+    "en": "Generate commit title and reason by AI, then commit all current changes",
+    "zh-CN": "由 AI 生成 commit 标题和原因，然后提交当前全部变更"
+  },
+  "等待 Git 认证": {
+    "en": "Waiting for Git authentication",
+    "zh-CN": "等待 Git 认证"
+  },
+  "筛选 Changes": {
+    "en": "Filter Changes",
+    "zh-CN": "筛选 Changes"
+  },
+  "筛选分支…": {
+    "en": "Filter branches…",
+    "zh-CN": "筛选分支…"
+  },
+  "筛选文件…": {
+    "en": "Filter files…",
+    "zh-CN": "筛选文件…"
+  },
+  "简介暂未生成": {
+    "en": "Introduction not yet generated",
+    "zh-CN": "简介暂未生成"
+  },
+  "简短说明这次改动": {
+    "en": "Briefly describe this change",
+    "zh-CN": "简短说明这次改动"
+  },
+  "编辑文件": {
+    "en": "Edit file",
+    "zh-CN": "编辑文件"
+  },
+  "落后 upstream": {
+    "en": "Behind upstream",
+    "zh-CN": "落后 upstream"
+  },
+  "解除 Repo 注册": {
+    "en": "Unregister Repo",
+    "zh-CN": "解除 Repo 注册"
+  },
+  "解除 Repo 注册？": {
+    "en": "Unregister Repo?",
+    "zh-CN": "解除 Repo 注册？"
+  },
+  "让 AI 为所有有变更的 Repo 生成原因并提交": {
+    "en": "Have AI generate reasons and commit for all Repos with changes",
+    "zh-CN": "让 AI 为所有有变更的 Repo 生成原因并提交"
+  },
+  "该提交较大；页面保留完整文件统计，并只渲染后端安全上限内的文本 diff。": {
+    "en": "This commit is large; the page retains full file statistics and only renders text diffs within the backend safety limit.",
+    "zh-CN": "该提交较大；页面保留完整文件统计，并只渲染后端安全上限内的文本 diff。"
+  },
+  "请先从 Repo 列表中选择一个仓库。": {
+    "en": "Please first select a repository from the Repo list.",
+    "zh-CN": "请先从 Repo 列表中选择一个仓库。"
+  },
+  "请检查 Remote 权限": {
+    "en": "Please check Remote permissions",
+    "zh-CN": "请检查 Remote 权限"
+  },
+  "请输入仓库内的文件路径。": {
+    "en": "Please enter a file path within the repository.",
+    "zh-CN": "请输入仓库内的文件路径。"
+  },
+  "调整搜索或 Project 筛选，或者注册一个新的 checkout。": {
+    "en": "Adjust the search or Project filter, or register a new checkout.",
+    "zh-CN": "调整搜索或 Project 筛选，或者注册一个新的 checkout。"
+  },
+  "跳转到当前文件行号": {
+    "en": "Jump to current file line number",
+    "zh-CN": "跳转到当前文件行号"
+  },
+  "转到文件": {
+    "en": "Go to file",
+    "zh-CN": "转到文件"
+  },
+  "输入 Portal host 上的 Git checkout 根目录。系统会识别 Git 顶层目录、remote 和提交历史，并复用匹配的 Repo ID。": {
+    "en": "Enter the Git checkout root directory on the Portal host. The system will detect the Git top-level directory, remote, and commit history, and reuse a matching Repo ID.",
+    "zh-CN": "输入 Portal host 上的 Git checkout 根目录。系统会识别 Git 顶层目录、remote 和提交历史，并复用匹配的 Repo ID。"
+  },
+  "输入文件名或路径…": {
+    "en": "Enter file name or path…",
+    "zh-CN": "输入文件名或路径…"
+  },
+  "输入私钥口令或服务器密码": {
+    "en": "Enter the private key passphrase or server password",
+    "zh-CN": "输入私钥口令或服务器密码"
+  },
+  "输入访问令牌或密码": {
+    "en": "Enter access token or password",
+    "zh-CN": "输入访问令牌或密码"
+  },
+  "返回代码": {
+    "en": "Return code",
+    "zh-CN": "返回代码"
+  },
+  "返回提交列表": {
+    "en": "Back to commit list",
+    "zh-CN": "返回提交列表"
+  },
+  "还没有注册 Repo": {
+    "en": "No Repo registered yet",
+    "zh-CN": "还没有注册 Repo"
+  },
+  "这个 Repo 正在执行 AI Commit。": {
+    "en": "This Repo is currently performing an AI Commit.",
+    "zh-CN": "这个 Repo 正在执行 AI Commit。"
+  },
+  "这个目录是空的": {
+    "en": "This directory is empty",
+    "zh-CN": "这个目录是空的"
+  },
+  "这会恢复 staged 与 unstaged 文件，并永久删除未跟踪文件和目录。此操作不能撤销。": {
+    "en": "This will restore staged and unstaged files and permanently delete untracked files and directories. This operation cannot be undone.",
+    "zh-CN": "这会恢复 staged 与 unstaged 文件，并永久删除未跟踪文件和目录。此操作不能撤销。"
+  },
+  "连接 Git remote": {
+    "en": "Connect Git remote",
+    "zh-CN": "连接 Git remote"
+  },
+  "遵循 SSH config / 系统默认": {
+    "en": "Follow SSH config / system defaults",
+    "zh-CN": "遵循 SSH config / 系统默认"
+  },
+  "部分 Repo 简介暂未生成，可刷新页面重试。": {
+    "en": "Some Repo descriptions have not been generated yet. Refresh the page to retry.",
+    "zh-CN": "部分 Repo 简介暂未生成，可刷新页面重试。"
+  },
+  "部分内容未展开": {
+    "en": "Some content is not expanded",
+    "zh-CN": "部分内容未展开"
+  },
+  "隐藏 AI 提交进度": {
+    "en": "Hide AI submission progress",
+    "zh-CN": "隐藏 AI 提交进度"
+  },
+  "需升级": {
+    "en": "Needs upgrade",
+    "zh-CN": "需升级"
+  },
+  "领先 upstream": {
+    "en": "Ahead of upstream",
+    "zh-CN": "领先 upstream"
+  },
+  "验证并重试": {
+    "en": "Verify and retry",
+    "zh-CN": "验证并重试"
+  },
+  "默认使用 Fetch URL": {
+    "en": "Use Fetch URL by default",
+    "zh-CN": "默认使用 Fetch URL"
+  },
+  "默认分支": {
+    "en": "Default branch",
+    "zh-CN": "默认分支"
+  },
+  "代码": {
+    "en": "Code",
+    "zh-CN": "代码"
+  },
+  "未跟踪": {
+    "en": "Untracked",
+    "zh-CN": "未跟踪"
+  },
+  "检查中…": {
+    "en": "Checking…",
+    "zh-CN": "检查中…"
+  },
+  "读取 Git 状态": {
+    "en": "Reading Git status",
+    "zh-CN": "读取 Git 状态"
+  }
+}

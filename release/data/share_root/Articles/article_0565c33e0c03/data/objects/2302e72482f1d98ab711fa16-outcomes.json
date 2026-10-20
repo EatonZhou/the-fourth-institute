@@ -1,0 +1,912 @@
+[
+  {
+    "id": "genome_0ac80448a534dc953505--development--shear_x--material--128",
+    "source": "genome_0ac80448a534dc953505",
+    "geometry": "development",
+    "steps": 256,
+    "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/local_terminal_feedback_20261018/b63cdc7c-3f38-4a43-af6e-9c481c419fa9/genome_0ac80448a534dc953505--development--shear_x--material--128",
+    "old_reference": "/data/dataset/lenia-research/lineage_75e3399f4877/native_investment_action_20261018/ae909c85-6b64-4528-870c-66b8794c3c54/genome_0ac80448a534dc953505--development--shear_x--material--128",
+    "complete": true,
+    "final": {
+      "offset": 256,
+      "step": 384,
+      "active": 0,
+      "M": 927.4905678824896,
+      "E": 687.0015567178947,
+      "U": 2.0950251821068733,
+      "born": 2.4286350093194065,
+      "death": 2.4275787669137507,
+      "input_E": 205.07615354756138,
+      "input_M": 51.269038386890344,
+      "heat": 1242.4628820090525,
+      "waste": 2555.367591249376,
+      "dead_energy": 1489.0647889428897,
+      "registered_alive": 241.63557766816604,
+      "terminal_mass": 739.9423984566826,
+      "terminal_actor": 0.029461149313380473,
+      "terminal_rule": 0.4113996689356487,
+      "generated_contact": 0.41791226288074024,
+      "received_mass": 0.4338957130765163,
+      "received_contact": 0.41693880716886444,
+      "unreceived_no_receiver": 1.196579191369875e-06,
+      "unreceived_unpaid": 0.00696390859332146,
+      "message_mass_alive": 214.24470819668034,
+      "message_contact_alive": 115.19137745293853,
+      "message_lost_mass": 0.640052200103968,
+      "message_lost_contact": 0.45060148557287016,
+      "direct_contact_alive": 196.90517944256425,
+      "packet_sources": 970,
+      "successful_links": 1834,
+      "communication_requested": 0.062336,
+      "communication_paid": 0.0469504,
+      "unknown_terminal_mass": 0.0,
+      "actor_movement_requested": 0.4557386787747226,
+      "actor_movement_paid": 0.4557386787747226,
+      "actor_movement_unpaid": 0.0,
+      "actor_basal_requested": 0.5564937069840503,
+      "actor_basal_paid": 0.5549125034181752,
+      "actor_basal_unpaid": 0.001581203565875227,
+      "synthesis_heat": 0.4857270018638814,
+      "template_heat": 0.04857270018638814,
+      "birth_fuel": 1.020026703914151,
+      "newborn_energy": 0.4857270018638814,
+      "precursor_spent": 2.4286350093194065,
+      "actor_mass_starvation": 0.041855487813759785,
+      "actor_mass_injury": 0.0,
+      "rule_death": 2.385723279099991,
+      "rule_death_energy": 1.8898858992107976
+    },
+    "initial_registration": 981.5779761248489,
+    "generated_total": [
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        739.9423984566826,
+        299.7992403984996,
+        65.75926650653867,
+        25.73281374898595,
+        0.0,
+        -22.833766624643207,
+        2146.283089617339
+      ]
+    ],
+    "delivered_total": [
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        738.9823892470265,
+        299.6471323143042,
+        65.59578628089571,
+        25.669926268065243,
+        0.0,
+        -21.353656303707645,
+        2140.1710272621963
+      ]
+    ],
+    "undelivered_total": [
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.9600092096566415,
+        0.15210808419587796,
+        0.16348022564294076,
+        0.06288748092070945,
+        0.0,
+        -1.4801103209355586,
+        6.112062355142732
+      ]
+    ],
+    "lost_after_delivery": [
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        524.7376810503456,
+        184.45575486136542,
+        38.94602723914872,
+        14.23860705475141,
+        0.0,
+        -30.234951421883707,
+        1186.6212886090173
+      ]
+    ],
+    "errors": {
+      "material_error": 9.094947017729282e-13,
+      "energy_error": 9.094947017729282e-13,
+      "reconstruction_error": 5.551115123125783e-17,
+      "K_column_error": 0.0,
+      "transport_error": 2.2737367544323206e-13,
+      "communication_energy_error": 8.68749516769185e-15,
+      "terminal_balance_error": 3.552713678800501e-15,
+      "initial_registration_error": 3.410605131648481e-13,
+      "stored_message_error": 6.821210263296962e-13
+    },
+    "readability": {
+      "real_paid_message_available_next_decision": true,
+      "available_mass": 249.142587326721,
+      "available_contact": 109.57095240554663,
+      "restore_read_once": true,
+      "extra_physical_steps": 0
+    }
+  },
+  {
+    "id": "genome_0ac80448a534dc953505--heldout_rotated--shear_x--material--128",
+    "source": "genome_0ac80448a534dc953505",
+    "geometry": "heldout_rotated",
+    "steps": 256,
+    "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/local_terminal_feedback_20261018/b63cdc7c-3f38-4a43-af6e-9c481c419fa9/genome_0ac80448a534dc953505--heldout_rotated--shear_x--material--128",
+    "old_reference": "/data/dataset/lenia-research/lineage_75e3399f4877/native_investment_action_20261018/ae909c85-6b64-4528-870c-66b8794c3c54/genome_0ac80448a534dc953505--heldout_rotated--shear_x--material--128",
+    "complete": true,
+    "final": {
+      "offset": 256,
+      "step": 384,
+      "active": 0,
+      "M": 940.7202765030825,
+      "E": 705.2217576231419,
+      "U": 2.2346860601223852,
+      "born": 1.9266530340844688,
+      "death": 2.2508333119291377,
+      "input_E": 205.07615354756138,
+      "input_M": 51.269038386890344,
+      "heat": 1244.947244853815,
+      "waste": 2557.6341071238257,
+      "dead_energy": 1486.0980848583101,
+      "registered_alive": 238.97262386444103,
+      "terminal_mass": 742.605352260408,
+      "terminal_actor": 0.024314427905637044,
+      "terminal_rule": 0.3488399657004815,
+      "generated_contact": 0.3439731041481372,
+      "received_mass": 0.36097548038434724,
+      "received_contact": 0.34207668372970296,
+      "unreceived_no_receiver": 0.0,
+      "unreceived_unpaid": 0.012178913221771314,
+      "message_mass_alive": 207.8356368658927,
+      "message_contact_alive": 111.87135566504946,
+      "message_lost_mass": 0.5557454458647642,
+      "message_lost_contact": 0.3975945547601877,
+      "direct_contact_alive": 197.29917785410902,
+      "packet_sources": 1035,
+      "successful_links": 1940,
+      "communication_requested": 0.0645376,
+      "communication_paid": 0.049664,
+      "unknown_terminal_mass": 0.0,
+      "actor_movement_requested": 0.4301371080454226,
+      "actor_movement_paid": 0.4301371080454226,
+      "actor_movement_unpaid": 0.0,
+      "actor_basal_requested": 0.5646266740685564,
+      "actor_basal_paid": 0.5634039223107059,
+      "actor_basal_unpaid": 0.0012227517578505534,
+      "synthesis_heat": 0.3853306068168938,
+      "template_heat": 0.03853306068168937,
+      "birth_fuel": 0.809194274315477,
+      "newborn_energy": 0.3853306068168938,
+      "precursor_spent": 1.9266530340844688,
+      "actor_mass_starvation": 0.03600236393388684,
+      "actor_mass_injury": 0.0,
+      "rule_death": 2.2148309479952504,
+      "rule_death_energy": 1.7111952158722985
+    },
+    "initial_registration": 981.5779761248489,
+    "generated_total": [
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        742.605352260408,
+        298.0610759365563,
+        66.1193799666634,
+        25.466237773014722,
+        0.0,
+        -52.76568318626362,
+        2124.119055028382
+      ]
+    ],
+    "delivered_total": [
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        741.6423348604934,
+        297.9500210293678,
+        65.9526753055808,
+        25.40505696230759,
+        0.0,
+        -50.329029695187984,
+        2117.853451786022
+      ]
+    ],
+    "undelivered_total": [
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.9630173999144364,
+        0.11105490718838279,
+        0.16670466108261356,
+        0.06118081070712408,
+        0.0,
+        -2.436653491075607,
+        6.265603242358953
+      ]
+    ],
+    "lost_after_delivery": [
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        533.8066979946007,
+        186.07866536431828,
+        39.892325318931874,
+        14.348521950493481,
+        0.0,
+        -48.36851718932308,
+        1195.895994102717
+      ]
+    ],
+    "errors": {
+      "material_error": 9.094947017729282e-13,
+      "energy_error": 9.094947017729282e-13,
+      "reconstruction_error": 5.551115123125783e-17,
+      "K_column_error": 0.0,
+      "transport_error": 2.2737367544323206e-13,
+      "communication_energy_error": 9.2148511043888e-15,
+      "terminal_balance_error": 5.329070518200751e-15,
+      "initial_registration_error": 4.547473508864641e-13,
+      "stored_message_error": 1.3642420526593924e-12
+    },
+    "readability": {
+      "real_paid_message_available_next_decision": true,
+      "available_mass": 244.89063384800997,
+      "available_contact": 107.08251071737311,
+      "restore_read_once": true,
+      "extra_physical_steps": 0
+    }
+  },
+  {
+    "id": "genome_6bd5bfd2f629f9414376--development--shear_x--material--128",
+    "source": "genome_6bd5bfd2f629f9414376",
+    "geometry": "development",
+    "steps": 256,
+    "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/local_terminal_feedback_20261018/b63cdc7c-3f38-4a43-af6e-9c481c419fa9/genome_6bd5bfd2f629f9414376--development--shear_x--material--128",
+    "old_reference": "/data/dataset/lenia-research/lineage_75e3399f4877/native_investment_action_20261018/ae909c85-6b64-4528-870c-66b8794c3c54/genome_6bd5bfd2f629f9414376--development--shear_x--material--128",
+    "complete": true,
+    "final": {
+      "offset": 256,
+      "step": 384,
+      "active": 0,
+      "M": 971.3153255331538,
+      "E": 807.8364639117251,
+      "U": 5.182142561356114,
+      "born": 4.156276970852094,
+      "death": 3.8098023401675647,
+      "input_E": 205.07615354756138,
+      "input_M": 51.269038386890344,
+      "heat": 902.2326255510412,
+      "waste": 1635.4828002251913,
+      "dead_energy": 1206.8964996989573,
+      "registered_alive": 34.29911669004896,
+      "terminal_mass": 450.19610297826165,
+      "terminal_actor": 1.2860252949369196e-05,
+      "terminal_rule": 0.20631220391752517,
+      "generated_contact": 0.2090613213869054,
+      "received_mass": 0.2063132992663464,
+      "received_contact": 0.2090531916773542,
+      "unreceived_no_receiver": 0.0,
+      "unreceived_unpaid": 1.176490412816315e-05,
+      "message_mass_alive": 44.10411073684733,
+      "message_contact_alive": 34.6110213882912,
+      "message_lost_mass": 0.31393611809097677,
+      "message_lost_contact": 0.24221775734356038,
+      "direct_contact_alive": 41.36279249773057,
+      "packet_sources": 537,
+      "successful_links": 1749,
+      "communication_requested": 0.0455936,
+      "communication_paid": 0.044774400000000006,
+      "unknown_terminal_mass": 0.0,
+      "actor_movement_requested": 0.6244572762720719,
+      "actor_movement_paid": 0.6244572762720719,
+      "actor_movement_unpaid": 0.0,
+      "actor_basal_requested": 0.5825813105414817,
+      "actor_basal_paid": 0.5825717429058497,
+      "actor_basal_unpaid": 9.567635632010117e-06,
+      "synthesis_heat": 0.8312553941704187,
+      "template_heat": 0.08312553941704187,
+      "birth_fuel": 1.7456363277578795,
+      "newborn_energy": 0.8312553941704187,
+      "precursor_spent": 4.156276970852094,
+      "actor_mass_starvation": 0.00025996610725960304,
+      "actor_mass_injury": 0.0,
+      "rule_death": 3.8095423740603063,
+      "rule_death_energy": 3.760203506384784
+    },
+    "initial_registration": 484.49521966831077,
+    "generated_total": [
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        450.19610297826165,
+        213.65516517623996,
+        52.36522647593038,
+        22.525426341338775,
+        0.0,
+        94.07631458183884,
+        1877.1197475543188
+      ]
+    ],
+    "delivered_total": [
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        450.01945119566346,
+        213.5727937789845,
+        52.33833641102215,
+        22.51368661555156,
+        0.0,
+        93.94117515542885,
+        1876.1414356742318
+      ]
+    ],
+    "undelivered_total": [
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.1766517825982061,
+        0.082371397255523,
+        0.026890064908272088,
+        0.011739725787223347,
+        0.0,
+        0.1351394264100138,
+        0.978311880089019
+      ]
+    ],
+    "lost_after_delivery": [
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        405.91534045881616,
+        178.96177239069317,
+        44.30676696148673,
+        18.77377930536654,
+        0.0,
+        40.01141845985368,
+        1564.4823905395863
+      ]
+    ],
+    "errors": {
+      "material_error": 9.094947017729282e-13,
+      "energy_error": 1.8189894035458565e-12,
+      "reconstruction_error": 5.551115123125783e-17,
+      "K_column_error": 0.0,
+      "transport_error": 2.2737367544323206e-13,
+      "communication_energy_error": 8.507083926190262e-15,
+      "terminal_balance_error": 3.552713678800501e-15,
+      "initial_registration_error": 1.7053025658242404e-13,
+      "stored_message_error": 1.1368683772161603e-12
+    },
+    "readability": {
+      "real_paid_message_available_next_decision": true,
+      "available_mass": 72.16990412082515,
+      "available_contact": 38.48160872489159,
+      "restore_read_once": true,
+      "extra_physical_steps": 0
+    }
+  },
+  {
+    "id": "genome_6bd5bfd2f629f9414376--heldout_rotated--shear_x--material--128",
+    "source": "genome_6bd5bfd2f629f9414376",
+    "geometry": "heldout_rotated",
+    "steps": 1,
+    "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/local_terminal_feedback_20261018/b63cdc7c-3f38-4a43-af6e-9c481c419fa9/genome_6bd5bfd2f629f9414376--heldout_rotated--shear_x--material--128",
+    "old_reference": "/data/dataset/lenia-research/lineage_75e3399f4877/native_investment_action_20261018/ae909c85-6b64-4528-870c-66b8794c3c54/genome_6bd5bfd2f629f9414376--heldout_rotated--shear_x--material--128",
+    "complete": false,
+    "final": {
+      "offset": 1,
+      "step": 129,
+      "active": 1,
+      "M": 487.7446866621357,
+      "E": 250.0483037323223,
+      "U": 4.216186971805931,
+      "born": 6.770595881016961,
+      "death": 3.5211288871921207,
+      "input_E": 0.8010787247951636,
+      "input_M": 0.2002696811987909,
+      "heat": 204.42593173718845,
+      "waste": 342.31990608149204,
+      "dead_energy": 228.88925594670147,
+      "registered_alive": 480.97409078111866,
+      "terminal_mass": 3.52112888719212,
+      "terminal_actor": 0.0,
+      "terminal_rule": 3.52112888719212,
+      "generated_contact": 0.03471960656112959,
+      "received_mass": 3.5211123738576324,
+      "received_contact": 0.03471944142778471,
+      "unreceived_no_receiver": 1.5554609065970212e-05,
+      "unreceived_unpaid": 9.587254218407052e-07,
+      "message_mass_alive": 3.5211123738576324,
+      "message_contact_alive": 0.03471944142778471,
+      "message_lost_mass": 0.0,
+      "message_lost_contact": 0.0,
+      "direct_contact_alive": 4.181467365244801,
+      "packet_sources": 553,
+      "successful_links": 1810,
+      "communication_requested": 0.0464128,
+      "communication_paid": 0.046336,
+      "unknown_terminal_mass": 0.0,
+      "actor_movement_requested": 0.8364969635906574,
+      "actor_movement_paid": 0.8364969635906574,
+      "actor_movement_unpaid": 0.0,
+      "actor_basal_requested": 0.29069713180098655,
+      "actor_basal_paid": 0.29069713180098644,
+      "actor_basal_unpaid": 2.3299861366993623e-17,
+      "synthesis_heat": 1.3541191762033922,
+      "template_heat": 0.13541191762033922,
+      "birth_fuel": 2.8436502700271236,
+      "newborn_energy": 1.3541191762033922,
+      "precursor_spent": 6.770595881016961,
+      "actor_mass_starvation": 0.0,
+      "actor_mass_injury": 0.0,
+      "rule_death": 3.5211288871921202,
+      "rule_death_energy": 2.1489110566206002
+    },
+    "initial_registration": 484.49521966831077,
+    "generated_total": [
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        3.52112888719212,
+        0.03471960656112959,
+        0.0062644840912011255,
+        0.0021126773323152724,
+        0.0,
+        -0.027942007053053705,
+        0.17605644435960602
+      ]
+    ],
+    "delivered_total": [
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        3.5211123738576324,
+        0.03471944142778471,
+        0.00626445969183613,
+        0.0021126674243145795,
+        0.0,
+        -0.027941591233306626,
+        0.1760556186928816
+      ]
+    ],
+    "undelivered_total": [
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        1.6513334487810916e-05,
+        1.6513334487810921e-07,
+        2.4399364995869844e-08,
+        9.90800069268655e-09,
+        0.0,
+        -4.1581974709561785e-07,
+        8.256667243905459e-07
+      ]
+    ],
+    "lost_after_delivery": [
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    ],
+    "errors": {
+      "material_error": 0.0,
+      "energy_error": 0.0,
+      "reconstruction_error": 5.2909066017292616e-17,
+      "K_column_error": 0.0,
+      "transport_error": 5.684341886080802e-14,
+      "communication_energy_error": 3.011479954295737e-15,
+      "terminal_balance_error": 4.440892098500626e-16,
+      "initial_registration_error": 0.0,
+      "stored_message_error": 0.0
+    },
+    "readability": {}
+  }
+]

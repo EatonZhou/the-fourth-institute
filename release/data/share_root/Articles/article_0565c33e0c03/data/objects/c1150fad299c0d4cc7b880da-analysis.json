@@ -1,0 +1,60 @@
+{
+  "groups": [
+    {
+      "arm": "adaptive_gain",
+      "treatment": "negate_content",
+      "n": 4,
+      "factual_correct": 2,
+      "intervened_correct": 0,
+      "commands_changed": 2,
+      "nonzero_interventions": 4
+    },
+    {
+      "arm": "adaptive_gain",
+      "treatment": "reset_gain",
+      "n": 4,
+      "factual_correct": 2,
+      "intervened_correct": 2,
+      "commands_changed": 0,
+      "nonzero_interventions": 4
+    },
+    {
+      "arm": "adaptive_gain",
+      "treatment": "sham",
+      "n": 1,
+      "factual_correct": 1,
+      "intervened_correct": 1,
+      "commands_changed": 0,
+      "nonzero_interventions": 0
+    },
+    {
+      "arm": "fixed_event",
+      "treatment": "negate_content",
+      "n": 4,
+      "factual_correct": 2,
+      "intervened_correct": 1,
+      "commands_changed": 3,
+      "nonzero_interventions": 4
+    },
+    {
+      "arm": "local_delay",
+      "treatment": "negate_content",
+      "n": 4,
+      "factual_correct": 3,
+      "intervened_correct": 0,
+      "commands_changed": 3,
+      "nonzero_interventions": 4
+    },
+    {
+      "arm": "history_table",
+      "treatment": "negate_content",
+      "n": 4,
+      "factual_correct": 4,
+      "intervened_correct": 0,
+      "commands_changed": 4,
+      "nonzero_interventions": 4
+    }
+  ],
+  "sham_full_state_max_abs": 0.0,
+  "independence": "Same-parent interventions, not independent life histories. Predetermined parents retained regardless of success."
+}

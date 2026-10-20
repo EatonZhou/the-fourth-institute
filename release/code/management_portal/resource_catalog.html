@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title data-portal-site-title="[&quot;Resource&quot;]">Resource</title>
+    <link rel="stylesheet" href="/static/portal_components.css" />
+    <link rel="stylesheet" href="/static/portal_collection_board.css" />
+    <link rel="stylesheet" href="/static/portal_workbench.css" />
+    <link rel="stylesheet" href="/static/resource_tabs.css" />
+    <link rel="stylesheet" href="/static/resource_catalog.css" />
+    <link rel="stylesheet" href="/static/vendor/xterm/xterm.css" />
+    <link rel="stylesheet" href="/static/portal_design_system.css" data-portal-skin="default" />
+    <link rel="stylesheet" href="/static/portal_themes.css" data-portal-skin-provider="themes" />
+    <link rel="stylesheet" href="/static/portal_board_toolbar.css" />
+    <script src="/static/portal_state.js"></script>
+    <script src="/static/portal_text.js"></script>
+    <script src="/static/portal_translations.js"></script>
+    <script src="/static/portal_i18n.js"></script>
+    <script src="/static/portal_theme.js"></script>
+    <script src="/static/portal_api.js"></script>
+    <script src="/static/portal_instruction_client.js"></script>
+    <script src="/static/portal_resident_service.js"></script>
+    <script src="/static/portal_resource_registration_service.js"></script>
+    <script src="/static/portal_passkeys.js"></script>
+    <script src="/static/portal_identity.js"></script>
+    <script src="/static/portal_overlay.js"></script>
+    <script src="/static/portal_events.js"></script>
+    <script src="/static/portal_refresh_coordinator.js"></script>
+    <script src="/static/resident_protocol.js"></script>
+    <script src="/static/portal_conversation_store.js"></script>
+    <script src="/static/portal_ui_primitives.js"></script>
+    <script src="/static/portal_nav.js"></script>
+    <script src="/static/portal_ui.js"></script>
+    <script src="/static/portal_form_controls.js"></script>
+    <script src="/static/portal_button_tooltips.js"></script>
+    <script src="/static/portal_toolbar.js"></script>
+    <script src="/static/portal_board_toolbar.js"></script>
+    <script src="/static/portal_detail_surface.js"></script>
+    <script src="/static/portal_editor_open_service.js"></script>
+    <script src="/static/portal_command_registry.js"></script>
+    <script src="/static/portal_workbench_context.js"></script>
+    <script src="/static/portal_workbench.js"></script>
+    <script src="/static/portal_document_statistics.js"></script>
+    <script src="/static/portal_workspace_surface.js"></script>
+    <script src="/static/portal_detail_workbench.js"></script>
+    <script src="/static/portal_component_recovery.js"></script>
+    <script src="/static/portal_resource_header.js"></script>
+    <script src="/static/portal_resource_routes.js"></script>
+    <script src="/static/portal_resource_detail.js"></script>
+    <script src="/static/portal_semantic_search.js"></script>
+    <script src="/static/portal_command_palette.js"></script>
+    <script src="/static/resource_tabs.js"></script>
+    <script src="/static/portal_terminal.js"></script>
+    <script src="/static/resource_catalog.js" defer></script>
+  </head>
+  <body class="portalBoardShell">
+    <header class="resourceSectionPageHeader">
+      <div class="portalSiteHeader" data-portal-site-header data-portal-nav-active="resource"></div>
+      <div class="resourceSectionFrame portalPageHeaderFrame">
+        <div class="portalBoardHeader" data-resource-section-header>
+          <div data-resource-tabs></div>
+          <div data-portal-board-toolbar aria-label="Resource filters" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Resource filters&quot;}">
+            <div data-portal-board-search>
+              <label for="resourceQuery"><!--portal-i18n:"搜索"-->搜索</label>
+              <input data-portal-board-search-input id="resourceQuery" type="search" autocomplete="off" placeholder="标题 / 预览 / ID"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;标题 / 预览 / ID&quot;}"/>
+              <button data-portal-board-semantic id="resourceSemanticButton" type="button" aria-label="根据输入内容发起语义检索" title="根据输入内容发起语义检索" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;根据输入内容发起语义检索&quot;, &quot;title&quot;: &quot;根据输入内容发起语义检索&quot;}">
+                <span data-semantic-label><!--portal-i18n:"语义检索"-->语义检索</span>
+              </button>
+            </div>
+            <div data-portal-board-actions>
+              <div data-portal-board-filter data-portal-toolbar-item data-portal-toolbar-priority="normal">
+                <button
+                  data-portal-board-action="filter"
+                  id="resourceFilterToggle"
+                  type="button"
+                  aria-expanded="false"
+                  aria-controls="resourceFilterPanel"
+                ><span><!--portal-i18n:"筛选"-->筛选</span></button>
+                <div class="portalCollectionFilterPanel" id="resourceFilterPanel" hidden>
+                  <div class="portalCollectionFilterLabel"><!--portal-i18n:"Projects"-->Projects</div>
+                  <div class="portalCollectionFilterOptions" id="resourceProjectOptions"></div>
+                </div>
+              </div>
+              <button data-portal-board-action="refresh" data-portal-toolbar-item data-portal-toolbar-priority="low" id="resourceReload" type="button" aria-label="刷新 Resource" title="刷新" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;刷新 Resource&quot;, &quot;title&quot;: &quot;刷新&quot;}"></button>
+              <button class="portalButton is-compact is-primary" data-portal-toolbar-item data-portal-toolbar-priority="critical" id="deviceRegisterOpen" type="button" hidden><!--portal-i18n:"注册新设备"-->注册新设备</button>
+            </div>
+            <span data-portal-board-meta id="resourceCount" aria-live="polite"><!--portal-i18n:"正在加载…"-->正在加载…</span>
+          </div>
+          <div data-portal-board-slot="filter-summary" class="portalCollectionFilterSummary" id="resourceFilterSummary"></div>
+          <div data-portal-board-slot="semantic" class="portalSemanticPanel resourceSemanticPanel" id="resourceSemanticPanel" aria-label="语义检索任务" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;语义检索任务&quot;}"></div>
+        </div>
+      </div>
+    </header>
+
+    <main class="resourcePage portalPageFrame">
+      <div class="portalSemanticIdentity" id="resourceSemanticIdentity" hidden></div>
+      <div id="resourceResults" aria-live="polite">
+        <div class="portalAsyncState" data-state="loading" data-density="panel" role="status">
+          <span class="portalAsyncStateIcon" aria-hidden="true"></span>
+          <span class="portalAsyncStateMessage"><!--portal-i18n:"正在加载资源…"-->正在加载资源…</span>
+        </div>
+      </div>
+    </main>
+
+    <div class="portalDetailOverlay" data-portal-detail-overlay id="resourceDetail" aria-hidden="true" hidden>
+      <section
+        class="portalDetailSurface"
+        data-portal-detail-surface
+        data-portal-detail-size="workbench"
+        id="resourceDetailPanel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="resourceDetailTitle"
+        tabindex="-1"
+      >
+        <header class="portalDetailHeader" data-portal-detail-header>
+          <div id="resourceDetailIdentity">
+            <div class="portalResourceIdentity">
+              <div class="portalResourceIdentityTitleRow">
+                <h2 class="portalResourceIdentityTitle" id="resourceDetailTitle"><!--portal-i18n:"Resource detail"-->Resource detail</h2>
+                <span class="portalResourceIdentitySeparator" aria-hidden="true">|</span>
+                <span class="portalResourceIdentityType" id="resourceDetailType"><!--portal-i18n:"Resource"-->Resource</span>
+              </div>
+            </div>
+          </div>
+          <div class="portalDetailWorkbenchToolbar" id="resourceDetailWorkbenchToolbar"></div>
+          <button class="portalDetailClose" data-portal-detail-close id="resourceDetailClose" type="button" aria-label="Close resource detail" data-portal-icon="close" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Close resource detail&quot;}"></button>
+        </header>
+        <div class="portalDetailBody" data-portal-detail-body id="resourceDetailBody"></div>
+      </section>
+    </div>
+
+    <div class="portalDetailOverlay" data-portal-detail-overlay data-portal-overlay-layer="dialog" id="deviceRegisterModal" aria-hidden="true" hidden>
+      <form
+        class="portalDetailSurface portalRegistrySurface deviceRegistryCard"
+        data-portal-detail-surface
+        id="deviceRegisterForm"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="deviceRegisterTitle"
+      >
+        <header class="portalDetailHeader">
+          <div>
+            <div class="portalRegistryEyebrow"><!--portal-i18n:"设备注册"-->设备注册</div>
+            <h2 id="deviceRegisterTitle"><!--portal-i18n:"注册新设备"-->注册新设备</h2>
+          </div>
+          <button class="portalDetailClose" data-portal-detail-close id="deviceRegisterClose" type="button" aria-label="关闭设备注册" data-portal-icon="close" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;关闭设备注册&quot;}"></button>
+        </header>
+        <div class="portalDetailBody portalRegistryBody">
+          <p><!--portal-i18n:"登记设备身份和 SSH 连接。密码会单独保存在 Portal host 的 Secret Store，不会进入设备注册文件或资源索引。"-->登记设备身份和 SSH 连接。密码会单独保存在 Portal host 的 Secret Store，不会进入设备注册文件或资源索引。</p>
+          <div class="deviceRegistryGrid">
+            <label class="portalField">
+              <span><!--portal-i18n:"设备名称"-->设备名称</span>
+              <input id="deviceRegisterName" name="name" required placeholder="例如：实验室工作站 01" autocomplete="off"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;例如：实验室工作站 01&quot;}"/>
+            </label>
+            <label class="portalField">
+              <span><!--portal-i18n:"设备类型"-->设备类型</span>
+              <select name="device_kind">
+                <option value="device"><!--portal-i18n:"通用设备"-->通用设备</option>
+                <option value="workstation"><!--portal-i18n:"工作站"-->工作站</option>
+                <option value="robot"><!--portal-i18n:"机器人"-->机器人</option>
+                <option value="storage"><!--portal-i18n:"存储设备"-->存储设备</option>
+                <option value="network"><!--portal-i18n:"网络设备"-->网络设备</option>
+                <option value="sensor"><!--portal-i18n:"传感器"-->传感器</option>
+              </select>
+            </label>
+            <label class="portalField">
+              <span><!--portal-i18n:"主机名"-->主机名</span>
+              <input name="hostname" placeholder="lab-host-01" autocomplete="off"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;lab-host-01&quot;}"/>
+            </label>
+            <label class="portalField">
+              <span><!--portal-i18n:"型号"-->型号</span>
+              <input name="model" placeholder="设备型号" autocomplete="off"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;设备型号&quot;}"/>
+            </label>
+            <label class="portalField">
+              <span><!--portal-i18n:"IP 地址"-->IP 地址</span>
+              <input name="primary_ip" placeholder="192.0.2.10" autocomplete="off" />
+            </label>
+            <label class="portalField">
+              <span><!--portal-i18n:"位置"-->位置</span>
+              <input name="location" placeholder="实验室 / 机柜 / 工位" autocomplete="off"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;实验室 / 机柜 / 工位&quot;}"/>
+            </label>
+          </div>
+          <label class="portalField">
+            <span><!--portal-i18n:"描述（可选）"-->描述（可选）</span>
+            <textarea name="description" rows="2" placeholder="设备用途或备注"></textarea>
+          </label>
+          <fieldset class="deviceRegistrySsh">
+            <legend><!--portal-i18n:"SSH 连接"-->SSH 连接</legend>
+            <div class="deviceRegistryGrid">
+              <label class="portalField">
+                <span><!--portal-i18n:"SSH Host / 别名"-->SSH Host / 别名</span>
+                <input name="ssh_host" placeholder="lab-host-01" autocomplete="off"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;lab-host-01&quot;}"/>
+              </label>
+              <label class="portalField">
+                <span><!--portal-i18n:"SSH 用户"-->SSH 用户</span>
+                <input name="ssh_user" placeholder="user" autocomplete="off"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;user&quot;}"/>
+              </label>
+              <label class="portalField">
+                <span><!--portal-i18n:"SSH 端口"-->SSH 端口</span>
+                <input name="ssh_port" type="number" min="1" max="65535" placeholder="22" />
+              </label>
+              <label class="portalField">
+                <span><!--portal-i18n:"SSH config 路径"-->SSH config 路径</span>
+                <input name="ssh_config" placeholder="/home/user/.ssh/config" autocomplete="off"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;/home/user/.ssh/config&quot;}"/>
+              </label>
+              <label class="portalField">
+                <span><!--portal-i18n:"SSH 密码（可选）"-->SSH 密码（可选）</span>
+                <input name="ssh_password" type="password" placeholder="保存在 Portal host 本地 secret 文件" autocomplete="new-password"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;保存在 Portal host 本地 secret 文件&quot;}"/>
+              </label>
+            </div>
+            <label class="portalField">
+              <span><!--portal-i18n:"密钥文件路径（可选）"-->密钥文件路径（可选）</span>
+              <input name="identity_file" placeholder="/home/user/.ssh/id_ed25519" autocomplete="off"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;/home/user/.ssh/id_ed25519&quot;}"/>
+            </label>
+          </fieldset>
+        </div>
+        <footer class="portalDetailFooter">
+          <button class="portalButton" id="deviceRegisterCancel" type="button"><!--portal-i18n:"取消"-->取消</button>
+          <button class="portalButton is-primary" type="submit"><!--portal-i18n:"注册设备"-->注册设备</button>
+        </footer>
+      </form>
+    </div>
+
+    <div class="portalDetailOverlay deviceTerminalOverlay" data-portal-detail-overlay data-portal-overlay-layer="dialog" id="deviceTerminalOverlay" aria-hidden="true" hidden>
+      <section class="portalDetailSurface deviceTerminalDialog" data-portal-detail-surface data-portal-detail-size="workbench" role="dialog" aria-modal="true" aria-labelledby="deviceTerminalTitle">
+        <header class="portalDetailHeader">
+          <div>
+            <span><!--portal-i18n:"SSH TERMINAL"-->SSH TERMINAL</span>
+            <h2 id="deviceTerminalTitle"><!--portal-i18n:"设备 Terminal"-->设备 Terminal</h2>
+          </div>
+          <div class="deviceTerminalHeaderActions">
+            <button class="portalButton" id="deviceTerminalInterrupt" type="button"><!--portal-i18n:"Ctrl-C"-->Ctrl-C</button>
+            <button class="portalButton" id="deviceTerminalRestart" type="button"><!--portal-i18n:"重新连接"-->重新连接</button>
+            <button class="portalButton" id="deviceTerminalClose" type="button"><!--portal-i18n:"关闭"-->关闭</button>
+          </div>
+        </header>
+        <div class="portalDetailBody deviceTerminalMount" id="deviceTerminalMount"></div>
+      </section>
+    </div>
+
+    <div class="portalDetailOverlay portalDetailFrameOverlay" data-portal-detail-overlay id="resourceFrameDetail" aria-hidden="true" hidden>
+      <div class="portalDetailFrameHost" data-portal-detail-frame-host>
+        <iframe
+          class="portalDetailFrame"
+          id="resourceFrameDetailFrame"
+          title="Resource detail"
+         data-portal-i18n-attrs="{&quot;title&quot;: &quot;Resource detail&quot;}"></iframe>
+        <div class="portalDetailFrameLoading" id="resourceFrameDetailLoading" role="status"><!--portal-i18n:"正在打开 Resource…"-->正在打开 Resource…</div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,178 @@
+[
+  {
+    "key": "compact_p512/plus/width1.6/effort0.5",
+    "eligible": 16,
+    "writes": 16,
+    "actual_A_changes": 16,
+    "changed_commands": 16,
+    "finite_response": true,
+    "max_command_scaling_error": 0.0,
+    "zero_commands": 0,
+    "passed": true
+  },
+  {
+    "key": "compact_p512/plus/width1.6/effort1",
+    "eligible": 16,
+    "writes": 16,
+    "actual_A_changes": 16,
+    "changed_commands": 0,
+    "finite_response": true,
+    "max_command_scaling_error": 0.0,
+    "zero_commands": 0,
+    "passed": true
+  },
+  {
+    "key": "compact_p512/plus/width4/effort0.5",
+    "eligible": 16,
+    "writes": 16,
+    "actual_A_changes": 16,
+    "changed_commands": 16,
+    "finite_response": true,
+    "max_command_scaling_error": 0.0,
+    "zero_commands": 0,
+    "passed": true
+  },
+  {
+    "key": "compact_p512/plus/width4/effort1",
+    "eligible": 16,
+    "writes": 16,
+    "actual_A_changes": 16,
+    "changed_commands": 0,
+    "finite_response": true,
+    "max_command_scaling_error": 0.0,
+    "zero_commands": 0,
+    "passed": true
+  },
+  {
+    "key": "compact_p512/minus/width1.6/effort0.5",
+    "eligible": 16,
+    "writes": 16,
+    "actual_A_changes": 16,
+    "changed_commands": 16,
+    "finite_response": true,
+    "max_command_scaling_error": 0.0,
+    "zero_commands": 0,
+    "passed": true
+  },
+  {
+    "key": "compact_p512/minus/width1.6/effort1",
+    "eligible": 16,
+    "writes": 16,
+    "actual_A_changes": 16,
+    "changed_commands": 0,
+    "finite_response": true,
+    "max_command_scaling_error": 0.0,
+    "zero_commands": 0,
+    "passed": true
+  },
+  {
+    "key": "compact_p512/minus/width4/effort0.5",
+    "eligible": 16,
+    "writes": 16,
+    "actual_A_changes": 16,
+    "changed_commands": 16,
+    "finite_response": true,
+    "max_command_scaling_error": 0.0,
+    "zero_commands": 0,
+    "passed": true
+  },
+  {
+    "key": "compact_p512/minus/width4/effort1",
+    "eligible": 16,
+    "writes": 16,
+    "actual_A_changes": 16,
+    "changed_commands": 0,
+    "finite_response": true,
+    "max_command_scaling_error": 0.0,
+    "zero_commands": 0,
+    "passed": true
+  },
+  {
+    "key": "soft_p512/plus/width1.6/effort0.5",
+    "eligible": 16,
+    "writes": 16,
+    "actual_A_changes": 16,
+    "changed_commands": 16,
+    "finite_response": true,
+    "max_command_scaling_error": 0.0,
+    "zero_commands": 0,
+    "passed": true
+  },
+  {
+    "key": "soft_p512/plus/width1.6/effort1",
+    "eligible": 16,
+    "writes": 16,
+    "actual_A_changes": 16,
+    "changed_commands": 0,
+    "finite_response": true,
+    "max_command_scaling_error": 0.0,
+    "zero_commands": 0,
+    "passed": true
+  },
+  {
+    "key": "soft_p512/plus/width4/effort0.5",
+    "eligible": 16,
+    "writes": 16,
+    "actual_A_changes": 16,
+    "changed_commands": 16,
+    "finite_response": true,
+    "max_command_scaling_error": 0.0,
+    "zero_commands": 0,
+    "passed": true
+  },
+  {
+    "key": "soft_p512/plus/width4/effort1",
+    "eligible": 16,
+    "writes": 16,
+    "actual_A_changes": 16,
+    "changed_commands": 0,
+    "finite_response": true,
+    "max_command_scaling_error": 0.0,
+    "zero_commands": 0,
+    "passed": true
+  },
+  {
+    "key": "soft_p512/minus/width1.6/effort0.5",
+    "eligible": 16,
+    "writes": 16,
+    "actual_A_changes": 16,
+    "changed_commands": 16,
+    "finite_response": true,
+    "max_command_scaling_error": 0.0,
+    "zero_commands": 0,
+    "passed": true
+  },
+  {
+    "key": "soft_p512/minus/width1.6/effort1",
+    "eligible": 16,
+    "writes": 16,
+    "actual_A_changes": 16,
+    "changed_commands": 0,
+    "finite_response": true,
+    "max_command_scaling_error": 0.0,
+    "zero_commands": 0,
+    "passed": true
+  },
+  {
+    "key": "soft_p512/minus/width4/effort0.5",
+    "eligible": 16,
+    "writes": 16,
+    "actual_A_changes": 16,
+    "changed_commands": 16,
+    "finite_response": true,
+    "max_command_scaling_error": 0.0,
+    "zero_commands": 0,
+    "passed": true
+  },
+  {
+    "key": "soft_p512/minus/width4/effort1",
+    "eligible": 16,
+    "writes": 16,
+    "actual_A_changes": 16,
+    "changed_commands": 0,
+    "finite_response": true,
+    "max_command_scaling_error": 0.0,
+    "zero_commands": 0,
+    "passed": true
+  }
+]

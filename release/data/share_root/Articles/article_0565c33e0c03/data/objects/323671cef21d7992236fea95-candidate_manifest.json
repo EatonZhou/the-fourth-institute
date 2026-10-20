@@ -1,0 +1,146 @@
+{
+  "candidates": [
+    {
+      "id": "genome_93e6148d32bbb0862163",
+      "parent_id": null,
+      "family": "reference_anisotropic--connected_trilobe",
+      "generation": 0,
+      "mutation_seed": null,
+      "role": "unchanged_parent_control",
+      "genome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/genomes/genome_93e6148d32bbb0862163.json",
+      "genome_sha256": "09bf2462010cb3e2041e06a9f04ae21c51e2a162e561c3d4adf1ba4bce23e2d5",
+      "snapshot": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/candidates/genome_93e6148d32bbb0862163.npz",
+      "snapshot_sha256": "cfc25c642daa522c210b790b44ef1ac6ac9251e4d479a4ffd0e185d2e953aeeb",
+      "phenotype_rule_sha256": "52aab565cd92b01752bba60e165d935eccd17f41a00cace6f78ace57317aec4d",
+      "static_shape": {
+        "alive": true,
+        "components": 1,
+        "holes": 0,
+        "elongation": 1.0074407887917467,
+        "radius": 5.47511962142528,
+        "mass": 71.24861043657577,
+        "maximum": 0.6738747678084522
+      },
+      "state_time": 0,
+      "shape": [
+        96,
+        96
+      ],
+      "initial_M": 71.24861043657577,
+      "initial_E": 56.998888349260625,
+      "physical_config_sha256": "c5861dc52d92e2ddc5a13e7899c720cbb6d6f078ec971326d591d1856731872e",
+      "scientific_evaluation": "none; static construction is not a body preview or fitness observation",
+      "snapshot_schema": "experience-adaptation-life0.v1",
+      "loader": "environment_evolution.experience_adaptation_host.open_life0",
+      "reference96": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/references/genome_93e6148d32bbb0862163-embedded-life0.npz",
+      "reference96_sha256": "472e50b1c73e7cbfe4b68d73aaaf1e906d4544696d3a9f120ede04124626f9ec"
+    },
+    {
+      "id": "genome_d02e7f60565f83066e5d",
+      "parent_id": null,
+      "family": "compact_ring_core_outer--bridged_longbody",
+      "generation": 0,
+      "mutation_seed": null,
+      "role": "unchanged_parent_control",
+      "genome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/genomes/genome_d02e7f60565f83066e5d.json",
+      "genome_sha256": "58891d508dbd892ad6fd2adc95b0416a250ba80b428139d4c1f7eb4d720cb507",
+      "snapshot": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/candidates/genome_d02e7f60565f83066e5d.npz",
+      "snapshot_sha256": "ff37d942c7168eeb4832aa42f0f94d14ceaa86ca8e454741efe4a183e049a185",
+      "phenotype_rule_sha256": "5be6f88188a01cb1f15099b7df122cf35c77ab18391979f9b1091cede60c6536",
+      "static_shape": {
+        "alive": true,
+        "components": 1,
+        "holes": 0,
+        "elongation": 4.289890448367966,
+        "radius": 8.15649524586093,
+        "mass": 71.24861043657577,
+        "maximum": 0.8966770386591322
+      },
+      "state_time": 0,
+      "shape": [
+        96,
+        96
+      ],
+      "initial_M": 71.24861043657577,
+      "initial_E": 56.99888834926062,
+      "physical_config_sha256": "c5861dc52d92e2ddc5a13e7899c720cbb6d6f078ec971326d591d1856731872e",
+      "scientific_evaluation": "none; static construction is not a body preview or fitness observation",
+      "snapshot_schema": "experience-adaptation-life0.v1",
+      "loader": "environment_evolution.experience_adaptation_host.open_life0",
+      "reference96": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/references/genome_d02e7f60565f83066e5d-embedded-life0.npz",
+      "reference96_sha256": "c5f8ab0600edafb27bd5bb9e99796c2e66c4af059171835762542972d8f5a17a"
+    },
+    {
+      "id": "genome_8d60f7d250e8e9f2a25b",
+      "parent_id": "genome_93e6148d32bbb0862163",
+      "family": "reference_anisotropic--connected_trilobe",
+      "generation": 1,
+      "mutation_seed": 202610180101,
+      "role": "unevaluated_offspring",
+      "genome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/genomes/genome_8d60f7d250e8e9f2a25b.json",
+      "genome_sha256": "4c2cb8f434927c3c754e788ba270001e9b295fe1acd4f1fc715a422b6829d33e",
+      "snapshot": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/candidates/genome_8d60f7d250e8e9f2a25b.npz",
+      "snapshot_sha256": "3fae7135bd9572011a4cdbf2bf174e96832481bca6f1de24277fc8894ea0d4a1",
+      "phenotype_rule_sha256": "68d2a5053526e83c80258af0f40eb9cb375732dcc9e665fea111c66ef3748d8d",
+      "static_shape": {
+        "alive": true,
+        "components": 1,
+        "holes": 0,
+        "elongation": 1.0093264610590442,
+        "radius": 5.440797601319645,
+        "mass": 71.24861043657577,
+        "maximum": 0.691945132838105
+      },
+      "state_time": 0,
+      "shape": [
+        96,
+        96
+      ],
+      "initial_M": 71.24861043657577,
+      "initial_E": 56.99888834926063,
+      "physical_config_sha256": "c5861dc52d92e2ddc5a13e7899c720cbb6d6f078ec971326d591d1856731872e",
+      "scientific_evaluation": "none; static construction is not a body preview or fitness observation",
+      "snapshot_schema": "experience-adaptation-life0.v1",
+      "loader": "environment_evolution.experience_adaptation_host.open_life0",
+      "reference96": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/references/genome_93e6148d32bbb0862163-embedded-life0.npz",
+      "reference96_sha256": "472e50b1c73e7cbfe4b68d73aaaf1e906d4544696d3a9f120ede04124626f9ec"
+    },
+    {
+      "id": "genome_a6a821dffd4f4046c97a",
+      "parent_id": "genome_d02e7f60565f83066e5d",
+      "family": "compact_ring_core_outer--bridged_longbody",
+      "generation": 1,
+      "mutation_seed": 202610180102,
+      "role": "unevaluated_offspring",
+      "genome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/genomes/genome_a6a821dffd4f4046c97a.json",
+      "genome_sha256": "b788fa270a4c40f0e8a67f7efb304c40ef3133566e0a1d682a11d80948c907ad",
+      "snapshot": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/candidates/genome_a6a821dffd4f4046c97a.npz",
+      "snapshot_sha256": "7efd847ad3efa0db001afe56a162b297d3a536ec48326890d4b09b6ceb793b4a",
+      "phenotype_rule_sha256": "36cf71ce6850857e75cfbd0b08e55d4e4c5d63abea1813e4449f19999d044cc8",
+      "static_shape": {
+        "alive": true,
+        "components": 1,
+        "holes": 0,
+        "elongation": 4.169395108129854,
+        "radius": 7.855726864825645,
+        "mass": 71.24861043657577,
+        "maximum": 0.9381713759275676
+      },
+      "state_time": 0,
+      "shape": [
+        96,
+        96
+      ],
+      "initial_M": 71.24861043657577,
+      "initial_E": 56.99888834926062,
+      "physical_config_sha256": "c5861dc52d92e2ddc5a13e7899c720cbb6d6f078ec971326d591d1856731872e",
+      "scientific_evaluation": "none; static construction is not a body preview or fitness observation",
+      "snapshot_schema": "experience-adaptation-life0.v1",
+      "loader": "environment_evolution.experience_adaptation_host.open_life0",
+      "reference96": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/references/genome_d02e7f60565f83066e5d-embedded-life0.npz",
+      "reference96_sha256": "c5f8ab0600edafb27bd5bb9e99796c2e66c4af059171835762542972d8f5a17a"
+    }
+  ],
+  "body_steps": 0,
+  "authoritative_initializer": "ce2"
+}

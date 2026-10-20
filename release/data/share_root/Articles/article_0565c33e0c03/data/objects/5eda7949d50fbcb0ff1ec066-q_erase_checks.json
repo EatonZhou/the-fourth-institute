@@ -1,0 +1,242 @@
+[
+  {
+    "id": "202610197401_0_paired_reactor_life",
+    "nonQ_exact": {
+      "body": true,
+      "energy": true,
+      "trace": true,
+      "last": true
+    },
+    "eraseQ_initial": true
+  },
+  {
+    "id": "202610197401_0_paired_fast_delta_life",
+    "nonQ_exact": {
+      "body": true,
+      "energy": true,
+      "trace": true,
+      "last": true
+    },
+    "eraseQ_initial": true
+  },
+  {
+    "id": "202610197401_0_paired_eligibility_life",
+    "nonQ_exact": {
+      "body": true,
+      "energy": true,
+      "trace": true,
+      "last": true
+    },
+    "eraseQ_initial": true
+  },
+  {
+    "id": "202610197401_0_unpaired_reactor_life",
+    "nonQ_exact": {
+      "body": true,
+      "energy": true,
+      "trace": true,
+      "last": true
+    },
+    "eraseQ_initial": true
+  },
+  {
+    "id": "202610197401_0_unpaired_fast_delta_life",
+    "nonQ_exact": {
+      "body": true,
+      "energy": true,
+      "trace": true,
+      "last": true
+    },
+    "eraseQ_initial": true
+  },
+  {
+    "id": "202610197401_0_unpaired_eligibility_life",
+    "nonQ_exact": {
+      "body": true,
+      "energy": true,
+      "trace": true,
+      "last": true
+    },
+    "eraseQ_initial": true
+  },
+  {
+    "id": "202610197401_1_paired_reactor_life",
+    "nonQ_exact": {
+      "body": true,
+      "energy": true,
+      "trace": true,
+      "last": true
+    },
+    "eraseQ_initial": true
+  },
+  {
+    "id": "202610197401_1_paired_fast_delta_life",
+    "nonQ_exact": {
+      "body": true,
+      "energy": true,
+      "trace": true,
+      "last": true
+    },
+    "eraseQ_initial": true
+  },
+  {
+    "id": "202610197401_1_paired_eligibility_life",
+    "nonQ_exact": {
+      "body": true,
+      "energy": true,
+      "trace": true,
+      "last": true
+    },
+    "eraseQ_initial": true
+  },
+  {
+    "id": "202610197401_1_unpaired_reactor_life",
+    "nonQ_exact": {
+      "body": true,
+      "energy": true,
+      "trace": true,
+      "last": true
+    },
+    "eraseQ_initial": true
+  },
+  {
+    "id": "202610197401_1_unpaired_fast_delta_life",
+    "nonQ_exact": {
+      "body": true,
+      "energy": true,
+      "trace": true,
+      "last": true
+    },
+    "eraseQ_initial": true
+  },
+  {
+    "id": "202610197401_1_unpaired_eligibility_life",
+    "nonQ_exact": {
+      "body": true,
+      "energy": true,
+      "trace": true,
+      "last": true
+    },
+    "eraseQ_initial": true
+  },
+  {
+    "id": "202610197402_0_paired_reactor_life",
+    "nonQ_exact": {
+      "body": true,
+      "energy": true,
+      "trace": true,
+      "last": true
+    },
+    "eraseQ_initial": true
+  },
+  {
+    "id": "202610197402_0_paired_fast_delta_life",
+    "nonQ_exact": {
+      "body": true,
+      "energy": true,
+      "trace": true,
+      "last": true
+    },
+    "eraseQ_initial": true
+  },
+  {
+    "id": "202610197402_0_paired_eligibility_life",
+    "nonQ_exact": {
+      "body": true,
+      "energy": true,
+      "trace": true,
+      "last": true
+    },
+    "eraseQ_initial": true
+  },
+  {
+    "id": "202610197402_0_unpaired_reactor_life",
+    "nonQ_exact": {
+      "body": true,
+      "energy": true,
+      "trace": true,
+      "last": true
+    },
+    "eraseQ_initial": true
+  },
+  {
+    "id": "202610197402_0_unpaired_fast_delta_life",
+    "nonQ_exact": {
+      "body": true,
+      "energy": true,
+      "trace": true,
+      "last": true
+    },
+    "eraseQ_initial": true
+  },
+  {
+    "id": "202610197402_0_unpaired_eligibility_life",
+    "nonQ_exact": {
+      "body": true,
+      "energy": true,
+      "trace": true,
+      "last": true
+    },
+    "eraseQ_initial": true
+  },
+  {
+    "id": "202610197402_1_paired_reactor_life",
+    "nonQ_exact": {
+      "body": true,
+      "energy": true,
+      "trace": true,
+      "last": true
+    },
+    "eraseQ_initial": true
+  },
+  {
+    "id": "202610197402_1_paired_fast_delta_life",
+    "nonQ_exact": {
+      "body": true,
+      "energy": true,
+      "trace": true,
+      "last": true
+    },
+    "eraseQ_initial": true
+  },
+  {
+    "id": "202610197402_1_paired_eligibility_life",
+    "nonQ_exact": {
+      "body": true,
+      "energy": true,
+      "trace": true,
+      "last": true
+    },
+    "eraseQ_initial": true
+  },
+  {
+    "id": "202610197402_1_unpaired_reactor_life",
+    "nonQ_exact": {
+      "body": true,
+      "energy": true,
+      "trace": true,
+      "last": true
+    },
+    "eraseQ_initial": true
+  },
+  {
+    "id": "202610197402_1_unpaired_fast_delta_life",
+    "nonQ_exact": {
+      "body": true,
+      "energy": true,
+      "trace": true,
+      "last": true
+    },
+    "eraseQ_initial": true
+  },
+  {
+    "id": "202610197402_1_unpaired_eligibility_life",
+    "nonQ_exact": {
+      "body": true,
+      "energy": true,
+      "trace": true,
+      "last": true
+    },
+    "eraseQ_initial": true
+  }
+]

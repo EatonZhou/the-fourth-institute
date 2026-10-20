@@ -1,0 +1,323 @@
+\subsection*{State-dependent action and acquired response gain}
+The four source batches are indexed by \path{acquired_gain_content_20261019/direction_handoff.json}, SHA-256 \texttt{5045d649\allowbreak{}75466cb1\allowbreak{}1c69e28f\allowbreak{}332fdccb\allowbreak{}a2962188\allowbreak{}385fbbe6\allowbreak{}2a2141b4\allowbreak{}324c087a}. Batches 1--4 respectively test linear state readout, unchanged-relation controls from actual parents, a scalar conditional gain and its acquired content. They comprise 18,816 actual updates and 118.121236 worker seconds, with no unknown updates or replay of old acquisition or futures. There are fourteen life-zero paths and eighteen dependent continuations, not 32 independent lives. The manuscript's transcription and cost aggregation run no model or fit. All failed original gates and all costs are retained.
+\begingroup\scriptsize\setlength{\tabcolsep}{3pt}\setlength{\LTpre}{6pt}\setlength{\LTpost}{6pt}
+
+\begin{longtable}{rlllrrrrl}
+\caption{All 78 recorded phase windows. B identifies the batch; C identifies the paired seed--field condition. A/R/H are acquisition, changed-relation feedback and no-new-feedback aftereffect; U is the unchanged-relation control. $S$ and $p_+$ are final-64 body-weighted field score and favourable-half mass fraction. P/F are the original conjunctive occupancy and viability gates, not retrospective judgements about relearning. Blank acquisition windows are never invented for forks.}\label{tab:gain-phases}\\
+\toprule
+B/C & Rule & Phase & $S$ & $p_+$ & $M_{end}$ & $E_{end}$ & Paid gain & Gate \\
+\midrule
+\endfirsthead
+\toprule
+B/C & Rule & Phase & $S$ & $p_+$ & $M_{end}$ & $E_{end}$ & Paid gain & Gate \\
+\midrule
+\endhead
+1/0 & Bias & A & 0.71704 & 0.96168 & 24.00000 & 146.13781 & 15.09757 & P \\
+1/0 & Bias & R & -0.56467 & 0.13823 & 24.00000 & 105.93567 & 1.00106 & F \\
+1/0 & Bias & H & -0.04471 & 0.50861 & 24.00000 & 101.82958 & 0.00000 & F \\
+1/0 & Linear & A & 0.71993 & 0.96244 & 24.00000 & 146.20120 & 15.15352 & P \\
+1/0 & Linear & R & -0.56549 & 0.13949 & 24.00000 & 106.00113 & 1.01480 & F \\
+1/0 & Linear & H & -0.05111 & 0.50278 & 24.00000 & 101.89517 & 0.00000 & F \\
+1/0 & Filtered & A & 0.72424 & 0.97646 & 24.00000 & 150.56720 & 18.59305 & P \\
+1/0 & Filtered & R & -0.10059 & 0.34239 & 24.00000 & 123.65226 & 1.94128 & F \\
+1/0 & Filtered & H & 0.29883 & 0.71843 & 24.00000 & 119.59148 & 0.00000 & P \\
+1/0 & Linear frozen & R & -0.12369 & 0.47462 & 24.00000 & 112.41100 & 1.05874 & F \\
+1/0 & Linear frozen & H & 0.56428 & 0.94934 & 24.00000 & 108.30971 & 0.00000 & P \\
+1/0 & Bias readout & R & -0.12862 & 0.46956 & 24.00000 & 112.34071 & 1.03325 & F \\
+1/0 & Bias readout & H & 0.55762 & 0.94832 & 24.00000 & 108.24018 & 0.00000 & P \\
+1/1 & Bias & A & 0.74041 & 0.96529 & 24.00000 & 146.61649 & 15.57477 & P \\
+1/1 & Bias & R & 0.31804 & 0.70794 & 24.00000 & 119.56176 & 4.14629 & P \\
+1/1 & Bias & H & 0.75108 & 0.92655 & 24.00000 & 115.38254 & 0.00000 & P \\
+1/1 & Linear & A & 0.74315 & 0.96594 & 24.00000 & 146.67919 & 15.62999 & P \\
+1/1 & Linear & R & 0.32329 & 0.71176 & 24.00000 & 119.72165 & 4.19775 & P \\
+1/1 & Linear & H & 0.75089 & 0.92674 & 24.00000 & 115.54208 & 0.00000 & P \\
+1/1 & Filtered & A & 0.73127 & 0.97730 & 24.00000 & 150.68099 & 18.69981 & P \\
+1/1 & Filtered & R & -0.14480 & 0.30071 & 24.00000 & 122.65290 & 1.72616 & F \\
+1/1 & Filtered & H & 0.25695 & 0.67934 & 24.00000 & 118.59553 & 0.00000 & P \\
+1/1 & Linear frozen & R & -0.06777 & 0.35750 & 24.00000 & 114.02290 & 1.29589 & F \\
+1/1 & Linear frozen & H & 0.60224 & 0.91874 & 24.00000 & 109.92392 & 0.00000 & P \\
+1/1 & Bias readout & R & -0.07302 & 0.35187 & 24.00000 & 113.94581 & 1.26621 & F \\
+1/1 & Bias readout & H & 0.59564 & 0.91631 & 24.00000 & 109.84752 & 0.00000 & P \\
+2/0 & Bias & U & 0.44552 & 0.89898 & 24.00000 & 163.23396 & 27.40377 & P \\
+2/0 & Bias & H & 0.33445 & 0.79769 & 24.00000 & 159.18496 & 0.00000 & P \\
+2/0 & Linear & U & 0.45471 & 0.90758 & 24.00000 & 163.41275 & 27.51345 & P \\
+2/0 & Linear & H & 0.35823 & 0.82380 & 24.00000 & 159.36397 & 0.00000 & P \\
+2/0 & Filtered & U & 0.93149 & 0.99421 & 24.00000 & 174.23712 & 33.99490 & P \\
+2/0 & Filtered & H & 0.94483 & 0.99635 & 24.00000 & 170.19225 & 0.00000 & P \\
+2/0 & Linear frozen & U & 0.13353 & 0.53529 & 24.00000 & 159.64015 & 24.69300 & F \\
+2/0 & Linear frozen & H & -0.55086 & 0.05257 & 24.00000 & 155.54040 & 0.00000 & F \\
+2/1 & Bias & U & 0.45367 & 0.98885 & 24.00000 & 163.48520 & 27.16943 & P \\
+2/1 & Bias & H & 0.39116 & 0.97401 & 24.00000 & 159.43862 & 0.00000 & P \\
+2/1 & Linear & U & 0.46402 & 0.99094 & 24.00000 & 163.67790 & 27.29378 & P \\
+2/1 & Linear & H & 0.41470 & 0.98229 & 24.00000 & 159.63142 & 0.00000 & P \\
+2/1 & Filtered & U & 0.93279 & 0.99446 & 24.00000 & 174.58478 & 34.21995 & P \\
+2/1 & Filtered & H & 0.94557 & 0.99661 & 24.00000 & 170.53824 & 0.00000 & P \\
+2/1 & Linear frozen & U & 0.07826 & 0.65348 & 24.00000 & 158.99297 & 23.79900 & F \\
+2/1 & Linear frozen & H & -0.58896 & 0.08603 & 24.00000 & 154.89538 & 0.00000 & F \\
+3/0 & Bias & A & 0.72791 & 0.96278 & 24.00000 & 146.59665 & 15.53046 & P \\
+3/0 & Bias & R & -0.79875 & 0.06707 & 24.00000 & 103.88366 & 0.80332 & F \\
+3/0 & Bias & H & -0.73068 & 0.08065 & 24.00000 & 99.83892 & 0.00000 & F \\
+3/0 & Learned gain & A & 0.73116 & 0.96284 & 24.00000 & 146.62755 & 15.55933 & P \\
+3/0 & Learned gain & R & 0.34187 & 0.66910 & 24.00000 & 128.12180 & 8.89882 & P \\
+3/0 & Learned gain & H & 0.57144 & 0.82715 & 24.00000 & 123.97599 & 0.00000 & P \\
+3/0 & Fixed gain & A & 0.97833 & 0.99937 & 24.00000 & 162.13878 & 29.37527 & P \\
+3/0 & Fixed gain & R & 0.74831 & 0.96551 & 24.00000 & 148.50805 & 10.24677 & P \\
+3/0 & Fixed gain & H & 0.96891 & 0.99884 & 24.00000 & 144.35124 & 0.00000 & P \\
+3/0 & Zero gain & A & 0.01973 & 0.42894 & 24.00000 & 134.45720 & 6.40723 & F \\
+3/0 & Zero gain & R & -0.01247 & 0.39180 & 24.00000 & 123.87701 & 5.40105 & F \\
+3/0 & Zero gain & H & -0.02260 & 0.37422 & 24.00000 & 119.83935 & 0.00000 & F \\
+3/0 & Gain frozen & R & 0.56962 & 0.89553 & 24.00000 & 132.94564 & 8.56271 & P \\
+3/0 & Gain frozen & H & 0.88502 & 0.98828 & 24.00000 & 128.84137 & 0.00000 & P \\
+3/1 & Bias & A & 0.71766 & 0.95951 & 24.00000 & 146.17913 & 15.21598 & P \\
+3/1 & Bias & R & 0.01491 & 0.47123 & 24.00000 & 116.07552 & 3.88639 & F \\
+3/1 & Bias & H & 0.36327 & 0.69535 & 24.00000 & 111.90938 & 0.00000 & P \\
+3/1 & Learned gain & A & 0.72261 & 0.95975 & 24.00000 & 146.23304 & 15.26912 & P \\
+3/1 & Learned gain & R & 0.76330 & 0.91537 & 24.00000 & 137.88629 & 13.06424 & P \\
+3/1 & Learned gain & H & 0.78826 & 0.97910 & 24.00000 & 133.70735 & 0.00000 & P \\
+3/1 & Fixed gain & A & 0.97800 & 0.99941 & 24.00000 & 162.03007 & 29.28525 & P \\
+3/1 & Fixed gain & R & 0.75103 & 0.95374 & 24.00000 & 148.51673 & 10.30808 & P \\
+3/1 & Fixed gain & H & 0.96606 & 0.99827 & 24.00000 & 144.34748 & 0.00000 & P \\
+3/1 & Zero gain & A & -0.00647 & 0.39908 & 24.00000 & 133.75192 & 6.07223 & F \\
+3/1 & Zero gain & R & 0.00977 & 0.41076 & 24.00000 & 124.11899 & 5.93320 & F \\
+3/1 & Zero gain & H & 0.02082 & 0.42436 & 24.00000 & 120.07954 & 0.00000 & F \\
+3/1 & Gain frozen & R & 0.61387 & 0.90213 & 24.00000 & 133.98361 & 9.28632 & P \\
+3/1 & Gain frozen & H & 0.88362 & 0.98697 & 24.00000 & 129.87737 & 0.00000 & P \\
+4/0 & Erase & R & -0.82935 & 0.01489 & 24.00000 & 104.66589 & 0.26247 & F \\
+4/0 & Erase & H & -0.82263 & 0.01542 & 24.00000 & 100.62500 & 0.00000 & F \\
+4/0 & Uniform & R & 0.57261 & 0.90334 & 24.00000 & 132.90200 & 8.43687 & P \\
+4/0 & Uniform & H & 0.89549 & 0.99188 & 24.00000 & 128.79788 & 0.00000 & P \\
+4/1 & Erase & R & -0.81331 & 0.01386 & 24.00000 & 104.83085 & 0.26100 & F \\
+4/1 & Erase & H & -0.81299 & 0.01491 & 24.00000 & 100.79105 & 0.00000 & F \\
+4/1 & Uniform & R & 0.61592 & 0.91079 & 24.00000 & 133.89256 & 9.13349 & P \\
+4/1 & Uniform & H & 0.89470 & 0.99129 & 24.00000 & 129.78627 & 0.00000 & P \\
+\bottomrule
+\end{longtable}
+
+\begin{longtable}{rlllrrr}
+\caption{Phase-specific actual expenditure for every window in the preceding table. These are whole-phase sums, not final-64 sums. External gain/loss and motor expenditure are distinct; complete basal and unpaid accounts are in the path table.}\label{tab:gain-phase-costs}\\
+\toprule
+B/C & Rule & Phase & Updates & Gain & Loss & Motor \\
+\midrule
+\endfirsthead
+\toprule
+B/C & Rule & Phase & Updates & Gain & Loss & Motor \\
+\midrule
+\endhead
+1/0 & Bias & A & 320 & 15.09757 & 2.80478 & 0.93898 \\
+1/0 & Bias & R & 320 & 1.00106 & 30.99907 & 0.98813 \\
+1/0 & Bias & H & 128 & 0.00000 & 0.00000 & 0.41969 \\
+1/0 & Linear & A & 320 & 15.15352 & 2.79681 & 0.93951 \\
+1/0 & Linear & R & 320 & 1.01480 & 31.01182 & 0.98705 \\
+1/0 & Linear & H & 128 & 0.00000 & 0.00000 & 0.41956 \\
+1/0 & Filtered & A & 320 & 18.59305 & 1.88430 & 0.92555 \\
+1/0 & Filtered & R & 320 & 1.94128 & 18.73142 & 0.90880 \\
+1/0 & Filtered & H & 128 & 0.00000 & 0.00000 & 0.37438 \\
+1/0 & Linear frozen & R & 320 & 1.05874 & 24.60159 & 1.03134 \\
+1/0 & Linear frozen & H & 128 & 0.00000 & 0.00000 & 0.41489 \\
+1/0 & Bias readout & R & 320 & 1.03325 & 24.64713 & 1.03061 \\
+1/0 & Bias readout & H & 128 & 0.00000 & 0.00000 & 0.41412 \\
+1/1 & Bias & A & 320 & 15.57477 & 2.79712 & 0.94516 \\
+1/1 & Bias & R & 320 & 4.14629 & 20.84193 & 1.14308 \\
+1/1 & Bias & H & 128 & 0.00000 & 0.00000 & 0.49282 \\
+1/1 & Linear & A & 320 & 15.62999 & 2.78910 & 0.94570 \\
+1/1 & Linear & R & 320 & 4.19775 & 20.79570 & 1.14360 \\
+1/1 & Linear & H & 128 & 0.00000 & 0.00000 & 0.49316 \\
+1/1 & Filtered & A & 320 & 18.69981 & 1.87647 & 0.92634 \\
+1/1 & Filtered & R & 320 & 1.72616 & 19.63175 & 0.90650 \\
+1/1 & Filtered & H & 128 & 0.00000 & 0.00000 & 0.37097 \\
+1/1 & Linear frozen & R & 320 & 1.29589 & 23.70235 & 1.03382 \\
+1/1 & Linear frozen & H & 128 & 0.00000 & 0.00000 & 0.41259 \\
+1/1 & Bias readout & R & 320 & 1.26621 & 23.75055 & 1.03304 \\
+1/1 & Bias readout & H & 128 & 0.00000 & 0.00000 & 0.41189 \\
+2/0 & Bias & U & 320 & 27.40377 & 0.08976 & 1.00186 \\
+2/0 & Bias & H & 128 & 0.00000 & 0.00000 & 0.36260 \\
+2/0 & Linear & U & 320 & 27.51345 & 0.08544 & 1.00046 \\
+2/0 & Linear & H & 128 & 0.00000 & 0.00000 & 0.36238 \\
+2/0 & Filtered & U & 320 & 33.99490 & 0.18804 & 0.92094 \\
+2/0 & Filtered & H & 128 & 0.00000 & 0.00000 & 0.35847 \\
+2/0 & Linear frozen & U & 320 & 24.69300 & 1.00816 & 1.02989 \\
+2/0 & Linear frozen & H & 128 & 0.00000 & 0.00000 & 0.41335 \\
+2/1 & Bias & U & 320 & 27.16943 & 0.09077 & 0.99394 \\
+2/1 & Bias & H & 128 & 0.00000 & 0.00000 & 0.36018 \\
+2/1 & Linear & U & 320 & 27.29378 & 0.08638 & 0.99268 \\
+2/1 & Linear & H & 128 & 0.00000 & 0.00000 & 0.36008 \\
+2/1 & Filtered & U & 320 & 34.21995 & 0.18353 & 0.91663 \\
+2/1 & Filtered & H & 128 & 0.00000 & 0.00000 & 0.36014 \\
+2/1 & Linear frozen & U & 320 & 23.79900 & 1.23694 & 1.03227 \\
+2/1 & Linear frozen & H & 128 & 0.00000 & 0.00000 & 0.41119 \\
+3/0 & Bias & A & 320 & 15.53046 & 2.77592 & 0.94189 \\
+3/0 & Bias & R & 320 & 0.80332 & 33.37659 & 0.92372 \\
+3/0 & Bias & H & 128 & 0.00000 & 0.00000 & 0.35834 \\
+3/0 & Learned gain & A & 320 & 15.55933 & 2.77211 & 0.94367 \\
+3/0 & Learned gain & R & 320 & 8.89882 & 17.14350 & 1.04508 \\
+3/0 & Learned gain & H & 128 & 0.00000 & 0.00000 & 0.45941 \\
+3/0 & Fixed gain & A & 320 & 29.37527 & 0.83818 & 1.18231 \\
+3/0 & Fixed gain & R & 320 & 10.24677 & 13.50124 & 1.16026 \\
+3/0 & Fixed gain & H & 128 & 0.00000 & 0.00000 & 0.47041 \\
+3/0 & Zero gain & A & 320 & 6.40723 & 5.85228 & 0.88175 \\
+3/0 & Zero gain & R & 320 & 5.40105 & 5.87744 & 0.88780 \\
+3/0 & Zero gain & H & 128 & 0.00000 & 0.00000 & 0.35126 \\
+3/0 & Gain frozen & R & 320 & 8.56271 & 12.00061 & 1.02802 \\
+3/0 & Gain frozen & H & 128 & 0.00000 & 0.00000 & 0.41786 \\
+3/1 & Bias & A & 320 & 15.21598 & 2.87814 & 0.94272 \\
+3/1 & Bias & R & 320 & 3.88639 & 23.65558 & 1.11841 \\
+3/1 & Bias & H & 128 & 0.00000 & 0.00000 & 0.47974 \\
+3/1 & Learned gain & A & 320 & 15.26912 & 2.87533 & 0.94474 \\
+3/1 & Learned gain & R & 320 & 13.06424 & 11.06622 & 1.12878 \\
+3/1 & Learned gain & H & 128 & 0.00000 & 0.00000 & 0.49254 \\
+3/1 & Fixed gain & A & 320 & 29.28525 & 0.84440 & 1.19479 \\
+3/1 & Fixed gain & R & 320 & 10.30808 & 13.44646 & 1.15896 \\
+3/1 & Fixed gain & H & 128 & 0.00000 & 0.00000 & 0.48284 \\
+3/1 & Zero gain & A & 320 & 6.07223 & 6.21703 & 0.88729 \\
+3/1 & Zero gain & R & 320 & 5.93320 & 5.46636 & 0.88377 \\
+3/1 & Zero gain & H & 128 & 0.00000 & 0.00000 & 0.35305 \\
+3/1 & Gain frozen & R & 320 & 9.28632 & 11.28519 & 1.03457 \\
+3/1 & Gain frozen & H & 128 & 0.00000 & 0.00000 & 0.41983 \\
+4/0 & Erase & R & 320 & 0.26247 & 32.11851 & 0.88963 \\
+4/0 & Erase & H & 128 & 0.00000 & 0.00000 & 0.35449 \\
+4/0 & Uniform & R & 320 & 8.43687 & 11.91791 & 1.02851 \\
+4/0 & Uniform & H & 128 & 0.00000 & 0.00000 & 0.41771 \\
+4/1 & Erase & R & 320 & 0.26100 & 31.55425 & 0.89295 \\
+4/1 & Erase & H & 128 & 0.00000 & 0.00000 & 0.35340 \\
+4/1 & Uniform & R & 320 & 9.13349 & 11.22326 & 1.03471 \\
+4/1 & Uniform & H & 128 & 0.00000 & 0.00000 & 0.41989 \\
+\bottomrule
+\end{longtable}
+
+\begin{longtable}{rllrrrrrrr}
+\caption{Complete physical energy accounts for all 32 actual paths. The start column prevents a 448-update fork from being mistaken for a new acquired life. $E_0$ is read from its actual saved starting state. All terms are measured in the implemented physical energy units; additional arithmetic, storage and communication have no assigned physical tariff.}\label{tab:gain-costs}\\
+\toprule
+B/C & Rule & Start & $E_0$ & $E_{end}$ & Gain & Loss & Motor & Basal & Unpaid \\
+\midrule
+\endfirsthead
+\toprule
+B/C & Rule & Start & $E_0$ & $E_{end}$ & Gain & Loss & Motor & Basal & Unpaid \\
+\midrule
+\endhead
+1/0 & Bias & 0 & 144.00000 & 101.82958 & 16.09863 & 33.80385 & 2.34680 & 22.11840 & 0.00000 \\
+1/0 & Linear & 0 & 144.00000 & 101.89517 & 16.16831 & 33.80862 & 2.34611 & 22.11840 & 0.00000 \\
+1/0 & Filtered & 0 & 144.00000 & 119.59148 & 20.53433 & 20.61572 & 2.20873 & 22.11840 & 0.00000 \\
+1/0 & Linear frozen & 320 & 146.20120 & 108.30971 & 1.05874 & 24.60159 & 1.44623 & 12.90240 & 0.00000 \\
+1/0 & Bias readout & 320 & 146.20120 & 108.24018 & 1.03325 & 24.64713 & 1.44473 & 12.90240 & 0.00000 \\
+1/1 & Bias & 0 & 144.00000 & 115.38254 & 19.72106 & 23.63905 & 2.58107 & 22.11840 & 0.00000 \\
+1/1 & Linear & 0 & 144.00000 & 115.54208 & 19.82774 & 23.58480 & 2.58246 & 22.11840 & 0.00000 \\
+1/1 & Filtered & 0 & 144.00000 & 118.59553 & 20.42597 & 21.50823 & 2.20381 & 22.11840 & 0.00000 \\
+1/1 & Linear frozen & 320 & 146.67919 & 109.92392 & 1.29589 & 23.70235 & 1.44641 & 12.90240 & 0.00000 \\
+1/1 & Bias readout & 320 & 146.67919 & 109.84752 & 1.26621 & 23.75055 & 1.44493 & 12.90240 & 0.00000 \\
+2/0 & Bias & 320 & 146.13781 & 159.18496 & 27.40377 & 0.08976 & 1.36446 & 12.90240 & 0.00000 \\
+2/0 & Linear & 320 & 146.20120 & 159.36397 & 27.51345 & 0.08544 & 1.36284 & 12.90240 & 0.00000 \\
+2/0 & Filtered & 320 & 150.56720 & 170.19225 & 33.99490 & 0.18804 & 1.27942 & 12.90240 & 0.00000 \\
+2/0 & Linear frozen & 320 & 146.20120 & 155.54040 & 24.69300 & 1.00816 & 1.44324 & 12.90240 & 0.00000 \\
+2/1 & Bias & 320 & 146.61649 & 159.43862 & 27.16943 & 0.09077 & 1.35413 & 12.90240 & 0.00000 \\
+2/1 & Linear & 320 & 146.67919 & 159.63142 & 27.29378 & 0.08638 & 1.35276 & 12.90240 & 0.00000 \\
+2/1 & Filtered & 320 & 150.68099 & 170.53824 & 34.21995 & 0.18353 & 1.27678 & 12.90240 & 0.00000 \\
+2/1 & Linear frozen & 320 & 146.67919 & 154.89538 & 23.79900 & 1.23694 & 1.44347 & 12.90240 & 0.00000 \\
+3/0 & Bias & 0 & 144.00000 & 99.83892 & 16.33379 & 36.15251 & 2.22396 & 22.11840 & 0.00000 \\
+3/0 & Learned gain & 0 & 144.00000 & 123.97599 & 24.45816 & 19.91561 & 2.44816 & 22.11840 & 0.00000 \\
+3/0 & Fixed gain & 0 & 144.00000 & 144.35124 & 39.62204 & 14.33942 & 2.81298 & 22.11840 & 0.00000 \\
+3/0 & Zero gain & 0 & 144.00000 & 119.83935 & 11.80828 & 11.72972 & 2.12081 & 22.11840 & 0.00000 \\
+3/0 & Gain frozen & 320 & 146.62755 & 128.84137 & 8.56271 & 12.00061 & 1.44588 & 12.90240 & 0.00000 \\
+3/1 & Bias & 0 & 144.00000 & 111.90938 & 19.10237 & 26.53373 & 2.54086 & 22.11840 & 0.00000 \\
+3/1 & Learned gain & 0 & 144.00000 & 133.70735 & 28.33336 & 13.94155 & 2.56605 & 22.11840 & 0.00000 \\
+3/1 & Fixed gain & 0 & 144.00000 & 144.34748 & 39.59333 & 14.29086 & 2.83660 & 22.11840 & 0.00000 \\
+3/1 & Zero gain & 0 & 144.00000 & 120.07954 & 12.00543 & 11.68338 & 2.12411 & 22.11840 & 0.00000 \\
+3/1 & Gain frozen & 320 & 146.23304 & 129.87737 & 9.28632 & 11.28519 & 1.45440 & 12.90240 & 0.00000 \\
+4/0 & Erase & 320 & 146.62755 & 100.62500 & 0.26247 & 32.11851 & 1.24412 & 12.90240 & 0.00000 \\
+4/0 & Uniform & 320 & 146.62755 & 128.79788 & 8.43687 & 11.91791 & 1.44623 & 12.90240 & 0.00000 \\
+4/1 & Erase & 320 & 146.23304 & 100.79105 & 0.26100 & 31.55425 & 1.24635 & 12.90240 & 0.00000 \\
+4/1 & Uniform & 320 & 146.23304 & 129.78627 & 9.13349 & 11.22326 & 1.45460 & 12.90240 & 0.00000 \\
+\bottomrule
+\end{longtable}
+
+\begin{longtable}{rllrrrrrrr}
+\caption{Material and energy checks on the same actual paths. No births occur. Actual death is tabulated rather than inferred from a rounded endpoint. Body-time is $0.1\sum_t M_t$ over the recorded updates. The last column is the absolute whole-path energy residual $|E_{end}-E_0-G+L+C_{motor}+C_{basal}|$; no additional cost is inferred from an absent tariff.}\label{tab:gain-material}\\
+\toprule
+B/C & Rule & Updates & $M_0$ & $M_{end}$ & $M_{min}$ & Min. conn. & Death & Body-time & Residual \\
+\midrule
+\endfirsthead
+\toprule
+B/C & Rule & Updates & $M_0$ & $M_{end}$ & $M_{min}$ & Min. conn. & Death & Body-time & Residual \\
+\midrule
+\endhead
+1/0 & Bias & 768 & 24.00000 & 24.00000 & 24.00000 & 0.99317 & 0.00000 & 1843.20000 & 2.1e-14 \\
+1/0 & Linear & 768 & 24.00000 & 24.00000 & 24.00000 & 0.99371 & 0.00000 & 1843.20000 & 1.8e-14 \\
+1/0 & Filtered & 768 & 24.00000 & 24.00000 & 24.00000 & 0.99266 & 0.00000 & 1843.20000 & 1.1e-14 \\
+1/0 & Linear frozen & 448 & 24.00000 & 24.00000 & 24.00000 & 0.99359 & 0.00000 & 1075.20000 & 1.6e-14 \\
+1/0 & Bias readout & 448 & 24.00000 & 24.00000 & 24.00000 & 0.99356 & 0.00000 & 1075.20000 & 3.7e-14 \\
+1/1 & Bias & 768 & 24.00000 & 24.00000 & 24.00000 & 0.99395 & 0.00000 & 1843.20000 & 0.0e+00 \\
+1/1 & Linear & 768 & 24.00000 & 24.00000 & 24.00000 & 0.99394 & 0.00000 & 1843.20000 & 8.9e-14 \\
+1/1 & Filtered & 768 & 24.00000 & 24.00000 & 24.00000 & 0.99302 & 0.00000 & 1843.20000 & 1.4e-14 \\
+1/1 & Linear frozen & 448 & 24.00000 & 24.00000 & 24.00000 & 0.99348 & 0.00000 & 1075.20000 & 1.8e-15 \\
+1/1 & Bias readout & 448 & 24.00000 & 24.00000 & 24.00000 & 0.99360 & 0.00000 & 1075.20000 & 5.7e-14 \\
+2/0 & Bias & 448 & 24.00000 & 24.00000 & 24.00000 & 0.99373 & 0.00000 & 1075.20000 & 1.8e-15 \\
+2/0 & Linear & 448 & 24.00000 & 24.00000 & 24.00000 & 0.99376 & 0.00000 & 1075.20000 & 3.6e-14 \\
+2/0 & Filtered & 448 & 24.00000 & 24.00000 & 24.00000 & 0.99168 & 0.00000 & 1075.20000 & 7.1e-14 \\
+2/0 & Linear frozen & 448 & 24.00000 & 24.00000 & 24.00000 & 0.99357 & 0.00000 & 1075.20000 & 3.6e-14 \\
+2/1 & Bias & 448 & 24.00000 & 24.00000 & 24.00000 & 0.99381 & 0.00000 & 1075.20000 & 8.9e-15 \\
+2/1 & Linear & 448 & 24.00000 & 24.00000 & 24.00000 & 0.99378 & 0.00000 & 1075.20000 & 3.4e-14 \\
+2/1 & Filtered & 448 & 24.00000 & 24.00000 & 24.00000 & 0.99159 & 0.00000 & 1075.20000 & 4.3e-14 \\
+2/1 & Linear frozen & 448 & 24.00000 & 24.00000 & 24.00000 & 0.99360 & 0.00000 & 1075.20000 & 7.1e-15 \\
+3/0 & Bias & 768 & 24.00000 & 24.00000 & 24.00000 & 0.98844 & 0.00000 & 1843.20000 & 3.6e-15 \\
+3/0 & Learned gain & 768 & 24.00000 & 24.00000 & 24.00000 & 0.99410 & 0.00000 & 1843.20000 & 5.7e-14 \\
+3/0 & Fixed gain & 768 & 24.00000 & 24.00000 & 24.00000 & 0.99568 & 0.00000 & 1843.20000 & 5.3e-14 \\
+3/0 & Zero gain & 768 & 24.00000 & 24.00000 & 24.00000 & 0.99133 & 0.00000 & 1843.20000 & 4.6e-14 \\
+3/0 & Gain frozen & 448 & 24.00000 & 24.00000 & 24.00000 & 0.98524 & 0.00000 & 1075.20000 & 5.7e-14 \\
+3/1 & Bias & 768 & 24.00000 & 24.00000 & 24.00000 & 0.99462 & 0.00000 & 1843.20000 & 6.4e-14 \\
+3/1 & Learned gain & 768 & 24.00000 & 24.00000 & 24.00000 & 0.99238 & 0.00000 & 1843.20000 & 1.4e-14 \\
+3/1 & Fixed gain & 768 & 24.00000 & 24.00000 & 24.00000 & 0.99525 & 0.00000 & 1843.20000 & 8.2e-14 \\
+3/1 & Zero gain & 768 & 24.00000 & 24.00000 & 24.00000 & 0.99163 & 0.00000 & 1843.20000 & 0.0e+00 \\
+3/1 & Gain frozen & 448 & 24.00000 & 24.00000 & 24.00000 & 0.98106 & 0.00000 & 1075.20000 & 4.8e-14 \\
+4/0 & Erase & 448 & 24.00000 & 24.00000 & 24.00000 & 0.99135 & 0.00000 & 1075.20000 & 2.7e-14 \\
+4/0 & Uniform & 448 & 24.00000 & 24.00000 & 24.00000 & 0.97938 & 0.00000 & 1075.20000 & 6.4e-14 \\
+4/1 & Erase & 448 & 24.00000 & 24.00000 & 24.00000 & 0.99119 & 0.00000 & 1075.20000 & 2.5e-14 \\
+4/1 & Uniform & 448 & 24.00000 & 24.00000 & 24.00000 & 0.97117 & 0.00000 & 1075.20000 & 5.7e-14 \\
+\bottomrule
+\end{longtable}
+
+\begin{longtable}{rllrrrrr}
+\caption{Matched actual-320 relation controls. Displacement is along the original learned direction over the entire 448-step continuation, whereas command is a final-64 mean and field/good mass are terminal values. The first eight consecutive opposite-direction commands are reported by their final clock, when present. Every pair has exactly equal first mean command, sampled motor and transport operator; later full physical futures can diverge.}\label{tab:gain-relation}\\
+\toprule
+C & Rule & Relation & $\Delta x$ & Command & $S_{end}$ & $M_{+,end}$ & First 8 \\
+\midrule
+\endfirsthead
+\toprule
+C & Rule & Relation & $\Delta x$ & Command & $S_{end}$ & $M_{+,end}$ & First 8 \\
+\midrule
+\endhead
+0 & Bias & changed & 10.84681 & 0.61242 & 0.07503 & 14.53769 & -- \\
+0 & Bias & unchanged & 8.50649 & 0.08363 & 0.30771 & 18.33784 & -- \\
+0 & Linear & changed & 10.75915 & 0.60725 & 0.06686 & 14.34493 & -- \\
+0 & Linear & unchanged & 8.32455 & 0.07153 & 0.33504 & 19.08275 & -- \\
+0 & Filtered & changed & -7.30811 & -0.32939 & 0.38990 & 19.15264 & 330 \\
+0 & Filtered & unchanged & 2.56591 & 0.06352 & 0.94596 & 23.92099 & -- \\
+0 & Linear frozen & changed & 14.71950 & 0.65981 & 0.69544 & 23.38969 & -- \\
+0 & Linear frozen & unchanged & 14.59756 & 0.65035 & -0.68340 & 0.60917 & -- \\
+1 & Bias & changed & 20.18241 & 1.14592 & 0.68591 & 21.49769 & -- \\
+1 & Bias & unchanged & 7.87071 & 0.04605 & 0.36740 & 23.01881 & -- \\
+1 & Linear & changed & 20.20543 & 1.14764 & 0.68368 & 21.48259 & -- \\
+1 & Linear & unchanged & 7.68557 & 0.03431 & 0.39467 & 23.31771 & -- \\
+1 & Filtered & changed & -7.20440 & -0.32684 & 0.35394 & 18.43217 & 330 \\
+1 & Filtered & unchanged & 2.48514 & 0.06268 & 0.94542 & 23.92718 & -- \\
+1 & Linear frozen & changed & 14.69449 & 0.65922 & 0.72568 & 23.14236 & -- \\
+1 & Linear frozen & unchanged & 14.56932 & 0.64977 & -0.71416 & 0.88322 & -- \\
+\bottomrule
+\end{longtable}
+
+\begin{longtable}{rllrr}
+\caption{Actual-320 gain-content interventions, two parents with dependent forks. The four new interventions preserve body, energy, non-gain auxiliary fields, memory, eligibility and random-generator state exactly at branching. Homogenization preserves the parent mass-weighted scalar gain but not each vector command or nonlinear motor amplitude. Global averaging occurs only in the experimental intervention. The retained/frozen reference was recorded in batch 3 and reused read-only.}\label{tab:gain-parent}\\
+\toprule
+C & Intervention & Other fields/RNG & $\bar\kappa_0$ & Max. initial command change \\
+\midrule
+\endfirsthead
+\toprule
+C & Intervention & Other fields/RNG & $\bar\kappa_0$ & Max. initial command change \\
+\midrule
+\endhead
+0 & Erase & identical & 0.66305 & 0.87275 \\
+0 & Uniform & identical & 0.66305 & 0.58363 \\
+1 & Erase & identical & 0.67034 & 0.87973 \\
+1 & Uniform & identical & 0.67034 & 0.58656 \\
+\bottomrule
+\end{longtable}
+
+\endgroup

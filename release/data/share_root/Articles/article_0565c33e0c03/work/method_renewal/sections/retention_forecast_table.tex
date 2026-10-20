@@ -1,0 +1,36 @@
+\begin{table}[p]
+\centering\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lrrrrr}
+\toprule
+Condition / acquired policy & Mean & Current & Capacity & History & Shuffled \\
+\midrule
+\multicolumn{6}{l}{\textit{Primary analysis holdout: seed 5602, both-class future}} \\
+5602 ring / $G$ & 46.2490 & 18.6381 & 18.3650 & 17.5149 & 18.4734 \\
+5602 ring / both & 28.5291 & 13.7608 & 13.7655 & 11.8449 & 13.5480 \\
+5602 separated / $G$ & 3.6700 & 1.7366 & 1.7777 & 1.7969 & 1.7727 \\
+5602 separated / both & 30.3140 & 20.1287 & 19.7525 & 17.3723 & 20.3516 \\
+Equal-trajectory mean & 27.1905 & 13.5661 & 13.4152 & 12.1323 & 13.5364 \\
+\midrule
+\multicolumn{6}{l}{\textit{Transfer: G-only future, both seeds}} \\
+5601 ring / $G$ & 74.6585 & 104.0697 & 104.4891 & 100.5207 & 105.1593 \\
+5601 ring / both & 95.5098 & 117.3715 & 117.2502 & 115.7981 & 117.6790 \\
+5601 separated / $G$ & 132.1975 & 151.8483 & 151.6422 & 132.8452 & 152.5906 \\
+5601 separated / both & 54.6151 & 65.0242 & 64.9562 & 65.6758 & 65.0060 \\
+5602 ring / $G$ & 55.0105 & 113.8719 & 112.8804 & 108.5712 & 113.6523 \\
+5602 ring / both & 68.3274 & 228.6207 & 229.2723 & 224.2026 & 231.8518 \\
+5602 separated / $G$ & 148.0354 & 170.0280 & 169.9242 & 155.9375 & 170.1486 \\
+5602 separated / both & 29.4618 & 52.4191 & 52.3939 & 54.0537 & 52.3313 \\
+Equal-trajectory mean & 82.2270 & 125.4067 & 125.3510 & 119.7006 & 126.0524 \\
+\midrule
+\multicolumn{6}{l}{\textit{Transfer: response-pooling future, both seeds}} \\
+5601 ring / both & 18.0012 & 8.0513 & 8.1413 & 7.3488 & 7.9888 \\
+5601 separated / both & 3.5618 & 15.4950 & 15.2567 & 14.3955 & 15.5046 \\
+5602 ring / both & 15.4281 & 9.9644 & 10.0928 & 8.8029 & 9.8555 \\
+5602 separated / both & 3.9085 & 6.9933 & 6.8448 & 5.7467 & 6.9392 \\
+Equal-trajectory mean & 10.2249 & 10.1260 & 10.0839 & 9.0735 & 10.0720 \\
+\bottomrule
+\end{tabular}
+\caption{\textbf{Recent density history improves average retention prediction but fails the primary criterion.} Entries are mean squared errors multiplied by $10^4$; lower is better. Each trajectory averages birth-mass-weighted errors over its fixed anchors. Mean denotes the constant training-mean predictor; Current is the quadratic current-state model, Capacity adds two current-state cubic columns, History adds two local four-step density summaries, and Shuffled shifts those summaries within each anchor. The seed-5602 separated body acquired under $G$ worsens against both current-state controls and shuffled history. Transfer groups are kept separate: both both-history separated bodies worsen under $G$-only continuation, whose group mean also exceeds the constant predictor. These related trajectories and overlapping anchors do not constitute independent environments or cell-level replicates.}
+\label{tab:history-retention-forecast}
+\end{table}

@@ -1,0 +1,156 @@
+{
+  "null": [
+    {
+      "seed": 202610199871,
+      "max_difference": 8.881784197001252e-16
+    },
+    {
+      "seed": 202610199872,
+      "max_difference": 8.881784197001252e-16
+    },
+    {
+      "seed": 202610199873,
+      "max_difference": 4.440892098500626e-16
+    }
+  ],
+  "contact_checks": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/f1875722-4dd2-4d02-8507-3177f4bc8a0a/raw/202610199861_fixed_readout",
+      "formed": 22,
+      "max_creation_distance": 1.035622848130964,
+      "max_energy_residual": 2.250977182427505e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/f1875722-4dd2-4d02-8507-3177f4bc8a0a/raw/202610199861_plastic",
+      "formed": 22,
+      "max_creation_distance": 1.035622848130964,
+      "max_energy_residual": 2.250977182427505e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/637b27a6-59dc-4a48-b0be-50b5fd7fce18/raw/202610199871_fixed",
+      "formed": 22,
+      "max_creation_distance": 1.0470939159375812,
+      "max_energy_residual": 2.4875934645507414e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/637b27a6-59dc-4a48-b0be-50b5fd7fce18/raw/202610199871_fixed_readout",
+      "formed": 22,
+      "max_creation_distance": 1.0470939159375812,
+      "max_energy_residual": 2.6319224577520117e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/637b27a6-59dc-4a48-b0be-50b5fd7fce18/raw/202610199871_passive",
+      "formed": 22,
+      "max_creation_distance": 1.0470939159375812,
+      "max_energy_residual": 2.894212647319705e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/637b27a6-59dc-4a48-b0be-50b5fd7fce18/raw/202610199871_plastic",
+      "formed": 22,
+      "max_creation_distance": 1.0470939159375812,
+      "max_energy_residual": 2.6319224577520117e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/637b27a6-59dc-4a48-b0be-50b5fd7fce18/raw/202610199871_plastic_sign",
+      "formed": 25,
+      "max_creation_distance": 1.1490828985425814,
+      "max_energy_residual": 2.2044865932713265e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/637b27a6-59dc-4a48-b0be-50b5fd7fce18/raw/202610199872_fixed",
+      "formed": 22,
+      "max_creation_distance": 1.0380845045435172,
+      "max_energy_residual": 2.976265067733408e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/637b27a6-59dc-4a48-b0be-50b5fd7fce18/raw/202610199872_fixed_readout",
+      "formed": 22,
+      "max_creation_distance": 1.0380845045435172,
+      "max_energy_residual": 3.0232760739323794e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/637b27a6-59dc-4a48-b0be-50b5fd7fce18/raw/202610199872_passive",
+      "formed": 22,
+      "max_creation_distance": 1.0380845045435172,
+      "max_energy_residual": 2.5599314334989742e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/637b27a6-59dc-4a48-b0be-50b5fd7fce18/raw/202610199872_plastic",
+      "formed": 22,
+      "max_creation_distance": 1.0380845045435172,
+      "max_energy_residual": 3.0232760739323794e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/637b27a6-59dc-4a48-b0be-50b5fd7fce18/raw/202610199872_plastic_sign",
+      "formed": 24,
+      "max_creation_distance": 1.1490958477700008,
+      "max_energy_residual": 2.5719010254832142e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/637b27a6-59dc-4a48-b0be-50b5fd7fce18/raw/202610199873_fixed",
+      "formed": 22,
+      "max_creation_distance": 1.0291938404621621,
+      "max_energy_residual": 2.6205600189843636e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/637b27a6-59dc-4a48-b0be-50b5fd7fce18/raw/202610199873_fixed_readout",
+      "formed": 22,
+      "max_creation_distance": 1.0291938404621621,
+      "max_energy_residual": 2.5885543708525915e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/637b27a6-59dc-4a48-b0be-50b5fd7fce18/raw/202610199873_passive",
+      "formed": 22,
+      "max_creation_distance": 1.0291938404621621,
+      "max_energy_residual": 2.649182956337981e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/637b27a6-59dc-4a48-b0be-50b5fd7fce18/raw/202610199873_plastic",
+      "formed": 22,
+      "max_creation_distance": 1.0291938404621621,
+      "max_energy_residual": 2.5885543708525915e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/637b27a6-59dc-4a48-b0be-50b5fd7fce18/raw/202610199873_plastic_sign",
+      "formed": 28,
+      "max_creation_distance": 1.1486937317612715,
+      "max_energy_residual": 2.8182317590719208e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b680f7d4-d600-46cd-a8d8-77276aceeb42/raw/202610199881_perturb_only",
+      "formed": 22,
+      "max_creation_distance": 1.0398197315344877,
+      "max_energy_residual": 2.6239427297625184e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b680f7d4-d600-46cd-a8d8-77276aceeb42/raw/202610199881_plastic",
+      "formed": 22,
+      "max_creation_distance": 1.0398197315344877,
+      "max_energy_residual": 2.7384344791769877e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b680f7d4-d600-46cd-a8d8-77276aceeb42/raw/202610199882_perturb_only",
+      "formed": 22,
+      "max_creation_distance": 1.0321179428639768,
+      "max_energy_residual": 2.4376334284426093e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b680f7d4-d600-46cd-a8d8-77276aceeb42/raw/202610199882_plastic",
+      "formed": 22,
+      "max_creation_distance": 1.0321179428639768,
+      "max_energy_residual": 3.001071613439876e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b680f7d4-d600-46cd-a8d8-77276aceeb42/raw/202610199883_perturb_only",
+      "formed": 22,
+      "max_creation_distance": 1.0324020704775467,
+      "max_energy_residual": 2.96637714392034e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b680f7d4-d600-46cd-a8d8-77276aceeb42/raw/202610199883_plastic",
+      "formed": 22,
+      "max_creation_distance": 1.0324020704775467,
+      "max_energy_residual": 2.903927098785175e-14
+    }
+  ]
+}

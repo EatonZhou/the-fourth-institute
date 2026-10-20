@@ -1,0 +1,104 @@
+[
+  {
+    "id": "202610197403_0_distractor_lag1_delta_life",
+    "parent_full_saved_fields_exact": true,
+    "erase_body_E_trace_equal": true,
+    "erase_registers_equal": true
+  },
+  {
+    "id": "202610197403_0_distractor_joint_delta_life",
+    "parent_full_saved_fields_exact": true,
+    "erase_body_E_trace_equal": true,
+    "erase_registers_equal": true
+  },
+  {
+    "id": "202610197403_0_distractor_gated_lags_life",
+    "parent_full_saved_fields_exact": true,
+    "erase_body_E_trace_equal": true,
+    "erase_registers_equal": true
+  },
+  {
+    "id": "202610197403_1_distractor_fast_delta_life",
+    "parent_full_saved_fields_exact": true,
+    "erase_body_E_trace_equal": true,
+    "erase_registers_equal": true
+  },
+  {
+    "id": "202610197403_1_distractor_fixed_trace_life",
+    "parent_full_saved_fields_exact": true,
+    "erase_body_E_trace_equal": true,
+    "erase_registers_equal": true
+  },
+  {
+    "id": "202610197403_1_distractor_lag1_delta_life",
+    "parent_full_saved_fields_exact": true,
+    "erase_body_E_trace_equal": true,
+    "erase_registers_equal": true
+  },
+  {
+    "id": "202610197403_1_distractor_joint_delta_life",
+    "parent_full_saved_fields_exact": true,
+    "erase_body_E_trace_equal": true,
+    "erase_registers_equal": true
+  },
+  {
+    "id": "202610197403_1_distractor_gated_lags_life",
+    "parent_full_saved_fields_exact": true,
+    "erase_body_E_trace_equal": true,
+    "erase_registers_equal": true
+  },
+  {
+    "id": "202610197404_0_distractor_fast_delta_life",
+    "parent_full_saved_fields_exact": true,
+    "erase_body_E_trace_equal": true,
+    "erase_registers_equal": true
+  },
+  {
+    "id": "202610197404_0_distractor_lag1_delta_life",
+    "parent_full_saved_fields_exact": true,
+    "erase_body_E_trace_equal": true,
+    "erase_registers_equal": true
+  },
+  {
+    "id": "202610197404_0_distractor_joint_delta_life",
+    "parent_full_saved_fields_exact": true,
+    "erase_body_E_trace_equal": true,
+    "erase_registers_equal": true
+  },
+  {
+    "id": "202610197404_0_distractor_gated_lags_life",
+    "parent_full_saved_fields_exact": true,
+    "erase_body_E_trace_equal": true,
+    "erase_registers_equal": true
+  },
+  {
+    "id": "202610197404_1_distractor_fast_delta_life",
+    "parent_full_saved_fields_exact": true,
+    "erase_body_E_trace_equal": true,
+    "erase_registers_equal": true
+  },
+  {
+    "id": "202610197404_1_distractor_fixed_trace_life",
+    "parent_full_saved_fields_exact": true,
+    "erase_body_E_trace_equal": true,
+    "erase_registers_equal": true
+  },
+  {
+    "id": "202610197404_1_distractor_lag1_delta_life",
+    "parent_full_saved_fields_exact": true,
+    "erase_body_E_trace_equal": true,
+    "erase_registers_equal": true
+  },
+  {
+    "id": "202610197404_1_distractor_joint_delta_life",
+    "parent_full_saved_fields_exact": true,
+    "erase_body_E_trace_equal": true,
+    "erase_registers_equal": true
+  },
+  {
+    "id": "202610197404_1_distractor_gated_lags_life",
+    "parent_full_saved_fields_exact": true,
+    "erase_body_E_trace_equal": true,
+    "erase_registers_equal": true
+  }
+]

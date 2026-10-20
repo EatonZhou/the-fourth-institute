@@ -1,0 +1,31 @@
+{
+  "id": "5f08b6b0-ceb7-4dc1-a70e-ee5d0052e9aa",
+  "name": "embodied-memory-comparison-33",
+  "command": [
+    ".venv/bin/python",
+    "-m",
+    "research.embodied_adaptive_memory.run_v2"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "resident33-embodied-memory-comparison-20261019-v1",
+  "status": "completed",
+  "created_at": "2026-10-19T12:43:02.554686+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5f08b6b0-ceb7-4dc1-a70e-ee5d0052e9aa",
+  "pid": 356806,
+  "manual_pause": false,
+  "create_time": 1792413782.02,
+  "started_at": "2026-10-19T12:43:02.635505+00:00",
+  "returncode": 0,
+  "finished_at": "2026-10-19T12:43:11.959182+00:00",
+  "result": {
+    "status": "completed",
+    "job": "5f08b6b0-ceb7-4dc1-a70e-ee5d0052e9aa",
+    "native": 7208,
+    "paths": 8,
+    "failed": 0,
+    "raw": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5f08b6b0-ceb7-4dc1-a70e-ee5d0052e9aa/raw",
+    "raw_bytes": 111624275,
+    "seconds": 8.77311060403008
+  }
+}

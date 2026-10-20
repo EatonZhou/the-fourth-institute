@@ -1,0 +1,23 @@
+[Unit]
+Description=Portal Codex app-server (account %i)
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=@PORTAL_ACCOUNTS_ROOT@/codex/%i/auth.json
+
+[Service]
+Type=simple
+WorkingDirectory=@PORTAL_ACCOUNTS_ROOT@/codex/%i
+Environment=CODEX_HOME=@PORTAL_ACCOUNTS_ROOT@/codex/%i
+@PORTAL_PROVIDER_EGRESS_DIRECTIVE@
+ExecStartPre=/usr/bin/mkdir -p @PORTAL_INSTANCES_ROOT@/sockets
+ExecStartPre=/usr/bin/rm -f @PORTAL_INSTANCES_ROOT@/sockets/codex-%i.sock
+ExecStart=@PORTAL_CODEX_BINARY@ app-server --listen unix://@PORTAL_INSTANCES_ROOT@/sockets/codex-%i.sock
+Restart=always
+RestartSec=2
+TimeoutStopSec=15
+MemoryHigh=32G
+MemoryMax=36G
+MemorySwapMax=1G
+
+[Install]
+WantedBy=default.target

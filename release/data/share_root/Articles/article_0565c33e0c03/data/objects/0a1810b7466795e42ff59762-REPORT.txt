@@ -1,0 +1,41 @@
+local_metabolic_translocation_20261018: completed fixed-mechanism pilot
+
+Unique job 39f866d1-9576-42d7-8e8a-9014b210c7b3; 1029 actual native attempts/commits; 61.589058 runner worker seconds including first failed boundary attempt. Four new256 paths; two exact old256 P1F1 references used read-only. No learning.
+
+Frozen criterion: each of the two late64 windows has born>=death (tolerance1e-8), all M>=32, and nondecreasing E. No parameter/threshold/schedule selection after results.
+
+Finite renewal passes: ['g1_f2_c0--compact--supported--diffusion']
+
+Only g1_f2 diffusion passes: late windows257..320 and321..384 have born-minus-death +.025406527/+.026068661, deltaE +.609132388/+.908613273, minM63.798237/63.830018. The other three new arms and both old no-pump references fail the frozen criterion. This is finite-window evidence, not an indefinitely maintained organism.
+
+The passing diffusion path ends with E8.680755 below its no-pump reference and pays21.956846 additional pump energy; total M+3.073149/bodytime+26.055537. Its late local recovery is not Pareto superiority. Directed transport costs less but does not pass either body. Simple diffusion explains the only criterion success; no need to call it a learned method.
+
+All four pump paths increase births, deaths and surviving post128 tissue relative to their own old references, while retaining less original128 material. Increased replacement is not reduced mortality. The two parent rules are existing examples, not independent ecological replicates.
+
+Pump q is cumulative edge-crossing cargo, not distinct resource parcels; a parcel may move again in a later step. Requested-minus-paid directed cost also includes simultaneous target rejection, not just energy shortage. Energy-unaffordable is separately zero in these four paths. Basal underpayment is only floating-point residue below4e-16, with zero starvation loss.
+
+Original15691ada native transport/growth/config/kernels/donor costs unchanged; zero active movement commands, native passive movement retained. Added price.08E/q/hop and cargo P=q/F=.42q are explicit new assumptions, not original capabilities or measured biology.
+
+Original completed old-survivor energy, excluding newborn endowment, pays after reserving next dt basal fee. One synchronous four-neighbor transfer after native return; only next step can use incoming inventory. No rerun of rate/admit/native to choose transfers. Permeability and donor/target caps are frozen; no same-step forwarding or reallocation.
+
+Same gross P1F1 input and original384 horizon; body-following spatial input may diverge after states diverge. Same tariff is not equal actual fees/flux. Directed vs diffusion changes actual resource/energy/organization jointly; no pure information or learning claim.
+
+Exact two128 parent joint physical/label states and frozen hashes were checked. Old raw records are never populated with new pump-stage fields. New per-step pump packets and predetermined full joint states preserve all prices/flows. Original birth_fuel already includes newborn energy+synthesis_heat+template_heat; do not double count. Added pump heat is distinct.
+
+First attempt completed three boundary calls then failed because the restore comparison included the changing global attempted_body_steps audit counter. No scientific path ran. Original source/result remain in first_attempt and original plan source. Same runner job/request resumed from complete clock130, two new131 boundary calls, excluding only audit count; all actual state/maps/other checks equal. Physical core and scientific parameters unchanged; all five calls counted. No old prefix129/130 replay.
+
+All active-minus-control M/E/U/bodytime/born/death/later tissue/pump fee:
+
+{"parent": "g1_f1_c0--compact--supported", "contrast": "directed-reference", "M": 1.1374481454549539, "E": 0.06961051642610983, "U": 24.636096309827067, "bodytime": 12.567279483703942, "born": 13.898803878492835, "death": 12.761355733037831, "post128_tissue": 8.416876317569628, "pump_fee": 0.9251907317897955}
+
+{"parent": "g1_f1_c0--compact--supported", "contrast": "diffusion-reference", "M": 1.889249244495204, "E": -0.2541563353223495, "U": 43.22319901663367, "bodytime": 21.366964534532258, "born": 21.776515626538803, "death": 19.887266382043578, "post128_tissue": 12.804558667967857, "pump_fee": 6.574859745759984}
+
+{"parent": "g1_f1_c0--compact--supported", "contrast": "directed-diffusion", "M": -0.7518010990402502, "E": 0.3237668517484593, "U": -18.587102706806604, "bodytime": -8.799685050828316, "born": -7.877711748045968, "death": -7.125910649005746, "post128_tissue": -4.387682350398229, "pump_fee": -5.649669013970189}
+
+{"parent": "g1_f2_c0--compact--supported", "contrast": "directed-reference", "M": 0.5934721569919077, "E": -0.5868970415910439, "U": 10.854099132531204, "bodytime": 4.929389059224945, "born": 6.343200716708864, "death": 5.749728559716985, "post128_tissue": 4.439320691888938, "pump_fee": 0.7845629848409463}
+
+{"parent": "g1_f2_c0--compact--supported", "contrast": "diffusion-reference", "M": 3.073148582189461, "E": -8.68075457520267, "U": 35.87463060544286, "bodytime": 26.055537397439025, "born": 15.462279259985308, "death": 12.38913067779589, "post128_tissue": 12.471092542223978, "pump_fee": 21.956845858086762}
+
+{"parent": "g1_f2_c0--compact--supported", "contrast": "directed-diffusion", "M": -2.479676425197553, "E": 8.093857533611626, "U": -25.020531472911657, "bodytime": -21.12614833821408, "born": -9.119078543276444, "death": -6.639402118078905, "post128_tissue": -8.03177185033504, "pump_fee": -21.172282873245816}
+
+All four fixed windows, complete old/new-tissue accounting, costs/denials and external sinks are in windows.csv/all_arms.csv/balance_validation.json. Two existing bodies/known geometry are not independent held-out ecology replicates. No extension of supply or learning follows automatically.

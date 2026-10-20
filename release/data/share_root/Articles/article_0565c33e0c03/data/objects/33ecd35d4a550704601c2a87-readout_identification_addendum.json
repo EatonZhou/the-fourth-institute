@@ -1,0 +1,78 @@
+{
+  "schema": "event-reservoir-readout-identification-addendum-v1",
+  "owner": "resident_33af539c4a17",
+  "date": "2026-10-18",
+  "original_handoff_sha256": "8217c47522bb24c5dd24123513763eccb90a6a65f46487f29c4c127251a40b55",
+  "scope": "Static reading of the two frozen plans, policy.py and existing summary.csv. No simulation, checkpoint replay or recomputation of path metrics. Original files remain unchanged.",
+  "implemented_arms": [
+    "event_rls",
+    "freeze24",
+    "current_rls",
+    "cue_last_pair",
+    "history_q",
+    "reactive",
+    "camp_left",
+    "camp_right",
+    "oracle",
+    "surprise_probe"
+  ],
+  "feature_controls": {
+    "current_rls": "policy.py:33 zeros all six delayed event features for the RLS proposal. The shared encoder still advances and cue is stored by the common implementation, but that held cue is not supplied separately to this RLS proposal. This is not a clean removal of oscillator computation or its overhead.",
+    "freeze24": "Weight updates stop at cycle24; the fixed encoder continues to receive paid phase0 cues and evolve. It tests stopping further learning after a shared learned prefix, not eliminating memory or learning from birth.",
+    "sample_and_hold_with_same_rls": "NOT RUN. No arm replaces only the oscillatory features with a held current cue while retaining the same RLS, action selection, fee schedule and training protocol.",
+    "cue_last_pair": "policy.py:28 holds the paid phase0 cue. Lines39-42 combine it with the latest stored legal training-period cue/action/intake tuple through a preprogrammed binary-complement rule. Lines54-55 update the tuple only during training. This arm contains cue holding but also changes the prediction rule; it does not isolate the necessity of oscillators.",
+    "history_q": "The shared ce2 history baseline also does not provide a same-RLS encoder substitution control.",
+    "temporal_order_control": "NOT RUN. No matched time-order shuffle, reversed-order control, single-timescale replacement or equal-dimensional nonoscillatory representation control exists in these two plans.",
+    "conclusion": "Event versus current-only supports access to vanished cue information, not necessity or superiority of multiple oscillatory timescales. Strong cue-aware recent-pair performance supplies an existing simpler alternative."
+  },
+  "time_boundary": {
+    "training_cycles": "0..31",
+    "unannounced_reversal_cycle": 24,
+    "post_reversal_training_cycles": "24..31 (eight cycles)",
+    "frozen_test_cycles": "32..47",
+    "test_sensing": "Paid current cues are still sensed/encoded; weights are not updated. cue_last_pair retains its last legal training-period tuple while the current cue changes.",
+    "deployment_reversal": "NOT TESTED: no new relationship switch after cycle32 and no ongoing deployment weight update in the frozen test.",
+    "surprise_probe": "Only during training: a completed residual below -0.5 triggers next-training-decision maximal x^T P_a x. Same tapes as the original batch; not independent held-out confirmation."
+  },
+  "outcome_windows": {
+    "capture": "Reported .046984 event and .368268 probe are frozen-test uptake fractions, not full-life intake fractions or direct prediction scores.",
+    "writer_reported_test_window_deltas": {
+      "attribution": "Values supplied by manuscript owner after reading original runs/cycles; not independently recomputed in this addendum.",
+      "event_rls": {
+        "delta_M": -29.902632,
+        "delta_E": -17.576049
+      },
+      "surprise_probe": {
+        "delta_M": -14.346208,
+        "delta_E": -19.170385
+      }
+    },
+    "existing_summary_final_state_means": {
+      "event_rls": {
+        "M": 0.0,
+        "E": 0.0,
+        "body_time_mass_steps": 33981.814180359994
+      },
+      "surprise_probe": {
+        "M": 18.326760403738554,
+        "E": 13.548239860251371,
+        "body_time_mass_steps": 42358.955979253325
+      },
+      "cue_last_pair": {
+        "M": 46.11191184096193,
+        "E": 58.8942413878845,
+        "body_time_mass_steps": 50177.54703021632
+      }
+    },
+    "interpretation": "Test-window changes and final-state means answer different questions. The policies have already diverged before the test begins; their test-window baselines are not matched physical states. Higher test capture does not imply nonnegative test energy change. Neither finite metric establishes indefinite maintenance."
+  },
+  "other_unidentified_mechanisms": [
+    "The surprise intervention does not isolate maximal-leverage action selection from generic extra sampling.",
+    "No claim that the inverse design matrix P is calibrated change-point uncertainty.",
+    "The absence of TD bootstrap is an implementation description, not novelty.",
+    "The fixed public schedule, direct locomotor program, fixed encoder and lifetime-learned readout must remain separate.",
+    "The PI physiological necessary condition in physiological_feasibility_addendum.json limits long-run interpretation without erasing finite matched-task policy differences."
+  ],
+  "new_experiments": 0,
+  "future_action": "Record the missing controls; do not launch them in response to this manuscript clarification. Any subsequent method work uses ce2's independently versioned shared core."
+}

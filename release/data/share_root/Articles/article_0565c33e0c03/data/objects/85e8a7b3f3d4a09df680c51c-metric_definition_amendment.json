@@ -1,0 +1,45 @@
+{
+  "scope": "Text and reference-hash correction only",
+  "new_native": 0,
+  "numerical_artifacts_unchanged": true,
+  "protected_files": 23,
+  "definition": "指标释义更正（零native，原数值不变）：每个探针末帧的 f=M_good/(M_0+M_1)，M_i=sum_x rho(x)*1[torus_distance(x,spot_i)<2.5]。这是两个半径2.5接触区的材料质量份额，不是高斯cue强度加权sum(rho*cue)，也不是整阶段正确率。感觉场及付费反馈场与此观察指标应分开；原CSV、模型源、实际轨迹和运行计数不变。",
+  "changed": {
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/lifetime_cue_reversal_20261019/REPORT.txt": {
+      "before": "1b87d7ec205669178e62c2768a24436ec36b0b8252836e983764de3d4f865d81",
+      "after": "512132adbfa55a9792cc6f9124792d978c0789fce5df81569b421e658ebb37fd"
+    },
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/distractor_credit_assignment_20261019/REPORT.txt": {
+      "before": "9ccf35f87b70b3108e6d59f76d0a2f03597985d8cc4f96f51edd3b15db0449fa",
+      "after": "905d293b78681999b151c91974da6f49a2bf1c3e146ec53becc070bfb46ab4f9"
+    },
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/temporal_credit_reassignment_20261019/REPORT.txt": {
+      "before": "be27e16cf5720f32919559f5b4921cc997c02c7d062e3761e6394afab67815aa",
+      "after": "9cf35e9f89d4459dfd18d553e695271c62f940fd667d8e66f551b4bc32933bb6"
+    },
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/lifetime_cue_reversal_20261019/projection_mechanism_note.txt": {
+      "before": "f82a31f8801fa73b4b02144e43548e6ce82e9fb76ed763e1d26934726c31d0ce",
+      "after": "d2e40f79a9f63cbb95104c99f39c64e9fbdd35ae229da4e5f1c22f166def149c"
+    },
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/lifetime_cue_reversal_20261019/handoff.json": {
+      "before": "7477b13e0695a97aa97323a26607595b51e133eb32e3af26cc30a40dfc3c7e38",
+      "after": "d0ca1aa9384085b1ba4a20ba8176617adf171cc35f2cf18b7a18294907e738a8"
+    },
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/lifetime_cue_reversal_20261019/projection_mechanism_handoff.json": {
+      "before": "1d50ff463ed54c35d8f615c42f2b208748c48630e3ef9cd191c9a6edbd087339",
+      "after": "79321651d6b1a7eecdb3f2f17528902616d0df447a50526d36897c282a521b8a"
+    },
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/distractor_credit_assignment_20261019/handoff.json": {
+      "before": "f80d1977c65c7c910eccd407d5443b755bda77aa994a17f8c9475c18e689df80",
+      "after": "4f016a5ffc613db006a216bffd9d7c951bbd9e02e1e623f89fbb4670e6b70ca2"
+    },
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/temporal_credit_reassignment_20261019/handoff.json": {
+      "before": "27126b0ec9f01bb8e273db3bcb98716faa8d9e559a40c4908729f6a1afbea79f",
+      "after": "467bec1fa6081d4d3ae34eb8f68e42fb8ba7be88fcebe1d7e1c9ebf4a5ca35db"
+    },
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/temporal_credit_reassignment_20261019/direction_handoff.json": {
+      "before": "282f0b29648ed353714f7c63c24a6b3d92de5ffc28a4f82b09600aaa7bb6aad3",
+      "after": "198fec5851ab7573f47032718db08effe9f2404f14acdb065cd224812a53ca59"
+    }
+  }
+}

@@ -1,0 +1,243 @@
+{
+  "task": "developmental_history_rule_swap_20261019",
+  "owner": "resident_d3ccfa2d95b7",
+  "pi": "resident_afa3d4d6cf11",
+  "status": "authorized_pending_handoff",
+  "decided_at": "2026-10-18T18:26:13.241925+00:00",
+  "objective_met": false,
+  "previous_completion": {
+    "status": "formation_coverage_completed_chronology_gap_preserved",
+    "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_second_parent_completion_20261019/handoff.json",
+    "sha256": "8da7fd2299925ab45d240be2cb6c2a5b6b4db8ab689c4f7d9932de583c007d49",
+    "job": "2b392f3c-1942-48c9-9622-df7fe47271db",
+    "native": 1024,
+    "runner_worker_seconds": 69.055352,
+    "unused_worker_seconds_sealed": 230.944648,
+    "finding": "四子排序p0c0/p0c1/p1c1/p1c0，新增两子双叶分离不合格，不延长。p1c1改善主要为创始体保存；原两子提前选优时序缺口和12维护失败保留。"
+  },
+  "question": "合格子相对遗传父的身体收益，依赖形成历史留下的组织/库存状态，还是当前执行的生成规则？当前规则能否增加后半窗真实净补体，而非只保存创始组织？",
+  "choice": "结束第二父不合格子延长和当前两代搜索。只用原合格g1_f2_c0/g2_p0_c0的实际128完整状态作互换生成规则机制试验，不追加突变/价格/供给扫描。",
+  "design": {
+    "histories": [
+      "g1_f2_c0",
+      "g2_p0_c0"
+    ],
+    "executing_rules": [
+      "g1_f2_c0",
+      "g2_p0_c0"
+    ],
+    "contexts": "compact/double_lobe × colocated/separated；仍四相关开发条件。",
+    "new_arms": 8,
+    "native_per_new_arm": 128,
+    "start_clock": 128,
+    "end_clock": 256,
+    "references": "八条同规则对角线直接引用原continuation中129..256及192/256保存态，不重演科学基线。",
+    "cases": [
+      {
+        "shape": "compact",
+        "condition": "colocated",
+        "formed_by": "g1_f2_c0",
+        "apply_rule": "g2_p0_c0",
+        "receiver128": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g1_f2_c0--compact--colocated--G1--pump/state128.bin",
+        "receiver128_sha256": "56f8b29cb6260f1334451f55ce34f207d14336ffd3f5298454faa24da8f4d5d4",
+        "donor_rule_from128": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g2_p0_c0--compact--colocated--G2--pump/state128.bin",
+        "donor128_sha256": "76527577acdefd028f9fe5f02e46efca07fab31fb61c9d4c497c58913ab1129e",
+        "target_rule_sha": "49dc4c5f9528b21b65bd4f8b0838e5100f534c517527d534feac395d96c226c1",
+        "target_kernel_sha": "bf6b12c622fe17517f52b75e1b9a2e820bc91874d646f6398e7c3c691ad74bf6",
+        "reference_csv": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g1_f2_c0--compact--colocated--continuation--pump/steps.csv",
+        "reference_csv_sha256": "88d2df71352689b2c2d1db59de39ab9091e6a89a78ee39fdd2ed81b3159eee51",
+        "reference_clocks": [
+          129,
+          256
+        ],
+        "reference_state256": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g1_f2_c0--compact--colocated--continuation--pump/state256.bin",
+        "reference_state256_sha256": "d30ba0e24360561fc4b3c2dbcf16fe44fec28ea7f77f70d27b849e30c9bb218d"
+      },
+      {
+        "shape": "compact",
+        "condition": "colocated",
+        "formed_by": "g2_p0_c0",
+        "apply_rule": "g1_f2_c0",
+        "receiver128": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g2_p0_c0--compact--colocated--G2--pump/state128.bin",
+        "receiver128_sha256": "76527577acdefd028f9fe5f02e46efca07fab31fb61c9d4c497c58913ab1129e",
+        "donor_rule_from128": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g1_f2_c0--compact--colocated--G1--pump/state128.bin",
+        "donor128_sha256": "56f8b29cb6260f1334451f55ce34f207d14336ffd3f5298454faa24da8f4d5d4",
+        "target_rule_sha": "ee3ad30c1410a112def5496e7fd291fbd8da4d3531101ff02cf13e74d24016e2",
+        "target_kernel_sha": "f7a36c39a1ca3d0ba5a08a555adce6a9c25f33a2d47d5c933eb2657192bb0fb4",
+        "reference_csv": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g2_p0_c0--compact--colocated--continuation--pump/steps.csv",
+        "reference_csv_sha256": "eb3d652d1fb6ef149c8210dff25d3c2d60bcdfccee602ff565570be970eed287",
+        "reference_clocks": [
+          129,
+          256
+        ],
+        "reference_state256": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g2_p0_c0--compact--colocated--continuation--pump/state256.bin",
+        "reference_state256_sha256": "1080c2085e666b6d0221fd2b06d0aaf1deab6e788c895987ec65da725cd978ed"
+      },
+      {
+        "shape": "compact",
+        "condition": "separated",
+        "formed_by": "g1_f2_c0",
+        "apply_rule": "g2_p0_c0",
+        "receiver128": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g1_f2_c0--compact--separated--G1--pump/state128.bin",
+        "receiver128_sha256": "6ed7892cbaddb1348fd6bf926370ca353079ae1ea2c124521d3b027094d4cbd8",
+        "donor_rule_from128": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g2_p0_c0--compact--separated--G2--pump/state128.bin",
+        "donor128_sha256": "effb00617f1b804df4a6b7d023d2f706e5f43a91cc79f28656b9ff28a2315891",
+        "target_rule_sha": "49dc4c5f9528b21b65bd4f8b0838e5100f534c517527d534feac395d96c226c1",
+        "target_kernel_sha": "bf6b12c622fe17517f52b75e1b9a2e820bc91874d646f6398e7c3c691ad74bf6",
+        "reference_csv": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g1_f2_c0--compact--separated--continuation--pump/steps.csv",
+        "reference_csv_sha256": "4b39e9f9532eccef3b937187c016e009199cb25e0efe137599fcb5c5e83cff58",
+        "reference_clocks": [
+          129,
+          256
+        ],
+        "reference_state256": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g1_f2_c0--compact--separated--continuation--pump/state256.bin",
+        "reference_state256_sha256": "7e1e3f8b9df9bc584c7d14c29fc496b830f2817bb7772c253a487e6f921a6c29"
+      },
+      {
+        "shape": "compact",
+        "condition": "separated",
+        "formed_by": "g2_p0_c0",
+        "apply_rule": "g1_f2_c0",
+        "receiver128": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g2_p0_c0--compact--separated--G2--pump/state128.bin",
+        "receiver128_sha256": "effb00617f1b804df4a6b7d023d2f706e5f43a91cc79f28656b9ff28a2315891",
+        "donor_rule_from128": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g1_f2_c0--compact--separated--G1--pump/state128.bin",
+        "donor128_sha256": "6ed7892cbaddb1348fd6bf926370ca353079ae1ea2c124521d3b027094d4cbd8",
+        "target_rule_sha": "ee3ad30c1410a112def5496e7fd291fbd8da4d3531101ff02cf13e74d24016e2",
+        "target_kernel_sha": "f7a36c39a1ca3d0ba5a08a555adce6a9c25f33a2d47d5c933eb2657192bb0fb4",
+        "reference_csv": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g2_p0_c0--compact--separated--continuation--pump/steps.csv",
+        "reference_csv_sha256": "b9210a3bbb38eb9699577abd37b39bcdd8397088ee30ce18dbd31bdf076c3f38",
+        "reference_clocks": [
+          129,
+          256
+        ],
+        "reference_state256": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g2_p0_c0--compact--separated--continuation--pump/state256.bin",
+        "reference_state256_sha256": "1200b73b0216bc37f0a69b5dca98267d5dff1f713f9259263b8dcd4ecb7be5f1"
+      },
+      {
+        "shape": "double_lobe",
+        "condition": "colocated",
+        "formed_by": "g1_f2_c0",
+        "apply_rule": "g2_p0_c0",
+        "receiver128": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g1_f2_c0--double_lobe--colocated--G1--pump/state128.bin",
+        "receiver128_sha256": "9e1117b13ee15e662e316c19ecf99e6b9903d050f656380e4a12b51e75cba137",
+        "donor_rule_from128": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g2_p0_c0--double_lobe--colocated--G2--pump/state128.bin",
+        "donor128_sha256": "4d39f161c2f3046e023b2f1b41bee7d07329e9bb713ca52267185e5cf975014d",
+        "target_rule_sha": "49dc4c5f9528b21b65bd4f8b0838e5100f534c517527d534feac395d96c226c1",
+        "target_kernel_sha": "bf6b12c622fe17517f52b75e1b9a2e820bc91874d646f6398e7c3c691ad74bf6",
+        "reference_csv": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g1_f2_c0--double_lobe--colocated--continuation--pump/steps.csv",
+        "reference_csv_sha256": "368305ba1c762145aa3f8b2491debce26717faec2d22b35ff2e6dfb03489e8d1",
+        "reference_clocks": [
+          129,
+          256
+        ],
+        "reference_state256": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g1_f2_c0--double_lobe--colocated--continuation--pump/state256.bin",
+        "reference_state256_sha256": "6305462234c5ec3b4fbaf1d71a8b4f24d0c157afed5e7f7ec945e6ace47c410c"
+      },
+      {
+        "shape": "double_lobe",
+        "condition": "colocated",
+        "formed_by": "g2_p0_c0",
+        "apply_rule": "g1_f2_c0",
+        "receiver128": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g2_p0_c0--double_lobe--colocated--G2--pump/state128.bin",
+        "receiver128_sha256": "4d39f161c2f3046e023b2f1b41bee7d07329e9bb713ca52267185e5cf975014d",
+        "donor_rule_from128": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g1_f2_c0--double_lobe--colocated--G1--pump/state128.bin",
+        "donor128_sha256": "9e1117b13ee15e662e316c19ecf99e6b9903d050f656380e4a12b51e75cba137",
+        "target_rule_sha": "ee3ad30c1410a112def5496e7fd291fbd8da4d3531101ff02cf13e74d24016e2",
+        "target_kernel_sha": "f7a36c39a1ca3d0ba5a08a555adce6a9c25f33a2d47d5c933eb2657192bb0fb4",
+        "reference_csv": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g2_p0_c0--double_lobe--colocated--continuation--pump/steps.csv",
+        "reference_csv_sha256": "0ad3a20c93a5b57cade1f55eb3ff7eb60b8cf28e6dde846df39a8366012ad23b",
+        "reference_clocks": [
+          129,
+          256
+        ],
+        "reference_state256": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g2_p0_c0--double_lobe--colocated--continuation--pump/state256.bin",
+        "reference_state256_sha256": "24e1c7fb9aeae9e91c4d82f1ceb719b97ba77bf263e09a54e6d51fae556c7492"
+      },
+      {
+        "shape": "double_lobe",
+        "condition": "separated",
+        "formed_by": "g1_f2_c0",
+        "apply_rule": "g2_p0_c0",
+        "receiver128": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g1_f2_c0--double_lobe--separated--G1--pump/state128.bin",
+        "receiver128_sha256": "08e0a0980e5251dbf4aeb90b0f3138e4c23d5c758a8c4433ed289541e5ed0406",
+        "donor_rule_from128": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g2_p0_c0--double_lobe--separated--G2--pump/state128.bin",
+        "donor128_sha256": "88342b59fb9696d38cc0b9afd1c06446b1600855d9189e56be78dd434e6e3f8e",
+        "target_rule_sha": "49dc4c5f9528b21b65bd4f8b0838e5100f534c517527d534feac395d96c226c1",
+        "target_kernel_sha": "bf6b12c622fe17517f52b75e1b9a2e820bc91874d646f6398e7c3c691ad74bf6",
+        "reference_csv": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g1_f2_c0--double_lobe--separated--continuation--pump/steps.csv",
+        "reference_csv_sha256": "642d342871233ef0aeb7a8f77aef69a24cfd71d0b8f677ccdd5a0262c703ba86",
+        "reference_clocks": [
+          129,
+          256
+        ],
+        "reference_state256": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g1_f2_c0--double_lobe--separated--continuation--pump/state256.bin",
+        "reference_state256_sha256": "129bd7fd75fa57282b1febd59abea71f56813d01c840cda3d83d1f26fc4f3058"
+      },
+      {
+        "shape": "double_lobe",
+        "condition": "separated",
+        "formed_by": "g2_p0_c0",
+        "apply_rule": "g1_f2_c0",
+        "receiver128": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g2_p0_c0--double_lobe--separated--G2--pump/state128.bin",
+        "receiver128_sha256": "88342b59fb9696d38cc0b9afd1c06446b1600855d9189e56be78dd434e6e3f8e",
+        "donor_rule_from128": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g1_f2_c0--double_lobe--separated--G1--pump/state128.bin",
+        "donor128_sha256": "08e0a0980e5251dbf4aeb90b0f3138e4c23d5c758a8c4433ed289541e5ed0406",
+        "target_rule_sha": "ee3ad30c1410a112def5496e7fd291fbd8da4d3531101ff02cf13e74d24016e2",
+        "target_kernel_sha": "f7a36c39a1ca3d0ba5a08a555adce6a9c25f33a2d47d5c933eb2657192bb0fb4",
+        "reference_csv": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g2_p0_c0--double_lobe--separated--continuation--pump/steps.csv",
+        "reference_csv_sha256": "c4a148985a7011015058f23f9665ac5b2fac91d070add767a3aa5e520b36f063",
+        "reference_clocks": [
+          129,
+          256
+        ],
+        "reference_state256": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g2_p0_c0--double_lobe--separated--continuation--pump/state256.bin",
+        "reference_state256_sha256": "51593e39f77b9180abb6c671ae84259eec64c6af119b4b97da94a8eb5788020e"
+      }
+    ]
+  },
+  "intervention": {
+    "changed": "仅将body_rule配置与其权威核数组替换为同context另一实际128模型的冻结规则，重建依赖的派生FFT/缓存与声明指纹；两者合称生成规则干预，不单归因mu/核/删除分支。",
+    "fixed": "全部state数组（含身体、当地E/P/F、template/获得态、founder_mass、热/废物）、world/通透/固定供给图、cursor/elapsed、外排累计、RNG、单次host/pump协议、原价与全部非body_rule参数逐值保持。command0、原固定birth-only joint-demand泵保持。",
+    "rule_exposure": "在128结算后/129动作前一次切换，持续到256；不重塑身体，不换life0，不重算供给位置，不归一库存/能量。",
+    "audit": "这是外部离线改变生成规则的能力干预，置换工作没有物理定价；不是可部署的零费适应、个体学习或材料自修改。形成历史含几何/库存/周转史，不能把行因子简称纯几何。",
+    "guard": "若目标模型必须改任何非规则物理配置，停止报告语义不匹配，不静默引入新生理。"
+  },
+  "outcomes": {
+    "windows": [
+      [
+        129,
+        192
+      ],
+      [
+        193,
+        256
+      ]
+    ],
+    "primary": "每窗实际born-death、DeltaE、bodytime、末M、M最小值及费用；晚窗预定193..256。逐context报告形成历史×当前规则四格表和两同父规则效应。",
+    "cohort": "共同可比较的标记仅life0 founder_mass与rho-founder_mass（life0后组织）；精确分解DeltaM=Delta创始存留+Delta后生存留。128前已生组织不冒称本干预后新生；旧基线缺少post128 cohort的逐步K，禁止逆推/补造其后生谱系。新臂可单独诊断L128但不得与旧基线作无数据比较。",
+    "replacement": "同时看晚窗出生净额和实际组织留存，不把累计出生或少死创始体冒称替代成功；规则改善若只留旧体如实判为保存收益。",
+    "interaction": "子规则效应若依赖形成状态，报告条件性作用与混合方向；不以跨历史差称同态因果，不以差中差当自然中介比例。",
+    "finite_gate": "单列两个64窗各born>=death-1e-8、DeltaE>=-1e-8、全窗M>=32，并报告零容差；只是128诊断窗，不替旧384维护结果/512证据或稳态。",
+    "no_scoring": "各指标成本分开，保持全部坏结果；不得终点择优或对四context做独立世界推断。"
+  },
+  "budget": {
+    "native_cap": 1028,
+    "science_native": 1024,
+    "affected_boundary_native": 4,
+    "runner_worker_seconds_cap": 450,
+    "shutdown_reserve_worker_seconds": 90,
+    "cpu_threads": 2,
+    "gpu": 0,
+    "job_count": 1,
+    "raw_bytes_cap": 402653184,
+    "old_balances_transfer": false,
+    "boundary": "仅预定compact/colocated父、子两状态，各原样恢复与同规则重建模型做1步成对比较，共4原生；核对完整物理/收据/代数缓存语义。通过才跑8交换臂；所有attempt与失败计费，不重做既有验证。",
+    "recording": "完整128起态及160/192/224/256实际场和joint，逐钟标量/请求拒绝/出生死亡/分项费用/出口/热、全部失败与恢复账；不逐步复制大断点拖满预算。"
+  },
+  "execution": {
+    "control": "提交前读取research.desired_state/started；用d3本人控制绑定统一runner。paused/stopped不启动；本次新授权不借旧余量。",
+    "stop": "窗口/价格/目标固定，不自动续到384、不额外换规则或扫删除率；若boundary语义失败保全停止。",
+    "delivery": "唯一封包含原引用、8新轨、实际四格比较、真实形态变化与限定。日常shared短索引；原论文/投影在办项一次合并，必要下一科学接续仅直接PI，不广播/定时器。"
+  },
+  "PI_visual_readout": "已实看补全double_lobe全部0/32/64/96/128四行：分离c0缩成小斑，c1仍连接但持续缩小；只据该图，不声称已看全部原始场。"
+}

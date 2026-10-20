@@ -1,0 +1,94 @@
+material_action_response_v1 — native 96x96 generative material extension
+
+from environment_evolution.material_action_response.core import MaterialActionBody, fixed_action
+from environment_evolution.regenerative_actor.model import ForwardPermit
+env = MaterialActionBody.from_formation(path, expected_sha256)
+obs = env.observe_local()
+receipt, checks = env.step(action, permit=permit)
+env.save(path)
+env = MaterialActionBody.restore(path)
+
+Instantiation and restore do not advance physics. Use only the funded unified
+runner for step; every attempted native model call consumes the shared permit.
+step accepts one finite float array (2,96,96), channels (dy,dx), pointwise norm
+<=1. The inherited polarity_gain=.5 multiplies these two signed face drives.
+There is no global normalization, sum-to-action, centroid control or body roll.
+Four face order: +y,-y,+x,-x. Geometry has periodic boundaries. Face permeability
+is symmetric and multiplies rates, not payload: blocked material stays at source.
+
+Source: two actual complete formation128 packets, including all local physical,
+stock, legacy controller and kernel arrays. No formation replay. Original
+regenerative_actor/model.py and material_transport.py unchanged. The new adapter
+replaces only the old run-scaled polarity contribution to face drive. Passive
+cohesion/pressure and original nonlinear rate saturation remain. Carried polarity
+still transports/rotates/relaxes and templates newborns, but is not this actuator.
+Old controller fields transport; old run/brake learning and decisions are disabled.
+This is an explicit model extension, not unmodified Lenia or demonstrated learning.
+
+Exact step order:
+  1. Add this step's finite predeclared local fuel/precursor supply to stocks.
+  2. Form local passive+two-channel active face rates; permeability and CFL <=.8.
+  3. Limit outgoing weights using OLD LOCAL tissue energy after basal reserve.
+     Added fuel/current uptake cannot fund this move. No shared energy wallet.
+  4. Conservative K transports body, energy and extensive carried fields.
+  5. Actual local fuel uptake; native basal/movement payments; injury/starvation.
+  6. Original dual-kernel response; native rule death, precursor/fuel-limited
+     births, newborn energy, synthesis/template heat; no global M target.
+  7. Return actual receipt; update checkpoint clock and separate external-input
+     ledger. Existing local precursor/fuel are stationary (formation T00).
+
+Local permissions:
+observe_local returns arrays body, energy, fuel, precursor, polarity, hazard,
+face_permeability. Each array is a field of local values; only the current cell
+and its four-neighbour stencil are available to a local strategy. Full-array
+storage is implementation, not permission for whole-body summaries. No future
+inputs, hidden targets, global mass/centroid, ancestry or future outcomes. Fixed
+shear baselines use spatial coordinates and are explicitly coordinate rules.
+A gradient baseline uses only the visible central difference of current fuel.
+One deterministic development geometry; heldout_rotated is an available separately
+declared geometry, not yet evaluated by the host pilot.
+
+Receipt (all actual, not simulated counterfactuals):
+  actor_action_requested: source-coordinate two-channel request.
+  actor_face_rate_unblocked; actor_weights_before_payment; actor_flux_requested.
+  actor_flux_executed = old_body * K_weights, four outgoing SOURCE face masses.
+  actor_movement_intended_source/denied_source; actor_source_budget_scale.
+  actor_movement_requested/paid/unpaid: DESTINATION fields after K transports work.
+  actor_basal_requested/paid/unpaid; energy: final local energy.
+  K_weights[4,H,W], K_stay[H,W]: exact sparse donor columns; advect implements K.
+  old_body/old_energy/old_fuel/old_precursor, transported_body, survivor, keep,
+  born, death, uptake, completed_mask, input_material/input_energy.
+  Additional original maps retain native growth, conversion and energy losses.
+
+uptake occurs before injury/rule death and birth. completed_mask=transported_body>0
+means local physical uptake was defined, not a measured unvisited opportunity
+label. A zero local uptake is an actual zero, but does not identify why (empty
+fuel/capacity/limited contact). The receipt contains no hidden direction label.
+Use survivor/keep when assigning any completed experience to surviving carriers;
+newborns have no imported controller experience. For an extensive learner payload
+L: transported=advect(L,K_weights), surviving=transported*keep, then add only a
+legal local update on the surviving support. Concentration reads divide by final
+body and thereby dilute at birth. K_stay and K_weights are source fields; keep
+is destination survival fraction. Do not replace K with a centroid shift.
+
+All maps may be archived for evaluation. Full reward sums, total body/energy,
+founder ancestry, global conservation and input ledgers are evaluator-only. Local
+learner may read its local uptake, energy costs, survival and acted flux, not
+relabel these as global reward received at every cell. Future predictive targets
+must come from later actual receipts, not fitting the already-known K identity.
+Controller arithmetic/storage have no extra price in this interface; inherited
+motor/basal/synthesis/template prices are exact and unchanged. Do not claim all
+computation is physically paid. Later fee extensions require another source.
+
+Checkpoint fully retains native state, kernels, world arrays, exact clock,
+elapsed input cursor, finite supply horizon and cumulative input totals. This
+host has no random generator; a stochastic learner must save its own RNG/state.
+Native source transport_allocation was ready/T00; the old inactive protocol ledger
+is provenance, not an active pending transaction in this extension.
+
+Pilot: two bodies x {none,gradient,shear_x,shear_y}, each256 steps, active first128
+then128 no-drive. All eight share their own actual complete128 starting state and
+the same predetermined supply. Two zero-old-energy donor boundary steps count
+separately. Equal maximum action norm does not imply equal movement or fees.
+Every scalar step is kept; full maps sampled at declared offsets, with complete
+initial/withdrawal/final packets. Unsaved intermediate maps are not reconstructed.

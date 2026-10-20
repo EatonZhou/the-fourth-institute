@@ -1,0 +1,51 @@
+{
+  "task": "local_signal_action_coordination_20261019",
+  "native": 8192,
+  "unknown": 0,
+  "worker_seconds": 25.863066,
+  "raw_bytes": 50230069,
+  "status": "complete",
+  "paths": 16,
+  "survived": 16,
+  "max_energy_error": 4.059361354002977e-14,
+  "old_replay": 0,
+  "source_unchanged": true,
+  "groups": {
+    "original": {
+      "n": 4,
+      "alive": 4,
+      "old_last64_choice_pass": 4,
+      "old_last64_substantive": 4,
+      "reversal_last64_choice_pass": 2,
+      "reversal_last64_substantive": 2,
+      "any_reversal_meaningful_contact": 4
+    },
+    "temporal": {
+      "n": 4,
+      "alive": 4,
+      "old_last64_choice_pass": 4,
+      "old_last64_substantive": 4,
+      "reversal_last64_choice_pass": 2,
+      "reversal_last64_substantive": 2,
+      "any_reversal_meaningful_contact": 4
+    },
+    "neighbor": {
+      "n": 4,
+      "alive": 4,
+      "old_last64_choice_pass": 4,
+      "old_last64_substantive": 4,
+      "reversal_last64_choice_pass": 2,
+      "reversal_last64_substantive": 2,
+      "any_reversal_meaningful_contact": 4
+    },
+    "pooled": {
+      "n": 4,
+      "alive": 4,
+      "old_last64_choice_pass": 4,
+      "old_last64_substantive": 4,
+      "reversal_last64_choice_pass": 4,
+      "reversal_last64_substantive": 4,
+      "any_reversal_meaningful_contact": 4
+    }
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "task": "recycling_precursor_dependence_20261019",
+  "status": "completed_actual_conditional_recycling_benefit_maintenance_failed",
+  "owner": "resident_ce2a5ab005bc",
+  "objective_met": false,
+  "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycling_precursor_dependence_20261019/REPORT.txt",
+  "summary": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycling_precursor_dependence_20261019/summary.json",
+  "execution": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycling_precursor_dependence_20261019/execution.json",
+  "audit": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycling_precursor_dependence_20261019/audit.json",
+  "plan": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycling_precursor_dependence_20261019/plan.json",
+  "plan_sha256": "74faceed21fc23a722e12bce3912dfdb4aee29517e81709af5a18fdfc649e324",
+  "source_sha256": {
+    "/share/Projects/元胞自动机研究/src/environment_evolution/recycling_precursor_dependence/core.py": "e52a191ec29756efadea91d39e0107119468aa114020e03bb09dca48f18476c6",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/recycling_precursor_dependence/run.py": "093548f50323fa22c9bbe52a4dc6726f5979179bbd6a9c14369a777ae8db93eb"
+  },
+  "native": 2048,
+  "worker_seconds": 149.458776,
+  "raw_bytes": 220331122,
+  "complete_paths": 8,
+  "replayed_native": 0,
+  "maintenance": {
+    "gate_all4": 0,
+    "gate_last2": 0,
+    "gate_all4_zero": 0,
+    "gate_last2_zero": 0
+  },
+  "window_pass": 4,
+  "finding": "撤P时回收提高两个相关父态的M/E/新组织与体时，但全四窗和末两窗均0/8；P_on回收两后窗出生不足。A账闭合，回收组P外排更大且A耗损更快，不支持闭环或学习。",
+  "artifacts": {
+    "scalar": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycling_precursor_dependence_20261019/all_steps.csv",
+    "windows": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycling_precursor_dependence_20261019/windows.csv",
+    "contrasts": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycling_precursor_dependence_20261019/contrasts.csv",
+    "checkpoints": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycling_precursor_dependence_20261019/checkpoint_index.json",
+    "frames": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycling_precursor_dependence_20261019/frames.json",
+    "figures": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycling_precursor_dependence_20261019/figure_sources.json",
+    "raw_manifest": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycling_precursor_dependence_20261019/raw_manifest.json"
+  },
+  "manifest": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycling_precursor_dependence_20261019/manifest.json",
+  "manifest_sha256": "890f50cb82b8c76a33695c1558c0d0b0b3e762d6539e1411b629b83b06e1f0d4",
+  "old_balances_used": 0,
+  "new_unused_native_sealed": 4,
+  "new_unused_worker_seconds_sealed": 450.541224
+}

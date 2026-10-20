@@ -1,0 +1,28 @@
+[
+  {
+    "id": "replenished-camp_left",
+    "actual_steps": 8192,
+    "min_M": 19.880417666142282,
+    "max_M": 20.000000000000007,
+    "min_E": 22.652101148441467,
+    "max_E": 32.000000000000014,
+    "basal_unpaid": 0.0,
+    "end_M": 19.97254583295235,
+    "end_E": 31.65063959195253,
+    "last128cycle_delta_E": 0.0030942461699652313,
+    "finite_window_only": true
+  },
+  {
+    "id": "replenished-latent_oracle",
+    "actual_steps": 8192,
+    "min_M": 19.880400183312066,
+    "max_M": 20.000000000000007,
+    "min_E": 22.628206526976086,
+    "max_E": 32.000000000000014,
+    "basal_unpaid": 0.0,
+    "end_M": 19.972016794401124,
+    "end_E": 31.61701951986936,
+    "last128cycle_delta_E": -0.02153610109647275,
+    "finite_window_only": true
+  }
+]

@@ -1,0 +1,584 @@
+[
+  {
+    "candidate": "genome_0ac80448a534dc953505",
+    "arm": "T10",
+    "reference": "T00",
+    "fields": {
+      "body": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.03927410436693546
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.03927410436693546
+        }
+      },
+      "energy": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.007851387778328722
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.007851387778328722
+        }
+      },
+      "precursor": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.10030081212577491
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.10030081212577491
+        }
+      },
+      "fuel": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.01649512383411289
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.01649512383411289
+        }
+      },
+      "actor_transport_weights": {
+        "exact": {
+          "step": 130,
+          "max_abs": 0.005622942325445436
+        },
+        "above_1e12": {
+          "step": 130,
+          "max_abs": 0.005622942325445436
+        }
+      },
+      "positive_request": {
+        "exact": {
+          "step": 130,
+          "max_abs": 0.00125870373227969
+        },
+        "above_1e12": {
+          "step": 130,
+          "max_abs": 0.00125870373227969
+        }
+      },
+      "template_support": {
+        "exact": {
+          "step": 130,
+          "max_abs": 0.010882762624380704
+        },
+        "above_1e12": {
+          "step": 130,
+          "max_abs": 0.010882762624380704
+        }
+      },
+      "births": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.03927410436693546
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.03927410436693546
+        }
+      },
+      "L_raw": {
+        "exact": {
+          "step": 130,
+          "max_abs": 0.0183067388492264
+        },
+        "above_1e12": {
+          "step": 130,
+          "max_abs": 0.0183067388492264
+        }
+      }
+    }
+  },
+  {
+    "candidate": "genome_0ac80448a534dc953505",
+    "arm": "T01",
+    "reference": "T00",
+    "fields": {
+      "body": {
+        "exact": {
+          "step": 135,
+          "max_abs": 0.00343431399662647
+        },
+        "above_1e12": {
+          "step": 135,
+          "max_abs": 0.00343431399662647
+        }
+      },
+      "energy": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.005256621594276034
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.005256621594276034
+        }
+      },
+      "precursor": {
+        "exact": {
+          "step": 135,
+          "max_abs": 0.00343431399662647
+        },
+        "above_1e12": {
+          "step": 135,
+          "max_abs": 0.00343431399662647
+        }
+      },
+      "fuel": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.043449692998977385
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.043449692998977385
+        }
+      },
+      "actor_transport_weights": {
+        "exact": {
+          "step": 136,
+          "max_abs": 0.0002063216199905387
+        },
+        "above_1e12": {
+          "step": 136,
+          "max_abs": 0.0002063216199905387
+        }
+      },
+      "positive_request": {
+        "exact": {
+          "step": 136,
+          "max_abs": 4.260007317076757e-05
+        },
+        "above_1e12": {
+          "step": 136,
+          "max_abs": 4.260007317076757e-05
+        }
+      },
+      "template_support": {
+        "exact": {
+          "step": 136,
+          "max_abs": 0.0008182957867881036
+        },
+        "above_1e12": {
+          "step": 136,
+          "max_abs": 0.0008182957867881036
+        }
+      },
+      "births": {
+        "exact": {
+          "step": 135,
+          "max_abs": 0.00343431399662647
+        },
+        "above_1e12": {
+          "step": 135,
+          "max_abs": 0.00343431399662647
+        }
+      },
+      "L_raw": {
+        "exact": {
+          "step": 136,
+          "max_abs": 4.260007317076757e-05
+        },
+        "above_1e12": {
+          "step": 136,
+          "max_abs": 4.260007317076757e-05
+        }
+      }
+    }
+  },
+  {
+    "candidate": "genome_0ac80448a534dc953505",
+    "arm": "T11",
+    "reference": "T00",
+    "fields": {
+      "body": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.03927410436693546
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.03927410436693546
+        }
+      },
+      "energy": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.007680549052624497
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.007680549052624497
+        }
+      },
+      "precursor": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.10030081212577491
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.10030081212577491
+        }
+      },
+      "fuel": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.043449692998977385
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.043449692998977385
+        }
+      },
+      "actor_transport_weights": {
+        "exact": {
+          "step": 130,
+          "max_abs": 0.005638020879727634
+        },
+        "above_1e12": {
+          "step": 130,
+          "max_abs": 0.005638020879727634
+        }
+      },
+      "positive_request": {
+        "exact": {
+          "step": 130,
+          "max_abs": 0.0013086204400381638
+        },
+        "above_1e12": {
+          "step": 130,
+          "max_abs": 0.0013086204400381638
+        }
+      },
+      "template_support": {
+        "exact": {
+          "step": 130,
+          "max_abs": 0.010874580983135984
+        },
+        "above_1e12": {
+          "step": 130,
+          "max_abs": 0.010874580983135984
+        }
+      },
+      "births": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.03927410436693546
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.03927410436693546
+        }
+      },
+      "L_raw": {
+        "exact": {
+          "step": 130,
+          "max_abs": 0.018300975398339525
+        },
+        "above_1e12": {
+          "step": 130,
+          "max_abs": 0.018300975398339525
+        }
+      }
+    }
+  },
+  {
+    "candidate": "genome_6bd5bfd2f629f9414376",
+    "arm": "T10",
+    "reference": "T00",
+    "fields": {
+      "body": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.006993316766495561
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.006993316766495561
+        }
+      },
+      "energy": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.0013984149861602096
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.0013984149861602096
+        }
+      },
+      "precursor": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.01483159489041361
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.01483159489041361
+        }
+      },
+      "fuel": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.0029371930419281322
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.0029371930419281322
+        }
+      },
+      "actor_transport_weights": {
+        "exact": {
+          "step": 130,
+          "max_abs": 0.0004831900722912707
+        },
+        "above_1e12": {
+          "step": 130,
+          "max_abs": 0.0004831900722912707
+        }
+      },
+      "positive_request": {
+        "exact": {
+          "step": 130,
+          "max_abs": 0.0003027101325620363
+        },
+        "above_1e12": {
+          "step": 130,
+          "max_abs": 0.0003027101325620363
+        }
+      },
+      "template_support": {
+        "exact": {
+          "step": 130,
+          "max_abs": 0.002648611876061968
+        },
+        "above_1e12": {
+          "step": 130,
+          "max_abs": 0.002648611876061968
+        }
+      },
+      "births": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.006993316766495569
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.006993316766495569
+        }
+      },
+      "L_raw": {
+        "exact": {
+          "step": 130,
+          "max_abs": 0.0003027101325620363
+        },
+        "above_1e12": {
+          "step": 130,
+          "max_abs": 0.0003027101325620363
+        }
+      }
+    }
+  },
+  {
+    "candidate": "genome_6bd5bfd2f629f9414376",
+    "arm": "T01",
+    "reference": "T00",
+    "fields": {
+      "body": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.0005933860432645321
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.0005933860432645321
+        }
+      },
+      "energy": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.004681994606302031
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.004681994606302031
+        }
+      },
+      "precursor": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.0005933860432645738
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.0005933860432645738
+        }
+      },
+      "fuel": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.013431315955011666
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.013431315955011666
+        }
+      },
+      "actor_transport_weights": {
+        "exact": {
+          "step": 130,
+          "max_abs": 4.2300316307212625e-05
+        },
+        "above_1e12": {
+          "step": 130,
+          "max_abs": 4.2300316307212625e-05
+        }
+      },
+      "positive_request": {
+        "exact": {
+          "step": 130,
+          "max_abs": 8.059958872802487e-06
+        },
+        "above_1e12": {
+          "step": 130,
+          "max_abs": 8.059958872802487e-06
+        }
+      },
+      "template_support": {
+        "exact": {
+          "step": 130,
+          "max_abs": 0.00014040348934130087
+        },
+        "above_1e12": {
+          "step": 130,
+          "max_abs": 0.00014040348934130087
+        }
+      },
+      "births": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.0005933860432645671
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.0005933860432645671
+        }
+      },
+      "L_raw": {
+        "exact": {
+          "step": 130,
+          "max_abs": 8.059958872802487e-06
+        },
+        "above_1e12": {
+          "step": 130,
+          "max_abs": 8.059958872802487e-06
+        }
+      }
+    }
+  },
+  {
+    "candidate": "genome_6bd5bfd2f629f9414376",
+    "arm": "T11",
+    "reference": "T00",
+    "fields": {
+      "body": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.006993316766495561
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.006993316766495561
+        }
+      },
+      "energy": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.004886673722427792
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.004886673722427792
+        }
+      },
+      "precursor": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.01483159489041361
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.01483159489041361
+        }
+      },
+      "fuel": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.013431315955011666
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.013431315955011666
+        }
+      },
+      "actor_transport_weights": {
+        "exact": {
+          "step": 130,
+          "max_abs": 0.0004831900722912707
+        },
+        "above_1e12": {
+          "step": 130,
+          "max_abs": 0.0004831900722912707
+        }
+      },
+      "positive_request": {
+        "exact": {
+          "step": 130,
+          "max_abs": 0.0003027101325620571
+        },
+        "above_1e12": {
+          "step": 130,
+          "max_abs": 0.0003027101325620571
+        }
+      },
+      "template_support": {
+        "exact": {
+          "step": 130,
+          "max_abs": 0.002648611876061968
+        },
+        "above_1e12": {
+          "step": 130,
+          "max_abs": 0.002648611876061968
+        }
+      },
+      "births": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.006993316766495569
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.006993316766495569
+        }
+      },
+      "L_raw": {
+        "exact": {
+          "step": 130,
+          "max_abs": 0.0003027101325620571
+        },
+        "above_1e12": {
+          "step": 130,
+          "max_abs": 0.0003027101325620571
+        }
+      }
+    }
+  }
+]

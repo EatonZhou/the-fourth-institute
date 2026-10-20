@@ -1,0 +1,18 @@
+{
+  "task": "local_terminal_feedback_20261018",
+  "job_id": "b63cdc7c-3f38-4a43-af6e-9c481c419fa9",
+  "ce2_steps": 771,
+  "ce2_committed": 771,
+  "ce2_runner_worker_seconds": 174.508036,
+  "ce2_cap_steps": 1280,
+  "ce2_cap_worker": 180,
+  "ce2_unspent_steps_not_transferred": 509,
+  "ce2_unspent_worker_not_transferred": 5.491963999999996,
+  "d3_exclusive_steps": 4864,
+  "d3_exclusive_worker_seconds": 420,
+  "shared_used_steps": 771,
+  "shared_used_worker_seconds": 174.508036,
+  "shared_cap_steps": 6144,
+  "shared_cap_worker_seconds": 600,
+  "old_budget_used": 0
+}

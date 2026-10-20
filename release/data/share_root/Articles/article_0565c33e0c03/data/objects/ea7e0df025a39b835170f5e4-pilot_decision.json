@@ -1,0 +1,5 @@
+{
+  "go": true,
+  "criteria": "both alive; endpoint toroidal displacement >=2; actual paid contact occurred. No efficacy selection.",
+  "native": 512
+}

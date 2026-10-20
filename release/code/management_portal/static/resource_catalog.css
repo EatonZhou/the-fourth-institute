@@ -1,0 +1,1178 @@
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.portalCollectionTypeChip[data-type="skill"] { background: rgba(60, 145, 135, .52); }
+.portalCollectionTypeChip[data-type="repo"] { background: rgba(76, 112, 178, .52); }
+.portalCollectionTypeChip[data-type="article"] { background: rgba(175, 148, 60, .52); }
+.portalCollectionTypeChip[data-type="experiment"] { background: rgba(120, 120, 200, .52); }
+.portalCollectionTypeChip[data-type="device"] { background: rgba(105, 116, 130, .52); }
+
+.resourcePage {
+  position: relative;
+  min-height: 360px;
+}
+
+.resourceError {
+  padding: 16px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: var(--muted);
+  text-align: center;
+}
+
+.resourceError { border-color: color-mix(in srgb, var(--danger) 48%, var(--border)); color: var(--danger); }
+
+.deviceRegistryCard {
+  --portal-detail-width: 760px;
+}
+
+.deviceRegistryGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.deviceRegistrySsh {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 13px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+}
+
+.deviceRegistrySsh legend {
+  padding: 0 6px;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+@media (max-width: 620px) {
+  .deviceRegistryGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .deviceSshPasswordForm {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .deviceTerminalDialog > header {
+    align-items: flex-start;
+  }
+
+  .deviceTerminalHeaderActions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+}
+
+.portalDetailSurface#resourceDetailPanel {
+  --portal-detail-heading-size: 17px;
+  --portal-resource-identity-title-size: 17px;
+}
+
+.portalDetailSurface#resourceDetailPanel:focus { outline: 0; }
+
+.resourceRemoteForm {
+  display: grid;
+  grid-template-columns: minmax(110px, 0.45fr) minmax(0, 1fr);
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel-2);
+}
+
+.resourceRemoteForm label {
+  display: grid;
+  gap: 5px;
+}
+
+.resourceRemoteForm label:not(:first-child) {
+  grid-column: 1 / -1;
+}
+
+.resourceRemoteForm span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.resourceRemoteForm input {
+  width: 100%;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--panel);
+  color: var(--text);
+  font: 11px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.resourceRemoteForm .portalButton {
+  justify-self: start;
+}
+
+.devicePageView {
+  display: grid;
+  gap: 14px;
+}
+
+.deviceViewHeadline {
+  min-width: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 2px 2px 0;
+}
+
+.deviceViewHeadline > div:first-child {
+  min-width: 0;
+}
+
+.deviceViewEyebrow {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--accent);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.deviceViewHeadline h1 {
+  margin: 0;
+  font-size: clamp(19px, 2vw, 26px);
+  font-weight: 720;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+
+.deviceViewHeadline p {
+  max-width: 760px;
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.deviceStatusPill {
+  max-width: 150px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  overflow: hidden;
+  padding: 3px 7px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 680;
+  text-overflow: ellipsis;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.deviceStatusDot {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.deviceStatusPill.online { color: #198754; }
+.deviceStatusPill.available { color: color-mix(in srgb, var(--accent) 86%, #198754); }
+.deviceStatusPill.busy { color: #c26b00; }
+.deviceStatusPill.warning { color: #b15f00; }
+.deviceStatusPill.danger { color: var(--danger); }
+.deviceStatusPill.stale {
+  border-style: dashed;
+  color: color-mix(in srgb, #b15f00 76%, var(--muted));
+}
+
+.deviceStatsGrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.deviceStatCard {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.deviceStatCard > span {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 760;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.deviceStatCard strong {
+  margin-top: 2px;
+  font-size: 23px;
+  line-height: 1;
+}
+
+.deviceStatCard small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deviceStatCard.busy strong { color: #c26b00; }
+.deviceStatCard.available strong { color: #198754; }
+.deviceStatCard.warning strong,
+.deviceStatCard.stale strong { color: #b15f00; }
+
+.deviceOperationsLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(260px, .75fr);
+  gap: 10px;
+}
+
+.deviceOperationsPanel {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.deviceOperationsPanel > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px 13px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--panel-2) 67%, var(--panel));
+}
+
+.deviceOperationsPanel > header span {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--accent);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .1em;
+}
+
+.deviceOperationsPanel > header h2 {
+  margin: 0;
+  font-size: 13px;
+}
+
+.deviceOperationsPanel > header small {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.deviceCapacityList,
+.deviceAttentionList {
+  display: grid;
+  padding: 6px;
+}
+
+.deviceCapacityRow {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(120px, .7fr) minmax(100px, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.deviceCapacityRow:hover,
+.deviceCapacityRow:focus-visible {
+  background: var(--panel-2);
+}
+
+.deviceCapacityIdentity,
+.deviceCapacityNumbers {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.deviceCapacityIdentity strong,
+.deviceCapacityNumbers strong {
+  overflow: hidden;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deviceCapacityIdentity span,
+.deviceCapacityNumbers span {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deviceCapacityNumbers {
+  text-align: right;
+}
+
+.deviceCapacityTrack,
+.deviceMetricTrack {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--border) 60%, var(--panel-2));
+}
+
+.deviceCapacityTrack > span,
+.deviceMetricTrack > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+}
+
+.deviceCapacityTrack > span {
+  background: linear-gradient(90deg, #d99614, #c26b00);
+}
+
+.deviceAttentionList button {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.deviceAttentionList button:hover {
+  background: var(--panel-2);
+}
+
+.deviceAttentionList button > span:nth-child(2) {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.deviceAttentionList strong,
+.deviceAttentionList small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deviceAttentionList strong { font-size: 10px; }
+.deviceAttentionList small { color: var(--muted); font-size: 9px; }
+
+.deviceAttentionDot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #b15f00;
+}
+
+.deviceAttentionDot.danger { background: var(--danger); }
+.deviceAttentionDot.warning { background: #b15f00; }
+
+.devicePanelEmpty {
+  padding: 20px 14px;
+  color: var(--muted);
+  font-size: 11px;
+  text-align: center;
+}
+
+.deviceTelemetryPanel,
+.deviceInventoryPanel {
+  grid-column: 1 / -1;
+}
+
+.deviceTelemetryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 7px;
+  padding: 8px;
+}
+
+.deviceTelemetryCard {
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--panel) 88%, var(--panel-2));
+  cursor: pointer;
+}
+
+.deviceTelemetryCard:hover,
+.deviceTelemetryCard:focus-visible {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  box-shadow: var(--shadow-hover);
+}
+
+.deviceTelemetryCard > header,
+.deviceTelemetryCard > footer {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.deviceTelemetryCard > header > div {
+  min-width: 0;
+}
+
+.deviceTelemetryCard > header > div > span {
+  display: block;
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 750;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+
+.deviceTelemetryCard h3 {
+  margin: 2px 0 0;
+  overflow: hidden;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deviceTelemetryMetrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.deviceMetricGauge {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.deviceMetricGauge > div:first-child {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.deviceMetricGauge span {
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.deviceMetricGauge strong {
+  font-size: 9px;
+}
+
+.deviceMetricGauge.empty {
+  align-content: center;
+}
+
+.deviceTelemetryCard > footer {
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.deviceTelemetryCard > footer span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deviceTelemetryCard > footer .stale {
+  color: #b15f00;
+}
+
+.deviceRosterGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 7px;
+  padding: 8px;
+}
+
+.deviceRosterCard {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 8px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--panel) 88%, var(--panel-2));
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.deviceRosterCard:hover,
+.deviceRosterCard:focus-visible {
+  border-color: color-mix(in srgb, var(--accent) 54%, var(--border));
+  box-shadow: var(--shadow-hover);
+}
+
+.deviceRosterCard > span:first-child {
+  overflow: hidden;
+  color: var(--accent);
+  font-size: 8px;
+  font-weight: 780;
+  letter-spacing: .07em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.deviceRosterCard > .deviceStatusPill {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+
+.deviceRosterCard > strong {
+  grid-column: 1;
+  overflow: hidden;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deviceRosterCard > small {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deviceRosterCard > small:last-child {
+  justify-self: end;
+}
+
+body[data-resource-category="device"] #resourceDetailPanel {
+  --portal-detail-header-align: center;
+  --portal-detail-header-padding: 14px 18px;
+  --portal-detail-heading-size: clamp(18px, 2vw, 24px);
+  --portal-resource-identity-title-size: clamp(18px, 2vw, 24px);
+}
+
+body[data-resource-category="device"] #resourceDetailBody {
+  padding: 14px;
+  background: color-mix(in srgb, var(--panel-2) 34%, var(--panel));
+}
+
+.deviceDetailWorkspace {
+  display: grid;
+  gap: 12px;
+}
+
+.deviceDetailHero {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(190px, auto);
+  align-items: stretch;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--accent) 9%, var(--panel)) 0%,
+      var(--panel) 46%
+    );
+  box-shadow: var(--shadow);
+}
+
+.deviceDetailHeroMain {
+  min-width: 0;
+  align-self: center;
+}
+
+.deviceDetailHeroBadges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.deviceDetailKind,
+.deviceDetailFreshness {
+  display: inline-flex;
+  align-items: center;
+  min-height: 23px;
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--panel-2) 76%, var(--panel));
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.deviceDetailFreshness {
+  color: #198754;
+}
+
+.deviceDetailFreshness.stale {
+  border-style: dashed;
+  color: #b15f00;
+}
+
+.deviceDetailHeroMain > p {
+  max-width: 760px;
+  margin: 12px 0 0;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.deviceDetailHeroMeta {
+  display: grid;
+  justify-items: start;
+  gap: 3px;
+  margin-top: 5px;
+}
+
+.deviceDetailHeroMeta > small {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.deviceDetailObserved {
+  min-width: 190px;
+  display: grid;
+  align-content: center;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--panel-2) 72%, var(--panel));
+}
+
+.deviceDetailObserved > span,
+.deviceDetailPanel > header span,
+.deviceDetailSection > header span {
+  color: var(--accent);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.deviceDetailObserved strong {
+  font-size: 17px;
+  line-height: 1.2;
+}
+
+.deviceDetailObserved small {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.deviceDetailMetrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 8px;
+}
+
+.deviceDetailMetric {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  padding: 12px 13px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.deviceDetailMetric > span {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.deviceDetailMetric > strong {
+  overflow: hidden;
+  font-size: 24px;
+  letter-spacing: -0.035em;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deviceDetailMetric > strong small {
+  margin-left: 4px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0;
+}
+
+.deviceDetailMetric > p {
+  min-height: 12px;
+  margin: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deviceDetailMetric.available > strong { color: #198754; }
+.deviceDetailMetric.busy > strong { color: #c26b00; }
+.deviceDetailMetric.warning > strong { color: #b15f00; }
+
+.deviceDetailMetricTrack {
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--border) 66%, var(--panel-2));
+}
+
+.deviceDetailMetricTrack > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+}
+
+.deviceDetailMetric.busy .deviceDetailMetricTrack > span {
+  background: linear-gradient(90deg, #d99614, #c26b00);
+}
+
+.deviceDetailMetric.warning .deviceDetailMetricTrack > span {
+  background: #b15f00;
+}
+
+.deviceDetailInfoGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 10px;
+}
+
+.deviceDetailPanel,
+.deviceDetailSection {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.deviceDetailPanel > header,
+.deviceDetailSection > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--panel-2) 68%, var(--panel));
+}
+
+.deviceDetailPanel > header h3,
+.deviceDetailSection > header h3 {
+  margin: 2px 0 0;
+  font-size: 12px;
+}
+
+.deviceDetailSection > header small {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.deviceDetailFacts {
+  margin: 0;
+  padding: 4px 12px;
+}
+
+.deviceDetailFacts > div {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(90px, .35fr) minmax(0, 1fr);
+  align-items: baseline;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+}
+
+.deviceDetailFacts > div:last-child { border-bottom: 0; }
+
+.deviceDetailFacts dt {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.deviceDetailFacts dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 10px;
+  font-weight: 620;
+  text-align: right;
+}
+
+.deviceDetailFacts dd.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 9px;
+}
+
+.deviceDetailSsh {
+  grid-column: 1 / -1;
+}
+
+.deviceSshActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px 12px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+}
+
+.deviceSshPasswordForm {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto auto minmax(90px, auto);
+  align-items: end;
+  gap: 8px;
+  padding: 0 12px 12px;
+}
+
+.deviceSshPasswordForm label {
+  display: grid;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.deviceSshPasswordForm input {
+  width: 100%;
+  min-width: 0;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--panel);
+  color: var(--text);
+  padding: 0 9px;
+}
+
+.deviceSshPasswordMessage {
+  align-self: center;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.deviceSshPasswordMessage.success { color: #198754; }
+.deviceSshPasswordMessage.error { color: var(--danger); }
+
+.deviceSshTestResult {
+  min-width: 0;
+  color: var(--muted);
+  font-size: 10px;
+  overflow-wrap: anywhere;
+}
+
+.deviceSshTestResult.success { color: #198754; }
+.deviceSshTestResult.error { color: var(--danger); }
+
+.deviceSshEmpty {
+  padding: 14px 12px;
+}
+
+.deviceSshEmpty p {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.deviceSshEmpty small {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.deviceTerminalDialog {
+  grid-template-rows: auto minmax(0, 1fr);
+  background: #07110d;
+}
+
+.deviceTerminalDialog > header span {
+  color: var(--accent);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .1em;
+}
+
+.deviceTerminalDialog > header h2 {
+  margin: 2px 0 0;
+  font-size: 14px;
+}
+
+.deviceTerminalHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.deviceTerminalHeaderActions .portalButton {
+  min-height: 30px;
+  padding: 5px 9px;
+  font-size: 10px;
+  box-shadow: none;
+}
+
+.deviceTerminalMount {
+  min-width: 0;
+  min-height: 0;
+  padding: 8px;
+  background: #07110d;
+}
+
+.deviceTerminalMount .xterm {
+  height: 100%;
+}
+
+.deviceDetailParent {
+  display: grid;
+  gap: 5px;
+  padding: 10px;
+}
+
+.deviceDetailParent > span {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 650;
+}
+
+.deviceDetailParent > button {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 3px 12px;
+  align-items: center;
+  padding: 10px 11px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--panel-2);
+  color: var(--text);
+  text-align: left;
+}
+
+.deviceDetailParent > button {
+  cursor: pointer;
+}
+
+.deviceDetailParent > button:hover,
+.deviceDetailParent > button:focus-visible {
+  border-color: color-mix(in srgb, var(--accent) 54%, var(--border));
+  background: color-mix(in srgb, var(--accent) 6%, var(--panel-2));
+}
+
+.deviceDetailParent strong {
+  overflow: hidden;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deviceDetailParent small {
+  grid-column: 1;
+  overflow: hidden;
+  color: var(--muted);
+  font: 8px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deviceDetailParent button > span {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  color: var(--accent);
+  font-size: 16px;
+}
+
+.deviceDetailComponents {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 7px;
+  padding: 9px;
+}
+
+.deviceDetailComponent {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 8px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--panel) 88%, var(--panel-2));
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.deviceDetailComponent:hover,
+.deviceDetailComponent:focus-visible {
+  border-color: color-mix(in srgb, var(--accent) 54%, var(--border));
+  box-shadow: var(--shadow-hover);
+}
+
+.deviceDetailComponentIndex {
+  color: var(--accent);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.deviceDetailComponent > strong {
+  grid-column: 1;
+  overflow: hidden;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deviceDetailComponent > .deviceStatusPill {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+
+.deviceDetailComponent > small {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deviceDetailWorkloadTableWrap {
+  overflow: auto;
+}
+
+.deviceDetailWorkloadTable {
+  width: 100%;
+  min-width: 620px;
+  border-collapse: collapse;
+  font-size: 9px;
+}
+
+.deviceDetailWorkloadTable th {
+  padding: 8px 11px;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 750;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.deviceDetailWorkloadTable td {
+  padding: 8px 11px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  color: var(--muted);
+}
+
+.deviceDetailWorkloadTable tr:last-child td { border-bottom: 0; }
+
+.deviceDetailWorkloadTable td:first-child {
+  min-width: 240px;
+  display: grid;
+  gap: 2px;
+}
+
+.deviceDetailWorkloadTable td strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deviceDetailWorkloadTable td small {
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.deviceDetailWorkspace > .portalResourceDetailActions {
+  justify-content: flex-end;
+  margin-top: 0;
+}
+
+@media (max-width: 1200px) {
+  .deviceStatsGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 900px) {
+  .deviceOperationsLayout { grid-template-columns: minmax(0, 1fr); }
+  .deviceTelemetryPanel,
+  .deviceInventoryPanel { grid-column: 1; }
+  .deviceDetailInfoGrid { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 720px) {
+  .deviceViewHeadline {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .deviceDetailHero { grid-template-columns: minmax(0, 1fr); }
+  .deviceDetailObserved { min-width: 0; }
+  .deviceStatsGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .deviceCapacityRow {
+    grid-template-columns: minmax(100px, .85fr) minmax(80px, 1fr) auto;
+    gap: 8px;
+  }
+  .deviceTelemetryGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 620px) {
+  .deviceTelemetryGrid { grid-template-columns: 1fr; }
+  .deviceRosterGrid { grid-template-columns: 1fr; }
+  .deviceDetailMetrics,
+  .deviceDetailComponents { grid-template-columns: minmax(0, 1fr); }
+  .deviceDetailFacts > div { grid-template-columns: minmax(82px, .4fr) minmax(0, 1fr); }
+}

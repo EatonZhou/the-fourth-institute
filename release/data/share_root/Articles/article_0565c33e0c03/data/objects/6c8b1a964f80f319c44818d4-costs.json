@@ -1,0 +1,19 @@
+{
+  "new_steps": 4192,
+  "reused_read_only_steps": 1536,
+  "worker_seconds": 266.97525,
+  "job": {
+    "id": "ae909c85-6b64-4528-870c-66b8794c3c54",
+    "status": "completed",
+    "returncode": 0,
+    "started_at": "2026-10-18T10:19:49.469966+00:00",
+    "finished_at": "2026-10-18T10:22:02.957591+00:00"
+  },
+  "ce2_unused_steps": 416,
+  "ce2_unused_worker_seconds": 163.02474999999998,
+  "d3_exclusive_steps": 1536,
+  "d3_exclusive_worker_seconds": 170,
+  "shared_unused_steps": 1952,
+  "shared_unused_worker_seconds": 333.02475,
+  "old_budget_used": 0
+}

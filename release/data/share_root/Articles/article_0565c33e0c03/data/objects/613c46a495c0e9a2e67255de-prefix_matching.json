@@ -1,0 +1,50 @@
+[
+  {
+    "condition": "accumulation",
+    "seed": 202610188201,
+    "full_environment_exact": true,
+    "policy_and_rng_exact_except_freeze_flag": true
+  },
+  {
+    "condition": "accumulation",
+    "seed": 202610188202,
+    "full_environment_exact": true,
+    "policy_and_rng_exact_except_freeze_flag": true
+  },
+  {
+    "condition": "accumulation",
+    "seed": 202610188203,
+    "full_environment_exact": true,
+    "policy_and_rng_exact_except_freeze_flag": true
+  },
+  {
+    "condition": "accumulation",
+    "seed": 202610188204,
+    "full_environment_exact": true,
+    "policy_and_rng_exact_except_freeze_flag": true
+  },
+  {
+    "condition": "local_override",
+    "seed": 202610188201,
+    "full_environment_exact": true,
+    "policy_and_rng_exact_except_freeze_flag": true
+  },
+  {
+    "condition": "local_override",
+    "seed": 202610188202,
+    "full_environment_exact": true,
+    "policy_and_rng_exact_except_freeze_flag": true
+  },
+  {
+    "condition": "local_override",
+    "seed": 202610188203,
+    "full_environment_exact": true,
+    "policy_and_rng_exact_except_freeze_flag": true
+  },
+  {
+    "condition": "local_override",
+    "seed": 202610188204,
+    "full_environment_exact": true,
+    "policy_and_rng_exact_except_freeze_flag": true
+  }
+]

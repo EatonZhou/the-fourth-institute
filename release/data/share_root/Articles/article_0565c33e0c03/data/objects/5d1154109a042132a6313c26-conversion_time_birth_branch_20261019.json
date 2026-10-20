@@ -1,0 +1,245 @@
+{
+  "task": "conversion_time_birth_branch_20261019",
+  "owner": "resident_d3ccfa2d95b7",
+  "objective_met": false,
+  "choice": "接受出生钟分析终版：有限both支持与出生输入/留存的算术区分成立，保留同龄反例和非因果边界。关闭ready同D重选正支候选在当前八父的部署：其严格可付增益为0。独立检验转换时点重选正支，保留原both删除决定。",
+  "question": "ready时锁定的响应经历原胞外外流/实际输入/actor后，正支选择是否遗漏当时的实际可付出生？在不重选删除分支、不增幅的条件下，转换时点选择原A/B/C正支能否增加真实未来N，同时不损既有C、M/E/体时与原单窗维护？",
+  "evidence": {
+    "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/birth_clock_retention_accounting_20261019/handoff.json",
+    "sha256": "4bfe364d73c88f59a5b03bef922ebc10104419057a29e8460cc192d07a4f926e",
+    "native": 0,
+    "recorded_offline_cpu_seconds": 11.94779,
+    "new_bytes": 18298702,
+    "result": "39/40同钟同龄汇总两权重为正，但2072点293负。8/8留存率账项正；6个末N负例均出生量负项更大。原C/O支持与仅两G史分离有用更新不改。B正请求8/8增加不支持直接放大请求。",
+    "PI_visual": "亲看same_age_all_pairs.png完整八父五年龄，两权重相近，5602 ring/G龄1反例保留；不把这张读出图叫真实动画。",
+    "preflight": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/conversion_time_birth_branch_20261019_preflight.json",
+    "preflight_scope": "ready8父零增益；after-actor64指定收据18非零，5/8父有差，最大单收据新增可付出生0.007580076648899225；所有原出生重算逐格差0。此为纯代数，未调用actor/native。",
+    "stage_correction": "PI最初只读探针误把old_*当含输入，负燃料校验即失败；核阶段后用old_*+input，再减actual uptake，不裁剪、不重演。错误和修正写入preflight。"
+  },
+  "parents": [
+    {
+      "id": "202610195601_ring_both",
+      "seed": 202610195601,
+      "shape": "ring",
+      "history": "both",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/renewal_preservation_choice_factorial_20261019/1fbc79b1-1983-4beb-82f0-a9e579e8ca6e/202610195601_ring_both/state320.bin",
+      "sha256": "40453de1bb20dea82b1c2e1440eda02c4b2055eb29fec33ae43fa1700273538d",
+      "baseline_rows": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195601_ring_both__future_both/steps.csv",
+      "baseline_rows_sha256": "9d4528f7e953f16d8d3778604cec61dcdb267242dee8539b56c447752f7be7b9",
+      "baseline_final": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195601_ring_both__future_both/state384.bin",
+      "baseline_final_sha256": "1375b5d2f6318a80f81de40a6a3f27e9c0e3b8d7bdce67a07233b94550af6878",
+      "baseline_first_receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195601_ring_both__future_both/receipt321.npz",
+      "baseline_first_receipt_sha256": "d5f9419e4da2d5de970aff944f89d6f9f6bb2c737302a889e66bfd44128dc80f"
+    },
+    {
+      "id": "202610195601_ring_birth_gain_only",
+      "seed": 202610195601,
+      "shape": "ring",
+      "history": "birth_gain_only",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/renewal_preservation_choice_factorial_20261019/1fbc79b1-1983-4beb-82f0-a9e579e8ca6e/202610195601_ring_birth_gain_only/state320.bin",
+      "sha256": "9eb846f3adfb820a50dd64e6f30f79da8d38072f8c91407e3dcd539fd3296838",
+      "baseline_rows": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195601_ring_birth_gain_only__future_both/steps.csv",
+      "baseline_rows_sha256": "3571362c15b426ec1d22c465fea7a3aee7e3ef83f37f728fc9ffa000059199f9",
+      "baseline_final": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195601_ring_birth_gain_only__future_both/state384.bin",
+      "baseline_final_sha256": "3af203fa6a5097506a84842543373e77f6b10703efafd014ccacd642cf3f3367",
+      "baseline_first_receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195601_ring_birth_gain_only__future_both/receipt321.npz",
+      "baseline_first_receipt_sha256": "f9aca12e08a625e9e32478f547815546b2b72887a8836122ce8615475dfba7b7"
+    },
+    {
+      "id": "202610195601_separate_seeds_both",
+      "seed": 202610195601,
+      "shape": "separate_seeds",
+      "history": "both",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/renewal_preservation_choice_factorial_20261019/1fbc79b1-1983-4beb-82f0-a9e579e8ca6e/202610195601_separate_seeds_both/state320.bin",
+      "sha256": "fac7f15ebff5997637456adeb499c4cbfb707e766cbb702181768f344282a4af",
+      "baseline_rows": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195601_separate_seeds_both__future_both/steps.csv",
+      "baseline_rows_sha256": "8eafe98edc5980fd8950b92ea42adde30028bcd1a31faa5e9b8ce375050f5127",
+      "baseline_final": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195601_separate_seeds_both__future_both/state384.bin",
+      "baseline_final_sha256": "b117500d0e2465f0037cda126d33edb3547dbe513205281ef0df7edf2caa623a",
+      "baseline_first_receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195601_separate_seeds_both__future_both/receipt321.npz",
+      "baseline_first_receipt_sha256": "400443001a039065429ae90e5c04552414af7d7340109599c2a570a663f48c4e"
+    },
+    {
+      "id": "202610195601_separate_seeds_birth_gain_only",
+      "seed": 202610195601,
+      "shape": "separate_seeds",
+      "history": "birth_gain_only",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/renewal_preservation_choice_factorial_20261019/1fbc79b1-1983-4beb-82f0-a9e579e8ca6e/202610195601_separate_seeds_birth_gain_only/state320.bin",
+      "sha256": "3b4aca15f2f86ea52a00fa44254b884c77caf795be276f8f615f7beeae2f5175",
+      "baseline_rows": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195601_separate_seeds_birth_gain_only__future_both/steps.csv",
+      "baseline_rows_sha256": "a71afd9b7e7725488e11983e5fe343a6b373b50932c8d7f78bd3efafcd81004d",
+      "baseline_final": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195601_separate_seeds_birth_gain_only__future_both/state384.bin",
+      "baseline_final_sha256": "b0976bbd3ecd8c62bd3c7ecb52d3bf56110245517dc8dcd1dd2a8f35f5266db7",
+      "baseline_first_receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195601_separate_seeds_birth_gain_only__future_both/receipt321.npz",
+      "baseline_first_receipt_sha256": "a3cf0327e6a2a4a7599d66833e99fcc4606a54be4315d4de265a8858da72b169"
+    },
+    {
+      "id": "202610195602_ring_both",
+      "seed": 202610195602,
+      "shape": "ring",
+      "history": "both",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/third_response_generation_search_20261019/b9f8bccb-57c5-4366-9788-7fdc1e301114/validation_ring_midpoint/state320.bin",
+      "sha256": "9bb0398ca84a95dd1d3cfda9d332d04e4feef80da4a821419e2c6ddf26fd2bb6",
+      "baseline_rows": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195602_ring_both__future_both/steps.csv",
+      "baseline_rows_sha256": "94be78f00f078437ea153a2e0273ec72a60d4d9787211ffef32bea94413a7015",
+      "baseline_final": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195602_ring_both__future_both/state384.bin",
+      "baseline_final_sha256": "c3128600e30dd1c5cf38bb79198a0ace2fb4c6f377675e90030c6fc87899df85",
+      "baseline_first_receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195602_ring_both__future_both/receipt321.npz",
+      "baseline_first_receipt_sha256": "b8fca38ec363659fcd7b22c9060d8cabfac5b8c7931876208fc131b7e3513e4d"
+    },
+    {
+      "id": "202610195602_ring_birth_gain_only",
+      "seed": 202610195602,
+      "shape": "ring",
+      "history": "birth_gain_only",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/renewal_preservation_choice_factorial_20261019/1fbc79b1-1983-4beb-82f0-a9e579e8ca6e/202610195602_ring_birth_gain_only/state320.bin",
+      "sha256": "f5a3011955fe809f61e05a763701d986aa5fbb640b32c9e157cc90b5e1d753aa",
+      "baseline_rows": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195602_ring_birth_gain_only__future_both/steps.csv",
+      "baseline_rows_sha256": "6d96fb0a71da8bd5c811820a700bce084b8980222fed3674742c948f9f12c81e",
+      "baseline_final": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195602_ring_birth_gain_only__future_both/state384.bin",
+      "baseline_final_sha256": "079ccec8cf582086d901820c25eac8933b4d95a6c7268737f23433b97732bd73",
+      "baseline_first_receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195602_ring_birth_gain_only__future_both/receipt321.npz",
+      "baseline_first_receipt_sha256": "d2544dd3b4bab27c20c40c481f27af809608143b55af49bd3f3893bad0f35c0f"
+    },
+    {
+      "id": "202610195602_separate_seeds_both",
+      "seed": 202610195602,
+      "shape": "separate_seeds",
+      "history": "both",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/third_response_generation_search_20261019/b9f8bccb-57c5-4366-9788-7fdc1e301114/validation_separate_seeds_midpoint/state320.bin",
+      "sha256": "20335dda007c0430774b0384588a6b41ce84309f5eb3c9532329dc6563f4e6f9",
+      "baseline_rows": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195602_separate_seeds_both__future_both/steps.csv",
+      "baseline_rows_sha256": "952b9df3067bd80629d379d9e07dac29aeafc6b0d252543689b82fbaf9a7f7d5",
+      "baseline_final": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195602_separate_seeds_both__future_both/state384.bin",
+      "baseline_final_sha256": "c822a81550dfa031334c958fef045b54dd9d8867d9f662830853dcf214137537",
+      "baseline_first_receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195602_separate_seeds_both__future_both/receipt321.npz",
+      "baseline_first_receipt_sha256": "01c2556f02a59bb8aac277689edf89138077c9b903690ef1d2976f9bb5f38ca1"
+    },
+    {
+      "id": "202610195602_separate_seeds_birth_gain_only",
+      "seed": 202610195602,
+      "shape": "separate_seeds",
+      "history": "birth_gain_only",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/renewal_preservation_choice_factorial_20261019/1fbc79b1-1983-4beb-82f0-a9e579e8ca6e/202610195602_separate_seeds_birth_gain_only/state320.bin",
+      "sha256": "a7c3d27d033c707fc3dac3b6ffc70d5c42237bd9e7e805678fa8586dc022e5d4",
+      "baseline_rows": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195602_separate_seeds_birth_gain_only__future_both/steps.csv",
+      "baseline_rows_sha256": "e1fbf9e950be3d6c1f5535178f30d4a6fa56ad4d4364a50c81e03bdeb4b01cce",
+      "baseline_final": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195602_separate_seeds_birth_gain_only__future_both/state384.bin",
+      "baseline_final_sha256": "f8e92c2f5d9a97289de09843279ff554a35b3fdfd83076dba7f7c75168019d29",
+      "baseline_first_receipt": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195602_separate_seeds_birth_gain_only__future_both/receipt321.npz",
+      "baseline_first_receipt_sha256": "ddc129499759bcf3e032cc659ae4ede1c92796fa67d7b3c9581063690bbccd96"
+    }
+  ],
+  "source_bindings": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/birth_clock_retention_accounting_20261019/handoff.json",
+      "sha256": "4bfe364d73c88f59a5b03bef922ebc10104419057a29e8460cc192d07a4f926e"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/birth_clock_retention_accounting_20261019/REPORT.txt",
+      "sha256": "ee75294c7ca5044ba04837e4fc233e6f83d5e31c63dc137d9967d67c7511aab8"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/birth_clock_retention_accounting_20261019/METHOD.txt",
+      "sha256": "5b5a0ec67ae978e0506377df0c9eb129f975845258098241773bacc23ef863d7"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/birth_clock_retention_accounting_20261019/scientific_next_request.json",
+      "sha256": "f599b35d67730a23e98bf3aa377d4a3632ef66f4cbb16ac666a482184421c3ca"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/birth_clock_retention_accounting_20261019/budget.json",
+      "sha256": "6ed031a7278b64e5c5f06b242d3861b1f7ca3824d1b590e5514ca18dfe37aea1"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/postbirth_cohort_policy_crossover_20261019/handoff.json",
+      "sha256": "38e3b6e66d258e3b551a5b695e0ba3f13d27d6835785f14c60061056006422eb"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/postbirth_cohort_policy_crossover_20261019/outcomes.json",
+      "sha256": "021523dacdacc4a90bef38108295553c47701802f744698c8fe4335da6353450"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/conversion_time_birth_branch_20261019_preflight.json",
+      "sha256": "39e8d7a4f533aab0200879c9d6a54daf5d37155bef548753fb426a75dad5522a"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/postbirth_cohort_policy_crossover/core.py",
+      "sha256": "e6ebf0057d58bb5b4dadf3618d2ff24d0b6b7b4150af78dc115d198830db4041"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/renewal_preservation_choice_factorial/core.py",
+      "sha256": "163a5c173183b5df93e314ba98345809558e55977a28bee9d83a09aa06481760"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/third_response_generation_search/core.py",
+      "sha256": "89b3a7b81ce76b49711367eb17fc01fa2487172d6883e32daee50ce304c2c5dc"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/regenerative_actor/model.py",
+      "sha256": "3941450e97d2311f833d1c9c8964f348218467d4cd8d41a68b6584b72b24b5b0"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/regenerative_actor/conversion.py",
+      "sha256": "d2b73ccf44d6720e01e2166c055f9a427406dc483b21746476b9f8cc5f95189a"
+    }
+  ],
+  "mechanism": {
+    "ready": "每步在原ready状态运行原fixed-midpoint both prechoice并锁requested_w/requested_C，删除分支完全沿用该决定；不读C/O/N、年龄、未来标签。",
+    "native_sequence": "原胞外半衰外流、实际中心输入、actor及收费各一次。到after-actor，按原锁定w/C计算h_both；D=min(rho_after,dt*max(-h_both,0))，survivor与局部dead_energy、own_energy和模板支持完全照原。这里的D是当前新轨自身状态上的both删除，不是逐钟强制复制旧轨D。",
+    "positive_choice": "用actual after-actor A/B/C原响应、实际尚未消费P、actor摄取后的F、同一survivor/support与原价格，纯admit评估R_j=dt*max(h_j,0)的可付birth_j。原R_both和其可付birth为首选；仅birth_j严格更大时逐格替换。确定顺序both,A,B,C，平局保更早者，特别是同付费birth平局不得改原R。不乘幅度、不补库存、不改容差/支撑/上限。",
+    "settlement": "只将选中的原正请求R送入一次真实admit并扣P/F、生成E/热、继承与标签；随后原pump与settle各一次。候选评估为纯函数不占用资源或推进身体。generation_enabled=false时维持原零请求。",
+    "semantics": "这是转换时点的即时信息访问及正负响应解耦的新生理规则；不是原规则等价改写、学习、额外记忆或已证时延因果。理论上可同格先删除后出生，必须实记该事件与全成本；保存态中此事件为0不保证未来为0。不得用signed净h掩掉同时删除/出生。额外分支比较/算术未物理定价，明确为假设。",
+    "implementation": "原源文件不改。隔离request-selection hook，仅改变conversion前的request来源；其余native、actor、删除能、模板、admit、pump保持原序列。若需隔离复制step，保存逐行差异及冻结源SHA，明确仅request hook变化；不得复制另一套近似物理、双跑actor、双付费或新生E支付旧费。"
+  },
+  "experiment": {
+    "design": "八个完整actual320父：5601/5602×ring/separate×both/G历史。每父一个新conversion-time未来321..384；同父fixed both旧未来完整只读作强同行。保留全部八父，包括纯样本上零增益的三父；不择优挑相位/初形/历史。",
+    "state": "完整320 body/E/P/F/world/RNG/游标/累计费/sinks/规则/旧标签不改；只绑定新request机制。C/O/N与原320定义完全相同，O=L256，C=post256活到320，N=以后真实出生；C仍是混龄存活群。",
+    "native_account": "512科学新native（8×64），另8个预定关闭hook的实际321边界（每父一次）对旧first receipt和完整实际状态验证；总cap520。不重演0..320取得、不重跑旧512尾窗，不启动另一job或扩大窗口。",
+    "boundary": "先纯装配/restore/标签隔离检查。8个off-hook first native均与旧321实际receipt逐数组/账核，和可核的完整状态对应；原321无完整joint时只用真实字段核覆盖并列缺项，禁止声称未存字段全态已核。8边界全部收费计数，不能把known检查计免费。通过后才跑8新未来。启用hook首实际step的actual K、actor、D、死能应与同父旧both一致，之后轨迹可分化。",
+    "old_baseline": "以parents中SHA绑定的512旧both scalar/fields/收据/full384/OCN账只读引用，0旧尾窗测量重演。原真实执行量不改。新候选可能共享相同前缀或全程零选择，明确报告激活时点和实际差，不能当独立世界。",
+    "records": "每native真实K/transported_body/actor_body/survivor/born全存以支持后续被动年龄账；同一O/C/N每步推进一次。逐钟保存原R/候选可付出生/选择格数/实际新增born与同状态原R单admit影子、删除量/双事件、P/F/全部热费欠付和输入外排。影子只纯admit，无actor或未来推进。",
+    "receipts": [
+      321,
+      322,
+      324,
+      328,
+      336,
+      352,
+      368,
+      384
+    ],
+    "joints": [
+      320,
+      352,
+      384
+    ],
+    "source_control": "原参数、kernel、价、dt、泵、零命令、中心供给/半衰/固定horizon都保持。只有新规则允许actual conversion选择正支；不补其他机制。"
+  },
+  "gates": {
+    "primary": "每父相对固定both：C384存留及C体时不低，N384严格增加，同时末M/末E/全64体时均不低，minM>=32；并保本64窗born>=death且E不下降。各分量完整报告，只有全部满足才记该父有用更新。",
+    "tolerances": "固定tol=1e-8及严格0两套一起报告。所有父状态和N/C值不归一化来救门，不以累计birth、更多C/O、更高末E或平均数替代。",
+    "scope": "八父逐项，ring必要反例，历史/seed全保；4相关context非新独立世界。单64窗不替代旧两窗、不称稳态或生命周期学习。全8不通过关闭跨父普遍主张；有条件正例只按原父报告。",
+    "mechanism": "实际可付birth增加只证明选择有可行动作；最终N或身体不提高即该固定规则失败。纯样本18/64不是成功率、不能按该样本挑新轨；不把改进归因某一种P/F短缺或中介份额。"
+  },
+  "budget": {
+    "native_cap": 520,
+    "science_native": 512,
+    "boundary_native": 8,
+    "runner_worker_seconds_cap": 450,
+    "cpu_threads": 2,
+    "gpu": 0,
+    "single_job": true,
+    "shutdown_reserve_worker_seconds": 60,
+    "new_raw_bytes_cap": 536870912,
+    "old_balances": "所有旧余额封存，本预算独立，不转用旧292.119088或离线剩余CPU。",
+    "halt": "执行前读research.desired_state与started。先冻结实现/计划，运行中按步/worker秒/磁盘最早上限停止并封实际覆盖；不超cap完成收尾。unknown native不重演；已确认完整checkpoint可同job显式续接并计全部attempt，失败原值保留。无自动增作业/延窗/训练/后续定时器。"
+  },
+  "outputs": [
+    "实际handoff/REPORT/METHOD、不可变源及计划SHA、全失败/零激活父、精确新旧步数和费用",
+    "8个同父C/O/N与M/E/体时/单窗门；同状态原R→新R实际可付变化及其后N，不用即时增益冒充留存",
+    "亲看ring和separate两seed/历史真实新旧组织序列，保宏观相似与零变化；论文科学整图按原手工可编辑规范",
+    "论文/投影在办事项合并入口，不广播；共享只压自己的短leaf，research objective仍false"
+  ],
+  "native_by_PI": 0
+}

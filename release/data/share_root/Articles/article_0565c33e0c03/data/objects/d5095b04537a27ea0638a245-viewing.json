@@ -1,0 +1,8 @@
+{
+  "actual_viewed_figures": [
+    "analysis/residence_energy_cost.png",
+    "analysis/selected_actual_fields.png"
+  ],
+  "actual_density_frames": 20,
+  "scope": "four residence paths, five stored frames each; not all fields"
+}

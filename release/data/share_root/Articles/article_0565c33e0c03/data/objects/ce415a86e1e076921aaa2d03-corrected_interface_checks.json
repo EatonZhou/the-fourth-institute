@@ -1,0 +1,51 @@
+{
+  "native": 0,
+  "prospective_only": true,
+  "tests": "zero command, zero displacement, unpaid execution refused; paid but pre-limited pair explicitly labeled",
+  "records": [
+    {
+      "context": "compact_p512",
+      "angle": "zero",
+      "old_eligible": 0,
+      "new_classification_eligible": 384,
+      "actual_native": 0
+    },
+    {
+      "context": "compact_p512",
+      "angle": "plus",
+      "old_eligible": 0,
+      "new_classification_eligible": 384,
+      "actual_native": 0
+    },
+    {
+      "context": "compact_p512",
+      "angle": "minus",
+      "old_eligible": 0,
+      "new_classification_eligible": 384,
+      "actual_native": 0
+    },
+    {
+      "context": "soft_p512",
+      "angle": "zero",
+      "old_eligible": 0,
+      "new_classification_eligible": 384,
+      "actual_native": 0
+    },
+    {
+      "context": "soft_p512",
+      "angle": "plus",
+      "old_eligible": 0,
+      "new_classification_eligible": 384,
+      "actual_native": 0
+    },
+    {
+      "context": "soft_p512",
+      "angle": "minus",
+      "old_eligible": 0,
+      "new_classification_eligible": 384,
+      "actual_native": 0
+    }
+  ],
+  "first16_no_eligible_or_no_actual_write_guard": true,
+  "source_sha256": "e468f9e82aea5c303db7f257a8dada39a8a1515e914c63237362369ee316ef71"
+}

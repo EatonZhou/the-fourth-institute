@@ -1,0 +1,62 @@
+[
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/contextual_terminal_records_20261018/API.txt",
+    "sha256": "367a205e6e7a2171b5684e70298ef401daec1de1a3d69ddc76970448a1bd733e",
+    "bytes": 4594
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/contextual_terminal_records_20261018/REPORT.txt",
+    "sha256": "533af508ba93bcd64a80b0a032c8585032a03ae50a4ddf79be17f4c0966188bf",
+    "bytes": 2567
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/contextual_terminal_records_20261018/budget.json",
+    "sha256": "13ecae174cdae611fbda60d0ceb478be231f757f32e6a3a20646faec9573e04f",
+    "bytes": 565
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/contextual_terminal_records_20261018/checks.json",
+    "sha256": "0e7b6cd69f1cc7e87726be50d94edca967f51b4ca6182e422860227e072eee71",
+    "bytes": 2444
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/contextual_terminal_records_20261018/job_receipt.json",
+    "sha256": "cb74d3e5e621e0da41762705fcf3678da92254b95eee19cc0287a06c7c42b2b6",
+    "bytes": 1339
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/contextual_terminal_records_20261018/optimized_equivalence.json",
+    "sha256": "76b05a7d8e355be73233f2b52c9f2e925bc632ff80702d7b5324e44517668527",
+    "bytes": 2558
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/contextual_terminal_records_20261018/plan.json",
+    "sha256": "72b9ccc0067b737fc5e1f25769a2929b5dde8e087ff9206dc1a70642b3f629b6",
+    "bytes": 4477
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/contextual_terminal_records_20261018/pure_checks.json",
+    "sha256": "3246e6f3f453f16deca8eb2ff3532e9931d05ff075e72a25b98365bea6886109",
+    "bytes": 187
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/contextual_terminal_records_20261018/raw_manifest.json",
+    "sha256": "ce79e7e9769b0e6e69d4259cafe4e76dfdbbbd8d8893aa3c2026f4f938f721d6",
+    "bytes": 5670
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/contextual_terminal_records_20261018/result.json",
+    "sha256": "42c8a1661044253e4cb4606fa235282e4e98db83affcfe3ed753e0ba2f402921",
+    "bytes": 581
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/contextual_terminal_records_20261018/source_refs.json",
+    "sha256": "0ddbce0b6c0cec63bec5fad6e15b9d981d3553dc913b91cd0b9b95796b4ba957",
+    "bytes": 4081
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/contextual_terminal_records_20261018/steps.json",
+    "sha256": "f1a409466b8cce58f630362720f593fe0e84d0295430e6394a2799f569b3f215",
+    "bytes": 34714
+  }
+]

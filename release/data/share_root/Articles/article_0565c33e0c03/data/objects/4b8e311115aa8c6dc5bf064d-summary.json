@@ -1,0 +1,301 @@
+{
+  "status": "completed_development_intervention",
+  "job_id": "fece0fb5-f2db-465d-9cc3-373933d3f727",
+  "host_steps": 9728,
+  "reference_steps": 1472,
+  "branch_steps": 8256,
+  "outcomes": 64,
+  "pairs": 32,
+  "alive": 64,
+  "zero_B": 0,
+  "B_range": [
+    8.30957907455705e-07,
+    0.0040000000000048885
+  ],
+  "Q_range": [
+    8.876647557237119e-07,
+    0.11722408196445092
+  ],
+  "born_spatial_l1_range": [
+    6.970982611157402e-10,
+    0.0012146729732422587
+  ],
+  "pulse_match_max": 7.105427357601002e-15,
+  "max_ledger_residual": 5.115907697472721e-13,
+  "slot_seconds": 4.394649,
+  "worker_seconds": 8.789298,
+  "independent_environment_seeds": 2,
+  "aggregates": [
+    {
+      "pair": "ema_uniform",
+      "scenario": "same",
+      "n": 8,
+      "means": {
+        "uptake": 1.6278131063196533e-05,
+        "cohort_attributed_uptake": 3.0924130183087343e-05,
+        "M_end": -3.2852878195654966e-08,
+        "E_end": 1.0354599709438972e-05,
+        "body_time": -9.521237757326162e-06,
+        "cohort_mass_end": -7.048902307931881e-19,
+        "movement_paid": -6.095249377446876e-08,
+        "memory_paid": -5.4030046409137e-10,
+        "basal_paid": -2.0946724132997474e-08,
+        "basal_unpaid": 0.0
+      },
+      "positive_above_tolerance": {
+        "uptake": 6,
+        "cohort_attributed_uptake": 7,
+        "M_end": 0,
+        "E_end": 5,
+        "body_time": 2,
+        "cohort_mass_end": 0,
+        "movement_paid": 4,
+        "memory_paid": 2,
+        "basal_paid": 2,
+        "basal_unpaid": 0
+      },
+      "negative_below_minus_tolerance": {
+        "uptake": 2,
+        "cohort_attributed_uptake": 1,
+        "M_end": 2,
+        "E_end": 1,
+        "body_time": 6,
+        "cohort_mass_end": 0,
+        "movement_paid": 4,
+        "memory_paid": 6,
+        "basal_paid": 6,
+        "basal_unpaid": 0
+      },
+      "seed_means": {
+        "202610184001": {
+          "uptake": 2.424346782481379e-05,
+          "cohort_attributed_uptake": 4.214946816266099e-05,
+          "M_end": -6.57057546149531e-08,
+          "E_end": 1.4949591542468e-05,
+          "body_time": -1.0688413453863177e-05,
+          "cohort_mass_end": -3.2526065174565133e-19,
+          "movement_paid": -1.8247565419793332e-07,
+          "memory_paid": -6.04300651185774e-10,
+          "basal_paid": -2.3514507896393866e-08,
+          "basal_unpaid": 0.0
+        },
+        "202610184002": {
+          "uptake": 8.312794301579274e-06,
+          "cohort_attributed_uptake": 1.96987922035137e-05,
+          "M_end": -1.7763568394002505e-15,
+          "E_end": 5.7596078764099445e-06,
+          "body_time": -8.354062060789147e-06,
+          "cohort_mass_end": -1.0845198098407248e-18,
+          "movement_paid": 6.05706666489958e-08,
+          "memory_paid": -4.76300276996966e-10,
+          "basal_paid": -1.8378940369601082e-08,
+          "basal_unpaid": 0.0
+        }
+      }
+    },
+    {
+      "pair": "ema_instant",
+      "scenario": "same",
+      "n": 8,
+      "means": {
+        "uptake": -0.00010495998753490277,
+        "cohort_attributed_uptake": -0.00021206264906045743,
+        "M_end": 2.357297188559926e-07,
+        "E_end": -6.342818718008125e-05,
+        "body_time": 7.500973032392722e-05,
+        "cohort_mass_end": -3.7957663948833334e-19,
+        "movement_paid": 1.6679332705271666e-06,
+        "memory_paid": 4.247139865493077e-09,
+        "basal_paid": 1.650214058734889e-07,
+        "basal_unpaid": 0.0
+      },
+      "positive_above_tolerance": {
+        "uptake": 0,
+        "cohort_attributed_uptake": 0,
+        "M_end": 2,
+        "E_end": 1,
+        "body_time": 5,
+        "cohort_mass_end": 0,
+        "movement_paid": 3,
+        "memory_paid": 5,
+        "basal_paid": 5,
+        "basal_unpaid": 0
+      },
+      "negative_below_minus_tolerance": {
+        "uptake": 8,
+        "cohort_attributed_uptake": 8,
+        "M_end": 0,
+        "E_end": 5,
+        "body_time": 3,
+        "cohort_mass_end": 0,
+        "movement_paid": 5,
+        "memory_paid": 3,
+        "basal_paid": 3,
+        "basal_unpaid": 0
+      },
+      "seed_means": {
+        "202610184001": {
+          "uptake": -0.000168227817470612,
+          "cohort_attributed_uptake": -0.0003220521226741115,
+          "M_end": 4.7145944215287727e-07,
+          "E_end": -9.709747268971114e-05,
+          "body_time": 8.022226654702536e-05,
+          "cohort_mass_end": 1.0842021724855044e-19,
+          "movement_paid": 2.404954472623455e-06,
+          "memory_paid": 4.5332318662771875e-09,
+          "basal_paid": 1.7648898698041648e-07,
+          "basal_unpaid": 0.0
+        },
+        "202610184002": {
+          "uptake": -4.1692157599193536e-05,
+          "cohort_attributed_uptake": -0.00010207317544680335,
+          "M_end": -4.440892098500626e-15,
+          "E_end": -2.9758901670451365e-05,
+          "body_time": 6.979719410082907e-05,
+          "cohort_mass_end": -8.675734962252171e-19,
+          "movement_paid": 9.30912068430878e-07,
+          "memory_paid": 3.9610478647089664e-09,
+          "basal_paid": 1.5355382476656132e-07,
+          "basal_unpaid": 0.0
+        }
+      }
+    },
+    {
+      "pair": "ema_uniform",
+      "scenario": "port_swap",
+      "n": 8,
+      "means": {
+        "uptake": 6.0831053021459525e-06,
+        "cohort_attributed_uptake": 1.2090297980951403e-05,
+        "M_end": -1.5372147998959917e-11,
+        "E_end": 4.812808867882268e-06,
+        "body_time": 1.6381167711188027e-06,
+        "cohort_mass_end": 3.5734202462290796e-22,
+        "movement_paid": -1.5199481842587126e-07,
+        "memory_paid": 9.244787921303121e-11,
+        "basal_paid": 3.6038594330989326e-09,
+        "basal_unpaid": 0.0
+      },
+      "positive_above_tolerance": {
+        "uptake": 7,
+        "cohort_attributed_uptake": 8,
+        "M_end": 0,
+        "E_end": 6,
+        "body_time": 7,
+        "cohort_mass_end": 0,
+        "movement_paid": 5,
+        "memory_paid": 6,
+        "basal_paid": 7,
+        "basal_unpaid": 0
+      },
+      "negative_below_minus_tolerance": {
+        "uptake": 1,
+        "cohort_attributed_uptake": 0,
+        "M_end": 2,
+        "E_end": 0,
+        "body_time": 1,
+        "cohort_mass_end": 0,
+        "movement_paid": 3,
+        "memory_paid": 1,
+        "basal_paid": 1,
+        "basal_unpaid": 0
+      },
+      "seed_means": {
+        "202610184001": {
+          "uptake": 9.657123110518029e-06,
+          "cohort_attributed_uptake": 1.2104317963443702e-05,
+          "M_end": -3.0746072354759235e-11,
+          "E_end": 6.8301579476681695e-06,
+          "body_time": -1.3998045460539288e-06,
+          "cohort_mass_end": 2.1731689052993143e-19,
+          "movement_paid": -7.750646840998243e-08,
+          "memory_paid": -7.897946185941862e-11,
+          "basal_paid": -3.0795683780837635e-09,
+          "basal_unpaid": 0.0
+        },
+        "202610184002": {
+          "uptake": 2.509087493773876e-06,
+          "cohort_attributed_uptake": 1.2076277998459101e-05,
+          "M_end": 1.7763568394002505e-15,
+          "E_end": 2.795459788096366e-06,
+          "body_time": 4.676038088291534e-06,
+          "cohort_mass_end": -2.1660220648068561e-19,
+          "movement_paid": -2.2648316844176009e-07,
+          "memory_paid": 2.6387522028548105e-10,
+          "basal_paid": 1.0287287244281629e-08,
+          "basal_unpaid": 0.0
+        }
+      }
+    },
+    {
+      "pair": "ema_instant",
+      "scenario": "port_swap",
+      "n": 8,
+      "means": {
+        "uptake": -8.45600858621065e-05,
+        "cohort_attributed_uptake": -0.00011889526550076659,
+        "M_end": -1.7204015989591426e-12,
+        "E_end": -4.968417920725443e-05,
+        "body_time": 1.8181545613060734e-05,
+        "cohort_mass_end": -1.3234889800848443e-23,
+        "movement_paid": 1.1895483290058628e-06,
+        "memory_paid": 1.0296759070382855e-09,
+        "basal_paid": 3.9999400236467864e-08,
+        "basal_unpaid": 0.0
+      },
+      "positive_above_tolerance": {
+        "uptake": 1,
+        "cohort_attributed_uptake": 1,
+        "M_end": 1,
+        "E_end": 1,
+        "body_time": 3,
+        "cohort_mass_end": 0,
+        "movement_paid": 4,
+        "memory_paid": 3,
+        "basal_paid": 3,
+        "basal_unpaid": 0
+      },
+      "negative_below_minus_tolerance": {
+        "uptake": 7,
+        "cohort_attributed_uptake": 7,
+        "M_end": 1,
+        "E_end": 5,
+        "body_time": 5,
+        "cohort_mass_end": 0,
+        "movement_paid": 4,
+        "memory_paid": 4,
+        "basal_paid": 4,
+        "basal_unpaid": 0
+      },
+      "seed_means": {
+        "202610184001": {
+          "uptake": -5.8873103240930647e-05,
+          "cohort_attributed_uptake": -9.399654938068603e-05,
+          "M_end": -3.439915019498585e-12,
+          "E_end": -4.2116724081608936e-05,
+          "body_time": 3.835846882793703e-06,
+          "cohort_mass_end": 2.167874949378975e-19,
+          "movement_paid": 9.512193144267655e-07,
+          "memory_paid": 2.164866758080919e-10,
+          "basal_paid": 8.43886405199612e-09,
+          "basal_unpaid": 0.0
+        },
+        "202610184002": {
+          "uptake": -0.00011024706848328236,
+          "cohort_attributed_uptake": -0.00014379398162084713,
+          "M_end": -8.881784197001252e-16,
+          "E_end": -5.7251634332899926e-05,
+          "body_time": 3.2527244343327766e-05,
+          "cohort_mass_end": -2.168139647174992e-19,
+          "movement_paid": 1.42787734358496e-06,
+          "memory_paid": 1.842865138268479e-09,
+          "basal_paid": 7.155993642093961e-08,
+          "basal_unpaid": 0.0
+        }
+      }
+    }
+  ],
+  "observation": "All planned clocks and pairs retained. No prefix replay, no reselection, no post-score parameter changes.",
+  "threshold_note": "Sign counts use +/-1e-12; raw signed values are retained in pairs.json.",
+  "cohort_scope": "Descriptive tag/survivor allocation of realized local uptake; no separate energy or genetic inheritance claim."
+}

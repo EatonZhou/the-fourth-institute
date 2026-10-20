@@ -1,0 +1,21 @@
+{
+  "width": 96,
+  "height": 96,
+  "steps": [
+    128,
+    136,
+    144,
+    152,
+    160,
+    168,
+    176,
+    184,
+    192,
+    200,
+    208,
+    216,
+    224
+  ],
+  "sha256": "4981aeb1317ac35727a23b8f9a4ce9f3464b0bac1ec705b85e152b6568af2a9a",
+  "framesFile": "clips/diversetransport-genome_85dffefe3eb5bacdfbf5--T11.frames.json"
+}

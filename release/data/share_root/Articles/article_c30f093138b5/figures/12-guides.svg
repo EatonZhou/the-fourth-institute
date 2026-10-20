@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600" viewBox="0 0 1200 600">
+<rect width="1200" height="600" fill="white"/>
+<text x="28" y="41.56" text-anchor="start" font-family="Noto Sans CJK SC" font-size="26" font-weight="700" fill="#275D85">六类表达指南：按人的理解任务选择</text>
+<polyline points="28,62 1172,62" fill="none" stroke="#91A2AE" stroke-width="1.7"/>
+<text x="30" y="583.0300000000001" text-anchor="start" font-family="Noto Sans CJK SC" font-size="13" font-weight="400" fill="#61717E">设计示意 · 实线：工作或依赖关系；虚线：反馈或关联；不表示实验测量</text>
+<rect x="35" y="100" width="350" height="185" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="210.0" y="126.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">系统结构</text>
+<text x="210.0" y="193.71" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">全貌 → 模块 → 协议</text>
+<text x="210.0" y="213.77" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442"></text>
+<text x="210.0" y="233.83" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">标注职责／查看影响</text>
+<rect x="425" y="100" width="350" height="185" fill="#EDF5F1" stroke="#26756C" stroke-width="1.5"/>
+<text x="600.0" y="126.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#26756C">功能体验</text>
+<text x="600.0" y="193.71" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">任务 → 操作 → 结果</text>
+<text x="600.0" y="213.77" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442"></text>
+<text x="600.0" y="233.83" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">尝试行为／反馈步骤</text>
+<rect x="815" y="100" width="350" height="185" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="990.0" y="126.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">运行机制</text>
+<text x="990.0" y="193.71" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">状态 → 事件 → 分支</text>
+<text x="990.0" y="213.77" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442"></text>
+<text x="990.0" y="233.83" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">调整条件／暂停观察</text>
+<rect x="35" y="330" width="350" height="185" fill="#EDF5F1" stroke="#26756C" stroke-width="1.5"/>
+<text x="210.0" y="356.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#26756C">方案比较</text>
+<text x="210.0" y="423.71000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">同一场景 → 候选差异</text>
+<text x="210.0" y="443.77000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442"></text>
+<text x="210.0" y="463.83000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">补充约束／选择方案</text>
+<rect x="425" y="330" width="350" height="185" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="600.0" y="356.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">阶段进展</text>
+<text x="600.0" y="423.71000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">近期变化 → 成果与阻塞</text>
+<text x="600.0" y="443.77000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442"></text>
+<text x="600.0" y="463.83000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">体验成果／调整关注</text>
+<rect x="815" y="330" width="350" height="185" fill="#EDF5F1" stroke="#26756C" stroke-width="1.5"/>
+<text x="990.0" y="356.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#26756C">未来演化</text>
+<text x="990.0" y="423.71000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">当前系统 → 拟议路径</text>
+<text x="990.0" y="443.77000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442"></text>
+<text x="990.0" y="463.83000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">调整优先级／查看依赖</text>
+</svg>

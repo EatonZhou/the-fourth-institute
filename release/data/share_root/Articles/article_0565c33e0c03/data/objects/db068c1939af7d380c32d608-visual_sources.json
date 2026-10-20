@@ -1,0 +1,46 @@
+[
+  {
+    "id": "202610195601_ring_both__future_both",
+    "split": "train",
+    "seed": 202610195601,
+    "shape": "ring",
+    "history": "both",
+    "clock": 328,
+    "horizon": 16,
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/figures/source_00_328.npz",
+    "not_new_body": true
+  },
+  {
+    "id": "202610195601_ring_both__future_birth_gain_only",
+    "split": "mechanism_shift_G",
+    "seed": 202610195601,
+    "shape": "ring",
+    "history": "both",
+    "clock": 328,
+    "horizon": 16,
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/figures/source_01_328.npz",
+    "not_new_body": true
+  },
+  {
+    "id": "202610195602_separate_seeds_birth_gain_only__future_both",
+    "split": "heldout_seed",
+    "seed": 202610195602,
+    "shape": "separate_seeds",
+    "history": "birth_gain_only",
+    "clock": 328,
+    "horizon": 16,
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/figures/source_15_328.npz",
+    "not_new_body": true
+  },
+  {
+    "id": "202610195602_separate_seeds_both__pooling",
+    "split": "mechanism_shift_pooling",
+    "seed": 202610195602,
+    "shape": "separate_seeds",
+    "history": null,
+    "clock": 264,
+    "horizon": 16,
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/figures/source_19_264.npz",
+    "not_new_body": true
+  }
+]

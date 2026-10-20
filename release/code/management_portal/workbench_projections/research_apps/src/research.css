@@ -1,0 +1,3 @@
+.researchDiscussion{display:grid;gap:var(--portal-space-3);border-top:1px solid var(--border);padding-top:var(--portal-space-4);margin-top:var(--portal-space-4)}
+.researchDiscussion label{display:grid;gap:var(--portal-space-2)}
+.researchDiscussion textarea{width:100%;box-sizing:border-box;color:var(--text);background:var(--panel);border:1px solid var(--border);border-radius:var(--portal-control-radius);padding:var(--portal-space-3);font:inherit}

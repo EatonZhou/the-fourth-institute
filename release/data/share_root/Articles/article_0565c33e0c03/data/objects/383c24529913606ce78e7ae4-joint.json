@@ -1,0 +1,98 @@
+{
+  "clock": 1600,
+  "predictor": {
+    "omega": 0.012271846303085117,
+    "recent": 0.008453860712298113,
+    "fit_pairs": 46,
+    "dot": 0.17221560753652854,
+    "cross": 0.01696175686627931,
+    "den": 0.17304888521792444,
+    "anchor_t": 1560,
+    "last_seen": [
+      20.215952658503284,
+      13.346407110828334
+    ],
+    "anchor": [
+      20.37446740616806,
+      13.579437642348287
+    ],
+    "v": [
+      -0.018288106673967075,
+      -0.034029312620521335
+    ],
+    "samples": [
+      [
+        1560,
+        [
+          20.37446740616806,
+          13.579437642348287
+        ]
+      ]
+    ],
+    "velocities": [
+      [
+        1560,
+        [
+          -0.018288106673967075,
+          -0.034029312620521335
+        ]
+      ]
+    ]
+  },
+  "rule": {
+    "transport_scheme": "face_potential",
+    "dt": 0.1,
+    "mobility": 1.0,
+    "cohesion": 1.2,
+    "pressure": 3.0,
+    "interaction_sigma": 1.4,
+    "cue_gain": 18.0,
+    "learning_rate": 0.0,
+    "eligibility_time": 0.8,
+    "memory_time": 200.0,
+    "uptake_rate": 0.2,
+    "energy_capacity": 2.0,
+    "basal_cost": 0.012,
+    "movement_cost": 0.012,
+    "starvation_rate": 0.15,
+    "starvation_energy": 0.08,
+    "food_sensor_scale": 5.0,
+    "injury_sensor_scale": 25.0,
+    "action_budget": "donor_energy",
+    "polarity_gain": 1.2,
+    "polarity_turn_rate": 0.0,
+    "polarity_relaxation_rate": 0.0,
+    "polarity_energy_gate": "none",
+    "energy_transfer_conductivity": 0.0,
+    "energy_transfer_loss": 0.01
+  },
+  "parent": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/paid_action_closed_loop_20261019/soft_p512/plus/last/keep/current",
+  "environment": "reverse",
+  "original_angle": "plus",
+  "angle": "minus",
+  "write": true,
+  "initialM": 17.60453621201369,
+  "calibrator": {
+    "arm": "last",
+    "g0": 0.12,
+    "A": [
+      [
+        0.05995400575816989,
+        0.09956805764043007
+      ],
+      [
+        -0.09956805764043007,
+        0.05995400575816989
+      ]
+    ],
+    "updates": 192
+  },
+  "selector": {
+    "arm": "instant_jacobian",
+    "ema": 0.0,
+    "writes": 0,
+    "decay": 0.9,
+    "initial_tie": "density"
+  },
+  "native_total": 704
+}

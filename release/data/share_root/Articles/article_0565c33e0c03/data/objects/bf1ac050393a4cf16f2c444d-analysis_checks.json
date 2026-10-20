@@ -1,0 +1,10 @@
+{
+  "mode": "readonly saved-output checks",
+  "forward_calls": 0,
+  "max_cycle_reconstruction_error": 2.4980018054066022e-15,
+  "final_states_checked": 216,
+  "followup_source_final_sha_references": 54,
+  "actual_frame_archives_sha_checked": 72,
+  "old_results_read_or_changed": false,
+  "source_file_sha256": "45bcb0392cf6a4d8bac46179cb0193cd54b335a03dffa46199b014b124b2db9e"
+}

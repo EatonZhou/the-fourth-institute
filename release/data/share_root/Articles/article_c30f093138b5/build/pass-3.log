@@ -1,0 +1,40 @@
+This is XeTeX, Version 3.141592653-2.6-0.999998 (TeX Live 2026) (preloaded format=xelatex)
+ restricted \write18 enabled.
+entering extended mode
+(./main.tex
+LaTeX2e <2026-06-01>
+L3 programming layer <2026-05-26>
+(${user_home}/.TinyTeX/texmf-dist/tex/latex/ctex/ctexart.cls (${user_home}/.TinyTeX/texmf-dist/tex/latex/ctex/config/ctexbackend.cfg) (${user_home}/.TinyTeX/texmf-dist/tex/latex/l3kernel/expl3.sty (${user_home}/.TinyTeX/texmf-dist/tex/latex/l3backend/l3backend-xetex.def))
+Document Class: ctexart 2022/07/14 v2.5.10 Chinese adapter for class article (CTEX)
+(${user_home}/.TinyTeX/texmf-dist/tex/latex/ctex/ctexhook.sty) (${user_home}/.TinyTeX/texmf-dist/tex/latex/ctex/ctexpatch.sty) (${user_home}/.TinyTeX/texmf-dist/tex/latex/base/fix-cm.sty (${user_home}/.TinyTeX/texmf-dist/tex/latex/base/ts1enc.def)) (${user_home}/.TinyTeX/texmf-dist/tex/latex/ctex/config/ctexopts.cfg) (${user_home}/.TinyTeX/texmf-dist/tex/latex/base/article.cls
+Document Class: article 2025/01/22 v1.4n Standard LaTeX document class
+(${user_home}/.TinyTeX/texmf-dist/tex/latex/base/size12.clo)) (${user_home}/.TinyTeX/texmf-dist/tex/latex/ctex/engine/ctex-engine-xetex.def (${user_home}/.TinyTeX/texmf-dist/tex/xelatex/xecjk/xeCJK.sty (${user_home}/.TinyTeX/texmf-dist/tex/latex/l3packages/xtemplate/xtemplate.sty) (${user_home}/.TinyTeX/texmf-dist/tex/latex/fontspec/fontspec.sty (${user_home}/.TinyTeX/texmf-dist/tex/latex/l3packages/xparse/xparse.sty) (${user_home}/.TinyTeX/texmf-dist/tex/latex/fontspec/fontspec-xetex.sty (${user_home}/.TinyTeX/texmf-dist/tex/latex/base/fontenc.sty) (${user_home}/.TinyTeX/texmf-dist/tex/latex/fontspec/fontspec.cfg))) (${user_home}/.TinyTeX/texmf-dist/tex/xelatex/xecjk/xeCJK.cfg))) (${user_home}/.TinyTeX/texmf-dist/tex/latex/zhnumber/zhnumber.sty (${user_home}/.TinyTeX/texmf-dist/tex/latex/zhnumber/zhnumber-utf8.cfg)) (${user_home}/.TinyTeX/texmf-dist/tex/latex/ctex/scheme/ctex-scheme-chinese-article.def (${user_home}/.TinyTeX/texmf-dist/tex/latex/ctex/config/ctex-name-utf8.cfg))) (${user_home}/.TinyTeX/texmf-dist/tex/latex/ctex/config/ctex.cfg) (${user_home}/.TinyTeX/texmf-dist/tex/latex/geometry/geometry.sty (${user_home}/.TinyTeX/texmf-dist/tex/latex/graphics/keyval.sty) (${user_home}/.TinyTeX/texmf-dist/tex/generic/iftex/ifvtex.sty (${user_home}/.TinyTeX/texmf-dist/tex/generic/iftex/iftex.sty))) (${user_home}/.TinyTeX/texmf-dist/tex/latex/amsmath/amsmath.sty
+For additional information on amsmath, use the `?' option.
+(${user_home}/.TinyTeX/texmf-dist/tex/latex/amsmath/amstext.sty (${user_home}/.TinyTeX/texmf-dist/tex/latex/amsmath/amsgen.sty)) (${user_home}/.TinyTeX/texmf-dist/tex/latex/amsmath/amsbsy.sty) (${user_home}/.TinyTeX/texmf-dist/tex/latex/amsmath/amsopn.sty)) (${user_home}/.TinyTeX/texmf-dist/tex/latex/amsfonts/amssymb.sty (${user_home}/.TinyTeX/texmf-dist/tex/latex/amsfonts/amsfonts.sty)) (${user_home}/.TinyTeX/texmf-dist/tex/latex/graphics/graphicx.sty (${user_home}/.TinyTeX/texmf-dist/tex/latex/graphics/graphics.sty (${user_home}/.TinyTeX/texmf-dist/tex/latex/graphics/trig.sty) (${user_home}/.TinyTeX/texmf-dist/tex/latex/graphics-cfg/graphics.cfg) (${user_home}/.TinyTeX/texmf-dist/tex/latex/graphics-def/xetex.def))) (${user_home}/.TinyTeX/texmf-dist/tex/latex/booktabs/booktabs.sty) (${user_home}/.TinyTeX/texmf-dist/tex/latex/tools/longtable.sty) (${user_home}/.TinyTeX/texmf-dist/tex/latex/tools/tabularx.sty (${user_home}/.TinyTeX/texmf-dist/tex/latex/tools/array.sty)) (${user_home}/.TinyTeX/texmf-dist/tex/latex/enumitem/enumitem.sty) (${user_home}/.TinyTeX/texmf-dist/tex/latex/xcolor/xcolor.sty (${user_home}/.TinyTeX/texmf-dist/tex/latex/graphics-cfg/color.cfg) (${user_home}/.TinyTeX/texmf-dist/tex/latex/graphics/mathcolor.ltx)) (${user_home}/.TinyTeX/texmf-dist/tex/latex/fancyhdr/fancyhdr.sty) (${user_home}/.TinyTeX/texmf-dist/tex/latex/caption/caption.sty (${user_home}/.TinyTeX/texmf-dist/tex/latex/caption/caption3.sty) (${user_home}/.TinyTeX/texmf-dist/tex/latex/caption/ltcaption.sty)) (${user_home}/.TinyTeX/texmf-dist/tex/latex/float/float.sty) (${user_home}/.TinyTeX/texmf-dist/tex/latex/setspace/setspace.sty) (${user_home}/.TinyTeX/texmf-dist/tex/latex/hyperref/hyperref.sty (${user_home}/.TinyTeX/texmf-dist/tex/latex/kvsetkeys/kvsetkeys.sty) (${user_home}/.TinyTeX/texmf-dist/tex/generic/kvdefinekeys/kvdefinekeys.sty) (${user_home}/.TinyTeX/texmf-dist/tex/generic/pdfescape/pdfescape.sty (${user_home}/.TinyTeX/texmf-dist/tex/generic/ltxcmds/ltxcmds.sty) (${user_home}/.TinyTeX/texmf-dist/tex/generic/pdftexcmds/pdftexcmds.sty (${user_home}/.TinyTeX/texmf-dist/tex/generic/infwarerr/infwarerr.sty))) (${user_home}/.TinyTeX/texmf-dist/tex/latex/hycolor/hycolor.sty) (${user_home}/.TinyTeX/texmf-dist/tex/latex/hyperref/nameref.sty (${user_home}/.TinyTeX/texmf-dist/tex/latex/refcount/refcount.sty) (${user_home}/.TinyTeX/texmf-dist/tex/generic/gettitlestring/gettitlestring.sty (${user_home}/.TinyTeX/texmf-dist/tex/latex/kvoptions/kvoptions.sty))) (${user_home}/.TinyTeX/texmf-dist/tex/latex/etoolbox/etoolbox.sty) (${user_home}/.TinyTeX/texmf-dist/tex/generic/stringenc/stringenc.sty) (${user_home}/.TinyTeX/texmf-dist/tex/latex/hyperref/pd1enc.def) (${user_home}/.TinyTeX/texmf-dist/tex/generic/intcalc/intcalc.sty) (${user_home}/.TinyTeX/texmf-dist/tex/latex/hyperref/puenc.def) (${user_home}/.TinyTeX/texmf-dist/tex/latex/url/url.sty) (${user_home}/.TinyTeX/texmf-dist/tex/generic/bitset/bitset.sty (${user_home}/.TinyTeX/texmf-dist/tex/generic/bigintcalc/bigintcalc.sty))) (${user_home}/.TinyTeX/texmf-dist/tex/latex/hyperref/hxetex.def (${user_home}/.TinyTeX/texmf-dist/tex/latex/rerunfilecheck/rerunfilecheck.sty (${user_home}/.TinyTeX/texmf-dist/tex/generic/uniquecounter/uniquecounter.sty))) (build/main.aux)
+*geometry* driver: auto-detecting
+*geometry* detected driver: xetex
+(build/main.out) (build/main.out) (${user_home}/.TinyTeX/texmf-dist/tex/latex/amsfonts/umsa.fd) (${user_home}/.TinyTeX/texmf-dist/tex/latex/amsfonts/umsb.fd) [1] (build/main.toc [2] [3]) (./chapters/01-introduction.tex [4] [5] [6]) (./chapters/02-framework.tex [7] [8] [9]) (./chapters/03-intent.tex [10] [11] [12] [13]) (./chapters/04-organization.tex [14] [15] [16] [17]) (./chapters/05-delivery.tex [18] [19] [20]) (./chapters/06-validation.tex [21]
+Underfull \hbox (badness 1478) in paragraph at lines 25--25
+[]|\TU/NotoSerifCJKSC(0)/m/n/10.95 执 行 器 延 迟 停
+
+Underfull \hbox (badness 1478) in paragraph at lines 25--25
+[]|\TU/NotoSerifCJKSC(0)/m/n/10.95 取 消 与 完 成 并
+[22] [23] [24] [25]) (./chapters/07-interaction.tex [26] [27] [28] [29]) (./chapters/08-guidelines.tex [30] [31] [32] [33] [34]) (./chapters/09-case.tex [35]
+Underfull \hbox (badness 1478) in paragraph at lines 24--24
+[]|\TU/NotoSerifCJKSC(0)/m/n/10.95 取 消 请 求 已 接
+[36] [37] [38]) (./chapters/10-evaluation.tex [39] [40] [41] [42] [43]) (./chapters/11-outlook.tex [44] [45]) [46] (./references.tex
+Underfull \hbox (badness 10000) in paragraph at lines 10--11
+[]\TU/lmr/m/n/10.95 Eric Horvitz. Principles of Mixed-Initiative User Interfaces. \TU/lmr/m/it/10.95 CHI\TU/lmr/m/n/10.95 , pp.
+
+Underfull \hbox (badness 10000) in paragraph at lines 10--11
+\TU/lmr/m/n/10.95 159–166, 1999. [][]$[][][][][] [] [] [] [][][] [] [][][][][][][][][] [] [][][] [] [][][][][][] [] [][][][][][][][] [] [][][][][][][][][][][] []
+
+Underfull \hbox (badness 1394) in paragraph at lines 11--12
+[]\TU/lmr/m/n/10.95 Saleema Amershi, Dan Weld, Mihaela Vorvoreanu, et al. Guidelines for Human-
+
+Underfull \hbox (badness 5741) in paragraph at lines 11--12
+\TU/lmr/m/n/10.95 AI Interaction. \TU/lmr/m/it/10.95 CHI\TU/lmr/m/n/10.95 , 2019. [][]$[][][][][] [] [] [] [][][] [] [][][][][][][][][] [] [][][] [] [][][][][][] [] [][][][][][][][] [] [][][][][][][][][][][] []
+[47]) [48] (build/main.aux) )
+(see the transcript file for additional information)
+Output written on build/main.pdf (48 pages).
+Transcript written on build/main.log.

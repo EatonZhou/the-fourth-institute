@@ -1,0 +1,54 @@
+{
+  "schema": "tfi.architecture-component-relations-manifest.v1",
+  "revision": 1,
+  "immutable": true,
+  "created_on": "2026-10-15",
+  "owner": "resident_60ae6d0cdf74",
+  "artifact": {
+    "address": "workspace_13209cb6666b/file/architecture-evidence/objects/component-relations-bd6a9b23888e415e3464f8e33467d909bceb7e7449db1cfbf5a214ad77d24d5b.json",
+    "sha256": "bd6a9b23888e415e3464f8e33467d909bceb7e7449db1cfbf5a214ad77d24d5b",
+    "size": 46362
+  },
+  "base_manifest": {
+    "address": "workspace_13209cb6666b/file/architecture-evidence/objects/manifest-fa5bba171eedccad1820ce10a53c10713f97dfc9e26b8c2856ae6a637490cc45.json",
+    "sha256": "fa5bba171eedccad1820ce10a53c10713f97dfc9e26b8c2856ae6a637490cc45",
+    "size": 160886
+  },
+  "consumer_contract": {
+    "address": "workspace_13209cb6666b/file/architecture-evidence/objects/consumer-contract-d1f751c4f0426819e41fcfb6146a76391c8c9bc3d105b8764ce3ccbf758d1031.json",
+    "sha256": "d1f751c4f0426819e41fcfb6146a76391c8c9bc3d105b8764ce3ccbf758d1031",
+    "size": 302180
+  },
+  "map": {
+    "status": "available",
+    "address": "workspace_13209cb6666b/file/architecture-evidence/commits/d4f9b6202c631c8f11027ee8c2eeecd499278fa1/architecture/modules.yaml",
+    "sha256": "e96421eef799499d406502da20b44d39e9bc037c588bac0684dd582319ed6b49",
+    "size": 48777
+  },
+  "binding": {
+    "commit": "d4f9b6202c631c8f11027ee8c2eeecd499278fa1",
+    "map_sha256": "e96421eef799499d406502da20b44d39e9bc037c588bac0684dd582319ed6b49",
+    "evolution_sha256": "6bc275ee5a2b8ce003e1563064654fb22d1e7468aaddc670fa23bb645003adc7"
+  },
+  "counts": {
+    "relations": 5,
+    "component_ids": 4,
+    "provider_scenario_roles": 8,
+    "new_modules": 0,
+    "new_protocols": 0,
+    "new_scenarios": 0
+  },
+  "loading": "Pin this manifest plus the exact base_manifest. Validate hash/size and matching binding before enabling relations; a mismatch leaves the supplement unavailable and keeps the selected base batch.",
+  "scope": "Independent factual supplement for an interaction proposal; no production UI or map update.",
+  "mutation_policy": "Append a new manifest version for future changes. Never overwrite this manifest, its artifact, the bound base batch, or a historical scene.",
+  "fields": [
+    "artifact.consumer_fields",
+    "artifact.rendering",
+    "artifact.components",
+    "artifact.relations",
+    "artifact.missing",
+    "artifact.scenario_reuse",
+    "artifact.design_versions",
+    "artifact.code_evidence"
+  ]
+}

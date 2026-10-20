@@ -1,0 +1,12 @@
+{
+  "name": "lenia-selected-projection",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "esbuild": "0.25.12"
+  },
+  "scripts": {
+    "build": "node build.mjs"
+  }
+}

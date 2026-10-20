@@ -1,0 +1,19 @@
+{
+  "id": "8038712e-7eda-4725-99fe-ecf966797d3d",
+  "name": "feedback-paid-content-freeze",
+  "command": [
+    "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+    "-m",
+    "environment_evolution.feedback_update_control.run"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "ce2-feedback-paid-content-freeze-20261018-v1",
+  "status": "running",
+  "created_at": "2026-10-18T06:46:47.316918+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/8038712e-7eda-4725-99fe-ecf966797d3d",
+  "pid": 3860135,
+  "manual_pause": false,
+  "create_time": 1792306006.8,
+  "started_at": "2026-10-18T06:46:47.417739+00:00"
+}

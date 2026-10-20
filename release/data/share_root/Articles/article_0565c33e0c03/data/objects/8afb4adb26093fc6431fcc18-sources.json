@@ -1,0 +1,713 @@
+{
+  "schema": "lenia.morphology-sources.v1",
+  "entries": [
+    {
+      "id": "m2026101607-g1-0060",
+      "title": "双体漂移",
+      "branch": "rule-and-initial-mutation",
+      "kind": "lifetime",
+      "summary": "两个局部结构在周期空间中移动，仍属Orbium相关分支。 已观察4096步，不作新物种或学习能力声明。",
+      "sourceNote": "来自真实CPU搜索5c0cbcd4；共享单环多项式Lenia，已知Orbium/组合/拉伸/环状初态分支。",
+      "changeSummary": "外层第1代候选；本片展示该候选本身的生命期，非父子图像插值。",
+      "parentRelation": "recorded",
+      "parentId": "founder:paired_orbium",
+      "parentNote": "真实搜索父标识；founder前缀表示初态生成分支，其他标识可在candidate_index.json查到。",
+      "sourceRef": null,
+      "publication": {
+        "approved": true,
+        "by": "resident_afa3d4d6cf11",
+        "note": "本轮用户明确要求首批实际候选进入项目投影；研究主理人提供共享项目真实数据。",
+        "audience": "project-readers",
+        "includes": [
+          "frames",
+          "metadata"
+        ]
+      },
+      "rule": {
+        "family": "single-ring polynomial Lenia",
+        "config": {
+          "size": 64,
+          "radius": 17.312394884565038,
+          "mu": 0.15816724304290594,
+          "sigma": 0.01736313349689692,
+          "dt": 0.09236343019463927,
+          "dtype": "float64"
+        }
+      },
+      "environment": {
+        "stimulus": "none",
+        "boundary": "periodic"
+      },
+      "time": {
+        "unit": "Lenia update",
+        "description": "实际生命周期更新步；每步dt见规则，显示帧不用于精确重启。"
+      },
+      "source": {
+        "format": "npz",
+        "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidates/m2026101607-g1-0060/long/trajectory.npz",
+        "key": "frames",
+        "stepsKey": "lifetime_steps"
+      },
+      "restart": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidates/m2026101607-g1-0060/long/restart.npz",
+      "initial": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidates/m2026101607-g1-0060/initial.npz",
+      "outer_generation": 1,
+      "review_status": "visually_reviewed_finite_window",
+      "review_notes": "两个局部结构在周期空间中移动，仍属Orbium相关分支。",
+      "recording": {
+        "coverage": "short-segment",
+        "description": "记录生命周期0至4096更新步；末态仍有结构，不代表完整生命周期或无限期稳定。",
+        "bodyMapping": "原始单通道身体密度frames[t,y,x]，范围[0,1]；没有记忆/环境通道合并，也无空间变换。"
+      },
+      "origin": "paired_orbium"
+    },
+    {
+      "id": "m2026101607-g2-0133",
+      "title": "细环斑点重排",
+      "branch": "rule-and-initial-mutation",
+      "kind": "lifetime",
+      "summary": "局部初态扩展为覆盖全域的细环斑点；属于场图样。 已观察4096步，不作新物种或学习能力声明。",
+      "sourceNote": "来自真实CPU搜索5c0cbcd4；共享单环多项式Lenia，已知Orbium/组合/拉伸/环状初态分支。",
+      "changeSummary": "外层第2代候选；本片展示该候选本身的生命期，非父子图像插值。",
+      "parentRelation": "recorded",
+      "parentId": "m2026101607-g1-0071",
+      "parentNote": "真实搜索父标识；founder前缀表示初态生成分支，其他标识可在candidate_index.json查到。",
+      "sourceRef": null,
+      "publication": {
+        "approved": true,
+        "by": "resident_afa3d4d6cf11",
+        "note": "本轮用户明确要求首批实际候选进入项目投影；研究主理人提供共享项目真实数据。",
+        "audience": "project-readers",
+        "includes": [
+          "frames",
+          "metadata"
+        ]
+      },
+      "rule": {
+        "family": "single-ring polynomial Lenia",
+        "config": {
+          "size": 64,
+          "radius": 8.519206137130956,
+          "mu": 0.1229216678539288,
+          "sigma": 0.01735408928748723,
+          "dt": 0.10360039403441842,
+          "dtype": "float64"
+        }
+      },
+      "environment": {
+        "stimulus": "none",
+        "boundary": "periodic"
+      },
+      "time": {
+        "unit": "Lenia update",
+        "description": "实际生命周期更新步；每步dt见规则，显示帧不用于精确重启。"
+      },
+      "source": {
+        "format": "npz",
+        "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidates/m2026101607-g2-0133/long/trajectory.npz",
+        "key": "frames",
+        "stepsKey": "lifetime_steps"
+      },
+      "restart": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidates/m2026101607-g2-0133/long/restart.npz",
+      "initial": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidates/m2026101607-g2-0133/initial.npz",
+      "outer_generation": 2,
+      "review_status": "visually_reviewed_finite_window",
+      "review_notes": "局部初态扩展为覆盖全域的细环斑点；属于场图样。",
+      "recording": {
+        "coverage": "short-segment",
+        "description": "记录生命周期0至4096更新步；末态仍有结构，不代表完整生命周期或无限期稳定。",
+        "bodyMapping": "原始单通道身体密度frames[t,y,x]，范围[0,1]；没有记忆/环境通道合并，也无空间变换。"
+      },
+      "origin": "paired_orbium"
+    },
+    {
+      "id": "m2026101607-g2-0165",
+      "title": "疏环图样",
+      "branch": "rule-and-initial-mutation",
+      "kind": "lifetime",
+      "summary": "发展为低活动环状阵列，不标为运动生物。 已观察4096步，不作新物种或学习能力声明。",
+      "sourceNote": "来自真实CPU搜索5c0cbcd4；共享单环多项式Lenia，已知Orbium/组合/拉伸/环状初态分支。",
+      "changeSummary": "外层第2代候选；本片展示该候选本身的生命期，非父子图像插值。",
+      "parentRelation": "recorded",
+      "parentId": "m2026101607-g1-0041",
+      "parentNote": "真实搜索父标识；founder前缀表示初态生成分支，其他标识可在candidate_index.json查到。",
+      "sourceRef": null,
+      "publication": {
+        "approved": true,
+        "by": "resident_afa3d4d6cf11",
+        "note": "本轮用户明确要求首批实际候选进入项目投影；研究主理人提供共享项目真实数据。",
+        "audience": "project-readers",
+        "includes": [
+          "frames",
+          "metadata"
+        ]
+      },
+      "rule": {
+        "family": "single-ring polynomial Lenia",
+        "config": {
+          "size": 64,
+          "radius": 12.927214813367051,
+          "mu": 0.14126464820280016,
+          "sigma": 0.02129813208102701,
+          "dt": 0.10869712869090481,
+          "dtype": "float64"
+        }
+      },
+      "environment": {
+        "stimulus": "none",
+        "boundary": "periodic"
+      },
+      "time": {
+        "unit": "Lenia update",
+        "description": "实际生命周期更新步；每步dt见规则，显示帧不用于精确重启。"
+      },
+      "source": {
+        "format": "npz",
+        "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidates/m2026101607-g2-0165/long/trajectory.npz",
+        "key": "frames",
+        "stepsKey": "lifetime_steps"
+      },
+      "restart": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidates/m2026101607-g2-0165/long/restart.npz",
+      "initial": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidates/m2026101607-g2-0165/initial.npz",
+      "outer_generation": 2,
+      "review_status": "visually_reviewed_finite_window",
+      "review_notes": "发展为低活动环状阵列，不标为运动生物。",
+      "recording": {
+        "coverage": "short-segment",
+        "description": "记录生命周期0至4096更新步；末态仍有结构，不代表完整生命周期或无限期稳定。",
+        "bodyMapping": "原始单通道身体密度frames[t,y,x]，范围[0,1]；没有记忆/环境通道合并，也无空间变换。"
+      },
+      "origin": "stretched_orbium"
+    },
+    {
+      "id": "m2026101607-g1-0062",
+      "title": "长短环斑点",
+      "branch": "rule-and-initial-mutation",
+      "kind": "lifetime",
+      "summary": "发展为长短不一的环状斑点图样。 已观察4096步，不作新物种或学习能力声明。",
+      "sourceNote": "来自真实CPU搜索5c0cbcd4；共享单环多项式Lenia，已知Orbium/组合/拉伸/环状初态分支。",
+      "changeSummary": "外层第1代候选；本片展示该候选本身的生命期，非父子图像插值。",
+      "parentRelation": "recorded",
+      "parentId": "founder:paired_orbium",
+      "parentNote": "真实搜索父标识；founder前缀表示初态生成分支，其他标识可在candidate_index.json查到。",
+      "sourceRef": null,
+      "publication": {
+        "approved": true,
+        "by": "resident_afa3d4d6cf11",
+        "note": "本轮用户明确要求首批实际候选进入项目投影；研究主理人提供共享项目真实数据。",
+        "audience": "project-readers",
+        "includes": [
+          "frames",
+          "metadata"
+        ]
+      },
+      "rule": {
+        "family": "single-ring polynomial Lenia",
+        "config": {
+          "size": 64,
+          "radius": 9.574235038004854,
+          "mu": 0.12321854078576643,
+          "sigma": 0.01323906380005953,
+          "dt": 0.08144392266544702,
+          "dtype": "float64"
+        }
+      },
+      "environment": {
+        "stimulus": "none",
+        "boundary": "periodic"
+      },
+      "time": {
+        "unit": "Lenia update",
+        "description": "实际生命周期更新步；每步dt见规则，显示帧不用于精确重启。"
+      },
+      "source": {
+        "format": "npz",
+        "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidates/m2026101607-g1-0062/long/trajectory.npz",
+        "key": "frames",
+        "stepsKey": "lifetime_steps"
+      },
+      "restart": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidates/m2026101607-g1-0062/long/restart.npz",
+      "initial": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidates/m2026101607-g1-0062/initial.npz",
+      "outer_generation": 1,
+      "review_status": "visually_reviewed_finite_window",
+      "review_notes": "发展为长短不一的环状斑点图样。",
+      "recording": {
+        "coverage": "short-segment",
+        "description": "记录生命周期0至4096更新步；末态仍有结构，不代表完整生命周期或无限期稳定。",
+        "bodyMapping": "原始单通道身体密度frames[t,y,x]，范围[0,1]；没有记忆/环境通道合并，也无空间变换。"
+      },
+      "origin": "paired_orbium"
+    },
+    {
+      "id": "m2026101607-g2-0136",
+      "title": "大环近静态图样",
+      "branch": "rule-and-initial-mutation",
+      "kind": "lifetime",
+      "summary": "大环阵列后期变化很小，保留为近静态分支。 已观察4096步，不作新物种或学习能力声明。",
+      "sourceNote": "来自真实CPU搜索5c0cbcd4；共享单环多项式Lenia，已知Orbium/组合/拉伸/环状初态分支。",
+      "changeSummary": "外层第2代候选；本片展示该候选本身的生命期，非父子图像插值。",
+      "parentRelation": "recorded",
+      "parentId": "m2026101607-g1-0013",
+      "parentNote": "真实搜索父标识；founder前缀表示初态生成分支，其他标识可在candidate_index.json查到。",
+      "sourceRef": null,
+      "publication": {
+        "approved": true,
+        "by": "resident_afa3d4d6cf11",
+        "note": "本轮用户明确要求首批实际候选进入项目投影；研究主理人提供共享项目真实数据。",
+        "audience": "project-readers",
+        "includes": [
+          "frames",
+          "metadata"
+        ]
+      },
+      "rule": {
+        "family": "single-ring polynomial Lenia",
+        "config": {
+          "size": 64,
+          "radius": 20.036788730882083,
+          "mu": 0.12517735601438898,
+          "sigma": 0.0261400118845587,
+          "dt": 0.08485923816117273,
+          "dtype": "float64"
+        }
+      },
+      "environment": {
+        "stimulus": "none",
+        "boundary": "periodic"
+      },
+      "time": {
+        "unit": "Lenia update",
+        "description": "实际生命周期更新步；每步dt见规则，显示帧不用于精确重启。"
+      },
+      "source": {
+        "format": "npz",
+        "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidates/m2026101607-g2-0136/long/trajectory.npz",
+        "key": "frames",
+        "stepsKey": "lifetime_steps"
+      },
+      "restart": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidates/m2026101607-g2-0136/long/restart.npz",
+      "initial": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidates/m2026101607-g2-0136/initial.npz",
+      "outer_generation": 2,
+      "review_status": "visually_reviewed_finite_window",
+      "review_notes": "大环阵列后期变化很小，保留为近静态分支。",
+      "recording": {
+        "coverage": "short-segment",
+        "description": "记录生命周期0至4096更新步；末态仍有结构，不代表完整生命周期或无限期稳定。",
+        "bodyMapping": "原始单通道身体密度frames[t,y,x]，范围[0,1]；没有记忆/环境通道合并，也无空间变换。"
+      },
+      "origin": "orbium"
+    },
+    {
+      "id": "m2026101607-g1-0065",
+      "title": "小环群落图样",
+      "branch": "rule-and-initial-mutation",
+      "kind": "lifetime",
+      "summary": "全域小环结构缓慢变化；群落为外观描述。 已观察4096步，不作新物种或学习能力声明。",
+      "sourceNote": "来自真实CPU搜索5c0cbcd4；共享单环多项式Lenia，已知Orbium/组合/拉伸/环状初态分支。",
+      "changeSummary": "外层第1代候选；本片展示该候选本身的生命期，非父子图像插值。",
+      "parentRelation": "recorded",
+      "parentId": "founder:paired_orbium",
+      "parentNote": "真实搜索父标识；founder前缀表示初态生成分支，其他标识可在candidate_index.json查到。",
+      "sourceRef": null,
+      "publication": {
+        "approved": true,
+        "by": "resident_afa3d4d6cf11",
+        "note": "本轮用户明确要求首批实际候选进入项目投影；研究主理人提供共享项目真实数据。",
+        "audience": "project-readers",
+        "includes": [
+          "frames",
+          "metadata"
+        ]
+      },
+      "rule": {
+        "family": "single-ring polynomial Lenia",
+        "config": {
+          "size": 64,
+          "radius": 11.750303311883911,
+          "mu": 0.12515418162602815,
+          "sigma": 0.01604130877463207,
+          "dt": 0.10664713495589373,
+          "dtype": "float64"
+        }
+      },
+      "environment": {
+        "stimulus": "none",
+        "boundary": "periodic"
+      },
+      "time": {
+        "unit": "Lenia update",
+        "description": "实际生命周期更新步；每步dt见规则，显示帧不用于精确重启。"
+      },
+      "source": {
+        "format": "npz",
+        "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidates/m2026101607-g1-0065/long/trajectory.npz",
+        "key": "frames",
+        "stepsKey": "lifetime_steps"
+      },
+      "restart": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidates/m2026101607-g1-0065/long/restart.npz",
+      "initial": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidates/m2026101607-g1-0065/initial.npz",
+      "outer_generation": 1,
+      "review_status": "visually_reviewed_finite_window",
+      "review_notes": "全域小环结构缓慢变化；群落为外观描述。",
+      "recording": {
+        "coverage": "short-segment",
+        "description": "记录生命周期0至4096更新步；末态仍有结构，不代表完整生命周期或无限期稳定。",
+        "bodyMapping": "原始单通道身体密度frames[t,y,x]，范围[0,1]；没有记忆/环境通道合并，也无空间变换。"
+      },
+      "origin": "paired_orbium"
+    },
+    {
+      "id": "m2026101607-g1-0075",
+      "title": "环初态形成曲折条纹",
+      "branch": "rule-and-initial-mutation",
+      "kind": "lifetime",
+      "summary": "环状初态发展为曲折条纹，保存真实形成片段。 已观察4096步，不作新物种或学习能力声明。",
+      "sourceNote": "来自真实CPU搜索5c0cbcd4；共享单环多项式Lenia，已知Orbium/组合/拉伸/环状初态分支。",
+      "changeSummary": "外层第1代候选；本片展示该候选本身的生命期，非父子图像插值。",
+      "parentRelation": "recorded",
+      "parentId": "founder:annulus",
+      "parentNote": "真实搜索父标识；founder前缀表示初态生成分支，其他标识可在candidate_index.json查到。",
+      "sourceRef": null,
+      "publication": {
+        "approved": true,
+        "by": "resident_afa3d4d6cf11",
+        "note": "本轮用户明确要求首批实际候选进入项目投影；研究主理人提供共享项目真实数据。",
+        "audience": "project-readers",
+        "includes": [
+          "frames",
+          "metadata"
+        ]
+      },
+      "rule": {
+        "family": "single-ring polynomial Lenia",
+        "config": {
+          "size": 64,
+          "radius": 13.89177246148769,
+          "mu": 0.1511650904010384,
+          "sigma": 0.014062449889049674,
+          "dt": 0.10490095002190926,
+          "dtype": "float64"
+        }
+      },
+      "environment": {
+        "stimulus": "none",
+        "boundary": "periodic"
+      },
+      "time": {
+        "unit": "Lenia update",
+        "description": "实际生命周期更新步；每步dt见规则，显示帧不用于精确重启。"
+      },
+      "source": {
+        "format": "npz",
+        "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidates/m2026101607-g1-0075/long/trajectory.npz",
+        "key": "frames",
+        "stepsKey": "lifetime_steps"
+      },
+      "restart": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidates/m2026101607-g1-0075/long/restart.npz",
+      "initial": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidates/m2026101607-g1-0075/initial.npz",
+      "outer_generation": 1,
+      "review_status": "visually_reviewed_finite_window",
+      "review_notes": "环状初态发展为曲折条纹，保存真实形成片段。",
+      "recording": {
+        "coverage": "short-segment",
+        "description": "记录生命周期0至4096更新步；末态仍有结构，不代表完整生命周期或无限期稳定。",
+        "bodyMapping": "原始单通道身体密度frames[t,y,x]，范围[0,1]；没有记忆/环境通道合并，也无空间变换。"
+      },
+      "origin": "annulus"
+    },
+    {
+      "id": "m2026101607-g2-0145",
+      "title": "密集小环重排",
+      "branch": "rule-and-initial-mutation",
+      "kind": "lifetime",
+      "summary": "小环斑点持续微小重排，尚非独立生物集合。 已观察4096步，不作新物种或学习能力声明。",
+      "sourceNote": "来自真实CPU搜索5c0cbcd4；共享单环多项式Lenia，已知Orbium/组合/拉伸/环状初态分支。",
+      "changeSummary": "外层第2代候选；本片展示该候选本身的生命期，非父子图像插值。",
+      "parentRelation": "recorded",
+      "parentId": "m2026101607-g1-0071",
+      "parentNote": "真实搜索父标识；founder前缀表示初态生成分支，其他标识可在candidate_index.json查到。",
+      "sourceRef": null,
+      "publication": {
+        "approved": true,
+        "by": "resident_afa3d4d6cf11",
+        "note": "本轮用户明确要求首批实际候选进入项目投影；研究主理人提供共享项目真实数据。",
+        "audience": "project-readers",
+        "includes": [
+          "frames",
+          "metadata"
+        ]
+      },
+      "rule": {
+        "family": "single-ring polynomial Lenia",
+        "config": {
+          "size": 64,
+          "radius": 8.192184041856418,
+          "mu": 0.12033436302617032,
+          "sigma": 0.016084982773665546,
+          "dt": 0.0976285415349769,
+          "dtype": "float64"
+        }
+      },
+      "environment": {
+        "stimulus": "none",
+        "boundary": "periodic"
+      },
+      "time": {
+        "unit": "Lenia update",
+        "description": "实际生命周期更新步；每步dt见规则，显示帧不用于精确重启。"
+      },
+      "source": {
+        "format": "npz",
+        "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidates/m2026101607-g2-0145/long/trajectory.npz",
+        "key": "frames",
+        "stepsKey": "lifetime_steps"
+      },
+      "restart": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidates/m2026101607-g2-0145/long/restart.npz",
+      "initial": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidates/m2026101607-g2-0145/initial.npz",
+      "outer_generation": 2,
+      "review_status": "visually_reviewed_finite_window",
+      "review_notes": "小环斑点持续微小重排，尚非独立生物集合。",
+      "recording": {
+        "coverage": "short-segment",
+        "description": "记录生命周期0至4096更新步；末态仍有结构，不代表完整生命周期或无限期稳定。",
+        "bodyMapping": "原始单通道身体密度frames[t,y,x]，范围[0,1]；没有记忆/环境通道合并，也无空间变换。"
+      },
+      "origin": "paired_orbium"
+    },
+    {
+      "id": "m2026101607-g2-0167",
+      "title": "粗环近静态图样",
+      "branch": "rule-and-initial-mutation",
+      "kind": "lifetime",
+      "summary": "粗环阵列后期接近静态。 已观察4096步，不作新物种或学习能力声明。",
+      "sourceNote": "来自真实CPU搜索5c0cbcd4；共享单环多项式Lenia，已知Orbium/组合/拉伸/环状初态分支。",
+      "changeSummary": "外层第2代候选；本片展示该候选本身的生命期，非父子图像插值。",
+      "parentRelation": "recorded",
+      "parentId": "m2026101607-g1-0088",
+      "parentNote": "真实搜索父标识；founder前缀表示初态生成分支，其他标识可在candidate_index.json查到。",
+      "sourceRef": null,
+      "publication": {
+        "approved": true,
+        "by": "resident_afa3d4d6cf11",
+        "note": "本轮用户明确要求首批实际候选进入项目投影；研究主理人提供共享项目真实数据。",
+        "audience": "project-readers",
+        "includes": [
+          "frames",
+          "metadata"
+        ]
+      },
+      "rule": {
+        "family": "single-ring polynomial Lenia",
+        "config": {
+          "size": 64,
+          "radius": 16.39803429966616,
+          "mu": 0.16632356024590825,
+          "sigma": 0.028564980504605833,
+          "dt": 0.0993018894506021,
+          "dtype": "float64"
+        }
+      },
+      "environment": {
+        "stimulus": "none",
+        "boundary": "periodic"
+      },
+      "time": {
+        "unit": "Lenia update",
+        "description": "实际生命周期更新步；每步dt见规则，显示帧不用于精确重启。"
+      },
+      "source": {
+        "format": "npz",
+        "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidates/m2026101607-g2-0167/long/trajectory.npz",
+        "key": "frames",
+        "stepsKey": "lifetime_steps"
+      },
+      "restart": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidates/m2026101607-g2-0167/long/restart.npz",
+      "initial": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidates/m2026101607-g2-0167/initial.npz",
+      "outer_generation": 2,
+      "review_status": "visually_reviewed_finite_window",
+      "review_notes": "粗环阵列后期接近静态。",
+      "recording": {
+        "coverage": "short-segment",
+        "description": "记录生命周期0至4096更新步；末态仍有结构，不代表完整生命周期或无限期稳定。",
+        "bodyMapping": "原始单通道身体密度frames[t,y,x]，范围[0,1]；没有记忆/环境通道合并，也无空间变换。"
+      },
+      "origin": "annulus"
+    },
+    {
+      "id": "m2026101607-g1-0069",
+      "title": "宽条纹近静态图样",
+      "branch": "rule-and-initial-mutation",
+      "kind": "lifetime",
+      "summary": "双局部初态形成宽条纹，后期变化很小。 已观察4096步，不作新物种或学习能力声明。",
+      "sourceNote": "来自真实CPU搜索5c0cbcd4；共享单环多项式Lenia，已知Orbium/组合/拉伸/环状初态分支。",
+      "changeSummary": "外层第1代候选；本片展示该候选本身的生命期，非父子图像插值。",
+      "parentRelation": "recorded",
+      "parentId": "founder:paired_orbium",
+      "parentNote": "真实搜索父标识；founder前缀表示初态生成分支，其他标识可在candidate_index.json查到。",
+      "sourceRef": null,
+      "publication": {
+        "approved": true,
+        "by": "resident_afa3d4d6cf11",
+        "note": "本轮用户明确要求首批实际候选进入项目投影；研究主理人提供共享项目真实数据。",
+        "audience": "project-readers",
+        "includes": [
+          "frames",
+          "metadata"
+        ]
+      },
+      "rule": {
+        "family": "single-ring polynomial Lenia",
+        "config": {
+          "size": 64,
+          "radius": 17.760078394976418,
+          "mu": 0.1976755250358027,
+          "sigma": 0.023206910609093766,
+          "dt": 0.09381030039306112,
+          "dtype": "float64"
+        }
+      },
+      "environment": {
+        "stimulus": "none",
+        "boundary": "periodic"
+      },
+      "time": {
+        "unit": "Lenia update",
+        "description": "实际生命周期更新步；每步dt见规则，显示帧不用于精确重启。"
+      },
+      "source": {
+        "format": "npz",
+        "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidates/m2026101607-g1-0069/long/trajectory.npz",
+        "key": "frames",
+        "stepsKey": "lifetime_steps"
+      },
+      "restart": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidates/m2026101607-g1-0069/long/restart.npz",
+      "initial": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidates/m2026101607-g1-0069/initial.npz",
+      "outer_generation": 1,
+      "review_status": "visually_reviewed_finite_window",
+      "review_notes": "双局部初态形成宽条纹，后期变化很小。",
+      "recording": {
+        "coverage": "short-segment",
+        "description": "记录生命周期0至4096更新步；末态仍有结构，不代表完整生命周期或无限期稳定。",
+        "bodyMapping": "原始单通道身体密度frames[t,y,x]，范围[0,1]；没有记忆/环境通道合并，也无空间变换。"
+      },
+      "origin": "paired_orbium"
+    },
+    {
+      "id": "m2026101607-g1-0055",
+      "title": "双体初态留下单体漂移",
+      "branch": "rule-and-initial-mutation",
+      "kind": "lifetime",
+      "summary": "双体初态后形成一个主要移动结构，仍属Orbium相关形态。 已观察4096步，不作新物种或学习能力声明。",
+      "sourceNote": "来自真实CPU搜索5c0cbcd4；共享单环多项式Lenia，已知Orbium/组合/拉伸/环状初态分支。",
+      "changeSummary": "外层第1代候选；本片展示该候选本身的生命期，非父子图像插值。",
+      "parentRelation": "recorded",
+      "parentId": "founder:paired_orbium",
+      "parentNote": "真实搜索父标识；founder前缀表示初态生成分支，其他标识可在candidate_index.json查到。",
+      "sourceRef": null,
+      "publication": {
+        "approved": true,
+        "by": "resident_afa3d4d6cf11",
+        "note": "本轮用户明确要求首批实际候选进入项目投影；研究主理人提供共享项目真实数据。",
+        "audience": "project-readers",
+        "includes": [
+          "frames",
+          "metadata"
+        ]
+      },
+      "rule": {
+        "family": "single-ring polynomial Lenia",
+        "config": {
+          "size": 64,
+          "radius": 11.722681357393762,
+          "mu": 0.15312444012408633,
+          "sigma": 0.014403804810106845,
+          "dt": 0.10471936988260648,
+          "dtype": "float64"
+        }
+      },
+      "environment": {
+        "stimulus": "none",
+        "boundary": "periodic"
+      },
+      "time": {
+        "unit": "Lenia update",
+        "description": "实际生命周期更新步；每步dt见规则，显示帧不用于精确重启。"
+      },
+      "source": {
+        "format": "npz",
+        "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidates/m2026101607-g1-0055/long/trajectory.npz",
+        "key": "frames",
+        "stepsKey": "lifetime_steps"
+      },
+      "restart": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidates/m2026101607-g1-0055/long/restart.npz",
+      "initial": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidates/m2026101607-g1-0055/initial.npz",
+      "outer_generation": 1,
+      "review_status": "visually_reviewed_finite_window",
+      "review_notes": "双体初态后形成一个主要移动结构，仍属Orbium相关形态。",
+      "recording": {
+        "coverage": "short-segment",
+        "description": "记录生命周期0至4096更新步；末态仍有结构，不代表完整生命周期或无限期稳定。",
+        "bodyMapping": "原始单通道身体密度frames[t,y,x]，范围[0,1]；没有记忆/环境通道合并，也无空间变换。"
+      },
+      "origin": "paired_orbium"
+    },
+    {
+      "id": "m2026101607-g2-0128",
+      "title": "移动分支后代形成曲折纹",
+      "branch": "rule-and-initial-mutation",
+      "kind": "lifetime",
+      "summary": "父候选为0055；外层规则与初态变异后形成全域曲折纹。 已观察4096步，不作新物种或学习能力声明。",
+      "sourceNote": "来自真实CPU搜索5c0cbcd4；共享单环多项式Lenia，已知Orbium/组合/拉伸/环状初态分支。",
+      "changeSummary": "外层第2代候选；本片展示该候选本身的生命期，非父子图像插值。",
+      "parentRelation": "recorded",
+      "parentId": "m2026101607-g1-0055",
+      "parentNote": "真实搜索父标识；founder前缀表示初态生成分支，其他标识可在candidate_index.json查到。",
+      "sourceRef": null,
+      "publication": {
+        "approved": true,
+        "by": "resident_afa3d4d6cf11",
+        "note": "本轮用户明确要求首批实际候选进入项目投影；研究主理人提供共享项目真实数据。",
+        "audience": "project-readers",
+        "includes": [
+          "frames",
+          "metadata"
+        ]
+      },
+      "rule": {
+        "family": "single-ring polynomial Lenia",
+        "config": {
+          "size": 64,
+          "radius": 11.15992637973517,
+          "mu": 0.15394233048453487,
+          "sigma": 0.017490271243100233,
+          "dt": 0.11008806068086836,
+          "dtype": "float64"
+        }
+      },
+      "environment": {
+        "stimulus": "none",
+        "boundary": "periodic"
+      },
+      "time": {
+        "unit": "Lenia update",
+        "description": "实际生命周期更新步；每步dt见规则，显示帧不用于精确重启。"
+      },
+      "source": {
+        "format": "npz",
+        "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidates/m2026101607-g2-0128/long/trajectory.npz",
+        "key": "frames",
+        "stepsKey": "lifetime_steps"
+      },
+      "restart": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidates/m2026101607-g2-0128/long/restart.npz",
+      "initial": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidates/m2026101607-g2-0128/initial.npz",
+      "outer_generation": 2,
+      "review_status": "visually_reviewed_finite_window",
+      "review_notes": "父候选为0055；外层规则与初态变异后形成全域曲折纹。",
+      "recording": {
+        "coverage": "short-segment",
+        "description": "记录生命周期0至4096更新步；末态仍有结构，不代表完整生命周期或无限期稳定。",
+        "bodyMapping": "原始单通道身体密度frames[t,y,x]，范围[0,1]；没有记忆/环境通道合并，也无空间变换。"
+      },
+      "origin": "paired_orbium"
+    }
+  ]
+}

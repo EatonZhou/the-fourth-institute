@@ -1,0 +1,6 @@
+{
+  "question": "Does declining no-feedback occupancy coincide with erasure of total carried association?",
+  "fields": "sum(rho*Q) per cue, sum(rho*z), M/E from actual1152/1216/1280; no fit/threshold/gate changes",
+  "scope": "post-hoc passive accounting; material-conserved total Q is not functional policy or local-concentration identity",
+  "native": 0
+}

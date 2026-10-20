@@ -1,0 +1,171 @@
+
+.semanticMatrix{display:grid;gap:var(--portal-space-3);min-width:0;max-width:100%}
+.semanticMatrix h2,.semanticMatrix h3,.semanticMatrix p{margin:0;overflow-wrap:anywhere}
+.semanticMatrix .matrixToolbar,.semanticMatrix .matrixActions,.semanticMatrix .matrixSummary,.semanticMatrix .matrixFilters,.semanticMatrix .matrixTabs{display:flex;align-items:center;flex-wrap:wrap;gap:var(--portal-space-3)}
+.semanticMatrix .matrixToolbar{justify-content:space-between}
+.semanticMatrix .matrixMuted{color:var(--muted);font-size:.85rem}
+.semanticMatrix .matrixSummary,.semanticMatrix .matrixNotice{padding:var(--portal-space-3);background:var(--panel-2);border-radius:var(--portal-control-radius)}
+.semanticMatrix .matrixSummary>:last-child{margin-inline-start:auto}
+.semanticMatrix .matrixFilters{align-items:end}
+.semanticMatrix .portalField{flex:1 1 12rem;min-width:0;max-width:24rem}
+.semanticMatrix .portalField input,.semanticMatrix .portalField select{box-sizing:border-box;max-width:100%;width:100%}
+.semanticMatrix [role=alert]{color:var(--danger)}
+.semanticMatrix .matrixScroll{overflow:auto;max-height:75vh;max-width:100%;border:1px solid var(--border);border-radius:var(--portal-surface-radius);background:var(--panel)}
+.semanticMatrix .performanceMatrix{border-collapse:separate;border-spacing:0;width:100%;min-width:48rem;table-layout:fixed}
+.semanticMatrix .performanceMatrix th{background:var(--panel-2);text-align:start;padding:var(--portal-space-3)}
+.semanticMatrix .performanceMatrix thead th{position:sticky;top:0;z-index:2}
+.semanticMatrix .performanceMatrix th:first-child{width:9rem;position:sticky;left:0;z-index:1}
+.semanticMatrix .performanceMatrix thead th:first-child{z-index:3}
+.semanticMatrix .performanceMatrix tbody th,.semanticMatrix .performanceMatrix td{border-bottom:1px solid var(--border)}
+.semanticMatrix .performanceMatrix td{padding:var(--portal-space-2);vertical-align:top}
+.semanticMatrix .modelOwner{display:block;margin-top:var(--portal-space-2);font-size:.75rem;color:var(--muted);font-weight:400}
+.semanticMatrix .matrixCell{display:grid;gap:var(--portal-space-3);width:100%;min-height:16rem;padding:var(--portal-space-3);border:1px solid var(--border);border-radius:var(--portal-control-radius);background:var(--panel);color:var(--text);text-align:start;white-space:normal;overflow-wrap:anywhere;font-weight:400;line-height:1.5;box-sizing:border-box}
+.semanticMatrix .matrixCell:hover,.semanticMatrix .matrixCell:focus-visible{border-color:var(--accent);background:var(--panel-2);outline:2px solid var(--accent);outline-offset:-2px}
+.semanticMatrix .cellTop{display:flex;justify-content:space-between;flex-wrap:wrap;gap:var(--portal-space-2);align-items:center}
+.semanticMatrix .cellBadge{font-size:.75rem;color:var(--muted)}
+.semanticMatrix .cellSpeedup{font-size:1rem;font-weight:650;color:var(--accent)}
+.semanticMatrix .cellOutcome{font-variant-numeric:tabular-nums;font-size:1.05rem}
+.semanticMatrix .cellChart{display:grid;gap:var(--portal-space-2);min-width:0}
+.semanticMatrix .cellChartCaption{font-size:.7rem;color:var(--muted);font-weight:400}
+.semanticMatrix .cellChartColumns{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--portal-space-2)}
+.semanticMatrix .cellChartColumn{display:grid;grid-template-rows:auto 6rem auto;min-width:0;gap:var(--portal-space-1)}
+.semanticMatrix .cellChartValue{font-size:.65rem;font-variant-numeric:tabular-nums;line-height:1.4;text-align:center;white-space:nowrap}
+.semanticMatrix .cellChartTrack{display:flex;align-items:flex-end;justify-content:center;border-bottom:1px solid var(--border);min-width:0}
+.semanticMatrix .cellChartBar{display:block;width:65%;background:var(--accent)}
+.semanticMatrix .cellChartColumn[data-stage='0'] .cellChartBar{background:color-mix(in srgb,var(--accent) 45%,var(--panel-2))}
+.semanticMatrix .cellChartColumn[data-stage='1'] .cellChartBar{background:color-mix(in srgb,var(--accent) 65%,var(--panel-2))}
+.semanticMatrix .cellChartColumn[data-stage='2'] .cellChartBar{background:color-mix(in srgb,var(--accent) 85%,var(--panel-2))}
+.semanticMatrix .cellChartMissing{font-size:.65rem;color:var(--muted);align-self:center;text-align:center}
+.semanticMatrix .cellChartLabel{font-size:.65rem;text-align:center;line-height:1.4;overflow-wrap:anywhere}
+.semanticMatrix .cellChartNote{font-size:.65rem;color:var(--muted);font-weight:400}
+.semanticMatrix #matrixDetail{width:min(64rem,calc(100% - var(--portal-space-4)));max-width:100%;max-height:90vh;padding:0;border:1px solid var(--border);border-radius:var(--portal-surface-radius);background:var(--panel);color:var(--text);box-sizing:border-box}
+.semanticMatrix #matrixDetail::backdrop{background:color-mix(in srgb,var(--text) 40%,transparent)}
+.semanticMatrix .matrixDetailBody{display:grid;gap:var(--portal-space-4);padding:var(--portal-space-4);overflow-wrap:anywhere}
+.semanticMatrix .matrixTabs{border-bottom:1px solid var(--border);padding-bottom:var(--portal-space-2)}
+.semanticMatrix .matrixTabs [aria-selected=true]{color:var(--accent);border-color:var(--accent)}
+.semanticMatrix .resultList,.semanticMatrix .methodList{display:grid;gap:var(--portal-space-3)}
+.semanticMatrix .resultRow,.semanticMatrix .methodCard{display:grid;gap:var(--portal-space-2);padding:var(--portal-space-3);border:1px solid var(--border);border-radius:var(--portal-control-radius)}
+.semanticMatrix .resultNumbers{display:flex;gap:var(--portal-space-4);flex-wrap:wrap;font-variant-numeric:tabular-nums}
+.semanticMatrix .sourceEvidence{max-height:40vh;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font:.8rem/1.6 monospace;padding:var(--portal-space-3);background:var(--panel-2)}
+.semanticMatrix [hidden]{display:none!important}
+@media(max-width:40rem){.semanticMatrix .matrixSummary>:last-child{margin-inline-start:0}.semanticMatrix .performanceMatrix th:first-child{width:7rem}.semanticMatrix .matrixDetailBody{padding:var(--portal-space-3)}}
+.semanticMatrix #matrixDetail{width:min(84rem,calc(100% - var(--portal-space-4)));max-height:92vh;background:var(--bg)}
+.semanticMatrix #matrixDetail>.paneHead{position:sticky;top:0;z-index:5;background:var(--panel);padding:var(--portal-space-4);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:var(--portal-space-3)}
+.semanticMatrix #matrixDetailTitle{font-size:1.45rem;letter-spacing:-.02em}
+.semanticMatrix #matrixDetailSubtitle{margin-top:var(--portal-space-1)}
+.semanticMatrix #matrixDetailSummary{font-size:.78rem;color:var(--muted);line-height:1.65}
+.semanticMatrix .matrixTabs{gap:var(--portal-space-2)}
+.semanticMatrix .matrixTabs [aria-selected=true]{background:color-mix(in srgb,var(--accent) 9%,var(--panel));font-weight:650}
+.semanticMatrix .exploreStats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--portal-space-3);margin-bottom:var(--portal-space-4)}
+.semanticMatrix .exploreStat{display:grid;gap:var(--portal-space-1);padding:var(--portal-space-3);background:var(--panel-2);border-radius:var(--portal-control-radius);border:1px solid var(--border)}
+.semanticMatrix .exploreStat strong{font-size:1.55rem;line-height:1.25;font-variant-numeric:tabular-nums;color:var(--accent)}
+.semanticMatrix .exploreStat span{font-size:.78rem;color:var(--muted)}
+.semanticMatrix .exploreToolbar{display:flex;align-items:end;flex-wrap:wrap;gap:var(--portal-space-3);margin-bottom:var(--portal-space-3)}
+.semanticMatrix .exploreToolbar .portalField{flex:1;max-width:none}
+.semanticMatrix .exploreLayout{display:grid;grid-template-columns:minmax(13rem,17rem) minmax(0,1fr);gap:var(--portal-space-4);align-items:start}
+.semanticMatrix .exploreList{display:grid;gap:var(--portal-space-2);max-height:37rem;overflow:auto;padding:var(--portal-space-1)}
+.semanticMatrix .exploreItem{width:100%;text-align:left;white-space:normal;display:grid;justify-content:stretch;justify-items:start;gap:var(--portal-space-2);padding:var(--portal-space-3);background:var(--panel);border:1px solid var(--border);border-radius:var(--portal-control-radius);color:var(--text)}
+.semanticMatrix .exploreItem[aria-pressed=true]{border-color:var(--accent);box-shadow:inset 3px 0 var(--accent);background:color-mix(in srgb,var(--accent) 7%,var(--panel))}
+.semanticMatrix .exploreItem:hover{border-color:var(--accent)}
+.semanticMatrix .exploreItem small{color:var(--muted);font-size:.72rem;font-weight:400}
+.semanticMatrix .exploreItem strong{font-size:.91rem;font-weight:650}
+.semanticMatrix .exploreDetail{display:grid;gap:var(--portal-space-4);min-width:0;padding:var(--portal-space-4);border:1px solid var(--border);border-radius:var(--portal-surface-radius)}
+.semanticMatrix .exploreEyebrow{font-size:.72rem;color:var(--accent);letter-spacing:.04em}
+.semanticMatrix .exploreDetail h3{font-size:1.4rem;line-height:1.3}
+.semanticMatrix .exploreDetail h4{font-size:.9rem;margin:0}
+.semanticMatrix .exploreDetail p,.semanticMatrix .exploreDetail blockquote{line-height:1.7;font-size:.87rem}
+.semanticMatrix .exploreOutcome{background:var(--panel-2);border-inline-start:3px solid var(--accent);padding:var(--portal-space-3);border-radius:var(--portal-control-radius);display:grid;gap:var(--portal-space-2)}
+.semanticMatrix .exploreQuote{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.semanticMatrix .exploreChips{display:flex;gap:var(--portal-space-2);flex-wrap:wrap;align-items:center}
+.semanticMatrix .exploreChip{font-size:.7rem;border:1px solid var(--border);border-radius:var(--portal-control-radius);padding:var(--portal-space-1) var(--portal-space-2);background:var(--panel-2);line-height:1.5;overflow-wrap:anywhere}
+.semanticMatrix .exploreMeta{color:var(--muted);font-size:.72rem;overflow-wrap:anywhere;line-height:1.6}
+.semanticMatrix .exploreEmpty{padding:var(--portal-space-5);text-align:center;background:var(--panel-2);border-radius:var(--portal-surface-radius);display:grid;gap:var(--portal-space-3)}
+.semanticMatrix .exploreSource{border-top:1px solid var(--border);padding-top:var(--portal-space-3)}
+.semanticMatrix .exploreSource summary{cursor:pointer;font-size:.82rem;line-height:1.7;overflow-wrap:anywhere}
+.semanticMatrix .exploreSource .sourceEvidence{max-height:23rem;font-size:.74rem}
+.semanticMatrix .journeyOverview{display:grid;grid-template-columns:1fr auto;align-items:center;gap:var(--portal-space-3);padding:var(--portal-space-4);background:var(--panel-2);border-radius:var(--portal-surface-radius);margin-bottom:var(--portal-space-4)}
+.semanticMatrix .journeyOverview h3{font-size:1.1rem;margin-bottom:var(--portal-space-2)}
+.semanticMatrix .journeyGrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(13rem,19rem);gap:var(--portal-space-4);align-items:start}
+.semanticMatrix #matrixJourney>.portalField{display:grid;gap:var(--portal-space-2);max-width:100%;margin-bottom:var(--portal-space-4)}
+.semanticMatrix .journeyTrack{display:grid;gap:var(--portal-space-3)}
+.semanticMatrix .journeyStep{display:grid;grid-template-columns:2rem minmax(0,1fr);gap:var(--portal-space-3)}
+.semanticMatrix .journeyRail{position:relative;display:flex;justify-content:center}
+.semanticMatrix .journeyRail:after{content:'';position:absolute;top:2rem;bottom:calc(-1 * var(--portal-space-3));width:1px;background:var(--border)}
+.semanticMatrix .journeyStep:last-child .journeyRail:after{display:none}
+.semanticMatrix .journeyNumber{width:2rem;height:2rem;display:grid;place-items:center;background:color-mix(in srgb,var(--accent) 10%,var(--panel));border:1px solid var(--border);border-radius:50%;color:var(--accent);font-size:.78rem;font-variant-numeric:tabular-nums}
+.semanticMatrix .journeyCard{border:1px solid var(--border);border-radius:var(--portal-control-radius);padding:var(--portal-space-3);display:grid;gap:var(--portal-space-2)}
+.semanticMatrix .journeyCard h4{margin:0;font-size:.9rem;line-height:1.65}
+.semanticMatrix .journeyCard p{font-size:.8rem;line-height:1.65;white-space:pre-wrap}
+.semanticMatrix .journeyAside{display:grid;gap:var(--portal-space-3);padding:var(--portal-space-3);background:var(--panel-2);border-radius:var(--portal-surface-radius)}
+.semanticMatrix .journeyAside h4{margin:0;font-size:.9rem}
+.semanticMatrix .journeyAside p{font-size:.8rem;line-height:1.7}
+.semanticMatrix .exploreEvidenceList{display:grid;gap:var(--portal-space-3);margin-bottom:var(--portal-space-4)}
+.semanticMatrix .exploreEvidenceList details{padding:var(--portal-space-3);border:1px solid var(--border);border-radius:var(--portal-control-radius)}
+.semanticMatrix .exploreStatusNegative{color:var(--danger)}
+.semanticMatrix #matrixResults .cellChart{max-width:42rem;margin-block:var(--portal-space-4)}
+.semanticMatrix #matrixResults .cellChartColumn{grid-template-rows:auto 10rem auto}
+.semanticMatrix #matrixResults .cellChartValue,.semanticMatrix #matrixResults .cellChartLabel{font-size:.85rem}
+@media(max-width:48rem){.semanticMatrix .exploreLayout,.semanticMatrix .journeyGrid{grid-template-columns:minmax(0,1fr)}.semanticMatrix .exploreList{display:flex;overflow:auto;max-height:none;padding-bottom:var(--portal-space-2)}.semanticMatrix .exploreItem{flex:0 0 13rem}.semanticMatrix .exploreDetail{padding:var(--portal-space-3)}.semanticMatrix .journeyOverview{grid-template-columns:1fr}.semanticMatrix .exploreToolbar .portalField{flex:1 1 10rem}.semanticMatrix .exploreStats{gap:var(--portal-space-2)}.semanticMatrix .exploreStat{padding:var(--portal-space-2)}.semanticMatrix .exploreStat strong{font-size:1.3rem}.semanticMatrix .matrixTabs{gap:var(--portal-space-1)}.semanticMatrix .matrixTabs .portalButton{font-size:.8rem}.semanticMatrix #matrixDetailTitle{font-size:1.1rem}.semanticMatrix #matrixDetail>.paneHead{padding:var(--portal-space-3)}}
+
+
+/* Compact matrix controls; detail panels retain their existing layout. */
+.semanticMatrix .matrixCompactToolbar{justify-content:flex-start;padding:var(--portal-space-2);gap:var(--portal-space-3)}
+.semanticMatrix .matrixCompactToolbar h2{font-size:1rem;white-space:nowrap;margin-inline-end:var(--portal-space-2)}
+.semanticMatrix .matrixCompactFilters{display:flex;flex:1 1 22rem;max-width:32rem;gap:var(--portal-space-3);min-width:0}
+.semanticMatrix .matrixCompactFilters .portalField{display:flex;align-items:center;gap:var(--portal-space-2);flex:1 1 10rem;max-width:none}
+.semanticMatrix .matrixCompactFilters .portalField label{flex:none;color:var(--muted);font-weight:500}
+.semanticMatrix .matrixCompactToolbar .matrixActions{gap:var(--portal-space-1);margin-inline-start:auto}
+.semanticMatrix .matrixCompactMeta{display:flex;align-items:baseline;flex-wrap:wrap;gap:var(--portal-space-2) var(--portal-space-3);font-size:.85rem;padding-inline:var(--portal-space-2);min-width:0}
+.semanticMatrix .matrixHelp{margin-inline-start:auto;min-width:0}
+.semanticMatrix .matrixHelp summary{cursor:pointer;color:var(--muted);width:max-content;margin-inline-start:auto;border-radius:var(--portal-control-radius)}
+.semanticMatrix .matrixHelp summary:focus-visible{outline:2px solid var(--accent);outline-offset:var(--portal-space-1)}
+.semanticMatrix .matrixHelp[open]{flex-basis:100%}
+.semanticMatrix .matrixHelpBody{display:grid;gap:var(--portal-space-2);margin-block-start:var(--portal-space-2);padding:var(--portal-space-3);background:var(--panel-2);border-radius:var(--portal-control-radius)}
+@media(max-width:48rem){.semanticMatrix .matrixCompactToolbar h2{flex-basis:100%}.semanticMatrix .matrixCompactFilters{flex-basis:100%;max-width:none}.semanticMatrix .matrixCompactToolbar .matrixActions{margin-inline-start:0}.semanticMatrix .matrixReadingHint{display:none}}
+
+.semanticMatrix #matrixDetail>.paneHead{padding:var(--portal-space-3) var(--portal-space-4)}
+.semanticMatrix #matrixDetailSubtitle{display:none}
+.semanticMatrix .matrixDetailBody{gap:var(--portal-space-3)}
+.semanticMatrix #matrixDetailSummary{font-size:.72rem;line-height:1.5}
+.semanticMatrix .visualControls{display:flex;flex-wrap:wrap;align-items:end;gap:var(--portal-space-3)}
+.semanticMatrix .visualControls .portalField{display:grid;gap:var(--portal-space-1);flex:1 1 8rem;min-width:0;font-size:.75rem}
+.semanticMatrix .visualControls .portalField:first-child{flex:2 1 12rem}
+.semanticMatrix .visualSummary{font-size:.77rem;line-height:1.6;color:var(--muted);margin-block:var(--portal-space-3)}
+.semanticMatrix .visualCompare,.semanticMatrix .visualJourney{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(17rem,1fr);gap:var(--portal-space-4);align-items:start}
+.semanticMatrix .visualChart{min-width:0;padding:var(--portal-space-3);background:var(--panel);border:1px solid var(--border);border-radius:var(--portal-surface-radius)}
+.semanticMatrix .visualAxis{display:flex;justify-content:space-between;color:var(--muted);font-size:.65rem;padding-inline:var(--portal-space-2);margin-bottom:var(--portal-space-2)}
+.semanticMatrix .measureBar{width:100%;display:grid;grid-template-columns:minmax(0,1fr);justify-content:stretch;justify-items:stretch;gap:var(--portal-space-1);padding:var(--portal-space-2);border:1px solid transparent;background:var(--panel);border-radius:var(--portal-control-radius);color:var(--text);text-align:left;white-space:normal;cursor:pointer;box-shadow:none}
+.semanticMatrix .measureBar:hover,.semanticMatrix .measureBar[aria-pressed=true]{background:color-mix(in srgb,var(--accent) 6%,var(--panel));border-color:var(--accent)}
+.semanticMatrix .measureTop,.semanticMatrix .measureMeta{display:flex;align-items:baseline;justify-content:space-between;gap:var(--portal-space-2)}
+.semanticMatrix .measureTop{font-size:.82rem}.semanticMatrix .measureValue{font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--accent)}
+.semanticMatrix .measureMeta{font-size:.66rem;color:var(--muted);font-weight:400}
+.semanticMatrix .measureTrack{height:.7rem;background:var(--panel-2);display:block;border-inline-start:1px solid var(--border)}
+.semanticMatrix .measureFill{height:100%;display:block;background:var(--accent);border-radius:0 var(--portal-control-radius) var(--portal-control-radius) 0}
+.semanticMatrix .measureFill.is-caution{background:repeating-linear-gradient(135deg,var(--accent),var(--accent) 4px,color-mix(in srgb,var(--accent) 45%,var(--panel)) 4px,color-mix(in srgb,var(--accent) 45%,var(--panel)) 8px)}
+.semanticMatrix .visualInspector{display:grid;gap:var(--portal-space-3);min-width:0;padding:var(--portal-space-4);border:1px solid var(--border);border-radius:var(--portal-surface-radius);background:var(--panel);overflow-wrap:anywhere}
+.semanticMatrix .visualInspector h3{font-size:1.25rem;margin:0}.semanticMatrix .visualInspector h4{font-size:.8rem;margin:0}
+.semanticMatrix .visualInspector p{font-size:.8rem;line-height:1.65;margin:0}
+.semanticMatrix .visualInspector .exploreEmpty{padding:var(--portal-space-5) var(--portal-space-2);background:var(--panel);font-size:.85rem}
+.semanticMatrix .metricPair{display:grid;grid-template-columns:1fr 1fr;gap:var(--portal-space-3);padding-block:var(--portal-space-3);border-block:1px solid var(--border)}
+.semanticMatrix .metricPair .exploreMeta{display:block}.semanticMatrix .metricPair strong{font-size:1.65rem;line-height:1.5;color:var(--accent);font-variant-numeric:tabular-nums}.semanticMatrix .metricPair small{font-size:.7rem}
+.semanticMatrix .visualCaution{padding:var(--portal-space-2) var(--portal-space-3);border-inline-start:3px solid var(--accent);background:var(--panel-2);font-size:.77rem;line-height:1.6}
+.semanticMatrix .visualFacts{display:grid;grid-template-columns:minmax(5rem,1fr) minmax(0,1.4fr);gap:var(--portal-space-2);font-size:.72rem;line-height:1.6;margin:0;overflow-wrap:anywhere}.semanticMatrix .visualFacts dt{color:var(--muted)}.semanticMatrix .visualFacts dd{margin:0}
+.semanticMatrix .visualMissing{border-top:1px solid var(--border);margin-top:var(--portal-space-3);padding-top:var(--portal-space-3);font-size:.8rem}.semanticMatrix .visualMissing summary{cursor:pointer}.semanticMatrix .missingChoices{display:flex;flex-wrap:wrap;gap:var(--portal-space-2);padding-top:var(--portal-space-3)}
+.semanticMatrix .tableScroll{overflow:auto}.semanticMatrix .recordTable{width:100%;font-size:.7rem;border-collapse:collapse}.semanticMatrix .recordTable th,.semanticMatrix .recordTable td{padding:var(--portal-space-2);border-bottom:1px solid var(--border);text-align:left}.semanticMatrix .recordTable caption{text-align:left;color:var(--muted);padding-block:var(--portal-space-2)}.semanticMatrix .recordLink{font-size:.7rem;padding:var(--portal-space-1);white-space:normal;text-align:left}
+.semanticMatrix .readableReport{max-height:26rem;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font-size:.78rem}.semanticMatrix .readableReport p{margin-block:var(--portal-space-2)}
+.semanticMatrix .journeyChooser{display:grid;gap:var(--portal-space-1);font-size:.78rem;margin-bottom:var(--portal-space-3)}
+.semanticMatrix .journeyPlot{min-width:0}.semanticMatrix .networkShell{border:1px solid var(--border);border-radius:var(--portal-surface-radius);background:var(--panel);overflow:hidden}.semanticMatrix .graphTools{display:flex;align-items:center;gap:var(--portal-space-2);padding:var(--portal-space-2);border-bottom:1px solid var(--border);flex-wrap:wrap}
+.semanticMatrix .graphTools .portalButton{padding:var(--portal-space-1) var(--portal-space-2);font-size:.75rem}
+.semanticMatrix .networkViewport{overflow:auto;max-height:36rem;min-height:12rem;background:radial-gradient(var(--border) 1px,transparent 1px);background-size:18px 18px}
+.semanticMatrix .networkSizer{position:relative}.semanticMatrix .networkWorld{position:relative;transform-origin:top left}.semanticMatrix .networkLines{position:absolute;inset:0;pointer-events:none}.semanticMatrix .networkLines path{fill:none;stroke:var(--accent);stroke-width:1.8}
+.semanticMatrix .graphNode{position:absolute;width:216px;height:82px;display:grid;align-content:center;gap:var(--portal-space-2);padding:var(--portal-space-3);text-align:left;background:var(--panel);border:1px solid var(--border);white-space:normal;overflow:hidden;border-radius:var(--portal-control-radius)}.semanticMatrix .graphNode strong{font-size:.76rem;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.semanticMatrix .graphNode small{font-size:.67rem;color:var(--muted)}
+.semanticMatrix .graphNode[aria-pressed=true],.semanticMatrix .candidateNode[aria-pressed=true],.semanticMatrix .timelineNode[aria-pressed=true]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 9%,var(--panel));box-shadow:inset 3px 0 var(--accent)}
+.semanticMatrix .candidateGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--portal-space-3)}
+.semanticMatrix .candidateNode{display:grid;justify-items:start;align-content:start;text-align:left;gap:var(--portal-space-2);padding:var(--portal-space-3);min-height:7rem;white-space:normal;background:var(--panel);border:1px solid var(--border)}.semanticMatrix .candidateNode strong{font-size:.85rem}.semanticMatrix .candidateNode span{font-size:.7rem;color:var(--muted)}
+.semanticMatrix .interactiveTimeline{display:grid;gap:var(--portal-space-3);border-inline-start:2px solid var(--border);padding-inline-start:var(--portal-space-3)}.semanticMatrix .timelineNode{display:grid;justify-items:start;gap:var(--portal-space-2);padding:var(--portal-space-3);background:var(--panel);border:1px solid var(--border);text-align:left;white-space:normal;font-size:.8rem}.semanticMatrix .timelineNode small,.semanticMatrix .timelineNode span{font-size:.72rem;color:var(--muted)}
+@media(max-width:48rem){.semanticMatrix .visualCompare,.semanticMatrix .visualJourney{grid-template-columns:minmax(0,1fr)}.semanticMatrix .visualInspector{padding:var(--portal-space-3)}.semanticMatrix .visualControls{gap:var(--portal-space-2)}.semanticMatrix .visualControls .portalField,.semanticMatrix .visualControls .portalField:first-child{flex:1 1 42%}.semanticMatrix .visualChart{padding:var(--portal-space-2)}.semanticMatrix .measureTop{font-size:.74rem}.semanticMatrix .measureMeta{font-size:.63rem}.semanticMatrix .candidateGrid{grid-template-columns:minmax(0,1fr)}.semanticMatrix .metricPair strong{font-size:1.4rem}}
+
+.semanticMatrix .candidateNode,.semanticMatrix .graphNode,.semanticMatrix .timelineNode{justify-content:stretch;justify-items:start;grid-template-columns:minmax(0,1fr)}
+.semanticMatrix .candidateNode.is-rejected{border-inline-start:3px solid var(--danger)}
+
+

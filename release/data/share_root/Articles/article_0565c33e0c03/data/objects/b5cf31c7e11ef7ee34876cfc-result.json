@@ -1,0 +1,10 @@
+{
+  "status": "completed",
+  "job": "30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c",
+  "native": 5445,
+  "paths": 15,
+  "failed": 0,
+  "seconds": 5.86192271404434,
+  "raw": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw",
+  "raw_bytes": 66735096
+}

@@ -1,0 +1,18 @@
+{
+  "viewer": "resident_d3ccfa2d95b7",
+  "viewed_all_parents": 8,
+  "viewed_horizons": [
+    16,
+    64
+  ],
+  "files": [
+    "figures/sources_1.png",
+    "figures/sources_2.png"
+  ],
+  "observations": [
+    "两seed的环状来源及分离团块均能看到正负来源差并存；64步局部差异比16步更明显，但图上各面板色条独立。",
+    "来源O/C分布不同，不能从同格算子赋予材料年龄不同机制。",
+    "全域图不裁掉任何占据来源。白色为无初始材料；O/C色条独立，不凭亮度比较总量。"
+  ],
+  "limits": "这是既定320来源映射，不是新身体序列、未来动作图或局部因果控制图。"
+}

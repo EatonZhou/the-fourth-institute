@@ -1,0 +1,1051 @@
+{
+  "task": "history_conditioned_retention_forecast_20261019",
+  "files": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/API.txt",
+      "sha256": "0541f0f9bc485661a250f04029315101461a8ed92269c825064044ac9000bc0f",
+      "bytes": 527
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/METHOD.txt",
+      "sha256": "96ed7442ef21527880359c5a74b4d4624b2c040c491635c5df4f8310c913d19b",
+      "bytes": 454
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/REPORT.txt",
+      "sha256": "5ce2fe1945cf50c52028e4111aa98a98cd0c74f45cd0c7312047eb216aad9c49",
+      "bytes": 3028
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchor_metrics.csv",
+      "sha256": "56fdd58858c2380ccd540bc075e3e6321af437e09a6f329f136d4bcc46b75a5e",
+      "bytes": 158551
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/00_328.npz",
+      "sha256": "ee8c765c38d3fe5c929e1cd1db70be883884892106cdd2e64521998a83f00eb8",
+      "bytes": 16407
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/00_336.npz",
+      "sha256": "49f7abb513649762d8816df6ac5d8845004ecc40a773f1a0fa1dfd013e3fd716",
+      "bytes": 16273
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/00_352.npz",
+      "sha256": "3ee2db6aef0c769bb7170b79a576d87387a413d2449028a2b53ac08fa00acca7",
+      "bytes": 16138
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/00_368.npz",
+      "sha256": "a05487c757ed568039256be83dc24c83445374320b65f2950e4b2240e6ae9ec2",
+      "bytes": 16156
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/01_328.npz",
+      "sha256": "1810cc5f72a37d34f7ca6f298e959160daeddcef3035ec68692e99c6f697c926",
+      "bytes": 17193
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/01_336.npz",
+      "sha256": "4b9775c1dc2c4c88b864114cbc1224fb4c42b2ad7391bd79d7cd7feec439b3db",
+      "bytes": 16279
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/01_352.npz",
+      "sha256": "e2e41bb80b0e40c2d595d99d1a4b6be17bd0473951b87a30dbd762934b5073be",
+      "bytes": 16202
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/01_368.npz",
+      "sha256": "2d5e37dec176389a4ec55ad836e33da143bed0057719f98da750b71afc9cfcb5",
+      "bytes": 16026
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/02_328.npz",
+      "sha256": "1acefbf3eeb96374520b0b3a6f15f987bd65a1dcd07dbe78e564736ae90550df",
+      "bytes": 17240
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/02_336.npz",
+      "sha256": "3c852f0b73e5955ff701f259c6dcb8575576b69f5f8f67de58717354debd6f7e",
+      "bytes": 17092
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/02_352.npz",
+      "sha256": "9507039e65560ded1a1fd1c4558af50761441f01438ce0e47e95f1d869683302",
+      "bytes": 17749
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/02_368.npz",
+      "sha256": "e9347e50695bad2371d2196b17c983c0107ff93ca17c54b11b9edabdd837db79",
+      "bytes": 17069
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/03_328.npz",
+      "sha256": "7b7435cfd258ce1a4303b114a143c62f262e41b386f8ad0f7e0fc08ef3dde2b4",
+      "bytes": 17549
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/03_336.npz",
+      "sha256": "80604f48fc8d1d021ebd5e466c94c22340d37448f29ecb08b01f5f878944ec2a",
+      "bytes": 17113
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/03_352.npz",
+      "sha256": "05ea22ac08e72beccf48f9a12ea254a9274eae46a633edb07c842623b0c33f3c",
+      "bytes": 17595
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/03_368.npz",
+      "sha256": "861fc5671d0ef2e6303533ef331a0abd13473423e6478ddf37e22ead9d1f49e1",
+      "bytes": 17072
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/04_328.npz",
+      "sha256": "bd12ff130bbd2566c0bc49ed22b4bc31fe1e8e1aedd7faca0114ab4a937ff37f",
+      "bytes": 14644
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/04_336.npz",
+      "sha256": "84ddaf889b6e879aeda63b031a10d220e880f7f397e6d909e0a31ad3db790cf2",
+      "bytes": 14565
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/04_352.npz",
+      "sha256": "ae00596a2b66e2073759a25c67588d1e6fb80eb292fc78288d6cc47c48ac4322",
+      "bytes": 14566
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/04_368.npz",
+      "sha256": "ce23d510435d6eaee12baa2096dc45959dc43fac6abbc700739f972ae2cd360d",
+      "bytes": 14129
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/05_328.npz",
+      "sha256": "80d2babb2e4bb71d537064fc94450200ba76dd98beb6361a8c0b4a664474939d",
+      "bytes": 15988
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/05_336.npz",
+      "sha256": "b9f84628c93dca8a1e52fadad96dd1ce09bfe03cb1fe4bfb807aac584a98b055",
+      "bytes": 16364
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/05_352.npz",
+      "sha256": "5e7c3e82776770eed56fbccdfdd59b62d0207a2299538d976e25e593fe01996f",
+      "bytes": 16233
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/05_368.npz",
+      "sha256": "b5c7e6821c526bb1fbdbc49aa3a0e7d4e0c6b7a0b5eac77e63740d74cdbb9cdb",
+      "bytes": 17047
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/06_328.npz",
+      "sha256": "1c13502dba6e00e36135c13a00001504f848d16002301691acaf2ff385e8a731",
+      "bytes": 14965
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/06_336.npz",
+      "sha256": "014af5f1099c3a25bb77f3e45d7f65ba5be654f9b4e4a92f472ce9884a5cf95d",
+      "bytes": 14123
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/06_352.npz",
+      "sha256": "8ab0db696aa9b648f6cf2cfc62769df03a0d2b5f85c14ecbd45735aad6c617df",
+      "bytes": 14962
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/06_368.npz",
+      "sha256": "c4896b8ee08c239add490e59b50fefbbeee8a2b11e945efdd0510b3d96472d0b",
+      "bytes": 14805
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/07_328.npz",
+      "sha256": "3f3d4610ab40156075d6d100a3ee39e7f530a4c2d1e8ddf0d3fb78113a58e0aa",
+      "bytes": 15621
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/07_336.npz",
+      "sha256": "8fd458ac71733cdf19a09399c75dff318f83d54cbffb19db47bfbd2d3838744b",
+      "bytes": 15716
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/07_352.npz",
+      "sha256": "10884ef4a7d4a9bfa2c39621e488acbaacf28771c64d717c900971ad4b39b46a",
+      "bytes": 15428
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/07_368.npz",
+      "sha256": "ad2809d0e117ed757c083d2e2bf574ef8a0f8e275ef1c3f071723d69a5e3a2aa",
+      "bytes": 15762
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/08_328.npz",
+      "sha256": "aa744caf1717b97bb27c9aa8671506853fb3a33f9649396f22dcd1538a34fba4",
+      "bytes": 16566
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/08_336.npz",
+      "sha256": "d450944c4b58d2925c3bbe988e17d42a4219278a80b6ee5ae1c90b23251c9f71",
+      "bytes": 16497
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/08_352.npz",
+      "sha256": "49c344cb03092ce532941db0a03e9a3e4528a5091539d4889923e5677479208d",
+      "bytes": 16488
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/08_368.npz",
+      "sha256": "be28352cb160084d97de0a8e1ed9a7c09952f21e19e3a78420039735ad35aa4c",
+      "bytes": 16594
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/09_328.npz",
+      "sha256": "3a1c580f0b3a131a914048046282e5cb701e77f89fafc2b1feb6ded41d627806",
+      "bytes": 16716
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/09_336.npz",
+      "sha256": "24d55455ac0809ae21cd939546018e4914cce98da2ac32d4fa2a2560a1d55a2c",
+      "bytes": 15761
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/09_352.npz",
+      "sha256": "5cda381d3740a14502a907e723d44b4991beeae8246a406c4c8beb991358bb46",
+      "bytes": 16157
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/09_368.npz",
+      "sha256": "53eca5853a18b83066d6e0743e7ae1c0f1c3b46f2b1886ebfb63978556c32918",
+      "bytes": 17012
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/10_328.npz",
+      "sha256": "9fe4a0e37d2e10e569716a695eeb855e1340255deb150c7321e54ac7c92e9622",
+      "bytes": 16489
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/10_336.npz",
+      "sha256": "a29e8c3ad7986e2c10e54e69ddf449301795574fea11b3f8d263784a0d86d78e",
+      "bytes": 16582
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/10_352.npz",
+      "sha256": "c2e395c740f16a6c0c84208e6104b98a144a3f5957ae57bf8101a6fb99bab138",
+      "bytes": 16308
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/10_368.npz",
+      "sha256": "1932c87f6e5bb6a004e47cc7dde46d6997be3a06078a4ea49d8421106d4861a9",
+      "bytes": 16533
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/11_328.npz",
+      "sha256": "c20aca109555ddb7f3d9f7b41af49ffaabe54ea8b18af2426a178a2fb8372eab",
+      "bytes": 16854
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/11_336.npz",
+      "sha256": "f8f3a76d1f0e54da51aeb9859961b7546bde728163ad7681dd939257d8ee4946",
+      "bytes": 16875
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/11_352.npz",
+      "sha256": "c6896a21b503490eedcd596e9c76ec5c58ddbccb6cf761e987f375384396c6cc",
+      "bytes": 16769
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/11_368.npz",
+      "sha256": "21bb49e368e3f504b474aa646995c40b2c68b8b1995778d761422964ef83a1bf",
+      "bytes": 16490
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/12_328.npz",
+      "sha256": "71d02cb4f1a4836a886c1080a7f74fd93d2c5674c55d16477b1362a0f6585591",
+      "bytes": 13058
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/12_336.npz",
+      "sha256": "ff7b4a7a547f938624f916639c2e600dbc217ad989366d7dfd88c1965744c815",
+      "bytes": 13124
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/12_352.npz",
+      "sha256": "c22bff79512c710ed247c6d5b455fcc04ecdf738f8a19fcdb90a999ee4f71c70",
+      "bytes": 12888
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/12_368.npz",
+      "sha256": "407eb46492eb31630971042752a2a2f8b70c921abca13584b12c072079489d0b",
+      "bytes": 12700
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/13_328.npz",
+      "sha256": "ed31239e55b94ea77a466ba3a77ef863ae86666992f588015915453e4b0c6a1c",
+      "bytes": 14281
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/13_336.npz",
+      "sha256": "7802fbf425bde2da2dd703c0ad01bc1a6372a71f50fc1e33957e9e825ea2cd6b",
+      "bytes": 15088
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/13_352.npz",
+      "sha256": "74435a7d56dd2c59b077bfd32a0f92fe286634d78bcc266b35ae1c192f3dc541",
+      "bytes": 15055
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/13_368.npz",
+      "sha256": "7cda498997c48303d62149c3d81ba4b7d9e0f53fb07b6fb1ef33703b93a897f4",
+      "bytes": 15302
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/14_328.npz",
+      "sha256": "e31e91b93b531ea4cb3180364d037058e58a32de26f803a1fb3a3f8eb86e7f53",
+      "bytes": 14173
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/14_336.npz",
+      "sha256": "5c882ecdbf094f2b39cdb8841ecafc7845eb7bdf9db1712f9d5e5bdc8f1b1568",
+      "bytes": 14401
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/14_352.npz",
+      "sha256": "6ae20dfd26ff7a98eb17bb3b19b90b83c520ed9eb34f8977e1ced379c238e593",
+      "bytes": 14574
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/14_368.npz",
+      "sha256": "91165d11f718743384e092bd9ac6e93360748bf6a594e257ad5d01426a9f095e",
+      "bytes": 14459
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/15_328.npz",
+      "sha256": "5ea8715186faa66ef4922e87ce3fa8fef3bdfdf853749235d8af413772e08966",
+      "bytes": 14392
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/15_336.npz",
+      "sha256": "2ccc3482285cd4320bc785c828adfded5643001add2fc751a60fa5cd923d50a4",
+      "bytes": 14427
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/15_352.npz",
+      "sha256": "4ea8182f9c198db3b7f03c17d268d59e45d013e471564d05e8fc20c2b6ca2365",
+      "bytes": 14502
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/15_368.npz",
+      "sha256": "7dce6d826e35d31dbb7cc7708dd314d86e33a6ee968d149b68e088735025b79d",
+      "bytes": 14232
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/16_264.npz",
+      "sha256": "5a54595671a5170939342ffc589430d51bcc0d5b55d6405ef282c1199e5bfa92",
+      "bytes": 16878
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/16_272.npz",
+      "sha256": "bf3a2269db78541bbe3dc68f4623714516fb1fbb3850a591446c9bb83f099e40",
+      "bytes": 16881
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/16_288.npz",
+      "sha256": "09bb7178a8d96b2fe62f8f030761f1877526b8cfdc5e5cd95e3461a404d26d5b",
+      "bytes": 16479
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/16_320.npz",
+      "sha256": "386714ecdd435f5b63eddf5c6e97d4dda3c880f362ea7300bc978e34e0ca6d9b",
+      "bytes": 16466
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/16_352.npz",
+      "sha256": "9fce3681b1e23445388d06b380dcd6228d4e45e573a796a1ffa44afd2d2ce10a",
+      "bytes": 16444
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/17_264.npz",
+      "sha256": "d785cf8c44bbc15e0c73d7fdba567bba279172d48dddbf7321a72d1273ef49e4",
+      "bytes": 16259
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/17_272.npz",
+      "sha256": "a66719c5765c594f98bff4ee216e2a9e1b635bab510e8bdbaa3e9a5b924ade3a",
+      "bytes": 16492
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/17_288.npz",
+      "sha256": "feaaf75af50a068b8d4b22aac7f7e95ee2840194b6ed3d1cc6e2d96299ef959e",
+      "bytes": 16390
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/17_320.npz",
+      "sha256": "62a82ddd3a0e9fbff01e2fb87584a66560cf9f21fe8666f8a6790ff0095eefc0",
+      "bytes": 16548
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/17_352.npz",
+      "sha256": "9ad87e08480839478132ce0c15ec4a5355ad0f8ee9b765909ddfb9a4a3525d08",
+      "bytes": 16467
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/18_264.npz",
+      "sha256": "33f97f7e81db182998c718367d72d9ed479cc2ca9d6d6f1efbba5fce47cde107",
+      "bytes": 16961
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/18_272.npz",
+      "sha256": "907f116e0985539d2698e66cd1032377f612d42121ee22022254d2f1608e4c5c",
+      "bytes": 16850
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/18_288.npz",
+      "sha256": "185c2359aaf64e4a3cd1a44559e72c0b2212763be7e1f7afffee1db88db6e2d7",
+      "bytes": 16602
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/18_320.npz",
+      "sha256": "3cfd28a96f126f4927e5cec4fe7fcd98f77efd7bb7c776e5e10c661fa34beb0a",
+      "bytes": 16567
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/18_352.npz",
+      "sha256": "f32fe47c5191dea6ad131b3f309034ce3b72107bb500e1320b731570e4b9f05c",
+      "bytes": 16818
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/19_264.npz",
+      "sha256": "20411f153359216e71e56517a304d12dd3697806db6baff6c616b4655f1e59bd",
+      "bytes": 14737
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/19_272.npz",
+      "sha256": "5fe5722c1e7581fcc92086c9180d297bd5f288e23e856f93273aa49037ce73c9",
+      "bytes": 14940
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/19_288.npz",
+      "sha256": "cf9a8db9aed55663c33c1009ae72a73482af9ab53655990195325f40d07750e1",
+      "bytes": 14948
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/19_320.npz",
+      "sha256": "8eb5e28fdd2bb838087ff3a83f8b1686c33d24b5e0ef260bbefd1ad839f78bac",
+      "bytes": 14981
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/anchors/19_352.npz",
+      "sha256": "803b552a176a00d66094f6e309286b71a87d3e3f3e50b80e63dce444349f4246",
+      "bytes": 14592
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/budget.json",
+      "sha256": "d3b1863f51d432f8b3aa3cb01420e2e3e71def941f8591efbc59a5e1fd90c82d",
+      "bytes": 1208
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/coefficients.csv",
+      "sha256": "48fa75593e04ddf8c38e69dcf3c0ca8edc1e271016bf4bae3be9b165a987f856",
+      "bytes": 15262
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/control.json",
+      "sha256": "ab6047109d91cfb2a45c2d60258971d2981778c202aa5c632f0a450375604549",
+      "bytes": 162
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/coverage.csv",
+      "sha256": "470bbe25bb6f1afce6fa2d1928e5afdf3086dfa6b703ad70813770c6da10553a",
+      "bytes": 20076
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/coverage.json",
+      "sha256": "6f7cc38704090376834b30327296a445ed5c9aa5de208178a9e2b8e90afd2f7f",
+      "bytes": 51244
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/dependencies_and_aliases.json",
+      "sha256": "e19aaeafe3059d60d054cae273ad24ba65fbd383897a35ecc1de5374fb82733d",
+      "bytes": 38282
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/execution.log",
+      "sha256": "6cbb5ad4e01176e6827ea63426a7b49c2fbe90a2685334f94d942a28d7551103",
+      "bytes": 2045
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/execution_receipt.json",
+      "sha256": "30ae6a317ece125ac6412dfcaa3ff27de0d672e0688a3e89fe4676e74b2ae512",
+      "bytes": 290
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/figure_track_indices.json",
+      "sha256": "b8faa028d13d1130f7002fcd7957b95a9a17d1c597311f6f74e4a13c16c15b54",
+      "bytes": 997
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/figures/source_00_328.npz",
+      "sha256": "f3bc2f8fd2f2267f1decdfa3bb3d173b4d0f81df986ccf434ae84d747148dcbb",
+      "bytes": 7595
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/figures/source_00_328.png",
+      "sha256": "be8fd9c6cad7345ae1df3e18ddc4d1c984ad4685365f643795426224f1957cef",
+      "bytes": 39573
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/figures/source_00_328.svg",
+      "sha256": "e7c213070b90ff69c16d64434dc709e2c535effca740c868a2da39e7529edb85",
+      "bytes": 37673
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/figures/source_01_328.npz",
+      "sha256": "d8199c082a74c9a3a80158ddae2ab3f120d332980d0e44a7501dd7a93b618d19",
+      "bytes": 8543
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/figures/source_01_328.png",
+      "sha256": "ef8eea782d5cb2d316d9071e5283c929f0f1159ec32b2c5f77f9f6f44d91dec6",
+      "bytes": 38785
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/figures/source_01_328.svg",
+      "sha256": "55b5b3ea6c28521438fce483daabe1b6182ef787789a3bba849096e3d6742e98",
+      "bytes": 34064
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/figures/source_15_328.npz",
+      "sha256": "d0c53c32c3c6796d542f5a5e8cbf6a74ae1ed9366bb8a4616f5e4d844bac9cc5",
+      "bytes": 6106
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/figures/source_15_328.png",
+      "sha256": "c6fdfade037a14583be2ce6791024784c50160c14ad37887e8f53354271d020e",
+      "bytes": 42479
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/figures/source_15_328.svg",
+      "sha256": "5c8c97faa11587fea8232fde4a369b0a02a68c5323e303bacad58a9d6d667836",
+      "bytes": 36117
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/figures/source_19_264.npz",
+      "sha256": "51b7c9fa77b369b6ce2687aac7e8b07277ce9ad5bea2eafc4a12471893071533",
+      "bytes": 7290
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/figures/source_19_264.png",
+      "sha256": "325bb13aff768c7398022c8c0a34ebd6ff118143e3a0e270e051337a72dc37d1",
+      "bytes": 38199
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/figures/source_19_264.svg",
+      "sha256": "f0af9402a781f26c4e15b4cf3ba924aa6b75909437b3a423b4be8a97d4574c33",
+      "bytes": 25890
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/figures/track_errors.png",
+      "sha256": "9a1aea52097defa3e2b1e73ece2988d8331ba2e81cc9806bc1caf2a1b40a5df4",
+      "bytes": 237503
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/figures/track_errors.svg",
+      "sha256": "ce258430a6ceed37d2869908dd0ebc36ae0bb642e81510652c6e6131d6a8db3c",
+      "bytes": 54172
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/input_manifest.json",
+      "sha256": "63d2e43b5083eb607ff7cd2afc82d5d456b212b8cd486efced63535ad815af23",
+      "bytes": 498913
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/models.json",
+      "sha256": "049e8bf1c1fc391132ed5662cf559d8f41f6ed7c048ed865aa8b235a323af6f4",
+      "bytes": 27024
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/operator_checks.csv",
+      "sha256": "1456f7794cbef058387279df989ba40be950582d11366b2dce5ba94fb98a3823",
+      "bytes": 15464
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/paired_metrics.csv",
+      "sha256": "0ac002b7c120d483f80b2cbc988c20bfc8e95c8d90eba2f1153f8bfc268cbf7d",
+      "bytes": 3789
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/plan.json",
+      "sha256": "75eea8efbc6e2b711ed3715de50f828b2f7fa8d1364ecd90f0cf0385dd20c198",
+      "bytes": 29591
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/000.npz",
+      "sha256": "a8e7096f985aa0ca0a40c0b08bfbb97768b54eb08db7149a07237091e6c3904f",
+      "bytes": 12395
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/001.npz",
+      "sha256": "cf0abb7394ae40025677db0dd8b76d971c8a20489e91d537755cd06c8212c983",
+      "bytes": 12354
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/002.npz",
+      "sha256": "b785d69771125d09dcb7ed912417dc6ebf7c802095d5f4aa8bf7ae010a572232",
+      "bytes": 12268
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/003.npz",
+      "sha256": "d6f2fd32c081dbe8f59954dbfa34d6c9083e49e409710154e255a5ef7bdad548",
+      "bytes": 12352
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/004.npz",
+      "sha256": "9ddf9a44035af9edec4e91ac2a389c1bcb90df073cab2eebc72e6acdc5cef36f",
+      "bytes": 12917
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/005.npz",
+      "sha256": "17d33d5d376d1646f996d976e654cb5bd55f6aec0ccd47aff1b1537b95e0002c",
+      "bytes": 12226
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/006.npz",
+      "sha256": "56a9a8c69a4be8649ec18f675d14be4ba3ad97b5f588ba16d256a3d8357c070c",
+      "bytes": 12069
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/007.npz",
+      "sha256": "e0acf33170aa47d641687fbb4fe20964c600e380933ce8532fcd67729e507336",
+      "bytes": 11908
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/008.npz",
+      "sha256": "45cfa4f526c8a6a81428246a0181c6e5887762860d72c246dc05f6a8e3ed60a1",
+      "bytes": 12825
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/009.npz",
+      "sha256": "301e78b165b8444156dd6dacadb819288ecd83c5bddad8c87eb25084d08878b1",
+      "bytes": 12660
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/010.npz",
+      "sha256": "8b749ecdf593d8c516be17040c568d4114ec834c901d0c42f9ba9762b37c3a93",
+      "bytes": 12869
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/011.npz",
+      "sha256": "9ff918b8d5673473cfe20dd5438943fb0ed44b99290d6483140c2f35759c4bf1",
+      "bytes": 12626
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/012.npz",
+      "sha256": "4854ffb3c1acab8ca02772ed38c57f5eb7c9c6ed0367fc27c5a1396bcc1ea11f",
+      "bytes": 12710
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/013.npz",
+      "sha256": "c8514425e3c0bb4461cc2d6d969fe4b9fa1bd9d51c903e3abb88ad9bb25b8ca0",
+      "bytes": 12479
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/014.npz",
+      "sha256": "bbfc9d4133081a761748a049b54eb4381cedef68d85ae0e9fedf6b40cbc93986",
+      "bytes": 12777
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/015.npz",
+      "sha256": "a7d5b0cd427fedc49214a4067c597befaf250a171355796491c0dd656d6caef0",
+      "bytes": 12532
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/016.npz",
+      "sha256": "9286547d14cdbc388274ed93a59f54a7957e0a70485746f1cf5bd4ee98e9f639",
+      "bytes": 10755
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/017.npz",
+      "sha256": "f9c294080e1d0b19e4d24c84e041891fbf1aae8cb3a9b308f5da6771011ada3b",
+      "bytes": 10734
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/018.npz",
+      "sha256": "1464b4b1e5a54ab0f537e6a30227c3e9bee2f8dddad4f61362e50bf94b1ef0d7",
+      "bytes": 10748
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/019.npz",
+      "sha256": "f2ffa776070095f3fefe387d00ed2e288fe24c4d6a884e6af908f1ca3f906d03",
+      "bytes": 10543
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/020.npz",
+      "sha256": "712598073addd46512d19d5d6b8b120c614f4c276dd150dedd906d4417c29176",
+      "bytes": 11603
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/021.npz",
+      "sha256": "9e348819ee80ea55d3de8c29f70dd9e6bd588fca6596bd1a262d3dbb39400760",
+      "bytes": 11682
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/022.npz",
+      "sha256": "5292351e4eefa695b8929c9eb5ede9e2c562916ee9f2e0eb357d88bfb3d3547c",
+      "bytes": 11559
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/023.npz",
+      "sha256": "35b102d07f28c1880a4cada485fe9ba3b58be69294f1c8f8e5d646990f49919e",
+      "bytes": 11717
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/024.npz",
+      "sha256": "83308613a8ddf702540f5b585bf6138d62e185209cb51754cf03f7e8e172455e",
+      "bytes": 10509
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/025.npz",
+      "sha256": "17d950c91afe8c68239a7e44818c3111247f72d346be2b8764d8f10f23df123a",
+      "bytes": 9957
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/026.npz",
+      "sha256": "bcb6cec65f3d7a0e49018c32837964bdc9c7d2ec03985f148abfbd5d557cd651",
+      "bytes": 10669
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/027.npz",
+      "sha256": "8d5d605e28ed7053afefc3b426dd070c2649ae1f17b5825ad2321aa8051f124f",
+      "bytes": 10726
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/028.npz",
+      "sha256": "1d78c00b63bc13b85a05bcac7f925243b94ed172a63c709a2904ee16a5e7df15",
+      "bytes": 10475
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/029.npz",
+      "sha256": "b4dfe3f24b60562f6fb7ddd6656cc393c134a78bd3cd1b632cf88bfb9c5cf91d",
+      "bytes": 10269
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/030.npz",
+      "sha256": "a053b21cf2f4929065b6675c44ef0d4e1bd116c09541fdac719dc6725cb5cb6a",
+      "bytes": 9955
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/031.npz",
+      "sha256": "5cf9c8b5c2e6409799b79fdd4eb99b8bb5345d0f462a6d238fe24e7298ddc044",
+      "bytes": 10236
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/032.npz",
+      "sha256": "0799240d5499db69fedcd5064ba1676b3784fb8859e9e88d39ed7339e4f9cc23",
+      "bytes": 12553
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/033.npz",
+      "sha256": "c8a91d88e8db5b6f945dea707a2e84a679d61a8a32a2d97ebf893acb0736252c",
+      "bytes": 12445
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/034.npz",
+      "sha256": "d7fefdc18772d1695eaf3d3c08f28aed39ef9f484f1f8bb77fbcab4fe9a4f7a1",
+      "bytes": 12558
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/035.npz",
+      "sha256": "d0b2fe92524870dc196817312b64ef6eb5281c254adf26f9ab848cbe7e745f14",
+      "bytes": 12620
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/036.npz",
+      "sha256": "9ea7400c76e8ca852a3daab46b3bc3322f92578b3338e74baa2fa10f94293a79",
+      "bytes": 12449
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/037.npz",
+      "sha256": "a8ca0c82b5071d41630fed29d943ccf2c9d0e50374508f5bae09b43b685376e9",
+      "bytes": 11870
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/038.npz",
+      "sha256": "4f9a3104e1f3e95d9835478756d4ea567574ba1049c55abee6e5cf084f805e68",
+      "bytes": 11839
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/039.npz",
+      "sha256": "8d0c88a49bb7c9b4043fdda3c16c012f1c1fead4b15b8619dc837ded087630a0",
+      "bytes": 12224
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/040.npz",
+      "sha256": "db1b51d985c42585837a3a0e639b31e60956ac4ae4fad5c972dd5db60cfaf838",
+      "bytes": 12307
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/041.npz",
+      "sha256": "137b081530c1f850d530bacaf8ed220c5cafeb9f5a1993d87d8cd89427925273",
+      "bytes": 12302
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/042.npz",
+      "sha256": "161795b666a35cc7071bb40f03934ce76fddfae47245dd3e1c0d2fe4ebb0544d",
+      "bytes": 12021
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/043.npz",
+      "sha256": "98e723b2da814781d6a721edb616be60f3e13267be13cf1ecaec6fed743691e2",
+      "bytes": 12025
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/044.npz",
+      "sha256": "4c2126d458ee676e9f4513d5e1640f4da4cc1c1964b17d9fda9127abe5359e40",
+      "bytes": 12286
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/045.npz",
+      "sha256": "25a4cc574074ba04288f968a0fc5579dd06f658e36e508180f4084394d594f03",
+      "bytes": 12266
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/046.npz",
+      "sha256": "827a6ec98eb54e89aabbf8ff72887c37b52832022583ddb6b9439cc0bab224af",
+      "bytes": 12145
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/047.npz",
+      "sha256": "f5b6df4f11b27b047fcc8a78f628b030d7b78265d4d94a67ed59ea5a68acb5d2",
+      "bytes": 12022
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/048.npz",
+      "sha256": "d0c51dd4e7932187747ee565be2779455c12ca658ab007e3a5a1412251d7a2a1",
+      "bytes": 10248
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/049.npz",
+      "sha256": "14935d2ce2079e3a081bf8409d3b3533c715cfed3403966b2b7b2711165b8a98",
+      "bytes": 10348
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/050.npz",
+      "sha256": "38db8b770e3ed547443c1f3660501673b0eff54efcccb8efc20d09710a3d0498",
+      "bytes": 10254
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/051.npz",
+      "sha256": "cc7770796514dd992d07aaec19d53712b82fd262d88265570ab85dcd38d04c9b",
+      "bytes": 10076
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/052.npz",
+      "sha256": "d262e7f94099feb92e17e5cb9da62d4008767c6215009377b95c3e3d0464f946",
+      "bytes": 10816
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/053.npz",
+      "sha256": "919b2e825aaf9e0df80eb9d7514a2cd5a2230a61ba36d3c232d04c9a123a5010",
+      "bytes": 11240
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/054.npz",
+      "sha256": "d8c031bd69aae55b32fc86d7e8cc6685933d0fb199879e2b675dabafdb159ef9",
+      "bytes": 11135
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/055.npz",
+      "sha256": "d43fe61bf3f10dc661ad3829f7dbaf7550ed7070e4fb9293bca1a3e7fffd0d64",
+      "bytes": 11064
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/056.npz",
+      "sha256": "5055d73631239b79c0589e4c41c8cdd042d9becf62934ff00bddab4d4f85db22",
+      "bytes": 9951
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/057.npz",
+      "sha256": "505fbd71a38d7f9fc5e5ce9ee12d444598dcb59c6fb6f15ecc452388d6de4778",
+      "bytes": 10103
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/058.npz",
+      "sha256": "5cebe8db30e0528f2850ca3a8926ccf47fd4e5fb7e7e4f85007a912cacadfa77",
+      "bytes": 10204
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/059.npz",
+      "sha256": "630d70fcd14263d85f39fade685f796bb9670fed1e5adb9f7593bcee3ba7472c",
+      "bytes": 10084
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/060.npz",
+      "sha256": "7a12979b08b1b3f11d9ceb3db53f7b3261d9bb49ebc46d6b076e7dba0cef02bf",
+      "bytes": 9484
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/061.npz",
+      "sha256": "a08539b16b031f95afdd210f6d23920efb3da32276fe393a89532c2ee0074e4e",
+      "bytes": 9622
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/062.npz",
+      "sha256": "6dfb1a5fb099f9821dc4eb1966c04172a82bd0862a50046af4aeb9fe356a100b",
+      "bytes": 9766
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/063.npz",
+      "sha256": "fb162938ee2c036b9cb9e80aee786aecde717b800658ef0a7cb00559e0add632",
+      "bytes": 9771
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/064.npz",
+      "sha256": "5a37be539490210d072af25d946804fb039594c5f77e0ae0214ffc2359a762f8",
+      "bytes": 12271
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/065.npz",
+      "sha256": "bbe8ea6463c30ad238adc3453c3c190a2db04e18889c14110dc9f4644da8a299",
+      "bytes": 12372
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/066.npz",
+      "sha256": "df884fa41d65e84b5d6dae8145811b35aadd03b06ff0fd5e8273234e4f84f9a8",
+      "bytes": 12284
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/067.npz",
+      "sha256": "1fa0872dd9e8d3ba32bcc9a89765d6c538d6fd4243c6892d8eccd4967f407a7e",
+      "bytes": 12481
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/068.npz",
+      "sha256": "f2328e111f69df688631e277d94c73994ac67261dabcd1fd8bcabdcf11374fee",
+      "bytes": 12449
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/069.npz",
+      "sha256": "f5e4798377390776a4fbfbf1a98177005172d71a4c16c32ad4a8e1d4ea376335",
+      "bytes": 11364
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/070.npz",
+      "sha256": "610ac0be8a7603f85779e8d5ce0c6caf4883031c47d708ada1c90402ec2f0fa2",
+      "bytes": 11401
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/071.npz",
+      "sha256": "461a4967beae2d3132fc64c08d5fa366e1705ffd767943860fe543a7658b6b72",
+      "bytes": 11265
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/072.npz",
+      "sha256": "dcfcb0976ba6ba5f332b9cfe136c2d32a9203d8df4ac68bac9b773e76d386f95",
+      "bytes": 11039
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/073.npz",
+      "sha256": "3b0a20c28b3dc7ecbd3edb6d5666114368fe66d752e988578bd39eb4566db294",
+      "bytes": 10824
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/074.npz",
+      "sha256": "44a57bdb9ce4fd437115f0a89847ee2e55a3eb7230aa0b9c6c98a21944cc51ed",
+      "bytes": 12394
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/075.npz",
+      "sha256": "7725297781814e7190e1be17673c0ed162bacdf3a7a79a0df0fb43e73db1160e",
+      "bytes": 12396
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/076.npz",
+      "sha256": "26a1e720621eedccdf12939c92c31076c7255e02d843f738e861967e308dbd28",
+      "bytes": 12520
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/077.npz",
+      "sha256": "e1e7326f56ef45e1747c7d18839f38b3a35fdcf323e8399e3a53bf5b432ba948",
+      "bytes": 12583
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/078.npz",
+      "sha256": "8cc1a62b7a64c09926ff454102f1ace51d72e7b8dc0987574438d14bc09b9e41",
+      "bytes": 12703
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/079.npz",
+      "sha256": "1dcbb519f97fb51c4e2ea97c52448763b5529d3e8bb760d24f27301e1617e159",
+      "bytes": 10577
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/080.npz",
+      "sha256": "9854b8545a6c4b0c6c836941c61efdc46d1e95fca18714ce83db8c490072fdb9",
+      "bytes": 10614
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/081.npz",
+      "sha256": "914eb6587becabfc35bb1ff236c3e45742846e1805ff3a3a859461b214d85b62",
+      "bytes": 10680
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/082.npz",
+      "sha256": "a1ef331cf9ce562f40b2eb8126ca3a5b659b2fc3c074ec6d9df11fd4cb1d65db",
+      "bytes": 10706
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/predictions/083.npz",
+      "sha256": "1d6c8c6359eb3270a8975043deb4684cf5b2035bef2496690726676be81a417f",
+      "bytes": 10292
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/progress.json",
+      "sha256": "c2216a272996472264110885d4ae65eafc255d81fa717e6a7ea8d82fd4eea8bc",
+      "bytes": 88
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/scientific_next_request.json",
+      "sha256": "ef8d60682a6d575016746338627df36ec95019a8f9abd0deb910b9134095ad81",
+      "bytes": 1643
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/source.py",
+      "sha256": "9a816f31580d71e7bfdc8e8d05898eb236211c646d8413a3ecd5da108a675c4f",
+      "bytes": 27057
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/split_metrics.csv",
+      "sha256": "ac15d10c0a6d9c36ec3fc76133881023b9fe89322c4ef48ede66d5b82567999a",
+      "bytes": 1547
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/track_metrics.csv",
+      "sha256": "53d39955aaf2ce7af70f29c06fc408e250ded692c95be3698aa7956783a8e741",
+      "bytes": 29562
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/track_metrics.json",
+      "sha256": "11f1422f13ba1201aacff15c28be3cbdc31c2e5e6258b8567fd4e1cf3aedb627",
+      "bytes": 60142
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/verdict.json",
+      "sha256": "3b13636919a2a644ff7e23f73d9dc68263557bb5f54377d9ffe937584aa88465",
+      "bytes": 5920
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/visual_inspection.json",
+      "sha256": "06543e8880b3faa6a8477faa3e90099bacfd07d796df09b7f5906aed0c46d1a4",
+      "bytes": 694
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/history_conditioned_retention_forecast_20261019/visual_sources.json",
+      "sha256": "db068c1939af7d380c32d608be985952f10ec191a23c56e028335ed1c3205bbc",
+      "bytes": 1607
+    }
+  ],
+  "source_readonly": true
+}

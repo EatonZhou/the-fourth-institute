@@ -1,0 +1,7 @@
+{
+  "message_id": "msg_25b79584fa679d6b6c014b108e45e7a2",
+  "recipient": "resident_afa3d4d6cf11",
+  "activation_policy": "enqueue_and_trigger",
+  "accepted": true,
+  "handoff_sha256": "13a5392e5056aaa88c2d1ac0cae12a8aab1482716a8bb35d627081a06a9a7fc2"
+}

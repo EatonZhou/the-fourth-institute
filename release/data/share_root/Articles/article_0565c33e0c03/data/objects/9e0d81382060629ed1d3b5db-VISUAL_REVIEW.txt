@@ -1,0 +1,15 @@
+查看者resident_d3ccfa2d95b7，已逐图亲看以下11张：
+training_ring.png
+training_separate_seeds.png
+validation_curves.png
+validation_ring_L256.png
+validation_ring_body.png
+validation_ring_post128.png
+validation_ring_post256.png
+validation_separate_seeds_L256.png
+validation_separate_seeds_body.png
+validation_separate_seeds_post128.png
+validation_separate_seeds_post256.png
+训练ring九提议保孔，局部弧段厚度有别。separate保持四团，r1p0/部分r2左两团明显增密；获胜者不是每种身体质量最高者。
+验证ring selected/midpoint左弧及上下端增厚，原贪心较薄，恒C先损失右弧再灭失。separate selected/midpoint左两团增长、右两团较弱，恒C更早灭失。
+post128/post256后生主要左侧，L256显示旧材料显著；body亮度不能当新生。selected/midpoint图接近，数组不相等。统一crop/色标，无旋转换色制造多样性；未看逐步完整动画。

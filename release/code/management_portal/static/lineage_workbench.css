@@ -1,0 +1,1302 @@
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--bg);
+        color: var(--text);
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      button, input, textarea, select { font: inherit; }
+      button { cursor: pointer; }
+      button:disabled { cursor: default; opacity: 0.55; }
+      .lineageWorkbenchRoot {
+        position: relative;
+        min-width: 0;
+        min-height: 0;
+        overflow: hidden;
+      }
+      body.resizingComposer { cursor: row-resize; user-select: none; }
+      .activityBtn {
+        width: 38px;
+        height: 38px;
+        border: none;
+        border-radius: 7px;
+        background: transparent;
+        color: var(--muted);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+      }
+      .activityBtn[draggable="true"] { cursor: grab; user-select: none; }
+      .activityBtn.activityDragging { opacity: .38; cursor: grabbing; }
+      .activityBtn:hover { background: var(--panel-2); color: var(--text); }
+      .activityBtn.active { color: var(--accent-2); background: color-mix(in srgb, var(--accent) 10%, var(--panel)); }
+      .activityBtn.active::before {
+        content: "";
+        position: absolute;
+        left: -6px;
+        top: 7px;
+        bottom: 7px;
+        width: 3px;
+        border-radius: 999px;
+        background: var(--accent-2);
+      }
+      .activityBtn svg { width: 19px; height: 19px; stroke: currentColor; }
+      .activityRecentRail {
+        width: 100%;
+        min-height: 0;
+        margin-top: 4px;
+        padding-top: 9px;
+        border-top: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
+        display: flex;
+        flex: 1 1 auto;
+        flex-direction: column;
+        align-items: center;
+        gap: 7px;
+        overflow: hidden;
+      }
+      .activityRecentRail:empty { display: none; }
+      .activityRecentSlot {
+        width: 32px;
+        height: 32px;
+        position: relative;
+        flex: 0 0 auto;
+      }
+      .activityRecentItem {
+        width: 32px;
+        height: 32px;
+        border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
+        border-radius: 8px;
+        background: color-mix(in srgb, var(--panel-2) 58%, var(--panel));
+        color: var(--muted);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        position: relative;
+        font-size: 11px;
+        font-weight: 800;
+        line-height: 1;
+      }
+      .activityRecentItem:hover {
+        color: var(--text);
+        border-color: color-mix(in srgb, var(--accent) 44%, var(--border));
+        background: color-mix(in srgb, var(--accent) 7%, var(--panel));
+      }
+      .activityRecentItem.active {
+        color: var(--accent-2);
+        border-color: color-mix(in srgb, var(--accent) 62%, var(--border));
+        background: color-mix(in srgb, var(--accent) 10%, var(--panel));
+      }
+      .activityRecentItem.fork::after,
+      .activityRecentItem.room::after,
+      .activityRecentItem.action::after {
+        content: attr(data-recent-kind-mark);
+        position: absolute;
+        right: -2px;
+        bottom: -2px;
+        min-width: 12px;
+        height: 12px;
+        border-radius: 999px;
+        background: var(--panel);
+        border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+        color: var(--muted);
+        font-size: 8px;
+        font-weight: 800;
+        line-height: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+      @keyframes activityRecentRunningPulse {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-2px); }
+      }
+      .activityRecentItem.running {
+        color: var(--accent);
+        border-color: color-mix(in srgb, var(--accent) 52%, var(--border));
+        box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent), 0 0 10px color-mix(in srgb, var(--accent) 18%, transparent);
+        animation: activityRecentRunningPulse 2.8s ease-in-out infinite;
+        animation-delay: var(--recent-delay, 0s);
+      }
+      .activityRecentUnreadDot {
+        position: absolute;
+        right: 3px;
+        top: 3px;
+        width: 6px;
+        height: 6px;
+        border-radius: 999px;
+        background: var(--accent-2);
+        box-shadow: 0 0 0 2px var(--panel);
+        pointer-events: none;
+      }
+      .activityRecentClose {
+        position: absolute;
+        right: -5px;
+        top: -5px;
+        width: 16px;
+        height: 16px;
+        border: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
+        border-radius: 999px;
+        background: var(--panel);
+        color: var(--muted);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        font-size: 12px;
+        line-height: 1;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 120ms ease, color 120ms ease, background 120ms ease;
+      }
+      .activityRecentSlot:hover .activityRecentClose,
+      .activityRecentSlot:focus-within .activityRecentClose {
+        opacity: 1;
+        pointer-events: auto;
+      }
+      .activityRecentClose:hover {
+        color: var(--danger);
+        background: var(--panel-2);
+      }
+      @media (prefers-reduced-motion: reduce) {
+        :root:not([data-portal-motion="full"]) .activityRecentItem.running { animation: none; }
+      }
+      :root[data-portal-motion="reduced"] .activityRecentItem.running { animation: none; }
+      .agentsToolbar {
+        position: relative;
+        margin-left: auto;
+      }
+      .paneToggle svg { transition: transform 0.16s ease; }
+      .sideFilterSummary {
+        margin: 8px 8px 0;
+      }
+      .sideFilterSummary .portalFilterSummary {
+        align-items: flex-start;
+        flex-wrap: wrap;
+      }
+      .sideFilterSummary .portalFilterSummaryChips {
+        order: 3;
+        width: 100%;
+      }
+      .sideFilterSummary .portalFilterSummaryClear {
+        margin-left: auto;
+      }
+      .paneBody { flex: 1 1 auto; min-height: 0; overflow: auto; }
+      .sidePane { min-width: 0; }
+      .srOnly {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+      .searchWrap { padding: 10px 12px; border-bottom: 1px solid var(--border); display: none; gap: 8px; }
+      .searchWrap.open { display: grid; }
+      .agentList { display: grid; gap: 0; padding: 2px 8px 12px; }
+      .personalAssistantResident { margin-bottom: 8px; }
+      .whichResidentWrap { display: grid; gap: var(--portal-space-2); margin-bottom: var(--portal-space-2); }
+      .whichResidentPanel { display: grid; gap: 8px; padding: 9px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel-2); }
+      .whichResidentPanel[hidden] { display: none; }
+      .whichResidentPanel form { display: grid; gap: 7px; }
+      .whichResidentPanel textarea { width: 100%; resize: vertical; min-height: 60px; border: 1px solid var(--border); border-radius: 7px; background: var(--panel); color: var(--text); padding: 8px; font: inherit; font-size: 11px; }
+      .whichResidentPanel form > button,
+      .whichResidentActions button,
+      .whichResidentAdviceActions button,
+      .whichResidentForkAdvice button,
+      .whichResidentCorrectionControls button {
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: var(--panel);
+        color: var(--text);
+        padding: 6px 8px;
+        font-size: 10px;
+        font-weight: 650;
+        line-height: 1.25;
+        cursor: pointer;
+      }
+      .whichResidentPanel form > button { background: var(--accent); color: var(--on-accent); border-color: transparent; }
+      .whichResidentStatus { color: var(--muted); font-size: 10.5px; line-height: 1.45; }
+      .whichResidentStatus.error { color: var(--danger); }
+      .whichResidentRequest { display: grid; gap: 3px; min-width: 0; color: var(--muted); font-size: 10.5px; line-height: 1.45; overflow-wrap: anywhere; }
+      .whichResidentResults { display: grid; gap: 7px; }
+      .whichResidentResult { display: grid; gap: 5px; padding: 8px; border: 1px solid var(--border); border-radius: 7px; background: var(--panel); }
+      .whichResidentResult > div:first-child { display: grid; gap: 2px; min-width: 0; }
+      .whichResidentResult strong { font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .whichResidentResult small { color: var(--muted); font-size: 9px; }
+      .whichResidentResult p { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.45; }
+      .whichResidentActions, .whichResidentAdviceActions { display: flex; flex-wrap: wrap; gap: 5px; }
+      .whichResidentActions button.recommended,
+      .whichResidentAdviceActions button.recommended { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--panel)); }
+      .whichResidentForkAdvice { display: grid; gap: 3px; padding: 7px; border-left: 3px solid var(--accent-2); background: color-mix(in srgb, var(--accent-2) 8%, transparent); font-size: 10px; }
+      .whichResidentForkAdvice small { color: var(--muted); }
+      .whichResidentCorrectionControls { display: flex; gap: 6px; }
+      .whichResidentCorrectionForm { display: grid; gap: 7px; padding: 8px; border: 1px solid var(--border); border-radius: 7px; background: var(--panel); }
+      .whichResidentCorrectionForm strong { font-size: 11px; }
+      .whichResidentCorrectionForm label { display: grid; gap: 4px; color: var(--muted); font-size: 9px; }
+      .whichResidentCorrectionForm select, .whichResidentCorrectionForm input[type="search"] { width: 100%; min-width: 0; border: 1px solid var(--border); border-radius: 7px; background: var(--panel-2); color: var(--text); padding: 7px; font: inherit; font-size: 10px; }
+      .whichResidentCorrectionSelected { display: flex; flex-wrap: wrap; gap: 4px; align-items: baseline; color: var(--muted); font-size: 9px; }
+      .whichResidentCorrectionSelected span { overflow-wrap: anywhere; }
+      .whichResidentCorrectionResults { display: grid; gap: 4px; max-height: 210px; overflow: auto; }
+      .whichResidentCorrectionResults button { display: grid; gap: 2px; width: 100%; min-width: 0; padding: 7px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel-2); color: var(--text); text-align: left; cursor: pointer; }
+      .whichResidentCorrectionResults button.selected { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--panel)); }
+      .whichResidentCorrectionResults strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .whichResidentCorrectionResults small, .whichResidentCorrectionResults span, .whichResidentCorrectionSearchState { color: var(--muted); font-size: 9px; line-height: 1.35; overflow-wrap: anywhere; }
+      .whichResidentCorrectionSearchState.error { color: var(--danger); }
+      /* Chatroom (decision_a6bebf4ac283) */
+      .chatroomList { gap: 7px; }
+      .chatroomCardWrap { min-width: 0; }
+      .chatroomCard .agentSelect { display: flex; align-items: center; gap: 8px; padding-right: 36px; }
+      .chatroomCardMenu {
+        position: absolute;
+        right: 5px;
+        top: calc(100% - 5px);
+        min-width: 146px;
+        display: grid;
+        gap: 2px;
+        padding: 5px;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        background: var(--panel);
+        box-shadow: var(--shadow);
+      }
+      .chatroomCardMenu[hidden] { display: none; }
+      .chatroomCardMenu button {
+        border: none;
+        border-radius: 5px;
+        background: transparent;
+        color: var(--text);
+        padding: 6px 8px;
+        text-align: left;
+        font: inherit;
+        font-size: 12px;
+        white-space: nowrap;
+      }
+      .chatroomCardMenu button:hover { background: var(--panel-2); color: var(--accent); }
+      .chatroomCardMenu button.danger { color: var(--danger); }
+      .chatroomEntryIcon { flex: 0 0 auto; width: 16px; height: 16px; color: var(--muted); }
+      .chatroomCard.unread .agentTitle { font-weight: 700; }
+      /* The name has the whole first row; the time is secondary and sits, short, after the preview. */
+      .chatroomCard .agentMain { flex: 1 1 auto; }
+      .chatroomEntryHead, .chatroomEntryLine { display: flex; align-items: center; gap: 6px; min-width: 0; }
+      .chatroomEntryHead .agentTitle { flex: 0 1 auto; }
+      .chatroomEntryLine { margin-top: 3px; }
+      .chatroomEntryLine .agentMeta { flex: 1 1 auto; margin-top: 0; }
+      .chatroomEntryTime { flex: 0 0 auto; color: var(--muted); font-size: 10px; white-space: nowrap; }
+      .chatroomUnreadCount, .chatroomPinnedMark { flex: 0 0 auto; }
+      .chatroomUnreadCount { min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--danger, #dc2626); color: var(--on-accent, #fff); font-size: 10px; line-height: 16px; text-align: center; }
+      .chatroomPinnedMark { width: 11px; height: 11px; color: var(--muted); }
+      .lineageChatroomContainer { position: relative; }
+      .lineageChatroomHost { position: absolute; inset: 0; z-index: 5; display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--panel); }
+      .lineageChatroomHost[hidden] { display: none; }
+      .lineageChatroomContainer.chatroomActive > :not(.lineageChatroomHost) { visibility: hidden; }
+      .portalChatroomView { display: flex; flex-direction: column; min-height: 0; }
+      /* Each Resident a message called shows its progress below it until it replies. */
+      .portalChatroomView .chatroomCallProgress { display: grid; gap: 2px; min-width: 0; }
+      .portalChatroomView .chatroomMessageFooter { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-width: 0; max-width: 100%; }
+      .portalChatroomView .messageItem.human:not(.messageIncoming) > .chatroomMessageFooter { align-items: flex-end; }
+      .portalChatroomView .messageItem.agent > .chatroomMessageFooter { margin-top: 4px; }
+      .portalChatroomView .chatroomReactions { display: flex; flex-wrap: wrap; gap: 4px; max-width: 100%; }
+      .portalChatroomView .messageItem.human:not(.messageIncoming) .chatroomReactions { justify-content: flex-end; }
+      .chatroomReaction { border: 1px solid var(--border); border-radius: 12px; background: var(--panel); color: var(--text); padding: 1px 8px; font: inherit; font-size: 12px; cursor: pointer; }
+      .chatroomReaction.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--panel)); }
+      .chatroomReactionChoices { display: flex; gap: 2px; }
+      .chatroomReactionChoices button { flex: 1; padding: 5px !important; text-align: center !important; }
+      .portalChatroomView .chatroomRetracted .messageContent { color: var(--muted); font-style: italic; }
+      .chatroomPicker { width: min(520px, 94vw); }
+      .chatroomPickerList { display: grid; gap: 4px; max-height: min(52vh, 420px); overflow: auto; margin: 8px 0; }
+      .chatroomPickerItem { display: flex; align-items: center; gap: 8px; width: 100%; min-width: 0; padding: 7px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel); color: var(--text); text-align: left; font: inherit; cursor: pointer; }
+      .chatroomPickerItem.selected { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 9%, var(--panel)); }
+      .chatroomPickerItem .agentMain { min-width: 0; flex: 1 1 auto; display: grid; }
+      .chatroomPickerItem .agentTitle, .chatroomPickerItem .agentMeta { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .chatroomPickerItem .agentMeta { color: var(--muted); font-size: 11px; }
+      .chatroomPickerHint { color: var(--muted); font-size: 12px; min-height: 1.3em; }
+      .residentSection {
+        min-width: 0;
+        display: grid;
+        gap: 5px;
+        margin-bottom: 8px;
+      }
+      .residentSection.collapsed {
+        gap: 0;
+        margin-bottom: 0;
+      }
+      .residentSection + .residentSection {
+        padding-top: 3px;
+        border-top: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+      }
+      .residentSection.collapsed + .residentSection {
+        padding-top: 0;
+        border-top: 0;
+      }
+      .residentGroupHead {
+        width: auto;
+        min-width: 0;
+        height: 22px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        margin: 0 -8px;
+        padding: 0 8px;
+        border-radius: 0;
+        background: var(--accent);
+        color: #fff;
+      }
+      .residentToggle,
+      .residentAddBtn {
+        width: 19px;
+        height: 19px;
+        flex: 0 0 auto;
+        border: none;
+        border-radius: 6px;
+        background: transparent;
+        color: var(--muted);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+      }
+      .residentToggle:hover,
+      .residentAddBtn:hover {
+        background: var(--panel-2);
+        color: var(--accent);
+      }
+      .residentGroupHead .residentToggle,
+      .residentGroupHead .residentAddBtn {
+        color: #fff;
+        opacity: 0.86;
+      }
+      .residentGroupHead .residentToggle:hover,
+      .residentGroupHead .residentAddBtn:hover {
+        background: rgba(255, 255, 255, 0.13);
+        color: #fff;
+        opacity: 1;
+      }
+      .residentToggle svg,
+      .residentAddBtn svg {
+        width: 14px;
+        height: 14px;
+        stroke: currentColor;
+      }
+      .residentChevron { transition: color 120ms ease; }
+      .residentGroupName {
+        min-width: 0;
+        flex: 1 1 auto;
+        border: none;
+        background: transparent;
+        padding: 0;
+        color: #fff;
+        font-family: inherit;
+        font-size: 10.5px;
+        font-weight: 850;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        text-align: left;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .residentGroupName:hover { color: #fff; }
+      .residentGroupBody {
+        display: grid;
+        gap: 8px;
+      }
+      .residentSubgroups {
+        display: grid;
+        gap: 7px;
+      }
+      .residentSubgroup {
+        min-width: 0;
+        display: grid;
+        gap: 5px;
+      }
+      .residentSubgroupHead {
+        width: 100%;
+        min-width: 0;
+        height: 21px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 0 4px 0 12px;
+        border-top: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border));
+        background: color-mix(in srgb, var(--accent) 7%, var(--panel-2));
+        color: var(--muted);
+      }
+      .residentSubgroupToggle {
+        width: 19px;
+        height: 19px;
+        flex: 0 0 auto;
+        border: none;
+        border-radius: 5px;
+        background: transparent;
+        color: var(--muted);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+      }
+      .residentSubgroupToggle:hover {
+        background: var(--panel-2);
+        color: var(--accent);
+      }
+      .residentSubgroupToggle svg {
+        width: 12px;
+        height: 12px;
+        stroke: currentColor;
+      }
+      .residentSubgroupName {
+        min-width: 0;
+        flex: 1 1 auto;
+        border: none;
+        background: transparent;
+        color: var(--muted);
+        padding: 0;
+        font-family: inherit;
+        font-size: 10.5px;
+        font-weight: 800;
+        text-align: left;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .residentSubgroupName:hover { color: var(--accent); }
+      .residentSubgroupCount {
+        flex: 0 0 auto;
+        min-width: 18px;
+        height: 18px;
+        border: none;
+        border-radius: 5px;
+        background: transparent;
+        color: var(--muted);
+        font-family: var(--mono);
+        font-size: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 4px;
+      }
+      button.residentSubgroupCount {
+        cursor: pointer;
+      }
+      .residentSubgroupBody {
+        display: grid;
+        gap: 7px;
+        padding-left: 12px;
+      }
+      .agentItem {
+        width: 100%;
+        text-align: left;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--panel);
+        color: var(--text);
+        position: relative;
+        overflow: visible;
+      }
+      .agentItem.menuOpen { z-index: 12; }
+      .agentSelect {
+        width: 100%;
+        border: none;
+        background: transparent;
+        color: inherit;
+        padding: 10px 36px 10px 10px;
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        gap: 9px;
+        align-items: center;
+        text-align: left;
+        border-radius: 8px;
+      }
+      .agentSelect.noStatusDot { grid-template-columns: minmax(0, 1fr); }
+      .agentItem.active { border-color: var(--accent); box-shadow: inset 4px 0 0 var(--accent-2); background: color-mix(in srgb, var(--accent) 8%, var(--panel)); }
+      @keyframes portalRunningPulse {
+        0%, 100% { opacity: .34; transform: scale(.985); }
+        50% { opacity: 1; transform: scale(1); }
+      }
+      .agentItem.working,
+      .residentMemberItem.working {
+        border-color: color-mix(in srgb, var(--accent) 52%, var(--border));
+        background: color-mix(in srgb, var(--accent) 8%, var(--panel));
+      }
+      .agentItem.working::after,
+      .residentMemberItem.working::after {
+        content: "";
+        position: absolute;
+        inset: -1px;
+        border: 1px solid color-mix(in srgb, var(--accent) 52%, transparent);
+        border-radius: inherit;
+        box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 25%, transparent);
+        pointer-events: none;
+        animation: portalRunningPulse 2.4s ease-in-out infinite;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        :root:not([data-portal-motion="full"]) .agentItem.working::after,
+        :root:not([data-portal-motion="full"]) .residentMemberItem.working::after {
+          animation: none;
+          opacity: .55;
+        }
+      }
+      :root[data-portal-motion="reduced"] .agentItem.working::after,
+      :root[data-portal-motion="reduced"] .residentMemberItem.working::after { animation: none; opacity: .55; }
+      .agentItem.unread:not(.active):not(.working),
+      .residentMemberItem.unread:not(.active):not(.working) {
+        border-color: color-mix(in srgb, var(--accent-2) 54%, var(--border));
+        background: color-mix(in srgb, var(--accent-2) 7%, var(--panel));
+      }
+      .sessionUnreadDot {
+        position: absolute;
+        right: 31px;
+        top: 8px;
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        background: var(--accent-2);
+        box-shadow: 0 0 0 2px var(--panel);
+        pointer-events: none;
+      }
+      .residentMemberItem .sessionUnreadDot {
+        right: 29px;
+        top: 7px;
+        width: 6px;
+        height: 6px;
+      }
+      .agentMain { min-width: 0; overflow: hidden; }
+      .agentTitle { display: block; min-width: 0; font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .agentTitle.withIcon {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .agentTitleText {
+        display: block;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .agentMeta { display: block; min-width: 0; margin-top: 3px; color: var(--muted); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .residentMemberItem {
+        width: calc(100% - 8px);
+        min-width: 0;
+        position: relative;
+        border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
+        border-radius: 7px;
+        background: color-mix(in srgb, var(--panel-2) 54%, var(--panel));
+        color: var(--text);
+        overflow: visible;
+      }
+      .residentMemberItem:hover {
+        border-color: color-mix(in srgb, var(--accent) 46%, var(--border));
+        background: color-mix(in srgb, var(--accent) 7%, var(--panel));
+      }
+      .residentMemberItem.active {
+        border-color: var(--accent);
+        box-shadow: inset 3px 0 0 var(--accent-2);
+        background: color-mix(in srgb, var(--accent) 9%, var(--panel));
+      }
+      .residentMemberSelect {
+        width: 100%;
+        border: none;
+        background: transparent;
+        color: inherit;
+        padding: 7px 32px 7px 9px;
+        text-align: left;
+      }
+      .agentMenuBtn {
+        position: absolute;
+        right: 5px;
+        bottom: 5px;
+        width: 25px;
+        height: 23px;
+        border: none;
+        border-radius: 6px;
+        background: transparent;
+        color: var(--muted);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+      }
+      .agentMenuBtn:hover,
+      .agentMenuBtn.active { background: var(--panel-2); color: var(--accent); }
+      .agentMenuBtn svg { width: 15px; height: 15px; stroke: currentColor; }
+      .agentFavoriteBtn {
+        position: absolute;
+        right: 5px;
+        bottom: 30px;
+        width: 25px;
+        height: 23px;
+        border: none;
+        border-radius: 6px;
+        background: transparent;
+        color: var(--muted);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        font-size: 14px;
+        line-height: 1;
+      }
+      .agentFavoriteBtn:hover {
+        background: var(--panel-2);
+        color: var(--accent-2);
+      }
+      .agentFavoriteBtn.active {
+        background: transparent;
+        color: #f5c518;
+      }
+      .agentFavoriteBtn.active:hover {
+        background: transparent;
+        color: #f5c518;
+      }
+      .agentCardMenu {
+        position: fixed;
+        left: 0;
+        top: 0;
+        min-width: 142px;
+        display: grid;
+        gap: 2px;
+        padding: 5px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--panel);
+        box-shadow: var(--shadow);
+      }
+      .agentCardMenu[hidden] { display: none !important; }
+      .agentCardAction {
+        border: none;
+        border-radius: 6px;
+        background: transparent;
+        color: var(--text);
+        text-align: left;
+        padding: 6px 8px;
+        font-size: 12px;
+        white-space: nowrap;
+      }
+      .agentCardAction:hover { background: var(--panel-2); color: var(--accent); }
+      .agentCardAction.danger { color: var(--danger); }
+      .agentCardAction.danger:hover { color: var(--danger); background: color-mix(in srgb, var(--danger) 9%, var(--panel-2)); }
+      .markdownBody:not(:where(.portalChatWorkspaceRoot *)) p, .markdownBody:not(:where(.portalChatWorkspaceRoot *)) ul, .markdownBody:not(:where(.portalChatWorkspaceRoot *)) ol, .markdownBody:not(:where(.portalChatWorkspaceRoot *)) blockquote, .markdownBody:not(:where(.portalChatWorkspaceRoot *)) pre { margin: 0 0 0.7em; }
+      .markdownBody:not(:where(.portalChatWorkspaceRoot *)) > *:last-child { margin-bottom: 0; }
+      .previewPane {
+        position: relative;
+      }
+      .watchboard {
+        display: none;
+        flex: 0 0 var(--watchboard-dashboard-w, 360px);
+        min-width: 250px;
+        max-width: min(60%, 1280px);
+        border-left: 1px solid var(--border);
+        background: color-mix(in srgb, var(--panel-2) 64%, var(--panel));
+        overflow: auto;
+      }
+      .watchboardSplitter {
+        display: none;
+        flex: 0 0 7px;
+        cursor: col-resize;
+        touch-action: none;
+        position: relative;
+      }
+      .watchboardSplitter.open {
+        display: block;
+      }
+      .watchboardSplitter::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 8px;
+        bottom: 8px;
+        width: 2px;
+        transform: translateX(-50%);
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--border) 78%, transparent);
+      }
+      .watchboardSplitter:hover::after,
+      .watchboardSplitter.active::after {
+        width: 3px;
+        background: var(--accent);
+      }
+      .watchboard.open {
+        display: block;
+      }
+      .watchboard.collapsed {
+        flex-basis: 38px;
+        min-width: 38px;
+        max-width: 38px;
+        overflow: hidden;
+      }
+      .watchboard.collapsed .watchboardBody {
+        display: none;
+      }
+      .watchboardHead {
+        position: sticky;
+        top: 0;
+        z-index: 3;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 9px 8px;
+        border-bottom: 1px solid var(--border);
+        background: var(--panel-2);
+      }
+      .watchboardTitle {
+        min-width: 0;
+        flex: 1 1 auto;
+        color: var(--accent-2);
+        font-size: 11px;
+        font-weight: 850;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .watchboardBody {
+        display: grid;
+        gap: 8px;
+        padding: 8px;
+      }
+      .watchboardSection {
+        border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
+        border-radius: 8px;
+        background: var(--panel);
+        overflow: hidden;
+      }
+      .watchboardSectionHead {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 7px 8px;
+        border-bottom: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+        color: var(--muted);
+        font-size: 10.5px;
+        font-weight: 850;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+      .watchboardIconBtn {
+        width: 22px;
+        height: 22px;
+        border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+        border-radius: 6px;
+        background: transparent;
+        color: var(--muted);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+      }
+      .watchboardIconBtn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 8%, transparent);
+      }
+      .watchboardIconBtn.danger:hover {
+        border-color: var(--danger);
+        color: var(--danger);
+        background: color-mix(in srgb, var(--danger) 8%, transparent);
+      }
+      .watchboardIconBtn:disabled {
+        opacity: 0.35;
+        cursor: default;
+      }
+      .watchboardIconBtn:disabled:hover {
+        border-color: color-mix(in srgb, var(--border) 72%, transparent);
+        color: var(--muted);
+        background: transparent;
+      }
+      .watchboardIconBtn svg {
+        width: 13px;
+        height: 13px;
+        stroke: currentColor;
+      }
+      .watchboardSectionBody {
+        display: grid;
+        gap: 7px;
+        padding: 8px;
+        color: var(--text);
+        font-size: 12px;
+        line-height: 1.4;
+      }
+      .watchboardKV {
+        display: grid;
+        grid-template-columns: 86px minmax(0, 1fr);
+        gap: 6px;
+        color: var(--muted);
+        font-size: 11px;
+      }
+      .watchboardKV span:last-child {
+        color: var(--text);
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+      .watchboardCommandBtn {
+        min-height: 24px;
+        padding: 4px 7px;
+        font-size: 11px;
+      }
+      .watchboardRunItem {
+        width: 100%;
+        border: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
+        border-radius: 7px;
+        padding: 6px 7px;
+        background: var(--panel-2);
+        color: var(--muted);
+        font-size: 11px;
+        overflow-wrap: anywhere;
+      }
+      .watchboardRunStatus {
+        color: var(--accent);
+        font-weight: 800;
+      }
+      .watchboardRunStatus.failed {
+        color: var(--danger);
+      }
+      .watchboardHeroText {
+        color: var(--text);
+        font-size: 12px;
+        line-height: 1.45;
+      }
+      .watchboardMiniActions {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .watchboardTextPreview {
+        max-height: 180px;
+        overflow: auto;
+        border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+        border-radius: 7px;
+        background: var(--panel-2);
+        padding: 7px;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        color: var(--muted);
+        font-family: var(--mono);
+        font-size: 10.5px;
+        line-height: 1.45;
+      }
+      .watchboardCompactList {
+        display: grid;
+        gap: 6px;
+      }
+      .watchboardCompactItem {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 8px;
+        align-items: center;
+        border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+        border-radius: 7px;
+        padding: 6px 7px;
+        background: var(--panel-2);
+        color: var(--muted);
+        font-size: 11px;
+      }
+      .watchboardCompactItem strong {
+        display: block;
+        color: var(--text);
+        font-size: 11.5px;
+      }
+      .watchboardCompactItem span {
+        overflow-wrap: anywhere;
+      }
+      .watchboardUserActions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 4px;
+      }
+      .watchboardControlRow {
+        display: grid;
+        grid-template-columns: 72px minmax(0, 1fr);
+        align-items: center;
+        gap: 7px;
+        color: var(--muted);
+        font-size: 11px;
+      }
+      .watchboardControlRow input,
+      .watchboardControlRow select,
+      .watchboardControlRow textarea {
+        min-width: 0;
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        background: var(--panel-2);
+        color: var(--text);
+        padding: 5px 7px;
+        font-size: 11px;
+      }
+      .watchboardFormStack {
+        display: grid;
+        gap: 9px;
+      }
+      .watchboardModalCard {
+        --portal-detail-width: 760px;
+        --portal-detail-max-height: min(760px, calc(100dvh - 56px));
+      }
+      .watchboardModalBody {
+        display: grid;
+        gap: 10px;
+      }
+      .watchboardModalTextarea {
+        width: 100%;
+        min-height: 240px;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        background: var(--panel-2);
+        color: var(--text);
+        padding: 9px;
+        font-family: var(--mono);
+        font-size: 11px;
+        line-height: 1.45;
+        resize: vertical;
+      }
+      .forwardDock {
+        position: absolute;
+        right: 14px;
+        z-index: 12;
+        display: none;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 8px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: color-mix(in srgb, var(--panel) 94%, transparent);
+        box-shadow: var(--shadow);
+      }
+      .forwardDock.open { display: flex; }
+      .previewPane .forwardDock { bottom: 14px; }
+      .forwardCount {
+        color: var(--muted);
+        font-size: 11px;
+      }
+      .consoleError { color: var(--danger); }
+      .previewOpenForm {
+        flex: 1 1 180px;
+        min-width: 0;
+        max-width: 260px;
+      }
+      .previewOpenInput {
+        width: 100%;
+        min-width: 0;
+        height: 26px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: var(--panel-2);
+        color: var(--text);
+        padding: 0 8px;
+        font: 11px/1.2 var(--mono);
+      }
+      .previewOpenInput:focus {
+        outline: none;
+        border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+        box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 14%, transparent);
+      }
+
+      .lineageHatgPanel {
+        position: relative;
+        min-width: 0;
+        min-height: 0;
+        overflow: hidden;
+        background: var(--panel);
+      }
+
+      .lineageHatgEmpty {
+        width: 100%;
+        height: 100%;
+        display: grid;
+        place-content: center;
+        justify-items: center;
+        gap: 7px;
+        color: var(--muted);
+        padding: 24px;
+        text-align: center;
+      }
+
+      .lineageHatgEmpty[hidden] { display: none; }
+      .lineageHatgEmpty > .portalIcon { width: 28px; height: 28px; color: var(--accent); }
+      .lineageHatgEmpty strong { color: var(--text); font-size: 13px; }
+      .lineageHatgEmpty small { max-width: 360px; font-size: 10px; line-height: 1.5; }
+
+      .residentEmpty {
+        border: 1px dashed var(--border);
+        border-radius: 8px;
+        padding: 10px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.5;
+      }
+      .lineageDialogOverlay {
+        --portal-detail-width: 560px;
+        --portal-detail-max-height: min(700px, calc(100vh - 32px));
+      }
+      .residentModalTitle {
+        font-size: 12px;
+        font-weight: 800;
+        color: var(--accent-2);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .residentForm { --portal-detail-form-gap: 8px; padding: 11px 12px 12px; display: grid; gap: 8px; }
+      .residentFormRow { display: grid; gap: 4px; align-content: start; }
+      .residentFormGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: start; }
+      .residentRuntimeGrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; align-items: start; }
+      .residentAdvancedDetails {
+        border: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
+        border-radius: 7px;
+        background: color-mix(in srgb, var(--panel-2) 48%, transparent);
+        overflow: hidden;
+      }
+      .residentAdvancedSummary {
+        min-height: 32px;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        padding: 7px 9px;
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 11px;
+        font-weight: 800;
+        user-select: none;
+      }
+      .residentAdvancedSummary::-webkit-details-marker { display: none; }
+      .residentDisclosureIcon { width: 17px; height: 17px; padding: 2px; border: none; border-radius: 5px; background: transparent; color: var(--muted); fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; flex: 0 0 auto; transition: transform 120ms ease; }
+      details[open] > summary .residentDisclosureIcon { transform: rotate(180deg); }
+      .residentAdvancedBody {
+        display: grid;
+        gap: 8px;
+        padding: 0 9px 9px;
+      }
+      .residentLabel { color: var(--muted); font-size: 11px; font-weight: 700; }
+      .residentFieldHead {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
+      }
+      .residentInput, .residentSelect, .residentTextarea {
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: var(--panel-2);
+        color: var(--text);
+        padding: 6px 8px;
+        outline: none;
+        font-size: 12px;
+        line-height: 1.25;
+      }
+      .residentInput, .residentSelect { min-height: 30px; }
+      .residentTextarea { min-height: 64px; resize: vertical; }
+      .residentInput:focus, .residentSelect:focus, .residentTextarea:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 20%, transparent);
+      }
+      .residentHint { color: var(--muted); font-size: 10.5px; line-height: 1.35; overflow-wrap: anywhere; }
+      .residentForkCreateModal {
+        width: min(720px, 100%);
+      }
+      .residentAttachModal {
+        width: min(720px, 100%);
+      }
+      .residentAttachBody {
+        padding: 11px 12px 12px;
+        display: grid;
+        gap: 8px;
+      }
+      .residentAttachOption {
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        background: var(--panel-2);
+        overflow: hidden;
+      }
+      .residentAttachOption summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        cursor: pointer;
+        padding: 8px 10px;
+        color: var(--text);
+        font-size: 12px;
+        font-weight: 800;
+      }
+      .residentAttachOption summary::-webkit-details-marker { display: none; }
+      .residentAttachOptionButton {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 8px 10px;
+        color: var(--text);
+        font: inherit;
+        font-size: 12px;
+        font-weight: 800;
+        text-align: left;
+        cursor: pointer;
+      }
+      .residentAttachOptionButton:hover {
+        background: color-mix(in srgb, var(--accent) 7%, var(--panel-2));
+      }
+      .residentAttachPanel {
+        display: grid;
+        gap: 8px;
+        padding: 0 10px 10px;
+      }
+      .residentAttachInlinePanel {
+        display: grid;
+        gap: 0;
+        margin-top: 2px;
+        padding-top: 8px;
+        border-top: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
+      }
+      .residentAttachInlinePanel:empty {
+        display: none;
+      }
+      .residentAttachInlinePanel .residentForm {
+        padding: 0;
+      }
+      .residentAttachInlinePanel .forkCreateBody {
+        padding: 0;
+      }
+      .forkCreateBody {
+        padding: 11px 12px 12px;
+        display: grid;
+        gap: 10px;
+      }
+      .forkCreateModeGrid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 7px;
+      }
+      .forkCreateModeBtn {
+        min-width: 0;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        background: var(--panel-2);
+        color: var(--text);
+        padding: 8px;
+        text-align: left;
+        font: inherit;
+      }
+      .forkCreateModeBtn:hover {
+        border-color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 8%, var(--panel));
+      }
+      .forkCreateModeTitle {
+        display: block;
+        font-size: 12px;
+        font-weight: 800;
+        color: var(--text);
+      }
+      .forkCreateModeMeta {
+        display: block;
+        margin-top: 3px;
+        color: var(--muted);
+        font-size: 10.5px;
+        line-height: 1.35;
+      }
+      @media (max-width: 1180px) {
+        .watchboard {
+          flex-basis: min(38%, 320px);
+          min-width: 230px;
+        }
+      }
+      @media (max-width: 720px) {
+        .residentFormGrid { grid-template-columns: 1fr; }
+        .residentRuntimeGrid { grid-template-columns: 1fr 1fr; }
+        .forkCreateModeGrid { grid-template-columns: 1fr; }
+      }
+      @media (max-width: 780px) {
+        .watchboardSplitter.open {
+          display: none;
+        }
+        .watchboard.open {
+          flex: 0 0 auto;
+          max-width: none;
+          min-width: 0;
+          max-height: 320px;
+          border-left: 0;
+          border-top: 1px solid var(--border);
+        }
+        .watchboard.collapsed {
+          flex-basis: 38px;
+          max-width: none;
+          width: 100%;
+        }
+      }
+
+/* Principal hierarchy uses the existing Agent cards and Portal icon controls. */
+.principalProject .residentSubgroupBody { margin-left: 14px; padding-left: 8px; border-left: 1px solid var(--border); }
+.residentSubgroups:has(> .principalProject) { gap: var(--portal-space-2); }
+.principalProjectCard { margin: 0; }
+.agentItem.principalProjectCard, .agentItem.principalLineageCard {
+  --principal-card-accent: var(--accent);
+  border-color: color-mix(in srgb, var(--principal-card-accent) 25%, var(--border));
+  background: color-mix(in srgb, var(--principal-card-accent) 3%, var(--panel));
+  box-shadow: inset 2px 0 color-mix(in srgb, var(--principal-card-accent) 55%, transparent);
+}
+.agentItem.principalLineageCard { --principal-card-accent: var(--accent-2); }
+.agentItem:is(.principalProjectCard, .principalLineageCard):not(.locked, .principalUnavailableCard):hover {
+  border-color: color-mix(in srgb, var(--principal-card-accent) 50%, var(--border));
+  background: color-mix(in srgb, var(--principal-card-accent) 6%, var(--panel));
+}
+.agentItem.principalProjectCard.active, .agentItem.principalLineageCard.active {
+  border-color: var(--principal-card-accent);
+  background: color-mix(in srgb, var(--principal-card-accent) 9%, var(--panel));
+  box-shadow: inset 3px 0 var(--principal-card-accent);
+}
+.agentItem:is(.principalProjectCard, .principalLineageCard) .agentMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--portal-space-1);
+  padding-right: 26px;
+}
+.principalKind {
+  flex: 0 0 auto;
+  padding: 1px var(--portal-space-1);
+  border-radius: var(--portal-space-1);
+  background: color-mix(in srgb, var(--principal-card-accent) 12%, transparent);
+  color: color-mix(in srgb, var(--principal-card-accent) 35%, var(--text));
+  font-size: 10px;
+  line-height: 1.4;
+  font-weight: 600;
+}
+.principalMetaDetail { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.principalUnavailableCard .agentSelect { display: block; cursor: default; }
+.principalUnavailableCard .agentMeta { white-space: normal; overflow-wrap: anywhere; }
+.principalUnavailableCard .principalAccessLock { position: absolute; right: 10px; bottom: 9px; width: 14px; height: 14px; color: var(--muted); }
+.principalProjectChevron { width: 14px; flex: 0 0 14px; color: var(--muted); }
+.principalOpenBtn, .principalCreateBtn { border: 0; background: transparent; color: var(--muted); cursor: pointer; width: 26px; height: 26px; padding: 4px; align-self: flex-end; flex: 0 0 26px; }
+.principalOpenBtn:hover, .principalCreateBtn:hover { color: var(--text); }
+.principalOpenBtn:disabled, .principalCreateBtn:disabled { opacity: .35; cursor: default; }
+.principalOpenBtn:focus-visible, .principalCreateBtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.agentItem .principalOpenBtn { position: absolute; right: 32px; bottom: 5px; }
+.agentItem .principalCreateBtn { position: absolute; right: 32px; top: 5px; }
+.principalProjectCard .agentTitle { padding-right: 26px; }
+.principalProjectCard .agentSelect { grid-template-columns: 14px minmax(0, 1fr); }
+.principalProjectCard .agentMenuBtn { display: block; }
+
+.principalProjectCard :is(.principalCreateBtn, .agentFavoriteBtn) {
+  top: 5px;
+  bottom: auto;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+}
+.principalProjectCard .agentFavoriteBtn { right: 5px; }
+.principalProjectCard .principalAccessLock { position: absolute; right: 38px; top: 10px; width: 14px; height: 14px; color: var(--muted); }
+.agentItem.locked .agentTitle { color: var(--muted); }
+.whichResidentRequestDetails { color: var(--muted); font-size: inherit; }

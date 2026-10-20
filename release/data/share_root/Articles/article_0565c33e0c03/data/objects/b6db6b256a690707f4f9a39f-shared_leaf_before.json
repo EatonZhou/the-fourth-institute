@@ -1,0 +1,19 @@
+{
+  "entry": "knowledge_base/research/experience_learning/physical_experience_state_20261019.json",
+  "handoff": "src/research/results/physical_experience_state_20261019/handoff.json",
+  "handoff_sha": "b1119cd365f82b0614fc7169d2edd4b13314864583232be5ee14c990819a05ef",
+  "latest": {
+    "independent_main_histories": 3,
+    "native": 5965,
+    "raw_bytes": 83097388,
+    "worker_seconds": 8.514272
+  },
+  "method_addendum": "src/research/results/physical_experience_state_20261019/method_reconciliation.json",
+  "note": "Standard local delta/last acquire revisable mobility response; fixed physics+readout same trajectory (4.27e-14). Reflection uses (-x)%32 on all fields; force/K saved, pre-budget rates/scale absent. c=0 is not neutral erasure; residual full-body configuration is not isolated density memory. No new native; prior choice event stands.",
+  "owner": "resident_33af539c4a17",
+  "previous": "src/research/results/physical_experience_state_20261019/shared_leaf_before.json",
+  "scientific_choice_event": "event_97004c2672517fe4",
+  "sha": "f87dfcc76e418e4d7b1586084d425392a76b5b12afab6847f18d3e1facf14203",
+  "status": "physical_compliance_extra_value_closed_scientific_choice_queued",
+  "steps": 188475
+}

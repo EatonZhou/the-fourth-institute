@@ -1,0 +1,34 @@
+{
+  "schema": "pi-experience-adaptation-outer-search-task.v1",
+  "created_at": "2026-10-18T00:46:23.258008+00:00",
+  "status": "implementation_assigned_cap0",
+  "shared_key": "research.experience_adaptation_outer_search_20261018",
+  "scientific_owner": "resident_afa3d4d6cf11",
+  "algorithm_owner": "resident_d3ccfa2d95b7",
+  "algorithm_family": "resident_5fe1227e36c0",
+  "native_host_owner": "resident_ce2a5ab005bc",
+  "native_host_family": "resident_4e35778304b2",
+  "question": "哪些生成规则与初态能在真实环境经历后改善完整生命窗的实际后果，并保留不同身体动态？先实现能诚实选择这种能力的外层搜索。",
+  "source_handoffs": [
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reciprocal_conditioning_20261018/handoff.json",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_conditioning_transfer_20261018/handoff.json",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/handoff.json"
+  ],
+  "deliverables": [
+    "可导入的固定个体规则/初态基因表示、可复现变异器、候选manifest和父子谱系；至少两类实质不同的既有形态/动态母体，不把换色/旋转作为新体型。",
+    "实际选择/档案更新实现：分别读取完整取得+未来体时、末M/E、无再伤存留、实际M/E外伤和费用，保向量/多样候选，不用单一I/S得分选优。以已封存704/448记录执行一次离线档案更新，完整保留取得期死亡失败；这只是历史数据选择，不是新身体实验或适应收益。",
+    "可消费的下一批候选参数与有限执行合同草案，明确新形成/取得/共同未来的实际步数、亲本对照、低成本强基线和单槽执行接口；与ce2直接协调源码接口，不复制物理runner。"
+  ],
+  "selection_boundaries": [
+    "全程C_d−N_d而不是仅I_d必须可见；无再伤基线被损坏不可转换为适应优势。",
+    "取得期死亡/测试起点为空保留为真实失败；I/S仍可计算但标无存活载体支持，不能通过筛除失败夸大收益。",
+    "E、体时、身体结构多样性分开，不把单纯尺寸膨大/末M高或归一化掉取得损失作为总体收益。",
+    "个体运行期间规则固定，亲子间规则/初态变异是外层遗传搜索；身体经历效应和策略/信息学习分开。"
+  ],
+  "autonomy": "d3自行选择具体变异与多样档案方法，实际实现和离线执行，不只交提案；ce2负责既有真实host与源码范围。交付后PI据具体每条路径预算安排新原生小批，不另建逐级审计或重复旧套件。",
+  "native_body_cap": 0,
+  "independent_energy_cap": 0,
+  "preview_cap": 0,
+  "old_budgets_unchanged": true,
+  "no_restart_or_replay": true
+}

@@ -1,0 +1,14 @@
+{
+  "task": "association_polarity_expression_20261019",
+  "status": "complete",
+  "job": "449ad358-e82a-4da7-a1e6-5ab5b14bb1a4",
+  "attempted": 1536,
+  "returned": 1536,
+  "unknown": 0,
+  "known_readonly": 512,
+  "wall": 19.10525050002616,
+  "error": null,
+  "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/association_polarity_expression_20261019/449ad358-e82a-4da7-a1e6-5ab5b14bb1a4",
+  "raw_bytes": 69484936,
+  "paths": 12
+}

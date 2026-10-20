@@ -1,0 +1,82 @@
+{
+  "reversal_update_minus_freeze": {
+    "0.4": {
+      "M_end": 4.059622123187061,
+      "E_end": 21.845439664722942,
+      "uptake": 34.82540328538675,
+      "body_time": 597.1313552967968,
+      "body_time_full": 597.1313552967949,
+      "uptake_full": 34.825403285386734,
+      "movement_paid": 0.5300556462491647,
+      "memory_paid": 0.03361418738841563,
+      "basal_paid": 1.313688981652953,
+      "death": 0.11942627105935928,
+      "terminal_eligibility_mass": 0.0868105381540305
+    },
+    "1.0": {
+      "M_end": 6.01700683839061,
+      "E_end": 31.107240521996754,
+      "uptake": 52.32581451197229,
+      "body_time": 1310.4545152304624,
+      "body_time_full": 1310.454515230461,
+      "uptake_full": 52.32581451197228,
+      "movement_paid": 1.1580813932399339,
+      "memory_paid": 0.07375143620979376,
+      "basal_paid": 2.8829999335070178,
+      "death": 0.2620909030460925,
+      "terminal_eligibility_mass": 0.19754716385898421
+    }
+  },
+  "all_outcomes": 144,
+  "independent_sequence_diagnostics": [
+    {
+      "seed": 202610182101,
+      "world": "same",
+      "future_cycles": 16,
+      "target_same_as_old_relation": 16,
+      "cue_target_product_sum": 16,
+      "note": "finite held-out sequences, not an estimate of population independence"
+    },
+    {
+      "seed": 202610182101,
+      "world": "reversal",
+      "future_cycles": 16,
+      "target_same_as_old_relation": 0,
+      "cue_target_product_sum": -16,
+      "note": "finite held-out sequences, not an estimate of population independence"
+    },
+    {
+      "seed": 202610182101,
+      "world": "independent",
+      "future_cycles": 16,
+      "target_same_as_old_relation": 9,
+      "cue_target_product_sum": 2,
+      "note": "finite held-out sequences, not an estimate of population independence"
+    },
+    {
+      "seed": 202610182102,
+      "world": "same",
+      "future_cycles": 16,
+      "target_same_as_old_relation": 16,
+      "cue_target_product_sum": -16,
+      "note": "finite held-out sequences, not an estimate of population independence"
+    },
+    {
+      "seed": 202610182102,
+      "world": "reversal",
+      "future_cycles": 16,
+      "target_same_as_old_relation": 0,
+      "cue_target_product_sum": 16,
+      "note": "finite held-out sequences, not an estimate of population independence"
+    },
+    {
+      "seed": 202610182102,
+      "world": "independent",
+      "future_cycles": 16,
+      "target_same_as_old_relation": 13,
+      "cue_target_product_sum": -10,
+      "note": "finite held-out sequences, not an estimate of population independence"
+    }
+  ],
+  "adaptive_claim": "not a Lenia adaptation or new-method superiority claim"
+}

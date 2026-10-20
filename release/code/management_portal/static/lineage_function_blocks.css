@@ -1,0 +1,519 @@
+/* Function Block cards, expanded boundaries and Family presentation. */
+@scope (:is(.portalHatgPanelComponent, .portalHatgOverlayComponent)) {
+
+.functionBlockWrapAction { position: relative; }
+
+.functionBlockWrapAction em {
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: #fff;
+  background: #8067d8;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+/* A collapsed block is its pigeon; the badge counts failures this viewer has not acknowledged.
+   The second selector outranks the card sizes of each semantic zoom level. */
+.hatgNode[data-node-kind="function_block"],
+.hatgCanvas[data-semantic-zoom] .hatgNode[data-node-kind="function_block"]:not(.seedNode) {
+  width: 64px;
+  height: 64px;
+  min-height: 64px;
+  padding: 0;
+  border-color: transparent;
+  border-radius: 16px;
+  background: transparent;
+  box-shadow: none;
+  /* Nor the ring an expanded Family puts on its members' cards. */
+  outline: none;
+}
+
+.hatgNode[data-node-kind="function_block"]:hover {
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.hatgNode[data-node-kind="function_block"].selected {
+  border-color: transparent;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.hatgNode[data-node-kind="function_block"].selected::after {
+  border-radius: 16px;
+}
+
+.functionBlockInstanceNode {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.functionBlockInstanceNode > .functionBlockPigeon {
+  width: 100%;
+  height: 100%;
+}
+
+/* Lines from a selected Family pigeon to its facade and members; they carry no label. */
+.hatgEdge.familyLink {
+  fill: none;
+  stroke: color-mix(in srgb, var(--accent) 55%, var(--muted));
+  stroke-width: 1.2;
+  stroke-dasharray: 3 4;
+  pointer-events: none;
+}
+
+.edgeLabelBtn.familyLink { display: none; }
+
+.functionBlockAlert {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 4px;
+  border: 0;
+  color: white;
+  font: 700 11px/20px sans-serif;
+  cursor: pointer;
+  border-radius: 50%;
+  background: var(--danger, #d64545);
+  box-shadow: 0 0 0 2px var(--panel);
+}
+
+.functionBlockObjectEditor { margin-top: 16px; }
+.functionBlockIssue { padding: 12px; border: 1px solid var(--border); border-radius: 8px; }
+.functionBlockIssue > small { display: block; color: var(--muted); overflow-wrap: anywhere; }
+.functionBlockIssue header { display: flex; justify-content: space-between; gap: 12px; }
+.functionBlockIssue p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.functionBlockIssue > div:last-child button { margin-right: 8px; }
+
+/* A folded module's objects: one row per component, grouped by kind. An Effect row
+   shows who hears about its failures; clicking them opens the recipients editor. */
+.functionBlockObjectsIntro,
+.functionBlockObjectsEmpty { margin: 0 0 10px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.functionBlockObjectToolbar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+}
+/* Outranks the inspector form's stacked labels: the box sits on its text's line. */
+.functionBlockObjectToolbar > .functionBlockSelectAll { display: inline-flex; align-items: center; gap: 8px; color: var(--text); cursor: pointer; }
+.functionBlockObjectToolbar > .functionBlockSelectAll > span { color: var(--text); font-size: 12px; font-weight: 700; letter-spacing: 0; text-transform: none; white-space: nowrap; }
+.functionBlockObjectToolbar > .functionBlockSelectAll > input,
+.functionBlockObjectRow > input { flex: none; width: 16px; height: 16px; min-height: 0; margin: 0; padding: 0; accent-color: var(--accent); }
+.functionBlockBulkButtons { display: flex; flex-wrap: wrap; gap: 6px; }
+.functionBlockObjectGroup { --object-columns: 18px minmax(0, 1fr) 84px minmax(150px, 230px) auto; margin-top: 14px; }
+.functionBlockObjectGroup > h4 {
+  display: grid;
+  grid-template-columns: var(--object-columns);
+  align-items: baseline;
+  gap: 10px;
+  margin: 0 0 6px;
+  padding: 0 10px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .04em;
+}
+.functionBlockObjectGroup > h4 > span:first-child { grid-column: 1 / 4; }
+.functionBlockObjectGroup > h4 small { margin-left: 4px; font-weight: 600; }
+.functionBlockObjectColumn { grid-column: 4; padding-left: 7px; }
+.functionBlockObjectGroup > ul { margin: 0; padding: 0; overflow: hidden; list-style: none; border: 1px solid var(--border); border-radius: 10px; }
+.functionBlockObjectRow {
+  display: grid;
+  grid-template-columns: var(--object-columns);
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.functionBlockObjectRow:last-child { border-bottom: 0; }
+.functionBlockObjectRow[data-selected="true"] { background: color-mix(in srgb, var(--accent) 6%, var(--panel)); }
+.functionBlockObjectMain { display: grid; gap: 2px; min-width: 0; }
+.functionBlockObjectMain strong { overflow: hidden; color: var(--text); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.functionBlockObjectMain small { overflow: hidden; color: var(--muted); font: 10px/1.4 var(--mono); text-overflow: ellipsis; white-space: nowrap; }
+.functionBlockObjectAction { display: flex; min-width: 0; }
+@media (max-width: 760px) {
+  .functionBlockObjectGroup { --object-columns: 18px minmax(0, 1fr) auto; }
+  .functionBlockObjectColumn { display: none; }
+  .functionBlockObjectState { grid-column: 3; grid-row: 1; }
+  .functionBlockObjectAction { grid-column: 2; grid-row: 2; }
+  .functionBlockObjectRow > [data-block-object-edit] { grid-column: 3; grid-row: 2; }
+}
+.functionBlockRecipients {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+  min-height: 32px;
+  padding: 3px 7px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.functionBlockRecipients:hover:not(:disabled),
+.functionBlockRecipients:focus-visible { border-color: var(--border); background: color-mix(in srgb, var(--accent) 6%, var(--panel)); }
+.functionBlockRecipients .effectRecipientChips { flex: 1; }
+.functionBlockRecipientsEdit { flex: none; color: var(--muted); font-size: 11px; font-weight: 700; }
+.functionBlockRecipients:hover .functionBlockRecipientsEdit,
+.functionBlockRecipients:focus-visible .functionBlockRecipientsEdit { color: var(--accent); }
+.functionBlockRecipientsSummary ul { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.functionBlockRecipientsSummary li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; }
+.functionBlockRecipientsSummary li > small { flex: none; color: var(--muted); font-size: 11px; }
+.functionBlockRecipientsSummary > button { justify-self: start; }
+.functionBlockIssueRecipients { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; }
+.functionBlockIssueRecipients > span { flex: none; color: var(--muted); font-size: 11px; font-weight: 700; }
+
+/* Effect failure recipients (lineage_element_fields.js): the inspector summary,
+   the chips every view shares and the editor dialog. */
+.effectRecipients {
+  display: grid;
+  gap: 7px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--panel-2) 40%, var(--panel));
+}
+.effectRecipients > header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.effectRecipients > header > span { color: var(--text); font-size: 11px; font-weight: 750; }
+.effectRecipients > small { color: var(--muted); font-size: 10px; line-height: 1.5; }
+.effectRecipientChips { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; min-width: 0; }
+.effectRecipientChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  min-height: 24px;
+  padding: 2px 8px 2px 2px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.effectRecipientChip small { color: var(--muted); font-size: 10px; font-weight: 500; }
+.effectRecipientChip em { color: var(--muted); font-size: 10px; font-style: normal; font-weight: 700; }
+.effectRecipientChip[data-recipient-partial="true"] { border-style: dashed; }
+.effectRecipientChip[data-recipient-missing="true"] {
+  border-color: color-mix(in srgb, var(--warning, #b45309) 45%, var(--border));
+  background: color-mix(in srgb, var(--warning, #b45309) 8%, var(--panel));
+}
+.effectRecipientChip[data-recipient-missing="true"] em { color: var(--warning, #b45309); }
+.effectRecipientAvatar {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 50%;
+  background: hsl(var(--recipient-hue, 200) 55% 88%);
+  color: hsl(var(--recipient-hue, 200) 45% 28%);
+  font-size: 10px;
+  font-weight: 800;
+}
+.effectRecipientAvatar img { width: 100%; height: 100%; object-fit: cover; }
+.effectRecipientName { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.effectRecipientMore { color: var(--muted); font-size: 11px; font-weight: 700; }
+.effectRecipientsOff { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 11px; font-weight: 650; }
+.effectRecipientsOff[data-recipients-state="off"] { color: color-mix(in srgb, var(--warning, #b45309) 80%, var(--muted)); }
+.effectRecipientsOff[data-recipients-state="unset"] { padding: 1px 8px; border: 1px dashed var(--border); border-radius: 999px; }
+.effectRecipientRemove,
+.effectRecipientAddAll { padding: 0 2px; border: 0; background: transparent; color: var(--muted); font: inherit; cursor: pointer; }
+.effectRecipientRemove { font-size: 15px; line-height: 1; }
+.effectRecipientRemove:hover { color: var(--danger, #dc2626); }
+.effectRecipientAddAll { color: var(--accent); font-size: 10px; font-weight: 750; }
+
+:scope.effectRecipientsOverlay { --portal-detail-width: 520px; }
+.effectRecipientsBody { display: grid; gap: 14px; }
+.effectRecipientsIntro { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.effectRecipientsCurrent { display: grid; gap: 8px; }
+.effectRecipientsCurrent > header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.effectRecipientsCurrent > header strong { color: var(--text); font-size: 12px; }
+.effectRecipientsCurrent > header > span { display: flex; gap: 6px; }
+.effectRecipientChips.is-editable {
+  min-height: 42px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--panel-2) 40%, var(--panel));
+}
+.effectRecipientOptions { display: grid; gap: 2px; max-height: 236px; overflow: auto; padding: 4px; border: 1px solid var(--border); border-radius: 10px; }
+.effectRecipientOption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.effectRecipientOption small { color: var(--muted); font-size: 11px; }
+.effectRecipientOption em { color: var(--accent); font-size: 10px; font-style: normal; font-weight: 700; }
+.effectRecipientOption em:first-of-type { margin-left: auto; }
+.effectRecipientOption:hover,
+.effectRecipientOption[aria-selected="true"] { background: color-mix(in srgb, var(--accent) 10%, var(--panel)); }
+.effectRecipientsNoMatch { margin: 0; padding: 8px; color: var(--muted); font-size: 12px; }
+.effectRecipientsPreview { padding: 10px 12px; border-radius: 10px; background: color-mix(in srgb, var(--accent) 7%, var(--panel)); color: var(--text); font-size: 12px; line-height: 1.6; }
+.effectRecipientsPreview p { margin: 0; }
+.effectRecipientsPreview [data-preview-state="unchanged"] { color: var(--muted); }
+.effectRecipientsPreview [data-preview-state="off"] { color: var(--warning, #b45309); }
+.effectRecipientsPreview ul { display: grid; gap: 3px; margin: 6px 0 0; padding: 0; list-style: none; }
+.effectRecipientsPreview li { display: flex; gap: 8px; min-width: 0; }
+.effectRecipientsPreview li strong { flex: none; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.effectRecipientsError { margin: 0; color: var(--danger, #dc2626); font-size: 12px; }
+.effectRecipientsError[hidden] { display: none; }
+
+/* The two inner Resident shortcuts share the pigeon's hover/focus lifetime. */
+.hatgNodeHoverAction[data-action-kind="resident-menu"] {
+  border-color: color-mix(in srgb, var(--accent) 48%, var(--border));
+  color: var(--accent);
+}
+
+.hatgNodeHoverAction.action-open-steward {
+  border-color: color-mix(in srgb, #2a9a6a 48%, var(--border));
+  color: #2a9a6a;
+}
+
+.hatgCanvas[data-semantic-zoom="overview"] .hatgNode[data-node-kind="function_block"]:not(.seedNode) {
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  border-radius: 12px;
+}
+
+.functionBlockMenuPanel > .functionBlockInstanceInspector {
+  padding: 4px 2px 12px;
+}
+.functionBlockMenuIdentity { display:grid; gap:3px; margin:0 0 16px; }
+.functionBlockMenuIdentity strong { font-size:20px; line-height:1.3; }
+.functionBlockMenuIdentity code { color:var(--muted); font-size:11px; overflow-wrap:anywhere; }
+.functionBlockMenuPanel .functionBlockInstanceInspector > p { margin:0 0 14px; color:var(--muted); font-size:12px; line-height:1.5; }
+.functionBlockMenuPanel .functionBlockIssue { margin-bottom:12px; font-size:13px; }
+.functionBlockMenuPanel .functionBlockIssue p { margin:10px 0; font-size:13px; line-height:1.5; }
+
+.functionBlockInsideResidents dd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.functionBlockInsideResidents dd > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.functionBlockInsideResidents dd > button {
+  flex: none;
+}
+
+.functionBlockInstanceBindings {
+  display: grid;
+  gap: 7px;
+}
+
+.functionBlockInstanceBindings > span {
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 850;
+  letter-spacing: .13em;
+}
+
+.functionBlockInstanceBindings dl {
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+}
+
+.functionBlockInstanceBindings dl > div {
+  padding: 8px 10px;
+  display: grid;
+  grid-template-columns: minmax(72px, .7fr) minmax(0, 1.3fr);
+  gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.functionBlockInstanceBindings dl > div:last-child { border-bottom: 0; }
+.functionBlockInsideResidents dl > div {
+  grid-template-columns: 72px minmax(0, 1fr);
+}
+.functionBlockInstanceBindings dt {
+  overflow: hidden;
+  color: #8067d8;
+  font: 8px/1.4 var(--mono);
+  text-overflow: ellipsis;
+}
+.functionBlockInstanceBindings dd {
+  margin: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.functionBlockInstanceActions {
+  flex-wrap: wrap;
+}
+
+
+
+}
+
+/* Expanded block boundaries. */
+@scope (:is(.portalHatgPanelComponent, .portalHatgOverlayComponent)) {
+.functionBlockBoundary {
+  position: absolute;
+  box-sizing: border-box;
+  border: 2px dashed color-mix(in srgb, #8067d8 65%, var(--border));
+  border-radius: 16px;
+  pointer-events: none;
+  background: color-mix(in srgb, #8067d8 3%, transparent);
+}
+.functionBlockBoundary > header { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; gap: 12px; }
+.functionBlockBoundary button { pointer-events: auto; border: 0; background: var(--panel); border-radius: 6px; padding: 3px 8px; color: var(--text); }
+.functionBlockBoundaryTitle { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+.functionBlockBoundaryCollapse { flex: none; font-size: 18px; }
+.functionBlockElementList dd { white-space: normal; overflow-wrap: anywhere; }
+.functionBlockElementList dd small { display: block; font: 9px var(--mono); color: var(--muted); margin-top: 3px; }
+}
+
+/* The template editor draws a structure template with the HATG graph engine (lineage_template_graph.js). */
+@scope (:is(.portalHatgPanelComponent, .portalHatgOverlayComponent)) {
+:scope.templateGraph {
+  --hatg-program-event-color: #596fd3;
+  --hatg-program-reference-color: #258da0;
+  --hatg-program-route-color: #7654c7;
+  --hatg-program-target-color: #c77d24;
+  --hatg-program-watch-color: #6f7b8f;
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.templateGraphPalette { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.templateGraphPaletteLabel { margin-left: 8px; color: var(--muted); font-size: 11px; }
+.templateGraphPaletteLabel:first-child { margin-left: 0; }
+.templateGraphChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+.templateGraphChip[draggable="true"] { cursor: grab; }
+.templateGraphChip:is(:hover, :focus-visible) { border-color: var(--accent); color: var(--accent); outline: none; }
+.templateGraphChip [data-portal-icon] { width: 13px; height: 13px; }
+.templateGraphStage {
+  position: relative;
+  height: 380px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--panel-2) 55%, var(--panel));
+}
+.templateGraphFit {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  z-index: 20;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--panel);
+  color: var(--muted);
+  cursor: pointer;
+}
+.templateGraphFit:is(:hover, :focus-visible) { border-color: var(--accent); color: var(--accent); outline: none; }
+.templateGraphHint {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  z-index: 20;
+  margin: 0;
+  padding: 6px 12px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 84%, transparent);
+  color: var(--panel);
+  font-size: 11px;
+  pointer-events: none;
+}
+.templateGraphHint[hidden] { display: none; }
+.templateGraphEmpty { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; color: var(--muted); font-size: 12px; pointer-events: none; }
+:scope.templateGraph:not([data-graph-empty="true"]) .templateGraphEmpty { display: none; }
+.templateGraph .hatgEdge.route { marker-end: url(#templateGraph-route-arrow); }
+.templateGraph .hatgEdge.target { marker-end: url(#templateGraph-target-arrow); }
+.templateGraph .hatgEdge.watch { marker-end: url(#templateGraph-watch-arrow); }
+.templateGraph .hatgNode .nodeTypePill[data-role-source="new"],
+.templateGraph .hatgNode .nodeTypePill[data-role-source="fork"] { color: #2a9a6a; }
+/* Existing elements the template finds: dashed when kept, amber when updated, red when deleted. */
+:scope.templateGraph .hatgNode:has([data-template-state]) { outline: 2px dashed color-mix(in srgb, var(--muted) 65%, transparent); outline-offset: 3px; }
+:scope.templateGraph .hatgNode:has([data-template-state="update"]) { outline-color: #c58a1c; }
+:scope.templateGraph .hatgNode:has([data-template-state="delete"]) { outline-color: #c2453b; opacity: .62; }
+:scope.templateGraph .hatgNode:has([data-template-state="delete"]) strong { text-decoration: line-through; }
+:scope.templateGraph .templateStatePill { margin-left: auto; padding: 0 6px; border: 1px dashed currentColor; border-radius: 999px; color: var(--muted); font-size: 9px; font-weight: 700; line-height: 15px; }
+:scope.templateGraph .templateStatePill[data-template-state="update"] { color: #c58a1c; }
+:scope.templateGraph .templateStatePill[data-template-state="delete"] { color: #c2453b; }
+}
+.familyWorkGuides { margin-block: 16px; padding-block: 16px; border-block: 1px solid var(--border); min-width: 0; }
+.familyWorkGuides header p, .familyTaskCard small { color: var(--muted); font-size: 12px; line-height: 1.6; }
+.familyWorkRole h3 { font-size: 13px; margin: 18px 0 10px; font-weight: 600; }
+.familyTaskCard { border: 1px solid var(--border); border-radius: 10px; margin: 8px 0; overflow: hidden; min-width: 0; }
+.familyTaskCard > summary { cursor: pointer; padding: 12px 14px; line-height: 1.5; overflow-wrap: anywhere; }
+.familyTaskCard > summary small { display: block; padding-left: 16px; margin-top: 3px; }
+.familyTaskCard[open] > summary { border-bottom: 1px solid var(--border); margin-bottom: 12px; }
+.familyTaskCard form { padding: 0 13px 13px; display: grid; gap: 12px; }
+.familyTaskCard label { display: grid; gap: 6px; font-size: 12px; }
+.familyTaskCard textarea { width: 100%; box-sizing: border-box; resize: vertical; line-height: 1.65; min-height: 80px; font: inherit; }
+.familyTaskExecution { margin: 0 13px 16px; display: grid; gap: 10px; }
+.familyTaskExecutionRow { padding: 10px 0; border-bottom: 1px solid var(--border); display: grid; gap: 8px; min-width: 0; }
+.familyTaskExecutionName, .familyTaskExecutionActions, .familyTaskFailureRecipients { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; min-width: 0; font-size: 12px; }
+.familyTaskExecutionName strong { font-weight: 550; overflow-wrap: anywhere; }
+.familyTaskExecutionName > small { flex: 0 0 4em; }
+.familyTaskFailureRecipients > span { color: var(--muted); }
+.familyTaskShared { margin: 0; }
+.familyWorkflowFooter { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding-top: 14px; color: var(--muted); font-size: 12px; }
+.functionBlockObjectInventory { border-top: 1px solid var(--border); margin-top: 16px; padding-top: 12px; }
+.functionBlockObjectInventory > summary { cursor: pointer; color: var(--muted); font-size: 12px; }
+.familyTaskCard button[type="submit"] { justify-self: start; }
+.familyTaskCard [role="status"] { font-size: 12px; }

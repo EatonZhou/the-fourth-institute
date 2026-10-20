@@ -1,0 +1,86 @@
+{
+  "task": "embodied_action_calibration_20261019",
+  "owner": "resident_ce2a5ab005bc",
+  "status": "complete_with_invalid_identification",
+  "research_status": "active",
+  "native": 7936,
+  "worker_seconds": 48.433502,
+  "unknown": 0,
+  "replay": 0,
+  "job_id": "30e9501f-2d28-47d2-8226-0f6337a738b0",
+  "plan_sha256": "cbc7d7f967a1bd23d299ab5cf7f76029ceeeeca89ee091908c0d2649fba989ad",
+  "scientific_status": {
+    "native_execution": "complete",
+    "scientific_status": "invalid_calibration_intervention_no_updates",
+    "eligible": 0,
+    "total_native": 7936,
+    "calibration_updates": 0,
+    "cause": "Frozen implementation conflated pre-execution source budget limiting with unpaid executed work; every record was rejected. Actual displacement is nonzero and motor_unpaid zero. Do not infer biological unidentifiability or learning-null.",
+    "prospective_fix": "Distinguish actual motor_unpaid from pre-limited request; new helper only, not applied retrospectively to physical results.",
+    "next": "Independent reduced actual-response closed-loop check with first16 readiness guard; no repeat of full matrix; no next run inside remaining old budget."
+  },
+  "result": "Explicit action rotation causes real conditional tracking/cost changes, but all calibration updates rejected by an overstrict implementation gate; main method comparison and keep/reset interventions do not identify calibration benefit.",
+  "zero_native_followup": "Distinct actual-paid response interface implemented and checked, six fixed-action shadows expose signal; no counterfactual body benefit claimed.",
+  "files": {
+    "REPORT.txt": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/embodied_action_calibration_20261019/analysis/REPORT.txt",
+      "sha256": "7ec5f22b95d0d54d8383de88c60020ebe362038089ec704df8ed3db621cbb787"
+    },
+    "scientific_status.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/embodied_action_calibration_20261019/analysis/scientific_status.json",
+      "sha256": "54cc6656f113e05faecaadd29d6a0fdae153372a3f3921a0202cf24357978ad5"
+    },
+    "accounting.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/embodied_action_calibration_20261019/analysis/accounting.json",
+      "sha256": "7cbca6b2250f83bf27fb5e179407d1fc1f9a9d4b604e0181adff0412d6f0026d"
+    },
+    "validation.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/embodied_action_calibration_20261019/analysis/validation.json",
+      "sha256": "c51a7fbba738a530b04cd17359cc8a195070a13814540171a6980b986c4586a2"
+    },
+    "prefix_equivalence.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/embodied_action_calibration_20261019/analysis/prefix_equivalence.json",
+      "sha256": "28b9870883ef52fab933632279d39e87e5a4cf032c94411da4fc20d2227c2859"
+    },
+    "contrasts.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/embodied_action_calibration_20261019/analysis/contrasts.json",
+      "sha256": "31c042c987fa9859c0a7beeb949f0d2fa664e6a977e3d5b3f7da2ccd964be2aa"
+    },
+    "recovery.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/embodied_action_calibration_20261019/analysis/recovery.json",
+      "sha256": "32f99aa1a84ff291c867ea78bb55189d8b3c85770d59804adb4919245fcd4700"
+    },
+    "probe_contrasts.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/embodied_action_calibration_20261019/analysis/probe_contrasts.json",
+      "sha256": "12b105e83704649962706c443e76361c0778cf32fdcdf5f559d1492775057941"
+    },
+    "probe_validation.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/embodied_action_calibration_20261019/analysis/probe_validation.json",
+      "sha256": "bd9c0ef885acbb970a49a3002efc79ae2c3ecff7d419e1e290e6302391eb9eef"
+    },
+    "qualification_failure_main.png": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/embodied_action_calibration_20261019/analysis/qualification_failure_main.png",
+      "sha256": "39213a8f7ed928ec969362b8b4664b28e0616e7c7f35209f2f235714b33c467a"
+    },
+    "replay.html": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/embodied_action_calibration_20261019/analysis/replay.html",
+      "sha256": "5b66b711da30a35e465654884d2db871ad3aaa18665ba7631038ba8b09359073"
+    },
+    "actual_compact_plus.gif": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/embodied_action_calibration_20261019/analysis/actual_compact_plus.gif",
+      "sha256": "bcb253187122f443501d3556a8e335609e542392f31cd1ac91e39f256c16a471"
+    },
+    "pair_diagnostic/plan.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/embodied_action_calibration_20261019/analysis/pair_diagnostic/plan.json",
+      "sha256": "5f148dc26fb7c09e8dcbf7540983088a67fd18c2ab3884464b536998207dc309"
+    },
+    "pair_diagnostic/summary.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/embodied_action_calibration_20261019/analysis/pair_diagnostic/summary.json",
+      "sha256": "18d65afec29f034721d56f714770789bbe87e76a55c225bc3a90410d945c6b97"
+    },
+    "pair_diagnostic/corrected_interface_checks.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/embodied_action_calibration_20261019/analysis/pair_diagnostic/corrected_interface_checks.json",
+      "sha256": "ce415a86e1e076921aaa2d03278982a6d6248cd26434c0c19d94d680463fb633"
+    }
+  }
+}

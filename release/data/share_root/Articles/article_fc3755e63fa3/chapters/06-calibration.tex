@@ -1,0 +1,88 @@
+\chapter{共同偏差、校准与可构造表示}
+\label{ch:calibration}
+\chapterguide{通过有限域上的观察关系，可以判断共同错误何时能够消除，并实际构造所需的组合规则。}
+
+\section{把持续失效因素写入情境}
+令$\theta\in\mathbb F_2^r$，所有情境都可能出现。基本实验由向量$a\in\calA\subseteq\mathbb F_2^r$标记，输出
+\[
+ V=a^\top\theta\oplus E,\qquad E\sim\Bern(\eta),\quad0<\eta<1/2.
+\]
+各次$E$独立，未知$\theta$始终相同。目标为$g(\theta)=l^\top\theta$，其中$l\ne0$。一个坐标可以表示真实事实，也可以表示影响多种规则的共同偏差；每行$a$说明一个操作把哪些因素混在一起。
+
+\begin{theorem}[线性目标的可辨别性]
+\label{thm:span}
+目标允许任意小的最坏错误率，当且仅当
+\[
+ l\in\operatorname{span}_{\mathbb F_2}(\calA).
+\]
+\end{theorem}
+\begin{proof}
+两个情境之差为$z$时，实验分布相同恰当$a^\top z=0$，因为$\eta\ne1/2$。因此不可辨别的差组成全部实验行的零空间。目标在类上为常数恰当$l^\top z=0$对该零空间中的每个$z$成立；有限维非退化内积下，这等价于$l$属于行空间。也可直接通过消元构造$l$的线性组合，或找到零空间中满足$l^\top z=1$的反证向量。最后应用推论\ref{cor:identifiability}。
+\end{proof}
+
+\section{区别强度与结构覆盖分离}
+若$a^\top z=0$，两分布相同；否则它们分别为参数$\eta$与$1-\eta$的Bernoulli分布。因此
+\[
+ h_a(\theta,\theta')=h_\eta\,\mathbf1\{a^\top(\theta-\theta')=1\},
+ \qquad h_\eta=1-2\sqrt{\eta(1-\eta)}.
+\]
+定义
+\[
+ \mu(\calA,l)=\max_w\min_{z:\,l^\top z=1}
+               \sum_aw_a\mathbf1\{a^\top z=1\}.
+\]
+于是$\kap=h_\eta\mu$。局部KL分布在所有真实情境下具有同样的冲突差集合，又有
+\[
+ \kapK=d_\eta\mu,\qquad
+ d_\eta=(1-2\eta)\ln\frac{1-\eta}{\eta}.
+\]
+该模型的下界可以直接使用$d_\eta\mu$，无需付出主定理的一般$dC_M$比较因子。基本实验的噪声强度与它们覆盖哪些错误方向，在这里成为两个独立可计算因素。
+
+\section{校准一个共同偏差}
+取$\theta=(Y,B)$、$l=(1,0)$。原实验$a_1=(1,1)$观察$Y\oplus B$，校准实验$a_2=(0,1)$观察$B$。只有$a_1$时目标不在行空间内，均匀先验的误差下限为$1/2$。两种实验都允许时，$l=a_1+a_2$。
+
+目标冲突差只有$(1,0)$与$(1,1)$。前者仅由$a_1$区分，后者仅由$a_2$区分，故
+\[
+ \mu=\max_{w\in[0,1]}\min(w,1-w)=1/2,
+ \qquad \kap=h_\eta/2.
+\]
+两个实验都已经属于基本能力时，开始使用校准实验属于组织改变；若原系统根本没有该操作，增添它则改变了允许的基本能力集合。两者都可能消除盲点，但归因不同。
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[x=6cm,y=4cm]
+\draw[edge] (0,0)--(1.1,0) node[right] {$w$};
+\draw[edge] (0,0)--(0,0.65) node[above] {覆盖率/$h_\eta$};
+\draw[ink,thick] (0,0)--(0.5,0.5)--(1,0);
+\draw[dashed,accent] (0.5,0)--(0.5,0.5)--(0,0.5);
+\node[below] at (0.5,0) {$1/2$};
+\node[left] at (0,0.5) {$1/2$};
+\node[below] at (1,0) {$1$};
+\node[above right,font=\small] at (0.5,0.5) {均衡分配};
+\end{tikzpicture}
+\caption{校准模型的最差诊断覆盖率。$w$为使用原观察的比例。}
+\end{figure}
+
+\begin{table}[ht]
+\centering
+\input{data/calibration-table}
+\caption{校准模型在$\delta=0.05$下的解析预算界。下界约束所有策略，上界由公开随机分配实现；二者不表示有限参数下已经达到精确最优。}
+\label{tab:calibration}
+\end{table}
+
+\section{表示怎样实际构造}
+对实验行做二元高斯消元，可以在关于显式矩阵尺寸的多项式时间内判断$l$是否可表达。若可表达，就得到
+$l=a_1+\cdots+a_k$，去掉重复行后可令$k\le r$。目标等于这$k$个真实观察bit的异或。
+
+\begin{proposition}[已构造线性表示的可靠执行]
+\label{prop:parity-execute}
+取奇数$s\ge\ln(k/\delta)/(2(1/2-\eta)^2)$，每个所选实验调用$s$次并取多数，最后异或这些多数结果。调用$ks$次，最坏错误率不超过$\delta$。
+\end{proposition}
+\begin{proof}
+每个多数错误概率至多$e^{-2s(1/2-\eta)^2}\le\delta/k$，由独立有界和的集中界。全部$k$项正确时异或必正确，故并合界给出结论。消元、计数与异或不需要读取未知情境。
+\end{proof}
+
+这个构造解决了本模型中表示如何取得的问题。它可能比枚举$2^r$个情境计算似然经济得多。若实验只有标准基且$l$包含$k$个坐标，均匀分配给这$k$行给出$\mu=1/k$；反方分别选择这$k$个单坐标差，证明无法更大。一般行集合中的分配由有限线性规划确定。
+
+\begin{exercise}对$\calA=\{(1,1,0),(0,1,1)\}$，判断目标$(1,0,1)$与$(1,1,1)$各自是否可辨别，并给出组合或反证。\end{exercise}
+\begin{exercise}证明标准基实验、含$k$个非零坐标的目标具有$\mu=1/k$。\end{exercise}

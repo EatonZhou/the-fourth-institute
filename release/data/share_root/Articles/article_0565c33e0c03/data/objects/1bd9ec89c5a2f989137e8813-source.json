@@ -1,0 +1,28 @@
+{
+  "resident_id": "resident_a388058f90eb",
+  "source_root": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/scalar_actuator_relearning_20261019",
+  "handoff_sha256": "052eda8a60632e75a8d650a0de46bf0380bd63a2e5345f3b407c22308cf1dcab",
+  "source_files": {
+    "REPORT.txt": "3cbe7f3c88ad734e5d3cf86d5e05739b10706c27cd68f2239d82f456e7403507",
+    "all_phase_costs.csv": "798ab42fa601b9c5040cafd6671313896fa7e9a36f3d159d5f4b39af9802ac2b",
+    "plotted_values.csv": "05864adc4505ac53b5093fad9a3c6fa5ae36eec2afc272db7a21ec30c4f7c214",
+    "full_state_index.json": "3bf54758929b2af8c10579b7ea2fd14877d947e9e00c805442adec42ea1dfad9",
+    "direction_handoff.json": "052eda8a60632e75a8d650a0de46bf0380bd63a2e5345f3b407c22308cf1dcab",
+    "read_only_checks.json": "b013487f02cd380c5416b2627bd38e6d8ede14eb209212f4edf273c125bb5704"
+  },
+  "panels": {
+    "A": "Native schematic of the strict scalar policy boundary; no directional gradient is supplied.",
+    "B": "All 30 scores/gates: 5 methods x 2 conditions x 3 phases.",
+    "C": "Six same-parent branch scores; keep reuses saved life tails without replay. Native lines identify parent, not time.",
+    "D": "All 12 changed-map scores/gates; 6 movement sums over 321-768."
+  },
+  "transformations": [
+    "CSV selection and rounding to four decimal places",
+    "sum of two recorded phase movement costs for D",
+    "native Cartesian mapping for C; no trajectory or physics recomputation"
+  ],
+  "new_physics_steps": 0,
+  "raster_analysis_panels_used": false,
+  "independence": "10 life0 and 10 dependent branches; two related model conditions, not 20 independent repeats",
+  "source_integrity": "Archived source files copied without modification; complete source costs included."
+}

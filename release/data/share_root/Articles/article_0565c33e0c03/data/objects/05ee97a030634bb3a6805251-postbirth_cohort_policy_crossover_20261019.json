@@ -1,0 +1,314 @@
+{
+  "task": "postbirth_cohort_policy_crossover_20261019",
+  "owner": "resident_d3ccfa2d95b7",
+  "objective_met": false,
+  "choice": "Close G-only body-preserving renewal advantage and R-only universal substitution. Retain both fixed midpoint as strong finite maintenance baseline. Test the fate of already-born tissue under a later policy change, rather than increasing immediate birth requests or searching more masks.",
+  "question": "Does restoring both after a G-only developmental interval improve survival of the SAME tissue that was already born257..320 and still exists at320? Does removing R after a both interval harm that same registered cohort? This distinguishes later support from merely changing how many cells are born during the evaluation period.",
+  "evidence": {
+    "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/renewal_preservation_choice_factorial_20261019/handoff.json",
+    "sha256": "15a208ff747f7668a5ad6ffff41391997b8f7b72741f21267f46dd8d22a8ff8e",
+    "native": 1796,
+    "science": 1792,
+    "boundaries": 4,
+    "worker_seconds": 114.722546,
+    "unused_sealed": [
+      0,
+      485.277454
+    ],
+    "findings": "G-only versus both primary0/4; M/E/bodytime decrease4/4, post256 increases only ring2/4. G births and newborn deletions both increase4/4. Two-window maintenance both4/4, G0/4, R1/4, neither0/4. Preserve all negative and positive results.",
+    "interpretation": "Preservation and renewal are not simply opposed in these related states. Current aggregate new-tissue account does not identify the later fate of a fixed already-born cohort.",
+    "PI_images": [
+      "sequence_202610195601_separate_seeds.png",
+      "sequence_202610195602_ring.png"
+    ],
+    "visual_scope": "Viewed actual body/L256/post256 at256/320/384: existing ring hole and four separate clusters remain; both retains thicker old material, post256 stays spatially concentrated. These two images do not establish a new morphology or full-animation review."
+  },
+  "parents": [
+    {
+      "id": "202610195601_ring_both",
+      "seed": 202610195601,
+      "shape": "ring",
+      "history": "both",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/renewal_preservation_choice_factorial_20261019/1fbc79b1-1983-4beb-82f0-a9e579e8ca6e/202610195601_ring_both/state320.bin",
+      "sha256": "40453de1bb20dea82b1c2e1440eda02c4b2055eb29fec33ae43fa1700273538d",
+      "M320": 96.47726960656249,
+      "E320": 158.2916854097707,
+      "L256_at320": 85.33462029971155,
+      "born257_320_surviving": 11.142649306850988,
+      "cohort_reconstruction_error": 4.440892098500626e-15,
+      "ready_R_cells": 31,
+      "ready_R_mass": 15.440330395152465,
+      "diagonal_rows": "/data/dataset/lenia-research/lineage_75e3399f4877/renewal_preservation_choice_factorial_20261019/1fbc79b1-1983-4beb-82f0-a9e579e8ca6e/202610195601_ring_both/steps.csv",
+      "diagonal_rows_sha256": "63faa6e57bb5e717d32e8fda8b7cb3e9420d82914f66a0301f7605c4a0958804",
+      "diagonal_final": "/data/dataset/lenia-research/lineage_75e3399f4877/renewal_preservation_choice_factorial_20261019/1fbc79b1-1983-4beb-82f0-a9e579e8ca6e/202610195601_ring_both/state384.bin",
+      "diagonal_final_sha256": "a739dbfaa21511f477b2de01904a1e072ccfe2ff3d595bbbf95eeb9732589b63",
+      "native": 0
+    },
+    {
+      "id": "202610195601_ring_birth_gain_only",
+      "seed": 202610195601,
+      "shape": "ring",
+      "history": "birth_gain_only",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/renewal_preservation_choice_factorial_20261019/1fbc79b1-1983-4beb-82f0-a9e579e8ca6e/202610195601_ring_birth_gain_only/state320.bin",
+      "sha256": "9eb846f3adfb820a50dd64e6f30f79da8d38072f8c91407e3dcd539fd3296838",
+      "M320": 87.41444951079237,
+      "E320": 148.22577095392694,
+      "L256_at320": 76.13232314066087,
+      "born257_320_surviving": 11.282126370131564,
+      "cohort_reconstruction_error": 4.440892098500626e-15,
+      "ready_R_cells": 7,
+      "ready_R_mass": 4.282421478611413,
+      "diagonal_rows": "/data/dataset/lenia-research/lineage_75e3399f4877/renewal_preservation_choice_factorial_20261019/1fbc79b1-1983-4beb-82f0-a9e579e8ca6e/202610195601_ring_birth_gain_only/steps.csv",
+      "diagonal_rows_sha256": "3b3eee007a43ecd0ca8dbd408b3e937e6a44813b8641df77b68bf10ba32f19d1",
+      "diagonal_final": "/data/dataset/lenia-research/lineage_75e3399f4877/renewal_preservation_choice_factorial_20261019/1fbc79b1-1983-4beb-82f0-a9e579e8ca6e/202610195601_ring_birth_gain_only/state384.bin",
+      "diagonal_final_sha256": "89d7a2cd2160af1a4f5cc8f5043bbfdf26988d3e825239f9c2d265c3bc798d74",
+      "native": 0
+    },
+    {
+      "id": "202610195601_separate_seeds_both",
+      "seed": 202610195601,
+      "shape": "separate_seeds",
+      "history": "both",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/renewal_preservation_choice_factorial_20261019/1fbc79b1-1983-4beb-82f0-a9e579e8ca6e/202610195601_separate_seeds_both/state320.bin",
+      "sha256": "fac7f15ebff5997637456adeb499c4cbfb707e766cbb702181768f344282a4af",
+      "M320": 79.18982026657574,
+      "E320": 127.84401682028201,
+      "L256_at320": 66.94957554782033,
+      "born257_320_surviving": 12.240244718755427,
+      "cohort_reconstruction_error": 3.1086244689504383e-15,
+      "ready_R_cells": 17,
+      "ready_R_mass": 17.52897876005108,
+      "diagonal_rows": "/data/dataset/lenia-research/lineage_75e3399f4877/renewal_preservation_choice_factorial_20261019/1fbc79b1-1983-4beb-82f0-a9e579e8ca6e/202610195601_separate_seeds_both/steps.csv",
+      "diagonal_rows_sha256": "0b1baebda7715e6aa740cbaa384728272a61dae7180d5db73884e8c9d941e1f1",
+      "diagonal_final": "/data/dataset/lenia-research/lineage_75e3399f4877/renewal_preservation_choice_factorial_20261019/1fbc79b1-1983-4beb-82f0-a9e579e8ca6e/202610195601_separate_seeds_both/state384.bin",
+      "diagonal_final_sha256": "99b1ebfc8e4fa7c3503c15132c938ba16abd1822ae0795ea2454ecda40443dbc",
+      "native": 0
+    },
+    {
+      "id": "202610195601_separate_seeds_birth_gain_only",
+      "seed": 202610195601,
+      "shape": "separate_seeds",
+      "history": "birth_gain_only",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/renewal_preservation_choice_factorial_20261019/1fbc79b1-1983-4beb-82f0-a9e579e8ca6e/202610195601_separate_seeds_birth_gain_only/state320.bin",
+      "sha256": "3b4aca15f2f86ea52a00fa44254b884c77caf795be276f8f615f7beeae2f5175",
+      "M320": 61.1228152518901,
+      "E320": 89.79655319424285,
+      "L256_at320": 50.421563172336114,
+      "born257_320_surviving": 10.701252079553988,
+      "cohort_reconstruction_error": 2.55351295663786e-15,
+      "ready_R_cells": 12,
+      "ready_R_mass": 6.8931900776049675,
+      "diagonal_rows": "/data/dataset/lenia-research/lineage_75e3399f4877/renewal_preservation_choice_factorial_20261019/1fbc79b1-1983-4beb-82f0-a9e579e8ca6e/202610195601_separate_seeds_birth_gain_only/steps.csv",
+      "diagonal_rows_sha256": "c8bc0e1e922c08153ed346f9564b8e3e5c9b350629135c28e381242ea968c3fb",
+      "diagonal_final": "/data/dataset/lenia-research/lineage_75e3399f4877/renewal_preservation_choice_factorial_20261019/1fbc79b1-1983-4beb-82f0-a9e579e8ca6e/202610195601_separate_seeds_birth_gain_only/state384.bin",
+      "diagonal_final_sha256": "5f76fe407e520330ed6cefce281ba3c5337ca1debfae46bbb43d005c2ef6d27f",
+      "native": 0
+    },
+    {
+      "id": "202610195602_ring_both",
+      "seed": 202610195602,
+      "shape": "ring",
+      "history": "both",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/third_response_generation_search_20261019/b9f8bccb-57c5-4366-9788-7fdc1e301114/validation_ring_midpoint/state320.bin",
+      "sha256": "9bb0398ca84a95dd1d3cfda9d332d04e4feef80da4a821419e2c6ddf26fd2bb6",
+      "M320": 95.40545256335511,
+      "E320": 157.10131735706386,
+      "L256_at320": 83.9556236749913,
+      "born257_320_surviving": 11.44982888836389,
+      "cohort_reconstruction_error": 4.218847493575595e-15,
+      "ready_R_cells": 34,
+      "ready_R_mass": 17.428308796720618,
+      "diagonal_rows": "/data/dataset/lenia-research/lineage_75e3399f4877/third_response_generation_search_20261019/b9f8bccb-57c5-4366-9788-7fdc1e301114/validation_ring_midpoint/steps.csv",
+      "diagonal_rows_sha256": "2e3bb1b770fe55f0e4629d31b4e36bed37bc9e9a9fcb0bd4a825e464fefda460",
+      "diagonal_final": "/data/dataset/lenia-research/lineage_75e3399f4877/third_response_generation_search_20261019/b9f8bccb-57c5-4366-9788-7fdc1e301114/validation_ring_midpoint/state384.bin",
+      "diagonal_final_sha256": "e697b86d75fa46050352cacb287bf668db9b902608f8b6395ab74ea40b0cbaa5",
+      "native": 0
+    },
+    {
+      "id": "202610195602_ring_birth_gain_only",
+      "seed": 202610195602,
+      "shape": "ring",
+      "history": "birth_gain_only",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/renewal_preservation_choice_factorial_20261019/1fbc79b1-1983-4beb-82f0-a9e579e8ca6e/202610195602_ring_birth_gain_only/state320.bin",
+      "sha256": "f5a3011955fe809f61e05a763701d986aa5fbb640b32c9e157cc90b5e1d753aa",
+      "M320": 83.62708964718303,
+      "E320": 142.04164040683355,
+      "L256_at320": 72.13422825591041,
+      "born257_320_surviving": 11.492861391272662,
+      "cohort_reconstruction_error": 4.551914400963142e-15,
+      "ready_R_cells": 8,
+      "ready_R_mass": 5.014360920867366,
+      "diagonal_rows": "/data/dataset/lenia-research/lineage_75e3399f4877/renewal_preservation_choice_factorial_20261019/1fbc79b1-1983-4beb-82f0-a9e579e8ca6e/202610195602_ring_birth_gain_only/steps.csv",
+      "diagonal_rows_sha256": "59b59038b95d7516cc4c30bf4804d7cc6f1c49d34fe1d7f07b4e2fde009716f7",
+      "diagonal_final": "/data/dataset/lenia-research/lineage_75e3399f4877/renewal_preservation_choice_factorial_20261019/1fbc79b1-1983-4beb-82f0-a9e579e8ca6e/202610195602_ring_birth_gain_only/state384.bin",
+      "diagonal_final_sha256": "dac9b75b60d786cbdf12a1f2eb777f03df036312e4f0c54df24c457cb4b955b1",
+      "native": 0
+    },
+    {
+      "id": "202610195602_separate_seeds_both",
+      "seed": 202610195602,
+      "shape": "separate_seeds",
+      "history": "both",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/third_response_generation_search_20261019/b9f8bccb-57c5-4366-9788-7fdc1e301114/validation_separate_seeds_midpoint/state320.bin",
+      "sha256": "20335dda007c0430774b0384588a6b41ce84309f5eb3c9532329dc6563f4e6f9",
+      "M320": 81.33096210972373,
+      "E320": 134.06612099516747,
+      "L256_at320": 69.31219866684646,
+      "born257_320_surviving": 12.018763442877265,
+      "cohort_reconstruction_error": 3.3306690738754696e-15,
+      "ready_R_cells": 21,
+      "ready_R_mass": 15.726677639447013,
+      "diagonal_rows": "/data/dataset/lenia-research/lineage_75e3399f4877/third_response_generation_search_20261019/b9f8bccb-57c5-4366-9788-7fdc1e301114/validation_separate_seeds_midpoint/steps.csv",
+      "diagonal_rows_sha256": "79a94b154ec2a6d18567307d6db0c94448fb5828a8946d21a5d3671caca6fc3e",
+      "diagonal_final": "/data/dataset/lenia-research/lineage_75e3399f4877/third_response_generation_search_20261019/b9f8bccb-57c5-4366-9788-7fdc1e301114/validation_separate_seeds_midpoint/state384.bin",
+      "diagonal_final_sha256": "6d5cd818f728ced291bfc42613c7c9c45cb58eba7801ec3f2adfec61e21de445",
+      "native": 0
+    },
+    {
+      "id": "202610195602_separate_seeds_birth_gain_only",
+      "seed": 202610195602,
+      "shape": "separate_seeds",
+      "history": "birth_gain_only",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/renewal_preservation_choice_factorial_20261019/1fbc79b1-1983-4beb-82f0-a9e579e8ca6e/202610195602_separate_seeds_birth_gain_only/state320.bin",
+      "sha256": "a7c3d27d033c707fc3dac3b6ffc70d5c42237bd9e7e805678fa8586dc022e5d4",
+      "M320": 66.4375130361503,
+      "E320": 103.06777680641682,
+      "L256_at320": 55.3738382449448,
+      "born257_320_surviving": 11.063674791205514,
+      "cohort_reconstruction_error": 3.1086244689504383e-15,
+      "ready_R_cells": 15,
+      "ready_R_mass": 10.729354589206253,
+      "diagonal_rows": "/data/dataset/lenia-research/lineage_75e3399f4877/renewal_preservation_choice_factorial_20261019/1fbc79b1-1983-4beb-82f0-a9e579e8ca6e/202610195602_separate_seeds_birth_gain_only/steps.csv",
+      "diagonal_rows_sha256": "355f37dded9cb9f29cd796db582a8e608148fa26cf29ad5c05ec02e59c979ea1",
+      "diagonal_final": "/data/dataset/lenia-research/lineage_75e3399f4877/renewal_preservation_choice_factorial_20261019/1fbc79b1-1983-4beb-82f0-a9e579e8ca6e/202610195602_separate_seeds_birth_gain_only/state384.bin",
+      "diagonal_final_sha256": "bb0ce8445717a00f1bb2234c35fdac714181830b7ab01ce2e2a3268242949bea",
+      "native": 0
+    }
+  ],
+  "source_bindings": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/renewal_preservation_choice_factorial_20261019/handoff.json",
+      "sha256": "15a208ff747f7668a5ad6ffff41391997b8f7b72741f21267f46dd8d22a8ff8e"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/renewal_preservation_choice_factorial_20261019/REPORT.txt",
+      "sha256": "070bc4a87b0e2407f2a6f2a6dff1ffe15d9f7f096c7f99f4e38d28b7bf8f71ab"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/renewal_preservation_choice_factorial_20261019/METHOD.txt",
+      "sha256": "8f5a2859f536c96697288938f5d6f080e0415dee9054515680f3deb5327a8952"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/renewal_preservation_choice_factorial_20261019/scientific_next_request.json",
+      "sha256": "4bcc16a93862bbd28f6bc8268551e1c4dc1a63a6679793c905300bbddc9b60fb"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/renewal_preservation_choice_factorial_20261019/outcomes.json",
+      "sha256": "4bd1d9417251cee2f8ffca37f65e27a14d47cec98f53841ed76c70b4f6e32782"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/renewal_preservation_choice_factorial_20261019/plan.json",
+      "sha256": "eff1a60989859fc0cd7926f310358bfc561a44b8265330e4f792b26bc229c875"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/renewal_preservation_choice_factorial/core.py",
+      "sha256": "163a5c173183b5df93e314ba98345809558e55977a28bee9d83a09aa06481760"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/third_response_generation_search/core.py",
+      "sha256": "89b3a7b81ce76b49711367eb17fc01fa2487172d6883e32daee50ce304c2c5dc"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/resource_conditioned_growth_rule/core.py",
+      "sha256": "bad674f254644c8fc00caa6fd50ccd45bbebdd65a229c11125ca3765df981a44"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/fixed_amount_rule_deletion_layout/core.py",
+      "sha256": "71277e88c480cb81b9b602a85dab641c5e4e61b661b4d74f67fe19a36b5914a5"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/replacement_history_carrier/core.py",
+      "sha256": "c8d97368cbd8b00b174f3728587702e0e9651b2d96da001af325b8671a345a45"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/regenerative_actor/model.py",
+      "sha256": "3941450e97d2311f833d1c9c8964f348218467d4cd8d41a68b6584b72b24b5b0"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/postbirth_cohort_policy_crossover_20261019_preflight.json",
+      "sha256": "01cde2e19d8abf4aadaa45212155102e03a946a69c9589c025bfc7f0c01829c7"
+    }
+  ],
+  "invariants": "Keep original three responses and midpoint z0, exact original both/G selectors, prices, kernels, native actor/admission/deletion/pump, zero commanded motion, finite center inputs and half-life64. No changed mask threshold, added response/age rule, inventory transfer, new memory, writer, search, birth suppression or forced cohort protection. Cohort measurements must have no effect on any policy or physical operation.",
+  "experiment": {
+    "design": "Four contexts (5601/5602 × ring/separate) × two actual acquisition histories (both/G-only257..320) × two future policies (both/G-only321..384). Sixteen logical futures, two per exact parent; eight paired future effects. The two histories within a context are different complete bodies, not exchangeable geometry-only or cohort-only states.",
+    "fork": "Restore each listed complete320 state and fork it unchanged in body, intracellularE, extracellularP/F, world, RNG, cursor, sinks, costs and original tags. The only physical-policy change is future acceptance policy both or G. Add observational tags separately. Do not zero old ledger, reset inputs, graft cohorts, normalize bodies or swap stocks.",
+    "schedule": "Exactly64 calls321..384 per future. This is the existing final64 window, not extension beyond384; no new washout, chosen switch phase, shift, map or price scan. At320 lock/freeze plan and hashes before native. Apply the chosen existing dynamic policy on each future own state.",
+    "switch_adapter": "Existing attach requires256, so implement a small isolated ready320 policy-switch adapter with explicit full-state verification. Retain ThirdRate/original native and original FactorialBody choice semantics. A stored ThirdBody both parent may be bound to the existing both choice after equality proof. Do not invoke attach256 or re-register L256.",
+    "existing_diagonals": "both-history→both and G-history→G are eight known physical tails,512 steps. Inspect whether saved TRUE K and actor/rule survival maps cover every321..384 step. If complete, consume those once read-only to propagate the new cohort, SHA-bound, with full old state/observer consistency. If sparse, explicit authorization is given to run each such known tail exactly once under a passive new observer,512 native maximum. This known replay is needed to measure the otherwise absent fate, not a new ecological replicate. Missing maps must never be interpolated or inverted.",
+    "novel_crossovers": "both-history→G and G-history→both: eight new physical64-step futures,512 native. All parents already exist at320, so acquisition0..320 is not replayed. If an old diagonal is replayed, keep its old row/final-state comparison and identify its native count separately.",
+    "accounting": "At most1024 scientific native:512 new crossover plus up to512 explicitly authorized known-tail observational replay. No extra native boundaries. Any exact read-only diagonal savings stay sealed and cannot buy more experiments. Do not alias a crossover because its first request happens to match."
+  },
+  "cohort_observer": {
+    "registration": "At320 obtain exact existing cohorts256.labels: O=L256 surviving material; C=post256 material currently alive (born257..320 and survived to320). Define N=0. These are three passive spatial arrays, summing to actualrho within the existing rounding residual. C is not all births257..320 and not a common birth age: birth ages at320 vary0..63. Keep all prior deaths in old ledgers, never reclassify them as unknown.",
+    "propagation": "At each actual step advect O,C,N by actualK once; apply actual actor-survival ratio and actual rule-survival ratio once, in native order. Add actual paid births only to N. Never add new births to O or C, including at already-labelled sites. Attribute actor/rule deletion by the same native proportional material rule, conserving each registered cohort plus recorded deaths. No resurrection or transfer of labels between cohorts.",
+    "invariants": "O must equal the existing L256 track; C+N must equal existing post256; O+C+N reconstructs actual body. Registered C is identical between the two futures of each parent. No label is fed to prechoice, pump, source maps, native accounting or inherited intent.",
+    "limits": "The primary estimand is future-policy effect on material already born and still alive at320. It does not estimate survival from original birth, birth-age-specific hazard, individual lineages, original-pulse mediation or a universally intrinsic quality of the birth site. Across acquisition histories, body/energy/resources/age mixture all differ."
+  },
+  "targets": {
+    "primary": "For each of eight exact parents, contrast future both minus future G for C mass at384 and C survival fraction C384/C320, plus integral C bodytime321..384. The four G-history parents are the predeclared restoration test; the four both-history parents test subsequent withdrawal. Endpoint384 is fixed, and all64 curves must be shown without selecting an earlier peak.",
+    "evidence_rule": "Call consistent restoration of already-born material only if C survival advantage is strictly positive in all four G-history contexts (report1e-8 mass/normalized equivalent and exact0). Report both-history consistency separately. Mixed signs close the universal restoration claim without adding a phase/threshold. A negative result does not prove irreversible damage or all future support impossible.",
+    "useful_renewal": "Distinguish cohort rescue from useful body renewal. For a body-preserving restoration also require finalM/E and bodytime321..384 non-decreasing versus same-parent G, future-born N384 non-decreasing, minM>=32, and the fixed64 window born>=death and deltaE>=0. List each guard; no sum score. A better C survival rate alone may merely preserve an already-existing cohort.",
+    "specificity": "Report O survival fraction and the difference (both-G C survival fraction) minus (both-G O survival fraction). This describes relative effects on these two registered material groups, not an independent-cell statistical test or a mechanistic fraction. Do not claim newborn-specific support if both groups benefit similarly.",
+    "secondary": "All four history×future outcomes per context; difference of paired future effects across histories, explicitly a full acquired-state interaction. Report totalpost256=C+N, individual C/N/O, M/E/bodytime/U, actual births/deaths, all physical fees, heat, exports, stocks and arrears. A cross-history row comparison is not causal evidence about geometry, cohort quality or resource deficit alone.",
+    "scope": "One finite64 window cannot re-establish two-window maintenance, steady state or life0 formation. No lifetime learning or novel learned algorithm claim. Existing both full128 maintenance remains a separate valid result."
+  },
+  "records": {
+    "every_step": "Continuous physical/fee/ledger scalars and O/C/N mass, actual registration/addition/deletion by stage, retention fractions, cohortbodytime and reconstruction errors. Preserve tiny signed floating residuals; zero cohort denominator yields null. Save exact minimal actual transport/survival/born maps compressed per step where feasible under raw cap so genuine cohort fates need not be reconstructed from sparse fields again.",
+    "receipts_offsets": [
+      1,
+      2,
+      4,
+      8,
+      16,
+      32,
+      48,
+      64
+    ],
+    "field_offsets": [
+      0,
+      1,
+      8,
+      16,
+      32,
+      48,
+      64
+    ],
+    "joints": [
+      320,
+      352,
+      384
+    ],
+    "diagnostic": "At saved stages show cohort-weighted actual generating response and P/F/E exposure with explicit stage and denominator; associations only, not native causes. Do not create new predictor fits or hidden-cause claims from the same trajectories.",
+    "tests": "Pure three-label identity, birth assignment, transport/deletion conservation, restored state equality and unchanged policy tests0native. Diagonal scientific calls, if needed, also verify all old physical/fee rows and saved final arrays before any scientific claim. No extra check forwards. If mismatch changes physics, stop with partial exact coverage; do not adjust prices or replace sources.",
+    "recovery": "Persist known complete states with passive cohorts and cumulative ledger. Charge all returned and all attempts; unknown native not replayed. Every output identifies whether native crossover, authorized diagonal replay or original raw read-only.",
+    "visual": "Inspect all four contexts with both histories and both futures, actual O/C/N maps at fixed clocks and process curves. Keep ring and separate counterexamples. Consolidate paper/projection original items once, no routine broadcast."
+  },
+  "budget": {
+    "native_cap": 1024,
+    "science_cap": 1024,
+    "new_physical_crossover": 512,
+    "authorized_known_tail_replay_max": 512,
+    "affected_native": 0,
+    "worker_seconds": 450,
+    "cpu": 2,
+    "gpu": 0,
+    "jobs": 1,
+    "raw_cap_bytes": 1073741824,
+    "shutdown_reserve_worker_seconds": 60,
+    "control": "Independent new budget. PI read running/started=true; executor must re-read immediately before job. Every old remaining native/worker allocation stays sealed. Start no body work if paused/stopped.",
+    "stop": "No automatic second job, native after cap, expansion past384, extra phases, label-dependent controller, threshold/price/rate search or writer. Seal any savings. Same-job explicit recovery only from fully known settled state."
+  },
+  "handoff": "d3 sole owner to implement, freeze and actually execute this bounded postbirth-cohort crossover. End the prior mask-deployment candidate; this task measures whether later support can retain already-born material, not whether another mask setting wins. Return one scientific choice with complete coverage and limits. Update a concise current result leaf, never extend the shared long chain or delete other owners state.",
+  "native_by_PI": 0
+}

@@ -1,0 +1,60 @@
+tissue_replacement_pf_location_20261018 — frozen method
+
+This is a new independently authorized maintenance intervention, not continuation
+of the preceding failed stage_B selection gate. The original two actual128 parent
+bundles, rule kernels/configuration, complete state/world, external input cursor,
+and exchange sinks are bound by source SHA and restored without replay. Each
+parent has four identical physical starting fingerprints. There is no learner,
+randomization, parameter search, rescue, or new genotype. Two rule/body instances
+are not independent seeds. The parent selection was fixed by the PI decision.
+
+P0F0: both new inputs at the original static patch; P1F0: only new P supported;
+P0F1: only new F supported; P1F1: both supported. Support is the original periodic
+3x3 binomial neighborhood of pre-step rho, normalized independently for each new
+input with its original gross amount. Empty support falls back to the patch.
+Patch coordinates remain fixed at all clocks. Neither existing stock nor body is
+relocated. No request q or future fields are read. Each arm takes256 native calls
+from clock128 to384; input continues through383 under this explicit new contract.
+Half-life64 real extracellular outflow, original prices and local-energy physics
+are unchanged. Commanded action is zero; native passive transport and its cost
+remain. External placement work is not priced to the organism: this intervention
+is not a free biological behavior, deployable learned policy, or upper bound.
+
+Diagnostic L128 is the complete actual body at128. Each returned native step gives
+K_weights, transported old body and actual survivor. The observer applies the
+existing conservative advect to L, then multiplies by survivor/transported where
+transported>0 (else0). All deletion is retained in a cumulative label ledger.
+Later born adds0 to this label. body-L is the current surviving post128 tissue,
+not cumulative birth and not an attribution of newborn benefit to old material.
+The separate native life0 founder field is preserved. Labels are not read by
+physiology, input allocation, or action. No atom-level ancestry is claimed.
+
+All2048 returned maps feed checks and actual scalar ledgers once, without a second
+physical forward. Full physical+exchange+observer states are saved at128,129,136,
+160,192,256,320,384; full actual receipts at the seven post128 saved clocks. Thus
+scalars are every step, spatial receipts are scheduled, and missing intermediate
+spatial fields are not inferred. Raw snapshot values and actual inputs, request,
+sequential rejection, birth/death, costs, outflow and diagnostic fields remain.
+
+Four predeclared windows are offsets1..64,65..128,129..192,193..256, inclusive
+post-step rows. DeltaM/E uses the previous window endpoint, or actual128 parent.
+Body-time=sum(post-step M)*native dt .05. Finite renewal requires BOTH last64
+windows to have every post-step M>=32, born>=all death-1e-8 and deltaE>=-1e-8.
+It does not imply infinite stability even if passed. No arm passed here.
+
+Factorial_effects and window_factorial_effects are descriptive conditional total
+effects per parent: P@F0=10-00, P@F1=11-01, F@P0=01-00, F@P1=11-10,
+interaction=11-10-01+00. No p-values or cell-as-replicate inference. The effects
+include all downstream trajectory changes. Equal gross input and initial state
+do not equal subsequent net available resource, births, costs or deletions.
+Ordered rejection counts are repeated, ordered requests, not independent causal
+mediators. Outcome summaries preserve actual cost components; birth_fuel already
+includes synthesis/template/newborn energy and must not be double-counted.
+
+Plan and sources were frozen before the first forward. Independent cap2080
+native/600 runner worker seconds/2GiB; eight256-step paths used2048 science calls,
+0 additional native boundary calls. Changed supply/empty fallback and label
+transport/deletion were checked on pure arrays. First actual129 save was restored
+and compared exactly without another forward. The native script safety gate was
+260wall seconds. Runtime worker budget is actual runner occupancy times2; all
+old balances and the new unused32 calls remain unspent and nontransferable.

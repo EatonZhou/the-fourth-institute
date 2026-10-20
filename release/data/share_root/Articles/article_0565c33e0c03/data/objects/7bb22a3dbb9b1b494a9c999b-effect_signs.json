@@ -1,0 +1,5860 @@
+[
+  {
+    "effect": "factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1/injury_at_naive",
+    "M": {
+      "positive": [
+        [
+          176,
+          191
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          175
+        ],
+        [
+          192,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          161,
+          206
+        ],
+        [
+          222,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          207,
+          221
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1/injury_at_experienced",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "effect": "factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1/experienced_minus_naive/acquisition",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          133,
+          160
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          132
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1/experienced_minus_naive/none",
+    "M": {
+      "positive": [
+        [
+          171,
+          189
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          170
+        ],
+        [
+          190,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          176,
+          196
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          175
+        ],
+        [
+          197,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          185,
+          195
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          184
+        ],
+        [
+          196,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          161,
+          188
+        ]
+      ],
+      "negative": [
+        [
+          189,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1/experienced_minus_naive/x",
+    "M": {
+      "positive": [
+        [
+          223,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          222
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          180,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          179
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "factorial_compact_R3fae7135_Icfc25c64_f6e408a330c8d3b1/history_by_injury",
+    "M": {
+      "positive": [
+        [
+          205,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          204
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          223,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          222
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          161,
+          162
+        ]
+      ],
+      "negative": [
+        [
+          163,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          186,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          185
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "genome_93e6148d32bbb0862163/injury_at_naive",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          161,
+          167
+        ]
+      ],
+      "negative": [
+        [
+          168,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "genome_93e6148d32bbb0862163/injury_at_experienced",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          161,
+          171
+        ]
+      ],
+      "negative": [
+        [
+          172,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "genome_93e6148d32bbb0862163/experienced_minus_naive/acquisition",
+    "M": {
+      "positive": [
+        [
+          155,
+          160
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          154
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          160
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "effect": "genome_93e6148d32bbb0862163/experienced_minus_naive/none",
+    "M": {
+      "positive": [
+        [
+          161,
+          201
+        ]
+      ],
+      "negative": [
+        [
+          202,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          199,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          198
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          161,
+          191
+        ]
+      ],
+      "negative": [
+        [
+          192,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "genome_93e6148d32bbb0862163/experienced_minus_naive/x",
+    "M": {
+      "positive": [
+        [
+          161,
+          182
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          164,
+          182
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          163
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "effect": "genome_93e6148d32bbb0862163/history_by_injury",
+    "M": {
+      "positive": [
+        [
+          161,
+          177
+        ],
+        [
+          202,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          178,
+          201
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          161,
+          198
+        ]
+      ],
+      "negative": [
+        [
+          199,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          162,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          161
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          161,
+          161
+        ],
+        [
+          165,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          162,
+          164
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "genome_8d60f7d250e8e9f2a25b/injury_at_naive",
+    "M": {
+      "positive": [
+        [
+          188,
+          202
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          187
+        ],
+        [
+          203,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "effect": "genome_8d60f7d250e8e9f2a25b/injury_at_experienced",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "effect": "genome_8d60f7d250e8e9f2a25b/experienced_minus_naive/acquisition",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          148,
+          160
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          147
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "genome_8d60f7d250e8e9f2a25b/experienced_minus_naive/none",
+    "M": {
+      "positive": [
+        [
+          190,
+          194
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          189
+        ],
+        [
+          195,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "effect": "genome_8d60f7d250e8e9f2a25b/experienced_minus_naive/x",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          173,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          172
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "genome_8d60f7d250e8e9f2a25b/history_by_injury",
+    "M": {
+      "positive": [
+        [
+          161,
+          161
+        ],
+        [
+          214,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          162,
+          213
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          161,
+          163
+        ]
+      ],
+      "negative": [
+        [
+          164,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          189,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          188
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e/injury_at_naive",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          161,
+          167
+        ]
+      ],
+      "negative": [
+        [
+          168,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e/injury_at_experienced",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          161,
+          171
+        ]
+      ],
+      "negative": [
+        [
+          172,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e/experienced_minus_naive/acquisition",
+    "M": {
+      "positive": [
+        [
+          154,
+          160
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          153
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          160
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "effect": "factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e/experienced_minus_naive/none",
+    "M": {
+      "positive": [
+        [
+          161,
+          204
+        ]
+      ],
+      "negative": [
+        [
+          205,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          198,
+          222
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          197
+        ],
+        [
+          223,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          161,
+          194
+        ]
+      ],
+      "negative": [
+        [
+          195,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e/experienced_minus_naive/x",
+    "M": {
+      "positive": [
+        [
+          161,
+          183
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          165,
+          183
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          164
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "effect": "factorial_compact_Rcfc25c64_I3fae7135_1f52bcc754bf012e/history_by_injury",
+    "M": {
+      "positive": [
+        [
+          161,
+          178
+        ],
+        [
+          205,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          179,
+          204
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          161,
+          197
+        ],
+        [
+          223,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          198,
+          222
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          163,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          162
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          161,
+          161
+        ],
+        [
+          166,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          162,
+          165
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423/injury_at_naive",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "effect": "factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423/injury_at_experienced",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "effect": "factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423/experienced_minus_naive/acquisition",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          160
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "effect": "factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423/experienced_minus_naive/none",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "effect": "factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423/experienced_minus_naive/x",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "factorial_multi_ring_R7efd847a_Iff37d942_708df58caddc4423/history_by_injury",
+    "M": {
+      "positive": [
+        [
+          175,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          174
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          161,
+          164
+        ],
+        [
+          168,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          165,
+          167
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          161,
+          162
+        ],
+        [
+          188,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          163,
+          187
+        ]
+      ]
+    },
+    "births": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "genome_d02e7f60565f83066e5d/injury_at_naive",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          176,
+          204
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          175
+        ],
+        [
+          205,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "genome_d02e7f60565f83066e5d/injury_at_experienced",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "genome_d02e7f60565f83066e5d/experienced_minus_naive/acquisition",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          160
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "effect": "genome_d02e7f60565f83066e5d/experienced_minus_naive/none",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          161,
+          202
+        ]
+      ],
+      "negative": [
+        [
+          203,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "genome_d02e7f60565f83066e5d/experienced_minus_naive/x",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "genome_d02e7f60565f83066e5d/history_by_injury",
+    "M": {
+      "positive": [
+        [
+          161,
+          168
+        ]
+      ],
+      "negative": [
+        [
+          169,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          161,
+          174
+        ]
+      ],
+      "negative": [
+        [
+          175,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          161,
+          174
+        ]
+      ],
+      "negative": [
+        [
+          175,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "genome_a6a821dffd4f4046c97a/injury_at_naive",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "effect": "genome_a6a821dffd4f4046c97a/injury_at_experienced",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "effect": "genome_a6a821dffd4f4046c97a/experienced_minus_naive/acquisition",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          160
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "effect": "genome_a6a821dffd4f4046c97a/experienced_minus_naive/none",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "effect": "genome_a6a821dffd4f4046c97a/experienced_minus_naive/x",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "genome_a6a821dffd4f4046c97a/history_by_injury",
+    "M": {
+      "positive": [
+        [
+          175,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          174
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          161,
+          166
+        ],
+        [
+          168,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          167,
+          167
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          161,
+          162
+        ],
+        [
+          190,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          163,
+          189
+        ]
+      ]
+    },
+    "births": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e/injury_at_naive",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          175,
+          205
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          174
+        ],
+        [
+          206,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e/injury_at_experienced",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e/experienced_minus_naive/acquisition",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          160
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "effect": "factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e/experienced_minus_naive/none",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          161,
+          204
+        ]
+      ],
+      "negative": [
+        [
+          205,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e/experienced_minus_naive/x",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "factorial_multi_ring_Rff37d942_I7efd847a_a48f1041422aca0e/history_by_injury",
+    "M": {
+      "positive": [
+        [
+          161,
+          167
+        ]
+      ],
+      "negative": [
+        [
+          168,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          162,
+          171
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          161
+        ],
+        [
+          172,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          161,
+          173
+        ]
+      ],
+      "negative": [
+        [
+          174,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "compact/rule_at_I0/formation",
+    "M": {
+      "positive": [
+        [
+          1,
+          128
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          1,
+          128
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          2,
+          128
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          4,
+          4
+        ],
+        [
+          8,
+          41
+        ],
+        [
+          49,
+          96
+        ]
+      ],
+      "negative": [
+        [
+          5,
+          7
+        ],
+        [
+          42,
+          48
+        ],
+        [
+          97,
+          128
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "compact/rule_at_I0/naive/acquisition",
+    "M": {
+      "positive": [
+        [
+          129,
+          160
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          160
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          129,
+          160
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          138
+        ]
+      ],
+      "negative": [
+        [
+          139,
+          160
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "compact/rule_at_I0/naive/none",
+    "M": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "compact/rule_at_I0/naive/x",
+    "M": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "effect": "compact/rule_at_I0/experienced/acquisition",
+    "M": {
+      "positive": [
+        [
+          129,
+          160
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          160
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          129,
+          160
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          131
+        ]
+      ],
+      "negative": [
+        [
+          132,
+          160
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "compact/rule_at_I0/experienced/none",
+    "M": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "compact/rule_at_I0/experienced/x",
+    "M": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          172,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          171
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "compact/rule_at_I1/formation",
+    "M": {
+      "positive": [
+        [
+          1,
+          128
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          1,
+          128
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          2,
+          128
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          4,
+          4
+        ],
+        [
+          8,
+          47
+        ],
+        [
+          55,
+          84
+        ]
+      ],
+      "negative": [
+        [
+          5,
+          7
+        ],
+        [
+          48,
+          54
+        ],
+        [
+          85,
+          128
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "compact/rule_at_I1/naive/acquisition",
+    "M": {
+      "positive": [
+        [
+          129,
+          160
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          160
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          129,
+          160
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          149
+        ]
+      ],
+      "negative": [
+        [
+          150,
+          160
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "compact/rule_at_I1/naive/none",
+    "M": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "compact/rule_at_I1/naive/x",
+    "M": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "effect": "compact/rule_at_I1/experienced/acquisition",
+    "M": {
+      "positive": [
+        [
+          129,
+          160
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          160
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          129,
+          160
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          132
+        ]
+      ],
+      "negative": [
+        [
+          133,
+          160
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "compact/rule_at_I1/experienced/none",
+    "M": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "compact/rule_at_I1/experienced/x",
+    "M": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          173,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          172
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "compact/initial_at_R0/formation",
+    "M": {
+      "positive": [
+        [
+          1,
+          39
+        ],
+        [
+          57,
+          67
+        ],
+        [
+          88,
+          122
+        ]
+      ],
+      "negative": [
+        [
+          40,
+          56
+        ],
+        [
+          68,
+          87
+        ],
+        [
+          123,
+          128
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          1,
+          41
+        ],
+        [
+          55,
+          72
+        ],
+        [
+          87,
+          123
+        ]
+      ],
+      "negative": [
+        [
+          42,
+          54
+        ],
+        [
+          73,
+          86
+        ],
+        [
+          124,
+          128
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          2,
+          128
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          9,
+          31
+        ],
+        [
+          101,
+          104
+        ]
+      ],
+      "negative": [
+        [
+          4,
+          8
+        ],
+        [
+          32,
+          100
+        ],
+        [
+          105,
+          128
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "compact/initial_at_R0/naive/acquisition",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          134,
+          143
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          133
+        ],
+        [
+          144,
+          160
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          154,
+          160
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          153
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "compact/initial_at_R0/naive/none",
+    "M": {
+      "positive": [
+        [
+          167,
+          195
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          166
+        ],
+        [
+          196,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          169,
+          218
+        ],
+        [
+          224,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          168
+        ],
+        [
+          219,
+          223
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          173,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          172
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          161,
+          180
+        ]
+      ],
+      "negative": [
+        [
+          181,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "compact/initial_at_R0/naive/x",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          177
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          177
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          161,
+          163
+        ]
+      ],
+      "negative": [
+        [
+          164,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "compact/initial_at_R0/experienced/acquisition",
+    "M": {
+      "positive": [
+        [
+          147,
+          160
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          146
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          149,
+          150
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          148
+        ],
+        [
+          151,
+          160
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          138,
+          160
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          137
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "compact/initial_at_R0/experienced/none",
+    "M": {
+      "positive": [
+        [
+          161,
+          207
+        ]
+      ],
+      "negative": [
+        [
+          208,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          194,
+          204
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          193
+        ],
+        [
+          205,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          161,
+          203
+        ]
+      ],
+      "negative": [
+        [
+          204,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "compact/initial_at_R0/experienced/x",
+    "M": {
+      "positive": [
+        [
+          161,
+          183
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          171,
+          183
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          170
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          168,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          167
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "compact/initial_at_R1/formation",
+    "M": {
+      "positive": [
+        [
+          1,
+          11
+        ],
+        [
+          14,
+          27
+        ],
+        [
+          36,
+          37
+        ],
+        [
+          39,
+          52
+        ]
+      ],
+      "negative": [
+        [
+          12,
+          13
+        ],
+        [
+          28,
+          35
+        ],
+        [
+          38,
+          38
+        ],
+        [
+          53,
+          128
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          1,
+          11
+        ],
+        [
+          44,
+          55
+        ]
+      ],
+      "negative": [
+        [
+          12,
+          43
+        ],
+        [
+          56,
+          128
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          2,
+          63
+        ]
+      ],
+      "negative": [
+        [
+          64,
+          128
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          12,
+          34
+        ],
+        [
+          38,
+          46
+        ]
+      ],
+      "negative": [
+        [
+          4,
+          11
+        ],
+        [
+          35,
+          37
+        ],
+        [
+          47,
+          128
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "compact/initial_at_R1/naive/acquisition",
+    "M": {
+      "positive": [
+        [
+          142,
+          160
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          141
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          130,
+          160
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          129
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "compact/initial_at_R1/naive/none",
+    "M": {
+      "positive": [
+        [
+          161,
+          189
+        ],
+        [
+          220,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          190,
+          219
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          167,
+          199
+        ],
+        [
+          211,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          166
+        ],
+        [
+          200,
+          210
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          161,
+          211
+        ]
+      ],
+      "negative": [
+        [
+          212,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          161,
+          182
+        ]
+      ],
+      "negative": [
+        [
+          183,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "compact/initial_at_R1/naive/x",
+    "M": {
+      "positive": [
+        [
+          161,
+          162
+        ],
+        [
+          192,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          163,
+          191
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          195,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          194
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          161,
+          165
+        ],
+        [
+          204,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          166,
+          203
+        ]
+      ]
+    },
+    "births": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "compact/initial_at_R1/experienced/acquisition",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          141,
+          160
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          140
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "compact/initial_at_R1/experienced/none",
+    "M": {
+      "positive": [
+        [
+          179,
+          183
+        ],
+        [
+          186,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          178
+        ],
+        [
+          184,
+          185
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          220,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          219
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          202,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          201
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          161,
+          161
+        ],
+        [
+          174,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          162,
+          173
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "compact/initial_at_R1/experienced/x",
+    "M": {
+      "positive": [
+        [
+          166,
+          210
+        ],
+        [
+          217,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          165
+        ],
+        [
+          211,
+          216
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          177,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          176
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          171,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          170
+        ]
+      ]
+    },
+    "births": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "compact/rule_initial_interaction/formation",
+    "M": {
+      "positive": [
+        [
+          4,
+          5
+        ],
+        [
+          39,
+          53
+        ]
+      ],
+      "negative": [
+        [
+          1,
+          3
+        ],
+        [
+          6,
+          38
+        ],
+        [
+          54,
+          128
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          4,
+          7
+        ],
+        [
+          9,
+          10
+        ],
+        [
+          43,
+          55
+        ]
+      ],
+      "negative": [
+        [
+          1,
+          3
+        ],
+        [
+          8,
+          8
+        ],
+        [
+          11,
+          42
+        ],
+        [
+          56,
+          128
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          5,
+          7
+        ],
+        [
+          50,
+          58
+        ]
+      ],
+      "negative": [
+        [
+          2,
+          4
+        ],
+        [
+          8,
+          49
+        ],
+        [
+          59,
+          128
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          4,
+          4
+        ],
+        [
+          25,
+          48
+        ]
+      ],
+      "negative": [
+        [
+          5,
+          24
+        ],
+        [
+          49,
+          128
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "compact/rule_initial_interaction/naive/acquisition",
+    "M": {
+      "positive": [
+        [
+          141,
+          160
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          140
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          151,
+          160
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          150
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          160
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "effect": "compact/rule_initial_interaction/naive/none",
+    "M": {
+      "positive": [
+        [
+          161,
+          189
+        ],
+        [
+          219,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          190,
+          218
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          166,
+          198
+        ],
+        [
+          216,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          165
+        ],
+        [
+          199,
+          215
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          161,
+          209
+        ]
+      ],
+      "negative": [
+        [
+          210,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          165,
+          182
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          164
+        ],
+        [
+          183,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "compact/rule_initial_interaction/naive/x",
+    "M": {
+      "positive": [
+        [
+          161,
+          166
+        ],
+        [
+          192,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          167,
+          191
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          195,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          194
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          161,
+          170
+        ],
+        [
+          202,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          171,
+          201
+        ]
+      ]
+    },
+    "births": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "compact/rule_initial_interaction/experienced/acquisition",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          130,
+          132
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          129
+        ],
+        [
+          133,
+          160
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "compact/rule_initial_interaction/experienced/none",
+    "M": {
+      "positive": [
+        [
+          204,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          203
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          215,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          214
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          182,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          181
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "compact/rule_initial_interaction/experienced/x",
+    "M": {
+      "positive": [
+        [
+          167,
+          168
+        ],
+        [
+          182,
+          210
+        ],
+        [
+          217,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          166
+        ],
+        [
+          169,
+          181
+        ],
+        [
+          211,
+          216
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          183,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          182
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          161,
+          161
+        ]
+      ],
+      "negative": [
+        [
+          162,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "multi_ring/rule_at_I0/formation",
+    "M": {
+      "positive": [
+        [
+          1,
+          6
+        ]
+      ],
+      "negative": [
+        [
+          7,
+          128
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          1,
+          9
+        ],
+        [
+          17,
+          23
+        ]
+      ],
+      "negative": [
+        [
+          10,
+          16
+        ],
+        [
+          24,
+          128
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          2,
+          10
+        ]
+      ],
+      "negative": [
+        [
+          11,
+          128
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          1,
+          6
+        ]
+      ],
+      "negative": [
+        [
+          7,
+          128
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "multi_ring/rule_at_I0/naive/acquisition",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          139
+        ]
+      ],
+      "negative": [
+        [
+          140,
+          160
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "multi_ring/rule_at_I0/naive/none",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "multi_ring/rule_at_I0/naive/x",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          161,
+          175
+        ]
+      ],
+      "negative": [
+        [
+          176,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "multi_ring/rule_at_I0/experienced/acquisition",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "births": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "multi_ring/rule_at_I0/experienced/none",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "multi_ring/rule_at_I0/experienced/x",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          161,
+          195
+        ]
+      ],
+      "negative": [
+        [
+          196,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "multi_ring/rule_at_I1/formation",
+    "M": {
+      "positive": [
+        [
+          1,
+          8
+        ]
+      ],
+      "negative": [
+        [
+          9,
+          128
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          1,
+          21
+        ]
+      ],
+      "negative": [
+        [
+          22,
+          128
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          2,
+          12
+        ]
+      ],
+      "negative": [
+        [
+          13,
+          128
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          1,
+          6
+        ]
+      ],
+      "negative": [
+        [
+          7,
+          128
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "multi_ring/rule_at_I1/naive/acquisition",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          131,
+          140
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          130
+        ],
+        [
+          141,
+          160
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "multi_ring/rule_at_I1/naive/none",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "multi_ring/rule_at_I1/naive/x",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          161,
+          175
+        ]
+      ],
+      "negative": [
+        [
+          176,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "multi_ring/rule_at_I1/experienced/acquisition",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "births": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "multi_ring/rule_at_I1/experienced/none",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "multi_ring/rule_at_I1/experienced/x",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          161,
+          198
+        ]
+      ],
+      "negative": [
+        [
+          199,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "multi_ring/initial_at_R0/formation",
+    "M": {
+      "positive": [
+        [
+          1,
+          1
+        ]
+      ],
+      "negative": [
+        [
+          2,
+          128
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          2,
+          2
+        ]
+      ],
+      "negative": [
+        [
+          3,
+          128
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          1,
+          1
+        ],
+        [
+          31,
+          46
+        ]
+      ],
+      "negative": [
+        [
+          2,
+          30
+        ],
+        [
+          47,
+          128
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "multi_ring/initial_at_R0/naive/acquisition",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          137
+        ],
+        [
+          143,
+          160
+        ]
+      ],
+      "negative": [
+        [
+          138,
+          142
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "multi_ring/initial_at_R0/naive/none",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          161,
+          169
+        ]
+      ],
+      "negative": [
+        [
+          170,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "multi_ring/initial_at_R0/naive/x",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          161,
+          180
+        ]
+      ],
+      "negative": [
+        [
+          181,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "multi_ring/initial_at_R0/experienced/acquisition",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          155,
+          160
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          154
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "multi_ring/initial_at_R0/experienced/none",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          162,
+          164
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          161
+        ],
+        [
+          165,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "multi_ring/initial_at_R0/experienced/x",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "multi_ring/initial_at_R1/formation",
+    "M": {
+      "positive": [
+        [
+          1,
+          1
+        ]
+      ],
+      "negative": [
+        [
+          2,
+          128
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          1,
+          1
+        ]
+      ],
+      "negative": [
+        [
+          2,
+          128
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          2,
+          2
+        ]
+      ],
+      "negative": [
+        [
+          3,
+          128
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          27,
+          111
+        ]
+      ],
+      "negative": [
+        [
+          1,
+          26
+        ],
+        [
+          112,
+          128
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "multi_ring/initial_at_R1/naive/acquisition",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          135,
+          160
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          134
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "multi_ring/initial_at_R1/naive/none",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "multi_ring/initial_at_R1/naive/x",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          222,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          221
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "multi_ring/initial_at_R1/experienced/acquisition",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          160
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          142,
+          160
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          141
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "multi_ring/initial_at_R1/experienced/none",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          161,
+          170
+        ]
+      ],
+      "negative": [
+        [
+          171,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "multi_ring/initial_at_R1/experienced/x",
+    "M": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    },
+    "births": {
+      "positive": [],
+      "negative": [
+        [
+          161,
+          224
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "multi_ring/rule_initial_interaction/formation",
+    "M": {
+      "positive": [
+        [
+          1,
+          124
+        ]
+      ],
+      "negative": [
+        [
+          125,
+          128
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          1,
+          21
+        ],
+        [
+          70,
+          93
+        ],
+        [
+          97,
+          128
+        ]
+      ],
+      "negative": [
+        [
+          22,
+          69
+        ],
+        [
+          94,
+          96
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          2,
+          128
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          6,
+          128
+        ]
+      ],
+      "negative": [
+        [
+          1,
+          5
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "multi_ring/rule_initial_interaction/naive/acquisition",
+    "M": {
+      "positive": [
+        [
+          140,
+          160
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          139
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          160
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          155,
+          160
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          154
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          136,
+          160
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          135
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "multi_ring/rule_initial_interaction/naive/none",
+    "M": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          175,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          174
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "multi_ring/rule_initial_interaction/naive/x",
+    "M": {
+      "positive": [
+        [
+          161,
+          171
+        ],
+        [
+          180,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          172,
+          179
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          183,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          161,
+          182
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "multi_ring/rule_initial_interaction/experienced/acquisition",
+    "M": {
+      "positive": [
+        [
+          142,
+          160
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          141
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          160
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          153,
+          160
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          152
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          135,
+          160
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          134
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "multi_ring/rule_initial_interaction/experienced/none",
+    "M": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  },
+  {
+    "effect": "multi_ring/rule_initial_interaction/experienced/x",
+    "M": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "E": {
+      "positive": [
+        [
+          161,
+          208
+        ],
+        [
+          212,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          209,
+          211
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    },
+    "births": {
+      "positive": [
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": []
+    }
+  }
+]

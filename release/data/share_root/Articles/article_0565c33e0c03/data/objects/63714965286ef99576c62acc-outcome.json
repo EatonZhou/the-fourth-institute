@@ -1,0 +1,71 @@
+{
+  "id": "validation_202610195402_double_lobe_prestate_greedy",
+  "stage": "validation",
+  "shape": "double_lobe",
+  "seed": 202610195402,
+  "policy": {
+    "kind": "greedy"
+  },
+  "canonical_policy": {
+    "kind": "greedy"
+  },
+  "start": 128,
+  "end": 384,
+  "initial": {
+    "clock": 128,
+    "body": 56.7384334464042,
+    "energy": 68.7939761477548,
+    "precursor": 2.355089127564543,
+    "fuel": 25.750402518063346,
+    "heat": 17.427042604855206,
+    "waste": 28.401076570308906,
+    "dead_energy": 33.47129537238417,
+    "founder_mass": 37.70251299625058,
+    "new_tissue": 19.03592045015361
+  },
+  "status": "complete",
+  "steps": 256,
+  "M": 59.997991263120845,
+  "E": 90.51034178272691,
+  "bodytime": 773.8648657547905,
+  "min_M": 56.7384334464042,
+  "post128_live": 32.80317936708687,
+  "L128": 27.194811896033972,
+  "final": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/validation_202610195402_double_lobe_prestate_greedy/state384.bin",
+  "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/validation_202610195402_double_lobe_prestate_greedy/steps.csv",
+  "final_shape": {
+    "alive": true,
+    "components": 1,
+    "holes": 0,
+    "elongation": 1.9966381355856981,
+    "radius": 4.387666854323865,
+    "mass": 59.997991263120845,
+    "maximum": 0.8838240542650649
+  },
+  "maximum_errors": {
+    "check_material_error": 2.842170943040401e-14,
+    "check_energy_error": 5.684341886080802e-14,
+    "check_max_density": 0.915060787749839,
+    "check_attempted_body_steps": 5828.0,
+    "check_reconstruction_error": 5.551115123125783e-17,
+    "check_K_column_error": 0.0,
+    "check_transport_error": 1.4210854715202004e-14,
+    "check_exchange_material_error": 2.288447209508604e-14,
+    "check_exchange_energy_error": 5.290212712338871e-14,
+    "check_whole_material_error": 3.7914116290949096e-14,
+    "check_whole_energy_error": 6.705747068735946e-14,
+    "check_input_material_array_error": 0.0,
+    "check_input_energy_array_error": 0.0,
+    "check_cargo_P_error": 4.440892098500626e-16,
+    "check_cargo_F_error": 1.0658141036401503e-14,
+    "check_cargo_E_heat_error": 0.0,
+    "check_cargo_capacity_excess": 0.0,
+    "check_cargo_payable_excess": 0.0,
+    "check_cargo_negative": 0.0,
+    "check_cargo_newborn_payer": 0.0,
+    "check_request_partition_error": 6.938893903907228e-18,
+    "check_founder_excess": 0.0,
+    "check_L128_conservation_error": 1.5626389071599078e-14,
+    "check_L128_excess": 0.0
+  }
+}

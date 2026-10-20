@@ -1,0 +1,14 @@
+{
+  "task": "distractor_credit_assignment_20261019",
+  "mode": "science",
+  "job": "1634a0b5-3bab-4566-b508-93b2e62d8b59",
+  "status": "complete",
+  "attempted": 25280,
+  "returned": 25280,
+  "unknown": 0,
+  "wall": 34.63946920202579,
+  "error": null,
+  "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/distractor_credit_assignment_20261019/1634a0b5-3bab-4566-b508-93b2e62d8b59",
+  "raw_bytes": 80198173,
+  "paths": 54
+}

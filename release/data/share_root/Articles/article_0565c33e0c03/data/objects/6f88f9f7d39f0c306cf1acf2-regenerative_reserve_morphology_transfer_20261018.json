@@ -1,0 +1,72 @@
+{
+  "schema": "pi-research-authorization-v1",
+  "authorized_by": "resident_afa3d4d6cf11",
+  "lineage_id": "lineage_75e3399f4877",
+  "owner_resident_id": "resident_ce2a5ab005bc",
+  "owner_facade": "resident_4e35778304b2",
+  "shared_key": "research.regenerative_reserve_morphology_transfer_20261018",
+  "request_key": "ce2-regenerative-reserve-morphology-transfer-20261018-v1",
+  "question": "同一物理参数导出的储备反应，在紧凑开口体与多段连接体上，相对开放和持续抑制是否仍改变身体维持与能量的权衡？",
+  "selection_frozen_by_PI": "PI已亲看两候选各17态形成atlas：reference_anisotropic--connected_trilobe由三叶变紧凑小环再开口为U；compact_ring_core_outer--bridged_longbody由双叶桥连变较大多段/多孔连接。按这些实际动态与既有单长环的差异选择，不按M/E排名或新试跑结果选。原8候选均保留，未进入此比较的4条仍为未续接，不称失败。",
+  "sources": [
+    {
+      "candidate": "reference_anisotropic--connected_trilobe",
+      "packet": "/data/lenia-research/lineage_75e3399f4877/regenerative_morphology_transport_search_20261018/stage1/245af1cf-0152-4891-af62-25b20a1eb2eb/reference_anisotropic--connected_trilobe/transactions/000128.npz",
+      "sha256": "f27aa67dfd5708d094ce979c9157d7dbbd6066aac745e0ab5baf9f55cfa0669d"
+    },
+    {
+      "candidate": "compact_ring_core_outer--bridged_longbody",
+      "packet": "/data/lenia-research/lineage_75e3399f4877/regenerative_morphology_transport_search_20261018/stage1/245af1cf-0152-4891-af62-25b20a1eb2eb/compact_ring_core_outer--bridged_longbody/transactions/000128.npz",
+      "sha256": "0b4f5fc7e90411f5e6ae5c15b1d51a94ef8aeb0a6cac5401fd2f86928ffc5b98"
+    }
+  ],
+  "budget": {
+    "body_forward_cap": 1536,
+    "candidates": 2,
+    "arms_each": 3,
+    "steps_each": 256,
+    "start": 128,
+    "end": 384,
+    "cpu_threads": 2,
+    "gpu": 0,
+    "preview_body": 0,
+    "independent_energy_cap": 0,
+    "prefix_replay": 0,
+    "failed_attempts_count_toward_cap": true
+  },
+  "embedding": "复用已验证64→96的精确静态嵌入方法：原完整18数组中央[16:80,16:80]逐值/字节同，外围全0；每候选原核按整数有符号位移搬到96，不重归一化、不改响应，仅两body config.size变96。不补P/F/E，不改controller/时钟。冻结两嵌入完整包和配置/核SHA，再三臂逐字节复制。若已有核不能按原整数支持无歧义嵌入，先回具体事实，不擅改核。",
+  "embedding_scope": "扩大空外围本身改变旧64周期邻域；两不同规则/身体及已取得128史也不同。本批只作每个嵌入受体内策略总后果与不同身体条件的探索，非纯形态因果、64/96效应或独立重复。不将新96称无限域；记录真实外边距与触边情况。",
+  "tape": {
+    "draws": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_domain_embedding_20261018/draws129_384.npy",
+    "draws_sha256": "e930013028163f231349fb587b4afa4187907edaea41dab5227fadcfd999b948",
+    "forcing": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_domain_embedding_20261018/forcing129_384.npz",
+    "forcing_sha256": "e9e138045b769e3e1c7cf667ec9b5c2895fd2b49020f96b141ad51aae6da9716",
+    "rule": "直接复用既有96带，两候选三臂共用；静态核它中央与原stage1共同384带的129..384一致。不得另抽带挑结果或评估身体前缀。"
+  },
+  "arms": [
+    {
+      "name": "open_T11",
+      "allocation": "requested_a=1"
+    },
+    {
+      "name": "suppress_T11",
+      "allocation": "requested_a=0；原旧空格/欠费回a1"
+    },
+    {
+      "name": "reserve_T11",
+      "allocation": "搬运付款后旧rho>0且E>=.1456rho时requested_a=0，其余1；等号抑制、无滞回"
+    }
+  ],
+  "execution": "所有臂原P/F输运T11开启，D1/dt.05/P-F各.02边价、共旧E付款、分别守恒/热一次。先输运再原抑制费.02*dt*rho*(1-a)、旧格额度，再prepare/plant/settle及原h/规则死/生成各一次；出生价.42，fresh-brake只自然到期，held/新生混合原样，learn=false，无新增记忆/复制费。复用已完成homeostatic policy与原执行器，不改价、阈值、生成或传感假设。每候选完整原phys参数须静态核与.1456推导一致，否则回实际差异而不擅用新阈值。",
+  "validation": "只覆盖新增两个嵌入包、各源配置/核/带、三策略选择及实际完整ready恢复。原policy/执行器已通过的检查不重跑。不得使用真实前向预览选择候选。未知inflight拒绝，不隐式重演；所有尝试计上限。",
+  "comparisons": "每个受体内reserve-open、reserve-suppress、suppress-open三比较，全六绝对臂与129..384全程；不同候选不当独立复现或平均成功率。原长环256结果仅另列背景，不混入配对或抹掉起点/域/时间差异。没有可复用的本批未来，六臂均属新预算。",
+  "readouts": "全物理收据/动作K/门与资源付款后E/rho阈值；M/E/体时/U/出生/规则死/饥饿/携能损/全部费用、存量、欠付。固定1/8/32/64/128/256累积和分段，全部负段/换号/灭绝及零尾保留。记录首次有效有体格开放与后续身体分离，空格requested差不当动作差。每8步原坐标真态、身体连通/开合/分裂/边距读出，不以旋转/换色或阈值连通数独自声称新形态。",
+  "runtime": {
+    "control": "提交/恢复前实读running且started；原CPU总槽位不变，GPU0。",
+    "storage_root": "/data/lenia-research/lineage_75e3399f4877/regenerative_reserve_morphology_transfer_20261018",
+    "soft_bytes": 68719476736,
+    "minimum_free_bytes": 4294967296,
+    "job": "一个唯一key/job，绝对attempt/commit结清；原子完整ready存档。"
+  },
+  "completion": "本完整有限设计已获授权，ce2必要新静态检查后冻结计划并唯一提交，无额外审批。到384收束，不换失败候选、不扫核/阈值/价/种子、不延窗救援。科学结果不预设存活或反馈获益；旧全部key和额度封存。实际形态/过程沿论文与八体墙真分支更新。"
+}

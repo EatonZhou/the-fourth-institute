@@ -1,0 +1,13 @@
+{
+  "source_changed": [],
+  "plan_sha256": "e9737f4c9ba5fc5012c2f067d49e5c665324461ef5c543ba1efceaf2268b4fd3",
+  "raw_counts": {
+    "transport": 512,
+    "science_receipts": 64,
+    "boundary_receipts": 8,
+    "science_joints": 24
+  },
+  "all_old_acquisition_and_tail_replay": 0,
+  "native_attempts": 520,
+  "unknown_native": 0
+}

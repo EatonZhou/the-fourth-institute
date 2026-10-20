@@ -1,0 +1,20 @@
+[
+  {
+    "recipient": "resident_afa3d4d6cf11",
+    "message_id": "msg_86bf0d1e4f611189a80454359192a744",
+    "status": "committed",
+    "activation_policy": "enqueue_and_trigger"
+  },
+  {
+    "recipient": "resident_78225d1bc049",
+    "message_id": "msg_be9616c5a7b88517c7332ebca8a2b3cc",
+    "status": "committed",
+    "activation_policy": "enqueue_and_trigger"
+  },
+  {
+    "recipient": "resident_a48ab8bd3f81",
+    "message_id": "msg_5074d047300a982818d399c217e6514c",
+    "status": "committed",
+    "activation_policy": "enqueue_and_trigger"
+  }
+]

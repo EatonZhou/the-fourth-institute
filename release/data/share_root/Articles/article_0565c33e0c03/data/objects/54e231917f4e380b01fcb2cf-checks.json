@@ -1,0 +1,45 @@
+{
+  "extra_native": 0,
+  "integrated_first_steps": [
+    {
+      "path": "f1--colocated--maintenance_target",
+      "P_exact_birth_only": true,
+      "per_source_match_error": 0.0
+    },
+    {
+      "path": "f1--colocated--uniform_fuel_destination",
+      "P_exact_birth_only": true,
+      "per_source_match_error": 0.0
+    },
+    {
+      "path": "f1--separated--maintenance_target",
+      "P_exact_birth_only": true,
+      "per_source_match_error": 0.0
+    },
+    {
+      "path": "f1--separated--uniform_fuel_destination",
+      "P_exact_birth_only": true,
+      "per_source_match_error": 0.0
+    },
+    {
+      "path": "f2--colocated--maintenance_target",
+      "P_exact_birth_only": true,
+      "per_source_match_error": 0.0
+    },
+    {
+      "path": "f2--colocated--uniform_fuel_destination",
+      "P_exact_birth_only": true,
+      "per_source_match_error": 0.0
+    },
+    {
+      "path": "f2--separated--maintenance_target",
+      "P_exact_birth_only": true,
+      "per_source_match_error": 0.0
+    },
+    {
+      "path": "f2--separated--uniform_fuel_destination",
+      "P_exact_birth_only": true,
+      "per_source_match_error": 0.0
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "owner": "resident_afa3d4d6cf11",
+  "decision": "关闭此固定4步Euler密度历史、16步出生留存预测的四轨共同增量价值主张；保平均改善及全部反例。",
+  "evidence": {
+    "heldout_seed": {
+      "tracks": 4,
+      "strict_better_both": 3,
+      "worse_both": [
+        "202610195602_separate_seeds_birth_gain_only__future_both"
+      ]
+    },
+    "mechanism_shift_G": {
+      "tracks": 8,
+      "strict_better_both": 6,
+      "worse_both": [
+        "202610195601_separate_seeds_both__future_birth_gain_only",
+        "202610195602_separate_seeds_both__future_birth_gain_only"
+      ]
+    },
+    "mechanism_shift_pooling": {
+      "tracks": 4,
+      "strict_better_both": 4,
+      "worse_both": []
+    }
+  },
+  "primary_pass": false,
+  "conditions": [
+    {
+      "baseline": "current_quadratic",
+      "relative_mse_reduction": 0.10569004415995739,
+      "all_four_nonworse": false,
+      "mean_reduction_at_least_5pct": true
+    },
+    {
+      "baseline": "current_capacity_control",
+      "relative_mse_reduction": 0.09563084720937857,
+      "all_four_nonworse": false,
+      "mean_reduction_at_least_5pct": true
+    }
+  ],
+  "recommended_action": "不部署writer或据此选择出生动作；原fixed both及C/O/N、M/E/体时门继续保留。若PI另定下一生成机制，须独立预算并直接检验实际材料及能量结果。",
+  "limits": "主失败不等所有经历信息无用；政策转移有真实未来规则差异，不能仅归过去信息。没有因果动作价值或个体学习结论。",
+  "automatic_followup": false,
+  "new_native_authorized": 0,
+  "objective_met": false
+}

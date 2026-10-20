@@ -1,0 +1,72 @@
+{
+  "task": "resource_conditioned_effort_opportunity_20261019",
+  "status": "complete",
+  "source_plan": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/plan.json",
+  "plan_sha": "1f2d6671f830ad177847301c1357779d2d740abb6235050b323dd711d48608a9",
+  "recording_repair": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/recording_repair.json",
+  "recording_repair_sha": "d881bfd7fba519e3a9cf9d7ee59ecf5560fb8183f4f5f21d1ccb1a4fac6d2201",
+  "native": 2048,
+  "unknown": 0,
+  "replayed_native": 0,
+  "runner_worker_seconds": 9.730864,
+  "all16_survive": true,
+  "boundary": {
+    "primary": "半投入U下降8/8；compact末E下降4/4，soft末E上升4/4但M/体时下降。宽度不改变净E排序。",
+    "temporal": "soft末64窗半投入U提高4/4但全128仍降低，早晚完整保留。",
+    "choice": "关闭本宽窄任务摄取历史必要性；不加第三档。继续身体摄取机会/局部能量配置反馈结构，保两个固定投入。",
+    "spatial": "96当步摄取前收据+272真帧，整体E较高可与局部匮乏共存；免费全局重分配仅数学诊断上界。",
+    "objective_met": false
+  },
+  "artifacts": {
+    "REPORT.txt": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/analysis/REPORT.txt",
+      "sha256": "c97cf1c6395b2984ea2e2aaa1fb7488914cfd04438915f983231fd0393df4ead"
+    },
+    "accounting.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/analysis/accounting.json",
+      "sha256": "94bd435794e5ce1bfd82e6ca2e417bde44fb22fdf5ed3edf75a202c19244ff7a"
+    },
+    "summaries.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/analysis/summaries.json",
+      "sha256": "d8e5fa571f7198e68b484cf6738ed00e7659f6f86b925f83b9afa2b18192e3b6"
+    },
+    "comparisons.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/analysis/comparisons.json",
+      "sha256": "d55125f5748130f74e5fa688a59f224bd018755c6dad5df933c16eef05874a34"
+    },
+    "interactions.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/analysis/interactions.json",
+      "sha256": "a58b3eb3e1595a366d5887d7b466030aa63b5455ce1d449e0b11646c5f6f7725"
+    },
+    "validation.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/analysis/validation.json",
+      "sha256": "757516f279c3fdadd9277d1dd4ecd365a4f61a3b5c4bf42ef32db0592094bf86"
+    },
+    "actual_amplitude_check.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/analysis/actual_amplitude_check.json",
+      "sha256": "051a0a75d40be1d405a759622d59bf168b62305c2a6243f2b03d731318a470bc"
+    },
+    "body_opportunity_readout.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/analysis/body_opportunity_readout.json",
+      "sha256": "ee5f8f1b0222043faa1df3fe967abdb0927f6cdb08f681807801ca1b2457182d"
+    },
+    "all_conditions.png": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/analysis/all_conditions.png",
+      "sha256": "4c7577cf192f55975d28d01303d74db41c06c8901418ddc32f14fa7b5472d050"
+    },
+    "terminal_spatial_fields.png": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/analysis/terminal_spatial_fields.png",
+      "sha256": "5b2eade138ec99f245db7b6075f60f22a5c7449ca5cda44c65ea642180574535"
+    },
+    "replay.html": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/analysis/replay.html",
+      "sha256": "14f7e5b0fd466bcbf1407f61ec3c19bd27b8602d39914ff42d81c1885c9696d0"
+    }
+  },
+  "related_body_histories": 4,
+  "new_independent_worlds": 0,
+  "analysis_sources": {
+    "/share/Projects/元胞自动机研究/src/environment_evolution/embodied_resource_prediction/resource_effort_analysis.py": "63ac91a466cad0b7581f4847b8f2e8c49aeda52b5269fba2153de9dce6c9555c",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/embodied_resource_prediction/effort_body_opportunity_readout.py": "7637c72221696e303ff377e1c66967822ba9b4b1d49b67587d9a81797033982d"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "type": "notice",
+  "category": "resource",
+  "description": "A Notice Board post; author and replies keep their original identities.",
+  "legacy_code_pattern": "[0-9a-f]{16}",
+  "title": {
+    "zh": "公告",
+    "en": "Notice"
+  },
+  "provider": "management_portal.resources.providers.notice:install_resolver",
+  "catalog_section": "",
+  "catalog_order": 0,
+  "registerable": false,
+  "scope": "shared",
+  "unit": "notice_board",
+  "enabled_by_default": true
+}

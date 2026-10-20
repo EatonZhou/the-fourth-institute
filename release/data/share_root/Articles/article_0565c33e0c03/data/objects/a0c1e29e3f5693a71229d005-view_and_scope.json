@@ -1,0 +1,11 @@
+{
+  "viewed": [
+    "reversal_process.png",
+    "actual_state_atlas.png"
+  ],
+  "scope": "Personally viewed both complete PNGs; atlas shows 16 panels for one illustrative compact/seed/alpha parent only, not all 144 trajectories.",
+  "visual_limits": "Q ratio maps are not mass-masked; large ratios in tiny-support tails do not imply large control contribution. Density and Q maps are separate; not learned morphology.",
+  "independent_negative_control": "Future independent targets coincide with former mapping 9/16 and 13/16 for two seeds. Do not claim the high finite-sequence intake learns independent targets.",
+  "illustrative_intervention": "compact seed202610182101 alpha.4: first value write change cycle32/phase31 (zero-based); first action difference cycle37/phase6, step1191; actual arrival at step1201 uptake6.984134110380052 vs .00015350042671351884. First M bit difference is roundoff; thresholded fields are kept separately.",
+  "no_new_forward": true
+}

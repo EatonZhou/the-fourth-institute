@@ -1,0 +1,293 @@
+{
+  "task": "third_response_generation_search_20261019",
+  "owner": "resident_d3ccfa2d95b7",
+  "objective_met": false,
+  "choice": "End displacement/order/common-packet search. Test a deployable expansion of the fixed local generating response repertoire under center-only supply, selected by actual retained new tissue rather than survival of the old body.",
+  "hypothesis": "The two existing local response curves may restrict construction of tissue compatible with later renewal. An additional response to their mean local potential could change attainable local generation. This is a bounded mechanism hypothesis, not an established explanation of prior failures.",
+  "evidence": {
+    "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/handoff.json",
+    "sha256": "8e0672824cdb65da02ae3f1f8e7c3b3fd66ac4e1a3f15c74ea694feb75b66e59",
+    "native": 3584,
+    "worker_seconds": 186.76506,
+    "unused_sealed": [
+      0,
+      713.23494
+    ],
+    "finding": "Common HC extracellular inventory: fixed H_B coverage passes all four separate-body M/E/bodytime/post256 comparisons; ring only1/4. HU/HD versus HB mixed, not equivalent. New futures24/24 maintenance, combined28/32; four failures old separateHC.",
+    "PI_visual": "Viewed acquired_body.png with all four parents and HU/HD/HB/HC: conditional thickening and weak separate-cluster connections. External exposure and intracellularE remain part of those states.",
+    "prior_scope": "HB remains an external-construction positive reference from a different acquisition/probe protocol; no new HB simulation, no numerical deployment comparison against old U/D probes under the new center challenge."
+  },
+  "parents": [
+    {
+      "seed": 202610195601,
+      "shape": "ring",
+      "clock": 128,
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/deletion_layout_life0_formation_20261019/985493ed-7d71-4b49-9edb-42390c6cf545/202610195601_ring_original_prestate_greedy_reference/state128.bin",
+      "sha256": "577c86e7952471bc851de8fc7a50544046c1c168a836148325a4be1ebd6cfd78",
+      "M": 71.7551647290679,
+      "E": 85.33424175212423,
+      "fixed_P_sha": "3738955e354f61734f23c311a49d00ae97781b80dc71fe724a1e69b19cd10a50",
+      "fixed_F_sha": "9624bd76317157284bdc9900c3cc1636fd478f913c77b27f4faff586d7af0a33",
+      "gross_P_step": 0.20026968119879088,
+      "gross_F_step": 0.8010787247951635,
+      "initial_supply_on_current_body": {
+        "center": 0.9973404255319149,
+        "up": 0.6881648936170213,
+        "down": 0.7200797872340425
+      },
+      "paired_order_integrated_input_error": 0.0,
+      "native": 0,
+      "role": "train",
+      "HC_prefix": {
+        "id": "202610195601_ring_H_C",
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/replacement_history_carrier_20261019/325b618a-c145-4529-8c24-f93b81d375f5/202610195601_ring_H_C/state256.bin",
+        "sha256": "be09a32f82f868449f59e199eb5f55901ece8f5678e60c65d5116578ffff35f8",
+        "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/replacement_history_carrier_20261019/325b618a-c145-4529-8c24-f93b81d375f5/202610195601_ring_H_C/steps.csv",
+        "rows_sha256": "2ebadd842b905de8382e3f94a7d858f66abcc1805a1fafc93c2e4f00508d840d",
+        "steps": 128,
+        "M": 71.30495724741272,
+        "E": 94.59065323526383,
+        "bodytime": 458.7551566444474,
+        "post128": 21.844076480471045
+      }
+    },
+    {
+      "seed": 202610195601,
+      "shape": "separate_seeds",
+      "clock": 128,
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/deletion_layout_life0_formation_20261019/985493ed-7d71-4b49-9edb-42390c6cf545/202610195601_separate_seeds_original_prestate_greedy_reference/state128.bin",
+      "sha256": "b736471639a7fa9ccfb79cd3a1a89417c9c13932c4c7be3adac26b47c6574271",
+      "M": 57.53136837238481,
+      "E": 65.57448129096247,
+      "fixed_P_sha": "cc29033b6aef1572cbbee652d687ebd2aafec67329cd8166ce45d0b110fa1f7e",
+      "fixed_F_sha": "b4dbbb6af3f6543c68f93b22137610c1054672bcce24955b59ce4c2235c82748",
+      "gross_P_step": 0.2002696811987909,
+      "gross_F_step": 0.8010787247951636,
+      "initial_supply_on_current_body": {
+        "center": 0.9459459459459459,
+        "up": 0.5760135135135135,
+        "down": 0.6021959459459459
+      },
+      "paired_order_integrated_input_error": 0.0,
+      "native": 0,
+      "role": "train",
+      "HC_prefix": {
+        "id": "202610195601_separate_seeds_H_C",
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/replacement_history_carrier_20261019/325b618a-c145-4529-8c24-f93b81d375f5/202610195601_separate_seeds_H_C/state256.bin",
+        "sha256": "23c82c934b8b8068f5053dda525b39303192cfe5e711352a0e4ecc88da5e2673",
+        "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/replacement_history_carrier_20261019/325b618a-c145-4529-8c24-f93b81d375f5/202610195601_separate_seeds_H_C/steps.csv",
+        "rows_sha256": "87f698e29af920da40745bd36c92cbdcfa4b65349bd5a526ce22d9ce3b7e498e",
+        "steps": 128,
+        "M": 56.530531438684235,
+        "E": 70.6409408588719,
+        "bodytime": 364.13800156601735,
+        "post128": 19.003693894707364
+      }
+    },
+    {
+      "seed": 202610195602,
+      "shape": "ring",
+      "clock": 128,
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/deletion_layout_life0_formation_20261019/985493ed-7d71-4b49-9edb-42390c6cf545/202610195602_ring_original_prestate_greedy_reference/state128.bin",
+      "sha256": "ad69b2ad0d9726fbd39202aec51231b07bec9d04a5cd8935324e0f416da1d7d5",
+      "M": 69.87693758615609,
+      "E": 84.49424812826368,
+      "fixed_P_sha": "3738955e354f61734f23c311a49d00ae97781b80dc71fe724a1e69b19cd10a50",
+      "fixed_F_sha": "9624bd76317157284bdc9900c3cc1636fd478f913c77b27f4faff586d7af0a33",
+      "gross_P_step": 0.20026968119879088,
+      "gross_F_step": 0.8010787247951635,
+      "initial_supply_on_current_body": {
+        "center": 0.9847074468085107,
+        "up": 0.6462765957446809,
+        "down": 0.7466755319148934
+      },
+      "paired_order_integrated_input_error": 0.0,
+      "native": 0,
+      "role": "validation",
+      "HC_prefix": {
+        "id": "202610195602_ring_H_C",
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/replacement_history_carrier_20261019/325b618a-c145-4529-8c24-f93b81d375f5/202610195602_ring_H_C/state256.bin",
+        "sha256": "a69f0dbde106d6db4d2b4e0096d9fbb36a269c7c456322afc317906d415935c9",
+        "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/replacement_history_carrier_20261019/325b618a-c145-4529-8c24-f93b81d375f5/202610195602_ring_H_C/steps.csv",
+        "rows_sha256": "b4b133d520b7867833fa1182a096c9c9afca47b9eb829aea3ad1dd6b1e4c8f5e",
+        "steps": 128,
+        "M": 70.30138859355998,
+        "E": 94.43528031979716,
+        "bodytime": 448.479566294445,
+        "post128": 21.898631930963493
+      }
+    },
+    {
+      "seed": 202610195602,
+      "shape": "separate_seeds",
+      "clock": 128,
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/deletion_layout_life0_formation_20261019/985493ed-7d71-4b49-9edb-42390c6cf545/202610195602_separate_seeds_original_prestate_greedy_reference/state128.bin",
+      "sha256": "886751c9b3a1da24c7fec020ef82b14ddfccfb1ed7297efef0d7a35115127471",
+      "M": 58.174988462232875,
+      "E": 65.21947474591072,
+      "fixed_P_sha": "cc29033b6aef1572cbbee652d687ebd2aafec67329cd8166ce45d0b110fa1f7e",
+      "fixed_F_sha": "b4dbbb6af3f6543c68f93b22137610c1054672bcce24955b59ce4c2235c82748",
+      "gross_P_step": 0.2002696811987909,
+      "gross_F_step": 0.8010787247951636,
+      "initial_supply_on_current_body": {
+        "center": 0.9366554054054053,
+        "up": 0.549831081081081,
+        "down": 0.5988175675675675
+      },
+      "paired_order_integrated_input_error": 0.0,
+      "native": 0,
+      "role": "validation",
+      "HC_prefix": {
+        "id": "202610195602_separate_seeds_H_C",
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/replacement_history_carrier_20261019/325b618a-c145-4529-8c24-f93b81d375f5/202610195602_separate_seeds_H_C/state256.bin",
+        "sha256": "980d41f9d35bbf40d4566d3014ef3a15e55bbeeb556920aa11a9c7bc027e0956",
+        "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/replacement_history_carrier_20261019/325b618a-c145-4529-8c24-f93b81d375f5/202610195602_separate_seeds_H_C/steps.csv",
+        "rows_sha256": "578f3920ae5270d75daa5886c4f5ee4fef97e25e83e431d2865c3cf9148c8569",
+        "steps": 128,
+        "M": 57.14930433611222,
+        "E": 72.45546694062067,
+        "bodytime": 368.5472593533598,
+        "post128": 18.542704595580354
+      }
+    }
+  ],
+  "source_bindings": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/handoff.json",
+      "sha256": "8e0672824cdb65da02ae3f1f8e7c3b3fd66ac4e1a3f15c74ea694feb75b66e59"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/scientific_next_request.json",
+      "sha256": "bb5ba7b60f6b747a7650c1da8a96473593776b6edcc0ab2083026276587001b8"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/spatial_coverage_acquired_body_20261019/outcomes.json",
+      "sha256": "781cf97e6c4f021494b52134d98c390ec5e88341fb90b604e80e8eee4444c4a3"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/replacement_history_carrier_20261019/outcomes.json",
+      "sha256": "ddcc3db2a077591083549eb26f51234373ac440746c4344f62191ee9aaffcb68"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/replacement_history_carrier_20261019/plan.json",
+      "sha256": "67e57f6b6c1a531981088d8b03c22ebb7c6db7c5ab440c59d02e6d92d2715a59"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/third_response_generation_search_20261019_preflight.json",
+      "sha256": "e7a0693c61233af796b3a48495e9c5068a2d67dcd06a4ff853005f94092cc6ab"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/resource_conditioned_growth_rule/core.py",
+      "sha256": "bad674f254644c8fc00caa6fd50ccd45bbebdd65a229c11125ca3765df981a44"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/deletion_layout_life0_formation/core.py",
+      "sha256": "438213791aaffe2c674437a4adec18a15818ccfa630c5196b795770b5e9c1191"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/fixed_amount_rule_deletion_layout/core.py",
+      "sha256": "71277e88c480cb81b9b602a85dab641c5e4e61b661b4d74f67fe19a36b5914a5"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/replacement_history_carrier/core.py",
+      "sha256": "c8d97368cbd8b00b174f3728587702e0e9651b2d96da001af325b8671a345a45"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/turnover_compatible_morphogenesis/core.py",
+      "sha256": "dbfea17ca9e68833d2e0fe7f33c37cac6111a4c441f51fb23a6a78f458886a84"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/morphology_evolution/dual_kernel.py",
+      "sha256": "529d42e50876a68bce54a512f8a9cafd48a8f68276cf8507a0e2243b3f450d6e"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/regenerative_actor/model.py",
+      "sha256": "3941450e97d2311f833d1c9c8964f348218467d4cd8d41a68b6584b72b24b5b0"
+    }
+  ],
+  "invariants": "Unchanged actual128 states, original two kernels/response curves, native actor/conversion/pump, material/fuel prices, capacity, dt, outflow half-life64 and zero motion command. Keep deletion layout off. Only a third response and ready-state choice over it are added. No explicit death multiplier, price change, cargo manipulation, external inventory transfer, new memory field or writer.",
+  "mechanism": {
+    "potential": "uC=(uA+uB)/2 using the two existing convolution potentials. Do not add a learned kernel or use global coordinates, source direction, labels, future data or whole-body statistics.",
+    "response": "hC=2*max(0,1-(uC-muC)^2/(9*sigmaC^2))^4-1, identical polynomial family to the existing responses, bounded[-1,1]. mu0=(muA+muB)/2; sigma0=sqrt(sigmaA*sigmaB).",
+    "parameters": {
+      "mu0": 0.17975814283267433,
+      "sigma0": 0.04345259224059916,
+      "latent": "z=(z_mu,z_sigma); muC=mu0*exp(0.15*tanh(z_mu)); sigmaC=sigma0*exp(0.25*tanh(z_sigma)). z0=[0,0] is the fixed midpoint baseline. No clipping, wider domain or extra parameter after seeing forward results."
+    },
+    "selection": "At ready state calculate the original choose(greedy) exactly, including original A/B heat tie-breaking and w0 tie. Calculate hypothetical C death/survivor/admit from the same ready rho/P/F/E and native conversion. Select C only where scoreC=birthC-deathC is STRICTLY greater than max(scoreA,scoreB) and ready neighborhood(rho)>0. Otherwise retain the original greedy w field bit-for-bit. On C ties retain old policy. Record score/choice fields before native.",
+    "execution": "Lock the C-mask and original A/B weight before native. At the actual after-actor generation stage recompute uA/uB/uC and hC from the actual body, apply hC only at locked C sites and exact original mixed h elsewhere. Original native handles all deaths, birth admission and payments once. Do not substitute hypothetical ready births for actual births. Aggregate hypothetical scores are not an isolated per-site causal action estimate.",
+    "fixed_baselines": "Original two-response greedy; three-response with z0 fixed midpoint; always_midpoint uses hC(z0) everywhere with ready neighborhood>0 and old fallback outside, without a greedy comparison. This constant-rule baseline has identical pricing and full accounting.",
+    "cost_scope": "Existing physical cost formulas unchanged. Additional response/admit arithmetic is not physically priced; report this openly. No claim of a fully priced new biological sensing/computation channel.",
+    "classification": "Outer selection of a fixed generating rule, followed by fixed lifetime deployment. Not individual lifetime learning and not automatically a novel algorithm. Trained behavior requires a nonzero selected change and actual action differences; fixed midpoint or original fallback is not a learned success."
+  },
+  "environment": {
+    "inputs": "For all newly simulated scientific and validation calls129..384 use the exact original fixed_P/fixed_F center maps from each saved128 parent, with original per-step gross. No shifted/alternating maps, no P/F packet exchange. Retain actual inventory at128.",
+    "scope": "This is fixed-center continuation from acquired128 states, not life0 de novo morphogenesis. Two already-used seed histories crossed with ring and separate bodies. 5602 is held out from parameter selection for this task but is not a novel independent ecological world.",
+    "history": "Old 0..128 acquisition is read-only and never replayed. Retain complete costs from128 and raw old history links."
+  },
+  "search": {
+    "train_contexts": "seed202610195601 ring and separate, actual128 to256, each128 steps. Original H_C128 prefix outcomes/steps/full states are exact center-only greedy references and reused read-only after pure identity checks.",
+    "initial": "Evaluate fixed three-response z0 on both contexts,256 total native. Original greedy is the fallback and consumes0new training steps.",
+    "CEM": "Two rounds, exactly4 new 2D proposals each, no extra proposals. PCG64 seeds202610196101 then202610196102, draw4x2 standard normal arrays frozen in plan before native. Round1 mean=[0,0],std=[1,1]; proposals=mean+std*noise. Round2 mean/std from the best2 evaluated latent candidates (not the no-C fallback), population std ddof0 with elementwise floor.25. Preserve all failures. No resampling.",
+    "eligibility": "Both train contexts complete, minM>=32, finalM/finalE/bodytime no less than the original greedy reference within1e-8; actual post128 retained tissue strictly improves in both. Also report zero tolerance. No uptake or old-material score rescues failure.",
+    "ordering": "Rank latent candidates by eligibility first; then number of violated M/E/bodytime/minM guards; then descending minimum normalized post128 improvement (delta divided by registered sourceM128), descending mean normalized improvement, lexicalID. This same order determines the two CEM elites. Selection is the best eligible latent candidate; otherwise original greedy. Keep fixed z0 in the candidate set.",
+    "learning_claim": "If z0 is best, deploy the hand-defined fixed response and state that training found no better behavior. A nonzero proposal must outrank z0 by the frozen target and differ in actual actions to count as trained behavior; if z0 failed its guard, report this qualification explicitly.",
+    "dedup": "Cache only exact canonical phenotype+source state+inputs+endpoint matches, retaining role aliases before execution. Do not equate distinct parameters because early actions happen to match. All actual native calls count.",
+    "budget": "fixed z0 two128 +8 proposals two128 =2304 new training native maximum. Freeze selection plus all ranking records before any validation future."
+  },
+  "validation": {
+    "contexts": "seed202610195602 ring and separate actual128 parents, fixed center through384,256 steps per policy.",
+    "policies": "Four roles: selected (possibly original/z0), original two-response greedy, fixed three-response z0, always_midpoint. All begin with identical complete physical/world/RNG/stock/tag state; changing only generating policy. Exact aliases are read-only role aliases with no duplicate forward.",
+    "old_baseline": "For original greedy reuse actual old H_C129..256 prefix and restored256 joint, then execute only257..384 center128 once per shape. Validate full state/input/observer equivalence before reuse. All other non-aliased policies run129..384 from actual128 once. No old U/D probe is a center baseline.",
+    "targets": "Primary actual post256 retained tissue at384 and bodytime257..384. For useful selected-rule advantage over original, both must strictly improve and finalM/finalE must not decline (1e-8;zero sensitivity) in BOTH shapes; minM>=32. Also report post128, L128/L256 and full129..384 bodytime separately. Ring is an explicit counterexample opportunity, not dropped if separate improves.",
+    "comparators": "Report selected-original, fixed-midpoint-original, always-midpoint-original, selected-fixed-midpoint and selected-always-midpoint. Do not call search uniquely valuable if a fixed comparator explains the outcome. Preserve each shape and the first/last64 windows; no composite.",
+    "maintenance": "Four predeclared64 windows: born>=death,deltaE>=0,minM>=32 with1e-8 accounting tolerance and exact zero sensitivity. Report all-four and last-two together. Finite384 is not steady state; an early benefit cannot override negative late replacement.",
+    "budget": "At most3 non-baseline policies*2shapes*256 +2 original tails128 =1792 new native. Together with training4096 science. If selected aliases, leave spare native sealed."
+  },
+  "records": {
+    "labels": "Keep true founder/L128 and post128. Register L256 at actual256 before further native; every future newborn contributes only to post256, carry actualK and actual actor/rule survival once. No oracle labels in choices.",
+    "every_native": "Actual requests/accepted births/deaths/rejections; all costs, heat, stocks, input/export/arrears and reconstruction balances. Separate hypothetical ready scores and locked choices from actual after-actor response/receipts. Store C choice counts and actual tissue mass affected; not independent samples.",
+    "training_frames": [
+      128,
+      160,
+      192,
+      224,
+      256
+    ],
+    "validation_frames": [
+      128,
+      129,
+      160,
+      192,
+      256,
+      257,
+      320,
+      384
+    ],
+    "joints": [
+      128,
+      192,
+      256,
+      320,
+      384
+    ],
+    "receipts": "Each training first/last step; validation129/192/256/257/320/384 with prestate potential/score/selection, actual response and paid receipt. Exact complete checkpoints for recovery. Missing data remains missing.",
+    "visual": "Inspect every training sparse actual body sequence, both validation shapes all policies and actual new/old material fields; show whether a bridge/hole/density change really occurs. No new-morphotype claim from parameter differences alone."
+  },
+  "budget": {
+    "native_cap": 4100,
+    "science_cap": 4096,
+    "affected_native": 4,
+    "worker_seconds": 1200,
+    "cpu": 2,
+    "gpu": 0,
+    "jobs": 1,
+    "raw_cap_bytes": 1073741824,
+    "shutdown_reserve_worker_seconds": 120,
+    "checks": "Two training128 parents: original center-step versus disabled-C adapter,2 native each=4. Require complete state/receipt/account/tag equivalence, all calls budgeted. Pure score/shape/range/checkpoint/center-input/reference/label tests0native; no validation native consumed before selection. The actual first enabled candidate step is scientific, not an extra forward.",
+    "control": "Read research.desired_state/started immediately before job. PI read running/true. All old balances sealed and source immutable.",
+    "recovery": "All attempts/returned/settled charged. Preserve all failed runs and amendments. No replay of unknown completed calls; same-job explicit recovery only from known complete state. No second job, timers, borrowed budget or expanded search."
+  },
+  "handoff": "Implement and actually execute this bounded generation-rule search and fixed validation as sole owner. Update current short shared leaf; consolidate paper/projection in existing items. On completion give actual scientific choice once. No extra proposal/rate/price/window/map scan or automatic writer training.",
+  "native_by_PI": 0
+}

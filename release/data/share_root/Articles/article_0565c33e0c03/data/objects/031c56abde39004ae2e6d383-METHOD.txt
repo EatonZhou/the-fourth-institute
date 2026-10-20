@@ -1,0 +1,21 @@
+共用模型与可恢复状态
+
+模块：environment_evolution.method_renewal_ecology_behavior.core
+Config固定本次价格/时程；Ecology(morphology,cfg)产生32×32 rho、资源场及共同E。
+observe(phase,cue)仅phase0返回cue，其余时刻cue=0；返回当前phase、M/E、x(含subcell余数)、y_variance、全域资源左右总量。
+Policy.act(observation,cycle,diagnostic_target=None)返回[-1,1]action和实际拟付memory_fee；只有oracle允许diagnostic_target。
+Ecology.step(action,phase,arrival_side=None,memory_fee=0)由host按私有带在phase16供给arrival_side。它返回真实位移、外部输入、摄取、资源流失、付款、死亡、M/E变化及两个守恒残差。策略不接收cue以外的未来带内容。
+Policy.feedback(actual_cycle_uptake,cycle,write_funded=...)仅以实际完成摄取更新Q；0.4学习率、训练epsilon0.18。未付写费跳过更新。价格是本新模型明确的代理成本，未物理计价Python算术/矩阵存储。
+
+单步顺序：记忆费→维持费→付费平移→饥饿/周转损失→实际外输入→当地摄取/增长→能量容量溢出→资源流失。资源输入可在本步摄取，动作事先决定；此顺序独立于旧Lenia host，不能与旧环境史事件次序混用。
+平移v=action*1.05/(1+.045*y_variance)，不足额按余额缩放；phase<6时v=0。subcell累积后做整格周期roll，不对密度插值。rho摄取上限为本格rho；摄取单位贡献.7E/.3热与.12身体物质。基费.0022*M，运动费.002*M*|v|，周转.0002。资源每步72%流出显式sink；新输入每周期7能量/.84物质，无finitebank。输入本身计外部供给投入，不虚构从体内付掉外部能源。
+能量恒等式：E+R+heat+sink = 初E + 累计外部输入。
+物质恒等式：M+.12*(R+sink)+dead_mass = 初M+.12*累计外部输入。
+两式逐真实步检查，单批执行报表及分析汇总保留原最大残差。
+
+48周期首批3环境×3seed×3初形×8策略=216路径，每条1536步。32周期训练+16冻结；反转cycle24发生在训练内。首批331776真实步。
+短续接：9同源稳定末态×2臂×16×32=9216；9反转末态×2臂×32×32=18432；9对同当前态探针×2×6=108；共27756。完整前缀均只读引用，不重计。
+续接source_states.json绑定实际父npz SHA，followup.py恢复rho/resource/E、账本、实际step、subcell、Q、cue、side、last_success、last_decision与RNG状态。外部tape单独保存。首批外部cursor由实际step_index及cycle32确定；恢复需联合相应tape与策略模式，不将npz单独冒作一键任意分叉API。
+
+原始记录：首批216末npz、9私有tape、seed1701的72逐步表及72帧包（每包30个真保存态）；短批18实际父引用、36末npz、18私有tape、864周期账以及9对同态探针诊断。探针只保存相等断言和输出动作，未持久化两条全部原数组；其观察范围据此限定。
+控制每次submit前由统一runner核running/started及空槽；CPU单作业2线程，GPU0。首批/data可用4GiB门禁，有限20分钟上限；实际两个计算各约22.66秒与1.72秒。分析只读保存输出，无新身体步。全部源码/原始状态SHA在清单中。

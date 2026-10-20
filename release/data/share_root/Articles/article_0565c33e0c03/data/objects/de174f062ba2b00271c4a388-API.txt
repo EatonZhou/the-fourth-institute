@@ -1,0 +1,8 @@
+结果消费入口
+handoff.json为唯一封存入口，manifest.json绑定附件；raw_manifest.json绑定513新原件。
+plan.json原冻结决定/source SHA及旧引用；reference_reuse.json为8条旧HC完整初态/输入/观察器纯等价；reused_histories.json为旧12取得史。
+combined_histories.json=16取得，combined_probes.json=32未来。每条sums为该腿实际账，cumulative_from128为取得+该未来；取得共同父不作重复样本。windows为真实固定64窗。
+outcomes.csv/contrasts.csv/packet_replacement.csv分别给绝对结果/共同PF身体差/同身体PF替换差；后一表不混进身体主对比。costs_by_actual_leg.csv、windows.csv及cumulative_probe_accounts_from128.json便于逐指标消费。
+raw每腿steps.csv为每次实际物理/标签/费用行，state*.bin为完整状态；frames.json仅184新保存场，combined_frames.json保新旧标记。没有回放生成的填补场。exchange_ledger.csv/exchanges.json与原始数组给移出/注入/净差，公共储库不是成对闭合。
+原实现local_learning.spatial_coverage_acquired_body.core/run冻结于source；只读analyze/package位于analysis_source。代码与旧原生源保持隔离；不得用分析脚本发起新native。
+视觉10图的实际观察与覆盖见visual_review.json。下一科学取舍见scientific_next_request.json；没有下一作业授权或自动续算。

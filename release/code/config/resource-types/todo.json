@@ -1,0 +1,16 @@
+{
+  "type": "todo",
+  "category": "knowledge_entry",
+  "description": "A knowledge-base or registered task-like todo resource.",
+  "title": {
+    "zh": "待办",
+    "en": "Todo"
+  },
+  "provider": "",
+  "catalog_section": "knowledge",
+  "catalog_order": 10,
+  "registerable": false,
+  "scope": "project",
+  "unit": "core",
+  "enabled_by_default": true
+}

@@ -1,0 +1,49 @@
+{
+  "native": 0,
+  "checks": [
+    {
+      "seed": 202610195601,
+      "shape": "ring",
+      "old_policy_exact": true,
+      "off_C_zero": true,
+      "roundtrip_exact": true,
+      "state_unchanged": true,
+      "midpoint_C_sites": 44,
+      "midpoint_C_pre_mass": 16.838909328215696
+    },
+    {
+      "seed": 202610195601,
+      "shape": "separate_seeds",
+      "old_policy_exact": true,
+      "off_C_zero": true,
+      "roundtrip_exact": true,
+      "state_unchanged": true,
+      "midpoint_C_sites": 3,
+      "midpoint_C_pre_mass": 0.9107635249845265
+    },
+    {
+      "seed": 202610195602,
+      "shape": "ring",
+      "old_policy_exact": true,
+      "off_C_zero": true,
+      "roundtrip_exact": true,
+      "state_unchanged": true,
+      "midpoint_C_sites": 38,
+      "midpoint_C_pre_mass": 14.019023776609686
+    },
+    {
+      "seed": 202610195602,
+      "shape": "separate_seeds",
+      "old_policy_exact": true,
+      "off_C_zero": true,
+      "roundtrip_exact": true,
+      "state_unchanged": true,
+      "midpoint_C_sites": 6,
+      "midpoint_C_pre_mass": 1.6123003639771238
+    }
+  ],
+  "source_parameters": [
+    0.17975814283267433,
+    0.04345259224059916
+  ]
+}

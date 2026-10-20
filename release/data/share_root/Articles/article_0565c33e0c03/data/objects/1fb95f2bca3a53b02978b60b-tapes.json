@@ -1,0 +1,56 @@
+[
+  {
+    "world": "stable",
+    "seed": 4101,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/renewable_independent_ports_20261018/69288aa8-ecae-4fe6-8f45-36cd8e06f3fc/tape-stable-4101.npz",
+    "sha256": "f4d973cd2f1a91379ab60839666b867f3e9e77bef26d5ce6fe4270eccbf2d2a1",
+    "both_rich": 16,
+    "both_empty": 19,
+    "switches": 0
+  },
+  {
+    "world": "stable",
+    "seed": 4102,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/renewable_independent_ports_20261018/69288aa8-ecae-4fe6-8f45-36cd8e06f3fc/tape-stable-4102.npz",
+    "sha256": "fc2f7be741ba8f150c4c626c26bb453993154380e70776398bf683136536fcb6",
+    "both_rich": 4,
+    "both_empty": 59,
+    "switches": 0
+  },
+  {
+    "world": "persistent",
+    "seed": 4101,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/renewable_independent_ports_20261018/69288aa8-ecae-4fe6-8f45-36cd8e06f3fc/tape-persistent-4101.npz",
+    "sha256": "f5869ff105ec72ae60795d04ee2e8cd01c10fa367435ac0ef49294b4b6b157fb",
+    "both_rich": 11,
+    "both_empty": 32,
+    "switches": 13
+  },
+  {
+    "world": "persistent",
+    "seed": 4102,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/renewable_independent_ports_20261018/69288aa8-ecae-4fe6-8f45-36cd8e06f3fc/tape-persistent-4102.npz",
+    "sha256": "515c94259b946e2f754b265f51ada839dbaaeaff26090b2c591b343c9ed8c8cd",
+    "both_rich": 31,
+    "both_empty": 19,
+    "switches": 8
+  },
+  {
+    "world": "iid",
+    "seed": 4101,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/renewable_independent_ports_20261018/69288aa8-ecae-4fe6-8f45-36cd8e06f3fc/tape-iid-4101.npz",
+    "sha256": "5fff283f8a3e344eeb9d23379622ca72f1a706a11e1f10ec90b89aebac5b3c96",
+    "both_rich": 16,
+    "both_empty": 29,
+    "switches": 63
+  },
+  {
+    "world": "iid",
+    "seed": 4102,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/renewable_independent_ports_20261018/69288aa8-ecae-4fe6-8f45-36cd8e06f3fc/tape-iid-4102.npz",
+    "sha256": "d5a7de3aff3af49a267078182b9696e0f30cbe43bf1a75e91e090c17c8864319",
+    "both_rich": 23,
+    "both_empty": 23,
+    "switches": 74
+  }
+]

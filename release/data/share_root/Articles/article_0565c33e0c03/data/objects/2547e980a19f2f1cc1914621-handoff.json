@@ -1,0 +1,29 @@
+{
+  "task": "embodied_adaptive_memory_dynamics_20261019",
+  "owner": "resident_33af539c4a17",
+  "status": "scalar_gain_candidate_closed_actual_local_history_capability_retained",
+  "report": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/embodied_adaptive_memory_dynamics_20261019.json",
+  "report_sha": "521380513cc47e48dd547629e6a2c7eeff104a505740413f00161de9ba1754d7",
+  "native": 23491,
+  "worker_seconds": 32.21922,
+  "usage": "${share_root}/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_dynamics_20261019/usage.json",
+  "directories": {
+    "opportunity": "${share_root}/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_opportunity_20261019",
+    "comparison": "${share_root}/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_comparison_20261019",
+    "paid_return": "${share_root}/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_return_join_20261019",
+    "causal": "${share_root}/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_probe_20261019",
+    "balanced": "${share_root}/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_balanced_20261019"
+  },
+  "primary_figures": [
+    "${share_root}/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_comparison_20261019/comparison.png",
+    "${share_root}/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_return_join_20261019/comparison.png",
+    "${share_root}/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_balanced_20261019/comparison.png"
+  ],
+  "animations": [
+    "${share_root}/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_comparison_20261019/continuous_body_state.gif",
+    "${share_root}/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_return_join_20261019/continuous_body_state.gif",
+    "${share_root}/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_balanced_20261019/continuous_body_state.gif"
+  ],
+  "causal": "${share_root}/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_probe_20261019/analysis.json",
+  "limits": "14 local fields adaptive/bank vs22 fixed-delay implementation; central6-event/128-entry Q table. Same local sensory/upkeep package, true movement/basal/assay costs; arithmetic, retention and central communication incompletely priced. No equal-bit or efficiency claim. Fixed delay has larger explicit capacity and is intentionally strong."
+}

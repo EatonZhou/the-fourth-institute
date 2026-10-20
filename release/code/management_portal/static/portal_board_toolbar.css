@@ -1,0 +1,327 @@
+/*
+ * Collection-board command surface.
+ *
+ * Pages provide business controls through the data-portal-board-* protocol.
+ * This file owns their layout and visual language; page styles must not
+ * redefine search, action-group, refresh, filter, or result-meta chrome.
+ */
+
+.portalBoardHeader,
+.portalBoardHeader *,
+.portalBoardHeader *::before,
+.portalBoardHeader *::after {
+  box-sizing: border-box;
+}
+
+.portalBoardHeader {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  /* Align the visible first rows, even when navigation and command controls
+     have different heights or the command grows additional result rows. */
+  align-items: start;
+  gap: 10px;
+  padding-bottom: 10px;
+}
+
+.portalBoardHeader > :is(.portalSectionShell, .resourceCategoryShell) {
+  width: auto;
+  min-width: max-content;
+  padding: 0;
+}
+
+.portalBoardHeader > [data-portal-board-toolbar]:first-child:last-child {
+  grid-column: 1 / -1;
+}
+
+.portalBoardHeader :is(.portalSectionViewport, .resourceCategoryViewport),
+.portalBoardHeader :is(.portalSectionRow, .resourceCategoryRow) {
+  width: auto;
+}
+
+.portalBoardHeader :is(.portalSectionRow, .resourceCategoryRow) {
+  min-width: 0;
+}
+
+/* The result meta leads the row, next to the page's title or section tabs. */
+.portalBoardCommand,
+[data-portal-board-toolbar]:not([data-portal-board-toolbar-mounted]) {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(290px, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.portalBoardCommand[hidden] {
+  display: none !important;
+}
+
+.portalBoardCommand:not(:has(> [data-portal-board-meta])),
+[data-portal-board-toolbar]:not([data-portal-board-toolbar-mounted]):not(:has(> [data-portal-board-meta])) {
+  grid-template-columns: minmax(290px, 1fr) auto;
+}
+
+.portalBoardSearch,
+[data-portal-board-search] {
+  min-width: 0;
+}
+
+.portalBoardCommand > :is(.portalBoardSearch, [data-portal-board-search]):only-child {
+  grid-column: 1 / -1;
+}
+
+.portalBoardSearchAction,
+[data-portal-board-search-action],
+.portalBoardSemantic,
+[data-portal-board-semantic] {
+  min-width: 102px;
+  height: 30px;
+  min-height: 30px;
+  border: 0;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--accent) 12%, var(--panel));
+  color: var(--accent);
+  box-shadow: none;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.portalBoardSearchAction:hover:not(:disabled, [aria-disabled="true"]),
+[data-portal-board-search-action]:hover:not(:disabled, [aria-disabled="true"]),
+.portalBoardSemantic:hover:not(:disabled, [aria-disabled="true"]) {
+  --portal-button-bg: color-mix(in srgb, var(--accent) 19%, var(--panel));
+  --portal-button-border: transparent;
+}
+
+.portalBoardSearchAction svg,
+.portalBoardSemantic svg {
+  width: 14px;
+  height: 14px;
+}
+
+.portalBoardActions.portalToolbar,
+[data-portal-board-actions]:not(.portalToolbar) {
+  min-width: 0;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--portal-control-radius, 8px) + 1px);
+  background: var(--panel);
+}
+
+.portalBoardActions.portalToolbar > [data-portal-toolbar-item] {
+  min-width: 0;
+}
+
+.portalBoardActions.portalToolbar[data-portal-board-actions-layout="selector-primary"] {
+  --portal-control-height: 38px;
+  --portal-control-height-compact: 38px;
+  width: max(420px, 34vw);
+  max-width: 100%;
+  height: 38px;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.portalBoardActions.portalToolbar[data-portal-board-actions-layout="selector-primary"]
+  > [data-portal-toolbar-grow="true"] {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.portalBoardActions.portalToolbar[data-portal-board-actions-layout="selector-primary"]
+  > .portalToolbarItem {
+  height: var(--portal-control-height);
+}
+
+.portalBoardActions.portalToolbar[data-portal-board-actions-layout="selector-primary"]
+  > .portalToolbarItem > :is(button, a),
+.portalBoardActions.portalToolbar[data-portal-board-actions-layout="selector-primary"]
+  > :is(button, a).portalToolbarItem {
+  height: 100%;
+}
+
+.portalBoardAction {
+  height: 30px;
+  min-height: 30px;
+  gap: 6px;
+  padding-inline: 9px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.portalBoardAction:hover:not(:disabled, [aria-disabled="true"]),
+.portalBoardAction.active,
+.portalBoardAction.is-active,
+.portalBoardAction[aria-expanded="true"],
+.portalBoardAction[aria-pressed="true"] {
+  --portal-button-bg: var(--panel-2);
+  --portal-button-border: transparent;
+  --portal-button-color: var(--text);
+}
+
+.portalBoardAction.is-primary,
+.portalBoardAction[data-variant="primary"] {
+  --portal-button-bg: var(--accent);
+  --portal-button-border: var(--accent);
+  --portal-button-color: var(--on-accent);
+}
+
+.portalBoardAction.is-icon {
+  width: 30px;
+  min-width: 30px;
+  padding: 0;
+}
+
+.portalBoardAction svg {
+  width: 14px;
+  height: 14px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.portalBoardFilter {
+  position: relative;
+}
+
+.portalBoardFilter > :is(.filter-panel, .portalCollectionFilterPanel) {
+  z-index: var(--portal-layer-popover, 400);
+}
+
+.portalBoardSelect {
+  min-width: 180px;
+  min-height: 30px;
+  padding: 0 28px 0 9px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--text);
+  font: 500 12px/1.3 ui-sans-serif, system-ui, sans-serif;
+}
+
+.portalBoardMeta,
+[data-portal-board-meta] {
+  order: -1;
+  min-width: 0;
+  max-width: 24em;
+  margin: 0;
+  padding: 0 4px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portalBoardSlot {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
+.portalBoardHeader > [data-portal-board-slot] {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
+.portalBoardSlot:empty {
+  display: none;
+}
+
+.portalBoardHeader > [data-portal-board-slot]:empty {
+  display: none;
+}
+
+.portalBoardDivider {
+  width: 1px;
+  height: 20px;
+  margin: 0 2px;
+  background: var(--border);
+}
+
+@media (max-width: 1240px) {
+  .portalBoardHeader {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .portalBoardHeader > :is(.portalSectionShell, .resourceCategoryShell) {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .portalBoardHeader :is(.portalSectionViewport, .resourceCategoryViewport),
+  .portalBoardHeader :is(.portalSectionRow, .resourceCategoryRow) {
+    width: 100%;
+  }
+}
+
+@media (max-width: 1080px) {
+  .portalBoardCommand {
+    grid-template-columns: minmax(260px, 1fr) auto;
+  }
+
+  .portalBoardCommand:not(:has(> [data-portal-board-meta])) {
+    grid-template-columns: minmax(260px, 1fr) auto;
+  }
+
+  .portalBoardMeta {
+    grid-column: 1 / -1;
+    max-width: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .portalBoardCommand {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .portalBoardCommand:not(:has(> [data-portal-board-meta])) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .portalBoardActions {
+    width: 100%;
+  }
+
+  .portalBoardActions.portalToolbar[data-portal-board-actions-layout="selector-primary"] {
+    width: 100%;
+  }
+
+  .portalBoardMeta {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 520px) {
+  .portalBoardSemantic {
+    min-width: 30px;
+    width: 30px;
+    padding: 0;
+  }
+
+  .portalBoardSemantic > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+}
+
+.portalBoardCommand:not(:has(> [data-portal-board-actions], > [data-portal-board-meta])),
+[data-portal-board-toolbar]:not(:has(> [data-portal-board-actions], > [data-portal-board-meta])) {
+  grid-template-columns: minmax(0, 1fr);
+}

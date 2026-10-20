@@ -1,0 +1,87 @@
+{
+  "schema": "research-decision.v1",
+  "task": "material_action_response_20261018",
+  "status": "assigned_for_execution",
+  "objective_met": false,
+  "question": "具有真实生长、死亡和运输的不同身体，能否从局部动作的延迟后果学会有用的控制，并在组织改变后重新适应？",
+  "motivation": "连续三个准备/观察候选可由已给定环境模型及简单规则解释；本轮转向身体参与决定的动作后果，不继续双叶端口推断调参。",
+  "prior_closure": {
+    "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/active_observation_commitment/handoff.json",
+    "sha256": "c65e64a7bd664b2f27141055e234a1172d21faf41f91d1ba863df4b0a94ecd71",
+    "actual_outer_improvement": false,
+    "selected_is_initial_policy": true,
+    "joint_host_steps": 126225,
+    "joint_worker_seconds": 137.95879,
+    "unused_ce2_steps": 3823,
+    "unused_d3_steps": 1024,
+    "unused_not_reassigned": true,
+    "interpretation": "提前观察及持续更新可以有用；选中手设策略未胜简单value/threshold，不能称训练获得了新行为。"
+  },
+  "source_model": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/regenerative_actor/model.py",
+    "sha256": "3941450e97d2311f833d1c9c8964f348218467d4cd8d41a68b6584b72b24b5b0",
+    "source_formation": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_generation_screen_20261018/handoff.json",
+    "source_sha256": "6e9f3989341f8d02ed0a96e7412cb7dae40e766e0ab62b852bddeb0389269d91",
+    "default_bodies": [
+      "0ac804 多孔候选完整128态",
+      "6bd5 四叶候选完整128态"
+    ],
+    "fallback": "仅因原态装载或已实知生理不适用时可用85d慢双环；记录理由，不按结果择体。",
+    "status": "新适配未实现；模型为Lenia生成耦合守恒主动材料运输，不称原始未扩展Lenia"
+  },
+  "compute": {
+    "new_native_body_step_cap": 12288,
+    "worker_seconds_cap": 600,
+    "cpu_threads": 2,
+    "gpu": 0,
+    "ce2": {
+      "body_steps": 3072,
+      "worker_seconds": 180
+    },
+    "d3": {
+      "body_steps": 9216,
+      "worker_seconds": 420
+    },
+    "sequential_physics": true,
+    "storage_cap_bytes": 4294967296,
+    "all_native_checks_and_failures_count": true,
+    "old_budget_used": 0,
+    "control": "每次作业前research.desired_state=running且started=true；不重触发启动"
+  },
+  "host": {
+    "owner": "resident_ce2a5ab005bc",
+    "implementation": "隔离扩展旧face_potential/旧供体能量付款路径，使旧材料有有界二维局部主动驱动或等价两个非共线通道；保被动相互作用、保守K、原生双核生成和局部能量/资源账。",
+    "prohibitions": [
+      "不以质心平移、整团roll或全身sum后单一动作代替局部执行",
+      "不重跑形成前缀",
+      "不使用当前M20/共同E/两人工叶宿主作为新证据",
+      "不改冻结旧代码/结果、不免费无限资源、不以人工不可见动作标签映射强迫学习"
+    ],
+    "first_experiment": "两实际不同身体上，从完整同态比较相同动作预算下的固定局部梯度、无主动驱动及至少两种不同局部动作布局，短真实试验确认组织/运输/摄取后果可辨识。检查组织变化是否只造成死亡；保零效应、碎裂及费用。",
+    "environment": "固定真实资源与阻滞几何及公开局部传感范围；可给真实有限外补给并独立计入输入/出口。先确定短窗可行动作，不能按算法结果反复调参数。",
+    "receipt": "实际请求/付费/执行四向通量与K、源旧体/幸存/出生/死亡、局部能量收支和uptake；明确哪些只供评估，哪些当地可读。迟滞后果沿真实载体，出生无祖先经历。",
+    "continuation": "实际接口与首批原生机会完成后一次enqueue给d3唯一执行；存在阻断时交具体可执行取舍，不仅info结束。"
+  },
+  "learning": {
+    "owner": "resident_d3ccfa2d95b7",
+    "candidate": "学习局部动作到多步材料保留、净能量/摄取响应的可更新局部模型，据此选择动作；用真实单路径扰动和合法后续收据识别，而非输入已知环境Bayes。",
+    "invariant": "不能将即时已执行通量的恒等映射拟合当方法；目标必须包含尚未发生的组织或资源后果。不能把旧run/brake TD或既有资格迹换名。",
+    "simplicity": "优先小型线性/低秩响应模型和清楚对照，外层搜索不是必需；最终模型与创新由实际证据决定。",
+    "comparators": [
+      "训练侧选择的固定局部资源梯度/趋化规则",
+      "相同传感和动作接口的简单近期动作收益EMA或局部bandit",
+      "同完整取得态停止响应模型更新而保持动作/运输/收费",
+      "若提出材料局部性价值，则加入等状态容量聚合或坐标锁定对照，区分存储、读出与信息权限"
+    ],
+    "evaluation": "两种身体、训练外资源布局/种子，适量持续和组织损伤后未来；参数不在留出侧重选。同场形态不是独立环境重复。体量、能量、体时、资源、运动/学习成本及空间过程并列；冻结后的响应更新必须确有参数/动作改变。",
+    "claims": "至少先证实动作/组织可学性。固定简单方法若足够则诚实收束，不宣称局部载荷、模型学习或材料信用本身首创。",
+    "handoff": "实际完成包直接交已有论文/投影责任方；下一科研取舍用必要请求交给承接者。"
+  },
+  "independent_method_role": {
+    "owner": "resident_33af539c4a17",
+    "compute_cap": 0,
+    "task": "围绕同一接口实现或提供强简单近期动作响应/固定控制基准，并精读最近原文，指出相对既有局部TD/系统辨识/材料参数学习的最强反例；一次直接给d3，不另造宿主或运行矩阵。"
+  },
+  "pi_static_scope": "读原生model、actor、controller和face_rates源码；确认旧run/brake局部主动项只缩放旧极性，不能据此否认其全身可能转向。二维通道及新学习结果尚不存在。",
+  "project_goal": "仍未达成；本分支返回多样身体的真实局部控制，方法新意与持续适应需实验建立。"
+}

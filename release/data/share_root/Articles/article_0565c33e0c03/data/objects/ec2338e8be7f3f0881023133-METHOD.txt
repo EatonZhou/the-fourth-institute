@@ -1,0 +1,10 @@
+隔离实现与数据语义
+
+1. 原GrowthBody从具名ready256/320完整joint恢复；完整物理/旧标签/world/tape/cursor/RNG保留，仅把模型类绑定到PulseRate。CoordinatedRate复用原RegenerativeBody.step同一code object、私有globals的唯一admit钩子；未修改共享原文件。每步原生只调用一次admit。
+2. 首步actual actor及signed h完成，原rule删除产生survivor后，取原可付容量C、b0=min(R,C)、有支持源a=max(R-b0,0)、v=max(C-b0,0)。plus/minus分别以目标h>=0/h<0限制v，四邻按目标v提议，单次接收限流。每源q=min(outplus,outminus)，各候选按q原比例缩放；只做源舍入向内修正，不迭代找路、不补ULP质量。执行R-out+in，拒绝留源；原admit及费用照常。
+3. 始终在原native前ready态选greedy w，不读当步未来。首脉冲后pulse_enabled=False，随后63步只调用原admit，原greedy和birth-only joint-demand泵不变。两候选算术可同时计算但只一条实际身体；不是两次试身体选好者。
+4. preexisting初始登记父体全质量，首步也按实际K、actor/bodytransport及survivor/afteractor分别删除。pulse实际born后普通=b0、额外=max(born-b0,0)，记录原差与负舍入残差，不替换生物body。以后born只进later。运输先advect，再actor keep，再rule keep；标签不影响任何执行。逐步死亡账按注册分母守恒，零标签/零分母无猜测。
+5. 零量别名须真实plus首转换两候选selected都逐格精确0，无阈值。此时minus未来同固定greedy、完整取得态/标签及确定性管线，复用完整plus未来并列显式alias，不重复原生。非零不缓存。
+6. 保存每步标量、所有cohort阶段收支；+1/2/4/8/16/32/64完整maps与标签场；父、+32/+64完整joint含观察器，另每16最新恢复包。未存中间K不重造；体时按每步真实留存×原dt累计。标签率零分母null；偏移与生后年龄明确分列。
+7. 纯数组检查使用已有收据重建admit/匹配/阶段守恒，0native；正式4边界为原样恢复与off hook的两组1步成对一致，身体/原maps/账逐值相同。科学首转换核候选/初态/总转换配平。旧源/父/参考SHA最终核无改动。
+8. 分析/绘图只读真实输出。稀疏显示使用共同尺度和固定crop，完整全网格原件保留。零量图不画伪0留存率。计算及额外邻读0价是显式假设，所有实际生物费用/欠付不省略。额外原生边界和所有失败如发生均计账，本批无失败原生。

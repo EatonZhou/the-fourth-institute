@@ -1,0 +1,561 @@
+schema: tfi.portal-evolution.v2
+observed_at: '2026-10-15T03:26:26Z'
+sources:
+  design: decision_13e1a748cf04
+  design_version: '9'
+  module_map: architecture/modules.yaml
+  plan_index: IMPROVE.md
+module_map:
+  ref: repo_5d287fed9c7e/file/architecture/modules.yaml
+  schema: tfi.portal-architecture.v1
+  model_version: 2
+semantics:
+  directions: >-
+    directions[].id 是本文件内稳定的局部身份，表示一个产品构想；标题调整不改变身份，
+    构想被另一个构想替代时分配新 ID。方向为 proposed，concept、future_experience、
+    why_feasible、first_step 分别说明构想、未来体验、可行基础和第一步。
+    description 只供画廊短说明，不代替四项叙事。方向独立于 Plan 存在。
+  retirement: >-
+    retired_directions 是旧方向的退役记录，不进入当前画廊、默认选择和方向计数。
+    旧书签或 focus 命中退役 ID 时显示其已退役及原因，不按标题猜测或自动改指向。
+    replaced_by 仅登记明确承接同一构想的新方向；空数组表示没有语义继承者。
+    六个旧方向均因 v8 调整内容范围而退役，不把旧方向换名复用。
+  plans: >-
+    顶层 plans 保留 IMPROVE.md 中的正式 Plan 资料索引，正文与生命周期以 source.ref 为准；
+    source.version 是本次读取的资源版本。status=proposed 表示候选方案，
+    不表达其各阶段尚未实现、已经批准执行或通过验证。方向的 plans 是关联 Plan ID 数组，
+    允许为空；plan_contributions 说明每份 Plan 对构想的实际贡献。关联只在方向一侧保存，
+    不从未挂接 Plan、同模块或历史分类自动生成方向，也不把所有旧 Plan 强配到新方向。
+  modules: >-
+    方向与 Plan 的 modules 均引用 module_map.ref 指向的当前地图中的真实模块 ID。
+    方向直接声明将拓展的架构部分，即使 plans 为空也能联动；module_roles 解释拓展位置。
+    module_map.model_version 表示地图的建模版本；本次为运行单元与内部组件模型，schema 仍为 v1。
+    当前地图的来源、schema 与建模版本一致且模块 ID 仍存在时，可以联动；
+    文本或协议说明的变化不改变模块身份，不按 Git 提交或文件摘要冻结地图。
+    来源或建模版本改变、模块 ID 删除时，保留方向叙事并由演化成员更新绑定及引用；
+    不读取历史地图，不按旧名称猜新 ID。
+    module_mapping=needs_review 表示原入口已失效、当前映射仅为拟议承接位置。
+  visuals: >-
+    visual.kind=storyboard 表示可供前端制作的分镜，文件本身就是分镜入口，尚无独立演示应用。
+    visual.status 与每帧 status 均为 simulated；角色、活动、产物与手势反馈均为示意。
+    storyboard[].scene/user_action/animation/caption 分别描述画面、操作、响应和字幕，
+    duration_ms 是建议播放时长，module_focus 只引用该方向的 modules。
+    前端可用本地 SVG、Canvas 或组件实现分镜；播放、拖拽和点按仅改变模拟场景，
+    不触发真实团队、消息、资源写入或发布。当前架构模块仍按 current 呈现，构想按 proposed 呈现。
+  depends_on: >-
+    只登记实施前必须完成的另一份 Plan；方向相同、links.related 或可复用机制
+    本身不构成前置依赖。首版未找到明确的跨 Plan 硬前置，均保留空数组。
+    空数组不表示业务前提、授权或验证已经满足。新增边时在 dependency_reasons
+    中以被依赖 Plan ID 为键写明原因及依据。
+  suggested_after: >-
+    [{id, reason}] 是依据 Plan 边界提出的可选实施顺序；可以并行或独立交付，
+    不参与硬依赖阻塞与解锁计算。原因中的范围条件必须保留。
+  cost: >-
+    cost 是供页面直接显示的代价说明，cost_level 为 low、medium、high 或 unknown；
+    按方案的跨模块范围、并发/恢复语义和验证负担作定性估计。
+    这些估计未经实施测量，不代表工时、预算或优先级；失效入口尚未重定时用 unknown。
+
+directions:
+  - id: agent-society-city
+    title: 一座会工作的 Agent 城市
+    status: proposed
+    description: Resident 成为会走动的角色，团队成为街区，协作像城市里的接力一样自然可见。
+    concept: >-
+      把 Agent Society 变成可漫游的动态卡通城市。一个团队占据一间工作室，Resident 有自己的角色造型；
+      讨论、写作和交付通过聚拢、工作台亮起与作品递送表现。城市布局跟随团队关系生长，
+      让人在一幅有生活感的画面里认识共同工作的 AI。
+    future_experience: >-
+      打开 Portal，看到研究街区正在讨论一个问题，开发工作室把新作品送到体验台。
+      拉近一个角色，听它用一句话介绍正在做的事；点击作品就进入对应工作台。
+      拉远以后仍能看见团队之间的接力，像观察一座由自己参与建设的小城。
+    why_feasible: >-
+      Portal 已有 Resident、Family、Lineage 和各自的工作状态，能够为角色、街区和活动提供身份与位置。
+      投影协议已有绑定、门面对话和对象联动，新的城市画面可以接在这些能力上。
+      第一版的主要新增是视觉语言和状态到动作的映射，可先在一个团队的小场景中试出有趣的表达。
+    first_step: >-
+      制作一个包含三个示例角色与两间工作室的本地动画样场，用“讨论—制作—交付”走完一次接力。
+      让用户选角色造型、缩放街区并点开作品占位；确定表现方式后，再把一个真实 Family 的活动接入同一画面。
+    modules: [lineage.definition, lineage.family, lineage.conversation, lineage.automation, web.projections, interface.workbenches, interface.conversation]
+    module_roles:
+      lineage.definition: 为角色提供 Resident 身份、成员定义与 Lineage 归属。
+      lineage.family: 为街区提供 Family 结构、门面路由与协作关系。
+      lineage.conversation: 为角色的一句话近况和对话入口提供内容。
+      lineage.automation: 为团队协作的接力动作提供事件与运行事实。
+      web.projections: 提供城市投影的团队绑定、资源调用代理和焦点反馈宿主。
+      interface.workbenches: 承载城市画面、缩放和作品入口。
+      interface.conversation: 在点选角色后打开对应对话。
+    plans: []
+    plan_contributions: {}
+    visual:
+      kind: storyboard
+      status: simulated
+      title: 三个角色把一个想法变成作品
+      composition: 等距卡通街区；左侧是研究屋，中间是开发工作室，右侧是体验台，三位角色有不同造型。
+      interaction: 缩放街区、点选角色、沿作品的递送路径回放；只使用样例角色与本地动画。
+      storyboard:
+        - id: city-morning
+          status: simulated
+          title: 小城醒来
+          duration_ms: 3500
+          scene: 两间工作室的灯依次亮起，研究员、开发者、体验员走到自己的桌边；画面保留可漫游的空地。
+          user_action: 滚轮拉近研究屋。
+          animation: 镜头平滑靠近，屋顶淡出，出现正在交换想法的角色和一张发光便签。
+          caption: 每个团队都有一个可以走进去的地方。
+          module_focus: [lineage.definition, lineage.family, interface.workbenches]
+        - id: city-handoff
+          status: simulated
+          title: 想法穿过街道
+          duration_ms: 4500
+          scene: 研究员把便签折成纸飞机，飞向开发工作室；开发者接过后铺开一张小画布。
+          user_action: 点选纸飞机。
+          animation: 路径暂时高亮，角色气泡用一句话说明这次交接的内容。
+          caption: 看见同伴之间正在发生的协作。
+          module_focus: [lineage.automation, lineage.conversation]
+        - id: city-creation
+          status: simulated
+          title: 作品开始成形
+          duration_ms: 4000
+          scene: 开发工作室里逐步拼出一个微型页面，体验员走近工作台。
+          user_action: 点选开发者角色。
+          animation: 角色转身介绍正在制作的内容，右侧出现模拟对话气泡，城市仍保持活动。
+          caption: 既能远远观察，也能走近问一句。
+          module_focus: [interface.conversation, lineage.conversation]
+        - id: city-opening
+          status: simulated
+          title: 去作品里看看
+          duration_ms: 4000
+          scene: 新页面作为小展品出现在体验台，周围角色聚过来。
+          user_action: 点击展品。
+          animation: 从展品放大到示例工作台，再收回城市全景；全程使用本地占位内容。
+          caption: 团队的工作变成可以直接走进去的成果。
+          module_focus: [web.projections, interface.workbenches]
+
+  - id: team-command-table
+    title: 像带领游戏小队一样指挥团队
+    status: proposed
+    description: 在一张动态指挥桌上编队、布置目标，让不同专长的小队协作完成一场任务。
+    concept: >-
+      为人与 AI 团队建立游戏式的指挥语言。用户面对的是目标区域、角色和可组合的小队，
+      可以圈选成员、把任务放到地图上、调整探索与制作的分工。操作表达意图，
+      Family 门面与 Lineage 把意图组织成实际协作。
+    future_experience: >-
+      为一个新产品寻找机会时，用户把研究小队放进“了解用户”的区域，把原型小队放进“试做”的区域。
+      两支队伍带回不同成果，用户在桌面上把有趣的想法拖给另一个小队继续发展。
+      改变方向就像重新布阵，同时可以和选中的队长交谈。
+    why_feasible: >-
+      Family 已提供面向一个门面的团队协作，Lineage 用成员、事件和连线表达工作关系，
+      HATG 提供对应操作入口。投影可以把这些对象组织成空间化的操作界面。
+      团队与工作身份已有基础，新的部分集中在把圈选、拖放和口头意图转换成合适的协作表达。
+    first_step: >-
+      用两个固定样例小队制作桌面原型，只做圈选、投放一个目标、把一个成果交给另一队三种动作。
+      观察用户能否自然表达“你们探索、你们试做、把这个继续下去”，再选择一种动作接入真实门面。
+    modules: [lineage.definition, lineage.family, lineage.automation, lineage.conversation, web.projections, interface.workbenches, interface.conversation]
+    module_roles:
+      lineage.definition: 保存小队的成员定义、可复用组合与组织配置。
+      lineage.family: 维护小队的 Family 门面，把目标与转向意图路由给协作成员。
+      lineage.automation: 把目标与交接对应到团队的事件和协作流程。
+      lineage.conversation: 承接用户向小队表达的意图与后续交流。
+      web.projections: 将指挥桌的对象焦点与反馈接入绑定团队，并代理宿主调用。
+      interface.workbenches: 承载目标区域、编队手势和成果移动。
+      interface.conversation: 提供与当前队长连续交谈的入口。
+    plans: []
+    plan_contributions: {}
+    visual:
+      kind: storyboard
+      status: simulated
+      title: 两支小队共同设计一个小产品
+      composition: 俯视的桌面沙盘；左侧为探索区、右侧为制作区，中间是共享成果区；角色使用棋子式造型。
+      interaction: 框选棋子、拖放目标旗、把成果拖给另一队；动作只改变本地模拟。
+      storyboard:
+        - id: table-assemble
+          status: simulated
+          title: 选择这次的搭档
+          duration_ms: 3500
+          scene: 五枚示例角色棋子散布在桌上，两个空的小队圆环位于探索区和制作区。
+          user_action: 框选三个角色放入探索小队。
+          animation: 选中棋子靠拢形成队形，队长图标浮起，其余角色保持原位。
+          caption: 用一眼可见的方式组织合作。
+          module_focus: [lineage.definition, lineage.family, interface.workbenches]
+        - id: table-objective
+          status: simulated
+          title: 把目标放到桌上
+          duration_ms: 4000
+          scene: 一面写着“做一个雨天出行助手”的目标旗出现在桌边。
+          user_action: 把旗拖到探索区，补充“先看看通勤的人需要什么”。
+          animation: 队长展开一张任务纸，棋子沿两条路线出发，右侧出现模拟门面对话。
+          caption: 像说话和布阵一样表达目标。
+          module_focus: [lineage.family, lineage.conversation, interface.conversation]
+        - id: table-relay
+          status: simulated
+          title: 好想法继续向前
+          duration_ms: 4500
+          scene: 探索小队带回三张机会卡，其中一张画着拥挤的公交站。
+          user_action: 把公交站机会卡拖给制作小队。
+          animation: 两队之间出现短暂的接力弧线，制作区升起一个可点击的界面模型。
+          caption: 一个团队的发现成为另一个团队的起点。
+          module_focus: [lineage.automation, web.projections, interface.workbenches]
+        - id: table-redirect
+          status: simulated
+          title: 让整个团队转向
+          duration_ms: 4000
+          scene: 两条可能的产品路线并排展开，小队围绕现有原型站定。
+          user_action: 指向“无障碍路线”并对队长说“继续发展这个”。
+          animation: 棋子重新组成队形，镜头沿新的目标路径展开后续场景。
+          caption: 用户决定方向，小队组织具体的工作。
+          module_focus: [lineage.definition, lineage.family, lineage.conversation, interface.workbenches]
+
+  - id: goal-grown-studio
+    title: 一句话长出一个软件工作室
+    status: proposed
+    description: 说出想做的软件，Portal 为它生长出团队、协作方式和可以亲自使用的工作台。
+    concept: >-
+      把软件工程的起点变成一个目标。用户描述希望做成的产品，Portal 组织适合它的成员和协作流程，
+      同时生成面向这项工作的投影：研究、实现、体验与日常使用各有入口。
+      团队和界面随着产品逐渐长大，形成这个工程自己的软件工作室。
+    future_experience: >-
+      输入“做一个给实验室安排设备预约的工具”，看到设计、开发和体验角色陆续加入，
+      一个预约日历和团队对话同时出现。用户在日历里试一次预约，把感受告诉工作室，
+      团队继续改进；以后增加新目标时，工作室会长出相应成员和功能区。
+    why_feasible: >-
+      Portal 已有以目标组织 Lineage 与 Family 的基础，既有模板和 Function Block 能表达可复用协作。
+      投影协议将工作台绑定到团队，已定义多功能区与应用包的承载方式。
+      可以先选择一种熟悉的小型软件，把团队实例化和页面生成串成一条完整路径，再逐步扩大产品范围。
+    first_step: >-
+      以“实验室设备预约工具”为唯一样例，制作目标输入到团队出现、预约界面出现、用户试用并反馈的连续原型。
+      选用一套已有的有效团队结构作为起点，先把可替换目标、资源和交付物说清楚，再实现这一类工作室的生成。
+    modules: [lineage.definition, lineage.family, lineage.automation, resources.types, storage.artifacts, web.projections, interface.workbenches]
+    module_roles:
+      lineage.definition: 为目标实例化成员、团队定义和可复用的模板与 Function Block。
+      lineage.family: 组织工作室的 Family 与门面，路由产品目标和试用反馈。
+      lineage.automation: 组织生成、实现和体验各阶段的工作。
+      resources.types: 把工程代码与设计资料接入统一资源类型和生命周期接口。
+      storage.artifacts: 按版本保存生成的投影应用包与脚本产物，供宿主读取。
+      web.projections: 托管生成工作台的页面与应用绑定，将产品反馈交回工作室团队。
+      interface.workbenches: 在浏览器装载生成的产品界面与团队工作台，并发送对象焦点。
+    plans: [plan_f9e0b86ba4b9]
+    plan_contributions:
+      plan_f9e0b86ba4b9: >-
+        从有效协作中提炼可参数化流程，可作为工作室团队生成的一个起点。
+        该 Plan 不包含产品界面生成，也不代表整条方向已经形成实施计划。
+    visual:
+      kind: storyboard
+      status: simulated
+      title: 从设备预约需求长出一个工作室
+      composition: 一张留白画布从一句话开始，向左生长团队、向右生长产品界面，底部逐渐出现可使用的作品。
+      interaction: 输入样例目标、切换样例范围、在生成的本地预约日历中试用并给出反馈。
+      storyboard:
+        - id: studio-seed
+          status: simulated
+          title: 写下想做的事
+          duration_ms: 3500
+          scene: 画布中央只有一句“给实验室做一个设备预约工具”，旁边有设备和日历的小图形。
+          user_action: 选择“先服务一个实验室”的样例范围。
+          animation: 句子化成一颗种子，展开日历、设备和使用者三个分支。
+          caption: 从一个具体目标开始。
+          module_focus: [web.projections, lineage.family]
+        - id: studio-team
+          status: simulated
+          title: 工作室有人了
+          duration_ms: 4500
+          scene: 三个角色从目标分支中出现，分别围绕设计画板、代码桌和体验台工作。
+          user_action: 点开设计角色，看看它准备做出的预约流程。
+          animation: 团队连线生长到各个桌面，示例对话与产物缩略图在同一画面出现。
+          caption: 团队与工作方式一起形成。
+          module_focus: [lineage.definition, lineage.family, lineage.automation]
+        - id: studio-product
+          status: simulated
+          title: 第一件作品能用了
+          duration_ms: 5000
+          scene: 右侧展开设备预约日历，示例显微镜有几个可选时段；下方显示生成中的工程资料。
+          user_action: 在本地日历里选择一个时段并填入示例用途。
+          animation: 预约块落入日历，产品画面成为画布的主体，团队缩成侧边仍可见的小工作室。
+          caption: 直接进入团队做出的软件。
+          module_focus: [interface.workbenches, web.projections, resources.types, storage.artifacts]
+        - id: studio-grow
+          status: simulated
+          title: 使用让工作室继续生长
+          duration_ms: 4500
+          scene: 用户在日历旁写下“还想知道设备维护的时间”，团队旁边留出新功能的位置。
+          user_action: 选择样例反馈“加上维护日程”。
+          animation: 一个维护日程分区在日历边展开，团队把新工作接到原有流程上。
+          caption: 新需要带来新的能力和协作。
+          module_focus: [lineage.family, lineage.automation, web.projections, interface.workbenches]
+
+retired_directions:
+  - id: reliable-changes
+    title: 让确认准确约束实际变更
+    retired_reason: v8 将权限与变更约束归入日常工程工作，退出未来产品方向画廊。
+    replaced_by: []
+  - id: traceable-execution
+    title: 让执行过程可追溯、可控制
+    retired_reason: v8 不再把运行记录与可追溯性作为演化方向。
+    replaced_by: []
+  - id: focused-decisions
+    title: 减少重复审阅，形成有依据的反馈
+    retired_reason: v8 不再把审阅与证据整理作为演化方向。
+    replaced_by: []
+  - id: discover-and-resume
+    title: 找全已有工作并连续推进
+    retired_reason: 原方向来自现有工程 Plan 的分类；新画廊直接表达未来产品构想，不继承这个分类。
+    replaced_by: []
+  - id: research-evidence
+    title: 用可核查证据比较研究结果
+    retired_reason: 原方向侧重现有研究流程的证据核对，退出本次未来产品方向画廊。
+    replaced_by: []
+  - id: reusable-collaboration
+    title: 让协作和验证可以解释、审阅与复用
+    retired_reason: 原方向把验证与流程工程归为一类；新构想按产品体验组织，旧分类不作为继承身份。
+    replaced_by: []
+
+plans:
+  - id: plan_ce8d3c73ac2d
+    title: 按指令逐批接入资源凭证授权
+    status: proposed
+    source: {ref: plan_ce8d3c73ac2d, version: '21'}
+    modules: [kernel.isa, resources.access, lineage.conversation, web.identity]
+    depends_on: []
+    suggested_after: []
+    cost_level: high
+    cost: 高（定性估计）。每批需核对指令参数、资源父关系、调用主体与委派链，并验证通过、拒绝和撤销后的行为。
+    review_notes:
+      - 正文已注明业务 owner 迁移取消，且保留历史规划；逐批接入范围需按现行策略与用户选择重新确认。
+      - 本图未读取实时策略，不能据该 Plan 的历史阶段判断当前受保护指令、管理员限制或凭证状态。
+
+  - id: plan_2d3d04345a3c
+    title: 跨资源编辑时保住草稿，并让每次保存可确认
+    status: proposed
+    source: {ref: plan_2d3d04345a3c, version: '2'}
+    modules: [interface.content, resources.types]
+    depends_on: []
+    suggested_after: []
+    cost_level: high
+    cost: 高（定性估计）。Document Session 与各资源版本适配器需贯通保存回执、冲突比较、切换事务及乱序响应保护。
+
+  - id: plan_b299e94aa941
+    title: 后台操作离开页面后仍能追踪到结果
+    status: proposed
+    source: {ref: plan_b299e94aa941, version: '2'}
+    modules: [web.workflows, resources.types, interface.workbenches]
+    depends_on: []
+    suggested_after: []
+    cost_level: high
+    cost: 高（定性估计）。保留各业务任务的事实所有权，连接稳定操作、尝试、终态与产物；中断和投影延迟需分别验证。
+
+  - id: plan_47ca2579a590
+    title: 从用量峰值追到具体执行，并解释统计差额
+    status: proposed
+    source: {ref: plan_47ca2579a590, version: '2'}
+    modules: [execution.scheduling, lineage.conversation, interface.home]
+    depends_on: []
+    suggested_after: []
+    cost_level: high
+    cost: 高（定性估计）。需连接执行明细与汇总口径，处理重复增量、晚到终值、跨日校正和历史缺失，并测量查询成本。
+
+  - id: plan_387d48bfd22c
+    title: 资源目录能查完整，并稳定翻到后续结果
+    status: proposed
+    source: {ref: plan_387d48bfd22c, version: '2'}
+    modules: [resources.access, interface.content]
+    depends_on: []
+    suggested_after: []
+    cost_level: medium
+    cost: 中（定性估计）。需确定稳定排序与续页失效规则，保证筛选统计同权同范围，并验证翻页失败和旧查询迟到。
+
+  - id: plan_25be497a0539
+    title: 归档确认精确对应逐项写入的正式知识
+    status: proposed
+    source: {ref: plan_25be497a0539, version: '2'}
+    modules: [web.workflows, resources.types, interface.content]
+    depends_on: []
+    suggested_after:
+      - id: plan_2d3d04345a3c
+        reason: 若归档扩展到更新既有知识，可复用版本冲突与回执约定；新建条目的逐项登记可独立完成。
+    cost_level: high
+    cost: 高（定性估计）。确认版本、正式登记、逐项持久回执与重试需要一致；还涉及外部 KnowledgeArchiveAgent 和 material 分支。
+
+  - id: plan_6977e2c74543
+    title: 团队启动前可预演一次事件将推动的协作
+    status: proposed
+    source: {ref: plan_6977e2c74543, version: '2'}
+    modules: [lineage.automation, lineage.definition, interface.workbenches]
+    depends_on: []
+    suggested_after: []
+    cost_level: high
+    cost: 高（定性估计）。需复用编译和映射语义，在所有有副作用的边界停止，仅记录意图，并准确保留未知分支与图版本。
+
+  - id: plan_187e56a424f1
+    title: 测试启动严格对应已经审阅的预览范围
+    status: proposed
+    source: {ref: plan_187e56a424f1, version: '2'}
+    modules: [engineering.validation, interface.workbenches]
+    depends_on: []
+    suggested_after: []
+    cost_level: medium
+    cost: 中（定性估计）。Planner、启动入口与 Run 需共享不可变范围和目标快照，解释失效差异，再逐个接入运行器。
+
+  - id: plan_a7181f513fd2
+    title: 每轮交给 AI 的上下文有可核对的来源说明
+    status: proposed
+    source: {ref: plan_a7181f513fd2, version: '2'}
+    modules: [lineage.conversation, execution.providers, interface.conversation]
+    depends_on: []
+    suggested_after: []
+    cost_level: high
+    cost: 高（定性估计）。多个组装入口需提供来源、版本与采用理由，贯通发送预览和实际执行；Provider 原生继承的未知范围必须保留。
+
+  - id: plan_4ce30e7bf164
+    title: 停止 AI 时明确作用范围，并等待真实停止结果
+    status: proposed
+    source: {ref: plan_4ce30e7bf164, version: '2'}
+    modules: [execution.providers, execution.scheduling, lineage.conversation, interface.conversation]
+    depends_on: []
+    suggested_after: []
+    cost_level: high
+    cost: 高（定性估计）。各 Provider 控制粒度不同，需关联请求和真实终态，验证自然完成竞争、迟到停止以及未知或不支持的结果。
+
+  - id: plan_4546b76a169c
+    title: 仓库提交只包含用户已审阅的变更集
+    status: proposed
+    source: {ref: plan_4546b76a169c, version: '2'}
+    modules: [resources.types, interface.content]
+    depends_on: []
+    suggested_after: []
+    cost_level: high
+    cost: 高（定性估计）。快照比较与提交需在同一受控边界内完成，保留既有暂存区与未选改动，并覆盖删除、重命名和并行编辑。
+    review_notes:
+      - 范围为 Repo 工作台的提交；Plan 明确排除发布和推送，不构成 Portal Release 发布策略变更。
+
+  - id: plan_e3b4ef59be38
+    title: TAU 的通过结论必须能由实际使用证据说明
+    status: proposed
+    source: {ref: plan_e3b4ef59be38, version: '2'}
+    modules: [engineering.validation, interface.workbenches]
+    depends_on: []
+    suggested_after:
+      - id: plan_187e56a424f1
+        reason: 先固定已审阅用例与运行目标，有助于解释一份结果评估的范围；TAU 的动作、观察和证据接纳规则可独立交付。
+    cost_level: medium
+    cost: 中（定性估计）。结果解释、运行器与页面需使用同一证据关系，并区分产品失败、体验摩擦和无法评估；仍需真实使用检查。
+
+  - id: plan_fdc5a650ef28
+    title: 默认先看现在需要我处理的事情
+    status: proposed
+    source: {ref: plan_fdc5a650ef28, version: '2'}
+    modules: [web.workflows, web.community, interface.home, interface.workbenches]
+    depends_on: []
+    suggested_after:
+      - id: plan_211b6e985cf2
+        reason: 扩展“可体验成果”卡片时可直接指向经过核对的步骤；现有 WALL 和 Project Overview 的关注视图可先独立实现。
+    cost_level: medium
+    cost: 中（定性估计）。需按真实工作关系归组、说明处理理由，保持阅读排序稳定，并把处理动作写回原业务对象。
+
+  - id: plan_de6f182d4521
+    title: 重新审核时看清相较上次审核的变化
+    status: proposed
+    source: {ref: plan_de6f182d4521, version: '2'}
+    modules: [web.workflows, resources.types, interface.workbenches]
+    depends_on: []
+    suggested_after: []
+    cost_level: medium
+    cost: 中（定性估计）。需保存可读取且受权限控制的审核基线，处理文档身份变化与缺少历史正文，并提供可靠的段落差异。
+
+  - id: plan_211b6e985cf2
+    title: 每项开发成果附上可直接照做的体验步骤
+    status: proposed
+    source: {ref: plan_211b6e985cf2, version: '2'}
+    modules: [web.workflows, interface.workbenches, engineering.validation]
+    depends_on: []
+    suggested_after:
+      - id: plan_e3b4ef59be38
+        reason: 引用 TAU 时可复用有动作和观察依据的结论；人工核对步骤不要求先完成 TAU 改造。
+      - id: plan_b299e94aa941
+        reason: 覆盖通用长任务成果时可复用稳定的结果入口；WALL 已有完成记录，首版体验说明可独立提供。
+    cost_level: medium
+    cost: 中（定性估计）。主要投入是核对真实入口、前提、预期与证据，关联用户反馈，并维护步骤随共享 Dev 变化的有效性。
+
+  - id: plan_7130a0308c69
+    title: 模糊需求先澄清再形成正式任务
+    status: proposed
+    source: {ref: plan_7130a0308c69, version: '2'}
+    modules: [web.workflows, interface.workbenches]
+    module_mapping: needs_review
+    depends_on: []
+    suggested_after: []
+    cost_level: unknown
+    cost: 待评估。原 Big Mouth/Todo 入口已无法在当前 Dev 找到；需先确定承接领域，再估计澄清持久化、确认和幂等建单成本。
+    review_notes:
+      - 原 links.source 的 todo_board_lan/todo_backend.py 与 todo_board_lan/todo_board.html 均不存在，派生 Design decision_90999f413177 不在当前 SPEC.md。
+      - modules 仅标出拟议的业务工作流与工作台影响面，不能据此认定这两个模块已拥有正式任务或 Big Mouth。
+
+  - id: plan_e61b5ce0cd2c
+    title: 开工前发现已有成果和正在进行的相同工作
+    status: proposed
+    source: {ref: plan_e61b5ce0cd2c, version: '2'}
+    modules: [resources.access, web.workflows, interface.workbenches]
+    module_mapping: needs_review
+    depends_on: []
+    suggested_after:
+      - id: plan_387d48bfd22c
+        reason: 复用完整查询与范围说明可降低漏查风险；语义候选和建单前选择可以在明确范围内独立实现。
+      - id: plan_7130a0308c69
+        reason: 对模糊需求先确定目标与范围可改善匹配；目标明确时可直接检查相关工作，不必经过澄清流程。
+    cost_level: unknown
+    cost: 待评估。搜索与 WALL 已有来源可复用，但原 Todo 建单入口已失效；重定参与和复用入口后才能评估跨领域接入成本。
+    review_notes:
+      - links.source 中 todo_board_lan/todo_backend.py 不存在，Todo 派生 Design decision_90999f413177 不在当前 SPEC.md；建单与加入任务的承接位置待核对。
+
+  - id: plan_b015b7ebb766
+    title: 按一项工作收拢资料和对话并继续阅读
+    status: proposed
+    source: {ref: plan_b015b7ebb766, version: '2'}
+    modules: [interface.workbenches, interface.content, interface.conversation, resources.access]
+    depends_on: []
+    suggested_after:
+      - id: plan_2d3d04345a3c
+        reason: 先验证草稿保留与事务式切换可降低批量恢复资料时的编辑风险；只读清单和续读入口可先行。
+    cost_level: medium
+    cost: 中（定性估计）。跨资源打开入口、共享资料清单与个人阅读位置需适配，恢复乱序、部分缺失和当前草稿必须分别处理。
+
+  - id: plan_635fb83ed8fa
+    title: 长讨论收敛为有依据的待决定问题
+    status: proposed
+    source: {ref: plan_635fb83ed8fa, version: '2'}
+    modules: [web.community, web.workflows, interface.content]
+    depends_on: []
+    suggested_after:
+      - id: plan_25be497a0539
+        reason: 正式归档讨论结论时可复用逐项写入回执；固定消息范围、整理草稿和确认分歧本身可独立交付。
+    cost_level: medium
+    cost: 中（定性估计）。需固定原消息范围并保留事实、条件性同意和分歧的引用，维护草稿与确认关系，防止把相似表述当作共识。
+
+  - id: plan_39a117d6a467
+    title: 论文比较形成可核查并持续更新的证据表
+    status: proposed
+    source: {ref: plan_39a117d6a467, version: '2'}
+    modules: [resources.types, web.workflows, interface.content]
+    depends_on: []
+    suggested_after: []
+    cost_level: high
+    cost: 高（定性估计）。证据定位、结论性质区分、人工修订保留和按来源版本局部更新需贯通，质量仍需研究者逐项核查。
+
+  - id: plan_c9feb7060e35
+    title: 实验结果在可比条件下解释差异
+    status: proposed
+    source: {ref: plan_c9feb7060e35, version: '2'}
+    modules: [resources.types, interface.content]
+    depends_on: []
+    suggested_after: []
+    cost_level: medium
+    cost: 中（定性估计）。先限定一类实验的条件集，核对版本、单位、多次运行和结果来源；历史缺失保持未知，人工纠正需保留依据。
+
+  - id: plan_f9e0b86ba4b9
+    title: 把有效的团队协作整理为可再次使用的流程
+    status: proposed
+    source: {ref: plan_f9e0b86ba4b9, version: '2'}
+    modules: [lineage.definition, lineage.automation, interface.workbenches]
+    depends_on: []
+    suggested_after:
+      - id: plan_6977e2c74543
+        reason: 参数化新实例后可用预演解释调用和效果范围；流程提炼与实例准备可以先复用现有编译诊断。
+    cost_level: high
+    cost: 高（定性估计）。从运行证据筛选稳定分工，移除旧路径与运行状态，将输入参数化并隔离版本；需不同真实实例验证适用边界。

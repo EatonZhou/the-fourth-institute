@@ -1,0 +1,182 @@
+[
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_independent_ports_20261018/REPORT.txt",
+    "bytes": 3825,
+    "sha256": "da265cca7a6d5bdba9992b40bce796ef32e78f3e6192da688ff8232aea4fe3e2"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_independent_ports_20261018/analysis/all_windows.csv",
+    "bytes": 88126,
+    "sha256": "cfbfdd6e39a69c098f294a76c7057a4e39f243f2dc9d3afb8190450286f232c0"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_independent_ports_20261018/analysis/checks.json",
+    "bytes": 3067,
+    "sha256": "5f165a54134874de9b78a6b304321d7962301839c191f9c9611e2d70b79f1874"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_independent_ports_20261018/analysis/ecological_laws.csv",
+    "bytes": 1586,
+    "sha256": "b8ccdb647577b05779b51a61b7b864f56f32ab048de5447faa664d72f53d4809"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_independent_ports_20261018/analysis/feedback_support.csv",
+    "bytes": 7011,
+    "sha256": "32332f6d3451b335f706718720fd2dd3f066a7c7e7c63ac5738e803b497f2b51"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_independent_ports_20261018/analysis/independent_arrivals.pdf",
+    "bytes": 15363,
+    "sha256": "5e776d6ac1a0286b4aa71617c12925d4542d9d5b8193a89044abba64120c260e"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_independent_ports_20261018/analysis/independent_arrivals.png",
+    "bytes": 61156,
+    "sha256": "70be884f317665c5ccd4d228168d3aabbbf1ac5bc23bf037a5f1ddde004cc9ec"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_independent_ports_20261018/analysis/persistent_absolute_trajectories.pdf",
+    "bytes": 36411,
+    "sha256": "aac219230fd029b4b9ab0ef15ce358b2bc3f816e6ce0ce7e43e8d4de6ac48fe5"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_independent_ports_20261018/analysis/persistent_absolute_trajectories.png",
+    "bytes": 343130,
+    "sha256": "b730f7d704fae80ab7d812417a6067de77770c03d27f29e193709e0b5a5068cb"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_independent_ports_20261018/analysis/pilot_by_seed.csv",
+    "bytes": 6260,
+    "sha256": "51fbb800576c64b4b370cb027a7c1f7a297c2f812943eedb00e9c23b7143bb7f"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_independent_ports_20261018/analysis/pilot_means.csv",
+    "bytes": 3290,
+    "sha256": "15b598a33fffac62ec2f4ec9e7c5420aefb1e0e05a6cd4ac7127f0d45bc00e2e"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_independent_ports_20261018/analysis/raw_manifest.json",
+    "bytes": 59773,
+    "sha256": "296936dcca61c9bdb04c7c8dfe7cd52de6d5278b6a215d57fab8c005040c2ce4"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_independent_ports_20261018/analysis/rendered_fields.json",
+    "bytes": 6011,
+    "sha256": "8964e197e58435b882e03b6d327ccc8ea1f6b9ca22bdad10559d8f460d04cd92"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_independent_ports_20261018/analysis/residence_all_outcomes.csv",
+    "bytes": 8407,
+    "sha256": "f72921c11c5b09f05e8e268ab89ff7b5577a39633d4fe738cf959b6efe8f42ef"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_independent_ports_20261018/analysis/residence_energy_cost.pdf",
+    "bytes": 35833,
+    "sha256": "d0d1aae66b79ac1290b81a62e8a4ec92777f780170a77e30ac3bced4abfa1e89"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_independent_ports_20261018/analysis/residence_energy_cost.png",
+    "bytes": 355425,
+    "sha256": "df753390a61f1539ed380877111cef74092dbf0a93d17eaaa98bd8ae1c86411e"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_independent_ports_20261018/analysis/residence_means.csv",
+    "bytes": 1287,
+    "sha256": "f65311c815826801db5f05527447ab3cbe7a8aaa085a230114e9c56238321e6d"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_independent_ports_20261018/analysis/residence_paired_differences.csv",
+    "bytes": 3936,
+    "sha256": "fbaebca249159375b7d9420e0bc171826eb4e9ca10d6c12b26a6649bed30b2b4"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_independent_ports_20261018/analysis/selected_actual_fields.pdf",
+    "bytes": 32275,
+    "sha256": "97d9f13b17ca316b06911a77c8b64ce3366fe5e77dc860b37d02c92523e0682f"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_independent_ports_20261018/analysis/selected_actual_fields.png",
+    "bytes": 198151,
+    "sha256": "242c70b5a287929d66cb4feb5d668e5822100b0b432bb67adb920ab5b274a2c4"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_independent_ports_20261018/cycles.csv",
+    "bytes": 2601807,
+    "sha256": "542496228c78268ba5063a69b68c548831693d907fb1ce96a875bba751b187d6"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_independent_ports_20261018/outcomes.csv",
+    "bytes": 41966,
+    "sha256": "4a40032ddc0d36b4de7b779239fad69c2e366880910aea8f18b198217e96afb1"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_independent_ports_20261018/plan.json",
+    "bytes": 2141,
+    "sha256": "b0818bb1082e00e956fc43d24932d9101286b18abd6c7002db57829353501571"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_independent_ports_20261018/raw_manifest.json",
+    "bytes": 59773,
+    "sha256": "296936dcca61c9bdb04c7c8dfe7cd52de6d5278b6a215d57fab8c005040c2ce4"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_independent_ports_20261018/residence/cycles.csv",
+    "bytes": 369411,
+    "sha256": "b3f9954c76b10b3ce0fb8f0727959dee6eca66674b498da43bc693706291c09c"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_independent_ports_20261018/residence/outcomes.csv",
+    "bytes": 8407,
+    "sha256": "f72921c11c5b09f05e8e268ab89ff7b5577a39633d4fe738cf959b6efe8f42ef"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_independent_ports_20261018/residence/plan.json",
+    "bytes": 1429,
+    "sha256": "680fbde2f7766e9bd7ad3a94366d06fffa5117b3d9fb0fca55488d3c7d90b4ec"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_independent_ports_20261018/residence/result.json",
+    "bytes": 305,
+    "sha256": "7b00feb1ea1ff87c8c16d7ef7a8fb6b02bf207abbc1bef2f852b6c34a8668fe2"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_independent_ports_20261018/residence/submission.json",
+    "bytes": 721,
+    "sha256": "15685598d57d3641d40c1ca71863b1d8899e501f99415d40710fbbd0a279f4ea"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_independent_ports_20261018/residence/submission_control.json",
+    "bytes": 313,
+    "sha256": "2a6a27894bdb8420ec970d1dbf2f8e31f25c07abd857404bea6859fb07a08c26"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_independent_ports_20261018/result.json",
+    "bytes": 395,
+    "sha256": "1840d1a4b322b1d08b2c93df40732532cca8dd6248484a8109889daddf9e44bd"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_independent_ports_20261018/submission.json",
+    "bytes": 708,
+    "sha256": "9734146c074d04a8643e231ea8345d220a7e4a4d5a344b61e3d613fc1d8f4a61"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_independent_ports_20261018/submission_control.json",
+    "bytes": 313,
+    "sha256": "4e7534cb10110f623c65c0567b4df4fa493e2a23f86b2fe6ac67736a27a30a07"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_independent_ports_20261018/tapes.json",
+    "bytes": 2127,
+    "sha256": "1fb95f2bca3a53b02978b60be7d117e6825cb816f965e7533663c5674658f9fd"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_independent_ports_20261018/viewing.json",
+    "bytes": 228,
+    "sha256": "d5095b04537a27ea0638a245236d8cc283d3dbade586557777a752d261887f30"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/renewable_independent_ports/analyze.py",
+    "bytes": 13895,
+    "sha256": "b887e9f58bb44c224e89695b43bf24365a86cc0d63afa4b37bd949d573b5a64d"
+  }
+]

@@ -1,0 +1,18 @@
+{
+  "id": "77dc63dd-23e2-4637-bb2e-d9e35a164a21",
+  "name": "feedback-acquisition-allocation",
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "33-feedback-acquisition-allocation-20261018-v1",
+  "status": "completed",
+  "created_at": "2026-10-18T06:18:33.188317+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/77dc63dd-23e2-4637-bb2e-d9e35a164a21",
+  "pid": 3598258,
+  "manual_pause": false,
+  "started_at": "2026-10-18T06:18:33.275955+00:00",
+  "returncode": 0,
+  "finished_at": "2026-10-18T06:20:04.033751+00:00",
+  "result": {
+    "ref": "${share_root}/Projects/元胞自动机研究/src/research/results/feedback_acquisition_20261018/native/result.json"
+  }
+}

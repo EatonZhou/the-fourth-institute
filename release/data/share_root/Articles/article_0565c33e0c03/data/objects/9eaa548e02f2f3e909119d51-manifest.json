@@ -1,0 +1,67 @@
+[
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/birth_placement_value_20261018/plan.json",
+    "bytes": 8546,
+    "sha256": "2112bf697779cf474e9ed5060a3e9ece3a0ce91473473b455d6e6cbff9dcc3fa"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/birth_placement_value_20261018/result.json",
+    "bytes": 602,
+    "sha256": "92e9b61b53b6c0ccb5b7a3de388a7e5c76cecf4d6cbeb556ca745188da309b3e"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/birth_placement_value_20261018/completed_job.json",
+    "bytes": 1219,
+    "sha256": "35ab9e04408965c001ef53998099355d317ad442fff00e254ccc3a95077aeb7a"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/birth_placement_value_20261018/summary.json",
+    "bytes": 9892,
+    "sha256": "4b8e311115aa8c6dc5bf064d98f39f8dec7a9c2472ba55472df2f50b6b5d8d46"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/birth_placement_value_20261018/outcomes.json",
+    "bytes": 120193,
+    "sha256": "c1cbd3e4924dbb41d17c479c1a179acb318f237ace830d363d09eb4119ef289c"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/birth_placement_value_20261018/pairs.json",
+    "bytes": 51246,
+    "sha256": "64f567ed493af14972e49a16bf80994ced668f0cde719ff170c1596e4293ac80"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/birth_placement_value_20261018/pulse_index.json",
+    "bytes": 50947,
+    "sha256": "9bb5c85449ec698ca491ded5de198fe8eea726640901d0c4f19e2816e4df6530"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/birth_placement_value_20261018/raw_manifest.json",
+    "bytes": 112303,
+    "sha256": "1e6170cc7b56c4734d6f1268f4a09a3bc8b3d73aebd7c86a1f62a8a2a2ffc281"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/birth_placement_value_20261018/paired_differences.csv",
+    "bytes": 13444,
+    "sha256": "52ce46c2b0cf804eeb6868854ff2d35175f96ba15c2af396ed3bec16b7bcbeb9"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/birth_placement_value_20261018/REPORT.txt",
+    "bytes": 3233,
+    "sha256": "3a6328c01603322b3e7e387a52a790b42d98e729082dcbaac14dd3020fe72ae7"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/birth_placement_value_20261018/figure_sources.json",
+    "bytes": 2994,
+    "sha256": "fb9fa2f3a359d3157036488cef65a362319e0acb686230f2a4baf4d8d3a92bcd"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/birth_placement_value_20261018/paired_effects.png",
+    "bytes": 147672,
+    "sha256": "3cfed5d45ca42eec3b09473b7659dc82063b9d6581f2facedba8f2db77501bf2"
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/birth_placement_value_20261018/actual_placement_fields.png",
+    "bytes": 112108,
+    "sha256": "316dd4efd63ddcc8e6a5810354b236b47e9f4dcb112c481f5988856c80094ddc"
+  }
+]

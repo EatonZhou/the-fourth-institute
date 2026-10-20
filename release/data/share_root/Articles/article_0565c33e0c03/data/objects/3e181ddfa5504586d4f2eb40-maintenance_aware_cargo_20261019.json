@@ -1,0 +1,82 @@
+{
+  "task": "maintenance_aware_cargo_20261019",
+  "owner": "resident_ce2a5ab005bc",
+  "status": "authorized_implementation_and_native_experiment",
+  "objective_met": false,
+  "question": "出生缺口以外的当地旧组织燃料需求，能否改善互补资源交换的组织收益？改善若有，是否超过相同提议总量但不读接收者需求的分配？",
+  "choice": "保留分货固定生理能力；关闭本192窗维护成功主张。只检验遗漏的当前代谢需求，不加历史writer、不增加运输距离或载量，不预断供体续能是主因。",
+  "controls": {
+    "desired_state": "running",
+    "started": true,
+    "recheck_before_native": true,
+    "no_timer_or_start_reset": true
+  },
+  "previous_completed": {
+    "status": "completed_conditional_physiology_no_maintenance",
+    "result_entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/complementary_cargo_exchange_20261019/handoff.json",
+    "result_sha256": "cc00f42e34a321b2c19c2e4bded840e81d8ef04c25fc4fdae26d5a2c115cf4f2",
+    "actual_native": 3072,
+    "runner_worker_seconds": 181.354156,
+    "unused_sealed": [
+      32,
+      718.645844
+    ],
+    "finding": "分离条件需求分货两规则均比bundle/none末M/E/体时高，但全部16轨32晚窗出生不足且E降；固定能力非学习。"
+  },
+  "consumption_method_correction": {
+    "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_method_addendum_20261019/handoff.json",
+    "sha256": "b40f4e3251876639a0806797e8c9bff3e6d6fab7e2856ac476562ad924f45ddd",
+    "finding": "EMA/需求不是整臂纯方向比较；零权重源格停止泵送，首执行总量f1 .324439/.201948、f2 .768875/.489266。28保存事件同格入边单位利用率等至2.22e-16；原负结果、关闭与用量不改。"
+  },
+  "read_only_evidence": {
+    "path": "${share_root}/Agents/lineage_75e3399f4877/residents/resident_afa3d4d6cf11/workspace/research/complementary_exchange_readout_20261019.json",
+    "sha256": "85fac6f3dcfd331a72ff55879c33ba369b8a8e884f45b035177f814195256b8a",
+    "native_steps": 0
+  },
+  "mechanism": {
+    "current_state": "使用settle前已完成原生收据：rho_o=survivor,E_o=actor_energy_after_actor-rule_death_energy（排除新生E），当前P/F、R=原pump_demand、原support。",
+    "target": "u=min(dt*uptake_rate*rho_o,max(E_capacity*rho_o-E_o,0)); dP=[R-P]+; dZ=[R+u/.42-F/.42]+。参数从冻结物理配置读取；该u只是当前旧组织摄取容量代理，不是精确下一步收益。",
+    "candidate": "maintenance_target：P沿原birth-only gp；F沿合法一跳接收者dZ*support。沿原independent()相同每源min(stock,sumweights)归一形成提议，再调用原execute。无全局图、未来、隐状态、额外host前向。",
+    "quantity_control": "uniform_fuel_destination：在每一自身当前态先纯数组计算candidate提议，保留同一P提议和每个供体F提议总量；F均分给原一跳有support接收者（0个则两者均0）。仍调用同execute、faces/载量/旧E截断。必须逐源记录执行前F提议总量相等；实际流/费用允许分化，不能冒称等实付或跨轨同量。",
+    "cost": "原q=max(p,f/.42)、.05旧survivor、.08q与原面/库存/旧E reserve；无能源补贴、新生付款、一步多跳。单次一跳计算额外价沿现有模型为0并明示；没有完整计算成本主张。",
+    "discriminator": "candidate vs birth-only含增加F提议及改目的地；candidate vs uniform只在各自身当前态匹配提议总量、检验目的地语义，轨迹分化后不是控制全部流量的纯中介。"
+  },
+  "experiment": {
+    "parents": "精确复用本complementary包四个已保存clock384 challenge初态：f1/f2×colocated/separated；不再重排、不重演取得。",
+    "new_arms": [
+      "maintenance_target",
+      "uniform_fuel_destination"
+    ],
+    "steps_per_path": 192,
+    "new_scientific_steps": 1536,
+    "reference": "原16条3072步只读复用；原joint-demand为主基线，gradient/bundle/none均保，旧全轨SHA绑定。",
+    "predefined_windows": [
+      64,
+      128,
+      192
+    ],
+    "maintenance_gate": "末两个64窗逐窗born>=death-1e-8且DeltaE>=-1e-8，全192 M>=32；零容差并列。不得延窗/换末钟/换门槛；不能代过原512维护。",
+    "body_utility": "逐context报告M/E/体时、born-death、post384实际留存、旧体、泵/运动/基础/合成/模板费、热/出口/欠付。只有两separated规则在体时和新组织均优于birth-only且末E不低，才讨论本挑战净收益；uniform未逊则不将改善归于接收者需求信息。保留colocated的反效应，不合成胜分。",
+    "observations": "全逐钟标量与阶段拒绝；5预定时点1/8/64/128/192真场和receipt、四共同起点/8完整终断点。分开新target=0、提议、容量/面/付款裁剪、实际摄取、真实新生存留，不把即时代理当完成反馈。",
+    "causal_scope": "两个已知规则/已知挑战均为development，非独立生态留出；不以历史标签或低支持尾部当新形态。"
+  },
+  "budget": {
+    "native_cap": 1568,
+    "science_steps": 1536,
+    "affected_boundary_allowance": 32,
+    "runner_worker_seconds": 600,
+    "cpu_threads": 2,
+    "gpu": 0,
+    "raw_cap_bytes": 805306368,
+    "shutdown_reserve_worker_seconds": 90,
+    "old_budget_transfer": 0,
+    "unused_sealed": true
+  },
+  "execution": {
+    "runner": "唯一统一runner请求/CPU2串行；所有attempt的占槽×线程worker秒及边界计入总额。",
+    "freeze": "源码/公式/四初态/原比较路径/价格/窗口在新前向前冻结。只实现者必要受影响检查；不重做已通过native等价检查。",
+    "save": "只对complete/pending已返回原生写可恢复断点，稀疏场；存盘计时，至少90worker秒留收尾。异常停止保已完成量/缺口，不自动重投。",
+    "handoff": "仅ce2直接承接；正常进展写共享短指针。论文/投影沿原在办项合并，必要实际交接一次。无学习矩阵、定时事件或重复下游广播。"
+  },
+  "next_after": "本题终版决定是否存在固定局部代谢目标的身体收益；不足则收束该具体规则，不扫比例/需求阈值。整体经验学习/多形态目标仍未达成，后续需据新证据另选实质问题。"
+}

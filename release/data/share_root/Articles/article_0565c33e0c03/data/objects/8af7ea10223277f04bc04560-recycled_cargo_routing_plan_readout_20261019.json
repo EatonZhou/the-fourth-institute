@@ -1,0 +1,230 @@
+{
+  "new_native": 0,
+  "scope": "纯数组当前状态计划上界，尚未应用face通透/共同计划配量/真正执行；D为本步完成后固定即时需求代理，非未来用途或因果信用。不得把28帧当独立样本。",
+  "rows": [
+    {
+      "id": "b2--P_on_recycle_on",
+      "clock": 385,
+      "recovered_q": 0.2034011926411954,
+      "residual_carrier_payment_cap": 0.2034011926411954,
+      "adjacent_demand_gated_cap_before_face": 0.024259240434165948,
+      "destination_residual_demand": 2.390532232756195
+    },
+    {
+      "id": "b2--P_on_recycle_on",
+      "clock": 392,
+      "recovered_q": 0.20329132479539225,
+      "residual_carrier_payment_cap": 0.20329132479539225,
+      "adjacent_demand_gated_cap_before_face": 0.027742253398358275,
+      "destination_residual_demand": 2.390107451600583
+    },
+    {
+      "id": "b2--P_on_recycle_on",
+      "clock": 416,
+      "recovered_q": 0.20494113247002121,
+      "residual_carrier_payment_cap": 0.20494113247002121,
+      "adjacent_demand_gated_cap_before_face": 0.03011921582621238,
+      "destination_residual_demand": 2.4272047219942654
+    },
+    {
+      "id": "b2--P_on_recycle_on",
+      "clock": 448,
+      "recovered_q": 0.20253457049499834,
+      "residual_carrier_payment_cap": 0.20235574735719314,
+      "adjacent_demand_gated_cap_before_face": 0.0322211507674211,
+      "destination_residual_demand": 2.4857006922005507
+    },
+    {
+      "id": "b2--P_on_recycle_on",
+      "clock": 512,
+      "recovered_q": 0.20202736004913324,
+      "residual_carrier_payment_cap": 0.20202736004913324,
+      "adjacent_demand_gated_cap_before_face": 0.032631826276838236,
+      "destination_residual_demand": 2.4922677605905954
+    },
+    {
+      "id": "b2--P_on_recycle_on",
+      "clock": 576,
+      "recovered_q": 0.20155245084597,
+      "residual_carrier_payment_cap": 0.20155245084597,
+      "adjacent_demand_gated_cap_before_face": 0.03782147106241255,
+      "destination_residual_demand": 2.6595968026224424
+    },
+    {
+      "id": "b2--P_on_recycle_on",
+      "clock": 640,
+      "recovered_q": 0.19885099046983773,
+      "residual_carrier_payment_cap": 0.19885099046983773,
+      "adjacent_demand_gated_cap_before_face": 0.032796087517641806,
+      "destination_residual_demand": 2.8869334411702705
+    },
+    {
+      "id": "b2--P_off_recycle_on",
+      "clock": 385,
+      "recovered_q": 0.2034011926411954,
+      "residual_carrier_payment_cap": 0.2034011926411954,
+      "adjacent_demand_gated_cap_before_face": 0.031359147245624594,
+      "destination_residual_demand": 2.4982814008536414
+    },
+    {
+      "id": "b2--P_off_recycle_on",
+      "clock": 392,
+      "recovered_q": 0.17598674743979192,
+      "residual_carrier_payment_cap": 0.17598674743979192,
+      "adjacent_demand_gated_cap_before_face": 0.024010974612684945,
+      "destination_residual_demand": 2.528845318499094
+    },
+    {
+      "id": "b2--P_off_recycle_on",
+      "clock": 416,
+      "recovered_q": 0.13649417008479475,
+      "residual_carrier_payment_cap": 0.13429219345247015,
+      "adjacent_demand_gated_cap_before_face": 0.020404345808623627,
+      "destination_residual_demand": 2.5140799463686925
+    },
+    {
+      "id": "b2--P_off_recycle_on",
+      "clock": 448,
+      "recovered_q": 0.11552988737392077,
+      "residual_carrier_payment_cap": 0.11552988737392077,
+      "adjacent_demand_gated_cap_before_face": 0.009403800038800357,
+      "destination_residual_demand": 2.367170312036945
+    },
+    {
+      "id": "b2--P_off_recycle_on",
+      "clock": 512,
+      "recovered_q": 0.11349784370569817,
+      "residual_carrier_payment_cap": 0.11349784370569817,
+      "adjacent_demand_gated_cap_before_face": 0.004188447329138389,
+      "destination_residual_demand": 1.8890504734194398
+    },
+    {
+      "id": "b2--P_off_recycle_on",
+      "clock": 576,
+      "recovered_q": 0.06891491078033386,
+      "residual_carrier_payment_cap": 0.06652280585023275,
+      "adjacent_demand_gated_cap_before_face": 0.00420212554453951,
+      "destination_residual_demand": 1.7047237657034675
+    },
+    {
+      "id": "b2--P_off_recycle_on",
+      "clock": 640,
+      "recovered_q": 0.039923696278502986,
+      "residual_carrier_payment_cap": 0.03989712639331376,
+      "adjacent_demand_gated_cap_before_face": 0.0007641867648386356,
+      "destination_residual_demand": 1.5672603748994125
+    },
+    {
+      "id": "b6--P_on_recycle_on",
+      "clock": 385,
+      "recovered_q": 0.20188646795493814,
+      "residual_carrier_payment_cap": 0.20188646795493814,
+      "adjacent_demand_gated_cap_before_face": 0.021948602551732144,
+      "destination_residual_demand": 2.408156605050478
+    },
+    {
+      "id": "b6--P_on_recycle_on",
+      "clock": 392,
+      "recovered_q": 0.20253331563020932,
+      "residual_carrier_payment_cap": 0.20253331563020932,
+      "adjacent_demand_gated_cap_before_face": 0.024623440139409015,
+      "destination_residual_demand": 2.3907327300527186
+    },
+    {
+      "id": "b6--P_on_recycle_on",
+      "clock": 416,
+      "recovered_q": 0.20365135520831312,
+      "residual_carrier_payment_cap": 0.20197633955042849,
+      "adjacent_demand_gated_cap_before_face": 0.027681134801914635,
+      "destination_residual_demand": 2.4045748292110627
+    },
+    {
+      "id": "b6--P_on_recycle_on",
+      "clock": 448,
+      "recovered_q": 0.19997896235481477,
+      "residual_carrier_payment_cap": 0.19997896235481477,
+      "adjacent_demand_gated_cap_before_face": 0.03031804035095091,
+      "destination_residual_demand": 2.4582212799628294
+    },
+    {
+      "id": "b6--P_on_recycle_on",
+      "clock": 512,
+      "recovered_q": 0.20018914037153002,
+      "residual_carrier_payment_cap": 0.20018914037153002,
+      "adjacent_demand_gated_cap_before_face": 0.036380604053830534,
+      "destination_residual_demand": 2.5089473515048533
+    },
+    {
+      "id": "b6--P_on_recycle_on",
+      "clock": 576,
+      "recovered_q": 0.19857196110011616,
+      "residual_carrier_payment_cap": 0.19857196110011616,
+      "adjacent_demand_gated_cap_before_face": 0.03400591538185368,
+      "destination_residual_demand": 2.6980111693155653
+    },
+    {
+      "id": "b6--P_on_recycle_on",
+      "clock": 640,
+      "recovered_q": 0.19767524558779845,
+      "residual_carrier_payment_cap": 0.19767524558779845,
+      "adjacent_demand_gated_cap_before_face": 0.024278631152622028,
+      "destination_residual_demand": 2.897696743603066
+    },
+    {
+      "id": "b6--P_off_recycle_on",
+      "clock": 385,
+      "recovered_q": 0.20188646795493814,
+      "residual_carrier_payment_cap": 0.20188646795493814,
+      "adjacent_demand_gated_cap_before_face": 0.02850681644950854,
+      "destination_residual_demand": 2.51792313023285
+    },
+    {
+      "id": "b6--P_off_recycle_on",
+      "clock": 392,
+      "recovered_q": 0.17662033588732384,
+      "residual_carrier_payment_cap": 0.17662033588732384,
+      "adjacent_demand_gated_cap_before_face": 0.028366745749713866,
+      "destination_residual_demand": 2.56088738990426
+    },
+    {
+      "id": "b6--P_off_recycle_on",
+      "clock": 416,
+      "recovered_q": 0.1334878549942961,
+      "residual_carrier_payment_cap": 0.13079282181055274,
+      "adjacent_demand_gated_cap_before_face": 0.017921586779562855,
+      "destination_residual_demand": 2.5241821450414443
+    },
+    {
+      "id": "b6--P_off_recycle_on",
+      "clock": 448,
+      "recovered_q": 0.11598917268162551,
+      "residual_carrier_payment_cap": 0.11598917268162551,
+      "adjacent_demand_gated_cap_before_face": 0.009369386324321582,
+      "destination_residual_demand": 2.32138378531405
+    },
+    {
+      "id": "b6--P_off_recycle_on",
+      "clock": 512,
+      "recovered_q": 0.11085626735435301,
+      "residual_carrier_payment_cap": 0.11085626735435301,
+      "adjacent_demand_gated_cap_before_face": 0.004122493995966256,
+      "destination_residual_demand": 1.8395898249461384
+    },
+    {
+      "id": "b6--P_off_recycle_on",
+      "clock": 576,
+      "recovered_q": 0.0613627117040525,
+      "residual_carrier_payment_cap": 0.0613627117040525,
+      "adjacent_demand_gated_cap_before_face": 0.0029453001188294936,
+      "destination_residual_demand": 1.6720388607116723
+    },
+    {
+      "id": "b6--P_off_recycle_on",
+      "clock": 640,
+      "recovered_q": 0.03944635083224655,
+      "residual_carrier_payment_cap": 0.03944635083224655,
+      "adjacent_demand_gated_cap_before_face": 0.000838094580006607,
+      "destination_residual_demand": 1.5419202492243465
+    }
+  ]
+}

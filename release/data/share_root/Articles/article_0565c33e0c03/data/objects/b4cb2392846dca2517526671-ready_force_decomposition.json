@@ -1,0 +1,109 @@
+{
+  "scope": "Pure components of saved ready action drive; no native, no future/control benefit inference. Direction-weighted equal four edges, tissue-weighted.",
+  "rows": [
+    {
+      "parent": "202610197503_0_0_fast_delta_life",
+      "clock": 1536,
+      "mass_weighted_abs_cue": 0.056115603237671896,
+      "mass_weighted_abs_polarity": 0.225,
+      "mass_weighted_abs_cohesion_pressure": 0.02939157529515085,
+      "mass_direction_fraction_cue_dominates_polarity": 0.07811086501582504,
+      "native": 0,
+      "Q_body_weighted_sum": [
+        -13.095935630995086,
+        -4.181975889142379
+      ]
+    },
+    {
+      "parent": "202610197503_0_0_fast_delta_life",
+      "clock": 2048,
+      "mass_weighted_abs_cue": 0.024793718692267853,
+      "mass_weighted_abs_polarity": 0.2250000000000007,
+      "mass_weighted_abs_cohesion_pressure": 0.030089519972532612,
+      "mass_direction_fraction_cue_dominates_polarity": 0.0447238205245139,
+      "native": 0,
+      "Q_body_weighted_sum": [
+        -13.095935630995088,
+        -4.181975889142379
+      ]
+    },
+    {
+      "parent": "202610197503_0_0_joint_delta_life",
+      "clock": 1536,
+      "mass_weighted_abs_cue": 0.06282118700214767,
+      "mass_weighted_abs_polarity": 0.22499999999999998,
+      "mass_weighted_abs_cohesion_pressure": 0.028938058908878427,
+      "mass_direction_fraction_cue_dominates_polarity": 0.07319370922432596,
+      "native": 0,
+      "Q_body_weighted_sum": [
+        -16.300782571795114,
+        -5.976082280344454
+      ]
+    },
+    {
+      "parent": "202610197503_0_0_joint_delta_life",
+      "clock": 2048,
+      "mass_weighted_abs_cue": 0.029319678708752378,
+      "mass_weighted_abs_polarity": 0.22500000000000062,
+      "mass_weighted_abs_cohesion_pressure": 0.029687386290947977,
+      "mass_direction_fraction_cue_dominates_polarity": 0.04211563041623377,
+      "native": 0,
+      "Q_body_weighted_sum": [
+        -16.310889670340423,
+        -5.976082280344453
+      ]
+    },
+    {
+      "parent": "202610197504_1_0_fast_delta_life",
+      "clock": 1536,
+      "mass_weighted_abs_cue": 0.056207898575089024,
+      "mass_weighted_abs_polarity": 0.22500000000000003,
+      "mass_weighted_abs_cohesion_pressure": 0.029386692233988154,
+      "mass_direction_fraction_cue_dominates_polarity": 0.07807599700504812,
+      "native": 0,
+      "Q_body_weighted_sum": [
+        -13.125250572302306,
+        -4.182536572367594
+      ]
+    },
+    {
+      "parent": "202610197504_1_0_fast_delta_life",
+      "clock": 2048,
+      "mass_weighted_abs_cue": 0.024824645065440187,
+      "mass_weighted_abs_polarity": 0.22500000000000062,
+      "mass_weighted_abs_cohesion_pressure": 0.03008599437254708,
+      "mass_direction_fraction_cue_dominates_polarity": 0.0447154349201291,
+      "native": 0,
+      "Q_body_weighted_sum": [
+        -13.125250572302306,
+        -4.182536572367595
+      ]
+    },
+    {
+      "parent": "202610197504_1_0_joint_delta_life",
+      "clock": 1536,
+      "mass_weighted_abs_cue": 0.06284238062282982,
+      "mass_weighted_abs_polarity": 0.22499999999999998,
+      "mass_weighted_abs_cohesion_pressure": 0.028946813063300735,
+      "mass_direction_fraction_cue_dominates_polarity": 0.07320429330587594,
+      "native": 0,
+      "Q_body_weighted_sum": [
+        -16.300094273558017,
+        -5.970093790914084
+      ]
+    },
+    {
+      "parent": "202610197504_1_0_joint_delta_life",
+      "clock": 2048,
+      "mass_weighted_abs_cue": 0.02931106491869132,
+      "mass_weighted_abs_polarity": 0.2250000000000007,
+      "mass_weighted_abs_cohesion_pressure": 0.029694796225051202,
+      "mass_direction_fraction_cue_dominates_polarity": 0.04211586351626086,
+      "native": 0,
+      "Q_body_weighted_sum": [
+        -16.310153147254184,
+        -5.970093790914085
+      ]
+    }
+  ]
+}

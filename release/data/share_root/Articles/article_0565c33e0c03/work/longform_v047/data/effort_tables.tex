@@ -1,0 +1,41 @@
+\subsection*{Fixed-effort resource opportunity}
+The completed comparison is indexed by \path{src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/analysis/handoff.json}. Four actual clock-1984 parents provide sixteen related futures. The \path{comparisons.json}, \path{summaries.json}, \path{body_opportunity_readout.json}, \path{validation.json} and \path{accounting.json} preserve the full 128, first 16, remaining 112, first 64 and last 64 update accounts, all source identities and component costs. These windows are correlated views of the same futures. The batch contains 2,048 new updates and 9.730864 runner-worker seconds with zero unknown or replayed updates. A recording failure after sixteen committed updates was repaired using those existing updates; the subsequent attempt supplied only the remaining 2,032. All sixteen paths meet the prespecified mass-viability condition; the smallest mass relative to its parent is 0.942763. Body mechanics and acquired histories differ together, so compact/soft contrasts do not isolate a morphological cause.
+
+\begin{table}[htbp]\centering\scriptsize
+\caption{All half-effort minus full-effort comparisons over 128 updates. $U$ is actual uptake, $c_m$ paid movement expenditure, $M$ and $E$ final reserves and $T_M$ integrated body-time. Signs refer to the same parent and field width; all eight terminal mass and uptake differences are negative. Resource width does not reverse the terminal energy ranking.}\label{tab:effort-comparisons}
+\begin{tabular}{llrrrrrr}\toprule
+Body & History & Width & $\Delta U$ & $\Delta c_m$ & $\Delta E$ & $\Delta M$ & $\Delta T_M$\\\midrule
+Compact & plus & 1.6 & -0.927569 & -0.411632 & -0.515609 & -0.001302 & -0.018726 \\
+Compact & plus & 4 & -0.622838 & -0.416607 & -0.206192 & -0.000993 & -0.007513 \\
+Compact & minus & 1.6 & -0.925719 & -0.396142 & -0.529521 & -0.000424 & -0.003297 \\
+Compact & minus & 4 & -0.563299 & -0.396408 & -0.166889 & -0.000022 & -0.000209 \\
+Soft & plus & 1.6 & -0.045985 & -0.216097 & +0.173753 & -0.040323 & -0.282301 \\
+Soft & plus & 4 & -0.113250 & -0.223810 & +0.110995 & -0.031559 & -0.160701 \\
+Soft & minus & 1.6 & -0.036763 & -0.230764 & +0.197152 & -0.037462 & -0.260446 \\
+Soft & minus & 4 & -0.096237 & -0.237363 & +0.141876 & -0.030081 & -0.150018 \\
+\bottomrule\end{tabular}\end{table}
+
+\begin{table}[htbp]\centering\scriptsize
+\caption{Complete 128-update branch costs and reserves. Each row is one actual future, not a new independent acquisition. $b_u$ and $m_d$ are unpaid basal and denied motor requests; actual unpaid motor cost is zero throughout. Starvation energy loss $E_s$ remains separate from expenditure. Resource input is 12.8 in every row; residual stocks, sink, death and all temporal windows are retained in the source summaries.}\label{tab:effort-costs}
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lllrrrrrrrr}\toprule
+Body/History & Width & Effort & $U$ & $c_m$ & $c_b$ & $E_s$ & $b_u$ & $m_d$ & $M$ & $E$\\\midrule
+C/p & 1.6 & 0.5 & 4.18972 & 1.31153 & 3.46164 & 0.00216 & 0.00431 & 0.00272 & 22.48756 & 43.03679 \\
+C/p & 1.6 & 1 & 5.11729 & 1.72316 & 3.46196 & 0.00216 & 0.00421 & 0.00337 & 22.48886 & 43.55240 \\
+C/p & 4 & 0.5 & 5.41177 & 1.31452 & 3.47703 & 0.000286 & 7.23e-05 & 7.2e-05 & 22.63560 & 44.24233 \\
+C/p & 4 & 1 & 6.03461 & 1.73112 & 3.47712 & 0.000237 & 7.27e-05 & 0.000119 & 22.63660 & 44.44852 \\
+C/m & 1.6 & 0.5 & 4.30102 & 1.31013 & 3.46995 & 0.000242 & 0.0006 & 0.000295 & 22.58648 & 43.97236 \\
+C/m & 1.6 & 1 & 5.22674 & 1.70627 & 3.47001 & 0.000232 & 0.000573 & 0.000366 & 22.58690 & 44.50188 \\
+C/m & 4 & 0.5 & 4.63107 & 1.31122 & 3.47170 & 9.53e-06 & 9e-07 & 2.32e-06 & 22.60222 & 44.29980 \\
+C/m & 4 & 1 & 5.19437 & 1.70763 & 3.47171 & 8.77e-06 & 7.94e-07 & 4.06e-06 & 22.60224 & 44.46669 \\
+S/p & 1.6 & 0.5 & 2.43128 & 0.80210 & 2.02522 & 0.0118 & 0.0248 & 0.0125 & 12.96616 & 14.46032 \\
+S/p & 1.6 & 1 & 2.47727 & 1.01819 & 2.02935 & 0.0113 & 0.024 & 0.015 & 13.00649 & 14.28657 \\
+S/p & 4 & 0.5 & 8.48775 & 0.82949 & 2.09734 & 0.00379 & 0.000832 & 0.000751 & 13.62396 & 20.42531 \\
+S/p & 4 & 1 & 8.60100 & 1.05330 & 2.09923 & 0.00234 & 0.000829 & 0.00119 & 13.65552 & 20.31432 \\
+S/m & 1.6 & 0.5 & 2.57275 & 0.86080 & 2.17060 & 0.0111 & 0.0223 & 0.0113 & 13.92509 & 15.85675 \\
+S/m & 1.6 & 1 & 2.60952 & 1.09157 & 2.17430 & 0.0106 & 0.0217 & 0.0134 & 13.96255 & 15.65960 \\
+S/m & 4 & 0.5 & 8.69541 & 0.88349 & 2.23398 & 0.00351 & 0.000843 & 0.000869 & 14.50854 & 21.90095 \\
+S/m & 4 & 1 & 8.79164 & 1.12085 & 2.23578 & 0.00247 & 0.000814 & 0.00132 & 14.53862 & 21.75908 \\
+\bottomrule\end{tabular}
+\par\smallskip\raggedright C/S denotes compact/soft; p/m denotes plus/minus prior directional condition. Scientific notation retains small nonzero losses and request shortfalls; full precision remains in the source JSON. Zero motor underpayment is not a claim of zero denied demand.
+\end{table}

@@ -1,0 +1,216 @@
+{
+  "primary_pass": false,
+  "main_heldout_tracks": 4,
+  "conditions": [
+    {
+      "baseline": "current_quadratic",
+      "relative_mse_reduction": 0.10569004415995739,
+      "all_four_nonworse": false,
+      "mean_reduction_at_least_5pct": true
+    },
+    {
+      "baseline": "current_capacity_control",
+      "relative_mse_reduction": 0.09563084720937857,
+      "all_four_nonworse": false,
+      "mean_reduction_at_least_5pct": true
+    }
+  ],
+  "mean_mse_gain_vs_shuffle": 0.0001404163084422847,
+  "shuffle_margin_pass": true,
+  "splits": [
+    {
+      "split": "train",
+      "model": "mean",
+      "tracks": 4,
+      "mse": 0.003011130224150561,
+      "mae": 0.03106620475443612
+    },
+    {
+      "split": "train",
+      "model": "current_quadratic",
+      "tracks": 4,
+      "mse": 0.0008624096102438794,
+      "mae": 0.014516706332575468
+    },
+    {
+      "split": "train",
+      "model": "current_capacity_control",
+      "tracks": 4,
+      "mse": 0.0008566018758378085,
+      "mae": 0.01450481660705789
+    },
+    {
+      "split": "train",
+      "model": "history_model",
+      "tracks": 4,
+      "mse": 0.0008187513160649543,
+      "mae": 0.014400627309373788
+    },
+    {
+      "split": "train",
+      "model": "shuffled_history",
+      "tracks": 4,
+      "mse": 0.0008588059512472772,
+      "mae": 0.014560002707958894
+    },
+    {
+      "split": "heldout_seed",
+      "model": "mean",
+      "tracks": 4,
+      "mse": 0.0027190521287773,
+      "mae": 0.030061390461183272
+    },
+    {
+      "split": "heldout_seed",
+      "model": "current_quadratic",
+      "tracks": 4,
+      "mse": 0.001356605401060457,
+      "mae": 0.018485372632158353
+    },
+    {
+      "split": "heldout_seed",
+      "model": "current_capacity_control",
+      "tracks": 4,
+      "mse": 0.001341516030894107,
+      "mae": 0.018433461449605837
+    },
+    {
+      "split": "heldout_seed",
+      "model": "history_model",
+      "tracks": 4,
+      "mse": 0.0012132257163147407,
+      "mae": 0.01750171339911903
+    },
+    {
+      "split": "heldout_seed",
+      "model": "shuffled_history",
+      "tracks": 4,
+      "mse": 0.0013536420247570254,
+      "mae": 0.01847689533568154
+    },
+    {
+      "split": "mechanism_shift_G",
+      "model": "mean",
+      "tracks": 8,
+      "mse": 0.008222699740109644,
+      "mae": 0.04621104037043139
+    },
+    {
+      "split": "mechanism_shift_G",
+      "model": "current_quadratic",
+      "tracks": 8,
+      "mse": 0.012540669405914544,
+      "mae": 0.04728344821049448
+    },
+    {
+      "split": "mechanism_shift_G",
+      "model": "current_capacity_control",
+      "tracks": 8,
+      "mse": 0.012535103801734006,
+      "mae": 0.04724768523101501
+    },
+    {
+      "split": "mechanism_shift_G",
+      "model": "history_model",
+      "tracks": 8,
+      "mse": 0.01197005960436229,
+      "mae": 0.04613330572504569
+    },
+    {
+      "split": "mechanism_shift_G",
+      "model": "shuffled_history",
+      "tracks": 8,
+      "mse": 0.012605236737540573,
+      "mae": 0.047247686979297016
+    },
+    {
+      "split": "mechanism_shift_pooling",
+      "model": "mean",
+      "tracks": 4,
+      "mse": 0.001022492944491098,
+      "mae": 0.022079084302681504
+    },
+    {
+      "split": "mechanism_shift_pooling",
+      "model": "current_quadratic",
+      "tracks": 4,
+      "mse": 0.0010125981727070238,
+      "mae": 0.017342513770686373
+    },
+    {
+      "split": "mechanism_shift_pooling",
+      "model": "current_capacity_control",
+      "tracks": 4,
+      "mse": 0.0010083874389871408,
+      "mae": 0.017335909218072806
+    },
+    {
+      "split": "mechanism_shift_pooling",
+      "model": "history_model",
+      "tracks": 4,
+      "mse": 0.000907346572015385,
+      "mae": 0.016272643971920773
+    },
+    {
+      "split": "mechanism_shift_pooling",
+      "model": "shuffled_history",
+      "tracks": 4,
+      "mse": 0.0010072031826780978,
+      "mae": 0.017210553453138627
+    }
+  ],
+  "primary_pairs": [
+    {
+      "id": "202610195602_ring_birth_gain_only__future_both",
+      "split": "heldout_seed",
+      "history_mse": 0.0017514893336369212,
+      "quadratic_mse": 0.0018638115152881363,
+      "capacity_mse": 0.0018364956409443623,
+      "shuffled_mse": 0.0018473434834274886,
+      "delta_vs_quadratic": -0.0001123221816512151,
+      "delta_vs_capacity": -8.50063073074411e-05,
+      "delta_vs_shuffle": -9.585414979056735e-05,
+      "nonworse_both": true
+    },
+    {
+      "id": "202610195602_ring_both__future_both",
+      "split": "heldout_seed",
+      "history_mse": 0.0011844947399388816,
+      "quadratic_mse": 0.0013760847987467969,
+      "capacity_mse": 0.0013765487452990159,
+      "shuffled_mse": 0.0013547974022468752,
+      "delta_vs_quadratic": -0.0001915900588079153,
+      "delta_vs_capacity": -0.0001920540053601343,
+      "delta_vs_shuffle": -0.0001703026623079936,
+      "nonworse_both": true
+    },
+    {
+      "id": "202610195602_separate_seeds_birth_gain_only__future_both",
+      "split": "heldout_seed",
+      "history_mse": 0.0001796854403188459,
+      "quadratic_mse": 0.00017365737771853402,
+      "capacity_mse": 0.0001777651687660592,
+      "shuffled_mse": 0.00017726852866091708,
+      "delta_vs_quadratic": 6.0280626003118875e-06,
+      "delta_vs_capacity": 1.9202715527866948e-06,
+      "delta_vs_shuffle": 2.4169116579288207e-06,
+      "nonworse_both": false
+    },
+    {
+      "id": "202610195602_separate_seeds_both__future_both",
+      "split": "heldout_seed",
+      "history_mse": 0.0017372333513643139,
+      "quadratic_mse": 0.0020128679124883607,
+      "capacity_mse": 0.0019752545685669904,
+      "shuffled_mse": 0.0020351586846928207,
+      "delta_vs_quadratic": -0.00027563456112404683,
+      "delta_vs_capacity": -0.00023802121720267657,
+      "delta_vs_shuffle": -0.0002979253333285068,
+      "nonworse_both": true
+    }
+  ],
+  "undefined_anchors": [],
+  "no_model_selection": true,
+  "no_control_inference": true,
+  "objective_met": false
+}

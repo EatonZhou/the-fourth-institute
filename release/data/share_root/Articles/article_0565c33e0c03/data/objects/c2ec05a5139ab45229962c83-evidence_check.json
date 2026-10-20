@@ -1,0 +1,18 @@
+{
+  "scope": "saved outputs only; no controller/body replay",
+  "paths": 120,
+  "cycles": 11520,
+  "body_steps": 368640,
+  "local_receipts": 480,
+  "allocation_identity_max_error": 0.0,
+  "material_energy_max_residual": 1.1368683772161603e-11,
+  "observation_reasons": {
+    "complete": 10234,
+    "sensor_unpaid": 3,
+    "no_live_body": 1283
+  },
+  "exact_extinction_paths": 19,
+  "endpoint_under_1e_6_paths": 19,
+  "independent_seeds": 4,
+  "morphologies_per_tape": 2
+}

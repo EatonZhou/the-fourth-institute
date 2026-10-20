@@ -1,0 +1,120 @@
+.projectionPage { height: 100dvh; display: flex; flex-direction: column; background: var(--bg); color: var(--text); font: 14px/1.5 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+.projectionPage > .portalSiteHeader { flex: 0 0 auto; }
+.projectionPage [hidden] { display: none !important; }
+#projectionMain { box-sizing: border-box; width: 100%; flex: 1; min-height: 0; overflow: auto; }
+.projectionHeading { display: flex; align-items: center; gap: 12px; margin: 0; }
+.projectionHeading h1 { margin: 0; }
+.projectionHeading p { margin: 0; color: var(--muted); }
+.projectionSection { background: var(--panel); border: 1px solid var(--border); border-radius: var(--portal-surface-radius); padding: 16px; min-width: 0; }
+.projectionActions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.projectionSection .portalField { margin: 12px 0; }
+.projectionSection textarea.code { min-height: 220px; font: 12px/1.5 ui-monospace, monospace; }
+.projectionStudio { display: grid; grid-template-columns: minmax(280px, 370px) minmax(0, 1fr); gap: 16px; align-items: start; }
+.projectionFrame { display: block; width: 100%; height: 75vh; min-height: 400px; box-sizing: border-box; border: 1px solid var(--border); background: var(--panel); border-radius: var(--portal-surface-radius); }
+.projectionPreview { min-width: 0; }
+.projectionStatus { padding: 12px; border-radius: var(--portal-control-radius); background: var(--panel-2); margin: 12px 0; overflow-wrap: anywhere; }
+.projectionStatus a, .projectionBindings a { color: var(--accent); }
+.projectionDesignerReply { box-sizing: border-box; width: 100%; min-height: 10em; resize: vertical; }
+.projectionPlanSteps { padding-left: 20px; }
+.projectionPlanSteps li { margin: 12px 0; }
+.projectionPlanSteps dt { color: var(--muted); font-size: 12px; }
+.projectionPlanSteps dd { margin: 0 0 8px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.projectionPlanSource { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 28rem; overflow: auto; }
+#projectionError { border: 1px solid var(--danger); color: var(--danger); padding: 12px; border-radius: var(--portal-control-radius); margin-bottom: 16px; white-space: pre-wrap; }
+.projectionEmpty { padding: 32px 16px; text-align: center; color: var(--muted); }
+.projectionBindings { overflow-wrap: anywhere; font-size: 12px; }
+.projectionBindingNotice { display: block; margin-top: 4px; color: var(--warn); }
+.projectionPage.is-view #projectionMain { overflow: hidden; }
+.projectionPage.is-view #projectionContent, .projectionPage.is-view #viewRoot, .projectionPage.is-view .projectionFrame { height: 100%; min-height: 0; border: 0; border-radius: 0; }
+.projectionWorkbenchShell { height: 75vh; min-height: 400px; }
+.projectionPage.is-view .projectionWorkbenchShell { height: 100%; min-height: 0; }
+.projectionWorkbenchRoot { height: 100%; min-width: 0; }
+.developmentWorkspace { height: 100%; }
+.developmentViews, .developmentView { height: 100%; min-width: 0; min-height: 0; overflow: hidden; }
+.developmentView { display: flex; flex-direction: column; }
+.developmentView.wallPage { height: 100%; min-height: 0; overflow: hidden; }
+.developmentView > .projectionWorkbenchShell { width: 100%; }
+@media (max-width: 800px) { .projectionStudio { grid-template-columns: 1fr; } .projectionFrame { height: 70vh; } }
+
+/* The directory and the editor use the Portal page frame: full width with the page gap. */
+.projectionPage:not(.is-view) #projectionMain { padding: var(--portal-page-gap, 6px); }
+/* The directory is a collection board like Resource and Project: toolbar first, no page heading. */
+.projectionPage.is-catalog .projectionHeading { display: none; }
+.workbenchVisuallyHidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* The editor is a panel workspace like Lineage: a title bar over a settings panel and a full-height preview panel. */
+.projectionPage.is-editor #projectionMain { display: flex; flex-direction: column; gap: var(--portal-page-gap, 6px); overflow: hidden; }
+.projectionPage.is-editor #projectionContent { flex: 1 1 auto; min-height: 0; }
+.projectionPage.is-editor #projectionError { margin: 0; }
+.projectionPage.is-editor .projectionHeading,
+.workbenchEditorControls,
+.workbenchEditor .projectionPreview {
+  box-sizing: border-box; border: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
+  border-radius: var(--radius, 8px); background: var(--panel); box-shadow: var(--shadow);
+}
+.projectionPage.is-editor .projectionHeading { flex: 0 0 auto; min-height: 40px; padding: 6px 12px; }
+.projectionHeadingText { display: flex; align-items: baseline; gap: 10px; flex: 1 1 auto; min-width: 0; }
+.projectionHeading h1 { flex: 0 1 auto; min-width: 0; overflow: hidden; font-size: 14px; font-weight: 800; line-height: 20px; text-overflow: ellipsis; white-space: nowrap; }
+.projectionHeading p { flex: 1 1 0; min-width: 0; overflow: hidden; font-size: 12px; line-height: 20px; text-overflow: ellipsis; white-space: nowrap; }
+.workbenchBreadcrumb { flex: 0 0 auto; padding-right: 12px; border-right: 1px solid var(--border); font-size: 12px; line-height: 20px; }
+.workbenchBreadcrumb a { color: var(--muted); text-decoration: none; }
+.workbenchBreadcrumb a:hover { color: var(--accent); text-decoration: underline; }
+.workbenchBreadcrumb .workbenchStudioSettings { margin-left: 12px; }
+.workbenchEditor, .workbenchEditor > section, .workbenchEditor #studioContent { height: 100%; min-height: 0; }
+.workbenchEditor .projectionStudio { grid-template-columns: minmax(300px, 360px) minmax(0, 1fr); gap: var(--portal-page-gap, 6px); height: 100%; align-items: stretch; }
+.workbenchEditorControls { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: auto; }
+/* Sections stack inside one settings panel, divided by rules like the Lineage side panel. */
+.workbenchEditor .projectionSection { padding: 12px; border: 0; border-bottom: 1px solid var(--border); border-radius: 0; background: transparent; }
+.workbenchEditor h3 { margin: 0 0 2px; font-size: 13px; font-weight: 800; line-height: 18px; }
+.workbenchEditor h4 { margin: 14px 0 4px; font-size: 12px; font-weight: 800; }
+.workbenchEditor .workbenchSectionHint, .workbenchEditor small { color: var(--muted); font-size: 12px; line-height: 1.5; }
+.workbenchEditor .workbenchSectionHint { margin: 2px 0 8px; }
+.workbenchEditor .portalField { margin: 10px 0; }
+.workbenchEditor .portalField textarea:not(.code) { min-height: 120px; }
+.workbenchEditor details > summary { display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text); font-size: 13px; font-weight: 800; line-height: 18px; list-style: none; }
+.workbenchEditor details > summary::-webkit-details-marker { display: none; }
+.workbenchEditor details > summary::before {
+  content: ""; flex: 0 0 auto; width: 5px; height: 5px; margin: 0 2px; border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted);
+  transform: rotate(-45deg); transition: transform .15s ease;
+}
+.workbenchEditor details[open] > summary::before { transform: rotate(45deg); }
+.workbenchEditor details[open] > summary { margin-bottom: 8px; }
+.workbenchEditor .is-new #generationDetails > summary { display: none; }
+.workbenchEditor .is-new #generationPanel { order: 0; }
+#workbenchSettings { order: 0; }
+#generationStatus { order: 1; margin: 12px; }
+#generationPanel { order: 2; }
+#workbenchAdvanced { order: 3; }
+#workbenchReverse { order: 4; }
+.workbenchSectionHeading { margin-bottom: 10px; }
+.workbenchEditor .workbenchSectionHeading p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.35; }
+/* The first section's heading is the panel head, level with the preview panel's. */
+#workbenchSettings > .workbenchSectionHeading,
+.is-new #generationForm > .workbenchSectionHeading {
+  box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; gap: 2px;
+  min-height: 44px; margin: -12px -12px 10px; padding: 5px 12px; border-bottom: 1px solid var(--border); background: var(--panel-2);
+}
+.workbenchSectionHeading h3 { margin: 0; }
+.workbenchDangerZone { border-top: 1px solid var(--border); margin-top: 16px; padding-top: 12px; }
+.workbenchEditor #generate { width: 100%; margin-top: 4px; }
+.workbenchEditor .projectionPreview { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.workbenchPreviewHeading { --portal-pane-head-min-height: 44px; box-sizing: border-box; flex-wrap: nowrap; padding-block: 5px; }
+.workbenchPreviewHeadingText { display: flex; align-items: baseline; gap: 10px; }
+.workbenchPreviewTitle { flex: 0 0 auto; margin: 0; }
+.workbenchPreviewNote { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.workbenchEditor #previewRoot { flex: 1 1 auto; min-height: 0; }
+.workbenchEditor #previewRoot > .projectionEmpty { display: flex; height: 100%; min-height: 240px; flex-direction: column; align-items: center; justify-content: center; padding: 24px; box-sizing: border-box; }
+.workbenchEditor #previewRoot > .projectionEmpty h2 { color: var(--text); font-size: 15px; margin: 0 0 8px; }
+.workbenchEditor #previewRoot > .projectionEmpty p { max-width: 36ch; margin: 0 0 16px; font-size: 13px; }
+.workbenchEditor .projectionWorkbenchShell { height: 100%; min-height: 0; }
+.workbenchEditor .projectionFrame { height: 100%; min-height: 0; border: 0; border-radius: 0; }
+@media (max-width: 1000px) {
+  .projectionPage.is-editor #projectionMain { overflow: auto; }
+  .projectionPage.is-editor #projectionContent, .workbenchEditor, .workbenchEditor > section, .workbenchEditor #studioContent { height: auto; }
+  .workbenchEditor .projectionStudio { grid-template-columns: 1fr; height: auto; }
+  .workbenchEditorControls { overflow: visible; }
+  .workbenchEditor .projectionPreview { height: 75vh; min-height: 420px; }
+}
+@media (max-width: 560px) {
+  .projectionHeading p, .workbenchPreviewNote { display: none; }
+}

@@ -1,0 +1,21 @@
+{
+  "status": "completed_preexperiment",
+  "owner": "resident_ce2a5ab005bc",
+  "job_id": "fece0fb5-f2db-465d-9cc3-373933d3f727",
+  "host_steps": 9728,
+  "worker_seconds": 8.789298,
+  "plan_sha256": "2112bf697779cf474e9ed5060a3e9ece3a0ce91473473b455d6e6cbff9dcc3fa",
+  "binding": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/birth_placement_value/strategy_binding.json",
+  "source_module": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/renewable_allocation_ecology/birth_placement.py",
+  "source_sha256": "f3d426b7ef67b3d33ba58e1716711ce2af7bcb2ec69d54e84bf2b18d52218b16",
+  "analysis_source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/renewable_allocation_ecology/analyze_birth_placement.py",
+  "analysis_source_sha256": "0f40e1f8dc128f40dc9b321ea577a8168b7e9f254a40e31ab56ccf7007b664e5",
+  "report": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/birth_placement_value_20261018/REPORT.txt",
+  "summary": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/birth_placement_value_20261018/summary.json",
+  "pairs": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/birth_placement_value_20261018/pairs.json",
+  "outcomes": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/birth_placement_value_20261018/outcomes.json",
+  "pulse_index": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/birth_placement_value_20261018/pulse_index.json",
+  "manifest": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/birth_placement_value_20261018/manifest.json",
+  "manifest_sha256": "9eaa548e02f2f3e909119d51d8aecdf60ea44bd7f38344fe46f10b47e0e53aab",
+  "scope": "Equal actual birth quantity; current EMA loses to instantaneous inventory on intake; no learned-rule advantage established."
+}

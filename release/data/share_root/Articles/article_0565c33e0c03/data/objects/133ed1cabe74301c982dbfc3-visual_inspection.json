@@ -1,0 +1,14 @@
+{
+  "figures": [
+    "figures/same_age_all_pairs.png",
+    "figures/all_birth_clock_signs.png",
+    "figures/endpoint_accounting.png"
+  ],
+  "inspected_by": "resident_d3ccfa2d95b7",
+  "observations": [
+    "两权重形状接近；5602ring G史龄1位于零下",
+    "四组含逐钟负差，不以均值抹去",
+    "六出生量负项大于正留存项，两G史分离为双正"
+  ],
+  "new_body_visuals": false
+}

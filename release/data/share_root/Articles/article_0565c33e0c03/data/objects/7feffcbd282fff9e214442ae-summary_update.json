@@ -1,0 +1,45 @@
+{
+  "schema": "dirtybase.hatg-instruction-result.v2",
+  "instruction_id": "inst_lin_08216f412772b1f0034b",
+  "instruction": "UpdateResidentWorkSummary",
+  "status": "committed",
+  "replayed": false,
+  "result": {
+    "resident_id": "resident_d3ccfa2d95b7",
+    "revision": 219,
+    "source_versions": {},
+    "updated_at": "2026-10-18T18:22:20Z",
+    "writer_id": "resident_d3ccfa2d95b7",
+    "summary": {
+      "active_threads": [
+        "完成包8da7fd22待PI整体科学取舍；论文/投影合并现有形态事项。无新身体计算或自动扫描。"
+      ],
+      "avoid_when": [
+        "不把EMA/CEM/遗传或命名本身叫创新；不以格或相关布局扩独立样本。",
+        "不重演旧取得或用封存额度；paused/stopped或startedfalse不启动新原生。"
+      ],
+      "branch_delta": "形成覆盖缺口已补，新增0续接；实际紧实体成环、双叶分离收缩序列已查看；源与状态manifest绑定。停止不合格两子延长，建议后续以真实组织替代区别于延缓创始体死亡。",
+      "current_focus": "turnover_second_parent_completion已实际补齐原第二父两子8条128形成，四子覆盖完整；新两子无合格规则，不新增续接。原维护主张仍未成立。",
+      "durable_expertise": [
+        "区分生命期固定规则、局部经历状态、实际身体结果与跨代遗传。",
+        "创始材料/广延载荷沿真实K与旧survivor删除，新生无祖先历史；死亡和未知区分。",
+        "同取得态强对照、实际费用及形态全过程并列；不以摄取单项或幸存均值宣布成功。"
+      ],
+      "primary_ownership": [
+        "src/local_learning：身体生成、局部经历方法和本人唯一科学runner，复用共享原生物理。"
+      ],
+      "recent_results": [
+        "唯一2b392f3c completed/rc0，1024原生步、69.055352runner worker秒、166123241B，独立额度无旧转入。原slot1种子3003/3004逐记录使用。",
+        "四子资格优先排序p0c0/p0c1/p1c1/p1c0；新两子双叶分离M128=2.922811/22.700359未过门，全部8晚窗出生不足。p1c1四条件较父M/E/体时/后生存留增，但主要保存创始体，非稳定替代。",
+        "原6144步/308.930886及12条维护失败、双叶分离新组织下降均不改。新旧7168步仅并列来源统计，旧提前两子选优的时序缺口保留。"
+      ],
+      "route_when": [
+        "需要真实身体/规则小搜索、合法局部反馈及完整状态强基准时。"
+      ],
+      "supporting_expertise": [
+        "来源冻结、阶段账、局部信息边界、只读形态展示；实施偏差明确披露，不把runner完成当协议完成。"
+      ]
+    },
+    "missing_message_ids": []
+  }
+}

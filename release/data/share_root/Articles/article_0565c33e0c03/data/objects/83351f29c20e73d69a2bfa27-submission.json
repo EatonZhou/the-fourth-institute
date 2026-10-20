@@ -1,0 +1,19 @@
+{
+  "id": "ecae3539-8cad-43fb-a2c8-e7993a5d83b3",
+  "name": "renewable-allocation-viability",
+  "command": [
+    "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+    "-m",
+    "environment_evolution.renewable_allocation_ecology.run"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "ce2-renewable-allocation-ecology-20261018-pilot-v1",
+  "status": "running",
+  "created_at": "2026-10-18T06:08:43.802893+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/ecae3539-8cad-43fb-a2c8-e7993a5d83b3",
+  "pid": 3526135,
+  "manual_pause": false,
+  "create_time": 1792303723.26,
+  "started_at": "2026-10-18T06:08:43.878686+00:00"
+}

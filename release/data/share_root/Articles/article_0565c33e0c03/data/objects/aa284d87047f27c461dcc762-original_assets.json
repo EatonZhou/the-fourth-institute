@@ -1,0 +1,22 @@
+{
+  "core7501.pptx": {
+    "sha256": "b79b3391fae5e8985ff661dbc42260aab494bc5dbc18f14645239410cde44f9d",
+    "bytes": 53995
+  },
+  "core7501.pdf": {
+    "sha256": "f4847a76de6cee6cd6ee2b82024410c9174191598518e3da252ffe6c565d432c",
+    "bytes": 309949
+  },
+  "core7501.png": {
+    "sha256": "9ca6958f2baf8c67c21a6eec9a8e9fcbbedc3a7449943d5a274cd1da023a56ca",
+    "bytes": 1232868
+  },
+  "caption.tex": {
+    "sha256": "cfd0730a98a77cb325f9e437dda5ab82465fc79a12a02451d51f27b9f90f2436",
+    "bytes": 1331
+  },
+  "production.json": {
+    "sha256": "25fcc7516672ef778dc85236e594f69b5d38757fef10c49c0d131a108b548ab5",
+    "bytes": 1421
+  }
+}

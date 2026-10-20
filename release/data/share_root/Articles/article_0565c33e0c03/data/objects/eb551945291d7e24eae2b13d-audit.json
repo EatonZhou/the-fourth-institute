@@ -1,0 +1,300 @@
+{
+  "saved_receipts": 120,
+  "receipt_max_errors": {
+    "cap_excess": 0,
+    "eligible_excess": 0,
+    "pay_excess": 0,
+    "fee_error": 0,
+    "registration": 0,
+    "P": 0,
+    "F": 0,
+    "E": 0,
+    "no_newborn_payer": 0,
+    "new_tissue": 0,
+    "first_q": 0,
+    "none_q": 0
+  },
+  "per_step_max_checks": {
+    "check_material_error": 4.263256414560601e-14,
+    "check_energy_error": 5.684341886080803e-14,
+    "check_max_density": 1.023093465794636,
+    "check_attempted_body_steps": 3072.0,
+    "check_reconstruction_error": 5.551115123125783e-17,
+    "check_K_column_error": 0,
+    "check_transport_error": 2.131628207280301e-14,
+    "check_exchange_material_error": 2.5472679521243435e-14,
+    "check_exchange_energy_error": 6.039613253960853e-14,
+    "check_whole_material_error": 3.7886360715333473e-14,
+    "check_whole_energy_error": 8.026912468039883e-14,
+    "check_input_material_array_error": 0,
+    "check_input_energy_array_error": 0,
+    "check_cargo_P_error": 7.105427357601002e-15,
+    "check_cargo_F_error": 1.4210854715202004e-14,
+    "check_cargo_E_heat_error": 0,
+    "check_cargo_capacity_excess": 0,
+    "check_cargo_payable_excess": 0,
+    "check_cargo_negative": 0,
+    "check_cargo_newborn_payer": 0,
+    "check_request_partition_error": 6.938893903907228e-18,
+    "check_founder_excess": 6.938893903907228e-18,
+    "check_recycle_material_error": 2.8421709430404014e-14,
+    "check_recycle_energy_error": 5.684341886080803e-14,
+    "check_recycle_payable_excess": 0,
+    "check_recycle_capacity_excess": 0,
+    "check_recycle_eligible_excess": 1.3877787807814457e-17,
+    "check_recycle_negative": 8.449153648861646e-20,
+    "check_recycle_newborn_payer": 0,
+    "check_recycle_no_F_or_deathE_change": 0,
+    "check_L256_excess": 6.938893903907228e-18,
+    "check_L256_balance_error": 2.8421709430404014e-14,
+    "check_eligible_balance_error": 2.1871393585115584e-14
+  },
+  "whole_trajectory_balance_max": {
+    "M": 6.394884621840902e-14,
+    "L256": 1.4210854715202004e-14,
+    "post256": 4.9960036108132044e-14,
+    "eligible": 1.0658141036401503e-14,
+    "precursor": 9.414691248821327e-14,
+    "waste": 2.842170943040401e-14,
+    "heat": 8.171241461241152e-14,
+    "energy_all": 3.268496584496461e-13
+  },
+  "reference_reexecution": [
+    {
+      "id": "b4--none",
+      "steps": 128,
+      "fields": [
+        "M",
+        "E",
+        "precursor",
+        "fuel",
+        "waste",
+        "heat",
+        "dead_energy",
+        "founder_mass",
+        "born",
+        "death",
+        "U",
+        "pump_fee_paid"
+      ],
+      "max_abs_difference": 0.0
+    },
+    {
+      "id": "b5--none",
+      "steps": 128,
+      "fields": [
+        "M",
+        "E",
+        "precursor",
+        "fuel",
+        "waste",
+        "heat",
+        "dead_energy",
+        "founder_mass",
+        "born",
+        "death",
+        "U",
+        "pump_fee_paid"
+      ],
+      "max_abs_difference": 0.0
+    },
+    {
+      "id": "b6--none",
+      "steps": 128,
+      "fields": [
+        "M",
+        "E",
+        "precursor",
+        "fuel",
+        "waste",
+        "heat",
+        "dead_energy",
+        "founder_mass",
+        "born",
+        "death",
+        "U",
+        "pump_fee_paid"
+      ],
+      "max_abs_difference": 0.0
+    },
+    {
+      "id": "b7--none",
+      "steps": 128,
+      "fields": [
+        "M",
+        "E",
+        "precursor",
+        "fuel",
+        "waste",
+        "heat",
+        "dead_energy",
+        "founder_mass",
+        "born",
+        "death",
+        "U",
+        "pump_fee_paid"
+      ],
+      "max_abs_difference": 0.0
+    }
+  ],
+  "first_step_checks": {
+    "extra_native": 0,
+    "integrated_first_steps": [
+      {
+        "id": "b0--none",
+        "first_q_zero": true,
+        "first_state_equal_none": true,
+        "extra_native": 0
+      },
+      {
+        "id": "b0--paid_inert",
+        "first_q_zero": true,
+        "first_state_equal_none": true,
+        "extra_native": 0
+      },
+      {
+        "id": "b0--paid_recycle",
+        "first_q_zero": true,
+        "first_state_equal_none": true,
+        "extra_native": 0
+      },
+      {
+        "id": "b1--none",
+        "first_q_zero": true,
+        "first_state_equal_none": true,
+        "extra_native": 0
+      },
+      {
+        "id": "b1--paid_inert",
+        "first_q_zero": true,
+        "first_state_equal_none": true,
+        "extra_native": 0
+      },
+      {
+        "id": "b1--paid_recycle",
+        "first_q_zero": true,
+        "first_state_equal_none": true,
+        "extra_native": 0
+      },
+      {
+        "id": "b2--none",
+        "first_q_zero": true,
+        "first_state_equal_none": true,
+        "extra_native": 0
+      },
+      {
+        "id": "b2--paid_inert",
+        "first_q_zero": true,
+        "first_state_equal_none": true,
+        "extra_native": 0
+      },
+      {
+        "id": "b2--paid_recycle",
+        "first_q_zero": true,
+        "first_state_equal_none": true,
+        "extra_native": 0
+      },
+      {
+        "id": "b3--none",
+        "first_q_zero": true,
+        "first_state_equal_none": true,
+        "extra_native": 0
+      },
+      {
+        "id": "b3--paid_inert",
+        "first_q_zero": true,
+        "first_state_equal_none": true,
+        "extra_native": 0
+      },
+      {
+        "id": "b3--paid_recycle",
+        "first_q_zero": true,
+        "first_state_equal_none": true,
+        "extra_native": 0
+      },
+      {
+        "id": "b4--none",
+        "first_q_zero": true,
+        "first_state_equal_none": true,
+        "extra_native": 0
+      },
+      {
+        "id": "b4--paid_inert",
+        "first_q_zero": true,
+        "first_state_equal_none": true,
+        "extra_native": 0
+      },
+      {
+        "id": "b4--paid_recycle",
+        "first_q_zero": true,
+        "first_state_equal_none": true,
+        "extra_native": 0
+      },
+      {
+        "id": "b5--none",
+        "first_q_zero": true,
+        "first_state_equal_none": true,
+        "extra_native": 0
+      },
+      {
+        "id": "b5--paid_inert",
+        "first_q_zero": true,
+        "first_state_equal_none": true,
+        "extra_native": 0
+      },
+      {
+        "id": "b5--paid_recycle",
+        "first_q_zero": true,
+        "first_state_equal_none": true,
+        "extra_native": 0
+      },
+      {
+        "id": "b6--none",
+        "first_q_zero": true,
+        "first_state_equal_none": true,
+        "extra_native": 0
+      },
+      {
+        "id": "b6--paid_inert",
+        "first_q_zero": true,
+        "first_state_equal_none": true,
+        "extra_native": 0
+      },
+      {
+        "id": "b6--paid_recycle",
+        "first_q_zero": true,
+        "first_state_equal_none": true,
+        "extra_native": 0
+      },
+      {
+        "id": "b7--none",
+        "first_q_zero": true,
+        "first_state_equal_none": true,
+        "extra_native": 0
+      },
+      {
+        "id": "b7--paid_inert",
+        "first_q_zero": true,
+        "first_state_equal_none": true,
+        "extra_native": 0
+      },
+      {
+        "id": "b7--paid_recycle",
+        "first_q_zero": true,
+        "first_state_equal_none": true,
+        "extra_native": 0
+      }
+    ]
+  },
+  "pure_checks": {
+    "native": 0,
+    "none_identity": true,
+    "old_waste_not_eligible": true,
+    "delayed_registration": true,
+    "inert_one_consumption": true,
+    "newborn_energy_excluded": true,
+    "no_survivor_no_payer": true,
+    "underfunded_downward": true
+  },
+  "source_bytes_unchanged": true
+}

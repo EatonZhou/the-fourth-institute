@@ -1,0 +1,262 @@
+{
+  "native": 0,
+  "within_state_source_and_fee_match": true,
+  "direction_different": true,
+  "zero_fresh_no_oldP_moved": true,
+  "no_demand_no_charge": true,
+  "no_newborn_payer": true,
+  "spent_original_capacity_respected": true,
+  "blocked_faces": true,
+  "one_hop_only": true,
+  "downward_only": true,
+  "forks": [
+    {
+      "parent": "b2",
+      "arm": "P_on_demand",
+      "baseline_exact": true,
+      "roundtrip_exact": true
+    },
+    {
+      "parent": "b2",
+      "arm": "P_on_uniform",
+      "baseline_exact": true,
+      "roundtrip_exact": true
+    },
+    {
+      "parent": "b2",
+      "arm": "P_off_demand",
+      "baseline_exact": true,
+      "roundtrip_exact": true
+    },
+    {
+      "parent": "b2",
+      "arm": "P_off_uniform",
+      "baseline_exact": true,
+      "roundtrip_exact": true
+    },
+    {
+      "parent": "b6",
+      "arm": "P_on_demand",
+      "baseline_exact": true,
+      "roundtrip_exact": true
+    },
+    {
+      "parent": "b6",
+      "arm": "P_on_uniform",
+      "baseline_exact": true,
+      "roundtrip_exact": true
+    },
+    {
+      "parent": "b6",
+      "arm": "P_off_demand",
+      "baseline_exact": true,
+      "roundtrip_exact": true
+    },
+    {
+      "parent": "b6",
+      "arm": "P_off_uniform",
+      "baseline_exact": true,
+      "roundtrip_exact": true
+    }
+  ],
+  "actual_saved_poststates": [
+    {
+      "id": "b2--P_on_recycle_on",
+      "clock": 385,
+      "same_source_error": 0.0,
+      "Q": 0.024259240434165948,
+      "direction_L1": 0.030277252958624788
+    },
+    {
+      "id": "b2--P_on_recycle_on",
+      "clock": 392,
+      "same_source_error": 0.0,
+      "Q": 0.027742253398358275,
+      "direction_L1": 0.03985056246950776
+    },
+    {
+      "id": "b2--P_on_recycle_on",
+      "clock": 416,
+      "same_source_error": 0.0,
+      "Q": 0.03011921582621238,
+      "direction_L1": 0.04274811401226525
+    },
+    {
+      "id": "b2--P_on_recycle_on",
+      "clock": 448,
+      "same_source_error": 4.336808689942018e-19,
+      "Q": 0.0322211507674211,
+      "direction_L1": 0.04478044401698965
+    },
+    {
+      "id": "b2--P_on_recycle_on",
+      "clock": 512,
+      "same_source_error": 0.0,
+      "Q": 0.032631826276838236,
+      "direction_L1": 0.04253623564969562
+    },
+    {
+      "id": "b2--P_on_recycle_on",
+      "clock": 576,
+      "same_source_error": 0.0,
+      "Q": 0.03782147106241254,
+      "direction_L1": 0.04831132072976399
+    },
+    {
+      "id": "b2--P_on_recycle_on",
+      "clock": 640,
+      "same_source_error": 0.0,
+      "Q": 0.032796087517641806,
+      "direction_L1": 0.032796087517641806
+    },
+    {
+      "id": "b2--P_off_recycle_on",
+      "clock": 385,
+      "same_source_error": 0.0,
+      "Q": 0.031359147245624594,
+      "direction_L1": 0.04117328229871822
+    },
+    {
+      "id": "b2--P_off_recycle_on",
+      "clock": 392,
+      "same_source_error": 0.0,
+      "Q": 0.024010974612684945,
+      "direction_L1": 0.0281816567778889
+    },
+    {
+      "id": "b2--P_off_recycle_on",
+      "clock": 416,
+      "same_source_error": 0.0,
+      "Q": 0.020404345808623627,
+      "direction_L1": 0.02676809754811614
+    },
+    {
+      "id": "b2--P_off_recycle_on",
+      "clock": 448,
+      "same_source_error": 0.0,
+      "Q": 0.009403800038800357,
+      "direction_L1": 0.006671017199484541
+    },
+    {
+      "id": "b2--P_off_recycle_on",
+      "clock": 512,
+      "same_source_error": 0.0,
+      "Q": 0.004188447329138389,
+      "direction_L1": 0.0020942236645691945
+    },
+    {
+      "id": "b2--P_off_recycle_on",
+      "clock": 576,
+      "same_source_error": 0.0,
+      "Q": 0.004202125544539509,
+      "direction_L1": 0.004202125544539509
+    },
+    {
+      "id": "b2--P_off_recycle_on",
+      "clock": 640,
+      "same_source_error": 0.0,
+      "Q": 0.0007641867648386356,
+      "direction_L1": 0.0003820933824193178
+    },
+    {
+      "id": "b6--P_on_recycle_on",
+      "clock": 385,
+      "same_source_error": 0.0,
+      "Q": 0.021948602551732144,
+      "direction_L1": 0.02566117770460961
+    },
+    {
+      "id": "b6--P_on_recycle_on",
+      "clock": 392,
+      "same_source_error": 0.0,
+      "Q": 0.024623440139409015,
+      "direction_L1": 0.03561635037024628
+    },
+    {
+      "id": "b6--P_on_recycle_on",
+      "clock": 416,
+      "same_source_error": 0.0,
+      "Q": 0.027681134801914635,
+      "direction_L1": 0.039620628759965894
+    },
+    {
+      "id": "b6--P_on_recycle_on",
+      "clock": 448,
+      "same_source_error": 4.336808689942018e-19,
+      "Q": 0.030318040350950908,
+      "direction_L1": 0.04230138131069462
+    },
+    {
+      "id": "b6--P_on_recycle_on",
+      "clock": 512,
+      "same_source_error": 0.0,
+      "Q": 0.036380604053830534,
+      "direction_L1": 0.04857484521012902
+    },
+    {
+      "id": "b6--P_on_recycle_on",
+      "clock": 576,
+      "same_source_error": 8.673617379884035e-19,
+      "Q": 0.03400591538185367,
+      "direction_L1": 0.039418736720636297
+    },
+    {
+      "id": "b6--P_on_recycle_on",
+      "clock": 640,
+      "same_source_error": 0.0,
+      "Q": 0.024278631152622028,
+      "direction_L1": 0.024278631152622025
+    },
+    {
+      "id": "b6--P_off_recycle_on",
+      "clock": 385,
+      "same_source_error": 0.0,
+      "Q": 0.02850681644950854,
+      "direction_L1": 0.035498498551274196
+    },
+    {
+      "id": "b6--P_off_recycle_on",
+      "clock": 392,
+      "same_source_error": 8.673617379884035e-19,
+      "Q": 0.028366745749713863,
+      "direction_L1": 0.03149610999570938
+    },
+    {
+      "id": "b6--P_off_recycle_on",
+      "clock": 416,
+      "same_source_error": 0.0,
+      "Q": 0.017921586779562855,
+      "direction_L1": 0.019030529732866643
+    },
+    {
+      "id": "b6--P_off_recycle_on",
+      "clock": 448,
+      "same_source_error": 0.0,
+      "Q": 0.009369386324321582,
+      "direction_L1": 0.006426586766934897
+    },
+    {
+      "id": "b6--P_off_recycle_on",
+      "clock": 512,
+      "same_source_error": 0.0,
+      "Q": 0.004122493995966255,
+      "direction_L1": 0.002061246997983128
+    },
+    {
+      "id": "b6--P_off_recycle_on",
+      "clock": 576,
+      "same_source_error": 0.0,
+      "Q": 0.002945300118829493,
+      "direction_L1": 0.0025085145045852
+    },
+    {
+      "id": "b6--P_off_recycle_on",
+      "clock": 640,
+      "same_source_error": 0.0,
+      "Q": 0.000838094580006607,
+      "direction_L1": 0.00041904729000330346
+    }
+  ],
+  "nonzero_saved_plans": 28,
+  "max_match_error": 8.673617379884035e-19
+}

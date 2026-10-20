@@ -1,0 +1,16 @@
+{
+  "type": "repo",
+  "category": "resource",
+  "description": "A logical Git repository, independent of checkout path, remote URL, and commit.",
+  "title": {
+    "zh": "仓库",
+    "en": "Repo"
+  },
+  "provider": "management_portal.resources.providers.repo:install_resolver",
+  "catalog_section": "repo",
+  "catalog_order": 30,
+  "registerable": true,
+  "scope": "project",
+  "unit": "repo",
+  "enabled_by_default": true
+}

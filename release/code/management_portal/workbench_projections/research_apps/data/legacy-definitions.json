@@ -1,0 +1,51 @@
+{
+  "schema": "portal.research.migration.v1",
+  "applications": {
+    "semantic": {
+      "title": "语义化优化研究工作台",
+      "description": "12 个模型 × 3 类硬件的交互研究工作台。每个 block 可查看语义方案记录、组合探索时间线、性能柱状图及来源证据；关联实验整理索引 information_6d772dbfa65b，保留负例、历史口径和待归属记录。页面只读研究数据，不触发实验。",
+      "path": "",
+      "updated_at": "2026-09-23T09:52:23Z",
+      "workbench_id": "workbench_d82dedd31208",
+      "builtin": "",
+      "created_at": "2026-09-22T13:03:43Z",
+      "navigation": "menu",
+      "project_ids": [
+        "OSForAgent"
+      ],
+      "bindings": {
+        "main": {
+          "lineage_id": "lineage_98e68feb0c21",
+          "residents": {
+            "coordinator": "resident_5549c42d1317"
+          },
+          "events": {}
+        }
+      },
+      "revision": 7,
+      "published_revision": 7
+    },
+    "matrix": {
+      "title": "模型 × 硬件优化矩阵",
+      "description": "按真实模型与 A100 / Thor / RTX4090 生成性能矩阵；单元格显示可追溯的性能、已登记阶段，点击查看各语义优化方式的效果与证据。",
+      "path": "",
+      "updated_at": "2026-09-29T09:55:21Z",
+      "workbench_id": "workbench_0d598218b194",
+      "builtin": "",
+      "created_at": "2026-09-08T20:01:12Z",
+      "navigation": "menu",
+      "project_ids": [],
+      "bindings": {
+        "main": {
+          "lineage_id": "lineage_98e68feb0c21",
+          "residents": {
+            "coordinator": "resident_5549c42d1317"
+          },
+          "events": {}
+        }
+      },
+      "revision": 22,
+      "published_revision": 22
+    }
+  }
+}

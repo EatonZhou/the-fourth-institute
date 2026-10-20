@@ -1,0 +1,18 @@
+{
+  "status": "completed_preexperiment",
+  "source_jobs": [
+    "bc3fea01-5bcc-41f5-b72d-c9b479960ebb",
+    "25d2a1e5-91bf-41f6-a27d-1e5e0c8b3266",
+    "953cabb4-34ec-46b1-8735-ba5054aac604"
+  ],
+  "host_steps": 58561,
+  "d3_host_steps": 58368,
+  "worker_seconds": 43.124932,
+  "results": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_birth_admission/key_results.json",
+  "spatial_action_control": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_birth_admission/spatial_action_control/summary.json",
+  "report": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_birth_admission/REPORT.txt",
+  "manifest": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_birth_admission/manifest.json",
+  "manifest_sha256": "7beeccf34806302294df78eb8725f1e9605189a6481d8817bb50a8cbe95faace",
+  "scope": "local birth gate on ce2 density host; candidate hand-designed updater, not a trained or established novel method",
+  "interpretation": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_birth_admission/INTERPRETATION.txt"
+}

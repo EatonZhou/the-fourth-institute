@@ -1,0 +1,326 @@
+[
+  {
+    "candidate": "genome_0ac80448a534dc953505",
+    "source128": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_generation_screen_20261018/780163bf-a09a-488b-a297-5e0f4261d7b5/genome_0ac80448a534dc953505--formation/transactions/000128.npz",
+    "source_sha256": "670dc066addc49b41e0574aa0a03f89cacd1c9797df80027d7e8bd2ef4030af8",
+    "fields": {
+      "body": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.03927410436693546
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.03927410436693546
+        }
+      },
+      "energy": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.007680549052624497
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.007680549052624497
+        }
+      },
+      "precursor": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.10030081212577491
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.10030081212577491
+        }
+      },
+      "fuel": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.043449692998977385
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.043449692998977385
+        }
+      },
+      "joint_P_actual": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.0361312607242965
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.0361312607242965
+        }
+      },
+      "joint_F_actual": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.020749513642915586
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.020749513642915586
+        }
+      },
+      "joint_fee_paid": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.0028750101024950475
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.0028750101024950475
+        }
+      },
+      "actor_transport_weights": {
+        "exact": {
+          "step": 130,
+          "max_abs": 0.005638020879727634
+        },
+        "above_1e12": {
+          "step": 130,
+          "max_abs": 0.005638020879727634
+        }
+      },
+      "positive_request": {
+        "exact": {
+          "step": 130,
+          "max_abs": 0.0013086204400381638
+        },
+        "above_1e12": {
+          "step": 130,
+          "max_abs": 0.0013086204400381638
+        }
+      },
+      "births": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.03927410436693546
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.03927410436693546
+        }
+      }
+    },
+    "meaning": "committed fields only; exact and tolerance thresholds separate; no forced simultaneous K/q onset"
+  },
+  {
+    "candidate": "genome_6bd5bfd2f629f9414376",
+    "source128": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_generation_screen_20261018/780163bf-a09a-488b-a297-5e0f4261d7b5/genome_6bd5bfd2f629f9414376--formation/transactions/000128.npz",
+    "source_sha256": "1df02c60d6bda5dfeaaad9ee213ee089fc0fa8ababaedb2cf1d2446ee51a5fe5",
+    "fields": {
+      "body": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.006993316766495561
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.006993316766495561
+        }
+      },
+      "energy": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.004886673722427792
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.004886673722427792
+        }
+      },
+      "precursor": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.01483159489041361
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.01483159489041361
+        }
+      },
+      "fuel": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.013431315955011666
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.013431315955011666
+        }
+      },
+      "joint_P_actual": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.014691516588443736
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.014691516588443736
+        }
+      },
+      "joint_F_actual": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.013665839556149827
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.013665839556149827
+        }
+      },
+      "joint_fee_paid": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.0007338303376988999
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.0007338303376988999
+        }
+      },
+      "actor_transport_weights": {
+        "exact": {
+          "step": 130,
+          "max_abs": 0.0004831900722912707
+        },
+        "above_1e12": {
+          "step": 130,
+          "max_abs": 0.0004831900722912707
+        }
+      },
+      "positive_request": {
+        "exact": {
+          "step": 130,
+          "max_abs": 0.0003027101325620571
+        },
+        "above_1e12": {
+          "step": 130,
+          "max_abs": 0.0003027101325620571
+        }
+      },
+      "births": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.006993316766495569
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.006993316766495569
+        }
+      }
+    },
+    "meaning": "committed fields only; exact and tolerance thresholds separate; no forced simultaneous K/q onset"
+  },
+  {
+    "candidate": "genome_85dffefe3eb5bacdfbf5",
+    "source128": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_generation_screen_20261018/780163bf-a09a-488b-a297-5e0f4261d7b5/genome_85dffefe3eb5bacdfbf5--formation/transactions/000128.npz",
+    "source_sha256": "77457fda32ad7c63a3f2a503878280d3ca0f6fa9310bd83809b803ce68929b89",
+    "fields": {
+      "body": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.008384154905447638
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.008384154905447638
+        }
+      },
+      "energy": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.004970095344746073
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.004970095344746073
+        }
+      },
+      "precursor": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.0190253469434174
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.0190253469434174
+        }
+      },
+      "fuel": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.014931950574731095
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.014931950574731095
+        }
+      },
+      "joint_P_actual": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.012061430121692758
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.012061430121692758
+        }
+      },
+      "joint_F_actual": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.01182445635894935
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.01182445635894935
+        }
+      },
+      "joint_fee_paid": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.0005195422919569601
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.0005195422919569601
+        }
+      },
+      "actor_transport_weights": {
+        "exact": {
+          "step": 130,
+          "max_abs": 0.0003632690959102722
+        },
+        "above_1e12": {
+          "step": 130,
+          "max_abs": 0.0003632690959102722
+        }
+      },
+      "positive_request": {
+        "exact": {
+          "step": 130,
+          "max_abs": 0.00024144438776261688
+        },
+        "above_1e12": {
+          "step": 130,
+          "max_abs": 0.00024144438776261688
+        }
+      },
+      "births": {
+        "exact": {
+          "step": 129,
+          "max_abs": 0.00838415490544765
+        },
+        "above_1e12": {
+          "step": 129,
+          "max_abs": 0.00838415490544765
+        }
+      }
+    },
+    "meaning": "committed fields only; exact and tolerance thresholds separate; no forced simultaneous K/q onset"
+  }
+]

@@ -1,0 +1,32 @@
+{
+  "native_cap": 7200,
+  "scientific_cap": 7168,
+  "actual_attempted": 6144,
+  "committed": 6144,
+  "settled": 6144,
+  "failed_native": 0,
+  "boundary_extra_native": 0,
+  "stages": {
+    "G1": 2048,
+    "G2": 1024,
+    "continuation": 3072
+  },
+  "runner_worker_seconds": 308.930886,
+  "runner_cap": 1800,
+  "job": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/runner_record.json",
+    "sha256": "91e4f94d23579bb2757f6a184c18933e587470d5d26348f19c159baffc36c049",
+    "bytes": 1439
+  },
+  "cpu": 2,
+  "gpu": 0,
+  "unused_sealed_native": 1056,
+  "unused_sealed_worker": 1491.069114,
+  "raw_bytes": 742625831,
+  "raw_cap_bytes": 1073741824,
+  "old_replay": 0,
+  "old_balance_transfer": 0,
+  "runner_status": "completed",
+  "protocol_status": "partial_second_parent_and_two_children_missing",
+  "automatic_resubmission": false
+}

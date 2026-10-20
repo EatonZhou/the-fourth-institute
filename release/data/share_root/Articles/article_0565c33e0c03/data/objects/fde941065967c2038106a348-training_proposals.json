@@ -1,0 +1,2347 @@
+[
+  {
+    "id": "theta0",
+    "complete": true,
+    "eligible": true,
+    "violations": 0,
+    "score_min": 0.0,
+    "score_mean": 0.0,
+    "policy": {
+      "kind": "theta",
+      "theta": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "results": [
+      {
+        "id": "constant_w0--compact",
+        "stage": "training",
+        "shape": "compact",
+        "seed": 202610195201,
+        "policy": {
+          "kind": "constant",
+          "w": 0.5442572838640933
+        },
+        "canonical_policy": {
+          "kind": "constant",
+          "w": 0.5442572838640933
+        },
+        "start": 128,
+        "end": 224,
+        "initial": {
+          "clock": 128,
+          "body": 65.07253016393415,
+          "energy": 84.78501202656405,
+          "precursor": 3.8299181723567006,
+          "fuel": 22.895939174121395,
+          "heat": 15.368806879243714,
+          "waste": 17.732395400389038,
+          "dead_energy": 23.785859970196874,
+          "founder_mass": 47.85928096490014,
+          "new_tissue": 17.213249199034014
+        },
+        "status": "complete",
+        "steps": 96,
+        "M": 64.4288690697389,
+        "E": 87.21769924445377,
+        "bodytime": 311.20677080669503,
+        "min_M": 64.4288690697389,
+        "post128_live": 14.940319231443452,
+        "L128": 49.48854983829544,
+        "final": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/constant_w0--compact/state224.bin",
+        "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/constant_w0--compact/steps.csv",
+        "final_shape": {
+          "alive": true,
+          "components": 1,
+          "holes": 0,
+          "elongation": 1.0498454283146086,
+          "radius": 4.5020589496469325,
+          "mass": 64.4288690697389,
+          "maximum": 0.6816868387815249
+        },
+        "maximum_errors": {
+          "check_material_error": 2.842170943040401e-14,
+          "check_energy_error": 2.842170943040401e-14,
+          "check_max_density": 0.6818096943762357,
+          "check_attempted_body_steps": 100.0,
+          "check_reconstruction_error": 5.551115123125783e-17,
+          "check_K_column_error": 0.0,
+          "check_transport_error": 1.4210854715202004e-14,
+          "check_exchange_material_error": 1.2261025528204073e-14,
+          "check_exchange_energy_error": 2.6201263381153694e-14,
+          "check_whole_material_error": 2.3397950243975174e-14,
+          "check_whole_energy_error": 3.8413716652030416e-14,
+          "check_input_material_array_error": 0.0,
+          "check_input_energy_array_error": 0.0,
+          "check_cargo_P_error": 8.881784197001252e-16,
+          "check_cargo_F_error": 7.105427357601002e-15,
+          "check_cargo_E_heat_error": 0.0,
+          "check_cargo_capacity_excess": 0.0,
+          "check_cargo_payable_excess": 0.0,
+          "check_cargo_negative": 0.0,
+          "check_cargo_newborn_payer": 0.0,
+          "check_request_partition_error": 6.938893903907228e-18,
+          "check_founder_excess": 0.0,
+          "check_L128_conservation_error": 1.8457457784393227e-14,
+          "check_L128_excess": 0.0
+        }
+      },
+      {
+        "id": "constant_w0--double_lobe",
+        "stage": "training",
+        "shape": "double_lobe",
+        "seed": 202610195202,
+        "policy": {
+          "kind": "constant",
+          "w": 0.5442572838640933
+        },
+        "canonical_policy": {
+          "kind": "constant",
+          "w": 0.5442572838640933
+        },
+        "start": 128,
+        "end": 224,
+        "initial": {
+          "clock": 128,
+          "body": 56.350125784757964,
+          "energy": 68.50791344342827,
+          "precursor": 2.3608580008936135,
+          "fuel": 25.06402264811716,
+          "heat": 17.112835931369005,
+          "waste": 28.86755037398314,
+          "dead_energy": 34.193575754676,
+          "founder_mass": 37.52870101117166,
+          "new_tissue": 18.82142477358631
+        },
+        "status": "complete",
+        "steps": 96,
+        "M": 54.266966379278415,
+        "E": 78.11395432241679,
+        "bodytime": 265.3702075127401,
+        "min_M": 54.266966379278415,
+        "post128_live": 15.114143842421681,
+        "L128": 39.15282253685673,
+        "final": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/constant_w0--double_lobe/state224.bin",
+        "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/constant_w0--double_lobe/steps.csv",
+        "final_shape": {
+          "alive": true,
+          "components": 1,
+          "holes": 0,
+          "elongation": 1.8262569322968802,
+          "radius": 4.274839483856866,
+          "mass": 54.266966379278415,
+          "maximum": 0.8611424139224879
+        },
+        "maximum_errors": {
+          "check_material_error": 2.842170943040401e-14,
+          "check_energy_error": 5.684341886080802e-14,
+          "check_max_density": 0.861148809921659,
+          "check_attempted_body_steps": 196.0,
+          "check_reconstruction_error": 5.551115123125783e-17,
+          "check_K_column_error": 0.0,
+          "check_transport_error": 1.4210854715202004e-14,
+          "check_exchange_material_error": 1.3072876114961218e-14,
+          "check_exchange_energy_error": 3.1585845050585704e-14,
+          "check_whole_material_error": 3.2085445411667024e-14,
+          "check_whole_energy_error": 4.596323321948148e-14,
+          "check_input_material_array_error": 0.0,
+          "check_input_energy_array_error": 0.0,
+          "check_cargo_P_error": 1.3322676295501878e-15,
+          "check_cargo_F_error": 7.105427357601002e-15,
+          "check_cargo_E_heat_error": 0.0,
+          "check_cargo_capacity_excess": 0.0,
+          "check_cargo_payable_excess": 0.0,
+          "check_cargo_negative": 0.0,
+          "check_cargo_newborn_payer": 0.0,
+          "check_request_partition_error": 6.938893903907228e-18,
+          "check_founder_excess": 0.0,
+          "check_L128_conservation_error": 1.8318679906315083e-14,
+          "check_L128_excess": 0.0
+        }
+      }
+    ]
+  },
+  {
+    "id": "cem1_proposal0",
+    "complete": true,
+    "eligible": true,
+    "violations": 0,
+    "score_min": 0.0,
+    "score_mean": 0.0,
+    "policy": {
+      "kind": "theta",
+      "theta": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "results": [
+      {
+        "id": "constant_w0--compact",
+        "stage": "training",
+        "shape": "compact",
+        "seed": 202610195201,
+        "policy": {
+          "kind": "constant",
+          "w": 0.5442572838640933
+        },
+        "canonical_policy": {
+          "kind": "constant",
+          "w": 0.5442572838640933
+        },
+        "start": 128,
+        "end": 224,
+        "initial": {
+          "clock": 128,
+          "body": 65.07253016393415,
+          "energy": 84.78501202656405,
+          "precursor": 3.8299181723567006,
+          "fuel": 22.895939174121395,
+          "heat": 15.368806879243714,
+          "waste": 17.732395400389038,
+          "dead_energy": 23.785859970196874,
+          "founder_mass": 47.85928096490014,
+          "new_tissue": 17.213249199034014
+        },
+        "status": "complete",
+        "steps": 96,
+        "M": 64.4288690697389,
+        "E": 87.21769924445377,
+        "bodytime": 311.20677080669503,
+        "min_M": 64.4288690697389,
+        "post128_live": 14.940319231443452,
+        "L128": 49.48854983829544,
+        "final": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/constant_w0--compact/state224.bin",
+        "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/constant_w0--compact/steps.csv",
+        "final_shape": {
+          "alive": true,
+          "components": 1,
+          "holes": 0,
+          "elongation": 1.0498454283146086,
+          "radius": 4.5020589496469325,
+          "mass": 64.4288690697389,
+          "maximum": 0.6816868387815249
+        },
+        "maximum_errors": {
+          "check_material_error": 2.842170943040401e-14,
+          "check_energy_error": 2.842170943040401e-14,
+          "check_max_density": 0.6818096943762357,
+          "check_attempted_body_steps": 100.0,
+          "check_reconstruction_error": 5.551115123125783e-17,
+          "check_K_column_error": 0.0,
+          "check_transport_error": 1.4210854715202004e-14,
+          "check_exchange_material_error": 1.2261025528204073e-14,
+          "check_exchange_energy_error": 2.6201263381153694e-14,
+          "check_whole_material_error": 2.3397950243975174e-14,
+          "check_whole_energy_error": 3.8413716652030416e-14,
+          "check_input_material_array_error": 0.0,
+          "check_input_energy_array_error": 0.0,
+          "check_cargo_P_error": 8.881784197001252e-16,
+          "check_cargo_F_error": 7.105427357601002e-15,
+          "check_cargo_E_heat_error": 0.0,
+          "check_cargo_capacity_excess": 0.0,
+          "check_cargo_payable_excess": 0.0,
+          "check_cargo_negative": 0.0,
+          "check_cargo_newborn_payer": 0.0,
+          "check_request_partition_error": 6.938893903907228e-18,
+          "check_founder_excess": 0.0,
+          "check_L128_conservation_error": 1.8457457784393227e-14,
+          "check_L128_excess": 0.0
+        }
+      },
+      {
+        "id": "constant_w0--double_lobe",
+        "stage": "training",
+        "shape": "double_lobe",
+        "seed": 202610195202,
+        "policy": {
+          "kind": "constant",
+          "w": 0.5442572838640933
+        },
+        "canonical_policy": {
+          "kind": "constant",
+          "w": 0.5442572838640933
+        },
+        "start": 128,
+        "end": 224,
+        "initial": {
+          "clock": 128,
+          "body": 56.350125784757964,
+          "energy": 68.50791344342827,
+          "precursor": 2.3608580008936135,
+          "fuel": 25.06402264811716,
+          "heat": 17.112835931369005,
+          "waste": 28.86755037398314,
+          "dead_energy": 34.193575754676,
+          "founder_mass": 37.52870101117166,
+          "new_tissue": 18.82142477358631
+        },
+        "status": "complete",
+        "steps": 96,
+        "M": 54.266966379278415,
+        "E": 78.11395432241679,
+        "bodytime": 265.3702075127401,
+        "min_M": 54.266966379278415,
+        "post128_live": 15.114143842421681,
+        "L128": 39.15282253685673,
+        "final": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/constant_w0--double_lobe/state224.bin",
+        "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/constant_w0--double_lobe/steps.csv",
+        "final_shape": {
+          "alive": true,
+          "components": 1,
+          "holes": 0,
+          "elongation": 1.8262569322968802,
+          "radius": 4.274839483856866,
+          "mass": 54.266966379278415,
+          "maximum": 0.8611424139224879
+        },
+        "maximum_errors": {
+          "check_material_error": 2.842170943040401e-14,
+          "check_energy_error": 5.684341886080802e-14,
+          "check_max_density": 0.861148809921659,
+          "check_attempted_body_steps": 196.0,
+          "check_reconstruction_error": 5.551115123125783e-17,
+          "check_K_column_error": 0.0,
+          "check_transport_error": 1.4210854715202004e-14,
+          "check_exchange_material_error": 1.3072876114961218e-14,
+          "check_exchange_energy_error": 3.1585845050585704e-14,
+          "check_whole_material_error": 3.2085445411667024e-14,
+          "check_whole_energy_error": 4.596323321948148e-14,
+          "check_input_material_array_error": 0.0,
+          "check_input_energy_array_error": 0.0,
+          "check_cargo_P_error": 1.3322676295501878e-15,
+          "check_cargo_F_error": 7.105427357601002e-15,
+          "check_cargo_E_heat_error": 0.0,
+          "check_cargo_capacity_excess": 0.0,
+          "check_cargo_payable_excess": 0.0,
+          "check_cargo_negative": 0.0,
+          "check_cargo_newborn_payer": 0.0,
+          "check_request_partition_error": 6.938893903907228e-18,
+          "check_founder_excess": 0.0,
+          "check_L128_conservation_error": 1.8318679906315083e-14,
+          "check_L128_excess": 0.0
+        }
+      }
+    ]
+  },
+  {
+    "id": "cem1_proposal1",
+    "complete": true,
+    "eligible": false,
+    "violations": 6,
+    "score_min": -6.119473861635946,
+    "score_mean": -2.9377711236456783,
+    "policy": {
+      "kind": "theta",
+      "theta": [
+        -0.8292621966787674,
+        -1.0987748430408724,
+        -0.42418987514722595,
+        -0.7914037881214975
+      ]
+    },
+    "results": [
+      {
+        "id": "cem1_proposal1--compact",
+        "stage": "training",
+        "shape": "compact",
+        "seed": 202610195201,
+        "policy": {
+          "kind": "theta",
+          "theta": [
+            -0.8292621966787674,
+            -1.0987748430408724,
+            -0.42418987514722595,
+            -0.7914037881214975
+          ]
+        },
+        "canonical_policy": {
+          "kind": "theta",
+          "theta": [
+            -0.8292621966787674,
+            -1.0987748430408724,
+            -0.42418987514722595,
+            -0.7914037881214975
+          ]
+        },
+        "start": 128,
+        "end": 224,
+        "initial": {
+          "clock": 128,
+          "body": 65.07253016393415,
+          "energy": 84.78501202656405,
+          "precursor": 3.8299181723567006,
+          "fuel": 22.895939174121395,
+          "heat": 15.368806879243714,
+          "waste": 17.732395400389038,
+          "dead_energy": 23.785859970196874,
+          "founder_mass": 47.85928096490014,
+          "new_tissue": 17.213249199034014
+        },
+        "status": "complete",
+        "steps": 96,
+        "M": 38.95120691929982,
+        "E": 41.502172010932455,
+        "bodytime": 210.7529856489809,
+        "min_M": 38.289078485473354,
+        "post128_live": 8.820845369807506,
+        "L128": 30.130361549492314,
+        "final": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/cem1_proposal1--compact/state224.bin",
+        "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/cem1_proposal1--compact/steps.csv",
+        "final_shape": {
+          "alive": true,
+          "components": 1,
+          "holes": 0,
+          "elongation": 1.2713945854549782,
+          "radius": 3.4780312243910783,
+          "mass": 38.95120691929982,
+          "maximum": 0.6812425247739802
+        },
+        "maximum_errors": {
+          "check_material_error": 2.842170943040401e-14,
+          "check_energy_error": 2.842170943040401e-14,
+          "check_max_density": 0.6985274821017385,
+          "check_attempted_body_steps": 1444.0,
+          "check_reconstruction_error": 5.551115123125783e-17,
+          "check_K_column_error": 0.0,
+          "check_transport_error": 1.4210854715202004e-14,
+          "check_exchange_material_error": 1.2337353361147052e-14,
+          "check_exchange_energy_error": 3.164135620181696e-14,
+          "check_whole_material_error": 2.6867397195928788e-14,
+          "check_whole_energy_error": 3.9190872769268026e-14,
+          "check_input_material_array_error": 0.0,
+          "check_input_energy_array_error": 0.0,
+          "check_cargo_P_error": 1.7763568394002505e-15,
+          "check_cargo_F_error": 7.105427357601002e-15,
+          "check_cargo_E_heat_error": 0.0,
+          "check_cargo_capacity_excess": 0.0,
+          "check_cargo_payable_excess": 0.0,
+          "check_cargo_negative": 0.0,
+          "check_cargo_newborn_payer": 0.0,
+          "check_request_partition_error": 6.938893903907228e-18,
+          "check_founder_excess": 0.0,
+          "check_L128_conservation_error": 1.0769163338864018e-14,
+          "check_L128_excess": 1.3877787807814457e-17
+        }
+      },
+      {
+        "id": "cem1_proposal1--double_lobe",
+        "stage": "training",
+        "shape": "double_lobe",
+        "seed": 202610195202,
+        "policy": {
+          "kind": "theta",
+          "theta": [
+            -0.8292621966787674,
+            -1.0987748430408724,
+            -0.42418987514722595,
+            -0.7914037881214975
+          ]
+        },
+        "canonical_policy": {
+          "kind": "theta",
+          "theta": [
+            -0.8292621966787674,
+            -1.0987748430408724,
+            -0.42418987514722595,
+            -0.7914037881214975
+          ]
+        },
+        "start": 128,
+        "end": 224,
+        "initial": {
+          "clock": 128,
+          "body": 56.350125784757964,
+          "energy": 68.50791344342827,
+          "precursor": 2.3608580008936135,
+          "fuel": 25.06402264811716,
+          "heat": 17.112835931369005,
+          "waste": 28.86755037398314,
+          "dead_energy": 34.193575754676,
+          "founder_mass": 37.52870101117166,
+          "new_tissue": 18.82142477358631
+        },
+        "status": "complete",
+        "steps": 96,
+        "M": 46.96603022151468,
+        "E": 57.60339223436213,
+        "bodytime": 232.12986450181293,
+        "min_M": 43.974653287316954,
+        "post128_live": 15.35807545676627,
+        "L128": 31.60795476474841,
+        "final": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/cem1_proposal1--double_lobe/state224.bin",
+        "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/cem1_proposal1--double_lobe/steps.csv",
+        "final_shape": {
+          "alive": true,
+          "components": 1,
+          "holes": 0,
+          "elongation": 1.8629454233633875,
+          "radius": 3.9595316299981826,
+          "mass": 46.96603022151468,
+          "maximum": 0.8475984659916493
+        },
+        "maximum_errors": {
+          "check_material_error": 2.842170943040401e-14,
+          "check_energy_error": 2.842170943040401e-14,
+          "check_max_density": 0.8475984659916493,
+          "check_attempted_body_steps": 1540.0,
+          "check_reconstruction_error": 5.551115123125783e-17,
+          "check_K_column_error": 0.0,
+          "check_transport_error": 1.4210854715202004e-14,
+          "check_exchange_material_error": 1.2993078835066285e-14,
+          "check_exchange_energy_error": 3.4861002973229915e-14,
+          "check_whole_material_error": 2.67841304690819e-14,
+          "check_whole_energy_error": 5.1736392947532295e-14,
+          "check_input_material_array_error": 0.0,
+          "check_input_energy_array_error": 0.0,
+          "check_cargo_P_error": 8.881784197001252e-16,
+          "check_cargo_F_error": 7.105427357601002e-15,
+          "check_cargo_E_heat_error": 0.0,
+          "check_cargo_capacity_excess": 0.0,
+          "check_cargo_payable_excess": 0.0,
+          "check_cargo_negative": 0.0,
+          "check_cargo_newborn_payer": 0.0,
+          "check_request_partition_error": 6.938893903907228e-18,
+          "check_founder_excess": 0.0,
+          "check_L128_conservation_error": 1.27675647831893e-14,
+          "check_L128_excess": 0.0
+        }
+      }
+    ]
+  },
+  {
+    "id": "cem1_proposal2",
+    "complete": true,
+    "eligible": false,
+    "violations": 3,
+    "score_min": 0.49743896758866946,
+    "score_mean": 0.6860602105273861,
+    "policy": {
+      "kind": "theta",
+      "theta": [
+        0.5175732106886932,
+        -0.32303520131855723,
+        0.35406251347310713,
+        -0.5636992071304034
+      ]
+    },
+    "results": [
+      {
+        "id": "cem1_proposal2--compact",
+        "stage": "training",
+        "shape": "compact",
+        "seed": 202610195201,
+        "policy": {
+          "kind": "theta",
+          "theta": [
+            0.5175732106886932,
+            -0.32303520131855723,
+            0.35406251347310713,
+            -0.5636992071304034
+          ]
+        },
+        "canonical_policy": {
+          "kind": "theta",
+          "theta": [
+            0.5175732106886932,
+            -0.32303520131855723,
+            0.35406251347310713,
+            -0.5636992071304034
+          ]
+        },
+        "start": 128,
+        "end": 224,
+        "initial": {
+          "clock": 128,
+          "body": 65.07253016393415,
+          "energy": 84.78501202656405,
+          "precursor": 3.8299181723567006,
+          "fuel": 22.895939174121395,
+          "heat": 15.368806879243714,
+          "waste": 17.732395400389038,
+          "dead_energy": 23.785859970196874,
+          "founder_mass": 47.85928096490014,
+          "new_tissue": 17.213249199034014
+        },
+        "status": "complete",
+        "steps": 96,
+        "M": 63.67942570021616,
+        "E": 84.2268380112316,
+        "bodytime": 308.3505747307819,
+        "min_M": 63.67942570021616,
+        "post128_live": 15.815000684909554,
+        "L128": 47.864425015306594,
+        "final": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/cem1_proposal2--compact/state224.bin",
+        "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/cem1_proposal2--compact/steps.csv",
+        "final_shape": {
+          "alive": true,
+          "components": 1,
+          "holes": 0,
+          "elongation": 1.047957282552643,
+          "radius": 4.45590823669029,
+          "mass": 63.67942570021616,
+          "maximum": 0.6506559685140296
+        },
+        "maximum_errors": {
+          "check_material_error": 2.842170943040401e-14,
+          "check_energy_error": 5.684341886080802e-14,
+          "check_max_density": 0.6526416069529767,
+          "check_attempted_body_steps": 1636.0,
+          "check_reconstruction_error": 5.551115123125783e-17,
+          "check_K_column_error": 0.0,
+          "check_transport_error": 1.4210854715202004e-14,
+          "check_exchange_material_error": 1.0144662887512368e-14,
+          "check_exchange_energy_error": 3.0309088572266774e-14,
+          "check_whole_material_error": 2.5424107263916085e-14,
+          "check_whole_energy_error": 4.18554080283684e-14,
+          "check_input_material_array_error": 0.0,
+          "check_input_energy_array_error": 0.0,
+          "check_cargo_P_error": 8.881784197001252e-16,
+          "check_cargo_F_error": 7.105427357601002e-15,
+          "check_cargo_E_heat_error": 0.0,
+          "check_cargo_capacity_excess": 0.0,
+          "check_cargo_payable_excess": 0.0,
+          "check_cargo_negative": 0.0,
+          "check_cargo_newborn_payer": 0.0,
+          "check_request_partition_error": 6.938893903907228e-18,
+          "check_founder_excess": 0.0,
+          "check_L128_conservation_error": 2.1815882433884326e-14,
+          "check_L128_excess": 0.0
+        }
+      },
+      {
+        "id": "cem1_proposal2--double_lobe",
+        "stage": "training",
+        "shape": "double_lobe",
+        "seed": 202610195202,
+        "policy": {
+          "kind": "theta",
+          "theta": [
+            0.5175732106886932,
+            -0.32303520131855723,
+            0.35406251347310713,
+            -0.5636992071304034
+          ]
+        },
+        "canonical_policy": {
+          "kind": "theta",
+          "theta": [
+            0.5175732106886932,
+            -0.32303520131855723,
+            0.35406251347310713,
+            -0.5636992071304034
+          ]
+        },
+        "start": 128,
+        "end": 224,
+        "initial": {
+          "clock": 128,
+          "body": 56.350125784757964,
+          "energy": 68.50791344342827,
+          "precursor": 2.3608580008936135,
+          "fuel": 25.06402264811716,
+          "heat": 17.112835931369005,
+          "waste": 28.86755037398314,
+          "dead_energy": 34.193575754676,
+          "founder_mass": 37.52870101117166,
+          "new_tissue": 18.82142477358631
+        },
+        "status": "complete",
+        "steps": 96,
+        "M": 56.62005626222213,
+        "E": 79.0652361146444,
+        "bodytime": 271.72956161867165,
+        "min_M": 56.30052754943295,
+        "post128_live": 15.61158281001035,
+        "L128": 41.008473452211774,
+        "final": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/cem1_proposal2--double_lobe/state224.bin",
+        "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/cem1_proposal2--double_lobe/steps.csv",
+        "final_shape": {
+          "alive": true,
+          "components": 1,
+          "holes": 1,
+          "elongation": 1.966528916381692,
+          "radius": 4.528035946322644,
+          "mass": 56.62005626222213,
+          "maximum": 0.841454698488892
+        },
+        "maximum_errors": {
+          "check_material_error": 1.4210854715202004e-14,
+          "check_energy_error": 2.842170943040401e-14,
+          "check_max_density": 0.8560925813311463,
+          "check_attempted_body_steps": 1732.0,
+          "check_reconstruction_error": 5.551115123125783e-17,
+          "check_K_column_error": 0.0,
+          "check_transport_error": 1.4210854715202004e-14,
+          "check_exchange_material_error": 1.264266469291897e-14,
+          "check_exchange_energy_error": 2.531308496145357e-14,
+          "check_whole_material_error": 2.6700863742235015e-14,
+          "check_whole_energy_error": 3.4861002973229915e-14,
+          "check_input_material_array_error": 0.0,
+          "check_input_energy_array_error": 0.0,
+          "check_cargo_P_error": 4.440892098500626e-16,
+          "check_cargo_F_error": 7.105427357601002e-15,
+          "check_cargo_E_heat_error": 0.0,
+          "check_cargo_capacity_excess": 0.0,
+          "check_cargo_payable_excess": 0.0,
+          "check_cargo_negative": 0.0,
+          "check_cargo_newborn_payer": 0.0,
+          "check_request_partition_error": 6.938893903907228e-18,
+          "check_founder_excess": 0.0,
+          "check_L128_conservation_error": 1.5709655798445965e-14,
+          "check_L128_excess": 0.0
+        }
+      }
+    ]
+  },
+  {
+    "id": "cem1_proposal3",
+    "complete": true,
+    "eligible": false,
+    "violations": 3,
+    "score_min": -0.7957649406231955,
+    "score_mean": -0.10779116532845201,
+    "policy": {
+      "kind": "theta",
+      "theta": [
+        0.24061213043844878,
+        -0.38782613706638325,
+        -0.49212516813782475,
+        0.3803532221482673
+      ]
+    },
+    "results": [
+      {
+        "id": "cem1_proposal3--compact",
+        "stage": "training",
+        "shape": "compact",
+        "seed": 202610195201,
+        "policy": {
+          "kind": "theta",
+          "theta": [
+            0.24061213043844878,
+            -0.38782613706638325,
+            -0.49212516813782475,
+            0.3803532221482673
+          ]
+        },
+        "canonical_policy": {
+          "kind": "theta",
+          "theta": [
+            0.24061213043844878,
+            -0.38782613706638325,
+            -0.49212516813782475,
+            0.3803532221482673
+          ]
+        },
+        "start": 128,
+        "end": 224,
+        "initial": {
+          "clock": 128,
+          "body": 65.07253016393415,
+          "energy": 84.78501202656405,
+          "precursor": 3.8299181723567006,
+          "fuel": 22.895939174121395,
+          "heat": 15.368806879243714,
+          "waste": 17.732395400389038,
+          "dead_energy": 23.785859970196874,
+          "founder_mass": 47.85928096490014,
+          "new_tissue": 17.213249199034014
+        },
+        "status": "complete",
+        "steps": 96,
+        "M": 63.55229217048425,
+        "E": 87.3865791590811,
+        "bodytime": 305.920001198864,
+        "min_M": 63.55229217048425,
+        "post128_live": 14.144554290820256,
+        "L128": 49.407737879664,
+        "final": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/cem1_proposal3--compact/state224.bin",
+        "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/cem1_proposal3--compact/steps.csv",
+        "final_shape": {
+          "alive": true,
+          "components": 1,
+          "holes": 0,
+          "elongation": 1.0510417807089878,
+          "radius": 4.453895464665216,
+          "mass": 63.55229217048425,
+          "maximum": 0.7204195874909092
+        },
+        "maximum_errors": {
+          "check_material_error": 2.842170943040401e-14,
+          "check_energy_error": 2.842170943040401e-14,
+          "check_max_density": 0.7204195874909092,
+          "check_attempted_body_steps": 1828.0,
+          "check_reconstruction_error": 5.551115123125783e-17,
+          "check_K_column_error": 0.0,
+          "check_transport_error": 2.1316282072803006e-14,
+          "check_exchange_material_error": 1.27675647831893e-14,
+          "check_exchange_energy_error": 2.8976820942716586e-14,
+          "check_whole_material_error": 3.036459972349803e-14,
+          "check_whole_energy_error": 3.3639757646142243e-14,
+          "check_input_material_array_error": 0.0,
+          "check_input_energy_array_error": 0.0,
+          "check_cargo_P_error": 8.881784197001252e-16,
+          "check_cargo_F_error": 7.105427357601002e-15,
+          "check_cargo_E_heat_error": 0.0,
+          "check_cargo_capacity_excess": 0.0,
+          "check_cargo_payable_excess": 0.0,
+          "check_cargo_negative": 0.0,
+          "check_cargo_newborn_payer": 0.0,
+          "check_request_partition_error": 6.938893903907228e-18,
+          "check_founder_excess": 0.0,
+          "check_L128_conservation_error": 1.4488410471358293e-14,
+          "check_L128_excess": 0.0
+        }
+      },
+      {
+        "id": "cem1_proposal3--double_lobe",
+        "stage": "training",
+        "shape": "double_lobe",
+        "seed": 202610195202,
+        "policy": {
+          "kind": "theta",
+          "theta": [
+            0.24061213043844878,
+            -0.38782613706638325,
+            -0.49212516813782475,
+            0.3803532221482673
+          ]
+        },
+        "canonical_policy": {
+          "kind": "theta",
+          "theta": [
+            0.24061213043844878,
+            -0.38782613706638325,
+            -0.49212516813782475,
+            0.3803532221482673
+          ]
+        },
+        "start": 128,
+        "end": 224,
+        "initial": {
+          "clock": 128,
+          "body": 56.350125784757964,
+          "energy": 68.50791344342827,
+          "precursor": 2.3608580008936135,
+          "fuel": 25.06402264811716,
+          "heat": 17.112835931369005,
+          "waste": 28.86755037398314,
+          "dead_energy": 34.193575754676,
+          "founder_mass": 37.52870101117166,
+          "new_tissue": 18.82142477358631
+        },
+        "status": "complete",
+        "steps": 96,
+        "M": 55.44848409533981,
+        "E": 77.55621864212806,
+        "bodytime": 265.63863617659496,
+        "min_M": 55.18102210551097,
+        "post128_live": 15.694326452387973,
+        "L128": 39.75415764295184,
+        "final": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/cem1_proposal3--double_lobe/state224.bin",
+        "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/cem1_proposal3--double_lobe/steps.csv",
+        "final_shape": {
+          "alive": true,
+          "components": 1,
+          "holes": 1,
+          "elongation": 1.9653123723398696,
+          "radius": 4.584163647887576,
+          "mass": 55.44848409533981,
+          "maximum": 0.8634889794870648
+        },
+        "maximum_errors": {
+          "check_material_error": 2.842170943040401e-14,
+          "check_energy_error": 5.684341886080802e-14,
+          "check_max_density": 0.8634889794870648,
+          "check_attempted_body_steps": 1924.0,
+          "check_reconstruction_error": 5.551115123125783e-17,
+          "check_K_column_error": 0.0,
+          "check_transport_error": 1.4210854715202004e-14,
+          "check_exchange_material_error": 1.296879270640261e-14,
+          "check_exchange_energy_error": 3.1530333899354446e-14,
+          "check_whole_material_error": 2.6756374893466273e-14,
+          "check_whole_energy_error": 3.808064974464287e-14,
+          "check_input_material_array_error": 0.0,
+          "check_input_energy_array_error": 0.0,
+          "check_cargo_P_error": 4.440892098500626e-16,
+          "check_cargo_F_error": 7.105427357601002e-15,
+          "check_cargo_E_heat_error": 0.0,
+          "check_cargo_capacity_excess": 0.0,
+          "check_cargo_payable_excess": 0.0,
+          "check_cargo_negative": 0.0,
+          "check_cargo_newborn_payer": 0.0,
+          "check_request_partition_error": 6.938893903907228e-18,
+          "check_founder_excess": 0.0,
+          "check_L128_conservation_error": 1.454392162258955e-14,
+          "check_L128_excess": 0.0
+        }
+      }
+    ]
+  },
+  {
+    "id": "cem1_proposal4",
+    "complete": true,
+    "eligible": false,
+    "violations": 6,
+    "score_min": 2.2250839910183817,
+    "score_mean": 2.3486770685954284,
+    "policy": {
+      "kind": "theta",
+      "theta": [
+        0.3725037462608706,
+        1.0282907233308016,
+        -0.2234005057801309,
+        0.3211601092107933
+      ]
+    },
+    "results": [
+      {
+        "id": "cem1_proposal4--compact",
+        "stage": "training",
+        "shape": "compact",
+        "seed": 202610195201,
+        "policy": {
+          "kind": "theta",
+          "theta": [
+            0.3725037462608706,
+            1.0282907233308016,
+            -0.2234005057801309,
+            0.3211601092107933
+          ]
+        },
+        "canonical_policy": {
+          "kind": "theta",
+          "theta": [
+            0.3725037462608706,
+            1.0282907233308016,
+            -0.2234005057801309,
+            0.3211601092107933
+          ]
+        },
+        "start": 128,
+        "end": 224,
+        "initial": {
+          "clock": 128,
+          "body": 65.07253016393415,
+          "energy": 84.78501202656405,
+          "precursor": 3.8299181723567006,
+          "fuel": 22.895939174121395,
+          "heat": 15.368806879243714,
+          "waste": 17.732395400389038,
+          "dead_energy": 23.785859970196874,
+          "founder_mass": 47.85928096490014,
+          "new_tissue": 17.213249199034014
+        },
+        "status": "complete",
+        "steps": 96,
+        "M": 62.65328826475631,
+        "E": 87.12147412988952,
+        "bodytime": 307.1756697451214,
+        "min_M": 62.65328826475631,
+        "post128_live": 17.412589377615927,
+        "L128": 45.24069888714038,
+        "final": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/cem1_proposal4--compact/state224.bin",
+        "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/cem1_proposal4--compact/steps.csv",
+        "final_shape": {
+          "alive": true,
+          "components": 1,
+          "holes": 0,
+          "elongation": 1.1681919499073365,
+          "radius": 4.335649232805637,
+          "mass": 62.65328826475631,
+          "maximum": 0.7025479493094146
+        },
+        "maximum_errors": {
+          "check_material_error": 2.842170943040401e-14,
+          "check_energy_error": 2.842170943040401e-14,
+          "check_max_density": 0.7025479493094146,
+          "check_attempted_body_steps": 2020.0,
+          "check_reconstruction_error": 5.551115123125783e-17,
+          "check_K_column_error": 0.0,
+          "check_transport_error": 1.4210854715202004e-14,
+          "check_exchange_material_error": 1.3079815008865125e-14,
+          "check_exchange_energy_error": 3.214095656289828e-14,
+          "check_whole_material_error": 3.1780134079895106e-14,
+          "check_whole_energy_error": 4.9404924595819466e-14,
+          "check_input_material_array_error": 0.0,
+          "check_input_energy_array_error": 0.0,
+          "check_cargo_P_error": 8.881784197001252e-16,
+          "check_cargo_F_error": 7.105427357601002e-15,
+          "check_cargo_E_heat_error": 0.0,
+          "check_cargo_capacity_excess": 0.0,
+          "check_cargo_payable_excess": 0.0,
+          "check_cargo_negative": 0.0,
+          "check_cargo_newborn_payer": 0.0,
+          "check_request_partition_error": 6.938893903907228e-18,
+          "check_founder_excess": 4.336808689942018e-19,
+          "check_L128_conservation_error": 1.199040866595169e-14,
+          "check_L128_excess": 4.336808689942018e-19
+        }
+      },
+      {
+        "id": "cem1_proposal4--double_lobe",
+        "stage": "training",
+        "shape": "double_lobe",
+        "seed": 202610195202,
+        "policy": {
+          "kind": "theta",
+          "theta": [
+            0.3725037462608706,
+            1.0282907233308016,
+            -0.2234005057801309,
+            0.3211601092107933
+          ]
+        },
+        "canonical_policy": {
+          "kind": "theta",
+          "theta": [
+            0.3725037462608706,
+            1.0282907233308016,
+            -0.2234005057801309,
+            0.3211601092107933
+          ]
+        },
+        "start": 128,
+        "end": 224,
+        "initial": {
+          "clock": 128,
+          "body": 56.350125784757964,
+          "energy": 68.50791344342827,
+          "precursor": 2.3608580008936135,
+          "fuel": 25.06402264811716,
+          "heat": 17.112835931369005,
+          "waste": 28.86755037398314,
+          "dead_energy": 34.193575754676,
+          "founder_mass": 37.52870101117166,
+          "new_tissue": 18.82142477358631
+        },
+        "status": "complete",
+        "steps": 96,
+        "M": 50.15616409934988,
+        "E": 73.21228004666392,
+        "bodytime": 252.44615291207938,
+        "min_M": 50.15616409934988,
+        "post128_live": 17.339227833440063,
+        "L128": 32.81693626590982,
+        "final": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/cem1_proposal4--double_lobe/state224.bin",
+        "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/cem1_proposal4--double_lobe/steps.csv",
+        "final_shape": {
+          "alive": true,
+          "components": 1,
+          "holes": 2,
+          "elongation": 1.6460341235192453,
+          "radius": 3.8269698703442305,
+          "mass": 50.15616409934988,
+          "maximum": 0.9341569271132414
+        },
+        "maximum_errors": {
+          "check_material_error": 2.842170943040401e-14,
+          "check_energy_error": 2.842170943040401e-14,
+          "check_max_density": 0.9343697878210998,
+          "check_attempted_body_steps": 2116.0,
+          "check_reconstruction_error": 5.551115123125783e-17,
+          "check_K_column_error": 0.0,
+          "check_transport_error": 1.4210854715202004e-14,
+          "check_exchange_material_error": 1.4068607390171906e-14,
+          "check_exchange_energy_error": 2.5202062658991053e-14,
+          "check_whole_material_error": 2.4147350785597155e-14,
+          "check_whole_energy_error": 5.284661597215745e-14,
+          "check_input_material_array_error": 0.0,
+          "check_input_energy_array_error": 0.0,
+          "check_cargo_P_error": 4.440892098500626e-16,
+          "check_cargo_F_error": 7.105427357601002e-15,
+          "check_cargo_E_heat_error": 0.0,
+          "check_cargo_capacity_excess": 0.0,
+          "check_cargo_payable_excess": 0.0,
+          "check_cargo_negative": 0.0,
+          "check_cargo_newborn_payer": 0.0,
+          "check_request_partition_error": 6.938893903907228e-18,
+          "check_founder_excess": 3.469446951953614e-18,
+          "check_L128_conservation_error": 1.0824674490095276e-14,
+          "check_L128_excess": 3.469446951953614e-18
+        }
+      }
+    ]
+  },
+  {
+    "id": "cem1_proposal5",
+    "complete": true,
+    "eligible": false,
+    "violations": 6,
+    "score_min": 0.689310214604733,
+    "score_mean": 1.7649001301601874,
+    "policy": {
+      "kind": "theta",
+      "theta": [
+        -0.8187363783624575,
+        1.8621193444862567,
+        0.2750639102513615,
+        -0.5678101608814785
+      ]
+    },
+    "results": [
+      {
+        "id": "cem1_proposal5--compact",
+        "stage": "training",
+        "shape": "compact",
+        "seed": 202610195201,
+        "policy": {
+          "kind": "theta",
+          "theta": [
+            -0.8187363783624575,
+            1.8621193444862567,
+            0.2750639102513615,
+            -0.5678101608814785
+          ]
+        },
+        "canonical_policy": {
+          "kind": "theta",
+          "theta": [
+            -0.8187363783624575,
+            1.8621193444862567,
+            0.2750639102513615,
+            -0.5678101608814785
+          ]
+        },
+        "start": 128,
+        "end": 224,
+        "initial": {
+          "clock": 128,
+          "body": 65.07253016393415,
+          "energy": 84.78501202656405,
+          "precursor": 3.8299181723567006,
+          "fuel": 22.895939174121395,
+          "heat": 15.368806879243714,
+          "waste": 17.732395400389038,
+          "dead_energy": 23.785859970196874,
+          "founder_mass": 47.85928096490014,
+          "new_tissue": 17.213249199034014
+        },
+        "status": "complete",
+        "steps": 96,
+        "M": 37.222700255733635,
+        "E": 57.61869502187507,
+        "bodytime": 230.7890653438822,
+        "min_M": 35.72133818667166,
+        "post128_live": 15.629629446048185,
+        "L128": 21.593070809685443,
+        "final": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/cem1_proposal5--compact/state224.bin",
+        "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/cem1_proposal5--compact/steps.csv",
+        "final_shape": {
+          "alive": true,
+          "components": 1,
+          "holes": 0,
+          "elongation": 1.4749258762259514,
+          "radius": 3.1383115357420603,
+          "mass": 37.222700255733635,
+          "maximum": 0.8990227279225775
+        },
+        "maximum_errors": {
+          "check_material_error": 2.842170943040401e-14,
+          "check_energy_error": 2.842170943040401e-14,
+          "check_max_density": 0.8990227279225775,
+          "check_attempted_body_steps": 2212.0,
+          "check_reconstruction_error": 5.551115123125783e-17,
+          "check_K_column_error": 0.0,
+          "check_transport_error": 1.4210854715202004e-14,
+          "check_exchange_material_error": 1.2660011927678738e-14,
+          "check_exchange_energy_error": 3.4083846855992306e-14,
+          "check_whole_material_error": 4.043987367197133e-14,
+          "check_whole_energy_error": 4.141131881851834e-14,
+          "check_input_material_array_error": 0.0,
+          "check_input_energy_array_error": 0.0,
+          "check_cargo_P_error": 8.881784197001252e-16,
+          "check_cargo_F_error": 7.105427357601002e-15,
+          "check_cargo_E_heat_error": 0.0,
+          "check_cargo_capacity_excess": 0.0,
+          "check_cargo_payable_excess": 0.0,
+          "check_cargo_negative": 0.0,
+          "check_cargo_newborn_payer": 0.0,
+          "check_request_partition_error": 6.938893903907228e-18,
+          "check_founder_excess": 6.938893903907228e-18,
+          "check_L128_conservation_error": 1.426636586643326e-14,
+          "check_L128_excess": 1.3877787807814457e-17
+        }
+      },
+      {
+        "id": "cem1_proposal5--double_lobe",
+        "stage": "training",
+        "shape": "double_lobe",
+        "seed": 202610195202,
+        "policy": {
+          "kind": "theta",
+          "theta": [
+            -0.8187363783624575,
+            1.8621193444862567,
+            0.2750639102513615,
+            -0.5678101608814785
+          ]
+        },
+        "canonical_policy": {
+          "kind": "theta",
+          "theta": [
+            -0.8187363783624575,
+            1.8621193444862567,
+            0.2750639102513615,
+            -0.5678101608814785
+          ]
+        },
+        "start": 128,
+        "end": 224,
+        "initial": {
+          "clock": 128,
+          "body": 56.350125784757964,
+          "energy": 68.50791344342827,
+          "precursor": 2.3608580008936135,
+          "fuel": 25.06402264811716,
+          "heat": 17.112835931369005,
+          "waste": 28.86755037398314,
+          "dead_energy": 34.193575754676,
+          "founder_mass": 37.52870101117166,
+          "new_tissue": 18.82142477358631
+        },
+        "status": "complete",
+        "steps": 96,
+        "M": 43.988957003166206,
+        "E": 67.69034754273224,
+        "bodytime": 209.54765485498825,
+        "min_M": 38.72254871633274,
+        "post128_live": 17.954633888137323,
+        "L128": 26.034323115028876,
+        "final": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/cem1_proposal5--double_lobe/state224.bin",
+        "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/cem1_proposal5--double_lobe/steps.csv",
+        "final_shape": {
+          "alive": true,
+          "components": 1,
+          "holes": 0,
+          "elongation": 1.2359880354827002,
+          "radius": 3.01403707947115,
+          "mass": 43.988957003166206,
+          "maximum": 1.042733840473437
+        },
+        "maximum_errors": {
+          "check_material_error": 2.842170943040401e-14,
+          "check_energy_error": 2.842170943040401e-14,
+          "check_max_density": 1.0680903325478117,
+          "check_attempted_body_steps": 2308.0,
+          "check_reconstruction_error": 5.551115123125783e-17,
+          "check_K_column_error": 0.0,
+          "check_transport_error": 1.4210854715202004e-14,
+          "check_exchange_material_error": 1.2302658891627516e-14,
+          "check_exchange_energy_error": 2.786659791809143e-14,
+          "check_whole_material_error": 2.8033131371785203e-14,
+          "check_whole_energy_error": 3.774758283725532e-14,
+          "check_input_material_array_error": 0.0,
+          "check_input_energy_array_error": 0.0,
+          "check_cargo_P_error": 4.440892098500626e-16,
+          "check_cargo_F_error": 7.105427357601002e-15,
+          "check_cargo_E_heat_error": 0.0,
+          "check_cargo_capacity_excess": 0.0,
+          "check_cargo_payable_excess": 0.0,
+          "check_cargo_negative": 0.0,
+          "check_cargo_newborn_payer": 0.0,
+          "check_request_partition_error": 6.938893903907228e-18,
+          "check_founder_excess": 1.3877787807814457e-17,
+          "check_L128_conservation_error": 9.103828801926284e-15,
+          "check_L128_excess": 2.7755575615628914e-17
+        }
+      }
+    ]
+  },
+  {
+    "id": "cem2_proposal0",
+    "complete": true,
+    "eligible": true,
+    "violations": 0,
+    "score_min": 0.0,
+    "score_mean": 0.0,
+    "policy": {
+      "kind": "theta",
+      "theta": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "results": [
+      {
+        "id": "constant_w0--compact",
+        "stage": "training",
+        "shape": "compact",
+        "seed": 202610195201,
+        "policy": {
+          "kind": "constant",
+          "w": 0.5442572838640933
+        },
+        "canonical_policy": {
+          "kind": "constant",
+          "w": 0.5442572838640933
+        },
+        "start": 128,
+        "end": 224,
+        "initial": {
+          "clock": 128,
+          "body": 65.07253016393415,
+          "energy": 84.78501202656405,
+          "precursor": 3.8299181723567006,
+          "fuel": 22.895939174121395,
+          "heat": 15.368806879243714,
+          "waste": 17.732395400389038,
+          "dead_energy": 23.785859970196874,
+          "founder_mass": 47.85928096490014,
+          "new_tissue": 17.213249199034014
+        },
+        "status": "complete",
+        "steps": 96,
+        "M": 64.4288690697389,
+        "E": 87.21769924445377,
+        "bodytime": 311.20677080669503,
+        "min_M": 64.4288690697389,
+        "post128_live": 14.940319231443452,
+        "L128": 49.48854983829544,
+        "final": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/constant_w0--compact/state224.bin",
+        "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/constant_w0--compact/steps.csv",
+        "final_shape": {
+          "alive": true,
+          "components": 1,
+          "holes": 0,
+          "elongation": 1.0498454283146086,
+          "radius": 4.5020589496469325,
+          "mass": 64.4288690697389,
+          "maximum": 0.6816868387815249
+        },
+        "maximum_errors": {
+          "check_material_error": 2.842170943040401e-14,
+          "check_energy_error": 2.842170943040401e-14,
+          "check_max_density": 0.6818096943762357,
+          "check_attempted_body_steps": 100.0,
+          "check_reconstruction_error": 5.551115123125783e-17,
+          "check_K_column_error": 0.0,
+          "check_transport_error": 1.4210854715202004e-14,
+          "check_exchange_material_error": 1.2261025528204073e-14,
+          "check_exchange_energy_error": 2.6201263381153694e-14,
+          "check_whole_material_error": 2.3397950243975174e-14,
+          "check_whole_energy_error": 3.8413716652030416e-14,
+          "check_input_material_array_error": 0.0,
+          "check_input_energy_array_error": 0.0,
+          "check_cargo_P_error": 8.881784197001252e-16,
+          "check_cargo_F_error": 7.105427357601002e-15,
+          "check_cargo_E_heat_error": 0.0,
+          "check_cargo_capacity_excess": 0.0,
+          "check_cargo_payable_excess": 0.0,
+          "check_cargo_negative": 0.0,
+          "check_cargo_newborn_payer": 0.0,
+          "check_request_partition_error": 6.938893903907228e-18,
+          "check_founder_excess": 0.0,
+          "check_L128_conservation_error": 1.8457457784393227e-14,
+          "check_L128_excess": 0.0
+        }
+      },
+      {
+        "id": "constant_w0--double_lobe",
+        "stage": "training",
+        "shape": "double_lobe",
+        "seed": 202610195202,
+        "policy": {
+          "kind": "constant",
+          "w": 0.5442572838640933
+        },
+        "canonical_policy": {
+          "kind": "constant",
+          "w": 0.5442572838640933
+        },
+        "start": 128,
+        "end": 224,
+        "initial": {
+          "clock": 128,
+          "body": 56.350125784757964,
+          "energy": 68.50791344342827,
+          "precursor": 2.3608580008936135,
+          "fuel": 25.06402264811716,
+          "heat": 17.112835931369005,
+          "waste": 28.86755037398314,
+          "dead_energy": 34.193575754676,
+          "founder_mass": 37.52870101117166,
+          "new_tissue": 18.82142477358631
+        },
+        "status": "complete",
+        "steps": 96,
+        "M": 54.266966379278415,
+        "E": 78.11395432241679,
+        "bodytime": 265.3702075127401,
+        "min_M": 54.266966379278415,
+        "post128_live": 15.114143842421681,
+        "L128": 39.15282253685673,
+        "final": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/constant_w0--double_lobe/state224.bin",
+        "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/constant_w0--double_lobe/steps.csv",
+        "final_shape": {
+          "alive": true,
+          "components": 1,
+          "holes": 0,
+          "elongation": 1.8262569322968802,
+          "radius": 4.274839483856866,
+          "mass": 54.266966379278415,
+          "maximum": 0.8611424139224879
+        },
+        "maximum_errors": {
+          "check_material_error": 2.842170943040401e-14,
+          "check_energy_error": 5.684341886080802e-14,
+          "check_max_density": 0.861148809921659,
+          "check_attempted_body_steps": 196.0,
+          "check_reconstruction_error": 5.551115123125783e-17,
+          "check_K_column_error": 0.0,
+          "check_transport_error": 1.4210854715202004e-14,
+          "check_exchange_material_error": 1.3072876114961218e-14,
+          "check_exchange_energy_error": 3.1585845050585704e-14,
+          "check_whole_material_error": 3.2085445411667024e-14,
+          "check_whole_energy_error": 4.596323321948148e-14,
+          "check_input_material_array_error": 0.0,
+          "check_input_energy_array_error": 0.0,
+          "check_cargo_P_error": 1.3322676295501878e-15,
+          "check_cargo_F_error": 7.105427357601002e-15,
+          "check_cargo_E_heat_error": 0.0,
+          "check_cargo_capacity_excess": 0.0,
+          "check_cargo_payable_excess": 0.0,
+          "check_cargo_negative": 0.0,
+          "check_cargo_newborn_payer": 0.0,
+          "check_request_partition_error": 6.938893903907228e-18,
+          "check_founder_excess": 0.0,
+          "check_L128_conservation_error": 1.8318679906315083e-14,
+          "check_L128_excess": 0.0
+        }
+      }
+    ]
+  },
+  {
+    "id": "cem2_proposal1",
+    "complete": true,
+    "eligible": false,
+    "violations": 3,
+    "score_min": 0.5640554594207661,
+    "score_mean": 0.5770393282944593,
+    "policy": {
+      "kind": "theta",
+      "theta": [
+        0.8483401733403587,
+        -0.3663525009867563,
+        -0.23272742811349678,
+        -0.20251513941250193
+      ]
+    },
+    "results": [
+      {
+        "id": "cem2_proposal1--compact",
+        "stage": "training",
+        "shape": "compact",
+        "seed": 202610195201,
+        "policy": {
+          "kind": "theta",
+          "theta": [
+            0.8483401733403587,
+            -0.3663525009867563,
+            -0.23272742811349678,
+            -0.20251513941250193
+          ]
+        },
+        "canonical_policy": {
+          "kind": "theta",
+          "theta": [
+            0.8483401733403587,
+            -0.3663525009867563,
+            -0.23272742811349678,
+            -0.20251513941250193
+          ]
+        },
+        "start": 128,
+        "end": 224,
+        "initial": {
+          "clock": 128,
+          "body": 65.07253016393415,
+          "energy": 84.78501202656405,
+          "precursor": 3.8299181723567006,
+          "fuel": 22.895939174121395,
+          "heat": 15.368806879243714,
+          "waste": 17.732395400389038,
+          "dead_energy": 23.785859970196874,
+          "founder_mass": 47.85928096490014,
+          "new_tissue": 17.213249199034014
+        },
+        "status": "complete",
+        "steps": 96,
+        "M": 63.44344586192256,
+        "E": 84.78649986582016,
+        "bodytime": 306.1905375140585,
+        "min_M": 63.44344586192256,
+        "post128_live": 15.504374690864218,
+        "L128": 47.939071171058345,
+        "final": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/cem2_proposal1--compact/state224.bin",
+        "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/cem2_proposal1--compact/steps.csv",
+        "final_shape": {
+          "alive": true,
+          "components": 1,
+          "holes": 0,
+          "elongation": 1.0552374158127285,
+          "radius": 4.4009334033692085,
+          "mass": 63.44344586192256,
+          "maximum": 0.6791434665507344
+        },
+        "maximum_errors": {
+          "check_material_error": 2.842170943040401e-14,
+          "check_energy_error": 5.684341886080802e-14,
+          "check_max_density": 0.6791434665507344,
+          "check_attempted_body_steps": 2404.0,
+          "check_reconstruction_error": 5.551115123125783e-17,
+          "check_K_column_error": 0.0,
+          "check_transport_error": 2.842170943040401e-14,
+          "check_exchange_material_error": 1.4016565685892601e-14,
+          "check_exchange_energy_error": 2.5091040356528538e-14,
+          "check_whole_material_error": 2.375877272697835e-14,
+          "check_whole_energy_error": 4.729550084903167e-14,
+          "check_input_material_array_error": 0.0,
+          "check_input_energy_array_error": 0.0,
+          "check_cargo_P_error": 8.881784197001252e-16,
+          "check_cargo_F_error": 7.105427357601002e-15,
+          "check_cargo_E_heat_error": 0.0,
+          "check_cargo_capacity_excess": 0.0,
+          "check_cargo_payable_excess": 0.0,
+          "check_cargo_negative": 0.0,
+          "check_cargo_newborn_payer": 0.0,
+          "check_request_partition_error": 6.938893903907228e-18,
+          "check_founder_excess": 0.0,
+          "check_L128_conservation_error": 1.559863349598345e-14,
+          "check_L128_excess": 0.0
+        }
+      },
+      {
+        "id": "cem2_proposal1--double_lobe",
+        "stage": "training",
+        "shape": "double_lobe",
+        "seed": 202610195202,
+        "policy": {
+          "kind": "theta",
+          "theta": [
+            0.8483401733403587,
+            -0.3663525009867563,
+            -0.23272742811349678,
+            -0.20251513941250193
+          ]
+        },
+        "canonical_policy": {
+          "kind": "theta",
+          "theta": [
+            0.8483401733403587,
+            -0.3663525009867563,
+            -0.23272742811349678,
+            -0.20251513941250193
+          ]
+        },
+        "start": 128,
+        "end": 224,
+        "initial": {
+          "clock": 128,
+          "body": 56.350125784757964,
+          "energy": 68.50791344342827,
+          "precursor": 2.3608580008936135,
+          "fuel": 25.06402264811716,
+          "heat": 17.112835931369005,
+          "waste": 28.86755037398314,
+          "dead_energy": 34.193575754676,
+          "founder_mass": 37.52870101117166,
+          "new_tissue": 18.82142477358631
+        },
+        "status": "complete",
+        "steps": 96,
+        "M": 56.051897651301104,
+        "E": 78.51260558621999,
+        "bodytime": 268.5424719726576,
+        "min_M": 55.7244675515634,
+        "post128_live": 15.704167039589834,
+        "L128": 40.34773061171127,
+        "final": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/cem2_proposal1--double_lobe/state224.bin",
+        "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/cem2_proposal1--double_lobe/steps.csv",
+        "final_shape": {
+          "alive": true,
+          "components": 1,
+          "holes": 1,
+          "elongation": 1.9735849097967662,
+          "radius": 4.563257951419397,
+          "mass": 56.051897651301104,
+          "maximum": 0.8509204559978858
+        },
+        "maximum_errors": {
+          "check_material_error": 2.842170943040401e-14,
+          "check_energy_error": 2.842170943040401e-14,
+          "check_max_density": 0.8509539474488099,
+          "check_attempted_body_steps": 2500.0,
+          "check_reconstruction_error": 5.551115123125783e-17,
+          "check_K_column_error": 0.0,
+          "check_transport_error": 1.4210854715202004e-14,
+          "check_exchange_material_error": 1.3329615189405786e-14,
+          "check_exchange_energy_error": 2.986499936241671e-14,
+          "check_whole_material_error": 2.6256774532384952e-14,
+          "check_whole_energy_error": 5.084821452783217e-14,
+          "check_input_material_array_error": 0.0,
+          "check_input_energy_array_error": 0.0,
+          "check_cargo_P_error": 8.881784197001252e-16,
+          "check_cargo_F_error": 7.105427357601002e-15,
+          "check_cargo_E_heat_error": 0.0,
+          "check_cargo_capacity_excess": 0.0,
+          "check_cargo_payable_excess": 0.0,
+          "check_cargo_negative": 0.0,
+          "check_cargo_newborn_payer": 0.0,
+          "check_request_partition_error": 6.938893903907228e-18,
+          "check_founder_excess": 0.0,
+          "check_L128_conservation_error": 1.4904744105592727e-14,
+          "check_L128_excess": 0.0
+        }
+      }
+    ]
+  },
+  {
+    "id": "cem2_proposal2",
+    "complete": true,
+    "eligible": false,
+    "violations": 3,
+    "score_min": 0.6997017682743607,
+    "score_mean": 1.1794607555486412,
+    "policy": {
+      "kind": "theta",
+      "theta": [
+        0.17780835794009348,
+        -0.25963233963452703,
+        0.21364383277816779,
+        -0.6019587250063685
+      ]
+    },
+    "results": [
+      {
+        "id": "cem2_proposal2--compact",
+        "stage": "training",
+        "shape": "compact",
+        "seed": 202610195201,
+        "policy": {
+          "kind": "theta",
+          "theta": [
+            0.17780835794009348,
+            -0.25963233963452703,
+            0.21364383277816779,
+            -0.6019587250063685
+          ]
+        },
+        "canonical_policy": {
+          "kind": "theta",
+          "theta": [
+            0.17780835794009348,
+            -0.25963233963452703,
+            0.21364383277816779,
+            -0.6019587250063685
+          ]
+        },
+        "start": 128,
+        "end": 224,
+        "initial": {
+          "clock": 128,
+          "body": 65.07253016393415,
+          "energy": 84.78501202656405,
+          "precursor": 3.8299181723567006,
+          "fuel": 22.895939174121395,
+          "heat": 15.368806879243714,
+          "waste": 17.732395400389038,
+          "dead_energy": 23.785859970196874,
+          "founder_mass": 47.85928096490014,
+          "new_tissue": 17.213249199034014
+        },
+        "status": "complete",
+        "steps": 96,
+        "M": 64.18731945648423,
+        "E": 83.05921955506415,
+        "bodytime": 308.61554511236994,
+        "min_M": 64.16784475777195,
+        "post128_live": 16.599538974266373,
+        "L128": 47.58778048221785,
+        "final": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/cem2_proposal2--compact/state224.bin",
+        "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/cem2_proposal2--compact/steps.csv",
+        "final_shape": {
+          "alive": true,
+          "components": 1,
+          "holes": 0,
+          "elongation": 1.039341464808117,
+          "radius": 4.517992801654693,
+          "mass": 64.18731945648423,
+          "maximum": 0.6811794365037058
+        },
+        "maximum_errors": {
+          "check_material_error": 2.842170943040401e-14,
+          "check_energy_error": 2.842170943040401e-14,
+          "check_max_density": 0.6845010510706583,
+          "check_attempted_body_steps": 2596.0,
+          "check_reconstruction_error": 5.551115123125783e-17,
+          "check_K_column_error": 0.0,
+          "check_transport_error": 1.4210854715202004e-14,
+          "check_exchange_material_error": 1.0984269049885143e-14,
+          "check_exchange_energy_error": 2.942091015256665e-14,
+          "check_whole_material_error": 2.833844270355712e-14,
+          "check_whole_energy_error": 6.228351168147128e-14,
+          "check_input_material_array_error": 0.0,
+          "check_input_energy_array_error": 0.0,
+          "check_cargo_P_error": 8.881784197001252e-16,
+          "check_cargo_F_error": 7.105427357601002e-15,
+          "check_cargo_E_heat_error": 0.0,
+          "check_cargo_capacity_excess": 0.0,
+          "check_cargo_payable_excess": 0.0,
+          "check_cargo_negative": 0.0,
+          "check_cargo_newborn_payer": 0.0,
+          "check_request_partition_error": 6.938893903907228e-18,
+          "check_founder_excess": 0.0,
+          "check_L128_conservation_error": 1.9206858326015208e-14,
+          "check_L128_excess": 0.0
+        }
+      },
+      {
+        "id": "cem2_proposal2--double_lobe",
+        "stage": "training",
+        "shape": "double_lobe",
+        "seed": 202610195202,
+        "policy": {
+          "kind": "theta",
+          "theta": [
+            0.17780835794009348,
+            -0.25963233963452703,
+            0.21364383277816779,
+            -0.6019587250063685
+          ]
+        },
+        "canonical_policy": {
+          "kind": "theta",
+          "theta": [
+            0.17780835794009348,
+            -0.25963233963452703,
+            0.21364383277816779,
+            -0.6019587250063685
+          ]
+        },
+        "start": 128,
+        "end": 224,
+        "initial": {
+          "clock": 128,
+          "body": 56.350125784757964,
+          "energy": 68.50791344342827,
+          "precursor": 2.3608580008936135,
+          "fuel": 25.06402264811716,
+          "heat": 17.112835931369005,
+          "waste": 28.86755037398314,
+          "dead_energy": 34.193575754676,
+          "founder_mass": 37.52870101117166,
+          "new_tissue": 18.82142477358631
+        },
+        "status": "complete",
+        "steps": 96,
+        "M": 55.81234392312084,
+        "E": 78.12484254121665,
+        "bodytime": 269.07213645188415,
+        "min_M": 55.806929008154896,
+        "post128_live": 15.813845610696042,
+        "L128": 39.9984983124248,
+        "final": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/cem2_proposal2--double_lobe/state224.bin",
+        "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/cem2_proposal2--double_lobe/steps.csv",
+        "final_shape": {
+          "alive": true,
+          "components": 1,
+          "holes": 1,
+          "elongation": 1.919004226351295,
+          "radius": 4.458108433954536,
+          "mass": 55.81234392312084,
+          "maximum": 0.8631053247797448
+        },
+        "maximum_errors": {
+          "check_material_error": 1.4210854715202004e-14,
+          "check_energy_error": 2.842170943040401e-14,
+          "check_max_density": 0.86490841884115,
+          "check_attempted_body_steps": 2692.0,
+          "check_reconstruction_error": 5.551115123125783e-17,
+          "check_K_column_error": 0.0,
+          "check_transport_error": 1.4210854715202004e-14,
+          "check_exchange_material_error": 1.2750217548429532e-14,
+          "check_exchange_energy_error": 3.108624468950438e-14,
+          "check_whole_material_error": 2.6006974351844292e-14,
+          "check_whole_energy_error": 4.884981308350689e-14,
+          "check_input_material_array_error": 0.0,
+          "check_input_energy_array_error": 0.0,
+          "check_cargo_P_error": 4.440892098500626e-16,
+          "check_cargo_F_error": 7.105427357601002e-15,
+          "check_cargo_E_heat_error": 0.0,
+          "check_cargo_capacity_excess": 0.0,
+          "check_cargo_payable_excess": 0.0,
+          "check_cargo_negative": 0.0,
+          "check_cargo_newborn_payer": 0.0,
+          "check_request_partition_error": 6.938893903907228e-18,
+          "check_founder_excess": 0.0,
+          "check_L128_conservation_error": 1.454392162258955e-14,
+          "check_L128_excess": 0.0
+        }
+      }
+    ]
+  },
+  {
+    "id": "cem2_proposal3",
+    "complete": true,
+    "eligible": false,
+    "violations": 6,
+    "score_min": 0.46894586820080697,
+    "score_mean": 1.3924426616936678,
+    "policy": {
+      "kind": "theta",
+      "theta": [
+        -0.18654071050531645,
+        -0.08181314015047873,
+        0.2860108147619024,
+        -0.3811882611923837
+      ]
+    },
+    "results": [
+      {
+        "id": "cem2_proposal3--compact",
+        "stage": "training",
+        "shape": "compact",
+        "seed": 202610195201,
+        "policy": {
+          "kind": "theta",
+          "theta": [
+            -0.18654071050531645,
+            -0.08181314015047873,
+            0.2860108147619024,
+            -0.3811882611923837
+          ]
+        },
+        "canonical_policy": {
+          "kind": "theta",
+          "theta": [
+            -0.18654071050531645,
+            -0.08181314015047873,
+            0.2860108147619024,
+            -0.3811882611923837
+          ]
+        },
+        "start": 128,
+        "end": 224,
+        "initial": {
+          "clock": 128,
+          "body": 65.07253016393415,
+          "energy": 84.78501202656405,
+          "precursor": 3.8299181723567006,
+          "fuel": 22.895939174121395,
+          "heat": 15.368806879243714,
+          "waste": 17.732395400389038,
+          "dead_energy": 23.785859970196874,
+          "founder_mass": 47.85928096490014,
+          "new_tissue": 17.213249199034014
+        },
+        "status": "complete",
+        "steps": 96,
+        "M": 56.86918585895675,
+        "E": 77.9570160587528,
+        "bodytime": 297.8253389208234,
+        "min_M": 56.86918585895675,
+        "post128_live": 17.25625868662998,
+        "L128": 39.61292717232676,
+        "final": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/cem2_proposal3--compact/state224.bin",
+        "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/cem2_proposal3--compact/steps.csv",
+        "final_shape": {
+          "alive": true,
+          "components": 2,
+          "holes": 1,
+          "elongation": 1.18598537976943,
+          "radius": 4.378863890233432,
+          "mass": 56.86918585895675,
+          "maximum": 0.80720097800081
+        },
+        "maximum_errors": {
+          "check_material_error": 2.842170943040401e-14,
+          "check_energy_error": 2.842170943040401e-14,
+          "check_max_density": 0.80720097800081,
+          "check_attempted_body_steps": 2788.0,
+          "check_reconstruction_error": 5.551115123125783e-17,
+          "check_K_column_error": 0.0,
+          "check_transport_error": 1.4210854715202004e-14,
+          "check_exchange_material_error": 1.379452108096757e-14,
+          "check_exchange_energy_error": 2.9476421303797906e-14,
+          "check_whole_material_error": 2.681188604469753e-14,
+          "check_whole_energy_error": 4.7628567756419216e-14,
+          "check_input_material_array_error": 0.0,
+          "check_input_energy_array_error": 0.0,
+          "check_cargo_P_error": 8.881784197001252e-16,
+          "check_cargo_F_error": 7.105427357601002e-15,
+          "check_cargo_E_heat_error": 0.0,
+          "check_cargo_capacity_excess": 0.0,
+          "check_cargo_payable_excess": 0.0,
+          "check_cargo_negative": 0.0,
+          "check_cargo_newborn_payer": 0.0,
+          "check_request_partition_error": 6.938893903907228e-18,
+          "check_founder_excess": 1.734723475976807e-18,
+          "check_L128_conservation_error": 1.5487611193520934e-14,
+          "check_L128_excess": 1.734723475976807e-18
+        }
+      },
+      {
+        "id": "cem2_proposal3--double_lobe",
+        "stage": "training",
+        "shape": "double_lobe",
+        "seed": 202610195202,
+        "policy": {
+          "kind": "theta",
+          "theta": [
+            -0.18654071050531645,
+            -0.08181314015047873,
+            0.2860108147619024,
+            -0.3811882611923837
+          ]
+        },
+        "canonical_policy": {
+          "kind": "theta",
+          "theta": [
+            -0.18654071050531645,
+            -0.08181314015047873,
+            0.2860108147619024,
+            -0.3811882611923837
+          ]
+        },
+        "start": 128,
+        "end": 224,
+        "initial": {
+          "clock": 128,
+          "body": 56.350125784757964,
+          "energy": 68.50791344342827,
+          "precursor": 2.3608580008936135,
+          "fuel": 25.06402264811716,
+          "heat": 17.112835931369005,
+          "waste": 28.86755037398314,
+          "dead_energy": 34.193575754676,
+          "founder_mass": 37.52870101117166,
+          "new_tissue": 18.82142477358631
+        },
+        "status": "complete",
+        "steps": 96,
+        "M": 52.222501028173255,
+        "E": 76.51621946020198,
+        "bodytime": 259.051913888059,
+        "min_M": 52.222501028173255,
+        "post128_live": 15.583089710622488,
+        "L128": 36.63941131755077,
+        "final": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/cem2_proposal3--double_lobe/state224.bin",
+        "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/cem2_proposal3--double_lobe/steps.csv",
+        "final_shape": {
+          "alive": true,
+          "components": 1,
+          "holes": 0,
+          "elongation": 1.7000850297225671,
+          "radius": 4.099546812603402,
+          "mass": 52.222501028173255,
+          "maximum": 0.8473448744212316
+        },
+        "maximum_errors": {
+          "check_material_error": 2.842170943040401e-14,
+          "check_energy_error": 2.842170943040401e-14,
+          "check_max_density": 0.8488686770603902,
+          "check_attempted_body_steps": 2884.0,
+          "check_reconstruction_error": 5.551115123125783e-17,
+          "check_K_column_error": 0.0,
+          "check_transport_error": 1.4210854715202004e-14,
+          "check_exchange_material_error": 1.3065937221057311e-14,
+          "check_exchange_energy_error": 3.375077994860476e-14,
+          "check_whole_material_error": 2.173261570703744e-14,
+          "check_whole_energy_error": 5.040412531798211e-14,
+          "check_input_material_array_error": 0.0,
+          "check_input_energy_array_error": 0.0,
+          "check_cargo_P_error": 8.881784197001252e-16,
+          "check_cargo_F_error": 7.105427357601002e-15,
+          "check_cargo_E_heat_error": 0.0,
+          "check_cargo_capacity_excess": 0.0,
+          "check_cargo_payable_excess": 0.0,
+          "check_cargo_negative": 0.0,
+          "check_cargo_newborn_payer": 0.0,
+          "check_request_partition_error": 6.938893903907228e-18,
+          "check_founder_excess": 3.469446951953614e-18,
+          "check_L128_conservation_error": 1.3711254354120683e-14,
+          "check_L128_excess": 3.469446951953614e-18
+        }
+      }
+    ]
+  },
+  {
+    "id": "cem2_proposal4",
+    "complete": true,
+    "eligible": false,
+    "violations": 3,
+    "score_min": 0.11624775253647535,
+    "score_mean": 0.21676813187666966,
+    "policy": {
+      "kind": "theta",
+      "theta": [
+        0.46376849174955226,
+        -0.277551402219386,
+        0.24932409261594135,
+        -0.12594202819955014
+      ]
+    },
+    "results": [
+      {
+        "id": "cem2_proposal4--compact",
+        "stage": "training",
+        "shape": "compact",
+        "seed": 202610195201,
+        "policy": {
+          "kind": "theta",
+          "theta": [
+            0.46376849174955226,
+            -0.277551402219386,
+            0.24932409261594135,
+            -0.12594202819955014
+          ]
+        },
+        "canonical_policy": {
+          "kind": "theta",
+          "theta": [
+            0.46376849174955226,
+            -0.277551402219386,
+            0.24932409261594135,
+            -0.12594202819955014
+          ]
+        },
+        "start": 128,
+        "end": 224,
+        "initial": {
+          "clock": 128,
+          "body": 65.07253016393415,
+          "energy": 84.78501202656405,
+          "precursor": 3.8299181723567006,
+          "fuel": 22.895939174121395,
+          "heat": 15.368806879243714,
+          "waste": 17.732395400389038,
+          "dead_energy": 23.785859970196874,
+          "founder_mass": 47.85928096490014,
+          "new_tissue": 17.213249199034014
+        },
+        "status": "complete",
+        "steps": 96,
+        "M": 63.83654942646989,
+        "E": 85.30380445626412,
+        "bodytime": 308.8564980385265,
+        "min_M": 63.83654942646989,
+        "post128_live": 15.257607742660316,
+        "L128": 48.578941683809575,
+        "final": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/cem2_proposal4--compact/state224.bin",
+        "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/cem2_proposal4--compact/steps.csv",
+        "final_shape": {
+          "alive": true,
+          "components": 1,
+          "holes": 0,
+          "elongation": 1.0400939388076191,
+          "radius": 4.439707523426883,
+          "mass": 63.83654942646989,
+          "maximum": 0.6460155680209795
+        },
+        "maximum_errors": {
+          "check_material_error": 2.842170943040401e-14,
+          "check_energy_error": 5.684341886080802e-14,
+          "check_max_density": 0.653623183688146,
+          "check_attempted_body_steps": 2980.0,
+          "check_reconstruction_error": 5.551115123125783e-17,
+          "check_K_column_error": 0.0,
+          "check_transport_error": 2.1316282072803006e-14,
+          "check_exchange_material_error": 1.3336554083309693e-14,
+          "check_exchange_energy_error": 2.942091015256665e-14,
+          "check_whole_material_error": 2.933764342571976e-14,
+          "check_whole_energy_error": 4.54081217071689e-14,
+          "check_input_material_array_error": 0.0,
+          "check_input_energy_array_error": 0.0,
+          "check_cargo_P_error": 8.881784197001252e-16,
+          "check_cargo_F_error": 7.105427357601002e-15,
+          "check_cargo_E_heat_error": 0.0,
+          "check_cargo_capacity_excess": 0.0,
+          "check_cargo_payable_excess": 0.0,
+          "check_cargo_negative": 0.0,
+          "check_cargo_newborn_payer": 0.0,
+          "check_request_partition_error": 6.938893903907228e-18,
+          "check_founder_excess": 0.0,
+          "check_L128_conservation_error": 1.304512053934559e-14,
+          "check_L128_excess": 0.0
+        }
+      },
+      {
+        "id": "cem2_proposal4--double_lobe",
+        "stage": "training",
+        "shape": "double_lobe",
+        "seed": 202610195202,
+        "policy": {
+          "kind": "theta",
+          "theta": [
+            0.46376849174955226,
+            -0.277551402219386,
+            0.24932409261594135,
+            -0.12594202819955014
+          ]
+        },
+        "canonical_policy": {
+          "kind": "theta",
+          "theta": [
+            0.46376849174955226,
+            -0.277551402219386,
+            0.24932409261594135,
+            -0.12594202819955014
+          ]
+        },
+        "start": 128,
+        "end": 224,
+        "initial": {
+          "clock": 128,
+          "body": 56.350125784757964,
+          "energy": 68.50791344342827,
+          "precursor": 2.3608580008936135,
+          "fuel": 25.06402264811716,
+          "heat": 17.112835931369005,
+          "waste": 28.86755037398314,
+          "dead_energy": 34.193575754676,
+          "founder_mass": 37.52870101117166,
+          "new_tissue": 18.82142477358631
+        },
+        "status": "complete",
+        "steps": 96,
+        "M": 56.45595453924416,
+        "E": 79.08717729140864,
+        "bodytime": 271.40084139939114,
+        "min_M": 56.3053274896393,
+        "post128_live": 15.230391594958157,
+        "L128": 41.225562944286,
+        "final": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/cem2_proposal4--double_lobe/state224.bin",
+        "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/cem2_proposal4--double_lobe/steps.csv",
+        "final_shape": {
+          "alive": true,
+          "components": 1,
+          "holes": 0,
+          "elongation": 1.9612937260963292,
+          "radius": 4.505138951209496,
+          "mass": 56.45595453924416,
+          "maximum": 0.8336572941966801
+        },
+        "maximum_errors": {
+          "check_material_error": 2.842170943040401e-14,
+          "check_energy_error": 2.842170943040401e-14,
+          "check_max_density": 0.8492147053422563,
+          "check_attempted_body_steps": 3076.0,
+          "check_reconstruction_error": 5.551115123125783e-17,
+          "check_K_column_error": 0.0,
+          "check_transport_error": 1.4210854715202004e-14,
+          "check_exchange_material_error": 1.2320006126387284e-14,
+          "check_exchange_energy_error": 2.8754776337791554e-14,
+          "check_whole_material_error": 2.9226621123257246e-14,
+          "check_whole_energy_error": 3.7636560534792807e-14,
+          "check_input_material_array_error": 0.0,
+          "check_input_energy_array_error": 0.0,
+          "check_cargo_P_error": 8.881784197001252e-16,
+          "check_cargo_F_error": 7.105427357601002e-15,
+          "check_cargo_E_heat_error": 0.0,
+          "check_cargo_capacity_excess": 0.0,
+          "check_cargo_payable_excess": 0.0,
+          "check_cargo_negative": 0.0,
+          "check_cargo_newborn_payer": 0.0,
+          "check_request_partition_error": 6.938893903907228e-18,
+          "check_founder_excess": 0.0,
+          "check_L128_conservation_error": 1.1629586182948515e-14,
+          "check_L128_excess": 0.0
+        }
+      }
+    ]
+  },
+  {
+    "id": "cem2_proposal5",
+    "complete": true,
+    "eligible": false,
+    "violations": 3,
+    "score_min": 0.03791403188204434,
+    "score_mean": 0.1441038151024019,
+    "policy": {
+      "kind": "theta",
+      "theta": [
+        0.24004106967414296,
+        0.13334060028272376,
+        0.2843442766612177,
+        -0.3864836493627766
+      ]
+    },
+    "results": [
+      {
+        "id": "cem2_proposal5--compact",
+        "stage": "training",
+        "shape": "compact",
+        "seed": 202610195201,
+        "policy": {
+          "kind": "theta",
+          "theta": [
+            0.24004106967414296,
+            0.13334060028272376,
+            0.2843442766612177,
+            -0.3864836493627766
+          ]
+        },
+        "canonical_policy": {
+          "kind": "theta",
+          "theta": [
+            0.24004106967414296,
+            0.13334060028272376,
+            0.2843442766612177,
+            -0.3864836493627766
+          ]
+        },
+        "start": 128,
+        "end": 224,
+        "initial": {
+          "clock": 128,
+          "body": 65.07253016393415,
+          "energy": 84.78501202656405,
+          "precursor": 3.8299181723567006,
+          "fuel": 22.895939174121395,
+          "heat": 15.368806879243714,
+          "waste": 17.732395400389038,
+          "dead_energy": 23.785859970196874,
+          "founder_mass": 47.85928096490014,
+          "new_tissue": 17.213249199034014
+        },
+        "status": "complete",
+        "steps": 96,
+        "M": 63.82134270556215,
+        "E": 86.79333921818441,
+        "bodytime": 308.7569167871907,
+        "min_M": 63.82134270556215,
+        "post128_live": 15.190612829766211,
+        "L128": 48.63072987579594,
+        "final": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/cem2_proposal5--compact/state224.bin",
+        "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/cem2_proposal5--compact/steps.csv",
+        "final_shape": {
+          "alive": true,
+          "components": 1,
+          "holes": 0,
+          "elongation": 1.0763294021175709,
+          "radius": 4.484372266034617,
+          "mass": 63.82134270556215,
+          "maximum": 0.6713372657175996
+        },
+        "maximum_errors": {
+          "check_material_error": 2.842170943040401e-14,
+          "check_energy_error": 2.842170943040401e-14,
+          "check_max_density": 0.6713372657175996,
+          "check_attempted_body_steps": 3172.0,
+          "check_reconstruction_error": 5.551115123125783e-17,
+          "check_K_column_error": 0.0,
+          "check_transport_error": 2.842170943040401e-14,
+          "check_exchange_material_error": 1.4391265956703592e-14,
+          "check_exchange_energy_error": 3.2529534621517087e-14,
+          "check_whole_material_error": 2.986499936241671e-14,
+          "check_whole_energy_error": 4.618527782440651e-14,
+          "check_input_material_array_error": 0.0,
+          "check_input_energy_array_error": 0.0,
+          "check_cargo_P_error": 8.881784197001252e-16,
+          "check_cargo_F_error": 7.105427357601002e-15,
+          "check_cargo_E_heat_error": 0.0,
+          "check_cargo_capacity_excess": 0.0,
+          "check_cargo_payable_excess": 0.0,
+          "check_cargo_negative": 0.0,
+          "check_cargo_newborn_payer": 0.0,
+          "check_request_partition_error": 3.469446951953614e-18,
+          "check_founder_excess": 0.0,
+          "check_L128_conservation_error": 1.7486012637846216e-14,
+          "check_L128_excess": 0.0
+        }
+      },
+      {
+        "id": "cem2_proposal5--double_lobe",
+        "stage": "training",
+        "shape": "double_lobe",
+        "seed": 202610195202,
+        "policy": {
+          "kind": "theta",
+          "theta": [
+            0.24004106967414296,
+            0.13334060028272376,
+            0.2843442766612177,
+            -0.3864836493627766
+          ]
+        },
+        "canonical_policy": {
+          "kind": "theta",
+          "theta": [
+            0.24004106967414296,
+            0.13334060028272376,
+            0.2843442766612177,
+            -0.3864836493627766
+          ]
+        },
+        "start": 128,
+        "end": 224,
+        "initial": {
+          "clock": 128,
+          "body": 56.350125784757964,
+          "energy": 68.50791344342827,
+          "precursor": 2.3608580008936135,
+          "fuel": 25.06402264811716,
+          "heat": 17.112835931369005,
+          "waste": 28.86755037398314,
+          "dead_energy": 34.193575754676,
+          "founder_mass": 37.52870101117166,
+          "new_tissue": 18.82142477358631
+        },
+        "status": "complete",
+        "steps": 96,
+        "M": 55.01468067394525,
+        "E": 78.53843860881605,
+        "bodytime": 268.80048637102556,
+        "min_M": 55.01468067394525,
+        "post128_live": 15.152057874303726,
+        "L128": 39.86262279964153,
+        "final": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/cem2_proposal5--double_lobe/state224.bin",
+        "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/cem2_proposal5--double_lobe/steps.csv",
+        "final_shape": {
+          "alive": true,
+          "components": 1,
+          "holes": 0,
+          "elongation": 1.8470855558017032,
+          "radius": 4.2798449691951985,
+          "mass": 55.01468067394525,
+          "maximum": 0.8563155630441744
+        },
+        "maximum_errors": {
+          "check_material_error": 2.842170943040401e-14,
+          "check_energy_error": 5.684341886080802e-14,
+          "check_max_density": 0.8576386422647021,
+          "check_attempted_body_steps": 3268.0,
+          "check_reconstruction_error": 5.551115123125783e-17,
+          "check_K_column_error": 0.0,
+          "check_transport_error": 1.4210854715202004e-14,
+          "check_exchange_material_error": 1.3114509478384662e-14,
+          "check_exchange_energy_error": 2.603472992745992e-14,
+          "check_whole_material_error": 2.6423307986078726e-14,
+          "check_whole_energy_error": 4.5075054799781356e-14,
+          "check_input_material_array_error": 0.0,
+          "check_input_energy_array_error": 0.0,
+          "check_cargo_P_error": 4.440892098500626e-16,
+          "check_cargo_F_error": 7.105427357601002e-15,
+          "check_cargo_E_heat_error": 0.0,
+          "check_cargo_capacity_excess": 0.0,
+          "check_cargo_payable_excess": 0.0,
+          "check_cargo_negative": 0.0,
+          "check_cargo_newborn_payer": 0.0,
+          "check_request_partition_error": 6.938893903907228e-18,
+          "check_founder_excess": 0.0,
+          "check_L128_conservation_error": 1.3877787807814457e-14,
+          "check_L128_excess": 0.0
+        }
+      }
+    ]
+  }
+]

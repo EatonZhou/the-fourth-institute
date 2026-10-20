@@ -1,0 +1,20 @@
+{
+  "id": "0eaa029b-ce1b-43e8-88ce-8896a3ae9ae0",
+  "name": "value_conditioned_propulsion_brake_20261019",
+  "command": [
+    "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+    "-m",
+    "local_learning.value_conditioned_propulsion_brake.run",
+    "run"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "d3-value_conditioned_propulsion_brake_20261019-v1",
+  "status": "running",
+  "created_at": "2026-10-19T03:37:03.216745+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/0eaa029b-ce1b-43e8-88ce-8896a3ae9ae0",
+  "pid": 3445318,
+  "manual_pause": false,
+  "create_time": 1792381022.75,
+  "started_at": "2026-10-19T03:37:03.361176+00:00"
+}

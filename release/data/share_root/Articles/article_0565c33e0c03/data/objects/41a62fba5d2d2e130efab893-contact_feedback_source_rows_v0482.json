@@ -1,0 +1,2778 @@
+{
+  "handoff": {
+    "task": "contact_feedback_reachability_20261019",
+    "owner": "resident_33af539c4a17",
+    "status": "completed_reachability_demonstrated_mean_age_credit_failed",
+    "objective_met": false,
+    "actual": {
+      "batches": [
+        {
+          "batch": "opportunity",
+          "job": "29e08413-cd1d-4681-9b38-04c53b79f7e7",
+          "native": 2304,
+          "worker_seconds": 1.319436,
+          "raw_bytes": 8586787,
+          "status": "completed",
+          "returncode": 0
+        },
+        {
+          "batch": "delay",
+          "job": "b7032a3a-31c6-4965-a20d-b1e0aa4a9c87",
+          "native": 6912,
+          "worker_seconds": 6.98804,
+          "raw_bytes": 30436027,
+          "status": "completed",
+          "returncode": 0
+        },
+        {
+          "batch": "path_probe",
+          "job": "df578238-aea6-4a00-a0f4-b8349ff6cac4",
+          "native": 1152,
+          "worker_seconds": 1.313383,
+          "raw_bytes": 6004732,
+          "status": "completed",
+          "returncode": 0
+        },
+        {
+          "batch": "action_probe",
+          "job": "9b42efeb-1cd0-4914-8c47-d45ce8cc35b1",
+          "native": 1440,
+          "worker_seconds": 1.431251,
+          "raw_bytes": 5288119,
+          "status": "completed",
+          "returncode": 0
+        },
+        {
+          "batch": "pacing",
+          "job": "704ff2af-28cb-41ed-9f0d-965b3c4694bd",
+          "native": 3456,
+          "worker_seconds": 3.350795,
+          "raw_bytes": 15112302,
+          "status": "completed",
+          "returncode": 0
+        },
+        {
+          "batch": "sparse",
+          "job": "d4b59280-695b-4ed6-858d-1c6cf7baca76",
+          "native": 5184,
+          "worker_seconds": 3.713248,
+          "raw_bytes": 22497829,
+          "status": "completed",
+          "returncode": 0
+        }
+      ],
+      "native": 20448,
+      "worker_seconds": 18.116153,
+      "raw_bytes": 87925796,
+      "independent_founders": 13,
+      "complete576_step_paths": 31,
+      "additional96_step_founder_prefixes": 3,
+      "causal_branches": 24,
+      "replication": "13 independent founder/exploration RNG histories; only sparse-condition3 also have independent frozen resource-pulse histories. Paired arms and24 causal continuations are dependent, not independent replicas."
+    },
+    "report": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_reachability_20261019/REPORT.txt",
+    "means": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_reachability_20261019/means.json",
+    "checks": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_reachability_20261019/checks.json",
+    "raw_manifest": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_reachability_20261019/raw_manifest.json",
+    "animation": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_reachability_20261019/continuous_signal.gif",
+    "plots": [
+      "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_reachability_20261019/results.png",
+      "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_reachability_20261019/sparse_condition.png"
+    ],
+    "batch_plans": {
+      "opportunity": {
+        "path": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_opportunity_20261019/plan.json",
+        "sha256": "99596f7a36b6d9bb8391584287d3abd12ee9904b99133a80ab496324ca9514d4"
+      },
+      "delay": {
+        "path": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_delay_20261019/plan.json",
+        "sha256": "80e49e632755f51e37c969f0538242c1889b22381b2305a733f201cfa41f9d02"
+      },
+      "path_probe": {
+        "path": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_path_probe_20261019/plan.json",
+        "sha256": "8840ba3a87ce812b99c6c74d567ce1a74cc3a81d39fb9b883fa7878ffe693eaa"
+      },
+      "action_probe": {
+        "path": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_action_probe_20261019/plan.json",
+        "sha256": "cd81f9b1a63eb7dd340d2afd3cea2723884295b94f7464946263af0072c83c79"
+      },
+      "pacing": {
+        "path": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_pacing_20261019/plan.json",
+        "sha256": "a2c06ebd5399cd2be9e26a51b59374307d1fc03acf62fc117dfa2ebf0831090c"
+      },
+      "sparse": {
+        "path": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_sparse_20261019/plan.json",
+        "sha256": "2508fcbad4827ef01331a4c418f8bee6faca6f8b609f73a8c9a776e4e4aab65b"
+      }
+    },
+    "findings": [
+      "Remote physical uptake reaches proximal modifiable material through actual contacts; no proximal food receipt.",
+      "Signal-only intervention with writer off preserves every physical state exactly; writer-on uptake effect tiny in saturated parents.",
+      "Fresh physical action comparisons give opposite useful response directions in two resource locations and local received signal retains ranking.",
+      "Mean-age alignment fails3/3; slower action pacing improves changed uptake1/3 and mainly saves remodeling costs.",
+      "Sparse resources remove distal saturation but diffusion uptake remains below no_signal3/3 after change; global diagnostic not consistently beneficial."
+    ],
+    "boundaries": [
+      "Moving material network, not CA/Lenia; no birth, fixed supports/external load; topology not learned.",
+      "Origin-resolved arrays host audit only; signals are not nutrition; all costs model-dependent.",
+      "Global and absent-signal arms unequal-information capability controls, not fair algorithm ranking.",
+      "13 founders not13 distinct environmental distributions;24 branches not independent replicas.",
+      "No new algorithm advantage or broad impossibility result; no seventh batch running."
+    ],
+    "next_scientific_issue": "Temporal mixing and coupled closed-loop action responses can defeat a useful reachable signal; need distinguish distinguishable feedback content from simply propagating more/longer. No new mechanism claimed or launched.",
+    "artifacts_sha": {
+      "results.png": "df6e19c13217870baf646b40106f2d4a1c8925a15b961d57111acfc8f2e66547",
+      "sparse_checks.json": "5eb40ba30a010648cbb5855246e798665ecdc692e563e51968292db5538b3f6e",
+      "REPORT.txt": "a86823ef890960a8af80558a8b333e53584f889aa96cf1e0b755ea4fabfd9ebc",
+      "actual_final.png": "706d00a43164529c6ccf6072dd58804b3d66ba6716ed8f13a1a104593d83455e",
+      "means.json": "a19d7cc87b23f7a7d9654ebf635deffdc2d9dc31d0ee022fe572bce9343d800a",
+      "paired_protocol_effects.json": "511e9b585421dc55689fde3a62a8cea1f17ea71816bb07a2399a3f7af9f582c1",
+      "usage.json": "6286994621572830ea8166e9a531b3b7f4754a9989aa5fea64520fe35bf89676",
+      "raw_manifest.json": "cabd63b86c1df0200bc22cf9b316ada7fa607d684a4f65b0d47b9a66ab4f0a47",
+      "actual_hold.png": "52b7ae36b788ab7f7a8953688b655eb42b627bbc31116955f8878621d0e27812",
+      "checks.json": "17d364d1ffb0a44f9618d7e72374e3b9789efcc720499a2384738ed736949f4d",
+      "figure_sources.json": "3edb493d1c91743671c0dc56bf020bc44c9d7d4902cc3dd11f85d454e88c5a90",
+      "continuous_signal.gif": "6af1f88b2e41c36befaf890115e91502f9235bb33aa7d01e0caeaa980e8da9b2",
+      "sparse_condition.png": "3fd8ad901f32adbf703a8a0104771bd7edef539cd18e5f833d87b424a5521345",
+      "action_response_pairs.json": "b2eda799d4bdd132c3bb239394ef6241abc1051f9bac0bcb562865168f21c145"
+    }
+  },
+  "inputs": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_reachability_20261019/handoff.json",
+      "sha256": "4cf3862fb7c28ce2a53b564a25568d348b3166a42d8de26366bfe304cd4093fb",
+      "bytes": 7273
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_reachability_20261019/results.png",
+      "sha256": "df6e19c13217870baf646b40106f2d4a1c8925a15b961d57111acfc8f2e66547",
+      "bytes": 121333
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_reachability_20261019/sparse_checks.json",
+      "sha256": "5eb40ba30a010648cbb5855246e798665ecdc692e563e51968292db5538b3f6e",
+      "bytes": 1639
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_reachability_20261019/REPORT.txt",
+      "sha256": "a86823ef890960a8af80558a8b333e53584f889aa96cf1e0b755ea4fabfd9ebc",
+      "bytes": 5501
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_reachability_20261019/actual_final.png",
+      "sha256": "706d00a43164529c6ccf6072dd58804b3d66ba6716ed8f13a1a104593d83455e",
+      "bytes": 4894
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_reachability_20261019/means.json",
+      "sha256": "a19d7cc87b23f7a7d9654ebf635deffdc2d9dc31d0ee022fe572bce9343d800a",
+      "bytes": 14983
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_reachability_20261019/paired_protocol_effects.json",
+      "sha256": "511e9b585421dc55689fde3a62a8cea1f17ea71816bb07a2399a3f7af9f582c1",
+      "bytes": 5328
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_reachability_20261019/usage.json",
+      "sha256": "6286994621572830ea8166e9a531b3b7f4754a9989aa5fea64520fe35bf89676",
+      "bytes": 1827
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_reachability_20261019/raw_manifest.json",
+      "sha256": "cabd63b86c1df0200bc22cf9b316ada7fa607d684a4f65b0d47b9a66ab4f0a47",
+      "bytes": 98402
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_reachability_20261019/actual_hold.png",
+      "sha256": "52b7ae36b788ab7f7a8953688b655eb42b627bbc31116955f8878621d0e27812",
+      "bytes": 5025
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_reachability_20261019/checks.json",
+      "sha256": "17d364d1ffb0a44f9618d7e72374e3b9789efcc720499a2384738ed736949f4d",
+      "bytes": 1120
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_reachability_20261019/figure_sources.json",
+      "sha256": "3edb493d1c91743671c0dc56bf020bc44c9d7d4902cc3dd11f85d454e88c5a90",
+      "bytes": 470
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_reachability_20261019/continuous_signal.gif",
+      "sha256": "6af1f88b2e41c36befaf890115e91502f9235bb33aa7d01e0caeaa980e8da9b2",
+      "bytes": 403767
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_reachability_20261019/sparse_condition.png",
+      "sha256": "3fd8ad901f32adbf703a8a0104771bd7edef539cd18e5f833d87b424a5521345",
+      "bytes": 72724
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_reachability_20261019/action_response_pairs.json",
+      "sha256": "b2eda799d4bdd132c3bb239394ef6241abc1051f9bac0bcb562865168f21c145",
+      "bytes": 1258
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_opportunity_20261019/plan.json",
+      "sha256": "99596f7a36b6d9bb8391584287d3abd12ee9904b99133a80ab496324ca9514d4",
+      "bytes": 2604
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_delay_20261019/plan.json",
+      "sha256": "80e49e632755f51e37c969f0538242c1889b22381b2305a733f201cfa41f9d02",
+      "bytes": 2864
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_path_probe_20261019/plan.json",
+      "sha256": "8840ba3a87ce812b99c6c74d567ce1a74cc3a81d39fb9b883fa7878ffe693eaa",
+      "bytes": 3118
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_action_probe_20261019/plan.json",
+      "sha256": "cd81f9b1a63eb7dd340d2afd3cea2723884295b94f7464946263af0072c83c79",
+      "bytes": 1804
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_pacing_20261019/plan.json",
+      "sha256": "a2c06ebd5399cd2be9e26a51b59374307d1fc03acf62fc117dfa2ebf0831090c",
+      "bytes": 2950
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_sparse_20261019/plan.json",
+      "sha256": "2508fcbad4827ef01331a4c418f8bee6faca6f8b609f73a8c9a776e4e4aab65b",
+      "bytes": 18610
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/29e08413-cd1d-4681-9b38-04c53b79f7e7/raw/202610199921_fixed_compensation/ledger.json",
+      "sha256": "836b983ff3ef83c170659a543c4b848a8fc3135ed6e4c8112d6bb32d50af676b",
+      "bytes": 387699
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/29e08413-cd1d-4681-9b38-04c53b79f7e7/raw/202610199921_diffusion/ledger.json",
+      "sha256": "03f79f0c247eb063af16c857bfa5cfe45b990b361b115c0ebb3094cddc7499e5",
+      "bytes": 382515
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/29e08413-cd1d-4681-9b38-04c53b79f7e7/raw/202610199921_global_diagnostic/ledger.json",
+      "sha256": "04158823c8193e63faee129323e3968accc4635a5f180690808b7c49ae6a94a6",
+      "bytes": 386958
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/29e08413-cd1d-4681-9b38-04c53b79f7e7/raw/202610199921_no_signal/ledger.json",
+      "sha256": "75402aad600048a8f1081cc69caf57d140f9ff85a1c0dd6473b6353794f89a33",
+      "bytes": 382066
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b7032a3a-31c6-4965-a20d-b1e0aa4a9c87/raw/202610199932_diffusion/ledger.json",
+      "sha256": "7e9b3b96c31bb024b713e460dc5a4cc684e537e906de9539180d304b3360dc90",
+      "bytes": 382099
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b7032a3a-31c6-4965-a20d-b1e0aa4a9c87/raw/202610199931_no_signal/ledger.json",
+      "sha256": "2f71c9a16b9ad730ad1a437dd3d2a200de7419607616d33d8e6a47d5a6b11d9b",
+      "bytes": 382147
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b7032a3a-31c6-4965-a20d-b1e0aa4a9c87/raw/202610199931_diffusion/ledger.json",
+      "sha256": "9f5bee3bdb22b3525bb057f59a6fcc31ec12869fd56ffa8775ca611740de220e",
+      "bytes": 382204
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b7032a3a-31c6-4965-a20d-b1e0aa4a9c87/raw/202610199931_age_aligned/ledger.json",
+      "sha256": "189d7406993ca085ad40b680ca096d939b8f38c86192b109b99062a797152b7e",
+      "bytes": 383466
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b7032a3a-31c6-4965-a20d-b1e0aa4a9c87/raw/202610199933_diffusion/ledger.json",
+      "sha256": "bbfe08efe912fe40b5ca2f1a58eeabae359ae4846fe4b65cccee9e0cf1eefcd5",
+      "bytes": 382237
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b7032a3a-31c6-4965-a20d-b1e0aa4a9c87/raw/202610199933_global_diagnostic/ledger.json",
+      "sha256": "003a6bd53aa464adf62ee82a456bcd869e840a92b68de8ed91a3ab63fefb4e08",
+      "bytes": 386863
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b7032a3a-31c6-4965-a20d-b1e0aa4a9c87/raw/202610199933_age_aligned/ledger.json",
+      "sha256": "16d66cf77cc8361ae84080a4fae501a3c8c204041a6cd5ceaf309ffbd2a8de63",
+      "bytes": 383544
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b7032a3a-31c6-4965-a20d-b1e0aa4a9c87/raw/202610199931_global_diagnostic/ledger.json",
+      "sha256": "f54d128a3bd2d23dcd94f24a9d6afad8d34f71afdcf057b67728757aa6b51bce",
+      "bytes": 386856
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b7032a3a-31c6-4965-a20d-b1e0aa4a9c87/raw/202610199933_no_signal/ledger.json",
+      "sha256": "83bd428c5b3508782c49018b0eda602f74766449bba0a7f7123de4874835eb6d",
+      "bytes": 382094
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b7032a3a-31c6-4965-a20d-b1e0aa4a9c87/raw/202610199932_no_signal/ledger.json",
+      "sha256": "46cbac4180f7bf7e64a52d27d5359e8b40d77580b096f8e624d4980d3e20df83",
+      "bytes": 382347
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b7032a3a-31c6-4965-a20d-b1e0aa4a9c87/raw/202610199932_age_aligned/ledger.json",
+      "sha256": "5f3faa1a4585cc604a41cbb1701f45e0689f588164b918f3ca2e8aa1287a481c",
+      "bytes": 383604
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b7032a3a-31c6-4965-a20d-b1e0aa4a9c87/raw/202610199932_global_diagnostic/ledger.json",
+      "sha256": "4eac4858118bfee70bd0f2f5f0ac039f02468f911ebb45351e59f6cc060fab91",
+      "bytes": 386864
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/df578238-aea6-4a00-a0f4-b8349ff6cac4/raw/202610199931_cut_update/ledger.json",
+      "sha256": "c21ecd873f70e433bb135d6319db305dadc37bae41611c9a3b9852442497b723",
+      "bytes": 64252
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/df578238-aea6-4a00-a0f4-b8349ff6cac4/raw/202610199932_open_update/ledger.json",
+      "sha256": "f0c4031f06457317592401d25c6226864cd025ce89fdf304a4cff0f8b9e4eba4",
+      "bytes": 64299
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/df578238-aea6-4a00-a0f4-b8349ff6cac4/raw/202610199933_cut_update/ledger.json",
+      "sha256": "10b0c0155165e3a8b9a6227586e4b2fc63b4581bf1ab9a7396c59496558db1ac",
+      "bytes": 64211
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/df578238-aea6-4a00-a0f4-b8349ff6cac4/raw/202610199932_open_hold/ledger.json",
+      "sha256": "3d2ed33fdc2072d93c911fd55614a6b29eed70d596e703ad262a5a97d679ec3f",
+      "bytes": 64020
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/df578238-aea6-4a00-a0f4-b8349ff6cac4/raw/202610199931_open_update/ledger.json",
+      "sha256": "f6d2e5d035f1bd8a49bd55c64082aa75ec475f4b7120c37c5d26f066648a8187",
+      "bytes": 64316
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/df578238-aea6-4a00-a0f4-b8349ff6cac4/raw/202610199932_cut_hold/ledger.json",
+      "sha256": "5cd338c45c0ce1045956d6c95d6a2d376c876ea3f470494dee46fc1fd563ed95",
+      "bytes": 63944
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/df578238-aea6-4a00-a0f4-b8349ff6cac4/raw/202610199931_open_hold/ledger.json",
+      "sha256": "345b9902445682b71c5656c98b580c74d84641202f1bc9a09e1c4a220a97ac0c",
+      "bytes": 64098
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/df578238-aea6-4a00-a0f4-b8349ff6cac4/raw/202610199933_open_update/ledger.json",
+      "sha256": "8908e283a9542a8adbfa6378598f1ef28c738725129df97ed7bd8e788dd7901d",
+      "bytes": 64255
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/df578238-aea6-4a00-a0f4-b8349ff6cac4/raw/202610199931_cut_hold/ledger.json",
+      "sha256": "b79ff08829c09aefeed68ba3f7a4582d78b36486b15e8ae326b23cde052cf113",
+      "bytes": 64052
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/df578238-aea6-4a00-a0f4-b8349ff6cac4/raw/202610199933_cut_hold/ledger.json",
+      "sha256": "7b29b8e1add1c3384736582f201b7476cfdd3828a50962e1f502c11a233a3542",
+      "bytes": 64024
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/df578238-aea6-4a00-a0f4-b8349ff6cac4/raw/202610199933_open_hold/ledger.json",
+      "sha256": "43ea39dd091fa3a700c4fc600262628383ed79183e6cdcbba0dd63e9578f8f95",
+      "bytes": 64098
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/df578238-aea6-4a00-a0f4-b8349ff6cac4/raw/202610199932_cut_update/ledger.json",
+      "sha256": "292faa2971b5831f3ee961491c925db4266adbcea0e2ca6708c6a7b5546f0e4e",
+      "bytes": 64224
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9b42efeb-1cd0-4914-8c47-d45ce8cc35b1/raw/202610199941_target4.7_delta0.08/ledger.json",
+      "sha256": "3db51e15b3855145e9b675ecc116cc51b72758ef420a8cd5c1561b84021b1852",
+      "bytes": 56940
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9b42efeb-1cd0-4914-8c47-d45ce8cc35b1/raw/202610199942_target4.7_delta0.08/ledger.json",
+      "sha256": "192503c2ff91a1f90bcff1df7e56f105b14680ec208d5a216ada058b96cdb619",
+      "bytes": 56949
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9b42efeb-1cd0-4914-8c47-d45ce8cc35b1/raw/202610199942_prefix/ledger.json",
+      "sha256": "16871a43d3289e4f601f9babd6479d6678f5f80cb3fa01b262a525106aceb27c",
+      "bytes": 52576
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9b42efeb-1cd0-4914-8c47-d45ce8cc35b1/raw/202610199942_target5.4_delta0.08/ledger.json",
+      "sha256": "031a610c65e6aeda9c156945fddf2aa0b78d641cc6985f66510d43d76ac7f027",
+      "bytes": 56953
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9b42efeb-1cd0-4914-8c47-d45ce8cc35b1/raw/202610199943_prefix/ledger.json",
+      "sha256": "6b8e0ec254312b143da2f0dc67e3cf0e002cccfbd0d899bc3848f2a962b90254",
+      "bytes": 52593
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9b42efeb-1cd0-4914-8c47-d45ce8cc35b1/raw/202610199943_target4.7_delta0.08/ledger.json",
+      "sha256": "dfe179a0012a84fc637be8bd89a28525ab63b6b4f953db97b2d8955b4c72792f",
+      "bytes": 56851
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9b42efeb-1cd0-4914-8c47-d45ce8cc35b1/raw/202610199941_prefix/ledger.json",
+      "sha256": "6d78b6d276aad61771431b4162569dce2bfbe57e518b1d2ea4fa67744cba8b0f",
+      "bytes": 52591
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9b42efeb-1cd0-4914-8c47-d45ce8cc35b1/raw/202610199943_target5.4_delta0.08/ledger.json",
+      "sha256": "daf6949731f06602a273c636054c6ca9c2b8fca35408eb29905a7fef1ed1f85c",
+      "bytes": 56832
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9b42efeb-1cd0-4914-8c47-d45ce8cc35b1/raw/202610199943_target4.7_delta-0.08/ledger.json",
+      "sha256": "a373a6cb164264d8845ac7931cbcf54f260e9c147aa2f610dbae2cfbef05899b",
+      "bytes": 56944
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9b42efeb-1cd0-4914-8c47-d45ce8cc35b1/raw/202610199942_target4.7_delta-0.08/ledger.json",
+      "sha256": "35a5ee76ad5b0012191e3c9a52aa56a5d00413bdd777e0486437a020b948d47d",
+      "bytes": 56980
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9b42efeb-1cd0-4914-8c47-d45ce8cc35b1/raw/202610199942_target5.4_delta-0.08/ledger.json",
+      "sha256": "e0867f7db08fc0ad2937d1692742e07af0aff4124eb6538bed52eff58e6c8896",
+      "bytes": 56960
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9b42efeb-1cd0-4914-8c47-d45ce8cc35b1/raw/202610199941_target5.4_delta0.08/ledger.json",
+      "sha256": "2db0a0834a385e933078db255db4306610be355371d6d10034b24da8ac97a568",
+      "bytes": 56962
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9b42efeb-1cd0-4914-8c47-d45ce8cc35b1/raw/202610199941_target4.7_delta-0.08/ledger.json",
+      "sha256": "151e8072353a44f09f72eb05fc56f3d0c21fd6d6eddb4305664a574897ecc7fd",
+      "bytes": 56926
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9b42efeb-1cd0-4914-8c47-d45ce8cc35b1/raw/202610199943_target5.4_delta-0.08/ledger.json",
+      "sha256": "c3f16e5ee4ff04e3e452cd6da722633be7a0ec8639daec8a0c51273863721fc3",
+      "bytes": 56946
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9b42efeb-1cd0-4914-8c47-d45ce8cc35b1/raw/202610199941_target5.4_delta-0.08/ledger.json",
+      "sha256": "191c29e92feacb4a1156ed70d76d1e59fe4f5e620c09429798cf9769583b453d",
+      "bytes": 56943
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/704ff2af-28cb-41ed-9f0d-965b3c4694bd/raw/202610199953_slow96/ledger.json",
+      "sha256": "ace617a63230d68486de10b065dc90e407b5d0f703de80c5ccb0dccb45f5373f",
+      "bytes": 380064
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/704ff2af-28cb-41ed-9f0d-965b3c4694bd/raw/202610199951_fast24/ledger.json",
+      "sha256": "79148582146e6f019b5743bab458aff81e3ce23abe012b418033b57c4f09ac75",
+      "bytes": 380646
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/704ff2af-28cb-41ed-9f0d-965b3c4694bd/raw/202610199951_slow96/ledger.json",
+      "sha256": "ead1e656497c4a135c075796943f7dd32a08cb4978538476e2b13a4836c1729f",
+      "bytes": 380331
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/704ff2af-28cb-41ed-9f0d-965b3c4694bd/raw/202610199952_slow96/ledger.json",
+      "sha256": "39723bc85f8f92e04466c46bc55ad5b1cbd1bacb8a06c3f8478b880e7f7dda9a",
+      "bytes": 380014
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/704ff2af-28cb-41ed-9f0d-965b3c4694bd/raw/202610199953_fast24/ledger.json",
+      "sha256": "5cf28e69e1b11a61340abdbba8ac0a0d1a2bee363a169656b9b70c184a405565",
+      "bytes": 380266
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/704ff2af-28cb-41ed-9f0d-965b3c4694bd/raw/202610199952_fast24/ledger.json",
+      "sha256": "be437ea435519f5f76da5b40d49b52beb2335766188ef4c423b537f8de9a9c64",
+      "bytes": 380525
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/d4b59280-695b-4ed6-858d-1c6cf7baca76/raw/202610199961_no_signal/ledger.json",
+      "sha256": "315a4e98aa535ba3dbb5e3ab1b79bd28e81fbad5f19a0e48fac7bd02c837bc53",
+      "bytes": 396989
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/d4b59280-695b-4ed6-858d-1c6cf7baca76/raw/202610199962_diffusion/ledger.json",
+      "sha256": "b42d882e143973e23353ad07572fce775a1f73b348bc5fc41aa12a7e68703d21",
+      "bytes": 396750
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/d4b59280-695b-4ed6-858d-1c6cf7baca76/raw/202610199962_global_diagnostic/ledger.json",
+      "sha256": "5460b9639e9ece6ba6e0f8fa65be5bb60a870b623ade723c60911c29ca85f154",
+      "bytes": 401313
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/d4b59280-695b-4ed6-858d-1c6cf7baca76/raw/202610199961_diffusion/ledger.json",
+      "sha256": "13dc7b3eee2f1ee7930a09d1eb0ea01749e64eddf11b5a68f87087f08bde0b0d",
+      "bytes": 397075
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/d4b59280-695b-4ed6-858d-1c6cf7baca76/raw/202610199963_diffusion/ledger.json",
+      "sha256": "a410fb2c1a34f94976d36411d46536a172c290dca9c2faa9a412a16444a25662",
+      "bytes": 397086
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/d4b59280-695b-4ed6-858d-1c6cf7baca76/raw/202610199961_global_diagnostic/ledger.json",
+      "sha256": "e1cbcb630655c0310a1773c70a36cc24b70f85228635df1c9ba7620a8ded97cf",
+      "bytes": 401679
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/d4b59280-695b-4ed6-858d-1c6cf7baca76/raw/202610199962_no_signal/ledger.json",
+      "sha256": "4f207ef093c1ee6a39a9f531acb1355c65b90e0914268af8b327680b13888a8e",
+      "bytes": 396803
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/d4b59280-695b-4ed6-858d-1c6cf7baca76/raw/202610199963_global_diagnostic/ledger.json",
+      "sha256": "fef5cdbdcc30d377407534c5f6cfbec07917cb8dd80db3e1fbae58117fe82930",
+      "bytes": 401616
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/d4b59280-695b-4ed6-858d-1c6cf7baca76/raw/202610199963_no_signal/ledger.json",
+      "sha256": "c622fb6d43c3ea2523ed3370fc82a22e81a286ce6131687d419cee2df0e59344",
+      "bytes": 397037
+    }
+  ],
+  "means": {
+    "opportunity": {
+      "diffusion": {
+        "acquire": {
+          "uptake": 5.655976341646092,
+          "E": 63.61174955229339,
+          "remodel_paid": 0.9026164739339465,
+          "signal_paid": 0.036000000000000004,
+          "signal_prox": 0.9373493966299093,
+          "age_prox": 25.322126635743185,
+          "M": 15.0
+        },
+        "hold": {
+          "uptake": 0.6210971788649337,
+          "E": 64.00788668993526,
+          "remodel_paid": 0.0,
+          "signal_paid": 0.007200000000000001,
+          "signal_prox": 1.7988010612142524,
+          "age_prox": 47.52747479754198,
+          "M": 15.0
+        },
+        "change": {
+          "uptake": 0.7489660683791768,
+          "E": 62.45497148181211,
+          "remodel_paid": 1.1717318390841418,
+          "signal_paid": 0.036000000000000004,
+          "signal_prox": 0.5892592553374771,
+          "age_prox": 80.30516440069121,
+          "M": 15.0
+        },
+        "hold_change": {
+          "uptake": 0.24692559662808902,
+          "E": 62.477026968481944,
+          "remodel_paid": 0.0,
+          "signal_paid": 0.007200000000000001,
+          "signal_prox": 0.6099287779973177,
+          "age_prox": 57.76602721865435,
+          "M": 15.0
+        }
+      },
+      "fixed_compensation": {
+        "acquire": {
+          "uptake": 5.655976341646092,
+          "E": 63.61174955229339,
+          "remodel_paid": 0.9026164739339465,
+          "signal_paid": 0.036000000000000004,
+          "signal_prox": 0.9373493966299093,
+          "age_prox": 25.322126635743185,
+          "M": 15.0
+        },
+        "hold": {
+          "uptake": 0.6210971788649337,
+          "E": 64.00788668993526,
+          "remodel_paid": 0.0,
+          "signal_paid": 0.007200000000000001,
+          "signal_prox": 1.7988010612142524,
+          "age_prox": 47.52747479754198,
+          "M": 15.0
+        },
+        "change": {
+          "uptake": 0.7489660683791768,
+          "E": 62.45497148181211,
+          "remodel_paid": 1.1717318390841418,
+          "signal_paid": 0.036000000000000004,
+          "signal_prox": 0.5892592553374771,
+          "age_prox": 80.30516440069121,
+          "M": 15.0
+        },
+        "hold_change": {
+          "uptake": 0.24692559662808902,
+          "E": 62.477026968481944,
+          "remodel_paid": 0.0,
+          "signal_paid": 0.007200000000000001,
+          "signal_prox": 0.6099287779973177,
+          "age_prox": 57.76602721865435,
+          "M": 15.0
+        }
+      },
+      "global_diagnostic": {
+        "acquire": {
+          "uptake": 5.658687289698699,
+          "E": 63.62252906454999,
+          "remodel_paid": 0.8944997839392481,
+          "signal_paid": 0.036000000000000004,
+          "signal_prox": 0.9373566867492881,
+          "age_prox": 25.321536836968487,
+          "M": 15.0
+        },
+        "hold": {
+          "uptake": 0.6183863755254009,
+          "E": 64.0159427104677,
+          "remodel_paid": 0.0,
+          "signal_paid": 0.007200000000000001,
+          "signal_prox": 1.7968444744691325,
+          "age_prox": 47.55128114235424,
+          "M": 15.0
+        },
+        "change": {
+          "uptake": 0.9192086593114949,
+          "E": 62.57711972851879,
+          "remodel_paid": 1.2275917111337389,
+          "signal_paid": 0.036000000000000004,
+          "signal_prox": 0.653300148292642,
+          "age_prox": 76.61386455696616,
+          "M": 15.0
+        },
+        "hold_change": {
+          "uptake": 0.29213626011661437,
+          "E": 62.64438010806938,
+          "remodel_paid": 0.0,
+          "signal_paid": 0.007200000000000001,
+          "signal_prox": 0.7264661241913535,
+          "age_prox": 58.039103011283906,
+          "M": 15.0
+        }
+      },
+      "no_signal": {
+        "acquire": {
+          "uptake": 5.672641019594242,
+          "E": 63.61485254112424,
+          "remodel_paid": 0.915630671876417,
+          "signal_paid": 0.036000000000000004,
+          "signal_prox": 0.938003448865229,
+          "age_prox": 25.332454231317463,
+          "M": 15.0
+        },
+        "hold": {
+          "uptake": 0.6044285617397219,
+          "E": 63.994230695647936,
+          "remodel_paid": 0.0,
+          "signal_paid": 0.007200000000000001,
+          "signal_prox": 1.779767330626342,
+          "age_prox": 47.772119626636744,
+          "M": 15.0
+        },
+        "change": {
+          "uptake": 1.0767536776915114,
+          "E": 62.92463391359333,
+          "remodel_paid": 1.0164991485186812,
+          "signal_paid": 0.036000000000000004,
+          "signal_prox": 0.7281559143200537,
+          "age_prox": 73.58736363364493,
+          "M": 15.0
+        },
+        "hold_change": {
+          "uptake": 0.28557385523392725,
+          "E": 62.98532782030193,
+          "remodel_paid": 0.0,
+          "signal_paid": 0.007200000000000001,
+          "signal_prox": 0.7518351529643189,
+          "age_prox": 61.20160429534175,
+          "M": 15.0
+        }
+      }
+    },
+    "delay": {
+      "age_aligned": {
+        "acquire": {
+          "uptake": 5.53369881368648,
+          "E": 63.46256522126178,
+          "remodel_paid": 0.9290849091089557,
+          "signal_paid": 0.036000000000000004,
+          "signal_prox": 0.9337948591633712,
+          "age_prox": 25.445012055256473,
+          "M": 15.0
+        },
+        "hold": {
+          "uptake": 0.7432610882857299,
+          "E": 63.98079277383073,
+          "remodel_paid": 0.0,
+          "signal_paid": 0.007200000000000001,
+          "signal_prox": 1.738557452949218,
+          "age_prox": 47.99520319929139,
+          "M": 15.0
+        },
+        "change": {
+          "uptake": 0.7517610309816002,
+          "E": 62.38553120115395,
+          "remodel_paid": 1.2168820676808478,
+          "signal_paid": 0.036000000000000004,
+          "signal_prox": 0.6289196890008236,
+          "age_prox": 78.4441944133726,
+          "M": 15.0
+        },
+        "hold_change": {
+          "uptake": 0.1309600023102896,
+          "E": 62.29153868234093,
+          "remodel_paid": 0.0,
+          "signal_paid": 0.007200000000000001,
+          "signal_prox": 0.4312191187535655,
+          "age_prox": 68.63174216207462,
+          "M": 15.0
+        }
+      },
+      "diffusion": {
+        "acquire": {
+          "uptake": 5.644548087883076,
+          "E": 63.76795948947326,
+          "remodel_paid": 0.734697739790818,
+          "signal_paid": 0.036000000000000004,
+          "signal_prox": 0.9346444900338277,
+          "age_prox": 25.365405174461937,
+          "M": 15.0
+        },
+        "hold": {
+          "uptake": 0.6324368581635794,
+          "E": 64.17532784622432,
+          "remodel_paid": 0.0,
+          "signal_paid": 0.007200000000000001,
+          "signal_prox": 1.714246736192506,
+          "age_prox": 48.49075298326708,
+          "M": 15.0
+        },
+        "change": {
+          "uptake": 1.2397884324974229,
+          "E": 63.041783632142256,
+          "remodel_paid": 1.2430925846947092,
+          "signal_paid": 0.036000000000000004,
+          "signal_prox": 0.7881649459910024,
+          "age_prox": 70.32234230141766,
+          "M": 15.0
+        },
+        "hold_change": {
+          "uptake": 0.28042817661363856,
+          "E": 63.09725276731884,
+          "remodel_paid": 0.0,
+          "signal_paid": 0.007200000000000001,
+          "signal_prox": 0.7941534648924381,
+          "age_prox": 62.05904057359902,
+          "M": 15.0
+        }
+      },
+      "global_diagnostic": {
+        "acquire": {
+          "uptake": 5.643894949661793,
+          "E": 63.7655140904403,
+          "remodel_paid": 0.7364901991710364,
+          "signal_paid": 0.036000000000000004,
+          "signal_prox": 0.9346451583171231,
+          "age_prox": 25.365433284976962,
+          "M": 15.0
+        },
+        "hold": {
+          "uptake": 0.6330900712934177,
+          "E": 64.17353761204451,
+          "remodel_paid": 0.0,
+          "signal_paid": 0.007200000000000001,
+          "signal_prox": 1.7143133758181948,
+          "age_prox": 48.49348585583749,
+          "M": 15.0
+        },
+        "change": {
+          "uptake": 1.3094722840693398,
+          "E": 63.02538142552667,
+          "remodel_paid": 1.327042440446894,
+          "signal_paid": 0.036000000000000004,
+          "signal_prox": 0.8157696738568259,
+          "age_prox": 69.79435158179787,
+          "M": 15.0
+        },
+        "hold_change": {
+          "uptake": 0.32614263395166104,
+          "E": 63.12655382210281,
+          "remodel_paid": 0.0,
+          "signal_paid": 0.007200000000000001,
+          "signal_prox": 0.8565941929198683,
+          "age_prox": 61.69112462541258,
+          "M": 15.0
+        }
+      },
+      "no_signal": {
+        "acquire": {
+          "uptake": 5.823065235294737,
+          "E": 63.840245637571,
+          "remodel_paid": 0.8401874983397531,
+          "signal_paid": 0.036000000000000004,
+          "signal_prox": 0.939537135819438,
+          "age_prox": 25.219988780471155,
+          "M": 15.0
+        },
+        "hold": {
+          "uptake": 0.45395454236448535,
+          "E": 64.0691729663805,
+          "remodel_paid": 0.0,
+          "signal_paid": 0.007200000000000001,
+          "signal_prox": 1.6613339648532381,
+          "age_prox": 49.76498629415542,
+          "M": 15.0
+        },
+        "change": {
+          "uptake": 1.1191890673168226,
+          "E": 62.911292009212865,
+          "remodel_paid": 1.14714493009121,
+          "signal_paid": 0.036000000000000004,
+          "signal_prox": 0.699628388357166,
+          "age_prox": 72.46451651633201,
+          "M": 15.0
+        },
+        "hold_change": {
+          "uptake": 0.24761176609049418,
+          "E": 62.933954044507836,
+          "remodel_paid": 0.0,
+          "signal_paid": 0.007200000000000001,
+          "signal_prox": 0.7242548298140713,
+          "age_prox": 60.35341647308491,
+          "M": 15.0
+        }
+      }
+    },
+    "pacing": {
+      "fast24": {
+        "acquire": {
+          "uptake": 5.575333319510205,
+          "E": 63.693519268111174,
+          "remodel_paid": 0.7401315642117575,
+          "signal_paid": 0.036000000000000004,
+          "signal_prox": 0.9204798562470744,
+          "age_prox": 25.105317116484855,
+          "M": 15.0
+        },
+        "hold": {
+          "uptake": 0.7016853719212165,
+          "E": 64.17029521954362,
+          "remodel_paid": 0.0,
+          "signal_paid": 0.007200000000000001,
+          "signal_prox": 1.7504539019468766,
+          "age_prox": 47.74251203826884,
+          "M": 15.0
+        },
+        "change": {
+          "uptake": 0.9214497638816613,
+          "E": 62.692106553968905,
+          "remodel_paid": 1.2690664241816234,
+          "signal_paid": 0.036000000000000004,
+          "signal_prox": 0.6778404874431233,
+          "age_prox": 77.73495905474722,
+          "M": 15.0
+        },
+        "hold_change": {
+          "uptake": 0.25236794413903735,
+          "E": 62.719546894623626,
+          "remodel_paid": 0.0,
+          "signal_paid": 0.007200000000000001,
+          "signal_prox": 0.6316339145690675,
+          "age_prox": 60.54505355167303,
+          "M": 15.0
+        }
+      },
+      "slow96": {
+        "acquire": {
+          "uptake": 5.39576886200492,
+          "E": 64.02935813781096,
+          "remodel_paid": 0.22719063380611346,
+          "signal_paid": 0.036000000000000004,
+          "signal_prox": 0.9057686001354147,
+          "age_prox": 24.960311249753047,
+          "M": 15.0
+        },
+        "hold": {
+          "uptake": 0.8811797717446249,
+          "E": 64.68561066159826,
+          "remodel_paid": 0.0,
+          "signal_paid": 0.007200000000000001,
+          "signal_prox": 1.7747413750675667,
+          "age_prox": 47.53710172435523,
+          "M": 15.0
+        },
+        "change": {
+          "uptake": 0.7885726992798371,
+          "E": 64.06440043015395,
+          "remodel_paid": 0.28360749950220243,
+          "signal_paid": 0.036000000000000004,
+          "signal_prox": 0.6642789904640101,
+          "age_prox": 81.96731764674259,
+          "M": 15.0
+        },
+        "hold_change": {
+          "uptake": 0.17920110987645851,
+          "E": 64.01873901029008,
+          "remodel_paid": 0.0,
+          "signal_paid": 0.007200000000000001,
+          "signal_prox": 0.4698461407542074,
+          "age_prox": 66.4500402012874,
+          "M": 15.0
+        }
+      }
+    },
+    "sparse": {
+      "diffusion": {
+        "acquire": {
+          "uptake": 0.6878011064358129,
+          "E": 58.83270642845914,
+          "remodel_paid": 0.7130007227018001,
+          "signal_paid": 0.036000000000000004,
+          "signal_prox": 0.17674838089446113,
+          "age_prox": 27.501206480173547,
+          "M": 15.0
+        },
+        "hold": {
+          "uptake": 0.22571090847358086,
+          "E": 58.833341093483426,
+          "remodel_paid": 0.0,
+          "signal_paid": 0.007200000000000001,
+          "signal_prox": 0.5987955037604419,
+          "age_prox": 55.05653699308788,
+          "M": 15.0
+        },
+        "change": {
+          "uptake": 0.35899583013333447,
+          "E": 56.69277993304178,
+          "remodel_paid": 1.3692473064335744,
+          "signal_paid": 0.036000000000000004,
+          "signal_prox": 0.29315097648686644,
+          "age_prox": 80.62863301614631,
+          "M": 15.0
+        },
+        "hold_change": {
+          "uptake": 0.05759263060476,
+          "E": 56.5254757048126,
+          "remodel_paid": 0.0,
+          "signal_paid": 0.007200000000000001,
+          "signal_prox": 0.2037426166130415,
+          "age_prox": 69.4174600499136,
+          "M": 15.0
+        }
+      },
+      "no_signal": {
+        "acquire": {
+          "uptake": 0.6860503653269893,
+          "E": 58.748021347982764,
+          "remodel_paid": 0.7954868820772126,
+          "signal_paid": 0.036000000000000004,
+          "signal_prox": 0.17605797361239647,
+          "age_prox": 27.513059165615232,
+          "M": 15.0
+        },
+        "hold": {
+          "uptake": 0.22529413453315236,
+          "E": 58.748254027550416,
+          "remodel_paid": 0.0,
+          "signal_paid": 0.007200000000000001,
+          "signal_prox": 0.5984131367816188,
+          "age_prox": 54.97498916977463,
+          "M": 15.0
+        },
+        "change": {
+          "uptake": 0.3691876416878033,
+          "E": 56.717999576178805,
+          "remodel_paid": 1.269241820949069,
+          "signal_paid": 0.036000000000000004,
+          "signal_prox": 0.29576927378039825,
+          "age_prox": 80.03897661087579,
+          "M": 15.0
+        },
+        "hold_change": {
+          "uptake": 0.05724704052030741,
+          "E": 56.55035117896628,
+          "remodel_paid": 0.0,
+          "signal_paid": 0.007200000000000001,
+          "signal_prox": 0.21075345383726865,
+          "age_prox": 70.0020979662683,
+          "M": 15.0
+        }
+      },
+      "global_diagnostic": {
+        "acquire": {
+          "uptake": 0.6881228231312898,
+          "E": 58.77893092482079,
+          "remodel_paid": 0.766865587889522,
+          "signal_paid": 0.036000000000000004,
+          "signal_prox": 0.17696758139300747,
+          "age_prox": 27.505128644989085,
+          "M": 15.0
+        },
+        "hold": {
+          "uptake": 0.22418759980399108,
+          "E": 58.77805574347091,
+          "remodel_paid": 0.0,
+          "signal_paid": 0.007200000000000001,
+          "signal_prox": 0.5983001650105341,
+          "age_prox": 55.06397516380098,
+          "M": 15.0
+        },
+        "change": {
+          "uptake": 0.3553337438451513,
+          "E": 56.63402970103249,
+          "remodel_paid": 1.3689839214006871,
+          "signal_paid": 0.036000000000000004,
+          "signal_prox": 0.28892257049161857,
+          "age_prox": 81.07184434723898,
+          "M": 15.0
+        },
+        "hold_change": {
+          "uptake": 0.06043277649152883,
+          "E": 56.46956016650099,
+          "remodel_paid": 0.0,
+          "signal_paid": 0.007200000000000001,
+          "signal_prox": 0.20699741002389874,
+          "age_prox": 68.78180709616073,
+          "M": 15.0
+        }
+      }
+    }
+  },
+  "checks": {
+    "full_state_compensation_max_error": 0.0,
+    "opportunity_first_proximal_signal_postclock": 56,
+    "opportunity_first_actual_uptake_postclock": 53,
+    "opportunity_actual_proximal_uptake_total": 0.0,
+    "path_hold_pairs": [
+      {
+        "seed": 202610199931,
+        "physical_max": 0.0,
+        "open_signal_end": 0.2292591383482537,
+        "cut_signal_end": 0.13103159060200262,
+        "update_cut_minus_open_U": -1.6834629334994133e-06,
+        "update_cut_minus_open_E": -0.0001469398644218245
+      },
+      {
+        "seed": 202610199932,
+        "physical_max": 0.0,
+        "open_signal_end": 0.22654139011365682,
+        "cut_signal_end": 0.12017332776734217,
+        "update_cut_minus_open_U": 6.541778043711588e-07,
+        "update_cut_minus_open_E": -0.01377827357218564
+      },
+      {
+        "seed": 202610199933,
+        "physical_max": 0.0,
+        "open_signal_end": 0.28092748003219103,
+        "cut_signal_end": 0.17351626713765045,
+        "update_cut_minus_open_U": -8.862939679943338e-07,
+        "update_cut_minus_open_E": -0.0068255657481159915
+      }
+    ],
+    "maximum_chemical_residual": 3.404221349256886e-14,
+    "minimum_mass": 15.0
+  },
+  "action_pairs": [
+    {
+      "seed": 202610199941,
+      "resource_x_host_only": 5.4,
+      "plus_minus_uptake": 0.44420146907374214,
+      "plus_minus_E": 0.5922338016281188,
+      "plus_minus_proximal_signal": 0.04811587292148389
+    },
+    {
+      "seed": 202610199941,
+      "resource_x_host_only": 4.7,
+      "plus_minus_uptake": -0.41614418148832755,
+      "plus_minus_E": -0.26811184893394113,
+      "plus_minus_proximal_signal": -0.0618174538491687
+    },
+    {
+      "seed": 202610199942,
+      "resource_x_host_only": 5.4,
+      "plus_minus_uptake": 0.4467888324049629,
+      "plus_minus_E": 0.5952927679873596,
+      "plus_minus_proximal_signal": 0.05508492603590942
+    },
+    {
+      "seed": 202610199942,
+      "resource_x_host_only": 4.7,
+      "plus_minus_uptake": -0.4201545709009489,
+      "plus_minus_E": -0.2716506353185508,
+      "plus_minus_proximal_signal": -0.05919572356170688
+    },
+    {
+      "seed": 202610199943,
+      "resource_x_host_only": 5.4,
+      "plus_minus_uptake": 0.45451277456332617,
+      "plus_minus_E": 0.606822648671347,
+      "plus_minus_proximal_signal": 0.053998936296323796
+    },
+    {
+      "seed": 202610199943,
+      "resource_x_host_only": 4.7,
+      "plus_minus_uptake": -0.4297070545403203,
+      "plus_minus_E": -0.27739718043228834,
+      "plus_minus_proximal_signal": -0.06293075312230001
+    }
+  ],
+  "paired_protocol_effects": [
+    {
+      "batch": "delay",
+      "seed": 202610199931,
+      "stage": "acquire",
+      "contrast": "age_aligned minus diffusion",
+      "uptake": -0.19333575884226306,
+      "E": -0.3970258580575674,
+      "remodel_paid": 0.20367287521589228
+    },
+    {
+      "batch": "delay",
+      "seed": 202610199931,
+      "stage": "hold",
+      "contrast": "age_aligned minus diffusion",
+      "uptake": 0.19330190425763294,
+      "E": -0.20373049423805156,
+      "remodel_paid": 0.0
+    },
+    {
+      "batch": "delay",
+      "seed": 202610199931,
+      "stage": "change",
+      "contrast": "age_aligned minus diffusion",
+      "uptake": -0.4247127015521902,
+      "E": -0.5244705063103936,
+      "remodel_paid": -0.10381641074948811
+    },
+    {
+      "batch": "delay",
+      "seed": 202610199931,
+      "stage": "hold_change",
+      "contrast": "age_aligned minus diffusion",
+      "uptake": -0.16476114194496866,
+      "E": -0.6892206584441567,
+      "remodel_paid": 0.0
+    },
+    {
+      "batch": "delay",
+      "seed": 202610199932,
+      "stage": "acquire",
+      "contrast": "age_aligned minus diffusion",
+      "uptake": -0.12860860097448423,
+      "E": -0.33729970413416765,
+      "remodel_paid": 0.20861524255941477
+    },
+    {
+      "batch": "delay",
+      "seed": 202610199932,
+      "stage": "hold",
+      "contrast": "age_aligned minus diffusion",
+      "uptake": 0.12858052445449486,
+      "E": -0.2086060680723847,
+      "remodel_paid": 0.0
+    },
+    {
+      "batch": "delay",
+      "seed": 202610199932,
+      "stage": "change",
+      "contrast": "age_aligned minus diffusion",
+      "uptake": -0.6136708595690602,
+      "E": -0.851642954143486,
+      "remodel_paid": 0.029452638067467785
+    },
+    {
+      "batch": "delay",
+      "seed": 202610199932,
+      "stage": "hold_change",
+      "contrast": "age_aligned minus diffusion",
+      "uptake": -0.10247114953734524,
+      "E": -0.9540967713437283,
+      "remodel_paid": 0.0
+    },
+    {
+      "batch": "delay",
+      "seed": 202610199933,
+      "stage": "acquire",
+      "contrast": "age_aligned minus diffusion",
+      "uptake": -0.010603462773043582,
+      "E": -0.18185724244269608,
+      "remodel_paid": 0.17087339017910608
+    },
+    {
+      "batch": "delay",
+      "seed": 202610199933,
+      "stage": "hold",
+      "contrast": "age_aligned minus diffusion",
+      "uptake": 0.010590261654323974,
+      "E": -0.1712686548703246,
+      "remodel_paid": 0.0
+    },
+    {
+      "batch": "delay",
+      "seed": 202610199933,
+      "stage": "change",
+      "contrast": "age_aligned minus diffusion",
+      "uptake": -0.4256986434262179,
+      "E": -0.5926438325110155,
+      "remodel_paid": -0.004267778359563712
+    },
+    {
+      "batch": "delay",
+      "seed": 202610199933,
+      "stage": "hold_change",
+      "contrast": "age_aligned minus diffusion",
+      "uptake": -0.18117223142773306,
+      "E": -0.7738248251458586,
+      "remodel_paid": 0.0
+    },
+    {
+      "batch": "pacing",
+      "seed": 202610199951,
+      "stage": "acquire",
+      "contrast": "slow96 minus fast24",
+      "uptake": 0.07158456417311765,
+      "E": 0.5037520745611346,
+      "remodel_paid": -0.4302005277794729
+    },
+    {
+      "batch": "pacing",
+      "seed": 202610199951,
+      "stage": "hold",
+      "contrast": "slow96 minus fast24",
+      "uptake": -0.07164282778631992,
+      "E": 0.43212165764477106,
+      "remodel_paid": 0.0
+    },
+    {
+      "batch": "pacing",
+      "seed": 202610199951,
+      "stage": "change",
+      "contrast": "slow96 minus fast24",
+      "uptake": -0.2566569130852571,
+      "E": 1.1756401817611888,
+      "remodel_paid": -0.9956001154938876
+    },
+    {
+      "batch": "pacing",
+      "seed": 202610199951,
+      "stage": "hold_change",
+      "contrast": "slow96 minus fast24",
+      "uptake": -0.16832696087947602,
+      "E": 1.0074307008258998,
+      "remodel_paid": 0.0
+    },
+    {
+      "batch": "pacing",
+      "seed": 202610199952,
+      "stage": "acquire",
+      "contrast": "slow96 minus fast24",
+      "uptake": -0.04637067407051809,
+      "E": 0.5346459372170926,
+      "remodel_paid": -0.5786952082806306
+    },
+    {
+      "batch": "pacing",
+      "seed": 202610199952,
+      "stage": "hold",
+      "contrast": "slow96 minus fast24",
+      "uptake": 0.04640169251155618,
+      "E": 0.5809732403254628,
+      "remodel_paid": 0.0
+    },
+    {
+      "batch": "pacing",
+      "seed": 202610199952,
+      "stage": "change",
+      "contrast": "slow96 minus fast24",
+      "uptake": 0.26959669781158824,
+      "E": 1.7357470676151436,
+      "remodel_paid": -0.8808084634758111
+    },
+    {
+      "batch": "pacing",
+      "seed": 202610199952,
+      "stage": "hold_change",
+      "contrast": "slow96 minus fast24",
+      "uptake": 0.006954403628228634,
+      "E": 1.7427053305027016,
+      "remodel_paid": 0.0
+    },
+    {
+      "batch": "pacing",
+      "seed": 202610199953,
+      "stage": "acquire",
+      "contrast": "slow96 minus fast24",
+      "uptake": -0.5639072626184554,
+      "E": -0.030881402678886616,
+      "remodel_paid": -0.5299270551568285
+    },
+    {
+      "batch": "pacing",
+      "seed": 202610199953,
+      "stage": "hold",
+      "contrast": "slow96 minus fast24",
+      "uptake": 0.5637243347449892,
+      "E": 0.5328514281936947,
+      "remodel_paid": 0.0
+    },
+    {
+      "batch": "pacing",
+      "seed": 202610199953,
+      "stage": "change",
+      "contrast": "slow96 minus fast24",
+      "uptake": -0.411570978531804,
+      "E": 1.2054943791787807,
+      "remodel_paid": -1.0799681950685642
+    },
+    {
+      "batch": "pacing",
+      "seed": 202610199953,
+      "stage": "hold_change",
+      "contrast": "slow96 minus fast24",
+      "uptake": -0.05812794553648931,
+      "E": 1.1474403156707496,
+      "remodel_paid": 0.0
+    }
+  ],
+  "sparse_stages": [
+    {
+      "seed": 202610199961,
+      "arm": "diffusion",
+      "stage": "acquire",
+      "uptake": 0.5748243722916503,
+      "E": 58.54502933413381,
+      "remodel_paid": 0.887711913493404,
+      "signal_paid": 0.036000000000000004
+    },
+    {
+      "seed": 202610199961,
+      "arm": "diffusion",
+      "stage": "hold",
+      "uptake": 0.2669132286117678,
+      "E": 58.58707309839648,
+      "remodel_paid": 0.0,
+      "signal_paid": 0.007200000000000001
+    },
+    {
+      "seed": 202610199961,
+      "arm": "diffusion",
+      "stage": "change",
+      "uptake": 0.4286397693300833,
+      "E": 56.809944170219495,
+      "remodel_paid": 1.075895441294975,
+      "signal_paid": 0.036000000000000004
+    },
+    {
+      "seed": 202610199961,
+      "arm": "diffusion",
+      "stage": "hold_change",
+      "uptake": 0.08316427954156592,
+      "E": 56.66818856373035,
+      "remodel_paid": 0.0,
+      "signal_paid": 0.007200000000000001
+    },
+    {
+      "seed": 202610199961,
+      "arm": "global_diagnostic",
+      "stage": "acquire",
+      "uptake": 0.5733277425909713,
+      "E": 58.43883843705632,
+      "remodel_paid": 0.9920891068922169,
+      "signal_paid": 0.036000000000000004
+    },
+    {
+      "seed": 202610199961,
+      "arm": "global_diagnostic",
+      "stage": "hold",
+      "uptake": 0.2657660078915882,
+      "E": 58.479738370780666,
+      "remodel_paid": 0.0,
+      "signal_paid": 0.007200000000000001
+    },
+    {
+      "seed": 202610199961,
+      "arm": "global_diagnostic",
+      "stage": "change",
+      "uptake": 0.4024804771306295,
+      "E": 56.618453036693374,
+      "remodel_paid": 1.1338151618470953,
+      "signal_paid": 0.036000000000000004
+    },
+    {
+      "seed": 202610199961,
+      "arm": "global_diagnostic",
+      "stage": "hold_change",
+      "uptake": 0.08070567969418466,
+      "E": 56.47422526805793,
+      "remodel_paid": 0.0,
+      "signal_paid": 0.007200000000000001
+    },
+    {
+      "seed": 202610199961,
+      "arm": "no_signal",
+      "stage": "acquire",
+      "uptake": 0.5774217910584558,
+      "E": 58.44292691338104,
+      "remodel_paid": 0.9917580797181934,
+      "signal_paid": 0.036000000000000004
+    },
+    {
+      "seed": 202610199961,
+      "arm": "no_signal",
+      "stage": "hold",
+      "uptake": 0.2710078860489356,
+      "E": 58.48906404761352,
+      "remodel_paid": 0.0,
+      "signal_paid": 0.007200000000000001
+    },
+    {
+      "seed": 202610199961,
+      "arm": "no_signal",
+      "stage": "change",
+      "uptake": 0.43405728468849514,
+      "E": 56.79389372419122,
+      "remodel_paid": 0.9993007509503057,
+      "signal_paid": 0.036000000000000004
+    },
+    {
+      "seed": 202610199961,
+      "arm": "no_signal",
+      "stage": "hold_change",
+      "uptake": 0.08271084906823839,
+      "E": 56.65168662907551,
+      "remodel_paid": 0.0,
+      "signal_paid": 0.007200000000000001
+    },
+    {
+      "seed": 202610199962,
+      "arm": "diffusion",
+      "stage": "acquire",
+      "uptake": 0.6746087534595007,
+      "E": 58.91113118881336,
+      "remodel_paid": 0.6219462163863443,
+      "signal_paid": 0.036000000000000004
+    },
+    {
+      "seed": 202610199962,
+      "arm": "diffusion",
+      "stage": "hold",
+      "uptake": 0.045927336054696934,
+      "E": 58.73196275924522,
+      "remodel_paid": 0.0,
+      "signal_paid": 0.007200000000000001
+    },
+    {
+      "seed": 202610199962,
+      "arm": "diffusion",
+      "stage": "change",
+      "uptake": 0.32405829091425636,
+      "E": 56.42447359180792,
+      "remodel_paid": 1.500691955844831,
+      "signal_paid": 0.036000000000000004
+    },
+    {
+      "seed": 202610199962,
+      "arm": "diffusion",
+      "stage": "hold_change",
+      "uptake": 0.053973856952116754,
+      "E": 56.253566424412654,
+      "remodel_paid": 0.0,
+      "signal_paid": 0.007200000000000001
+    },
+    {
+      "seed": 202610199962,
+      "arm": "global_diagnostic",
+      "stage": "acquire",
+      "uptake": 0.6824479706432205,
+      "E": 58.9355120447005,
+      "remodel_paid": 0.6051368221450947,
+      "signal_paid": 0.036000000000000004
+    },
+    {
+      "seed": 202610199962,
+      "arm": "global_diagnostic",
+      "stage": "hold",
+      "uptake": 0.046782476862713,
+      "E": 58.75716071526683,
+      "remodel_paid": 0.0,
+      "signal_paid": 0.007200000000000001
+    },
+    {
+      "seed": 202610199962,
+      "arm": "global_diagnostic",
+      "stage": "change",
+      "uptake": 0.3520551176292851,
+      "E": 56.51942533805388,
+      "remodel_paid": 1.458949869495045,
+      "signal_paid": 0.036000000000000004
+    },
+    {
+      "seed": 202610199962,
+      "arm": "global_diagnostic",
+      "stage": "hold_change",
+      "uptake": 0.06069654316251789,
+      "E": 56.3552291960467,
+      "remodel_paid": 0.0,
+      "signal_paid": 0.007200000000000001
+    },
+    {
+      "seed": 202610199962,
+      "arm": "no_signal",
+      "stage": "acquire",
+      "uptake": 0.6783175029837797,
+      "E": 58.8864747647647,
+      "remodel_paid": 0.6498011085585749,
+      "signal_paid": 0.036000000000000004
+    },
+    {
+      "seed": 202610199962,
+      "arm": "no_signal",
+      "stage": "hold",
+      "uptake": 0.04632780547792776,
+      "E": 58.707649856238206,
+      "remodel_paid": 0.0,
+      "signal_paid": 0.007200000000000001
+    },
+    {
+      "seed": 202610199962,
+      "arm": "no_signal",
+      "stage": "change",
+      "uptake": 0.34286608773036076,
+      "E": 56.57639540054069,
+      "remodel_paid": 1.3436129841025557,
+      "signal_paid": 0.036000000000000004
+    },
+    {
+      "seed": 202610199962,
+      "arm": "no_signal",
+      "stage": "hold_change",
+      "uptake": 0.05582584609855967,
+      "E": 56.4073375932334,
+      "remodel_paid": 0.0,
+      "signal_paid": 0.007200000000000001
+    },
+    {
+      "seed": 202610199963,
+      "arm": "diffusion",
+      "stage": "acquire",
+      "uptake": 0.8139701935562879,
+      "E": 59.041958762430255,
+      "remodel_paid": 0.6293440382256522,
+      "signal_paid": 0.036000000000000004
+    },
+    {
+      "seed": 202610199963,
+      "arm": "diffusion",
+      "stage": "hold",
+      "uptake": 0.3642921607542778,
+      "E": 59.18098742280859,
+      "remodel_paid": 0.0,
+      "signal_paid": 0.007200000000000001
+    },
+    {
+      "seed": 202610199963,
+      "arm": "diffusion",
+      "stage": "change",
+      "uptake": 0.32428943015566386,
+      "E": 56.84392203709792,
+      "remodel_paid": 1.531154522160917,
+      "signal_paid": 0.036000000000000004
+    },
+    {
+      "seed": 202610199963,
+      "arm": "diffusion",
+      "stage": "hold_change",
+      "uptake": 0.03563975532059731,
+      "E": 56.6546721262948,
+      "remodel_paid": 0.0,
+      "signal_paid": 0.007200000000000001
+    },
+    {
+      "seed": 202610199963,
+      "arm": "global_diagnostic",
+      "stage": "acquire",
+      "uptake": 0.8085927561596779,
+      "E": 58.96244229270556,
+      "remodel_paid": 0.7033708346312545,
+      "signal_paid": 0.036000000000000004
+    },
+    {
+      "seed": 202610199963,
+      "arm": "global_diagnostic",
+      "stage": "hold",
+      "uptake": 0.3600143146576721,
+      "E": 59.09726814436526,
+      "remodel_paid": 0.0,
+      "signal_paid": 0.007200000000000001
+    },
+    {
+      "seed": 202610199963,
+      "arm": "global_diagnostic",
+      "stage": "change",
+      "uptake": 0.3114656367755393,
+      "E": 56.76421072835022,
+      "remodel_paid": 1.514186732859921,
+      "signal_paid": 0.036000000000000004
+    },
+    {
+      "seed": 202610199963,
+      "arm": "global_diagnostic",
+      "stage": "hold_change",
+      "uptake": 0.03989610661788396,
+      "E": 56.57922603539833,
+      "remodel_paid": 0.0,
+      "signal_paid": 0.007200000000000001
+    },
+    {
+      "seed": 202610199963,
+      "arm": "no_signal",
+      "stage": "acquire",
+      "uptake": 0.802411801938732,
+      "E": 58.91466236580257,
+      "remodel_paid": 0.7449014579548697,
+      "signal_paid": 0.036000000000000004
+    },
+    {
+      "seed": 202610199963,
+      "arm": "no_signal",
+      "stage": "hold",
+      "uptake": 0.35854671207259375,
+      "E": 59.04804817879951,
+      "remodel_paid": 0.0,
+      "signal_paid": 0.007200000000000001
+    },
+    {
+      "seed": 202610199963,
+      "arm": "no_signal",
+      "stage": "change",
+      "uptake": 0.33063955264455425,
+      "E": 56.783709603804496,
+      "remodel_paid": 1.4648117277943453,
+      "signal_paid": 0.036000000000000004
+    },
+    {
+      "seed": 202610199963,
+      "arm": "no_signal",
+      "stage": "hold_change",
+      "uptake": 0.03320442639412416,
+      "E": 56.59202931458992,
+      "remodel_paid": 0.0,
+      "signal_paid": 0.007200000000000001
+    }
+  ],
+  "sparse_checks": [
+    {
+      "seed": 202610199961,
+      "arm": "diffusion",
+      "maximum_distal_energy": 4.244289231891194,
+      "maximum_residual": 2.3849032557837768e-14,
+      "minimum_mass": 15.0
+    },
+    {
+      "seed": 202610199961,
+      "arm": "no_signal",
+      "maximum_distal_energy": 4.242067796667729,
+      "maximum_residual": 2.923350580705253e-14,
+      "minimum_mass": 15.0
+    },
+    {
+      "seed": 202610199961,
+      "arm": "global_diagnostic",
+      "maximum_distal_energy": 4.247339447592941,
+      "maximum_residual": 2.355575587018044e-14,
+      "minimum_mass": 15.0
+    },
+    {
+      "seed": 202610199962,
+      "arm": "diffusion",
+      "maximum_distal_energy": 4.180469777761957,
+      "maximum_residual": 3.121716210183201e-14,
+      "minimum_mass": 15.0
+    },
+    {
+      "seed": 202610199962,
+      "arm": "no_signal",
+      "maximum_distal_energy": 4.179563695074702,
+      "maximum_residual": 3.121716210183201e-14,
+      "minimum_mass": 15.0
+    },
+    {
+      "seed": 202610199962,
+      "arm": "global_diagnostic",
+      "maximum_distal_energy": 4.179783528159914,
+      "maximum_residual": 3.121716210183201e-14,
+      "minimum_mass": 15.0
+    },
+    {
+      "seed": 202610199963,
+      "arm": "diffusion",
+      "maximum_distal_energy": 4.317062884587115,
+      "maximum_residual": 2.665744144522697e-14,
+      "minimum_mass": 15.0
+    },
+    {
+      "seed": 202610199963,
+      "arm": "no_signal",
+      "maximum_distal_energy": 4.306094436953649,
+      "maximum_residual": 3.064735965008225e-14,
+      "minimum_mass": 15.0
+    },
+    {
+      "seed": 202610199963,
+      "arm": "global_diagnostic",
+      "maximum_distal_energy": 4.313875270705537,
+      "maximum_residual": 2.223563130496209e-14,
+      "minimum_mass": 15.0
+    }
+  ],
+  "ledger_accounts": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/29e08413-cd1d-4681-9b38-04c53b79f7e7/raw/202610199921_fixed_compensation/ledger.json",
+      "steps": 576,
+      "totals": {
+        "uptake": 7.272965185518291,
+        "local_uptake": 0.0,
+        "remodel_paid": 2.0743483130180884,
+        "movement": 0.04318990401684151,
+        "basal": 2.5919999999999996,
+        "signal_paid": 0.0864,
+        "remodel_release": 1.0173724710483765,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 62.477026968481944,
+      "final_mass": 15.0,
+      "max_chemical_residual": 2.9060900821192837e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/29e08413-cd1d-4681-9b38-04c53b79f7e7/raw/202610199921_diffusion/ledger.json",
+      "steps": 576,
+      "totals": {
+        "uptake": 7.272965185518291,
+        "local_uptake": 0.0,
+        "remodel_paid": 2.0743483130180884,
+        "movement": 0.04318990401684151,
+        "basal": 2.5919999999999996,
+        "signal_paid": 0.0864,
+        "remodel_release": 1.0173724710483765,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 62.477026968481944,
+      "final_mass": 15.0,
+      "max_chemical_residual": 2.9060900821192837e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/29e08413-cd1d-4681-9b38-04c53b79f7e7/raw/202610199921_global_diagnostic/ledger.json",
+      "steps": 576,
+      "totals": {
+        "uptake": 7.488418584652209,
+        "local_uptake": 0.0,
+        "remodel_paid": 2.1220914950729868,
+        "movement": 0.04354698150845959,
+        "basal": 2.5919999999999996,
+        "signal_paid": 0.0864,
+        "remodel_release": 1.059677003176354,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 62.64438010806938,
+      "final_mass": 15.0,
+      "max_chemical_residual": 2.9060900821192837e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/29e08413-cd1d-4681-9b38-04c53b79f7e7/raw/202610199921_no_signal/ledger.json",
+      "steps": 576,
+      "totals": {
+        "uptake": 7.639397114259403,
+        "local_uptake": 0.0,
+        "remodel_paid": 1.932129820395098,
+        "movement": 0.04353947356107445,
+        "basal": 2.5919999999999996,
+        "signal_paid": 0.0864,
+        "remodel_release": 0.9056459391296663,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 62.98532782030193,
+      "final_mass": 15.0,
+      "max_chemical_residual": 2.9060900821192837e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b7032a3a-31c6-4965-a20d-b1e0aa4a9c87/raw/202610199932_diffusion/ledger.json",
+      "steps": 576,
+      "totals": {
+        "uptake": 7.7543744778039905,
+        "local_uptake": 0.0,
+        "remodel_paid": 1.8664964818079024,
+        "movement": 0.043121328925588884,
+        "basal": 2.5919999999999996,
+        "signal_paid": 0.0864,
+        "remodel_release": 1.0989241600675808,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 63.166356667069174,
+      "final_mass": 15.0,
+      "max_chemical_residual": 2.3951327032811776e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b7032a3a-31c6-4965-a20d-b1e0aa4a9c87/raw/202610199931_no_signal/ledger.json",
+      "steps": 576,
+      "totals": {
+        "uptake": 7.524635596780502,
+        "local_uptake": 0.0,
+        "remodel_paid": 1.9907140146631939,
+        "movement": 0.0441427423721523,
+        "basal": 2.5919999999999996,
+        "signal_paid": 0.0864,
+        "remodel_release": 0.7885719776708146,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 62.81137883974377,
+      "final_mass": 15.0,
+      "max_chemical_residual": 2.968111867396317e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b7032a3a-31c6-4965-a20d-b1e0aa4a9c87/raw/202610199931_diffusion/ledger.json",
+      "steps": 576,
+      "totals": {
+        "uptake": 7.662936252335935,
+        "local_uptake": 0.0,
+        "remodel_paid": 2.0015551841573394,
+        "movement": 0.043793902608418894,
+        "basal": 2.5919999999999996,
+        "signal_paid": 0.0864,
+        "remodel_release": 0.9237642560174867,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 62.93918716556883,
+      "final_mass": 15.0,
+      "max_chemical_residual": 2.6950663922775675e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b7032a3a-31c6-4965-a20d-b1e0aa4a9c87/raw/202610199931_age_aligned/ledger.json",
+      "steps": 576,
+      "totals": {
+        "uptake": 7.0734285542541455,
+        "local_uptake": 0.0,
+        "remodel_paid": 2.1014116486237433,
+        "movement": 0.043650398504312064,
+        "basal": 2.5919999999999996,
+        "signal_paid": 0.0864,
+        "remodel_release": 0.9156284648236153,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 62.249966507124675,
+      "final_mass": 15.0,
+      "max_chemical_residual": 2.566002965664893e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b7032a3a-31c6-4965-a20d-b1e0aa4a9c87/raw/202610199933_diffusion/ledger.json",
+      "steps": 576,
+      "totals": {
+        "uptake": 7.974293935333228,
+        "local_uptake": 0.0,
+        "remodel_paid": 2.0653193074913396,
+        "movement": 0.044360158522070946,
+        "basal": 2.5919999999999996,
+        "signal_paid": 0.0864,
+        "remodel_release": 1.1800706671161136,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 63.18621446931852,
+      "final_mass": 15.0,
+      "max_chemical_residual": 2.6032995203983944e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b7032a3a-31c6-4965-a20d-b1e0aa4a9c87/raw/202610199933_global_diagnostic/ledger.json",
+      "steps": 576,
+      "totals": {
+        "uptake": 8.210730966717726,
+        "local_uptake": 0.0,
+        "remodel_paid": 2.1194013156157623,
+        "movement": 0.04471554992771608,
+        "basal": 2.5919999999999996,
+        "signal_paid": 0.0864,
+        "remodel_release": 1.2472627187060734,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 63.36821410117299,
+      "final_mass": 15.0,
+      "max_chemical_residual": 2.7325364193586665e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b7032a3a-31c6-4965-a20d-b1e0aa4a9c87/raw/202610199933_age_aligned/ledger.json",
+      "steps": 576,
+      "totals": {
+        "uptake": 7.367409859360557,
+        "local_uptake": 0.0,
+        "remodel_paid": 2.2319249193108823,
+        "movement": 0.04469529587565606,
+        "basal": 2.5919999999999996,
+        "signal_paid": 0.0864,
+        "remodel_release": 1.2126170354142936,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 62.41238964417266,
+      "final_mass": 15.0,
+      "max_chemical_residual": 2.680061034210368e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b7032a3a-31c6-4965-a20d-b1e0aa4a9c87/raw/202610199931_global_diagnostic/ledger.json",
+      "steps": 576,
+      "totals": {
+        "uptake": 7.91848308891855,
+        "local_uptake": 0.0,
+        "remodel_paid": 2.0618072853301235,
+        "movement": 0.044142661698707536,
+        "basal": 2.5919999999999996,
+        "signal_paid": 0.0864,
+        "remodel_release": 0.991756785458042,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 63.13413314188839,
+      "final_mass": 15.0,
+      "max_chemical_residual": 2.576411306520754e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b7032a3a-31c6-4965-a20d-b1e0aa4a9c87/raw/202610199933_no_signal/ledger.json",
+      "steps": 576,
+      "totals": {
+        "uptake": 7.433933495237162,
+        "local_uptake": 0.0,
+        "remodel_paid": 2.1485607656255192,
+        "movement": 0.044613789936396656,
+        "basal": 2.5919999999999996,
+        "signal_paid": 0.0864,
+        "remodel_release": 1.0887419958192397,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 62.56235893967385,
+      "final_mass": 15.0,
+      "max_chemical_residual": 2.6516983053781473e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b7032a3a-31c6-4965-a20d-b1e0aa4a9c87/raw/202610199932_no_signal/ledger.json",
+      "steps": 576,
+      "totals": {
+        "uptake": 7.972892741181957,
+        "local_uptake": 0.0,
+        "remodel_paid": 1.8227225050041762,
+        "movement": 0.04364588207063548,
+        "basal": 2.5919999999999996,
+        "signal_paid": 0.0864,
+        "remodel_release": 0.9550950156894442,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 63.42812435410588,
+      "final_mass": 15.0,
+      "max_chemical_residual": 3.061006309534875e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b7032a3a-31c6-4965-a20d-b1e0aa4a9c87/raw/202610199932_age_aligned/ledger.json",
+      "steps": 576,
+      "totals": {
+        "uptake": 7.038204392177596,
+        "local_uptake": 0.0,
+        "remodel_paid": 2.1045643624347847,
+        "movement": 0.04298013401592794,
+        "basal": 2.5919999999999996,
+        "signal_paid": 0.0864,
+        "remodel_release": 1.069586687631241,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 62.212259895725445,
+      "final_mass": 15.0,
+      "max_chemical_residual": 2.8341044788771086e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b7032a3a-31c6-4965-a20d-b1e0aa4a9c87/raw/202610199932_global_diagnostic/ledger.json",
+      "steps": 576,
+      "totals": {
+        "uptake": 7.6085857612923595,
+        "local_uptake": 0.0,
+        "remodel_paid": 2.009389317907905,
+        "movement": 0.04348222013603896,
+        "basal": 2.5919999999999996,
+        "signal_paid": 0.0864,
+        "remodel_release": 1.1647594386081204,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 62.877314223247055,
+      "final_mass": 15.0,
+      "max_chemical_residual": 2.7346180875298387e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/df578238-aea6-4a00-a0f4-b8349ff6cac4/raw/202610199931_cut_update/ledger.json",
+      "steps": 96,
+      "totals": {
+        "uptake": 0.09143465113757987,
+        "local_uptake": 0.0,
+        "remodel_paid": 0.39418196743691347,
+        "movement": 0.005415302601162393,
+        "basal": 0.43199999999999994,
+        "signal_paid": 0.014400000000000001,
+        "remodel_release": 0.23885335498807816,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 62.184624546668175,
+      "final_mass": 15.0,
+      "max_chemical_residual": 2.2195353194254253e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/df578238-aea6-4a00-a0f4-b8349ff6cac4/raw/202610199932_open_update/ledger.json",
+      "steps": 96,
+      "totals": {
+        "uptake": 0.0914446750547313,
+        "local_uptake": 0.0,
+        "remodel_paid": 0.5817096708142555,
+        "movement": 0.005986384238461342,
+        "basal": 0.43199999999999994,
+        "signal_paid": 0.014400000000000001,
+        "remodel_release": 0.3700806373624245,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 62.22370528707104,
+      "final_mass": 15.0,
+      "max_chemical_residual": 1.847220293393903e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/df578238-aea6-4a00-a0f4-b8349ff6cac4/raw/202610199933_cut_update/ledger.json",
+      "steps": 96,
+      "totals": {
+        "uptake": 0.0914516975750379,
+        "local_uptake": 0.0,
+        "remodel_paid": 0.39484834752489567,
+        "movement": 0.005472528623740397,
+        "basal": 0.43199999999999994,
+        "signal_paid": 0.014400000000000001,
+        "remodel_release": 0.20177469286432012,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 62.43094529074482,
+      "final_mass": 15.0,
+      "max_chemical_residual": 1.7053632811458996e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/df578238-aea6-4a00-a0f4-b8349ff6cac4/raw/202610199932_open_hold/ledger.json",
+      "steps": 96,
+      "totals": {
+        "uptake": 0.09145243458744101,
+        "local_uptake": 0.0,
+        "remodel_paid": 0.0,
+        "movement": 0.0033489611401492556,
+        "basal": 0.43199999999999994,
+        "signal_paid": 0.014400000000000001,
+        "remodel_release": 0.0,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 62.80806014051632,
+      "final_mass": 15.0,
+      "max_chemical_residual": 1.9745489965306007e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/df578238-aea6-4a00-a0f4-b8349ff6cac4/raw/202610199931_open_update/ledger.json",
+      "steps": 96,
+      "totals": {
+        "uptake": 0.09143633460051337,
+        "local_uptake": 0.0,
+        "remodel_paid": 0.3940496385075467,
+        "movement": 0.0054023751290309015,
+        "basal": 0.43199999999999994,
+        "signal_paid": 0.014400000000000001,
+        "remodel_release": 0.22754401844042246,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 62.1847714865326,
+      "final_mass": 15.0,
+      "max_chemical_residual": 1.5512764683922597e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/df578238-aea6-4a00-a0f4-b8349ff6cac4/raw/202610199932_cut_hold/ledger.json",
+      "steps": 96,
+      "totals": {
+        "uptake": 0.09145243458744101,
+        "local_uptake": 0.0,
+        "remodel_paid": 0.0,
+        "movement": 0.0033489611401492556,
+        "basal": 0.43199999999999994,
+        "signal_paid": 0.014400000000000001,
+        "remodel_release": 0.0,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 62.80806014051632,
+      "final_mass": 15.0,
+      "max_chemical_residual": 1.9745489965306007e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/df578238-aea6-4a00-a0f4-b8349ff6cac4/raw/202610199931_open_hold/ledger.json",
+      "steps": 96,
+      "totals": {
+        "uptake": 0.09143879598940163,
+        "local_uptake": 0.0,
+        "remodel_paid": 0.0,
+        "movement": 0.0033293690695365644,
+        "basal": 0.43199999999999994,
+        "signal_paid": 0.014400000000000001,
+        "remodel_release": 0.0,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 62.580896592488536,
+      "final_mass": 15.0,
+      "max_chemical_residual": 2.4885041943756292e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/df578238-aea6-4a00-a0f4-b8349ff6cac4/raw/202610199933_open_update/ledger.json",
+      "steps": 96,
+      "totals": {
+        "uptake": 0.0914525838690059,
+        "local_uptake": 0.0,
+        "remodel_paid": 0.3880372084861002,
+        "movement": 0.00545898820839444,
+        "basal": 0.43199999999999994,
+        "signal_paid": 0.014400000000000001,
+        "remodel_release": 0.19355991770106495,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 62.43777085649294,
+      "final_mass": 15.0,
+      "max_chemical_residual": 2.0383000842727483e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/df578238-aea6-4a00-a0f4-b8349ff6cac4/raw/202610199931_cut_hold/ledger.json",
+      "steps": 96,
+      "totals": {
+        "uptake": 0.09143879598940163,
+        "local_uptake": 0.0,
+        "remodel_paid": 0.0,
+        "movement": 0.0033293690695365644,
+        "basal": 0.43199999999999994,
+        "signal_paid": 0.014400000000000001,
+        "remodel_release": 0.0,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 62.580896592488536,
+      "final_mass": 15.0,
+      "max_chemical_residual": 2.4885041943756292e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/df578238-aea6-4a00-a0f4-b8349ff6cac4/raw/202610199933_cut_hold/ledger.json",
+      "steps": 96,
+      "totals": {
+        "uptake": 0.09145313399009414,
+        "local_uptake": 0.0,
+        "remodel_paid": 0.0,
+        "movement": 0.0033262948552576325,
+        "basal": 0.43199999999999994,
+        "signal_paid": 0.014400000000000001,
+        "remodel_release": 0.0,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 62.82794130845326,
+      "final_mass": 15.0,
+      "max_chemical_residual": 1.9708193410572505e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/df578238-aea6-4a00-a0f4-b8349ff6cac4/raw/202610199933_open_hold/ledger.json",
+      "steps": 96,
+      "totals": {
+        "uptake": 0.09145313399009414,
+        "local_uptake": 0.0,
+        "remodel_paid": 0.0,
+        "movement": 0.0033262948552576325,
+        "basal": 0.43199999999999994,
+        "signal_paid": 0.014400000000000001,
+        "remodel_release": 0.0,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 62.82794130845326,
+      "final_mass": 15.0,
+      "max_chemical_residual": 1.9708193410572505e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/df578238-aea6-4a00-a0f4-b8349ff6cac4/raw/202610199932_cut_update/ledger.json",
+      "steps": 96,
+      "totals": {
+        "uptake": 0.09144532923253568,
+        "local_uptake": 0.0,
+        "remodel_paid": 0.5954560661133191,
+        "movement": 0.006018916689388656,
+        "basal": 0.43199999999999994,
+        "signal_paid": 0.014400000000000001,
+        "remodel_release": 0.374009060171383,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 62.209927013498856,
+      "final_mass": 15.0,
+      "max_chemical_residual": 1.927104309462635e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9b42efeb-1cd0-4914-8c47-d45ce8cc35b1/raw/202610199941_target4.7_delta0.08/ledger.json",
+      "steps": 96,
+      "totals": {
+        "uptake": 2.3916893644812895,
+        "local_uptake": 0.0,
+        "remodel_paid": 0.0,
+        "movement": 0.0074313356209538195,
+        "basal": 0.43199999999999994,
+        "signal_paid": 0.014400000000000001,
+        "remodel_release": 0.0,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 61.436411494532635,
+      "final_mass": 15.0,
+      "max_chemical_residual": 2.576411306520754e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9b42efeb-1cd0-4914-8c47-d45ce8cc35b1/raw/202610199942_target4.7_delta0.08/ledger.json",
+      "steps": 96,
+      "totals": {
+        "uptake": 2.4328673396023217,
+        "local_uptake": 0.0,
+        "remodel_paid": 0.0,
+        "movement": 0.007434010759143433,
+        "basal": 0.43199999999999994,
+        "signal_paid": 0.014400000000000001,
+        "remodel_release": 0.0,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 61.47782630162675,
+      "final_mass": 15.0,
+      "max_chemical_residual": 2.605207716221969e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9b42efeb-1cd0-4914-8c47-d45ce8cc35b1/raw/202610199942_prefix/ledger.json",
+      "steps": 96,
+      "totals": {
+        "uptake": 0.0,
+        "local_uptake": 0.0,
+        "remodel_paid": 0.0,
+        "movement": 0.01439777907391889,
+        "basal": 0.43199999999999994,
+        "signal_paid": 0.014400000000000001,
+        "remodel_release": 0.0,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 59.539202220925716,
+      "final_mass": 15.0,
+      "max_chemical_residual": 2.2469818974218958e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9b42efeb-1cd0-4914-8c47-d45ce8cc35b1/raw/202610199942_target5.4_delta0.08/ledger.json",
+      "steps": 96,
+      "totals": {
+        "uptake": 3.3121369515135015,
+        "local_uptake": 0.0,
+        "remodel_paid": 0.0,
+        "movement": 0.007434010759143433,
+        "basal": 0.43199999999999994,
+        "signal_paid": 0.014400000000000001,
+        "remodel_release": 0.0,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 62.357095913537925,
+      "final_mass": 15.0,
+      "max_chemical_residual": 2.2898349882893854e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9b42efeb-1cd0-4914-8c47-d45ce8cc35b1/raw/202610199943_prefix/ledger.json",
+      "steps": 96,
+      "totals": {
+        "uptake": 0.0,
+        "local_uptake": 0.0,
+        "remodel_paid": 0.0,
+        "movement": 0.014408924049511907,
+        "basal": 0.43199999999999994,
+        "signal_paid": 0.014400000000000001,
+        "remodel_release": 0.0,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 59.53919107595012,
+      "final_mass": 15.0,
+      "max_chemical_residual": 2.3426518971220167e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9b42efeb-1cd0-4914-8c47-d45ce8cc35b1/raw/202610199943_target4.7_delta0.08/ledger.json",
+      "steps": 96,
+      "totals": {
+        "uptake": 2.506495935618222,
+        "local_uptake": 0.0,
+        "remodel_paid": 0.0,
+        "movement": 0.007446696725155443,
+        "basal": 0.43199999999999994,
+        "signal_paid": 0.014400000000000001,
+        "remodel_release": 0.0,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 61.55338523490532,
+      "final_mass": 15.0,
+      "max_chemical_residual": 2.7564756033271465e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9b42efeb-1cd0-4914-8c47-d45ce8cc35b1/raw/202610199941_prefix/ledger.json",
+      "steps": 96,
+      "totals": {
+        "uptake": 0.0,
+        "local_uptake": 0.0,
+        "remodel_paid": 0.0,
+        "movement": 0.01439583559864969,
+        "basal": 0.43199999999999994,
+        "signal_paid": 0.014400000000000001,
+        "remodel_release": 0.0,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 59.53920416440098,
+      "final_mass": 15.0,
+      "max_chemical_residual": 2.579441651592851e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9b42efeb-1cd0-4914-8c47-d45ce8cc35b1/raw/202610199943_target5.4_delta0.08/ledger.json",
+      "steps": 96,
+      "totals": {
+        "uptake": 3.236235178011594,
+        "local_uptake": 0.0,
+        "remodel_paid": 0.0,
+        "movement": 0.007446696725155443,
+        "basal": 0.43199999999999994,
+        "signal_paid": 0.014400000000000001,
+        "remodel_release": 0.0,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 62.28312447729869,
+      "final_mass": 15.0,
+      "max_chemical_residual": 2.4868995751603507e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9b42efeb-1cd0-4914-8c47-d45ce8cc35b1/raw/202610199943_target4.7_delta-0.08/ledger.json",
+      "steps": 96,
+      "totals": {
+        "uptake": 2.9362029901585425,
+        "local_uptake": 0.0,
+        "remodel_paid": 0.0,
+        "movement": 0.005455535826750595,
+        "basal": 0.43199999999999994,
+        "signal_paid": 0.014400000000000001,
+        "remodel_release": 0.0,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 61.83078241533761,
+      "final_mass": 15.0,
+      "max_chemical_residual": 2.6645352591003757e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9b42efeb-1cd0-4914-8c47-d45ce8cc35b1/raw/202610199942_target4.7_delta-0.08/ledger.json",
+      "steps": 96,
+      "totals": {
+        "uptake": 2.8530219105032706,
+        "local_uptake": 0.0,
+        "remodel_paid": 0.0,
+        "movement": 0.005459652060715588,
+        "basal": 0.43199999999999994,
+        "signal_paid": 0.014400000000000001,
+        "remodel_release": 0.0,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 61.7494769369453,
+      "final_mass": 15.0,
+      "max_chemical_residual": 2.8168439802911394e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9b42efeb-1cd0-4914-8c47-d45ce8cc35b1/raw/202610199942_target5.4_delta-0.08/ledger.json",
+      "steps": 96,
+      "totals": {
+        "uptake": 2.8653481191085386,
+        "local_uptake": 0.0,
+        "remodel_paid": 0.0,
+        "movement": 0.005459652060715588,
+        "basal": 0.43199999999999994,
+        "signal_paid": 0.014400000000000001,
+        "remodel_release": 0.0,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 61.761803145550566,
+      "final_mass": 15.0,
+      "max_chemical_residual": 2.1295465391091284e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9b42efeb-1cd0-4914-8c47-d45ce8cc35b1/raw/202610199941_target5.4_delta0.08/ledger.json",
+      "steps": 96,
+      "totals": {
+        "uptake": 3.3544883007765978,
+        "local_uptake": 0.0,
+        "remodel_paid": 0.0,
+        "movement": 0.0074313356209538195,
+        "basal": 0.43199999999999994,
+        "signal_paid": 0.014400000000000001,
+        "remodel_release": 0.0,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 62.39921043082794,
+      "final_mass": 15.0,
+      "max_chemical_residual": 2.1073420786166253e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9b42efeb-1cd0-4914-8c47-d45ce8cc35b1/raw/202610199941_target4.7_delta-0.08/ledger.json",
+      "steps": 96,
+      "totals": {
+        "uptake": 2.807833545969617,
+        "local_uptake": 0.0,
+        "remodel_paid": 0.0,
+        "movement": 0.0054587692979278166,
+        "basal": 0.43199999999999994,
+        "signal_paid": 0.014400000000000001,
+        "remodel_release": 0.0,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 61.704523343466576,
+      "final_mass": 15.0,
+      "max_chemical_residual": 2.2273849431542203e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9b42efeb-1cd0-4914-8c47-d45ce8cc35b1/raw/202610199943_target5.4_delta-0.08/ledger.json",
+      "steps": 96,
+      "totals": {
+        "uptake": 2.781722403448268,
+        "local_uptake": 0.0,
+        "remodel_paid": 0.0,
+        "movement": 0.005455535826750595,
+        "basal": 0.43199999999999994,
+        "signal_paid": 0.014400000000000001,
+        "remodel_release": 0.0,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 61.676301828627345,
+      "final_mass": 15.0,
+      "max_chemical_residual": 2.5028590311393373e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9b42efeb-1cd0-4914-8c47-d45ce8cc35b1/raw/202610199941_target5.4_delta-0.08/ledger.json",
+      "steps": 96,
+      "totals": {
+        "uptake": 2.9102868317028556,
+        "local_uptake": 0.0,
+        "remodel_paid": 0.0,
+        "movement": 0.0054587692979278166,
+        "basal": 0.43199999999999994,
+        "signal_paid": 0.014400000000000001,
+        "remodel_release": 0.0,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 61.80697662919982,
+      "final_mass": 15.0,
+      "max_chemical_residual": 1.6910084443821916e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/704ff2af-28cb-41ed-9f0d-965b3c4694bd/raw/202610199953_slow96/ledger.json",
+      "steps": 576,
+      "totals": {
+        "uptake": 7.052602102006207,
+        "local_uptake": 0.0,
+        "remodel_paid": 0.3696683253797253,
+        "movement": 0.03582441163320074,
+        "basal": 2.5919999999999996,
+        "signal_paid": 0.0864,
+        "remodel_release": 0.20703887241938806,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 63.96870936499187,
+      "final_mass": 15.0,
+      "max_chemical_residual": 3.051725538938399e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/704ff2af-28cb-41ed-9f0d-965b3c4694bd/raw/202610199951_fast24/ledger.json",
+      "steps": 576,
+      "totals": {
+        "uptake": 7.119785289457586,
+        "local_uptake": 0.0,
+        "remodel_paid": 1.987052970014147,
+        "movement": 0.04343532492700689,
+        "basal": 2.5919999999999996,
+        "signal_paid": 0.0864,
+        "remodel_release": 1.1644332087315683,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 62.41089699451497,
+      "final_mass": 15.0,
+      "max_chemical_residual": 2.430694534538702e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/704ff2af-28cb-41ed-9f0d-965b3c4694bd/raw/202610199951_slow96/ledger.json",
+      "steps": 576,
+      "totals": {
+        "uptake": 6.694743151879651,
+        "local_uptake": 0.0,
+        "remodel_paid": 0.5612523267407867,
+        "movement": 0.036763129796474725,
+        "basal": 2.5919999999999996,
+        "signal_paid": 0.0864,
+        "remodel_release": 0.2939239652683759,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 63.41832769534087,
+      "final_mass": 15.0,
+      "max_chemical_residual": 3.404221349256886e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/704ff2af-28cb-41ed-9f0d-965b3c4694bd/raw/202610199952_slow96/ledger.json",
+      "steps": 576,
+      "totals": {
+        "uptake": 7.986822074831663,
+        "local_uptake": 0.0,
+        "remodel_paid": 0.6014737478044357,
+        "movement": 0.037768356488405576,
+        "basal": 2.5919999999999996,
+        "signal_paid": 0.0864,
+        "remodel_release": 0.2624127297257315,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 64.6691799705375,
+      "final_mass": 15.0,
+      "max_chemical_residual": 2.7379140621341946e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/704ff2af-28cb-41ed-9f0d-965b3c4694bd/raw/202610199953_fast24/ledger.json",
+      "steps": 576,
+      "totals": {
+        "uptake": 7.522483953947967,
+        "local_uptake": 0.0,
+        "remodel_paid": 1.979563575605118,
+        "movement": 0.04325132902033014,
+        "basal": 2.5919999999999996,
+        "signal_paid": 0.0864,
+        "remodel_release": 1.0688016086838288,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 62.82126904932112,
+      "final_mass": 15.0,
+      "max_chemical_residual": 3.0510316495480083e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/704ff2af-28cb-41ed-9f0d-965b3c4694bd/raw/202610199952_fast24/ledger.json",
+      "steps": 576,
+      "totals": {
+        "uptake": 7.710239954950807,
+        "local_uptake": 0.0,
+        "remodel_paid": 2.0609774195608774,
+        "movement": 0.04438789535375681,
+        "basal": 2.5919999999999996,
+        "signal_paid": 0.0864,
+        "remodel_release": 1.126214492247734,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 62.9264746400348,
+      "final_mass": 15.0,
+      "max_chemical_residual": 2.7249036360643686e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/d4b59280-695b-4ed6-858d-1c6cf7baca76/raw/202610199961_no_signal/ledger.json",
+      "steps": 576,
+      "totals": {
+        "uptake": 1.365197810864125,
+        "local_uptake": 0.0,
+        "remodel_paid": 1.991058830668499,
+        "movement": 0.044052351118496466,
+        "basal": 2.5919999999999996,
+        "signal_paid": 0.0864,
+        "remodel_release": 1.0669197976517348,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 56.65168662907551,
+      "final_mass": 15.0,
+      "max_chemical_residual": 2.923350580705253e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/d4b59280-695b-4ed6-858d-1c6cf7baca76/raw/202610199962_diffusion/ledger.json",
+      "steps": 576,
+      "totals": {
+        "uptake": 1.0985682373805707,
+        "local_uptake": 0.0,
+        "remodel_paid": 2.1226381722311753,
+        "movement": 0.04396364073509825,
+        "basal": 2.5919999999999996,
+        "signal_paid": 0.0864,
+        "remodel_release": 1.2006796163261917,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 56.253566424412654,
+      "final_mass": 15.0,
+      "max_chemical_residual": 3.121716210183201e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/d4b59280-695b-4ed6-858d-1c6cf7baca76/raw/202610199962_global_diagnostic/ledger.json",
+      "steps": 576,
+      "totals": {
+        "uptake": 1.1419821082977364,
+        "local_uptake": 0.0,
+        "remodel_paid": 2.0640866916401395,
+        "movement": 0.04426622060924813,
+        "basal": 2.5919999999999996,
+        "signal_paid": 0.0864,
+        "remodel_release": 1.1438659169012655,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 56.3552291960467,
+      "final_mass": 15.0,
+      "max_chemical_residual": 3.121716210183201e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/d4b59280-695b-4ed6-858d-1c6cf7baca76/raw/202610199961_diffusion/ledger.json",
+      "steps": 576,
+      "totals": {
+        "uptake": 1.3535416497750672,
+        "local_uptake": 0.0,
+        "remodel_paid": 1.963607354788379,
+        "movement": 0.04334573125472173,
+        "basal": 2.5919999999999996,
+        "signal_paid": 0.0864,
+        "remodel_release": 1.093882382580524,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 56.66818856373035,
+      "final_mass": 15.0,
+      "max_chemical_residual": 2.3849032557837768e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/d4b59280-695b-4ed6-858d-1c6cf7baca76/raw/202610199963_diffusion/ledger.json",
+      "steps": 576,
+      "totals": {
+        "uptake": 1.5381915397868269,
+        "local_uptake": 0.0,
+        "remodel_paid": 2.160498560386569,
+        "movement": 0.044620853103941496,
+        "basal": 2.5919999999999996,
+        "signal_paid": 0.0864,
+        "remodel_release": 1.139084803314643,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 56.6546721262948,
+      "final_mass": 15.0,
+      "max_chemical_residual": 2.665744144522697e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/d4b59280-695b-4ed6-858d-1c6cf7baca76/raw/202610199961_global_diagnostic/ledger.json",
+      "steps": 576,
+      "totals": {
+        "uptake": 1.3222799073073737,
+        "local_uptake": 0.0,
+        "remodel_paid": 2.125904268739312,
+        "movement": 0.04375037050850978,
+        "basal": 2.5919999999999996,
+        "signal_paid": 0.0864,
+        "remodel_release": 1.1249551229903814,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 56.47422526805793,
+      "final_mass": 15.0,
+      "max_chemical_residual": 2.355575587018044e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/d4b59280-695b-4ed6-858d-1c6cf7baca76/raw/202610199962_no_signal/ledger.json",
+      "steps": 576,
+      "totals": {
+        "uptake": 1.1233372422906278,
+        "local_uptake": 0.0,
+        "remodel_paid": 1.9934140926611308,
+        "movement": 0.04418555639448715,
+        "basal": 2.5919999999999996,
+        "signal_paid": 0.0864,
+        "remodel_release": 1.045649380027751,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 56.4073375932334,
+      "final_mass": 15.0,
+      "max_chemical_residual": 3.121716210183201e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/d4b59280-695b-4ed6-858d-1c6cf7baca76/raw/202610199963_global_diagnostic/ledger.json",
+      "steps": 576,
+      "totals": {
+        "uptake": 1.5199688142107732,
+        "local_uptake": 0.0,
+        "remodel_paid": 2.2175575674911756,
+        "movement": 0.04478521131973018,
+        "basal": 2.5919999999999996,
+        "signal_paid": 0.0864,
+        "remodel_release": 1.057477849957257,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 56.57922603539833,
+      "final_mass": 15.0,
+      "max_chemical_residual": 2.223563130496209e-14
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/d4b59280-695b-4ed6-858d-1c6cf7baca76/raw/202610199963_no_signal/ledger.json",
+      "steps": 576,
+      "totals": {
+        "uptake": 1.5248024930500041,
+        "local_uptake": 0.0,
+        "remodel_paid": 2.209713185749215,
+        "movement": 0.04465999270932546,
+        "basal": 2.5919999999999996,
+        "signal_paid": 0.0864,
+        "remodel_release": 0.9688246769459766,
+        "bond_break_release": 0.0,
+        "death": 0.0
+      },
+      "final_energy": 56.59202931458992,
+      "final_mass": 15.0,
+      "max_chemical_residual": 3.064735965008225e-14
+    }
+  ],
+  "raw_manifest": "${share_root}/Projects/元胞自动机研究/src/research/results/contact_feedback_reachability_20261019/raw_manifest.json",
+  "new_simulations_or_fits": 0,
+  "table_blocks": 6,
+  "table_rows": 127
+}

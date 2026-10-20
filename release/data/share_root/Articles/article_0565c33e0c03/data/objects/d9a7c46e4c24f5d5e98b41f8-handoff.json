@@ -1,0 +1,85 @@
+{
+  "schema": "anticipatory-material-feasibility-handoff-v1",
+  "job_id": "5063bd49-7b65-4ec3-9338-92f5bd855747",
+  "actual_host_steps": 18592,
+  "worker_seconds": 9.112918,
+  "remaining": {
+    "host_steps": 181408,
+    "cpu_worker_seconds": 590.887082
+  },
+  "core_sha": "4ea2ebf8f3ec025624b30688122dbb3ea7f5717606f9eccb1ea5c4765b726817",
+  "trained_rule": false,
+  "opportunity_present": true,
+  "files": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/anticipatory_material_allocation/__init__.py",
+      "sha256": "eb685731193c01eb458144b0036f9d42c2964dbfd05768d475cd644340d664cb",
+      "bytes": 72
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/anticipatory_material_allocation/analyze.py",
+      "sha256": "333d55b77ce770464f246297938a83f144a4f155d7df6e51e3644db69ce43bcc",
+      "bytes": 11539
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/anticipatory_material_allocation/core.py",
+      "sha256": "4ea2ebf8f3ec025624b30688122dbb3ea7f5717606f9eccb1ea5c4765b726817",
+      "bytes": 11959
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/anticipatory_material_allocation/feasibility.py",
+      "sha256": "b280e88e8a627dd419853d4145fca27113ed566c9334b9cb50694792721e1296",
+      "bytes": 13127
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/anticipatory_material_allocation_20261018/API.txt",
+      "sha256": "30f63964fba46fffb61cb3ebdbd0c783eb15ca9ec0bd8cb3a712f8bc62e0a8b2",
+      "bytes": 1887
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/anticipatory_material_allocation_20261018/REPORT.txt",
+      "sha256": "5820a0afaac5a1b7231a9a099d5f2d3cb119add8052e86fdce814985cd67c69c",
+      "bytes": 3832
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/anticipatory_material_allocation_20261018/actual_preparation.png",
+      "sha256": "e2674e7e357096680feabce84fbf00896c8fc3858da05e84a183b61e17094137",
+      "bytes": 109096
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/anticipatory_material_allocation_20261018/completed_job.json",
+      "sha256": "4d2a97d301620d77aca77abfafed701d4bdbf531941653226156c577ea0e80ba",
+      "bytes": 26440
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/anticipatory_material_allocation_20261018/figure_sources.json",
+      "sha256": "4ede5e208e5ba5dca2a5dc3889d9969ccc8e91daf3d8ac85e9aeb920839c01ef",
+      "bytes": 2766
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/anticipatory_material_allocation_20261018/plan.json",
+      "sha256": "b9ee12445341c12e9e505d107f5f112279e4506645140c432a70a563761b8a6d",
+      "bytes": 2146
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/anticipatory_material_allocation_20261018/raw_manifest.json",
+      "sha256": "7b3dd710b1086d99578d9eee70690274cb36dc8e8235ad0781d55af94aef01de",
+      "bytes": 14232
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/anticipatory_material_allocation_20261018/result.json",
+      "sha256": "22a09098267eed5196fec9d388d67226b20cb4391293a6126e5dcce3b94a10b8",
+      "bytes": 24371
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/anticipatory_material_allocation_20261018/reversal_baselines.png",
+      "sha256": "f4fe7685616430aa8a165362cab043946b287795db1c7c2856c31be8df1d049d",
+      "bytes": 141429
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/anticipatory_material_allocation_20261018/summary.json",
+      "sha256": "73aacafd9ad57fe17c521a202cc324f6baad5b1b1460c21de9b7722dff4e8830",
+      "bytes": 20144
+    }
+  ]
+}

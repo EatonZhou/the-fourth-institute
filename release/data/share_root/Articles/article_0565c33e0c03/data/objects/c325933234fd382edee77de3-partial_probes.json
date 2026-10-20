@@ -1,0 +1,35 @@
+[
+  {
+    "id": "202610197403_0_distractor_fast_delta_life",
+    "tag": "acquisition_retention",
+    "clock": 610,
+    "correct_fraction": 0.5083387524781066,
+    "correct_displacement": -0.00041203660315503043,
+    "contact_mass": 1.0265235459403734e-05,
+    "mean_correct_fraction": 0.5061811377752657,
+    "observed_steps": 34,
+    "planned_steps": 64
+  },
+  {
+    "id": "202610197403_0_distractor_fixed_trace_life",
+    "tag": "acquisition_retention",
+    "clock": 623,
+    "correct_fraction": 0.4032449624440806,
+    "correct_displacement": 0.017799422743731697,
+    "contact_mass": 1.4151282290396306e-06,
+    "mean_correct_fraction": 0.42069688258583227,
+    "observed_steps": 47,
+    "planned_steps": 64
+  },
+  {
+    "id": "202610197404_0_distractor_fixed_trace_life",
+    "tag": "reversal_retention",
+    "clock": 1199,
+    "correct_fraction": 0.3916214331903149,
+    "correct_displacement": 0.009692804563520951,
+    "contact_mass": 1.3208300106764089e-06,
+    "mean_correct_fraction": 0.4248295984915479,
+    "observed_steps": 47,
+    "planned_steps": 64
+  }
+]

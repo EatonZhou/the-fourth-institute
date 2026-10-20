@@ -1,0 +1,1014 @@
+{
+  "schema": "lenia.dual-kernel-projection.v1",
+  "job_id": "4abde81f-62f4-46b0-9672-b1f8108276bd",
+  "publication": {
+    "project_readers": true
+  },
+  "sourceRef": null,
+  "candidates": [
+    {
+      "candidate_id": "dk2026101619-r2-v0",
+      "parent_id": "m2026101607-g2-0161",
+      "parent_kind": "initial_genome_not_experienced_body",
+      "origin": "paired_orbium_source",
+      "outer_generation": 3,
+      "kind": "lifetime",
+      "sourceRef": null,
+      "rule": {
+        "schema": "lenia.fixed-dual-response.v1",
+        "configs": [
+          {
+            "size": 64,
+            "radius": 9.198894039746325,
+            "mu": 0.1203104356754759,
+            "sigma": 0.013121955472950973,
+            "dt": 0.1,
+            "dtype": "float64"
+          },
+          {
+            "size": 64,
+            "radius": 6.439225827822427,
+            "mu": 0.18006772291509276,
+            "sigma": 0.02160348511611349,
+            "dt": 0.1,
+            "dtype": "float64"
+          }
+        ],
+        "weight_second": 0.0,
+        "kernel_definition": "shared normalized polynomial radial kernel",
+        "growth_definition": "G_i(u)=2*max(0,1-(u-mu_i)^2/(9*sigma_i^2))^4-1",
+        "update": "clip(A+dt*((1-w)*G1(K1*A)+w*G2(K2*A)-intensity*A),0,1)",
+        "time_rule": "fixed dt=0.1; fixed lifetime kernels, responses and weight; no internal memory"
+      },
+      "source_frames": [
+        {
+          "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/e5675e43-73f7-42af-b913-392217941cc8/candidates/dk2026101619-r2-v0/screen/trajectory.npz",
+          "lifetime_range": [
+            0,
+            512
+          ]
+        },
+        {
+          "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/025c6b49-fee7-4f7e-a280-b4f4132614c6/candidates/dk2026101619-r2-v0/long/trajectory.npz",
+          "lifetime_range": [
+            512,
+            3072
+          ]
+        }
+      ],
+      "lifetime_range": [
+        0,
+        3072
+      ],
+      "shape": [
+        193,
+        64,
+        64
+      ],
+      "description": "localized_single/moving",
+      "centroid_speed": 0.4993853491507674,
+      "restart": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/025c6b49-fee7-4f7e-a280-b4f4132614c6/candidates/dk2026101619-r2-v0/long/restart.npz",
+      "initial": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/e5675e43-73f7-42af-b913-392217941cc8/candidates/dk2026101619-r2-v0/initial.npz",
+      "static_kernel_fields": [
+        "kernel1",
+        "kernel2"
+      ],
+      "dynamic_fields": [
+        "body"
+      ],
+      "loader": "morphology_evolution.dual_kernel.load_candidate",
+      "combined_frames": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/4abde81f-62f4-46b0-9672-b1f8108276bd/lifetime/dk2026101619-r2-v0/trajectory.npz",
+      "source_frame_jobs": [
+        "e5675e43-73f7-42af-b913-392217941cc8",
+        "025c6b49-fee7-4f7e-a280-b4f4132614c6"
+      ],
+      "environment_branches": [
+        {
+          "kind": "lifetime_environment_branch",
+          "label": "sham",
+          "frames": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/4abde81f-62f4-46b0-9672-b1f8108276bd/candidates/dk2026101619-r2-v0/sham/trajectory.npz",
+          "lifetime_range": [
+            3072,
+            3584
+          ],
+          "parent_lifetime_step": 3072,
+          "intensity_first8": 0.0,
+          "new_outer_generation": false,
+          "metrics": {
+            "mass": 32.73368594128909,
+            "occupied": 90,
+            "center": [
+              -21.78062352805247,
+              9.191892749433386
+            ],
+            "anisotropy": 1.3134711269947594,
+            "compactness": 1.7850446988796074,
+            "fill": 0.3637076215698788,
+            "perimeter_ratio": 11.595018087284057,
+            "components": 1,
+            "mean_activity": 7.543171040547877,
+            "tail_mass_mean": 32.48555788846557,
+            "mass_cv": 0.01134288388538623,
+            "saturation_pixel_fraction": 0.0009765625,
+            "saturation_mass_fraction": 0.12203623088561778,
+            "periodic_spans_yx": [
+              14,
+              14
+            ],
+            "min_tail_concentration": 0.9474132156816106,
+            "centroid_speed": 0.4963265132860765,
+            "extinct_step": null,
+            "lifetime_end": 3584,
+            "morphology": "localized_single",
+            "dynamics": "moving",
+            "classification_limit": "Finite-window density descriptors, not organism/species counts; centroid speed only for coherent localized single states."
+          }
+        },
+        {
+          "kind": "lifetime_environment_branch",
+          "label": "probe",
+          "frames": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/4abde81f-62f4-46b0-9672-b1f8108276bd/candidates/dk2026101619-r2-v0/probe/trajectory.npz",
+          "lifetime_range": [
+            3072,
+            3584
+          ],
+          "parent_lifetime_step": 3072,
+          "intensity_first8": 0.45,
+          "new_outer_generation": false,
+          "metrics": {
+            "mass": 32.91993311401945,
+            "occupied": 93,
+            "center": [
+              -24.062625166132634,
+              9.219906098028911
+            ],
+            "anisotropy": 1.3259672294516742,
+            "compactness": 1.8067995716134184,
+            "fill": 0.353977775419564,
+            "perimeter_ratio": 12.028639658872933,
+            "components": 2,
+            "mean_activity": 7.571120938923961,
+            "tail_mass_mean": 32.46701313875891,
+            "mass_cv": 0.013400929624367026,
+            "saturation_pixel_fraction": 0.000732421875,
+            "saturation_mass_fraction": 0.09113019730657973,
+            "periodic_spans_yx": [
+              15,
+              14
+            ],
+            "min_tail_concentration": 0.9451115059356476,
+            "centroid_speed": null,
+            "extinct_step": null,
+            "lifetime_end": 3584,
+            "morphology": "multiple_bodies",
+            "dynamics": "changing",
+            "classification_limit": "Finite-window density descriptors, not organism/species counts; centroid speed only for coherent localized single states."
+          }
+        }
+      ],
+      "control": "second_off",
+      "phase_initial": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/025c6b49-fee7-4f7e-a280-b4f4132614c6/candidates/dk2026101619-r2-v0/long/initial.npz",
+      "phase_initial_step": 512,
+      "initial_step": 0
+    },
+    {
+      "candidate_id": "dk2026101619-r2-v1",
+      "parent_id": "m2026101607-g2-0161",
+      "parent_kind": "initial_genome_not_experienced_body",
+      "origin": "paired_orbium_source",
+      "outer_generation": 3,
+      "kind": "lifetime",
+      "sourceRef": null,
+      "rule": {
+        "schema": "lenia.fixed-dual-response.v1",
+        "configs": [
+          {
+            "size": 64,
+            "radius": 9.198894039746325,
+            "mu": 0.1203104356754759,
+            "sigma": 0.013121955472950973,
+            "dt": 0.1,
+            "dtype": "float64"
+          },
+          {
+            "size": 64,
+            "radius": 6.439225827822427,
+            "mu": 0.18006772291509276,
+            "sigma": 0.02160348511611349,
+            "dt": 0.1,
+            "dtype": "float64"
+          }
+        ],
+        "weight_second": 0.08,
+        "kernel_definition": "shared normalized polynomial radial kernel",
+        "growth_definition": "G_i(u)=2*max(0,1-(u-mu_i)^2/(9*sigma_i^2))^4-1",
+        "update": "clip(A+dt*((1-w)*G1(K1*A)+w*G2(K2*A)-intensity*A),0,1)",
+        "time_rule": "fixed dt=0.1; fixed lifetime kernels, responses and weight; no internal memory"
+      },
+      "source_frames": [
+        {
+          "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/e5675e43-73f7-42af-b913-392217941cc8/candidates/dk2026101619-r2-v1/screen/trajectory.npz",
+          "lifetime_range": [
+            0,
+            512
+          ]
+        },
+        {
+          "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/025c6b49-fee7-4f7e-a280-b4f4132614c6/candidates/dk2026101619-r2-v1/long/trajectory.npz",
+          "lifetime_range": [
+            512,
+            3072
+          ]
+        }
+      ],
+      "lifetime_range": [
+        0,
+        3072
+      ],
+      "shape": [
+        193,
+        64,
+        64
+      ],
+      "description": "localized_single/moving",
+      "centroid_speed": 0.4466425664388105,
+      "restart": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/025c6b49-fee7-4f7e-a280-b4f4132614c6/candidates/dk2026101619-r2-v1/long/restart.npz",
+      "initial": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/e5675e43-73f7-42af-b913-392217941cc8/candidates/dk2026101619-r2-v1/initial.npz",
+      "static_kernel_fields": [
+        "kernel1",
+        "kernel2"
+      ],
+      "dynamic_fields": [
+        "body"
+      ],
+      "loader": "morphology_evolution.dual_kernel.load_candidate",
+      "combined_frames": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/4abde81f-62f4-46b0-9672-b1f8108276bd/lifetime/dk2026101619-r2-v1/trajectory.npz",
+      "source_frame_jobs": [
+        "e5675e43-73f7-42af-b913-392217941cc8",
+        "025c6b49-fee7-4f7e-a280-b4f4132614c6"
+      ],
+      "environment_branches": [
+        {
+          "kind": "lifetime_environment_branch",
+          "label": "sham",
+          "frames": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/4abde81f-62f4-46b0-9672-b1f8108276bd/candidates/dk2026101619-r2-v1/sham/trajectory.npz",
+          "lifetime_range": [
+            3072,
+            3584
+          ],
+          "parent_lifetime_step": 3072,
+          "intensity_first8": 0.0,
+          "new_outer_generation": false,
+          "metrics": {
+            "mass": 31.42770499609131,
+            "occupied": 86,
+            "center": [
+              26.572201167238862,
+              -25.62492857912125
+            ],
+            "anisotropy": 1.3874677515063643,
+            "compactness": 1.886289090685141,
+            "fill": 0.36543843018710825,
+            "perimeter_ratio": 10.998942866750719,
+            "components": 1,
+            "mean_activity": 6.574517427407651,
+            "tail_mass_mean": 31.527496658673364,
+            "mass_cv": 0.008966716943547249,
+            "saturation_pixel_fraction": 0.001220703125,
+            "saturation_mass_fraction": 0.15826873996287522,
+            "periodic_spans_yx": [
+              13,
+              14
+            ],
+            "min_tail_concentration": 0.9525136135659135,
+            "centroid_speed": 0.445647530203295,
+            "extinct_step": null,
+            "lifetime_end": 3584,
+            "morphology": "localized_single",
+            "dynamics": "moving",
+            "classification_limit": "Finite-window density descriptors, not organism/species counts; centroid speed only for coherent localized single states."
+          }
+        },
+        {
+          "kind": "lifetime_environment_branch",
+          "label": "probe",
+          "frames": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/4abde81f-62f4-46b0-9672-b1f8108276bd/candidates/dk2026101619-r2-v1/probe/trajectory.npz",
+          "lifetime_range": [
+            3072,
+            3584
+          ],
+          "parent_lifetime_step": 3072,
+          "intensity_first8": 0.45,
+          "new_outer_generation": false,
+          "metrics": {
+            "mass": 0.0,
+            "occupied": 0,
+            "center": [
+              0.0,
+              0.0
+            ],
+            "anisotropy": 1.0,
+            "compactness": 0.0,
+            "fill": 0.0,
+            "perimeter_ratio": 0.0,
+            "components": 0,
+            "mean_activity": 0.0,
+            "tail_mass_mean": 0.0,
+            "mass_cv": 0.0,
+            "saturation_pixel_fraction": 0.0,
+            "saturation_mass_fraction": 0.0,
+            "periodic_spans_yx": [
+              0,
+              0
+            ],
+            "min_tail_concentration": 0.0,
+            "centroid_speed": null,
+            "extinct_step": 3105,
+            "lifetime_end": 3584,
+            "morphology": "extinct",
+            "dynamics": "extinct",
+            "classification_limit": "Finite-window density descriptors, not organism/species counts; centroid speed only for coherent localized single states."
+          }
+        }
+      ],
+      "control": null,
+      "phase_initial": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/025c6b49-fee7-4f7e-a280-b4f4132614c6/candidates/dk2026101619-r2-v1/long/initial.npz",
+      "phase_initial_step": 512,
+      "initial_step": 0
+    },
+    {
+      "candidate_id": "dk2026101619-r2-v4",
+      "parent_id": "m2026101607-g2-0161",
+      "parent_kind": "initial_genome_not_experienced_body",
+      "origin": "paired_orbium_source",
+      "outer_generation": 3,
+      "kind": "lifetime",
+      "sourceRef": null,
+      "rule": {
+        "schema": "lenia.fixed-dual-response.v1",
+        "configs": [
+          {
+            "size": 64,
+            "radius": 9.198894039746325,
+            "mu": 0.1203104356754759,
+            "sigma": 0.013121955472950973,
+            "dt": 0.1,
+            "dtype": "float64"
+          },
+          {
+            "size": 64,
+            "radius": 12.878451655644854,
+            "mu": 0.07035510514821972,
+            "sigma": 0.008440799063299363,
+            "dt": 0.1,
+            "dtype": "float64"
+          }
+        ],
+        "weight_second": 0.3,
+        "kernel_definition": "shared normalized polynomial radial kernel",
+        "growth_definition": "G_i(u)=2*max(0,1-(u-mu_i)^2/(9*sigma_i^2))^4-1",
+        "update": "clip(A+dt*((1-w)*G1(K1*A)+w*G2(K2*A)-intensity*A),0,1)",
+        "time_rule": "fixed dt=0.1; fixed lifetime kernels, responses and weight; no internal memory"
+      },
+      "source_frames": [
+        {
+          "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/e5675e43-73f7-42af-b913-392217941cc8/candidates/dk2026101619-r2-v4/screen/trajectory.npz",
+          "lifetime_range": [
+            0,
+            512
+          ]
+        },
+        {
+          "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/025c6b49-fee7-4f7e-a280-b4f4132614c6/candidates/dk2026101619-r2-v4/long/trajectory.npz",
+          "lifetime_range": [
+            512,
+            3072
+          ]
+        }
+      ],
+      "lifetime_range": [
+        0,
+        3072
+      ],
+      "shape": [
+        193,
+        64,
+        64
+      ],
+      "description": "Multi-component transient at512; extinct at2385. Keep failure visible.",
+      "centroid_speed": null,
+      "restart": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/025c6b49-fee7-4f7e-a280-b4f4132614c6/candidates/dk2026101619-r2-v4/long/restart.npz",
+      "initial": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/e5675e43-73f7-42af-b913-392217941cc8/candidates/dk2026101619-r2-v4/initial.npz",
+      "static_kernel_fields": [
+        "kernel1",
+        "kernel2"
+      ],
+      "dynamic_fields": [
+        "body"
+      ],
+      "loader": "morphology_evolution.dual_kernel.load_candidate",
+      "combined_frames": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/4abde81f-62f4-46b0-9672-b1f8108276bd/lifetime/dk2026101619-r2-v4/trajectory.npz",
+      "source_frame_jobs": [
+        "e5675e43-73f7-42af-b913-392217941cc8",
+        "025c6b49-fee7-4f7e-a280-b4f4132614c6"
+      ],
+      "control": null,
+      "phase_initial": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/025c6b49-fee7-4f7e-a280-b4f4132614c6/candidates/dk2026101619-r2-v4/long/initial.npz",
+      "phase_initial_step": 512,
+      "initial_step": 0
+    },
+    {
+      "candidate_id": "dk2026101619-r2-v5",
+      "parent_id": "m2026101607-g2-0161",
+      "parent_kind": "initial_genome_not_experienced_body",
+      "origin": "paired_orbium_source",
+      "outer_generation": 3,
+      "kind": "lifetime",
+      "sourceRef": null,
+      "rule": {
+        "schema": "lenia.fixed-dual-response.v1",
+        "configs": [
+          {
+            "size": 64,
+            "radius": 9.198894039746325,
+            "mu": 0.1203104356754759,
+            "sigma": 0.013121955472950973,
+            "dt": 0.1,
+            "dtype": "float64"
+          },
+          {
+            "size": 64,
+            "radius": 16.558009271543384,
+            "mu": 0.03952532812762109,
+            "sigma": 0.006,
+            "dt": 0.1,
+            "dtype": "float64"
+          }
+        ],
+        "weight_second": 0.5,
+        "kernel_definition": "shared normalized polynomial radial kernel",
+        "growth_definition": "G_i(u)=2*max(0,1-(u-mu_i)^2/(9*sigma_i^2))^4-1",
+        "update": "clip(A+dt*((1-w)*G1(K1*A)+w*G2(K2*A)-intensity*A),0,1)",
+        "time_rule": "fixed dt=0.1; fixed lifetime kernels, responses and weight; no internal memory"
+      },
+      "source_frames": [
+        {
+          "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/e5675e43-73f7-42af-b913-392217941cc8/candidates/dk2026101619-r2-v5/screen/trajectory.npz",
+          "lifetime_range": [
+            0,
+            512
+          ]
+        },
+        {
+          "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/025c6b49-fee7-4f7e-a280-b4f4132614c6/candidates/dk2026101619-r2-v5/long/trajectory.npz",
+          "lifetime_range": [
+            512,
+            3072
+          ]
+        }
+      ],
+      "lifetime_range": [
+        0,
+        3072
+      ],
+      "shape": [
+        193,
+        64,
+        64
+      ],
+      "description": "multiple_bodies/mass_oscillation_or_transient",
+      "centroid_speed": null,
+      "restart": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/025c6b49-fee7-4f7e-a280-b4f4132614c6/candidates/dk2026101619-r2-v5/long/restart.npz",
+      "initial": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/e5675e43-73f7-42af-b913-392217941cc8/candidates/dk2026101619-r2-v5/initial.npz",
+      "static_kernel_fields": [
+        "kernel1",
+        "kernel2"
+      ],
+      "dynamic_fields": [
+        "body"
+      ],
+      "loader": "morphology_evolution.dual_kernel.load_candidate",
+      "combined_frames": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/4abde81f-62f4-46b0-9672-b1f8108276bd/lifetime/dk2026101619-r2-v5/trajectory.npz",
+      "source_frame_jobs": [
+        "e5675e43-73f7-42af-b913-392217941cc8",
+        "025c6b49-fee7-4f7e-a280-b4f4132614c6"
+      ],
+      "environment_branches": [
+        {
+          "kind": "lifetime_environment_branch",
+          "label": "sham",
+          "frames": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/4abde81f-62f4-46b0-9672-b1f8108276bd/candidates/dk2026101619-r2-v5/sham/trajectory.npz",
+          "lifetime_range": [
+            3072,
+            3584
+          ],
+          "parent_lifetime_step": 3072,
+          "intensity_first8": 0.0,
+          "new_outer_generation": false,
+          "metrics": {
+            "mass": 60.97443327059618,
+            "occupied": 123,
+            "center": [
+              -25.71850508628423,
+              6.79937164045156
+            ],
+            "anisotropy": 5.397702867473584,
+            "compactness": 0.21719046363290587,
+            "fill": 0.49572709976094453,
+            "perimeter_ratio": 11.361037396809646,
+            "components": 2,
+            "mean_activity": 5.071982104842341,
+            "tail_mass_mean": 58.13367011921985,
+            "mass_cv": 0.03807333751512632,
+            "saturation_pixel_fraction": 0.0048828125,
+            "saturation_mass_fraction": 0.32627497965313795,
+            "periodic_spans_yx": [
+              39,
+              27
+            ],
+            "min_tail_concentration": 0.031497030789089636,
+            "centroid_speed": null,
+            "extinct_step": null,
+            "lifetime_end": 3584,
+            "morphology": "multiple_bodies",
+            "dynamics": "mass_oscillation_or_transient",
+            "classification_limit": "Finite-window density descriptors, not organism/species counts; centroid speed only for coherent localized single states."
+          }
+        },
+        {
+          "kind": "lifetime_environment_branch",
+          "label": "probe",
+          "frames": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/4abde81f-62f4-46b0-9672-b1f8108276bd/candidates/dk2026101619-r2-v5/probe/trajectory.npz",
+          "lifetime_range": [
+            3072,
+            3584
+          ],
+          "parent_lifetime_step": 3072,
+          "intensity_first8": 0.45,
+          "new_outer_generation": false,
+          "metrics": {
+            "mass": 29.846622478715247,
+            "occupied": 56,
+            "center": [
+              -13.235445678568171,
+              10.225851854863581
+            ],
+            "anisotropy": 1.3503791871015554,
+            "compactness": 2.3072497608782925,
+            "fill": 0.5329754014056294,
+            "perimeter_ratio": 7.750576015460307,
+            "components": 1,
+            "mean_activity": 2.5590471227641363,
+            "tail_mass_mean": 28.911604397107567,
+            "mass_cv": 0.05506421568591801,
+            "saturation_pixel_fraction": 0.00146484375,
+            "saturation_mass_fraction": 0.20006428216751398,
+            "periodic_spans_yx": [
+              11,
+              11
+            ],
+            "min_tail_concentration": 0.9496738532171388,
+            "centroid_speed": 0.17693221321022057,
+            "extinct_step": null,
+            "lifetime_end": 3584,
+            "morphology": "localized_single",
+            "dynamics": "moving",
+            "classification_limit": "Finite-window density descriptors, not organism/species counts; centroid speed only for coherent localized single states."
+          }
+        }
+      ],
+      "control": null,
+      "phase_initial": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/025c6b49-fee7-4f7e-a280-b4f4132614c6/candidates/dk2026101619-r2-v5/long/initial.npz",
+      "phase_initial_step": 512,
+      "initial_step": 0
+    },
+    {
+      "candidate_id": "dk2026101619-r4-v3",
+      "parent_id": "analytic_founder:three_blobs_local",
+      "parent_kind": "analytic_local_initial_state",
+      "origin": "three_blobs_local",
+      "outer_generation": 1,
+      "kind": "lifetime",
+      "sourceRef": null,
+      "rule": {
+        "schema": "lenia.fixed-dual-response.v1",
+        "configs": [
+          {
+            "size": 64,
+            "radius": 11,
+            "mu": 0.145,
+            "sigma": 0.02,
+            "dt": 0.1,
+            "dtype": "float64"
+          },
+          {
+            "size": 64,
+            "radius": 15.399999999999999,
+            "mu": 0.07879250670247283,
+            "sigma": 0.011954725154857949,
+            "dt": 0.1,
+            "dtype": "float64"
+          }
+        ],
+        "weight_second": 0.12,
+        "kernel_definition": "shared normalized polynomial radial kernel",
+        "growth_definition": "G_i(u)=2*max(0,1-(u-mu_i)^2/(9*sigma_i^2))^4-1",
+        "update": "clip(A+dt*((1-w)*G1(K1*A)+w*G2(K2*A)-intensity*A),0,1)",
+        "time_rule": "fixed dt=0.1; fixed lifetime kernels, responses and weight; no internal memory"
+      },
+      "source_frames": [
+        {
+          "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/e5675e43-73f7-42af-b913-392217941cc8/candidates/dk2026101619-r4-v3/screen/trajectory.npz",
+          "lifetime_range": [
+            0,
+            512
+          ]
+        },
+        {
+          "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/025c6b49-fee7-4f7e-a280-b4f4132614c6/candidates/dk2026101619-r4-v3/long/trajectory.npz",
+          "lifetime_range": [
+            512,
+            3072
+          ]
+        }
+      ],
+      "lifetime_range": [
+        0,
+        3072
+      ],
+      "shape": [
+        193,
+        64,
+        64
+      ],
+      "description": "distributed_pattern/changing",
+      "centroid_speed": null,
+      "restart": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/025c6b49-fee7-4f7e-a280-b4f4132614c6/candidates/dk2026101619-r4-v3/long/restart.npz",
+      "initial": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/e5675e43-73f7-42af-b913-392217941cc8/candidates/dk2026101619-r4-v3/initial.npz",
+      "static_kernel_fields": [
+        "kernel1",
+        "kernel2"
+      ],
+      "dynamic_fields": [
+        "body"
+      ],
+      "loader": "morphology_evolution.dual_kernel.load_candidate",
+      "combined_frames": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/4abde81f-62f4-46b0-9672-b1f8108276bd/lifetime/dk2026101619-r4-v3/trajectory.npz",
+      "source_frame_jobs": [
+        "e5675e43-73f7-42af-b913-392217941cc8",
+        "025c6b49-fee7-4f7e-a280-b4f4132614c6"
+      ],
+      "control": null,
+      "phase_initial": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/025c6b49-fee7-4f7e-a280-b4f4132614c6/candidates/dk2026101619-r4-v3/long/initial.npz",
+      "phase_initial_step": 512,
+      "initial_step": 0
+    },
+    {
+      "candidate_id": "dk2026101619-r4-v5",
+      "parent_id": "analytic_founder:three_blobs_local",
+      "parent_kind": "analytic_local_initial_state",
+      "origin": "three_blobs_local",
+      "outer_generation": 1,
+      "kind": "lifetime",
+      "sourceRef": null,
+      "rule": {
+        "schema": "lenia.fixed-dual-response.v1",
+        "configs": [
+          {
+            "size": 64,
+            "radius": 11,
+            "mu": 0.145,
+            "sigma": 0.02,
+            "dt": 0.1,
+            "dtype": "float64"
+          },
+          {
+            "size": 64,
+            "radius": 19.8,
+            "mu": 0.040641070137555205,
+            "sigma": 0.006166231331215273,
+            "dt": 0.1,
+            "dtype": "float64"
+          }
+        ],
+        "weight_second": 0.5,
+        "kernel_definition": "shared normalized polynomial radial kernel",
+        "growth_definition": "G_i(u)=2*max(0,1-(u-mu_i)^2/(9*sigma_i^2))^4-1",
+        "update": "clip(A+dt*((1-w)*G1(K1*A)+w*G2(K2*A)-intensity*A),0,1)",
+        "time_rule": "fixed dt=0.1; fixed lifetime kernels, responses and weight; no internal memory"
+      },
+      "source_frames": [
+        {
+          "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/e5675e43-73f7-42af-b913-392217941cc8/candidates/dk2026101619-r4-v5/screen/trajectory.npz",
+          "lifetime_range": [
+            0,
+            512
+          ]
+        },
+        {
+          "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/025c6b49-fee7-4f7e-a280-b4f4132614c6/candidates/dk2026101619-r4-v5/long/trajectory.npz",
+          "lifetime_range": [
+            512,
+            3072
+          ]
+        }
+      ],
+      "lifetime_range": [
+        0,
+        3072
+      ],
+      "shape": [
+        193,
+        64,
+        64
+      ],
+      "description": "Non-Orbium local three-blobs -> intermittent ring-like and moving/deforming states, already before probe; limited observation, not learning.",
+      "centroid_speed": 0.0033479460133598055,
+      "restart": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/025c6b49-fee7-4f7e-a280-b4f4132614c6/candidates/dk2026101619-r4-v5/long/restart.npz",
+      "initial": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/e5675e43-73f7-42af-b913-392217941cc8/candidates/dk2026101619-r4-v5/initial.npz",
+      "static_kernel_fields": [
+        "kernel1",
+        "kernel2"
+      ],
+      "dynamic_fields": [
+        "body"
+      ],
+      "loader": "morphology_evolution.dual_kernel.load_candidate",
+      "combined_frames": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/4abde81f-62f4-46b0-9672-b1f8108276bd/lifetime/dk2026101619-r4-v5/trajectory.npz",
+      "source_frame_jobs": [
+        "e5675e43-73f7-42af-b913-392217941cc8",
+        "025c6b49-fee7-4f7e-a280-b4f4132614c6"
+      ],
+      "environment_branches": [
+        {
+          "kind": "lifetime_environment_branch",
+          "label": "sham",
+          "frames": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/4abde81f-62f4-46b0-9672-b1f8108276bd/candidates/dk2026101619-r4-v5/sham/trajectory.npz",
+          "lifetime_range": [
+            3072,
+            3584
+          ],
+          "parent_lifetime_step": 3072,
+          "intensity_first8": 0.0,
+          "new_outer_generation": false,
+          "metrics": {
+            "mass": 49.77869150026845,
+            "occupied": 72,
+            "center": [
+              -6.497814370852062,
+              -5.537826177137247
+            ],
+            "anisotropy": 1.1351431520429565,
+            "compactness": 2.8549033986892565,
+            "fill": 0.6913707152815063,
+            "perimeter_ratio": 7.778174593052023,
+            "components": 1,
+            "mean_activity": 1.3229162546452657,
+            "tail_mass_mean": 47.80793139011975,
+            "mass_cv": 0.03790953749112776,
+            "saturation_pixel_fraction": 0.00634765625,
+            "saturation_mass_fraction": 0.5199824318649136,
+            "periodic_spans_yx": [
+              11,
+              13
+            ],
+            "min_tail_concentration": 0.950617587124296,
+            "centroid_speed": 0.06929510567532968,
+            "extinct_step": null,
+            "lifetime_end": 3584,
+            "morphology": "localized_single",
+            "dynamics": "moving",
+            "classification_limit": "Finite-window density descriptors, not organism/species counts; centroid speed only for coherent localized single states."
+          }
+        },
+        {
+          "kind": "lifetime_environment_branch",
+          "label": "probe",
+          "frames": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/4abde81f-62f4-46b0-9672-b1f8108276bd/candidates/dk2026101619-r4-v5/probe/trajectory.npz",
+          "lifetime_range": [
+            3072,
+            3584
+          ],
+          "parent_lifetime_step": 3072,
+          "intensity_first8": 0.45,
+          "new_outer_generation": false,
+          "metrics": {
+            "mass": 48.62310598488428,
+            "occupied": 85,
+            "center": [
+              2.5824750187241015,
+              -13.363240245760771
+            ],
+            "anisotropy": 1.1641678211672353,
+            "compactness": 2.845847157781564,
+            "fill": 0.5720365409986387,
+            "perimeter_ratio": 7.37563556583431,
+            "components": 1,
+            "mean_activity": 2.1326468535098404,
+            "tail_mass_mean": 47.36939976259581,
+            "mass_cv": 0.036325710070211646,
+            "saturation_pixel_fraction": 0.00341796875,
+            "saturation_mass_fraction": 0.2875313710594294,
+            "periodic_spans_yx": [
+              11,
+              14
+            ],
+            "min_tail_concentration": 0.9457591325858766,
+            "centroid_speed": 0.11679694553086006,
+            "extinct_step": null,
+            "lifetime_end": 3584,
+            "morphology": "localized_single",
+            "dynamics": "moving",
+            "classification_limit": "Finite-window density descriptors, not organism/species counts; centroid speed only for coherent localized single states."
+          }
+        }
+      ],
+      "full_environment_branch_frames": {
+        "sham": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/4abde81f-62f4-46b0-9672-b1f8108276bd/lifetime/dk2026101619-r4-v5/sham_trajectory.npz",
+        "probe": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/4abde81f-62f4-46b0-9672-b1f8108276bd/lifetime/dk2026101619-r4-v5/probe_trajectory.npz"
+      },
+      "control": null,
+      "phase_initial": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/025c6b49-fee7-4f7e-a280-b4f4132614c6/candidates/dk2026101619-r4-v5/long/initial.npz",
+      "phase_initial_step": 512,
+      "initial_step": 0
+    },
+    {
+      "candidate_id": "dk2026101619-r5-v1",
+      "parent_id": "analytic_founder:crescent_local",
+      "parent_kind": "analytic_local_initial_state",
+      "origin": "crescent_local",
+      "outer_generation": 1,
+      "kind": "lifetime",
+      "sourceRef": null,
+      "rule": {
+        "schema": "lenia.fixed-dual-response.v1",
+        "configs": [
+          {
+            "size": 64,
+            "radius": 12,
+            "mu": 0.145,
+            "sigma": 0.018,
+            "dt": 0.1,
+            "dtype": "float64"
+          },
+          {
+            "size": 64,
+            "radius": 8.399999999999999,
+            "mu": 0.21628752386892244,
+            "sigma": 0.02953443429382527,
+            "dt": 0.1,
+            "dtype": "float64"
+          }
+        ],
+        "weight_second": 0.08,
+        "kernel_definition": "shared normalized polynomial radial kernel",
+        "growth_definition": "G_i(u)=2*max(0,1-(u-mu_i)^2/(9*sigma_i^2))^4-1",
+        "update": "clip(A+dt*((1-w)*G1(K1*A)+w*G2(K2*A)-intensity*A),0,1)",
+        "time_rule": "fixed dt=0.1; fixed lifetime kernels, responses and weight; no internal memory"
+      },
+      "source_frames": [
+        {
+          "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/e5675e43-73f7-42af-b913-392217941cc8/candidates/dk2026101619-r5-v1/screen/trajectory.npz",
+          "lifetime_range": [
+            0,
+            512
+          ]
+        },
+        {
+          "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/025c6b49-fee7-4f7e-a280-b4f4132614c6/candidates/dk2026101619-r5-v1/long/trajectory.npz",
+          "lifetime_range": [
+            512,
+            3072
+          ]
+        }
+      ],
+      "lifetime_range": [
+        0,
+        3072
+      ],
+      "shape": [
+        193,
+        64,
+        64
+      ],
+      "description": "distributed_pattern/changing",
+      "centroid_speed": null,
+      "restart": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/025c6b49-fee7-4f7e-a280-b4f4132614c6/candidates/dk2026101619-r5-v1/long/restart.npz",
+      "initial": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/e5675e43-73f7-42af-b913-392217941cc8/candidates/dk2026101619-r5-v1/initial.npz",
+      "static_kernel_fields": [
+        "kernel1",
+        "kernel2"
+      ],
+      "dynamic_fields": [
+        "body"
+      ],
+      "loader": "morphology_evolution.dual_kernel.load_candidate",
+      "combined_frames": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/4abde81f-62f4-46b0-9672-b1f8108276bd/lifetime/dk2026101619-r5-v1/trajectory.npz",
+      "source_frame_jobs": [
+        "e5675e43-73f7-42af-b913-392217941cc8",
+        "025c6b49-fee7-4f7e-a280-b4f4132614c6"
+      ],
+      "control": null,
+      "phase_initial": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/025c6b49-fee7-4f7e-a280-b4f4132614c6/candidates/dk2026101619-r5-v1/long/initial.npz",
+      "phase_initial_step": 512,
+      "initial_step": 0
+    },
+    {
+      "candidate_id": "dk2026101619-r1-v7",
+      "parent_id": "m2026101607-g1-0082",
+      "parent_kind": "initial_genome_not_experienced_body",
+      "origin": "annulus_source",
+      "outer_generation": 2,
+      "kind": "lifetime",
+      "sourceRef": null,
+      "rule": {
+        "schema": "lenia.fixed-dual-response.v1",
+        "configs": [
+          {
+            "size": 64,
+            "radius": 12.351887716873172,
+            "mu": 0.15490376554840232,
+            "sigma": 0.015062892992669585,
+            "dt": 0.1,
+            "dtype": "float64"
+          },
+          {
+            "size": 64,
+            "radius": 22.23339789037171,
+            "mu": 0.1058208465388764,
+            "sigma": 0.011319059226109108,
+            "dt": 0.1,
+            "dtype": "float64"
+          }
+        ],
+        "weight_second": 1.0,
+        "kernel_definition": "shared normalized polynomial radial kernel",
+        "growth_definition": "G_i(u)=2*max(0,1-(u-mu_i)^2/(9*sigma_i^2))^4-1",
+        "update": "clip(A+dt*((1-w)*G1(K1*A)+w*G2(K2*A)-intensity*A),0,1)",
+        "time_rule": "fixed dt=0.1; fixed lifetime kernels, responses and weight; no internal memory"
+      },
+      "source_frames": [
+        {
+          "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/e5675e43-73f7-42af-b913-392217941cc8/candidates/dk2026101619-r1-v7/screen/trajectory.npz",
+          "lifetime_range": [
+            0,
+            512
+          ]
+        },
+        {
+          "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/025c6b49-fee7-4f7e-a280-b4f4132614c6/candidates/dk2026101619-r1-v7/long/trajectory.npz",
+          "lifetime_range": [
+            512,
+            3072
+          ]
+        }
+      ],
+      "lifetime_range": [
+        0,
+        3072
+      ],
+      "shape": [
+        193,
+        64,
+        64
+      ],
+      "description": "localized_single/changing",
+      "centroid_speed": 0.0015829389564110514,
+      "restart": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/025c6b49-fee7-4f7e-a280-b4f4132614c6/candidates/dk2026101619-r1-v7/long/restart.npz",
+      "initial": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/e5675e43-73f7-42af-b913-392217941cc8/candidates/dk2026101619-r1-v7/initial.npz",
+      "static_kernel_fields": [
+        "kernel1",
+        "kernel2"
+      ],
+      "dynamic_fields": [
+        "body"
+      ],
+      "loader": "morphology_evolution.dual_kernel.load_candidate",
+      "combined_frames": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/4abde81f-62f4-46b0-9672-b1f8108276bd/lifetime/dk2026101619-r1-v7/trajectory.npz",
+      "source_frame_jobs": [
+        "e5675e43-73f7-42af-b913-392217941cc8",
+        "025c6b49-fee7-4f7e-a280-b4f4132614c6"
+      ],
+      "control": "first_off",
+      "phase_initial": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/025c6b49-fee7-4f7e-a280-b4f4132614c6/candidates/dk2026101619-r1-v7/long/initial.npz",
+      "phase_initial_step": 512,
+      "initial_step": 0
+    }
+  ],
+  "pixel_data": "Original full 64x64 numeric fields; concatenation drops only identical checkpoint duplicate; GIF uses nearest-neighbor display enlargement.",
+  "limits": [
+    "Fixed spatial rule search, no learned memory or natural reproduction.",
+    "Closed single-kernel controls labelled; endpoint activity does not establish a stable new organism.",
+    "No centroid speed claim for distributed or multiple-body fields."
+  ],
+  "source_jobs": [
+    "e5675e43-73f7-42af-b913-392217941cc8",
+    "025c6b49-fee7-4f7e-a280-b4f4132614c6",
+    "4abde81f-62f4-46b0-9672-b1f8108276bd"
+  ],
+  "events": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/4abde81f-62f4-46b0-9672-b1f8108276bd/combined_events.json",
+  "early_handoff_superseded": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/e5675e43-73f7-42af-b913-392217941cc8/projection_early.json",
+    "note": "Early r2-v4 subsequently goes extinct; r4-v5 alternates ring-like and moving intervals before probe. Preserve all time windows."
+  }
+}

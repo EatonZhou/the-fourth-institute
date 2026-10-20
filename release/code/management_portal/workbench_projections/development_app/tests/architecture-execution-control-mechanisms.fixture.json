@@ -1,0 +1,4772 @@
+{
+  "capture": {
+    "path": "${share_root}/Projects/AI员工/knowledge_base/agents/lineage_8794980b1bb7/residents/resident_2546a3558662/workspace/architecture-deep-exploration/fixtures/discovery-candidate-lessons.json",
+    "sha256": "d5140814a30b47fa3f920fb75ccfae8325fa9b502b9efd18cb56f4187ef53b62",
+    "entry": {
+      "address": "workspace_13209cb6666b/file/deep-architecture/objects/discovery-candidate-5f405e01cd34df70f358726542a30f6ad11ca9359df4161979a0fc814a465f71.json",
+      "sha256": "5f405e01cd34df70f358726542a30f6ad11ca9359df4161979a0fc814a465f71",
+      "size": 314467
+    },
+    "pair": {
+      "address": "workspace_13209cb6666b/file/deep-architecture/objects/discovery-pair-6919d4cf31c5ae0a0815bf827f1e3c12b2d9898eb94fb2af805b8cf865f8f762.json",
+      "sha256": "6919d4cf31c5ae0a0815bf827f1e3c12b2d9898eb94fb2af805b8cf865f8f762",
+      "size": 1403
+    },
+    "manifest": {
+      "address": "workspace_13209cb6666b/file/deep-architecture/objects/manifest-ec379604ae9355d9426fd22456675a1118d5f58e2fe8a3a72b08a16f0bb68c73.json",
+      "sha256": "ec379604ae9355d9426fd22456675a1118d5f58e2fe8a3a72b08a16f0bb68c73",
+      "size": 62252
+    },
+    "model": {
+      "address": "workspace_13209cb6666b/file/deep-architecture/objects/model-9105515ec8785625eec38571299947d6a877504af9ac3f17721d12a48a0103b8.json",
+      "sha256": "9105515ec8785625eec38571299947d6a877504af9ac3f17721d12a48a0103b8",
+      "size": 4346630
+    }
+  },
+  "binding": {
+    "commit": "a0dac83394748582158ee9c63a8b23c715872a1e",
+    "base_manifest": {
+      "address": "workspace_13209cb6666b/file/architecture-evidence/objects/manifest-43e2c68c22125fa9e390d3970bb3ba890e7304a4d3fbd6c1bb39465138b1faa2.json",
+      "sha256": "43e2c68c22125fa9e390d3970bb3ba890e7304a4d3fbd6c1bb39465138b1faa2",
+      "size": 312931
+    },
+    "consumer_contract": {
+      "address": "workspace_13209cb6666b/file/architecture-evidence/objects/consumer-contract-44b674154fb267114f3285b6b3b3039a285fcccb8ae891dc46039c715499cd92.json",
+      "sha256": "44b674154fb267114f3285b6b3b3039a285fcccb8ae891dc46039c715499cd92",
+      "size": 332878
+    },
+    "module_map": {
+      "address": "workspace_13209cb6666b/file/architecture-evidence/commits/a0dac83394748582158ee9c63a8b23c715872a1e/architecture/modules.yaml",
+      "sha256": "9aa3b1615bf8ddc192cc7859ab5257abbf063fa5d52fceaff7fe7eb3c539048e",
+      "size": 48968
+    },
+    "evolution": {
+      "address": "workspace_13209cb6666b/file/architecture-evidence/commits/a0dac83394748582158ee9c63a8b23c715872a1e/architecture/evolution.yaml",
+      "sha256": "9c9c4c6d0340cd2a86ff6ff491fe3e0819500de53a86f1cb29a8b7ead6f135f3",
+      "size": 34097
+    }
+  },
+  "mechanisms": [
+    {
+      "id": "control.submission",
+      "owner_id": "execution.client",
+      "title": "稳定ID提交与未知回执",
+      "question": "第一次已入队但响应丢失时是否会再次准备或执行？",
+      "presentation": "idempotency_ledger",
+      "entry_conditions": [
+        "本地模拟，无模型、RPC或业务发送",
+        "固定实现 a0dac83394748582158ee9c63a8b23c715872a1e；Design独立版本观察"
+      ],
+      "participants": [
+        {
+          "object_id": "execution.client",
+          "role": "Execution业务facade"
+        },
+        {
+          "object_id": "execution.server",
+          "role": "Execution RPC入口"
+        },
+        {
+          "object_id": "execution.scheduling",
+          "role": "持久调度、账号与用量"
+        }
+      ],
+      "adapter": "execution-control.declarative-transitions.v1",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "existing": {
+            "type": "boolean",
+            "description": "该execution_id已有记录"
+          },
+          "same_digest": {
+            "type": "boolean",
+            "description": "原始请求摘要相同"
+          },
+          "reply_lost": {
+            "type": "boolean",
+            "description": "首次入队响应丢失"
+          }
+        },
+        "required": [
+          "existing",
+          "same_digest",
+          "reply_lost"
+        ],
+        "additionalProperties": false
+      },
+      "state_model": {
+        "kind": "declarative_transition_system",
+        "condition_scope": "state",
+        "supported_ops": [
+          "set",
+          "increment",
+          "append"
+        ],
+        "semantics": "load先校验并绑定inputs；when只查询状态；按next和条件选择步骤；state_changes顺序执行。状态均为示例观察，authority_id指事实写入方。案例为机制切片而非真实RPC模拟器。",
+        "not_a_runtime_emulator": true
+      },
+      "state_fields": [
+        {
+          "id": "existing",
+          "label": "existing",
+          "meaning": "该execution_id已有记录",
+          "type": "boolean",
+          "initial": false,
+          "state_scope": "observation"
+        },
+        {
+          "id": "same_digest",
+          "label": "same_digest",
+          "meaning": "原始请求摘要相同",
+          "type": "boolean",
+          "initial": true,
+          "state_scope": "observation"
+        },
+        {
+          "id": "reply_lost",
+          "label": "reply_lost",
+          "meaning": "首次入队响应丢失",
+          "type": "boolean",
+          "initial": false,
+          "state_scope": "observation"
+        },
+        {
+          "id": "queue_rows",
+          "label": "queue_rows",
+          "meaning": "本示例创建的队列行数",
+          "type": "integer",
+          "initial": 0,
+          "state_scope": "observation",
+          "authority_id": "execution.scheduling"
+        },
+        {
+          "id": "prepare_count",
+          "label": "prepare_count",
+          "meaning": "本示例技术prepare次数",
+          "type": "integer",
+          "initial": 0,
+          "state_scope": "observation"
+        },
+        {
+          "id": "result",
+          "label": "result",
+          "meaning": "提交结果",
+          "type": "string",
+          "initial": "pending",
+          "state_scope": "observation"
+        }
+      ],
+      "invariants": [
+        "摘要取原始请求；准备后的route变化不改变幂等比较",
+        "新ID意味着新执行，不能用于恢复未知响应"
+      ],
+      "steps": [
+        {
+          "id": "load",
+          "title": "载入本次机制的自足输入",
+          "from": "execution.client",
+          "to": "execution.client",
+          "relation_id": null,
+          "trigger": "载入本次机制的自足输入",
+          "guard": "本地演示或前一步已建立前置条件",
+          "state_changes": [
+            {
+              "field": "existing",
+              "op": "set",
+              "value": {
+                "input": "existing"
+              }
+            },
+            {
+              "field": "same_digest",
+              "op": "set",
+              "value": {
+                "input": "same_digest"
+              }
+            },
+            {
+              "field": "reply_lost",
+              "op": "set",
+              "value": {
+                "input": "reply_lost"
+              }
+            }
+          ],
+          "observable": "载入本次机制的自足输入",
+          "next": [
+            "send"
+          ],
+          "evidence_ids": [
+            "control.ev.submit",
+            "control.ev.dedup"
+          ]
+        },
+        {
+          "id": "send",
+          "title": "发送原始请求",
+          "from": "execution.client",
+          "to": "execution.server",
+          "relation_id": "control.rel.submit",
+          "trigger": "发送原始请求",
+          "guard": "本地演示或前一步已建立前置条件",
+          "state_changes": [],
+          "observable": "发送原始请求",
+          "next": [
+            "new",
+            "same",
+            "conflict"
+          ],
+          "evidence_ids": [
+            "control.ev.submit"
+          ]
+        },
+        {
+          "id": "new",
+          "title": "摘要检查后首次准备并入队",
+          "from": "execution.server",
+          "to": "execution.scheduling",
+          "relation_id": "control.rel.enqueue",
+          "trigger": "摘要检查后首次准备并入队",
+          "guard": "when仅查询已载入状态；见状态条件",
+          "state_changes": [
+            {
+              "field": "queue_rows",
+              "op": "set",
+              "value": 1
+            },
+            {
+              "field": "prepare_count",
+              "op": "set",
+              "value": 1
+            }
+          ],
+          "observable": "摘要检查后首次准备并入队",
+          "next": [
+            "reply",
+            "retry"
+          ],
+          "evidence_ids": [
+            "control.ev.dedup"
+          ],
+          "when": {
+            "field": "existing",
+            "equals": false
+          }
+        },
+        {
+          "id": "same",
+          "title": "返回已存在执行",
+          "from": "execution.server",
+          "to": "execution.scheduling",
+          "relation_id": "control.rel.enqueue",
+          "trigger": "返回已存在执行",
+          "guard": "when仅查询已载入状态；见状态条件",
+          "state_changes": [
+            {
+              "field": "result",
+              "op": "set",
+              "value": "existing"
+            }
+          ],
+          "observable": "返回已存在执行",
+          "next": [],
+          "evidence_ids": [
+            "control.ev.dedup"
+          ],
+          "when": {
+            "all": [
+              {
+                "field": "existing",
+                "equals": true
+              },
+              {
+                "field": "same_digest",
+                "equals": true
+              }
+            ]
+          }
+        },
+        {
+          "id": "conflict",
+          "title": "同ID不同原始请求拒绝",
+          "from": "execution.server",
+          "to": "execution.scheduling",
+          "relation_id": "control.rel.enqueue",
+          "trigger": "同ID不同原始请求拒绝",
+          "guard": "when仅查询已载入状态；见状态条件",
+          "state_changes": [
+            {
+              "field": "result",
+              "op": "set",
+              "value": "digest_conflict"
+            }
+          ],
+          "observable": "同ID不同原始请求拒绝",
+          "next": [],
+          "evidence_ids": [
+            "control.ev.dedup"
+          ],
+          "when": {
+            "all": [
+              {
+                "field": "existing",
+                "equals": true
+              },
+              {
+                "field": "same_digest",
+                "equals": false
+              }
+            ]
+          }
+        },
+        {
+          "id": "reply",
+          "title": "首次快照返回",
+          "from": "execution.client",
+          "to": "execution.client",
+          "relation_id": null,
+          "trigger": "首次快照返回",
+          "guard": "when仅查询已载入状态；见状态条件",
+          "state_changes": [
+            {
+              "field": "result",
+              "op": "set",
+              "value": "accepted"
+            }
+          ],
+          "observable": "首次快照返回",
+          "next": [],
+          "evidence_ids": [
+            "control.ev.submit"
+          ],
+          "when": {
+            "field": "reply_lost",
+            "equals": false
+          }
+        },
+        {
+          "id": "retry",
+          "title": "250ms后以相同ID和请求重试",
+          "from": "execution.client",
+          "to": "execution.server",
+          "relation_id": "control.rel.submit",
+          "trigger": "250ms后以相同ID和请求重试",
+          "guard": "when仅查询已载入状态；见状态条件",
+          "state_changes": [
+            {
+              "field": "existing",
+              "op": "set",
+              "value": true
+            },
+            {
+              "field": "same_digest",
+              "op": "set",
+              "value": true
+            }
+          ],
+          "observable": "250ms后以相同ID和请求重试",
+          "next": [
+            "same"
+          ],
+          "evidence_ids": [
+            "control.ev.submit",
+            "control.ev.dedup"
+          ],
+          "when": {
+            "field": "reply_lost",
+            "equals": true
+          }
+        }
+      ],
+      "cases": [
+        {
+          "id": "首次成功",
+          "title": "首次成功",
+          "inputs": {
+            "existing": false,
+            "same_digest": true,
+            "reply_lost": false
+          },
+          "path": [
+            "load",
+            "send",
+            "new",
+            "reply"
+          ],
+          "outcome": "创建一行、准备一次。",
+          "evidence_ids": [
+            "control.ev.submit",
+            "control.ev.dedup"
+          ]
+        },
+        {
+          "id": "回执丢失重试",
+          "title": "回执丢失重试",
+          "inputs": {
+            "existing": false,
+            "same_digest": true,
+            "reply_lost": true
+          },
+          "path": [
+            "load",
+            "send",
+            "new",
+            "retry",
+            "same"
+          ],
+          "outcome": "仍是一行、准备一次，同ID返回原记录。",
+          "evidence_ids": [
+            "control.ev.submit",
+            "control.ev.dedup"
+          ]
+        },
+        {
+          "id": "ID冲突",
+          "title": "ID冲突",
+          "inputs": {
+            "existing": true,
+            "same_digest": false,
+            "reply_lost": false
+          },
+          "path": [
+            "load",
+            "send",
+            "conflict"
+          ],
+          "outcome": "原记录不变，不重做准备。",
+          "evidence_ids": [
+            "control.ev.dedup"
+          ]
+        }
+      ],
+      "evidence_ids": [
+        "control.ev.submit",
+        "control.ev.dedup"
+      ],
+      "mode": "simulated"
+    },
+    {
+      "id": "control.rpc-dispatch",
+      "owner_id": "execution.server",
+      "title": "RPC认证、actor与方法分派",
+      "question": "socket可连接是否足以取得业务owner身份？",
+      "presentation": "authenticated_dispatch",
+      "entry_conditions": [
+        "本地模拟，无模型、RPC或业务发送",
+        "固定实现 a0dac83394748582158ee9c63a8b23c715872a1e；Design独立版本观察"
+      ],
+      "participants": [
+        {
+          "object_id": "execution.server",
+          "role": "Execution RPC入口"
+        },
+        {
+          "object_id": "execution.scheduling",
+          "role": "持久调度、账号与用量"
+        }
+      ],
+      "adapter": "execution-control.declarative-transitions.v1",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "envelope_valid": {
+            "type": "boolean",
+            "description": "一行JSON对象与params对象有效"
+          },
+          "authenticated": {
+            "type": "boolean",
+            "description": "RPC认证封套验证成功"
+          },
+          "actor_matches": {
+            "type": "boolean",
+            "description": "若params带actor，其值匹配认证断言"
+          }
+        },
+        "required": [
+          "envelope_valid",
+          "authenticated",
+          "actor_matches"
+        ],
+        "additionalProperties": false
+      },
+      "state_model": {
+        "kind": "declarative_transition_system",
+        "condition_scope": "state",
+        "supported_ops": [
+          "set",
+          "increment",
+          "append"
+        ],
+        "semantics": "load先校验并绑定inputs；when只查询状态；按next和条件选择步骤；state_changes顺序执行。状态均为示例观察，authority_id指事实写入方。案例为机制切片而非真实RPC模拟器。",
+        "not_a_runtime_emulator": true
+      },
+      "state_fields": [
+        {
+          "id": "envelope_valid",
+          "label": "envelope_valid",
+          "meaning": "一行JSON对象与params对象有效",
+          "type": "boolean",
+          "initial": true,
+          "state_scope": "observation"
+        },
+        {
+          "id": "authenticated",
+          "label": "authenticated",
+          "meaning": "RPC认证封套验证成功",
+          "type": "boolean",
+          "initial": true,
+          "state_scope": "observation"
+        },
+        {
+          "id": "actor_matches",
+          "label": "actor_matches",
+          "meaning": "若params带actor，其值匹配认证断言",
+          "type": "boolean",
+          "initial": true,
+          "state_scope": "observation"
+        },
+        {
+          "id": "dispatched",
+          "label": "dispatched",
+          "meaning": "是否已进入Scheduler",
+          "type": "boolean",
+          "initial": false,
+          "state_scope": "observation"
+        },
+        {
+          "id": "error",
+          "label": "error",
+          "meaning": "响应错误类别",
+          "type": "string",
+          "initial": "",
+          "state_scope": "observation"
+        }
+      ],
+      "invariants": [
+        "服务端认证在dispatch之前",
+        "当前Design的无凭据描述列入冲突，不能覆盖固定实现"
+      ],
+      "steps": [
+        {
+          "id": "load",
+          "title": "载入本次机制的自足输入",
+          "from": "execution.server",
+          "to": "execution.server",
+          "relation_id": null,
+          "trigger": "载入本次机制的自足输入",
+          "guard": "本地演示或前一步已建立前置条件",
+          "state_changes": [
+            {
+              "field": "envelope_valid",
+              "op": "set",
+              "value": {
+                "input": "envelope_valid"
+              }
+            },
+            {
+              "field": "authenticated",
+              "op": "set",
+              "value": {
+                "input": "authenticated"
+              }
+            },
+            {
+              "field": "actor_matches",
+              "op": "set",
+              "value": {
+                "input": "actor_matches"
+              }
+            }
+          ],
+          "observable": "载入本次机制的自足输入",
+          "next": [
+            "parse"
+          ],
+          "evidence_ids": [
+            "control.ev.rpc",
+            "control.ev.dispatch",
+            "control.ev.design-auth"
+          ]
+        },
+        {
+          "id": "parse",
+          "title": "检查请求封套",
+          "from": "execution.server",
+          "to": "execution.server",
+          "relation_id": null,
+          "trigger": "检查请求封套",
+          "guard": "本地演示或前一步已建立前置条件",
+          "state_changes": [],
+          "observable": "检查请求封套",
+          "next": [
+            "invalid",
+            "authenticate"
+          ],
+          "evidence_ids": [
+            "control.ev.rpc"
+          ]
+        },
+        {
+          "id": "invalid",
+          "title": "拒绝非对象参数",
+          "from": "execution.server",
+          "to": "execution.server",
+          "relation_id": null,
+          "trigger": "拒绝非对象参数",
+          "guard": "when仅查询已载入状态；见状态条件",
+          "state_changes": [
+            {
+              "field": "error",
+              "op": "set",
+              "value": "ValueError"
+            }
+          ],
+          "observable": "拒绝非对象参数",
+          "next": [],
+          "evidence_ids": [
+            "control.ev.rpc"
+          ],
+          "when": {
+            "field": "envelope_valid",
+            "equals": false
+          }
+        },
+        {
+          "id": "authenticate",
+          "title": "验证调用断言",
+          "from": "execution.server",
+          "to": "execution.server",
+          "relation_id": null,
+          "trigger": "验证调用断言",
+          "guard": "when仅查询已载入状态；见状态条件",
+          "state_changes": [],
+          "observable": "验证调用断言",
+          "next": [
+            "deny",
+            "actor",
+            "dispatch"
+          ],
+          "evidence_ids": [
+            "control.ev.rpc"
+          ],
+          "when": {
+            "field": "envelope_valid",
+            "equals": true
+          }
+        },
+        {
+          "id": "deny",
+          "title": "拒绝无效认证",
+          "from": "execution.server",
+          "to": "execution.server",
+          "relation_id": null,
+          "trigger": "拒绝无效认证",
+          "guard": "when仅查询已载入状态；见状态条件",
+          "state_changes": [
+            {
+              "field": "error",
+              "op": "set",
+              "value": "authentication_error"
+            }
+          ],
+          "observable": "拒绝无效认证",
+          "next": [],
+          "evidence_ids": [
+            "control.ev.rpc"
+          ],
+          "when": {
+            "field": "authenticated",
+            "equals": false
+          }
+        },
+        {
+          "id": "actor",
+          "title": "拒绝actor冒充",
+          "from": "execution.server",
+          "to": "execution.server",
+          "relation_id": null,
+          "trigger": "拒绝actor冒充",
+          "guard": "when仅查询已载入状态；见状态条件",
+          "state_changes": [
+            {
+              "field": "error",
+              "op": "set",
+              "value": "PermissionError"
+            }
+          ],
+          "observable": "拒绝actor冒充",
+          "next": [],
+          "evidence_ids": [
+            "control.ev.rpc"
+          ],
+          "when": {
+            "all": [
+              {
+                "field": "authenticated",
+                "equals": true
+              },
+              {
+                "field": "actor_matches",
+                "equals": false
+              }
+            ]
+          }
+        },
+        {
+          "id": "dispatch",
+          "title": "调用Scheduler提交",
+          "from": "execution.server",
+          "to": "execution.scheduling",
+          "relation_id": "control.rel.enqueue",
+          "trigger": "调用Scheduler提交",
+          "guard": "when仅查询已载入状态；见状态条件",
+          "state_changes": [
+            {
+              "field": "dispatched",
+              "op": "set",
+              "value": true
+            }
+          ],
+          "observable": "调用Scheduler提交",
+          "next": [],
+          "evidence_ids": [
+            "control.ev.dispatch",
+            "control.ev.rpc"
+          ],
+          "when": {
+            "all": [
+              {
+                "field": "authenticated",
+                "equals": true
+              },
+              {
+                "field": "actor_matches",
+                "equals": true
+              }
+            ]
+          }
+        }
+      ],
+      "cases": [
+        {
+          "id": "有效请求",
+          "title": "有效请求",
+          "inputs": {
+            "envelope_valid": true,
+            "authenticated": true,
+            "actor_matches": true
+          },
+          "path": [
+            "load",
+            "parse",
+            "authenticate",
+            "dispatch"
+          ],
+          "outcome": "Scheduler处理幂等提交。",
+          "evidence_ids": [
+            "control.ev.rpc",
+            "control.ev.dispatch"
+          ]
+        },
+        {
+          "id": "actor不符",
+          "title": "actor不符",
+          "inputs": {
+            "envelope_valid": true,
+            "authenticated": true,
+            "actor_matches": false
+          },
+          "path": [
+            "load",
+            "parse",
+            "authenticate",
+            "actor"
+          ],
+          "outcome": "不进入Scheduler。",
+          "evidence_ids": [
+            "control.ev.rpc"
+          ]
+        },
+        {
+          "id": "未认证",
+          "title": "未认证",
+          "inputs": {
+            "envelope_valid": true,
+            "authenticated": false,
+            "actor_matches": true
+          },
+          "path": [
+            "load",
+            "parse",
+            "authenticate",
+            "deny"
+          ],
+          "outcome": "拒绝调用。",
+          "evidence_ids": [
+            "control.ev.rpc"
+          ]
+        },
+        {
+          "id": "参数类型错",
+          "title": "参数类型错",
+          "inputs": {
+            "envelope_valid": false,
+            "authenticated": true,
+            "actor_matches": true
+          },
+          "path": [
+            "load",
+            "parse",
+            "invalid"
+          ],
+          "outcome": "返回错误封套。",
+          "evidence_ids": [
+            "control.ev.rpc"
+          ]
+        }
+      ],
+      "evidence_ids": [
+        "control.ev.rpc",
+        "control.ev.dispatch",
+        "control.ev.design-auth"
+      ],
+      "mode": "simulated"
+    },
+    {
+      "id": "control.preparation",
+      "owner_id": "execution.preparation",
+      "title": "账号与已绑定会话的技术准备",
+      "question": "为何初选账号后还必须根据会话再解析路由？",
+      "presentation": "binding_route_pipeline",
+      "entry_conditions": [
+        "本地模拟，无模型、RPC或业务发送",
+        "固定实现 a0dac83394748582158ee9c63a8b23c715872a1e；Design独立版本观察"
+      ],
+      "participants": [
+        {
+          "object_id": "execution.preparation",
+          "role": "新请求技术准备"
+        },
+        {
+          "object_id": "execution.scheduling.accounts",
+          "role": "账号目录与额度准入策略"
+        },
+        {
+          "object_id": "execution.providers.sessions",
+          "role": "SessionManager"
+        },
+        {
+          "object_id": "execution.server",
+          "role": "Execution RPC入口"
+        },
+        {
+          "object_id": "execution.scheduling",
+          "role": "持久调度、账号与用量"
+        }
+      ],
+      "adapter": "execution-control.declarative-transitions.v1",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "service": {
+            "type": "string",
+            "description": "已验证的服务类型",
+            "enum": [
+              "agent_session",
+              "chat_completion"
+            ]
+          },
+          "bound": {
+            "type": "boolean",
+            "description": "SessionManager返回已有backend_session_id"
+          },
+          "preparation_ok": {
+            "type": "boolean",
+            "description": "账号和会话解析成功"
+          }
+        },
+        "required": [
+          "service",
+          "bound",
+          "preparation_ok"
+        ],
+        "additionalProperties": false
+      },
+      "state_model": {
+        "kind": "declarative_transition_system",
+        "condition_scope": "state",
+        "supported_ops": [
+          "set",
+          "increment",
+          "append"
+        ],
+        "semantics": "load先校验并绑定inputs；when只查询状态；按next和条件选择步骤；state_changes顺序执行。状态均为示例观察，authority_id指事实写入方。案例为机制切片而非真实RPC模拟器。",
+        "not_a_runtime_emulator": true
+      },
+      "state_fields": [
+        {
+          "id": "service",
+          "label": "service",
+          "meaning": "已验证的服务类型",
+          "type": "string",
+          "initial": "agent_session",
+          "state_scope": "observation",
+          "enum": [
+            "agent_session",
+            "chat_completion"
+          ]
+        },
+        {
+          "id": "bound",
+          "label": "bound",
+          "meaning": "SessionManager返回已有backend_session_id",
+          "type": "boolean",
+          "initial": false,
+          "state_scope": "observation"
+        },
+        {
+          "id": "preparation_ok",
+          "label": "preparation_ok",
+          "meaning": "账号和会话解析成功",
+          "type": "boolean",
+          "initial": true,
+          "state_scope": "observation"
+        },
+        {
+          "id": "route",
+          "label": "route",
+          "meaning": "技术准备结果",
+          "type": "string",
+          "initial": "unresolved",
+          "state_scope": "observation"
+        },
+        {
+          "id": "queued",
+          "label": "queued",
+          "meaning": "是否继续插入新队列行",
+          "type": "boolean",
+          "initial": false,
+          "state_scope": "observation",
+          "authority_id": "execution.scheduling"
+        }
+      ],
+      "invariants": [
+        "此prepare是Scheduler首次提交的技术准备，不等同业务输入或AgentData预创建",
+        "重复execution_id在prepare前返回"
+      ],
+      "steps": [
+        {
+          "id": "load",
+          "title": "载入本次机制的自足输入",
+          "from": "execution.preparation",
+          "to": "execution.preparation",
+          "relation_id": null,
+          "trigger": "载入本次机制的自足输入",
+          "guard": "本地演示或前一步已建立前置条件",
+          "state_changes": [
+            {
+              "field": "service",
+              "op": "set",
+              "value": {
+                "input": "service"
+              }
+            },
+            {
+              "field": "bound",
+              "op": "set",
+              "value": {
+                "input": "bound"
+              }
+            },
+            {
+              "field": "preparation_ok",
+              "op": "set",
+              "value": {
+                "input": "preparation_ok"
+              }
+            }
+          ],
+          "observable": "载入本次机制的自足输入",
+          "next": [
+            "select"
+          ],
+          "evidence_ids": [
+            "control.ev.prepare",
+            "control.ev.dedup",
+            "control.ev.account"
+          ]
+        },
+        {
+          "id": "select",
+          "title": "选择准备路径",
+          "from": "execution.preparation",
+          "to": "execution.preparation",
+          "relation_id": null,
+          "trigger": "选择准备路径",
+          "guard": "本地演示或前一步已建立前置条件",
+          "state_changes": [],
+          "observable": "选择准备路径",
+          "next": [
+            "bypass",
+            "resolve"
+          ],
+          "evidence_ids": [
+            "control.ev.prepare"
+          ]
+        },
+        {
+          "id": "bypass",
+          "title": "无状态完成请求直接返回",
+          "from": "execution.preparation",
+          "to": "execution.preparation",
+          "relation_id": null,
+          "trigger": "无状态完成请求直接返回",
+          "guard": "when仅查询已载入状态；见状态条件",
+          "state_changes": [
+            {
+              "field": "route",
+              "op": "set",
+              "value": "unchanged"
+            }
+          ],
+          "observable": "无状态完成请求直接返回",
+          "next": [
+            "enqueue"
+          ],
+          "evidence_ids": [
+            "control.ev.prepare"
+          ],
+          "when": {
+            "field": "service",
+            "equals": "chat_completion"
+          }
+        },
+        {
+          "id": "resolve",
+          "title": "按Provider和选项初解账号",
+          "from": "execution.preparation",
+          "to": "execution.scheduling.accounts",
+          "relation_id": "control.rel.prepare-account",
+          "trigger": "按Provider和选项初解账号",
+          "guard": "when仅查询已载入状态；见状态条件",
+          "state_changes": [],
+          "observable": "按Provider和选项初解账号",
+          "next": [
+            "session",
+            "fail"
+          ],
+          "evidence_ids": [
+            "control.ev.prepare",
+            "control.ev.account"
+          ],
+          "when": {
+            "field": "service",
+            "equals": "agent_session"
+          }
+        },
+        {
+          "id": "fail",
+          "title": "准备失败回滚首次提交",
+          "from": "execution.preparation",
+          "to": "execution.preparation",
+          "relation_id": null,
+          "trigger": "准备失败回滚首次提交",
+          "guard": "when仅查询已载入状态；见状态条件",
+          "state_changes": [
+            {
+              "field": "route",
+              "op": "set",
+              "value": "failed"
+            }
+          ],
+          "observable": "准备失败回滚首次提交",
+          "next": [],
+          "evidence_ids": [
+            "control.ev.prepare",
+            "control.ev.dedup"
+          ],
+          "when": {
+            "field": "preparation_ok",
+            "equals": false
+          }
+        },
+        {
+          "id": "session",
+          "title": "读取持久会话绑定",
+          "from": "execution.preparation",
+          "to": "execution.providers.sessions",
+          "relation_id": "control.rel.prepare-session",
+          "trigger": "读取持久会话绑定",
+          "guard": "when仅查询已载入状态；见状态条件",
+          "state_changes": [],
+          "observable": "读取持久会话绑定",
+          "next": [
+            "bound",
+            "fresh"
+          ],
+          "evidence_ids": [
+            "control.ev.prepare"
+          ],
+          "when": {
+            "field": "preparation_ok",
+            "equals": true
+          }
+        },
+        {
+          "id": "bound",
+          "title": "按既有session路由重新解析bound账号",
+          "from": "execution.preparation",
+          "to": "execution.scheduling.accounts",
+          "relation_id": "control.rel.prepare-account",
+          "trigger": "按既有session路由重新解析bound账号",
+          "guard": "when仅查询已载入状态；见状态条件",
+          "state_changes": [
+            {
+              "field": "route",
+              "op": "set",
+              "value": "bound_session_route"
+            }
+          ],
+          "observable": "按既有session路由重新解析bound账号",
+          "next": [
+            "enqueue"
+          ],
+          "evidence_ids": [
+            "control.ev.prepare"
+          ],
+          "when": {
+            "field": "bound",
+            "equals": true
+          }
+        },
+        {
+          "id": "fresh",
+          "title": "按未绑定会话选定规范路由",
+          "from": "execution.preparation",
+          "to": "execution.scheduling.accounts",
+          "relation_id": "control.rel.prepare-account",
+          "trigger": "按未绑定会话选定规范路由",
+          "guard": "when仅查询已载入状态；见状态条件",
+          "state_changes": [
+            {
+              "field": "route",
+              "op": "set",
+              "value": "canonical_selected_route"
+            }
+          ],
+          "observable": "按未绑定会话选定规范路由",
+          "next": [
+            "enqueue"
+          ],
+          "evidence_ids": [
+            "control.ev.prepare"
+          ],
+          "when": {
+            "field": "bound",
+            "equals": false
+          }
+        },
+        {
+          "id": "enqueue",
+          "title": "技术准备返回后持久入队",
+          "from": "execution.server",
+          "to": "execution.scheduling",
+          "relation_id": "control.rel.enqueue",
+          "trigger": "技术准备返回后持久入队",
+          "guard": "本地演示或前一步已建立前置条件",
+          "state_changes": [
+            {
+              "field": "queued",
+              "op": "set",
+              "value": true
+            }
+          ],
+          "observable": "技术准备返回后持久入队",
+          "next": [],
+          "evidence_ids": [
+            "control.ev.dedup"
+          ]
+        }
+      ],
+      "cases": [
+        {
+          "id": "继续已有会话",
+          "title": "继续已有会话",
+          "inputs": {
+            "service": "agent_session",
+            "bound": true,
+            "preparation_ok": true
+          },
+          "path": [
+            "load",
+            "select",
+            "resolve",
+            "session",
+            "bound",
+            "enqueue"
+          ],
+          "outcome": "使用已有会话账号。",
+          "evidence_ids": [
+            "control.ev.prepare"
+          ]
+        },
+        {
+          "id": "新会话",
+          "title": "新会话",
+          "inputs": {
+            "service": "agent_session",
+            "bound": false,
+            "preparation_ok": true
+          },
+          "path": [
+            "load",
+            "select",
+            "resolve",
+            "session",
+            "fresh",
+            "enqueue"
+          ],
+          "outcome": "规范选择的账号路由。",
+          "evidence_ids": [
+            "control.ev.prepare"
+          ]
+        },
+        {
+          "id": "准备失败",
+          "title": "准备失败",
+          "inputs": {
+            "service": "agent_session",
+            "bound": false,
+            "preparation_ok": false
+          },
+          "path": [
+            "load",
+            "select",
+            "resolve",
+            "fail"
+          ],
+          "outcome": "不产生Scheduler queued行；业务AgentData准备另属其owner。",
+          "evidence_ids": [
+            "control.ev.prepare",
+            "control.ev.dedup"
+          ]
+        },
+        {
+          "id": "无状态服务",
+          "title": "无状态服务",
+          "inputs": {
+            "service": "chat_completion",
+            "bound": false,
+            "preparation_ok": true
+          },
+          "path": [
+            "load",
+            "select",
+            "bypass",
+            "enqueue"
+          ],
+          "outcome": "不读取SessionManager绑定。",
+          "evidence_ids": [
+            "control.ev.prepare"
+          ]
+        }
+      ],
+      "evidence_ids": [
+        "control.ev.prepare",
+        "control.ev.dedup",
+        "control.ev.account"
+      ],
+      "mode": "simulated"
+    },
+    {
+      "id": "control.runtime-slot",
+      "owner_id": "worker.runtime",
+      "title": "同execution的本地执行槽",
+      "question": "同一进程刚释放旧claim时，新claim会并行运行同一execution吗？",
+      "presentation": "local_singleflight",
+      "entry_conditions": [
+        "本地模拟，无模型、RPC或业务发送",
+        "固定实现 a0dac83394748582158ee9c63a8b23c715872a1e；Design独立版本观察"
+      ],
+      "participants": [
+        {
+          "object_id": "worker.runtime",
+          "role": "单次执行与结果收尾"
+        }
+      ],
+      "adapter": "execution-control.declarative-transitions.v1",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "predecessor_active": {
+            "type": "boolean",
+            "description": "本地同execution仍在_execution_slots"
+          },
+          "cancelled": {
+            "type": "boolean",
+            "description": "等待期间观察到用户取消"
+          },
+          "handover": {
+            "type": "boolean",
+            "description": "等待期间失去资格或进入交接"
+          }
+        },
+        "required": [
+          "predecessor_active",
+          "cancelled",
+          "handover"
+        ],
+        "additionalProperties": false
+      },
+      "state_model": {
+        "kind": "declarative_transition_system",
+        "condition_scope": "state",
+        "supported_ops": [
+          "set",
+          "increment",
+          "append"
+        ],
+        "semantics": "load先校验并绑定inputs；when只查询状态；按next和条件选择步骤；state_changes顺序执行。状态均为示例观察，authority_id指事实写入方。案例为机制切片而非真实RPC模拟器。",
+        "not_a_runtime_emulator": true
+      },
+      "state_fields": [
+        {
+          "id": "predecessor_active",
+          "label": "predecessor_active",
+          "meaning": "本地同execution仍在_execution_slots",
+          "type": "boolean",
+          "initial": false,
+          "state_scope": "observation"
+        },
+        {
+          "id": "cancelled",
+          "label": "cancelled",
+          "meaning": "等待期间观察到用户取消",
+          "type": "boolean",
+          "initial": false,
+          "state_scope": "observation"
+        },
+        {
+          "id": "handover",
+          "label": "handover",
+          "meaning": "等待期间失去资格或进入交接",
+          "type": "boolean",
+          "initial": false,
+          "state_scope": "observation"
+        },
+        {
+          "id": "slot_acquired",
+          "label": "slot_acquired",
+          "meaning": "获得本地执行槽",
+          "type": "boolean",
+          "initial": false,
+          "state_scope": "observation"
+        },
+        {
+          "id": "outcome",
+          "label": "outcome",
+          "meaning": "本地运行入口结果",
+          "type": "string",
+          "initial": "waiting",
+          "state_scope": "observation"
+        }
+      ],
+      "invariants": [
+        "本地槽不替代数据库租约围栏",
+        "abandoned清理是源码取消短路的例外，本机制聚焦普通执行"
+      ],
+      "steps": [
+        {
+          "id": "load",
+          "title": "载入本次机制的自足输入",
+          "from": "worker.runtime",
+          "to": "worker.runtime",
+          "relation_id": null,
+          "trigger": "载入本次机制的自足输入",
+          "guard": "本地演示或前一步已建立前置条件",
+          "state_changes": [
+            {
+              "field": "predecessor_active",
+              "op": "set",
+              "value": {
+                "input": "predecessor_active"
+              }
+            },
+            {
+              "field": "cancelled",
+              "op": "set",
+              "value": {
+                "input": "cancelled"
+              }
+            },
+            {
+              "field": "handover",
+              "op": "set",
+              "value": {
+                "input": "handover"
+              }
+            }
+          ],
+          "observable": "载入本次机制的自足输入",
+          "next": [
+            "check"
+          ],
+          "evidence_ids": [
+            "control.ev.runtime-slot"
+          ]
+        },
+        {
+          "id": "check",
+          "title": "在条件锁下检查execution_id",
+          "from": "worker.runtime",
+          "to": "worker.runtime",
+          "relation_id": null,
+          "trigger": "在条件锁下检查execution_id",
+          "guard": "本地演示或前一步已建立前置条件",
+          "state_changes": [],
+          "observable": "在条件锁下检查execution_id",
+          "next": [
+            "cancel",
+            "defer",
+            "acquire",
+            "wait"
+          ],
+          "evidence_ids": [
+            "control.ev.runtime-slot"
+          ]
+        },
+        {
+          "id": "cancel",
+          "title": "取消时不进入运行",
+          "from": "worker.runtime",
+          "to": "worker.runtime",
+          "relation_id": null,
+          "trigger": "取消时不进入运行",
+          "guard": "when仅查询已载入状态；见状态条件",
+          "state_changes": [
+            {
+              "field": "outcome",
+              "op": "set",
+              "value": "ExecutionCancelled"
+            }
+          ],
+          "observable": "取消时不进入运行",
+          "next": [],
+          "evidence_ids": [
+            "control.ev.runtime-slot"
+          ],
+          "when": {
+            "field": "cancelled",
+            "equals": true
+          }
+        },
+        {
+          "id": "defer",
+          "title": "有前任且交接，延期退出",
+          "from": "worker.runtime",
+          "to": "worker.runtime",
+          "relation_id": null,
+          "trigger": "有前任且交接，延期退出",
+          "guard": "when仅查询已载入状态；见状态条件",
+          "state_changes": [
+            {
+              "field": "outcome",
+              "op": "set",
+              "value": "ExecutionRecoveryDeferred"
+            }
+          ],
+          "observable": "有前任且交接，延期退出",
+          "next": [],
+          "evidence_ids": [
+            "control.ev.runtime-slot"
+          ],
+          "when": {
+            "all": [
+              {
+                "field": "cancelled",
+                "equals": false
+              },
+              {
+                "field": "predecessor_active",
+                "equals": true
+              },
+              {
+                "field": "handover",
+                "equals": true
+              }
+            ]
+          }
+        },
+        {
+          "id": "wait",
+          "title": "前任仍在：等待条件变量",
+          "from": "worker.runtime",
+          "to": "worker.runtime",
+          "relation_id": null,
+          "trigger": "前任仍在：等待条件变量",
+          "guard": "when仅查询已载入状态；见状态条件",
+          "state_changes": [
+            {
+              "field": "predecessor_active",
+              "op": "set",
+              "value": false
+            }
+          ],
+          "observable": "示例外部事件：前任finally释放并notify；真实实现每0.1秒复查",
+          "next": [
+            "acquire"
+          ],
+          "evidence_ids": [
+            "control.ev.runtime-slot"
+          ],
+          "when": {
+            "all": [
+              {
+                "field": "cancelled",
+                "equals": false
+              },
+              {
+                "field": "predecessor_active",
+                "equals": true
+              },
+              {
+                "field": "handover",
+                "equals": false
+              }
+            ]
+          }
+        },
+        {
+          "id": "acquire",
+          "title": "占据execution槽并执行_once",
+          "from": "worker.runtime",
+          "to": "worker.runtime",
+          "relation_id": null,
+          "trigger": "占据execution槽并执行_once",
+          "guard": "when仅查询已载入状态；见状态条件",
+          "state_changes": [
+            {
+              "field": "slot_acquired",
+              "op": "set",
+              "value": true
+            },
+            {
+              "field": "outcome",
+              "op": "set",
+              "value": "executing"
+            }
+          ],
+          "observable": "占据execution槽并执行_once",
+          "next": [
+            "finally"
+          ],
+          "evidence_ids": [
+            "control.ev.runtime-slot"
+          ],
+          "when": {
+            "all": [
+              {
+                "field": "cancelled",
+                "equals": false
+              },
+              {
+                "field": "predecessor_active",
+                "equals": false
+              }
+            ]
+          }
+        },
+        {
+          "id": "finally",
+          "title": "正常或异常都释放本地槽",
+          "from": "worker.runtime",
+          "to": "worker.runtime",
+          "relation_id": null,
+          "trigger": "正常或异常都释放本地槽",
+          "guard": "本地演示或前一步已建立前置条件",
+          "state_changes": [
+            {
+              "field": "slot_acquired",
+              "op": "set",
+              "value": false
+            },
+            {
+              "field": "outcome",
+              "op": "set",
+              "value": "slot_released"
+            }
+          ],
+          "observable": "正常或异常都释放本地槽",
+          "next": [],
+          "evidence_ids": [
+            "control.ev.runtime-slot"
+          ]
+        }
+      ],
+      "cases": [
+        {
+          "id": "无前任",
+          "title": "无前任",
+          "inputs": {
+            "predecessor_active": false,
+            "cancelled": false,
+            "handover": false
+          },
+          "path": [
+            "load",
+            "check",
+            "acquire",
+            "finally"
+          ],
+          "outcome": "独占槽在finally释放。",
+          "evidence_ids": [
+            "control.ev.runtime-slot"
+          ]
+        },
+        {
+          "id": "等待前任",
+          "title": "等待前任",
+          "inputs": {
+            "predecessor_active": true,
+            "cancelled": false,
+            "handover": false
+          },
+          "path": [
+            "load",
+            "check",
+            "wait",
+            "acquire",
+            "finally"
+          ],
+          "outcome": "不会并行执行同ID。",
+          "evidence_ids": [
+            "control.ev.runtime-slot"
+          ]
+        },
+        {
+          "id": "等待时取消",
+          "title": "等待时取消",
+          "inputs": {
+            "predecessor_active": true,
+            "cancelled": true,
+            "handover": false
+          },
+          "path": [
+            "load",
+            "check",
+            "cancel"
+          ],
+          "outcome": "不启动Provider。",
+          "evidence_ids": [
+            "control.ev.runtime-slot"
+          ]
+        },
+        {
+          "id": "等待时换代",
+          "title": "等待时换代",
+          "inputs": {
+            "predecessor_active": true,
+            "cancelled": false,
+            "handover": true
+          },
+          "path": [
+            "load",
+            "check",
+            "defer"
+          ],
+          "outcome": "不占新槽，交回恢复。",
+          "evidence_ids": [
+            "control.ev.runtime-slot"
+          ]
+        }
+      ],
+      "evidence_ids": [
+        "control.ev.runtime-slot"
+      ],
+      "mode": "simulated"
+    },
+    {
+      "id": "control.runtime-finalization",
+      "owner_id": "worker.runtime",
+      "title": "完成恢复点与内容/会话收尾",
+      "question": "Provider已完成却尚未交终态时，新Worker会再调用模型吗？",
+      "presentation": "completion_checkpoint_pipeline",
+      "entry_conditions": [
+        "本地模拟，无模型、RPC或业务发送",
+        "固定实现 a0dac83394748582158ee9c63a8b23c715872a1e；Design独立版本观察"
+      ],
+      "participants": [
+        {
+          "object_id": "worker.runtime",
+          "role": "单次执行与结果收尾"
+        },
+        {
+          "object_id": "worker.runtime.agent-session",
+          "role": "AgentSession服务适配"
+        },
+        {
+          "object_id": "worker.claim-loop",
+          "role": "领取与持有资格控制"
+        },
+        {
+          "object_id": "execution.scheduling.leases",
+          "role": "领取、租约及恢复账本"
+        },
+        {
+          "object_id": "execution.agent-data.projector",
+          "role": "AgentDataProjector"
+        },
+        {
+          "object_id": "execution.providers.sessions",
+          "role": "SessionManager"
+        }
+      ],
+      "adapter": "execution-control.declarative-transitions.v1",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "checkpoint_phase": {
+            "type": "string",
+            "description": "恢复点证据",
+            "enum": [
+              "none",
+              "accepted",
+              "provider_completed"
+            ]
+          },
+          "cancel_after_content": {
+            "type": "boolean",
+            "description": "最终内容投影后观察到取消"
+          },
+          "handover_after_checkpoint": {
+            "type": "boolean",
+            "description": "保存完成checkpoint后进入交接"
+          }
+        },
+        "required": [
+          "checkpoint_phase",
+          "cancel_after_content",
+          "handover_after_checkpoint"
+        ],
+        "additionalProperties": false
+      },
+      "state_model": {
+        "kind": "declarative_transition_system",
+        "condition_scope": "state",
+        "supported_ops": [
+          "set",
+          "increment",
+          "append"
+        ],
+        "semantics": "load先校验并绑定inputs；when只查询状态；按next和条件选择步骤；state_changes顺序执行。状态均为示例观察，authority_id指事实写入方。案例为机制切片而非真实RPC模拟器。",
+        "not_a_runtime_emulator": true
+      },
+      "state_fields": [
+        {
+          "id": "checkpoint_phase",
+          "label": "checkpoint_phase",
+          "meaning": "恢复点证据",
+          "type": "string",
+          "initial": "none",
+          "state_scope": "observation",
+          "enum": [
+            "none",
+            "accepted",
+            "provider_completed"
+          ]
+        },
+        {
+          "id": "cancel_after_content",
+          "label": "cancel_after_content",
+          "meaning": "最终内容投影后观察到取消",
+          "type": "boolean",
+          "initial": false,
+          "state_scope": "observation"
+        },
+        {
+          "id": "handover_after_checkpoint",
+          "label": "handover_after_checkpoint",
+          "meaning": "保存完成checkpoint后进入交接",
+          "type": "boolean",
+          "initial": false,
+          "state_scope": "observation"
+        },
+        {
+          "id": "provider_call_count",
+          "label": "provider_call_count",
+          "meaning": "本机制新原生输入计数；跟随已接受turn的RPC不算新输入",
+          "type": "integer",
+          "initial": 0,
+          "state_scope": "observation"
+        },
+        {
+          "id": "service_called",
+          "label": "service_called",
+          "meaning": "是否进入service.execute",
+          "type": "boolean",
+          "initial": false,
+          "state_scope": "observation"
+        },
+        {
+          "id": "result_recovered",
+          "label": "result_recovered",
+          "meaning": "从完成恢复点重建BackendResult",
+          "type": "boolean",
+          "initial": false,
+          "state_scope": "observation"
+        },
+        {
+          "id": "content_phase",
+          "label": "content_phase",
+          "meaning": "最终投影阶段；更早streaming可已写入",
+          "type": "string",
+          "initial": "not_finalized",
+          "state_scope": "observation"
+        },
+        {
+          "id": "binding_phase",
+          "label": "binding_phase",
+          "meaning": "会话完成绑定观察",
+          "type": "string",
+          "initial": "unknown",
+          "state_scope": "observation"
+        },
+        {
+          "id": "outcome",
+          "label": "outcome",
+          "meaning": "Runtime结果",
+          "type": "string",
+          "initial": "pending",
+          "state_scope": "observation"
+        }
+      ],
+      "invariants": [
+        "provider_completed恢复不调用service.execute、不重发原输入",
+        "accepted案例以可接回kept-running turn为前提，真实故障恢复由Provider能力决定",
+        "内容先于取消检查；异常路径可bind_started_session，取消不证明未写binding",
+        "Runtime返回BackendResult后仍由Worker独立finish"
+      ],
+      "steps": [
+        {
+          "id": "load",
+          "title": "载入本次机制的自足输入",
+          "from": "worker.runtime",
+          "to": "worker.runtime",
+          "relation_id": null,
+          "trigger": "载入本次机制的自足输入",
+          "guard": "本地演示或前一步已建立前置条件",
+          "state_changes": [
+            {
+              "field": "checkpoint_phase",
+              "op": "set",
+              "value": {
+                "input": "checkpoint_phase"
+              }
+            },
+            {
+              "field": "cancel_after_content",
+              "op": "set",
+              "value": {
+                "input": "cancel_after_content"
+              }
+            },
+            {
+              "field": "handover_after_checkpoint",
+              "op": "set",
+              "value": {
+                "input": "handover_after_checkpoint"
+              }
+            }
+          ],
+          "observable": "载入本次机制的自足输入",
+          "next": [
+            "select"
+          ],
+          "evidence_ids": [
+            "control.ev.runtime-recover",
+            "control.ev.runtime-checkpoint",
+            "control.ev.runtime-final",
+            "control.ev.worker-finish",
+            "control.ev.design-generation"
+          ]
+        },
+        {
+          "id": "select",
+          "title": "按恢复阶段选择结果来源",
+          "from": "worker.runtime",
+          "to": "worker.runtime",
+          "relation_id": null,
+          "trigger": "按恢复阶段选择结果来源",
+          "guard": "本地演示或前一步已建立前置条件",
+          "state_changes": [],
+          "observable": "按恢复阶段选择结果来源",
+          "next": [
+            "recover",
+            "fresh",
+            "follow"
+          ],
+          "evidence_ids": [
+            "control.ev.runtime-recover"
+          ]
+        },
+        {
+          "id": "recover",
+          "title": "provider_completed直接重建BackendResult",
+          "from": "worker.runtime",
+          "to": "worker.runtime",
+          "relation_id": null,
+          "trigger": "provider_completed直接重建BackendResult",
+          "guard": "when仅查询已载入状态；见状态条件",
+          "state_changes": [
+            {
+              "field": "result_recovered",
+              "op": "set",
+              "value": true
+            }
+          ],
+          "observable": "provider_completed直接重建BackendResult",
+          "next": [
+            "checkpoint"
+          ],
+          "evidence_ids": [
+            "control.ev.runtime-recover"
+          ],
+          "when": {
+            "field": "checkpoint_phase",
+            "equals": "provider_completed"
+          }
+        },
+        {
+          "id": "fresh",
+          "title": "无接受证据的新执行进入服务",
+          "from": "worker.runtime",
+          "to": "worker.runtime.agent-session",
+          "relation_id": "control.rel.runtime-service",
+          "trigger": "无接受证据的新执行进入服务",
+          "guard": "when仅查询已载入状态；见状态条件",
+          "state_changes": [
+            {
+              "field": "service_called",
+              "op": "set",
+              "value": true
+            },
+            {
+              "field": "provider_call_count",
+              "op": "set",
+              "value": 1
+            }
+          ],
+          "observable": "无接受证据的新执行进入服务",
+          "next": [
+            "checkpoint"
+          ],
+          "evidence_ids": [
+            "control.ev.runtime-recover"
+          ],
+          "when": {
+            "field": "checkpoint_phase",
+            "equals": "none"
+          }
+        },
+        {
+          "id": "follow",
+          "title": "已接受的可恢复turn交Adapter核对/跟随",
+          "from": "worker.runtime",
+          "to": "worker.runtime.agent-session",
+          "relation_id": "control.rel.runtime-service",
+          "trigger": "已接受的可恢复turn交Adapter核对/跟随",
+          "guard": "when仅查询已载入状态；见状态条件",
+          "state_changes": [
+            {
+              "field": "service_called",
+              "op": "set",
+              "value": true
+            }
+          ],
+          "observable": "已接受的可恢复turn交Adapter核对/跟随",
+          "next": [
+            "checkpoint"
+          ],
+          "evidence_ids": [
+            "control.ev.runtime-recover",
+            "control.ev.design-generation"
+          ],
+          "when": {
+            "field": "checkpoint_phase",
+            "equals": "accepted"
+          }
+        },
+        {
+          "id": "checkpoint",
+          "title": "完成证据先于最终投影写入",
+          "from": "worker.claim-loop",
+          "to": "execution.scheduling.leases",
+          "relation_id": "control.rel.checkpoint",
+          "trigger": "完成证据先于最终投影写入",
+          "guard": "本地演示或前一步已建立前置条件",
+          "state_changes": [
+            {
+              "field": "checkpoint_phase",
+              "op": "set",
+              "value": "provider_completed"
+            }
+          ],
+          "observable": "完成证据先于最终投影写入",
+          "next": [
+            "defer",
+            "content"
+          ],
+          "evidence_ids": [
+            "control.ev.runtime-checkpoint"
+          ]
+        },
+        {
+          "id": "defer",
+          "title": "交接则保留完成证据并延期",
+          "from": "worker.runtime",
+          "to": "worker.runtime",
+          "relation_id": null,
+          "trigger": "交接则保留完成证据并延期",
+          "guard": "when仅查询已载入状态；见状态条件",
+          "state_changes": [
+            {
+              "field": "outcome",
+              "op": "set",
+              "value": "ExecutionRecoveryDeferred"
+            }
+          ],
+          "observable": "交接则保留完成证据并延期",
+          "next": [],
+          "evidence_ids": [
+            "control.ev.runtime-checkpoint"
+          ],
+          "when": {
+            "field": "handover_after_checkpoint",
+            "equals": true
+          }
+        },
+        {
+          "id": "content",
+          "title": "投影本次最终内容",
+          "from": "worker.runtime",
+          "to": "execution.agent-data.projector",
+          "relation_id": "control.rel.project",
+          "trigger": "投影本次最终内容",
+          "guard": "when仅查询已载入状态；见状态条件",
+          "state_changes": [
+            {
+              "field": "content_phase",
+              "op": "set",
+              "value": "finalized"
+            }
+          ],
+          "observable": "投影本次最终内容",
+          "next": [
+            "cancel",
+            "binding"
+          ],
+          "evidence_ids": [
+            "control.ev.runtime-final"
+          ],
+          "when": {
+            "field": "handover_after_checkpoint",
+            "equals": false
+          }
+        },
+        {
+          "id": "cancel",
+          "title": "内容已投影后观察取消",
+          "from": "worker.runtime",
+          "to": "worker.runtime",
+          "relation_id": null,
+          "trigger": "内容已投影后观察取消",
+          "guard": "when仅查询已载入状态；见状态条件",
+          "state_changes": [
+            {
+              "field": "outcome",
+              "op": "set",
+              "value": "ExecutionCancelled"
+            },
+            {
+              "field": "binding_phase",
+              "op": "set",
+              "value": "unknown"
+            }
+          ],
+          "observable": "内容已投影后观察取消",
+          "next": [],
+          "evidence_ids": [
+            "control.ev.runtime-final"
+          ],
+          "when": {
+            "field": "cancel_after_content",
+            "equals": true
+          }
+        },
+        {
+          "id": "binding",
+          "title": "完成会话绑定后返回结果",
+          "from": "worker.runtime",
+          "to": "execution.providers.sessions",
+          "relation_id": "control.rel.binding",
+          "trigger": "完成会话绑定后返回结果",
+          "guard": "when仅查询已载入状态；见状态条件",
+          "state_changes": [
+            {
+              "field": "binding_phase",
+              "op": "set",
+              "value": "completed"
+            },
+            {
+              "field": "outcome",
+              "op": "set",
+              "value": "BackendResult"
+            }
+          ],
+          "observable": "完成会话绑定后返回结果",
+          "next": [],
+          "evidence_ids": [
+            "control.ev.runtime-final"
+          ],
+          "when": {
+            "field": "cancel_after_content",
+            "equals": false
+          }
+        }
+      ],
+      "cases": [
+        {
+          "id": "首次运行",
+          "title": "首次运行",
+          "inputs": {
+            "checkpoint_phase": "none",
+            "cancel_after_content": false,
+            "handover_after_checkpoint": false
+          },
+          "path": [
+            "load",
+            "select",
+            "fresh",
+            "checkpoint",
+            "content",
+            "binding"
+          ],
+          "outcome": "新输入一次；Provider完成不等于Scheduler已终态。",
+          "evidence_ids": [
+            "control.ev.runtime-recover",
+            "control.ev.runtime-final"
+          ]
+        },
+        {
+          "id": "完成后恢复",
+          "title": "完成后恢复",
+          "inputs": {
+            "checkpoint_phase": "provider_completed",
+            "cancel_after_content": false,
+            "handover_after_checkpoint": false
+          },
+          "path": [
+            "load",
+            "select",
+            "recover",
+            "checkpoint",
+            "content",
+            "binding"
+          ],
+          "outcome": "service_called=false，new native input=0。",
+          "evidence_ids": [
+            "control.ev.runtime-recover",
+            "control.ev.runtime-final"
+          ]
+        },
+        {
+          "id": "接回已接受轮次",
+          "title": "接回已接受轮次",
+          "inputs": {
+            "checkpoint_phase": "accepted",
+            "cancel_after_content": false,
+            "handover_after_checkpoint": false
+          },
+          "path": [
+            "load",
+            "select",
+            "follow",
+            "checkpoint",
+            "content",
+            "binding"
+          ],
+          "outcome": "本案例为kept-running原turn跟随；不泛化所有Provider故障恢复。",
+          "evidence_ids": [
+            "control.ev.runtime-recover",
+            "control.ev.design-generation"
+          ]
+        },
+        {
+          "id": "完成后交接",
+          "title": "完成后交接",
+          "inputs": {
+            "checkpoint_phase": "none",
+            "cancel_after_content": false,
+            "handover_after_checkpoint": true
+          },
+          "path": [
+            "load",
+            "select",
+            "fresh",
+            "checkpoint",
+            "defer"
+          ],
+          "outcome": "下一Worker从完成恢复点收尾。",
+          "evidence_ids": [
+            "control.ev.runtime-checkpoint"
+          ]
+        },
+        {
+          "id": "内容后取消",
+          "title": "内容后取消",
+          "inputs": {
+            "checkpoint_phase": "provider_completed",
+            "cancel_after_content": true,
+            "handover_after_checkpoint": false
+          },
+          "path": [
+            "load",
+            "select",
+            "recover",
+            "checkpoint",
+            "content",
+            "cancel"
+          ],
+          "outcome": "最终内容已写，binding状态仍须权威查询。",
+          "evidence_ids": [
+            "control.ev.runtime-final"
+          ]
+        }
+      ],
+      "evidence_ids": [
+        "control.ev.runtime-recover",
+        "control.ev.runtime-checkpoint",
+        "control.ev.runtime-final",
+        "control.ev.worker-finish",
+        "control.ev.design-generation"
+      ],
+      "mode": "simulated"
+    },
+    {
+      "id": "control.agent-service",
+      "owner_id": "worker.runtime.agent-session",
+      "title": "Provider选择与Harness执行边界",
+      "question": "Harness不运行时是否仍经过调用准备？",
+      "presentation": "service_adapter_pipeline",
+      "entry_conditions": [
+        "本地模拟，无模型、RPC或业务发送",
+        "固定实现 a0dac83394748582158ee9c63a8b23c715872a1e；Design独立版本观察"
+      ],
+      "participants": [
+        {
+          "object_id": "worker.runtime.agent-session",
+          "role": "AgentSession服务适配"
+        },
+        {
+          "object_id": "worker.harness",
+          "role": "worker.harness"
+        },
+        {
+          "object_id": "execution.providers",
+          "role": "execution.providers"
+        }
+      ],
+      "adapter": "execution-control.declarative-transitions.v1",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "provider_known": {
+            "type": "boolean",
+            "description": "请求Provider存在于服务映射"
+          },
+          "harness_runs": {
+            "type": "boolean",
+            "description": "should_run判定启用Harness"
+          }
+        },
+        "required": [
+          "provider_known",
+          "harness_runs"
+        ],
+        "additionalProperties": false
+      },
+      "state_model": {
+        "kind": "declarative_transition_system",
+        "condition_scope": "state",
+        "supported_ops": [
+          "set",
+          "increment",
+          "append"
+        ],
+        "semantics": "load先校验并绑定inputs；when只查询状态；按next和条件选择步骤；state_changes顺序执行。状态均为示例观察，authority_id指事实写入方。案例为机制切片而非真实RPC模拟器。",
+        "not_a_runtime_emulator": true
+      },
+      "state_fields": [
+        {
+          "id": "provider_known",
+          "label": "provider_known",
+          "meaning": "请求Provider存在于服务映射",
+          "type": "boolean",
+          "initial": true,
+          "state_scope": "observation"
+        },
+        {
+          "id": "harness_runs",
+          "label": "harness_runs",
+          "meaning": "should_run判定启用Harness",
+          "type": "boolean",
+          "initial": true,
+          "state_scope": "observation"
+        },
+        {
+          "id": "native_options_prepared",
+          "label": "native_options_prepared",
+          "meaning": "native options准备",
+          "type": "boolean",
+          "initial": false,
+          "state_scope": "observation"
+        },
+        {
+          "id": "harness_prepared",
+          "label": "harness_prepared",
+          "meaning": "Harness.prepare_invocation已调用",
+          "type": "boolean",
+          "initial": false,
+          "state_scope": "observation"
+        },
+        {
+          "id": "path",
+          "label": "path",
+          "meaning": "Provider执行路径",
+          "type": "string",
+          "initial": "pending",
+          "state_scope": "observation"
+        }
+      ],
+      "invariants": [
+        "Runtime按service_type选服务；AgentSessionService按provider选Backend",
+        "interrupt直接委托同Provider精确route/session/turn；未知Provider返回false"
+      ],
+      "steps": [
+        {
+          "id": "load",
+          "title": "载入本次机制的自足输入",
+          "from": "worker.runtime.agent-session",
+          "to": "worker.runtime.agent-session",
+          "relation_id": null,
+          "trigger": "载入本次机制的自足输入",
+          "guard": "本地演示或前一步已建立前置条件",
+          "state_changes": [
+            {
+              "field": "provider_known",
+              "op": "set",
+              "value": {
+                "input": "provider_known"
+              }
+            },
+            {
+              "field": "harness_runs",
+              "op": "set",
+              "value": {
+                "input": "harness_runs"
+              }
+            }
+          ],
+          "observable": "载入本次机制的自足输入",
+          "next": [
+            "lookup"
+          ],
+          "evidence_ids": [
+            "control.ev.agent-service"
+          ]
+        },
+        {
+          "id": "lookup",
+          "title": "按request.provider选择Backend",
+          "from": "worker.runtime.agent-session",
+          "to": "worker.runtime.agent-session",
+          "relation_id": null,
+          "trigger": "按request.provider选择Backend",
+          "guard": "本地演示或前一步已建立前置条件",
+          "state_changes": [],
+          "observable": "按request.provider选择Backend",
+          "next": [
+            "unsupported",
+            "prepare"
+          ],
+          "evidence_ids": [
+            "control.ev.agent-service"
+          ]
+        },
+        {
+          "id": "unsupported",
+          "title": "拒绝未支持Provider",
+          "from": "worker.runtime.agent-session",
+          "to": "worker.runtime.agent-session",
+          "relation_id": null,
+          "trigger": "拒绝未支持Provider",
+          "guard": "when仅查询已载入状态；见状态条件",
+          "state_changes": [
+            {
+              "field": "path",
+              "op": "set",
+              "value": "ValueError"
+            }
+          ],
+          "observable": "拒绝未支持Provider",
+          "next": [],
+          "evidence_ids": [
+            "control.ev.agent-service"
+          ],
+          "when": {
+            "field": "provider_known",
+            "equals": false
+          }
+        },
+        {
+          "id": "prepare",
+          "title": "先native options，再Harness准备",
+          "from": "worker.runtime.agent-session",
+          "to": "worker.harness",
+          "relation_id": "control.rel.agent-harness",
+          "trigger": "先native options，再Harness准备",
+          "guard": "when仅查询已载入状态；见状态条件",
+          "state_changes": [
+            {
+              "field": "native_options_prepared",
+              "op": "set",
+              "value": true
+            },
+            {
+              "field": "harness_prepared",
+              "op": "set",
+              "value": true
+            }
+          ],
+          "observable": "先native options，再Harness准备",
+          "next": [
+            "wrapped",
+            "direct"
+          ],
+          "evidence_ids": [
+            "control.ev.agent-service"
+          ],
+          "when": {
+            "field": "provider_known",
+            "equals": true
+          }
+        },
+        {
+          "id": "wrapped",
+          "title": "Harness以Provider执行回调运行",
+          "from": "worker.runtime.agent-session",
+          "to": "worker.harness",
+          "relation_id": "control.rel.agent-harness",
+          "trigger": "Harness以Provider执行回调运行",
+          "guard": "when仅查询已载入状态；见状态条件",
+          "state_changes": [
+            {
+              "field": "path",
+              "op": "set",
+              "value": "harness_execute"
+            }
+          ],
+          "observable": "Harness以Provider执行回调运行",
+          "next": [
+            "provider"
+          ],
+          "evidence_ids": [
+            "control.ev.agent-service"
+          ],
+          "when": {
+            "field": "harness_runs",
+            "equals": true
+          }
+        },
+        {
+          "id": "direct",
+          "title": "should_run=false直接使用执行回调",
+          "from": "worker.runtime.agent-session",
+          "to": "worker.runtime.agent-session",
+          "relation_id": null,
+          "trigger": "should_run=false直接使用执行回调",
+          "guard": "when仅查询已载入状态；见状态条件",
+          "state_changes": [
+            {
+              "field": "path",
+              "op": "set",
+              "value": "direct_callback"
+            }
+          ],
+          "observable": "should_run=false直接使用执行回调",
+          "next": [
+            "provider"
+          ],
+          "evidence_ids": [
+            "control.ev.agent-service"
+          ],
+          "when": {
+            "field": "harness_runs",
+            "equals": false
+          }
+        },
+        {
+          "id": "provider",
+          "title": "补context seed并调用已选择Provider",
+          "from": "worker.runtime.agent-session",
+          "to": "execution.providers",
+          "relation_id": "control.rel.agent-provider",
+          "trigger": "补context seed并调用已选择Provider",
+          "guard": "本地演示或前一步已建立前置条件",
+          "state_changes": [],
+          "observable": "补context seed并调用已选择Provider",
+          "next": [],
+          "evidence_ids": [
+            "control.ev.agent-service"
+          ]
+        }
+      ],
+      "cases": [
+        {
+          "id": "Harness启用",
+          "title": "Harness启用",
+          "inputs": {
+            "provider_known": true,
+            "harness_runs": true
+          },
+          "path": [
+            "load",
+            "lookup",
+            "prepare",
+            "wrapped",
+            "provider"
+          ],
+          "outcome": "Provider回调由Harness执行。",
+          "evidence_ids": [
+            "control.ev.agent-service"
+          ]
+        },
+        {
+          "id": "直接路径",
+          "title": "直接路径",
+          "inputs": {
+            "provider_known": true,
+            "harness_runs": false
+          },
+          "path": [
+            "load",
+            "lookup",
+            "prepare",
+            "direct",
+            "provider"
+          ],
+          "outcome": "仍完成native options和Harness.prepare_invocation。",
+          "evidence_ids": [
+            "control.ev.agent-service"
+          ]
+        },
+        {
+          "id": "不支持Provider",
+          "title": "不支持Provider",
+          "inputs": {
+            "provider_known": false,
+            "harness_runs": true
+          },
+          "path": [
+            "load",
+            "lookup",
+            "unsupported"
+          ],
+          "outcome": "不调用Harness与Provider。",
+          "evidence_ids": [
+            "control.ev.agent-service"
+          ]
+        }
+      ],
+      "evidence_ids": [
+        "control.ev.agent-service"
+      ],
+      "mode": "simulated"
+    },
+    {
+      "id": "control.request-protocol",
+      "owner_id": "resident-execution",
+      "title": "观察、超时与终态确认",
+      "question": "等待超时是否取消执行；确认能否清掉还在运行的请求？",
+      "presentation": "observer_result_ack",
+      "entry_conditions": [
+        "本地模拟，无模型、RPC或业务发送",
+        "固定实现 a0dac83394748582158ee9c63a8b23c715872a1e；Design独立版本观察"
+      ],
+      "participants": [
+        {
+          "object_id": "resident-execution",
+          "role": "业务执行请求与观察协议"
+        },
+        {
+          "object_id": "execution.client",
+          "role": "Execution业务facade"
+        },
+        {
+          "object_id": "execution.server",
+          "role": "Execution RPC入口"
+        },
+        {
+          "object_id": "execution.scheduling",
+          "role": "持久调度、账号与用量"
+        }
+      ],
+      "adapter": "execution-control.declarative-transitions.v1",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "owner_matches": {
+            "type": "boolean",
+            "description": "认证调用方拥有该execution"
+          },
+          "terminal": {
+            "type": "boolean",
+            "description": "观察到终态"
+          },
+          "wait_timeout": {
+            "type": "boolean",
+            "description": "本次观察超时"
+          }
+        },
+        "required": [
+          "owner_matches",
+          "terminal",
+          "wait_timeout"
+        ],
+        "additionalProperties": false
+      },
+      "state_model": {
+        "kind": "declarative_transition_system",
+        "condition_scope": "state",
+        "supported_ops": [
+          "set",
+          "increment",
+          "append"
+        ],
+        "semantics": "load先校验并绑定inputs；when只查询状态；按next和条件选择步骤；state_changes顺序执行。状态均为示例观察，authority_id指事实写入方。案例为机制切片而非真实RPC模拟器。",
+        "not_a_runtime_emulator": true
+      },
+      "state_fields": [
+        {
+          "id": "owner_matches",
+          "label": "owner_matches",
+          "meaning": "认证调用方拥有该execution",
+          "type": "boolean",
+          "initial": true,
+          "state_scope": "observation"
+        },
+        {
+          "id": "terminal",
+          "label": "terminal",
+          "meaning": "观察到终态",
+          "type": "boolean",
+          "initial": true,
+          "state_scope": "observation"
+        },
+        {
+          "id": "wait_timeout",
+          "label": "wait_timeout",
+          "meaning": "本次观察超时",
+          "type": "boolean",
+          "initial": false,
+          "state_scope": "observation"
+        },
+        {
+          "id": "cancel_sent",
+          "label": "cancel_sent",
+          "meaning": "本机制未请求业务停止",
+          "type": "boolean",
+          "initial": false,
+          "state_scope": "observation"
+        },
+        {
+          "id": "resubmitted",
+          "label": "resubmitted",
+          "meaning": "观察不会重新提交",
+          "type": "boolean",
+          "initial": false,
+          "state_scope": "observation"
+        },
+        {
+          "id": "acknowledged",
+          "label": "acknowledged",
+          "meaning": "是否确认终态",
+          "type": "boolean",
+          "initial": false,
+          "state_scope": "observation",
+          "authority_id": "execution.scheduling"
+        },
+        {
+          "id": "result_retained",
+          "label": "result_retained",
+          "meaning": "确认后保存完整result",
+          "type": "boolean",
+          "initial": true,
+          "state_scope": "observation"
+        },
+        {
+          "id": "outcome",
+          "label": "outcome",
+          "meaning": "观察结果",
+          "type": "string",
+          "initial": "observing",
+          "state_scope": "observation"
+        }
+      ],
+      "invariants": [
+        "业务轮次归属在Lineage，技术排队/租约在Scheduler；correlation_id建立关联",
+        "观察和通知只是读取提示，终态以快照为准",
+        "显式停止单独发cancel，不能由页面断开/超时推导"
+      ],
+      "steps": [
+        {
+          "id": "load",
+          "title": "载入本次机制的自足输入",
+          "from": "resident-execution",
+          "to": "resident-execution",
+          "relation_id": null,
+          "trigger": "载入本次机制的自足输入",
+          "guard": "本地演示或前一步已建立前置条件",
+          "state_changes": [
+            {
+              "field": "owner_matches",
+              "op": "set",
+              "value": {
+                "input": "owner_matches"
+              }
+            },
+            {
+              "field": "terminal",
+              "op": "set",
+              "value": {
+                "input": "terminal"
+              }
+            },
+            {
+              "field": "wait_timeout",
+              "op": "set",
+              "value": {
+                "input": "wait_timeout"
+              }
+            }
+          ],
+          "observable": "载入本次机制的自足输入",
+          "next": [
+            "observe"
+          ],
+          "evidence_ids": [
+            "control.ev.wait",
+            "control.ev.ack",
+            "control.ev.design-request"
+          ]
+        },
+        {
+          "id": "observe",
+          "title": "按原execution_id和游标观察",
+          "from": "execution.client",
+          "to": "execution.server",
+          "relation_id": "control.rel.observe",
+          "trigger": "按原execution_id和游标观察",
+          "guard": "本地演示或前一步已建立前置条件",
+          "state_changes": [],
+          "observable": "按原execution_id和游标观察",
+          "next": [
+            "deny",
+            "timeout",
+            "not-terminal",
+            "ack"
+          ],
+          "evidence_ids": [
+            "control.ev.wait",
+            "control.ev.design-request"
+          ]
+        },
+        {
+          "id": "deny",
+          "title": "owner不符，拒绝业务读取/确认",
+          "from": "execution.server",
+          "to": "execution.server",
+          "relation_id": null,
+          "trigger": "owner不符，拒绝业务读取/确认",
+          "guard": "when仅查询已载入状态；见状态条件",
+          "state_changes": [
+            {
+              "field": "outcome",
+              "op": "set",
+              "value": "KeyError"
+            }
+          ],
+          "observable": "owner不符，拒绝业务读取/确认",
+          "next": [],
+          "evidence_ids": [
+            "control.ev.ack",
+            "control.ev.design-request"
+          ],
+          "when": {
+            "field": "owner_matches",
+            "equals": false
+          }
+        },
+        {
+          "id": "timeout",
+          "title": "返回可续观察的超时快照和游标",
+          "from": "execution.client",
+          "to": "execution.client",
+          "relation_id": null,
+          "trigger": "返回可续观察的超时快照和游标",
+          "guard": "when仅查询已载入状态；见状态条件",
+          "state_changes": [
+            {
+              "field": "outcome",
+              "op": "set",
+              "value": "ExecutionWaitTimeout"
+            }
+          ],
+          "observable": "返回可续观察的超时快照和游标",
+          "next": [],
+          "evidence_ids": [
+            "control.ev.wait"
+          ],
+          "when": {
+            "all": [
+              {
+                "field": "owner_matches",
+                "equals": true
+              },
+              {
+                "field": "wait_timeout",
+                "equals": true
+              }
+            ]
+          }
+        },
+        {
+          "id": "not-terminal",
+          "title": "非终态不能acknowledge",
+          "from": "execution.server",
+          "to": "execution.scheduling",
+          "relation_id": "control.rel.ack",
+          "trigger": "非终态不能acknowledge",
+          "guard": "when仅查询已载入状态；见状态条件",
+          "state_changes": [
+            {
+              "field": "outcome",
+              "op": "set",
+              "value": "nonterminal_rejected"
+            }
+          ],
+          "observable": "非终态不能acknowledge",
+          "next": [],
+          "evidence_ids": [
+            "control.ev.ack"
+          ],
+          "when": {
+            "all": [
+              {
+                "field": "owner_matches",
+                "equals": true
+              },
+              {
+                "field": "wait_timeout",
+                "equals": false
+              },
+              {
+                "field": "terminal",
+                "equals": false
+              }
+            ]
+          }
+        },
+        {
+          "id": "ack",
+          "title": "消费终态后确认",
+          "from": "execution.server",
+          "to": "execution.scheduling",
+          "relation_id": "control.rel.ack",
+          "trigger": "消费终态后确认",
+          "guard": "when仅查询已载入状态；见状态条件",
+          "state_changes": [
+            {
+              "field": "acknowledged",
+              "op": "set",
+              "value": true
+            },
+            {
+              "field": "outcome",
+              "op": "set",
+              "value": "request_checkpoint_cleared"
+            }
+          ],
+          "observable": "消费终态后确认",
+          "next": [],
+          "evidence_ids": [
+            "control.ev.ack"
+          ],
+          "when": {
+            "all": [
+              {
+                "field": "owner_matches",
+                "equals": true
+              },
+              {
+                "field": "wait_timeout",
+                "equals": false
+              },
+              {
+                "field": "terminal",
+                "equals": true
+              }
+            ]
+          }
+        }
+      ],
+      "cases": [
+        {
+          "id": "正常确认",
+          "title": "正常确认",
+          "inputs": {
+            "owner_matches": true,
+            "terminal": true,
+            "wait_timeout": false
+          },
+          "path": [
+            "load",
+            "observe",
+            "ack"
+          ],
+          "outcome": "保留result，可重复确认，不重新执行。",
+          "evidence_ids": [
+            "control.ev.ack"
+          ]
+        },
+        {
+          "id": "观察超时",
+          "title": "观察超时",
+          "inputs": {
+            "owner_matches": true,
+            "terminal": false,
+            "wait_timeout": true
+          },
+          "path": [
+            "load",
+            "observe",
+            "timeout"
+          ],
+          "outcome": "cancel_sent=false/resubmitted=false，可凭游标继续观察。",
+          "evidence_ids": [
+            "control.ev.wait"
+          ]
+        },
+        {
+          "id": "误确认活动执行",
+          "title": "误确认活动执行",
+          "inputs": {
+            "owner_matches": true,
+            "terminal": false,
+            "wait_timeout": false
+          },
+          "path": [
+            "load",
+            "observe",
+            "not-terminal"
+          ],
+          "outcome": "不清活动请求。",
+          "evidence_ids": [
+            "control.ev.ack"
+          ]
+        },
+        {
+          "id": "owner不符",
+          "title": "owner不符",
+          "inputs": {
+            "owner_matches": false,
+            "terminal": true,
+            "wait_timeout": false
+          },
+          "path": [
+            "load",
+            "observe",
+            "deny"
+          ],
+          "outcome": "不授予其他owner状态。",
+          "evidence_ids": [
+            "control.ev.ack",
+            "control.ev.design-request"
+          ]
+        }
+      ],
+      "evidence_ids": [
+        "control.ev.wait",
+        "control.ev.ack",
+        "control.ev.design-request"
+      ],
+      "mode": "simulated"
+    },
+    {
+      "id": "control.chat-service",
+      "owner_id": "worker.runtime.chat-completion",
+      "title": "消息构造与协议Adapter",
+      "question": "无状态调用的取消和参数错误在哪一步阻止网络请求？",
+      "presentation": "stateless_protocol_pipeline",
+      "entry_conditions": [
+        "本地模拟，无模型、RPC或业务发送",
+        "固定实现 a0dac83394748582158ee9c63a8b23c715872a1e；Design独立版本观察"
+      ],
+      "participants": [
+        {
+          "object_id": "worker.runtime.chat-completion",
+          "role": "ChatCompletion服务适配"
+        },
+        {
+          "object_id": "execution.providers",
+          "role": "execution.providers"
+        }
+      ],
+      "adapter": "execution-control.declarative-transitions.v1",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "cancelled_before_call": {
+            "type": "boolean",
+            "description": "进入服务时已取消"
+          },
+          "model_present": {
+            "type": "boolean",
+            "description": "options.model或目录default_model有效"
+          },
+          "parameters_valid": {
+            "type": "boolean",
+            "description": "所选协议验证参数通过"
+          },
+          "last_message_user": {
+            "type": "boolean",
+            "description": "已有messages最后一条是user"
+          }
+        },
+        "required": [
+          "cancelled_before_call",
+          "model_present",
+          "parameters_valid",
+          "last_message_user"
+        ],
+        "additionalProperties": false
+      },
+      "state_model": {
+        "kind": "declarative_transition_system",
+        "condition_scope": "state",
+        "supported_ops": [
+          "set",
+          "increment",
+          "append"
+        ],
+        "semantics": "load先校验并绑定inputs；when只查询状态；按next和条件选择步骤；state_changes顺序执行。状态均为示例观察，authority_id指事实写入方。案例为机制切片而非真实RPC模拟器。",
+        "not_a_runtime_emulator": true
+      },
+      "state_fields": [
+        {
+          "id": "cancelled_before_call",
+          "label": "cancelled_before_call",
+          "meaning": "进入服务时已取消",
+          "type": "boolean",
+          "initial": false,
+          "state_scope": "observation"
+        },
+        {
+          "id": "model_present",
+          "label": "model_present",
+          "meaning": "options.model或目录default_model有效",
+          "type": "boolean",
+          "initial": true,
+          "state_scope": "observation"
+        },
+        {
+          "id": "parameters_valid",
+          "label": "parameters_valid",
+          "meaning": "所选协议验证参数通过",
+          "type": "boolean",
+          "initial": true,
+          "state_scope": "observation"
+        },
+        {
+          "id": "last_message_user",
+          "label": "last_message_user",
+          "meaning": "已有messages最后一条是user",
+          "type": "boolean",
+          "initial": true,
+          "state_scope": "observation"
+        },
+        {
+          "id": "messages",
+          "label": "messages",
+          "meaning": "最终user消息构造方式",
+          "type": "string",
+          "initial": "unprepared",
+          "state_scope": "observation"
+        },
+        {
+          "id": "network_called",
+          "label": "network_called",
+          "meaning": "是否进入Adapter.execute",
+          "type": "boolean",
+          "initial": false,
+          "state_scope": "observation"
+        },
+        {
+          "id": "result",
+          "label": "result",
+          "meaning": "服务结果",
+          "type": "string",
+          "initial": "pending",
+          "state_scope": "observation"
+        }
+      ],
+      "invariants": [
+        "不走AgentSessionService/Harness的Agent对话路径",
+        "interrupt返回false不证明远端停止，运行期由cancel callback与Adapter等待机制响应",
+        "这里的execution.providers为既有共享owner，不为本服务新建第二套Provider权威"
+      ],
+      "steps": [
+        {
+          "id": "load",
+          "title": "载入本次机制的自足输入",
+          "from": "worker.runtime.chat-completion",
+          "to": "worker.runtime.chat-completion",
+          "relation_id": null,
+          "trigger": "载入本次机制的自足输入",
+          "guard": "本地演示或前一步已建立前置条件",
+          "state_changes": [
+            {
+              "field": "cancelled_before_call",
+              "op": "set",
+              "value": {
+                "input": "cancelled_before_call"
+              }
+            },
+            {
+              "field": "model_present",
+              "op": "set",
+              "value": {
+                "input": "model_present"
+              }
+            },
+            {
+              "field": "parameters_valid",
+              "op": "set",
+              "value": {
+                "input": "parameters_valid"
+              }
+            },
+            {
+              "field": "last_message_user",
+              "op": "set",
+              "value": {
+                "input": "last_message_user"
+              }
+            }
+          ],
+          "observable": "载入本次机制的自足输入",
+          "next": [
+            "start"
+          ],
+          "evidence_ids": [
+            "control.ev.chat-service"
+          ]
+        },
+        {
+          "id": "start",
+          "title": "检查取消并构造消息",
+          "from": "worker.runtime.chat-completion",
+          "to": "worker.runtime.chat-completion",
+          "relation_id": null,
+          "trigger": "检查取消并构造消息",
+          "guard": "本地演示或前一步已建立前置条件",
+          "state_changes": [],
+          "observable": "检查取消并构造消息",
+          "next": [
+            "cancel",
+            "replace",
+            "append"
+          ],
+          "evidence_ids": [
+            "control.ev.chat-service"
+          ]
+        },
+        {
+          "id": "cancel",
+          "title": "调用前取消",
+          "from": "worker.runtime.chat-completion",
+          "to": "worker.runtime.chat-completion",
+          "relation_id": null,
+          "trigger": "调用前取消",
+          "guard": "when仅查询已载入状态；见状态条件",
+          "state_changes": [
+            {
+              "field": "result",
+              "op": "set",
+              "value": "InterruptedError"
+            }
+          ],
+          "observable": "调用前取消",
+          "next": [],
+          "evidence_ids": [
+            "control.ev.chat-service"
+          ],
+          "when": {
+            "field": "cancelled_before_call",
+            "equals": true
+          }
+        },
+        {
+          "id": "replace",
+          "title": "末条user内容替换为本次user_prompt",
+          "from": "worker.runtime.chat-completion",
+          "to": "worker.runtime.chat-completion",
+          "relation_id": null,
+          "trigger": "末条user内容替换为本次user_prompt",
+          "guard": "when仅查询已载入状态；见状态条件",
+          "state_changes": [
+            {
+              "field": "messages",
+              "op": "set",
+              "value": "replace_last_user"
+            }
+          ],
+          "observable": "末条user内容替换为本次user_prompt",
+          "next": [
+            "invalid",
+            "missing",
+            "execute"
+          ],
+          "evidence_ids": [
+            "control.ev.chat-service"
+          ],
+          "when": {
+            "all": [
+              {
+                "field": "cancelled_before_call",
+                "equals": false
+              },
+              {
+                "field": "last_message_user",
+                "equals": true
+              }
+            ]
+          }
+        },
+        {
+          "id": "append",
+          "title": "没有末条user则追加本次prompt",
+          "from": "worker.runtime.chat-completion",
+          "to": "worker.runtime.chat-completion",
+          "relation_id": null,
+          "trigger": "没有末条user则追加本次prompt",
+          "guard": "when仅查询已载入状态；见状态条件",
+          "state_changes": [
+            {
+              "field": "messages",
+              "op": "set",
+              "value": "append_user"
+            }
+          ],
+          "observable": "没有末条user则追加本次prompt",
+          "next": [
+            "invalid",
+            "missing",
+            "execute"
+          ],
+          "evidence_ids": [
+            "control.ev.chat-service"
+          ],
+          "when": {
+            "all": [
+              {
+                "field": "cancelled_before_call",
+                "equals": false
+              },
+              {
+                "field": "last_message_user",
+                "equals": false
+              }
+            ]
+          }
+        },
+        {
+          "id": "invalid",
+          "title": "协议参数验证失败",
+          "from": "worker.runtime.chat-completion",
+          "to": "worker.runtime.chat-completion",
+          "relation_id": null,
+          "trigger": "协议参数验证失败",
+          "guard": "when仅查询已载入状态；见状态条件",
+          "state_changes": [
+            {
+              "field": "result",
+              "op": "set",
+              "value": "validation_error"
+            }
+          ],
+          "observable": "协议参数验证失败",
+          "next": [],
+          "evidence_ids": [
+            "control.ev.chat-service"
+          ],
+          "when": {
+            "field": "parameters_valid",
+            "equals": false
+          }
+        },
+        {
+          "id": "missing",
+          "title": "没有指定或默认模型",
+          "from": "worker.runtime.chat-completion",
+          "to": "worker.runtime.chat-completion",
+          "relation_id": null,
+          "trigger": "没有指定或默认模型",
+          "guard": "when仅查询已载入状态；见状态条件",
+          "state_changes": [
+            {
+              "field": "result",
+              "op": "set",
+              "value": "ValueError"
+            }
+          ],
+          "observable": "没有指定或默认模型",
+          "next": [],
+          "evidence_ids": [
+            "control.ev.chat-service"
+          ],
+          "when": {
+            "all": [
+              {
+                "field": "parameters_valid",
+                "equals": true
+              },
+              {
+                "field": "model_present",
+                "equals": false
+              }
+            ]
+          }
+        },
+        {
+          "id": "execute",
+          "title": "协议Adapter发起本次调用并封装结果",
+          "from": "worker.runtime.chat-completion",
+          "to": "execution.providers",
+          "relation_id": "control.rel.chat-adapter",
+          "trigger": "协议Adapter发起本次调用并封装结果",
+          "guard": "when仅查询已载入状态；见状态条件",
+          "state_changes": [
+            {
+              "field": "network_called",
+              "op": "set",
+              "value": true
+            },
+            {
+              "field": "result",
+              "op": "set",
+              "value": "BackendResult"
+            }
+          ],
+          "observable": "协议Adapter发起本次调用并封装结果",
+          "next": [],
+          "evidence_ids": [
+            "control.ev.chat-service"
+          ],
+          "when": {
+            "all": [
+              {
+                "field": "parameters_valid",
+                "equals": true
+              },
+              {
+                "field": "model_present",
+                "equals": true
+              }
+            ]
+          }
+        }
+      ],
+      "cases": [
+        {
+          "id": "末条替换",
+          "title": "末条替换",
+          "inputs": {
+            "cancelled_before_call": false,
+            "model_present": true,
+            "parameters_valid": true,
+            "last_message_user": true
+          },
+          "path": [
+            "load",
+            "start",
+            "replace",
+            "execute"
+          ],
+          "outcome": "按协议参数发一次调用；response与structured结果一并保留。",
+          "evidence_ids": [
+            "control.ev.chat-service"
+          ]
+        },
+        {
+          "id": "追加user",
+          "title": "追加user",
+          "inputs": {
+            "cancelled_before_call": false,
+            "model_present": true,
+            "parameters_valid": true,
+            "last_message_user": false
+          },
+          "path": [
+            "load",
+            "start",
+            "append",
+            "execute"
+          ],
+          "outcome": "系统context与业务system_prompt按顺序放在消息前部。",
+          "evidence_ids": [
+            "control.ev.chat-service"
+          ]
+        },
+        {
+          "id": "参数错误",
+          "title": "参数错误",
+          "inputs": {
+            "cancelled_before_call": false,
+            "model_present": true,
+            "parameters_valid": false,
+            "last_message_user": true
+          },
+          "path": [
+            "load",
+            "start",
+            "replace",
+            "invalid"
+          ],
+          "outcome": "网络未调用。",
+          "evidence_ids": [
+            "control.ev.chat-service"
+          ]
+        },
+        {
+          "id": "缺模型",
+          "title": "缺模型",
+          "inputs": {
+            "cancelled_before_call": false,
+            "model_present": false,
+            "parameters_valid": true,
+            "last_message_user": true
+          },
+          "path": [
+            "load",
+            "start",
+            "replace",
+            "missing"
+          ],
+          "outcome": "网络未调用。",
+          "evidence_ids": [
+            "control.ev.chat-service"
+          ]
+        },
+        {
+          "id": "调用前取消",
+          "title": "调用前取消",
+          "inputs": {
+            "cancelled_before_call": true,
+            "model_present": true,
+            "parameters_valid": true,
+            "last_message_user": true
+          },
+          "path": [
+            "load",
+            "start",
+            "cancel"
+          ],
+          "outcome": "网络未调用。",
+          "evidence_ids": [
+            "control.ev.chat-service"
+          ]
+        }
+      ],
+      "evidence_ids": [
+        "control.ev.chat-service"
+      ],
+      "mode": "simulated"
+    }
+  ],
+  "objects": [
+    {
+      "id": "execution",
+      "kind": "module",
+      "title": "Execution 请求协调服务",
+      "responsibility": "在独立服务进程接收已认证请求，按稳定ID提交、提供观察控制，协调账号/持久调度与技术会话准备；Provider执行在Worker。",
+      "parent_id": null,
+      "child_ids": [
+        "execution.scheduling",
+        "execution.agent-data",
+        "execution.client",
+        "execution.server",
+        "execution.preparation"
+      ],
+      "host_ids": [],
+      "state_owned": [
+        "服务端点、维护循环与通知协调；持久执行事实由scheduling拥有"
+      ],
+      "relation_ids": [
+        "rel.lineage.submit-execution",
+        "infra.relation.execution-reload",
+        "ps.relation.relay-submit",
+        "ps.relation.isa-chat"
+      ],
+      "protocol_ids": [
+        "deployment-control",
+        "model-api",
+        "resident-execution"
+      ],
+      "mechanism_ids": [
+        "execution.lifecycle",
+        "control.request-protocol"
+      ],
+      "evidence_ids": [
+        "control.ev.dispatch",
+        "control.ev.design-service",
+        "ex.overview",
+        "ex.provider"
+      ],
+      "identity": {
+        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "focus_owner_id": "execution",
+        "focus_kind": "module:execution",
+        "local_only": false
+      }
+    },
+    {
+      "id": "execution.scheduling",
+      "kind": "module",
+      "title": "持久调度、账号与用量",
+      "responsibility": "维护队列与持有资格；按账号容量、binding互斥、优先级和actor公平选工作；按恢复证据接管而不猜测外部执行。",
+      "parent_id": "execution",
+      "child_ids": [
+        "execution.scheduling.admission",
+        "execution.scheduling.leases",
+        "execution.scheduling.accounts"
+      ],
+      "host_ids": [],
+      "state_owned": [
+        "Scheduler数据库executions/worker注册/公平/容量/账号观察与用量记录"
+      ],
+      "relation_ids": [
+        "ex.enqueue",
+        "ex.prepare",
+        "ex.claim.rpc",
+        "ex.checkpoint",
+        "ex.finish.rpc",
+        "ex.cancel.request",
+        "control.rel.enqueue",
+        "control.rel.prepare",
+        "control.rel.admission",
+        "control.rel.generation",
+        "control.rel.ack",
+        "es.scheduler.record"
+      ],
+      "protocol_ids": [
+        "resident-execution",
+        "worker-lease"
+      ],
+      "mechanism_ids": [
+        "control.admission",
+        "control.fairness",
+        "control.expiry",
+        "execution.lifecycle"
+      ],
+      "evidence_ids": [
+        "control.ev.capacity",
+        "control.ev.fair",
+        "control.ev.expiry",
+        "control.ev.design-scheduling",
+        "ex.overview",
+        "ex.provider"
+      ],
+      "identity": {
+        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "focus_owner_id": "execution.scheduling",
+        "focus_kind": "module:execution.scheduling",
+        "local_only": false
+      }
+    },
+    {
+      "id": "execution.providers",
+      "kind": "module",
+      "title": "会话管理与 Provider Adapter",
+      "parent_id": "worker",
+      "child_ids": [
+        "execution.providers.sessions",
+        "execution.providers.codex",
+        "execution.providers.catalog",
+        "execution.providers.adapters"
+      ],
+      "host_ids": [
+        "execution",
+        "worker"
+      ],
+      "responsibility": "把统一请求解析为既定会话、能力和原生 Adapter 调用，归一结果及控制边界。",
+      "state_owned": [
+        "Provider 定义为代码事实；持久会话身份在 AgentData；原生服务持有自身会话/轮次。"
+      ],
+      "relation_ids": [
+        "ex.adapter",
+        "ex.native",
+        "control.rel.agent-provider",
+        "control.rel.chat-adapter"
+      ],
+      "protocol_ids": [
+        "provider-capabilities",
+        "provider-native",
+        "resident-execution"
+      ],
+      "mechanism_ids": [
+        "execution.lifecycle",
+        "provider.catalog-settings",
+        "provider.adapter-boundary",
+        "provider.session-resolve",
+        "provider.binding-cas"
+      ],
+      "evidence_ids": [
+        "es.ev.catalog",
+        "es.ev.service",
+        "es.ev.design-provider",
+        "es.ev.design-session",
+        "es.ev.catalog-cap",
+        "es.ev.catalog-settings",
+        "es.ev.options",
+        "es.ev.settings",
+        "es.ev.design-update",
+        "es.ev.design-route",
+        "es.ev.session-prepare",
+        "es.ev.session-complete",
+        "es.ev.session-cas",
+        "es.ev.backend",
+        "es.ev.callback",
+        "es.ev.design-handover",
+        "ex.overview",
+        "ex.provider"
+      ],
+      "identity": {
+        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "focus_owner_id": "execution.providers",
+        "focus_kind": "module:execution.providers",
+        "local_only": false
+      }
+    },
+    {
+      "id": "worker.harness",
+      "kind": "module",
+      "title": "Agent Harness",
+      "parent_id": "worker",
+      "child_ids": [
+        "worker.harness.plan",
+        "worker.harness.tools",
+        "worker.harness.pipeline",
+        "worker.harness.observation"
+      ],
+      "host_ids": [
+        "worker"
+      ],
+      "responsibility": "按实际 Adapter 能力准备工具与本轮计划，串接输入/工具批次插件并观察执行。",
+      "state_owned": [
+        "本轮有效计划和观察；不决定 Execution 终态，也不把控制确认当停止事实。"
+      ],
+      "relation_ids": [
+        "ex.harness.apply",
+        "resources.relation.harness-put",
+        "control.rel.agent-harness",
+        "es.service.harness"
+      ],
+      "protocol_ids": [
+        "file-storage",
+        "provider-capabilities",
+        "resident-execution"
+      ],
+      "mechanism_ids": [
+        "execution.lifecycle",
+        "harness.plan-selection",
+        "harness.tool-attachment",
+        "harness.plugin-lifecycle",
+        "harness.observation"
+      ],
+      "evidence_ids": [
+        "es.ev.plan",
+        "es.ev.feature",
+        "es.ev.observe",
+        "es.ev.design-harness",
+        "es.ev.harness-settings",
+        "es.ev.capability",
+        "es.ev.recover-plan",
+        "es.ev.design-policy",
+        "es.ev.tools",
+        "es.ev.prepare-tools",
+        "es.ev.tool-persistence",
+        "es.ev.batch",
+        "es.ev.harness-run",
+        "ex.overview",
+        "ex.provider"
+      ],
+      "identity": {
+        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "focus_owner_id": "worker.harness",
+        "focus_kind": "module:worker.harness",
+        "local_only": false
+      }
+    },
+    {
+      "id": "resident-execution",
+      "kind": "protocol",
+      "title": "业务执行请求与观察协议",
+      "responsibility": "以稳定execution_id连接业务归属与技术执行；认证调用方、actor归属和Worker领取资格是不同约束，观察/确认不会制造新执行。",
+      "parent_id": null,
+      "child_ids": [],
+      "host_ids": [],
+      "state_owned": [],
+      "relation_ids": [],
+      "protocol_ids": [],
+      "mechanism_ids": [
+        "execution.lifecycle",
+        "control.submission",
+        "control.request-protocol",
+        "control.rpc-dispatch"
+      ],
+      "evidence_ids": [
+        "control.ev.request",
+        "control.ev.rpc",
+        "control.ev.dedup",
+        "control.ev.wait",
+        "control.ev.ack",
+        "control.ev.design-request",
+        "ex.overview",
+        "ex.provider"
+      ],
+      "identity": {
+        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "focus_owner_id": "resident-execution",
+        "focus_kind": "protocol:resident-execution",
+        "local_only": false
+      },
+      "contract": {
+        "roles": [
+          {
+            "object_id": "lineage.conversation",
+            "role": "业务输入与轮次owner",
+            "guarantees": [
+              "稳定correlation_id归回原业务轮次",
+              "收到真实终态后投影，保持业务状态责任"
+            ]
+          },
+          {
+            "object_id": "execution.client",
+            "role": "提交和观察facade",
+            "guarantees": [
+              "同ID幂等提交重试",
+              "只读等待可按游标恢复；超时不自动停止"
+            ]
+          },
+          {
+            "object_id": "execution.server",
+            "role": "认证和分派",
+            "guarantees": [
+              "auth校验及actor断言一致后分派",
+              "不在RPC线程运行Provider"
+            ]
+          },
+          {
+            "object_id": "execution.scheduling",
+            "role": "持久技术状态owner",
+            "guarantees": [
+              "原始摘要幂等",
+              "actor所有权校验",
+              "终态确认保留完整结果"
+            ]
+          },
+          {
+            "object_id": "worker.runtime",
+            "role": "执行与结果收尾",
+            "guarantees": [
+              "完成恢复点避免重复Provider调用",
+              "内容和会话绑定由各自owner保存"
+            ]
+          }
+        ],
+        "operations": [
+          {
+            "id": "execution.submit",
+            "request_fields": [
+              "schema",
+              "schema_version",
+              "execution_id",
+              "actor",
+              "agent_id",
+              "service_type",
+              "provider",
+              "operation",
+              "prompt",
+              "session",
+              "priority",
+              "correlation_id",
+              "runtime_options",
+              "system_instructions",
+              "input_media"
+            ],
+            "response_fields": [
+              "ExecutionSnapshot"
+            ],
+            "failures": [
+              "schema/provider/operation invalid",
+              "same ID different digest",
+              "preparation failed"
+            ],
+            "guarantees": [
+              "原始摘要先于prepare；只有新ID技术准备并入队"
+            ]
+          },
+          {
+            "id": "execution.status",
+            "request_fields": [
+              "execution_id",
+              "actor",
+              "after_sequence",
+              "include_events",
+              "include_result"
+            ],
+            "response_fields": [
+              "snapshot/status/events/result/scheduler"
+            ],
+            "failures": [
+              "not found/owner mismatch"
+            ],
+            "guarantees": [
+              "只读；事件按游标过滤；禁用结果/事件则返回空对应字段"
+            ]
+          },
+          {
+            "id": "execution.wait",
+            "request_fields": [
+              "execution_id",
+              "actor",
+              "after_sequence",
+              "after_updated_at",
+              "timeout_seconds"
+            ],
+            "response_fields": [
+              "snapshot or facade ExecutionWaitTimeout(snapshot,cursor)"
+            ],
+            "failures": [
+              "owner mismatch",
+              "transport unknown"
+            ],
+            "guarantees": [
+              "终态/新事件/更新时间/单段超时唤醒",
+              "facade超时不cancel/resubmit"
+            ]
+          },
+          {
+            "id": "execution.cancel",
+            "request_fields": [
+              "execution_id",
+              "actor",
+              "reason",
+              "performed_by",
+              "queued_only"
+            ],
+            "response_fields": [
+              "snapshot"
+            ],
+            "failures": [
+              "owner mismatch"
+            ],
+            "guarantees": [
+              "普通queued可直接取消；active记录取消意图；有保留turn的queued须清理，不可假称已停止"
+            ]
+          },
+          {
+            "id": "execution.acknowledge",
+            "request_fields": [
+              "execution_id",
+              "actor"
+            ],
+            "response_fields": [
+              "snapshot"
+            ],
+            "failures": [
+              "not owner",
+              "not terminal"
+            ],
+            "guarantees": [
+              "清请求和checkpoint；保留result；可重复"
+            ]
+          },
+          {
+            "id": "execution.priority / execution.route.reassign",
+            "request_fields": [
+              "execution_id",
+              "actor",
+              "priority or backend_route_id",
+              "performed_by"
+            ],
+            "response_fields": [
+              "snapshot"
+            ],
+            "failures": [
+              "nonqueued",
+              "invalid route",
+              "owner mismatch"
+            ],
+            "guarantees": [
+              "仅queued更新；路由改派须保留既有会话账号约束"
+            ]
+          },
+          {
+            "id": "execution.input.append / execution.turn_settings.update",
+            "request_fields": [
+              "schema",
+              "control_id",
+              "execution_id",
+              "agent_id",
+              "expected_turn_id",
+              "input/settings payload"
+            ],
+            "response_fields": [
+              "durable control receipt"
+            ],
+            "failures": [
+              "terminal",
+              "unsupported capability",
+              "stale turn",
+              "same control ID different payload"
+            ],
+            "guarantees": [
+              "控制独立于execution身份；重试同控制不得重复原生投递"
+            ]
+          }
+        ],
+        "invariants": [
+          "认证actor、业务归属与Worker token三者不可替代",
+          "固定源码优先，Design无auth描述见work item",
+          "主链execution.lifecycle保持完整，细节机制是独立入口"
+        ],
+        "mechanism_ids": [
+          "execution.lifecycle",
+          "control.submission",
+          "control.request-protocol",
+          "control.rpc-dispatch"
+        ],
+        "transport": "同机Unix socket JSON RPC；当前固定实现读取auth并认证；身份封套属于共享RPC机制",
+        "evidence_ids": [
+          "control.ev.request",
+          "control.ev.rpc",
+          "control.ev.dedup",
+          "control.ev.wait",
+          "control.ev.ack",
+          "control.ev.design-request",
+          "control.ev.design-auth"
+        ]
+      }
+    },
+    {
+      "id": "execution.client",
+      "kind": "concept",
+      "title": "Execution业务facade",
+      "responsibility": "为业务调用方提交、观察、恢复关联和确认；响应未知只重试同ID提交，观察超时保留执行。",
+      "parent_id": "execution",
+      "child_ids": [],
+      "host_ids": [
+        "lineage",
+        "web"
+      ],
+      "state_owned": [
+        "调用方临时观察游标/超时/回调状态"
+      ],
+      "relation_ids": [
+        "ex.submit.rpc",
+        "ex.result.ack",
+        "ex.cancel.request",
+        "control.rel.submit",
+        "control.rel.observe"
+      ],
+      "protocol_ids": [
+        "resident-execution"
+      ],
+      "mechanism_ids": [
+        "control.submission",
+        "control.request-protocol"
+      ],
+      "evidence_ids": [
+        "control.ev.submit",
+        "control.ev.wait",
+        "control.ev.ack"
+      ],
+      "identity": {
+        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "focus_owner_id": "execution",
+        "focus_kind": "module:execution",
+        "local_only": true
+      }
+    },
+    {
+      "id": "execution.server",
+      "kind": "concept",
+      "title": "Execution RPC入口",
+      "responsibility": "解析并认证JSON封套、约束actor一致性、分派执行与目录；自身不调用Provider完成任务。",
+      "parent_id": "execution",
+      "child_ids": [],
+      "host_ids": [
+        "execution"
+      ],
+      "state_owned": [
+        "单连接请求ID、错误封套；服务持有的协调器实例"
+      ],
+      "relation_ids": [
+        "ex.submit.rpc",
+        "ex.enqueue",
+        "control.rel.submit",
+        "control.rel.enqueue",
+        "control.rel.observe",
+        "control.rel.ack"
+      ],
+      "protocol_ids": [
+        "resident-execution"
+      ],
+      "mechanism_ids": [
+        "control.rpc-dispatch"
+      ],
+      "evidence_ids": [
+        "control.ev.rpc",
+        "control.ev.dispatch"
+      ],
+      "identity": {
+        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "focus_owner_id": "execution",
+        "focus_kind": "module:execution",
+        "local_only": true
+      }
+    },
+    {
+      "id": "execution.preparation",
+      "kind": "concept",
+      "title": "新请求技术准备",
+      "responsibility": "首次提交在持久入队事务中规范账号路由，读取已有Session绑定，并按已绑定会话固定账号；同ID重复请求不重做准备。",
+      "parent_id": "execution",
+      "child_ids": [],
+      "host_ids": [
+        "execution"
+      ],
+      "state_owned": [
+        "惰性SessionManager实例；会话绑定真值属于execution.providers.sessions"
+      ],
+      "relation_ids": [
+        "ex.prepare",
+        "control.rel.prepare",
+        "control.rel.prepare-session",
+        "control.rel.prepare-account"
+      ],
+      "protocol_ids": [
+        "resident-execution"
+      ],
+      "mechanism_ids": [
+        "control.preparation"
+      ],
+      "evidence_ids": [
+        "control.ev.prepare",
+        "control.ev.dedup",
+        "control.ev.account"
+      ],
+      "identity": {
+        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "focus_owner_id": "execution",
+        "focus_kind": "module:execution",
+        "local_only": true
+      }
+    },
+    {
+      "id": "worker.claim-loop",
+      "kind": "concept",
+      "title": "领取与持有资格控制",
+      "responsibility": "按本地槽领取，开始/续租/等待控制，给Runtime注入带令牌回调；等待回执后finish或requeue，失去资格停止写入。",
+      "parent_id": "worker",
+      "child_ids": [],
+      "host_ids": [
+        "worker"
+      ],
+      "state_owned": [
+        "活跃线程/领取marker、lease_deadline、取消与ownership_lost、待回执"
+      ],
+      "relation_ids": [
+        "ex.claim.rpc",
+        "ex.run",
+        "ex.finish.rpc",
+        "ex.cancel.provider",
+        "ex.generation",
+        "control.rel.claim",
+        "control.rel.start",
+        "control.rel.renew",
+        "control.rel.checkpoint",
+        "control.rel.finish",
+        "control.rel.handover",
+        "control.rel.requeue",
+        "control.rel.run",
+        "control.rel.spawn"
+      ],
+      "protocol_ids": [
+        "provider-capabilities",
+        "worker-lease"
+      ],
+      "mechanism_ids": [
+        "control.worker-slots",
+        "control.worker-protocol",
+        "control.handover"
+      ],
+      "evidence_ids": [
+        "control.ev.slots",
+        "control.ev.worker-control",
+        "control.ev.worker-run",
+        "control.ev.worker-finish"
+      ],
+      "identity": {
+        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "focus_owner_id": "worker",
+        "focus_kind": "module:worker",
+        "local_only": true
+      }
+    },
+    {
+      "id": "worker.runtime",
+      "kind": "concept",
+      "title": "单次执行与结果收尾",
+      "responsibility": "按execution_id本地互斥，选择service，准备会话并跟随恢复点；先保存Provider完成证据，再投影内容与更新会话，最后交Worker报终态。",
+      "parent_id": "worker",
+      "child_ids": [
+        "worker.runtime.agent-session",
+        "worker.runtime.chat-completion"
+      ],
+      "host_ids": [
+        "worker"
+      ],
+      "state_owned": [
+        "进程内execution_slots和active调用；内容/绑定写入分别委托既有owner",
+        "services持有agent_session/chat_completion；sessions与agent_data_projector为协作实例引用，其数据语义owner仍分别为execution.providers与execution.agent-data。"
+      ],
+      "relation_ids": [
+        "ex.run",
+        "ex.session",
+        "ex.invoke",
+        "ex.checkpoint",
+        "ex.content.write",
+        "ex.binding.commit",
+        "ex.cancel.provider",
+        "control.rel.run",
+        "control.rel.runtime-service",
+        "control.rel.project",
+        "control.rel.binding",
+        "control.rel.runtime-chat",
+        "es.runtime.project",
+        "es.plan.checkpoint"
+      ],
+      "protocol_ids": [
+        "provider-capabilities",
+        "resident-execution",
+        "worker-lease"
+      ],
+      "mechanism_ids": [
+        "control.runtime-slot",
+        "control.runtime-finalization"
+      ],
+      "evidence_ids": [
+        "control.ev.runtime-slot",
+        "control.ev.runtime-select",
+        "control.ev.runtime-recover",
+        "control.ev.runtime-final",
+        "runtime.integration.constructor",
+        "runtime.integration.dispatch",
+        "runtime.integration.finalization"
+      ],
+      "identity": {
+        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "focus_owner_id": "worker",
+        "focus_kind": "module:worker",
+        "local_only": true
+      }
+    },
+    {
+      "id": "worker.runtime.agent-session",
+      "kind": "concept",
+      "title": "AgentSession服务适配",
+      "responsibility": "把agent_session操作按Provider目录路由，经native options和Harness准备执行；Harness运行与直接Provider调用是同一个service下的两个路径。",
+      "parent_id": "worker.runtime",
+      "child_ids": [],
+      "host_ids": [
+        "worker"
+      ],
+      "state_owned": [
+        "服务实例Provider映射和Harness引用；不拥有Provider原生进程状态"
+      ],
+      "relation_ids": [
+        "ex.invoke",
+        "ex.harness.apply",
+        "ex.adapter",
+        "control.rel.runtime-service",
+        "control.rel.agent-harness",
+        "control.rel.agent-provider",
+        "es.service.catalog",
+        "es.service.adapter",
+        "es.service.interrupt",
+        "es.service.harness"
+      ],
+      "protocol_ids": [
+        "provider-capabilities",
+        "resident-execution"
+      ],
+      "mechanism_ids": [
+        "control.agent-service"
+      ],
+      "evidence_ids": [
+        "control.ev.agent-service"
+      ],
+      "identity": {
+        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "focus_owner_id": "worker",
+        "focus_kind": "module:worker",
+        "local_only": true
+      }
+    },
+    {
+      "id": "execution.providers.sessions",
+      "kind": "concept",
+      "title": "SessionManager",
+      "parent_id": "execution.providers",
+      "child_ids": [
+        "execution.providers.sessions.resolve",
+        "execution.providers.sessions.bindings"
+      ],
+      "host_ids": [
+        "execution",
+        "worker"
+      ],
+      "responsibility": "解析稳定 binding 的准备快照，并以显式身份条件完成、替换、恢复或释放会话。",
+      "state_owned": [
+        "持久映射在 AgentData；本对象只负责会话映射语义。"
+      ],
+      "relation_ids": [
+        "ex.session",
+        "ex.binding.commit",
+        "control.rel.prepare-session",
+        "control.rel.binding",
+        "es.session.resolve",
+        "es.session.bind"
+      ],
+      "protocol_ids": [
+        "provider-capabilities",
+        "resident-execution"
+      ],
+      "mechanism_ids": [
+        "execution.lifecycle",
+        "provider.session-resolve",
+        "provider.binding-cas"
+      ],
+      "evidence_ids": [
+        "es.ev.session-prepare",
+        "es.ev.session-complete",
+        "es.ev.session-cas",
+        "es.ev.design-session",
+        "es.ev.bind",
+        "es.ev.replace",
+        "es.ev.restore",
+        "es.ev.design-injection"
+      ],
+      "identity": {
+        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "focus_owner_id": "execution.providers",
+        "focus_kind": "module:execution.providers",
+        "local_only": true
+      }
+    },
+    {
+      "id": "execution.agent-data.projector",
+      "kind": "concept",
+      "title": "AgentDataProjector",
+      "parent_id": "execution.agent-data",
+      "child_ids": [
+        "execution.agent-data.projector.inputs",
+        "execution.agent-data.projector.events",
+        "execution.agent-data.projector.outputs"
+      ],
+      "host_ids": [
+        "worker"
+      ],
+      "responsibility": "把实际输入、Provider 完成条目和执行关联写入内容库，维护本次投影的短期状态。",
+      "state_owned": [
+        "每执行内存活动投影；真实内容和回执写入 AgentData；固定代码 begin 失败存在终态写入例外，见工作项。"
+      ],
+      "relation_ids": [
+        "ex.content.write",
+        "control.rel.project",
+        "es.runtime.project"
+      ],
+      "protocol_ids": [
+        "resident-execution"
+      ],
+      "mechanism_ids": [
+        "execution.lifecycle",
+        "agent-data.actual-input",
+        "agent-data.acceptance-projection",
+        "agent-data.completed-content"
+      ],
+      "evidence_ids": [
+        "es.ev.project-begin",
+        "es.ev.project-complete",
+        "es.ev.design-data",
+        "es.ev.project-input",
+        "es.ev.transform",
+        "es.ev.project-bind",
+        "es.ev.project-accept",
+        "es.ev.receipt",
+        "es.ev.accept",
+        "es.ev.project-events",
+        "es.ev.project-model",
+        "es.ev.model-identity"
+      ],
+      "identity": {
+        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "focus_owner_id": "execution.agent-data",
+        "focus_kind": "module:execution.agent-data",
+        "local_only": true
+      }
+    },
+    {
+      "id": "execution.scheduling.leases",
+      "kind": "concept",
+      "title": "领取、租约及恢复账本",
+      "responsibility": "持有executions中的owner/token/lease/checkpoint/结果；围栏写入与回收锁定同一行，回收依据Provider证据作重排/失败/清理。",
+      "parent_id": "execution.scheduling",
+      "child_ids": [],
+      "host_ids": [],
+      "state_owned": [
+        "owner_worker_id/claim_token/lease_expires_at/status/checkpoint/result"
+      ],
+      "relation_ids": [
+        "control.rel.reserve",
+        "control.rel.claim",
+        "control.rel.start",
+        "control.rel.renew",
+        "control.rel.checkpoint",
+        "control.rel.finish",
+        "control.rel.handover",
+        "control.rel.requeue"
+      ],
+      "protocol_ids": [
+        "worker-lease"
+      ],
+      "mechanism_ids": [
+        "control.worker-protocol",
+        "control.expiry"
+      ],
+      "evidence_ids": [
+        "control.ev.fence",
+        "control.ev.checkpoint",
+        "control.ev.expiry",
+        "control.ev.finish"
+      ],
+      "identity": {
+        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "focus_owner_id": "execution.scheduling",
+        "focus_kind": "module:execution.scheduling",
+        "local_only": true
+      }
+    },
+    {
+      "id": "execution.scheduling.accounts",
+      "kind": "concept",
+      "title": "账号目录与额度准入策略",
+      "responsibility": "账号目录将Provider路由交已登记适配器解析；额度观察、阈值与binding例外共同决定准入，reserved另请求活动执行取消。",
+      "parent_id": "execution.scheduling",
+      "child_ids": [],
+      "host_ids": [],
+      "state_owned": [
+        "账号配置观察；Scheduler持久额度样本/阈值/binding例外，原生余额仍由Provider负责"
+      ],
+      "relation_ids": [
+        "control.rel.prepare-account",
+        "control.rel.quota"
+      ],
+      "protocol_ids": [
+        "resident-execution",
+        "worker-lease"
+      ],
+      "mechanism_ids": [
+        "control.quota"
+      ],
+      "evidence_ids": [
+        "control.ev.account",
+        "control.ev.quota",
+        "control.ev.quota-enforce",
+        "control.ev.design-quota"
+      ],
+      "identity": {
+        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "focus_owner_id": "execution.scheduling",
+        "focus_kind": "module:execution.scheduling",
+        "local_only": true
+      }
+    },
+    {
+      "id": "worker.runtime.chat-completion",
+      "kind": "concept",
+      "title": "ChatCompletion服务适配",
+      "responsibility": "无持续会话的服务分支：从登记接口取协议kind/default model，构造消息和参数，经协议Adapter调用并保存transport观察；不拥有持久Agent Session。",
+      "parent_id": "worker.runtime",
+      "child_ids": [],
+      "host_ids": [
+        "worker"
+      ],
+      "state_owned": [
+        "本次transport诊断和结果封装"
+      ],
+      "relation_ids": [
+        "control.rel.runtime-chat",
+        "control.rel.chat-adapter"
+      ],
+      "protocol_ids": [
+        "resident-execution"
+      ],
+      "mechanism_ids": [
+        "control.chat-service"
+      ],
+      "evidence_ids": [
+        "control.ev.chat-service",
+        "control.ev.agent-service"
+      ],
+      "identity": {
+        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "focus_owner_id": "worker",
+        "focus_kind": "module:worker",
+        "local_only": true
+      }
+    }
+  ],
+  "evidence": [
+    {
+      "id": "control.ev.submit",
+      "kind": "code",
+      "claim": "Facade只对同一execution_id的幂等提交重试；250ms等待。",
+      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/service.py",
+      "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
+      "sha256": "c3a08209db632da47a0ffd808e8cac12c056a3c55724e8fb6b460abd3c5852e7",
+      "start_line": 199,
+      "end_line": 213,
+      "symbol": "def submit(self, request: ExecutionRequest) -> dict[str, Any]:",
+      "excerpt": "    def submit(self, request: ExecutionRequest) -> dict[str, Any]:\n        request.validate()\n        while True:\n            try:\n                result = self.client.request(\n                    \"execution.submit\",\n                    request.to_payload(),\n                )\n                return result if isinstance(result, dict) else {}\n            except (ExecutionServiceUnavailable, ExecutionResponseUnknown):\n                # Submission is idempotent on execution_id. A rolling socket\n                # replacement must keep waiting for the same durable request.\n                time.sleep(0.25)\n\n    def configure_binding_quota_overrides(self, policies: list[dict[str, Any]]) -> dict[str, Any]:",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-c3a08209db632da47a0ffd808e8cac12c056a3c55724e8fb6b460abd3c5852e7.json",
+        "sha256": "c3a08209db632da47a0ffd808e8cac12c056a3c55724e8fb6b460abd3c5852e7",
+        "size": 55436
+      }
+    },
+    {
+      "id": "control.ev.dedup",
+      "kind": "code",
+      "claim": "首次原始请求摘要在准备之前计算；同ID同摘要复用，冲突拒绝。",
+      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/scheduler.py",
+      "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
+      "sha256": "48ecd9885d360e9c7beb4fd6756c3060748a9fd2c54bba78eab2a1e8806a3ea7",
+      "start_line": 1477,
+      "end_line": 1546,
+      "symbol": "def submit(self, request: ExecutionRequest, *, prepare=None) -> dict[str, Any]:",
+      "excerpt": "    def submit(self, request: ExecutionRequest, *, prepare=None) -> dict[str, Any]:\n        request.validate()\n        import hashlib\n        original_digest = hashlib.sha256(_json(request.to_payload()).encode()).hexdigest()\n        now = execution_timestamp()\n        with self._lock, self._connect() as connection:\n            self._transaction_lock(\n                connection, f\"execution:{request.execution_id}\"\n            )\n            existing = connection.execute(\n                'SELECT request_json FROM executions WHERE execution_id = %s',\n                (request.execution_id,),\n            ).fetchone()\n            if existing is not None:\n                saved = connection.execute(\"SELECT value FROM execution_store_meta WHERE key=%s\", (f\"request_digest:{request.execution_id}\",)).fetchone()\n                stored_digest = str(saved[\"value\"]) if saved else hashlib.sha256(_json(_object(existing[\"request_json\"])).encode()).hexdigest()\n                if stored_digest != original_digest:\n                    connection.rollback()\n                    raise ValueError(\n                        \"execution id already exists with a different request\"\n                    )\n                connection.commit()\n                return self.snapshot(request.execution_id)\n            if prepare is not None:\n                request = prepare(request)\n            capacity_key = self._capacity_key(request.to_payload())\n            connection.execute(\"INSERT INTO execution_store_meta(key,value) VALUES (%s,%s)\", (f\"request_digest:{request.execution_id}\", original_digest))\n            nonterminal = connection.execute(\n                \"\"\"\n                SELECT 1\n                FROM executions\n                WHERE status IN ('queued', 'claimed', 'running')\n                LIMIT 1\n                \"\"\"\n            ).fetchone()\n            if nonterminal is None:\n                connection.execute(\"DELETE FROM execution_actor_dispatch_state\")\n            connection.execute(\n                \"\\n                INSERT INTO executions (\\n                    execution_id, capability, actor, priority,\\n                    correlation_id, request_json, status, created_at, updated_at\\n                ) VALUES (%s, %s, %s, %s, %s, %s, 'queued', %s, %s)\\n                \",\n                (\n                    request.execution_id,\n                    request.capability,\n                    request.actor,\n                    request.priority,\n                    request.correlation_id,\n                    _json(request.to_payload()),\n                    now,\n                    now,\n                ),\n            )\n            self._event(\n                connection,\n                request.execution_id,\n                \"queued\",\n                {\n                    \"service_type\": request.service_type,\n                    \"provider\": request.provider,\n                    \"operation\": request.operation,\n                    \"capability\": request.capability,\n                    \"priority\": request.priority,\n                    \"capacity_key\": capacity_key,\n                },\n            )\n            connection.commit()\n            # Workers wait on this condition between claims.  Persisting a new\n            # request without waking them makes every idle submission pay the\n            # full long-poll timeout before it can be claimed.\n            self._claim_changed.notify_all()\n        return self.snapshot(request.execution_id)\n",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-48ecd9885d360e9c7beb4fd6756c3060748a9fd2c54bba78eab2a1e8806a3ea7.json",
+        "sha256": "48ecd9885d360e9c7beb4fd6756c3060748a9fd2c54bba78eab2a1e8806a3ea7",
+        "size": 181834
+      }
+    },
+    {
+      "id": "control.ev.prepare",
+      "kind": "code",
+      "claim": "技术准备先解析账号，再查持久会话，再按已绑定会话固定路由。",
+      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/service.py",
+      "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
+      "sha256": "c3a08209db632da47a0ffd808e8cac12c056a3c55724e8fb6b460abd3c5852e7",
+      "start_line": 90,
+      "end_line": 126,
+      "symbol": "class ExecutionPreparation:",
+      "excerpt": "class ExecutionPreparation:\n    \"\"\"Resolve technical execution routing before work enters the queue.\"\"\"\n\n    def __init__(\n        self,\n        *,\n        account_registry=None,\n        session_manager: SessionManager | None = None,\n        provider_registry: AIProviderRegistry | None = None,\n        accounts=None,\n    ) -> None:\n        self.provider_registry = provider_registry or shared_ai_provider_registry\n        self.accounts = accounts or default_execution_accounts(account_registry=account_registry, provider_registry=self.provider_registry)\n        self._session_manager_instance = session_manager\n        self._lock = threading.RLock()\n\n    def _session_manager(self) -> SessionManager:\n        with self._lock:\n            manager = self._session_manager_instance\n            if manager is None:\n                manager = SessionManager()\n                self._session_manager_instance = manager\n            return manager\n\n    def prepare(self, request: ExecutionRequest) -> ExecutionRequest:\n        request.validate()\n        if request.service_type != \"agent_session\":\n            return request\n        incoming = self.accounts.resolve(request.provider, request.session.backend_route_id, request.runtime_options)\n        if incoming and request.session.backend_route_id and incoming.route_id != request.session.backend_route_id:\n            request = replace(request, session=replace(request.session, backend_route_id=incoming.route_id))\n        runtime_session = self._session_manager().prepare(request)\n        account = self.accounts.resolve(request.provider, runtime_session.backend_route_id, request.runtime_options, bound=bool(runtime_session.backend_session_id))\n        if account is None or account.route_id == request.session.backend_route_id:\n            return request\n        return replace(request, session=replace(request.session, backend_route_id=account.route_id)).validate()\n",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-c3a08209db632da47a0ffd808e8cac12c056a3c55724e8fb6b460abd3c5852e7.json",
+        "sha256": "c3a08209db632da47a0ffd808e8cac12c056a3c55724e8fb6b460abd3c5852e7",
+        "size": 55436
+      }
+    },
+    {
+      "id": "control.ev.account",
+      "kind": "code",
+      "claim": "账号目录把provider/route/options/bound委托给已登记账号适配器。",
+      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/accounts.py",
+      "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
+      "sha256": "f9bb8916a085544b1da517cca4ff479464a17d75063178c845ac6bd93972b008",
+      "start_line": 81,
+      "end_line": 96,
+      "symbol": "def resolve(self, provider: str, route_id: str = \"\", options: dict[str, Any] | None = None, *, bound: bool = False) -> ExecutionAccount | None:",
+      "excerpt": "    def resolve(self, provider: str, route_id: str = \"\", options: dict[str, Any] | None = None, *, bound: bool = False) -> ExecutionAccount | None:\n        adapter = self.adapters.get(provider)\n        return adapter.resolve(route_id, options or {}, bound=bound) if adapter else self._accounts.get(provider)\n\n    def canonical_route(self, provider: str, route_id: object) -> str:\n        adapter = self.adapters.get(provider)\n        if not adapter or not str(route_id or \"\").strip():\n            return \"\"\n        normalize = getattr(adapter, \"canonical_route\", None)\n        if callable(normalize):\n            return str(normalize(route_id) or \"\")\n        try:\n            return str(adapter.resolve(str(route_id), {}, bound=True).route_id)\n        except ValueError:\n            return \"\"\n",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-f9bb8916a085544b1da517cca4ff479464a17d75063178c845ac6bd93972b008.json",
+        "sha256": "f9bb8916a085544b1da517cca4ff479464a17d75063178c845ac6bd93972b008",
+        "size": 16737
+      }
+    },
+    {
+      "id": "control.ev.rpc",
+      "kind": "code",
+      "claim": "RPC解析对象、认证封套、检查actor匹配后进入dispatch。",
+      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/service.py",
+      "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
+      "sha256": "c3a08209db632da47a0ffd808e8cac12c056a3c55724e8fb6b460abd3c5852e7",
+      "start_line": 596,
+      "end_line": 635,
+      "symbol": "def handle(self) -> None:",
+      "excerpt": "    def handle(self) -> None:\n        raw = self.rfile.readline()\n        request_id = \"\"\n        try:\n            request = json.loads(raw)\n            if not isinstance(request, dict):\n                raise ValueError(\"request envelope must be an object\")\n            request_id = str(request.get(\"id\") or \"\")\n            method = str(request.get(\"method\") or \"\")\n            params = request.get(\"params\")\n            if not isinstance(params, dict):\n                raise ValueError(\"request params must be an object\")\n            actor = self.server.rpc_auth.authenticate(method, params, request.get(\"auth\"))\n            if method == \"instruction.execute\":\n                self._serve_instruction(params, request_id, actor)\n                return\n            if \"actor\" in params and str(params[\"actor\"] or \"\").strip() != actor:\n                raise PermissionError(\"RPC actor must match the authenticated assertion\")\n            result = self.server.dispatch(method, params)\n            response = {\"id\": request_id, \"ok\": True, \"result\": result}\n        except Exception as exc:\n            response = {\n                \"id\": request_id,\n                \"ok\": False,\n                \"error\": {\n                    \"class\": exc.__class__.__name__,\n                    \"message\": str(exc),\n                },\n            }\n        try:\n            self.wfile.write(\n                json.dumps(\n                    response,\n                    ensure_ascii=False,\n                    separators=(\",\", \":\"),\n                ).encode(\"utf-8\")\n                + b\"\\n\"\n            )\n        except (BrokenPipeError, ConnectionResetError):\n            return",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-c3a08209db632da47a0ffd808e8cac12c056a3c55724e8fb6b460abd3c5852e7.json",
+        "sha256": "c3a08209db632da47a0ffd808e8cac12c056a3c55724e8fb6b460abd3c5852e7",
+        "size": 55436
+      }
+    },
+    {
+      "id": "control.ev.dispatch",
+      "kind": "code",
+      "claim": "ExecutionService分派目录/提交；submit把preparation交给Scheduler。",
+      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/service.py",
+      "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
+      "sha256": "c3a08209db632da47a0ffd808e8cac12c056a3c55724e8fb6b460abd3c5852e7",
+      "start_line": 872,
+      "end_line": 913,
+      "symbol": "def dispatch(self, method: str, params: dict[str, Any]) -> Any:",
+      "excerpt": "    def dispatch(self, method: str, params: dict[str, Any]) -> Any:\n        if method in {\"settings.get\", \"settings.update\"}:\n            from management_portal.authorization import holds_portal_admin\n            if not holds_portal_admin(self._required(params, \"actor\")):\n                raise PermissionError(\"只有管理员可以查看或修改执行设置\")\n            if method == \"settings.update\":\n                return self.request_timing.configure(params.get(\"model_request_timing_enabled\"))\n            return self.request_timing.settings.get()\n        if method == \"health\":\n            scheduler_health = self.scheduler.health()\n            health: ExecutionServiceHealth = {\n                \"ok\": True,\n                \"schema\": EXECUTION_SERVICE_SCHEMA,\n                \"instance\": self.instance,\n                \"build_id\": self.build_id,\n                \"scheduler\": scheduler_health,\n                \"notifications\": self.notification_publisher.health(),\n                \"agent_data\": self.agent_data.health(),\n            }\n            return health\n        if method == \"accounts.usage\":\n            return self.quota_monitor.usage_snapshot()\n        if method == \"accounts.list\":\n            if params.get(\"force_refresh\"):\n                self.quota_monitor.request_refresh()\n            return self.quota_monitor.snapshot()\n        if method == \"accounts.resolve\":\n            return self.accounts.configuration(self._required(params, \"provider\"), str(params.get(\"backend_route_id\") or \"\"), params.get(\"runtime_options\") or {})\n        if method == \"runtime.catalog\":\n            return self.accounts.runtime_catalog(str(params.get(\"account_id\") or \"\"), backend=str(params.get(\"backend\") or \"\"), include_backends=bool(params.get(\"include_backends\")))\n        if method == \"execution.submit\":\n            request = ExecutionRequest.from_payload(params)\n            return self._changed(self.scheduler.submit(request, prepare=self.preparation.prepare))\n        if method == \"execution.states\":\n            executions = params.get(\"executions\")\n            if not isinstance(executions, dict) or len(executions) > 500:\n                raise ValueError(\"execution.states requires at most 500 execution/actor pairs\")\n            if not all(isinstance(key,str) and key and isinstance(actor,str) and actor for key,actor in executions.items()):\n                raise ValueError(\"execution.states requires execution and actor IDs\")\n            return self.scheduler.states(executions)\n        if method == \"execution.status\":\n            execution_id = self._required(params, \"execution_id\")",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-c3a08209db632da47a0ffd808e8cac12c056a3c55724e8fb6b460abd3c5852e7.json",
+        "sha256": "c3a08209db632da47a0ffd808e8cac12c056a3c55724e8fb6b460abd3c5852e7",
+        "size": 55436
+      }
+    },
+    {
+      "id": "control.ev.worker-finish",
+      "kind": "code",
+      "claim": "释放/finish之前等待输入回执；claim_lost不伪造终态。",
+      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/worker.py",
+      "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
+      "sha256": "14ed38d469ab45e1ccc5f624912eec379d1f96998946defb42af7632a764759f",
+      "start_line": 378,
+      "end_line": 435,
+      "symbol": "finally:",
+      "excerpt": "        finally:\n            # A Provider call can end while its input pump still persists a\n            # receipt. Keep the lease alive until that receipt is acknowledged.\n            with receipt_lock:\n                pass\n            heartbeat_stop.set()\n        if planned_handover.is_set() and not deferred_reason:\n            heartbeat.join()\n            try:\n                released = self.scheduler.requeue(\n                    execution_id, claim_token, \"worker generation handover\",\n                )\n                return {\n                    \"execution_id\": execution_id,\n                    \"status\": (\n                        \"cancelled\" if released.get(\"status\") == \"cancelled\"\n                        else \"requeued\"\n                    ),\n                    \"reason\": \"worker generation handover\",\n                }\n            except (ExecutionClaimOwnershipLost, ExecutionServiceUnavailable):\n                ownership_lost.set()\n        if ownership_lost.is_set():\n            heartbeat.join(timeout=2)\n            return {\n                \"execution_id\": execution_id,\n                \"status\": \"claim_lost\",\n                \"reason\": \"execution claim ownership changed\",\n            }\n        if deferred_reason:\n            heartbeat.join(timeout=2)\n            return {\n                \"execution_id\": execution_id,\n                \"status\": \"requeued\",\n                \"reason\": deferred_reason,\n            }\n        if result is None:\n            heartbeat.join(timeout=2)\n            raise RuntimeError(\"execution produced no terminal result\")\n        try:\n            snapshot = self.scheduler.finish(result, claim_token)\n        except ExecutionClaimOwnershipLost:\n            return {\n                \"execution_id\": execution_id,\n                \"status\": \"claim_lost\",\n                \"reason\": \"execution claim ownership changed\",\n            }\n        finally:\n            # Publishing the terminal state wakes the blocking control wait,\n            # so the heartbeat can be reclaimed without paying its join\n            # timeout on every successful execution.\n            heartbeat.join(timeout=2)\n        return {\n            \"execution_id\": execution_id,\n            \"status\": result.status,\n            \"result\": result.to_payload(),\n            \"snapshot\": snapshot,\n        }",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-14ed38d469ab45e1ccc5f624912eec379d1f96998946defb42af7632a764759f.json",
+        "sha256": "14ed38d469ab45e1ccc5f624912eec379d1f96998946defb42af7632a764759f",
+        "size": 28633
+      }
+    },
+    {
+      "id": "control.ev.runtime-slot",
+      "kind": "code",
+      "claim": "同一Runtime内同execution互斥；等待期取消/交接提前退出，finally释放。",
+      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/runtime.py",
+      "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
+      "sha256": "b1484ec7694088c6fb531bb631b14d6f63d9c7d50b2b7d9a22fd3e3fab4400cf",
+      "start_line": 151,
+      "end_line": 187,
+      "symbol": "def execute(",
+      "excerpt": "    def execute(\n        self,\n        request: ExecutionRequest,\n        context: RuntimeContext | None = None,\n    ) -> BackendResult:\n        request.validate()\n        runtime_context = context or RuntimeContext()\n        execution_id = request.execution_id\n        abandoned = isinstance((runtime_context.recovery_checkpoint or {}).get(\"abandoned\"), dict)\n        waited_for_predecessor = False\n        with self._execution_slot_changed:\n            while execution_id in self._execution_slots:\n                waited_for_predecessor = True\n                if runtime_context.is_cancelled() and not abandoned:\n                    raise ExecutionCancelled(\n                        \"execution was cancelled while waiting for its local predecessor\"\n                    )\n                if runtime_context.is_handover():\n                    raise ExecutionRecoveryDeferred(\n                        \"execution claim changed while waiting for its local predecessor\"\n                    )\n                self._execution_slot_changed.wait(0.1)\n            if runtime_context.is_cancelled() and not abandoned:\n                raise ExecutionCancelled(\n                    \"execution was cancelled before ExecutionRuntime started\"\n                )\n            if waited_for_predecessor and runtime_context.is_handover():\n                raise ExecutionRecoveryDeferred(\n                    \"execution claim changed before ExecutionRuntime started\"\n                )\n            self._execution_slots.add(execution_id)\n        try:\n            return self._execute_once(request, runtime_context)\n        finally:\n            with self._execution_slot_changed:\n                self._execution_slots.discard(execution_id)\n                self._execution_slot_changed.notify_all()",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-b1484ec7694088c6fb531bb631b14d6f63d9c7d50b2b7d9a22fd3e3fab4400cf.json",
+        "sha256": "b1484ec7694088c6fb531bb631b14d6f63d9c7d50b2b7d9a22fd3e3fab4400cf",
+        "size": 38577
+      }
+    },
+    {
+      "id": "control.ev.runtime-recover",
+      "kind": "code",
+      "claim": "provider_completed恢复点重建BackendResult，跳过service.execute。",
+      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/runtime.py",
+      "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
+      "sha256": "b1484ec7694088c6fb531bb631b14d6f63d9c7d50b2b7d9a22fd3e3fab4400cf",
+      "start_line": 509,
+      "end_line": 556,
+      "symbol": "if bool(recovery_checkpoint.get(\"provider_completed\")):",
+      "excerpt": "            if bool(recovery_checkpoint.get(\"provider_completed\")):\n                result = BackendResult(\n                    output=dict(\n                        recovery_checkpoint.get(\"output\")\n                        if isinstance(\n                            recovery_checkpoint.get(\"output\"),\n                            dict,\n                        )\n                        else {}\n                    ),\n                    backend_session_id=str(\n                        recovery_checkpoint.get(\"backend_session_id\")\n                        or \"\"\n                    ),\n                    backend_route_id=str(\n                        recovery_checkpoint.get(\"backend_route_id\") or \"\"\n                    ),\n                    usage=dict(\n                        recovery_checkpoint.get(\"usage\")\n                        if isinstance(\n                            recovery_checkpoint.get(\"usage\"),\n                            dict,\n                        )\n                        else {}\n                    ),\n                    available_harness_tool_names=frozenset(\n                        str(name or \"\").strip()\n                        for name in (\n                            recovery_checkpoint.get(\n                                \"available_harness_tool_names\"\n                            )\n                            or ()\n                        )\n                        if str(name or \"\").strip()\n                    ),\n                )\n                emit(\n                    \"provider_result_recovered\",\n                    {\n                        \"provider\": request.provider,\n                        \"turn_id\": str(\n                            recovery_checkpoint.get(\"turn_id\") or \"\"\n                        ),\n                    },\n                )\n            else:\n                result = service.execute(\n                    invocation,",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-b1484ec7694088c6fb531bb631b14d6f63d9c7d50b2b7d9a22fd3e3fab4400cf.json",
+        "sha256": "b1484ec7694088c6fb531bb631b14d6f63d9c7d50b2b7d9a22fd3e3fab4400cf",
+        "size": 38577
+      }
+    },
+    {
+      "id": "control.ev.runtime-checkpoint",
+      "kind": "code",
+      "claim": "完成恢复点在最终投影之前保存；交接可安全延期。",
+      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/runtime.py",
+      "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
+      "sha256": "b1484ec7694088c6fb531bb631b14d6f63d9c7d50b2b7d9a22fd3e3fab4400cf",
+      "start_line": 646,
+      "end_line": 669,
+      "symbol": "\"provider_completed\": True,",
+      "excerpt": "                    \"provider_completed\": True,\n                    \"output\": dict(result.output),\n                    \"usage\": dict(result.usage),\n                    \"available_harness_tool_names\": sorted(\n                        result.available_harness_tool_names\n                    ),\n                }\n                if live_context_usage:\n                    completed_checkpoint[\"context_usage\"] = (\n                        live_context_usage\n                    )\n                    completed_checkpoint[\"context_usage_at\"] = (\n                        live_context_usage_at\n                    )\n                if live_context_window:\n                    completed_checkpoint[\"model_context_window\"] = (\n                        live_context_window\n                    )\n                runtime_context.checkpoint(completed_checkpoint)\n            if runtime_context.is_handover():\n                raise ExecutionRecoveryDeferred(\n                    \"worker handover deferred terminal reconciliation\"\n                )\n            self.agent_data_projector.complete(",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-b1484ec7694088c6fb531bb631b14d6f63d9c7d50b2b7d9a22fd3e3fab4400cf.json",
+        "sha256": "b1484ec7694088c6fb531bb631b14d6f63d9c7d50b2b7d9a22fd3e3fab4400cf",
+        "size": 38577
+      }
+    },
+    {
+      "id": "control.ev.runtime-final",
+      "kind": "code",
+      "claim": "内容投影先于取消检查与binding完成；异常可能绑定已开始会话。",
+      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/runtime.py",
+      "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
+      "sha256": "b1484ec7694088c6fb531bb631b14d6f63d9c7d50b2b7d9a22fd3e3fab4400cf",
+      "start_line": 669,
+      "end_line": 742,
+      "symbol": "self.agent_data_projector.complete(",
+      "excerpt": "            self.agent_data_projector.complete(\n                execution_id=request.execution_id,\n                backend_route_id=result.backend_route_id,\n                backend_session_id=result.backend_session_id,\n                turn_id=str(\n                    result.output.get(\"turn_id\")\n                    or recovery_checkpoint.get(\"turn_id\")\n                    or \"\"\n                ),\n                response=str(result.output.get(\"message\") or \"\"),\n                usage=result.usage,\n            )\n            if runtime_context.is_cancelled():\n                raise ExecutionCancelled(\"execution cancelled during Backend call\")\n            self.sessions.complete(\n                request,\n                session,\n                result.backend_session_id,\n                backend_route_id=result.backend_route_id,\n                context_fingerprint=(\n                    instructions_fingerprint\n                    or str(\n                        recovery_checkpoint.get(\n                            \"context_fingerprint\"\n                        )\n                        or \"\"\n                    )\n                ),\n                context_attached=(\n                    context_attached_now\n                    or bool(\n                        recovery_checkpoint.get(\"context_attached\")\n                    )\n                ),\n                context_injected_at=injection_at,\n                harness_tool_names=(\n                    result.available_harness_tool_names\n                ),\n            )\n            emit(\n                \"service_completed\",\n                {\n                    \"service_type\": request.service_type,\n                    \"provider\": request.provider,\n                    \"operation\": request.operation,\n                    \"backend_session_id\": result.backend_session_id,\n                    \"backend_route_id\": result.backend_route_id,\n                },\n            )\n            return result\n        except ExecutionRecoveryDeferred:\n            # The Scheduler keeps the durable checkpoint and a later claim\n            # resumes the same Provider turn. Do not publish a terminal Agent\n            # Data fact for this local attempt.\n            raise\n        except BaseException as exc:\n            if not runtime_context.is_handover():\n                self._interrupt_kept_turn(request, runtime_context, exc)\n                self._bind_started_session(\n                    request,\n                    session,\n                    context_attached=context_attached_now,\n                    context_injected_at=injection_at,\n                )\n            raise\n        finally:\n            self.agent_data_projector.discard(request.execution_id)\n            with self._lock:\n                self._active.pop(request.execution_id, None)\n\n    def _bind_started_session(\n        self,\n        request: ExecutionRequest,\n        session: Any,",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-b1484ec7694088c6fb531bb631b14d6f63d9c7d50b2b7d9a22fd3e3fab4400cf.json",
+        "sha256": "b1484ec7694088c6fb531bb631b14d6f63d9c7d50b2b7d9a22fd3e3fab4400cf",
+        "size": 38577
+      }
+    },
+    {
+      "id": "control.ev.agent-service",
+      "kind": "code",
+      "claim": "AgentSessionService选择Provider并准备Harness；按should_run走Harness或直接执行，interrupt走Provider。",
+      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/backends.py",
+      "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
+      "sha256": "b56a7bb3e9e7cef5f816ce17f54298f3217efb639b09178eab7093be651ce124",
+      "start_line": 3958,
+      "end_line": 4031,
+      "symbol": "class AgentSessionService:",
+      "excerpt": "class AgentSessionService:\n    service_type = \"agent_session\"\n\n    def __init__(\n        self,\n        providers: dict[str, Backend] | None = None,\n        harness: AgentHarness | None = None,\n    ) -> None:\n        self.providers = providers or {\n            definition.provider: definition.build_backend() for definition in AGENT_PROVIDERS.values()\n        }\n        self.harness = harness if harness is not None else default_agent_harness()\n\n    def execute(\n        self,\n        invocation: BackendInvocation,\n        context: BackendContext,\n    ) -> BackendResult:\n        try:\n            provider = self.providers[invocation.request.provider]\n        except KeyError as exc:\n            raise ValueError(\n                \"unsupported Agent Backend Provider: \"\n                f\"{invocation.request.provider}\"\n            ) from exc\n        from .native_options import prepare_invocation\n        invocation = prepare_invocation(invocation)\n        invocation = self.harness.prepare_invocation(invocation, provider)\n        def execute_with_context_seed(\n            prepared: BackendInvocation,\n            backend_context: BackendContext,\n        ) -> BackendResult:\n            return provider.execute(\n                prepare_backend_context_seed(provider, prepared),\n                backend_context,\n            )\n        if not self.harness.should_run(invocation):\n            return execute_with_context_seed(invocation, context)\n        return self.harness.execute(\n            provider=provider,\n            invocation=invocation,\n            context=context,\n            execute=execute_with_context_seed,\n        )\n\n    def interrupt(\n        self,\n        *,\n        provider: str,\n        backend_session_id: str,\n        turn_id: str,\n        backend_route_id: str,\n        runtime_options: dict[str, Any],\n    ) -> bool:\n        selected = self.providers.get(provider)\n        if selected is None:\n            return False\n        return selected.interrupt(\n            backend_session_id=backend_session_id,\n            turn_id=turn_id,\n            backend_route_id=backend_route_id,\n            runtime_options=runtime_options,\n        )\n\n\ndef default_execution_services(\n    *,\n    agent_harness: AgentHarness | None = None,\n) -> dict[str, ExecutionServiceAdapter]:\n    services: tuple[ExecutionServiceAdapter, ...] = (\n        AgentSessionService(harness=agent_harness),\n        ChatCompletionService(),\n    )\n    return {service.service_type: service for service in services}",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-b56a7bb3e9e7cef5f816ce17f54298f3217efb639b09178eab7093be651ce124.json",
+        "sha256": "b56a7bb3e9e7cef5f816ce17f54298f3217efb639b09178eab7093be651ce124",
+        "size": 171655
+      }
+    },
+    {
+      "id": "control.ev.wait",
+      "kind": "code",
+      "claim": "观察超时抛ExecutionWaitTimeout，携带快照/游标；显式取消另发控制。",
+      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/service.py",
+      "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
+      "sha256": "c3a08209db632da47a0ffd808e8cac12c056a3c55724e8fb6b460abd3c5852e7",
+      "start_line": 400,
+      "end_line": 560,
+      "symbol": "def wait(",
+      "excerpt": "    def wait(\n        self,\n        execution_id: str,\n        *,\n        actor: str,\n        after_sequence: int = 0,\n        timeout_seconds: float | None = None,\n        cancellation_requested: Callable[[], bool] | None = None,\n        on_events: Callable[[list[dict[str, Any]]], None] | None = None,\n        on_snapshot: Callable[[dict[str, Any]], bool | None] | None = None,\n    ) -> dict[str, Any]:\n        \"\"\"Observe a durable execution; only explicit cancellation sends Stop.\"\"\"\n        deadline = (\n            time.monotonic() + max(0.1, float(timeout_seconds))\n            if timeout_seconds is not None\n            else None\n        )\n        after_sequence = max(0, int(after_sequence))\n        after_updated_at = \"\"\n        cancel_sent = False\n        last_control_plane_error = \"\"\n        snapshot: dict[str, Any] = {}\n        last_projected_snapshot: dict[str, Any] | None = None\n        last_activity_signature: tuple[int, int] | None = None\n        while deadline is None or time.monotonic() < deadline:\n            remaining = (\n                max(0.1, deadline - time.monotonic())\n                if deadline is not None\n                else 30.0\n            )\n            wait_seconds = min(30.0, remaining)\n            try:\n                # Business cancellation is local to this waiter; it does not\n                # wake a Scheduler wait until we deliver the control request.\n                # A quiet provider/tool must not hide Stop behind a 30s RPC.\n                if not cancel_sent and cancellation_requested is not None:\n                    if cancellation_requested():\n                        self.cancel(\n                            execution_id,\n                            actor=actor,\n                            reason=\"execution cancelled by caller\",\n                        )\n                        cancel_sent = True\n                    else:\n                        wait_seconds = min(\n                            wait_seconds, _CANCELLATION_CHECK_SECONDS,\n                        )\n                reply = self.client.request(\n                    \"execution.wait\",\n                    {\n                        \"execution_id\": str(execution_id or \"\"),\n                        \"actor\": str(actor or \"\"),\n                        \"after_sequence\": after_sequence,\n                        \"after_updated_at\": after_updated_at,\n                        \"timeout_seconds\": wait_seconds,\n                        \"include_events\": True,\n                        \"include_result\": True,\n                        \"quiet_reply\": True,\n                    },\n                    timeout=wait_seconds + 2,\n                )\n                last_control_plane_error = \"\"\n            except (ExecutionServiceUnavailable, ExecutionResponseUnknown) as exc:\n                # ExecutionService is the durable control plane. A socket\n                # replacement does not say anything about the Worker or model\n                # turn, so preserve the same execution identity and cursor\n                # until the service is reachable again.\n                last_control_plane_error = str(exc)\n                retry_delay = 0.25\n                if deadline is not None:\n                    retry_delay = min(\n                        retry_delay,\n                        max(0.0, deadline - time.monotonic()),\n                    )\n                if retry_delay > 0:\n                    time.sleep(retry_delay)\n                continue\n            reply = reply if isinstance(reply, dict) else {}\n            if reply.get(\"unchanged\") is True:\n                # Nothing changed since the last full snapshot; its events\n                # were already handled.\n                reply = (\n                    {**snapshot, \"events\": []}\n                    if snapshot\n                    else dict(self.status(\n                        execution_id,\n                        actor=actor,\n                        after_sequence=after_sequence,\n                        include_events=True,\n                        include_result=True,\n                    ))\n                )\n            snapshot = reply\n            terminal_status = str(snapshot.get(\"status\") or \"\").strip().lower()\n            if (\n                terminal_status in TERMINAL_STATUSES\n                and not _terminal_snapshot_has_matching_result(snapshot)\n            ):\n                # A business waiter may overlap another process finishing and\n                # acknowledging the same job.  Do not project an incomplete\n                # terminal observation: confirm against the canonical row so\n                # a stale terminal projection cannot end a live Execution.\n                snapshot = dict(\n                    self.status(\n                        execution_id,\n                        actor=actor,\n                        after_sequence=after_sequence,\n                        include_events=True,\n                        include_result=True,\n                    )\n                )\n                confirmed_status = str(\n                    snapshot.get(\"status\") or \"\"\n                ).strip().lower()\n                if (\n                    confirmed_status in TERMINAL_STATUSES\n                    and not _terminal_snapshot_has_matching_result(snapshot)\n                ):\n                    raise RuntimeError(\n                        \"ExecutionService returned a terminal state without \"\n                        \"its matching ExecutionResult\"\n                    )\n            events = [\n                dict(item)\n                for item in snapshot.get(\"events\") or []\n                if isinstance(item, dict)\n            ]\n            if events:\n                after_sequence = max(\n                    after_sequence,\n                    max(int(item.get(\"sequence\") or 0) for item in events),\n                )\n                if on_events is not None:\n                    on_events(events)\n            projected_snapshot = {key: value for key, value in snapshot.items() if key != \"events\"}\n            # A Provider activity (for example \"Command started\") is appended to\n            # the shared activity log and announced only to the ExecutionService\n            # the Worker reports to; Dev and Release share PostgreSQL, not memory.\n            # A quiet tool changes neither events nor the row, so the growing log\n            # itself is a change worth projecting.\n            activity_signature = _execution_activity_signature(execution_id)\n            if on_snapshot is not None and (\n                events\n                or projected_snapshot != last_projected_snapshot\n                or activity_signature != last_activity_signature\n            ):\n                observed_snapshot = copy.deepcopy(projected_snapshot)\n                if on_snapshot(dict(snapshot)) is not False:\n                    last_projected_snapshot = observed_snapshot\n                    last_activity_signature = activity_signature\n            after_updated_at = str(\n                (snapshot.get(\"scheduler\") or {}).get(\"updated_at\")\n                or after_updated_at\n            )\n            if str(snapshot.get(\"status\") or \"\") in TERMINAL_STATUSES:\n                return snapshot\n        if deadline is None:\n            raise RuntimeError(\"unreachable execution wait state\")\n        raise ExecutionWaitTimeout(\n            execution_id, snapshot=snapshot, after_sequence=after_sequence,\n            control_plane_error=last_control_plane_error,",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-c3a08209db632da47a0ffd808e8cac12c056a3c55724e8fb6b460abd3c5852e7.json",
+        "sha256": "c3a08209db632da47a0ffd808e8cac12c056a3c55724e8fb6b460abd3c5852e7",
+        "size": 55436
+      }
+    },
+    {
+      "id": "control.ev.ack",
+      "kind": "code",
+      "claim": "所有者终态确认清request/checkpoint，保留result，重复确认不重跑。",
+      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/scheduler.py",
+      "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
+      "sha256": "48ecd9885d360e9c7beb4fd6756c3060748a9fd2c54bba78eab2a1e8806a3ea7",
+      "start_line": 3475,
+      "end_line": 3500,
+      "symbol": "def acknowledge(self, execution_id: str, *, actor: str) -> dict[str, Any]:",
+      "excerpt": "    def acknowledge(self, execution_id: str, *, actor: str) -> dict[str, Any]:\n        with self._condition, self._connect() as connection:\n            self._transaction_lock(connection, f\"execution:{execution_id}\")\n            row = connection.execute(\n                'SELECT actor, status, acknowledged_at FROM executions WHERE execution_id = %s',\n                (execution_id,),\n            ).fetchone()\n            if row is None or str(row[\"actor\"]) != str(actor or \"\"):\n                connection.rollback()\n                raise KeyError(execution_id)\n            if str(row[\"status\"]) not in TERMINAL_STATUSES:\n                connection.rollback()\n                raise RuntimeError(\"only terminal executions can be acknowledged\")\n            acknowledged_at = (iso_time(row[\"acknowledged_at\"]) or \"\") or execution_timestamp()\n            connection.execute(\n                \"\\n                UPDATE executions\\n                SET request_json = '{}', checkpoint_json = '',\\n                    acknowledged_at = %s, updated_at = %s\\n                WHERE execution_id = %s\\n                \",\n                (acknowledged_at, acknowledged_at, execution_id),\n            )\n            self._event(\n                connection,\n                execution_id,\n                \"acknowledged\",\n                {},\n            )\n            connection.commit()\n        return self.snapshot(execution_id, include_result=False)",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-48ecd9885d360e9c7beb4fd6756c3060748a9fd2c54bba78eab2a1e8806a3ea7.json",
+        "sha256": "48ecd9885d360e9c7beb4fd6756c3060748a9fd2c54bba78eab2a1e8806a3ea7",
+        "size": 181834
+      }
+    },
+    {
+      "id": "control.ev.design-request",
+      "kind": "design",
+      "claim": "提交、只读观察、取消与确认的业务契约。",
+      "address": "decision_6ad0384e020d",
+      "version": "33",
+      "sha256": "9c449bd773b55bdf79c99237ee25d4fae9ce6c44590a37bc81fc0c3b7edf26fb",
+      "start_line": 209,
+      "end_line": 224,
+      "excerpt": "### 提交与观察\n\n- **`execution.submit`**：接收完整请求，先按执行 ID 比较首次提交的请求摘要；只有新执行才解析执行账号和准备会话，再持久入队。相同 `execution_id` 与相同请求返回已有记录；相同 ID 与不同请求被拒绝。\n- **`execution.status`**：参数为 `execution_id`、可选 `actor`、非负 `after_sequence`（只返回这个序号之后的事件），以及 `include_events`、`include_result`。`actor` 非空时必须等于执行所有者，否则按“不存在”处理；可信内部调用方可以传空 `actor`。返回八个固定字段的快照；关闭事件时 `events` 为空数组，关闭结果时 `result` 为空对象。\n- **`execution.wait`**：参数为 `execution_id`、必填 `actor`、事件游标 `after_sequence`、Scheduler 更新时间 `after_updated_at`、单段等待秒数（限制在 0.1 到 60 秒，默认 30），以及事件和结果开关。出现新事件、更新时间变化、进入终态或本段超时时返回快照。等待不续租，也不改变执行状态。服务端除了接收本进程的即时通知，还监听 Scheduler 数据库的变化通知，并每 5 秒复查一次，所以另一个进程（例如另一个部署）提交的终态也能及时唤醒等待者。facade 的分段、重连和取消行为见 decision_25eb93d803a4。\n- **`execution.token_usage`**：读取小时用量账本，参数和返回见 decision_f1331d57be89。它不接收 `actor`，也不改变任何执行。\n\n### 运行中的控制\n\n- **`execution.input.append`**：接收完整的追加输入。必须显式携带 `schema=tfi.execution-input-control.v1`，缺少或版本不同直接失败。它为非终态的、支持运行中输入的一轮对话新增一条 `pending` 控制，并唤醒 Worker。权限在对应 ISA 入口按动态策略检查；这里校验执行状态、Provider 能力与目标轮次。终态、不支持的 Provider、非 `turn` 操作或当前一轮已经改变都会失败。\n- **`execution.turn_settings.update`**：接收本轮设置更新，规则同上。\n- **`execution.input.get`**：参数为 `control_id` 和 `agent_id`，返回这条控制的持久回执。控制不存在时返回 `null`；控制存在但所属执行缺失或 `agent_id` 不符时以 `KeyError` 拒绝，不返回其他执行者的回执。重复读取不会重复投递。\n- **`execution.cancel`**：参数为 `execution_id`、必填 `actor`、可选 `reason`、可选 `performed_by`（实际执行取消的人，默认等于 `actor`）和可选 `queued_only`。`actor` 必须等于执行所有者，`performed_by` 记录实际操作者。排队中的执行立即变为 `cancelled`；已领取或运行中的执行记下取消请求并通知 Worker。`queued_only=true` 时只取消排队中的执行，其他状态原样返回。重复取消保持已有的终态或标志。\n- **`execution.priority`**：参数为 `execution_id`、必填 `actor`、新的 `priority` 和可选 `performed_by`（记录实际操作者）。只能修改排队中的执行；Scheduler 同时更新结构化优先级和持久请求，并追加 `priority_changed` 事件。\n- **`execution.route.reassign`**：参数为 `execution_id`、必填 `actor`、目标 `backend_route_id` 和可选 `performed_by`。Scheduler 只允许改动排队中的持续会话执行；调用方负责确认该请求尚未使用 Provider 会话，执行账号的适配器同时改写路由和相关运行选项，执行 ID 保持不变，并追加 `route_changed` 事件。Resident 切换账号时用它移动还没开始的排队工作。\n- **`execution.acknowledge`**：参数为 `execution_id` 和必填 `actor`。只有所有者的终态执行可以确认，非终态确认失败。确认后 Scheduler 清空保存的请求和恢复点，保留完整的执行结果，让重连或同时观察的一方仍能读到结果。确认可以重复，不改变结果；确认后超过 24 小时的记录被清理。",
+      "raw_read_resource": "research/execution-control/design/decision_6ad0384e020d.json",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-9c449bd773b55bdf79c99237ee25d4fae9ce6c44590a37bc81fc0c3b7edf26fb.json",
+        "sha256": "9c449bd773b55bdf79c99237ee25d4fae9ce6c44590a37bc81fc0c3b7edf26fb",
+        "size": 34111
+      }
+    },
+    {
+      "id": "control.ev.design-auth",
+      "kind": "design",
+      "claim": "业务actor与Worker令牌不同；无凭据句与固定实现冲突。",
+      "address": "decision_6ad0384e020d",
+      "version": "33",
+      "sha256": "9c449bd773b55bdf79c99237ee25d4fae9ce6c44590a37bc81fc0c3b7edf26fb",
+      "start_line": 305,
+      "end_line": 309,
+      "excerpt": "## 权限依据与错误\n\n业务控制和 Worker 写入使用两套依据。`status`、`wait`、`input`、`cancel`、`priority`、`route.reassign`、`acknowledge` 比较请求中的 `actor` 与执行所有者；`performed_by` 记录实际操作者。Worker 方法依据 Worker 状态、Worker ID、领取令牌和租约。`actor` 不能代替领取令牌，领取令牌也不授予业务所有者的权限。\n\n这组 RPC 运行在权限为 `0660` 的同机 Unix socket 上，请求本身不带凭据。`actor` 由可信的 Portal 内部调用方提供；能连接 socket 的本地进程可以伪造它。",
+      "raw_read_resource": "research/execution-control/design/decision_6ad0384e020d.json",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-9c449bd773b55bdf79c99237ee25d4fae9ce6c44590a37bc81fc0c3b7edf26fb.json",
+        "sha256": "9c449bd773b55bdf79c99237ee25d4fae9ce6c44590a37bc81fc0c3b7edf26fb",
+        "size": 34111
+      }
+    },
+    {
+      "id": "control.ev.design-generation",
+      "kind": "design",
+      "claim": "代际激活与逐项解除跟随、释放和接回同turn。",
+      "address": "decision_075f66430606",
+      "version": "17",
+      "sha256": "adbdbf46259886e7d6cb94c73150773152864be0ec1e86106301816f6569eb2a",
+      "start_line": 71,
+      "end_line": 116,
+      "excerpt": "## 一次计划内滚动交接\n\n```text\n部署发送 SIGHUP\n      │\n      ▼\n新 Worker 以 standby 登记 → 健康文件就绪 → Scheduler 原子激活\n                                      │\n                          旧 Worker 进入 draining\n                                      │\n                        为每项执行持久准备交接\n                                      │\n                    解除跟随，并等待旧控制调用结束\n                                      │\n                  逐项释放领取资格，原执行回到 queued\n                                      │\n                      新 Worker 领取同一个 execution\n                                      │\n                               核对原来那一轮\n                         ┌────────────┴────────────┐\n                         ▼                         ▼\n                 已经完成：补交结果         仍在运行：接回原轮次\n```\n\nWorkerManager 是一个常驻循环，每 0.5 秒检查一次：有没有收到重新加载请求、激活中的 Worker 是否还活着、正在退休的 Worker 是否已经退出，并更新自己的健康文件。部署通过向它发送 SIGHUP 请求换代。收到请求时，如果 WorkerManager 自己的源码（`worker_manager.py`）已经改变，它让所有 Worker 进入退休流程后退出，由 systemd 用新代码重启；否则在当前进程内启动新一代 Worker 完成替换。换代失败时记录日志，当前一代继续服务。\n\n显式重启通过管理接口向 WorkerManager 主进程发送 `SIGUSR1`，普通 reload 仍发送 `SIGHUP`。管理入口先核对健康文件的 `manager_pid` 与 systemd 当前主进程一致，并确认 `explicit_restart_supported=true` 和原 Worker ID；旧 manager 尚未加载该处理器时拒绝请求，须先通过正常部署加载，不能直接给旧进程发送未支持的信号。管理入口在既有健康及构建版本检查之外，等待当前健康 Worker ID 与请求前的 ID 不同，才确认完成，并返回 `worker_restart` 中的 `previous_worker_id`、新 `worker_id`、`build_id` 和 `manager_pid`。受理请求、同代健康或浏览器刷新均不代表 Worker 已更换；超时保留验证失败，不能返回假成功。该回执证明新 Worker 激活，不保证旧 Worker 全部执行已交接完毕；验证某任务恢复还须沿原 `execution_id` 核验实际 owner 与接管事实。\n\n## 准备、释放与接管\n\n旧 Worker 通过 `scheduler.handover.prepare` 在有效资格下保存交接恢复点。只有恢复点可以使用时结果才是“就绪”；还没有输入已接收或可恢复的证据时，不会把原任务改写成猜测性的 `continue`。用户已经取消时，按取消流程收尾。\n\n交接恢复点记下原 Worker、Provider 会话和精确的那一轮。Codex、Claude Code、Kimi Code 和 DSH 的计划交接均保留 Provider 中正在运行的一轮，准备结果为“无需中断”；旧 Worker 解除跟随，新 Worker 接回同一 turn。不能用 `turn/interrupt` 代替解除跟随：模型的工具等待被中断，不证明原生子进程或副作用已经停止。真正的用户停止仍走精确中断；已经发出的控制请求须返回后才释放资格，避免迟到的请求影响新的一轮。Runtime 保留执行内容和恢复位置，计划移交不产生失败或取消终态。\n\n每项执行退出后，旧 Worker 调用 `scheduler.requeue`，保留原请求和恢复点，释放原领取令牌。Scheduler 在释放事务中再次检查取消；已经有停止请求且 Provider 仍可能运行时，先进入待中断队列，由下一位 Worker 中断后收敛为 `cancelled`；没有 Provider 工作时直接取消。新 Worker 用新的令牌恢复同一个执行，旧 Worker 之后的写入都会被拒绝。\n\nCodex Adapter 先在同一个路由和 thread 上核对原来那一轮：仍在运行就通过 `resume_turn` 接回，已经完成就经既有实时投影入口补交真实结果，均不发送新输入。无法核对原轮次或工具交付时，Adapter 不发送继续输入，延期计入持久的无进展恢复预算。原生命令后来完成也不能证明结果已交给模型；连续三次无新工作后报告恢复耗尽，保留原执行和工具证据。Provider 接收新的一轮后，原交接标记被清除。跨代准备状态和 Goal 的处理见 decision_3e8c2a7f91d4。\n\nCodex、Claude Code、Kimi Code 和 DSH 的交接不中断这一轮（Provider 目录 `handover_keeps_turn`）。这一轮由 Provider 自己的进程运行（Claude 守护进程、Kimi Code 服务、DSH bridge），同一会话和 turn_id 的一轮可以换一个 Worker 继续：\n\n- **Codex 的跟随边界。** Codex 客户端以 `detach_requested` 区分计划移交与用户取消。已开始的 Worker 动态工具调用先回传真实结果；进入解除跟随状态后不再接新工具请求，也不向模型返回虚构的取消结果，由 App Server 将待处理请求交给新订阅者。原生命令继续属于 App Server 的原 turn。新 Worker 按真实 command/item ID 重放同 turn 的已完成结果到同一个 Agent trace，不按正文或 native_id 去重，不另设历史写入入口。成功通过资格校验重新排队后，Worker 返回 `requeued`，不会把本地解除跟随标志误报为资格被抢走。\n\n- **旧 Worker 离开。** 准备结果为“无需中断”，交接恢复点的交接标记带 `turn_kept_running`。Claude 和 DSH 的旧 Worker 只在两条消息之间断开连接；Kimi 的旧 Worker 停止轮询，不中止这一轮。旧 Worker 已经开始执行的工具调用先执行完并回传结果；交接开始后才到达旧 Worker 的工具调用不执行，原样交给下一个 Worker 执行（`ToolCallHandedOver`），不会以“已取消”失败返回模型。Adapter 报告可恢复的延期，Worker 照常 `requeue`。\n- **新 Worker 接回。** 新 Worker 用同一个 turn_id 接回这一轮（这一轮是 Provider 错误后的续接时，用续接那一轮的 ID）。Claude 守护进程和 DSH bridge 把这一轮接到新连接上，DSH 只按 turn_id 认这一轮，不再比对请求内容；Kimi 的新 Worker 继续跟随同一个 prompt，并照常处理审批、提问和工具状态。接回时不发送任何输入，只记 `worker_handover_continuing`（`input_delivery=kept_running`）。\n- **空档里不丢东西。** 没有 Worker 连接期间，Claude 守护进程保留这一轮的事件（最多 5000 条），DSH bridge 从会话日志补发新 Worker 没收到的事件；Portal 工具调用等待新 Worker，最多 3 分钟（Kimi 的工具调用等待新 Worker 的工具网关出现）。\n- **空档里的停止。** 释放领取或排队期间收到停止时，执行不直接结束，按丢失 Worker 的方式标记 `abandoned`：下一个 Worker 先中断这一轮，再以取消结束，所以 Portal 显示空闲时 Provider 也已停下。新 Worker 接回前发现执行已停止，就不再接回。",
+      "raw_read_resource": "research/execution-control/design/decision_075f66430606.json",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-adbdbf46259886e7d6cb94c73150773152864be0ec1e86106301816f6569eb2a.json",
+        "sha256": "adbdbf46259886e7d6cb94c73150773152864be0ec1e86106301816f6569eb2a",
+        "size": 22281
+      }
+    },
+    {
+      "id": "control.ev.chat-service",
+      "kind": "code",
+      "claim": "ChatCompletionService构造messages、选择协议Adapter、验证参数/模型并返回结构化结果；interrupt不提供原生停止。",
+      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/backends.py",
+      "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
+      "sha256": "b56a7bb3e9e7cef5f816ce17f54298f3217efb639b09178eab7093be651ce124",
+      "start_line": 3815,
+      "end_line": 3933,
+      "symbol": "class ChatCompletionService:",
+      "excerpt": "class ChatCompletionService:\n    service_type = \"chat_completion\"\n\n    def __init__(\n        self,\n        provider_registry: AIProviderRegistry | None = None,\n    ) -> None:\n        self.provider_registry = (\n            provider_registry or shared_ai_provider_registry\n        )\n\n    def execute(\n        self,\n        invocation: BackendInvocation,\n        context: BackendContext,\n    ) -> BackendResult:\n        transport: dict[str, Any] = {}\n        try:\n            return self._execute(invocation, context, transport)\n        except Exception as exc:\n            if transport.get(\"schema\"):\n                existing = getattr(exc, \"error_details\", {})\n                exc.error_details = {**(existing if isinstance(existing, dict) else {}), \"provider_transport\": transport}\n            raise\n\n    def _execute(\n        self, invocation: BackendInvocation, context: BackendContext, transport: dict[str, Any],\n    ) -> BackendResult:\n        request = invocation.request\n        if context.is_cancelled():\n            raise InterruptedError(\"execution was cancelled before provider call\")\n        options = request.runtime_options\n        provider_id = request.provider\n        item = self.provider_registry.get(provider_id)\n        raw_messages = options.get(\"messages\")\n        messages = [\n            dict(message)\n            for message in raw_messages\n            if isinstance(message, dict)\n        ] if isinstance(raw_messages, list) else []\n        if invocation.attach_system_context:\n            messages.insert(\n                0,\n                {\n                    \"role\": \"system\",\n                    \"content\": invocation.system_context,\n                },\n            )\n        business_system_prompt = str(options.get(\"system_prompt\") or \"\").strip()\n        if business_system_prompt:\n            insert_at = 1 if invocation.attach_system_context else 0\n            messages.insert(\n                insert_at,\n                {\"role\": \"system\", \"content\": business_system_prompt},\n            )\n        if messages and messages[-1].get(\"role\") == \"user\":\n            messages[-1][\"content\"] = invocation.user_prompt\n        else:\n            messages.append({\"role\": \"user\", \"content\": invocation.user_prompt})\n        parameters = (\n            dict(options.get(\"parameters\"))\n            if isinstance(options.get(\"parameters\"), dict)\n            else {}\n        )\n        from .model_api_protocols import protocol_adapter\n        adapter = protocol_adapter(str(item.get(\"kind\") or \"openai_compatible_chat\"))\n        adapter.validate(parameters, require_questions=True)\n        model = str(options.get(\"model\") or item.get(\"default_model\") or \"\").strip()\n        if not model:\n            raise ValueError(f\"LLM provider model is missing: {provider_id}\")\n        if options.get(\"context_history\"):\n            context.emit(\"context_history\", options[\"context_history\"])\n        result = adapter.execute(\n            self.provider_registry, {**item, \"id\": provider_id}, model, messages, parameters,\n            float(options.get(\"timeout_seconds\") or 120), max(0, int(options.get(\"max_retries\") or 0)),\n            context.is_cancelled, transport.update, lambda call: _until_cancelled(call, context.is_cancelled),\n        )\n        return self._result(context, provider_id, model, result.response, result.content, transport,\n                            structured=result.structured)\n\n    def _result(self, context, provider_id, model, response, content, transport, *, structured=None):\n        usage = (\n            dict(response.get(\"usage\"))\n            if isinstance(response.get(\"usage\"), dict)\n            else {}\n        )\n        usage.update(\n            {\n                \"api_id\": provider_id,\n                \"model\": str(model),\n            }\n        )\n        context.emit(\n            \"provider_output\",\n            {\"text\": content, \"final\": True,\n             \"request_timing\": {key: transport.get(key) for key in (\"started_at\", \"finished_at\")}},\n        )\n        return BackendResult(\n            output={\n                \"message\": content,\n                \"service_type\": self.service_type,\n                \"provider\": provider_id,\n                \"response\": response,\n                **({\"structured\": structured} if structured is not None else {}),\n                **({\"provider_transport\": transport} if transport.get(\"schema\") else {}),\n            },\n            usage=usage,\n        )\n\n    def interrupt(\n        self,\n        *,\n        provider: str,\n        backend_session_id: str,\n        turn_id: str,\n        backend_route_id: str,\n        runtime_options: dict[str, Any],\n    ) -> bool:\n        return False",
+      "frozen": {
+        "address": "workspace_13209cb6666b/file/deep-architecture/objects/source-b56a7bb3e9e7cef5f816ce17f54298f3217efb639b09178eab7093be651ce124.json",
+        "sha256": "b56a7bb3e9e7cef5f816ce17f54298f3217efb639b09178eab7093be651ce124",
+        "size": 171655
+      }
+    }
+  ]
+}

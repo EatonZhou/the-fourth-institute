@@ -1,0 +1,164 @@
+[
+  {
+    "key": "compact_p512/zero/fixed/main",
+    "fraction": 1.0,
+    "longest_run": 256,
+    "first32_start": 1025,
+    "sustained_to_end": 1025,
+    "first32_elapsed": 1,
+    "sustained_elapsed": 1
+  },
+  {
+    "key": "compact_p512/zero/last/main",
+    "fraction": 1.0,
+    "longest_run": 256,
+    "first32_start": 1025,
+    "sustained_to_end": 1025,
+    "first32_elapsed": 1,
+    "sustained_elapsed": 1
+  },
+  {
+    "key": "compact_p512/zero/fit/main",
+    "fraction": 1.0,
+    "longest_run": 256,
+    "first32_start": 1025,
+    "sustained_to_end": 1025,
+    "first32_elapsed": 1,
+    "sustained_elapsed": 1
+  },
+  {
+    "key": "compact_p512/plus/fixed/main",
+    "fraction": 0.16796875,
+    "longest_run": 27,
+    "first32_start": null,
+    "sustained_to_end": null,
+    "first32_elapsed": null,
+    "sustained_elapsed": null
+  },
+  {
+    "key": "compact_p512/plus/last/main",
+    "fraction": 0.16796875,
+    "longest_run": 27,
+    "first32_start": null,
+    "sustained_to_end": null,
+    "first32_elapsed": null,
+    "sustained_elapsed": null
+  },
+  {
+    "key": "compact_p512/plus/fit/main",
+    "fraction": 0.16796875,
+    "longest_run": 27,
+    "first32_start": null,
+    "sustained_to_end": null,
+    "first32_elapsed": null,
+    "sustained_elapsed": null
+  },
+  {
+    "key": "compact_p512/minus/fixed/main",
+    "fraction": 0.98828125,
+    "longest_run": 253,
+    "first32_start": 1025,
+    "sustained_to_end": null,
+    "first32_elapsed": 1,
+    "sustained_elapsed": null
+  },
+  {
+    "key": "compact_p512/minus/last/main",
+    "fraction": 0.98828125,
+    "longest_run": 253,
+    "first32_start": 1025,
+    "sustained_to_end": null,
+    "first32_elapsed": 1,
+    "sustained_elapsed": null
+  },
+  {
+    "key": "compact_p512/minus/fit/main",
+    "fraction": 0.98828125,
+    "longest_run": 253,
+    "first32_start": 1025,
+    "sustained_to_end": null,
+    "first32_elapsed": 1,
+    "sustained_elapsed": null
+  },
+  {
+    "key": "soft_p512/zero/fixed/main",
+    "fraction": 1.0,
+    "longest_run": 256,
+    "first32_start": 1025,
+    "sustained_to_end": 1025,
+    "first32_elapsed": 1,
+    "sustained_elapsed": 1
+  },
+  {
+    "key": "soft_p512/zero/last/main",
+    "fraction": 1.0,
+    "longest_run": 256,
+    "first32_start": 1025,
+    "sustained_to_end": 1025,
+    "first32_elapsed": 1,
+    "sustained_elapsed": 1
+  },
+  {
+    "key": "soft_p512/zero/fit/main",
+    "fraction": 1.0,
+    "longest_run": 256,
+    "first32_start": 1025,
+    "sustained_to_end": 1025,
+    "first32_elapsed": 1,
+    "sustained_elapsed": 1
+  },
+  {
+    "key": "soft_p512/plus/fixed/main",
+    "fraction": 0.59765625,
+    "longest_run": 74,
+    "first32_start": 1141,
+    "sustained_to_end": 1207,
+    "first32_elapsed": 117,
+    "sustained_elapsed": 183
+  },
+  {
+    "key": "soft_p512/plus/last/main",
+    "fraction": 0.59765625,
+    "longest_run": 74,
+    "first32_start": 1141,
+    "sustained_to_end": 1207,
+    "first32_elapsed": 117,
+    "sustained_elapsed": 183
+  },
+  {
+    "key": "soft_p512/plus/fit/main",
+    "fraction": 0.59765625,
+    "longest_run": 74,
+    "first32_start": 1141,
+    "sustained_to_end": 1207,
+    "first32_elapsed": 117,
+    "sustained_elapsed": 183
+  },
+  {
+    "key": "soft_p512/minus/fixed/main",
+    "fraction": 0.984375,
+    "longest_run": 252,
+    "first32_start": 1025,
+    "sustained_to_end": null,
+    "first32_elapsed": 1,
+    "sustained_elapsed": null
+  },
+  {
+    "key": "soft_p512/minus/last/main",
+    "fraction": 0.984375,
+    "longest_run": 252,
+    "first32_start": 1025,
+    "sustained_to_end": null,
+    "first32_elapsed": 1,
+    "sustained_elapsed": null
+  },
+  {
+    "key": "soft_p512/minus/fit/main",
+    "fraction": 0.984375,
+    "longest_run": 252,
+    "first32_start": 1025,
+    "sustained_to_end": null,
+    "first32_elapsed": 1,
+    "sustained_elapsed": null
+  }
+]

@@ -1,0 +1,16 @@
+{
+  "type": "chatroom",
+  "category": "resource",
+  "description": "A Chatroom: a conversation among member Users that can call any Resident with @resident_<ID>.",
+  "title": {
+    "zh": "聊天室",
+    "en": "Chatroom"
+  },
+  "provider": "management_portal.resources.providers.chatroom:install_resolver",
+  "catalog_section": "",
+  "catalog_order": 0,
+  "registerable": false,
+  "scope": "shared",
+  "unit": "chatroom",
+  "enabled_by_default": true
+}

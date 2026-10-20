@@ -1,0 +1,31 @@
+{
+  "version": "0.48.1",
+  "article_id": "article_0565c33e0c03",
+  "status": "Published within the same full manuscript and Article",
+  "prior_full_revision": "${share_root}/Articles/article_0565c33e0c03/work/longform_v047/data/integration_v048.json",
+  "source": "${share_root}/Projects/元胞自动机研究/src/research/results/persistent_contact_remodeling_20261019/handoff.json",
+  "source_sha256": "081fb5cbda0e28d733c3d5b66807eede9f5fbedf053ec524b75b8bc0b0451051",
+  "source_native_steps": 11112,
+  "source_occupied_worker_seconds": 3.403083,
+  "source_rows": "${share_root}/Articles/article_0565c33e0c03/work/longform_v047/data/contact_source_rows_v0481.json",
+  "new_simulation_steps": 0,
+  "new_fits": 0,
+  "scope": "Seven existing GUI main figures retained; auxiliary elastic network is not a CA or a fourth stage of the same organism. Standard local content has limited utility; force-equivalent null and costs preclude extra method/efficiency claims.",
+  "actual_animation": "${share_root}/Projects/元胞自动机研究/src/research/results/persistent_contact_remodeling_20261019/continuous_contacts.gif",
+  "publication_record": "${share_root}/Articles/article_0565c33e0c03/work/longform_v047/data/publication_record.json",
+  "freeze_manifest": "${share_root}/Articles/article_0565c33e0c03/work/longform_v047/data/default_preview_freeze_v0481.json",
+  "source_rows_sha256": "3a1197e3f8775ce6a58af0dcb3ae23caaf2a220b4207e05a9a1714a5a22bd598",
+  "review_message": "msg_27466461f339c387972cba727de15c5c",
+  "default_pages_viewed": [
+    6,
+    15,
+    35,
+    182
+  ],
+  "default_pdf_sha256": "f8dc7983b11e9bd9dd6f61d7f001574533a6ce074d9ac56d01554162fea0fbc6",
+  "published_at": "2026-10-19T14:08:50Z",
+  "total_pages": 183,
+  "main_figures": 7,
+  "main_tables": 5,
+  "supplementary_tables": 88
+}

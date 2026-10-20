@@ -1,0 +1,31 @@
+/* The architecture iframe owns a viewport-height surface. Host min-height
+   alone leaves percentage children content-sized, letting the SVG's fitted
+   height shrink its own viewport during the first mount. Keep host padding. */
+html,body,#app{height:100%}
+body{box-sizing:border-box}
+#app{min-height:0;min-width:0}
+.arch-app{font:14px/1.5 system-ui,sans-serif;color:var(--text);background:var(--bg);min-height:100vh;display:flex;flex-direction:column;gap:0;box-sizing:border-box;position:relative;padding:8px}
+.arch-app *{box-sizing:border-box}.arch-app h1{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}.arch-app h2{font-size:19px;margin:0 0 8px}.arch-app h3{font-size:15px;margin:18px 0 6px}.arch-app button,.arch-app input,.arch-app select{font:inherit;min-height:32px;max-width:100%}.arch-app button{cursor:pointer}.arch-app button:disabled{cursor:default;opacity:.55}.arch-app input,.arch-app select,.arch-app textarea{color:var(--text);background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:6px 9px}.arch-app :is(button,input,select,textarea,summary):focus-visible{outline:2px solid var(--accent);outline-offset:3px}.arch-app [hidden]{display:none!important}
+.arch-header{display:flex;align-items:center;justify-content:space-between;min-height:40px;gap:8px;z-index:6}.arch-controls{display:flex;align-items:center;gap:8px;margin-left:auto}.arch-controls>button,.arch-layer-menu>summary{border:1px solid var(--border);border-radius:7px;background:var(--panel);padding:6px 10px;cursor:pointer}.arch-badge{font-size:12px;border:1px solid var(--border);border-radius:5px;padding:3px 7px;overflow-wrap:anywhere}.arch-notice{border-left:3px solid var(--accent);padding:8px 12px;background:var(--panel);margin:6px 0}.arch-notice button{margin-left:8px}
+.arch-layer-menu{position:relative}.arch-layer-options{position:absolute;right:0;top:100%;z-index:12;width:min(410px,calc(100vw - 32px));max-height:75vh;overflow:auto;padding:16px;display:flex;flex-wrap:wrap;gap:10px;box-shadow:0 8px 30px #0003;background:var(--panel);border:1px solid var(--border);border-radius:10px}.arch-layer-options label{display:flex;align-items:center;gap:5px}.arch-layer-options select{width:100%}.arch-layer-options .arch-auxiliary{width:100%}.arch-search-panel{position:absolute;z-index:15;top:52px;right:10px;width:min(540px,calc(100% - 20px));padding:14px;background:var(--panel);border:1px solid var(--border);border-radius:10px;box-shadow:0 10px 40px #0004;display:flex;flex-wrap:wrap;gap:8px}.arch-search-panel>input{flex:1;min-width:180px}.arch-search-results{width:100%;max-height:60vh;overflow:auto;display:flex;flex-direction:column;gap:5px}.arch-search-result{text-align:left;padding:10px!important;white-space:normal}
+.arch-breadcrumb{display:flex;gap:6px;flex-wrap:wrap;padding:4px 0}.arch-body{position:relative;flex:1;min-height:calc(100vh - 65px);min-width:0}.arch-map{width:100%;min-height:calc(100vh - 65px);min-width:0}.arch-inspector{display:none;position:absolute;right:0;top:8px;bottom:8px;width:min(440px,100%);z-index:7;overflow:auto;background:var(--panel);border:1px solid var(--border);border-radius:12px;box-shadow:0 12px 40px #0003;padding:18px;overflow-wrap:anywhere}.arch-detail-open .arch-inspector{display:block}.arch-inspector p{white-space:pre-wrap}.arch-actions,.arch-protocol-links{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}.arch-detail button{margin:3px}.arch-detail ul{padding-left:20px}.arch-component-list>li{margin-bottom:12px}.arch-component-list p{margin:2px 0}.arch-runtime-note{font-size:13px;opacity:.8}.arch-file-list{max-height:280px;overflow:auto}.arch-provenance{font:12px/1.5 ui-monospace,monospace;overflow-wrap:anywhere;white-space:pre-wrap}.arch-source pre,.arch-difference pre{white-space:pre-wrap;overflow-wrap:anywhere;padding:8px;background:var(--bg);border:1px solid var(--border)}.arch-markdown table{width:100%;border-collapse:collapse}.arch-markdown :is(td,th){border:1px solid var(--border);padding:5px}.arch-return-map{margin-bottom:12px}.arch-feedback{border-top:1px solid var(--border);padding-top:10px;margin-top:12px}.arch-feedback textarea{width:100%;min-height:100px;resize:vertical}
+.arch-auxiliary{padding:8px 0}.arch-auxiliary summary{cursor:pointer}.arch-tree{max-height:300px;overflow:auto}.arch-tree li{margin:5px 0}
+.arch-playback-wide .arch-inspector{width:100%;position:relative;inset:auto;max-height:none;min-height:calc(100vh - 70px)}.arch-playback-wide .arch-map{display:none}
+@media(max-width:650px){.arch-app{padding:6px}.arch-inspector{width:100%;padding:14px}.arch-controls>button,.arch-layer-menu>summary{min-height:40px}.arch-search-panel{top:54px}.arch-header{min-height:44px}}
+@media(prefers-reduced-motion:reduce){.arch-app *{scroll-behavior:auto;animation:none!important;transition:none!important}}
+
+.arch-playback-wide .arch-inspector{padding:8px}
+.arch-playback-wide .arch-inspector>.arch-breadcrumb,.arch-playback-wide .arch-inspector>.arch-return-map{display:none}
+
+/* The root path is always available, independently of selection details. */
+.arch-breadcrumb{align-items:center;min-height:34px;border-bottom:1px solid var(--border);margin-bottom:4px}
+.arch-breadcrumb button{border:0;background:transparent;color:var(--text);padding:2px 6px}
+.arch-breadcrumb button+button:before{content:'›';padding-right:8px;opacity:.6}
+.arch-playback-wide .arch-workbench-return{position:relative;z-index:1;margin:0 8px 8px 0}
+.arch-playback-wide .arch-inspector{min-height:calc(100vh - 104px)}
+.arch-protocol-workbench{min-width:0}
+
+.arch-scope-status{margin:2px 6px 6px;font-size:12px;color:var(--text);opacity:.8}
+
+/* Reference names are content, so they wrap within the inspector, including its button margins. */
+.arch-app .arch-reference-button{min-width:0;max-width:calc(100% - 6px);height:auto;white-space:normal;overflow-wrap:anywhere;text-align:left;justify-content:flex-start;line-height:1.5;padding:6px 10px}

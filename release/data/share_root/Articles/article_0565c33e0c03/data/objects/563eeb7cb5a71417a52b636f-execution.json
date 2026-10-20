@@ -1,0 +1,11 @@
+{
+  "status": "complete",
+  "job_id": "d64322a7-3beb-474d-9038-7a4bf5bbdf70",
+  "native_attempted": 2048,
+  "native_returned": 2048,
+  "unknown_native": 0,
+  "old_replayed_native": 0,
+  "completed_paths": 16,
+  "worker_seconds": 8.261554178123966,
+  "raw_bytes": 18899867
+}

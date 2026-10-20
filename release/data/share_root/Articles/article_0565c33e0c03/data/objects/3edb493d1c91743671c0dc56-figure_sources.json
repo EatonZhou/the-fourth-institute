@@ -1,0 +1,9 @@
+{
+  "results": "Frozen batch summaries and full saved action-probe arrays; no new physics",
+  "animation": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b7032a3a-31c6-4965-a20d-b1e0aa4a9c87/raw/202610199931_diffusion/states.npz",
+    "sha256": "944eb66dc3b7634a85b093c4e5c13dfbd234c233760aafba38085fde36d656ad",
+    "sampling": "Every fourth actual native, no interpolation",
+    "color": "Information-field intensity, not usable food/energy"
+  }
+}

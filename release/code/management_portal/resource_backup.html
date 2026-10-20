@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title data-portal-site-title="[&quot;Backup&quot;]">Backup</title>
+    <link rel="stylesheet" href="/static/portal_components.css" />
+    <link rel="stylesheet" href="/static/resource_tabs.css" />
+    <link rel="stylesheet" href="/static/resource_backup.css" />
+    <link rel="stylesheet" href="/static/portal_design_system.css" data-portal-skin="default" />
+    <link rel="stylesheet" href="/static/portal_themes.css" data-portal-skin-provider="themes" />
+    <link rel="stylesheet" href="/static/portal_board_toolbar.css" />
+    <script src="/static/portal_state.js"></script>
+    <script src="/static/portal_text.js"></script>
+    <script src="/static/portal_translations.js"></script>
+    <script src="/static/portal_i18n.js"></script>
+    <script src="/static/portal_theme.js"></script>
+    <script src="/static/portal_api.js"></script>
+    <script src="/static/portal_instruction_client.js"></script>
+    <script src="/static/portal_resident_service.js"></script>
+    <script src="/static/portal_passkeys.js"></script>
+    <script src="/static/portal_identity.js"></script>
+    <script src="/static/portal_overlay.js"></script>
+    <script src="/static/portal_events.js"></script>
+    <script src="/static/portal_refresh_coordinator.js"></script>
+    <script src="/static/resident_protocol.js"></script>
+    <script src="/static/portal_conversation_store.js"></script>
+    <script src="/static/portal_ui_primitives.js"></script>
+    <script src="/static/portal_nav.js"></script>
+    <script src="/static/portal_ui.js"></script>
+    <script src="/static/portal_form_controls.js"></script>
+    <script src="/static/portal_command_registry.js"></script>
+    <script src="/static/portal_command_palette.js"></script>
+    <script src="/static/portal_button_tooltips.js"></script>
+    <script src="/static/portal_toolbar.js"></script>
+    <script src="/static/portal_board_toolbar.js"></script>
+    <script src="/static/portal_detail_surface.js"></script>
+    <script src="/static/portal_resource_routes.js"></script>
+    <script src="/static/resource_tabs.js"></script>
+    <script src="/static/resource_backup.js" defer></script>
+  </head>
+  <body class="portalBoardShell" data-resource-category="backup">
+    <header class="resourceBackupHeader resourceSectionPageHeader">
+      <div class="portalSiteHeader" data-portal-site-header data-portal-nav-active="resource"></div>
+      <div class="resourceSectionFrame portalPageHeaderFrame">
+        <div class="portalBoardHeader" data-resource-section-header>
+          <div data-resource-tabs data-resource-category="backup"></div>
+          <div data-portal-board-toolbar aria-label="Backup controls" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Backup controls&quot;}">
+            <div data-portal-board-search>
+              <label for="resourceBackupQuery"><!--portal-i18n:"搜索备份状态"-->搜索备份状态</label>
+              <input data-portal-board-search-input id="resourceBackupQuery" type="search" autocomplete="off" placeholder="搜索覆盖域 / 运行记录"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;搜索覆盖域 / 运行记录&quot;}"/>
+            </div>
+            <div data-portal-board-actions>
+              <button data-portal-board-action="action" data-portal-toolbar-item data-portal-toolbar-priority="normal" id="resourceBackupVerify" type="button" data-portal-tooltip="校验 Restic 仓库元数据" data-portal-icon="shield-check">
+                <span><!--portal-i18n:"校验"-->校验</span>
+              </button>
+              <button data-portal-board-action="action" data-portal-toolbar-item data-portal-toolbar-priority="normal" id="resourceBackupCritical" type="button" data-portal-tooltip="立即同步统一 ID、Lineage、附件、配置和一致性数据库副本" data-portal-icon="download">
+                <span><!--portal-i18n:"关键状态"-->关键状态</span>
+              </button>
+              <button data-portal-board-action="refresh" data-portal-toolbar-item data-portal-toolbar-priority="low" id="resourceBackupRefresh" type="button" aria-label="刷新备份状态" data-portal-tooltip="刷新备份状态" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;刷新备份状态&quot;}"></button>
+              <button class="portalButton is-compact is-primary" data-portal-toolbar-item data-portal-toolbar-priority="critical" id="resourceBackupRun" type="button" data-portal-icon="download">
+                <span><!--portal-i18n:"立即完整备份"-->立即完整备份</span>
+              </button>
+            </div>
+            <span data-portal-board-meta id="resourceBackupMeta" aria-live="polite"><!--portal-i18n:"正在读取…"-->正在读取…</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="resourceBackupPage portalPageFrame" id="resourceBackupPage">
+      <div id="resourceBackupContent" aria-live="polite">
+        <div class="portalAsyncState" data-state="loading" data-density="panel" role="status">
+          <span class="portalAsyncStateIcon" aria-hidden="true"></span>
+          <strong class="portalAsyncStateTitle"><!--portal-i18n:"正在读取 Backup Center"-->正在读取 Backup Center</strong>
+          <span class="portalAsyncStateMessage"><!--portal-i18n:"正在核对备份库、定时策略和最近运行。"-->正在核对备份库、定时策略和最近运行。</span>
+        </div>
+      </div>
+    </main>
+
+    <div class="portalDetailOverlay" data-portal-detail-overlay id="resourceBackupRunDetail" aria-hidden="true" hidden>
+      <section class="portalDetailSurface" data-portal-detail-surface data-portal-detail-size="wide" role="dialog" aria-modal="true" aria-labelledby="resourceBackupRunTitle">
+        <header class="portalDetailHeader">
+          <div>
+            <div class="portalDetailEyebrow"><!--portal-i18n:"BACKUP RUN"-->BACKUP RUN</div>
+            <h2 id="resourceBackupRunTitle"><!--portal-i18n:"运行详情"-->运行详情</h2>
+          </div>
+          <button class="portalDetailClose" data-portal-detail-close id="resourceBackupRunClose" type="button" aria-label="关闭运行详情" data-portal-icon="close" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;关闭运行详情&quot;}"></button>
+        </header>
+        <div class="portalDetailBody" id="resourceBackupRunBody"></div>
+      </section>
+    </div>
+  </body>
+</html>

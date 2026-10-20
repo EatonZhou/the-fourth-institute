@@ -1,0 +1,10 @@
+{
+  "status": "completed",
+  "native": 1440,
+  "job": "9b42efeb-1cd0-4914-8c47-d45ce8cc35b1",
+  "raw": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9b42efeb-1cd0-4914-8c47-d45ce8cc35b1/raw",
+  "elapsed": 1.2847140040248632,
+  "independent_founders": 3,
+  "branches": 12,
+  "raw_bytes": 5288119
+}

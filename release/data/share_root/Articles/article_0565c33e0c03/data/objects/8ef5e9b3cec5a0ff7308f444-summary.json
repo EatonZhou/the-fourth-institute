@@ -1,0 +1,50 @@
+{
+  "task": "coordinated_feedback_retention_20261019",
+  "status": "complete",
+  "native": 2048,
+  "known_readonly": 1024,
+  "old_replay": 0,
+  "unknown": 0,
+  "worker_seconds": 18.960042,
+  "raw_bytes": 13837533,
+  "paths": 8,
+  "survivors": 8,
+  "groups": {
+    "freeze": {
+      "n": 4,
+      "reversal_substantive": 2,
+      "retention_first64_substantive": 2,
+      "retention_last64_substantive": 2,
+      "retention_last64_good_mass": [
+        0.03894109974000331,
+        8.722349986473768,
+        0.04103691726156004,
+        8.715983468868007
+      ],
+      "retention_last64_choice": [
+        0.06967062589993164,
+        0.9145506801684263,
+        0.07448595683148737,
+        0.9144138627710102
+      ]
+    },
+    "write": {
+      "n": 4,
+      "reversal_substantive": 4,
+      "retention_first64_substantive": 4,
+      "retention_last64_substantive": 2,
+      "retention_last64_good_mass": [
+        4.072498030975426,
+        0.6707879637957664,
+        3.7031275434597277,
+        0.6701747998666989
+      ],
+      "retention_last64_choice": [
+        0.8373444608067129,
+        0.1529377972043015,
+        0.7926487230851015,
+        0.1528163442519617
+      ]
+    }
+  }
+}

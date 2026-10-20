@@ -1,0 +1,11 @@
+{
+  "actual_native": 5,
+  "joint_restore_exact": true,
+  "incomplete_rejected": true,
+  "extra_old_native": 0,
+  "excluded_audit_counter": "attempted_body_steps",
+  "actual_counter_values": [
+    4,
+    5
+  ]
+}

@@ -1,0 +1,42 @@
+[
+  {
+    "parent": "202610197503_0_0_fast_delta_life",
+    "explore": "original",
+    "final_all_fields_exact": true
+  },
+  {
+    "parent": "202610197503_0_0_fast_delta_life",
+    "explore": "turn_once",
+    "final_all_fields_exact": true
+  },
+  {
+    "parent": "202610197503_0_0_joint_delta_life",
+    "explore": "original",
+    "final_all_fields_exact": true
+  },
+  {
+    "parent": "202610197503_0_0_joint_delta_life",
+    "explore": "turn_once",
+    "final_all_fields_exact": true
+  },
+  {
+    "parent": "202610197504_1_0_fast_delta_life",
+    "explore": "original",
+    "final_all_fields_exact": true
+  },
+  {
+    "parent": "202610197504_1_0_fast_delta_life",
+    "explore": "turn_once",
+    "final_all_fields_exact": true
+  },
+  {
+    "parent": "202610197504_1_0_joint_delta_life",
+    "explore": "original",
+    "final_all_fields_exact": true
+  },
+  {
+    "parent": "202610197504_1_0_joint_delta_life",
+    "explore": "turn_once",
+    "final_all_fields_exact": true
+  }
+]

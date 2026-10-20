@@ -1,0 +1,69 @@
+{
+  "extra_native": 0,
+  "integrated_first_steps": [
+    {
+      "path": "f1--colocated--original_bundle_diffusion",
+      "first_native_equal": true
+    },
+    {
+      "path": "f1--colocated--independent_current_gradient",
+      "first_native_equal": true
+    },
+    {
+      "path": "f1--colocated--independent_joint_current_demand",
+      "first_native_equal": true
+    },
+    {
+      "path": "f1--colocated--no_pump",
+      "first_native_equal": true
+    },
+    {
+      "path": "f1--separated--original_bundle_diffusion",
+      "first_native_equal": true
+    },
+    {
+      "path": "f1--separated--independent_current_gradient",
+      "first_native_equal": true
+    },
+    {
+      "path": "f1--separated--independent_joint_current_demand",
+      "first_native_equal": true
+    },
+    {
+      "path": "f1--separated--no_pump",
+      "first_native_equal": true
+    },
+    {
+      "path": "f2--colocated--original_bundle_diffusion",
+      "first_native_equal": true
+    },
+    {
+      "path": "f2--colocated--independent_current_gradient",
+      "first_native_equal": true
+    },
+    {
+      "path": "f2--colocated--independent_joint_current_demand",
+      "first_native_equal": true
+    },
+    {
+      "path": "f2--colocated--no_pump",
+      "first_native_equal": true
+    },
+    {
+      "path": "f2--separated--original_bundle_diffusion",
+      "first_native_equal": true
+    },
+    {
+      "path": "f2--separated--independent_current_gradient",
+      "first_native_equal": true
+    },
+    {
+      "path": "f2--separated--independent_joint_current_demand",
+      "first_native_equal": true
+    },
+    {
+      "path": "f2--separated--no_pump",
+      "first_native_equal": true
+    }
+  ]
+}

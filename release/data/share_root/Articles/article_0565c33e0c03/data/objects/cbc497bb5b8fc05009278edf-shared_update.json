@@ -1,0 +1,7 @@
+{
+  "instruction_id": "inst_lin_45873c18100d669121d1",
+  "matched": true,
+  "changed": true,
+  "updated_field": "pi_current_scientific_direction",
+  "result_entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/complementary_cargo_exchange_20261019/handoff.json"
+}

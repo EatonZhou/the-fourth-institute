@@ -1,0 +1,357 @@
+{
+  "schema": "tfi.portal-protocol-scenario.v1",
+  "scenario_id": "codex-native-accepted-turn-recovery",
+  "protocol_id": "provider-native",
+  "status": "simulated",
+  "author": "resident_60ae6d0cdf74",
+  "review_status": "data_owner_checked__ui_review_pending",
+  "title": "Codex 原生 thread/turn 以及接受后断线恢复",
+  "source_refs": [
+    "decision_3e8c2a7f91d4"
+  ],
+  "source_versions": [
+    {
+      "ref": "decision_3e8c2a7f91d4",
+      "response_version": "11",
+      "body_version": "11",
+      "observed_at": "2026-10-15T08:02:32.371038+00:00",
+      "actor": "resident_60ae6d0cdf74",
+      "temporal_scope": "observed_now_not_commit_snapshot",
+      "body_sha256": "8ba213f246ce98c5358f046979adedbf1eb62153a6a38619272ceab8696621d5",
+      "body": {
+        "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-8ba213f246ce98c5358f046979adedbf1eb62153a6a38619272ceab8696621d5.md",
+        "sha256": "8ba213f246ce98c5358f046979adedbf1eb62153a6a38619272ceab8696621d5",
+        "size": 19782
+      }
+    }
+  ],
+  "preconditions": [
+    "按条件阅读的规范模拟；播放不执行指令，不代表某次真实请求。",
+    "参与者映射到固定地图 ID；根边界内角色不创建新组件。"
+  ],
+  "participants": [
+    {
+      "id": "adapter",
+      "module_id": "execution.providers",
+      "role": "CodexBackend 与原生客户端"
+    },
+    {
+      "id": "native",
+      "module_id": "providers",
+      "role": "Codex App Server"
+    },
+    {
+      "id": "runtime",
+      "module_id": "worker",
+      "role": "Worker 内保存恢复检查点的 Runtime 角色"
+    }
+  ],
+  "steps": [
+    {
+      "id": "connect",
+      "from": "adapter",
+      "to": "native",
+      "condition": "已选择账号与其 Unix socket",
+      "request": "WebSocket 连接，initialize 请求后 initialized 通知",
+      "result": "按请求 ID 配对响应，通知/服务端请求由读线程分派",
+      "source_refs": [
+        {
+          "ref": "decision_3e8c2a7f91d4",
+          "section": "连接",
+          "body_version": "11",
+          "response_version": "11",
+          "body_sha256": "8ba213f246ce98c5358f046979adedbf1eb62153a6a38619272ceab8696621d5",
+          "snapshot_address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-8ba213f246ce98c5358f046979adedbf1eb62153a6a38619272ceab8696621d5.md",
+          "line_start": 98,
+          "line_end": 100,
+          "line_numbering": "1-based inclusive in frozen UTF-8 body",
+          "excerpt_sha256": "52d40b801c46b14f60633d4e3f75a40850ca30897967fa291ba15e4cae0497bc"
+        }
+      ]
+    },
+    {
+      "id": "thread",
+      "from": "adapter",
+      "to": "native",
+      "condition": "会话记录指定新建或恢复的 thread",
+      "request": "新会话 thread/start；既有 thread 调用 thread/resume",
+      "result": "恢复原会话；连接存在不等于 thread 已加载",
+      "source_refs": [
+        {
+          "ref": "decision_3e8c2a7f91d4",
+          "section": "设计点",
+          "body_version": "11",
+          "response_version": "11",
+          "body_sha256": "8ba213f246ce98c5358f046979adedbf1eb62153a6a38619272ceab8696621d5",
+          "snapshot_address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-8ba213f246ce98c5358f046979adedbf1eb62153a6a38619272ceab8696621d5.md",
+          "line_start": 61,
+          "line_end": 67,
+          "line_numbering": "1-based inclusive in frozen UTF-8 body",
+          "excerpt_sha256": "f4502ed57eabedd312e01307aecffa28f97b1ee60c1302a36ac3437e4d0b6a42"
+        },
+        {
+          "ref": "decision_3e8c2a7f91d4",
+          "section": "连接",
+          "body_version": "11",
+          "response_version": "11",
+          "body_sha256": "8ba213f246ce98c5358f046979adedbf1eb62153a6a38619272ceab8696621d5",
+          "snapshot_address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-8ba213f246ce98c5358f046979adedbf1eb62153a6a38619272ceab8696621d5.md",
+          "line_start": 98,
+          "line_end": 100,
+          "line_numbering": "1-based inclusive in frozen UTF-8 body",
+          "excerpt_sha256": "52d40b801c46b14f60633d4e3f75a40850ca30897967fa291ba15e4cae0497bc"
+        }
+      ]
+    },
+    {
+      "id": "accepted",
+      "from": "native",
+      "to": "adapter",
+      "condition": "turn/start 已被 App Server 接受",
+      "request": "返回本轮 turn ID",
+      "result": "取得确定的 thread/turn 身份",
+      "source_refs": [
+        {
+          "ref": "decision_3e8c2a7f91d4",
+          "section": "设计点",
+          "body_version": "11",
+          "response_version": "11",
+          "body_sha256": "8ba213f246ce98c5358f046979adedbf1eb62153a6a38619272ceab8696621d5",
+          "snapshot_address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-8ba213f246ce98c5358f046979adedbf1eb62153a6a38619272ceab8696621d5.md",
+          "line_start": 61,
+          "line_end": 67,
+          "line_numbering": "1-based inclusive in frozen UTF-8 body",
+          "excerpt_sha256": "f4502ed57eabedd312e01307aecffa28f97b1ee60c1302a36ac3437e4d0b6a42"
+        }
+      ]
+    },
+    {
+      "id": "checkpoint",
+      "from": "adapter",
+      "to": "runtime",
+      "condition": "已经取得被接受的 turn ID",
+      "request": "立即记录接受轮次身份供恢复检查点使用",
+      "result": "后续恢复观察相同 turn，禁止重发该用户输入",
+      "source_refs": [
+        {
+          "ref": "decision_3e8c2a7f91d4",
+          "section": "设计点",
+          "body_version": "11",
+          "response_version": "11",
+          "body_sha256": "8ba213f246ce98c5358f046979adedbf1eb62153a6a38619272ceab8696621d5",
+          "snapshot_address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-8ba213f246ce98c5358f046979adedbf1eb62153a6a38619272ceab8696621d5.md",
+          "line_start": 63,
+          "line_end": 67,
+          "line_numbering": "1-based inclusive in frozen UTF-8 body",
+          "excerpt_sha256": "f96503a11d950d4c4091e1be54dc42ca62a290e4e4d5f5eb1b1dd886ff0504ae"
+        },
+        {
+          "ref": "decision_3e8c2a7f91d4",
+          "section": "组件职责",
+          "body_version": "11",
+          "response_version": "11",
+          "body_sha256": "8ba213f246ce98c5358f046979adedbf1eb62153a6a38619272ceab8696621d5",
+          "snapshot_address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-8ba213f246ce98c5358f046979adedbf1eb62153a6a38619272ceab8696621d5.md",
+          "line_start": 89,
+          "line_end": 96,
+          "line_numbering": "1-based inclusive in frozen UTF-8 body",
+          "excerpt_sha256": "2d2c06638be46372d5e8fedc9da41c61328cf40d324bf4628b0d44abd3ecf2e1"
+        }
+      ]
+    },
+    {
+      "id": "follow-terminal",
+      "from": "adapter",
+      "to": "native",
+      "condition": "存在已接受 turn，连接可用",
+      "request": "观察通知与精确 turn 快照直至真实终态；按规范选择最终回答",
+      "result": "得到原生结果供执行层保存；不由最终文本推断 Scheduler 已完成",
+      "source_refs": [
+        {
+          "ref": "decision_3e8c2a7f91d4",
+          "section": "设计点",
+          "body_version": "11",
+          "response_version": "11",
+          "body_sha256": "8ba213f246ce98c5358f046979adedbf1eb62153a6a38619272ceab8696621d5",
+          "snapshot_address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-8ba213f246ce98c5358f046979adedbf1eb62153a6a38619272ceab8696621d5.md",
+          "line_start": 63,
+          "line_end": 67,
+          "line_numbering": "1-based inclusive in frozen UTF-8 body",
+          "excerpt_sha256": "f96503a11d950d4c4091e1be54dc42ca62a290e4e4d5f5eb1b1dd886ff0504ae"
+        },
+        {
+          "ref": "decision_3e8c2a7f91d4",
+          "section": "统一 follow_turn",
+          "body_version": "11",
+          "response_version": "11",
+          "body_sha256": "8ba213f246ce98c5358f046979adedbf1eb62153a6a38619272ceab8696621d5",
+          "snapshot_address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-8ba213f246ce98c5358f046979adedbf1eb62153a6a38619272ceab8696621d5.md",
+          "line_start": 108,
+          "line_end": 108,
+          "line_numbering": "1-based inclusive in frozen UTF-8 body",
+          "excerpt_sha256": "27a56f5ef8314b1440074e86ee59019bf5f6293ef503f0788644e3d11a57e9b6"
+        }
+      ]
+    }
+  ],
+  "branches": [
+    {
+      "id": "disconnect-before-accept",
+      "kind": "exception",
+      "at_step": "accepted",
+      "condition": "没有取得已接受的 turn ID 即失败",
+      "steps": [
+        {
+          "id": "ordinary-failure",
+          "from": "adapter",
+          "to": "runtime",
+          "condition": "缺少被接受轮次身份",
+          "request": "上报普通失败",
+          "result": "不伪造可恢复 turn 或把输入当作已被 Provider 接受",
+          "source_refs": [
+            {
+              "ref": "decision_3e8c2a7f91d4",
+              "section": "设计点",
+              "body_version": "11",
+              "response_version": "11",
+              "body_sha256": "8ba213f246ce98c5358f046979adedbf1eb62153a6a38619272ceab8696621d5",
+              "snapshot_address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-8ba213f246ce98c5358f046979adedbf1eb62153a6a38619272ceab8696621d5.md",
+              "line_start": 63,
+              "line_end": 63,
+              "line_numbering": "1-based inclusive in frozen UTF-8 body",
+              "excerpt_sha256": "8ebf198d7f5f13da6127ba64b9efb3b75d689c20789cd20c35710ac817c27ccd"
+            }
+          ]
+        }
+      ],
+      "source_refs": [
+        "decision_3e8c2a7f91d4"
+      ]
+    },
+    {
+      "id": "disconnect-after-accept",
+      "kind": "recovery",
+      "at_step": "follow-terminal",
+      "condition": "已保存 turn ID 后连接中断或 Worker 换代",
+      "steps": [
+        {
+          "id": "recover-original",
+          "from": "adapter",
+          "to": "native",
+          "condition": "原账号/原 thread/原 turn 身份齐全",
+          "request": "在恢复期限内重连原账号，只观察原 turn；Worker 换代按原记录接续",
+          "result": "不重发输入，不切换账号，不制造另一个轮次",
+          "source_refs": [
+            {
+              "ref": "decision_3e8c2a7f91d4",
+              "section": "设计点",
+              "body_version": "11",
+              "response_version": "11",
+              "body_sha256": "8ba213f246ce98c5358f046979adedbf1eb62153a6a38619272ceab8696621d5",
+              "snapshot_address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-8ba213f246ce98c5358f046979adedbf1eb62153a6a38619272ceab8696621d5.md",
+              "line_start": 63,
+              "line_end": 67,
+              "line_numbering": "1-based inclusive in frozen UTF-8 body",
+              "excerpt_sha256": "f96503a11d950d4c4091e1be54dc42ca62a290e4e4d5f5eb1b1dd886ff0504ae"
+            },
+            {
+              "ref": "decision_3e8c2a7f91d4",
+              "section": "统一 follow_turn",
+              "body_version": "11",
+              "response_version": "11",
+              "body_sha256": "8ba213f246ce98c5358f046979adedbf1eb62153a6a38619272ceab8696621d5",
+              "snapshot_address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-8ba213f246ce98c5358f046979adedbf1eb62153a6a38619272ceab8696621d5.md",
+              "line_start": 108,
+              "line_end": 108,
+              "line_numbering": "1-based inclusive in frozen UTF-8 body",
+              "excerpt_sha256": "27a56f5ef8314b1440074e86ee59019bf5f6293ef503f0788644e3d11a57e9b6"
+            }
+          ]
+        },
+        {
+          "id": "defer-recovery",
+          "from": "adapter",
+          "to": "runtime",
+          "condition": "180 秒恢复窗口耗尽且仍未取得有效完成结果",
+          "request": "保存原 turn 身份并延迟重新领取",
+          "result": "保留可恢复上下文；不是伪造执行成功",
+          "source_refs": [
+            {
+              "ref": "decision_3e8c2a7f91d4",
+              "section": "统一 follow_turn",
+              "body_version": "11",
+              "response_version": "11",
+              "body_sha256": "8ba213f246ce98c5358f046979adedbf1eb62153a6a38619272ceab8696621d5",
+              "snapshot_address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-8ba213f246ce98c5358f046979adedbf1eb62153a6a38619272ceab8696621d5.md",
+              "line_start": 108,
+              "line_end": 108,
+              "line_numbering": "1-based inclusive in frozen UTF-8 body",
+              "excerpt_sha256": "27a56f5ef8314b1440074e86ee59019bf5f6293ef503f0788644e3d11a57e9b6"
+            }
+          ]
+        }
+      ],
+      "source_refs": [
+        "decision_3e8c2a7f91d4"
+      ]
+    },
+    {
+      "id": "stale-control",
+      "kind": "concurrency",
+      "at_step": "follow-terminal",
+      "condition": "停止/追加/设置请求指定的 turn 已被另一轮替换",
+      "steps": [
+        {
+          "id": "reject-stale-control",
+          "from": "adapter",
+          "to": "runtime",
+          "condition": "目标轮次不再是请求指定的 turn",
+          "request": "拒绝过期控制",
+          "result": "不影响后续 turn；interrupt 即便已发送也只是尝试，终态另行判断",
+          "source_refs": [
+            {
+              "ref": "decision_3e8c2a7f91d4",
+              "section": "设计点",
+              "body_version": "11",
+              "response_version": "11",
+              "body_sha256": "8ba213f246ce98c5358f046979adedbf1eb62153a6a38619272ceab8696621d5",
+              "snapshot_address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-8ba213f246ce98c5358f046979adedbf1eb62153a6a38619272ceab8696621d5.md",
+              "line_start": 65,
+              "line_end": 65,
+              "line_numbering": "1-based inclusive in frozen UTF-8 body",
+              "excerpt_sha256": "1b75a612128f150ab95851989d493be69fc3b2290a6bd7eb10aefe71dc59e48d"
+            },
+            {
+              "ref": "decision_3e8c2a7f91d4",
+              "section": "运行中控制",
+              "body_version": "11",
+              "response_version": "11",
+              "body_sha256": "8ba213f246ce98c5358f046979adedbf1eb62153a6a38619272ceab8696621d5",
+              "snapshot_address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-8ba213f246ce98c5358f046979adedbf1eb62153a6a38619272ceab8696621d5.md",
+              "line_start": 162,
+              "line_end": 166,
+              "line_numbering": "1-based inclusive in frozen UTF-8 body",
+              "excerpt_sha256": "e25c7ad5055b8c19f38b828b6668f5493ec253c60b00d015d70fda4cf1c59746"
+            }
+          ]
+        }
+      ],
+      "source_refs": [
+        "decision_3e8c2a7f91d4"
+      ]
+    }
+  ],
+  "concurrency": {
+    "status": "partial",
+    "ordering": "conditional_partial_order_only",
+    "global_order": null,
+    "reason": "只采用本场景步骤和分支明确引用的先后条件，不从参与者排列建立全序。"
+  },
+  "limitations": [
+    "固定 Design 的当前观察不是历史提交的 Design 正文。",
+    "不可把模拟作为实际执行回执；真实终态从所属服务读取。",
+    "仅 Codex App Server；不代表 Claude/Kimi 等所有 Provider 的传输或恢复协议。",
+    "取消先到/返回后取消与 Scheduler finish 仍复用能力协议 0431，原内容和角色映射不改。",
+    "指向 Runtime 的步骤是同 Worker 进程内职责交接，不新建 Runtime 模块 ID。"
+  ]
+}

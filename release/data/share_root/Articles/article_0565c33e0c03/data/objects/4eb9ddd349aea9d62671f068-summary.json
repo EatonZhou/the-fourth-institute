@@ -1,0 +1,47 @@
+{
+  "status": "passed",
+  "scope": "synthetic record audit only",
+  "body_steps": 0,
+  "environment_forward_calls": 0,
+  "outcomes_generated_by_physics": false,
+  "passed_cases": [
+    "last_suffices",
+    "same_last_residual",
+    "random_realizations_only",
+    "mature_phenotype_explains",
+    "pending_configuration_explains",
+    "censor_is_not_zero",
+    "cost_erases_incremental_credit"
+  ],
+  "expected_rejections": [
+    {
+      "case": "unfinished_history",
+      "error": "history has unfinished/current/future event"
+    },
+    {
+      "case": "unpaid_zero",
+      "error": "censored/unpaid event cannot be labelled as a result"
+    },
+    {
+      "case": "postpaid_observation",
+      "error": "observation was not prepaid"
+    },
+    {
+      "case": "cue_after_observation",
+      "error": "cue was not locked before observation"
+    },
+    {
+      "case": "future_label_visible",
+      "error": "future evaluation target exposed to policy"
+    },
+    {
+      "case": "missing_phenotype_field",
+      "error": "phenotype field set differs from host contract"
+    },
+    {
+      "case": "same_complete_state_future_different_result",
+      "error": "same complete state/future/action yields different deterministic result"
+    }
+  ],
+  "main_limit": "Host/model receipts here are declared synthetic fixtures, not native evidence or learned behavior."
+}

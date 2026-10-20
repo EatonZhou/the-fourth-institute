@@ -1,0 +1,18 @@
+[
+  {
+    "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/state_gated_motor_gain_20261019/actual_sequence.gif",
+    "source_sha256": "b467194948cd1a8edfde4014ef23c165255f835c91826a4fc529bb33c23bc064",
+    "frame_index": 48,
+    "clock": 768,
+    "asset": "gain_0768.png",
+    "operation": "lossless RGB extraction of existing GIF frame; no plot or field regenerated; native GUI crop removes labels"
+  },
+  {
+    "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/acquired_gain_content_20261019/actual_sequence.gif",
+    "source_sha256": "a9bd0e91263d7ac99e8d39120a2ebebf7f0e352dd7f702670f2260ea6e33db7c",
+    "frame_index": 28,
+    "clock": 768,
+    "asset": "content_0768.png",
+    "operation": "lossless RGB extraction of existing GIF frame; no plot or field regenerated; native GUI crop removes labels"
+  }
+]

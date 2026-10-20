@@ -1,0 +1,62 @@
+Frozen host: environment_evolution.active_observation_commitment.core
+  ActiveObservationEcology(cfg=original Config(), observation_cfg=ObservationConfig())
+  make_tape(seed, cycles=24, condition='informative', change_points=None, cfg=ObservationConfig())
+
+The core SHA is 941265f64b609b46fc040cc71b3979e0d0f33bbc0d6939daf827c80c72e49e77.
+Original host 4ea2ebf8f3ec025624b30688122dbb3ea7f5717606f9eccb1ea5c4765b726817 remains immutable.
+
+PUBLIC:
+  env.observe(phase,cue) -> phase/cue/rho/resource/energy/active/pending/pending_due/step/subcell_x.
+  cue is visible only through phase4. Current phenotype/pipeline may itself encode history.
+  env.body owns original physiology; env.rho/resource/step_index are convenience properties.
+
+HOST STEP:
+  row, receipt = env.step(action, phase,
+      observe_mask=None, upstream_input=None, event_id=None,
+      commit=None, resource_input=None, memory_fee=0., detect=False)
+  observe_mask: finite binary 32x32 in PRE-move material coordinates, optional at phase2.
+  upstream_input: two private event bits at phase2, not strategy input.
+  event_id: opaque host event ID, required when upstream_input is supplied.
+  commit: original [0,1] dimensionless weight field at phase4; rho multiplied once inside allocator.
+  resource_input: two host-only energy amounts at phase12, ordinarily 6*tape['arrivals'][cycle].
+  detect: original phase12 natural completed-label sensor, NOT replaced by upstream sensing.
+
+ORDER:
+  Original maintenance/translation/survival step runs once.
+  At phase2, requested receptor support is roll(mask, actual shift) & fixed local port mask & survivor>1e-12.
+  Requested price=.015*sum(survivor[eligible]); actual min(E,price) goes to heat.
+  All requested price must be paid, event present and old support eligible for any completed label.
+  Partial payment is consumed but yields no completed label. No request/unsupported/outside-window has no charge.
+  Valid request with missing event is charged and unknown; do not turn failure into a negative observation.
+  Receipt is available after postclock3; commit at preclock4/post5, maturity/food at preclock12/post13.
+  All original memory/commit/basal/movement/natural-detection charges persist.
+  Detection completion and memory-writer payment are distinct. An unpaid writer does not invalidate a paid sensor receipt.
+
+LOCAL RECEIPT:
+  Original shift/keep/rho_before/survivor/uptake/born/proposed_born/rejected_material,
+  active/pending/pending_due/matured/commit_target/commit_accepted/completed_mask/local_label.
+  Plus early_request_before/early_request_transported/early_eligible/early_completed_mask/early_label,
+  early_requested/early_paid/early_unpaid/early_event_id/early_completed_clock/preclock/postclock.
+  Noncompleted labels are -1. Unrequested local upstream values are never returned.
+  Fields describe actual material motion/survival. Newborn has no prior history or initial capability.
+  row.E/delta_E/heat/energy_residual include the new fee. early_* totals are separate from original detect_*.
+
+RESTORE:
+  env.checkpoint() contains original full body/pipeline plus observation config and cumulative observation_heat.
+  ActiveObservationEcology.restore(state) restores that exact state. Tape is separately private to host/driver.
+
+EVENT MODEL:
+  .8/.2 food, .9/.1 diagnostic probabilities conditional on cue*hidden mapping; .08 default Markov flip hazard.
+  Explicit change_points gives host-only scheduled reversals. None uses random transitions.
+  Independent RNG streams for cue/regime, food, and upstream; choices cannot alter tape.
+  condition='uninformative' changes upstream probabilities to .5/.5 and retains the same food tape.
+  Both ports can be rich/empty in a realized cycle. A port event is shared across its 49 spatial cells;
+  never multiply that same sample's likelihood 49 times. Shared regime causes marginal correlation.
+  Upstream event is a nonnutritive environmental signal. Paid receptors need old tissue, not mature absorption.
+  This is a stated sensor assumption, not early access to the realized future food.
+
+FROZEN DEVELOPMENT:
+  seeds202610189101/9102, physical parents clock128; suffix cycles4..19, change at10.
+  Result/plan/raw_manifest in this directory; no original suite rerun.
+  Pilot is model-informed local Bayes, fixed thresholds, fixed direct action0, one artificial body.
+  New training may use this unchanged interface but must freeze its own seeds/selection before execution.

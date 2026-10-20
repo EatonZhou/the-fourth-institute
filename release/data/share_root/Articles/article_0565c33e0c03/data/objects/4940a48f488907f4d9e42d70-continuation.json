@@ -1,0 +1,11 @@
+{
+  "recipient": "resident_d3ccfa2d95b7",
+  "activation_policy": "enqueue_and_trigger",
+  "message_id": "msg_8e69b409d380b2c676a46a884f59afdb",
+  "host_entry": "handoff.json",
+  "host_sha256": "cbf40055bfde856e0ebeccdbf2fc04425da83bd5f9e89dad29705a3f59b865ff",
+  "d3_cap_steps": 9216,
+  "d3_cap_worker_seconds": 420,
+  "host_frozen": true,
+  "no_replay_request": true
+}

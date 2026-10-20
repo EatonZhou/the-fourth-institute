@@ -1,0 +1,124 @@
+{
+  "job_id": "a1dac939-9915-452f-a2ab-fd038398d4e1",
+  "status": "finished_all_stops_preserved",
+  "committed": 1280,
+  "unknown": 0,
+  "old_native_replay": 0,
+  "branches": {
+    "g0_keep": {
+      "status": "complete",
+      "steps": 128,
+      "t": 256,
+      "M": 90.99299592588945,
+      "centroid_y": 31.321719146548574,
+      "centroid_x": 27.565796592495104,
+      "largest_component": 0.981051272975788,
+      "components": 1,
+      "edge_fraction": 9.338412519970744e-11
+    },
+    "g0_pooled": {
+      "status": "complete",
+      "steps": 128,
+      "t": 256,
+      "M": 92.45349967152903,
+      "centroid_y": 31.316730764785966,
+      "centroid_x": 27.527824243205668,
+      "largest_component": 0.9816494351104252,
+      "components": 1,
+      "edge_fraction": 9.476033548523751e-11
+    },
+    "g0_swapped": {
+      "status": "complete",
+      "steps": 128,
+      "t": 256,
+      "M": 91.6756375124773,
+      "centroid_y": 31.302153341680654,
+      "centroid_x": 27.528553454421584,
+      "largest_component": 0.9814322139409203,
+      "components": 1,
+      "edge_fraction": 9.15700946744702e-11
+    },
+    "g0_yoked_uniform": {
+      "status": "complete",
+      "steps": 128,
+      "t": 256,
+      "M": 90.30130448591419,
+      "centroid_y": 31.305486689839327,
+      "centroid_x": 27.662006272896623,
+      "largest_component": 0.9821329691414751,
+      "components": 1,
+      "edge_fraction": 9.238244259247482e-11
+    },
+    "g0_freeze": {
+      "status": "complete",
+      "steps": 128,
+      "t": 256,
+      "M": 87.88747532373068,
+      "centroid_y": 31.31080281774522,
+      "centroid_x": 27.6364165159284,
+      "largest_component": 0.9806942170866235,
+      "components": 1,
+      "edge_fraction": 9.274539660004816e-11
+    },
+    "g1_keep": {
+      "status": "complete",
+      "steps": 128,
+      "t": 256,
+      "M": 90.56990889361498,
+      "centroid_y": 31.547469191502127,
+      "centroid_x": 36.0614548230239,
+      "largest_component": 0.9824879285324913,
+      "components": 1,
+      "edge_fraction": 1.0987838330149484e-10
+    },
+    "g1_pooled": {
+      "status": "complete",
+      "steps": 128,
+      "t": 256,
+      "M": 89.97330646688982,
+      "centroid_y": 31.543291415978754,
+      "centroid_x": 36.080138605423606,
+      "largest_component": 0.9822482818901372,
+      "components": 1,
+      "edge_fraction": 1.0968061448743608e-10
+    },
+    "g1_swapped": {
+      "status": "complete",
+      "steps": 128,
+      "t": 256,
+      "M": 89.30120758856532,
+      "centroid_y": 31.545351339922618,
+      "centroid_x": 36.092914570290716,
+      "largest_component": 0.9824070685932531,
+      "components": 1,
+      "edge_fraction": 1.0882719381858144e-10
+    },
+    "g1_yoked_uniform": {
+      "status": "complete",
+      "steps": 128,
+      "t": 256,
+      "M": 89.74186345153561,
+      "centroid_y": 31.552591961171178,
+      "centroid_x": 36.1088486785663,
+      "largest_component": 0.9826019723517778,
+      "components": 1,
+      "edge_fraction": 1.0983962583530823e-10
+    },
+    "g1_freeze": {
+      "status": "complete",
+      "steps": 128,
+      "t": 256,
+      "M": 89.87076998936206,
+      "centroid_y": 31.556762305711565,
+      "centroid_x": 36.12250003869474,
+      "largest_component": 0.9822649411931865,
+      "components": 1,
+      "edge_fraction": 1.107157605605446e-10
+    }
+  },
+  "native": 1280,
+  "science_wall": 13.126792971976101,
+  "raw_bytes": 29709930,
+  "all_files_bytes": 31594833,
+  "observed_all_files_peak": 31594833
+}

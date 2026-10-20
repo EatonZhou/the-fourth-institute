@@ -1,0 +1,141 @@
+{
+  "resident_id": "resident_a388058f90eb",
+  "figure": "local_motor",
+  "new_model_steps": 0,
+  "sources": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/local_motor_expression_20261019/direction_handoff.json",
+      "sha256": "c5f6ce24a7e2fdc7f76a352ffcd84d69be9bbff6e1cb96665eb39c71a5a1d299"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/embodied_action_learning_20261019/REPORT.txt",
+      "sha256": "c255802a0eda5fd6a3f5107033266488e8481511366170a80be6148a90ab1449"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/embodied_action_learning_20261019/comparisons.csv",
+      "sha256": "112264de265fddb451851e44085b269991ef31a23330cad97a31f31deb72abcc"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/embodied_action_learning_20261019/summary.json",
+      "sha256": "cd92d14665de5e68f1d4659dcb179078ae1f48efb56fd08da566137be2ba9f29"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_action_credit_20261019/REPORT.txt",
+      "sha256": "1cd054f85b76e36f4ed7db3bc918716f1aafc3dcbfb1f0c51bbadda127c1d38d"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_action_credit_20261019/comparisons.csv",
+      "sha256": "8b53f7b83b853d23cba609f213cb260611e5ef06be783b05164c4253f38b86f4"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_action_credit_20261019/summary.json",
+      "sha256": "b222762d9c643f622250fec28968490fe57db4ee94eddd578086f38bbc807ee7"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/local_motor_expression_20261019/REPORT.txt",
+      "sha256": "15b2cd5651ea9caeb9680a5a7ad962b0d19a698c1aeeacb07263060a61822923"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/local_motor_expression_20261019/comparisons.csv",
+      "sha256": "786383012b6c7a8df99b7e38623c27d95c0fc31fbdc5bb430deae0eac9d4227d"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/local_motor_expression_20261019/summary.json",
+      "sha256": "c22b71065a375b59a3a470a66b567daf7b08bb926c4cc7f7817777daf74a1b93"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_action_credit_20261019/actual_0320.png",
+      "sha256": "0662706636e37832c0cf4c46c6455e123000de871d4653cb77c83dc348f068b8"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/local_motor_expression_20261019/actual_final.png",
+      "sha256": "7b171afe281edd32eae82b1835a983dfe81c7dc8834aa56da553dd04dcd8ca0e"
+    }
+  ],
+  "panel_B": "Four measured rules; both conditions shown separately. No pooling or inferential replication.",
+  "panel_C": "Two actual step-320 donor_immediate parents, each with retain/zero/negate 128-step forks; only theta[:2] differs at fork. Six endpoint fields, not six independent repeats.",
+  "coordinate_system": "Original 32x32 periodic domain. Every GUI-cropped field occupies 5.6x5.6 cm; no translation, rotation, coordinate recentering or frame interpolation.",
+  "field_encoding": {
+    "positive": "cyan",
+    "negative": "yellow",
+    "body": "darkness proportional to rho/max(rho) within each saved tile, not common absolute rho; all six endpoint M=24"
+  },
+  "gui_crop_pixels": {
+    "actual_0320.png": {
+      "parent_C0": [
+        0,
+        30,
+        256,
+        286
+      ],
+      "parent_C1": [
+        0,
+        316,
+        256,
+        572
+      ]
+    },
+    "actual_final.png": {
+      "C0_retain": [
+        0,
+        27,
+        256,
+        283
+      ],
+      "C0_zero": [
+        256,
+        27,
+        512,
+        283
+      ],
+      "C0_negate": [
+        512,
+        27,
+        768,
+        283
+      ],
+      "C1_retain": [
+        0,
+        310,
+        256,
+        566
+      ],
+      "C1_zero": [
+        256,
+        310,
+        512,
+        566
+      ],
+      "C1_negate": [
+        512,
+        310,
+        768,
+        566
+      ]
+    }
+  },
+  "crop_method": "Original source PNG imported separately, then cropped in visible Impress Crop Image Dialog; original 100 PPI permits exact pixel-edge crop via inches. Native labels and geometry were drawn separately.",
+  "native_objects": "All annotations, mechanism arrows, table text/rules, axes, displacement segments and markers authored via visible GUI keyboard/mouse; no UNO, XML generation or scripted PPT authoring.",
+  "scope_limits": [
+    "Prescribed local actuator/cohesion; no tissue birth",
+    "Immediate source acquisition 2/2, prescribed reversal 0/2",
+    "EMA/one-hop comparisons not optimized trace benchmark",
+    "Source-versus-recipient changes delivery and update location together",
+    "Communication unpriced; motion costs remain positive",
+    "Zero occupancy does not establish learned stopping",
+    "Separate host from cue-gradient and central joint regenerative models"
+  ],
+  "native_displacement_scale": {
+    "unit": "lattice units",
+    "native_x_cm": "20.5 + 1.1 * signed_dx",
+    "native_row_y_cm": {
+      "C0": 30.8,
+      "C1": 32.05
+    },
+    "values": "source/local_motor_expression_20261019_comparisons.csv; labels rounded to four decimals; marker coordinates use complete CSV precision"
+  },
+  "figure_source_data": [
+    "source/panel_B_scores.csv",
+    "source/local_motor_expression_20261019_comparisons.csv"
+  ]
+}

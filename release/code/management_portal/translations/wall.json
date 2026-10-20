@@ -1,0 +1,750 @@
+{
+  "/absolute/path/to/project": {
+    "en": "/absolute/path/to/project",
+    "zh-CN": "/absolute/path/to/project"
+  },
+  "10 分": {
+    "en": "10 points",
+    "zh-CN": "10 分"
+  },
+  "Block 地址无效": {
+    "en": "Invalid Block address",
+    "zh-CN": "Block 地址无效"
+  },
+  "Codex 账号必须是已登记的账号 ID": {
+    "en": "Codex account must be a registered account ID",
+    "zh-CN": "Codex 账号必须是已登记的账号 ID"
+  },
+  "Design / Plan": {
+    "en": "Design / Plan",
+    "zh-CN": "设计 / 计划"
+  },
+  "Dev 已完成": {
+    "en": "Dev completed",
+    "zh-CN": "Dev 已完成"
+  },
+  "DiscussionTab": {
+    "en": "DiscussionTab",
+    "zh-CN": "DiscussionTab"
+  },
+  "Documentation": {
+    "en": "Documentation",
+    "zh-CN": "文档"
+  },
+  "DocumentationContent": {
+    "en": "DocumentationContent",
+    "zh-CN": "DocumentationContent"
+  },
+  "Markdown 路径不在已登记工程目录内": {
+    "en": "Markdown path is not within a registered project directory",
+    "zh-CN": "Markdown 路径不在已登记工程目录内"
+  },
+  "Metaness": {
+    "en": "Metaness",
+    "zh-CN": "Metaness"
+  },
+  "Metaness 元层级筛选": {
+    "en": "Metaness meta-level filter",
+    "zh-CN": "Metaness 元层级筛选"
+  },
+  "Portal 是 WALL 的初始工程": {
+    "en": "Portal is the initial project of WALL",
+    "zh-CN": "Portal 是 WALL 的初始工程"
+  },
+  "Resident 尚未返回明确的 WALL 工作结果，请在对话中查看进展": {
+    "en": "The Resident has not yet returned a definitive WALL work result; check progress in the conversation",
+    "zh-CN": "Resident 尚未返回明确的 WALL 工作结果，请在对话中查看进展"
+  },
+  "Resident 指定的成果不是蓝色 Dev 条目": {
+    "en": "The deliverable specified by Resident is not a blue Dev entry",
+    "zh-CN": "Resident 指定的成果不是蓝色 Dev 条目"
+  },
+  "SPEC 模块筛选": {
+    "en": "SPEC module filter",
+    "zh-CN": "SPEC 模块筛选"
+  },
+  "SPEC.md 没有可生成的 Design 正文": {
+    "en": "SPEC.md has no Design body to generate",
+    "zh-CN": "SPEC.md 没有可生成的 Design 正文"
+  },
+  "WALL API 不存在": {
+    "en": "WALL API does not exist",
+    "zh-CN": "WALL API 不存在"
+  },
+  "WALL requires a human session or Resident credential": {
+    "en": "WALL requires a human session or Resident credential",
+    "zh-CN": "WALL 需要人类会话或 Resident 凭证"
+  },
+  "WALL 原生产页面 · 隔离数据验收（不写真实工程）": {
+    "en": "WALL native production page · isolated data acceptance (does not write to real projects)",
+    "zh-CN": "WALL 原生产页面 · 隔离数据验收（不写真实工程）"
+  },
+  "WALL 只读取 Markdown 文档": {
+    "en": "WALL only reads Markdown documents",
+    "zh-CN": "WALL 只读取 Markdown 文档"
+  },
+  "WALL 控件": {
+    "en": "WALL control",
+    "zh-CN": "WALL 控件"
+  },
+  "WALL 操作失败，请稍后重试": {
+    "en": "WALL operation failed, please try again later",
+    "zh-CN": "WALL 操作失败，请稍后重试"
+  },
+  "WALL 暂时无法读取，请稍后重试": {
+    "en": "WALL is temporarily unavailable, please try again later",
+    "zh-CN": "WALL 暂时无法读取，请稍后重试"
+  },
+  "WALL 状态文件格式错误": {
+    "en": "WALL state file format error",
+    "zh-CN": "WALL 状态文件格式错误"
+  },
+  "WALL 隔离加载容器": {
+    "en": "WALL isolated loading container",
+    "zh-CN": "WALL 隔离加载容器"
+  },
+  "WorkTab": {
+    "en": "WorkTab",
+    "zh-CN": "WorkTab"
+  },
+  "metaness 无效：必须是 1–10 的整数，请检查来源文档": {
+    "en": "metaness is invalid: it must be an integer from 1 to 10; check the source document",
+    "zh-CN": "metaness 无效：必须是 1–10 的整数，请检查来源文档"
+  },
+  "reviewed 应为布尔值": {
+    "en": "reviewed must be boolean",
+    "zh-CN": "reviewed 应为布尔值"
+  },
+  "same-origin request required": {
+    "en": "same-origin request required",
+    "zh-CN": "需要同源请求"
+  },
+  "≥ 2 分": {
+    "en": "≥ 2 points",
+    "zh-CN": "≥ 2 分"
+  },
+  "≥ 3 分": {
+    "en": "≥ 3 points",
+    "zh-CN": "≥ 3 分"
+  },
+  "≥ 4 分": {
+    "en": "≥ 4 points",
+    "zh-CN": "≥ 4 分"
+  },
+  "≥ 5 分": {
+    "en": "≥ 5 points",
+    "zh-CN": "≥ 5 分"
+  },
+  "≥ 6 分": {
+    "en": "≥ 6 points",
+    "zh-CN": "≥ 6 分"
+  },
+  "≥ 7 分": {
+    "en": "≥ 7 points",
+    "zh-CN": "≥ 7 分"
+  },
+  "≥ 8 分": {
+    "en": "≥ 8 points",
+    "zh-CN": "≥ 8 分"
+  },
+  "≥ 9 分": {
+    "en": "≥ 9 points",
+    "zh-CN": "≥ 9 分"
+  },
+  "下载 Markdown": {
+    "en": "Download Markdown",
+    "zh-CN": "下载 Markdown"
+  },
+  "仅按当前工程 SPEC 索引生成 Markdown。保留每份 Design 的版本和 SHA256；不会发布 Release、提交代码或重启服务。": {
+    "en": "Generate Markdown only from the current project SPEC index. Preserves each Design's version and SHA256; will not publish Release, commit code, or restart services.",
+    "zh-CN": "仅按当前工程 SPEC 索引生成 Markdown。保留每份 Design 的版本和 SHA256；不会发布 Release、提交代码或重启服务。"
+  },
+  "仅显示达到所选重要度的点": {
+    "en": "Only show points reaching the selected importance",
+    "zh-CN": "仅显示达到所选重要度的点"
+  },
+  "从 Plan 中移除这项建议，保留现有代码。": {
+    "en": "Remove this suggestion from the Plan and keep the existing code.",
+    "zh-CN": "从 Plan 中移除这项建议，保留现有代码。"
+  },
+  "保留工程源码。": {
+    "en": "Keep project source code.",
+    "zh-CN": "保留工程源码。"
+  },
+  "修改后的 Markdown 无法识别这个点": {
+    "en": "The modified Markdown cannot recognize this point",
+    "zh-CN": "修改后的 Markdown 无法识别这个点"
+  },
+  "停止请求已接收，等待运行状态更新。": {
+    "en": "Stop request received, waiting for run status update.",
+    "zh-CN": "停止请求已接收，等待运行状态更新。"
+  },
+  "全量发布": {
+    "en": "Full release",
+    "zh-CN": "全量发布"
+  },
+  "全面回归": {
+    "en": "Full regression",
+    "zh-CN": "全面回归"
+  },
+  "关联点": {
+    "en": "Related point",
+    "zh-CN": "关联点"
+  },
+  "关联点应为列表": {
+    "en": "Related points should be a list",
+    "zh-CN": "关联点应为列表"
+  },
+  "关闭发布文档预览": {
+    "en": "Close release document preview",
+    "zh-CN": "关闭发布文档预览"
+  },
+  "关闭最近完成": {
+    "en": "Close recently completed",
+    "zh-CN": "关闭最近完成"
+  },
+  "关闭表单": {
+    "en": "Close form",
+    "zh-CN": "关闭表单"
+  },
+  "内容已变化，请查看最新内容后重新设置审核状态": {
+    "en": "The content has changed. Please review the latest content and set the review status again.",
+    "zh-CN": "内容已变化，请查看最新内容后重新设置审核状态"
+  },
+  "准备工作区与任务中": {
+    "en": "Preparing workspace and tasks",
+    "zh-CN": "准备工作区与任务中"
+  },
+  "分析间隔（分钟）": {
+    "en": "Analysis interval (minutes)",
+    "zh-CN": "分析间隔（分钟）"
+  },
+  "分节中的点请保留 Markdown 标题": {
+    "en": "Keep the dots in section headings as Markdown headings",
+    "zh-CN": "分节中的点请保留 Markdown 标题"
+  },
+  "分配 Resident 中": {
+    "en": "Assigning Resident",
+    "zh-CN": "分配 Resident 中"
+  },
+  "刷新墙面": {
+    "en": "Refresh Wall",
+    "zh-CN": "刷新墙面"
+  },
+  "原 Resident 已不可用，可从上方操作重新发起任务。": {
+    "en": "The original Resident is no longer available; you can restart the task from the actions above.",
+    "zh-CN": "原 Resident 已不可用，可从上方操作重新发起任务。"
+  },
+  "原文与出处": {
+    "en": "Original Text and Source",
+    "zh-CN": "原文与出处"
+  },
+  "发布文档预览": {
+    "en": "Publish Document Preview",
+    "zh-CN": "发布文档预览"
+  },
+  "取消工程登记？": {
+    "en": "Cancel project registration?",
+    "zh-CN": "取消工程登记？"
+  },
+  "取消登记": {
+    "en": "Cancel registration",
+    "zh-CN": "取消登记"
+  },
+  "同名设计点 · 隔离验收": {
+    "en": "Same-name design point · Isolated acceptance",
+    "zh-CN": "同名设计点 · 隔离验收"
+  },
+  "启用自动推进": {
+    "en": "Enable auto-advance",
+    "zh-CN": "启用自动推进"
+  },
+  "墙面": {
+    "en": "Wall",
+    "zh-CN": "墙面"
+  },
+  "完成时间未记录": {
+    "en": "Completion time not recorded",
+    "zh-CN": "完成时间未记录"
+  },
+  "实现中": {
+    "en": "Implementing",
+    "zh-CN": "实现中"
+  },
+  "审核状态": {
+    "en": "Review status",
+    "zh-CN": "审核状态"
+  },
+  "审核状态筛选": {
+    "en": "Review status filter",
+    "zh-CN": "审核状态筛选"
+  },
+  "对话工作区": {
+    "en": "Conversation workspace",
+    "zh-CN": "对话工作区"
+  },
+  "对话运行状态暂不可用，稍后自动重试。": {
+    "en": "Conversation running status is temporarily unavailable; will retry automatically later.",
+    "zh-CN": "对话运行状态暂不可用，稍后自动重试。"
+  },
+  "将当前 Dev 源码完整同步到 Release；不等待全面回归，不改变功能卡片的完成状态": {
+    "en": "Fully sync current Dev source to Release; do not wait for full regression, do not change the completion status of feature cards",
+    "zh-CN": "将当前 Dev 源码完整同步到 Release；不等待全面回归，不改变功能卡片的完成状态"
+  },
+  "将此成果及必要依赖同步到 Release，校验 commit 后完成当前成果": {
+    "en": "Sync this result and necessary dependencies to Release; validate the commit to complete this result",
+    "zh-CN": "将此成果及必要依赖同步到 Release，校验 commit 后完成当前成果"
+  },
+  "工作已停止，任务尚未投递": {
+    "en": "Work has stopped; task not yet delivered",
+    "zh-CN": "工作已停止，任务尚未投递"
+  },
+  "工程内尚未找到 SPEC.md 或 IMPROVE.md": {
+    "en": "SPEC.md or IMPROVE.md not yet found in the project",
+    "zh-CN": "工程内尚未找到 SPEC.md 或 IMPROVE.md"
+  },
+  "工程名称": {
+    "en": "Project name",
+    "zh-CN": "工程名称"
+  },
+  "工程未登记": {
+    "en": "Project not registered",
+    "zh-CN": "工程未登记"
+  },
+  "工程根目录": {
+    "en": "Project root directory",
+    "zh-CN": "工程根目录"
+  },
+  "工程没有 SPEC.md，无法生成发布文档": {
+    "en": "Project has no SPEC.md; cannot generate release documentation",
+    "zh-CN": "工程没有 SPEC.md，无法生成发布文档"
+  },
+  "工程级操作不能指定卡片": {
+    "en": "Project-level operations cannot specify a card",
+    "zh-CN": "工程级操作不能指定卡片"
+  },
+  "工程运行": {
+    "en": "Project run",
+    "zh-CN": "工程运行"
+  },
+  "已取消登记": {
+    "en": "Registration canceled",
+    "zh-CN": "已取消登记"
+  },
+  "已完成的工作": {
+    "en": "Completed work",
+    "zh-CN": "已完成的工作"
+  },
+  "已审核": {
+    "en": "Reviewed",
+    "zh-CN": "已审核"
+  },
+  "已审核当前内容": {
+    "en": "Reviewed current content",
+    "zh-CN": "已审核当前内容"
+  },
+  "已拒绝，身份清理将在空闲后完成。": {
+    "zh-CN": "已拒绝，身份清理将在空闲后完成。",
+    "en": "Rejected. Resident cleanup will finish when idle."
+  },
+  "已移除的成果": {
+    "en": "Removed results",
+    "zh-CN": "已移除的成果"
+  },
+  "开始推进": {
+    "en": "Start advancing",
+    "zh-CN": "开始推进"
+  },
+  "当前点的状态不支持这项操作": {
+    "en": "The current point's status does not support this operation",
+    "zh-CN": "当前点的状态不支持这项操作"
+  },
+  "当前账号不能读取全部索引正文，未生成部分文档": {
+    "en": "The current account cannot read all indexed body text; some documents were not generated",
+    "zh-CN": "当前账号不能读取全部索引正文，未生成部分文档"
+  },
+  "打开其他点后将丢失尚未保存的修改。": {
+    "en": "Opening another point will lose unsaved changes.",
+    "zh-CN": "打开其他点后将丢失尚未保存的修改。"
+  },
+  "按元层级筛选；未填写按 M1，显式非法值仅在全部中显示并提示诊断": {
+    "en": "Filter by meta-level; if not filled, defaults to M1; explicitly invalid values are shown only in All with a diagnostic prompt",
+    "zh-CN": "按元层级筛选；未填写按 M1，显式非法值仅在全部中显示并提示诊断"
+  },
+  "授权自动修复日常错误": {
+    "en": "Authorize automatic repair of routine errors",
+    "zh-CN": "授权自动修复日常错误"
+  },
+  "搜索关联点": {
+    "en": "Search association points",
+    "zh-CN": "搜索关联点"
+  },
+  "搜索墙面": {
+    "en": "Search wall",
+    "zh-CN": "搜索墙面"
+  },
+  "搜索设计、改进、方向与出处": {
+    "en": "Search design, improvements, direction, and provenance",
+    "zh-CN": "搜索设计、改进、方向与出处"
+  },
+  "改实现": {
+    "en": "Change implementation",
+    "zh-CN": "改实现"
+  },
+  "改规范": {
+    "en": "Change spec",
+    "zh-CN": "改规范"
+  },
+  "改进": {
+    "en": "Improve",
+    "zh-CN": "改进"
+  },
+  "文档刚刚有更新，请刷新后重试": {
+    "en": "The document was just updated; refresh and try again",
+    "zh-CN": "文档刚刚有更新，请刷新后重试"
+  },
+  "文档默认重要度": {
+    "en": "Default document importance",
+    "zh-CN": "文档默认重要度"
+  },
+  "新任务 Codex 账号": {
+    "en": "New task Codex account",
+    "zh-CN": "新任务 Codex 账号"
+  },
+  "方向总览": {
+    "en": "Direction overview",
+    "zh-CN": "方向总览"
+  },
+  "暂无已完成的工作": {
+    "en": "No completed work yet",
+    "zh-CN": "暂无已完成的工作"
+  },
+  "最近完成": {
+    "en": "Recently completed",
+    "zh-CN": "最近完成"
+  },
+  "最近完成 · 可用结果": {
+    "en": "Recently completed · Available results",
+    "zh-CN": "最近完成 · 可用结果"
+  },
+  "最近完成的工作": {
+    "en": "Recently completed work",
+    "zh-CN": "最近完成的工作"
+  },
+  "最近打开": {
+    "en": "Recently opened",
+    "zh-CN": "最近打开"
+  },
+  "未命名点": {
+    "en": "Unnamed point",
+    "zh-CN": "未命名点"
+  },
+  "未审核": {
+    "en": "Not reviewed",
+    "zh-CN": "未审核"
+  },
+  "未知 WALL 操作": {
+    "en": "Unknown WALL operation",
+    "zh-CN": "未知 WALL 操作"
+  },
+  "未知的点类型": {
+    "en": "Unknown point type",
+    "zh-CN": "未知的点类型"
+  },
+  "权限 Project ID": {
+    "en": "Permission Project ID",
+    "zh-CN": "权限 Project ID"
+  },
+  "查看 Resident": {
+    "en": "View Resident",
+    "zh-CN": "查看 Resident"
+  },
+  "查看结果": {
+    "en": "View result",
+    "zh-CN": "查看结果"
+  },
+  "标题不能为空": {
+    "en": "Title cannot be empty",
+    "zh-CN": "标题不能为空"
+  },
+  "正在保存审核状态": {
+    "en": "Saving review status",
+    "zh-CN": "正在保存审核状态"
+  },
+  "正在打开资源…": {
+    "en": "Opening resource…",
+    "zh-CN": "正在打开资源…"
+  },
+  "正在打开资源详情…": {
+    "en": "Opening resource details…",
+    "zh-CN": "正在打开资源详情…"
+  },
+  "正在读取墙面…": {
+    "en": "Reading wall…",
+    "zh-CN": "正在读取墙面…"
+  },
+  "正在读取工程…": {
+    "en": "Reading project…",
+    "zh-CN": "正在读取工程…"
+  },
+  "正在读取设计点": {
+    "en": "Reading design point",
+    "zh-CN": "正在读取设计点"
+  },
+  "正在读取设计点的测试绑定…": {
+    "en": "Reading design point's test bindings…",
+    "zh-CN": "正在读取设计点的测试绑定…"
+  },
+  "正在连接实现 Resident…": {
+    "en": "Connecting to implementation Resident…",
+    "zh-CN": "正在连接实现 Resident…"
+  },
+  "正文不接受 YAML 头部，请使用文档属性字段": {
+    "en": "Body does not accept YAML front matter; use document property fields",
+    "zh-CN": "正文不接受 YAML 头部，请使用文档属性字段"
+  },
+  "正文未识别为独立的设计点或工作项。": {
+    "en": "Body not recognized as a standalone design point or work item.",
+    "zh-CN": "正文未识别为独立的设计点或工作项。"
+  },
+  "正文（Markdown）": {
+    "en": "Body (Markdown)",
+    "zh-CN": "正文（Markdown）"
+  },
+  "此设计点尚未绑定主测试。": {
+    "en": "This design point is not yet bound to a primary test.",
+    "zh-CN": "此设计点尚未绑定主测试。"
+  },
+  "测试报告": {
+    "en": "Test report",
+    "zh-CN": "测试报告"
+  },
+  "测试结果中的 test_run_ids 格式错误": {
+    "en": "Malformed test_run_ids in test results",
+    "zh-CN": "测试结果中的 test_run_ids 格式错误"
+  },
+  "演化方向": {
+    "en": "Evolution direction",
+    "zh-CN": "演化方向"
+  },
+  "点卡片": {
+    "en": "Click card",
+    "zh-CN": "点卡片"
+  },
+  "点的重要度": {
+    "en": "Node importance",
+    "zh-CN": "点的重要度"
+  },
+  "点详情": {
+    "en": "Click details",
+    "zh-CN": "点详情"
+  },
+  "独立计划只支持全面回归和全量发布": {
+    "en": "Standalone plans only support full regression and full release",
+    "zh-CN": "独立计划只支持全面回归和全量发布"
+  },
+  "生成发布文档": {
+    "en": "Generate release document",
+    "zh-CN": "生成发布文档"
+  },
+  "生成期间 SPEC.md 已变化，请重新生成": {
+    "en": "SPEC.md changed during generation; please regenerate",
+    "zh-CN": "生成期间 SPEC.md 已变化，请重新生成"
+  },
+  "用于新任务与首次讨论；已有讨论可在 Session 中切换账号": {
+    "en": "For new tasks and first discussions; for existing discussions, you can switch accounts in Session",
+    "zh-CN": "用于新任务与首次讨论；已有讨论可在 Session 中切换账号"
+  },
+  "登记工程": {
+    "en": "Register project",
+    "zh-CN": "登记工程"
+  },
+  "移除对应功能实现并更新规范。": {
+    "en": "Remove the corresponding feature implementation and update the specification.",
+    "zh-CN": "移除对应功能实现并更新规范。"
+  },
+  "移除这个方向，保留关联的设计点、改进点和现有代码。": {
+    "en": "Remove this direction and keep the associated design points, improvement points, and existing code.",
+    "zh-CN": "移除这个方向，保留关联的设计点、改进点和现有代码。"
+  },
+  "移除这条不一致记录，保留规范和现有代码。": {
+    "en": "Remove this inconsistency record and keep the specification and existing code.",
+    "zh-CN": "移除这条不一致记录，保留规范和现有代码。"
+  },
+  "类别筛选": {
+    "en": "Category filter",
+    "zh-CN": "类别筛选"
+  },
+  "索引与正文总量超过 8 MiB，未生成部分文档": {
+    "en": "The total index and body size exceeds 8 MiB; some documents were not generated",
+    "zh-CN": "索引与正文总量超过 8 MiB，未生成部分文档"
+  },
+  "索引正文缺失，未生成部分文档；请先修复 SPEC.md": {
+    "en": "Index body is missing; some documents were not generated. Please fix SPEC.md first",
+    "zh-CN": "索引正文缺失，未生成部分文档；请先修复 SPEC.md"
+  },
+  "聚类": {
+    "en": "Cluster",
+    "zh-CN": "聚类"
+  },
+  "自动任务 Codex 账号": {
+    "en": "Automated task Codex account",
+    "zh-CN": "自动任务 Codex 账号"
+  },
+  "自动分析间隔为 10 至 10080 分钟": {
+    "en": "Automatic analysis interval is 10 to 10080 minutes",
+    "zh-CN": "自动分析间隔为 10 至 10080 分钟"
+  },
+  "自动推进": {
+    "en": "Auto-advance",
+    "zh-CN": "自动推进"
+  },
+  "自动推进和自动修复使用开关值": {
+    "en": "Auto-advance and auto-fix use toggle values",
+    "zh-CN": "自动推进和自动修复使用开关值"
+  },
+  "表格中的点请保留一行 Markdown 表格格式": {
+    "en": "Keep points in the table in a single-line Markdown table format",
+    "zh-CN": "表格中的点请保留一行 Markdown 表格格式"
+  },
+  "计划启用状态使用开关值": {
+    "en": "Scheduled enabled state uses a toggle value",
+    "zh-CN": "计划启用状态使用开关值"
+  },
+  "计划间隔为 10 至 10080 分钟": {
+    "en": "Schedule interval is 10 to 10080 minutes",
+    "zh-CN": "计划间隔为 10 至 10080 分钟"
+  },
+  "设计、改进与软件演化": {
+    "en": "Design, improvement, and software evolution",
+    "zh-CN": "设计、改进与软件演化"
+  },
+  "设计与改进": {
+    "en": "Design and improvement",
+    "zh-CN": "设计与改进"
+  },
+  "设计与改进墙": {
+    "en": "Design and improvement wall",
+    "zh-CN": "设计与改进墙"
+  },
+  "该来源已不在工程索引中": {
+    "en": "This source is no longer in the project index",
+    "zh-CN": "该来源已不在工程索引中"
+  },
+  "详细": {
+    "en": "Detailed",
+    "zh-CN": "详细"
+  },
+  "语义搜索失败": {
+    "en": "Semantic search failed",
+    "zh-CN": "语义搜索失败"
+  },
+  "请先保存修改，再审核当前内容": {
+    "en": "Please save changes first, then review the current content",
+    "zh-CN": "请先保存修改，再审核当前内容"
+  },
+  "请先等待或停止这个工程的工作": {
+    "en": "Please wait for or stop the work of this project first",
+    "zh-CN": "请先等待或停止这个工程的工作"
+  },
+  "请实现": {
+    "en": "Please implement",
+    "zh-CN": "请实现"
+  },
+  "请检查筛选、搜索和缩放条件；未识别的文档会显示来源与原因。": {
+    "en": "Please check the filter, search, and zoom conditions; unrecognized documents will show their source and reason.",
+    "zh-CN": "请检查筛选、搜索和缩放条件；未识别的文档会显示来源与原因。"
+  },
+  "请输入可识别的标题和正文": {
+    "en": "Please enter a recognizable title and body",
+    "zh-CN": "请输入可识别的标题和正文"
+  },
+  "请输入存在的软件工程目录": {
+    "en": "Please enter an existing software engineering directory",
+    "zh-CN": "请输入存在的软件工程目录"
+  },
+  "请选择一个完整 WALL 设计点 ID": {
+    "en": "Please select a complete WALL design point ID",
+    "zh-CN": "请选择一个完整 WALL 设计点 ID"
+  },
+  "请选择已登记的 Portal Project": {
+    "en": "Please select a registered Portal Project",
+    "zh-CN": "请选择已登记的 Portal Project"
+  },
+  "读取语义搜索失败": {
+    "en": "Failed to read semantic search",
+    "zh-CN": "读取语义搜索失败"
+  },
+  "调用本工程的回归测试与修复 Resident，运行测试、排查失败并修复": {
+    "en": "Invoke this project's regression testing and fixing Resident to run tests, troubleshoot failures, and fix them",
+    "zh-CN": "调用本工程的回归测试与修复 Resident，运行测试、排查失败并修复"
+  },
+  "账号：沿用配置": {
+    "en": "Account: use configuration",
+    "zh-CN": "账号：沿用配置"
+  },
+  "资源正文不可用": {
+    "en": "Resource body unavailable",
+    "zh-CN": "资源正文不可用"
+  },
+  "较早完成 · 已移除结果": {
+    "en": "Completed earlier · result removed",
+    "zh-CN": "较早完成 · 已移除结果"
+  },
+  "这个点已被修改或移除，请刷新墙面": {
+    "en": "This point has been modified or removed. Refresh the wall.",
+    "zh-CN": "这个点已被修改或移除，请刷新墙面"
+  },
+  "重新扫描工程文档": {
+    "en": "Rescan project documents",
+    "zh-CN": "重新扫描工程文档"
+  },
+  "重要度（1–10）": {
+    "en": "Importance (1–10)",
+    "zh-CN": "重要度（1–10）"
+  },
+  "重要程度筛选": {
+    "en": "Importance filter",
+    "zh-CN": "重要程度筛选"
+  },
+  "重试实现": {
+    "en": "Retry implementation",
+    "zh-CN": "重试实现"
+  },
+  "重试当前卡片；已分配且仍可访问的 Resident 会继续复用": {
+    "en": "Retry the current card; Residents that are already assigned and still accessible will continue to be reused",
+    "zh-CN": "重试当前卡片；已分配且仍可访问的 Resident 会继续复用"
+  },
+  "阅读状态筛选": {
+    "en": "Read status filter",
+    "zh-CN": "阅读状态筛选"
+  },
+  "隐藏的同名成果": {
+    "en": "Hidden artifacts with the same name",
+    "zh-CN": "隐藏的同名成果"
+  },
+  "隔离 WALL 验收": {
+    "en": "Isolate WALL acceptance",
+    "zh-CN": "隔离 WALL 验收"
+  },
+  "隔离主测试关系": {
+    "en": "Isolate primary test relationship",
+    "zh-CN": "隔离主测试关系"
+  },
+  "隔离验收": {
+    "en": "Isolated acceptance",
+    "zh-CN": "隔离验收"
+  },
+  "首次发送时创建讨论 Resident": {
+    "en": "Create discussion Resident on first send",
+    "zh-CN": "首次发送时创建讨论 Resident"
+  },
+  "（已退役）": {
+    "en": "(retired)",
+    "zh-CN": "（已退役）"
+  },
+  "（未填写，显示默认 1）": {
+    "en": "(not filled in, showing default 1)",
+    "zh-CN": "（未填写，显示默认 1）"
+  }
+}

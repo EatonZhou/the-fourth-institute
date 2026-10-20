@@ -1,0 +1,43 @@
+# The first model is the default unless PORTAL_KIMI_CODE_DEFAULT_MODEL selects another listed model.
+default_model = __PORTAL_KIMI_DEFAULT_MODEL__
+
+[providers.portal_kimi]
+type = "kimi"
+base_url = __PORTAL_KIMI_BASE_URL__
+api_key = __PORTAL_KIMI_API_KEY__
+
+[models."kimi-k3"]
+provider = "portal_kimi"
+model = "kimi-k3"
+display_name = "Kimi K3"
+max_context_size = 1048576
+capabilities = ["image_in", "thinking"]
+support_efforts = ["max"]
+default_effort = "max"
+
+[models."kimi-k2.7-code"]
+provider = "portal_kimi"
+model = "kimi-k2.7-code"
+display_name = "Kimi K2.7 Code"
+max_context_size = 262144
+capabilities = ["image_in", "thinking"]
+
+[models."kimi-k2.7-code-highspeed"]
+provider = "portal_kimi"
+model = "kimi-k2.7-code-highspeed"
+display_name = "Kimi K2.7 Code HighSpeed"
+max_context_size = 262144
+capabilities = ["image_in", "thinking"]
+
+[models."kimi-k2.6"]
+provider = "portal_kimi"
+model = "kimi-k2.6"
+display_name = "Kimi K2.6"
+max_context_size = 262144
+capabilities = ["image_in", "thinking"]
+
+[telemetry]
+enabled = false
+
+[subagent]
+timeout_ms = 2147000000

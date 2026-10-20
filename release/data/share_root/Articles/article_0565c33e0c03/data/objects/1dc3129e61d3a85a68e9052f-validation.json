@@ -1,0 +1,26 @@
+{
+  "native_source_sha_unchanged": {
+    "/share/Projects/元胞自动机研究/src/environment_evolution/joint_renewal/run.py": "9672e7f165d256c7d1b12917e30012d0b649a077be74748fc470292db02a42a9",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/joint_renewal/core.py": "d6000b5dc97f3d80d1ad748cf8696d2290d52a31f13c94801d0a3f158fc2e8d7",
+    "/share/Projects/元胞自动机研究/src/local_learning/joint_renewal_interface/core.py": "e9030cadfdc2cd634530c52e98e8df9b74d4195566f3ad194f8f4b11a7fa7e74",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_actor/model.py": "3941450e97d2311f833d1c9c8964f348218467d4cd8d41a68b6584b72b24b5b0",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_actor/conversion.py": "d2b73ccf44d6720e01e2166c055f9a427406dc483b21746476b9f8cc5f95189a",
+    "/share/Projects/元胞自动机研究/src/local_learning/material_transport.py": "dd5622a2df6a5d50642a31ad586215d5e30e33929cf8f57ee9efff36fdef08d5",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_joint_resource_transport/transport.py": "19cf10d64d52fad045d4b373ba6d8205b338b520e1ef60bcab6a90463031a6d6",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/renewal_association/run.py": "36bd85e0e3395cca4ddfd2f0ee6e63b6527988c8f73d4af205a6536310f48938"
+  },
+  "newborn_pending_max": 0.0,
+  "retention_bank_delta_max": 0.0,
+  "material_error_max": 9.094947017729282e-13,
+  "energy_error_max": 1.8189894035458565e-12,
+  "retention_true_newborn_fraction": {
+    "fragile_g0_joint": 0.9510037899017334,
+    "fragile_g0_frozen_prior": 0.9564473628997803,
+    "fragile_g1_joint": 0.9584892988204956,
+    "fragile_g1_frozen_prior": 0.9570735692977905,
+    "multi_g0_joint": 0.4767155647277832,
+    "multi_g0_frozen_prior": 0.5431212186813354,
+    "multi_g1_joint": 0.5010621547698975,
+    "multi_g1_frozen_prior": 0.5239028930664062
+  }
+}

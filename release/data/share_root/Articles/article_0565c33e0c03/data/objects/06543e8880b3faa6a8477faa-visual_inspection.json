@@ -1,0 +1,16 @@
+{
+  "viewed": [
+    "source_00_328.png",
+    "source_01_328.png",
+    "source_15_328.png",
+    "source_19_264.png",
+    "track_errors.png"
+  ],
+  "findings": [
+    "图为既存真实出生材料的被动标签，不是新身体实验或预测的形态。",
+    "源点留存率与运输后位置质量分开；零出生位置留存率图空白。",
+    "主留出第三排序轨G史分离反例保留，G转移两B史分离反例保留。"
+  ],
+  "map_scale": "retention0..1 fixed; birth and retained mass colorbars explicit per-panel, not equal-intensity effect size comparison",
+  "paper_scope": "editable SVG and exact arrays provided; no claim of hand-composed final publication figure"
+}

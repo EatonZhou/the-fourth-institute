@@ -1,0 +1,80 @@
+{
+  "job_id": "f89de5ff-f8e6-4cb7-89f4-4e1fd031abfa",
+  "status": "finished_all_stops_preserved",
+  "committed": 576,
+  "unknown": 0,
+  "old_native_replay": 0,
+  "branches": {
+    "g0_keep": {
+      "status": "complete",
+      "steps": 96,
+      "t": 224,
+      "M": 89.56978035517874,
+      "centroid_y": 31.277250745618687,
+      "centroid_x": 27.916039930512053,
+      "largest_component": 0.9828022232352811,
+      "components": 1,
+      "edge_fraction": 1.3191285025611291e-11
+    },
+    "g0_pooled": {
+      "status": "complete",
+      "steps": 96,
+      "t": 224,
+      "M": 88.75062611034014,
+      "centroid_y": 31.28077819180211,
+      "centroid_x": 27.811177396577122,
+      "largest_component": 0.9818146445760145,
+      "components": 1,
+      "edge_fraction": 1.3305652692201572e-11
+    },
+    "g0_swapped": {
+      "status": "complete",
+      "steps": 96,
+      "t": 224,
+      "M": 87.65766301304859,
+      "centroid_y": 31.292758428701376,
+      "centroid_x": 27.792926404922913,
+      "largest_component": 0.9810221056137154,
+      "components": 1,
+      "edge_fraction": 1.3326929338342673e-11
+    },
+    "g1_keep": {
+      "status": "complete",
+      "steps": 96,
+      "t": 224,
+      "M": 84.13334280333868,
+      "centroid_y": 31.465889357303766,
+      "centroid_x": 35.72429088961526,
+      "largest_component": 0.9830418625222735,
+      "components": 1,
+      "edge_fraction": 1.7039332429823563e-11
+    },
+    "g1_pooled": {
+      "status": "complete",
+      "steps": 96,
+      "t": 224,
+      "M": 84.00889551995334,
+      "centroid_y": 31.473821644886247,
+      "centroid_x": 35.71552604856947,
+      "largest_component": 0.9832931388724905,
+      "components": 1,
+      "edge_fraction": 1.6969991636502688e-11
+    },
+    "g1_swapped": {
+      "status": "complete",
+      "steps": 96,
+      "t": 224,
+      "M": 83.7911378326082,
+      "centroid_y": 31.478556414693756,
+      "centroid_x": 35.6646160433403,
+      "largest_component": 0.9834394013859024,
+      "components": 1,
+      "edge_fraction": 1.6829912595991544e-11
+    }
+  },
+  "native": 576,
+  "science_wall": 7.917041606036946,
+  "raw_bytes": 15098647,
+  "all_files_bytes": 16977597,
+  "observed_all_files_peak": 16977597
+}

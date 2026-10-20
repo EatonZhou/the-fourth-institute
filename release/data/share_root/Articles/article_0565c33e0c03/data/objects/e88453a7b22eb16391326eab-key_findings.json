@@ -1,0 +1,89 @@
+{
+  "child_rule_effect_same_history": {
+    "delta_M": [
+      1.932700172463747,
+      2.795908719547832
+    ],
+    "delta_E": [
+      1.8965811632717617,
+      5.365756248901938
+    ],
+    "delta_bodytime": [
+      10.498040353785257,
+      17.5292330990373
+    ]
+  },
+  "late_netborn_range": [
+    -3.4817392310105566,
+    -0.9654068699761087
+  ],
+  "history_contrast_late": "child history minus father history: M256 and late body-time both lower in all 8 fixed-rule contrasts; E mixed",
+  "double_lobe_separated": [
+    {
+      "shape": "double_lobe",
+      "condition": "separated",
+      "start": "193",
+      "end": "256",
+      "history": "g1_f2_c0",
+      "contrast": "child_rule_minus_parent_rule_same_actual128",
+      "delta_M": "2.588244892647168",
+      "delta_E": "5.365756248901938",
+      "delta_delta_E": "1.2499104343208955",
+      "delta_bodytime": "8.196143942656306",
+      "delta_born": "-0.775763560350156",
+      "delta_death": "-0.810925428297335",
+      "delta_netborn": "0.03516186794717857",
+      "delta_U": "-0.15387611159782644",
+      "delta_founder": "2.742562038296903",
+      "delta_life0_after_tissue": "-0.15431714564972943",
+      "delta_pump_fee_paid": "-0.3119165252547097",
+      "delta_actor_basal_paid": "0.09833248841346731",
+      "delta_actor_basal_unpaid": "1.417776402139936e-07",
+      "delta_synthesis_heat": "-0.15515271207003123",
+      "delta_template_heat": "-0.01551527120700312",
+      "delta_external_material_out": "0.183176193286398",
+      "delta_external_energy_out": "-0.16941620908104227"
+    },
+    {
+      "shape": "double_lobe",
+      "condition": "separated",
+      "start": "193",
+      "end": "256",
+      "history": "g2_p0_c0",
+      "contrast": "child_rule_minus_parent_rule_same_actual128",
+      "delta_M": "2.4420139044794666",
+      "delta_E": "5.212617671064869",
+      "delta_delta_E": "0.28893205784187614",
+      "delta_bodytime": "8.40074959943459",
+      "delta_born": "-0.48879364361184463",
+      "delta_death": "-0.1505501607578985",
+      "delta_netborn": "-0.33824348285394645",
+      "delta_U": "-0.5500896062415004",
+      "delta_founder": "3.1925256738400023",
+      "delta_life0_after_tissue": "-0.7505117693605392",
+      "delta_pump_fee_paid": "-0.14793668530089885",
+      "delta_actor_basal_paid": "0.1010108770117244",
+      "delta_actor_basal_unpaid": "1.0642712030689779e-06",
+      "delta_synthesis_heat": "-0.09775872872236896",
+      "delta_template_heat": "-0.009775872872236892",
+      "delta_external_material_out": "0.34511038115125636",
+      "delta_external_energy_out": "0.2748883325499065"
+    }
+  ],
+  "totals_all16": {
+    "actor_basal_unpaid": 4.612702780662752e-05,
+    "pump_fee_paid": 24.64347564139401,
+    "pump_fee_unaffordable": 0.000419681791299602,
+    "actor_movement_paid": 69.91912121920053,
+    "actor_basal_paid": 67.6160490728811,
+    "synthesis_heat": 38.33539873263182,
+    "template_heat": 3.8335398732631822,
+    "external_material_out": 188.6074285652695,
+    "external_energy_out": 847.7115572994165
+  },
+  "totals_new8": {
+    "actor_basal_unpaid": 2.9299883778364885e-05,
+    "pump_fee_paid": 12.7229705291975,
+    "pump_fee_unaffordable": 0.0002985572059707401
+  }
+}

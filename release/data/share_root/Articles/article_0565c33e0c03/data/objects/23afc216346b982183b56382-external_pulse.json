@@ -1,0 +1,123 @@
+{
+  "time": "after256_before257",
+  "fraction": 0.2,
+  "direction": "+x",
+  "cases": [
+    {
+      "branch": "reference_anisotropic--connected_trilobe--open_T11",
+      "source": {
+        "branch": "reference_anisotropic--connected_trilobe--open_T11",
+        "step": "256",
+        "kind": "new_atomic",
+        "path": "/data/lenia-research/lineage_75e3399f4877/regenerative_reserve_morphology_transfer_20261018/10238c47-5624-4f8b-acee-a5a478f50549/reference_anisotropic--connected_trilobe--open_T11/transactions/000256.npz",
+        "sha256": "abb91a662a14eed204ab5d59b57ff0bd10450fe0141ae9020fbea95e16d30249"
+      },
+      "dose": {
+        "n": 96,
+        "centroid_y": 36.02823236260908,
+        "centroid_x": 47.95625530121395,
+        "boundary_column": 51,
+        "target_mass": 8.21374396484024,
+        "removed_mass": 8.21374396484024,
+        "removed_energy": 4.988838722204961,
+        "removed_founder": 0.015033749693843124,
+        "M_before": 41.0687198242012,
+        "M_after": 32.85497585936096,
+        "E_before": 23.303924560632083,
+        "E_after": 18.31508583842712,
+        "partial_columns": 1,
+        "cut_cells": 32,
+        "material_cell_error": 2.220446049250313e-16,
+        "energy_cell_error": 2.220446049250313e-16,
+        "body_updates": 0,
+        "fields": {
+          "extensive_scaled": [
+            "body",
+            "energy",
+            "founder_mass"
+          ],
+          "concentrations_survivors_kept_empty_zero": [
+            "memory",
+            "eligibility",
+            "polarity",
+            "c_theta",
+            "c_value",
+            "c_trace",
+            "c_food",
+            "c_run",
+            "c_remaining"
+          ],
+          "unchanged": [
+            "precursor",
+            "fuel",
+            "heat"
+          ],
+          "additive_death_sinks": [
+            "waste",
+            "dead_energy"
+          ],
+          "kernels": "outside state, unchanged",
+          "clock": "global256 unchanged; carried remaining kept on survivors, zero on empty"
+        }
+      }
+    },
+    {
+      "branch": "compact_ring_core_outer--bridged_longbody--open_T11",
+      "source": {
+        "branch": "compact_ring_core_outer--bridged_longbody--open_T11",
+        "step": "256",
+        "kind": "new_atomic",
+        "path": "/data/lenia-research/lineage_75e3399f4877/regenerative_reserve_morphology_transfer_20261018/10238c47-5624-4f8b-acee-a5a478f50549/compact_ring_core_outer--bridged_longbody--open_T11/transactions/000256.npz",
+        "sha256": "d3cee1bfbb75b9a50012896f8ab928bfc3fb748fbcabd2d8e85a810393ee63bd"
+      },
+      "dose": {
+        "n": 96,
+        "centroid_y": 47.905867155469494,
+        "centroid_x": 47.69584522850639,
+        "boundary_column": 67,
+        "target_mass": 145.35095823942453,
+        "removed_mass": 145.3509582394245,
+        "removed_energy": 77.366918766736,
+        "removed_founder": 5.796541686319262e-17,
+        "M_before": 726.7547911971226,
+        "M_after": 581.403832957698,
+        "E_before": 427.48632804096883,
+        "E_after": 350.11940927423285,
+        "partial_columns": 1,
+        "cut_cells": 444,
+        "material_cell_error": 2.220446049250313e-16,
+        "energy_cell_error": 4.440892098500626e-16,
+        "body_updates": 0,
+        "fields": {
+          "extensive_scaled": [
+            "body",
+            "energy",
+            "founder_mass"
+          ],
+          "concentrations_survivors_kept_empty_zero": [
+            "memory",
+            "eligibility",
+            "polarity",
+            "c_theta",
+            "c_value",
+            "c_trace",
+            "c_food",
+            "c_run",
+            "c_remaining"
+          ],
+          "unchanged": [
+            "precursor",
+            "fuel",
+            "heat"
+          ],
+          "additive_death_sinks": [
+            "waste",
+            "dead_energy"
+          ],
+          "kernels": "outside state, unchanged",
+          "clock": "global256 unchanged; carried remaining kept on survivors, zero on empty"
+        }
+      }
+    }
+  ]
+}

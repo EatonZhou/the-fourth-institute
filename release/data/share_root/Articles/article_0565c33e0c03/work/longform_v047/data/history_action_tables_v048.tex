@@ -1,0 +1,160 @@
+\subsection*{Literal and filtered history controls}
+The nine continuous paths comprise 7,128 actual updates; eighteen dependent content interventions add 108. The latter completed their physical work but failed an internal 8 MiB packaging assertion at approximately 10.03 MB, below the project's 128 MiB limit. Their recovered recorded results are used without rerun; the job is not represented as a successful wrapper exit. Total worker time is 10.552385 seconds.
+\begingroup\scriptsize\setlength{\tabcolsep}{3pt}\setlength{\LTpre}{6pt}\setlength{\LTpost}{6pt}
+\begin{longtable}{lllllll}
+\caption{All 36 history-learning stages. Seeds 0--2 are 202610199721--202610199723, shared across the three methods. Each of nine continuous paths supplies four stages.}\label{tab:history-stages}\\
+\toprule
+Seed & Readout & Stage & Correct & Episodes & $E_{end}$ & Signed move \\
+\midrule
+\endfirsthead
+\toprule
+Seed & Readout & Stage & Correct & Episodes & $E_{end}$ & Signed move \\
+\midrule
+\endhead
+0 & Literal & A & 18 & 24 & 65.05668 & 6.20426 \\
+0 & Literal & H & 12 & 12 & 62.98564 & 6.07306 \\
+0 & Literal & C & 12 & 24 & 53.10955 & 0.22699 \\
+0 & Literal & HC & 12 & 12 & 51.04947 & 5.86087 \\
+0 & Filtered & A & 21 & 24 & 66.44494 & 9.28288 \\
+0 & Filtered & H & 12 & 12 & 64.36717 & 6.01016 \\
+0 & Filtered & C & 18 & 24 & 57.34506 & 5.79687 \\
+0 & Filtered & HC & 12 & 12 & 55.27877 & 5.78962 \\
+0 & Body readout & A & 11 & 24 & 61.60151 & -1.03485 \\
+0 & Body readout & H & 5 & 12 & 56.18642 & -0.97866 \\
+0 & Body readout & C & 13 & 24 & 46.78967 & 1.00281 \\
+0 & Body readout & HC & 8 & 12 & 42.81112 & 1.92796 \\
+1 & Literal & A & 18 & 24 & 65.04942 & 6.23742 \\
+1 & Literal & H & 12 & 12 & 62.97188 & 6.10287 \\
+1 & Literal & C & 12 & 24 & 53.06316 & 0.06955 \\
+1 & Literal & HC & 12 & 12 & 50.99178 & 5.97483 \\
+1 & Filtered & A & 21 & 24 & 66.44040 & 9.28821 \\
+1 & Filtered & H & 12 & 12 & 64.35977 & 5.99645 \\
+1 & Filtered & C & 18 & 24 & 57.32632 & 5.95765 \\
+1 & Filtered & HC & 12 & 12 & 55.25413 & 5.87864 \\
+1 & Body readout & A & 12 & 24 & 62.08055 & 0.12961 \\
+1 & Body readout & H & 5 & 12 & 56.65039 & -1.00043 \\
+1 & Body readout & C & 9 & 24 & 45.30551 & -2.88229 \\
+1 & Body readout & HC & 6 & 12 & 40.35288 & -0.00024 \\
+2 & Literal & A & 18 & 24 & 65.05367 & 6.34841 \\
+2 & Literal & H & 12 & 12 & 62.97794 & 6.00466 \\
+2 & Literal & C & 12 & 24 & 53.07760 & -0.42245 \\
+2 & Literal & HC & 12 & 12 & 51.01084 & 5.83897 \\
+2 & Filtered & A & 21 & 24 & 66.43916 & 9.40026 \\
+2 & Filtered & H & 12 & 12 & 64.35711 & 5.95416 \\
+2 & Filtered & C & 18 & 24 & 57.32790 & 5.76016 \\
+2 & Filtered & HC & 12 & 12 & 55.25642 & 5.87650 \\
+2 & Body readout & A & 12 & 24 & 62.07464 & 0.02093 \\
+2 & Body readout & H & 9 & 12 & 58.55977 & 2.98598 \\
+2 & Body readout & C & 12 & 24 & 48.65910 & -0.01282 \\
+2 & Body readout & HC & 3 & 12 & 42.26660 & -2.89651 \\
+\bottomrule
+\end{longtable}
+\begin{longtable}{lllllllll}
+\caption{Actual expenses in all history-learning stages. Sensor and feedback fees here are explicit task tariffs, unlike the scalar action model. These comparisons do not assign a full physical cost to central table lookup or table capacity.}\label{tab:history-costs}\\
+\toprule
+Seed & Readout & Stage & Motor & Basal & Sensor & Outcome fee & Gain & Loss \\
+\midrule
+\endfirsthead
+\toprule
+Seed & Readout & Stage & Motor & Basal & Sensor & Outcome fee & Gain & Loss \\
+\midrule
+\endhead
+0 & Literal & A & 0.95292 & 7.60320 & 0.69120 & 0.57600 & 4.32000 & 1.44000 \\
+0 & Literal & H & 0.51584 & 3.80160 & 0.34560 & 0.28800 & 2.88000 & 0.00000 \\
+0 & Literal & C & 1.00569 & 7.60320 & 0.69120 & 0.57600 & 2.88000 & 2.88000 \\
+0 & Literal & HC & 0.50488 & 3.80160 & 0.34560 & 0.28800 & 2.88000 & 0.00000 \\
+0 & Filtered & A & 1.00466 & 7.60320 & 0.69120 & 0.57600 & 5.04000 & 0.72000 \\
+0 & Filtered & H & 0.52258 & 3.80160 & 0.34560 & 0.28800 & 2.88000 & 0.00000 \\
+0 & Filtered & C & 1.03170 & 7.60320 & 0.69120 & 0.57600 & 4.32000 & 1.44000 \\
+0 & Filtered & HC & 0.51110 & 3.80160 & 0.34560 & 0.28800 & 2.88000 & 0.00000 \\
+0 & Body readout & A & 1.04809 & 7.60320 & 0.69120 & 0.57600 & 2.64000 & 3.12000 \\
+0 & Body readout & H & 0.49989 & 3.80160 & 0.34560 & 0.28800 & 1.20000 & 1.68000 \\
+0 & Body readout & C & 1.00635 & 7.60320 & 0.69120 & 0.57600 & 3.12000 & 2.64000 \\
+0 & Body readout & HC & 0.50335 & 3.80160 & 0.34560 & 0.28800 & 1.92000 & 0.96000 \\
+1 & Literal & A & 0.96018 & 7.60320 & 0.69120 & 0.57600 & 4.32000 & 1.44000 \\
+1 & Literal & H & 0.52234 & 3.80160 & 0.34560 & 0.28800 & 2.88000 & 0.00000 \\
+1 & Literal & C & 1.03832 & 7.60320 & 0.69120 & 0.57600 & 2.88000 & 2.88000 \\
+1 & Literal & HC & 0.51618 & 3.80160 & 0.34560 & 0.28800 & 2.88000 & 0.00000 \\
+1 & Filtered & A & 1.00920 & 7.60320 & 0.69120 & 0.57600 & 5.04000 & 0.72000 \\
+1 & Filtered & H & 0.52543 & 3.80160 & 0.34560 & 0.28800 & 2.88000 & 0.00000 \\
+1 & Filtered & C & 1.04305 & 7.60320 & 0.69120 & 0.57600 & 4.32000 & 1.44000 \\
+1 & Filtered & HC & 0.51699 & 3.80160 & 0.34560 & 0.28800 & 2.88000 & 0.00000 \\
+1 & Body readout & A & 1.04905 & 7.60320 & 0.69120 & 0.57600 & 2.88000 & 2.88000 \\
+1 & Body readout & H & 0.51496 & 3.80160 & 0.34560 & 0.28800 & 1.20000 & 1.68000 \\
+1 & Body readout & C & 1.03448 & 7.60320 & 0.69120 & 0.57600 & 2.16000 & 3.60000 \\
+1 & Body readout & HC & 0.51743 & 3.80160 & 0.34560 & 0.28800 & 1.44000 & 1.44000 \\
+2 & Literal & A & 0.95593 & 7.60320 & 0.69120 & 0.57600 & 4.32000 & 1.44000 \\
+2 & Literal & H & 0.52053 & 3.80160 & 0.34560 & 0.28800 & 2.88000 & 0.00000 \\
+2 & Literal & C & 1.02994 & 7.60320 & 0.69120 & 0.57600 & 2.88000 & 2.88000 \\
+2 & Literal & HC & 0.51156 & 3.80160 & 0.34560 & 0.28800 & 2.88000 & 0.00000 \\
+2 & Filtered & A & 1.01044 & 7.60320 & 0.69120 & 0.57600 & 5.04000 & 0.72000 \\
+2 & Filtered & H & 0.52685 & 3.80160 & 0.34560 & 0.28800 & 2.88000 & 0.00000 \\
+2 & Filtered & C & 1.03880 & 7.60320 & 0.69120 & 0.57600 & 4.32000 & 1.44000 \\
+2 & Filtered & HC & 0.51628 & 3.80160 & 0.34560 & 0.28800 & 2.88000 & 0.00000 \\
+2 & Body readout & A & 1.05496 & 7.60320 & 0.69120 & 0.57600 & 2.88000 & 2.88000 \\
+2 & Body readout & H & 0.51967 & 3.80160 & 0.34560 & 0.28800 & 2.16000 & 0.72000 \\
+2 & Body readout & C & 1.03027 & 7.60320 & 0.69120 & 0.57600 & 2.88000 & 2.88000 \\
+2 & Body readout & HC & 0.51730 & 3.80160 & 0.34560 & 0.28800 & 0.72000 & 2.16000 \\
+\bottomrule
+\end{longtable}
+\begin{longtable}{llllllll}
+\caption{All eighteen same-parent history-content interventions. Trial identifies the completed parent. Original and swapped commands/correctness are paired counterfactual tests; they are not independent acquisitions. Body readout commands did not change in any of its six interventions.}\label{tab:history-content}\\
+\toprule
+Seed & Readout & Trial & Old cmd & New cmd & Old correct & New correct & New $\Delta x$ \\
+\midrule
+\endfirsthead
+\toprule
+Seed & Readout & Trial & Old cmd & New cmd & Old correct & New correct & New $\Delta x$ \\
+\midrule
+\endhead
+0 & Literal & 24 & 1 & -1 & P & F & -0.52072 \\
+0 & Literal & 60 & 1 & -1 & P & F & -0.49666 \\
+0 & Filtered & 24 & 1 & -1 & P & F & -0.51229 \\
+0 & Filtered & 60 & 1 & -1 & P & F & -0.48765 \\
+0 & Body readout & 24 & 1 & 1 & P & P & 0.45176 \\
+0 & Body readout & 60 & 1 & 1 & P & P & 0.46702 \\
+1 & Literal & 24 & 1 & -1 & P & F & -0.54741 \\
+1 & Literal & 60 & 1 & -1 & P & F & -0.51062 \\
+1 & Filtered & 24 & 1 & -1 & P & F & -0.53168 \\
+1 & Filtered & 60 & 1 & -1 & P & F & -0.49959 \\
+1 & Body readout & 24 & 1 & 1 & P & P & 0.47678 \\
+1 & Body readout & 60 & -1 & -1 & F & F & -0.51254 \\
+2 & Literal & 24 & 1 & -1 & P & F & -0.53527 \\
+2 & Literal & 60 & 1 & -1 & P & F & -0.49502 \\
+2 & Filtered & 24 & 1 & -1 & P & F & -0.52936 \\
+2 & Filtered & 60 & 1 & -1 & P & F & -0.50027 \\
+2 & Body readout & 24 & 1 & 1 & P & P & 0.47650 \\
+2 & Body readout & 60 & -1 & -1 & F & F & -0.51434 \\
+\bottomrule
+\end{longtable}
+\begin{longtable}{lllllllll}
+\caption{Physical values for the content interventions. Original pre-assay energy is not a post-assay endpoint. Each continuation has six actual updates.}\label{tab:history-content-costs}\\
+\toprule
+Seed & Readout & Trial & Old motor & New motor & Basal & Old pre-$E$ & New $E$ & $M$ \\
+\midrule
+\endfirsthead
+\toprule
+Seed & Readout & Trial & Old motor & New motor & Basal & Old pre-$E$ & New $E$ & $M$ \\
+\midrule
+\endhead
+0 & Literal & 24 & 0.03624 & 0.04324 & 0.17280 & 64.67186 & 64.66487 & 24.00000 \\
+0 & Literal & 60 & 0.03670 & 0.04132 & 0.17280 & 52.72465 & 52.72002 & 24.00000 \\
+0 & Filtered & 24 & 0.03696 & 0.04355 & 0.17280 & 66.05939 & 66.05281 & 24.00000 \\
+0 & Filtered & 60 & 0.03746 & 0.04171 & 0.17280 & 56.95937 & 56.95512 & 24.00000 \\
+0 & Body readout & 24 & 0.03822 & 0.03822 & 0.17280 & 61.21575 & 61.21575 & 24.00000 \\
+0 & Body readout & 60 & 0.03793 & 0.03793 & 0.17280 & 46.40370 & 46.40370 & 24.00000 \\
+1 & Literal & 24 & 0.03313 & 0.04405 & 0.17280 & 64.66652 & 64.65560 & 24.00000 \\
+1 & Literal & 60 & 0.03689 & 0.04284 & 0.17280 & 52.67766 & 52.67172 & 24.00000 \\
+1 & Filtered & 24 & 0.03484 & 0.04404 & 0.17280 & 66.05627 & 66.04706 & 24.00000 \\
+1 & Filtered & 60 & 0.03736 & 0.04262 & 0.17280 & 56.94042 & 56.93516 & 24.00000 \\
+1 & Body readout & 24 & 0.03769 & 0.03769 & 0.17280 & 61.69446 & 61.69446 & 24.00000 \\
+1 & Body readout & 60 & 0.04300 & 0.04300 & 0.17280 & 44.91379 & 44.91379 & 24.00000 \\
+2 & Literal & 24 & 0.03524 & 0.04388 & 0.17280 & 64.66975 & 64.66112 & 24.00000 \\
+2 & Literal & 60 & 0.03725 & 0.04199 & 0.17280 & 52.69196 & 52.68722 & 24.00000 \\
+2 & Filtered & 24 & 0.03616 & 0.04415 & 0.17280 & 66.05430 & 66.04630 & 24.00000 \\
+2 & Filtered & 60 & 0.03708 & 0.04252 & 0.17280 & 56.94230 & 56.93686 & 24.00000 \\
+2 & Body readout & 24 & 0.03879 & 0.03879 & 0.17280 & 61.68735 & 61.68735 & 24.00000 \\
+2 & Body readout & 60 & 0.04288 & 0.04288 & 0.17280 & 48.26714 & 48.26714 & 24.00000 \\
+\bottomrule
+\end{longtable}
+\endgroup

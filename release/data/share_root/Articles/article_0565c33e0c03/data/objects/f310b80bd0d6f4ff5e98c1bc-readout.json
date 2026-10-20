@@ -1,0 +1,972 @@
+{
+  "task": "birth_cohort_exposure_readout_20261019",
+  "native_steps": 0,
+  "source_handoff": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/birth_site_compatibility_cohort_20261019/handoff.json",
+  "source_sha256": "13a95fa6d0498936a5328dd5f59ab873f20e66092d5c6575c3f344d59f50b206",
+  "sources": [
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195401_double_lobe_256_plus/receipt001.npz",
+      "sha256": "d3a00dd0322abc0700c9f9dbc6bd736a6b5352a4a22d26451ce9e1ba27b50d8e"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195401_double_lobe_256_plus/receipt002.npz",
+      "sha256": "d18f1ae63908427d0d07daeec22a59dac0fe054211a6ca8172a632a5e541f6f6"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195401_double_lobe_256_plus/receipt004.npz",
+      "sha256": "300ddaaf949b5ca141ec8777d7f9ee544822ad17aeae8dc79233495a879065a8"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195401_double_lobe_256_plus/receipt008.npz",
+      "sha256": "7353b2a84854e525d211fd45a2f5d569adfa72b3479028ca922fe5860a0417cb"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195401_double_lobe_256_plus/receipt016.npz",
+      "sha256": "a6a489e2ebfd3f4b0fc2750db3b2ef5800112fc3373bb686cbca63239f07b69c"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195401_double_lobe_256_plus/receipt032.npz",
+      "sha256": "15571471d0c88631b54271058f8294ac526d1ab668653f61f316a1248bf1e3d1"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195401_double_lobe_256_plus/receipt064.npz",
+      "sha256": "287a9dd78783a66af673b6fc70790b8d86f42e4a8ac8633cdc422d2ae7a6987c"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195401_double_lobe_256_minus/receipt001.npz",
+      "sha256": "5075163b532ebc7d9270005c300802c28702c1b06ac67deffd267cc7c04cd8a8"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195401_double_lobe_256_minus/receipt002.npz",
+      "sha256": "1db6d9dc329b0ec8637c6e4bf22c3d4d130ed0531bba2e68dbe43b96cb944f25"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195401_double_lobe_256_minus/receipt004.npz",
+      "sha256": "03a602622d1f62ff03d539aa5008e48d750e67adf7ae2f84ceead0f0ef2f0c5a"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195401_double_lobe_256_minus/receipt008.npz",
+      "sha256": "6f1715680791f5f673a79480d77cd3034d6dab1d3c0576cdbc40d905601a9809"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195401_double_lobe_256_minus/receipt016.npz",
+      "sha256": "1805969d33e21c819e1a8da09323fe3c69867624ab57f6cfb84f0e95dea728ef"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195401_double_lobe_256_minus/receipt032.npz",
+      "sha256": "ff88d5bae60d84186bfd38a3ce8bf864ee9092de5c8382c2e2550e03ed22a1c6"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195401_double_lobe_256_minus/receipt064.npz",
+      "sha256": "84baa7326fbf277eda6622331f433244f71ed281d7fb251ab9e34422155f65ba"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195401_double_lobe_320_plus/receipt001.npz",
+      "sha256": "534ee276022e58bb11714553b7143b2fe298412931dd18836d35d77a7231e34d"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195401_double_lobe_320_plus/receipt002.npz",
+      "sha256": "d7b811c4853cd9d7ff3df5fede5fd6fb373ca28a2e7222aa3d780bd2c697f73d"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195401_double_lobe_320_plus/receipt004.npz",
+      "sha256": "ccb980817bc54b10221ecb113b1eeb07cd6658fdfd6caa9f48b982dd00664f23"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195401_double_lobe_320_plus/receipt008.npz",
+      "sha256": "ae29e99f113200daaa0b6422fddfc83ab02084fb9410a98bc00d99f3f95afa16"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195401_double_lobe_320_plus/receipt016.npz",
+      "sha256": "b005925188ac2d354f2a4cd65c9d2ce8c5a0427dc46f7b42720258a0c35e326e"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195401_double_lobe_320_plus/receipt032.npz",
+      "sha256": "69f4501110a16c1a49d9fef37c3124ff908487f3fffdf4b0521732527a66ec0e"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195401_double_lobe_320_plus/receipt064.npz",
+      "sha256": "ebb3b221da51402cf38a06e547facaf74dc7e5e88ffc893a6a3ee937043268ea"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195401_double_lobe_320_minus/receipt001.npz",
+      "sha256": "24b4f88bc48c0fefb2659a23e3802e35db95cf36808afa4cb4cb076ceb2c9c68"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195401_double_lobe_320_minus/receipt002.npz",
+      "sha256": "c6692603bb4ff822c2d575f68c1c75400b3d572e730c9aeab6db05a84921015b"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195401_double_lobe_320_minus/receipt004.npz",
+      "sha256": "9857aa78dee764cd73caf56210ca2eb59cb21ff3c4d9b33fb1ce7cb98b35aef3"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195401_double_lobe_320_minus/receipt008.npz",
+      "sha256": "3e74f02d8b4286fdb1922e2c43ec78df7dfc4423334b9930e4b15b8c9d4d5844"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195401_double_lobe_320_minus/receipt016.npz",
+      "sha256": "7f0fc65e738d5de20fdd584c292fcd413820679522238bab20b7e28983d02105"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195401_double_lobe_320_minus/receipt032.npz",
+      "sha256": "3797c3a5abb5730f35e6f2065fae17853a352e9e49908cd6175503bbf68c0309"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195401_double_lobe_320_minus/receipt064.npz",
+      "sha256": "d1ff7f83f9121c0a2fffcf11b8537dd1da114d1a9afd355b66e8e04ce49e35fc"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195402_compact_256_plus/receipt001.npz",
+      "sha256": "1225e37dd0936b0c24c72d48d31ac89fbde08f263fd438cb6624e0acd6f20b7d"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195402_compact_256_plus/receipt002.npz",
+      "sha256": "29fccaff54997e09804a625520bf9da0c84e73fd0b7b216c3453b871e61c3769"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195402_compact_256_plus/receipt004.npz",
+      "sha256": "772585ebbe0717504ca799b07603a8a6b3f25dd99fc2ad8395f3524180cb60ce"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195402_compact_256_plus/receipt008.npz",
+      "sha256": "79ad2a4b4674ff190916db89035f71fb9a574e3617f4145f2ca8613923bfe47e"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195402_compact_256_plus/receipt016.npz",
+      "sha256": "f7183aacfedac4f71adbfc16110711d6dfb8a7a642c6ad1eb479534fa589edfc"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195402_compact_256_plus/receipt032.npz",
+      "sha256": "56843f0766ecf8a389e9595887f2a06d731b6633e59574d845657fc032843dee"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195402_compact_256_plus/receipt064.npz",
+      "sha256": "8af39f28ba36b415c479dc5ce5a90c93525ed3c81db38960c4a41599a2219bda"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195402_compact_256_minus/receipt001.npz",
+      "sha256": "c866ee53537eebbf68d410a4833ce446cbe9a6f4fc404dd82513bdcf897f2b01"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195402_compact_256_minus/receipt002.npz",
+      "sha256": "31da667f8236a17c226fa3a565ba6f3256a9a80ffc177e7169fa13f896fd5d6d"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195402_compact_256_minus/receipt004.npz",
+      "sha256": "6bf466acf4f28fac4f3b0bc86fd94f99bfb92eccd1920c2936363cf518a57a01"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195402_compact_256_minus/receipt008.npz",
+      "sha256": "bb548255f0e28f72e5e1c09f9841e2ee6ca748691671f99973e7e7f7837aa685"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195402_compact_256_minus/receipt016.npz",
+      "sha256": "80a3f66a8ec8cbbb948a948561c574d6dabcae2dcb83062c08983a4498312497"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195402_compact_256_minus/receipt032.npz",
+      "sha256": "d3af59777e80582e1da319833e84ba1765f89662b8a5f2b2c445559bf921e0b9"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195402_compact_256_minus/receipt064.npz",
+      "sha256": "f2f8810567e681d8da0823272ac57d1e5a501f473d5dc1ba6e239f3f863a9f93"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195402_compact_320_plus/receipt001.npz",
+      "sha256": "d7631a4a3d20009289b936d05a669cfa6a62a12385775c4a0e176682db2dbd91"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195402_compact_320_plus/receipt002.npz",
+      "sha256": "d0d4960f69953daaf56191669a0445db6c078def4cd83b7d8d1de22f7b06df39"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195402_compact_320_plus/receipt004.npz",
+      "sha256": "0f9acc6356c3b361a1e2db71b370f6629be1a70ab1322cbca32a78cbc1665bd8"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195402_compact_320_plus/receipt008.npz",
+      "sha256": "c54dd23764dcc34498384f7ee2d01bc8e3cd3fd9b737eb7e8dc949a89dcb1f7d"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195402_compact_320_plus/receipt016.npz",
+      "sha256": "7d584689f615b4ba8f60b4812c16fd71c65490695b6533013dced92ef28c92a8"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195402_compact_320_plus/receipt032.npz",
+      "sha256": "5407f04ce792638077f2a6af9f30531fd351315750541646857aa4bc0762d0da"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195402_compact_320_plus/receipt064.npz",
+      "sha256": "5369374eba3c095c3ed8aa1ace1ed091e1f7036965db0b88e8f987d0755b980c"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195402_compact_320_minus/receipt001.npz",
+      "sha256": "f87f7a6bb63e23307185eab58c79084e8f6dff147591137d6c80881b89c01d08"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195402_compact_320_minus/receipt002.npz",
+      "sha256": "4e2b043fdf54e60aed85bf93236a4925b0b153184b05e151c14b6eb5ad44cb91"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195402_compact_320_minus/receipt004.npz",
+      "sha256": "dc5f98a6799be881af1ef38a4686021c844a0982f0c187d545548eb09991151b"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195402_compact_320_minus/receipt008.npz",
+      "sha256": "ab7bdf50b6e2ef435cab1c4fc14fe5b1a13f7f17a1960a4407a7bd90488b978f"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195402_compact_320_minus/receipt016.npz",
+      "sha256": "3d1a66b2afe6138518b4abb7205550467049ac7a3df6430a0bed7383244eaba4"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195402_compact_320_minus/receipt032.npz",
+      "sha256": "5faab800c274fdf2445babba868b19756ae87a353bc2ccedf9a43e4fa798ef1b"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195402_compact_320_minus/receipt064.npz",
+      "sha256": "cb9749ca0c5c6596d588aceb2a2c7da0b99d92e68e0311d30acc402278c73f6e"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195402_double_lobe_256_plus/receipt001.npz",
+      "sha256": "3db532cbf08410f52c46235a638262adb501b00b0265b2004017cef2fd40bc64"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195402_double_lobe_256_plus/receipt002.npz",
+      "sha256": "354f60da3f9d2c7d7abd1db8ddc878f23a2c7834387363f22b20109735a4d91b"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195402_double_lobe_256_plus/receipt004.npz",
+      "sha256": "1e08a29a69e8dbbd636e0d5f4c4fb1ee13d2982a8193483158cdc07d29b11f69"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195402_double_lobe_256_plus/receipt008.npz",
+      "sha256": "0f8a0ca38b829ec48f9d4099c7793afb3055c33835f7577183441f42d3ef991e"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195402_double_lobe_256_plus/receipt016.npz",
+      "sha256": "ef1feabb54d3b18266dfbdf0bcd0d7a3fb4622dacb74d424a7b5896098c32fac"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195402_double_lobe_256_plus/receipt032.npz",
+      "sha256": "19ab0722d3a7014cd3d6f0d43302e3ef94da206fc391a37baebb81d306f8b5e7"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195402_double_lobe_256_plus/receipt064.npz",
+      "sha256": "3ad3840276c57daaf2027af32acb48dcb041206f9dc618e66776d6896d2e4619"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195402_double_lobe_256_minus/receipt001.npz",
+      "sha256": "1a48c35e38a78938f4ef0239c37f519a123dc7f252b3b8cae375c86935a0d57e"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195402_double_lobe_256_minus/receipt002.npz",
+      "sha256": "cd1b6d7eabfe8fcb89ccf947756bb2b33b73ab70eb4a484e775059775be3452b"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195402_double_lobe_256_minus/receipt004.npz",
+      "sha256": "2514e3ac95e5941a5df3581dc03e4338e13661602e7d4746d2c2adddf2b7da50"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195402_double_lobe_256_minus/receipt008.npz",
+      "sha256": "824d77cc0e448d702a96d0b0b79f1b03260fa81e50e823b5075062a175eb9d61"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195402_double_lobe_256_minus/receipt016.npz",
+      "sha256": "3c2f149f026f113026e217c91786adff566cdb38c01d1f0e96e145a9e48d8968"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195402_double_lobe_256_minus/receipt032.npz",
+      "sha256": "929ea23bffd798b78e2c7e73647193bdefb43a467425feafe4ee29e84ae8c2ff"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/birth_site_compatibility_cohort_20261019/8de86188-a832-4e73-af13-b5bac20826a1/202610195402_double_lobe_256_minus/receipt064.npz",
+      "sha256": "9838391033a8e59df91ed807cc9ba61792cf9b1232c8007a0626fda1d60fa0fc"
+    }
+  ],
+  "rows": 70,
+  "offsets": [
+    1,
+    2,
+    4,
+    8,
+    16,
+    32,
+    64
+  ],
+  "summary": [
+    {
+      "id": "202610195401_double_lobe_256",
+      "plus": {
+        "current_h": [
+          0.007246183801980548,
+          0.005618705550609975,
+          0.0036238155468004255,
+          -0.0014423543758977423,
+          -0.01829435224195254,
+          -0.06100274258492958,
+          -0.10469238600307429
+        ],
+        "negative_exposure": [
+          0.0,
+          0.016698637137840738,
+          0.04830703191491564,
+          0.10540129650102852,
+          0.20009364356838988,
+          0.9999782193984926,
+          0.9999614621645001
+        ],
+        "both_kernels_negative": [
+          0.0,
+          0.016698637137840738,
+          0.04830703191491564,
+          0.10540129650102852,
+          0.20009364356838988,
+          0.9999782193984926,
+          0.9999614621645001
+        ],
+        "one_step_rule_loss_fraction": [
+          0.0,
+          0.0002455872639088003,
+          0.000676761211659588,
+          0.0013482775639818403,
+          0.002334739191616609,
+          0.0055236724802743675,
+          0.00946013752019108
+        ],
+        "precursor_per_body": [
+          0.005565095300577023,
+          0.01148893737498744,
+          0.023098507857290448,
+          0.04527508520598167,
+          0.0849493088799129,
+          0.14901327630855846,
+          0.2444461869143367
+        ],
+        "fuel_per_body": [
+          1.11955729771777,
+          1.1244509492671215,
+          1.1339783716359357,
+          1.1501979243314686,
+          1.1761250926563656,
+          1.2277651889246957,
+          1.3442194772574736
+        ],
+        "payable_birth_headroom": [
+          0.0029822309311808744,
+          0.006220868447527942,
+          0.01229237163583285,
+          0.0239843195230304,
+          0.04549962415015631,
+          0.08048571311955538,
+          0.1318454295022442
+        ]
+      },
+      "minus": {
+        "current_h": [
+          -0.10162382822032312,
+          -0.1013011057203463,
+          -0.10014102970400975,
+          -0.10209626487093369,
+          -0.11470144492584448,
+          -0.1443407013863419,
+          -0.1571877803652963
+        ],
+        "negative_exposure": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "both_kernels_negative": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "one_step_rule_loss_fraction": [
+          0.007481856388083144,
+          0.007460872280259742,
+          0.0073807625073707694,
+          0.007528909881521358,
+          0.008466940202181583,
+          0.010776416201377325,
+          0.012053910553007498
+        ],
+        "precursor_per_body": [
+          0.08844660144306879,
+          0.09334528012775246,
+          0.10279420569478145,
+          0.12096576230267334,
+          0.1549908366927763,
+          0.2177652999770388,
+          0.3106452296416464
+        ],
+        "fuel_per_body": [
+          0.9361955543430409,
+          0.937519421170721,
+          0.9401531017730493,
+          0.9441747801000151,
+          0.9506950414686218,
+          0.9717336995864768,
+          1.1247553391758043
+        ],
+        "payable_birth_headroom": [
+          0.05995842944766544,
+          0.06312803202584294,
+          0.06902887767411509,
+          0.08047012629400778,
+          0.10210407516011565,
+          0.14154690880024776,
+          0.1976847227007944
+        ]
+      }
+    },
+    {
+      "id": "202610195401_double_lobe_320",
+      "plus": {
+        "current_h": [
+          0.029468285958219015,
+          0.02716174534117596,
+          0.024627025256198337,
+          0.019352725087364953,
+          0.010059306059204264,
+          -0.005736719610759686,
+          -0.021378729678247447
+        ],
+        "negative_exposure": [
+          0.0,
+          0.017398347168286882,
+          0.05056626480272378,
+          0.11143497267224098,
+          0.21465094433285395,
+          0.36641092315791074,
+          0.6876913586947239
+        ],
+        "both_kernels_negative": [
+          0.0,
+          0.017398347168286882,
+          0.05056626480272378,
+          0.11143497267224098,
+          0.21465094433285395,
+          0.36641092315791074,
+          0.6876913586947239
+        ],
+        "one_step_rule_loss_fraction": [
+          0.0,
+          0.00028411597291390134,
+          0.0008192548920904752,
+          0.0017800238090590987,
+          0.003331443463804571,
+          0.00538335919678847,
+          0.00713327181750361
+        ],
+        "precursor_per_body": [
+          0.0056517243613329465,
+          0.010899379825975497,
+          0.022791013828923547,
+          0.04482300577384918,
+          0.08298322040974156,
+          0.1385146839873689,
+          0.1962001706036162
+        ],
+        "fuel_per_body": [
+          0.6771554790458265,
+          0.686097269036256,
+          0.7086794005741246,
+          0.748773755810786,
+          0.814634686735775,
+          0.9113417680840772,
+          1.0370746180936727
+        ],
+        "payable_birth_headroom": [
+          0.0017322146898498042,
+          0.005072171880280247,
+          0.01110416382358295,
+          0.022492289982743614,
+          0.04293964324887344,
+          0.07388395294865385,
+          0.10767754727621051
+        ]
+      },
+      "minus": {
+        "current_h": [
+          -0.04827959832472274,
+          -0.04893086449270137,
+          -0.04824374757927533,
+          -0.0477741326649045,
+          -0.0482594301551554,
+          -0.052522865917454725,
+          -0.06037530368332791
+        ],
+        "negative_exposure": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          0.6246586877496008
+        ],
+        "both_kernels_negative": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          0.6246586877496008
+        ],
+        "one_step_rule_loss_fraction": [
+          0.0038013998252469684,
+          0.00387263757103905,
+          0.0038598261714382913,
+          0.0038942620083866173,
+          0.004047939393143996,
+          0.004544017448687944,
+          0.0057517698483570325
+        ],
+        "precursor_per_body": [
+          0.02579276337140537,
+          0.028120468476439998,
+          0.03725482866010564,
+          0.05542798875030868,
+          0.09037308008213343,
+          0.14962206031510222,
+          0.22823168862132212
+        ],
+        "fuel_per_body": [
+          1.1198840129170713,
+          1.1235091221255848,
+          1.1321470305254921,
+          1.1480911636657996,
+          1.1769574944268146,
+          1.2255078500403214,
+          1.2988197601503446
+        ],
+        "payable_birth_headroom": [
+          0.015938052603290113,
+          0.017365778246174128,
+          0.02228044430537177,
+          0.032124909054299336,
+          0.051340132764824374,
+          0.08491657755705938,
+          0.1318497310602846
+        ]
+      }
+    },
+    {
+      "id": "202610195402_compact_256",
+      "plus": {
+        "current_h": [
+          0.006041840035744261,
+          0.0075204042179799965,
+          0.013312757560099971,
+          0.028154304155804364,
+          0.057180523042928505,
+          0.10357672311129025,
+          0.14283500058860182
+        ],
+        "negative_exposure": [
+          0.0,
+          0.013105575328337407,
+          0.03814676076925857,
+          0.08471492228691668,
+          0.1679957813451686,
+          0.22007254057898848,
+          0.42552949780018917
+        ],
+        "both_kernels_negative": [
+          0.0,
+          0.013105575328337407,
+          0.03814676076925857,
+          0.08471492228691668,
+          0.1679957813451686,
+          0.22007254057898848,
+          0.42552949780018917
+        ],
+        "one_step_rule_loss_fraction": [
+          0.0,
+          9.224679540094545e-05,
+          0.00024352081710784444,
+          0.0004610216561415234,
+          0.0006876142179009777,
+          0.000787090903057643,
+          0.0019009208708368247
+        ],
+        "precursor_per_body": [
+          0.002982206711829358,
+          0.0036442486456611193,
+          0.005081996228875877,
+          0.00838176832320273,
+          0.017187212416961455,
+          0.029767308343618123,
+          0.023512717213526643
+        ],
+        "fuel_per_body": [
+          0.2690772343770976,
+          0.2712288259251938,
+          0.2750518417597391,
+          0.27946903251269567,
+          0.28578001356260196,
+          0.2956671560349919,
+          0.3298259165471364
+        ],
+        "payable_birth_headroom": [
+          0.0014011129519203229,
+          0.0018322415300906297,
+          0.002355389302753453,
+          0.0035855377787997206,
+          0.008551406074990234,
+          0.016035257208705633,
+          0.013367534282252503
+        ]
+      },
+      "minus": {
+        "current_h": [
+          -0.15918429045537796,
+          -0.15467913396269115,
+          -0.14524777985670287,
+          -0.12897500439845966,
+          -0.10342092021113268,
+          -0.06880699080569828,
+          -0.0338048881049484
+        ],
+        "negative_exposure": [
+          1.0,
+          1.0,
+          0.9999996259890123,
+          0.9999836868678053,
+          0.9997760549770993,
+          0.9999138636592538,
+          1.0
+        ],
+        "both_kernels_negative": [
+          1.0,
+          1.0,
+          0.9999996259890123,
+          0.9999836868678053,
+          0.9997760549770993,
+          0.9999138636592538,
+          1.0
+        ],
+        "one_step_rule_loss_fraction": [
+          0.014234683109573888,
+          0.013805967812988953,
+          0.01292138943318215,
+          0.01139345810707553,
+          0.009005892151982569,
+          0.005838396135792183,
+          0.002723416677190329
+        ],
+        "precursor_per_body": [
+          0.004178900089185958,
+          0.004909486102676833,
+          0.006453566401165487,
+          0.009825921662465755,
+          0.017524828198027885,
+          0.03605141935405304,
+          0.07856959925826122
+        ],
+        "fuel_per_body": [
+          0.6369587862937809,
+          0.6367002678248898,
+          0.6368108449995696,
+          0.6372295769913962,
+          0.6394990652427417,
+          0.6517260248513703,
+          0.7001625151448664
+        ],
+        "payable_birth_headroom": [
+          0.0021898610244546,
+          0.0027774095706140523,
+          0.0037103446049113623,
+          0.005761024882049486,
+          0.010500305152622404,
+          0.022128435976528884,
+          0.04951851957365715
+        ]
+      }
+    },
+    {
+      "id": "202610195402_compact_320",
+      "plus": {
+        "current_h": [
+          0.02092065750538978,
+          0.015536025742867384,
+          0.009139354172104763,
+          -0.0007910681398579636,
+          -0.012930092982508561,
+          -0.02383849760977619,
+          -0.030971058922205717
+        ],
+        "negative_exposure": [
+          0.0,
+          0.008550352927913493,
+          0.024745915944867993,
+          0.05515260121661086,
+          0.9504388784069451,
+          0.9560710201578219,
+          0.9668044749785683
+        ],
+        "both_kernels_negative": [
+          0.0,
+          0.008550352927913493,
+          0.024745915944867993,
+          0.05515260121661086,
+          0.9504388784069451,
+          0.9560710201578219,
+          0.9668044749785683
+        ],
+        "one_step_rule_loss_fraction": [
+          0.0,
+          2.8176415480744582e-05,
+          8.705586453343441e-05,
+          0.00020835364191642728,
+          0.000962387386537112,
+          0.0018033178117141037,
+          0.0023873248568871703
+        ],
+        "precursor_per_body": [
+          0.06945510161597784,
+          0.06267838676084363,
+          0.055464534800815195,
+          0.0455661242963277,
+          0.025028903470057897,
+          0.029128245093463685,
+          0.04646249077437468
+        ],
+        "fuel_per_body": [
+          0.2431386411973429,
+          0.22837825118620358,
+          0.20550846722878785,
+          0.16405484421740413,
+          0.080629167204894,
+          0.06929399339685638,
+          0.08538653839694627
+        ],
+        "payable_birth_headroom": [
+          0.04509604301517534,
+          0.043635248974897914,
+          0.03865188351608263,
+          0.03182522554765676,
+          0.016989131967178744,
+          0.019226683008967696,
+          0.014077035066008409
+        ]
+      },
+      "minus": {
+        "current_h": [
+          -0.027267565725114882,
+          -0.030997336138309704,
+          -0.0332093220792197,
+          -0.0357715754307444,
+          -0.036499546426794295,
+          -0.03672232211519728,
+          -0.03716535859786949
+        ],
+        "negative_exposure": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "both_kernels_negative": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "one_step_rule_loss_fraction": [
+          0.002160519260415489,
+          0.0024390443368559915,
+          0.0026116370780128054,
+          0.0028122836287846286,
+          0.002876673835647694,
+          0.0029075761369695336,
+          0.002964790410620503
+        ],
+        "precursor_per_body": [
+          0.1745329015949421,
+          0.1682154666804822,
+          0.16221756976355078,
+          0.15154109462137214,
+          0.13500151619700246,
+          0.11324782997501769,
+          0.10043990827445848
+        ],
+        "fuel_per_body": [
+          0.5114305098141159,
+          0.49539183609024967,
+          0.4770679926858164,
+          0.44916412030277447,
+          0.39893630481383224,
+          0.31995300746080313,
+          0.3240962041654173
+        ],
+        "payable_birth_headroom": [
+          0.11171628163024934,
+          0.11088238365136573,
+          0.1066401823568428,
+          0.0992044816519927,
+          0.0876339972578017,
+          0.0723573919654205,
+          0.053859120085218044
+        ]
+      }
+    },
+    {
+      "id": "202610195402_double_lobe_256",
+      "plus": {
+        "current_h": [
+          0.021750728523844742,
+          0.01853164981445038,
+          0.01348226794407988,
+          0.003650118561509434,
+          -0.012900048905625591,
+          -0.03779406052564164,
+          -0.07053275245554645
+        ],
+        "negative_exposure": [
+          0.0,
+          0.02017839447777459,
+          0.058034768452693515,
+          0.12521346402725306,
+          0.23390824651689354,
+          0.3863548391792291,
+          0.5615495923527491
+        ],
+        "both_kernels_negative": [
+          0.0,
+          0.02017839447777459,
+          0.058034768452693515,
+          0.12521346402725306,
+          0.23390824651689354,
+          0.3863548391792291,
+          0.5615495923527491
+        ],
+        "one_step_rule_loss_fraction": [
+          0.0,
+          0.000419052996252161,
+          0.0011973526418663308,
+          0.0025609716555462883,
+          0.004726649910810185,
+          0.0076755441635658,
+          0.010852698903977298
+        ],
+        "precursor_per_body": [
+          0.005983607117392343,
+          0.012844061217872462,
+          0.02583993665488316,
+          0.04930492603849747,
+          0.08854522812669242,
+          0.1470100836544888,
+          0.2163005413703371
+        ],
+        "fuel_per_body": [
+          1.2139349567160331,
+          1.2186093482494675,
+          1.2301228757948055,
+          1.249407655323645,
+          1.2789350821704815,
+          1.3166091253526522,
+          1.3508603380513171
+        ],
+        "payable_birth_headroom": [
+          0.0018135687699475944,
+          0.005426414585904034,
+          0.011211292312380937,
+          0.021841146232794827,
+          0.04010603764005374,
+          0.06878501313316018,
+          0.1068957855756939
+        ]
+      },
+      "minus": {
+        "current_h": [
+          -0.02698263532310341,
+          -0.031744627891815556,
+          -0.0379533580885329,
+          -0.04706894057591978,
+          -0.056725635404788526,
+          -0.06362256590871987,
+          -0.07279155596830283
+        ],
+        "negative_exposure": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "both_kernels_negative": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "one_step_rule_loss_fraction": [
+          0.002209109424798698,
+          0.002640081490154528,
+          0.0032319818879911434,
+          0.00413172389232599,
+          0.005172219757805731,
+          0.00604179197624452,
+          0.006999759245317515
+        ],
+        "precursor_per_body": [
+          0.0056539253913380815,
+          0.012424919837015541,
+          0.02536294887163509,
+          0.049104403308255065,
+          0.08999423425386345,
+          0.1534175943645023,
+          0.23335663791523523
+        ],
+        "fuel_per_body": [
+          1.2640066784948152,
+          1.267328761221486,
+          1.2770948957788426,
+          1.2950449707882474,
+          1.324211957484341,
+          1.3597373182514398,
+          1.3981205653493403
+        ],
+        "payable_birth_headroom": [
+          0.0029011051961398315,
+          0.0067957477873541615,
+          0.013199412942035641,
+          0.025020520504921352,
+          0.04562039309078742,
+          0.07848605069314737,
+          0.12307862968752879
+        ]
+      }
+    }
+  ],
+  "boundaries": [
+    "五非零配对70真实稀疏收据；3零配对保持原null，无补轨。",
+    "offset1权重为出生后标签，不是出生前暴露；offset2起为该步actor后、rule删除前全在场cohort。",
+    "稀疏暴露不能积分为累计中介，不能恢复未存K或局部符号切换次数；只按原完整逐步标签标量判断总留存反转。",
+    "P/F使用当前input并减实际uptake；资源暴露与生成响应相关不说明哪一个造成死亡。",
+    "两个kernel同时negative只是同保存状态现有两响应的瞬时支持限制，非未来控制上界或所有生成规则不可能。"
+  ]
+}

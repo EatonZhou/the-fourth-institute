@@ -1,0 +1,96 @@
+{
+  "files": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/noisy_evidence_preparation/METHOD.txt",
+      "sha256": "0fa95a9b9d57f011b6c2245b81f4bb611378cc5a4b072c039d8cd7ac8e09a9f1"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/noisy_evidence_preparation/REPORT.txt",
+      "sha256": "673da4a71e698d7003da42133f7bfdd6c315c17c64c2c6411ee5394ffa66716e"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/noisy_evidence_preparation/actual_process.png",
+      "sha256": "d19c421d92d5a6af9fd2a372747b6dcfb0473dea9dbdbec20ff7aacc1b141a69"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/noisy_evidence_preparation/checks.json",
+      "sha256": "7873180324292385d1bc429d05980e5459a4f3eef5e282a1f24b5651df433eb6"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/noisy_evidence_preparation/cycles.csv",
+      "sha256": "f388e24b24e8b9a72c472035b9f5f9e23cb9113c5f1e169b3af538afaf7d09ea"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/noisy_evidence_preparation/negative_control_exact.json",
+      "sha256": "6d619d661d36d69343b036c101719265c49895096dd88df73a1ef14511d67eb6"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/noisy_evidence_preparation/outcomes.csv",
+      "sha256": "c34056d6f396fc23b82975e81497da27e0cc594a467eb4380a68aafdf89e42ab"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/noisy_evidence_preparation/paired.csv",
+      "sha256": "da506256108384ea7c98a03b460c5e3acf2c8c3f22d3a1e0076ac37048b7a9ce"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/noisy_evidence_preparation/physical_outcomes.png",
+      "sha256": "17877adec94abfc0e5c4771f31b3e4436c4546ec5d159d3c0f14ce09ef80684c"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/noisy_evidence_preparation/plan.json",
+      "sha256": "24dc1b9f70adc22be81329f595e05414cbb4756a0da9ccc4a251f815b8b38bbf"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/noisy_evidence_preparation/prefix_matching.json",
+      "sha256": "613c46a495c0e9a2e67255defc8edee85d7bc27ed5ede137f0f13d599ebac2ee"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/noisy_evidence_preparation/pure_checks.json",
+      "sha256": "72ab364e807a81214968ab46343b4cf7496a4d53c6ae02d6e3b88ade2daacb91"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/noisy_evidence_preparation/recovery.csv",
+      "sha256": "948d71f624d9889535592bc37e6fc8951290ed42f01b31ffd148e415e3f0df6e"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/noisy_evidence_preparation/selected_visual_sources.json",
+      "sha256": "f35c9e0f22dfdb7dabadb4503592b3d02ac4b52e6831c5c433d83a5e25fd2d63"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/noisy_evidence_preparation/source/analyze.py",
+      "sha256": "4cb93c09e53fa004912b3c55f03d660887ed4650d898bd486b0e8a32e3426c8b"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/noisy_evidence_preparation/source/environment_evolution/anticipatory_material_allocation/core.py",
+      "sha256": "4ea2ebf8f3ec025624b30688122dbb3ea7f5717606f9eccb1ea5c4765b726817"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/noisy_evidence_preparation/source/local_learning/method_renewal_local_plasticity/anticipatory_io.py",
+      "sha256": "341c04d4d2fcdfcc629892317021e286a5a4391b11ebe65cf3f713276113574d"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/noisy_evidence_preparation/source/local_learning/noisy_evidence_preparation/experiment.py",
+      "sha256": "256fd842ab3d7775cfa0038b2c0c4d4ceb67f14ebc93a7ce3c34cc300ed6c3d6"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/noisy_evidence_preparation/source/local_learning/noisy_evidence_preparation/policy.py",
+      "sha256": "c3a2e47e9680de6699bda6d95f41eacca60a1e754c4ce899c0095c788a7033ce"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/noisy_evidence_preparation/source/local_learning/noisy_evidence_preparation/tape.py",
+      "sha256": "4ec0369d6100aad541f5ddc4c5fba6188042ba3c757912e310df2f6f7e7c8eb8"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/noisy_evidence_preparation/source_index.json",
+      "sha256": "ffd50a71d435a70089a06a89d761f3114423e3a9d73b03dd6fbeec998a93370a"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/noisy_evidence_preparation/summary.json",
+      "sha256": "bb6d75ef27c6162c67c3e8aea1903ed731e6310c841dda645891338b78947351"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/noisy_evidence_preparation/usage.json",
+      "sha256": "dbe94449cc047dec26a08aae64c00d362a7b7a5c20618669cb8fc229440f470a"
+    }
+  ]
+}

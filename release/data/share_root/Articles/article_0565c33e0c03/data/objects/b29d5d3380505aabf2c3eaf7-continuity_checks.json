@@ -1,0 +1,98 @@
+[
+  {
+    "id": "202610197503_0_0_fast_delta_life_original",
+    "initial_bitwise_equal": true,
+    "energy_max_error": 4.043293477806742e-14,
+    "returned_rows": 512
+  },
+  {
+    "id": "202610197503_0_0_fast_delta_life_temporal",
+    "initial_bitwise_equal": true,
+    "energy_max_error": 3.3393426912553537e-14,
+    "returned_rows": 512
+  },
+  {
+    "id": "202610197503_0_0_fast_delta_life_neighbor",
+    "initial_bitwise_equal": true,
+    "energy_max_error": 3.046941030984186e-14,
+    "returned_rows": 512
+  },
+  {
+    "id": "202610197503_0_0_fast_delta_life_pooled",
+    "initial_bitwise_equal": true,
+    "energy_max_error": 2.7408319212308963e-14,
+    "returned_rows": 512
+  },
+  {
+    "id": "202610197503_0_1_fast_delta_life_original",
+    "initial_bitwise_equal": true,
+    "energy_max_error": 2.986907867309069e-14,
+    "returned_rows": 512
+  },
+  {
+    "id": "202610197503_0_1_fast_delta_life_temporal",
+    "initial_bitwise_equal": true,
+    "energy_max_error": 3.6165515027164474e-14,
+    "returned_rows": 512
+  },
+  {
+    "id": "202610197503_0_1_fast_delta_life_neighbor",
+    "initial_bitwise_equal": true,
+    "energy_max_error": 3.568160849252988e-14,
+    "returned_rows": 512
+  },
+  {
+    "id": "202610197503_0_1_fast_delta_life_pooled",
+    "initial_bitwise_equal": true,
+    "energy_max_error": 3.8058532020324165e-14,
+    "returned_rows": 512
+  },
+  {
+    "id": "202610197504_1_0_fast_delta_life_original",
+    "initial_bitwise_equal": true,
+    "energy_max_error": 3.0156432906380815e-14,
+    "returned_rows": 512
+  },
+  {
+    "id": "202610197504_1_0_fast_delta_life_temporal",
+    "initial_bitwise_equal": true,
+    "energy_max_error": 3.856984176486833e-14,
+    "returned_rows": 512
+  },
+  {
+    "id": "202610197504_1_0_fast_delta_life_neighbor",
+    "initial_bitwise_equal": true,
+    "energy_max_error": 3.3713049713002263e-14,
+    "returned_rows": 512
+  },
+  {
+    "id": "202610197504_1_0_fast_delta_life_pooled",
+    "initial_bitwise_equal": true,
+    "energy_max_error": 2.8716612421320065e-14,
+    "returned_rows": 512
+  },
+  {
+    "id": "202610197504_1_1_fast_delta_life_original",
+    "initial_bitwise_equal": true,
+    "energy_max_error": 3.3431590829025026e-14,
+    "returned_rows": 512
+  },
+  {
+    "id": "202610197504_1_1_fast_delta_life_temporal",
+    "initial_bitwise_equal": true,
+    "energy_max_error": 3.445160823289939e-14,
+    "returned_rows": 512
+  },
+  {
+    "id": "202610197504_1_1_fast_delta_life_neighbor",
+    "initial_bitwise_equal": true,
+    "energy_max_error": 3.929803260149106e-14,
+    "returned_rows": 512
+  },
+  {
+    "id": "202610197504_1_1_fast_delta_life_pooled",
+    "initial_bitwise_equal": true,
+    "energy_max_error": 4.059361354002977e-14,
+    "returned_rows": 512
+  }
+]

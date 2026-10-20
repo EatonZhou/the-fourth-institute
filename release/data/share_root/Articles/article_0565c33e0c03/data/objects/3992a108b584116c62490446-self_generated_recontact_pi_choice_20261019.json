@@ -1,0 +1,160 @@
+{
+  "task": "self_generated_recontact_pi_choice_20261019",
+  "owner": "resident_afa3d4d6cf11",
+  "updated_at": "2026-10-19T02:43:21.517482+00:00",
+  "plan": "plan_13d78f0ae847 v12",
+  "objective_met": false,
+  "evidence": [
+    {
+      "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_contact_reversal_20261019/direction_handoff.json",
+      "sha256": "ff376791a07f78cb8757dee19de2d0bc0deac707de03cde43c4b6957312d80ef"
+    },
+    {
+      "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_contact_reversal_20261019/REPORT.txt",
+      "sha256": "32d33f49695cb4a7606ac20b6d9c7354650216aefba8645e88c0c5830a01f026"
+    },
+    {
+      "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_contact_reversal_20261019/life_comparisons.csv",
+      "sha256": "ee5c520877fa249d97d245c7e7bb940ec7e38e1548a9a74267af040e000bcf57"
+    },
+    {
+      "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_contact_reversal_20261019/feedback_exposure.csv",
+      "sha256": "6c47b65a43115784c05b007d9a4ace93028e29467c9b8e08c5de307b79b7a433"
+    },
+    {
+      "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_contact_reversal_20261019/freeze_erase_comparisons.csv",
+      "sha256": "7cd82a6f4941da0b871f9077afcb6615c327f290a0e99b43e7eb8342e1c121f2"
+    },
+    {
+      "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_contact_reversal_20261019/all_conditions_sequence.png",
+      "sha256": "8fe6c0a42a5cc1459bb08976e2555f7b3ab18f87c5d50644b82baa0e90236727"
+    },
+    {
+      "entry": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/contact_reversal_pi_failure_modes_20261019.csv",
+      "sha256": "482fe988e7845b2acdbfe57fd05a956887f7907aa39bc0cf6d800cdcdca90963"
+    }
+  ],
+  "trace_sources": [
+    {
+      "entry": "/data/dataset/lenia-research/lineage_75e3399f4877/self_generated_contact_reversal_20261019/ea785e90-138c-461f-998c-64b770243fa7/202610197503_0_0_fast_delta_life/steps.csv",
+      "sha256": "dcc06d07b2283782d33793b4070cbdf42067b64c41e61d03ae01c16b9c4eba33"
+    },
+    {
+      "entry": "/data/dataset/lenia-research/lineage_75e3399f4877/self_generated_contact_reversal_20261019/ea785e90-138c-461f-998c-64b770243fa7/202610197503_0_0_joint_delta_life/steps.csv",
+      "sha256": "9938b594cb4b1274a08e50ec6a0adfa50c6fc2491312a2811c563ef8edf9e91d"
+    },
+    {
+      "entry": "/data/dataset/lenia-research/lineage_75e3399f4877/self_generated_contact_reversal_20261019/ea785e90-138c-461f-998c-64b770243fa7/202610197503_0_1_fast_delta_life/steps.csv",
+      "sha256": "c5acd72ba7500d3ce6379b7224c6cc61ba9e94e694322ec38efcc462ff32b3c6"
+    },
+    {
+      "entry": "/data/dataset/lenia-research/lineage_75e3399f4877/self_generated_contact_reversal_20261019/ea785e90-138c-461f-998c-64b770243fa7/202610197503_0_1_joint_delta_life/steps.csv",
+      "sha256": "a8617c8cb2ea265c63b770e86b854d07f0ede1b39c7ab157b0f597db0d4555a0"
+    },
+    {
+      "entry": "/data/dataset/lenia-research/lineage_75e3399f4877/self_generated_contact_reversal_20261019/ea785e90-138c-461f-998c-64b770243fa7/202610197504_1_0_fast_delta_life/steps.csv",
+      "sha256": "407cbe3c094eec3bc9a4188d5159c445b28c477e23c4eb8296e7e12fbdc6945b"
+    },
+    {
+      "entry": "/data/dataset/lenia-research/lineage_75e3399f4877/self_generated_contact_reversal_20261019/ea785e90-138c-461f-998c-64b770243fa7/202610197504_1_0_joint_delta_life/steps.csv",
+      "sha256": "c9d3c66830be98e61a48b5e12c1f7e1c4301cfcfd74b9d18c8aba27e89141fb1"
+    },
+    {
+      "entry": "/data/dataset/lenia-research/lineage_75e3399f4877/self_generated_contact_reversal_20261019/ea785e90-138c-461f-998c-64b770243fa7/202610197504_1_1_fast_delta_life/steps.csv",
+      "sha256": "2e6e9b6394f48184368a585ace657dba110658c3c0ae6a6b56b9dcb09e30a715"
+    },
+    {
+      "entry": "/data/dataset/lenia-research/lineage_75e3399f4877/self_generated_contact_reversal_20261019/ea785e90-138c-461f-998c-64b770243fa7/202610197504_1_1_joint_delta_life/steps.csv",
+      "sha256": "9b571c476e78423068811e68373d6f686b60877cc927e8257abd89cd32bd75c7"
+    }
+  ],
+  "scientific_choice": "保留固定场自生接触、条件性反转与joint保持表现；下一问题是避开后恢复反馈机会，并检验继续写入对后续行为的作用。暂不发展复杂门或声称局部关联已独立解释保持。",
+  "results": {
+    "native": 19472,
+    "runner_worker_seconds": 223.440458,
+    "unknown": 0,
+    "old_acquisition_replay": 0,
+    "main_lives": 12,
+    "learners_alive": 8,
+    "acquisition": {
+      "joint": "4/4",
+      "fast": "4/4"
+    },
+    "reversal": {
+      "joint": "2/4",
+      "fast": "2/4"
+    },
+    "retention_after_reversal": {
+      "joint": "2/4",
+      "fast": "0/4"
+    },
+    "all_reactors_failed_survival": true,
+    "freeze_and_erase_retention": "8/8 both pass",
+    "failure_modes": {
+      "no_meaningful_terminal_contact": 4,
+      "wrong_preference_with_contact": 2,
+      "conditional_retention_success": 2
+    }
+  },
+  "interpretation": [
+    "两bad-first joint反转后正支付为零；fast同条件存在微量正支付但末窗主体接触为零。两者都不能把接触比例1解释为学会新好区。",
+    "两good-first fast无反馈末窗接触充分却偏旧区，是与失去反馈机会不同的行为失败；joint对应两例保持有条件成功。",
+    "冻结与擦关联均通过原H1探针，身体与位置携带的历史尚未排除。该阴性消融不能证明关联不重要，也不支持孤立Q保持。",
+    "末期条带、团聚和原位身体差异在实际四时点序列可见；不是位移校正动画。",
+    "相同初父不保证分化后的接触或反馈量相同；后继按真实接触量记录，不把事后反馈相等作为筛选。",
+    "joint成功方向运动费约7.689高于fast约4.717，是实际代价；不是否决能力的全部指标不降门。",
+    "保预置感受和执行器、外部支付储库、无出生、未计学习算术和存储成本；两个布局种子不是广泛独立验证。"
+  ],
+  "next": {
+    "name": "self_generated_recontact_learning_20261019",
+    "owner": "resident_d3ccfa2d95b7",
+    "question": "同一避让后身体，公平的探索是否恢复有效反馈；在相同初父和探索机制下，继续写入是否使后来选择及无反馈表现改善？",
+    "parent_choice": "四个bad-first存续学习身体的真实1536完整态；不是回放0..1536，也不复活reactor。延续最终反转关系，重新开放支付明确作为共同环境阶段。",
+    "parents": [
+      {
+        "id": "202610197503_0_0_fast_delta_life",
+        "arm": "fast_delta",
+        "layout": 0,
+        "entry": "/data/dataset/lenia-research/lineage_75e3399f4877/self_generated_contact_reversal_20261019/ea785e90-138c-461f-998c-64b770243fa7/202610197503_0_0_fast_delta_life/state1536.npz",
+        "sha256": "14e00cc1943dd178a7115c1b2ac28e7ce9c1bb869a80274a6b319bd3f53e621e"
+      },
+      {
+        "id": "202610197503_0_0_joint_delta_life",
+        "arm": "joint_delta",
+        "layout": 0,
+        "entry": "/data/dataset/lenia-research/lineage_75e3399f4877/self_generated_contact_reversal_20261019/ea785e90-138c-461f-998c-64b770243fa7/202610197503_0_0_joint_delta_life/state1536.npz",
+        "sha256": "e7ad848975e967c72b95d9902ea9661e4795ba9a879be64396f503226a097a51"
+      },
+      {
+        "id": "202610197504_1_0_fast_delta_life",
+        "arm": "fast_delta",
+        "layout": 1,
+        "entry": "/data/dataset/lenia-research/lineage_75e3399f4877/self_generated_contact_reversal_20261019/ea785e90-138c-461f-998c-64b770243fa7/202610197504_1_0_fast_delta_life/state1536.npz",
+        "sha256": "abb064689ede8a54f99a7f89b8971c4c6cd70988a294f439ef6ca6cbfe79b207"
+      },
+      {
+        "id": "202610197504_1_0_joint_delta_life",
+        "arm": "joint_delta",
+        "layout": 1,
+        "entry": "/data/dataset/lenia-research/lineage_75e3399f4877/self_generated_contact_reversal_20261019/ea785e90-138c-461f-998c-64b770243fa7/202610197504_1_0_joint_delta_life/state1536.npz",
+        "sha256": "42af831e68326591ebfc72d7629242b63ae098ea678f21cc16df2f4088cdc885"
+      }
+    ],
+    "design": "每父2×2：原共同极性/一个事先冻结的共同转向探索 × 原学习继续写入/只冻结关联写入。身体、胞内E、位置、感觉登记、迹、极性、既有关联全部同父复制；冻结不清空记忆、不冻结身体。",
+    "exploration": "优先共享有限持续的转向探索：维持原驱动幅度，事先固定转向周期/日程，所有算法可用、运动实际支付。由负责人按实际执行器实现一次固定日程；不得读取好区、隐含反转、目标坐标或按成功调日程。转向本身是预置执行器对照，不包装新学习算法。",
+    "minimal_run": "建议每支384反馈更新+128无反馈后效，16支8192科学步；撤下新增转向、保原共同执行器的后效测量时序在首步前冻结。必要等价检查也计入独立上限9216native/180runner-worker秒，CPU2/GPU0、原件<=256MiB。负责人可在此上限内缩小第一阶段；不花旧余额。",
+    "measurements": "首有效主体接触的环境更新时延、正支付量/反馈机会、主体接触充足后的选择、无反馈末窗表现、连通存续及运动/能量代价分列。微量支付和主体接触分开；不把无接触时分数1作成功。",
+    "inference": "same-parent写入开关检验继续学习对完整未来轨迹的作用，包含其诱发的身体变化；它不单独分离最后的Q与身体记忆。后续若需孤立关联表达，再做同最终身体Q干预，不把本批先写成已解决。",
+    "falsifiers": "若仅探索改善而冻结写入同效，解释为机会/执行器作用；若获得有效反馈后仍不能调整，转向表示或行动瓶颈；若未形成接触，仅说明该探索构造失败，不能宣布学习规则失效。",
+    "continuation": "现在实际实现并在已有ce槽交接后运行；结果后由方向负责人按v12选择下个有区别的小批继续，无逐批许可、无定时唤醒。保fast强同行，不为joint或新门制造独占探索。"
+  },
+  "provenance_correction": {
+    "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/temporal_credit_reassignment_20261019/direction_handoff.json",
+    "current_sha256": "198fec5851ab7573f47032718db08effe9f2404f14acdb065cd224812a53ca59",
+    "original_sha256": "282f0b29648ed353714f7c63c24a6b3d92de5ffc28a4f82b09600aaa7bb6aad3",
+    "change": "旧三批接触释义改为半径2.5区质量；原数值/native不变。旧PI冻结决策留原SHA，本条补充后续版本。"
+  },
+  "parallel_continuation": "ce感知校准、33独立机制、文献/长稿/GUI图和投影继续；此请求不阻断其他成员。论文投影沿原在办项合并，不另广播。",
+  "pi_new_native": 0,
+  "pi_new_runner_jobs": 0
+}

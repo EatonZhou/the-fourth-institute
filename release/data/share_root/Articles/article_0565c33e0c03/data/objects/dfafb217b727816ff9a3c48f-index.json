@@ -1,0 +1,10 @@
+{
+  "schema": "lenia.paired-replay-index.v1",
+  "cases": [
+    {
+      "id": "triplet",
+      "title": "三次刺激：只调换两个间隔，结局改变",
+      "manifest": "manifest.json"
+    }
+  ]
+}

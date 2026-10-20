@@ -1,0 +1,94 @@
+tissue_replacement_pf_location_20261018 — actual results
+
+Result: simultaneous local support of new P and F has positive interaction for current tissue mass, energy and post128 tissue retention in these two fixed mature bodies. It increases tissue turnover, not survival of the original128 cohort. It still does not replace all deletion in any of the four64-step windows.
+Actual unique job dcb51b4d-8c47-4300-9ffe-d31b932e675a completed/rc0:2048 attempted=committed,0 failed calls,0 replay,0 extra native boundaries. Worker seconds=83.732428/600; unused32 native/516.267572worker frozen. No old budget used.
+
+All eight arms remain present and every M is above32, but no finite-renewal gate passed. Both predeclared last64 windows have negative deltaM AND deltaE for all arms. The old initial-life0 formation claim and its negative gate are not rewritten.
+
+Actual endpoint table (clock384; all quantities are absolute, not normalized):
+rule arm M E U bodytime L128_retained post128_retained births deaths
+g1_f1_c0 P0F0 55.845027 111.510579 48.945759 754.760495 45.371770 10.473257 11.983109 20.709686
+g1_f1_c0 P1F0 57.262900 113.753071 50.872212 759.462243 45.388429 11.874472 13.338731 20.647435
+g1_f1_c0 P0F1 56.953935 113.636047 52.269041 770.375933 44.319665 12.634270 13.646424 21.264093
+g1_f1_c0 P1F1 63.378648 126.143186 79.850253 817.368507 37.476039 25.902609 28.464917 29.657874
+g1_f2_c0 P0F0 53.928059 105.829327 59.887193 740.757988 39.585315 14.342744 16.416353 25.330761
+g1_f2_c0 P1F0 53.564609 105.648875 60.382923 738.202512 39.346983 14.217626 16.328411 25.606270
+g1_f2_c0 P0F1 55.188493 108.588833 66.462690 759.013233 37.954477 17.234015 19.692346 27.346322
+g1_f2_c0 P1F1 60.825211 120.169283 92.875932 791.234418 31.738693 29.086518 33.566365 35.583622
+
+Actual four windows (births/deaths, deltaM, deltaE; no post hoc window selection):
+g1_f1_c0 P0F0 +1..64: born=0.787964, death=4.979022, dM=-4.191059, dE=-0.148365, minM=60.380546
+g1_f1_c0 P0F0 +65..128: born=2.720013, death=4.946407, dM=-2.226394, dE=-0.225032, minM=58.154152
+g1_f1_c0 P0F0 +129..192: born=4.556985, death=5.391885, dM=-0.834900, dE=-1.704611, minM=57.319252
+g1_f1_c0 P0F0 +193..256: born=3.918147, death=5.392372, dM=-1.474225, dE=-2.797494, minM=55.845027
+g1_f1_c0 P1F0 +1..64: born=0.980422, death=4.929863, dM=-3.949441, dE=-0.062790, minM=60.622164
+g1_f1_c0 P1F0 +65..128: born=2.658438, death=4.995134, dM=-2.336696, dE=-0.281392, minM=58.282140
+g1_f1_c0 P1F0 +129..192: born=4.907749, death=5.363566, dM=-0.455817, dE=-1.057522, minM=57.827315
+g1_f1_c0 P1F0 +193..256: born=4.792122, death=5.358872, dM=-0.566751, dE=-1.231305, minM=57.260607
+g1_f1_c0 P0F1 +1..64: born=3.153444, death=5.753844, dM=-2.600399, dE=7.261735, minM=61.971205
+g1_f1_c0 P0F1 +65..128: born=3.080325, death=5.155906, dM=-2.075581, dE=-4.015961, minM=59.895624
+g1_f1_c0 P0F1 +129..192: born=3.477665, death=4.996082, dM=-1.518417, dE=-3.095434, minM=58.377207
+g1_f1_c0 P0F1 +193..256: born=3.934989, death=5.358262, dM=-1.423272, dE=-2.900374, minM=56.953935
+g1_f1_c0 P1F1 +1..64: born=7.047526, death=7.465730, dM=-0.418204, dE=10.282229, minM=64.095153
+g1_f1_c0 P1F1 +65..128: born=7.183919, death=7.513474, dM=-0.329555, dE=0.368416, minM=63.823845
+g1_f1_c0 P1F1 +129..192: born=7.099070, death=7.359264, dM=-0.260194, dE=-0.499479, minM=63.563652
+g1_f1_c0 P1F1 +193..256: born=7.134403, death=7.319407, dM=-0.185004, dE=-0.394060, minM=63.378648
+g1_f2_c0 P0F0 +1..64: born=2.498978, death=5.431491, dM=-2.932514, dE=3.439136, minM=59.909954
+g1_f2_c0 P0F0 +65..128: born=4.062004, death=6.344120, dM=-2.282116, dE=-1.031630, minM=57.627838
+g1_f2_c0 P0F0 +129..192: born=4.975179, death=6.840119, dM=-1.864940, dE=-3.651720, minM=55.762898
+g1_f2_c0 P0F0 +193..256: born=4.880193, death=6.715032, dM=-1.834839, dE=-3.808252, minM=53.928059
+g1_f2_c0 P1F0 +1..64: born=2.510342, death=5.489650, dM=-2.979309, dE=3.262505, minM=59.863159
+g1_f2_c0 P1F0 +65..128: born=3.811202, death=6.327115, dM=-2.515913, dE=-1.040780, minM=57.347246
+g1_f2_c0 P1F0 +129..192: born=4.822993, death=6.782427, dM=-1.959434, dE=-3.640017, minM=55.387813
+g1_f2_c0 P1F0 +193..256: born=5.183874, death=7.007078, dM=-1.823204, dE=-3.814627, minM=53.564609
+g1_f2_c0 P0F1 +1..64: born=5.184293, death=6.839540, dM=-1.655248, dE=9.604463, minM=61.187220
+g1_f2_c0 P0F1 +65..128: born=4.965386, death=6.667126, dM=-1.701741, dE=-3.286155, minM=59.485480
+g1_f2_c0 P0F1 +129..192: born=5.151418, death=7.087183, dM=-1.935765, dE=-3.992853, minM=57.549714
+g1_f2_c0 P0F1 +193..256: born=4.391250, death=6.752472, dM=-2.361222, dE=-4.618416, minM=55.188493
+g1_f2_c0 P1F1 +1..64: born=8.346921, death=8.822646, dM=-0.475725, dE=9.176465, minM=62.366742
+g1_f2_c0 P1F1 +65..128: born=8.354702, death=8.914415, dM=-0.559713, dE=1.752667, minM=61.807030
+g1_f2_c0 P1F1 +129..192: born=8.361825, death=8.889301, dM=-0.527476, dE=-0.825197, minM=61.279554
+g1_f2_c0 P1F1 +193..256: born=8.502917, death=8.957259, dM=-0.454342, dE=-0.816445, minM=60.825211
+
+Conditional total effects and interaction (full metrics and per-window effects in CSV):
+rule metric P@F0 P@F1 F@P0 F@P1 interaction
+g1_f1_c0 M 1.417873 6.424713 1.108908 6.115747 5.006840
+g1_f1_c0 E 2.242492 12.507138 2.125468 12.390114 10.264646
+g1_f1_c0 U 1.926453 27.581211 3.323283 28.978041 25.654758
+g1_f1_c0 bodytime 4.701749 46.992574 15.615439 57.906264 42.290825
+g1_f1_c0 label128 0.016659 -6.843626 -1.052105 -7.912390 -6.860285
+g1_f1_c0 post128_tissue 1.401214 13.268339 2.161013 14.028137 11.867125
+g1_f1_c0 born 1.355623 14.818494 1.663315 15.126186 13.462871
+g1_f1_c0 death -0.062250 8.393781 0.554407 9.010438 8.456031
+g1_f2_c0 M -0.363450 5.636719 1.260433 7.260602 6.000169
+g1_f2_c0 E -0.180452 11.580450 2.759505 14.520408 11.760902
+g1_f2_c0 U 0.495730 26.413242 6.575497 32.493009 25.917512
+g1_f2_c0 bodytime -2.555476 32.221185 18.255245 53.031907 34.776661
+g1_f2_c0 label128 -0.238332 -6.215784 -1.630838 -7.608289 -5.977452
+g1_f2_c0 post128_tissue -0.125118 11.852503 2.891271 14.868892 11.977621
+g1_f2_c0 born -0.087942 13.874019 3.275993 17.237954 13.961961
+g1_f2_c0 death 0.275508 8.237300 2.015560 9.977352 7.961791
+
+Interpretation and preserved negative results:
+The P effect depends on F placement. In f2, P-only changes final M by -0.363450, E by -0.180452, bodytime by -2.555476 and post128 tissue by -0.125118 despite U+0.495730. With F supported, the same P intervention changes M+5.636719, E+11.580450 and post128 tissue+11.852503. Thus neither P-alone shortage nor uptake improvement is an adequate main conclusion.
+Mass interaction is +5.006840/+6.000169 and post128-tissue interaction +11.867125/+11.977621 for f1/f2. Those are finite conditional interventions, not statistical population evidence or proof of a particular microscopic mediator.
+P1F1 versus P0F0: new retained tissue increases from10.473257 to25.902609 (f1) and14.342744 to29.086518 (f2), while retained128 material falls from45.371770 to37.476039 and39.585315 to31.738693. Total deletion also increases20.709686→29.657874 and25.330761→35.583622. Greater replacement and less old-material survival coexist; cumulative birth is not retained tissue.
+P1F1 final M/E are higher than P0F0, but still lower M than the parent. Its last two dM windows are -.260194/-.185004 (f1) and-.527476/-.454342 (f2); corresponding dE -.499479/-.394060 and-.825197/-.816445. Narrowing deficits cannot be extrapolated to an asymptote or infinite steady state.
+No actor injury/starvation mass death occurred. Actual deletion is in the rule stage, while physical movement/basal/synthesis/template costs are all present. This locates the accounting stage; it does not establish that the rule is generally wrong, nor that changing its death rate would preserve organization.
+
+Costs, gross input and external boundary:
+g1_f1_c0 P0F0: input_material=51.269038387, input_energy=205.076153548, external_material_out=31.847124362, external_energy_out=106.584413523, actor_movement_paid=5.901829942, actor_basal_paid=9.062361882, birth_fuel=5.032905586, synthesis_heat=2.396621708, template_heat=0.239662171, rule_death_energy=41.253689809
+g1_f1_c0 P1F0: input_material=51.269038387, input_energy=205.076153548, external_material_out=31.292243881, external_energy_out=105.716502087, actor_movement_paid=5.912753390, actor_basal_paid=9.117932142, birth_fuel=5.602267208, synthesis_heat=2.667746289, template_heat=0.266774629, rule_death_energy=41.142281856
+g1_f1_c0 P0F1: input_material=51.269038387, input_energy=205.076153548, external_material_out=30.106142764, external_energy_out=101.936422839, actor_movement_paid=6.048228703, actor_basal_paid=9.249081802, birth_fuel=5.731497874, synthesis_heat=2.729284702, template_heat=0.272928470, rule_death_energy=42.451048482
+g1_f1_c0 P1F1: input_material=51.269038387, input_energy=205.076153548, external_material_out=20.014943861, external_energy_out=79.330970300, actor_movement_paid=6.702542587, actor_basal_paid=9.809137857, birth_fuel=11.955265297, synthesis_heat=5.692983475, template_heat=0.569298347, rule_death_energy=59.274450366
+g1_f2_c0 P0F0: input_material=51.269038387, input_energy=205.076153548, external_material_out=28.495925976, external_energy_out=97.819497827, actor_movement_paid=8.884333051, actor_basal_paid=8.894444496, birth_fuel=6.894868356, synthesis_heat=3.283270646, template_heat=0.328327065, rule_death_energy=50.444152079
+g1_f2_c0 P1F0: input_material=51.269038387, input_energy=205.076153548, external_material_out=28.709147861, external_energy_out=97.822749270, actor_movement_paid=8.897760914, actor_basal_paid=8.863996856, birth_fuel=6.857932790, synthesis_heat=3.265682281, template_heat=0.326568228, rule_death_energy=51.119765648
+g1_f2_c0 P0F1: input_material=51.269038387, input_energy=205.076153548, external_material_out=25.290098618, external_energy_out=89.923904778, actor_movement_paid=9.052582864, actor_basal_paid=9.112751182, birth_fuel=8.270785522, synthesis_heat=3.938469296, template_heat=0.393846930, rule_death_energy=54.528786102
+g1_f2_c0 P1F1: input_material=51.269038387, input_energy=205.076153548, external_material_out=16.507610451, external_energy_out=69.907571498, actor_movement_paid=9.685689811, actor_basal_paid=9.496023374, birth_fuel=14.097873389, synthesis_heat=6.713273042, template_heat=0.671327304, rule_death_energy=71.120002715
+All arms gross input P51.269038386890465/F205.07615354756186; same per-step totals (difference below1e-12). Actual input/outflow and costs differ downstream. Sum actual basal-unpaid floating residue=2.5035387870943072e-15; not rounded to zero in data.
+maintenance_balances.csv reports actual heat/waste/dead-energy/fuel/precursor changes, whole material/energy residuals, retained128/deleted128 and retained/deleted post128 tissue. All-step fees/requests/rejections remain in steps.csv; full supplementary metrics are not dropped for the endpoint presentation.
+
+Max native per-step whole M/E error=3.16e-14/7.92e-14; max diagnostic balance=4.26e-14; scalar recomposition error0. Both parents' four starts were exact-array/hash matched including world/cursor/sinks. No unknown death was replaced by zero.
+
+Scientific disposition: close this fixed8-arm experiment with conditional P/F complementarity and genuine post128 turnover, but no finite-window self-replacement. Use actual saved birth/death/request maps to formulate a next local maintenance-rule question; do not prolong current supply or scan rates to convert the failed criterion. A new intervention would need its own frozen question and budget.
+This batch contains no learned controller, online adaptation, new algorithm, biological free resource placement, population replication, or physical upper-bound claim.

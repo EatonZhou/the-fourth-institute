@@ -1,0 +1,55 @@
+{
+  "status": "completed_analytic_necessary_condition_and_saved_trace_check",
+  "plan": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/method_renewal_ecology_behavior_20261018/plan.json",
+  "plan_sha256": "2f1a85da27d1f975e1ba143dc85e0eb3c0be64991b2fe324cf08b48f42fd6daa",
+  "analysis_sha256": "8eb723b162b6569e0ebc19f6fead6a0a83b8c1f19b04b552690867ea0b66a4ac",
+  "parameters": {
+    "eta": 0.7,
+    "growth_yield_g": 0.12,
+    "turnover_tau": 0.0002,
+    "basal_b": 0.0022
+  },
+  "eta_over_g": 5.833333333333333,
+  "basal_minus_eta_tau_over_g": 0.0010333333333333334,
+  "required_uptake_energy_per_unit_U_at_mass_balance": 1.32,
+  "available_energy_per_unit_U": 0.7,
+  "derivation": [
+    "Under zero basal_unpaid, delta M = -tau*M + g*U.",
+    "delta E = eta*U - b*M - nonnegative paid movement/memory/death-E/spill.",
+    "V = E - (eta/g)*M; delta V <= -(b-eta*tau/g)*M.",
+    "For bounded M, E>=0 bounds V below. Positive b-eta*tau/g rules out an infinite starvation-free trajectory with positive long-run mean M.",
+    "In any positive periodic mass cycle, maintenance alone costs b*g/tau=1.32 per U, exceeding eta=0.7 per U, before movement and memory."
+  ],
+  "interpretation": "Prediction or increased input alone cannot remove this fixed growth/maintenance mismatch in the pilot model. A continuing-adaptation task must distinguish learning failure from physiological feasibility.",
+  "limits": [
+    "Only this reduced-density model; not the old Lenia model or a universal biological claim.",
+    "Does not rule out finite survival, shrinking biomass, or repeated starvation/birth cycles.",
+    "Necessary condition, not a sufficient viability test after changing parameters or allocation.",
+    "Two frozen saved traces checked, not all paths; no new body, controller, or environment steps."
+  ],
+  "trace_checks": [
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/predictive--1701--compact--oracle--steps.csv",
+      "sha256": "6ec3db5a9edc2dfed27233fb54b85968bda3e11c888f8ca486a567b071906f85",
+      "total_steps": 1536,
+      "exact_full_payment_steps": 1536,
+      "unpaid_steps_excluded_from_bound": 0,
+      "max_raw_bound_slack": -0.00457973978022648,
+      "min_raw_bound_slack": -1.2313904727173695,
+      "max_abs_mass_identity_error": 1.9125326322644298e-14,
+      "sum_delta_V": -131.15940458039364
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/predictive--1701--compact--history_q--steps.csv",
+      "sha256": "0208f38368059cd1f28285a0529b210546971ca50c70b4003902a9acdc708ac6",
+      "total_steps": 1536,
+      "exact_full_payment_steps": 1536,
+      "unpaid_steps_excluded_from_bound": 0,
+      "max_raw_bound_slack": -0.005572756717523622,
+      "min_raw_bound_slack": -1.190832552002246,
+      "max_abs_mass_identity_error": 1.7394072293619445e-14,
+      "sum_delta_V": -129.4591315560649
+    }
+  ],
+  "new_simulation_steps": 0
+}

@@ -1,0 +1,66 @@
+{
+  "task": "physical_experience_state_20261019",
+  "owner": "resident_33af539c4a17",
+  "status": "completed_opportunity_and_falsifier_linear_compliance_extra_value_closed",
+  "objective_met": false,
+  "usage": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/physical_experience_state_20261019/usage.json",
+    "sha256": "7d61ca5aff2e7b77f601c0400ddbe787957fc818b1a6bff8a5ae75ab12b6587d"
+  },
+  "report": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/physical_experience_state_20261019/REPORT.txt",
+    "sha256": "b05cfdd626309410152011025c3b0cfd45c6a9ce06eff89ec352ce07c9f9c77e"
+  },
+  "comparisons": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/physical_experience_comparison_20261019/summary.json",
+    "sha256": "5321629c38f0c34e9958d1e26743bc3e9dd4824c4527136297fdf84c544cd2bc"
+  },
+  "costs": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/physical_experience_state_20261019/costs.json",
+    "sha256": "1a6c6125b6b435f98ee563af49b06cf07af495bdf05284c3a709410a989604d6"
+  },
+  "causal": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/physical_experience_state_20261019/causal_summary.json",
+    "sha256": "63c1dbbb2fdd5b20834d1cd7136cf64846f1d8e0a6bf79e686776e3e1a49fa00"
+  },
+  "original_batches": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/physical_experience_opportunity_20261019/plan.json",
+      "sha256": "e8527b9737c0c67ae8402d41b832732f63e9a952f8ccda5bf49292d8b1c8068d"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/physical_experience_opportunity_corrected_20261019/plan.json",
+      "sha256": "0b0cdf14a641599753271d7557ceb4433490e8562952777bb3916a7c57d59bb7"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/physical_experience_comparison_20261019/plan.json",
+      "sha256": "888fa9f713e764147bd820d3d5433add09f274924925249b1b6fc9958bcf5df6"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/research/results/physical_experience_content_probe_20261019/plan.json",
+      "sha256": "595990e94b2a5f9f362cce5ce12fefb830fa75a26f992f8da13c131f3f150fee"
+    }
+  ],
+  "previous_closed_gain_handoff": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/embodied_adaptive_memory_dynamics_20261019/handoff.json",
+    "sha256": "2547e980a19f2f1cc19146210edfa392cdc16e2b66a734d621cf7802e25f379a"
+  },
+  "eb_gate_sidecar": {
+    "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/embodied_adaptive_memory_writer_gates_20261019.json",
+    "sha256": "a473d62348705f5ebbf5c4821badc18b2df9be467e6e549b8d0e07b4a7788301"
+  },
+  "scientific_choice": {
+    "requires_pi_choice": true,
+    "question": "当前可塑顺应性在同局部力补偿接口下与标准在线读出精确等价，c归零后几何仅近随机。下一是否优先改为持久几何/接触拓扑塑形，而非继续换材料系数？另一条是对补偿力引入真实能量/行动权限约束，但会改变共同控制合同并与d3动作线交叉；建议优先前者，保无birth，不追改本批。",
+    "recommendation": "persistent_geometry_or_contact_topology",
+    "not_running": true
+  },
+  "no_claims": [
+    "new algorithm",
+    "thermodynamic efficiency",
+    "learned natural locomotion",
+    "regeneration",
+    "Lenia learning",
+    "independent replication from causal branches"
+  ]
+}

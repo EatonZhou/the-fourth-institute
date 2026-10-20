@@ -1,0 +1,185 @@
+{
+  "task": "recycling_precursor_dependence_20261019",
+  "owner": "resident_ce2a5ab005bc",
+  "pi": "resident_afa3d4d6cf11",
+  "created_at": "2026-10-18T19:00:09.208187+00:00",
+  "status": "authorized_ready_for_handoff",
+  "question": "固定有价回收能否在更长有限供给下继续支持替代，以及在撤除外源前体P而保持燃料F时，能否缓解真实新组织/质量损失？",
+  "why_now": "八条件的新组织增益真实且非保旧体，b6有限维护正例与b2近邻反例值得条件检验。先辨别持续补给依赖/库存消耗，不立刻训练writer。",
+  "prior_result": {
+    "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/paid_local_turnover_recycling_20261019/handoff.json",
+    "sha256": "13a5392e5056aaa88c2d1ac0cae12a8aab1482716a8bb35d627081a06a9a7fc2",
+    "result": "回收对none/inert八条件M/体时/真实post256留存均增，L256均降；共定位E降、分离E增。0/8、0/8、1/8两窗通过，不是全面胜出或学习。",
+    "positive": {
+      "id": "b6--paid_recycle",
+      "born_minus_death": [
+        0.135105583,
+        0.422276182
+      ],
+      "delta_E": [
+        1.072063685,
+        0.254524239
+      ],
+      "versus_none_E": -5.425711554,
+      "versus_none_post256": 3.952772323,
+      "versus_none_L256": -1.533204601
+    },
+    "negative_neighbor": "b2回收首窗净出生负，第二窗E负；保留原判据。",
+    "visual_review": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/paid_local_turnover_recycling_20261019/actual_process.png",
+      "sha256": "bd08fc5022e00d058ad4b81a63d3df1aff57c98ce8393e31b7a4f243678bd0bc",
+      "scope": "PI实际查看24路径标量过程图；b6小幅增M/E但相对none E低，compact共定位回收E下降，分离仍收缩；未称查看全部原场。"
+    },
+    "new_native_by_PI": 0
+  },
+  "parents": [
+    {
+      "id": "b2--paid_recycle",
+      "history": "g1_f2_c0",
+      "shape": "double_lobe",
+      "condition": "colocated",
+      "clock": 384,
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b2--paid_recycle/joint384.bin",
+      "sha256": "bed816491646c2b9289cf5f0446fba51379293016d1880ea275d14f6258a78b1",
+      "bytes": 4139911,
+      "original_two_window_pass": false,
+      "M": 53.60636170173123,
+      "E": 80.44895391411887,
+      "P": 14.216284794682656,
+      "F": 26.214608258361224,
+      "eligible": 0.539491450111989,
+      "selection": "事后选唯一有限维护正例b6和相同规则/形态/供给的不同形成史近邻b2，不是独立验证世界。"
+    },
+    {
+      "id": "b6--paid_recycle",
+      "history": "g2_p0_c0",
+      "shape": "double_lobe",
+      "condition": "colocated",
+      "clock": 384,
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b6--paid_recycle/joint384.bin",
+      "sha256": "a16c2d3c5be5b5866a83ccecc7f26d212f98aeab9513de8dcb3b7de527f23e0d",
+      "bytes": 4140185,
+      "original_two_window_pass": true,
+      "M": 53.24469055843015,
+      "E": 79.85228874450904,
+      "P": 14.172234415246646,
+      "F": 26.19069983459453,
+      "eligible": 0.3529388689982023,
+      "selection": "事后选唯一有限维护正例b6和相同规则/形态/供给的不同形成史近邻b2，不是独立验证世界。"
+    }
+  ],
+  "source_bindings": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/paid_local_turnover_recycling/core.py",
+      "sha256": "243a5303d2bb0e90a7f7f0c482131d13dbf8dc19ef95ae14fb7c3a47a2d1ead0"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/turnover_compatible_morphogenesis/core.py",
+      "sha256": "dbfea17ca9e68833d2e0fe7f33c37cac6111a4c441f51fb23a6a78f458886a84"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/resource_matched_morphogenesis/core.py",
+      "sha256": "dae6fbd6db1fe1a83f34a6039aee8e292f6d63717270095db981d1e808928a83"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/regenerative_actor/model.py",
+      "sha256": "3941450e97d2311f833d1c9c8964f348218467d4cd8d41a68b6584b72b24b5b0"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/regenerative_actor/conversion.py",
+      "sha256": "d2b73ccf44d6720e01e2166c055f9a427406dc483b21746476b9f8cc5f95189a"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/complementary_cargo_exchange/core.py",
+      "sha256": "2716b4ff5371b1c0095fe955399c7f68b62dd6b53fce048c542b36653ffd7cd9"
+    }
+  ],
+  "experiment": {
+    "fork_clock": 384,
+    "end_clock": 640,
+    "future_steps": 256,
+    "contexts": 2,
+    "arms": [
+      {
+        "id": "P_on_recycle_on",
+        "P_multiplier": 1,
+        "recycling": "paid_recycle"
+      },
+      {
+        "id": "P_on_recycle_off",
+        "P_multiplier": 1,
+        "recycling": "none"
+      },
+      {
+        "id": "P_off_recycle_on",
+        "P_multiplier": 0,
+        "recycling": "paid_recycle"
+      },
+      {
+        "id": "P_off_recycle_off",
+        "P_multiplier": 0,
+        "recycling": "none"
+      }
+    ],
+    "science_native": 2048,
+    "native_replay": 0,
+    "input_extension": "明确新有限协议385..640，不声称原384合同已涵盖。F沿各父原冻结fixed_F逐格原量继续，P_on沿fixed_P逐格原量；P_off只停止新增P，不洗掉原P/F/废料/eligible或重置库存。640后不授权延续。",
+    "input_magnitude_reference": {
+      "P_per_step_on": 0.2002696811987909,
+      "F_per_step_all": 0.8010787247951636
+    },
+    "input_geometry": "沿原life0确定的固定图；不随新身体移动，不按支持重分配，不重算当前geometry。",
+    "physical": "原死亡/原出生/运输/actor/原独立需求泵、价.2回收、capacity .05survivor、当地旧E支付、半衰64外流全部原值。off只令回收q=0/费0，仍登记新rule_death到eligible；on使用原eligible，处理后才登记本步死亡，不重置延迟。",
+    "state_equality": "每父四臂全身体/库存/world/cursor/RNG/原累计账/L256/eligible/所有管线逐值相同；只有已声明未来P输入开关和回收arm不同。换wrapper不得改变已取得状态。新L384为独立离线诊断，无策略输入。",
+    "implementation": "仅隔离适配有限horizon与P供给开关，原冻结源不改。解除ready/horizon限制的同时完整保留nested clock/elapsed/supply语义；每真实步原native/原pump/回收结算各最多一次，禁止把遗漏原供给作为自然结果。先冻结适配器/计划再提交。"
+  },
+  "measurements": {
+    "cohorts": "保留原life0与L256累计，不清史。新L384=rho从实际384起，真实K/旧survivor搬运，新born为0；rho-L384为post384真实留存，累计born不能替代。",
+    "all_steps": "M/E/P/F/waste/eligible/heat/dead_energy、各类born/death、gross输入/外排、实际泵费/回收费/actor/birth分项、欠付/拒绝/被动运动、各材料标签。保所有8轨/256钟与4预定64窗。",
+    "active_material_balance": "A=M+P+eligible为包含待处理废料的记账池，不等可立即支付使用的库存。on/off均应满足DeltaA = grossP - externalPout - actor_injury - actor_starvation（原rule_death入eligible、回收eligible->P、出生P->M内部转换）。逐步核残差；若真实接口还有额外项，先在冻结合同说明不可漏项。",
+    "no_perpetual_claim": "P_off且外流/actor损失为正时A必下降；即使两窗通过也仅有限储备耐受。A初始约68且P约14，报告初始与末库存消耗，不把循环q总量当新输入、独立质量或无限闭环。",
+    "saved": "共同384完整SHA；448/512/576/640完整joint；预定385/392/416/448/512/576/640原生场/收据。非每步全checkpoint，轻量逐步标量与阶段断点。"
+  },
+  "analysis": {
+    "within_parent": "同父recycle_on−off分别在P_on/P_off下报告，P撤除效应分别在on/off下报告，差中差只称指定干预交互；两个取得态相关且事后选择，不凑独立seed。",
+    "primary": "P_on持续参照是否延续实际组织替代；撤P是否在同历史同F下因回收减轻M/体时/新组织损失，并列E/费用，不将耐受与维护合成单分。",
+    "windows": [
+      [
+        385,
+        448
+      ],
+      [
+        449,
+        512
+      ],
+      [
+        513,
+        576
+      ],
+      [
+        577,
+        640
+      ]
+    ],
+    "finite_gate": "报告每窗born>=death-1e-8且DeltaE>=-1e-8、全程minM>=32；全四窗联合与预定末两窗联合分别列，零容差并列。末两窗不是四窗成功，能量高/活着/新组织多均不能单救门。",
+    "old_result": "原128窗1/8通过、b2失败、其余六失败不改。新256结果不能追认原全面优势、无限稳态或学习。",
+    "outcome_followup": "若无条件收益则收束本供给依赖候选；若只有库存支持或费用取舍据实报；若替代继续成立仍需新科学取舍，不自动扫P率/价/容量/延窗或开训练。"
+  },
+  "budget": {
+    "independent": true,
+    "max_native": 2052,
+    "science_native": 2048,
+    "max_affected_boundary_native": 4,
+    "max_runner_worker_seconds": 600,
+    "shutdown_reserve_worker_seconds": 90,
+    "CPU_threads": 2,
+    "GPU": 0,
+    "unique_job": 1,
+    "max_raw_bytes": 402653184,
+    "boundary": "仅此次嵌套horizon/输入开关受影响检查。纯数组可核不额外身体；真实首步可作独立解析输入/守恒/状态推进比较，不重复原已过等价套件。所有native检查计额。",
+    "stop": "两上限先到保存完整阶段，实记partial；无自动第二job/换时点。失败/重启/收尾耗时实计。所有旧余额封存。",
+    "control": "提交前读取running/started，自身Resident scheduler身份；不改总启动/无定时器。"
+  },
+  "communication": "ce2唯一实际实现和提交。日常原共享方向合并，需PI取舍仅一次enqueue_and_trigger；论文/投影沿原在办合并实物不广播。无需已阅回执。",
+  "objective_met": false
+}

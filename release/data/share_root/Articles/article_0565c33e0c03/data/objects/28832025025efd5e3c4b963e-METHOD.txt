@@ -1,0 +1,11 @@
+隔离实现与阶段权限
+
+prestate_greedy仍在外排/输入/native之前由ready当前P/F/E和身体纯计算w。原actor/K执行后，两个h按w混合；原D0=min(after_actor,dt*max(-h,0))唯一赋值RHS被私有AST包装为deletion_hook(D0,rho,h)。原模块不变、不全局monkeypatch。其他语句、正请求R、survivor/死能/模板/admit和后续原泵完全照原执行。
+
+a=D0；v=where(h<0,max(rho-D0,0),0)。mass按邻v比例；uniform仅在v>0邻居等分，分母0不提。原a同步投影，收件按v/sum incoming限流；两候选取每源min(out_mass,out_uniform)再缩放。只执行所选候选；拒绝留源。Dnew=D0-out+in。source/receiver浮点向内处理只有roundoff，无新一轮路由、重试、递归、增邻或物理差额补入。
+
+reference走同hook但chosen=0，精确D0。生物原价同，计算/邻读0价。全身体分数、cohort、未来均不进策略。无年龄保护，无回收/储备，无学习写入。
+
+L256/post256各广延标签，先真实K，再actor retention，再rule retention；post256在rule后加actual born，L256不加。全登记/累积实际死亡/存活重组，分别actor/rule，非幸存均值。全身born/death含actor死亡，与D0只rule预算有区别。
+
+初始四父完整SHA见原决定及plan。唯一job第一段388步后输出汇总类型错误，事务全完成；同job恢复1152新步。original source/run.py快照保持，run_resume_frozen.py及resume_evidence.json披露唯一实现修补与skip逻辑；不重采规则或重演物理。原plan.source_sha256中run.py旧SHA由显式恢复证据替代，其他源码及父/旧baseline均完全未改。

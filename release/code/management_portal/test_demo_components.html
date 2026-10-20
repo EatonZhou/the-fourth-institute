@@ -1,0 +1,1122 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-portal-i18n-text="&quot;Portal component behavior demo&quot;">Portal component behavior demo</title>
+  <link rel="stylesheet" href="/static/portal_design_system.css" />
+  <link rel="stylesheet" href="/static/portal_image_editor.css" />
+  <link rel="stylesheet" href="/static/portal_components.css" />
+  <link rel="stylesheet" href="/static/portal_workbench.css" />
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background: var(--bg);
+      font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    }
+    .componentDemoShell {
+      width: min(940px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 28px 0 64px;
+    }
+    .componentDemoHeader {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+    .componentDemoHeader h1,
+    .componentDemoHeader p { margin: 0; }
+    .componentDemoHeader p {
+      max-width: 560px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+    .componentDemoGrid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .componentDemoCard {
+      min-width: 0;
+      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--panel);
+      box-shadow: var(--shadow-soft);
+    }
+    .componentDemoCard h2 {
+      margin: 0 0 6px;
+      font-size: 15px;
+    }
+    .componentDemoCard p {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .componentDemoToolbarHost {
+      width: 270px;
+      max-width: 100%;
+      padding: 6px;
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+    }
+    .componentDemoFilterPanel {
+      width: 220px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+    .componentDemoFilterPanel label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 0;
+    }
+    .componentDemoSearch {
+      display: grid;
+      gap: 10px;
+    }
+    .componentDemoAsync {
+      min-height: 88px;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+    }
+    .componentDemoPopoverBoundary {
+      position: relative;
+      width: min(260px, 100%);
+      height: 170px;
+      overflow: hidden;
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      background: color-mix(in srgb, var(--panel) 92%, var(--accent) 8%);
+    }
+    .componentDemoPopoverBoundary > button {
+      position: absolute;
+      right: 4px;
+      bottom: 4px;
+    }
+    .componentDemoPopoverBoundary.is-demo-pinned {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      z-index: 60;
+    }
+    .componentDemoPopoverPanel,
+    .componentDemoFloatingPanel {
+      box-sizing: border-box;
+      width: 340px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+    .componentDemoPopoverPanel {
+      min-height: 240px;
+    }
+    #componentDynamicPanel {
+      min-height: 0;
+    }
+    .componentDemoFeedbackActions,
+    .componentDemoAsyncVariants,
+    .componentDemoIconRow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+    .componentDemoStackHost {
+      position: relative;
+      z-index: 20;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+    .componentDemoStackCompetitor {
+      position: relative;
+      z-index: 40;
+      margin-top: 8px;
+      padding: 8px;
+      color: var(--muted);
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+    }
+    .componentDemoAsyncVariants > div {
+      flex: 1 1 180px;
+      min-width: 0;
+    }
+    .componentDemoAsyncVariants > .componentDemoNarrowAsync {
+      flex: 0 0 176px;
+      width: 176px;
+      max-width: 100%;
+      overflow: hidden;
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+    }
+    .componentDemoResult {
+      min-height: 22px;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .componentDemoTallForm {
+      display: grid;
+      gap: 14px;
+    }
+    .componentDemoTallSpacer {
+      min-height: 620px;
+      padding: 16px;
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      color: var(--muted);
+      background: color-mix(in srgb, var(--panel) 94%, var(--accent) 6%);
+    }
+    .componentDemoWorkbench {
+      --demo-pane-size: 160px;
+      display: grid;
+      grid-template-columns: minmax(100px, var(--demo-pane-size)) 12px minmax(0, 1fr);
+      min-height: 132px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+    .componentDemoWorkbenchPane {
+      min-width: 0;
+      padding: 12px;
+      background: color-mix(in srgb, var(--panel) 94%, var(--accent) 6%);
+    }
+    .componentDemoSplitter {
+      width: 12px;
+      min-height: 132px;
+      cursor: col-resize;
+      touch-action: none;
+      background: color-mix(in srgb, var(--border) 72%, var(--accent) 28%);
+    }
+    .componentDemoSplitter:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: -2px;
+    }
+    .componentDemoSemantic {
+      display: grid;
+      gap: 8px;
+    }
+    .componentDemoSemanticControls {
+      display: flex;
+      gap: 8px;
+    }
+    .componentDemoSemanticControls input { min-width: 0; flex: 1; }
+    .componentDemoMutationTargets {
+      display: grid;
+      gap: 9px;
+      margin-top: 10px;
+    }
+    @media (max-width: 680px) {
+      .componentDemoGrid { grid-template-columns: 1fr; }
+      .componentDemoHeader { align-items: start; flex-direction: column; }
+    }
+  </style>
+  <script src="/static/portal_state.js"></script>
+  <script src="/static/portal_overlay.js"></script>
+  <script src="/static/portal_ui.js"></script>
+  <script src="/static/portal_ui_primitives.js"></script>
+  <script src="/static/portal_form_controls.js"></script>
+  <script src="/static/portal_button_tooltips.js"></script>
+  <script src="/static/portal_toolbar.js"></script>
+  <script src="/static/portal_detail_surface.js"></script>
+  <script src="/static/portal_editor_open_service.js"></script>
+    <script src="/static/portal_text.js"></script>
+    <script src="/static/portal_translations.js"></script>
+    <script src="/static/portal_i18n.js"></script>
+  <script src="/static/portal_command_registry.js"></script>
+  <script src="/static/portal_workbench_context.js"></script>
+  <script src="/static/portal_workbench.js"></script>
+  <script src="/static/portal_resource_header.js"></script>
+  <script src="/static/portal_semantic_search.js"></script>
+  <script src="/static/portal_resource_routes.js"></script>
+    <script src="/static/portal_preview_contract.js"></script>
+    <script src="/static/portal_resource_chips.js"></script>
+  <script src="/static/portal_file_links.js"></script>
+  <script src="/static/resident_projection.js"></script>
+  <script src="/static/portal_instruction_client.js"></script>
+  <script src="/static/portal_society_service.js"></script>
+  <script src="/static/portal_resident_service.js"></script>
+  <script src="/static/resident_protocol.js"></script>
+  <script src="/static/portal_image_editor.js"></script>
+  <script src="/static/portal_model_api_settings.js"></script>
+    <script src="/static/portal_resident_runtime_controller.js"></script>
+    <script src="/static/portal_chat_workspace.js"></script>
+</head>
+<body>
+  <main class="componentDemoShell" id="componentDemoReady">
+    <header class="componentDemoHeader">
+      <div>
+        <h1><!--portal-i18n:"Portal shared interaction showcase"-->Portal shared interaction showcase</h1>
+        <p><!--portal-i18n:"这里使用 Portal 正式组件展示 Overlay、Toolbar、Form Controls、Tooltip、Detail Surface 与 Toast 的组合行为。"-->这里使用 Portal 正式组件展示 Overlay、Toolbar、Form Controls、Tooltip、Detail Surface 与 Toast 的组合行为。</p>
+      </div>
+      <button class="portalButton is-primary" id="openLayeredDemo" type="button"><!--portal-i18n:"打开双层 Overlay"-->打开双层 Overlay</button>
+    </header>
+
+    <div class="componentDemoGrid">
+      <section class="componentDemoCard" id="componentToolbarCard">
+        <h2><!--portal-i18n:"Responsive Toolbar"-->Responsive Toolbar</h2>
+        <p><!--portal-i18n:"关键动作留在主栏，低优先级动作自动进入 More。"-->关键动作留在主栏，低优先级动作自动进入 More。</p>
+        <div class="componentDemoToolbarHost">
+          <div data-portal-toolbar id="componentToolbar">
+            <button class="portalButton is-compact is-primary" data-portal-toolbar-item data-portal-toolbar-priority="critical" type="button"><!--portal-i18n:"关键动作"-->关键动作</button>
+            <button class="portalButton is-compact" data-portal-toolbar-item data-portal-toolbar-priority="normal" type="button"><!--portal-i18n:"筛选"-->筛选</button>
+            <button class="portalButton is-compact" id="componentToolbarLiveToggle" data-portal-toolbar-item data-portal-toolbar-priority="low" type="button" aria-pressed="false"><!--portal-i18n:"实时状态"-->实时状态</button>
+            <button class="portalButton is-compact" data-portal-toolbar-item data-portal-toolbar-priority="low" type="button"><!--portal-i18n:"更多记录"-->更多记录</button>
+          </div>
+        </div>
+        <div class="componentDemoResult" id="componentToolbarLiveStatus" role="status"><!--portal-i18n:"live:off"-->live:off</div>
+      </section>
+
+      <section class="componentDemoCard" id="componentFormCard">
+        <h2><!--portal-i18n:"Form Controls"-->Form Controls</h2>
+        <p><!--portal-i18n:"搜索清空与筛选 Popover 共享相同的焦点和关闭协议。"-->搜索清空与筛选 Popover 共享相同的焦点和关闭协议。</p>
+        <div class="componentDemoSearch" data-search-control>
+          <label for="componentSearch"><!--portal-i18n:"搜索组件"-->搜索组件</label>
+          <span id="componentDynamicSearchHost"></span>
+          <button class="portalButton is-compact" id="componentFilterButton" type="button"><!--portal-i18n:"筛选"-->筛选</button>
+          <div class="componentDemoFilterPanel" id="componentFilterPanel" hidden>
+            <label><input type="checkbox" /><!--portal-i18n:" 只看核心行为"--> 只看核心行为</label>
+            <label><input type="checkbox" /><!--portal-i18n:" 显示回归分支"--> 显示回归分支</label>
+          </div>
+        </div>
+      </section>
+
+      <section class="componentDemoCard" id="componentTooltipCard">
+        <h2><!--portal-i18n:"Button Tooltip"-->Button Tooltip</h2>
+        <p><!--portal-i18n:"鼠标与键盘焦点使用同一个动态提示 surface。"-->鼠标与键盘焦点使用同一个动态提示 surface。</p>
+        <span id="componentDynamicTooltipHost"></span>
+      </section>
+
+      <section class="componentDemoCard" id="componentSurfaceCard">
+        <h2><!--portal-i18n:"Semantic Surfaces"-->Semantic Surfaces</h2>
+        <p><!--portal-i18n:"详情、异步状态与反馈遵循相同的视觉和可访问性契约。"-->详情、异步状态与反馈遵循相同的视觉和可访问性契约。</p>
+        <div class="componentDemoAsync" id="componentAsyncState" role="status"><!--portal-i18n:"固定数据已就绪"-->固定数据已就绪</div>
+        <div class="portalButtonGroup" style="margin-top:12px">
+          <button class="portalButton is-compact" id="componentDetailOpen" type="button"><!--portal-i18n:"打开详情"-->打开详情</button>
+          <button class="portalButton is-compact" id="componentTallDetailOpen" type="button"><!--portal-i18n:"打开长表单"-->打开长表单</button>
+          <button class="portalButton is-compact" id="componentToast" type="button"><!--portal-i18n:"更新 Toast"-->更新 Toast</button>
+        </div>
+      </section>
+
+      <section class="componentDemoCard" id="componentPopoverCard">
+        <h2><!--portal-i18n:"Anchored & Floating Popover"-->Anchored & Floating Popover</h2>
+        <p><!--portal-i18n:"锚点菜单会在边界内翻转和收紧；浮动菜单按坐标定位，并由 outside click 与 Escape 关闭。"-->锚点菜单会在边界内翻转和收紧；浮动菜单按坐标定位，并由 outside click 与 Escape 关闭。</p>
+        <div class="componentDemoPopoverBoundary" id="componentPopoverBoundary">
+          <button class="portalButton is-compact" id="componentAnchoredOpen" type="button"><!--portal-i18n:"打开锚点菜单"-->打开锚点菜单</button>
+          <div class="componentDemoPopoverPanel" id="componentAnchoredPanel" role="menu" hidden><!--portal-i18n:"\n            已翻转到锚点上方，并限制在虚线边界内。\n          "-->
+            已翻转到锚点上方，并限制在虚线边界内。
+          </div>
+        </div>
+        <div class="componentDemoFeedbackActions" style="margin-top:12px">
+          <button class="portalButton is-compact" id="componentFloatingOpen" type="button"><!--portal-i18n:"打开浮动菜单"-->打开浮动菜单</button>
+          <button class="portalButton is-compact" id="componentFloatingOutside" type="button"><!--portal-i18n:"Outside"-->Outside</button>
+        </div>
+        <div class="componentDemoFloatingPanel" id="componentFloatingPanel" role="menu" hidden><!--portal-i18n:"\n          按用户选择点定位的浮动动作。\n        "-->
+          按用户选择点定位的浮动动作。
+        </div>
+        <div class="componentDemoFeedbackActions" id="componentDynamicControls" style="margin-top:12px">
+          <button class="portalButton is-compact" id="componentDynamicA" type="button"><!--portal-i18n:"动态 A"-->动态 A</button>
+          <button class="portalButton is-compact" id="componentDynamicB" type="button"><!--portal-i18n:"动态 B"-->动态 B</button>
+          <span class="componentDemoResult" id="componentDynamicStatus"><!--portal-i18n:"close:0"-->close:0</span>
+        </div>
+        <div class="componentDemoPopoverPanel" id="componentDynamicPanel" role="menu" hidden>
+          <span><!--portal-i18n:"同一个 Panel 跟随当前动态触发器。"-->同一个 Panel 跟随当前动态触发器。</span>
+          <button class="portalButton is-compact" id="componentDynamicSwitch" type="button"><!--portal-i18n:"切换到 B"-->切换到 B</button>
+        </div>
+        <div class="componentDemoStackHost" id="componentStackHost" style="margin-top:12px">
+          <button class="portalButton is-compact" id="componentStackTrigger" type="button"><!--portal-i18n:"打开并替换触发器"-->打开并替换触发器</button>
+          <div class="componentDemoFilterPanel" id="componentStackPanel" role="menu" hidden><!--portal-i18n:"\n            Host 会在菜单打开时提升层级。\n          "-->
+            Host 会在菜单打开时提升层级。
+          </div>
+        </div>
+        <div class="componentDemoStackCompetitor" id="componentStackCompetitor"><!--portal-i18n:"竞争层级 z-index: 40"-->竞争层级 z-index: 40</div>
+      </section>
+
+      <section class="componentDemoCard" id="componentFeedbackCard">
+        <h2><!--portal-i18n:"Confirmation, Prompt & Dirty Close"-->Confirmation, Prompt & Dirty Close</h2>
+        <p><!--portal-i18n:"危险确认、文本输入和未保存关闭都使用共享 Surface，并把焦点还给触发器。"-->危险确认、文本输入和未保存关闭都使用共享 Surface，并把焦点还给触发器。</p>
+        <div class="componentDemoFeedbackActions">
+          <button class="portalButton is-compact" id="componentConfirmOpen" type="button"><!--portal-i18n:"打开确认"-->打开确认</button>
+          <button class="portalButton is-compact" id="componentPromptOpen" type="button"><!--portal-i18n:"打开 Prompt"-->打开 Prompt</button>
+          <button class="portalButton is-compact" id="componentDirtyOpen" type="button"><!--portal-i18n:"打开未保存编辑器"-->打开未保存编辑器</button>
+        </div>
+        <div class="componentDemoResult" id="componentFeedbackResult" role="status"><!--portal-i18n:"等待交互"-->等待交互</div>
+      </section>
+
+      <section class="componentDemoCard" id="componentAsyncCard">
+        <h2><!--portal-i18n:"Async State & Error Feedback"-->Async State & Error Feedback</h2>
+        <p><!--portal-i18n:"Panel、Compact、Inline 状态使用同一语义，失败状态提供可操作的重试。"-->Panel、Compact、Inline 状态使用同一语义，失败状态提供可操作的重试。</p>
+        <div class="componentDemoAsyncVariants">
+          <div class="componentDemoNarrowAsync" id="componentAsyncPanel"></div>
+          <div id="componentAsyncCompact"></div>
+          <div id="componentAsyncInline"></div>
+        </div>
+        <div class="componentDemoFeedbackActions" style="margin-top:12px">
+          <button class="portalButton is-compact" id="componentAsyncError" type="button"><!--portal-i18n:"显示可重试错误"-->显示可重试错误</button>
+          <button class="portalButton is-compact" id="componentErrorToast" type="button"><!--portal-i18n:"显示 Error Toast"-->显示 Error Toast</button>
+        </div>
+      </section>
+
+      <section class="componentDemoCard" id="componentIconCard">
+        <h2><!--portal-i18n:"Icon Fill Contract"-->Icon Fill Contract</h2>
+        <p><!--portal-i18n:"按钮 SVG 默认保持轮廓；显式声明的状态图标保留填充。"-->按钮 SVG 默认保持轮廓；显式声明的状态图标保留填充。</p>
+        <div class="componentDemoIconRow" id="componentIconContract">
+          <button class="portalButton is-compact" id="componentOutlineContract" type="button" aria-label="轮廓图标" data-portal-icon="plus" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;轮廓图标&quot;}"><span><!--portal-i18n:"轮廓"-->轮廓</span></button>
+          <span class="portalStatus" data-portal-icon="status-dot" id="componentFilledIcon"><!--portal-i18n:"\n\n            显式填充\n          "-->
+
+            显式填充
+          </span>
+        </div>
+      </section>
+
+      <section class="componentDemoCard" id="componentProjectSummaryCard">
+        <h2><!--portal-i18n:"Project Summary Empty State"-->Project Summary Empty State</h2>
+        <p><!--portal-i18n:"尚未创建摘要时使用共享 empty state，不渲染页面私有 placeholder。"-->尚未创建摘要时使用共享 empty state，不渲染页面私有 placeholder。</p>
+        <button class="portalButton is-compact" id="componentProjectSummaryOpen" type="button"><!--portal-i18n:"打开空摘要"-->打开空摘要</button>
+      </section>
+
+      <section class="componentDemoCard" id="componentWorkbenchCard">
+        <h2><!--portal-i18n:"Keyboard Workbench Splitter"-->Keyboard Workbench Splitter</h2>
+        <p><!--portal-i18n:"Splitter owner 处理键盘步进、ARIA、边界与持久化完成状态。"-->Splitter owner 处理键盘步进、ARIA、边界与持久化完成状态。</p>
+        <div class="componentDemoWorkbench" id="componentKeyboardWorkbench">
+          <div class="componentDemoWorkbenchPane"><!--portal-i18n:"Keyboard pane"-->Keyboard pane</div>
+          <div class="componentDemoSplitter" id="componentKeyboardSplitter"></div>
+          <div class="componentDemoWorkbenchPane"><!--portal-i18n:"Chat"-->Chat</div>
+        </div>
+        <div class="componentDemoResult" id="componentKeyboardStatus"><!--portal-i18n:"size:160 · stored:—"-->size:160 · stored:—</div>
+      </section>
+
+      <section class="componentDemoCard" id="componentSemanticCard">
+        <h2><!--portal-i18n:"Semantic Search Owner Menu"-->Semantic Search Owner Menu</h2>
+        <p><!--portal-i18n:"异步生成的 owner 菜单仍由共享 Overlay 处理 outside click、Escape 和焦点恢复。"-->异步生成的 owner 菜单仍由共享 Overlay 处理 outside click、Escape 和焦点恢复。</p>
+        <div class="componentDemoSemantic">
+          <div class="componentDemoSemanticControls">
+            <input id="componentSemanticInput" value="lineage" />
+            <button class="portalButton is-compact" id="componentSemanticButton" type="button">
+              <span data-semantic-label><!--portal-i18n:"Semantic"-->Semantic</span>
+            </button>
+          </div>
+          <div id="componentSemanticPanel"></div>
+          <div class="componentDemoResult" id="componentSemanticStatus"><!--portal-i18n:"trigger:initial"-->trigger:initial</div>
+        </div>
+      </section>
+
+      <section class="componentDemoCard" id="componentResourceIdentityCard">
+        <h2><!--portal-i18n:"Resource Identity & Image Preview"-->Resource Identity & Image Preview</h2>
+        <p><!--portal-i18n:"Resource Header 只复制 canonical ID；共享图片预览按当前视口约束大图。"-->Resource Header 只复制 canonical ID；共享图片预览按当前视口约束大图。</p>
+        <div id="componentResourceIdentity"></div>
+        <div class="componentDemoResult" id="componentResourceCopyStatus"><!--portal-i18n:"copied:—"-->copied:—</div>
+        <button class="portalButton is-compact" id="componentImagePreviewOpen" type="button"><!--portal-i18n:"打开 1920×1080 图片"-->打开 1920×1080 图片</button>
+        <div class="componentDemoResult" id="componentImagePreviewStatus"><!--portal-i18n:"preview:closed"-->preview:closed</div>
+      </section>
+
+      <section class="componentDemoCard" id="componentDialogProtocolCard">
+        <h2><!--portal-i18n:"Dialog Close Protocols"-->Dialog Close Protocols</h2>
+        <p><!--portal-i18n:"普通与 native Dialog 都执行 dirty guard，并在真正关闭后恢复触发器焦点。"-->普通与 native Dialog 都执行 dirty guard，并在真正关闭后恢复触发器焦点。</p>
+        <div class="componentDemoFeedbackActions">
+          <button class="portalButton is-compact" id="componentGuardedOpen" type="button"><!--portal-i18n:"打开 guarded Dialog"-->打开 guarded Dialog</button>
+          <button class="portalButton is-compact" id="componentNativeOpen" type="button"><!--portal-i18n:"打开 native Dialog"-->打开 native Dialog</button>
+          <button class="portalButton is-compact" id="componentRetryToastOpen" type="button"><!--portal-i18n:"显示可重试 Toast"-->显示可重试 Toast</button>
+        </div>
+        <div class="componentDemoResult" id="componentGuardedStatus"><!--portal-i18n:"guarded:idle"-->guarded:idle</div>
+        <div class="componentDemoResult" id="componentNativeStatus"><!--portal-i18n:"native:idle"-->native:idle</div>
+        <div class="componentDemoResult" id="componentRetryToastStatus"><!--portal-i18n:"retried:0"-->retried:0</div>
+      </section>
+
+      <section class="componentDemoCard" id="componentMutationCard">
+        <h2><!--portal-i18n:"Mutation Deduplication & Retry"-->Mutation Deduplication & Retry</h2>
+        <p><!--portal-i18n:"重复提交共享同一个运行；失败可原地重试，初始禁用状态不会被错误恢复。"-->重复提交共享同一个运行；失败可原地重试，初始禁用状态不会被错误恢复。</p>
+        <div class="componentDemoMutationTargets">
+          <button class="portalButton is-compact" id="componentMutationDedupe" type="button"><!--portal-i18n:"保存"-->保存</button>
+          <div class="componentDemoResult" id="componentMutationDedupeStatus"><!--portal-i18n:"calls:0 · idle"-->calls:0 · idle</div>
+          <button class="portalButton is-compact" id="componentMutationRetryStart" type="button"><!--portal-i18n:"启动失败发布"-->启动失败发布</button>
+          <button class="portalButton is-compact" id="componentMutationRetryTarget" type="button" disabled><!--portal-i18n:"发布"-->发布</button>
+          <div class="componentDemoResult" id="componentMutationRetryStatus"><!--portal-i18n:"calls:0 · disabled:true"-->calls:0 · disabled:true</div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <div class="portalDetailOverlay" id="componentDialogA" data-portal-detail-overlay hidden>
+    <section class="portalDetailSurface" data-portal-detail-surface data-portal-detail-size="wide" role="dialog" aria-modal="true" aria-labelledby="componentDialogATitle">
+      <header class="portalDetailHeader">
+        <div><h2 id="componentDialogATitle"><!--portal-i18n:"第一层 Detail Surface"-->第一层 Detail Surface</h2><p><!--portal-i18n:"Escape 只关闭当前最上层。"-->Escape 只关闭当前最上层。</p></div>
+        <button class="portalDetailClose" data-portal-detail-close type="button" aria-label="关闭" data-portal-icon="close" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;关闭&quot;}"></button>
+      </header>
+      <div class="portalDetailBody"><button class="portalButton" id="componentDialogAFocus" type="button"><!--portal-i18n:"第一层焦点"-->第一层焦点</button></div>
+    </section>
+  </div>
+
+  <div class="portalDetailOverlay" id="componentDialogB" data-portal-detail-overlay hidden>
+    <section class="portalDetailSurface" data-portal-detail-surface data-portal-detail-size="compact" role="dialog" aria-modal="true" aria-labelledby="componentDialogBTitle">
+      <header class="portalDetailHeader">
+        <div><h2 id="componentDialogBTitle"><!--portal-i18n:"第二层 Overlay"-->第二层 Overlay</h2><p><!--portal-i18n:"关闭后焦点回到第一层。"-->关闭后焦点回到第一层。</p></div>
+        <button class="portalDetailClose" data-portal-detail-close type="button" aria-label="关闭" data-portal-icon="close" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;关闭&quot;}"></button>
+      </header>
+      <div class="portalDetailBody"><button class="portalButton" id="componentDialogBFocus" type="button"><!--portal-i18n:"最上层焦点"-->最上层焦点</button></div>
+    </section>
+  </div>
+
+  <div id="componentDetail" data-portal-detail-overlay hidden>
+    <section data-portal-detail-surface data-portal-detail-size="viewport" aria-labelledby="componentDetailTitle">
+      <header data-portal-detail-header>
+        <div><h2 id="componentDetailTitle"><!--portal-i18n:"Responsive Detail Surface"-->Responsive Detail Surface</h2><p><!--portal-i18n:"同一语义 surface 会被视口约束。"-->同一语义 surface 会被视口约束。</p></div>
+        <button data-portal-detail-close type="button" aria-label="关闭" data-portal-icon="close" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;关闭&quot;}"></button>
+      </header>
+      <div data-portal-detail-body></div>
+    </section>
+  </div>
+
+  <div id="componentTallDetail" data-portal-detail-overlay hidden>
+    <section data-portal-detail-surface data-portal-detail-size="wide" aria-labelledby="componentTallDetailTitle">
+      <header data-portal-detail-header>
+        <div><h2 id="componentTallDetailTitle"><!--portal-i18n:"Long unwrapped form"-->Long unwrapped form</h2><p><!--portal-i18n:"详情内部滚动，不把表单动作推出视口。"-->详情内部滚动，不把表单动作推出视口。</p></div>
+        <button data-portal-detail-close type="button" aria-label="关闭" data-portal-icon="close" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;关闭&quot;}"></button>
+      </header>
+      <form class="componentDemoTallForm" id="componentTallForm">
+        <label><!--portal-i18n:"名称 "-->名称 <input type="text" value="Portal regression contract" /></label>
+        <div class="componentDemoTallSpacer"><!--portal-i18n:"这个 form 是 Surface 的直接子元素；mount 会把它识别为滚动区。"-->这个 form 是 Surface 的直接子元素；mount 会把它识别为滚动区。</div>
+        <label for="componentTallFinalInput"><!--portal-i18n:"最后一个字段"-->最后一个字段</label>
+        <input id="componentTallFinalInput" type="text" value="仍然可达" />
+        <button class="portalButton is-primary" id="componentTallFinalAction" type="button"><!--portal-i18n:"可达的最终动作"-->可达的最终动作</button>
+      </form>
+    </section>
+  </div>
+
+  <div class="portalDetailOverlay" id="componentDirtyDialog" data-portal-detail-overlay hidden>
+    <section class="portalDetailSurface" data-portal-detail-surface data-portal-detail-size="compact" role="dialog" aria-modal="true" aria-labelledby="componentDirtyTitle">
+      <header class="portalDetailHeader">
+        <div><h2 id="componentDirtyTitle"><!--portal-i18n:"Unsaved editor"-->Unsaved editor</h2><p><!--portal-i18n:"关闭会先经过共享确认。"-->关闭会先经过共享确认。</p></div>
+      </header>
+      <div class="portalDetailBody">
+        <label for="componentDirtyInput"><!--portal-i18n:"草稿"-->草稿</label>
+        <textarea id="componentDirtyInput">尚未保存的修改</textarea>
+      </div>
+      <footer class="portalDetailFooter">
+        <button class="portalButton" id="componentDirtyRequestClose" type="button"><!--portal-i18n:"请求关闭"-->请求关闭</button>
+        <button class="portalButton" id="componentDirtyDiscardLocal" type="button"><!--portal-i18n:"结束本地演示"-->结束本地演示</button>
+      </footer>
+    </section>
+  </div>
+
+  <div id="componentProjectSummary" data-portal-detail-overlay hidden>
+    <section data-portal-detail-surface data-portal-detail-size="workbench" aria-labelledby="componentProjectSummaryTitle">
+      <header data-portal-detail-header>
+        <div><h2 id="componentProjectSummaryTitle"><!--portal-i18n:"Empty Project"-->Empty Project</h2><p><!--portal-i18n:"Project Summary"-->Project Summary</p></div>
+        <button data-portal-detail-close type="button" aria-label="关闭" data-portal-icon="close" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;关闭&quot;}"></button>
+      </header>
+      <div id="componentProjectSummaryBody" data-portal-detail-body></div>
+    </section>
+  </div>
+
+  <div class="portalDetailOverlay" id="componentGuardedDialog" data-portal-detail-overlay hidden>
+    <section class="portalDetailSurface" data-portal-detail-surface data-portal-detail-size="compact" role="dialog" aria-modal="true" aria-labelledby="componentGuardedTitle">
+      <header class="portalDetailHeader">
+        <div><h2 id="componentGuardedTitle"><!--portal-i18n:"Guarded draft"-->Guarded draft</h2><p><!--portal-i18n:"第一次关闭会被 dirty policy 拒绝。"-->第一次关闭会被 dirty policy 拒绝。</p></div>
+      </header>
+      <div class="portalDetailBody">
+        <label for="componentGuardedInput"><!--portal-i18n:"草稿"-->草稿</label>
+        <input id="componentGuardedInput" value="changed" />
+      </div>
+      <footer class="portalDetailFooter">
+        <button class="portalButton" id="componentGuardedClose" type="button"><!--portal-i18n:"尝试关闭"-->尝试关闭</button>
+        <button class="portalButton is-primary" id="componentGuardedAllowClose" type="button"><!--portal-i18n:"标记已保存并关闭"-->标记已保存并关闭</button>
+      </footer>
+    </section>
+  </div>
+
+  <dialog class="portalDetailSurface" id="componentNativeDialog" aria-labelledby="componentNativeTitle">
+    <header class="portalDetailHeader">
+      <div><h2 id="componentNativeTitle"><!--portal-i18n:"Native dirty Dialog"-->Native dirty Dialog</h2><p><!--portal-i18n:"Escape 同样经过共享关闭策略。"-->Escape 同样经过共享关闭策略。</p></div>
+    </header>
+    <div class="portalDetailBody">
+      <label for="componentNativeInput"><!--portal-i18n:"草稿"-->草稿</label>
+      <input id="componentNativeInput" value="unsaved" />
+      <button class="portalButton" id="componentNativeMarkClean" type="button"><!--portal-i18n:"标记已保存"-->标记已保存</button>
+    </div>
+  </dialog>
+
+  <script>
+    (() => {
+      const semanticDetailSurface = PortalDetailSurface.mount(
+        document.querySelector("#componentDetail [data-portal-detail-surface]"),
+      );
+      semanticDetailSurface.setState({
+        state: "error",
+        title: window.PortalI18n.t("无法加载"),
+        message: window.PortalI18n.t("请重试"),
+      });
+      const tallDetailSurface = PortalDetailSurface.mount(
+        document.querySelector("#componentTallDetail [data-portal-detail-surface]"),
+      );
+      const projectSummarySurface = PortalDetailSurface.mount(
+        document.querySelector("#componentProjectSummary [data-portal-detail-surface]"),
+      );
+      projectSummarySurface.setState({
+        state: "empty",
+        title: window.PortalI18n.t("尚未创建项目摘要"),
+        message: window.PortalI18n.t("创建 summary.md 后会在这里显示。"),
+      });
+      const dialogA = PortalUI.createDialogController({
+        modal: "componentDialogA",
+        initialFocus: "componentDialogAFocus",
+        backdropClose: true,
+        escapeClose: true,
+      });
+      const dialogB = PortalUI.createDialogController({
+        modal: "componentDialogB",
+        initialFocus: "componentDialogBFocus",
+        backdropClose: true,
+        escapeClose: true,
+      });
+      const detail = PortalUI.createDialogController({
+        modal: "componentDetail",
+        initialFocus: "componentDetailTitle",
+        backdropClose: true,
+        escapeClose: true,
+      });
+      const tallDetail = PortalUI.createDialogController({
+        modal: "componentTallDetail",
+        initialFocus: "componentTallDetailTitle",
+        backdropClose: true,
+        escapeClose: true,
+      });
+      let dirtyDemoDirty = true;
+      const dirtyDialog = PortalUI.createDialogController({
+        modal: "componentDirtyDialog",
+        initialFocus: "componentDirtyInput",
+        backdropClose: true,
+        escapeClose: true,
+        dirty: () => dirtyDemoDirty,
+      });
+      const projectSummaryDialog = PortalUI.createDialogController({
+        modal: "componentProjectSummary",
+        initialFocus: "componentProjectSummaryTitle",
+        backdropClose: true,
+        escapeClose: true,
+      });
+      let guardedDirty = true;
+      let guardedConfirmCount = 0;
+      const guardedStatus = document.getElementById("componentGuardedStatus");
+      const guardedDialog = PortalUI.createDialogController({
+        modal: "componentGuardedDialog",
+        initialFocus: "componentGuardedInput",
+        backdropClose: true,
+        escapeClose: true,
+        dirty: () => guardedDirty,
+        confirmDiscard: () => {
+          guardedConfirmCount += 1;
+          guardedStatus.textContent = window.PortalI18n.text`guarded:rejected · confirms:${guardedConfirmCount}`;
+          return false;
+        },
+        onClose: () => {
+          guardedStatus.textContent = window.PortalI18n.text`guarded:closed · confirms:${guardedConfirmCount}`;
+        },
+      });
+      let nativeDirty = true;
+      let nativeConfirmCount = 0;
+      const nativeStatus = document.getElementById("componentNativeStatus");
+      const nativeDialog = PortalUI.createDialogController({
+        modal: "componentNativeDialog",
+        initialFocus: "componentNativeInput",
+        escapeClose: true,
+        dirty: () => nativeDirty,
+        confirmDiscard: () => {
+          nativeConfirmCount += 1;
+          nativeStatus.textContent = window.PortalI18n.text`native:rejected · confirms:${nativeConfirmCount}`;
+          return false;
+        },
+        onClose: () => {
+          nativeStatus.textContent = window.PortalI18n.text`native:closed · confirms:${nativeConfirmCount}`;
+        },
+      });
+      const feedbackResult = document.getElementById("componentFeedbackResult");
+      const markAfterLayout = callback => requestAnimationFrame(
+        () => requestAnimationFrame(callback),
+      );
+      const anchoredPanel = document.getElementById("componentAnchoredPanel");
+      const anchoredTrigger = document.getElementById("componentAnchoredOpen");
+      const anchoredBoundary = document.getElementById("componentPopoverBoundary");
+      const anchoredPopover = PortalOverlay.bindPopover({
+        trigger: anchoredTrigger,
+        panel: anchoredPanel,
+        boundary: anchoredBoundary,
+        placement: "bottom-end",
+        margin: 8,
+        portal: true,
+        onClose: () => anchoredBoundary.classList.remove("is-demo-pinned"),
+      });
+      const floatingPanel = document.getElementById("componentFloatingPanel");
+      const floatingPopover = PortalOverlay.bindFloatingPopover({
+        panel: floatingPanel,
+        placement: "top",
+        align: "center",
+        closeOnOutside: true,
+        closeOnEscape: true,
+      });
+      const dynamicPanel = document.getElementById("componentDynamicPanel");
+      const dynamicStatus = document.getElementById("componentDynamicStatus");
+      let dynamicCloseCount = 0;
+      const dynamicPopover = PortalOverlay.bindDynamicPopover({
+        panel: dynamicPanel,
+        placement: "bottom-start",
+        closeOnOutside: true,
+        closeOnEscape: true,
+        resolveTriggerAfterClose: previous => document.getElementById(previous.id),
+        onClose: context => {
+          dynamicCloseCount += 1;
+          const trigger = document.getElementById("componentDynamicB");
+          if (context instanceof KeyboardEvent && context.key === "Escape" && trigger) {
+            trigger.replaceWith(trigger.cloneNode(true));
+          }
+          dynamicStatus.textContent = window.PortalI18n.text`close:${dynamicCloseCount}`;
+        },
+      });
+      const bindDynamicTrigger = trigger => {
+        trigger.addEventListener("click", () => {
+          if (
+            dynamicPopover.isOpen()
+            && dynamicPopover.trigger() === trigger
+          ) {
+            trigger.remove();
+            return;
+          }
+          dynamicPopover.open(trigger);
+        });
+      };
+      bindDynamicTrigger(document.getElementById("componentDynamicA"));
+      bindDynamicTrigger(document.getElementById("componentDynamicB"));
+      document.getElementById("componentDynamicSwitch").addEventListener("click", () => {
+        dynamicPopover.open(document.getElementById("componentDynamicB"));
+      });
+      const stackHost = document.getElementById("componentStackHost");
+      const stackPanel = document.getElementById("componentStackPanel");
+      const stackTrigger = document.getElementById("componentStackTrigger");
+      const stackPopover = PortalOverlay.bindPopover({
+        trigger: stackTrigger,
+        panel: stackPanel,
+        placement: "bottom-start",
+      });
+      stackTrigger.addEventListener("click", () => {
+        if (stackPopover.isOpen()) {
+          stackTrigger.replaceWith(stackTrigger.cloneNode(true));
+          return;
+        }
+        stackPopover.open();
+      });
+      document.getElementById("openLayeredDemo").addEventListener("click", () => {
+        dialogA.open();
+        dialogB.open();
+      });
+      document.querySelectorAll("#componentDialogA [data-portal-detail-close]")
+        .forEach(button => button.addEventListener("click", () => dialogA.close()));
+      document.querySelectorAll("#componentDialogB [data-portal-detail-close]")
+        .forEach(button => button.addEventListener("click", () => dialogB.close()));
+      document.querySelectorAll("#componentDetail [data-portal-detail-close]")
+        .forEach(button => button.addEventListener("click", () => detail.close()));
+      document.querySelectorAll("#componentTallDetail [data-portal-detail-close]")
+        .forEach(button => button.addEventListener("click", () => tallDetail.close()));
+      document.querySelectorAll("#componentProjectSummary [data-portal-detail-close]")
+        .forEach(button => button.addEventListener("click", () => projectSummaryDialog.close()));
+      document.getElementById("componentDetailOpen")
+        .addEventListener("click", () => detail.open());
+      document.getElementById("componentTallDetailOpen")
+        .addEventListener("click", () => tallDetail.open());
+      document.getElementById("componentProjectSummaryOpen")
+        .addEventListener("click", () => projectSummaryDialog.open());
+      document.getElementById("componentDirtyOpen")
+        .addEventListener("click", () => {
+          dirtyDemoDirty = true;
+          dirtyDialog.open();
+        });
+      document.getElementById("componentDirtyRequestClose")
+        .addEventListener("click", () => dirtyDialog.close());
+      document.getElementById("componentDirtyDiscardLocal")
+        .addEventListener("click", () => {
+          dirtyDemoDirty = false;
+          dirtyDialog.close();
+        });
+      anchoredTrigger.addEventListener("click", () => {
+        anchoredBoundary.classList.add("is-demo-pinned");
+        anchoredPopover.toggle();
+        markAfterLayout(() => {
+          const panel = anchoredPanel.getBoundingClientRect();
+          const trigger = anchoredTrigger.getBoundingClientRect();
+          const boundary = anchoredBoundary.getBoundingClientRect();
+          const clamped = (
+            panel.left >= boundary.left + 7
+            && panel.right <= boundary.right - 7
+            && panel.bottom <= trigger.top
+          );
+          anchoredPanel.dataset.demoPositioned = clamped ? "true" : "false";
+        });
+      });
+      document.getElementById("componentFloatingOpen").addEventListener("click", () => {
+        floatingPopover.open({ x: 3, y: 3 });
+        markAfterLayout(() => {
+          const bounds = floatingPanel.getBoundingClientRect();
+          const clamped = (
+            bounds.left >= 8
+            && bounds.top >= 8
+            && bounds.right <= document.documentElement.clientWidth - 8
+            && bounds.bottom <= document.documentElement.clientHeight - 8
+          );
+          floatingPanel.dataset.demoPositioned = clamped ? "true" : "false";
+        });
+      });
+      document.getElementById("componentConfirmOpen").addEventListener("click", event => {
+        const trigger = event.currentTarget;
+        PortalUI.confirm({
+          title: window.PortalI18n.t("删除演示对象？"),
+          message: window.PortalI18n.t("这里只验证确认 Surface，不会执行删除。"),
+          description: window.PortalI18n.t("Escape 会返回 false，并把焦点还给刚才的按钮。"),
+          confirmLabel: window.PortalI18n.t("删除"),
+          tone: "danger",
+        }).then(result => {
+          feedbackResult.textContent = window.PortalI18n.text`confirm:${String(result)}`;
+          trigger.focus({ preventScroll: true });
+        });
+      });
+      document.getElementById("componentPromptOpen").addEventListener("click", event => {
+        const trigger = event.currentTarget;
+        PortalUI.prompt({
+          title: window.PortalI18n.t("重命名演示对象"),
+          label: window.PortalI18n.t("名称"),
+          value: "before",
+          confirmLabel: "保存",
+        }).then(result => {
+          feedbackResult.textContent = result === null
+            ? "prompt:cancelled"
+            : window.PortalI18n.text`prompt:${result}`;
+          trigger.focus({ preventScroll: true });
+        });
+      });
+      document.getElementById("componentToast").addEventListener("click", () => {
+        PortalUI.toast(window.PortalI18n.t("第一次状态"), "info", { key: "component-demo", duration: 12000 });
+        PortalUI.toast(window.PortalI18n.t("同一 key 已更新，没有叠加重复反馈"), "success", {
+          key: "component-demo",
+          duration: 12000,
+        });
+      });
+      document.getElementById("componentErrorToast").addEventListener("click", () => {
+        PortalUI.toast(window.PortalI18n.t("Review failed"), "error", {
+          key: "component-demo-error",
+          duration: 12000,
+        });
+      });
+      document.getElementById("componentToolbarLiveToggle").addEventListener("click", event => {
+        const active = event.currentTarget.getAttribute("aria-pressed") !== "true";
+        event.currentTarget.setAttribute("aria-pressed", active ? "true" : "false");
+        document.getElementById("componentToolbarLiveStatus").textContent = (
+          active ? "live:on" : "live:off"
+        );
+      });
+      let keyboardSize = 160;
+      let keyboardStored = null;
+      const keyboardWorkbench = document.getElementById("componentKeyboardWorkbench");
+      const keyboardStatus = document.getElementById("componentKeyboardStatus");
+      const syncKeyboardStatus = () => {
+        keyboardWorkbench.style.setProperty("--demo-pane-size", `${keyboardSize}px`);
+        keyboardStatus.textContent = window.PortalI18n.text`size:${keyboardSize} · stored:${keyboardStored ?? "—"}`;
+        keyboardStatus.dataset.demoSize = String(keyboardSize);
+        keyboardStatus.dataset.demoStored = keyboardStored === null
+          ? ""
+          : String(keyboardStored);
+      };
+      PortalWorkbench.layout.bindSplitter({
+        handle: "#componentKeyboardSplitter",
+        min: 100,
+        max: 260,
+        keyboardStep: 20,
+        readSize: () => keyboardSize,
+        applySize: size => {
+          keyboardSize = Math.round(size);
+          syncKeyboardStatus();
+        },
+        store: {
+          write: patch => {
+            keyboardStored = Number(patch.paneWidth);
+            syncKeyboardStatus();
+          },
+        },
+        stateKey: "paneWidth",
+      });
+      syncKeyboardStatus();
+
+      const semanticSearch = PortalSemanticSearch.create({
+        input: "componentSemanticInput",
+        button: "componentSemanticButton",
+        panel: "componentSemanticPanel",
+        client: {
+          get: async () => ({
+            searches: [{
+              search_id: "search_0123456789ab",
+              query: "lineage",
+              status: "done",
+              result_count: 1,
+            }],
+          }),
+          post: async () => ({}),
+        },
+        urls: { list: "/fixture/searches" },
+      });
+      const semanticPanel = document.getElementById("componentSemanticPanel");
+      const semanticStatus = document.getElementById("componentSemanticStatus");
+      semanticSearch.load().then(() => {
+        const initialTrigger = semanticPanel.querySelector(
+          "[data-semantic-owner-menu]",
+        );
+        if (!initialTrigger) throw new Error("Semantic owner trigger was not rendered");
+        initialTrigger.dataset.demoTriggerGeneration = "initial";
+        const observer = new MutationObserver(() => {
+          const replacement = semanticPanel.querySelector(
+            "[data-semantic-owner-menu]",
+          );
+          if (!replacement || replacement === initialTrigger) return;
+          replacement.dataset.demoTriggerGeneration = "replacement";
+          semanticStatus.textContent = window.PortalI18n.t("trigger:replaced · previous:detached");
+          semanticStatus.dataset.demoTriggerReplaced = String(
+            !initialTrigger.isConnected,
+          );
+        });
+        observer.observe(semanticPanel, { childList: true, subtree: true });
+      }).catch(error => {
+        semanticPanel.textContent = window.PortalI18n.text`semantic error: ${String(
+          error?.message || error,
+        )}`;
+      });
+
+      const resourceCopyStatus = document.getElementById("componentResourceCopyStatus");
+      Object.defineProperty(navigator, "clipboard", {
+        configurable: true,
+        value: {
+          writeText: async value => {
+            resourceCopyStatus.textContent = `copied:${String(value)}`;
+            resourceCopyStatus.dataset.demoCopied = String(value);
+          },
+        },
+      });
+      PortalResourceHeader.mount("componentResourceIdentity", {
+        title: window.PortalI18n.t("Architecture quality"),
+        type: "insight",
+        resource_id: "insight_ee85097d560b",
+      });
+
+      document.getElementById("componentImagePreviewOpen").addEventListener("click", () => {
+        const svg = window.PortalI18n.html`<svg data-portal-visualization="image-preview-fixture" xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+          <rect width="1920" height="1080" fill="#e7eef2"/>
+          <rect x="80" y="80" width="1760" height="920" rx="48" fill="#f8fafc" stroke="#8abbb5" stroke-width="12"/>
+          <text x="960" y="540" text-anchor="middle" dominant-baseline="middle" fill="#173a3a" font-size="96" font-family="sans-serif">Preview</text>
+        </svg>`;
+        PortalChatWorkspace.openImagePreview(
+          `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`,
+          "/workspace/results/lineage-overview.png",
+        );
+        const image = document.querySelector(".portalChatImagePreviewBody img");
+        const markPreview = () => markAfterLayout(() => {
+          const panel = document.querySelector(".portalChatImagePreviewPanel");
+          const body = document.querySelector(".portalChatImagePreviewBody");
+          if (!panel || !body || !image) return;
+          const panelBounds = panel.getBoundingClientRect();
+          const bodyBounds = body.getBoundingClientRect();
+          const imageBounds = image.getBoundingClientRect();
+          const contained = (
+            panelBounds.width <= document.documentElement.clientWidth + 1
+            && panelBounds.height <= document.documentElement.clientHeight + 1
+            && imageBounds.width <= bodyBounds.width + 1
+            && imageBounds.height <= bodyBounds.height + 1
+          );
+          const status = document.getElementById("componentImagePreviewStatus");
+          status.textContent = `${contained ? "preview:contained" : "preview:overflow"} · panel:${Math.round(
+            panelBounds.width,
+          )} · image:${Math.round(imageBounds.width)}`;
+          status.dataset.demoContained = contained ? "true" : "false";
+          status.dataset.demoPanelWidth = String(Math.round(panelBounds.width));
+          status.dataset.demoImageWidth = String(Math.round(imageBounds.width));
+          status.dataset.demoViewportWidth = String(
+            document.documentElement.clientWidth,
+          );
+          image.dataset.demoNaturalWidth = String(image.naturalWidth);
+        });
+        if (image?.complete) markPreview();
+        else image?.addEventListener("load", markPreview, { once: true });
+      });
+
+      document.getElementById("componentGuardedOpen").addEventListener("click", () => {
+        guardedDirty = true;
+        guardedConfirmCount = 0;
+        guardedStatus.textContent = "guarded:open";
+        guardedDialog.open();
+      });
+      document.getElementById("componentGuardedClose")
+        .addEventListener("click", () => guardedDialog.close());
+      document.getElementById("componentGuardedAllowClose").addEventListener("click", () => {
+        guardedDirty = false;
+        guardedDialog.close();
+      });
+      document.getElementById("componentNativeOpen").addEventListener("click", () => {
+        nativeDirty = true;
+        nativeConfirmCount = 0;
+        nativeStatus.textContent = "native:open";
+        nativeDialog.open();
+      });
+      document.getElementById("componentNativeMarkClean").addEventListener("click", () => {
+        nativeDirty = false;
+        nativeStatus.textContent = window.PortalI18n.text`native:clean · confirms:${nativeConfirmCount}`;
+      });
+
+      document.getElementById("componentRetryToastOpen").addEventListener("click", () => {
+        PortalUI.toast(window.PortalI18n.t("保存失败"), "error", {
+          duration: 0,
+          key: "component-demo-retry-toast",
+          retry: () => {
+            const status = document.getElementById("componentRetryToastStatus");
+            status.textContent = "retried:1";
+            status.dataset.demoRetried = "1";
+          },
+        });
+      });
+
+      document.getElementById("componentMutationDedupe").addEventListener("click", async event => {
+        const button = event.currentTarget;
+        const status = document.getElementById("componentMutationDedupeStatus");
+        let calls = 0;
+        let finish;
+        const run = () => PortalUI.runMutation({
+          key: "component-demo-save-one",
+          button,
+          busyLabel: "保存中…",
+          run: () => new Promise(resolve => {
+            calls += 1;
+            finish = resolve;
+          }),
+        });
+        const first = run();
+        const second = run();
+        status.textContent = window.PortalI18n.text`calls:${calls} · busy`;
+        status.dataset.demoCalls = String(calls);
+        setTimeout(() => finish({ ok: true }), 80);
+        await Promise.all([first, second]);
+        const restoredText = String(button.textContent || "").trim();
+        const restoredDisabled = button.disabled;
+        const restoredBusy = button.getAttribute("aria-busy");
+        const restored = (
+          restoredText === "保存"
+          && restoredDisabled === false
+          && restoredBusy === null
+        );
+        status.textContent = window.PortalI18n.text`calls:${calls} · idle · text:${restoredText} · disabled:${restoredDisabled} · aria-busy:${restoredBusy ?? "none"}`;
+        status.dataset.demoCalls = String(calls);
+        status.dataset.demoIdle = "true";
+        status.dataset.demoRestored = String(restored);
+      });
+
+      let mutationRetryCalls = 0;
+      document.getElementById("componentMutationRetryStart").addEventListener("click", async () => {
+        const target = document.getElementById("componentMutationRetryTarget");
+        const status = document.getElementById("componentMutationRetryStatus");
+        await PortalUI.runMutation({
+          key: "component-demo-publish-one",
+          button: target,
+          busyLabel: "发布中…",
+          run: async () => {
+            mutationRetryCalls += 1;
+            status.textContent = window.PortalI18n.text`calls:${mutationRetryCalls} · disabled:${target.disabled}`;
+            status.dataset.demoCalls = String(mutationRetryCalls);
+            if (mutationRetryCalls === 1) throw new Error("临时失败");
+            return { ok: true };
+          },
+          successMessage: "发布成功",
+        });
+        status.textContent = window.PortalI18n.text`calls:${mutationRetryCalls} · disabled:${target.disabled}`;
+        status.dataset.demoCalls = String(mutationRetryCalls);
+        status.dataset.demoDisabled = String(target.disabled);
+      });
+      const markAsyncFits = () => markAfterLayout(() => {
+        const host = document.getElementById("componentAsyncPanel");
+        const content = host.firstElementChild;
+        host.dataset.demoFits = (
+          content
+          && content.scrollWidth <= host.clientWidth
+          && host.scrollWidth <= host.clientWidth
+        ) ? "true" : "false";
+      });
+      const renderAsyncReady = () => {
+        PortalUIPrimitives.renderAsyncState("componentAsyncPanel", {
+          state: "success",
+          title: window.PortalI18n.t("Panel ready"),
+          message: window.PortalI18n.t("重试完成；很长的状态说明仍然限制在这个窄容器中。"),
+        });
+        PortalUIPrimitives.renderAsyncState("componentAsyncCompact", {
+          state: "empty",
+          density: "compact",
+          title: window.PortalI18n.t("Compact empty"),
+          message: window.PortalI18n.t("没有匹配记录。"),
+        });
+        PortalUIPrimitives.renderAsyncState("componentAsyncInline", {
+          state: "loading",
+          density: "inline",
+          title: window.PortalI18n.t("Inline loading"),
+          message: window.PortalI18n.t("正在同步。"),
+        });
+        markAsyncFits();
+      };
+      document.getElementById("componentAsyncError").addEventListener("click", () => {
+        PortalUIPrimitives.renderAsyncState("componentAsyncPanel", {
+          state: "error",
+          title: window.PortalI18n.t("读取失败"),
+          message: window.PortalI18n.t("保留当前页面，并允许原地重试；这段很长的错误说明不会溢出窄容器。"),
+          onRetry: renderAsyncReady,
+        });
+        markAsyncFits();
+      });
+      renderAsyncReady();
+      PortalFormControls.bindFilterDropdown({
+        button: "componentFilterButton",
+        panel: "componentFilterPanel",
+      });
+      PortalToolbar.mount(document.getElementById("componentToolbar"));
+      const mountDynamicControls = () => setTimeout(() => {
+        const input = document.createElement("input");
+        input.id = "componentSearch";
+        input.type = "search";
+        input.dataset.clearableInput = "1";
+        input.placeholder = window.PortalI18n.t("输入测试关键词…");
+        document.getElementById("componentDynamicSearchHost").appendChild(input);
+
+        const tooltipAction = document.createElement("button");
+        tooltipAction.className = "portalButton is-compact";
+        tooltipAction.id = "componentTooltipAction";
+        tooltipAction.dataset.action = "delete";
+        tooltipAction.type = "button";
+        tooltipAction.textContent = window.PortalI18n.t("删除");
+        document.getElementById("componentDynamicTooltipHost").appendChild(
+          tooltipAction,
+        );
+      }, 0);
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", mountDynamicControls, {
+          once: true,
+        });
+      } else {
+        mountDynamicControls();
+      }
+    })();
+  </script>
+</body>
+</html>

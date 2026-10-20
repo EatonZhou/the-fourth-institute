@@ -1,0 +1,113 @@
+{
+  "native": 0,
+  "checks": [
+    {
+      "seed": 202610195601,
+      "shape": "ring",
+      "parent_sha": "577c86e7952471bc851de8fc7a50544046c1c168a836148325a4be1ebd6cfd78",
+      "old_next_inputs_exact": true,
+      "integrated_order_exact": true,
+      "roundtrip_exact": true,
+      "state_fields": [
+        "body",
+        "energy",
+        "memory",
+        "eligibility",
+        "polarity",
+        "precursor",
+        "fuel",
+        "waste",
+        "heat",
+        "dead_energy",
+        "founder_mass",
+        "c_theta",
+        "c_value",
+        "c_trace",
+        "c_food",
+        "c_run",
+        "c_remaining"
+      ]
+    },
+    {
+      "seed": 202610195601,
+      "shape": "separate_seeds",
+      "parent_sha": "b736471639a7fa9ccfb79cd3a1a89417c9c13932c4c7be3adac26b47c6574271",
+      "old_next_inputs_exact": true,
+      "integrated_order_exact": true,
+      "roundtrip_exact": true,
+      "state_fields": [
+        "body",
+        "energy",
+        "memory",
+        "eligibility",
+        "polarity",
+        "precursor",
+        "fuel",
+        "waste",
+        "heat",
+        "dead_energy",
+        "founder_mass",
+        "c_theta",
+        "c_value",
+        "c_trace",
+        "c_food",
+        "c_run",
+        "c_remaining"
+      ]
+    },
+    {
+      "seed": 202610195602,
+      "shape": "ring",
+      "parent_sha": "ad69b2ad0d9726fbd39202aec51231b07bec9d04a5cd8935324e0f416da1d7d5",
+      "old_next_inputs_exact": true,
+      "integrated_order_exact": true,
+      "roundtrip_exact": true,
+      "state_fields": [
+        "body",
+        "energy",
+        "memory",
+        "eligibility",
+        "polarity",
+        "precursor",
+        "fuel",
+        "waste",
+        "heat",
+        "dead_energy",
+        "founder_mass",
+        "c_theta",
+        "c_value",
+        "c_trace",
+        "c_food",
+        "c_run",
+        "c_remaining"
+      ]
+    },
+    {
+      "seed": 202610195602,
+      "shape": "separate_seeds",
+      "parent_sha": "886751c9b3a1da24c7fec020ef82b14ddfccfb1ed7297efef0d7a35115127471",
+      "old_next_inputs_exact": true,
+      "integrated_order_exact": true,
+      "roundtrip_exact": true,
+      "state_fields": [
+        "body",
+        "energy",
+        "memory",
+        "eligibility",
+        "polarity",
+        "precursor",
+        "fuel",
+        "waste",
+        "heat",
+        "dead_energy",
+        "founder_mass",
+        "c_theta",
+        "c_value",
+        "c_trace",
+        "c_food",
+        "c_run",
+        "c_remaining"
+      ]
+    }
+  ]
+}

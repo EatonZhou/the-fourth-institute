@@ -1,0 +1,14 @@
+{
+  "status": "passed",
+  "new_packets": 256,
+  "old_unique_future_packets": 256,
+  "display_entries": 68,
+  "max_balance_error": 1.8189894035458565e-12,
+  "max_observer_error": 1.9984014443252818e-15,
+  "max_cut_path_error": 2.3869795029440866e-15,
+  "native_forward_calls": 0,
+  "observer_steps": 512,
+  "actual_K_used": true,
+  "uniform_survival_from_actual_saved_deaths": true,
+  "old_nontransport_observer_not_used": true
+}

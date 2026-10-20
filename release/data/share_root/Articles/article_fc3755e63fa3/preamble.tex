@@ -1,0 +1,77 @@
+\usepackage[paperwidth=170mm,paperheight=240mm,inner=22mm,outer=19mm,top=23mm,bottom=24mm,headheight=15pt]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{booktabs,longtable,array,tabularx}
+\usepackage{graphicx,xcolor,tikz}
+\usetikzlibrary{arrows.meta,positioning,calc,fit,backgrounds}
+\usepackage{enumitem,fancyhdr,microtype}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage{hyperref}
+\definecolor{ink}{HTML}{17334B}
+\definecolor{accent}{HTML}{A45335}
+\definecolor{pale}{HTML}{E9EFF3}
+\hypersetup{unicode=true,colorlinks=true,linkcolor=ink,citecolor=accent,urlcolor=ink,pdftitle={思维论},pdfsubject={诊断组织的有限数学：共同错误、可辨别性与通信},pdfauthor={AI员工项目研究书稿}}
+\urlstyle{same}
+\setlength{\emergencystretch}{2em}
+\setlength{\parskip}{0.25em}
+\setlength{\tabcolsep}{5pt}
+\linespread{1.12}
+\raggedbottom
+\setcounter{tocdepth}{1}
+\setcounter{secnumdepth}{2}
+\setlist{nosep,topsep=4pt,leftmargin=2em}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[LE,RO]{\small\thepage}
+\fancyhead[RE]{\small 思维论}
+\fancyhead[LO]{\small\nouppercase{\leftmark}}
+\renewcommand{\headrulewidth}{0.3pt}
+\ctexset{chapter={format=\Large\bfseries\color{ink},beforeskip=12pt,afterskip=22pt},section={format=\large\bfseries\color{ink}}}
+\theoremstyle{definition}
+\newtheorem{definition}{定义}[chapter]
+\newtheorem{example}[definition]{例}
+\newtheorem{counterexample}[definition]{反例}
+\newtheorem{exercise}{练习}[chapter]
+\theoremstyle{plain}
+\newtheorem{theorem}[definition]{定理}
+\newtheorem{proposition}[definition]{命题}
+\newtheorem{lemma}[definition]{引理}
+\newtheorem{corollary}[definition]{推论}
+\theoremstyle{remark}
+\newtheorem{remark}[definition]{说明}
+\renewcommand{\proofname}{证明}
+\newcommand{\VV}{\mathcal V}
+\newcommand{\HH}{\mathcal H}
+\newcommand{\LL}{\mathcal L}
+\newcommand{\XX}{\mathcal X}
+\newcommand{\II}{\mathbf I}
+\newcommand{\PP}{\mathbb P}
+\newcommand{\EE}{\mathbb E}
+\newcommand{\NN}{\mathbb N}
+\newcommand{\RR}{\mathbb R}
+\newcommand{\concat}{\mathbin{\Vert}}
+\newcommand{\wait}{\mathsf{wait}}
+\newcommand{\StopMode}{\mathsf{stop}}
+\newcommand{\TV}{\operatorname{TV}}
+\newcommand{\Var}{\operatorname{Var}}
+\newcommand{\Cov}{\operatorname{Cov}}
+\newcommand{\KL}{D_{\mathrm{KL}}}
+\newcommand{\bits}{\operatorname{bits}}
+\newcommand{\cost}{\operatorname{cost}}
+\newcommand{\obs}{\operatorname{obs}}
+\newcommand{\sem}[1]{[\![#1]\!]}
+\newcommand{\chapterguide}[1]{\begin{quote}\small\color{ink}#1\end{quote}}
+\DeclareMathOperator{\Risk}{Risk}
+\DeclareMathOperator{\Reg}{Reg}
+\DeclareMathOperator{\Bin}{Bin}
+\DeclareMathOperator{\Bern}{Bern}
+\newcommand{\calP}{\mathfrak P}
+\newcommand{\calD}{\mathcal D}
+\newcommand{\calA}{\mathcal A}
+\newcommand{\calQ}{\mathcal Q}
+\newcommand{\kap}{\kappa_{\mathrm H}}
+\newcommand{\kapK}{\kappa_{\mathrm K}}
+\newcommand{\Aff}{\operatorname{Aff}}
+\newcommand{\Alt}{\operatorname{Alt}}
+\newcommand{\kl}{\operatorname{kl}}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\tikzset{fragment/.style={circle,draw=ink,fill=pale,minimum size=7mm,inner sep=1pt},operation/.style={rectangle,draw=accent,fill=white,minimum width=9mm,minimum height=6mm},unit/.style={rounded corners,draw=ink,fill=pale,minimum width=22mm,minimum height=11mm,align=center},edge/.style={-{Stealth[length=2mm]},semithick,draw=ink}}

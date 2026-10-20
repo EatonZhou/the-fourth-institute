@@ -1,0 +1,6 @@
+{
+  "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_response_estimation_20261019/7c0a58b9-0d08-4afa-8fa0-16ea61ef2114/c0_spsa/state_0640.npz": "code/initial/scalar_response_content/c0_state_0640.npz",
+  "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_response_estimation_20261019/7c0a58b9-0d08-4afa-8fa0-16ea61ef2114/c1_spsa/state_0640.npz": "code/initial/scalar_response_content/c1_state_0640.npz",
+  "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_response_estimation_20261019/7c0a58b9-0d08-4afa-8fa0-16ea61ef2114/c0_spsa/state_0320.npz": "code/initial/scalar_actuator_relearning/c0_state_0320.npz",
+  "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_response_estimation_20261019/7c0a58b9-0d08-4afa-8fa0-16ea61ef2114/c1_spsa/state_0320.npz": "code/initial/scalar_actuator_relearning/c1_state_0320.npz"
+}

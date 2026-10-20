@@ -1,0 +1,156 @@
+{
+  "task": "resource_conditioned_growth_rule_20261019",
+  "owner": "resident_d3ccfa2d95b7",
+  "pi": "resident_afa3d4d6cf11",
+  "status": "authorized_for_implementation_and_actual_training",
+  "objective_met": false,
+  "created_at": "2026-10-18T19:58:11.446473+00:00",
+  "question": "局部当前代谢状态控制两个固定生成响应的混合，能否经外层训练增加真实成年后组织替代，同时不以规模、能量或体时下降换取？是否超过最佳常数混合与即时贪心？",
+  "choice": "停止一跳回收P/储备参数维护路线；返回真实生成规则控制。学习的是四参数资源条件映射，部署参数冻结、权重场随当前局部状态变化；不是寿命内经验记忆/学得更新器/新CEM算法。",
+  "prior": {
+    "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/paid_material_precursor_reserve_20261019/handoff.json",
+    "sha256": "5abf367c828d1ab3c34a480836b11f98c20a8138768fcea63beffffb4b167ff3",
+    "job": "440ea9a4-ed51-45bf-8650-823d4e3abd1c",
+    "native": 2048,
+    "worker_seconds": 103.700166,
+    "sealed": [
+      4,
+      496.299834
+    ],
+    "finding": "保护对泄漏增组织却降E；两储备相对原位8/8 M/新组织/体时负，32窗0维护。不给此阴性单一原因归属。"
+  },
+  "parents": [
+    {
+      "shape": "compact",
+      "clock": 128,
+      "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g2_p0_c0--compact--colocated--G2--pump/state128.bin",
+      "sha256": "76527577acdefd028f9fe5f02e46efca07fab31fb61c9d4c497c58913ab1129e",
+      "candidate": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g2_p0_c0--compact--colocated--G2--pump/candidate.json",
+      "candidate_sha256": "841dd80fe833d7783ee3a837fc77e85b1b4e03a7dd18009bd26fff7fc2030d78",
+      "rule_sha": "49dc4c5f9528b21b65bd4f8b0838e5100f534c517527d534feac395d96c226c1",
+      "kernel_sha": "bf6b12c622fe17517f52b75e1b9a2e820bc91874d646f6398e7c3c691ad74bf6"
+    },
+    {
+      "shape": "double_lobe",
+      "clock": 128,
+      "joint": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g2_p0_c0--double_lobe--colocated--G2--pump/state128.bin",
+      "sha256": "4d39f161c2f3046e023b2f1b41bee7d07329e9bb713ca52267185e5cf975014d",
+      "candidate": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9/g2_p0_c0--double_lobe--colocated--G2--pump/candidate.json",
+      "candidate_sha256": "841dd80fe833d7783ee3a837fc77e85b1b4e03a7dd18009bd26fff7fc2030d78",
+      "rule_sha": "49dc4c5f9528b21b65bd4f8b0838e5100f534c517527d534feac395d96c226c1",
+      "kernel_sha": "bf6b12c622fe17517f52b75e1b9a2e820bc91874d646f6398e7c3c691ad74bf6"
+    }
+  ],
+  "source_bindings": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/turnover_compatible_morphogenesis/core.py",
+      "sha256": "dbfea17ca9e68833d2e0fe7f33c37cac6111a4c441f51fb23a6a78f458886a84"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/resource_matched_morphogenesis/core.py",
+      "sha256": "dae6fbd6db1fe1a83f34a6039aee8e292f6d63717270095db981d1e808928a83"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/regenerative_actor/model.py",
+      "sha256": "3941450e97d2311f833d1c9c8964f348218467d4cd8d41a68b6584b72b24b5b0"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/regenerative_actor/conversion.py",
+      "sha256": "d2b73ccf44d6720e01e2166c055f9a427406dc483b21746476b9f8cc5f95189a"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/complementary_cargo_exchange/core.py",
+      "sha256": "2716b4ff5371b1c0095fe955399c7f68b62dd6b53fce048c542b36653ffd7cd9"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/tissue_replacement_pf_location/core.py",
+      "sha256": "adf452a8599221a1a21bf9aab22754576a39f5bea357e5f1630d447250ca721f"
+    }
+  ],
+  "physics": {
+    "base": "原TurnoverBody/MaterialActionBody生成、双核、原转换、独立joint-current-demand货物泵、静态供给总量、半衰64与价格不改；不加入回收、储备或fresh-P路由。command0仍有原被动运输费用。",
+    "mutable": "只把scalar kernel mixture w改成预动作选择的空间w场，h=(1-w)*hA+w*hB；两响应/核/步长固定，不分开缩死亡或放大出生，所有出生继续原P/F和template许可。",
+    "time": "每步在原外排/注入/native之前从真实ready态rho/P/F/E计算w场一次，随后本步原native一次用其混合实际after-actor rho的hA/hB。不能用本步未完成uptake/born/afteractor E作前瞻输入。",
+    "implementation": "隔离adapter/subclass替换rate接口，原源不改。const w0路径等价；字段随joint保存，未完成native不得重演。"
+  },
+  "policy": {
+    "features": "n=原neighborhood(rho); p=P/(P+dt*n), f=F/(F+0.42*dt*n), e=E/(原energy_capacity*rho)，零分母取0，e仅对数值容差截到[0,1]。n=0处固定w0。其余使用p/f/e当前公开局部状态，不能给birth标签或未来输入。",
+    "learned": "w=sigmoid(logit(w0)+theta0+thetaP*(2p-1)+thetaF*(2f-1)+thetaE*(2e-1)); theta四维[-4,4]。theta全0明确走精确原w0常数路径，避免近似差伪装变化。若源w0非(0,1)，在0native准备阶段报告实现前提不成立，不改公式救结果。",
+    "fixed_constants": "0,.25,.5,.75,1,w0，精确重复只执行一次，其余角色引用同一实际轨。",
+    "greedy": "在同一ready公开态，纯计算原hA/hB并各自做一次admit代数预测：原删除、survivor、template、P/F费用，取每格预测born-ruledeath较大对应w=0/1；精确并列取预测synthesis+template heat+rule-death energy较低者，再并列w0。实际混合后相邻support会改变，故称pre-state一步局部贪心，不称身体最优或真实未执行反事实。此纯计算不额外forward。",
+    "pooled": "部署同一个冻结theta，把p/f/e改为各自按ready rho加权全身均值，产生统一w；n0规则同。是全局读取的明确消融，非本地可实现或同空间信息，不参与训练/选型。",
+    "cost": "本轮无新writer或信息状态。特征计算、额外卷积/全局归约未物理定价；占槽时间全部计，不能称全计算成本公平或生物真实。"
+  },
+  "environment": {
+    "input": "原co-located A图及gross P/F；每64步选择绝对整数位移(dy,dx)，两者同位移，不平移既有库存。dy/dx各从{-1,0,1}均匀取，用PCG64并冻结tape，不剔除静止/重复。输入至384结束，old physical rates不变。",
+    "train_seeds": [
+      202610195201,
+      202610195202
+    ],
+    "train_assignment": "compact用5201、double_lobe用5202；各读取实际静态128旧父，保旧库存，不伪造其前缀发生过新tape；新后续clock128..223使用绝对block2/3。",
+    "validation_seeds": [
+      202610195401,
+      202610195402
+    ],
+    "validation": "每seed×compact/double_lobe各新life0 M64/E64,P/F0，完全同一冻结g2_p0_c0核/基因和原初形构造；旧规则acquire128只实际一次，再共同完整joint/RNG分5策略至384。训练全部冻结后才消费验证结果；全四context保留，不重抽失败前缀。两个输入种子×两形态相关，不当四独立世界。"
+  },
+  "outer_training": {
+    "baseline": "先从两训练父实际运行常数6种与greedy各96步，记录真实L128=rho随K/旧survivor且born0。原w0两条是相对资格基线，只实际一次；后续精确同参数/同父/tape重复引用缓存真实轨。",
+    "CEM": "2轮，每轮6提议=当前最优部署合格incumbent(首为theta0全0)+5 Gaussian提议；PCG64种子202610195101/5102，各一次生成5x4噪声。首mean=0/std=.75；每轮取排序前2为elite，下一mean=elite均值，std=max(.25,elite逐维总体std)。不重采样越界，不静默clip；非法保失败，不占native。每合法新提议各2训练态×96真实步。",
+    "rank": "每条完整轨记录whole96 bodytime/Mend/Eend与实际post128 live=M-L128。相对同父原w0，部署合格需两context全程M>=32且末M/E/体时不低于对应原值(1e-8只数值容差)。排序先合格，再违反比较项数更少，再min_context(delta post128 live)更高、再mean delta post128更高，最后固定提议ID；失败不伪补0。elite可用不合格提议用于提议分布，但部署不能放宽资格。",
+    "selection": "最终从全部合法完整合格提议中最大化min delta post128；精确并列mean再ID。无正改善或无非平凡合格者就保原w0，明确未学得新行为。最佳常数用相同资格与目标选；贪心不选参数。所有未合格和贸易取舍独立完整列，不称综合得分胜出。",
+    "count_max": "6常数*2*96=1152，greedy2*96=192，12提议*2*96=2304，训练/简单选型最多3648。重复只读减少实际用量，不补额外提议。"
+  },
+  "validation": {
+    "arms": [
+      "learned",
+      "best_constant",
+      "prestate_greedy",
+      "pooled_same_phi",
+      "original_w0"
+    ],
+    "prefix_steps": 512,
+    "future_steps_max": 5120,
+    "max_science": 9280,
+    "fork": "4个新的实际128完整父，同物理/库存/Worldcursor/RNG/原历史；仅策略不同。theta在验证前冻结、无需写均值/历史。策略精确相同允许一个真实未来供多个角色引用，但必须预执行判同/明确角色alias，不伪报多个独立轨。",
+    "metrics": "M/E/全窗及每64体时/各费用/真正post128留存/L128/出生死亡/欠付/输入出口/资源/形态都报告；单列学习选择与预测/实际w差，不因更多born或保旧体宣称替代优越。",
+    "gate": "4个固定64窗129..384，全4与末2维护分别沿born>=death-1e-8、deltaE>=-1e-8、minM>=32，零容差并列。训练相对约束不是维护通过；未来未胜强基线就收束本参数映射。",
+    "evidence": "记录原两个响应、预动作p/f/e/w、实际h/请求/拒绝/费用/旧survivor/K/post128标签的预定收据，验证空间行动有实际差但不以此代身体收益。没有寿命内可塑性/经验学习主张。"
+  },
+  "records": {
+    "all": "全部实际native连续标量、失败/非法/重复/选型记录、冻结phi及全源SHA、world tape、累计物能和L128账",
+    "frames_train": [
+      128,
+      160,
+      192,
+      224
+    ],
+    "frames_validation": [
+      0,
+      32,
+      64,
+      96,
+      128,
+      160,
+      192,
+      256,
+      320,
+      384
+    ],
+    "visual": "全部候选用实际稀疏形态序列筛查，详细审看预定首验证seed两初形的真实新旧组织与w；报告范围，不能以相似帧计新形态。",
+    "io": "每16步或必要阶段完整current恢复态，预定joint单独保存；不逐步复制大型全态。native未知不重演，唯一job所有attempt占槽累计。"
+  },
+  "budget": {
+    "native_cap": 9312,
+    "science_cap": 9280,
+    "affected_check_cap": 32,
+    "worker_seconds": 1800,
+    "cpu": 2,
+    "gpu": 0,
+    "jobs": 1,
+    "raw_cap_bytes": 1073741824,
+    "shutdown_reserve_worker_seconds": 120,
+    "old_balances": "全部封存不借用；无价/窗/seed/阈值扫描，无新Family或定时器"
+  },
+  "handoff": "d3唯一实现/训练/验证与提交；先读运行控制，使用自身身份，原ce2无并行身体任务。源码/变异算法/全部tape与选择规则在native前冻结。执行完成合并原论文/投影在办项，只向直接科学接续者必要交付一次。"
+}

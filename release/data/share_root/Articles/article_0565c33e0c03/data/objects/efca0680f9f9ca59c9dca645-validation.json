@@ -1,0 +1,130 @@
+[
+  {
+    "key": "compact_p512/plus/width1.6",
+    "viable": true,
+    "minimum_mass_ratio": 0.9932811801848505,
+    "writes": 128,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.003919940917012718,
+    "max_uptake_error": 0.0,
+    "energy_residual": 2.8236961380212477e-15,
+    "stock_residual": -8.881784197001252e-16,
+    "exclusive_limiting_U": [
+      0.8609994088837106,
+      0.047394503885838025,
+      4.202419061897302
+    ]
+  },
+  {
+    "key": "compact_p512/plus/width4",
+    "viable": true,
+    "minimum_mass_ratio": 0.9994750729807189,
+    "writes": 128,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 9.194948929599551e-05,
+    "max_uptake_error": 0.0,
+    "energy_residual": -1.0844461179743137e-14,
+    "stock_residual": -8.881784197001252e-16,
+    "exclusive_limiting_U": [
+      2.501374305354056,
+      0.9979904119452135,
+      2.5787546293575785
+    ]
+  },
+  {
+    "key": "compact_p512/minus/width1.6",
+    "viable": true,
+    "minimum_mass_ratio": 0.9992714328171596,
+    "writes": 128,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.0006271944710937445,
+    "max_uptake_error": 0.0,
+    "energy_residual": 3.2841025905672172e-15,
+    "stock_residual": 8.881784197001252e-16,
+    "exclusive_limiting_U": [
+      0.9746491108965936,
+      0.01614959818128606,
+      4.186624364111317
+    ]
+  },
+  {
+    "key": "compact_p512/minus/width4",
+    "viable": true,
+    "minimum_mass_ratio": 0.9999851773602009,
+    "writes": 128,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 1.5840744716168118e-06,
+    "max_uptake_error": 0.0,
+    "energy_residual": -5.5308659534887214e-15,
+    "stock_residual": -8.881784197001252e-16,
+    "exclusive_limiting_U": [
+      2.3176888696284896,
+      0.4265063191835247,
+      2.4212025827703867
+    ]
+  },
+  {
+    "key": "soft_p512/plus/width1.6",
+    "viable": true,
+    "minimum_mass_ratio": 0.9386368319292038,
+    "writes": 128,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.029701018613244458,
+    "max_uptake_error": 0.0,
+    "energy_residual": -2.6957602816679582e-15,
+    "stock_residual": 4.440892098500626e-16,
+    "exclusive_limiting_U": [
+      1.314763176615963,
+      0.009520514660265478,
+      1.1648424953446226
+    ]
+  },
+  {
+    "key": "soft_p512/plus/width4",
+    "viable": true,
+    "minimum_mass_ratio": 0.9898396584160437,
+    "writes": 128,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.0019919421689378047,
+    "max_uptake_error": 0.0,
+    "energy_residual": -2.246033220520971e-15,
+    "stock_residual": 0.0,
+    "exclusive_limiting_U": [
+      7.267785891511652,
+      0.0302542626495795,
+      1.4005957403805185
+    ]
+  },
+  {
+    "key": "soft_p512/minus/width1.6",
+    "viable": true,
+    "minimum_mass_ratio": 0.950549546283689,
+    "writes": 128,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.025829448556501638,
+    "max_uptake_error": 0.0,
+    "energy_residual": -3.7470027081099033e-16,
+    "stock_residual": -1.7763568394002505e-15,
+    "exclusive_limiting_U": [
+      1.3425912997929088,
+      0.0014737985944156087,
+      1.2484386171445236
+    ]
+  },
+  {
+    "key": "soft_p512/minus/width4",
+    "viable": true,
+    "minimum_mass_ratio": 0.9926755854118835,
+    "writes": 128,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.0012463809005278537,
+    "max_uptake_error": 0.0,
+    "energy_residual": 4.7834999850060456e-15,
+    "stock_residual": 0.0,
+    "exclusive_limiting_U": [
+      7.355040089270624,
+      0.0121775297509971,
+      1.4765210154735275
+    ]
+  }
+]

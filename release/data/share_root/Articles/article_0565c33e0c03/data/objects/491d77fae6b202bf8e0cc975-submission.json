@@ -1,0 +1,19 @@
+{
+  "id": "325b618a-c145-4529-8c24-f93b81d375f5",
+  "name": "replacement_history_carrier_20261019",
+  "command": [
+    "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+    "-m",
+    "local_learning.replacement_history_carrier.run"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "d3-replacement-history-carrier-20261019-v1",
+  "status": "running",
+  "created_at": "2026-10-18T21:37:31.452705+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/325b618a-c145-4529-8c24-f93b81d375f5",
+  "pid": 4003957,
+  "manual_pause": false,
+  "create_time": 1792359450.95,
+  "started_at": "2026-10-18T21:37:31.559999+00:00"
+}

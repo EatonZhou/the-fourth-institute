@@ -1,0 +1,842 @@
+[
+  {
+    "effect": "genome_0ac80448a534dc953505/T11_minus_T00",
+    "start": 0,
+    "M": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          138
+        ],
+        [
+          143,
+          213
+        ]
+      ],
+      "negative": [
+        [
+          139,
+          142
+        ],
+        [
+          214,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "precursor": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "fuel": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          129
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "rule_death": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          129
+        ]
+      ]
+    },
+    "rejected_precursor": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "rejected_fuel": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "transport_fee": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "genome_0ac80448a534dc953505/T11_minus_T00",
+    "start": 128,
+    "M": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          138
+        ],
+        [
+          143,
+          213
+        ]
+      ],
+      "negative": [
+        [
+          139,
+          142
+        ],
+        [
+          214,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "precursor": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "fuel": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          129,
+          129
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    },
+    "rule_death": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          129,
+          129
+        ]
+      ]
+    },
+    "rejected_precursor": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "rejected_fuel": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    },
+    "transport_fee": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    }
+  },
+  {
+    "effect": "genome_6bd5bfd2f629f9414376/T11_minus_T00",
+    "start": 0,
+    "M": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "precursor": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "fuel": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          129
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "rule_death": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          129
+        ]
+      ]
+    },
+    "rejected_precursor": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "rejected_fuel": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "transport_fee": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "genome_6bd5bfd2f629f9414376/T11_minus_T00",
+    "start": 128,
+    "M": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    },
+    "precursor": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "fuel": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          129,
+          129
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    },
+    "rule_death": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          129,
+          129
+        ]
+      ]
+    },
+    "rejected_precursor": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "rejected_fuel": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    },
+    "transport_fee": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    }
+  },
+  {
+    "effect": "genome_85dffefe3eb5bacdfbf5/T11_minus_T00",
+    "start": 0,
+    "M": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "precursor": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "fuel": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          129
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "rule_death": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          129
+        ]
+      ]
+    },
+    "rejected_precursor": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "rejected_fuel": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          129
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "transport_fee": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "genome_85dffefe3eb5bacdfbf5/T11_minus_T00",
+    "start": 128,
+    "M": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    },
+    "precursor": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "fuel": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          129,
+          129
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    },
+    "rule_death": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          129,
+          129
+        ]
+      ]
+    },
+    "rejected_precursor": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "rejected_fuel": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          129
+        ]
+      ],
+      "zero": []
+    },
+    "transport_fee": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    }
+  }
+]

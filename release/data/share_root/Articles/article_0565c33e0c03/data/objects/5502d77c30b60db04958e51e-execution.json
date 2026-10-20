@@ -1,0 +1,144 @@
+{
+  "job_id": "725c41a5-f2e1-4ab6-9490-c1dfe7c68c06",
+  "status": "finished_with_all_stops_preserved",
+  "native": 6144,
+  "committed": 6144,
+  "unknown": 0,
+  "old_native_replay": 0,
+  "branches": {
+    "i0_g0_fast": {
+      "status": "complete",
+      "steps": 640,
+      "t": 640,
+      "M": 135.58995326087322,
+      "centroid_y": 30.467960751631917,
+      "centroid_x": 32.66135731835059,
+      "largest_component": 0.9743489552026605,
+      "components": 1,
+      "edge_fraction": 9.887881179937888e-08
+    },
+    "i0_g0_frozen": {
+      "status": "complete",
+      "steps": 640,
+      "t": 640,
+      "M": 133.7054308143237,
+      "centroid_y": 31.792320335264844,
+      "centroid_x": 33.2624226426532,
+      "largest_component": 0.9731288226389934,
+      "components": 1,
+      "edge_fraction": 1.7039839222101896e-08
+    },
+    "i0_g1_fast": {
+      "status": "complete",
+      "steps": 640,
+      "t": 640,
+      "M": 140.1305373463372,
+      "centroid_y": 31.78042641934384,
+      "centroid_x": 29.797196220811262,
+      "largest_component": 0.9769090579820022,
+      "components": 1,
+      "edge_fraction": 1.9831289231945743e-07
+    },
+    "i0_g1_frozen": {
+      "status": "complete",
+      "steps": 640,
+      "t": 640,
+      "M": 132.57495330565575,
+      "centroid_y": 32.1118512996265,
+      "centroid_x": 29.202314970285215,
+      "largest_component": 0.9757836129075067,
+      "components": 1,
+      "edge_fraction": 1.5538937779130863e-08
+    },
+    "i1_g0_fast": {
+      "status": "complete",
+      "steps": 640,
+      "t": 640,
+      "M": 130.0731495465683,
+      "centroid_y": 32.315584580498346,
+      "centroid_x": 31.75371327591824,
+      "largest_component": 0.9744045170420238,
+      "components": 1,
+      "edge_fraction": 0.00010234676593353867
+    },
+    "i1_g0_frozen": {
+      "status": "complete",
+      "steps": 640,
+      "t": 640,
+      "M": 110.02719053685257,
+      "centroid_y": 32.315287749718884,
+      "centroid_x": 34.11532787142747,
+      "largest_component": 0.9739848321280596,
+      "components": 1,
+      "edge_fraction": 8.536691468700249e-08
+    },
+    "i1_g1_fast": {
+      "status": "complete",
+      "steps": 640,
+      "t": 640,
+      "M": 128.6956166965016,
+      "centroid_y": 32.643529182590534,
+      "centroid_x": 30.88706477213288,
+      "largest_component": 0.9746437752830648,
+      "components": 1,
+      "edge_fraction": 3.245085154731267e-05
+    },
+    "i1_g1_frozen": {
+      "status": "complete",
+      "steps": 640,
+      "t": 640,
+      "M": 109.47903361117864,
+      "centroid_y": 32.64387921141975,
+      "centroid_x": 30.35595395816894,
+      "largest_component": 0.9731994047602207,
+      "components": 1,
+      "edge_fraction": 1.218376419512593e-07
+    },
+    "i0_g0_fast_freeze_reversal": {
+      "status": "complete",
+      "steps": 256,
+      "t": 512,
+      "M": 94.86709949141323,
+      "centroid_y": 29.3259496337916,
+      "centroid_x": 22.82450084746464,
+      "largest_component": 0.9691628505638303,
+      "components": 1,
+      "edge_fraction": 8.94773067055413e-05
+    },
+    "i0_g1_fast_freeze_reversal": {
+      "status": "complete",
+      "steps": 256,
+      "t": 512,
+      "M": 97.3880849917893,
+      "centroid_y": 31.132785417834775,
+      "centroid_x": 40.67896704244043,
+      "largest_component": 0.9731487626340463,
+      "components": 1,
+      "edge_fraction": 0.0002423420886020689
+    },
+    "i1_g0_fast_freeze_reversal": {
+      "status": "complete",
+      "steps": 256,
+      "t": 512,
+      "M": 101.96456040654041,
+      "centroid_y": 31.995447308102293,
+      "centroid_x": 40.25508814457039,
+      "largest_component": 0.9707763574588462,
+      "components": 1,
+      "edge_fraction": 0.0005203870855574729
+    },
+    "i1_g1_fast_freeze_reversal": {
+      "status": "complete",
+      "steps": 256,
+      "t": 512,
+      "M": 96.99488782777485,
+      "centroid_y": 32.0,
+      "centroid_x": 25.55293198312984,
+      "largest_component": 0.9697356678161301,
+      "components": 1,
+      "edge_fraction": 3.904653374251122e-05
+    }
+  },
+  "science_wall": 66.75528196897358,
+  "raw_bytes": 134393851
+}

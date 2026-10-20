@@ -1,0 +1,85 @@
+{
+  "task": "embodied_action_learning_20261019_direction",
+  "status": "three_actual_batches_complete_direction_active",
+  "owner": "resident_d3ccfa2d95b7",
+  "objective_met": false,
+  "native": 13824,
+  "worker_seconds": 44.054520000000004,
+  "unknown": 0,
+  "old_replay": 0,
+  "entries": [
+    {
+      "task": "embodied_action_learning_20261019",
+      "native": 7680,
+      "worker_seconds": 22.542748,
+      "unknown": 0,
+      "summary": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/embodied_action_learning_20261019/summary.json",
+      "report": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/embodied_action_learning_20261019/REPORT.txt",
+      "animation": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/embodied_action_learning_20261019/actual_local_motor.gif"
+    },
+    {
+      "task": "material_action_credit_20261019",
+      "native": 5376,
+      "worker_seconds": 18.432334,
+      "unknown": 0,
+      "summary": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_action_credit_20261019/summary.json",
+      "report": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_action_credit_20261019/REPORT.txt",
+      "animation": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_action_credit_20261019/actual_local_motor.gif"
+    },
+    {
+      "task": "local_motor_expression_20261019",
+      "native": 768,
+      "worker_seconds": 3.079438,
+      "unknown": 0,
+      "summary": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/local_motor_expression_20261019/summary.json",
+      "report": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/local_motor_expression_20261019/REPORT.txt",
+      "animation": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/local_motor_expression_20261019/actual_expression.gif"
+    }
+  ],
+  "finding": "无中央五动作的真实可变形CA中，标准即时来源信用取得2/2；同父无反馈retain移动+4.31/+4.18、zero约0、negate-4.42/-4.30格。规定反转0/2，完整适应未成；邻域/EMA迹无优势。",
+  "interpretation": "真实已付局部后果沿实际K回到动作来源是有效实现区别；source-vs-recipient同时改变反馈通信与写入位置，不声称新算法或唯一中介。新生=0，不能同ce结果拼成再生学习。所有动作是局部motor+预置凝聚，没有中央方向或隐藏映射。",
+  "fairness": "EMA normalized trace with same nominal alpha has lower immediate effective gain; no claim against optimized standard trace. Strong immediate standard method carries positive result; fixed east has preset direction prior and periodic score peaks, not learned adaptation.",
+  "active_scientific_problem": "取得方向偏置后为何仍持续推进、不能在未告知反转规定窗恢复？区分局部动作价值与闭环状态依赖的行动表达；不续扫alpha/trace/邻接参数，不再修ce接口当本方向终点。",
+  "budget": "Three independent bounded tasks: first cap8192/240 used7680/22.542748 including first serialization failure; second cap6144/120 used5376/18.432334; third cap1024/60 used768/3.079438. No transfer of unused balances. Four serial runner attempts; no unknown/replay.",
+  "source_checks": {
+    "embodied_action_learning_20261019": true,
+    "material_action_credit_20261019": true,
+    "local_motor_expression_20261019": true
+  },
+  "visual_inspection": [
+    "first full field/motor curves and actual320/896",
+    "second curves and actual320/640",
+    "third displacement/absolute-mass curves and final actual fields"
+  ],
+  "papers_projection": "Append to original learning work item: standard local motor acquisition + failed adaptation, not novel algorithm claim; use real continuous gifs linked per entry.",
+  "requires_pi_choice": true,
+  "scientific_question": "主文/并行研究是否以这条无中央汇总的标准来源信用作为局部运动能力强核心，保持ce中央joint再生线独立，并把下一辨识集中在状态依赖闭环行动而非增加资格门？目前仍不得提升为完整适应或新算法优势。",
+  "sha256": {
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/embodied_action_learning_20261019/plan.json": "f2cb3702e916d06ad2d023c43fa9fd2065086dba22af15f97f22944ce57f7702",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/embodied_action_learning_20261019/summary.json": "cd92d14665de5e68f1d4659dcb179078ae1f48efb56fd08da566137be2ba9f29",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/embodied_action_learning_20261019/comparisons.csv": "112264de265fddb451851e44085b269991ef31a23330cad97a31f31deb72abcc",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/embodied_action_learning_20261019/REPORT.txt": "c255802a0eda5fd6a3f5107033266488e8481511366170a80be6148a90ab1449",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/embodied_action_learning_20261019/actual_local_motor.gif": "97cc304dd1d363a168c1224c40bd50b70353600a8efe20af55321f162659face",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/material_action_credit_20261019/plan.json": "b2a4a1d1545452021085a4fa9ea100a2470627a7c85cc78c0b42fb0533bb870d",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/material_action_credit_20261019/summary.json": "b222762d9c643f622250fec28968490fe57db4ee94eddd578086f38bbc807ee7",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/material_action_credit_20261019/comparisons.csv": "8b53f7b83b853d23cba609f213cb260611e5ef06be783b05164c4253f38b86f4",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/material_action_credit_20261019/REPORT.txt": "1cd054f85b76e36f4ed7db3bc918716f1aafc3dcbfb1f0c51bbadda127c1d38d",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/material_action_credit_20261019/actual_local_motor.gif": "2d900ad33476c1af9d0e61b4e4b051ee84c1babd539af2a1588b568b92cd9de1",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/local_motor_expression_20261019/plan.json": "e42e2b1babce91d19817ee54916004d4a32c83d9f148e54f9647942e4e4e65f1",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/local_motor_expression_20261019/summary.json": "c22b71065a375b59a3a470a66b567daf7b08bb926c4cc7f7817777daf74a1b93",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/local_motor_expression_20261019/comparisons.csv": "786383012b6c7a8df99b7e38623c27d95c0fc31fbdc5bb430deae0eac9d4227d",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/local_motor_expression_20261019/REPORT.txt": "15b2cd5651ea9caeb9680a5a7ad962b0d19a698c1aeeacb07263060a61822923",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/local_motor_expression_20261019/actual_expression.gif": "6add966d1377759c5be3ba6ae5aa03c042bab76f4e05da8af0e0fb2e58e22707",
+    "/share/Projects/元胞自动机研究/src/local_learning/embodied_action_learning/analyze.py": "462e85c8c550cbebabcb5a58a3fd0e03c388a16ebee33413504e0f2d2dd29f17",
+    "/share/Projects/元胞自动机研究/src/local_learning/embodied_action_learning/run.py": "7620f60ddfa16877e2e7027b0b6f80052d9dbf40778bbad86fb55efe16ad9224",
+    "/share/Projects/元胞自动机研究/src/local_learning/embodied_action_learning/core.py": "bb519a2ca973ca40228041f47b44887b118bd192597f24759b47b21a252226cf",
+    "/share/Projects/元胞自动机研究/src/local_learning/embodied_action_learning/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "/share/Projects/元胞自动机研究/src/local_learning/material_action_credit/analyze.py": "67931a2fc08c6edd1f6ca814443d402d794c9087572bb278d4aaf66a4a39701a",
+    "/share/Projects/元胞自动机研究/src/local_learning/material_action_credit/run.py": "53171844d5fe1ffe62e47f4471397c1977f49cf6c44f97c677eb39923726b724",
+    "/share/Projects/元胞自动机研究/src/local_learning/material_action_credit/core.py": "d725f553863e95a58d3de157926fa02818f7e6bd7f07440e33cc742054dfe422",
+    "/share/Projects/元胞自动机研究/src/local_learning/material_action_credit/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "/share/Projects/元胞自动机研究/src/local_learning/local_motor_expression/analyze.py": "8c2864d35eacde3a85bcadef8a9eca0ef1f357d5e1af88051c161eddbc92d38f",
+    "/share/Projects/元胞自动机研究/src/local_learning/local_motor_expression/run.py": "102e8ee8d2d53f79be80f9034099ce14a79d00b0fa02e4ef9aadae429952ddb3",
+    "/share/Projects/元胞自动机研究/src/local_learning/local_motor_expression/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "tfi-portal",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TFI Portal JavaScript tooling",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "setup:js": "npm install --package-lock=false"
+  },
+  "devDependencies": {
+    "@babel/parser": "*",
+    "@babel/traverse": "*",
+    "jsdom": "*",
+    "monaco-editor": "*"
+  },
+  "license": "Apache-2.0"
+}

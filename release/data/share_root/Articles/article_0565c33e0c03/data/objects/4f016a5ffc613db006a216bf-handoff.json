@@ -1,0 +1,53 @@
+{
+  "task": "distractor_credit_assignment_20261019",
+  "status": "complete",
+  "report": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/distractor_credit_assignment_20261019/REPORT.txt",
+  "summary": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/distractor_credit_assignment_20261019/summary.json",
+  "table": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/distractor_credit_assignment_20261019/comparisons.csv",
+  "animation": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/distractor_credit_assignment_20261019/actual_credit_assignment.gif",
+  "accounting": {
+    "attempted": 25280,
+    "returned": 25280,
+    "jobs": [
+      {
+        "task": "distractor_credit_assignment_20261019",
+        "mode": "science",
+        "job": "1634a0b5-3bab-4566-b508-93b2e62d8b59",
+        "status": "complete",
+        "attempted": 25280,
+        "returned": 25280,
+        "unknown": 0,
+        "wall": 34.63946920202579,
+        "error": null,
+        "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/distractor_credit_assignment_20261019/1634a0b5-3bab-4566-b508-93b2e62d8b59",
+        "raw_bytes": 80198173,
+        "paths": 54,
+        "runner_worker_seconds": 70.686758
+      }
+    ],
+    "worker_seconds": 70.686758,
+    "unspent_scientific_steps": 1600,
+    "unspent_reason": "three connectivity failures stop their lives and omit terminal forks; not unknown, no resurrection"
+  },
+  "findings": "Sufficient history restores delayed cue learning under distractors; gated-lag advantage over strong fixed-lag and additive-delta NOT established",
+  "previous": "src/local_learning/results_20261019/lifetime_cue_reversal_20261019/handoff.json",
+  "artifacts": {
+    "actual_sequence.png": "99b32e3a9a8c1711cca467f84fe6fc1a1fe763c0459cc9a7e1f4e75dd97a55da",
+    "runner_final.json": "75a43de1928bc6f7edad7143942b60de686aa43bd03c27f3aa290a041d64b77a",
+    "feedback_exposure.json": "d52851afde9d103259cb26321899830f5cceba5386aa5057837f2261cc6f0fb0",
+    "accounting.json": "3da38e75f03f0becf292e55269700538a9cf434407d30517d0e8cab696e066e9",
+    "control_science.json": "ca4c6a5668b5ded8ebaa79d71d1eac806b9fd8591dcc15c978b84eb220020df8",
+    "REPORT.txt": "905d293b78681999b151c91974da6f49a2bf1c3e146ec53becc070bfb46ab4f9",
+    "erase_checks.json": "74ba63e4e1477376e22b39eb097d0f66fcbb398529bbd7e8defbb9d4cd075978",
+    "all_conditions.png": "ced246218524d0e50f2f71a6ab0ab1c4731963b330f91ece6c3f7fbc009ffe59",
+    "pure_checks.json": "caac3548c52b49687fa40c49e1e93490f45fb91409b4490c1c8af756d5eef810",
+    "science_outcomes.json": "724cbb6bd6d542f382f158b3212c1b84b019220a349dda89f90470a61c727012",
+    "actual_credit_assignment.gif": "0e5c2c813cb3cf395a432bfc53ff0d5a0270f0f90ea1b6967233ff2f24768e3b",
+    "science_result.json": "8005828b896fc0eccee2b9aa6af575911552460ea17e5c8f616e35d44ae748c7",
+    "plan.json": "89282127b6c4635c7a9bb7b57d193a13ac4f594415338c8a8eb81afa190f304d",
+    "partial_probes.json": "c325933234fd382edee77de32ffa6d71e1290e40628eff14716bfc1a53867e68",
+    "summary.json": "2acc58826014aee32eebb108eaf8b33bf271f08a644cf32c1c18e56a6c40edd5",
+    "comparisons.csv": "4562a5dce5c17bc1a310d8723b0edc16811ffe65f09101d6435f3abdcdf59c9c"
+  },
+  "metric_definition": "指标释义更正（零native，原数值不变）：每个探针末帧的 f=M_good/(M_0+M_1)，M_i=sum_x rho(x)*1[torus_distance(x,spot_i)<2.5]。这是两个半径2.5接触区的材料质量份额，不是高斯cue强度加权sum(rho*cue)，也不是整阶段正确率。感觉场及付费反馈场与此观察指标应分开；原CSV、模型源、实际轨迹和运行计数不变。"
+}

@@ -1,0 +1,14 @@
+{
+  "task": "embodied_action_learning_20261019",
+  "status": "partial",
+  "job": "88644365-c43f-4faa-b720-d4d119e4ffac",
+  "attempted": 256,
+  "returned": 256,
+  "unknown": 0,
+  "old_replay": 0,
+  "paths": [],
+  "error": "Traceback (most recent call last):\n  File \"${share_root}/Projects/元胞自动机研究/src/local_learning/embodied_action_learning/run.py\", line 82, in main\n    pilot=[execute('pilot',i,'fixed',256) for i in range(2)]\n           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^\n  File \"${share_root}/Projects/元胞自动机研究/src/local_learning/embodied_action_learning/run.py\", line 79, in execute\n    dump(p/'outcome.json',out);paths.append(out);dump(OUT/'progress.json',{'native':returned,'paths':paths});print(json.dumps({k:out[k] for k in ('stage','condition','arm','steps','alive','phases')}),flush=True)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^\n  File \"${share_root}/Projects/元胞自动机研究/src/local_learning/embodied_action_learning/run.py\", line 14, in dump\n    p=Path(p);p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(v,ensure_ascii=False,indent=2,allow_nan=False)+'\\n')\n                                                                      ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"${user_home}/.local/share/uv/python/cpython-3.13.13-linux-x86_64-gnu/lib/python3.13/json/__init__.py\", line 242, in dumps\n    **kw).encode(obj)\n          ~~~~~~^^^^^\n  File \"${user_home}/.local/share/uv/python/cpython-3.13.13-linux-x86_64-gnu/lib/python3.13/json/encoder.py\", line 202, in encode\n    chunks = self.iterencode(o, _one_shot=True)\n  File \"${user_home}/.local/share/uv/python/cpython-3.13.13-linux-x86_64-gnu/lib/python3.13/json/encoder.py\", line 263, in iterencode\n    return _iterencode(o, 0)\n  File \"${user_home}/.local/share/uv/python/cpython-3.13.13-linux-x86_64-gnu/lib/python3.13/json/encoder.py\", line 182, in default\n    raise TypeError(f'Object of type {o.__class__.__name__} '\n                    f'is not JSON serializable')\nTypeError: Object of type bool is not JSON serializable\n",
+  "wall_seconds": 0.2674808669835329,
+  "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/embodied_action_learning_20261019/88644365-c43f-4faa-b720-d4d119e4ffac",
+  "raw_bytes": 1375750
+}

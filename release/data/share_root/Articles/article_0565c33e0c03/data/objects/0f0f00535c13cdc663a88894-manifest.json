@@ -1,0 +1,430 @@
+{
+  "task": "birth_site_compatibility_cohort_20261019",
+  "attachments": [
+    {
+      "path": "METHOD.txt",
+      "bytes": 2556,
+      "sha256": "ec2338e8be7f3f088102313375e405e68695607fac0ca2303ef9e7e4644267ab"
+    },
+    {
+      "path": "REPORT.txt",
+      "bytes": 4263,
+      "sha256": "e767a52ec1900e4ce3f07bdac013dda3697a178624568535d82ab6b3e418b8ea"
+    },
+    {
+      "path": "analysis.json",
+      "bytes": 48144,
+      "sha256": "d5a9f5e614ee61b32d5e8b9051deb4e4d1fbcae07cfa6853960013c9c76fb2ea"
+    },
+    {
+      "path": "analysis_source/analyze.py",
+      "bytes": 6848,
+      "sha256": "3c35bedfd801fb5dc9717fa009e550ee6197b4d786e18e298edb31eec2e83ed7"
+    },
+    {
+      "path": "analysis_source/package.py",
+      "bytes": 12747,
+      "sha256": "b03546262c90dfb8b13444d75e3bfbeff66e67cbd52da224d91c75b13bbf8a2f"
+    },
+    {
+      "path": "baseline_readonly.csv",
+      "bytes": 1199,
+      "sha256": "e303b64b4ca30087b7d1faa473672363e00c2ad62e118f16a2d84c816cef5427"
+    },
+    {
+      "path": "boundaries.json",
+      "bytes": 1088,
+      "sha256": "2ccb708ca56c664b786985c74bc3790aa4edabec2014252a43dcc19a77658f63"
+    },
+    {
+      "path": "budget.json",
+      "bytes": 459,
+      "sha256": "82a10b2b36d0f6ccf6ef844153490e63543f8947284c3650be68a554302946f8"
+    },
+    {
+      "path": "cohort_curves.csv",
+      "bytes": 221551,
+      "sha256": "5f3742bec670f9dfc7dfe6f21b7e3b99f2ab7c2a80efcae49e90ac5253a1faf0"
+    },
+    {
+      "path": "cohort_retention_pairs.png",
+      "bytes": 333419,
+      "sha256": "596f0e48d0cf7d1d4cbd60f2469baeea26fc9dd22121bc7e667fe396a9c517d1"
+    },
+    {
+      "path": "control_before_native.json",
+      "bytes": 70,
+      "sha256": "ca4c6a5668b5ded8ebaa79d71d1eac806b9fd8591dcc15c978b84eb220020df8"
+    },
+    {
+      "path": "control_before_submit.json",
+      "bytes": 70,
+      "sha256": "ca4c6a5668b5ded8ebaa79d71d1eac806b9fd8591dcc15c978b84eb220020df8"
+    },
+    {
+      "path": "frames.json",
+      "bytes": 62975,
+      "sha256": "9211ab7f9f4f103159ff828c0ef77e0cd405a99067101b1ac68110b91da527d3"
+    },
+    {
+      "path": "matches.json",
+      "bytes": 3044,
+      "sha256": "17a1fb13b6c56d04791cb4b676a593a61a4e7bdd897da5e3ac37f7b555db081a"
+    },
+    {
+      "path": "outcomes.json",
+      "bytes": 183289,
+      "sha256": "6b8c6bd203b43c475e0c241997eec4a909412b6cd24207ed00da2e3c4eeb45ea"
+    },
+    {
+      "path": "paired.csv",
+      "bytes": 8946,
+      "sha256": "d0d081335310c2a9a8db9d39d23233eb7e33e04e2ec4aac957bca0299915062e"
+    },
+    {
+      "path": "plan.json",
+      "bytes": 28538,
+      "sha256": "59aa9e3b8f1de09fd9d2ad74d1cc0ae1ee0e8bc56d690ec5379882ab0eb5c5b1"
+    },
+    {
+      "path": "pulse_accounting.json",
+      "bytes": 5038,
+      "sha256": "22dd1bfc243edfbc1f0d130a35a916a937fbed4c794870e5f3f3708d20deaf97"
+    },
+    {
+      "path": "pulse_compact_256.png",
+      "bytes": 53655,
+      "sha256": "1b80ea110e9f872a783bad455aa8b2f8b3518261dcef81cff8b11fde32326974"
+    },
+    {
+      "path": "pulse_compact_320.png",
+      "bytes": 53613,
+      "sha256": "ac11bf06b41111fd68b1e402e08d3f437f776cc9ca08269f02184f69ae344a35"
+    },
+    {
+      "path": "pulse_double_lobe_256.png",
+      "bytes": 54264,
+      "sha256": "2507aa3fb80e53c2f612f379550efda6fc6e7cdef30b3c6406590ecae7858ba5"
+    },
+    {
+      "path": "pulse_double_lobe_320.png",
+      "bytes": 55312,
+      "sha256": "f0a221bb80d8912f7181d7bf5440b5dd2094f75c869f12ce271f607992c3b1c7"
+    },
+    {
+      "path": "pure_checks.json",
+      "bytes": 3589,
+      "sha256": "a06a784228ea4c6b19d2b7d41a97a93135f6f92458ea9ef0a78753f5a9668cc5"
+    },
+    {
+      "path": "raw_manifest.json",
+      "bytes": 85165,
+      "sha256": "42446af2aae1c779d6bb99b100db3a950bda04b43add7197fe11ea846a6738e4"
+    },
+    {
+      "path": "result.json",
+      "bytes": 614,
+      "sha256": "7e1ff589cde7b8f0c4045af3fcb7f5bc82563862d8d9342a9a77f164c4100bac"
+    },
+    {
+      "path": "runner_final.json",
+      "bytes": 1303,
+      "sha256": "74868de0568919952717df092617d166b75cc596e6e176a402a8454daf61da4a"
+    },
+    {
+      "path": "scientific_next_request.json",
+      "bytes": 843,
+      "sha256": "fb165c4940e7f851cad68e0fe994e0d4e0fd9074d9c13d8bc4f5356433a21a6c"
+    },
+    {
+      "path": "source/environment_evolution/complementary_cargo_exchange/core.py",
+      "bytes": 10848,
+      "sha256": "2716b4ff5371b1c0095fe955399c7f68b62dd6b53fce048c542b36653ffd7cd9"
+    },
+    {
+      "path": "source/environment_evolution/local_metabolic_translocation/__init__.py",
+      "bytes": 83,
+      "sha256": "6a18014b1fb754e64d976c5f7b9c7f7a3f8835b22c90db7fa7fd40e627a14088"
+    },
+    {
+      "path": "source/environment_evolution/local_metabolic_translocation/core.py",
+      "bytes": 8342,
+      "sha256": "14917689b4a891b8ed27a1574630331b56a64d1538cf785e505b5a8fab3e393e"
+    },
+    {
+      "path": "source/environment_evolution/material_action_response/__init__.py",
+      "bytes": 78,
+      "sha256": "fcbdb20688501c53d8722953f8d3c4228982965c62ff8bc458835aed983a9f92"
+    },
+    {
+      "path": "source/environment_evolution/material_action_response/core.py",
+      "bytes": 9751,
+      "sha256": "15691ada9fd805c076f7c5770ba955dbf6cc454ea3af129b1ba03fe958467b5b"
+    },
+    {
+      "path": "source/environment_evolution/metabolic_maintenance_withdrawal/__init__.py",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "source/environment_evolution/metabolic_maintenance_withdrawal/core.py",
+      "bytes": 8461,
+      "sha256": "c8260577edb1cec138f3f3869d889860ae93ff3d45fe212ff3cc08c1b2249a12"
+    },
+    {
+      "path": "source/environment_evolution/native_investment_action/__init__.py",
+      "bytes": 78,
+      "sha256": "a80dd0002964474f230aff723a4a94c648b7f3330de722236dc2fb86dcab47b6"
+    },
+    {
+      "path": "source/environment_evolution/native_investment_action/run.py",
+      "bytes": 14352,
+      "sha256": "162a6f3a238334abe364c8fc871fcdac332b9710ba36f43f44b652c30fbba3f9"
+    },
+    {
+      "path": "source/environment_evolution/regenerative_actor/__init__.py",
+      "bytes": 154,
+      "sha256": "b9438b684a84e8b7868c892b912a638023c8afa18ad426135b0a4c5dc6369b66"
+    },
+    {
+      "path": "source/environment_evolution/regenerative_actor/conversion.py",
+      "bytes": 2821,
+      "sha256": "d2b73ccf44d6720e01e2166c055f9a427406dc483b21746476b9f8cc5f95189a"
+    },
+    {
+      "path": "source/environment_evolution/regenerative_actor/model.py",
+      "bytes": 8610,
+      "sha256": "3941450e97d2311f833d1c9c8964f348218467d4cd8d41a68b6584b72b24b5b0"
+    },
+    {
+      "path": "source/environment_evolution/regenerative_actor/prepare.py",
+      "bytes": 8045,
+      "sha256": "dfeac30fd839c0fda9e88398b4ed4446bc332b2be54c4d7287e7c6ad84317620"
+    },
+    {
+      "path": "source/environment_evolution/regenerative_actor/runner.py",
+      "bytes": 6011,
+      "sha256": "4d48a7a9fe11bda60fcf743753a733ef0e574feabb5f0e2192c9b3bb4e7f419d"
+    },
+    {
+      "path": "source/environment_evolution/resource_wave_actionability/__init__.py",
+      "bytes": 82,
+      "sha256": "fe3350daac1e0ac3c02c688585caab51f1760bede457ee9246aad2d6a0ba5b2a"
+    },
+    {
+      "path": "source/environment_evolution/resource_wave_actionability/core.py",
+      "bytes": 6324,
+      "sha256": "fcfb8954f7fa94e21954657545d3e0d4dd3155cf20adef2a87851a129c85726d"
+    },
+    {
+      "path": "source/local_learning/__init__.py",
+      "bytes": 75,
+      "sha256": "0e45857cf6352df2192e9fe1272f55be5010ecb456bb5a6e6dc5d1527a3c3cb5"
+    },
+    {
+      "path": "source/local_learning/adaptive_action_renewal/controller.py",
+      "bytes": 3576,
+      "sha256": "82ce81c7e382119e74ef8f17fe002dfd74d05f8ba87005a6fdaf73b2540bbeb6"
+    },
+    {
+      "path": "source/local_learning/birth_site_compatibility_cohort/__init__.py",
+      "bytes": 1,
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+      "path": "source/local_learning/birth_site_compatibility_cohort/core.py",
+      "bytes": 5182,
+      "sha256": "5bc8d369ed51248ae3fd104526f2b071a16b493297cf51326beef3ba3793bd46"
+    },
+    {
+      "path": "source/local_learning/birth_site_compatibility_cohort/run.py",
+      "bytes": 14694,
+      "sha256": "96229df8ee3c8a69edc8e23730a320931c674182b31d0161cec9912de7d0afad"
+    },
+    {
+      "path": "source/local_learning/developmental_history_rule_swap/__init__.py",
+      "bytes": 79,
+      "sha256": "6c39983bb455ed58c9e7b2a7b8c5ccce7f76f305662bc10d9fd663a9f527bca7"
+    },
+    {
+      "path": "source/local_learning/developmental_history_rule_swap/core.py",
+      "bytes": 2698,
+      "sha256": "727edc91ab7725e04ebe979cc58c7e8cb4b14e6e921b81740866342392c05b32"
+    },
+    {
+      "path": "source/local_learning/experience_adaptation_outer_search/__init__.py",
+      "bytes": 263,
+      "sha256": "18b10d0143cb60ab3c1a67bd90de35363b12619cb42f1a4ce7374d94c297a8b9"
+    },
+    {
+      "path": "source/local_learning/experience_adaptation_outer_search/archive.py",
+      "bytes": 5444,
+      "sha256": "46f77d8c9d71aa5ed5f5f760efa6fdc3cb29efb011c517bf05289ef3527ca337"
+    },
+    {
+      "path": "source/local_learning/experience_adaptation_outer_search/genome.py",
+      "bytes": 7258,
+      "sha256": "cad661bf00f177b3cb3f38a5c7210a0095e4db76e5bfbab8a5b6c3541b15d10b"
+    },
+    {
+      "path": "source/local_learning/local_terminal_feedback/__init__.py",
+      "bytes": 83,
+      "sha256": "ed460f70f95f7de2af6391acf68ccc1c8b05d4ec7bda3dbb254aaefb0510f5ec"
+    },
+    {
+      "path": "source/local_learning/local_terminal_feedback/core.py",
+      "bytes": 3104,
+      "sha256": "3e4b5f75ba406762a7e36507f1f2e3a602b3e2517f17880493f5149ab37c8c54"
+    },
+    {
+      "path": "source/local_learning/local_terminal_feedback/experiment.py",
+      "bytes": 15185,
+      "sha256": "1b820d4bed26a3c8452a2dd139fa29dedbb451c3d7f866835ed3b4d6890e1f7f"
+    },
+    {
+      "path": "source/local_learning/material_transport.py",
+      "bytes": 17572,
+      "sha256": "dd5622a2df6a5d50642a31ad586215d5e30e33929cf8f57ee9efff36fdef08d5"
+    },
+    {
+      "path": "source/local_learning/method_renewal_local_plasticity/__init__.py",
+      "bytes": 69,
+      "sha256": "dfce25ef21799ab43cbd04c6137023a8d6911086406a824e0763f04d4d2c4d2d"
+    },
+    {
+      "path": "source/local_learning/method_renewal_local_plasticity/anticipatory_io.py",
+      "bytes": 2565,
+      "sha256": "341c04d4d2fcdfcc629892317021e286a5a4391b11ebe65cf3f713276113574d"
+    },
+    {
+      "path": "source/local_learning/native_investment_action/__init__.py",
+      "bytes": 153,
+      "sha256": "932074acaf8ec99ece1c4342bd9fdaf81acd2eeaf735c1c8ced7dd880e09a96e"
+    },
+    {
+      "path": "source/local_learning/native_investment_action/intent.py",
+      "bytes": 8554,
+      "sha256": "281cdf539552d744002768036509eaab3476e6c74a9ddf156bf093872ecb0d88"
+    },
+    {
+      "path": "source/local_learning/resource_conditioned_growth_rule/__init__.py",
+      "bytes": 78,
+      "sha256": "87ddc989f8d8289370aad7a8009f147c477f46275793f54fb1f866624a142507"
+    },
+    {
+      "path": "source/local_learning/resource_conditioned_growth_rule/core.py",
+      "bytes": 7061,
+      "sha256": "bad674f254644c8fc00caa6fd50ccd45bbebdd65a229c11125ca3765df981a44"
+    },
+    {
+      "path": "source/local_learning/resource_matched_morphogenesis/__init__.py",
+      "bytes": 66,
+      "sha256": "652c286b9440c8b3d1b51b48aa433f1894c7b61b8bd872d1f547d3a8100d808d"
+    },
+    {
+      "path": "source/local_learning/resource_matched_morphogenesis/core.py",
+      "bytes": 6767,
+      "sha256": "dae6fbd6db1fe1a83f34a6039aee8e292f6d63717270095db981d1e808928a83"
+    },
+    {
+      "path": "source/local_learning/rule_geometry_resource_support/__init__.py",
+      "bytes": 74,
+      "sha256": "7a6102980e60a41c1de40cfa2bee276749ca1dfb9dd18d80d8ca8e53abe54b83"
+    },
+    {
+      "path": "source/local_learning/rule_geometry_resource_support/core.py",
+      "bytes": 3149,
+      "sha256": "006c505f6e388d132f75466b21b8a5ec355e8cc5c0e64b8b5218f3f73e196d39"
+    },
+    {
+      "path": "source/local_learning/spatial_birth_request_coordination/__init__.py",
+      "bytes": 84,
+      "sha256": "67059ab30ca2fc8889dce31c9b756b763632f445cb3f15f17db42603290dea73"
+    },
+    {
+      "path": "source/local_learning/spatial_birth_request_coordination/core.py",
+      "bytes": 4579,
+      "sha256": "1b052a12458e251b343a3bcf1ae7075e095dccd267d55bcd05858e219681bfde"
+    },
+    {
+      "path": "source/local_learning/tissue_replacement_pf_location/__init__.py",
+      "bytes": 77,
+      "sha256": "39091d6f3db6d4c57ee090795573a7e93f1f645c1e4602c1d2ade8bd3d332ac6"
+    },
+    {
+      "path": "source/local_learning/tissue_replacement_pf_location/core.py",
+      "bytes": 4398,
+      "sha256": "adf452a8599221a1a21bf9aab22754576a39f5bea357e5f1630d447250ca721f"
+    },
+    {
+      "path": "source/local_learning/turnover_compatible_morphogenesis/__init__.py",
+      "bytes": 73,
+      "sha256": "4e555285ca6c0bfe37cd3ccbe91915b9d7f8828b5c929bb4e2eec75772014d4c"
+    },
+    {
+      "path": "source/local_learning/turnover_compatible_morphogenesis/core.py",
+      "bytes": 5692,
+      "sha256": "dbfea17ca9e68833d2e0fe7f33c37cac6111a4c441f51fb23a6a78f458886a84"
+    },
+    {
+      "path": "source/local_learning/turnover_compatible_morphogenesis/run.py",
+      "bytes": 17503,
+      "sha256": "e73bc74edc530ae6a3d2f17a2232c83056bcb9d56c1b5fc13818bb0608974433"
+    },
+    {
+      "path": "source/morphology_evolution/__init__.py",
+      "bytes": 75,
+      "sha256": "9e9c593e32e60dffaeebf902feda910a47b75d1f5b15a0de77a0f910f9cfc130"
+    },
+    {
+      "path": "source/morphology_evolution/dual_kernel.py",
+      "bytes": 2922,
+      "sha256": "529d42e50876a68bce54a512f8a9cafd48a8f68276cf8507a0e2243b3f450d6e"
+    },
+    {
+      "path": "source/simulation/__init__.py",
+      "bytes": 389,
+      "sha256": "564809e49203a4dc2f071ada201b8ac8bc142d83583a4ff3b4fa861bdeae79da"
+    },
+    {
+      "path": "source/simulation/core.py",
+      "bytes": 2976,
+      "sha256": "0e832298f01c53a5774df1fbd144d40a816529907fcc6ac58ea6dcf9296d4974"
+    },
+    {
+      "path": "source/simulation/data.py",
+      "bytes": 4960,
+      "sha256": "dfcec89a87caecf81836582b4639b01f8ab14edeec154d7f2e769356547805e5"
+    },
+    {
+      "path": "source/simulation/seeds.py",
+      "bytes": 1809,
+      "sha256": "d92ae0992f80b5588f76c1cac5228f53108e90fea71b5970b9a721d1ab775bbf"
+    },
+    {
+      "path": "source/simulation/snapshot.py",
+      "bytes": 6192,
+      "sha256": "e99d3eccee47ded2abe1518e3fb80d2d630a8ff21a2a339ff6723c2878dfc382"
+    },
+    {
+      "path": "source_integrity.json",
+      "bytes": 25598,
+      "sha256": "0c8b8d92fa7402c25bc04eab3f86e9de2362a2e9d84b6d57d0244e97a53362cb"
+    },
+    {
+      "path": "submission.json",
+      "bytes": 707,
+      "sha256": "b1de5676e000c7f42150e64c1ba52c7478339287a3b221f9f9991f3cad24c495"
+    },
+    {
+      "path": "supervisor_identity.json",
+      "bytes": 384,
+      "sha256": "6281af9f9b1abd504adf63a69e095992069201c84697ec4e9201b99f88d6af0a"
+    },
+    {
+      "path": "visual_review.json",
+      "bytes": 756,
+      "sha256": "2e8eb064a544ffbc6bbfd1610d5c3d09a9f52654b653eea32238e1ea4d0d072a"
+    }
+  ]
+}

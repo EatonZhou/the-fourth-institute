@@ -1,0 +1,42 @@
+[
+  {
+    "body": "genome_0ac80448a534dc953505",
+    "mode": "none",
+    "complete_initial_equal": true
+  },
+  {
+    "body": "genome_0ac80448a534dc953505",
+    "mode": "gradient",
+    "complete_initial_equal": true
+  },
+  {
+    "body": "genome_0ac80448a534dc953505",
+    "mode": "shear_x",
+    "complete_initial_equal": true
+  },
+  {
+    "body": "genome_0ac80448a534dc953505",
+    "mode": "shear_y",
+    "complete_initial_equal": true
+  },
+  {
+    "body": "genome_6bd5bfd2f629f9414376",
+    "mode": "none",
+    "complete_initial_equal": true
+  },
+  {
+    "body": "genome_6bd5bfd2f629f9414376",
+    "mode": "gradient",
+    "complete_initial_equal": true
+  },
+  {
+    "body": "genome_6bd5bfd2f629f9414376",
+    "mode": "shear_x",
+    "complete_initial_equal": true
+  },
+  {
+    "body": "genome_6bd5bfd2f629f9414376",
+    "mode": "shear_y",
+    "complete_initial_equal": true
+  }
+]

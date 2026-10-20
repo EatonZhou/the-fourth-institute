@@ -1,0 +1,55 @@
+{
+  "schema": "anticipatory-information-audit-input-scope.v1",
+  "owner_contract": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/anticipatory_material_allocation_20261018/audit_record_contract.json",
+    "sha256": "6d8ab9525de1152b5ecd411fb2a521b57475de0867debbbd94e873e2e7723b5f"
+  },
+  "full_host_public": [
+    "phase",
+    "cue",
+    "rho",
+    "resource",
+    "energy",
+    "active",
+    "pending",
+    "pending_due",
+    "step",
+    "subcell_x"
+  ],
+  "actual_d3_prepare_arguments": [
+    "rho",
+    "resource",
+    "cue",
+    "phase",
+    "energy"
+  ],
+  "actual_controller_internal": "material-carried per-cue numerator/support/innovation/age plus eligibility/current_cue/cue_paid; host active/pending/due are not passed to prepare",
+  "partition_interpretation": {
+    "instant_resource_empty": "only inventory is empty; does not imply full host-public or body state is history-free",
+    "full_public": "original reusable adapter describes host-public interface, not the narrower deployed d3 policy",
+    "body": "active/pending and due must remain in body/pipeline matching even when hidden from actual controller; rho/energy can also reflect history",
+    "phase": "public phase/constant delay give timing, not unknown mapping; all arms share this scaffold"
+  },
+  "sensory_vs_writer": {
+    "sensor": "paid detect + legal old survivor + mature capacity coverage; local completed_mask/local_label",
+    "writer": "sensor valid AND surviving cue eligibility AND cue_paid AND memory_unpaid==0; frozen suppresses update but transport/death/age still evolve",
+    "missing": "unobserved label=-1; writer ineligibility is not automatically sensor missingness"
+  },
+  "record_timing": {
+    "phase4": "prechoice commit then post5; paid success retires old active and schedules pending",
+    "phase12": "mature then shift/keep then detect payment then resource input then label/uptake then birth/export then post13 then writer",
+    "frames": "832 post-host/post-settle frames from first heldout seed changed condition; prediction post-write, phase4 requested actual, other-phase requested stale last_requested"
+  },
+  "missing_prechoice": [
+    "complete per-decision public observation",
+    "pending_due/subcell_x in sampled frames",
+    "actual shift/keep in sampled frames",
+    "full before/after controller writes",
+    "complete admitted carried event history"
+  ],
+  "available": "per_step all scalars; sparse array frames; stage-end full environment and controller checkpoints; these do not supply all missing before-choice records",
+  "provenance_id": "source SHA + stored stage/clock/cell may index a saved record; it is not an emitted opaque event or newly observed event",
+  "full_native_partition_status": "incomplete_not_reconstructed",
+  "body_oracle_upper_bound": false,
+  "no_changes_to_old_adapter": true
+}

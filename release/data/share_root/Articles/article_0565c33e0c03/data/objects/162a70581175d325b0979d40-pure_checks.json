@@ -1,0 +1,7 @@
+{
+  "native_calls": 0,
+  "original384_state_preserved": true,
+  "only_new_horizon": true,
+  "L384_initial": true,
+  "schedule_clock": true
+}

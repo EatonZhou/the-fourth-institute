@@ -1,0 +1,74 @@
+{
+  "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_birth_admission/INTERPRETATION.txt": {
+    "sha256": "633801ebb1fe330c0825e0449f13f808bd511c1c58baa6ef2393cf76d92ccf18",
+    "bytes": 2432
+  },
+  "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_birth_admission/REPORT.txt": {
+    "sha256": "c66d2505c67bdc338b3cef6c91b93b304476a21a413cb5650ab62779d150ac32",
+    "bytes": 4214
+  },
+  "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_birth_admission/actual_birth_state_atlas.png": {
+    "sha256": "ebee9e3e582ad61b1984aa8dbbe6d217fa439b4d0d111b473fd61aab20ad5674",
+    "bytes": 198247
+  },
+  "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_birth_admission/actual_state_sources.json": {
+    "sha256": "c9bc1fb3f3d2ff24c6d532b51c51c4554689c368ad92639fcdbf8dcb5c34ff39",
+    "bytes": 5009
+  },
+  "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_birth_admission/frames.json": {
+    "sha256": "d309eff67a8ace9ceef41b8dddedbbcc9f87b892d73e130093c2a10e25e8874a",
+    "bytes": 22287
+  },
+  "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_birth_admission/implementation_sources.json": {
+    "sha256": "894d0910a93ea6d7f07369b8f28ecc69ce423a442a0264c84c335ef1caa1b941",
+    "bytes": 1104
+  },
+  "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_birth_admission/joint_usage.json": {
+    "sha256": "7512f508fd8fec72ed0a9c96b81331ab950378c42f0eca24d3261660d183bb66",
+    "bytes": 1696
+  },
+  "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_birth_admission/key_results.json": {
+    "sha256": "611c63f9fde7137dff8a29a67198ca08b1715e750a0cbc69d30eb11228dbff10",
+    "bytes": 10731
+  },
+  "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_birth_admission/outcomes.json": {
+    "sha256": "b1c7d913823c448bd3e67d1eb5d3fb5f182f8b20ca45f4f681b02e2881623303",
+    "bytes": 213751
+  },
+  "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_birth_admission/paired_differences.csv": {
+    "sha256": "2ed79b4cf35f3bee2496b236b89c93c4892ef0e3a08559d060fa99d64b8ceceb",
+    "bytes": 80254
+  },
+  "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_birth_admission/paired_outcomes.png": {
+    "sha256": "f9e170f4a6fb19dad117f1ddc8b5481bec123e3c234b02fdd67bb44cff83f94f",
+    "bytes": 117488
+  },
+  "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_birth_admission/plan.json": {
+    "sha256": "7588ce527e901a91222ca06862f28a2fd4f6d294c79e017c7039cbdc45bf4c0f",
+    "bytes": 2786
+  },
+  "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_birth_admission/result.json": {
+    "sha256": "06e2a71f6407de4c0912ad3f19a6034c42d0b59b31f7e030f2a5a7f350f00f32",
+    "bytes": 959
+  },
+  "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_birth_admission/spatial_action_control/differences.json": {
+    "sha256": "0587d25d9ab1375d42e8ff5f2cdf0fa35062e464e9d848b27b065b33d32cccd4",
+    "bytes": 4044
+  },
+  "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_birth_admission/spatial_action_control/outcomes.json": {
+    "sha256": "86ff25dbad569830add15c264834ac5c2f88e4c05e36b91b2b132c7bc6253695",
+    "bytes": 15754
+  },
+  "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_birth_admission/spatial_action_control/plan.json": {
+    "sha256": "ac035d98e71a908d8efb69005bdd6ed7d397d741bf05f33a2695a1483bc627d9",
+    "bytes": 15103
+  },
+  "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_birth_admission/spatial_action_control/result.json": {
+    "sha256": "6ed79ce8bf1c709e6cfc2324673275758be868a45879ce8cc385a414b3974450",
+    "bytes": 437
+  },
+  "/share/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_birth_admission/spatial_action_control/summary.json": {
+    "sha256": "4de06d96fc34118f796eaaf3279fae686cae04bf285cbe68b09bebb7616c0f55",
+    "bytes": 638
+  }
+}

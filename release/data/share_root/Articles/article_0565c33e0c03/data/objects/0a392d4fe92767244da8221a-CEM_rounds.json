@@ -1,0 +1,60 @@
+[
+  {
+    "round": 1,
+    "mean": [
+      0.0,
+      0.0
+    ],
+    "std": [
+      1.0,
+      1.0
+    ],
+    "proposal_ids": [
+      "round1_proposal0",
+      "round1_proposal1",
+      "round1_proposal2",
+      "round1_proposal3"
+    ],
+    "elite": [
+      "round1_proposal1",
+      "round1_proposal0"
+    ],
+    "next_mean": [
+      0.029202312303560574,
+      0.9110229085949529
+    ],
+    "next_std": [
+      0.5489384024579826,
+      0.25
+    ]
+  },
+  {
+    "round": 2,
+    "mean": [
+      0.029202312303560574,
+      0.9110229085949529
+    ],
+    "std": [
+      0.5489384024579826,
+      0.25
+    ],
+    "proposal_ids": [
+      "round2_proposal0",
+      "round2_proposal1",
+      "round2_proposal2",
+      "round2_proposal3"
+    ],
+    "elite": [
+      "round1_proposal1",
+      "round2_proposal2"
+    ],
+    "next_mean": [
+      0.4867971275543694,
+      0.8663920319641855
+    ],
+    "next_std": [
+      0.25,
+      0.25
+    ]
+  }
+]

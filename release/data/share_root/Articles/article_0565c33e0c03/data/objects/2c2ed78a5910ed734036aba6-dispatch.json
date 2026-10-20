@@ -1,0 +1,22 @@
+{
+  "dispatch": [
+    {
+      "resident_id": "resident_afa3d4d6cf11",
+      "status": "committed",
+      "message_id": "msg_5986b67743a1f48e0eeaf91d0b635182"
+    },
+    {
+      "resident_id": "resident_78225d1bc049",
+      "status": "committed",
+      "message_id": "msg_f991cb8dbad38d399d882794e7aff7fd"
+    },
+    {
+      "resident_id": "resident_a48ab8bd3f81",
+      "status": "committed",
+      "message_id": "msg_7ab175308039c0cad5b9f2dd4953dad1"
+    }
+  ],
+  "summary_update": {
+    "status": "failed"
+  }
+}

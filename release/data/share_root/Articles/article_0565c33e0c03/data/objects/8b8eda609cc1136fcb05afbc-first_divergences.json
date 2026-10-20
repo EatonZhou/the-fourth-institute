@@ -1,0 +1,2666 @@
+[
+  {
+    "morph": "compact",
+    "seed": 202610182101,
+    "alpha": 0.4,
+    "world": "same",
+    "action_exact": null,
+    "action_gt1e-12": null,
+    "M_exact": null,
+    "M_gt1e-12": null,
+    "E_exact": null,
+    "E_gt1e-12": null,
+    "uptake_exact": null,
+    "uptake_gt1e-12": null,
+    "memory_paid_exact": null,
+    "memory_paid_gt1e-12": null,
+    "movement_paid_exact": null,
+    "movement_paid_gt1e-12": null,
+    "value_write_L1_exact": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 0.15966644264634017,
+      "frozen": 0.0
+    },
+    "value_write_L1_gt1e-12": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 0.15966644264634017,
+      "frozen": 0.0
+    }
+  },
+  {
+    "morph": "compact",
+    "seed": 202610182101,
+    "alpha": 0.4,
+    "world": "reversal",
+    "action_exact": {
+      "cycle": 37,
+      "phase": 6,
+      "step": 1191,
+      "update": -1.0,
+      "frozen": 1.0
+    },
+    "action_gt1e-12": {
+      "cycle": 37,
+      "phase": 6,
+      "step": 1191,
+      "update": -1.0,
+      "frozen": 1.0
+    },
+    "M_exact": {
+      "cycle": 37,
+      "phase": 7,
+      "step": 1192,
+      "update": 37.647676605555425,
+      "frozen": 37.64767660555542
+    },
+    "M_gt1e-12": {
+      "cycle": 37,
+      "phase": 16,
+      "step": 1201,
+      "update": 38.418061068273694,
+      "frozen": 37.579983395079296
+    },
+    "E_exact": {
+      "cycle": 37,
+      "phase": 13,
+      "step": 1198,
+      "update": 41.376110829772834,
+      "frozen": 41.37611082375201
+    },
+    "E_gt1e-12": {
+      "cycle": 37,
+      "phase": 13,
+      "step": 1198,
+      "update": 41.376110829772834,
+      "frozen": 41.37611082375201
+    },
+    "uptake_exact": {
+      "cycle": 37,
+      "phase": 16,
+      "step": 1201,
+      "update": 6.984134110380052,
+      "frozen": 0.00015350042671351884
+    },
+    "uptake_gt1e-12": {
+      "cycle": 37,
+      "phase": 16,
+      "step": 1201,
+      "update": 6.984134110380052,
+      "frozen": 0.00015350042671351884
+    },
+    "memory_paid_exact": {
+      "cycle": 37,
+      "phase": 8,
+      "step": 1193,
+      "update": 0.0018823838302777713,
+      "frozen": 0.001882383830277771
+    },
+    "memory_paid_gt1e-12": {
+      "cycle": 37,
+      "phase": 17,
+      "step": 1202,
+      "update": 0.0019209030534136848,
+      "frozen": 0.001878999169753965
+    },
+    "movement_paid_exact": {
+      "cycle": 37,
+      "phase": 7,
+      "step": 1192,
+      "update": 0.07238849281867187,
+      "frozen": 0.07238849281867185
+    },
+    "movement_paid_gt1e-12": {
+      "cycle": 37,
+      "phase": 13,
+      "step": 1198,
+      "update": 0.019636314430153654,
+      "frozen": 0.019636320452184074
+    },
+    "value_write_L1_exact": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 2.6254107501904214,
+      "frozen": 0.0
+    },
+    "value_write_L1_gt1e-12": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 2.6254107501904214,
+      "frozen": 0.0
+    }
+  },
+  {
+    "morph": "compact",
+    "seed": 202610182101,
+    "alpha": 0.4,
+    "world": "independent",
+    "action_exact": {
+      "cycle": 44,
+      "phase": 6,
+      "step": 1415,
+      "update": -1.0,
+      "frozen": 1.0
+    },
+    "action_gt1e-12": {
+      "cycle": 44,
+      "phase": 6,
+      "step": 1415,
+      "update": -1.0,
+      "frozen": 1.0
+    },
+    "M_exact": {
+      "cycle": 44,
+      "phase": 7,
+      "step": 1416,
+      "update": 42.43910826601011,
+      "frozen": 42.4391082660101
+    },
+    "M_gt1e-12": {
+      "cycle": 44,
+      "phase": 16,
+      "step": 1425,
+      "update": 42.36284695337495,
+      "frozen": 43.202778954896
+    },
+    "E_exact": {
+      "cycle": 44,
+      "phase": 13,
+      "step": 1422,
+      "update": 47.508675608929735,
+      "frozen": 47.50867561414824
+    },
+    "E_gt1e-12": {
+      "cycle": 44,
+      "phase": 13,
+      "step": 1422,
+      "update": 47.508675608929735,
+      "frozen": 47.50867561414824
+    },
+    "uptake_exact": {
+      "cycle": 44,
+      "phase": 6,
+      "step": 1415,
+      "update": 9.285552637402802e-16,
+      "frozen": 1.39300991221229e-16
+    },
+    "uptake_gt1e-12": {
+      "cycle": 44,
+      "phase": 16,
+      "step": 1425,
+      "update": 0.0005666536523187429,
+      "frozen": 6.999999999660984
+    },
+    "memory_paid_exact": {
+      "cycle": 44,
+      "phase": 10,
+      "step": 1419,
+      "update": 0.002121106716013402,
+      "frozen": 0.0021211067160134016
+    },
+    "memory_paid_gt1e-12": {
+      "cycle": 44,
+      "phase": 17,
+      "step": 1426,
+      "update": 0.0021181423476687475,
+      "frozen": 0.0021601389477448
+    },
+    "movement_paid_exact": {
+      "cycle": 44,
+      "phase": 8,
+      "step": 1417,
+      "update": 0.08135793314281657,
+      "frozen": 0.08135793314281656
+    },
+    "movement_paid_gt1e-12": {
+      "cycle": 44,
+      "phase": 13,
+      "step": 1422,
+      "update": 0.02359636164026326,
+      "frozen": 0.023596356420726435
+    },
+    "value_write_L1_exact": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 2.6254107501904214,
+      "frozen": 0.0
+    },
+    "value_write_L1_gt1e-12": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 2.6254107501904214,
+      "frozen": 0.0
+    }
+  },
+  {
+    "morph": "compact",
+    "seed": 202610182101,
+    "alpha": 1.0,
+    "world": "same",
+    "action_exact": null,
+    "action_gt1e-12": null,
+    "M_exact": null,
+    "M_gt1e-12": null,
+    "E_exact": null,
+    "E_gt1e-12": null,
+    "uptake_exact": null,
+    "uptake_gt1e-12": null,
+    "memory_paid_exact": null,
+    "memory_paid_gt1e-12": null,
+    "movement_paid_exact": null,
+    "movement_paid_gt1e-12": null,
+    "value_write_L1_exact": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 0.09606495196140327,
+      "frozen": 0.0
+    },
+    "value_write_L1_gt1e-12": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 0.09606495196140327,
+      "frozen": 0.0
+    }
+  },
+  {
+    "morph": "compact",
+    "seed": 202610182101,
+    "alpha": 1.0,
+    "world": "reversal",
+    "action_exact": {
+      "cycle": 37,
+      "phase": 6,
+      "step": 1191,
+      "update": -1.0,
+      "frozen": 1.0
+    },
+    "action_gt1e-12": {
+      "cycle": 37,
+      "phase": 6,
+      "step": 1191,
+      "update": -1.0,
+      "frozen": 1.0
+    },
+    "M_exact": {
+      "cycle": 37,
+      "phase": 7,
+      "step": 1192,
+      "update": 37.647676605555425,
+      "frozen": 37.64767660555542
+    },
+    "M_gt1e-12": {
+      "cycle": 37,
+      "phase": 16,
+      "step": 1201,
+      "update": 38.418061068273694,
+      "frozen": 37.579983395079296
+    },
+    "E_exact": {
+      "cycle": 37,
+      "phase": 13,
+      "step": 1198,
+      "update": 41.376110829772834,
+      "frozen": 41.37611082375201
+    },
+    "E_gt1e-12": {
+      "cycle": 37,
+      "phase": 13,
+      "step": 1198,
+      "update": 41.376110829772834,
+      "frozen": 41.37611082375201
+    },
+    "uptake_exact": {
+      "cycle": 37,
+      "phase": 16,
+      "step": 1201,
+      "update": 6.984134110380052,
+      "frozen": 0.00015350042671351884
+    },
+    "uptake_gt1e-12": {
+      "cycle": 37,
+      "phase": 16,
+      "step": 1201,
+      "update": 6.984134110380052,
+      "frozen": 0.00015350042671351884
+    },
+    "memory_paid_exact": {
+      "cycle": 37,
+      "phase": 8,
+      "step": 1193,
+      "update": 0.0018823838302777713,
+      "frozen": 0.001882383830277771
+    },
+    "memory_paid_gt1e-12": {
+      "cycle": 37,
+      "phase": 17,
+      "step": 1202,
+      "update": 0.0019209030534136848,
+      "frozen": 0.001878999169753965
+    },
+    "movement_paid_exact": {
+      "cycle": 37,
+      "phase": 7,
+      "step": 1192,
+      "update": 0.07238849281867187,
+      "frozen": 0.07238849281867185
+    },
+    "movement_paid_gt1e-12": {
+      "cycle": 37,
+      "phase": 13,
+      "step": 1198,
+      "update": 0.019636314430153654,
+      "frozen": 0.019636320452184074
+    },
+    "value_write_L1_exact": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 6.866619939096989,
+      "frozen": 0.0
+    },
+    "value_write_L1_gt1e-12": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 6.866619939096989,
+      "frozen": 0.0
+    }
+  },
+  {
+    "morph": "compact",
+    "seed": 202610182101,
+    "alpha": 1.0,
+    "world": "independent",
+    "action_exact": {
+      "cycle": 39,
+      "phase": 6,
+      "step": 1255,
+      "update": -1.0,
+      "frozen": 1.0
+    },
+    "action_gt1e-12": {
+      "cycle": 39,
+      "phase": 6,
+      "step": 1255,
+      "update": -1.0,
+      "frozen": 1.0
+    },
+    "M_exact": {
+      "cycle": 39,
+      "phase": 7,
+      "step": 1256,
+      "update": 41.278485459907344,
+      "frozen": 41.27848545990735
+    },
+    "M_gt1e-12": {
+      "cycle": 39,
+      "phase": 16,
+      "step": 1265,
+      "update": 41.20429363667193,
+      "frozen": 42.04424359568825
+    },
+    "E_exact": {
+      "cycle": 39,
+      "phase": 13,
+      "step": 1262,
+      "update": 55.90685179051124,
+      "frozen": 55.90685178552057
+    },
+    "E_gt1e-12": {
+      "cycle": 39,
+      "phase": 13,
+      "step": 1262,
+      "update": 55.90685179051124,
+      "frozen": 55.90685178552057
+    },
+    "uptake_exact": {
+      "cycle": 39,
+      "phase": 16,
+      "step": 1265,
+      "update": 0.0004169775346587624,
+      "frozen": 6.999999969337372
+    },
+    "uptake_gt1e-12": {
+      "cycle": 39,
+      "phase": 16,
+      "step": 1265,
+      "update": 0.0004169775346587624,
+      "frozen": 6.999999969337372
+    },
+    "memory_paid_exact": {
+      "cycle": 39,
+      "phase": 8,
+      "step": 1257,
+      "update": 0.002063924272995367,
+      "frozen": 0.0020639242729953676
+    },
+    "memory_paid_gt1e-12": {
+      "cycle": 39,
+      "phase": 17,
+      "step": 1266,
+      "update": 0.0020602146818335964,
+      "frozen": 0.0021022121797844126
+    },
+    "movement_paid_exact": {
+      "cycle": 39,
+      "phase": 8,
+      "step": 1257,
+      "update": 0.07920890430860868,
+      "frozen": 0.07920890430860869
+    },
+    "movement_paid_gt1e-12": {
+      "cycle": 39,
+      "phase": 13,
+      "step": 1262,
+      "update": 0.022463529807033956,
+      "frozen": 0.0224635347986933
+    },
+    "value_write_L1_exact": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 6.866619939096989,
+      "frozen": 0.0
+    },
+    "value_write_L1_gt1e-12": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 6.866619939096989,
+      "frozen": 0.0
+    }
+  },
+  {
+    "morph": "ring",
+    "seed": 202610182101,
+    "alpha": 0.4,
+    "world": "same",
+    "action_exact": null,
+    "action_gt1e-12": null,
+    "M_exact": null,
+    "M_gt1e-12": null,
+    "E_exact": null,
+    "E_gt1e-12": null,
+    "uptake_exact": null,
+    "uptake_gt1e-12": null,
+    "memory_paid_exact": null,
+    "memory_paid_gt1e-12": null,
+    "movement_paid_exact": null,
+    "movement_paid_gt1e-12": null,
+    "value_write_L1_exact": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 0.27957089305384575,
+      "frozen": 0.0
+    },
+    "value_write_L1_gt1e-12": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 0.27957089305384575,
+      "frozen": 0.0
+    }
+  },
+  {
+    "morph": "ring",
+    "seed": 202610182101,
+    "alpha": 0.4,
+    "world": "reversal",
+    "action_exact": {
+      "cycle": 37,
+      "phase": 6,
+      "step": 1191,
+      "update": -1.0,
+      "frozen": 1.0
+    },
+    "action_gt1e-12": {
+      "cycle": 37,
+      "phase": 6,
+      "step": 1191,
+      "update": -1.0,
+      "frozen": 1.0
+    },
+    "M_exact": {
+      "cycle": 37,
+      "phase": 13,
+      "step": 1198,
+      "update": 33.431667660878965,
+      "frozen": 33.43166766087896
+    },
+    "M_gt1e-12": {
+      "cycle": 37,
+      "phase": 16,
+      "step": 1201,
+      "update": 34.229032115536576,
+      "frozen": 33.411625142313895
+    },
+    "E_exact": {
+      "cycle": 37,
+      "phase": 13,
+      "step": 1198,
+      "update": 31.464289329434425,
+      "frozen": 31.464287113293693
+    },
+    "E_gt1e-12": {
+      "cycle": 37,
+      "phase": 13,
+      "step": 1198,
+      "update": 31.464289329434425,
+      "frozen": 31.464287113293693
+    },
+    "uptake_exact": {
+      "cycle": 37,
+      "phase": 6,
+      "step": 1191,
+      "update": 9.570567147171424e-25,
+      "frozen": 4.128253927632976e-29
+    },
+    "uptake_gt1e-12": {
+      "cycle": 37,
+      "phase": 16,
+      "step": 1201,
+      "update": 6.811828697678905,
+      "frozen": 0.00010392082324903597
+    },
+    "memory_paid_exact": {
+      "cycle": 37,
+      "phase": 14,
+      "step": 1199,
+      "update": 0.0016715833830439483,
+      "frozen": 0.001671583383043948
+    },
+    "memory_paid_gt1e-12": {
+      "cycle": 37,
+      "phase": 17,
+      "step": 1202,
+      "update": 0.0017114516057768288,
+      "frozen": 0.0016705812571156948
+    },
+    "movement_paid_exact": {
+      "cycle": 37,
+      "phase": 13,
+      "step": 1198,
+      "update": 0.04867937392209939,
+      "frozen": 0.048681590506146205
+    },
+    "movement_paid_gt1e-12": {
+      "cycle": 37,
+      "phase": 13,
+      "step": 1198,
+      "update": 0.04867937392209939,
+      "frozen": 0.048681590506146205
+    },
+    "value_write_L1_exact": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 2.449130798170218,
+      "frozen": 0.0
+    },
+    "value_write_L1_gt1e-12": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 2.449130798170218,
+      "frozen": 0.0
+    }
+  },
+  {
+    "morph": "ring",
+    "seed": 202610182101,
+    "alpha": 0.4,
+    "world": "independent",
+    "action_exact": {
+      "cycle": 44,
+      "phase": 6,
+      "step": 1415,
+      "update": -1.0,
+      "frozen": 1.0
+    },
+    "action_gt1e-12": {
+      "cycle": 44,
+      "phase": 6,
+      "step": 1415,
+      "update": -1.0,
+      "frozen": 1.0
+    },
+    "M_exact": {
+      "cycle": 44,
+      "phase": 6,
+      "step": 1415,
+      "update": 38.386735237602956,
+      "frozen": 38.38673523760292
+    },
+    "M_gt1e-12": {
+      "cycle": 44,
+      "phase": 16,
+      "step": 1425,
+      "update": 38.31007095816773,
+      "frozen": 39.15002795381244
+    },
+    "E_exact": {
+      "cycle": 44,
+      "phase": 6,
+      "step": 1415,
+      "update": 41.618860215908214,
+      "frozen": 41.61886021590805
+    },
+    "E_gt1e-12": {
+      "cycle": 44,
+      "phase": 13,
+      "step": 1422,
+      "update": 40.49487970628779,
+      "frozen": 40.494881254075125
+    },
+    "uptake_exact": {
+      "cycle": 44,
+      "phase": 6,
+      "step": 1415,
+      "update": 3.6294739659592963e-13,
+      "frozen": 1.2824052738195643e-13
+    },
+    "uptake_gt1e-12": {
+      "cycle": 44,
+      "phase": 16,
+      "step": 1425,
+      "update": 0.00033443129089632585,
+      "frozen": 6.9999760616637605
+    },
+    "memory_paid_exact": {
+      "cycle": 44,
+      "phase": 7,
+      "step": 1416,
+      "update": 0.001919336761880148,
+      "frozen": 0.0019193367618801462
+    },
+    "memory_paid_gt1e-12": {
+      "cycle": 44,
+      "phase": 17,
+      "step": 1426,
+      "update": 0.0019155035479083865,
+      "frozen": 0.001957501397690622
+    },
+    "movement_paid_exact": {
+      "cycle": 44,
+      "phase": 7,
+      "step": 1416,
+      "update": 0.06845566060832317,
+      "frozen": 0.06845566060832309
+    },
+    "movement_paid_gt1e-12": {
+      "cycle": 44,
+      "phase": 13,
+      "step": 1422,
+      "update": 0.05185498333658456,
+      "frozen": 0.051853435239451226
+    },
+    "value_write_L1_exact": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 2.449130798170218,
+      "frozen": 0.0
+    },
+    "value_write_L1_gt1e-12": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 2.449130798170218,
+      "frozen": 0.0
+    }
+  },
+  {
+    "morph": "ring",
+    "seed": 202610182101,
+    "alpha": 1.0,
+    "world": "same",
+    "action_exact": null,
+    "action_gt1e-12": null,
+    "M_exact": null,
+    "M_gt1e-12": null,
+    "E_exact": null,
+    "E_gt1e-12": null,
+    "uptake_exact": null,
+    "uptake_gt1e-12": null,
+    "memory_paid_exact": null,
+    "memory_paid_gt1e-12": null,
+    "movement_paid_exact": null,
+    "movement_paid_gt1e-12": null,
+    "value_write_L1_exact": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 0.12419259269044941,
+      "frozen": 0.0
+    },
+    "value_write_L1_gt1e-12": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 0.12419259269044941,
+      "frozen": 0.0
+    }
+  },
+  {
+    "morph": "ring",
+    "seed": 202610182101,
+    "alpha": 1.0,
+    "world": "reversal",
+    "action_exact": {
+      "cycle": 37,
+      "phase": 6,
+      "step": 1191,
+      "update": -1.0,
+      "frozen": 1.0
+    },
+    "action_gt1e-12": {
+      "cycle": 37,
+      "phase": 6,
+      "step": 1191,
+      "update": -1.0,
+      "frozen": 1.0
+    },
+    "M_exact": {
+      "cycle": 37,
+      "phase": 13,
+      "step": 1198,
+      "update": 33.431667660878965,
+      "frozen": 33.43166766087896
+    },
+    "M_gt1e-12": {
+      "cycle": 37,
+      "phase": 16,
+      "step": 1201,
+      "update": 34.229032115536576,
+      "frozen": 33.411625142313895
+    },
+    "E_exact": {
+      "cycle": 37,
+      "phase": 13,
+      "step": 1198,
+      "update": 31.464289329434425,
+      "frozen": 31.464287113293693
+    },
+    "E_gt1e-12": {
+      "cycle": 37,
+      "phase": 13,
+      "step": 1198,
+      "update": 31.464289329434425,
+      "frozen": 31.464287113293693
+    },
+    "uptake_exact": {
+      "cycle": 37,
+      "phase": 6,
+      "step": 1191,
+      "update": 9.570567147171424e-25,
+      "frozen": 4.128253927632976e-29
+    },
+    "uptake_gt1e-12": {
+      "cycle": 37,
+      "phase": 16,
+      "step": 1201,
+      "update": 6.811828697678905,
+      "frozen": 0.00010392082324903597
+    },
+    "memory_paid_exact": {
+      "cycle": 37,
+      "phase": 14,
+      "step": 1199,
+      "update": 0.0016715833830439483,
+      "frozen": 0.001671583383043948
+    },
+    "memory_paid_gt1e-12": {
+      "cycle": 37,
+      "phase": 17,
+      "step": 1202,
+      "update": 0.0017114516057768288,
+      "frozen": 0.0016705812571156948
+    },
+    "movement_paid_exact": {
+      "cycle": 37,
+      "phase": 13,
+      "step": 1198,
+      "update": 0.04867937392209939,
+      "frozen": 0.048681590506146205
+    },
+    "movement_paid_gt1e-12": {
+      "cycle": 37,
+      "phase": 13,
+      "step": 1198,
+      "update": 0.04867937392209939,
+      "frozen": 0.048681590506146205
+    },
+    "value_write_L1_exact": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 6.697551709885424,
+      "frozen": 0.0
+    },
+    "value_write_L1_gt1e-12": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 6.697551709885424,
+      "frozen": 0.0
+    }
+  },
+  {
+    "morph": "ring",
+    "seed": 202610182101,
+    "alpha": 1.0,
+    "world": "independent",
+    "action_exact": {
+      "cycle": 39,
+      "phase": 6,
+      "step": 1255,
+      "update": -1.0,
+      "frozen": 1.0
+    },
+    "action_gt1e-12": {
+      "cycle": 39,
+      "phase": 6,
+      "step": 1255,
+      "update": -1.0,
+      "frozen": 1.0
+    },
+    "M_exact": {
+      "cycle": 39,
+      "phase": 6,
+      "step": 1255,
+      "update": 37.10226821748427,
+      "frozen": 37.102268217484266
+    },
+    "M_gt1e-12": {
+      "cycle": 39,
+      "phase": 16,
+      "step": 1265,
+      "update": 37.02816068351576,
+      "frozen": 37.857416364162624
+    },
+    "E_exact": {
+      "cycle": 39,
+      "phase": 13,
+      "step": 1262,
+      "update": 46.616731926790344,
+      "frozen": 46.61673013904356
+    },
+    "E_gt1e-12": {
+      "cycle": 39,
+      "phase": 13,
+      "step": 1262,
+      "update": 46.616731926790344,
+      "frozen": 46.61673013904356
+    },
+    "uptake_exact": {
+      "cycle": 39,
+      "phase": 6,
+      "step": 1255,
+      "update": 1.2876410457587416e-26,
+      "frozen": 6.3648817807111525e-31
+    },
+    "uptake_gt1e-12": {
+      "cycle": 39,
+      "phase": 16,
+      "step": 1265,
+      "update": 0.0002521165780727497,
+      "frozen": 6.910716121968671
+    },
+    "memory_paid_exact": {
+      "cycle": 39,
+      "phase": 7,
+      "step": 1256,
+      "update": 0.0018551134108742138,
+      "frozen": 0.0018551134108742134
+    },
+    "memory_paid_gt1e-12": {
+      "cycle": 39,
+      "phase": 17,
+      "step": 1266,
+      "update": 0.001851408034175788,
+      "frozen": 0.0018928708182081313
+    },
+    "movement_paid_exact": {
+      "cycle": 39,
+      "phase": 7,
+      "step": 1256,
+      "update": 0.06591763171266071,
+      "frozen": 0.0659176317126607
+    },
+    "movement_paid_gt1e-12": {
+      "cycle": 39,
+      "phase": 13,
+      "step": 1262,
+      "update": 0.051467464696160876,
+      "frozen": 0.05146925280056264
+    },
+    "value_write_L1_exact": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 6.697551709885424,
+      "frozen": 0.0
+    },
+    "value_write_L1_gt1e-12": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 6.697551709885424,
+      "frozen": 0.0
+    }
+  },
+  {
+    "morph": "double_lobe",
+    "seed": 202610182101,
+    "alpha": 0.4,
+    "world": "same",
+    "action_exact": null,
+    "action_gt1e-12": null,
+    "M_exact": null,
+    "M_gt1e-12": null,
+    "E_exact": null,
+    "E_gt1e-12": null,
+    "uptake_exact": null,
+    "uptake_gt1e-12": null,
+    "memory_paid_exact": null,
+    "memory_paid_gt1e-12": null,
+    "movement_paid_exact": null,
+    "movement_paid_gt1e-12": null,
+    "value_write_L1_exact": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 0.20591711795340434,
+      "frozen": 0.0
+    },
+    "value_write_L1_gt1e-12": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 0.20591711795340434,
+      "frozen": 0.0
+    }
+  },
+  {
+    "morph": "double_lobe",
+    "seed": 202610182101,
+    "alpha": 0.4,
+    "world": "reversal",
+    "action_exact": {
+      "cycle": 37,
+      "phase": 6,
+      "step": 1191,
+      "update": -1.0,
+      "frozen": 1.0
+    },
+    "action_gt1e-12": {
+      "cycle": 37,
+      "phase": 6,
+      "step": 1191,
+      "update": -1.0,
+      "frozen": 1.0
+    },
+    "M_exact": {
+      "cycle": 37,
+      "phase": 11,
+      "step": 1196,
+      "update": 34.761799353709385,
+      "frozen": 34.76179935370938
+    },
+    "M_gt1e-12": {
+      "cycle": 37,
+      "phase": 16,
+      "step": 1201,
+      "update": 35.56343166266651,
+      "frozen": 34.727066775718065
+    },
+    "E_exact": {
+      "cycle": 37,
+      "phase": 14,
+      "step": 1199,
+      "update": 36.35681759167085,
+      "frozen": 36.35677512560502
+    },
+    "E_gt1e-12": {
+      "cycle": 37,
+      "phase": 14,
+      "step": 1199,
+      "update": 36.35681759167085,
+      "frozen": 36.35677512560502
+    },
+    "uptake_exact": {
+      "cycle": 37,
+      "phase": 6,
+      "step": 1191,
+      "update": 1.5779119096572585e-45,
+      "frozen": 3.182610915252797e-52
+    },
+    "uptake_gt1e-12": {
+      "cycle": 37,
+      "phase": 16,
+      "step": 1201,
+      "update": 6.969835053097972,
+      "frozen": 0.00012766186099036223
+    },
+    "memory_paid_exact": {
+      "cycle": 37,
+      "phase": 12,
+      "step": 1197,
+      "update": 0.0017380899676854693,
+      "frozen": 0.001738089967685469
+    },
+    "memory_paid_gt1e-12": {
+      "cycle": 37,
+      "phase": 17,
+      "step": 1202,
+      "update": 0.0017781715831333255,
+      "frozen": 0.0017363533387859034
+    },
+    "movement_paid_exact": {
+      "cycle": 37,
+      "phase": 12,
+      "step": 1197,
+      "update": 0.05737827438844022,
+      "frozen": 0.05737827438844021
+    },
+    "movement_paid_gt1e-12": {
+      "cycle": 37,
+      "phase": 14,
+      "step": 1199,
+      "update": 0.022780280946685518,
+      "frozen": 0.02282275550742825
+    },
+    "value_write_L1_exact": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 2.5735684876878913,
+      "frozen": 0.0
+    },
+    "value_write_L1_gt1e-12": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 2.5735684876878913,
+      "frozen": 0.0
+    }
+  },
+  {
+    "morph": "double_lobe",
+    "seed": 202610182101,
+    "alpha": 0.4,
+    "world": "independent",
+    "action_exact": {
+      "cycle": 44,
+      "phase": 6,
+      "step": 1415,
+      "update": -1.0,
+      "frozen": 1.0
+    },
+    "action_gt1e-12": {
+      "cycle": 44,
+      "phase": 6,
+      "step": 1415,
+      "update": -1.0,
+      "frozen": 1.0
+    },
+    "M_exact": {
+      "cycle": 44,
+      "phase": 14,
+      "step": 1423,
+      "update": 39.640963109202644,
+      "frozen": 39.64096310920264
+    },
+    "M_gt1e-12": {
+      "cycle": 44,
+      "phase": 16,
+      "step": 1425,
+      "update": 39.62513702442854,
+      "frozen": 40.464552059597494
+    },
+    "E_exact": {
+      "cycle": 44,
+      "phase": 6,
+      "step": 1415,
+      "update": 45.82998649709903,
+      "frozen": 45.82998649709902
+    },
+    "E_gt1e-12": {
+      "cycle": 44,
+      "phase": 14,
+      "step": 1423,
+      "update": 44.558232804580285,
+      "frozen": 44.55825426008496
+    },
+    "uptake_exact": {
+      "cycle": 44,
+      "phase": 6,
+      "step": 1415,
+      "update": 7.63585315311815e-15,
+      "frozen": 4.3256443238722096e-15
+    },
+    "uptake_gt1e-12": {
+      "cycle": 44,
+      "phase": 16,
+      "step": 1425,
+      "update": 0.00023929025885157905,
+      "frozen": 6.995364583333425
+    },
+    "memory_paid_exact": {
+      "cycle": 44,
+      "phase": 15,
+      "step": 1424,
+      "update": 0.0019820481554601323,
+      "frozen": 0.001982048155460132
+    },
+    "memory_paid_gt1e-12": {
+      "cycle": 44,
+      "phase": 17,
+      "step": 1426,
+      "update": 0.001981256851221427,
+      "frozen": 0.0020232276029798746
+    },
+    "movement_paid_exact": {
+      "cycle": 44,
+      "phase": 8,
+      "step": 1417,
+      "update": 0.06688301973079874,
+      "frozen": 0.06688301973079873
+    },
+    "movement_paid_gt1e-12": {
+      "cycle": 44,
+      "phase": 14,
+      "step": 1423,
+      "update": 0.017417092971204893,
+      "frozen": 0.01739563317457261
+    },
+    "value_write_L1_exact": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 2.5735684876878913,
+      "frozen": 0.0
+    },
+    "value_write_L1_gt1e-12": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 2.5735684876878913,
+      "frozen": 0.0
+    }
+  },
+  {
+    "morph": "double_lobe",
+    "seed": 202610182101,
+    "alpha": 1.0,
+    "world": "same",
+    "action_exact": null,
+    "action_gt1e-12": null,
+    "M_exact": null,
+    "M_gt1e-12": null,
+    "E_exact": null,
+    "E_gt1e-12": null,
+    "uptake_exact": null,
+    "uptake_gt1e-12": null,
+    "memory_paid_exact": null,
+    "memory_paid_gt1e-12": null,
+    "movement_paid_exact": null,
+    "movement_paid_gt1e-12": null,
+    "value_write_L1_exact": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 0.10060362057485296,
+      "frozen": 0.0
+    },
+    "value_write_L1_gt1e-12": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 0.10060362057485296,
+      "frozen": 0.0
+    }
+  },
+  {
+    "morph": "double_lobe",
+    "seed": 202610182101,
+    "alpha": 1.0,
+    "world": "reversal",
+    "action_exact": {
+      "cycle": 37,
+      "phase": 6,
+      "step": 1191,
+      "update": -1.0,
+      "frozen": 1.0
+    },
+    "action_gt1e-12": {
+      "cycle": 37,
+      "phase": 6,
+      "step": 1191,
+      "update": -1.0,
+      "frozen": 1.0
+    },
+    "M_exact": {
+      "cycle": 37,
+      "phase": 11,
+      "step": 1196,
+      "update": 34.761799353709385,
+      "frozen": 34.76179935370938
+    },
+    "M_gt1e-12": {
+      "cycle": 37,
+      "phase": 16,
+      "step": 1201,
+      "update": 35.56343166266651,
+      "frozen": 34.727066775718065
+    },
+    "E_exact": {
+      "cycle": 37,
+      "phase": 14,
+      "step": 1199,
+      "update": 36.35681759167085,
+      "frozen": 36.35677512560502
+    },
+    "E_gt1e-12": {
+      "cycle": 37,
+      "phase": 14,
+      "step": 1199,
+      "update": 36.35681759167085,
+      "frozen": 36.35677512560502
+    },
+    "uptake_exact": {
+      "cycle": 37,
+      "phase": 6,
+      "step": 1191,
+      "update": 1.5779119096572585e-45,
+      "frozen": 3.182610915252797e-52
+    },
+    "uptake_gt1e-12": {
+      "cycle": 37,
+      "phase": 16,
+      "step": 1201,
+      "update": 6.969835053097972,
+      "frozen": 0.00012766186099036223
+    },
+    "memory_paid_exact": {
+      "cycle": 37,
+      "phase": 12,
+      "step": 1197,
+      "update": 0.0017380899676854693,
+      "frozen": 0.001738089967685469
+    },
+    "memory_paid_gt1e-12": {
+      "cycle": 37,
+      "phase": 17,
+      "step": 1202,
+      "update": 0.0017781715831333255,
+      "frozen": 0.0017363533387859034
+    },
+    "movement_paid_exact": {
+      "cycle": 37,
+      "phase": 12,
+      "step": 1197,
+      "update": 0.05737827438844022,
+      "frozen": 0.05737827438844021
+    },
+    "movement_paid_gt1e-12": {
+      "cycle": 37,
+      "phase": 14,
+      "step": 1199,
+      "update": 0.022780280946685518,
+      "frozen": 0.02282275550742825
+    },
+    "value_write_L1_exact": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 6.848077292176232,
+      "frozen": 0.0
+    },
+    "value_write_L1_gt1e-12": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 6.848077292176232,
+      "frozen": 0.0
+    }
+  },
+  {
+    "morph": "double_lobe",
+    "seed": 202610182101,
+    "alpha": 1.0,
+    "world": "independent",
+    "action_exact": {
+      "cycle": 39,
+      "phase": 6,
+      "step": 1255,
+      "update": -1.0,
+      "frozen": 1.0
+    },
+    "action_gt1e-12": {
+      "cycle": 39,
+      "phase": 6,
+      "step": 1255,
+      "update": -1.0,
+      "frozen": 1.0
+    },
+    "M_exact": {
+      "cycle": 39,
+      "phase": 12,
+      "step": 1261,
+      "update": 38.41062234251455,
+      "frozen": 38.41062234251456
+    },
+    "M_gt1e-12": {
+      "cycle": 39,
+      "phase": 16,
+      "step": 1265,
+      "update": 38.37992369843397,
+      "frozen": 39.21816908514443
+    },
+    "E_exact": {
+      "cycle": 39,
+      "phase": 14,
+      "step": 1263,
+      "update": 51.46288769004194,
+      "frozen": 51.46285941161235
+    },
+    "E_gt1e-12": {
+      "cycle": 39,
+      "phase": 14,
+      "step": 1263,
+      "update": 51.46288769004194,
+      "frozen": 51.46285941161235
+    },
+    "uptake_exact": {
+      "cycle": 39,
+      "phase": 16,
+      "step": 1265,
+      "update": 0.0001719706095287128,
+      "frozen": 6.985550193196696
+    },
+    "uptake_gt1e-12": {
+      "cycle": 39,
+      "phase": 16,
+      "step": 1265,
+      "update": 0.0001719706095287128,
+      "frozen": 6.985550193196696
+    },
+    "memory_paid_exact": {
+      "cycle": 39,
+      "phase": 13,
+      "step": 1262,
+      "update": 0.0019205311171257276,
+      "frozen": 0.001920531117125728
+    },
+    "memory_paid_gt1e-12": {
+      "cycle": 39,
+      "phase": 17,
+      "step": 1266,
+      "update": 0.0019189961849216987,
+      "frozen": 0.0019609084542572216
+    },
+    "movement_paid_exact": {
+      "cycle": 39,
+      "phase": 13,
+      "step": 1262,
+      "update": 0.06426097111907018,
+      "frozen": 0.0642609711190702
+    },
+    "movement_paid_gt1e-12": {
+      "cycle": 39,
+      "phase": 14,
+      "step": 1263,
+      "update": 0.019774278989741226,
+      "frozen": 0.019802563076157246
+    },
+    "value_write_L1_exact": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 6.848077292176232,
+      "frozen": 0.0
+    },
+    "value_write_L1_gt1e-12": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 6.848077292176232,
+      "frozen": 0.0
+    }
+  },
+  {
+    "morph": "compact",
+    "seed": 202610182102,
+    "alpha": 0.4,
+    "world": "same",
+    "action_exact": null,
+    "action_gt1e-12": null,
+    "M_exact": null,
+    "M_gt1e-12": null,
+    "E_exact": null,
+    "E_gt1e-12": null,
+    "uptake_exact": null,
+    "uptake_gt1e-12": null,
+    "memory_paid_exact": null,
+    "memory_paid_gt1e-12": null,
+    "movement_paid_exact": null,
+    "movement_paid_gt1e-12": null,
+    "value_write_L1_exact": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 0.14015367290067707,
+      "frozen": 0.0
+    },
+    "value_write_L1_gt1e-12": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 0.14015367290067707,
+      "frozen": 0.0
+    }
+  },
+  {
+    "morph": "compact",
+    "seed": 202610182102,
+    "alpha": 0.4,
+    "world": "reversal",
+    "action_exact": {
+      "cycle": 40,
+      "phase": 6,
+      "step": 1287,
+      "update": 1.0,
+      "frozen": -1.0
+    },
+    "action_gt1e-12": {
+      "cycle": 40,
+      "phase": 6,
+      "step": 1287,
+      "update": 1.0,
+      "frozen": -1.0
+    },
+    "M_exact": {
+      "cycle": 40,
+      "phase": 6,
+      "step": 1287,
+      "update": 35.70386148335031,
+      "frozen": 35.703861483350316
+    },
+    "M_gt1e-12": {
+      "cycle": 40,
+      "phase": 16,
+      "step": 1297,
+      "update": 36.47032905844216,
+      "frozen": 35.63254523539191
+    },
+    "E_exact": {
+      "cycle": 40,
+      "phase": 13,
+      "step": 1294,
+      "update": 28.9542426802573,
+      "frozen": 28.95424268511571
+    },
+    "E_gt1e-12": {
+      "cycle": 40,
+      "phase": 13,
+      "step": 1294,
+      "update": 28.9542426802573,
+      "frozen": 28.95424268511571
+    },
+    "uptake_exact": {
+      "cycle": 40,
+      "phase": 16,
+      "step": 1297,
+      "update": 6.9817588780964615,
+      "frozen": 0.00022701934442217656
+    },
+    "uptake_gt1e-12": {
+      "cycle": 40,
+      "phase": 16,
+      "step": 1297,
+      "update": 6.9817588780964615,
+      "frozen": 0.00022701934442217656
+    },
+    "memory_paid_exact": {
+      "cycle": 40,
+      "phase": 7,
+      "step": 1288,
+      "update": 0.0017851930741675155,
+      "frozen": 0.001785193074167516
+    },
+    "memory_paid_gt1e-12": {
+      "cycle": 40,
+      "phase": 17,
+      "step": 1298,
+      "update": 0.001823516452922108,
+      "frozen": 0.0017816272617695956
+    },
+    "movement_paid_exact": {
+      "cycle": 40,
+      "phase": 7,
+      "step": 1288,
+      "update": 0.06868455550352581,
+      "frozen": 0.06868455550352583
+    },
+    "movement_paid_gt1e-12": {
+      "cycle": 40,
+      "phase": 13,
+      "step": 1294,
+      "update": 0.01831324291312722,
+      "frozen": 0.01831323805374307
+    },
+    "value_write_L1_exact": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 2.644493656989376,
+      "frozen": 0.0
+    },
+    "value_write_L1_gt1e-12": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 2.644493656989376,
+      "frozen": 0.0
+    }
+  },
+  {
+    "morph": "compact",
+    "seed": 202610182102,
+    "alpha": 0.4,
+    "world": "independent",
+    "action_exact": null,
+    "action_gt1e-12": null,
+    "M_exact": null,
+    "M_gt1e-12": null,
+    "E_exact": null,
+    "E_gt1e-12": null,
+    "uptake_exact": null,
+    "uptake_gt1e-12": null,
+    "memory_paid_exact": null,
+    "memory_paid_gt1e-12": null,
+    "movement_paid_exact": null,
+    "movement_paid_gt1e-12": null,
+    "value_write_L1_exact": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 0.14015367290067707,
+      "frozen": 0.0
+    },
+    "value_write_L1_gt1e-12": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 0.14015367290067707,
+      "frozen": 0.0
+    }
+  },
+  {
+    "morph": "compact",
+    "seed": 202610182102,
+    "alpha": 1.0,
+    "world": "same",
+    "action_exact": null,
+    "action_gt1e-12": null,
+    "M_exact": null,
+    "M_gt1e-12": null,
+    "E_exact": null,
+    "E_gt1e-12": null,
+    "uptake_exact": null,
+    "uptake_gt1e-12": null,
+    "memory_paid_exact": null,
+    "memory_paid_gt1e-12": null,
+    "movement_paid_exact": null,
+    "movement_paid_gt1e-12": null,
+    "value_write_L1_exact": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 0.14177020762607886,
+      "frozen": 0.0
+    },
+    "value_write_L1_gt1e-12": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 0.14177020762607886,
+      "frozen": 0.0
+    }
+  },
+  {
+    "morph": "compact",
+    "seed": 202610182102,
+    "alpha": 1.0,
+    "world": "reversal",
+    "action_exact": {
+      "cycle": 33,
+      "phase": 6,
+      "step": 1063,
+      "update": -1.0,
+      "frozen": 1.0
+    },
+    "action_gt1e-12": {
+      "cycle": 33,
+      "phase": 6,
+      "step": 1063,
+      "update": -1.0,
+      "frozen": 1.0
+    },
+    "M_exact": {
+      "cycle": 33,
+      "phase": 8,
+      "step": 1065,
+      "update": 36.46859966415759,
+      "frozen": 36.46859966415758
+    },
+    "M_gt1e-12": {
+      "cycle": 33,
+      "phase": 16,
+      "step": 1073,
+      "update": 37.250287372256146,
+      "frozen": 36.41031734798736
+    },
+    "E_exact": {
+      "cycle": 33,
+      "phase": 6,
+      "step": 1063,
+      "update": 52.268360755420424,
+      "frozen": 52.26836075542042
+    },
+    "E_gt1e-12": {
+      "cycle": 33,
+      "phase": 13,
+      "step": 1070,
+      "update": 51.18221460828542,
+      "frozen": 51.182214610365236
+    },
+    "uptake_exact": {
+      "cycle": 33,
+      "phase": 6,
+      "step": 1063,
+      "update": 8.350610382670383e-15,
+      "frozen": 2.2708528985341143e-15
+    },
+    "uptake_gt1e-12": {
+      "cycle": 33,
+      "phase": 16,
+      "step": 1073,
+      "update": 6.999971992195309,
+      "frozen": 0.0002217899554058333
+    },
+    "memory_paid_exact": {
+      "cycle": 33,
+      "phase": 9,
+      "step": 1066,
+      "update": 0.0018234299832078794,
+      "frozen": 0.0018234299832078792
+    },
+    "memory_paid_gt1e-12": {
+      "cycle": 33,
+      "phase": 17,
+      "step": 1074,
+      "update": 0.0018625143686128074,
+      "frozen": 0.001820515867399368
+    },
+    "movement_paid_exact": {
+      "cycle": 33,
+      "phase": 9,
+      "step": 1066,
+      "update": 0.07018696883035876,
+      "frozen": 0.07018696883035874
+    },
+    "movement_paid_gt1e-12": {
+      "cycle": 33,
+      "phase": 13,
+      "step": 1070,
+      "update": 0.018510881488349357,
+      "frozen": 0.01851087940810178
+    },
+    "value_write_L1_exact": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 6.819842727995196,
+      "frozen": 0.0
+    },
+    "value_write_L1_gt1e-12": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 6.819842727995196,
+      "frozen": 0.0
+    }
+  },
+  {
+    "morph": "compact",
+    "seed": 202610182102,
+    "alpha": 1.0,
+    "world": "independent",
+    "action_exact": {
+      "cycle": 39,
+      "phase": 6,
+      "step": 1255,
+      "update": -1.0,
+      "frozen": 1.0
+    },
+    "action_gt1e-12": {
+      "cycle": 39,
+      "phase": 6,
+      "step": 1255,
+      "update": -1.0,
+      "frozen": 1.0
+    },
+    "M_exact": {
+      "cycle": 39,
+      "phase": 7,
+      "step": 1256,
+      "update": 40.003407033796904,
+      "frozen": 40.00340703379691
+    },
+    "M_gt1e-12": {
+      "cycle": 39,
+      "phase": 16,
+      "step": 1265,
+      "update": 40.77145781443066,
+      "frozen": 39.93148703060794
+    },
+    "E_exact": {
+      "cycle": 39,
+      "phase": 13,
+      "step": 1262,
+      "update": 54.56418083921304,
+      "frozen": 54.5641808428652
+    },
+    "E_gt1e-12": {
+      "cycle": 39,
+      "phase": 13,
+      "step": 1262,
+      "update": 54.56418083921304,
+      "frozen": 54.5641808428652
+    },
+    "uptake_exact": {
+      "cycle": 39,
+      "phase": 6,
+      "step": 1255,
+      "update": 6.243618768522635e-15,
+      "frozen": 5.3568331375616816e-15
+    },
+    "uptake_gt1e-12": {
+      "cycle": 39,
+      "phase": 16,
+      "step": 1265,
+      "update": 6.999994460522384,
+      "frozen": 0.00023792866634003742
+    },
+    "memory_paid_exact": {
+      "cycle": 39,
+      "phase": 8,
+      "step": 1257,
+      "update": 0.002000170351689845,
+      "frozen": 0.0020001703516898455
+    },
+    "memory_paid_gt1e-12": {
+      "cycle": 39,
+      "phase": 17,
+      "step": 1266,
+      "update": 0.002038572890721533,
+      "frozen": 0.001996574351530397
+    },
+    "movement_paid_exact": {
+      "cycle": 39,
+      "phase": 8,
+      "step": 1257,
+      "update": 0.07680635165166019,
+      "frozen": 0.0768063516516602
+    },
+    "movement_paid_gt1e-12": {
+      "cycle": 39,
+      "phase": 13,
+      "step": 1262,
+      "update": 0.021485558019706225,
+      "frozen": 0.021485554366813278
+    },
+    "value_write_L1_exact": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 0.14177020762607886,
+      "frozen": 0.0
+    },
+    "value_write_L1_gt1e-12": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 0.14177020762607886,
+      "frozen": 0.0
+    }
+  },
+  {
+    "morph": "ring",
+    "seed": 202610182102,
+    "alpha": 0.4,
+    "world": "same",
+    "action_exact": null,
+    "action_gt1e-12": null,
+    "M_exact": null,
+    "M_gt1e-12": null,
+    "E_exact": null,
+    "E_gt1e-12": null,
+    "uptake_exact": null,
+    "uptake_gt1e-12": null,
+    "memory_paid_exact": null,
+    "memory_paid_gt1e-12": null,
+    "movement_paid_exact": null,
+    "movement_paid_gt1e-12": null,
+    "value_write_L1_exact": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 0.30222321820500614,
+      "frozen": 0.0
+    },
+    "value_write_L1_gt1e-12": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 0.30222321820500614,
+      "frozen": 0.0
+    }
+  },
+  {
+    "morph": "ring",
+    "seed": 202610182102,
+    "alpha": 0.4,
+    "world": "reversal",
+    "action_exact": {
+      "cycle": 40,
+      "phase": 6,
+      "step": 1287,
+      "update": 1.0,
+      "frozen": -1.0
+    },
+    "action_gt1e-12": {
+      "cycle": 40,
+      "phase": 6,
+      "step": 1287,
+      "update": 1.0,
+      "frozen": -1.0
+    },
+    "M_exact": {
+      "cycle": 40,
+      "phase": 6,
+      "step": 1287,
+      "update": 31.69735833853356,
+      "frozen": 31.697358338533586
+    },
+    "M_gt1e-12": {
+      "cycle": 40,
+      "phase": 16,
+      "step": 1297,
+      "update": 32.43737046225252,
+      "frozen": 31.63404414983026
+    },
+    "E_exact": {
+      "cycle": 40,
+      "phase": 6,
+      "step": 1287,
+      "update": 19.77145361204177,
+      "frozen": 19.771453612041913
+    },
+    "E_gt1e-12": {
+      "cycle": 40,
+      "phase": 13,
+      "step": 1294,
+      "update": 18.864190282017336,
+      "frozen": 18.864187991584092
+    },
+    "uptake_exact": {
+      "cycle": 40,
+      "phase": 6,
+      "step": 1287,
+      "update": 1.6230980683066967e-16,
+      "frozen": 2.0091792554928638e-13
+    },
+    "uptake_gt1e-12": {
+      "cycle": 40,
+      "phase": 16,
+      "step": 1297,
+      "update": 6.694581796415154,
+      "frozen": 0.00019585956287201082
+    },
+    "memory_paid_exact": {
+      "cycle": 40,
+      "phase": 7,
+      "step": 1288,
+      "update": 0.0015848679169266783,
+      "frozen": 0.0015848679169266793
+    },
+    "memory_paid_gt1e-12": {
+      "cycle": 40,
+      "phase": 17,
+      "step": 1298,
+      "update": 0.001621868523112626,
+      "frozen": 0.001581702207491513
+    },
+    "movement_paid_exact": {
+      "cycle": 40,
+      "phase": 7,
+      "step": 1288,
+      "update": 0.05580889282559379,
+      "frozen": 0.05580889282559382
+    },
+    "movement_paid_gt1e-12": {
+      "cycle": 40,
+      "phase": 13,
+      "step": 1294,
+      "update": 0.046689505621103404,
+      "frozen": 0.04669179651268042
+    },
+    "value_write_L1_exact": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 2.3924154180770865,
+      "frozen": 0.0
+    },
+    "value_write_L1_gt1e-12": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 2.3924154180770865,
+      "frozen": 0.0
+    }
+  },
+  {
+    "morph": "ring",
+    "seed": 202610182102,
+    "alpha": 0.4,
+    "world": "independent",
+    "action_exact": null,
+    "action_gt1e-12": null,
+    "M_exact": null,
+    "M_gt1e-12": null,
+    "E_exact": null,
+    "E_gt1e-12": null,
+    "uptake_exact": null,
+    "uptake_gt1e-12": null,
+    "memory_paid_exact": null,
+    "memory_paid_gt1e-12": null,
+    "movement_paid_exact": null,
+    "movement_paid_gt1e-12": null,
+    "value_write_L1_exact": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 0.30222321820500614,
+      "frozen": 0.0
+    },
+    "value_write_L1_gt1e-12": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 0.30222321820500614,
+      "frozen": 0.0
+    }
+  },
+  {
+    "morph": "ring",
+    "seed": 202610182102,
+    "alpha": 1.0,
+    "world": "same",
+    "action_exact": null,
+    "action_gt1e-12": null,
+    "M_exact": null,
+    "M_gt1e-12": null,
+    "E_exact": null,
+    "E_gt1e-12": null,
+    "uptake_exact": null,
+    "uptake_gt1e-12": null,
+    "memory_paid_exact": null,
+    "memory_paid_gt1e-12": null,
+    "movement_paid_exact": null,
+    "movement_paid_gt1e-12": null,
+    "value_write_L1_exact": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 0.2650428122266803,
+      "frozen": 0.0
+    },
+    "value_write_L1_gt1e-12": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 0.2650428122266803,
+      "frozen": 0.0
+    }
+  },
+  {
+    "morph": "ring",
+    "seed": 202610182102,
+    "alpha": 1.0,
+    "world": "reversal",
+    "action_exact": {
+      "cycle": 33,
+      "phase": 6,
+      "step": 1063,
+      "update": -1.0,
+      "frozen": 1.0
+    },
+    "action_gt1e-12": {
+      "cycle": 33,
+      "phase": 6,
+      "step": 1063,
+      "update": -1.0,
+      "frozen": 1.0
+    },
+    "M_exact": {
+      "cycle": 33,
+      "phase": 6,
+      "step": 1063,
+      "update": 32.32100991467191,
+      "frozen": 32.32100991467185
+    },
+    "M_gt1e-12": {
+      "cycle": 33,
+      "phase": 16,
+      "step": 1073,
+      "update": 33.06649986514164,
+      "frozen": 32.256438038887865
+    },
+    "E_exact": {
+      "cycle": 33,
+      "phase": 6,
+      "step": 1063,
+      "update": 38.81660281692888,
+      "frozen": 38.816602816928494
+    },
+    "E_gt1e-12": {
+      "cycle": 33,
+      "phase": 13,
+      "step": 1070,
+      "update": 37.86544735917477,
+      "frozen": 37.86544986464492
+    },
+    "uptake_exact": {
+      "cycle": 33,
+      "phase": 6,
+      "step": 1063,
+      "update": 5.586157285527264e-13,
+      "frozen": 1.2997526020038964e-14
+    },
+    "uptake_gt1e-12": {
+      "cycle": 33,
+      "phase": 16,
+      "step": 1073,
+      "update": 6.7506151958209974,
+      "frozen": 9.997704017925983e-05
+    },
+    "memory_paid_exact": {
+      "cycle": 33,
+      "phase": 7,
+      "step": 1064,
+      "update": 0.0016160504957335956,
+      "frozen": 0.0016160504957335924
+    },
+    "memory_paid_gt1e-12": {
+      "cycle": 33,
+      "phase": 17,
+      "step": 1074,
+      "update": 0.001653324993257082,
+      "frozen": 0.0016128219019443933
+    },
+    "movement_paid_exact": {
+      "cycle": 33,
+      "phase": 7,
+      "step": 1064,
+      "update": 0.056813713103217096,
+      "frozen": 0.05681371310321697
+    },
+    "movement_paid_gt1e-12": {
+      "cycle": 33,
+      "phase": 13,
+      "step": 1070,
+      "update": 0.04810544495249418,
+      "frozen": 0.048102938980731126
+    },
+    "value_write_L1_exact": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 6.471518413218286,
+      "frozen": 0.0
+    },
+    "value_write_L1_gt1e-12": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 6.471518413218286,
+      "frozen": 0.0
+    }
+  },
+  {
+    "morph": "ring",
+    "seed": 202610182102,
+    "alpha": 1.0,
+    "world": "independent",
+    "action_exact": {
+      "cycle": 39,
+      "phase": 6,
+      "step": 1255,
+      "update": -1.0,
+      "frozen": 1.0
+    },
+    "action_gt1e-12": {
+      "cycle": 39,
+      "phase": 6,
+      "step": 1255,
+      "update": -1.0,
+      "frozen": 1.0
+    },
+    "M_exact": {
+      "cycle": 39,
+      "phase": 6,
+      "step": 1255,
+      "update": 35.887354377052766,
+      "frozen": 35.88735437705273
+    },
+    "M_gt1e-12": {
+      "cycle": 39,
+      "phase": 16,
+      "step": 1265,
+      "update": 36.64709706483187,
+      "frozen": 35.815657053460555
+    },
+    "E_exact": {
+      "cycle": 39,
+      "phase": 6,
+      "step": 1255,
+      "update": 44.579509911436574,
+      "frozen": 44.579509911436354
+    },
+    "E_gt1e-12": {
+      "cycle": 39,
+      "phase": 13,
+      "step": 1262,
+      "update": 43.5209721128727,
+      "frozen": 43.520973990073855
+    },
+    "uptake_exact": {
+      "cycle": 39,
+      "phase": 6,
+      "step": 1255,
+      "update": 6.207184808585014e-13,
+      "frozen": 3.0850425517172976e-13
+    },
+    "uptake_gt1e-12": {
+      "cycle": 39,
+      "phase": 16,
+      "step": 1265,
+      "update": 6.9287736144594145,
+      "frozen": 0.00010685303208362004
+    },
+    "memory_paid_exact": {
+      "cycle": 39,
+      "phase": 7,
+      "step": 1256,
+      "update": 0.0017943677188526385,
+      "frozen": 0.0017943677188526365
+    },
+    "memory_paid_gt1e-12": {
+      "cycle": 39,
+      "phase": 17,
+      "step": 1266,
+      "update": 0.0018323548532415935,
+      "frozen": 0.0017907828526730278
+    },
+    "movement_paid_exact": {
+      "cycle": 39,
+      "phase": 7,
+      "step": 1256,
+      "update": 0.06364624399936647,
+      "frozen": 0.06364624399936641
+    },
+    "movement_paid_gt1e-12": {
+      "cycle": 39,
+      "phase": 13,
+      "step": 1262,
+      "update": 0.050395852044038854,
+      "frozen": 0.05039397446713266
+    },
+    "value_write_L1_exact": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 0.2650428122266803,
+      "frozen": 0.0
+    },
+    "value_write_L1_gt1e-12": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 0.2650428122266803,
+      "frozen": 0.0
+    }
+  },
+  {
+    "morph": "double_lobe",
+    "seed": 202610182102,
+    "alpha": 0.4,
+    "world": "same",
+    "action_exact": null,
+    "action_gt1e-12": null,
+    "M_exact": null,
+    "M_gt1e-12": null,
+    "E_exact": null,
+    "E_gt1e-12": null,
+    "uptake_exact": null,
+    "uptake_gt1e-12": null,
+    "memory_paid_exact": null,
+    "memory_paid_gt1e-12": null,
+    "movement_paid_exact": null,
+    "movement_paid_gt1e-12": null,
+    "value_write_L1_exact": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 0.18092880314321544,
+      "frozen": 0.0
+    },
+    "value_write_L1_gt1e-12": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 0.18092880314321544,
+      "frozen": 0.0
+    }
+  },
+  {
+    "morph": "double_lobe",
+    "seed": 202610182102,
+    "alpha": 0.4,
+    "world": "reversal",
+    "action_exact": {
+      "cycle": 40,
+      "phase": 6,
+      "step": 1287,
+      "update": 1.0,
+      "frozen": -1.0
+    },
+    "action_gt1e-12": {
+      "cycle": 40,
+      "phase": 6,
+      "step": 1287,
+      "update": 1.0,
+      "frozen": -1.0
+    },
+    "M_exact": {
+      "cycle": 40,
+      "phase": 10,
+      "step": 1291,
+      "update": 32.70920124227366,
+      "frozen": 32.70920124227365
+    },
+    "M_gt1e-12": {
+      "cycle": 40,
+      "phase": 16,
+      "step": 1297,
+      "update": 33.505651666348456,
+      "frozen": 32.66999100829426
+    },
+    "E_exact": {
+      "cycle": 40,
+      "phase": 14,
+      "step": 1295,
+      "update": 22.75755158120999,
+      "frozen": 22.75750354813342
+    },
+    "E_gt1e-12": {
+      "cycle": 40,
+      "phase": 14,
+      "step": 1295,
+      "update": 22.75755158120999,
+      "frozen": 22.75750354813342
+    },
+    "uptake_exact": {
+      "cycle": 40,
+      "phase": 6,
+      "step": 1287,
+      "update": 4.762215566782686e-16,
+      "frozen": 8.125582059197736e-16
+    },
+    "uptake_gt1e-12": {
+      "cycle": 40,
+      "phase": 16,
+      "step": 1297,
+      "update": 6.964015377312229,
+      "frozen": 0.00017656019392458058
+    },
+    "memory_paid_exact": {
+      "cycle": 40,
+      "phase": 11,
+      "step": 1292,
+      "update": 0.001635460062113683,
+      "frozen": 0.0016354600621136825
+    },
+    "memory_paid_gt1e-12": {
+      "cycle": 40,
+      "phase": 17,
+      "step": 1298,
+      "update": 0.001675282583317423,
+      "frozen": 0.0016334995504147132
+    },
+    "movement_paid_exact": {
+      "cycle": 40,
+      "phase": 7,
+      "step": 1288,
+      "update": 0.053736485496829814,
+      "frozen": 0.05373648549682981
+    },
+    "movement_paid_gt1e-12": {
+      "cycle": 40,
+      "phase": 14,
+      "step": 1295,
+      "update": 0.023256088599207345,
+      "frozen": 0.02330413128431648
+    },
+    "value_write_L1_exact": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 2.597420625814353,
+      "frozen": 0.0
+    },
+    "value_write_L1_gt1e-12": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 2.597420625814353,
+      "frozen": 0.0
+    }
+  },
+  {
+    "morph": "double_lobe",
+    "seed": 202610182102,
+    "alpha": 0.4,
+    "world": "independent",
+    "action_exact": null,
+    "action_gt1e-12": null,
+    "M_exact": null,
+    "M_gt1e-12": null,
+    "E_exact": null,
+    "E_gt1e-12": null,
+    "uptake_exact": null,
+    "uptake_gt1e-12": null,
+    "memory_paid_exact": null,
+    "memory_paid_gt1e-12": null,
+    "movement_paid_exact": null,
+    "movement_paid_gt1e-12": null,
+    "value_write_L1_exact": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 0.18092880314321544,
+      "frozen": 0.0
+    },
+    "value_write_L1_gt1e-12": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 0.18092880314321544,
+      "frozen": 0.0
+    }
+  },
+  {
+    "morph": "double_lobe",
+    "seed": 202610182102,
+    "alpha": 1.0,
+    "world": "same",
+    "action_exact": null,
+    "action_gt1e-12": null,
+    "M_exact": null,
+    "M_gt1e-12": null,
+    "E_exact": null,
+    "E_gt1e-12": null,
+    "uptake_exact": null,
+    "uptake_gt1e-12": null,
+    "memory_paid_exact": null,
+    "memory_paid_gt1e-12": null,
+    "movement_paid_exact": null,
+    "movement_paid_gt1e-12": null,
+    "value_write_L1_exact": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 0.14908400368133792,
+      "frozen": 0.0
+    },
+    "value_write_L1_gt1e-12": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 0.14908400368133792,
+      "frozen": 0.0
+    }
+  },
+  {
+    "morph": "double_lobe",
+    "seed": 202610182102,
+    "alpha": 1.0,
+    "world": "reversal",
+    "action_exact": {
+      "cycle": 33,
+      "phase": 6,
+      "step": 1063,
+      "update": -1.0,
+      "frozen": 1.0
+    },
+    "action_gt1e-12": {
+      "cycle": 33,
+      "phase": 6,
+      "step": 1063,
+      "update": -1.0,
+      "frozen": 1.0
+    },
+    "M_exact": {
+      "cycle": 33,
+      "phase": 6,
+      "step": 1063,
+      "update": 33.38125156088717,
+      "frozen": 33.38125156088716
+    },
+    "M_gt1e-12": {
+      "cycle": 33,
+      "phase": 16,
+      "step": 1073,
+      "update": 34.141981927214836,
+      "frozen": 33.3145622981495
+    },
+    "E_exact": {
+      "cycle": 33,
+      "phase": 6,
+      "step": 1063,
+      "update": 43.61577974732946,
+      "frozen": 43.61577974732934
+    },
+    "E_gt1e-12": {
+      "cycle": 33,
+      "phase": 14,
+      "step": 1071,
+      "update": 42.53957734667314,
+      "frozen": 42.53963180329337
+    },
+    "uptake_exact": {
+      "cycle": 33,
+      "phase": 6,
+      "step": 1063,
+      "update": 2.23230811468163e-13,
+      "frozen": 5.240857889565062e-14
+    },
+    "uptake_gt1e-12": {
+      "cycle": 33,
+      "phase": 16,
+      "step": 1073,
+      "update": 6.8952734602617305,
+      "frozen": 0.00010988471734808163
+    },
+    "memory_paid_exact": {
+      "cycle": 33,
+      "phase": 7,
+      "step": 1064,
+      "update": 0.0016690625780443587,
+      "frozen": 0.001669062578044358
+    },
+    "memory_paid_gt1e-12": {
+      "cycle": 33,
+      "phase": 17,
+      "step": 1074,
+      "update": 0.001707099096360742,
+      "frozen": 0.0016657281149074748
+    },
+    "movement_paid_exact": {
+      "cycle": 33,
+      "phase": 7,
+      "step": 1064,
+      "update": 0.054614950847473406,
+      "frozen": 0.05461495084747338
+    },
+    "movement_paid_gt1e-12": {
+      "cycle": 33,
+      "phase": 14,
+      "step": 1071,
+      "update": 0.02487574110643234,
+      "frozen": 0.024821273592598187
+    },
+    "value_write_L1_exact": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 6.7967481599480974,
+      "frozen": 0.0
+    },
+    "value_write_L1_gt1e-12": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 6.7967481599480974,
+      "frozen": 0.0
+    }
+  },
+  {
+    "morph": "double_lobe",
+    "seed": 202610182102,
+    "alpha": 1.0,
+    "world": "independent",
+    "action_exact": {
+      "cycle": 39,
+      "phase": 6,
+      "step": 1255,
+      "update": -1.0,
+      "frozen": 1.0
+    },
+    "action_gt1e-12": {
+      "cycle": 39,
+      "phase": 6,
+      "step": 1255,
+      "update": -1.0,
+      "frozen": 1.0
+    },
+    "M_exact": {
+      "cycle": 39,
+      "phase": 7,
+      "step": 1256,
+      "update": 37.00657803589828,
+      "frozen": 37.00657803589827
+    },
+    "M_gt1e-12": {
+      "cycle": 39,
+      "phase": 16,
+      "step": 1265,
+      "update": 37.77428674048244,
+      "frozen": 36.94003405536081
+    },
+    "E_exact": {
+      "cycle": 39,
+      "phase": 6,
+      "step": 1255,
+      "update": 49.16100032553442,
+      "frozen": 49.161000325534395
+    },
+    "E_gt1e-12": {
+      "cycle": 39,
+      "phase": 14,
+      "step": 1263,
+      "update": 47.965557332175635,
+      "frozen": 47.965589981375196
+    },
+    "uptake_exact": {
+      "cycle": 39,
+      "phase": 6,
+      "step": 1255,
+      "update": 8.307690673873676e-14,
+      "frozen": 5.0673941346609184e-14
+    },
+    "uptake_gt1e-12": {
+      "cycle": 39,
+      "phase": 16,
+      "step": 1265,
+      "update": 6.952227336977963,
+      "frozen": 0.00012162763114886367
+    },
+    "memory_paid_exact": {
+      "cycle": 39,
+      "phase": 8,
+      "step": 1257,
+      "update": 0.001850328901794914,
+      "frozen": 0.0018503289017949137
+    },
+    "memory_paid_gt1e-12": {
+      "cycle": 39,
+      "phase": 17,
+      "step": 1266,
+      "update": 0.001888714337024122,
+      "frozen": 0.0018470017027680406
+    },
+    "movement_paid_exact": {
+      "cycle": 39,
+      "phase": 8,
+      "step": 1257,
+      "update": 0.06162983069496695,
+      "frozen": 0.06162983069496694
+    },
+    "movement_paid_gt1e-12": {
+      "cycle": 39,
+      "phase": 14,
+      "step": 1263,
+      "update": 0.020852998720182474,
+      "frozen": 0.020820342989452477
+    },
+    "value_write_L1_exact": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 0.14908400368133792,
+      "frozen": 0.0
+    },
+    "value_write_L1_gt1e-12": {
+      "cycle": 32,
+      "phase": 31,
+      "step": 1056,
+      "update": 0.14908400368133792,
+      "frozen": 0.0
+    }
+  }
+]

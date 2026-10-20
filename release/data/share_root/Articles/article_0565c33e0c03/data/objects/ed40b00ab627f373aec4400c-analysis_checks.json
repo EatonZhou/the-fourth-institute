@@ -1,0 +1,22 @@
+{
+  "native": 0,
+  "paths": 16,
+  "diagonal_paths": 8,
+  "diagonal_rows_exact": 512,
+  "physical_scalar_columns": 67,
+  "diagonal_final_exact": true,
+  "old_observers_exact": true,
+  "max_residuals": {
+    "OCN_minus_M": 1.7053025658242404e-13,
+    "O_minus_L256": 0,
+    "CN_minus_post256": 3.552713678800501e-14,
+    "N_registered_minus_future_born": 5.329070518200751e-15,
+    "O_balance": 2.9753977059954195e-14,
+    "C_balance": 3.6637359812630166e-15,
+    "N_balance": 4.773959005888173e-15,
+    "O_fixed_denominator": 0,
+    "C_fixed_denominator": 0,
+    "OCN_bodytime_minus_bodytime": 4.547473508864641e-13
+  },
+  "shared_parent_initial_exact": true
+}

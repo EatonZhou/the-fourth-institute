@@ -1,0 +1,81 @@
+{
+  "task": "postbirth_cohort_policy_crossover_20261019",
+  "status": "completed_limited_postbirth_support",
+  "objective_met": false,
+  "owner": "resident_d3ccfa2d95b7",
+  "report": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/postbirth_cohort_policy_crossover_20261019/REPORT.txt",
+  "method": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/postbirth_cohort_policy_crossover_20261019/METHOD.txt",
+  "analysis": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/postbirth_cohort_policy_crossover_20261019/analysis.json",
+  "budget": {
+    "native_cap": 1024,
+    "native_actual": 1024,
+    "new_crossover_native": 512,
+    "known_tail_measurement_replay_native": 512,
+    "old_acquisition_replay_native": 0,
+    "extra_boundary_native": 0,
+    "failed_native": 0,
+    "unknown_native": 0,
+    "runner_jobs": 1,
+    "attempts": 1,
+    "runner_job": "5df9843e-6c1d-4b3a-8120-6c233c2a0dfb",
+    "runner_status": "completed",
+    "returncode": 0,
+    "worker_cap": 450,
+    "runner_worker_seconds": 157.880912,
+    "worker_definition": "2 allocated CPU workers times authoritative runner started..finished wall seconds",
+    "native_script_wall_seconds": 78.69068641890772,
+    "remaining_native_sealed": 0,
+    "remaining_worker_seconds_sealed": 292.119088,
+    "scientific_wall_gate_seconds": 180,
+    "shutdown_reserve_worker_seconds": 60,
+    "cpu": 2,
+    "gpu": 0,
+    "raw_bytes": 191475921,
+    "raw_cap_bytes": 1073741824,
+    "old_budget_used": 0
+  },
+  "counts": {
+    "restoration": {
+      "C_advantage_tol": 4,
+      "C_advantage_zero": 4,
+      "useful_renewal_tol": 2,
+      "useful_renewal_zero": 2,
+      "total": 4,
+      "positive_specificity": 2
+    },
+    "withdrawal": {
+      "C_advantage_tol": 4,
+      "C_advantage_zero": 4,
+      "useful_renewal_tol": 0,
+      "useful_renewal_zero": 0,
+      "total": 4,
+      "positive_specificity": 0
+    },
+    "maintenance_by_history_future": {
+      "both__both": 4,
+      "both__birth_gain_only": 0,
+      "birth_gain_only__both": 4,
+      "birth_gain_only__birth_gain_only": 0
+    },
+    "same_zero_tolerance_classification": true
+  },
+  "scientific_choice": "保四态出生后材料支持；仅两G史分离体有用更新；关闭普遍新生特异和普遍更新优势",
+  "next_request": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/postbirth_cohort_policy_crossover_20261019/scientific_next_request.json",
+  "plan_sha256": "5d514fbf980e85a23b443fe373b7a8e834a075cfc26e5183a6b635697da7a119",
+  "manifest_sha256": "87b64866bd05bdde24ef22aec87b64ab9e86e7159f725959a3fab5d52d0dc54a",
+  "raw_manifest_sha256": "6787f20f8d3b5c3833cdc09ca0c3e9f79104670970626b908f2f54044b810f33",
+  "attachment_count": 103,
+  "raw_file_count": 1361,
+  "figures": [
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/postbirth_cohort_policy_crossover_20261019/figures/curves_202610195601_ring.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/postbirth_cohort_policy_crossover_20261019/figures/curves_202610195601_separate_seeds.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/postbirth_cohort_policy_crossover_20261019/figures/curves_202610195602_ring.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/postbirth_cohort_policy_crossover_20261019/figures/curves_202610195602_separate_seeds.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/postbirth_cohort_policy_crossover_20261019/figures/maps_202610195601_ring.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/postbirth_cohort_policy_crossover_20261019/figures/maps_202610195601_separate_seeds.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/postbirth_cohort_policy_crossover_20261019/figures/maps_202610195602_ring.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/postbirth_cohort_policy_crossover_20261019/figures/maps_202610195602_separate_seeds.png"
+  ],
+  "diagonal_verification": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/postbirth_cohort_policy_crossover_20261019/diagonal_checks.json",
+  "bounds": "四相关取得态；C为活到320的混龄出生材料；单64窗；额外计算/诊断未计价；无学习/长期维护主张"
+}

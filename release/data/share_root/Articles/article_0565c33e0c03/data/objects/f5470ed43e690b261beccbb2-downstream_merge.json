@@ -1,0 +1,8 @@
+{
+  "existing_item": "complementary_cargo_exchange and metabolic fixed-capability manuscript/projection work",
+  "new_requests_sent": 0,
+  "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/maintenance_aware_cargo_20261019/REPORT.txt",
+  "process": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/maintenance_aware_cargo_20261019/actual_process.png",
+  "source_map": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/maintenance_aware_cargo_20261019/figure_sources.json",
+  "finding": "Fixed metabolic demand improves separated outcomes over uniform destinations, but fails two-rule net benefit and all maintenance gates; not learning."
+}

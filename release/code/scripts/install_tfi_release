@@ -1,0 +1,7 @@
+#!/usr/bin/env python3
+"""Install an already generated TFI engineering bundle in an isolated instance."""
+import sys
+sys.dont_write_bytecode = True
+from tfi_release_install import main
+
+raise SystemExit(main())

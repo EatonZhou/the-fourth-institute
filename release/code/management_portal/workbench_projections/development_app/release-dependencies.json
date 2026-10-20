@@ -1,0 +1,88 @@
+{
+  "schema": "tfi.projection-release-dependencies.v1",
+  "code_repository": "repo_5d287fed9c7e",
+  "files": [
+    {
+      "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/architecture-evidence/current/IMPROVE.md",
+      "sha256": "4f7027d564b7e86714cf46e41fa6e49eb4c4db528d38a1d4b0f65444d039624f",
+      "size": 6498
+    },
+    {
+      "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/architecture-evidence/current/SPEC.md",
+      "sha256": "47f1523dee9946a1bc1397055eb89ae501fc5570103e718bc07f2cf6c939b675",
+      "size": 15776
+    },
+    {
+      "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/architecture-evidence/current/architecture/evolution.yaml",
+      "sha256": "75725c9fe1415c317c04d840ebee33ecb6a971114023d489ccbcefc9ac58a627",
+      "size": 33935
+    },
+    {
+      "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/architecture-evidence/current/architecture/modules.yaml",
+      "sha256": "ee8c2a1e97773fe43693d083e8b88d7f7bdf3adefe4399ff60807264339dd2e7",
+      "size": 111522
+    },
+    {
+      "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/architecture-evidence/current/file-index.json",
+      "sha256": "79b840a37fa22ed997768e04ae34d643ab3937bfc953ef448599d407d0c740be",
+      "size": 2160309
+    },
+    {
+      "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/architecture-evidence/current/protocols.json",
+      "sha256": "b0ef553e3290743aa3b40aef3ecb6386e23ac1a6264af79269644ec829e70a43",
+      "size": 59003
+    },
+    {
+      "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/architecture-evidence/manifest.json",
+      "sha256": "6264ac78f52112151ac3fed78c2b146c937b029d27b4c0ca02fd08792aedc138",
+      "size": 3406
+    },
+    {
+      "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/deep-architecture/current/authored-lessons.js",
+      "sha256": "e08f1c8e976e255771cae0d4e103a12727d53ea8793b8e3e9afac7741112b8ae",
+      "size": 36836
+    },
+    {
+      "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/deep-architecture/current/catalog-manifest.json",
+      "sha256": "2dea30fda0d9eb477a97baa6f66c824cc87b716b2daced34a3c5a960fd1ef425",
+      "size": 7413
+    },
+    {
+      "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/deep-architecture/current/catalog.json",
+      "sha256": "2b977035a9e2e63dfd6b2d9e418efbe5998c5412a100dda661e97bdd2d3065b4",
+      "size": 522200
+    },
+    {
+      "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/deep-architecture/current/exploration-manifest.json",
+      "sha256": "11c95c95558c2ec20cc00e331359781f6659850c35b40474051303bb77c05ddd",
+      "size": 54266
+    },
+    {
+      "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/deep-architecture/current/exploration-model.json",
+      "sha256": "f6fe25b561761eb4dc27327c6653aeec3da51f7f220ac780b45a6f5173eff515",
+      "size": 5832858
+    },
+    {
+      "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/deep-architecture/current/lesson-manifest.json",
+      "sha256": "de177ad9bcdac8688f0a9acb69d96e10e2a24f44853dcf029cb488584ddae46d",
+      "size": 5552
+    },
+    {
+      "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/deep-architecture/current/lesson-sources.json",
+      "sha256": "dda9d3876be4425666304064a4335c59371833d7a9fdf078bb5167bdb86ee637",
+      "size": 78137
+    },
+    {
+      "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/deep-architecture/objects/isa-catalog-attachment-664e88043ae96e8717abac64faebf7bd4be75f25912ad3085954384fb4ae15fb.json",
+      "sha256": "678c19c9814ee901bc384312476a4a7d0f3563bcabd6b3429cd256df41a5c542",
+      "size": 615
+    }
+  ],
+  "json_roots": [],
+  "stage_progress": {
+    "index": "workspace_f9ff5e8a76df/file/reports/stage-index.json",
+    "content": "workspace_f9ff5e8a76df/file/reports/stage-content.json",
+    "schema": "workspace_f9ff5e8a76df/file/reports/stage-report-schema.json",
+    "new_report_directory": "digests/"
+  }
+}

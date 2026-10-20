@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title data-portal-site-title="[&quot;Login&quot;]">Login</title>
+    <link rel="stylesheet" href="/static/portal_components.css" />
+    <link rel="stylesheet" href="/static/portal_design_system.css" data-portal-skin="default" />
+    <link rel="stylesheet" href="/static/portal_themes.css" data-portal-skin-provider="themes" />
+    <script src="/static/portal_state.js"></script>
+    <script src="/static/portal_overlay.js"></script>
+    <script src="/static/portal_text.js"></script>
+    <script src="/static/portal_translations.js"></script>
+    <script src="/static/portal_i18n.js"></script>
+    <script src="/static/portal_theme.js"></script>
+    <script src="/static/portal_ui_primitives.js"></script>
+    <script src="/static/portal_button_tooltips.js"></script>
+    <style>
+      *, *::before, *::after { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        display: flex;
+        flex-direction: column;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      main {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 32px 16px;
+      }
+
+      .loginCard {
+        --portal-detail-width: 360px;
+        padding: 36px 40px 32px;
+        width: 100%;
+        max-width: 360px;
+      }
+
+      .loginCard h1 {
+        margin: 0 0 24px;
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--text);
+      }
+
+      .loginForm { display: grid; gap: 14px; }
+      .loginSubmit { width: 100%; }
+      .loginAlternative { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; margin: 18px 0 12px; color: var(--muted); font-size: 11px; }
+      .loginAlternative::before, .loginAlternative::after { content: ""; height: 1px; background: var(--border); }
+      .loginPasskey { width: 100%; }
+      .loginPasskeyStatus { margin: 10px 0 0; color: var(--muted); font-size: 12px; line-height: 1.4; }
+      .loginPasskeyStatus.error { color: var(--danger); }
+      .loginRecovery { display: block; margin-top: 14px; color: var(--accent); font-size: 12px; text-align: center; }
+      .loginError { margin-top: 16px; }
+      .loginNewcomer { display: flex; justify-content: center; gap: 16px; margin: 18px 0 0; padding-top: 14px; border-top: 1px solid var(--border); font-size: 12px; }
+      .loginNewcomer a { color: var(--accent); }
+    </style>
+  </head>
+  <body class="portalBoardShell">
+    <header class="portalSiteHeader">
+      <div class="portalNavShell"><div class="portalNavTop" data-portal-public-language><a class="portalBrand" href="/" data-portal-site-name>Portal</a></div></div>
+    </header>
+    <main>
+      <div class="portalDetailSurface loginCard">
+        <h1><!--portal-i18n:"登录"-->登录</h1>
+        <form class="loginForm" method="POST" action="/login">
+          <label class="portalField" for="usr"><!--portal-i18n:"用户名"-->用户名<input id="usr" type="text" name="username" autocomplete="username webauthn" autofocus /></label>
+          <label class="portalField" for="pwd"><!--portal-i18n:"密码"-->密码<input id="pwd" type="password" name="password" autocomplete="current-password" /></label>
+          <button class="portalButton is-primary loginSubmit" type="submit"><!--portal-i18n:"进入"-->进入</button>
+        </form>
+        <div class="loginAlternative" data-passkey-divider hidden><span><!--portal-i18n:"或"-->或</span></div>
+        <button class="portalButton loginPasskey" data-passkey-login data-portal-icon="lock" type="button" hidden><!--portal-i18n:"使用 Passkey 登录"-->使用 Passkey 登录</button>
+        <p class="loginPasskeyStatus" data-passkey-status role="status" hidden></p>
+        <a class="loginRecovery" href="/forgot-password"><!--portal-i18n:"忘记密码？"-->忘记密码？</a>
+        <!--ERROR-->
+        <p class="loginNewcomer"><a href="/join"><!--portal-i18n:"有邀请？加入 Portal"-->有邀请？加入 Portal</a><a href="/guide"><!--portal-i18n:"Guide"-->Guide</a></p>
+      </div>
+    </main>
+    <script src="/static/portal_api.js"></script>
+    <script src="/static/portal_passkeys.js"></script>
+    <script>
+      (() => {
+        // A new account arrives from /join with its username; the password is all that is left to type.
+        const username = new URLSearchParams(location.search).get("username");
+        if (username && !document.getElementById("usr").value) {
+          document.getElementById("usr").value = username;
+          document.getElementById("pwd").focus();
+        }
+      })();
+      (() => {
+        const button = document.querySelector("[data-passkey-login]");
+        const divider = document.querySelector("[data-passkey-divider]");
+        const status = document.querySelector("[data-passkey-status]");
+        if (!button || !window.PortalPasskeys?.supported()) return;
+        button.hidden = false;
+        divider.hidden = false;
+        let conditionalController = null;
+        let conditionalAttempt = null;
+
+        async function stopConditionalAttempt() {
+          if (!conditionalAttempt) return;
+          conditionalController?.abort();
+          await conditionalAttempt.catch(() => {});
+          conditionalAttempt = null;
+          conditionalController = null;
+        }
+
+        button.addEventListener("click", async () => {
+          button.disabled = true;
+          status.hidden = false;
+          status.className = "loginPasskeyStatus";
+          status.textContent = window.PortalI18n.t("Waiting for your Passkey…");
+          try {
+            await stopConditionalAttempt();
+            await window.PortalPasskeys.authenticate();
+            status.textContent = window.PortalI18n.t("Signed in. Opening Portal…");
+            window.location.replace("/");
+          } catch (error) {
+            status.className = "loginPasskeyStatus error";
+            status.textContent = window.PortalPasskeys.userFacingError(error);
+            button.disabled = false;
+          }
+        });
+
+        (async () => {
+          if (!await window.PortalPasskeys.conditionalSupported()) return;
+          conditionalController = new AbortController();
+          const controller = conditionalController;
+          conditionalAttempt = window.PortalPasskeys.authenticate({
+            mediation: "conditional",
+            signal: controller.signal,
+          });
+          const timeout = window.setTimeout(() => controller.abort(), 4 * 60 * 1000);
+          try {
+            await conditionalAttempt;
+            window.location.replace("/");
+          } catch (_error) {
+            // Conditional Passkey discovery is optional; password login remains available.
+          } finally {
+            window.clearTimeout(timeout);
+            if (conditionalController === controller) {
+              conditionalAttempt = null;
+              conditionalController = null;
+            }
+          }
+        })();
+      })();
+    </script>
+  </body>
+</html>

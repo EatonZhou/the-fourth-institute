@@ -1,0 +1,97 @@
+[
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/material_action_response/API.txt",
+    "sha256": "e16af38b4525327734464a6c9a0fbaf2aca67595285346ccd76e5cf09cf47262",
+    "bytes": 6272
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/material_action_response/analyze.py",
+    "sha256": "7a817682df4e4f1b4cf4453109641f7fa1362dad679d5bcd03ef8f00fb64790f",
+    "bytes": 6018
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/material_action_response/core.py",
+    "sha256": "15691ada9fd805c076f7c5770ba955dbf6cc454ea3af129b1ba03fe958467b5b",
+    "bytes": 9751
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/material_action_response/pilot.py",
+    "sha256": "458df9b45ad81b3afa188970842d92dbf21e97a64f4365bec7a762324a4570b8",
+    "bytes": 9908
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/material_action_response_20261018/API.txt",
+    "sha256": "e16af38b4525327734464a6c9a0fbaf2aca67595285346ccd76e5cf09cf47262",
+    "bytes": 6272
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/material_action_response_20261018/REPORT.txt",
+    "sha256": "067bc4d2a96b11be70e71c246d8a39209ddf5b1069664cfbcb7fff2ee7b60586",
+    "bytes": 6102
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/material_action_response_20261018/actual_bodies.png",
+    "sha256": "026d0ede19d6c04ed64387532a43be233e2793210e26963daecbeb1a9a3a227b",
+    "bytes": 156614
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/material_action_response_20261018/actual_dynamics.png",
+    "sha256": "15eaf0a44b077a3466ef341639a53d43e2ef851fc1797381f0276aef63fde4b5",
+    "bytes": 312266
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/material_action_response_20261018/boundary_failure.json",
+    "sha256": "addfe4dee2f2f51014fcfe50c327172dacd75f6f79c9b48077285887d1a65763",
+    "bytes": 311
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/material_action_response_20261018/first_attempt_result.json",
+    "sha256": "1a7120bd21df1ced4d54b49b753f384592841ab58a896c06a4f179bf4c3ad935",
+    "bytes": 484
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/material_action_response_20261018/outcomes.csv",
+    "sha256": "e3e219b95e5139bd9d766253eec4decdb4ae6cab8f4a06b5dae3a38b0881a20b",
+    "bytes": 3216
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/material_action_response_20261018/paired_vs_none.csv",
+    "sha256": "f4e1f0a6cf3116f32da2f616af766b14729c19c916064a184de75d105d0997a8",
+    "bytes": 1323
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/material_action_response_20261018/pilot_first_attempt.py.txt",
+    "sha256": "3b870e208be8d77c66e3824a8cb3260bc6ce8b7b95bc637f14577469e42c4782",
+    "bytes": 9868
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/material_action_response_20261018/plan.json",
+    "sha256": "396b81c2a38bb85163b672287c87c71c55c687e9df7c5169cc9977184683d040",
+    "bytes": 3764
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/material_action_response_20261018/plan_v2.json",
+    "sha256": "5121290d96085d33cf3ef76eeb40c610782d90879fa9e1ff70cdab17c35f4132",
+    "bytes": 3843
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/material_action_response_20261018/raw_manifest.json",
+    "sha256": "3882fda902c9874ba399a269744e8dfd64bb2f07b591193c9664e18bd30a226e",
+    "bytes": 46434
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/material_action_response_20261018/result.json",
+    "sha256": "f2d7713cf9ec4e83fa1f1a7faa2ab32983036de5294432ab022a44191c9520af",
+    "bytes": 17612
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/material_action_response_20261018/same_initial_checks.json",
+    "sha256": "60ee40cef2ff4503969f8d9e0c622b6ca82d13cc16904f2ceb394383fe325889",
+    "bytes": 878
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/material_action_response_20261018/summary.json",
+    "sha256": "40c2e6ca391ac8c659ade742b9d7da5e0a8e63e173acf1e78f0bc8f5a14e0f98",
+    "bytes": 10784
+  }
+]

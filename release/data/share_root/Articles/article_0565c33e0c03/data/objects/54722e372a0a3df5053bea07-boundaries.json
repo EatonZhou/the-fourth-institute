@@ -1,0 +1,16 @@
+[
+  {
+    "parent": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/validation_202610195401_compact_prestate_greedy/state256.bin",
+    "state_exact": true,
+    "maps_exact": true,
+    "ledger_exact": true,
+    "native": 2
+  },
+  {
+    "parent": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/validation_202610195401_double_lobe_prestate_greedy/state256.bin",
+    "state_exact": true,
+    "maps_exact": true,
+    "ledger_exact": true,
+    "native": 2
+  }
+]

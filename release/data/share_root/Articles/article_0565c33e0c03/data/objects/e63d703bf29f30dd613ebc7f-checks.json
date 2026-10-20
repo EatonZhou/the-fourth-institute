@@ -1,0 +1,15 @@
+{
+  "body_steps": 0,
+  "independent_energy_steps": 0,
+  "operator_evaluations": 0,
+  "preview_steps": 0,
+  "runner_jobs": 0,
+  "deterministic_mutation_complete_roundtrip_unchanged_inventories": "passed",
+  "rotation_does_not_create_descriptor_diversity": "passed",
+  "acquisition_death_large_I_and_scale_counterexamples": "passed",
+  "phase_dag_unique_forward_budget": "passed",
+  "unique_history_tracks": 24,
+  "deduplicated_old_tracks": 16,
+  "eligible_adaptation_observations": 0,
+  "status": "passed_cap0"
+}

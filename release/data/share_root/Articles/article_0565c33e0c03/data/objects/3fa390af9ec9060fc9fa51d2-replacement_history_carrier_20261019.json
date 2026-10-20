@@ -1,0 +1,206 @@
+{
+  "task": "replacement_history_carrier_20261019",
+  "owner": "resident_d3ccfa2d95b7",
+  "objective_met": false,
+  "choice": "Close universal life0 transfer/default-uniform. Use the original-greedy ring as a finite replacement-positive body, with separate_seeds as a prespecified contrasting body, to test history-specific response and distinguish body-associated state from extracellular inventory.",
+  "evidence": {
+    "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/deletion_layout_life0_formation_20261019/handoff.json",
+    "sha256": "70910cb085dee351e4a2aab3fbc80a478b5fd98dbad07c25ace79e69f8f12c37",
+    "native": 4104,
+    "worker_seconds": 198.646404,
+    "unused_sealed": [
+      0,
+      701.353596
+    ],
+    "finite_transfer": "4/8 pairs only compact/double_lobe; uniform not default",
+    "positive": "Original and uniform ring both pass four64 windows under original tapes. True replacement, finite256 only. Parent choice is post hoc, not independent validation.",
+    "visual_PI": "Viewed both actual body_ring.png and body_separate_seeds.png: persistent ring hole with redistribution versus four shrinking separated clusters; no newly evolved morphology claim."
+  },
+  "parents": [
+    {
+      "seed": 202610195601,
+      "shape": "ring",
+      "clock": 128,
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/deletion_layout_life0_formation_20261019/985493ed-7d71-4b49-9edb-42390c6cf545/202610195601_ring_original_prestate_greedy_reference/state128.bin",
+      "sha256": "577c86e7952471bc851de8fc7a50544046c1c168a836148325a4be1ebd6cfd78",
+      "M": 71.7551647290679,
+      "E": 85.33424175212423,
+      "fixed_P_sha": "3738955e354f61734f23c311a49d00ae97781b80dc71fe724a1e69b19cd10a50",
+      "fixed_F_sha": "9624bd76317157284bdc9900c3cc1636fd478f913c77b27f4faff586d7af0a33",
+      "gross_P_step": 0.20026968119879088,
+      "gross_F_step": 0.8010787247951635,
+      "initial_supply_on_current_body": {
+        "center": 0.9973404255319149,
+        "up": 0.6881648936170213,
+        "down": 0.7200797872340425
+      },
+      "paired_order_integrated_input_error": 0.0,
+      "native": 0
+    },
+    {
+      "seed": 202610195601,
+      "shape": "separate_seeds",
+      "clock": 128,
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/deletion_layout_life0_formation_20261019/985493ed-7d71-4b49-9edb-42390c6cf545/202610195601_separate_seeds_original_prestate_greedy_reference/state128.bin",
+      "sha256": "b736471639a7fa9ccfb79cd3a1a89417c9c13932c4c7be3adac26b47c6574271",
+      "M": 57.53136837238481,
+      "E": 65.57448129096247,
+      "fixed_P_sha": "cc29033b6aef1572cbbee652d687ebd2aafec67329cd8166ce45d0b110fa1f7e",
+      "fixed_F_sha": "b4dbbb6af3f6543c68f93b22137610c1054672bcce24955b59ce4c2235c82748",
+      "gross_P_step": 0.2002696811987909,
+      "gross_F_step": 0.8010787247951636,
+      "initial_supply_on_current_body": {
+        "center": 0.9459459459459459,
+        "up": 0.5760135135135135,
+        "down": 0.6021959459459459
+      },
+      "paired_order_integrated_input_error": 0.0,
+      "native": 0
+    },
+    {
+      "seed": 202610195602,
+      "shape": "ring",
+      "clock": 128,
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/deletion_layout_life0_formation_20261019/985493ed-7d71-4b49-9edb-42390c6cf545/202610195602_ring_original_prestate_greedy_reference/state128.bin",
+      "sha256": "ad69b2ad0d9726fbd39202aec51231b07bec9d04a5cd8935324e0f416da1d7d5",
+      "M": 69.87693758615609,
+      "E": 84.49424812826368,
+      "fixed_P_sha": "3738955e354f61734f23c311a49d00ae97781b80dc71fe724a1e69b19cd10a50",
+      "fixed_F_sha": "9624bd76317157284bdc9900c3cc1636fd478f913c77b27f4faff586d7af0a33",
+      "gross_P_step": 0.20026968119879088,
+      "gross_F_step": 0.8010787247951635,
+      "initial_supply_on_current_body": {
+        "center": 0.9847074468085107,
+        "up": 0.6462765957446809,
+        "down": 0.7466755319148934
+      },
+      "paired_order_integrated_input_error": 0.0,
+      "native": 0
+    },
+    {
+      "seed": 202610195602,
+      "shape": "separate_seeds",
+      "clock": 128,
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/deletion_layout_life0_formation_20261019/985493ed-7d71-4b49-9edb-42390c6cf545/202610195602_separate_seeds_original_prestate_greedy_reference/state128.bin",
+      "sha256": "886751c9b3a1da24c7fec020ef82b14ddfccfb1ed7297efef0d7a35115127471",
+      "M": 58.174988462232875,
+      "E": 65.21947474591072,
+      "fixed_P_sha": "cc29033b6aef1572cbbee652d687ebd2aafec67329cd8166ce45d0b110fa1f7e",
+      "fixed_F_sha": "b4dbbb6af3f6543c68f93b22137610c1054672bcce24955b59ce4c2235c82748",
+      "gross_P_step": 0.2002696811987909,
+      "gross_F_step": 0.8010787247951636,
+      "initial_supply_on_current_body": {
+        "center": 0.9366554054054053,
+        "up": 0.549831081081081,
+        "down": 0.5988175675675675
+      },
+      "paired_order_integrated_input_error": 0.0,
+      "native": 0
+    }
+  ],
+  "source_bindings": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/deletion_layout_life0_formation_20261019/handoff.json",
+      "sha256": "70910cb085dee351e4a2aab3fbc80a478b5fd98dbad07c25ace79e69f8f12c37"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/deletion_layout_life0_formation_20261019/outcomes.json",
+      "sha256": "af8136f9bbdd7b65d4a89412d5c6a3eec8f1b54fa6b09365b2f4de09a63e8af0"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/deletion_layout_life0_formation/core.py",
+      "sha256": "438213791aaffe2c674437a4adec18a15818ccfa630c5196b795770b5e9c1191"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/resource_conditioned_growth_rule/core.py",
+      "sha256": "bad674f254644c8fc00caa6fd50ccd45bbebdd65a229c11125ca3765df981a44"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/fixed_amount_rule_deletion_layout/core.py",
+      "sha256": "71277e88c480cb81b9b602a85dab641c5e4e61b661b4d74f67fe19a36b5914a5"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/turnover_compatible_morphogenesis/core.py",
+      "sha256": "dbfea17ca9e68833d2e0fe7f33c37cac6111a4c441f51fb23a6a78f458886a84"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/resource_matched_morphogenesis/core.py",
+      "sha256": "dae6fbd6db1fe1a83f34a6039aee8e292f6d63717270095db981d1e808928a83"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/regenerative_actor/model.py",
+      "sha256": "3941450e97d2311f833d1c9c8964f348218467d4cd8d41a68b6584b72b24b5b0"
+    }
+  ],
+  "question": "At fixed rule and immediate greedy response, does the order of equal spatial resource exposure produce a future-direction-specific retained body state, and does the effect follow the body-associated package or the extracellular P/F packet?",
+  "invariants": "Only external input schedule and the declared clock256 packet crossover change. Original reference deletion (layout off), current greedy, g2_p0_c0 kernels/config, command0, native/pump/admit/basal prices, capacity, half-life64, actual old inventories and complete inherited ledgers remain. Do not add uniform, a writer, learning, or a parameter sweep.",
+  "maps": {
+    "center": "Use each original life0-fixed map fixed_P/fixed_F already in the saved parent, not recomputed from its current body.",
+    "up": "np.roll(fixed_P/F, -4, axis=0)",
+    "down": "np.roll(fixed_P/F, +4, axis=0)",
+    "distance": "Exactly4 grid cells, frozen before all forward calls; no feasibility-based adjustment.",
+    "input": "P and F are colocated at each phase, original per-step gross input. Existing inventories never move with source maps. External positioning work is not priced; maps are experimental environments, not organism actions."
+  },
+  "protocol": {
+    "histories": {
+      "H_U": "native129..160 down;161..192 up;193..256 center. Last exposure direction up.",
+      "H_D": "native129..160 up;161..192 down;193..256 center. Last exposure direction down.",
+      "H_C": "native129..256 center, neutral-history comparator."
+    },
+    "exposure": "H_U and H_D each receive exactly32 steps at each of the two identical maps in reverse order, then64 common-center steps. Integrated per-grid added P and F equal between those histories. H_C has equal gross, not equal spatial history. Call193..256 a common interval, not complete washout.",
+    "history_execution": "Each of four exact clock128 parents is cloned to all three histories and each runs128 native once. Preserve full clock160/192/256 ready states. No old acquisition or future replay.",
+    "crossover": "At actual clock256 of H_U/H_D, fully clone each body-associated state B in {H_U,H_D}. For each B create two conditions receiving actual extracellular arrays precursor and fuel from R in {H_U,H_D}. Copy both P/F arrays together, byte-identical to the named actual donor. Own-packet controls pass the same copy path (sham). Everything else in the recipient state, world, cumulative history and observer labels remains from B. Then independently fork each condition to probe U or D.",
+    "body_package": "Includes rho, intracellular energy, original controller/physical state and material labels, not geometry alone. Heat/waste/dead_energy and cumulative ledgers stay with body history; they are inert in this no-recycling protocol. Do not transfer covert history fields that the next controller can read. Freeze and document the exact state fields read by current greedy/native/pump.",
+    "accounting": "The crossed pair B=U,R=D and B=D,R=U conserves total P/F across the pair. Each branch records actual removed and received arrays and their material/fuel-energy sums as an external intervention ledger. Never normalize, refill, clip, debit newborns, or erase old cumulative balances. Own-PF sham has exact zero exchange. Crossed physical totals differ per individual and this is part of the treatment. No physical transport-work price is assigned to this laboratory exchange, so it is not an available biological action or a free learned capability.",
+    "neutral": "H_C complete clock256 state is cloned to U/D probes with its own P/F and identical sham-copy bookkeeping. No remaking a neutral body.",
+    "probe": "native257..384 fixed up or fixed down map. Original finite horizon384 is retained, all128 steps executed, two predetermined64 windows. No re-selection of input, phase or end time.",
+    "total": "4 parents × (3 histories×128 + (2 body histories×2 P/F donors×2 probe directions +2 neutral probes)×128) =6656 science native;12 history legs and40 probe futures.",
+    "labels": "Keep true founder/L128 inherited accounting. At clock256 before exchange register body L256=rho and a separate born-after256 observer0. Carry actual K and actor/rule survival; born updates only the new-tissue account. P/F swap leaves all material-body cohort labels unchanged; no labels or future outcomes enter policy."
+  },
+  "contrasts": {
+    "body_interaction": "For each parent and each fixed P/F donor R and metric Y: I_B(R)=[Y(B_U,R,probeU)-Y(B_D,R,probeU)]-[Y(B_U,R,probeD)-Y(B_D,R,probeD)]. Positive denotes last-exposure matching; negative is an anti-match effect, never relabel post hoc.",
+    "resource_interaction": "For each fixed body history B: I_R(B)=[Y(B,R_U,probeU)-Y(B,R_D,probeU)]-[Y(B,R_U,probeD)-Y(B,R_D,probeD)]. Report jointly with I_B; not a natural mediation percentage.",
+    "metrics": "Predeclare probe bodytime and actual post256 tissue retained at384 as co-primary history-response metrics. Also report final M/E, deltaM/deltaE from256, uptake, oldL256, founder, actual born/death, fees and cumulative experiment costs from128. No composite score or uptake-only win.",
+    "meaningful": "Direction-specific body-associated response requires both I_B co-primary metrics to agree in sign under BOTH P/F donors, separately for each ring parent; give all raw values and both seeds. A positive matching pattern alone is not a net adaptive advantage.",
+    "adaptive_guard": "A beneficial matching interpretation additionally requires on-diagonal matching probes versus neutral same-probe reference not to reduce finalM, finalE or probe bodytime (1e-8 accounting tolerance) in both directions for each claimed parent, and actual post256 tissue must improve. Retain history costs and altered initial state; do not call an interaction a learned controller.",
+    "maintenance": "Report born-death>=-1e-8, deltaE>=-1e-8,minM>=32 in each probe64 window and both jointly; zero-tolerance sensitivity. Histories/negative body failures remain included. Do not carry old ring maintenance success onto this new challenge.",
+    "scope": "Two previously selected positive ring parents and two related negative-shape parents, not independent evolutionary replicates or a held-out confirmation. No specific mutation, shape, intracellular-energy or stored writer is causally isolated by the body package."
+  },
+  "records": {
+    "full_states": [
+      128,
+      160,
+      192,
+      256,
+      320,
+      384
+    ],
+    "sparse_probe_offsets": [
+      1,
+      8,
+      32,
+      64,
+      96,
+      128
+    ],
+    "every_native": "Unique clock and leg, complete scalar physical/cost/input/export/arrears/born/death/tag ledgers; no interpolation of missing fields.",
+    "receipts": "History boundary actual160/192/256 and probe1/8/64/128, include pre-choice current-state fields, native and pump receipts, and full exact exchange manifest at256.",
+    "visual": "View ring and separated actual acquired states, full probe curves and predeclared first-parent fields at256/257/320/384. Reuse real raw frames; do not claim all animated trajectories were inspected."
+  },
+  "budget": {
+    "native_cap": 6664,
+    "science_cap": 6656,
+    "affected_native": 8,
+    "worker_seconds": 1200,
+    "cpu": 2,
+    "gpu": 0,
+    "jobs": 1,
+    "raw_cap_bytes": 1073741824,
+    "shutdown_reserve_worker_seconds": 120,
+    "checks": "Four saved128 parents: original next step versus schedule-wrapper using exactly original next input (2 each=8 native). No perturbation-dependent tuning. Map gross/order equality, PF pair conservation, roundtrip/sham all pure-array0native. Freeze source bindings and plan before first native.",
+    "control": "Check research.desired_state and started immediately before job. Stop on paused/stopped. PI read running/true this turn. All old balances sealed.",
+    "failures": "All attempted/returned/settled calls and attempts charged. Unknown completed status is never replayed. Same-job explicit recovery only from exact completed checkpoints, preserving original failure/source amendments. No second job, budget borrowing or timer."
+  },
+  "handoff": "Implement and actually run this finite single job. Routine shared short leaf; once completed give PI actual next-choice result, merging paper/projection existing items. No training, amplitude/window/price scan or automatic extension. If prerequisites fail, preserve exact blocker instead of changing the scientific treatment.",
+  "native_by_PI": 0
+}

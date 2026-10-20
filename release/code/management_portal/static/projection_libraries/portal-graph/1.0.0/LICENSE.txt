@@ -1,0 +1,3 @@
+Portal graph geometry is first-party TFI Portal source, extracted from
+management_portal/static/lineage_graph.js. It remains subject to the same
+repository terms. This notice does not grant an additional third-party license.

@@ -1,0 +1,155 @@
+{
+  "task": "association_readout_recontact_20261019",
+  "status": "complete",
+  "owner": "resident_d3ccfa2d95b7",
+  "scientific_choice": "暂闭运动读出恢复有限真实接触并给出同身体关联表达窄阳性；主体回返0/16，fast同样表达，不是新方法优势。",
+  "accounting": {
+    "task": "association_readout_recontact_20261019",
+    "status": "complete",
+    "native": 8192,
+    "unknown": 0,
+    "worker_seconds": 51.468148,
+    "raw_bytes": 43654859,
+    "paths": 16,
+    "alive": 16,
+    "continuity_all": true,
+    "max_energy_error": 7.667477763817487e-15,
+    "groups": {
+      "original_write": {
+        "n": 4,
+        "feedback_last64_pass": 0,
+        "aftermath_last64_pass": 0,
+        "meaningful_positive_any": 0,
+        "positive_updates": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "meaningful_positive_updates": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "original_freeze": {
+        "n": 4,
+        "feedback_last64_pass": 0,
+        "aftermath_last64_pass": 0,
+        "meaningful_positive_any": 0,
+        "positive_updates": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "meaningful_positive_updates": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "readout_pause_write": {
+        "n": 4,
+        "feedback_last64_pass": 0,
+        "aftermath_last64_pass": 0,
+        "meaningful_positive_any": 0,
+        "positive_updates": [
+          382,
+          381,
+          382,
+          381
+        ],
+        "meaningful_positive_updates": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "readout_pause_freeze": {
+        "n": 4,
+        "feedback_last64_pass": 0,
+        "aftermath_last64_pass": 0,
+        "meaningful_positive_any": 0,
+        "positive_updates": [
+          382,
+          381,
+          382,
+          381
+        ],
+        "meaningful_positive_updates": [
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    }
+  },
+  "artifacts": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/association_readout_recontact_20261019/plan.json",
+      "sha256": "67a54b1be221df14dd567bc345b69b6d0defc148f6fde95a528358a937c9119a"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/association_readout_recontact_20261019/pure_checks.json",
+      "sha256": "abc0b55d23f96a8330dfab3de13add97909ee1070425390a9bc1cef09c8dea96"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/association_readout_recontact_20261019/result.json",
+      "sha256": "5a57d8743bb719821fa15961341cabd7d38e6f0b4088b67771d7e3b1f2c76467"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/association_readout_recontact_20261019/summary.json",
+      "sha256": "70b5e4a5703080ab019e044c13780e490af3bca6745d39c63beb7333b7045b2d"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/association_readout_recontact_20261019/REPORT.txt",
+      "sha256": "c1d8920d8c8c05b0add27fbb1f2e71e2f642a586da4156d37ee9bea045bfef71"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/association_readout_recontact_20261019/all_branches.csv",
+      "sha256": "bb19eecdb97f180eb6383c47024b541d96a25d4fce18a4ed19db1675543f3e27"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/association_readout_recontact_20261019/blocks.csv",
+      "sha256": "72d2b1cba630aeb77817776a1343ab52c8492d284641219b8b3fe5d24fb5af10"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/association_readout_recontact_20261019/paired_differences.csv",
+      "sha256": "d1151ffe257c4cb286a1a2d7f913023f9d8e6978ed6f30f13044c3c5e0ce3a38"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/association_readout_recontact_20261019/factorial_interactions.csv",
+      "sha256": "10438675ebcb41a7bbd2aebe5a43dcd24aac66e62939abf82943076a0d03d068"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/association_readout_recontact_20261019/continuity_checks.json",
+      "sha256": "8b3185222b955122085a57073fff2370fdb9350f54493c35f316f93cc2c79f42"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/association_readout_recontact_20261019/expression_same_body_check.json",
+      "sha256": "44031d96f751b98ed4e86529720fb8a76a09c33eb2d740ee464c0fefd4048d2e"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/association_readout_recontact_20261019/behavior_cost_feedback.png",
+      "sha256": "30b14d02acff78caea09d18d077d3232546e84ac88276919a830a6050c1c2d1f"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/association_readout_recontact_20261019/actual_recontact.gif",
+      "sha256": "89ff2a7a795950537fa3450f693e9ec3414cad1f1bfe25688511be2e64b6e37c"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/association_readout_recontact_20261019/actual_sequence.png",
+      "sha256": "adadaf8c67fda4817cca1ad74136c52fa21b5de30902314ec876a080c311eed3"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/association_readout_recontact_20261019/outcomes.json",
+      "sha256": "baeeb86070f8331fd7b8a4764a9b779fdc841e4044ca6e9af8f55f54a2996189"
+    }
+  ],
+  "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/association_readout_recontact_20261019/ad4ac8e6-8d32-47e7-b7fd-8a14dc557161"
+}

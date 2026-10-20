@@ -1,0 +1,19 @@
+{
+  "id": "b9f8bccb-57c5-4366-9788-7fdc1e301114",
+  "name": "third_response_generation_search_20261019",
+  "command": [
+    "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+    "-m",
+    "local_learning.third_response_generation_search.run"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "d3-third-response-generation-search-20261019-v1",
+  "status": "running",
+  "created_at": "2026-10-18T22:11:24.455394+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b9f8bccb-57c5-4366-9788-7fdc1e301114",
+  "pid": 65921,
+  "manual_pause": false,
+  "create_time": 1792361483.93,
+  "started_at": "2026-10-18T22:11:24.546529+00:00"
+}

@@ -1,0 +1,6 @@
+{
+  "comparison": "local_override Bayes versus local last, all physical scalar rows",
+  "paired_steps": 4096,
+  "exact_equal": true,
+  "host_steps": 0
+}

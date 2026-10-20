@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600" viewBox="0 0 1200 600">
+<rect width="1200" height="600" fill="white"/>
+<text x="28" y="41.56" text-anchor="start" font-family="Noto Sans CJK SC" font-size="26" font-weight="700" fill="#275D85">完整工作示例：从目标进入下一轮变化</text>
+<polyline points="28,62 1172,62" fill="none" stroke="#91A2AE" stroke-width="1.7"/>
+<text x="30" y="583.0300000000001" text-anchor="start" font-family="Noto Sans CJK SC" font-size="13" font-weight="400" fill="#61717E">设计示意 · 实线：工作或依赖关系；虚线：反馈或关联；不表示实验测量</text>
+<rect x="35" y="105" width="260" height="145" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="165.0" y="131.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">意图</text>
+<text x="165.0" y="198.77" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">用户需要确认任务停止</text>
+<polyline points="295,178 325,178" fill="none" stroke="#275D85" stroke-width="1.7"/>
+<polygon points="325,178 316.6420182798114,181.33828422471686 316.6420182798114,174.66171577528314" fill="#275D85"/>
+<rect x="325" y="105" width="260" height="145" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="455.0" y="131.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">分工</text>
+<text x="455.0" y="198.77" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">状态／执行／界面职责</text>
+<polyline points="585,178 615,178" fill="none" stroke="#275D85" stroke-width="1.7"/>
+<polygon points="615,178 606.6420182798114,181.33828422471686 606.6420182798114,174.66171577528314" fill="#275D85"/>
+<rect x="615" y="105" width="260" height="145" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="745.0" y="131.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">实现</text>
+<text x="745.0" y="198.77" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">契约＋局部修改</text>
+<polyline points="875,178 905,178" fill="none" stroke="#275D85" stroke-width="1.7"/>
+<polygon points="905,178 896.6420182798114,181.33828422471686 896.6420182798114,174.66171577528314" fill="#275D85"/>
+<rect x="905" y="105" width="260" height="145" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="1035.0" y="131.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">交付</text>
+<text x="1035.0" y="198.77" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">实际内容与定向证据</text>
+<rect x="905" y="355" width="260" height="155" fill="#FAF3E7" stroke="#99651B" stroke-width="1.5"/>
+<text x="1035.0" y="381.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#99651B">TAU 发现问题</text>
+<text x="1035.0" y="443.74" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">等待状态缺少说明</text>
+<text x="1035.0" y="463.8" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">刷新后才看到终态</text>
+<rect x="615" y="355" width="260" height="155" fill="#FAF3E7" stroke="#99651B" stroke-width="1.5"/>
+<text x="745.0" y="381.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#99651B">回到相关职责</text>
+<text x="745.0" y="443.74" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">补充等待与状态更新</text>
+<text x="745.0" y="463.8" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">复查体验路径</text>
+<rect x="325" y="355" width="260" height="155" fill="#EDF5F1" stroke="#26756C" stroke-width="1.5"/>
+<text x="455.0" y="381.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#26756C">展示与反馈</text>
+<text x="455.0" y="443.74" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">人体验新的状态演示</text>
+<text x="455.0" y="463.8" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">提出保留中间结果</text>
+<rect x="35" y="355" width="260" height="155" fill="#EDF5F1" stroke="#26756C" stroke-width="1.5"/>
+<text x="165.0" y="381.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#26756C">下一轮意图</text>
+<text x="165.0" y="443.74" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">更新输出保留契约</text>
+<text x="165.0" y="463.8" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">复用有效验证</text>
+<polyline points="1035,250 1035,355" fill="none" stroke="#275D85" stroke-width="1.7"/>
+<polygon points="1035,355 1031.6617157752833,346.6420182798114 1038.3382842247167,346.6420182798114" fill="#275D85"/>
+<polyline points="905,432 875,432" fill="none" stroke="#26756C" stroke-width="1.7"/>
+<polygon points="875,432 883.3579817201886,428.66171577528314 883.3579817201886,435.33828422471686" fill="#26756C"/>
+<polyline points="615,432 585,432" fill="none" stroke="#26756C" stroke-width="1.7"/>
+<polygon points="585,432 593.3579817201886,428.66171577528314 593.3579817201886,435.33828422471686" fill="#26756C"/>
+<polyline points="325,432 295,432" fill="none" stroke="#26756C" stroke-width="1.7"/>
+<polygon points="295,432 303.3579817201886,428.66171577528314 303.3579817201886,435.33828422471686" fill="#26756C"/>
+<polyline points="165,355 165,250" fill="none" stroke="#26756C" stroke-width="1.7" stroke-dasharray="7 5"/>
+<polygon points="165,250 168.33828422471683,258.3579817201886 161.66171577528317,258.3579817201886" fill="#26756C"/>
+</svg>

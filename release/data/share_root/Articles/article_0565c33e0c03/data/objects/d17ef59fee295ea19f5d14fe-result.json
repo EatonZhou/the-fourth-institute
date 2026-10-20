@@ -1,0 +1,254 @@
+{
+  "status": "completed",
+  "schema": "lenia.outer_body_candidates.v1",
+  "compute_seconds": 12.515607794979587,
+  "seed": 2026101608,
+  "size": 32,
+  "iterations": 36,
+  "candidates": [
+    {
+      "id": "ls-12d8620a-b00-i036",
+      "branch": 0,
+      "optimization_step": 36,
+      "parent_id": "ls-12d8620a-b00-i032",
+      "origin": "Orbium-derived reference seed",
+      "stable": true,
+      "min_mass": 71.94737665336163,
+      "final_mass": 72.87683700775774,
+      "tail_activity": 15.056563389626275,
+      "descriptors": [
+        0.3558439307019421,
+        0.5758362378012979,
+        1.0071946601080255,
+        0.5084596111267167,
+        0.36759187962954776
+      ],
+      "checkpoint": "checkpoints/step_036.npz",
+      "rule": {
+        "radius": 13.02990240626312,
+        "mu": 0.14987211939801467,
+        "sigma": 0.014309449450607985,
+        "alpha": 0.11304006990157212,
+        "beta": 0.9978941638325535,
+        "kernel_weights": [
+          0.9993370064142884,
+          0.0003130990245663119,
+          0.0003498945611454115
+        ]
+      },
+      "trajectory_path": "candidates/ls-12d8620a-b00-i036.npz",
+      "comparison_path": "candidates/ls-12d8620a-b00-i036_optimization.gif"
+    },
+    {
+      "id": "ls-12d8620a-b01-i036",
+      "branch": 1,
+      "optimization_step": 36,
+      "parent_id": "ls-12d8620a-b01-i032",
+      "origin": "Orbium-derived reference seed",
+      "stable": true,
+      "min_mass": 72.85989967205647,
+      "final_mass": 72.91808998081551,
+      "tail_activity": 15.289319076363267,
+      "descriptors": [
+        0.35604536123445074,
+        0.5770067138141518,
+        1.0038827972360387,
+        0.5019842889026366,
+        0.373274391512775
+      ],
+      "checkpoint": "checkpoints/step_036.npz",
+      "rule": {
+        "radius": 13.075952780081462,
+        "mu": 0.14841970332658838,
+        "sigma": 0.014444284298004817,
+        "alpha": 0.18424092930906635,
+        "beta": 0.9978792583191677,
+        "kernel_weights": [
+          0.9991920634852015,
+          0.00034687787186164494,
+          0.0004610586429370425
+        ]
+      },
+      "trajectory_path": "candidates/ls-12d8620a-b01-i036.npz",
+      "comparison_path": "candidates/ls-12d8620a-b01-i036_optimization.gif"
+    },
+    {
+      "id": "ls-12d8620a-b02-i036",
+      "branch": 2,
+      "optimization_step": 36,
+      "parent_id": "ls-12d8620a-b02-i032",
+      "origin": "smooth random localized seed",
+      "stable": true,
+      "min_mass": 185.3197189568037,
+      "final_mass": 206.0436735648641,
+      "tail_activity": 0.29971898001087555,
+      "descriptors": [
+        1.006072624828438,
+        0.9833566981699282,
+        1.2266756100792666,
+        0.33415158214108054,
+        0.0073173579104217675
+      ],
+      "checkpoint": "checkpoints/step_036.npz",
+      "rule": {
+        "radius": 8.669090613934717,
+        "mu": 0.14562342604941086,
+        "sigma": 0.022810480152831665,
+        "alpha": 0.22167063917073246,
+        "beta": 0.9978280288921647,
+        "kernel_weights": [
+          0.44834625610342327,
+          0.21472768452025306,
+          0.3369260593763236
+        ]
+      },
+      "trajectory_path": "candidates/ls-12d8620a-b02-i036.npz",
+      "comparison_path": "candidates/ls-12d8620a-b02-i036_optimization.gif"
+    },
+    {
+      "id": "ls-12d8620a-b03-i036",
+      "branch": 3,
+      "optimization_step": 36,
+      "parent_id": "ls-12d8620a-b03-i032",
+      "origin": "smooth random localized seed",
+      "stable": true,
+      "min_mass": 158.87744996882185,
+      "final_mass": 241.14929784064327,
+      "tail_activity": 0.06944046285313066,
+      "descriptors": [
+        1.1774868058625159,
+        0.9938413097738972,
+        0.980797519926233,
+        0.3761859105927488,
+        0.0016953238001252602
+      ],
+      "checkpoint": "checkpoints/step_036.npz",
+      "rule": {
+        "radius": 9.297308360303482,
+        "mu": 0.1727747859631394,
+        "sigma": 0.029129708669499384,
+        "alpha": 0.28487374559758666,
+        "beta": 0.9979445794999047,
+        "kernel_weights": [
+          0.5354654661957479,
+          0.22237303203604492,
+          0.2421615017682072
+        ]
+      },
+      "trajectory_path": "candidates/ls-12d8620a-b03-i036.npz",
+      "comparison_path": "candidates/ls-12d8620a-b03-i036_optimization.gif"
+    },
+    {
+      "id": "ls-12d8620a-b04-i036",
+      "branch": 4,
+      "optimization_step": 36,
+      "parent_id": "ls-12d8620a-b04-i032",
+      "origin": "smooth random localized seed",
+      "stable": true,
+      "min_mass": 124.90656686436401,
+      "final_mass": 175.2238614640586,
+      "tail_activity": 27.238124844078875,
+      "descriptors": [
+        0.8555852610549736,
+        0.897679931207811,
+        1.7156889889214448,
+        0.3036005202286542,
+        0.6649932823261445
+      ],
+      "checkpoint": "checkpoints/step_036.npz",
+      "rule": {
+        "radius": 10.276892076151487,
+        "mu": 0.1449868734736905,
+        "sigma": 0.02101061772543914,
+        "alpha": 0.2547322125652053,
+        "beta": 0.9962953843612299,
+        "kernel_weights": [
+          0.33215982472844124,
+          0.5361078872179399,
+          0.131732288053619
+        ]
+      },
+      "trajectory_path": "candidates/ls-12d8620a-b04-i036.npz",
+      "comparison_path": "candidates/ls-12d8620a-b04-i036_optimization.gif"
+    },
+    {
+      "id": "ls-12d8620a-b05-i016",
+      "branch": 5,
+      "optimization_step": 16,
+      "parent_id": "ls-12d8620a-b05-i008",
+      "origin": "smooth random localized seed",
+      "stable": true,
+      "min_mass": 108.95074859855423,
+      "final_mass": 204.55660908840804,
+      "tail_activity": 0.06836181588294202,
+      "descriptors": [
+        0.9988115678144924,
+        0.9965414755574818,
+        1.6950848114096424,
+        0.28920743614038524,
+        0.001668989645579639
+      ],
+      "checkpoint": "checkpoints/step_016.npz",
+      "rule": {
+        "radius": 11.326023297257777,
+        "mu": 0.14957684399997456,
+        "sigma": 0.021689306621439957,
+        "alpha": 0.3146256518615982,
+        "beta": 0.9969387714675237,
+        "kernel_weights": [
+          0.11186840154616602,
+          0.3229088237962915,
+          0.5652227746575426
+        ]
+      },
+      "trajectory_path": "candidates/ls-12d8620a-b05-i016.npz",
+      "comparison_path": "candidates/ls-12d8620a-b05-i016_optimization.gif"
+    },
+    {
+      "id": "ls-12d8620a-b07-i036",
+      "branch": 7,
+      "optimization_step": 36,
+      "parent_id": "ls-12d8620a-b07-i032",
+      "origin": "smooth random localized seed",
+      "stable": true,
+      "min_mass": 226.64211611725614,
+      "final_mass": 230.5682973751538,
+      "tail_activity": 0.3097983035150962,
+      "descriptors": [
+        1.1258217645271182,
+        0.9876968578410205,
+        0.5967021096271483,
+        0.6419120885542281,
+        0.007563435144411528
+      ],
+      "checkpoint": "checkpoints/step_036.npz",
+      "rule": {
+        "radius": 13.037860687520318,
+        "mu": 0.1612532702560842,
+        "sigma": 0.026544558098648786,
+        "alpha": 0.3825485366201111,
+        "beta": 0.9971127588115012,
+        "kernel_weights": [
+          0.2745009723765263,
+          0.2276290354223387,
+          0.497869992201135
+        ]
+      },
+      "trajectory_path": "candidates/ls-12d8620a-b07-i036.npz",
+      "comparison_path": "candidates/ls-12d8620a-b07-i036_optimization.gif"
+    }
+  ],
+  "raw_parameter_max_change": {
+    "raw_radius": 0.10469621022096458,
+    "raw_mu": 0.11052409809702851,
+    "raw_ratio": 0.11763074995760903,
+    "raw_alpha": 0.9897075166301513,
+    "raw_beta": 0.9411113051453159,
+    "kernel_logits": 0.3724876713639427,
+    "seed_logits": 0.8408752954643532
+  },
+  "all_nodes_path": "lineage.json",
+  "history_path": "optimizer_history.json",
+  "gallery": "candidate_gallery.gif",
+  "interpretation": "First externally optimized candidates; finite active window and descriptor diversity are not a novelty, learning-benefit or long-term viability claim."
+}

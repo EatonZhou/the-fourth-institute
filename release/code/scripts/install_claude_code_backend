@@ -1,0 +1,153 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PROVIDER_RUNTIME_ROOT="$(python3 - "$ROOT" <<'PYTHON'
+import sys
+sys.path.insert(0, sys.argv[1])
+from management_portal.execution.provider_updates import RUNTIMES
+print(RUNTIMES)
+PYTHON
+)"
+RUNTIME_CURRENT="${PORTAL_CLAUDE_RUNTIME_CURRENT:-$PROVIDER_RUNTIME_ROOT/claude-agent-sdk-current}"
+APP_SERVER_VERSION="$(tr -d '[:space:]' < "$ROOT/management_portal/claude_app_server_version.txt")"
+APP_SERVER_ROOT="${PORTAL_CLAUDE_APP_SERVER_ROOT:-$PROVIDER_RUNTIME_ROOT/claude-app-server-$APP_SERVER_VERSION}"
+APP_SERVER_CURRENT="${PORTAL_CLAUDE_APP_SERVER_CURRENT:-$PROVIDER_RUNTIME_ROOT/claude-app-server-current}"
+USER_UNIT_ROOT="${PORTAL_SYSTEMD_USER_UNIT_ROOT:-$HOME/.config/systemd/user}"
+
+if [[ ! "$APP_SERVER_VERSION" =~ ^[0-9A-Za-z][0-9A-Za-z._-]{0,63}$ ]]; then
+  printf 'Invalid Claude app-server version: %s\n' "$APP_SERVER_VERSION" >&2
+  exit 1
+fi
+
+INSTALL_SDK=1
+if [[ "${1:-}" == "--app-server-only" ]]; then
+  INSTALL_SDK=0
+  shift
+fi
+if [[ "$#" -ne 0 ]]; then
+  printf 'Usage: %s [--app-server-only]\n' "$0" >&2
+  exit 2
+fi
+
+if [[ "$INSTALL_SDK" -eq 0 ]]; then
+  if [[ ! -L "$RUNTIME_CURRENT" ]]; then
+    printf 'Claude Agent SDK runtime is missing: %s\n' "$RUNTIME_CURRENT" >&2
+    exit 1
+  fi
+  SDK_VERSION="$(basename "$(readlink -f "$RUNTIME_CURRENT")")"
+  SDK_VERSION="${SDK_VERSION#claude-agent-sdk-}"
+else
+  SDK_VERSION="$(python3 - "$ROOT" <<'PYTHON'
+import sys
+sys.path.insert(0, sys.argv[1])
+from management_portal.execution.provider_updates import ClaudeRuntime
+print(ClaudeRuntime().available()[0])
+PYTHON
+)"
+fi
+if [[ ! "$SDK_VERSION" =~ ^[0-9][0-9A-Za-z.+_-]{0,63}$ ]]; then
+  printf 'Invalid Claude Agent SDK version: %s\n' "$SDK_VERSION" >&2
+  exit 1
+fi
+if [[ "$INSTALL_SDK" -eq 0 ]]; then
+  RUNTIME_ROOT="${PORTAL_CLAUDE_RUNTIME_ROOT:-$(readlink -f "$RUNTIME_CURRENT")}"
+else
+  RUNTIME_ROOT="${PORTAL_CLAUDE_RUNTIME_ROOT:-$PROVIDER_RUNTIME_ROOT/claude-agent-sdk-$SDK_VERSION}"
+fi
+
+if [[ "$INSTALL_SDK" -eq 1 ]]; then
+  python3 - "$ROOT" "$SDK_VERSION" "$RUNTIME_ROOT" <<'PYTHON'
+import sys
+from pathlib import Path
+sys.path.insert(0, sys.argv[1])
+from management_portal.execution.provider_updates import ClaudeRuntime
+ClaudeRuntime().stage((sys.argv[2],), root=Path(sys.argv[3]))
+PYTHON
+fi
+if [[ ! -x "$RUNTIME_ROOT/bin/python" ]]; then
+  printf 'Claude Agent SDK runtime is missing: %s\n' "$RUNTIME_ROOT" >&2
+  exit 1
+fi
+"$RUNTIME_ROOT/bin/python" -c \
+  'import claude_agent_sdk, psycopg, psycopg_pool, sys; assert claude_agent_sdk.__version__ == sys.argv[1]' \
+  "$SDK_VERSION"
+BUNDLED_CLAUDE="$("$RUNTIME_ROOT/bin/python" -c 'from pathlib import Path; import claude_agent_sdk; print(Path(claude_agent_sdk.__file__).parent / "_bundled" / "claude")')"
+BUNDLED_VERSION="$("$BUNDLED_CLAUDE" --version)"
+if [[ -z "$BUNDLED_VERSION" ]]; then
+  printf 'Bundled Claude Code returned no version: %s\n' "$BUNDLED_CLAUDE" >&2
+  exit 1
+fi
+
+APP_SERVER_PARENT="$(dirname "$APP_SERVER_ROOT")"
+mkdir -p "$APP_SERVER_PARENT"
+APP_SERVER_STAGING="$(mktemp -d "$APP_SERVER_PARENT/.claude-app-server-$APP_SERVER_VERSION.XXXXXXXX")"
+cleanup() {
+  if [[ -n "${APP_SERVER_STAGING:-}" && -d "$APP_SERVER_STAGING" ]]; then
+    rm -rf -- "$APP_SERVER_STAGING"
+  fi
+  if [[ -n "${APP_SERVER_CURRENT_TMP:-}" ]]; then
+    rm -f -- "$APP_SERVER_CURRENT_TMP"
+  fi
+  if [[ -n "${APP_SERVER_UNIT_TMP:-}" ]]; then
+    rm -f -- "$APP_SERVER_UNIT_TMP"
+  fi
+  if [[ -n "${RUNTIME_CURRENT_TMP:-}" ]]; then
+    rm -f -- "$RUNTIME_CURRENT_TMP"
+  fi
+}
+trap cleanup EXIT
+
+python3 "$ROOT/scripts/claude_app_server_package.py" "$ROOT" "$APP_SERVER_STAGING"
+
+PYTHONDONTWRITEBYTECODE=1 "$RUNTIME_ROOT/bin/python" -c \
+  'import sys; sys.path.insert(0, sys.argv[2]); from management_portal import claude_code_daemon as daemon; assert daemon.APP_SERVER_VERSION == sys.argv[1]; assert daemon.APP_SERVER_PROTOCOL_VERSION == 1' \
+  "$APP_SERVER_VERSION" "$APP_SERVER_STAGING"
+
+if [[ -e "$APP_SERVER_ROOT" ]]; then
+  if ! diff -qr "$APP_SERVER_STAGING" "$APP_SERVER_ROOT" >/dev/null; then
+    printf 'Refusing to replace immutable Claude app-server runtime: %s\n' "$APP_SERVER_ROOT" >&2
+    printf 'Bump APP_SERVER_VERSION before installing changed daemon code.\n' >&2
+    exit 1
+  fi
+else
+  mv "$APP_SERVER_STAGING" "$APP_SERVER_ROOT"
+  APP_SERVER_STAGING=""
+fi
+
+if [[ -e "$RUNTIME_CURRENT" && ! -L "$RUNTIME_CURRENT" ]]; then
+  printf 'Refusing to replace non-symlink Claude runtime current path: %s\n' "$RUNTIME_CURRENT" >&2
+  exit 1
+fi
+RUNTIME_CURRENT_PARENT="$(dirname "$RUNTIME_CURRENT")"
+mkdir -p "$RUNTIME_CURRENT_PARENT"
+RUNTIME_CURRENT_TMP="$RUNTIME_CURRENT_PARENT/.claude-agent-sdk-current.$$.tmp"
+ln -s "$RUNTIME_ROOT" "$RUNTIME_CURRENT_TMP"
+mv -Tf "$RUNTIME_CURRENT_TMP" "$RUNTIME_CURRENT"
+
+if [[ -e "$APP_SERVER_CURRENT" && ! -L "$APP_SERVER_CURRENT" ]]; then
+  printf 'Refusing to replace non-symlink Claude app-server current path: %s\n' "$APP_SERVER_CURRENT" >&2
+  exit 1
+fi
+APP_SERVER_CURRENT_PARENT="$(dirname "$APP_SERVER_CURRENT")"
+mkdir -p "$APP_SERVER_CURRENT_PARENT"
+APP_SERVER_CURRENT_TMP="$APP_SERVER_CURRENT_PARENT/.current.$$.tmp"
+rm -f -- "$APP_SERVER_CURRENT_TMP"
+ln -s "$APP_SERVER_ROOT" "$APP_SERVER_CURRENT_TMP"
+mv -Tf "$APP_SERVER_CURRENT_TMP" "$APP_SERVER_CURRENT"
+
+mkdir -p "$USER_UNIT_ROOT"
+APP_SERVER_UNIT="$USER_UNIT_ROOT/portal-claude-code.service"
+python3 - "$ROOT" "$APP_SERVER_UNIT" <<'PYUNIT'
+from pathlib import Path
+import sys
+sys.path.insert(0, sys.argv[1])
+from scripts.portal_instance_storage import install_unit
+install_unit(Path(sys.argv[1]) / "systemd/portal-claude-code.service", Path(sys.argv[2]))
+PYUNIT
+systemctl --user daemon-reload
+
+printf 'Claude Code backend runtime installed at %s (SDK %s; bundled %s)\n' \
+  "$RUNTIME_ROOT" "$SDK_VERSION" "$BUNDLED_VERSION"
+printf 'Claude app-server %s installed at %s\n' \
+  "$APP_SERVER_VERSION" "$APP_SERVER_ROOT"

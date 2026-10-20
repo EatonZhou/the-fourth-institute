@@ -1,0 +1,20 @@
+{
+  "id": "b2633c74-3046-455c-9f37-37e5a61532e6",
+  "name": "d3 local motor source-return credit 5376",
+  "command": [
+    "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+    "-m",
+    "local_learning.material_action_credit.run",
+    "run"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "d3-material-action-credit-20261019-v1",
+  "status": "running",
+  "created_at": "2026-10-19T09:21:18.377060+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/b2633c74-3046-455c-9f37-37e5a61532e6",
+  "pid": 2369404,
+  "manual_pause": false,
+  "create_time": 1792401677.84,
+  "started_at": "2026-10-19T09:21:18.452917+00:00"
+}

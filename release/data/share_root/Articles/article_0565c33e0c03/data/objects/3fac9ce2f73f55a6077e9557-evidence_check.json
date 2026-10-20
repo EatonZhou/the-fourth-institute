@@ -1,0 +1,15 @@
+{
+  "scope": "saved evidence only, no replay",
+  "new_paths": 48,
+  "new_steps": 147456,
+  "original_paths_referenced": 120,
+  "original_outcomes_sha256": "61bfd0067af2db1a6ec1fcc8b2c54c460025ffee7cc1347e3e4889409f18735f",
+  "tape_files_reused": 12,
+  "new_memory_fees": 0,
+  "new_observation_attempts": 0,
+  "actual_extinctions": 4,
+  "max_material_energy_residual": 6.366462912410498e-12,
+  "independent_seeds": 4,
+  "paired_morphologies": 2,
+  "design": "posthoc descriptive completion; not a new heldout replication or equal-fee content ablation"
+}

@@ -1,0 +1,16 @@
+{
+  "type": "dataset",
+  "category": "resource",
+  "description": "A logical dataset whose identity is independent of storage paths, download locations, and splits.",
+  "title": {
+    "zh": "数据集",
+    "en": "Dataset"
+  },
+  "provider": "",
+  "catalog_section": "",
+  "catalog_order": 0,
+  "registerable": false,
+  "scope": "shared",
+  "unit": "core",
+  "enabled_by_default": true
+}

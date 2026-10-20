@@ -1,0 +1,62 @@
+\subsection*{Propulsion expression and complete-life braking comparisons}
+The unified handoff is \path{src/local_learning/results_20261019/value_conditioned_propulsion_brake_20261019/direction_handoff.json}, SHA-256 \texttt{14dc780b\allowbreak{}6b3637d6\allowbreak{}e2e000e5\allowbreak{}d2c1af76\allowbreak{}850bd150\allowbreak{}4a862d84\allowbreak{}529f7b0e\allowbreak{}67329ac9}. Child directories \path{association_polarity_expression_20261019} and \path{value_conditioned_propulsion_brake_20261019} contain the two reports, complete \path{all_branches.csv}, \path{blocks.csv}, continuity checks, raw SHA manifests and actual-coordinate animations. The first package contains four acquired parents with sixteen logical continuations, of which four are known read-only segments. The second contains twelve new complete lives across four related contexts, with no old acquisition replay. The contexts are neither independent worlds nor cell-level samples. Missing first-sixteen-update component/K records for the old both-on paths stay null; they are not reconstructed or treated as zeros. Local value changes are measured from actual states, separately from those missing transition-component records.
+
+\begin{table}[htbp]\centering\scriptsize
+\caption{All sixteen expression branches. $\overline M_g$ and $f$ are final-window favourable mean mass and contact mass-time share, P the substantive pass, $c_m$ the full 128-step movement cost and $\Delta Q_{\rm local}$ the maximum local value change. Each branch remains viable at $M\simeq24$, with basal cost 3.6864, zero feedback/writing, zero unpaid movement and zero starvation loss. Material-weighted association-total changes stay below $1.2\times10^{-15}$ despite substantial local changes. Both-on rows are the known 512-update future.}\label{tab:polarity-expression}
+\setlength{\tabcolsep}{4pt}\begin{tabular}{llrrcrrr}\toprule
+Parent & Drive & $\overline M_g$ & $f$ & P & $c_m$ & $E$ & $\Delta Q_{\rm local}$\\\midrule
+L0g0 & Both on & 4.0725 & 0.8373 & 1 & 0.26691 & 74.5764 & 1.1376 \\
+L0g0 & Cue only & 7.3775 & 0.9878 & 1 & 0.06287 & 74.7804 & 1.0439 \\
+L0g0 & Polarity only & 1.7960 & 0.8015 & 1 & 0.26994 & 74.5733 & 1.1444 \\
+L0g0 & Both off & 8.8585 & 0.9954 & 1 & 0.03655 & 74.8067 & 0.9774 \\
+L0g1 & Both on & 0.6708 & 0.1529 & 0 & 0.27894 & 85.4873 & 1.1024 \\
+L0g1 & Cue only & 3.7421 & 1.0000 & 1 & 0.05843 & 85.7078 & 0.4595 \\
+L0g1 & Polarity only & 0.3947 & 0.1100 & 0 & 0.25963 & 85.5066 & 1.1034 \\
+L0g1 & Both off & 2.3475 & 0.9403 & 1 & 0.03027 & 85.7360 & 0.6579 \\
+L1g0 & Both on & 3.7031 & 0.7926 & 1 & 0.27147 & 73.7243 & 1.1450 \\
+L1g0 & Cue only & 7.3171 & 0.9837 & 1 & 0.05731 & 73.9385 & 1.0412 \\
+L1g0 & Polarity only & 1.6371 & 0.7603 & 1 & 0.27051 & 73.7253 & 1.1433 \\
+L1g0 & Both off & 8.5278 & 0.9930 & 1 & 0.03651 & 73.9593 & 0.8785 \\
+L1g1 & Both on & 0.6702 & 0.1528 & 0 & 0.27894 & 85.4813 & 1.1024 \\
+L1g1 & Cue only & 3.7401 & 1.0000 & 1 & 0.05843 & 85.7018 & 0.4595 \\
+L1g1 & Polarity only & 0.3944 & 0.1099 & 0 & 0.25963 & 85.5006 & 1.1034 \\
+L1g1 & Both off & 2.3459 & 0.9403 & 1 & 0.03027 & 85.7300 & 0.6573 \\
+\bottomrule\end{tabular}\end{table}\FloatBarrier
+
+\begin{table}[htbp]\centering\scriptsize
+\caption{All life-zero braking outcomes. Mean favourable contact mass is shown separately for acquisition (A), reversal (R) and retention (H); P gives the three fixed-window pass flags. The final two columns retain reversal and retention contact shares even when absolute contact is negligible. Values below 0.001 are not recoded as successful from a large share. All phase denominators and absolute coverage counts remain in the source tables.}\label{tab:brake-outcomes}
+\setlength{\tabcolsep}{4pt}\begin{tabular}{llrrrcrr}\toprule
+Context & Rule & $\overline M_{g,A}$ & $\overline M_{g,R}$ & $\overline M_{g,H}$ & P: A/R/H & $f_R$ & $f_H$\\\midrule
+L0g0 & Original & 0.001400 & 1.673674 & 0.032161 & 0/1/0 & 0.8693 & 0.0055 \\
+L0g0 & Fixed & 0.001513 & 11.766967 & 11.444859 & 0/1/1 & 0.9805 & 0.8442 \\
+L0g0 & Value & 0.001271 & 11.564029 & 10.870126 & 0/1/1 & 0.9730 & 0.8633 \\
+L0g1 & Original & 0.194159 & 0.272879 & 0.196250 & 0/0/0 & 0.2156 & 0.0615 \\
+L0g1 & Fixed & 6.011902 & 0.000112 & 0.000112 & 1/0/0 & 0.9991 & 1.0000 \\
+L0g1 & Value & 6.245731 & 0.000355 & 0.003570 & 1/0/0 & 1.0000 & 1.0000 \\
+L1g0 & Original & 0.001437 & 1.453574 & 0.029462 & 0/1/0 & 0.7889 & 0.0037 \\
+L1g0 & Fixed & 0.001510 & 11.633348 & 11.622195 & 0/1/1 & 0.9773 & 0.7465 \\
+L1g0 & Value & 0.001276 & 11.358577 & 9.916750 & 0/1/1 & 0.9575 & 0.7056 \\
+L1g1 & Original & 0.193998 & 0.270775 & 0.200045 & 0/0/0 & 0.2183 & 0.0616 \\
+L1g1 & Fixed & 6.008074 & 0.000097 & 0.000097 & 1/0/0 & 0.0607 & 0.0007 \\
+L1g1 & Value & 6.235425 & 0.000130 & 0.000130 & 1/0/0 & 0.0483 & 0.0024 \\
+\bottomrule\end{tabular}\end{table}\FloatBarrier
+
+\begin{table}[htbp]\centering\scriptsize
+\caption{All life-zero costs over 1,024 updates. $c_m,c_b$ are movement/basal expenditure, $G,L$ realized feedback gain/loss and $u_b$ basal underpayment, including nonzero numerical-scale values. All twelve remain at $M\simeq24$ with zero starvation, zero tissue-energy loss and zero unpaid movement. The source CSV retains the acquisition/reversal/retention breakdown, feedback waiting, denied transport and early failures; aggregate costs do not replace those stage boundaries. No feedback or association writing occurs in retention.}\label{tab:brake-costs}
+\setlength{\tabcolsep}{4pt}\begin{tabular}{llrrrrrr}\toprule
+Context & Rule & $E$ & $c_m$ & $c_b$ & $G$ & $L$ & $u_b$\\\midrule
+L0g0 & Original & 71.6994 & 1.83263 & 29.49120 & 35.38179 & 4.35855 & 1.49e-16 \\
+L0g0 & Fixed & 76.1312 & 1.46926 & 29.49120 & 38.25011 & 3.15842 & 1.26e-16 \\
+L0g0 & Value & 73.3315 & 1.51042 & 29.49120 & 37.15441 & 4.82132 & 1.31e-16 \\
+L0g1 & Original & 78.6197 & 2.18968 & 29.49120 & 43.45429 & 5.15369 & 1.83e-16 \\
+L0g1 & Fixed & 70.4514 & 1.38351 & 29.49120 & 33.07483 & 3.74875 & 1.03e-16 \\
+L0g1 & Value & 68.6990 & 1.67085 & 29.49120 & 33.53086 & 5.66981 & 1.27e-16 \\
+L1g0 & Original & 72.6774 & 1.76002 & 29.49120 & 36.59225 & 4.66368 & 1.50e-16 \\
+L1g0 & Fixed & 76.8993 & 1.42373 & 29.49120 & 39.00614 & 3.19195 & 1.21e-16 \\
+L1g0 & Value & 74.1986 & 1.48281 & 29.49120 & 38.27954 & 5.10691 & 1.33e-16 \\
+L1g1 & Original & 78.8169 & 2.14701 & 29.49120 & 43.54060 & 5.08551 & 1.77e-16 \\
+L1g1 & Fixed & 70.4078 & 1.40483 & 29.49120 & 33.05346 & 3.74967 & 9.94e-17 \\
+L1g1 & Value & 69.0054 & 1.42520 & 29.49120 & 33.57228 & 5.65049 & 9.86e-17 \\
+\bottomrule\end{tabular}\end{table}\FloatBarrier
+
+All original fixed-window decisions are preserved. The two value-conditioned initial-$g1$ paths have first complete reversal-window successes at offsets 88 and 86, but both fail the final reversal window. First nonzero feedback at step 2 is distinct from substantial paid contact at steps 25--34; it is not an immediate-learning claim. The two initial-$g0$ paths fail acquisition despite their later substantial residence when the environmental value of their occupied location changes. No continuation or threshold search is added to repair these negatives.

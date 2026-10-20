@@ -1,0 +1,434 @@
+[
+  {
+    "id": "predictive--1701--compact--camp_left",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/predictive--1701--compact--camp_left--frames.npz",
+    "sha256": "3d4d2b938bc6a3f6ee332718c9153617f0222b6cb7e9d93983be35288d984f2a",
+    "frames": 30
+  },
+  {
+    "id": "predictive--1701--compact--camp_right",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/predictive--1701--compact--camp_right--frames.npz",
+    "sha256": "93fe770d54c4fd1d1e278639adf388eb9bd85df6f992d3a2b174df9b51565b22",
+    "frames": 30
+  },
+  {
+    "id": "predictive--1701--compact--alternate",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/predictive--1701--compact--alternate--frames.npz",
+    "sha256": "26c7541c25a717851e12204879a26550106c6ecd9ba47fc7471eb225c58a106a",
+    "frames": 30
+  },
+  {
+    "id": "predictive--1701--compact--reactive",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/predictive--1701--compact--reactive--frames.npz",
+    "sha256": "21fc35290cbff65544c4c5b65b7a35443ac0505c8741cae4f52c32ed24182d84",
+    "frames": 30
+  },
+  {
+    "id": "predictive--1701--compact--win_stay",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/predictive--1701--compact--win_stay--frames.npz",
+    "sha256": "fce2f89bdae3e54724ce5e650992027731b772ee2ec5734311aaafaacbcd857d",
+    "frames": 30
+  },
+  {
+    "id": "predictive--1701--compact--bandit_nohistory",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/predictive--1701--compact--bandit_nohistory--frames.npz",
+    "sha256": "94f937b6b5a2395f3cd26101b44783ada09af80f2f1b14072e396673873b04b5",
+    "frames": 30
+  },
+  {
+    "id": "predictive--1701--compact--history_q",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/predictive--1701--compact--history_q--frames.npz",
+    "sha256": "7eb4cb0bc9dfa9114023a2506c28f013214b40840eeed5d9ab4f53a8aa0b5ab0",
+    "frames": 30
+  },
+  {
+    "id": "predictive--1701--compact--oracle",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/predictive--1701--compact--oracle--frames.npz",
+    "sha256": "1d9ba0cd9e8af850ee3efc33308841de149b0b6c66fba853258264153f51e284",
+    "frames": 30
+  },
+  {
+    "id": "predictive--1701--ring--camp_left",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/predictive--1701--ring--camp_left--frames.npz",
+    "sha256": "a1fe07282392435f1b1b5f2b50f3302697199e516924fa17ca82541f65a9c653",
+    "frames": 30
+  },
+  {
+    "id": "predictive--1701--ring--camp_right",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/predictive--1701--ring--camp_right--frames.npz",
+    "sha256": "0b89c3c21540da9089998ca9a9691088e67fde8baf4e4e8b177e98f6e67d0a3a",
+    "frames": 30
+  },
+  {
+    "id": "predictive--1701--ring--alternate",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/predictive--1701--ring--alternate--frames.npz",
+    "sha256": "d00952d469d64d918266b658ec9c27fe598a5b72a02bb86d0f05c8588595c242",
+    "frames": 30
+  },
+  {
+    "id": "predictive--1701--ring--reactive",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/predictive--1701--ring--reactive--frames.npz",
+    "sha256": "c0e84a96e3cf77d58c61c76d3b1f776a4fb6a958d19f07493980fcb54c479ff1",
+    "frames": 30
+  },
+  {
+    "id": "predictive--1701--ring--win_stay",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/predictive--1701--ring--win_stay--frames.npz",
+    "sha256": "fcd62bea2f672f58b9293a10798b08b26625252208e0a6241c612520f4258473",
+    "frames": 30
+  },
+  {
+    "id": "predictive--1701--ring--bandit_nohistory",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/predictive--1701--ring--bandit_nohistory--frames.npz",
+    "sha256": "7abe15d4a028810c8b9a37b854b0981da5f1da74a4974c6b68e91385e7617389",
+    "frames": 30
+  },
+  {
+    "id": "predictive--1701--ring--history_q",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/predictive--1701--ring--history_q--frames.npz",
+    "sha256": "e00bf84a84949d48010a799e4d7c5e442c0e606a8ad87f1f8b478b353fa61232",
+    "frames": 30
+  },
+  {
+    "id": "predictive--1701--ring--oracle",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/predictive--1701--ring--oracle--frames.npz",
+    "sha256": "35ea2395364102d3f1133cb77db912dc92ac40af4781004072e18b4131e8ba8a",
+    "frames": 30
+  },
+  {
+    "id": "predictive--1701--double_lobe--camp_left",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/predictive--1701--double_lobe--camp_left--frames.npz",
+    "sha256": "3ab60062918a53cffa29b4f6f21e3953d6d0ac4303acbfa67b758f76b84bcaae",
+    "frames": 30
+  },
+  {
+    "id": "predictive--1701--double_lobe--camp_right",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/predictive--1701--double_lobe--camp_right--frames.npz",
+    "sha256": "91274d41dc2e23e16c6d7b45a2473f2f026d7cc214515887b3856e96d5d78f09",
+    "frames": 30
+  },
+  {
+    "id": "predictive--1701--double_lobe--alternate",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/predictive--1701--double_lobe--alternate--frames.npz",
+    "sha256": "18961f1061953d3a7a2e44806d4f1f59862a151d1d12fcf2a9e047dc097af055",
+    "frames": 30
+  },
+  {
+    "id": "predictive--1701--double_lobe--reactive",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/predictive--1701--double_lobe--reactive--frames.npz",
+    "sha256": "2e2a844adaf21c7497ee500a8a427f5f2ee9264ade9a3f52f5fced69cacde0b9",
+    "frames": 30
+  },
+  {
+    "id": "predictive--1701--double_lobe--win_stay",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/predictive--1701--double_lobe--win_stay--frames.npz",
+    "sha256": "e9426b391d791c5c8131ec956dfdc6f9dadf9ec66ba5391930f03d106acfd197",
+    "frames": 30
+  },
+  {
+    "id": "predictive--1701--double_lobe--bandit_nohistory",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/predictive--1701--double_lobe--bandit_nohistory--frames.npz",
+    "sha256": "8248bd6c262e6b431c4a16675623f5c3792f5bc27d4a7368d92d187d512b39b7",
+    "frames": 30
+  },
+  {
+    "id": "predictive--1701--double_lobe--history_q",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/predictive--1701--double_lobe--history_q--frames.npz",
+    "sha256": "092dca3af2f9b4d715a2b195a47b5744ab9ee828bc91aea6c3ce75728379134a",
+    "frames": 30
+  },
+  {
+    "id": "predictive--1701--double_lobe--oracle",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/predictive--1701--double_lobe--oracle--frames.npz",
+    "sha256": "ead08ec87db399b115219de54ece9ab7ef2b2c95fc2312ee8fefba0c4ac8e818",
+    "frames": 30
+  },
+  {
+    "id": "reversal--1701--compact--camp_left",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/reversal--1701--compact--camp_left--frames.npz",
+    "sha256": "4bbc7a1ce4637372f02cba859a597d322791a66b5ecd0a2c8cc31de2cc648498",
+    "frames": 30
+  },
+  {
+    "id": "reversal--1701--compact--camp_right",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/reversal--1701--compact--camp_right--frames.npz",
+    "sha256": "01fbede42c4b3cf7bb9e7813d69b64223e356a570a3802ff4ad0db39ffd300ad",
+    "frames": 30
+  },
+  {
+    "id": "reversal--1701--compact--alternate",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/reversal--1701--compact--alternate--frames.npz",
+    "sha256": "aaeb7238b5cd68efcff85a6a6092385f8cc32c1cd2d827ba635c68dfd9fe892a",
+    "frames": 30
+  },
+  {
+    "id": "reversal--1701--compact--reactive",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/reversal--1701--compact--reactive--frames.npz",
+    "sha256": "8ac960bd29800f6b8a82619091b008ea06bc9d96a25ef7f7faa0e282cd82cba4",
+    "frames": 30
+  },
+  {
+    "id": "reversal--1701--compact--win_stay",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/reversal--1701--compact--win_stay--frames.npz",
+    "sha256": "f6eb3215dc11d15531e635ea9fc5dba38585c21ba59c152f45bc9a0820546471",
+    "frames": 30
+  },
+  {
+    "id": "reversal--1701--compact--bandit_nohistory",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/reversal--1701--compact--bandit_nohistory--frames.npz",
+    "sha256": "db2bfc099605f04096ddfa1e93838e85f738bb8b54131c4787f12956d45c82c7",
+    "frames": 30
+  },
+  {
+    "id": "reversal--1701--compact--history_q",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/reversal--1701--compact--history_q--frames.npz",
+    "sha256": "323829de951273210382232ee841075d948c13bcf10cde2033a246cf3a8989f6",
+    "frames": 30
+  },
+  {
+    "id": "reversal--1701--compact--oracle",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/reversal--1701--compact--oracle--frames.npz",
+    "sha256": "218c15e34305ecfb97eb02403ce5583cb8141d7e140d880bd5ddea0d2710688e",
+    "frames": 30
+  },
+  {
+    "id": "reversal--1701--ring--camp_left",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/reversal--1701--ring--camp_left--frames.npz",
+    "sha256": "8772aa8fbec2566693640454a36a7fd5571b2b0bbd8eb3242a30580660faff55",
+    "frames": 30
+  },
+  {
+    "id": "reversal--1701--ring--camp_right",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/reversal--1701--ring--camp_right--frames.npz",
+    "sha256": "ed76d1cfdd57c79e7f970c21de4bdef8ff75d5166f75e7f418e06695d31a2de4",
+    "frames": 30
+  },
+  {
+    "id": "reversal--1701--ring--alternate",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/reversal--1701--ring--alternate--frames.npz",
+    "sha256": "9823ee2fb72fa25e7faecc35f05d7b6a862ec0521d87797eebd8a2413a690310",
+    "frames": 30
+  },
+  {
+    "id": "reversal--1701--ring--reactive",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/reversal--1701--ring--reactive--frames.npz",
+    "sha256": "7bf1a2e68a257da0d0ef448caca73668340f29f1284dd1bf56b4ec338b98341e",
+    "frames": 30
+  },
+  {
+    "id": "reversal--1701--ring--win_stay",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/reversal--1701--ring--win_stay--frames.npz",
+    "sha256": "fde145021707428f692f68bd80f2760ca448f564d4e7aced052007fc86c0a07d",
+    "frames": 30
+  },
+  {
+    "id": "reversal--1701--ring--bandit_nohistory",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/reversal--1701--ring--bandit_nohistory--frames.npz",
+    "sha256": "05ab95a7417f429665b9f1f843f971d74c6a8ba97b24b1628d59bfc7acba70dd",
+    "frames": 30
+  },
+  {
+    "id": "reversal--1701--ring--history_q",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/reversal--1701--ring--history_q--frames.npz",
+    "sha256": "6eac4aab1393389995437932513c27e9c40042a80b2c2498cea44427130fdc15",
+    "frames": 30
+  },
+  {
+    "id": "reversal--1701--ring--oracle",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/reversal--1701--ring--oracle--frames.npz",
+    "sha256": "c1c776532951d180faef60cd53fa2d564e088fdef78c6a36585dc5e3e48fd00f",
+    "frames": 30
+  },
+  {
+    "id": "reversal--1701--double_lobe--camp_left",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/reversal--1701--double_lobe--camp_left--frames.npz",
+    "sha256": "7a1906267aac994a10f11666a074ce8c6a6b9a46063c4d5db7c06e784e53ffa2",
+    "frames": 30
+  },
+  {
+    "id": "reversal--1701--double_lobe--camp_right",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/reversal--1701--double_lobe--camp_right--frames.npz",
+    "sha256": "b24d72a038cb379c9aa8e2bab79d222faf3e69656440fc62dd93acb5fdfb96bc",
+    "frames": 30
+  },
+  {
+    "id": "reversal--1701--double_lobe--alternate",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/reversal--1701--double_lobe--alternate--frames.npz",
+    "sha256": "c9de24b870b6015a36d1b1294be82aa7fd2b9d39f36ae6f8fa96dfb79160bfdd",
+    "frames": 30
+  },
+  {
+    "id": "reversal--1701--double_lobe--reactive",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/reversal--1701--double_lobe--reactive--frames.npz",
+    "sha256": "52381b722b8c40613c3921a8db0fc096dec35840f65dd9af71ca95c983eb2257",
+    "frames": 30
+  },
+  {
+    "id": "reversal--1701--double_lobe--win_stay",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/reversal--1701--double_lobe--win_stay--frames.npz",
+    "sha256": "28db9f42ee59958cfb895ad6878b64556ff3d001b21a6cf4ae3fc0fd4d13905d",
+    "frames": 30
+  },
+  {
+    "id": "reversal--1701--double_lobe--bandit_nohistory",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/reversal--1701--double_lobe--bandit_nohistory--frames.npz",
+    "sha256": "8d68e10faff8628f877155194e02ba37bc8592ae25538ac53016c627f0479281",
+    "frames": 30
+  },
+  {
+    "id": "reversal--1701--double_lobe--history_q",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/reversal--1701--double_lobe--history_q--frames.npz",
+    "sha256": "66246255599a7ad8b0b12d99c812bfaed286600ec4b81f427238b0154aef321d",
+    "frames": 30
+  },
+  {
+    "id": "reversal--1701--double_lobe--oracle",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/reversal--1701--double_lobe--oracle--frames.npz",
+    "sha256": "15a7767e77e768a4952e84419710aef3d616a38e47d4d58f5b00f8905daa6c38",
+    "frames": 30
+  },
+  {
+    "id": "independent--1701--compact--camp_left",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/independent--1701--compact--camp_left--frames.npz",
+    "sha256": "b0e61b00a33a804d06eb97cd029e0757ff62aa3594497aab5e35730f5783dd83",
+    "frames": 30
+  },
+  {
+    "id": "independent--1701--compact--camp_right",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/independent--1701--compact--camp_right--frames.npz",
+    "sha256": "d03e3a20479e51250c863dd09d8291a80be5cdb43c29d4dc6374e77ffefef4e7",
+    "frames": 30
+  },
+  {
+    "id": "independent--1701--compact--alternate",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/independent--1701--compact--alternate--frames.npz",
+    "sha256": "51a3ebc085bfa4e2e1d95440ec1aefc1416008d2d50099038ac7140f3c97f981",
+    "frames": 30
+  },
+  {
+    "id": "independent--1701--compact--reactive",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/independent--1701--compact--reactive--frames.npz",
+    "sha256": "80f83ff946ae9457a6e2b96b787db6fa364c7bcbf6a899e1f87305b8be0d76ce",
+    "frames": 30
+  },
+  {
+    "id": "independent--1701--compact--win_stay",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/independent--1701--compact--win_stay--frames.npz",
+    "sha256": "a3096ce6b544921b067d52ce945cdc825e334812b2c3e86ce0c7960f05f4a982",
+    "frames": 30
+  },
+  {
+    "id": "independent--1701--compact--bandit_nohistory",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/independent--1701--compact--bandit_nohistory--frames.npz",
+    "sha256": "e44da12ae19fec8a32dffb4fa0a20a6c039041c862b30fcf97076b25174c1420",
+    "frames": 30
+  },
+  {
+    "id": "independent--1701--compact--history_q",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/independent--1701--compact--history_q--frames.npz",
+    "sha256": "3cc69e0f22d53a05673b473e80e985f323227de7f174eb8b278eb6160dd60226",
+    "frames": 30
+  },
+  {
+    "id": "independent--1701--compact--oracle",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/independent--1701--compact--oracle--frames.npz",
+    "sha256": "18c4e5a963cc7602a7c8294d04a8b7c308136a46d6e5ba0db1ad2fafca9d0cc2",
+    "frames": 30
+  },
+  {
+    "id": "independent--1701--ring--camp_left",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/independent--1701--ring--camp_left--frames.npz",
+    "sha256": "eee01c5daee539ad8a691f2e504092ecac907a486afa37a5d00c923f13afa7f4",
+    "frames": 30
+  },
+  {
+    "id": "independent--1701--ring--camp_right",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/independent--1701--ring--camp_right--frames.npz",
+    "sha256": "36be61d22552a8180901396c8c13295b73ec63e7e49f70ff522b4b45a8f6ddef",
+    "frames": 30
+  },
+  {
+    "id": "independent--1701--ring--alternate",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/independent--1701--ring--alternate--frames.npz",
+    "sha256": "13c0224b9b06a51476235c730815925951e534bc9d79f07dacb6c36cf8eaa22d",
+    "frames": 30
+  },
+  {
+    "id": "independent--1701--ring--reactive",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/independent--1701--ring--reactive--frames.npz",
+    "sha256": "8430c170d010bee90928164bce38dcfcb55d38f6ad4cc7f1aabc00554982214d",
+    "frames": 30
+  },
+  {
+    "id": "independent--1701--ring--win_stay",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/independent--1701--ring--win_stay--frames.npz",
+    "sha256": "24012b1c0c57d0ed88e604a3aade4fa5805781a6b169f6c0be12fd5dab13a599",
+    "frames": 30
+  },
+  {
+    "id": "independent--1701--ring--bandit_nohistory",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/independent--1701--ring--bandit_nohistory--frames.npz",
+    "sha256": "69e40fce267b6f8ad8c14054eb4f3f9cd4e02c0a0eae22a09df9e2f372665709",
+    "frames": 30
+  },
+  {
+    "id": "independent--1701--ring--history_q",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/independent--1701--ring--history_q--frames.npz",
+    "sha256": "10a064490d8865c104849a1d46c48657ad1adae6a06e70cef7bae47d61db778d",
+    "frames": 30
+  },
+  {
+    "id": "independent--1701--ring--oracle",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/independent--1701--ring--oracle--frames.npz",
+    "sha256": "6d5ab65e0c6bb96927abff1c530920c37d7ac43140b9151dd3adc4b8bc3524c0",
+    "frames": 30
+  },
+  {
+    "id": "independent--1701--double_lobe--camp_left",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/independent--1701--double_lobe--camp_left--frames.npz",
+    "sha256": "d8355a5bc65c31cd06ee761d23771118a321cbe9437bee192596cfe6d3d83055",
+    "frames": 30
+  },
+  {
+    "id": "independent--1701--double_lobe--camp_right",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/independent--1701--double_lobe--camp_right--frames.npz",
+    "sha256": "6d68ff691828893b6eaedf2e34248a3816c50e2112636eb4de212f503e33e20b",
+    "frames": 30
+  },
+  {
+    "id": "independent--1701--double_lobe--alternate",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/independent--1701--double_lobe--alternate--frames.npz",
+    "sha256": "5071a9067a09380a4bf0d1667be76449241b16a3b1a6e22477043e415c8bf2dc",
+    "frames": 30
+  },
+  {
+    "id": "independent--1701--double_lobe--reactive",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/independent--1701--double_lobe--reactive--frames.npz",
+    "sha256": "f41e1233bc9144ce7dcda739ccd4263b2475bb3e4b9159d5b24cdd76e1241311",
+    "frames": 30
+  },
+  {
+    "id": "independent--1701--double_lobe--win_stay",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/independent--1701--double_lobe--win_stay--frames.npz",
+    "sha256": "6e630467de6144fdd0dbfc38c81ece724705dcc9a384c133c5799b85b7d48efe",
+    "frames": 30
+  },
+  {
+    "id": "independent--1701--double_lobe--bandit_nohistory",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/independent--1701--double_lobe--bandit_nohistory--frames.npz",
+    "sha256": "c693038e7c1b7864090f4cfffa035ce3ee44018d5aef2f16e9b1088252d8b4f8",
+    "frames": 30
+  },
+  {
+    "id": "independent--1701--double_lobe--history_q",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/independent--1701--double_lobe--history_q--frames.npz",
+    "sha256": "9527e5c1ef4c0f5d334a270ae24358672dd67c3574ac85e2cb3cb6f299daa043",
+    "frames": 30
+  },
+  {
+    "id": "independent--1701--double_lobe--oracle",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df/independent--1701--double_lobe--oracle--frames.npz",
+    "sha256": "a3d15c87a535aedc0c2843f8536a7307a062e6da1147ca67ea2ac82b522bc83c",
+    "frames": 30
+  }
+]

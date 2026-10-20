@@ -1,0 +1,239 @@
+{
+  "task": "association_polarity_expression_20261019",
+  "status": "complete",
+  "summary": {
+    "task": "association_polarity_expression_20261019",
+    "status": "complete",
+    "native": 1536,
+    "attempted": 1536,
+    "unknown": 0,
+    "known_readonly": 512,
+    "old_replay": 0,
+    "worker_seconds": 43.113396,
+    "raw_bytes": 69484936,
+    "survivors": 16,
+    "paths": 16,
+    "groups": {
+      "both_on": {
+        "last64_good_mass_mean": [
+          4.072498030975426,
+          0.6707879637957664,
+          3.7031275434597277,
+          0.6701747998666989
+        ],
+        "last64_good_fraction": [
+          0.8373444608067129,
+          0.1529377972043015,
+          0.7926487230851015,
+          0.1528163442519617
+        ],
+        "last64_good_coverage": [
+          0.16968741795730932,
+          0.02794949849149029,
+          0.15429698097748862,
+          0.027923949994445776
+        ],
+        "E": [
+          74.5763502233412,
+          85.48729397587506,
+          73.72434567808953,
+          85.48127865353489
+        ],
+        "movement_paid": [
+          0.2669084681231182,
+          0.27893543564143314,
+          0.2714674256606503,
+          0.2789382197345067
+        ],
+        "moved_mass": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "dwell_steps": [
+          128,
+          128,
+          128,
+          128
+        ],
+        "first_exit_step": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "last64_substantive": 2
+      },
+      "cue_only": {
+        "last64_good_mass_mean": [
+          7.377519627631001,
+          3.742066773039226,
+          7.317138344777218,
+          3.740095561977088
+        ],
+        "last64_good_fraction": [
+          0.9878022975776258,
+          0.9999815111304188,
+          0.9836991178052299,
+          0.9999815069366373
+        ],
+        "last64_good_coverage": [
+          0.30739665115129156,
+          0.1559194488766345,
+          0.3048807643657174,
+          0.1558373150823786
+        ],
+        "E": [
+          74.78039320918032,
+          85.70779746547032,
+          73.93850322835783,
+          85.701784447578
+        ],
+        "movement_paid": [
+          0.06286548228396889,
+          0.05843194604615991,
+          0.057309875392355644,
+          0.058432425691343506
+        ],
+        "moved_mass": [
+          31.432741141984447,
+          29.215973023079954,
+          28.65493769617782,
+          29.216212845671752
+        ],
+        "dwell_steps": [
+          128,
+          128,
+          128,
+          128
+        ],
+        "first_exit_step": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "last64_substantive": 4
+      },
+      "polarity_only": {
+        "last64_good_mass_mean": [
+          1.7959838400956118,
+          0.39472171600395034,
+          1.6370705016637375,
+          0.3944240764748611
+        ],
+        "last64_good_fraction": [
+          0.801478713848886,
+          0.1099762767300489,
+          0.7602786585810417,
+          0.10989511061877742
+        ],
+        "last64_good_coverage": [
+          0.07483266000398378,
+          0.01644673816683127,
+          0.0682112709026557,
+          0.016434336519785882
+        ],
+        "E": [
+          74.57331861986846,
+          85.50660275906337,
+          73.72530362418041,
+          85.50058833882122
+        ],
+        "movement_paid": [
+          0.26994007159583755,
+          0.2596266524531539,
+          0.27050947956976884,
+          0.2596285344481498
+        ],
+        "moved_mass": [
+          134.97003579791877,
+          129.81332622657695,
+          135.2547397848844,
+          129.81426722407488
+        ],
+        "dwell_steps": [
+          128,
+          112,
+          128,
+          112
+        ],
+        "first_exit_step": [
+          null,
+          113,
+          null,
+          113
+        ],
+        "last64_substantive": 2
+      },
+      "both_off": {
+        "last64_good_mass_mean": [
+          8.85846711915988,
+          2.347466528190857,
+          8.527778396763859,
+          2.3458886422985525
+        ],
+        "last64_good_fraction": [
+          0.9953919493621058,
+          0.9403207672706675,
+          0.9930053494412246,
+          0.9402850990823959
+        ],
+        "last64_good_coverage": [
+          0.36910279663166146,
+          0.09781110534128579,
+          0.3553240998651608,
+          0.09774536009577299
+        ],
+        "E": [
+          74.80671368879254,
+          85.73595812711856,
+          73.9593014522283,
+          85.72995032304223
+        ],
+        "movement_paid": [
+          0.03654500267176648,
+          0.030271284397920206,
+          0.036511651521841916,
+          0.030266550227146215
+        ],
+        "moved_mass": [
+          18.272501335883238,
+          15.135642198960102,
+          18.25582576092096,
+          15.133275113573108
+        ],
+        "dwell_steps": [
+          128,
+          128,
+          128,
+          128
+        ],
+        "first_exit_step": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "last64_substantive": 4
+      }
+    }
+  },
+  "scientific_choice": "保极性推进因果作用与两父关联表达增益；双关闭4/4排除仅据停留称学会停止。转回真实取得和未告知反转，强简单停止同行。",
+  "artifacts": {
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/association_polarity_expression_20261019/plan.json": "bb96426c3f75c1396cbbdacce8ac19e92dfa5e9fe715b350fb371f98f304beef",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/association_polarity_expression_20261019/pure_checks.json": "5641f949590f213e3cd7070ff46cc7fc243086b0cbaebc3fb739a7c7543ce23b",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/association_polarity_expression_20261019/result.json": "9bc4dae966ebb5dde7ad480dd75782b2dfec6b67e963df8486b2263349373300",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/association_polarity_expression_20261019/summary.json": "27aca111c2b80dbcc895cd734e96062529997a6e215326cb3268fc22b287f17f",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/association_polarity_expression_20261019/all_branches.csv": "6c32d73c01695ec9004cb9a0801360895a5c364411de28ee6b6ceab9d40d02d3",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/association_polarity_expression_20261019/blocks.csv": "be71e5a75925abb20ac26217026fba4246142cb2c4f47e4f685a8503fdba99f0",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/association_polarity_expression_20261019/factorial_effects.csv": "3ca56b333ae2e019f12a4fe962c1579bce0f544132ba3d0bb8c38d8750a9fd48",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/association_polarity_expression_20261019/continuity_checks.json": "48928944ba142a0aec381771480384842adec9006ef6f0ad4693f27f7e5c1dcc",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/association_polarity_expression_20261019/REPORT.txt": "0065f259194015235b11798ab6fdb739a74aa561807f5e724e514c8e5d8e3752",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/association_polarity_expression_20261019/expression_cost.png": "c947c530c86edec6c7f40b86161dbb5072a96f62ae0df20e96fa2ea2fa35a490",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/association_polarity_expression_20261019/actual_expression.gif": "07a754237ef1112f11dc86f691ffcb5ab41f21515c66b68da407ccbc00f0139f",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/association_polarity_expression_20261019/actual_sequence.png": "833b2228538ad9b9a2695ee61892c4729451f24b6b12c05aad79c56c4953bc7d"
+  },
+  "next": "value_conditioned_propulsion_brake_20261019 independent batch; no result claimed"
+}

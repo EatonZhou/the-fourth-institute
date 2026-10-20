@@ -1,0 +1,11 @@
+{
+  "reviewed": [
+    "actual_process.png",
+    "actual_fields_f1--colocated.png",
+    "actual_fields_f1--separated.png",
+    "actual_fields_f2--colocated.png",
+    "actual_fields_f2--separated.png"
+  ],
+  "scope": "4 contexts, all24 actual final bodies; not all120 saved spatial frames",
+  "layout_correction": "title clearance only; source values unchanged"
+}

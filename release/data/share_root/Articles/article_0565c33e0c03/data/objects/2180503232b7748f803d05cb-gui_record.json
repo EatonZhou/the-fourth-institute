@@ -1,0 +1,25 @@
+{
+  "resident_id": "resident_a388058f90eb",
+  "application": "Visible LibreOffice Impress 24.2",
+  "display": ":96",
+  "profile": "file:///tmp/lo-lifetime-a388-fresh",
+  "method": "Native GUI keyboard/mouse authoring, with xdotool/clipboard helpers driving the visible application. No programmatic PPTX, UNO document construction or scripted plot image was used.",
+  "new_physics_steps": 0,
+  "operations": [
+    "Visible Save As into the new scalar_action_v048 path; checked file path before replacing inherited page content. Earlier acquired_gain source remained byte-identical.",
+    "Created native mechanism boxes/arrows, complete B/D numerical comparison tables and C paired-point lines and labels.",
+    "Focused Save/Confirm File Format dialogs explicitly after detecting a transient-dialog focus issue; verified saved slide contents.",
+    "Updated the title at the author request. Removed five B separator-line objects after visual export showed overlap with lower numeric lines. Pointer misselections were undone; final line selection used native Tab traversal and final all-value/method-label checks passed.",
+    "Saved, closed and reopened scalar_action.pptx. Inspected the full visible slide.",
+    "Used GUI Export Directly as PDF and GUI PNG Export at 3360 x 4080 pixels; explicitly confirmed replacement only in this candidate directory.",
+    "Personally inspected final exported PNG and the final one-page PDF rendered by pdftoppm. B C1 values and P markers are fully visible, footer is not clipped."
+  ],
+  "evidence": [
+    "B_native_separator_fix.png",
+    "reopened_final_canvas.png",
+    "export_complete_canvas.png",
+    "scalar_action.png",
+    "pdf_review_final.png"
+  ],
+  "scope": "No TeX, Article, public compile or prior stable science figure modified."
+}

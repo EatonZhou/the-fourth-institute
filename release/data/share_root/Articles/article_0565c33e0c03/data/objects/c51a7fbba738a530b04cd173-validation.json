@@ -1,0 +1,648 @@
+[
+  {
+    "key": "compact_p512/zero/fixed/main",
+    "steps": 384,
+    "frozen_omega": true,
+    "delayed_actual_displacement_write": true,
+    "norm_preserved": true,
+    "eligible": 0,
+    "rejected": 384,
+    "gram_eigenvalues": [
+      0.0,
+      0.0
+    ],
+    "gram_condition": null,
+    "response_error_mean": 0.005157657795953827,
+    "pre_response_error": 0.0048710226514635255,
+    "post_response_error": 0.005300975368198978,
+    "max_energy_error": 1.9594779087066944e-14,
+    "viable": true
+  },
+  {
+    "key": "compact_p512/zero/last/main",
+    "steps": 384,
+    "frozen_omega": true,
+    "delayed_actual_displacement_write": true,
+    "norm_preserved": true,
+    "eligible": 0,
+    "rejected": 384,
+    "gram_eigenvalues": [
+      0.0,
+      0.0
+    ],
+    "gram_condition": null,
+    "response_error_mean": 0.005157657795953848,
+    "pre_response_error": 0.004871022651463508,
+    "post_response_error": 0.005300975368199019,
+    "max_energy_error": 1.6865855771448085e-14,
+    "viable": true
+  },
+  {
+    "key": "compact_p512/zero/fit/main",
+    "steps": 384,
+    "frozen_omega": true,
+    "delayed_actual_displacement_write": true,
+    "norm_preserved": true,
+    "eligible": 0,
+    "rejected": 384,
+    "gram_eigenvalues": [
+      0.0,
+      0.0
+    ],
+    "gram_condition": null,
+    "response_error_mean": 0.005157657795953848,
+    "pre_response_error": 0.004871022651463508,
+    "post_response_error": 0.005300975368199019,
+    "max_energy_error": 1.6865855771448085e-14,
+    "viable": true
+  },
+  {
+    "key": "compact_p512/plus/fixed/main",
+    "steps": 384,
+    "frozen_omega": true,
+    "delayed_actual_displacement_write": true,
+    "norm_preserved": true,
+    "eligible": 0,
+    "rejected": 384,
+    "gram_eigenvalues": [
+      0.0,
+      0.0
+    ],
+    "gram_condition": null,
+    "response_error_mean": 0.043214286353063076,
+    "pre_response_error": 0.0048710226514635255,
+    "post_response_error": 0.062385918203862856,
+    "max_energy_error": 2.0505102336140085e-14,
+    "viable": true
+  },
+  {
+    "key": "compact_p512/plus/last/main",
+    "steps": 384,
+    "frozen_omega": true,
+    "delayed_actual_displacement_write": true,
+    "norm_preserved": true,
+    "eligible": 0,
+    "rejected": 384,
+    "gram_eigenvalues": [
+      0.0,
+      0.0
+    ],
+    "gram_condition": null,
+    "response_error_mean": 0.0432142863530631,
+    "pre_response_error": 0.004871022651463508,
+    "post_response_error": 0.06238591820386288,
+    "max_energy_error": 1.6865855771448085e-14,
+    "viable": true
+  },
+  {
+    "key": "compact_p512/plus/fit/main",
+    "steps": 384,
+    "frozen_omega": true,
+    "delayed_actual_displacement_write": true,
+    "norm_preserved": true,
+    "eligible": 0,
+    "rejected": 384,
+    "gram_eigenvalues": [
+      0.0,
+      0.0
+    ],
+    "gram_condition": null,
+    "response_error_mean": 0.0432142863530631,
+    "pre_response_error": 0.004871022651463508,
+    "post_response_error": 0.06238591820386288,
+    "max_energy_error": 1.6865855771448085e-14,
+    "viable": true
+  },
+  {
+    "key": "compact_p512/minus/fixed/main",
+    "steps": 384,
+    "frozen_omega": true,
+    "delayed_actual_displacement_write": true,
+    "norm_preserved": true,
+    "eligible": 0,
+    "rejected": 384,
+    "gram_eigenvalues": [
+      0.0,
+      0.0
+    ],
+    "gram_condition": null,
+    "response_error_mean": 0.025102772340427158,
+    "pre_response_error": 0.0048710226514635255,
+    "post_response_error": 0.03521864718490898,
+    "max_energy_error": 2.3705511295255e-14,
+    "viable": true
+  },
+  {
+    "key": "compact_p512/minus/last/main",
+    "steps": 384,
+    "frozen_omega": true,
+    "delayed_actual_displacement_write": true,
+    "norm_preserved": true,
+    "eligible": 0,
+    "rejected": 384,
+    "gram_eigenvalues": [
+      0.0,
+      0.0
+    ],
+    "gram_condition": null,
+    "response_error_mean": 0.025102772340427116,
+    "pre_response_error": 0.004871022651463508,
+    "post_response_error": 0.03521864718490891,
+    "max_energy_error": 2.0241925811296385e-14,
+    "viable": true
+  },
+  {
+    "key": "compact_p512/minus/fit/main",
+    "steps": 384,
+    "frozen_omega": true,
+    "delayed_actual_displacement_write": true,
+    "norm_preserved": true,
+    "eligible": 0,
+    "rejected": 384,
+    "gram_eigenvalues": [
+      0.0,
+      0.0
+    ],
+    "gram_condition": null,
+    "response_error_mean": 0.025102772340427116,
+    "pre_response_error": 0.004871022651463508,
+    "post_response_error": 0.03521864718490891,
+    "max_energy_error": 2.0241925811296385e-14,
+    "viable": true
+  },
+  {
+    "key": "soft_p512/zero/fixed/main",
+    "steps": 384,
+    "frozen_omega": true,
+    "delayed_actual_displacement_write": true,
+    "norm_preserved": true,
+    "eligible": 0,
+    "rejected": 384,
+    "gram_eigenvalues": [
+      0.0,
+      0.0
+    ],
+    "gram_condition": null,
+    "response_error_mean": 0.0015166020306491446,
+    "pre_response_error": 0.0016424210942674181,
+    "post_response_error": 0.0014536924988400078,
+    "max_energy_error": 1.1047152775889302e-14,
+    "viable": true
+  },
+  {
+    "key": "soft_p512/zero/last/main",
+    "steps": 384,
+    "frozen_omega": true,
+    "delayed_actual_displacement_write": true,
+    "norm_preserved": true,
+    "eligible": 0,
+    "rejected": 384,
+    "gram_eigenvalues": [
+      0.0,
+      0.0
+    ],
+    "gram_condition": null,
+    "response_error_mean": 0.0015166020306491533,
+    "pre_response_error": 0.0016424210942673702,
+    "post_response_error": 0.0014536924988400451,
+    "max_energy_error": 1.1288713019919072e-14,
+    "viable": true
+  },
+  {
+    "key": "soft_p512/zero/fit/main",
+    "steps": 384,
+    "frozen_omega": true,
+    "delayed_actual_displacement_write": true,
+    "norm_preserved": true,
+    "eligible": 0,
+    "rejected": 384,
+    "gram_eigenvalues": [
+      0.0,
+      0.0
+    ],
+    "gram_condition": null,
+    "response_error_mean": 0.0015166020306491533,
+    "pre_response_error": 0.0016424210942673702,
+    "post_response_error": 0.0014536924988400451,
+    "max_energy_error": 1.1288713019919072e-14,
+    "viable": true
+  },
+  {
+    "key": "soft_p512/plus/fixed/main",
+    "steps": 384,
+    "frozen_omega": true,
+    "delayed_actual_displacement_write": true,
+    "norm_preserved": true,
+    "eligible": 0,
+    "rejected": 384,
+    "gram_eigenvalues": [
+      0.0,
+      0.0
+    ],
+    "gram_condition": null,
+    "response_error_mean": 0.03790358958712834,
+    "pre_response_error": 0.0016424210942674181,
+    "post_response_error": 0.05603417383355881,
+    "max_energy_error": 1.1119631691119958e-14,
+    "viable": true
+  },
+  {
+    "key": "soft_p512/plus/last/main",
+    "steps": 384,
+    "frozen_omega": true,
+    "delayed_actual_displacement_write": true,
+    "norm_preserved": true,
+    "eligible": 0,
+    "rejected": 384,
+    "gram_eigenvalues": [
+      0.0,
+      0.0
+    ],
+    "gram_condition": null,
+    "response_error_mean": 0.03790358958712844,
+    "pre_response_error": 0.0016424210942673702,
+    "post_response_error": 0.05603417383355898,
+    "max_energy_error": 8.580565728430467e-15,
+    "viable": true
+  },
+  {
+    "key": "soft_p512/plus/fit/main",
+    "steps": 384,
+    "frozen_omega": true,
+    "delayed_actual_displacement_write": true,
+    "norm_preserved": true,
+    "eligible": 0,
+    "rejected": 384,
+    "gram_eigenvalues": [
+      0.0,
+      0.0
+    ],
+    "gram_condition": null,
+    "response_error_mean": 0.03790358958712844,
+    "pre_response_error": 0.0016424210942673702,
+    "post_response_error": 0.05603417383355898,
+    "max_energy_error": 8.580565728430467e-15,
+    "viable": true
+  },
+  {
+    "key": "soft_p512/minus/fixed/main",
+    "steps": 384,
+    "frozen_omega": true,
+    "delayed_actual_displacement_write": true,
+    "norm_preserved": true,
+    "eligible": 0,
+    "rejected": 384,
+    "gram_eigenvalues": [
+      0.0,
+      0.0
+    ],
+    "gram_condition": null,
+    "response_error_mean": 0.022434790177802217,
+    "pre_response_error": 0.0016424210942674181,
+    "post_response_error": 0.032830974719569625,
+    "max_energy_error": 9.196202827022049e-15,
+    "viable": true
+  },
+  {
+    "key": "soft_p512/minus/last/main",
+    "steps": 384,
+    "frozen_omega": true,
+    "delayed_actual_displacement_write": true,
+    "norm_preserved": true,
+    "eligible": 0,
+    "rejected": 384,
+    "gram_eigenvalues": [
+      0.0,
+      0.0
+    ],
+    "gram_condition": null,
+    "response_error_mean": 0.022434790177802255,
+    "pre_response_error": 0.0016424210942673702,
+    "post_response_error": 0.032830974719569694,
+    "max_energy_error": 9.305544616117212e-15,
+    "viable": true
+  },
+  {
+    "key": "soft_p512/minus/fit/main",
+    "steps": 384,
+    "frozen_omega": true,
+    "delayed_actual_displacement_write": true,
+    "norm_preserved": true,
+    "eligible": 0,
+    "rejected": 384,
+    "gram_eigenvalues": [
+      0.0,
+      0.0
+    ],
+    "gram_condition": null,
+    "response_error_mean": 0.022434790177802255,
+    "pre_response_error": 0.0016424210942673702,
+    "post_response_error": 0.032830974719569694,
+    "max_energy_error": 9.305544616117212e-15,
+    "viable": true
+  },
+  {
+    "key": "compact_p512/plus/last/keep",
+    "steps": 64,
+    "frozen_omega": true,
+    "delayed_actual_displacement_write": true,
+    "norm_preserved": true,
+    "eligible": 0,
+    "rejected": 64,
+    "gram_eigenvalues": [
+      0.0,
+      0.0
+    ],
+    "gram_condition": null,
+    "response_error_mean": 0.047283244266704536,
+    "pre_response_error": 0.047283244266704536,
+    "post_response_error": null,
+    "max_energy_error": 1.2159879629906542e-14,
+    "viable": true
+  },
+  {
+    "key": "compact_p512/plus/last/reset",
+    "steps": 64,
+    "frozen_omega": true,
+    "delayed_actual_displacement_write": true,
+    "norm_preserved": true,
+    "eligible": 0,
+    "rejected": 64,
+    "gram_eigenvalues": [
+      0.0,
+      0.0
+    ],
+    "gram_condition": null,
+    "response_error_mean": 0.047283244266704536,
+    "pre_response_error": 0.047283244266704536,
+    "post_response_error": null,
+    "max_energy_error": 1.2159879629906542e-14,
+    "viable": true
+  },
+  {
+    "key": "compact_p512/plus/fit/keep",
+    "steps": 64,
+    "frozen_omega": true,
+    "delayed_actual_displacement_write": true,
+    "norm_preserved": true,
+    "eligible": 0,
+    "rejected": 64,
+    "gram_eigenvalues": [
+      0.0,
+      0.0
+    ],
+    "gram_condition": null,
+    "response_error_mean": 0.047283244266704536,
+    "pre_response_error": 0.047283244266704536,
+    "post_response_error": null,
+    "max_energy_error": 1.2159879629906542e-14,
+    "viable": true
+  },
+  {
+    "key": "compact_p512/plus/fit/reset",
+    "steps": 64,
+    "frozen_omega": true,
+    "delayed_actual_displacement_write": true,
+    "norm_preserved": true,
+    "eligible": 0,
+    "rejected": 64,
+    "gram_eigenvalues": [
+      0.0,
+      0.0
+    ],
+    "gram_condition": null,
+    "response_error_mean": 0.047283244266704536,
+    "pre_response_error": 0.047283244266704536,
+    "post_response_error": null,
+    "max_energy_error": 1.2159879629906542e-14,
+    "viable": true
+  },
+  {
+    "key": "compact_p512/minus/last/keep",
+    "steps": 64,
+    "frozen_omega": true,
+    "delayed_actual_displacement_write": true,
+    "norm_preserved": true,
+    "eligible": 0,
+    "rejected": 64,
+    "gram_eigenvalues": [
+      0.0,
+      0.0
+    ],
+    "gram_condition": null,
+    "response_error_mean": 0.045268235784643764,
+    "pre_response_error": 0.045268235784643764,
+    "post_response_error": null,
+    "max_energy_error": 1.7591671527686717e-14,
+    "viable": true
+  },
+  {
+    "key": "compact_p512/minus/last/reset",
+    "steps": 64,
+    "frozen_omega": true,
+    "delayed_actual_displacement_write": true,
+    "norm_preserved": true,
+    "eligible": 0,
+    "rejected": 64,
+    "gram_eigenvalues": [
+      0.0,
+      0.0
+    ],
+    "gram_condition": null,
+    "response_error_mean": 0.045268235784643764,
+    "pre_response_error": 0.045268235784643764,
+    "post_response_error": null,
+    "max_energy_error": 1.7591671527686717e-14,
+    "viable": true
+  },
+  {
+    "key": "compact_p512/minus/fit/keep",
+    "steps": 64,
+    "frozen_omega": true,
+    "delayed_actual_displacement_write": true,
+    "norm_preserved": true,
+    "eligible": 0,
+    "rejected": 64,
+    "gram_eigenvalues": [
+      0.0,
+      0.0
+    ],
+    "gram_condition": null,
+    "response_error_mean": 0.045268235784643764,
+    "pre_response_error": 0.045268235784643764,
+    "post_response_error": null,
+    "max_energy_error": 1.7591671527686717e-14,
+    "viable": true
+  },
+  {
+    "key": "compact_p512/minus/fit/reset",
+    "steps": 64,
+    "frozen_omega": true,
+    "delayed_actual_displacement_write": true,
+    "norm_preserved": true,
+    "eligible": 0,
+    "rejected": 64,
+    "gram_eigenvalues": [
+      0.0,
+      0.0
+    ],
+    "gram_condition": null,
+    "response_error_mean": 0.045268235784643764,
+    "pre_response_error": 0.045268235784643764,
+    "post_response_error": null,
+    "max_energy_error": 1.7591671527686717e-14,
+    "viable": true
+  },
+  {
+    "key": "soft_p512/plus/last/keep",
+    "steps": 64,
+    "frozen_omega": true,
+    "delayed_actual_displacement_write": true,
+    "norm_preserved": true,
+    "eligible": 0,
+    "rejected": 64,
+    "gram_eigenvalues": [
+      0.0,
+      0.0
+    ],
+    "gram_condition": null,
+    "response_error_mean": 0.04761815700496677,
+    "pre_response_error": 0.04761815700496677,
+    "post_response_error": null,
+    "max_energy_error": 5.692007195440274e-15,
+    "viable": true
+  },
+  {
+    "key": "soft_p512/plus/last/reset",
+    "steps": 64,
+    "frozen_omega": true,
+    "delayed_actual_displacement_write": true,
+    "norm_preserved": true,
+    "eligible": 0,
+    "rejected": 64,
+    "gram_eigenvalues": [
+      0.0,
+      0.0
+    ],
+    "gram_condition": null,
+    "response_error_mean": 0.04761815700496677,
+    "pre_response_error": 0.04761815700496677,
+    "post_response_error": null,
+    "max_energy_error": 5.692007195440274e-15,
+    "viable": true
+  },
+  {
+    "key": "soft_p512/plus/fit/keep",
+    "steps": 64,
+    "frozen_omega": true,
+    "delayed_actual_displacement_write": true,
+    "norm_preserved": true,
+    "eligible": 0,
+    "rejected": 64,
+    "gram_eigenvalues": [
+      0.0,
+      0.0
+    ],
+    "gram_condition": null,
+    "response_error_mean": 0.04761815700496677,
+    "pre_response_error": 0.04761815700496677,
+    "post_response_error": null,
+    "max_energy_error": 5.692007195440274e-15,
+    "viable": true
+  },
+  {
+    "key": "soft_p512/plus/fit/reset",
+    "steps": 64,
+    "frozen_omega": true,
+    "delayed_actual_displacement_write": true,
+    "norm_preserved": true,
+    "eligible": 0,
+    "rejected": 64,
+    "gram_eigenvalues": [
+      0.0,
+      0.0
+    ],
+    "gram_condition": null,
+    "response_error_mean": 0.04761815700496677,
+    "pre_response_error": 0.04761815700496677,
+    "post_response_error": null,
+    "max_energy_error": 5.692007195440274e-15,
+    "viable": true
+  },
+  {
+    "key": "soft_p512/minus/last/keep",
+    "steps": 64,
+    "frozen_omega": true,
+    "delayed_actual_displacement_write": true,
+    "norm_preserved": true,
+    "eligible": 0,
+    "rejected": 64,
+    "gram_eigenvalues": [
+      0.0,
+      0.0
+    ],
+    "gram_condition": null,
+    "response_error_mean": 0.04335128981724589,
+    "pre_response_error": 0.04335128981724589,
+    "post_response_error": null,
+    "max_energy_error": 4.9704164395425465e-15,
+    "viable": true
+  },
+  {
+    "key": "soft_p512/minus/last/reset",
+    "steps": 64,
+    "frozen_omega": true,
+    "delayed_actual_displacement_write": true,
+    "norm_preserved": true,
+    "eligible": 0,
+    "rejected": 64,
+    "gram_eigenvalues": [
+      0.0,
+      0.0
+    ],
+    "gram_condition": null,
+    "response_error_mean": 0.04335128981724589,
+    "pre_response_error": 0.04335128981724589,
+    "post_response_error": null,
+    "max_energy_error": 4.9704164395425465e-15,
+    "viable": true
+  },
+  {
+    "key": "soft_p512/minus/fit/keep",
+    "steps": 64,
+    "frozen_omega": true,
+    "delayed_actual_displacement_write": true,
+    "norm_preserved": true,
+    "eligible": 0,
+    "rejected": 64,
+    "gram_eigenvalues": [
+      0.0,
+      0.0
+    ],
+    "gram_condition": null,
+    "response_error_mean": 0.04335128981724589,
+    "pre_response_error": 0.04335128981724589,
+    "post_response_error": null,
+    "max_energy_error": 4.9704164395425465e-15,
+    "viable": true
+  },
+  {
+    "key": "soft_p512/minus/fit/reset",
+    "steps": 64,
+    "frozen_omega": true,
+    "delayed_actual_displacement_write": true,
+    "norm_preserved": true,
+    "eligible": 0,
+    "rejected": 64,
+    "gram_eigenvalues": [
+      0.0,
+      0.0
+    ],
+    "gram_condition": null,
+    "response_error_mean": 0.04335128981724589,
+    "pre_response_error": 0.04335128981724589,
+    "post_response_error": null,
+    "max_energy_error": 4.9704164395425465e-15,
+    "viable": true
+  }
+]

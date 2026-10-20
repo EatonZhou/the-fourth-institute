@@ -1,0 +1,22 @@
+[
+  {
+    "resident_id": "resident_afa3d4d6cf11",
+    "activation_policy": "enqueue_and_trigger",
+    "message_id": "msg_c7bdaf222353f327b6ba97858ab8935d"
+  },
+  {
+    "resident_id": "resident_78225d1bc049",
+    "activation_policy": "attach_to_next",
+    "message_id": "msg_3c4063c31b416b36e47a9e54785f8d50"
+  },
+  {
+    "resident_id": "resident_a48ab8bd3f81",
+    "activation_policy": "attach_to_next",
+    "message_id": "msg_49392a8d42670264e96d80a7fa02d22b"
+  },
+  {
+    "resident_id": "resident_5fe1227e36c0",
+    "activation_policy": "attach_to_next",
+    "message_id": "msg_61c610b4f946818fb19c7d75a8ffd12c"
+  }
+]

@@ -1,0 +1,99 @@
+Inherited tolerance and injury experience have different consequences
+Formation 0–128 (T00)  →  Histories 129–160  →  Test 161–224
+N: no prior cut; C: 10% +x cuts before 129 / 145. N and C use paid P/F transport (T11).
+Test: none or 20% +x cut before 161. T00: no prior cut, no transport capability or transport charge.
+A  Compact offspring survives cuts that kill its parent
+160: before
+after cut
+184
+224
+Parent
+N
+0
+0
+Parent
+C
+0
+0
+Offspring
+N
+Offspring
+C
+Density ρ: white 0 → teal 1 M/cell. Same x28–67, y28–63 crop; y up.
+All six cut paths · body mass (M)
+0
+40
+80
+0
+128
+224
+N
+C
+T00
+Light: parent; dark: offspring
+B  Positive interaction does not make injury experience beneficial
+160
+224
+Parent N
+Parent C
+Child N
+Child C
+Multiring:
+all six matched
+child − parent
+M / E / body-time < 0
+Complete 0–224: C − N body-time (M × time)
+0
+-30
+-60
+0
+128
+224
+Compact none −24.085
+Compact x −46.596
+Multiring none −56.516
+Multiring x −50.218
+C  Regaining total mass is not restoration of the missing structure
+Cut · 384
+Uninjured · 384
+0
+80
+160
+256
+384
+Grey: uninjured region; orange: cut region. This is a different receiver and clock from A/B.
+One compound mutation per parent; one tape / +x scenario. Learning off; no stable-recovery or general-adaptation claim.
+Fixed 68 × 64 crop; same ρ scale; smaller than A.
+Separate state 256 excision.
+Fixed x10–85, y10–85 crop.
+Compact: extinct 273.
+Multiring: old total M regained at 312;
+cut region ends at 22.78% of control.
+Cut region peaks at 325, then falls.
+Shape L1 = 373.060 after registration
+(displacement 0): not restored.
+Multiring: interaction +6.298, but both C − N totals < 0.
+Step
+Cut
+region
+M
+I0
+I1
+R1
+178 / 183: zero
+both >0 at 224
+R1I0 C − N, x: ΔM +.687; ΔE −6.279;
+ΔT −40.633 (T = full-cycle body-time).
+R/I follow-up:
+At each I, R1 − R0:
+M / E / T < 0 in all
+four matched paths.
+R × I is nonzero.
+Parent and child:
+all six original futures
+grow at every final-32
+update.
+Compact R × I follow-up (N/x, C/x)
+R0
+178 / 184: zero
+both >0 at 224

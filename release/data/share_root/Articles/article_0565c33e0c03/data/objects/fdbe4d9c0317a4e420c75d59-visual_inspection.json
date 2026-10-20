@@ -1,0 +1,15 @@
+{
+  "viewed": [
+    "actual_body_f1.png",
+    "actual_body_f2.png",
+    "paired_body_results.png"
+  ],
+  "scope": "two known parents, changed schedule, six arms, saved449/512/529/576/608 only",
+  "observation": "f1 small hollow ring; f2 filled centre with fourfold contour; between-arm shape differences small, post384 tissue changes visible",
+  "crop": "replaced incorrect fixed central crop by fixed per-parent union-of-body-support window; all sources unchanged",
+  "does_not_establish": [
+    "full-trajectory stability",
+    "new life0 formation",
+    "new algorithm superiority"
+  ]
+}

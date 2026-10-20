@@ -1,0 +1,39 @@
+{
+  "status": "fixed_before_first_d3_physics",
+  "pairing": "heldout seed and condition; four independent seeds, repeated conditions not independent replications",
+  "primary_metrics": [
+    "total_uptake",
+    "final_M",
+    "final_E",
+    "body_time",
+    "all_actual_payments",
+    "failure_and_zero_tail"
+  ],
+  "contrasts": [
+    "learned-last",
+    "learned-ema",
+    "learned-fixed",
+    "learned-instant",
+    "learned-frozen",
+    "learned-permuted"
+  ],
+  "windows": [
+    "full_0_to_1024",
+    "post_shared_prefix_256_to_1024",
+    "post_change_cycles_10_to_20",
+    "post_change_cycles_21_to_31"
+  ],
+  "adaptation_lag": {
+    "definition": "first cycle offset after each change whose uptake and following cycle uptake both reach 4.0; window-censored if no such pair",
+    "threshold": 4.0,
+    "justification": "two thirds of nominal total ability 6, fixed before any d3 execution; also publish all cycle values and do not treat this threshold as comprehensive adaptation evidence"
+  },
+  "inference": "descriptive paired seeds, all signs and ranges retained; no test-seed tuning, no scalar winner declaration",
+  "units": {
+    "body_time": "sum of pre-step body mass, unit-step duration",
+    "cost": "energy payments separately, no double count of heat or precursor material"
+  },
+  "interventions": "freeze and permute share the exact learned eight-cycle physical/controller prefix; permutation exchanges cue content, not a spatial locality test",
+  "nulls": "no improvement over last/EMA means no demonstrated extra value for learned update rule",
+  "saved_process": "predeclared first heldout seed changed world, all arms, four phases per cycle; partial temporal samples not every intermediate field"
+}

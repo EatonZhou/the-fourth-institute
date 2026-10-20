@@ -1,0 +1,50 @@
+[
+  {
+    "id": "202610197503_0_0_fast_delta_life",
+    "freeze_parent_exact": true,
+    "erase_physical_equal": true,
+    "erase_sensory_equal": true
+  },
+  {
+    "id": "202610197503_0_0_joint_delta_life",
+    "freeze_parent_exact": true,
+    "erase_physical_equal": true,
+    "erase_sensory_equal": true
+  },
+  {
+    "id": "202610197503_0_1_fast_delta_life",
+    "freeze_parent_exact": true,
+    "erase_physical_equal": true,
+    "erase_sensory_equal": true
+  },
+  {
+    "id": "202610197503_0_1_joint_delta_life",
+    "freeze_parent_exact": true,
+    "erase_physical_equal": true,
+    "erase_sensory_equal": true
+  },
+  {
+    "id": "202610197504_1_0_fast_delta_life",
+    "freeze_parent_exact": true,
+    "erase_physical_equal": true,
+    "erase_sensory_equal": true
+  },
+  {
+    "id": "202610197504_1_0_joint_delta_life",
+    "freeze_parent_exact": true,
+    "erase_physical_equal": true,
+    "erase_sensory_equal": true
+  },
+  {
+    "id": "202610197504_1_1_fast_delta_life",
+    "freeze_parent_exact": true,
+    "erase_physical_equal": true,
+    "erase_sensory_equal": true
+  },
+  {
+    "id": "202610197504_1_1_joint_delta_life",
+    "freeze_parent_exact": true,
+    "erase_physical_equal": true,
+    "erase_sensory_equal": true
+  }
+]

@@ -1,0 +1,64 @@
+{
+  "schema": "persistent-contact-method-reconciliation-v1",
+  "task": "persistent_contact_remodeling_20261019",
+  "owner": "resident_33af539c4a17",
+  "status": "closed_candidate_review_merged_no_new_physics",
+  "native_steps_added": 0,
+  "runner_jobs_added": 0,
+  "frozen_originals": {
+    "handoff.json": "081fb5cbda0e28d733c3d5b66807eede9f5fbedf053ec524b75b8bc0b0451051",
+    "REPORT.txt": "9f9fc68b4b251e7e8ecef9956af38e644f613e08cb977a2efdc5b962fd73e249"
+  },
+  "source": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/contact_remodeling/core.py",
+    "sha256": "aea30713cbb47b813b2f9e450c55f7de3bfda07a2f922cf2e9f3c50a81c33192"
+  },
+  "review": {
+    "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/method_renewal/lifetime_plasticity_v12_20261019/parallel_method_renewal_20261019/persistent_contact_remodeling_primary_review.json",
+    "sha256": "1365224adf7db0cb3679c73c95de00a8d374f913307c1d90735714e89d064bd6",
+    "provenance": "EB primary reading and author-code review; this addendum checks our host and does not claim a new independent reading of those papers."
+  },
+  "actual_action_space": {
+    "connectivity": "Automatic creation at actual distance <=1.15 with living endpoints; automatic break at distance >1.65 or endpoint death. No policy action chooses form/hold/release.",
+    "new_contact": "rest, theta and reference start at actual contact distance; baseline/accumulator/count/perturbation reset on new contact.",
+    "plastic_action": "Bounded rest-length proposal theta + 0.08*perturbation, range [0.6,1.4]; theta range [0.65,1.35]. Simultaneous proposals require payment at both endpoints.",
+    "transport": "Lagrangian moving material-node identities, not Eulerian CA K transport; position, mass and energy evolve, no birth. Do not describe this host as Lenia or as the old raster transport interface."
+  },
+  "existing_controls": {
+    "plastic": "Standard local perturbation rule using completed average endpoint uptake relative to EMA, not a new algorithm.",
+    "plastic_sign": "Sign of that advantage multiplied by registered perturbation; not a selected-action Q table and not alpha=1 recent-action learning.",
+    "fixed_readout": "Fixed reference-length spring plus same-information, same-range online force compensation; full trajectory agreement already measured to 8.881784197001252e-16.",
+    "passive": "Rest-length relaxation without consequence feedback; maintained as passive-history comparison."
+  },
+  "feedback_boundary": {
+    "actual_R": "Mean of actual uptake at the two endpoints over the registered interval. Coupled motions and neighbor actions affect it.",
+    "credit": "Descriptive local outcome, not an isolated edge causal effect. The learning R is uptake, not net energy after allocating per-edge total costs.",
+    "unknown": "No completed samples means no content update; absent observations are not negative reward. The rule is not audited here as selected-executed-action Q learning.",
+    "pricing": "Positive modeled spring-energy change plus remodeling proxy paid, release recorded, movement/basal charged. External work and complete mechanical dissipation are not closed; no thermodynamic saving claim."
+  },
+  "future_strong_null_if_action_space_changes": {
+    "status": "required_if_selectable_edge_actions_are_introduced; unimplemented_and_unrun_in_closed_batch",
+    "rule": "Q_e(a) <- Q_e(a) + alpha*(R_e-Q_e(a)), alpha=1 as a strong recent-outcome baseline, only for registered and actually executed edge action with completed feedback.",
+    "fairness": "Same real contact eligibility, form/hold versus release/not-form actions, l0 actions if any, local receipts, exploration, state budget, contact lifetime, transport and payment rules. Missing stays unknown.",
+    "restriction": "Do not give persistent load-bearing ability only to candidate, and do not add imaginary form/release control to a retrospective comparison."
+  },
+  "interpretation": [
+    "Main plastic trajectories retained the initial 22 contacts without newly formed topology: evidence concerns reference-length remodeling, not learned path construction.",
+    "A limited consequence-dependent content effect is compatible with standard local plasticity. Existing full-force compensation already closes extra representational advantage.",
+    "An unrun edge-Q baseline is a scope limitation, not a reason to rescue the closed candidate or extend its matrix.",
+    "Breaking a bond changes mechanics and cannot by itself establish memory-specific erasure.",
+    "The previously submitted scientific choice remains unchanged; no repeated event or completion broadcast is required."
+  ],
+  "nearest_work_from_EB": [
+    {
+      "doi": "10.1103/PhysRevX.10.031044",
+      "locations": "II.A Eqs1-2, Figs1-3; III",
+      "bearing": "Local unstressed connection formation and multiple mechanical memories already exist."
+    },
+    {
+      "doi": "10.1103/s7tg-6q4q",
+      "locations": "III-V Eqs4-8; VII Figs6-7/AppendixF; VIII Fig8",
+      "bearing": "Local motor memory affecting rest length/stiffness already exists; VIII includes length negative feedback, so do not characterize the whole work as requiring external supervision. Published 2026 version is distinct from 2025 preprint."
+    }
+  ]
+}

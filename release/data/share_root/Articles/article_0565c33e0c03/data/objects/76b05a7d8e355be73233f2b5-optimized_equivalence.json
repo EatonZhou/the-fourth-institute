@@ -1,0 +1,32 @@
+{
+  "status": "passed",
+  "native_body_calls": 0,
+  "saved_map_replays": 2,
+  "saved_map": "/data/dataset/lenia-research/lineage_75e3399f4877/contextual_terminal_records_20261018/48c455c9-79dc-4c02-9890-fb886c8aab85/genome_0ac80448a534dc953505/actual141.npz",
+  "saved_map_sha256": "f2c347705a830efe79422e2ea1cd7e2d30413a107eebaefc90a8e16e81f72e6f",
+  "pre_records_sha256": "6b8109ae6b42938c9a258b1c246e59d070807d2bf37e7af2cc76f86bc04e1020",
+  "reference_vs_actual_saved_receipt_max_abs": 0.0,
+  "optimized_vs_reference_output_max_abs": 0.0,
+  "optimized_vs_reference_state_max_abs": 0.0,
+  "signed_multichannel_transport_max_abs": 0.0,
+  "mixed_partition_scarce_budget_delivery_max_abs": 0.0,
+  "single_map_seconds_reference_optimized": [
+    0.37524093699175864,
+    0.2898767279693857
+  ],
+  "scope": "Pure saved-map arithmetic and synthetic arrays; not new physical validation or native throughput. No missing heat/state reconstructed.",
+  "sources": {
+    "environment_evolution/contextual_terminal_records/fast_ops.c": "74af6436d0fcfc9e4acf7cd8d7ed5e9b3ce5a55f8f8cadaf033dddfc83366179",
+    "environment_evolution/contextual_terminal_records/run.py": "108edee5bf2cb08a9941d505c2664d1792a28fb62826a0edeef5cbb7b53b9443",
+    "environment_evolution/contextual_terminal_records/replay_equivalence.py": "8584e724c94b9976d19a2c4e80700c2c45bb3df72f89385bc22efd5a0d29957b",
+    "environment_evolution/contextual_terminal_records/joint.py": "80b0c2f8811579a38220e12b4726f7db0e02a7db2c2a6b2772325aea403ec121",
+    "environment_evolution/contextual_terminal_records/_fast_ops.so": "574d00bf2c26578a9f909a31addbaaea132be9e57be461fd485332178a474e65",
+    "environment_evolution/contextual_terminal_records/core.py": "696a8227839537dba8afd9d85f8400b8521ca6c2fe183dbc27a759f338cf3ec8",
+    "environment_evolution/contextual_terminal_records/optimized.py": "38e4c004a068ed3b94099252a11d88a8532e38c65b1ee1bcbf9487ffefcf6ff8",
+    "environment_evolution/contextual_terminal_records/fast_ops.py": "a5c0e973a28560618d0fe6817949130ace8a2c0b11d4bfe7ff3157c0bf780efb",
+    "environment_evolution/contextual_terminal_records/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "environment_evolution/contextual_terminal_records/optimized_joint.py": "09a27893774eabe5718d4ca7ea988ca22951ed78cca952eec7b4d8493c9f0551",
+    "environment_evolution/contextual_terminal_records/checks.py": "42b881b32879d38f935964da5cd6ea5c9377f8a2d5ebfee34f0c1318a5a1668c"
+  },
+  "compiler_flags": "cc -O3 -std=c99 -ffp-contract=off -fPIC -shared; no fast-math"
+}

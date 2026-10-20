@@ -1,0 +1,77 @@
+{
+  "extra_native": 0,
+  "integrated_first_steps": [
+    {
+      "id": "b2--P_on_recycle_on",
+      "inherited_eligible_exact": true,
+      "input_P_error": 0.0,
+      "input_F_error": 0.0,
+      "A_error": -1.5829351718288365e-17,
+      "first_recycle_q": 0.2034011926411954,
+      "extra_native": 0
+    },
+    {
+      "id": "b2--P_on_recycle_off",
+      "inherited_eligible_exact": true,
+      "input_P_error": 0.0,
+      "input_F_error": 0.0,
+      "A_error": -1.5829351718288365e-17,
+      "first_recycle_q": 0.0,
+      "extra_native": 0
+    },
+    {
+      "id": "b2--P_off_recycle_on",
+      "inherited_eligible_exact": true,
+      "input_P_error": 0.0,
+      "input_F_error": 0.0,
+      "A_error": 5.947933118255477e-16,
+      "first_recycle_q": 0.2034011926411954,
+      "extra_native": 0
+    },
+    {
+      "id": "b2--P_off_recycle_off",
+      "inherited_eligible_exact": true,
+      "input_P_error": 0.0,
+      "input_F_error": 0.0,
+      "A_error": 5.947933118255477e-16,
+      "first_recycle_q": 0.0,
+      "extra_native": 0
+    },
+    {
+      "id": "b6--P_on_recycle_on",
+      "inherited_eligible_exact": true,
+      "input_P_error": 0.0,
+      "input_F_error": 0.0,
+      "A_error": -1.5080601697969875e-14,
+      "first_recycle_q": 0.20188646795493814,
+      "extra_native": 0
+    },
+    {
+      "id": "b6--P_on_recycle_off",
+      "inherited_eligible_exact": true,
+      "input_P_error": 0.0,
+      "input_F_error": 0.0,
+      "A_error": -1.5080601697969875e-14,
+      "first_recycle_q": 0.0,
+      "extra_native": 0
+    },
+    {
+      "id": "b6--P_off_recycle_on",
+      "inherited_eligible_exact": true,
+      "input_P_error": 0.0,
+      "input_F_error": 0.0,
+      "A_error": -1.446997903442604e-14,
+      "first_recycle_q": 0.20188646795493814,
+      "extra_native": 0
+    },
+    {
+      "id": "b6--P_off_recycle_off",
+      "inherited_eligible_exact": true,
+      "input_P_error": 0.0,
+      "input_F_error": 0.0,
+      "A_error": -1.446997903442604e-14,
+      "first_recycle_q": 0.0,
+      "extra_native": 0
+    }
+  ]
+}

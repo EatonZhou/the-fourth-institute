@@ -1,0 +1,14 @@
+.userEnrollment { margin-block: 16px; min-width: 0; }
+.userEnrollment summary { cursor: pointer; font-weight: 600; padding-block: 8px; }
+.userEnrollment form { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; margin-block: 12px; }
+.userEnrollment .portalField { flex: 1 1 160px; min-width: 0; }
+.userEnrollment .enrollmentExpiry { flex: 0 1 130px; }
+.userEnrollment .enrollmentAudience { flex: 0 1 120px; }
+.userEnrollment .enrollmentSecret { display: flex; flex-wrap: wrap; gap: 8px 12px; margin-block: 12px; }
+.userEnrollment .enrollmentSecret .portalField { flex: 1 1 100%; }
+.userEnrollment ul { list-style: none; padding: 0; margin: 0; }
+.userEnrollment li { display: flex; gap: 12px; align-items: center; justify-content: space-between; border-top: 1px solid var(--border); padding-block: 8px; }
+.userEnrollment li span { min-width: 0; overflow-wrap: anywhere; font-size: 13px; }
+.userEnrollment [role="status"] { font-size: 13px; color: var(--muted); }
+.userEnrollment textarea { width: 100%; overflow-wrap: anywhere; resize: vertical; }
+.userEnrollment [hidden] { display: none !important; }

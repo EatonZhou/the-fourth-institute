@@ -1,0 +1,192 @@
+[
+  {
+    "stage_id": "genome_8a9ce6d23c3acf3e2fce/formation",
+    "net_M_negative": [
+      [
+        1,
+        27
+      ]
+    ],
+    "physical_M_negative": [
+      [
+        1,
+        27
+      ]
+    ],
+    "net_E_negative": [
+      [
+        1,
+        27
+      ]
+    ],
+    "physical_E_negative": [
+      [
+        1,
+        27
+      ]
+    ],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_263c8a617a8734da20b4/formation",
+    "net_M_negative": [
+      [
+        1,
+        18
+      ]
+    ],
+    "physical_M_negative": [
+      [
+        1,
+        18
+      ]
+    ],
+    "net_E_negative": [
+      [
+        1,
+        18
+      ]
+    ],
+    "physical_E_negative": [
+      [
+        1,
+        18
+      ]
+    ],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_009dfb62455ffa95b7af/formation",
+    "net_M_negative": [],
+    "physical_M_negative": [],
+    "net_E_negative": [
+      [
+        1,
+        2
+      ]
+    ],
+    "physical_E_negative": [
+      [
+        1,
+        2
+      ]
+    ],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_31f3a3913b57bc13b2c0/formation",
+    "net_M_negative": [
+      [
+        1,
+        1
+      ]
+    ],
+    "physical_M_negative": [
+      [
+        1,
+        1
+      ]
+    ],
+    "net_E_negative": [
+      [
+        1,
+        3
+      ]
+    ],
+    "physical_E_negative": [
+      [
+        1,
+        3
+      ]
+    ],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_fa17a0d7ba9d7e8045f4/formation",
+    "net_M_negative": [],
+    "physical_M_negative": [],
+    "net_E_negative": [
+      [
+        1,
+        10
+      ]
+    ],
+    "physical_E_negative": [
+      [
+        1,
+        10
+      ]
+    ],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_0ac80448a534dc953505/formation",
+    "net_M_negative": [],
+    "physical_M_negative": [],
+    "net_E_negative": [
+      [
+        12,
+        14
+      ],
+      [
+        33,
+        35
+      ]
+    ],
+    "physical_E_negative": [
+      [
+        12,
+        14
+      ],
+      [
+        33,
+        35
+      ]
+    ],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_6bd5bfd2f629f9414376/formation",
+    "net_M_negative": [],
+    "physical_M_negative": [],
+    "net_E_negative": [],
+    "physical_E_negative": [],
+    "starvation": []
+  },
+  {
+    "stage_id": "genome_85dffefe3eb5bacdfbf5/formation",
+    "net_M_negative": [
+      [
+        18,
+        27
+      ]
+    ],
+    "physical_M_negative": [
+      [
+        18,
+        27
+      ]
+    ],
+    "net_E_negative": [
+      [
+        1,
+        2
+      ],
+      [
+        19,
+        23
+      ]
+    ],
+    "physical_E_negative": [
+      [
+        1,
+        2
+      ],
+      [
+        19,
+        23
+      ]
+    ],
+    "starvation": []
+  }
+]

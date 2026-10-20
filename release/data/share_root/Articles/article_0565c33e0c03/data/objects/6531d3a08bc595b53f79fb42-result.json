@@ -1,0 +1,18 @@
+{
+  "task": "developmental_history_rule_swap_20261019",
+  "status": "completed",
+  "job": "3099d6b9-f83e-45c6-95ff-d82d354375d0",
+  "attempted": 1028,
+  "committed": 1028,
+  "settled": 1028,
+  "science_native": 1024,
+  "boundary_native": 4,
+  "wall_seconds": 24.541093626990914,
+  "failure": null,
+  "complete_paths": 8,
+  "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/developmental_history_rule_swap_20261019/3099d6b9-f83e-45c6-95ff-d82d354375d0",
+  "raw_bytes": 236791515,
+  "objective_met": false,
+  "old_science_replayed": 0,
+  "old_budget_used": 0
+}

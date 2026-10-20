@@ -1,0 +1,19 @@
+{
+  "task": "spatial_coverage_acquired_body_20261019",
+  "status": "completed",
+  "job": "981ed2bf-6b89-4f95-bdf5-5c92a4755d9f",
+  "attempted": 3584,
+  "committed": 3584,
+  "settled": 3584,
+  "science_native": 3584,
+  "boundary_native": 0,
+  "wall_seconds": 93.08128898998257,
+  "failure": null,
+  "actual_legs": 28,
+  "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/spatial_coverage_acquired_body_20261019/981ed2bf-6b89-4f95-bdf5-5c92a4755d9f",
+  "raw_bytes": 82326113,
+  "old_budget_used": 0,
+  "old_acquisition_replayed": 0,
+  "old_future_replayed": 0,
+  "objective_met": false
+}

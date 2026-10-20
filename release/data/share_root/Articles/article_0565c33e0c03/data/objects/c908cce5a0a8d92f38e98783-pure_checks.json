@@ -1,0 +1,58 @@
+{
+  "native": 0,
+  "strict_partition": true,
+  "parents": [
+    {
+      "seed": 202610195601,
+      "shape": "ring",
+      "native": 0,
+      "base_unchanged": true,
+      "both_old_prechoice_exact": true,
+      "partition_exact": true,
+      "checkpoint_exact": true,
+      "center_inputs_exact": true,
+      "G_sites": 3,
+      "R_sites": 37,
+      "W_sites": 40
+    },
+    {
+      "seed": 202610195601,
+      "shape": "separate_seeds",
+      "native": 0,
+      "base_unchanged": true,
+      "both_old_prechoice_exact": true,
+      "partition_exact": true,
+      "checkpoint_exact": true,
+      "center_inputs_exact": true,
+      "G_sites": 8,
+      "R_sites": 22,
+      "W_sites": 30
+    },
+    {
+      "seed": 202610195602,
+      "shape": "ring",
+      "native": 0,
+      "base_unchanged": true,
+      "both_old_prechoice_exact": true,
+      "partition_exact": true,
+      "checkpoint_exact": true,
+      "center_inputs_exact": true,
+      "G_sites": 8,
+      "R_sites": 33,
+      "W_sites": 41
+    },
+    {
+      "seed": 202610195602,
+      "shape": "separate_seeds",
+      "native": 0,
+      "base_unchanged": true,
+      "both_old_prechoice_exact": true,
+      "partition_exact": true,
+      "checkpoint_exact": true,
+      "center_inputs_exact": true,
+      "G_sites": 10,
+      "R_sites": 19,
+      "W_sites": 29
+    }
+  ]
+}

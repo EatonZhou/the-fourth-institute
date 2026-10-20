@@ -1,0 +1,1177 @@
+{
+  "schema": "tfi.hatg-primitive-definitions.v1",
+  "default_types": {
+    "event": "resident.work_finished"
+  },
+  "event_type_categories": {
+    "resident": {
+      "title": "Resident 运行",
+      "description": "观察 Resident 的工作轮次、上下文压力、生命周期和集合状态。"
+    },
+    "time_workspace": {
+      "title": "时间与 Workspace",
+      "description": "由时间到达、Workspace 文件变化或工作区交接产生事实。"
+    },
+    "graph_control": {
+      "title": "图与手动控制",
+      "description": "由用户操作、Lineage 版本、共享状态或 Event Source 预算产生事实。"
+    },
+    "delivery": {
+      "title": "投递状态",
+      "description": "观察 Invoke 边的失败或过期，不增加 Event 出口。"
+    },
+    "effect_outcome": {
+      "title": "Effect 结果",
+      "description": "观察 Effect 调用指令的成功或失败。"
+    }
+  },
+  "event_common_fields": [
+    {
+      "path": "config.max_fires",
+      "type": "optional-limit",
+      "label": "总触发次数",
+      "name": "max_fires",
+      "default": null,
+      "minimum": 0,
+      "maximum": 100000,
+      "step": 1,
+      "enabled_label": "限制这个事件的总触发次数",
+      "help": "0 表示完全不触发；不限次数请关闭开关。"
+    },
+    {
+      "path": "config.auto_delete_on_exhaustion",
+      "type": "checkbox",
+      "label": "触发次数耗尽后自动删除自身",
+      "name": "auto_delete_on_exhaustion",
+      "default": false,
+      "omit_if_default": true,
+      "help": "仅在设置总触发次数时生效。最后一次触发及相关在途调用处理完后，删除此 Event 和关联连线，保留下游节点；不限次数时不会自动删除。"
+    }
+  ],
+  "event_types": {
+    "resident.work_finished": {
+      "category": "resident",
+      "title": "Resident 完成一轮工作",
+      "description": "Portal 在目标 Resident 从 running 变为 idle 后产生。",
+      "fields": [
+        {
+          "path": "config.resident_scope",
+          "type": "select",
+          "label": "监听范围",
+          "name": "resident_scope",
+          "default": "watched",
+          "omit_if_default": true,
+          "options": [
+            {
+              "value": "watched",
+              "label": "Watch 连线指定的 Resident"
+            },
+            {
+              "value": "lineage",
+              "label": "本 Lineage 的全部 Resident"
+            },
+            {
+              "value": "system",
+              "label": "Portal 全部 Resident"
+            }
+          ],
+          "value_notes": [
+            {
+              "equals": "lineage",
+              "text": "本 Lineage 任一 Resident 工作完成都触发一次，之后加入的成员自动包括在内，不需要 Watch 连线。",
+              "data_attribute": "data-event-lineage-scope-note"
+            },
+            {
+              "equals": "system",
+              "text": "Portal 任一 Resident 工作完成都触发一次，不需要 Watch 连线。",
+              "data_attribute": "data-event-system-scope-note"
+            }
+          ],
+          "help": "每次触发只关于一个 Resident，事件写明是哪一个。按范围监听时，这个事件自己投递出去的工作（直接投递或经 Effect 投递）结束时不会再触发它，避免自我循环。"
+        },
+        {
+          "path": "watch.subject",
+          "type": "watch-reference",
+          "label": "Watch Resident",
+          "required": true,
+          "visible_when": {
+            "path": "config.resident_scope",
+            "equals": "watched"
+          }
+        }
+      ],
+      "watch_contract": {
+        "allowed_kinds": [
+          "resident"
+        ],
+        "required": true,
+        "multiple": true,
+        "required_when": {
+          "path": "config.resident_scope",
+          "equals": "watched"
+        }
+      }
+    },
+    "resident.work_started": {
+      "category": "resident",
+      "title": "Resident 开始一轮工作",
+      "description": "Portal 识别目标 Resident 从空闲进入一个新的活动 job。",
+      "fields": [
+        {
+          "path": "watch.subject",
+          "type": "watch-reference",
+          "label": "Watch Resident",
+          "required": true
+        }
+      ],
+      "watch_contract": {
+        "allowed_kinds": [
+          "resident"
+        ],
+        "required": true,
+        "multiple": true
+      }
+    },
+    "resident.work_failed": {
+      "category": "resident",
+      "title": "Resident 工作失败",
+      "description": "Resident 的本轮工作以 failed 终态结束。",
+      "fields": [
+        {
+          "path": "config.resident_scope",
+          "type": "select",
+          "label": "监听范围",
+          "name": "resident_scope",
+          "default": "watched",
+          "omit_if_default": true,
+          "options": [
+            {
+              "value": "watched",
+              "label": "Watch 连线指定的 Resident"
+            },
+            {
+              "value": "lineage",
+              "label": "本 Lineage 的全部 Resident"
+            },
+            {
+              "value": "system",
+              "label": "Portal 全部 Resident"
+            }
+          ],
+          "value_notes": [
+            {
+              "equals": "lineage",
+              "text": "本 Lineage 任一 Resident 工作失败都触发一次，之后加入的成员自动包括在内，不需要 Watch 连线。",
+              "data_attribute": "data-event-lineage-scope-note"
+            },
+            {
+              "equals": "system",
+              "text": "Portal 任一 Resident 工作失败都触发一次，不需要 Watch 连线。",
+              "data_attribute": "data-event-system-scope-note"
+            }
+          ],
+          "help": "每次触发只关于一个 Resident，事件写明是哪一个。按范围监听时，这个事件自己投递出去的工作（直接投递或经 Effect 投递）结束时不会再触发它，避免自我循环。"
+        },
+        {
+          "path": "watch.subject",
+          "type": "watch-reference",
+          "label": "Watch Resident",
+          "required": true,
+          "visible_when": {
+            "path": "config.resident_scope",
+            "equals": "watched"
+          }
+        }
+      ],
+      "watch_contract": {
+        "allowed_kinds": [
+          "resident"
+        ],
+        "required": true,
+        "multiple": true,
+        "required_when": {
+          "path": "config.resident_scope",
+          "equals": "watched"
+        }
+      }
+    },
+    "resident.work_cancelled": {
+      "category": "resident",
+      "title": "Resident 工作被取消",
+      "description": "Resident 的本轮工作被用户或系统明确取消。",
+      "fields": [
+        {
+          "path": "config.resident_scope",
+          "type": "select",
+          "label": "监听范围",
+          "name": "resident_scope",
+          "default": "watched",
+          "omit_if_default": true,
+          "options": [
+            {
+              "value": "watched",
+              "label": "Watch 连线指定的 Resident"
+            },
+            {
+              "value": "lineage",
+              "label": "本 Lineage 的全部 Resident"
+            },
+            {
+              "value": "system",
+              "label": "Portal 全部 Resident"
+            }
+          ],
+          "value_notes": [
+            {
+              "equals": "lineage",
+              "text": "本 Lineage 任一 Resident 工作被取消都触发一次，之后加入的成员自动包括在内，不需要 Watch 连线。",
+              "data_attribute": "data-event-lineage-scope-note"
+            },
+            {
+              "equals": "system",
+              "text": "Portal 任一 Resident 工作被取消都触发一次，不需要 Watch 连线。",
+              "data_attribute": "data-event-system-scope-note"
+            }
+          ],
+          "help": "每次触发只关于一个 Resident，事件写明是哪一个。按范围监听时，这个事件自己投递出去的工作（直接投递或经 Effect 投递）结束时不会再触发它，避免自我循环。"
+        },
+        {
+          "path": "watch.subject",
+          "type": "watch-reference",
+          "label": "Watch Resident",
+          "required": true,
+          "visible_when": {
+            "path": "config.resident_scope",
+            "equals": "watched"
+          }
+        }
+      ],
+      "watch_contract": {
+        "allowed_kinds": [
+          "resident"
+        ],
+        "required": true,
+        "multiple": true,
+        "required_when": {
+          "path": "config.resident_scope",
+          "equals": "watched"
+        }
+      }
+    },
+    "resident.state_changed": {
+      "category": "resident",
+      "title": "Resident 状态发生变化",
+      "description": "Portal 识别 Resident 接单状态的变化。",
+      "fields": [
+        {
+          "path": "watch.subject",
+          "type": "watch-reference",
+          "label": "观察的 Resident",
+          "required": true
+        },
+        {
+          "path": "config.state_domain",
+          "type": "select",
+          "label": "状态域",
+          "required": true,
+          "default": "intake",
+          "options": [
+            {
+              "value": "intake",
+              "label": "Agent 接单状态（OPEN / CLOSED）"
+            }
+          ],
+          "help": "第一次读取只建立基线；之后每次实际变化产生一个 Event。"
+        }
+      ],
+      "watch_contract": {
+        "allowed_kinds": [
+          "resident"
+        ],
+        "required": true,
+        "multiple": true
+      }
+    },
+    "resident.context_pressure_exceeded": {
+      "category": "resident",
+      "title": "Resident 上下文压力超过阈值",
+      "description": "观察目标 Resident 当前会话的上下文占用率；首次采样已超过阈值，或从阈值及以下进入阈值以上时产生。持续高于阈值不会重复产生。",
+      "fields": [
+        {
+          "path": "watch.subject",
+          "type": "watch-reference",
+          "label": "观察的 Resident",
+          "required": true
+        },
+        {
+          "path": "config.threshold_percent",
+          "type": "number",
+          "label": "压力阈值（%）",
+          "required": true,
+          "default": 85,
+          "minimum": 0,
+          "maximum": 100,
+          "step": 0.1,
+          "help": "首次采样已超过阈值会立即产生；保持在阈值上方不重复，降到阈值或以下后重新武装。"
+        }
+      ],
+      "watch_contract": {
+        "allowed_kinds": [
+          "resident"
+        ],
+        "required": true,
+        "multiple": true
+      }
+    },
+    "resident.work_duration_exceeded": {
+      "category": "resident",
+      "title": "Resident 单轮工作超时",
+      "description": "观察目标 Resident 的当前工作轮次；超过设定时长时产生一次 Event。同一个 message_id 持续运行不会重复产生。",
+      "fields": [
+        {
+          "path": "watch.subject",
+          "type": "watch-reference",
+          "label": "观察的 Resident",
+          "required": true
+        },
+        {
+          "path": "config.duration_seconds",
+          "type": "number",
+          "label": "单轮工作时长阈值（秒）",
+          "required": true,
+          "default": 900,
+          "minimum": 1,
+          "maximum": 604800,
+          "step": 1,
+          "help": "首次监听时若当前轮次已经超时会立即产生；每个 message_id 最多产生一次。"
+        }
+      ],
+      "watch_contract": {
+        "allowed_kinds": [
+          "resident"
+        ],
+        "required": true,
+        "multiple": true
+      }
+    },
+    "resident.queue_pressure_exceeded": {
+      "category": "resident",
+      "title": "Resident 队列压力超过阈值",
+      "description": "观察目标 Resident 的待处理队列长度或最早消息等待时长；从阈值及以下进入阈值以上时产生。",
+      "fields": [
+        {
+          "path": "watch.subject",
+          "type": "watch-reference",
+          "label": "观察的 Resident",
+          "required": true
+        },
+        {
+          "path": "config.pressure_metric",
+          "type": "select",
+          "label": "压力指标",
+          "required": true,
+          "default": "queue_length",
+          "options": [
+            {
+              "value": "queue_length",
+              "label": "等待队列长度"
+            },
+            {
+              "value": "oldest_wait_seconds",
+              "label": "最早消息等待时长"
+            }
+          ]
+        },
+        {
+          "path": "config.queue_length_threshold",
+          "type": "number",
+          "label": "队列长度阈值",
+          "required": true,
+          "default": 3,
+          "minimum": 1,
+          "maximum": 100,
+          "step": 1,
+          "visible_when": {
+            "path": "config.pressure_metric",
+            "equals": "queue_length"
+          },
+          "help": "队列长度大于该值时产生；保持在阈值上方不重复，恢复后重新武装。"
+        },
+        {
+          "path": "config.wait_seconds_threshold",
+          "type": "number",
+          "label": "等待时长阈值（秒）",
+          "required": true,
+          "default": 300,
+          "minimum": 1,
+          "maximum": 604800,
+          "step": 1,
+          "visible_when": {
+            "path": "config.pressure_metric",
+            "equals": "oldest_wait_seconds"
+          },
+          "help": "最早一条待处理消息的等待秒数大于该值时产生；队列清空后重新武装。"
+        }
+      ],
+      "watch_contract": {
+        "allowed_kinds": [
+          "resident"
+        ],
+        "required": true,
+        "multiple": true
+      }
+    },
+    "resident.message_received": {
+      "category": "resident",
+      "title": "Resident 收到消息",
+      "description": "消息进入目标 Resident 的队列时产生，每条消息一次。Event 的发起者是消息的发送者，payload 包含 message_id、author_id 与 relay_depth（这条消息已经经过的 Family 门面数）。",
+      "fields": [
+        {
+          "path": "watch.subject",
+          "type": "watch-reference",
+          "label": "观察的 Resident",
+          "required": true
+        }
+      ],
+      "watch_contract": {
+        "allowed_kinds": [
+          "resident"
+        ],
+        "required": true,
+        "multiple": true
+      }
+    },
+    "residents.all_idle": {
+      "category": "resident",
+      "title": "所有 Resident 工作结束（全局）",
+      "description": "Portal 在全局仍有 Resident 工作时开始等待，并在全局未完成工作数从非零变为零时产生。",
+      "fields": [
+        {
+          "path": "config.resident_scope",
+          "type": "select",
+          "label": "监听范围",
+          "required": true,
+          "default": "system",
+          "options": [
+            {
+              "value": "system",
+              "label": "Portal 全局的全部 Resident"
+            }
+          ],
+          "value_notes": [
+            {
+              "equals": "system",
+              "text": "系统范围会检查 Portal 已登记的全部 Resident；适合全局静默点，不受当前 Lineage 成员变化影响。",
+              "data_attribute": "data-event-system-scope-note"
+            }
+          ],
+          "help": "范围固定为全局；排队、调度中或运行中的 Resident 都算尚未完成，只有数量从非零变为零才会触发。"
+        }
+      ]
+    },
+    "residents.all_finished": {
+      "category": "resident",
+      "title": "指定 Residents 完成本轮运行",
+      "description": "Portal 在同一个 Trigger Path 中确认指定 Residents 都成功完成后产生一次事件。",
+      "fields": [
+        {
+          "path": "config.resident_ids",
+          "type": "resident-set",
+          "label": "Residents",
+          "required": true,
+          "default": [],
+          "help": "每个 Resident 必须在同一 Trigger Path 中存在 Invoke 记录并成功完成。"
+        },
+        {
+          "path": "config.trigger_path_id",
+          "type": "text",
+          "label": "Run ID",
+          "required": true,
+          "default": "$trigger_path.id",
+          "help": "$trigger_path.id 表示自动匹配由上游根 Event 建立的当前 Trigger Path；也可填写明确的 trigger_path_* ID。"
+        }
+      ]
+    },
+    "time.reached": {
+      "category": "time_workspace",
+      "title": "时间到达 / 倒计时",
+      "description": "Portal 可按绝对时间或从启用时开始的倒计时产生事件。",
+      "fields": [
+        {
+          "path": "config.schedule_mode",
+          "type": "select",
+          "label": "时间模式",
+          "required": true,
+          "default": "at",
+          "options": [
+            {
+              "value": "at",
+              "label": "到达绝对时间"
+            },
+            {
+              "value": "countdown",
+              "label": "启动倒计时"
+            },
+            {
+              "value": "recurring",
+              "label": "可靠周期计划"
+            }
+          ],
+          "help": "周期计划由 Event Source 自己持久推进，不依赖下游 Resident 是否成功。"
+        },
+        {
+          "path": "config.scheduled_at",
+          "type": "datetime-local",
+          "label": "到达时间",
+          "required": true,
+          "visible_when": {
+            "path": "config.schedule_mode",
+            "equals": "at"
+          }
+        },
+        {
+          "path": "config.delay_seconds",
+          "type": "number",
+          "label": "倒计时秒数",
+          "required": true,
+          "default": 60,
+          "minimum": 1,
+          "maximum": 604800,
+          "step": 1,
+          "visible_when": {
+            "path": "config.schedule_mode",
+            "equals": "countdown"
+          },
+          "help": "从 Event Source 首次进入监听开始计时；刷新页面不会重新开始。"
+        },
+        {
+          "path": "config.recurrence_kind",
+          "type": "select",
+          "label": "周期类型",
+          "required": true,
+          "default": "interval",
+          "options": [
+            {
+              "value": "interval",
+              "label": "固定间隔"
+            },
+            {
+              "value": "calendar",
+              "label": "日历计划"
+            }
+          ],
+          "visible_when": {
+            "path": "config.schedule_mode",
+            "equals": "recurring"
+          }
+        },
+        {
+          "path": "config.interval_seconds",
+          "type": "number",
+          "label": "固定间隔（秒）",
+          "required": false,
+          "default": 60,
+          "minimum": 1,
+          "maximum": 31536000,
+          "step": 1,
+          "visible_when": {
+            "path": "config.schedule_mode",
+            "equals": "recurring"
+          },
+          "help": "仅固定间隔计划使用；首次启用后从当前时间开始锚定。"
+        },
+        {
+          "path": "config.timezone",
+          "type": "text",
+          "label": "日历时区",
+          "required": false,
+          "default": "UTC",
+          "placeholder": "Asia/Hong_Kong",
+          "visible_when": {
+            "path": "config.schedule_mode",
+            "equals": "recurring"
+          },
+          "help": "仅日历计划使用，填写 IANA 时区。"
+        },
+        {
+          "path": "config.calendar_frequency",
+          "type": "select",
+          "label": "日历频率",
+          "required": false,
+          "default": "daily",
+          "options": [
+            {
+              "value": "daily",
+              "label": "每天"
+            },
+            {
+              "value": "weekly",
+              "label": "每周"
+            },
+            {
+              "value": "monthly",
+              "label": "每月"
+            }
+          ],
+          "visible_when": {
+            "path": "config.schedule_mode",
+            "equals": "recurring"
+          }
+        },
+        {
+          "path": "config.calendar_time",
+          "type": "text",
+          "label": "本地触发时间",
+          "required": false,
+          "default": "09:00",
+          "placeholder": "09:30",
+          "visible_when": {
+            "path": "config.schedule_mode",
+            "equals": "recurring"
+          }
+        },
+        {
+          "path": "config.calendar_weekdays",
+          "type": "text",
+          "label": "每周日期",
+          "required": false,
+          "default": "mon",
+          "placeholder": "mon,wed,fri",
+          "visible_when": {
+            "path": "config.schedule_mode",
+            "equals": "recurring"
+          },
+          "help": "weekly 使用；可填 mon..sun，以逗号分隔。"
+        },
+        {
+          "path": "config.calendar_day",
+          "type": "number",
+          "label": "每月日期",
+          "required": false,
+          "default": 1,
+          "minimum": 1,
+          "maximum": 31,
+          "step": 1,
+          "visible_when": {
+            "path": "config.schedule_mode",
+            "equals": "recurring"
+          },
+          "help": "monthly 使用；不存在该日期的月份会跳过。"
+        },
+        {
+          "path": "config.misfire_policy",
+          "type": "select",
+          "label": "错过计划时",
+          "required": true,
+          "default": "coalesce_latest",
+          "options": [
+            {
+              "value": "skip",
+              "label": "跳过错过的窗口"
+            },
+            {
+              "value": "coalesce_latest",
+              "label": "合并为最新一次"
+            }
+          ],
+          "visible_when": {
+            "path": "config.schedule_mode",
+            "equals": "recurring"
+          }
+        },
+        {
+          "path": "config.overlap_policy",
+          "type": "select",
+          "label": "目标忙碌时",
+          "required": true,
+          "default": "drop",
+          "options": [
+            {
+              "value": "drop",
+              "label": "丢弃本次投递"
+            },
+            {
+              "value": "queue_one",
+              "label": "最多等待一次"
+            },
+            {
+              "value": "latest",
+              "label": "只等待最新一次"
+            }
+          ],
+          "visible_when": {
+            "path": "config.schedule_mode",
+            "equals": "recurring"
+          },
+          "help": "作用于本 Event Source 的每条输出边；积压始终有界。"
+        },
+        {
+          "path": "config.jitter_seconds",
+          "type": "number",
+          "label": "随机偏移上限（秒）",
+          "required": false,
+          "default": 0,
+          "minimum": 0,
+          "maximum": 86400,
+          "step": 1,
+          "visible_when": {
+            "path": "config.schedule_mode",
+            "equals": "recurring"
+          },
+          "help": "每次计划触发在 0 到该值之间随机延迟；按固定间隔触发时必须小于间隔。"
+        }
+      ]
+    },
+    "file.changed": {
+      "category": "time_workspace",
+      "title": "指定文件发生变化",
+      "description": "Portal 识别到目标 Resident Workspace 内的文件变化后产生。",
+      "fields": [
+        {
+          "path": "watch.subject",
+          "type": "watch-reference",
+          "label": "文件所在 Resident",
+          "required": true
+        },
+        {
+          "path": "config.path",
+          "type": "relative-path",
+          "label": "Workspace 相对文件",
+          "required": true,
+          "max_length": 800,
+          "placeholder": "docs/quality-gate.md"
+        }
+      ],
+      "watch_contract": {
+        "allowed_kinds": [
+          "resident"
+        ],
+        "required": true
+      }
+    },
+    "portal.release_published": {
+      "category": "graph_control",
+      "title": "Portal 发布完成",
+      "description": "Release 健康验收成功后的发布。首次监听从当前水位开始；积压可逐次补发或只处理最新一次。",
+      "fields": [
+        {
+          "path": "config.misfire_policy",
+          "type": "select",
+          "label": "积压发布",
+          "default": "all",
+          "options": [
+            {
+              "value": "all",
+              "label": "逐次补发"
+            },
+            {
+              "value": "coalesce_latest",
+              "label": "只处理最新一次"
+            }
+          ]
+        }
+      ]
+    },
+    "manual.triggered": {
+      "category": "graph_control",
+      "title": "用户手动触发",
+      "description": "只在用户从 HATG 主动产生事件时触发。",
+      "fields": []
+    },
+    "lineage.changed": {
+      "category": "graph_control",
+      "title": "Lineage 发生变化",
+      "description": "当前 Lineage 的版本发生变化。",
+      "fields": []
+    },
+    "state.condition_met": {
+      "category": "graph_control",
+      "title": "Graph State 条件成立",
+      "description": "观察一个 Graph State Cell；条件从不成立变为成立时产生 Event。只读取实时 State，不创建快照。",
+      "fields": [
+        {
+          "path": "config.key",
+          "type": "text",
+          "label": "State key",
+          "required": true,
+          "max_length": 160,
+          "placeholder": "review.status"
+        },
+        {
+          "path": "config.operator",
+          "type": "select",
+          "label": "判断条件",
+          "required": true,
+          "default": "equals",
+          "options": [
+            {
+              "value": "exists",
+              "label": "Cell 已存在"
+            },
+            {
+              "value": "missing",
+              "label": "Cell 不存在"
+            },
+            {
+              "value": "equals",
+              "label": "等于"
+            },
+            {
+              "value": "not_equals",
+              "label": "不等于"
+            },
+            {
+              "value": "greater_than",
+              "label": "大于"
+            },
+            {
+              "value": "greater_or_equal",
+              "label": "大于或等于"
+            },
+            {
+              "value": "less_than",
+              "label": "小于"
+            },
+            {
+              "value": "less_or_equal",
+              "label": "小于或等于"
+            }
+          ]
+        },
+        {
+          "path": "config.expected_value",
+          "type": "json",
+          "label": "比较值（JSON）",
+          "required": true,
+          "default": null,
+          "rows": 4,
+          "help": "exists / missing 会忽略该值；数值大小比较只接受 JSON number。"
+        },
+        {
+          "path": "config.fire_on_initial_match",
+          "type": "checkbox",
+          "label": "首次监听时条件已成立也触发",
+          "default": false,
+          "help": "关闭时，首次读取只建立条件基线；之后仅在 false → true 时触发。"
+        }
+      ]
+    },
+    "budget.exhausted": {
+      "category": "graph_control",
+      "title": "Event Source 次数预算耗尽",
+      "description": "所选 Event Source 达到最大 fire 次数时产生。",
+      "fields": [
+        {
+          "path": "watch.subject",
+          "type": "watch-reference",
+          "label": "Watch Event Source",
+          "required": true
+        }
+      ],
+      "watch_contract": {
+        "allowed_kinds": [
+          "event_source"
+        ],
+        "required": true
+      }
+    },
+    "event.delivery_failed": {
+      "category": "delivery",
+      "title": "Event 投递失败",
+      "description": "所选 Event Source 或其一条 Event 连线投递失败时产生。",
+      "fields": [
+        {
+          "path": "watch.subject",
+          "type": "watch-reference",
+          "label": "Watch Event Source / Event wire",
+          "required": true
+        }
+      ],
+      "watch_contract": {
+        "allowed_kinds": [
+          "event_source",
+          "wire"
+        ],
+        "required": true
+      }
+    },
+    "event.delivery_expired": {
+      "category": "delivery",
+      "title": "Event 投递过期",
+      "description": "所选 Event Source 或其一条 Event 连线上的积压事件过期时产生。",
+      "fields": [
+        {
+          "path": "watch.subject",
+          "type": "watch-reference",
+          "label": "Watch Event Source / Event wire",
+          "required": true
+        }
+      ],
+      "watch_contract": {
+        "allowed_kinds": [
+          "event_source",
+          "wire"
+        ],
+        "required": true
+      }
+    },
+    "effect.succeeded": {
+      "category": "effect_outcome",
+      "title": "Effect 执行成功",
+      "description": "所选 Effect 调用的指令执行成功后产生，并携带指令的结果字段。",
+      "fields": [
+        {
+          "path": "watch.subject",
+          "type": "watch-reference",
+          "label": "Watch Effect",
+          "required": true
+        }
+      ],
+      "watch_contract": {
+        "allowed_kinds": [
+          "effect"
+        ],
+        "required": true
+      }
+    },
+    "effect.failed": {
+      "category": "effect_outcome",
+      "title": "Effect 执行失败",
+      "description": "所选 Effect 执行失败时产生；失败不占用 Effect 的图出口。",
+      "fields": [
+        {
+          "path": "watch.subject",
+          "type": "watch-reference",
+          "label": "Watch Effect",
+          "required": true
+        }
+      ],
+      "watch_contract": {
+        "allowed_kinds": [
+          "effect"
+        ],
+        "required": true
+      }
+    },
+    "workspace_handoff.ready": {
+      "category": "time_workspace",
+      "title": "Workspace Handoff Ready",
+      "description": "所选工作区交接准备完成时触发。",
+      "fields": [
+        {
+          "path": "watch.subject",
+          "type": "watch-reference",
+          "label": "观察的工作区交接",
+          "required": true
+        }
+      ],
+      "watch_contract": {
+        "allowed_kinds": [
+          "handoff"
+        ],
+        "required": true
+      }
+    },
+    "workspace_handoff.failed": {
+      "category": "time_workspace",
+      "title": "Workspace Handoff 失败",
+      "description": "所选工作区交接准备失败时触发。",
+      "fields": [
+        {
+          "path": "watch.subject",
+          "type": "watch-reference",
+          "label": "观察的工作区交接",
+          "required": true
+        }
+      ],
+      "watch_contract": {
+        "allowed_kinds": [
+          "handoff"
+        ],
+        "required": true
+      }
+    },
+    "state.changed": {
+      "category": "graph_control",
+      "title": "共享状态变化",
+      "description": "观察一个共享状态键；这个键的值实际改变时产生 Event，不论由 Resident、Effect 还是页面写入。",
+      "fields": [
+        {
+          "path": "config.key",
+          "type": "text",
+          "label": "State key",
+          "required": true,
+          "max_length": 160,
+          "placeholder": "review.status"
+        }
+      ]
+    },
+    "script.finished": {
+      "category": "effect_outcome",
+      "title": "脚本运行结束",
+      "description": "所选 Effect 启动的脚本结束时产生，携带输出字段。",
+      "fields": [
+        {
+          "path": "watch.subject",
+          "type": "watch-reference",
+          "label": "Watch Effect",
+          "required": true
+        },
+        {
+          "path": "config.outcome",
+          "type": "select",
+          "label": "运行结果",
+          "default": "any",
+          "options": [
+            {
+              "value": "any",
+              "label": "全部结果"
+            },
+            {
+              "value": "succeeded",
+              "label": "成功"
+            },
+            {
+              "value": "failed",
+              "label": "失败、超时、取消或丢失"
+            }
+          ]
+        }
+      ],
+      "watch_contract": {
+        "allowed_kinds": [
+          "effect"
+        ],
+        "required": true,
+        "multiple": true
+      }
+    }
+  },
+  "component_types": {
+    "event_source": {
+      "title": "Event Source",
+      "description": "观察手动触发、时间、Resident 状态、Effect 结果或共享状态等事实，产生 Event。",
+      "ports": [
+        {
+          "id": "output",
+          "direction": "out",
+          "kind": "route"
+        },
+        {
+          "id": "watch",
+          "direction": "out",
+          "kind": "watch"
+        }
+      ]
+    },
+    "effect": {
+      "title": "Effect",
+      "description": "运行一段脚本，按顺序、条件和循环调用一条或多条 HATG ISA 指令；配置 script 与具名 endpoints。",
+      "config_fields": [
+        "script",
+        "endpoints"
+      ],
+      "ports": [
+        {
+          "id": "invoke",
+          "direction": "in",
+          "kind": "route"
+        },
+        {
+          "id": "<endpoint>",
+          "direction": "out",
+          "kind": "target"
+        }
+      ]
+    },
+    "filter": {
+      "title": "Filter",
+      "description": "按条件保留或拒绝候选。",
+      "ports": [
+        {
+          "id": "invoke",
+          "direction": "in",
+          "kind": "route"
+        },
+        {
+          "id": "output",
+          "direction": "out",
+          "kind": "route"
+        }
+      ]
+    },
+    "selector": {
+      "title": "Selector",
+      "description": "在多个命名分支中选择路径。",
+      "ports": [
+        {
+          "id": "invoke",
+          "direction": "in",
+          "kind": "route"
+        },
+        {
+          "id": "branch:<id>",
+          "direction": "out",
+          "kind": "route"
+        }
+      ]
+    },
+    "reducer": {
+      "title": "Reducer",
+      "description": "冻结并合并一组候选。",
+      "ports": [
+        {
+          "id": "invoke",
+          "direction": "in",
+          "kind": "route"
+        },
+        {
+          "id": "output",
+          "direction": "out",
+          "kind": "route"
+        }
+      ]
+    },
+    "loop": {
+      "title": "循环",
+      "description": "记录一段往复交互进行了几轮；达到 max_rounds 或收到完成信号时从 stop 输出。completion 为 complete 时停止后保持停止，为 rearm 时下次外部触发重新计数。",
+      "config_fields": [
+        "max_rounds",
+        "completion"
+      ],
+      "ports": [
+        {
+          "id": "invoke",
+          "direction": "in",
+          "kind": "route"
+        },
+        {
+          "id": "done",
+          "direction": "in",
+          "kind": "route"
+        },
+        {
+          "id": "continue",
+          "direction": "out",
+          "kind": "route"
+        },
+        {
+          "id": "stop",
+          "direction": "out",
+          "kind": "route"
+        }
+      ]
+    },
+    "seed": {
+      "title": "Seed",
+      "description": "尚未成为 Resident 的候选，记录一个想法或方案及其来源 Resident。",
+      "ports": [
+        {
+          "id": "invoke",
+          "direction": "in",
+          "kind": "route"
+        }
+      ]
+    }
+  }
+}

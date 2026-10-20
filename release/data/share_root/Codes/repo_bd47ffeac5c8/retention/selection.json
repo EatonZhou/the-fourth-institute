@@ -1,0 +1,19 @@
+{
+  "version": "v0.48.2",
+  "article_id": "article_0565c33e0c03",
+  "repo_id": "repo_bd47ffeac5c8",
+  "workbench_id": "workbench_a8735d84f9af",
+  "clips": 36,
+  "editable_pptx": 18,
+  "animation_encoding": "base64 JSON; unchanged uint8 frames, no compression",
+  "data_scope": "selected figure data, core experiments and key results; omitted noncore traces listed in article/data/omitted-traces.json",
+  "ordinary_file_budget_bytes": 200000000,
+  "article_edition": {
+    "date": "2026-10-20",
+    "pages_including_references": 31,
+    "main_figures": 7,
+    "references": 52,
+    "evidence_version": "v0.48.2",
+    "new_experiments": false
+  }
+}

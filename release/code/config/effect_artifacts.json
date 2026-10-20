@@ -1,0 +1,6 @@
+{
+  "schema": "tfi.effect-artifacts-storage.v1",
+  "owner": "lineage",
+  "namespace": "effect-artifacts",
+  "root": "/srv/agent-staging/shared/effect_artifacts"
+}

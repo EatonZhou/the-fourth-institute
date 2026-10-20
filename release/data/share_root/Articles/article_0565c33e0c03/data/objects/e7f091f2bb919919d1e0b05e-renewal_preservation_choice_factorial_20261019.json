@@ -1,0 +1,235 @@
+{
+  "task": "renewal_preservation_choice_factorial_20261019",
+  "owner": "resident_d3ccfa2d95b7",
+  "objective_met": false,
+  "choice": "Close the two-parameter search. Keep fixed conditional midpoint as the strong generating baseline. Test whether its non-birth-increasing selections support later renewal or instead preserve old material at the expense of retained new tissue, using a fixed four-arm ablation from common actual midpoint256 bodies.",
+  "hypothesis": "Selecting by immediate admitted birth minus deletion can admit C for two distinct ready-state reasons. Removing non-birth-increasing winners may improve actual later tissue replacement, or may destroy the substrate that makes it possible. Both outcomes are scientifically informative. Neither direction is assumed from the current M/L256 decomposition.",
+  "evidence": {
+    "handoff": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/third_response_generation_search_20261019/handoff.json",
+    "sha256": "0a5ad186fdb3562bb4660d844b5bd54f2945d22e443a3464127f0e43a83e1dd6",
+    "native": 4100,
+    "worker_seconds": 197.56489,
+    "unused_sealed": [
+      0,
+      1002.43511
+    ],
+    "closed": "Selected rule beats original joint target only in separate body (1/2); beats fixed midpoint in neither (0/2). Do not extend the CEM search or declare lifetime learning.",
+    "retained": "Fixed midpoint and selected pass all four64 maintenance windows in both validation shapes. Always-midpoint actually dies. Preserve these positive and negative controls without converting finite success to steady state.",
+    "warning": "Selected-original ring M gain27.914177 accompanies L256 gain28.763763 and post256 loss0.849586. Fixed midpoint remains the stronger M/E/bodytime baseline.",
+    "PI_visual_review": [
+      "validation_ring_post256.png",
+      "validation_separate_seeds_L256.png"
+    ],
+    "PI_visual_scope": "Viewed both actual image arrays: late new material remains spatially concentrated, while much of the separate-body L256 material persists. Blank early panels remain not registered/not saved; no full animation or new morphology claim."
+  },
+  "parents": [
+    {
+      "seed": 202610195601,
+      "shape": "ring",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/third_response_generation_search_20261019/b9f8bccb-57c5-4366-9788-7fdc1e301114/midpoint_ring/state256.bin",
+      "sha256": "f48f24ba8da02eefe582b6df28a712dc844fa86a09972a895d9389622deda6f4",
+      "M256": 92.70621022902037,
+      "E256": 144.97302517817081,
+      "old_id": "midpoint_ring",
+      "both_reference": null
+    },
+    {
+      "seed": 202610195601,
+      "shape": "separate_seeds",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/third_response_generation_search_20261019/b9f8bccb-57c5-4366-9788-7fdc1e301114/midpoint_separate_seeds/state256.bin",
+      "sha256": "9a85aca8ccf0d0ad8855de328f145f6c4b85312b770635facacc407bf5c45e76",
+      "M256": 70.88184984513387,
+      "E256": 101.37772409458924,
+      "old_id": "midpoint_separate_seeds",
+      "both_reference": null
+    },
+    {
+      "seed": 202610195602,
+      "shape": "ring",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/third_response_generation_search_20261019/b9f8bccb-57c5-4366-9788-7fdc1e301114/validation_ring_midpoint/state256.bin",
+      "sha256": "fd725c839d1c7ca7a6083fef222c5e26d82bb53411f70e6a6cf463202e839354",
+      "M256": 91.4072927150369,
+      "E256": 144.02403856341576,
+      "old_id": "validation_ring_midpoint",
+      "both_reference": {
+        "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/third_response_generation_search_20261019/b9f8bccb-57c5-4366-9788-7fdc1e301114/validation_ring_midpoint/steps.csv",
+        "rows_sha256": "2e3bb1b770fe55f0e4629d31b4e36bed37bc9e9a9fcb0bd4a825e464fefda460",
+        "first_clock": 257,
+        "last_clock": 384,
+        "final": "/data/dataset/lenia-research/lineage_75e3399f4877/third_response_generation_search_20261019/b9f8bccb-57c5-4366-9788-7fdc1e301114/validation_ring_midpoint/state384.bin",
+        "final_sha256": "e697b86d75fa46050352cacb287bf668db9b902608f8b6395ab74ea40b0cbaa5",
+        "source_outcome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/third_response_generation_search_20261019/outcomes.json",
+        "role": "exact read-only 128-step continuation",
+        "M384": 98.10210815619483,
+        "E384": 164.21547105990686,
+        "bodytime": 610.5096712487478,
+        "post256": 21.013384571645553
+      }
+    },
+    {
+      "seed": 202610195602,
+      "shape": "separate_seeds",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/third_response_generation_search_20261019/b9f8bccb-57c5-4366-9788-7fdc1e301114/validation_separate_seeds_midpoint/state256.bin",
+      "sha256": "c41428d2d6f7df88d837784cdf2579e2c2058e0c053b43490c654615ca083ca0",
+      "M256": 74.27090058881541,
+      "E256": 110.13736571683864,
+      "old_id": "validation_separate_seeds_midpoint",
+      "both_reference": {
+        "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/third_response_generation_search_20261019/b9f8bccb-57c5-4366-9788-7fdc1e301114/validation_separate_seeds_midpoint/steps.csv",
+        "rows_sha256": "79a94b154ec2a6d18567307d6db0c94448fb5828a8946d21a5d3671caca6fc3e",
+        "first_clock": 257,
+        "last_clock": 384,
+        "final": "/data/dataset/lenia-research/lineage_75e3399f4877/third_response_generation_search_20261019/b9f8bccb-57c5-4366-9788-7fdc1e301114/validation_separate_seeds_midpoint/state384.bin",
+        "final_sha256": "6d5cd818f728ced291bfc42613c7c9c45cb58eba7801ec3f2adfec61e21de445",
+        "source_outcome": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/third_response_generation_search_20261019/outcomes.json",
+        "role": "exact read-only 128-step continuation",
+        "M384": 85.67785330663237,
+        "E384": 147.94960654206415,
+        "bodytime": 518.4260995551721,
+        "post256": 21.61882959404332
+      }
+    }
+  ],
+  "source_bindings": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/third_response_generation_search_20261019/handoff.json",
+      "sha256": "0a5ad186fdb3562bb4660d844b5bd54f2945d22e443a3464127f0e43a83e1dd6"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/third_response_generation_search_20261019/METHOD.txt",
+      "sha256": "4a03824983e9bf1de166c307ea4b30eeac6f87f782a03251a168a5be37cbc6b6"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/third_response_generation_search_20261019/REPORT.txt",
+      "sha256": "387266751a3d088253b34f7b988d93745cb6e922d20156f5a04d4902e2cbab59"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/third_response_generation_search_20261019/scientific_next_request.json",
+      "sha256": "82d0154f2f3397ef69d181ab49424c88705bdac36bd8419efed93f2655207883"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/third_response_generation_search_20261019/outcomes.json",
+      "sha256": "e9ad0e68489d2bd22e3ff6d41b2434a6dbbeadf78a05f18c5ae8e49f17849897"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/third_response_generation_search_20261019/plan.json",
+      "sha256": "d76ab6f941660dcb9ed4c7fc9a2edd82f2b08e2f3729ea7bf60ab087909f051a"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/third_response_generation_search/core.py",
+      "sha256": "89b3a7b81ce76b49711367eb17fc01fa2487172d6883e32daee50ce304c2c5dc"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/resource_conditioned_growth_rule/core.py",
+      "sha256": "bad674f254644c8fc00caa6fd50ccd45bbebdd65a229c11125ca3765df981a44"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/fixed_amount_rule_deletion_layout/core.py",
+      "sha256": "71277e88c480cb81b9b602a85dab641c5e4e61b661b4d74f67fe19a36b5914a5"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/replacement_history_carrier/core.py",
+      "sha256": "c8d97368cbd8b00b174f3728587702e0e9651b2d96da001af325b8671a345a45"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/regenerative_actor/model.py",
+      "sha256": "3941450e97d2311f833d1c9c8964f348218467d4cd8d41a68b6584b72b24b5b0"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/regenerative_actor/conversion.py",
+      "sha256": "d2b73ccf44d6720e01e2166c055f9a427406dc483b21746476b9f8cc5f95189a"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/renewal_preservation_choice_factorial_20261019_preflight.json",
+      "sha256": "932152ea5cc8703075f7af41b8f946a538c1a0812feb8e1903c3499fb72221f4"
+    }
+  ],
+  "frozen_physics": "Keep original kernels, A/B and midpoint C curves (z=[0,0]), dt, conversion/admission order, actor, prices, capacities, native/pump, zero motion command, deletion layout off and actual256 stocks/body/energy/world/RNG/labels unchanged. No imposed death multiplier, inventory exchange, added cargo, teacher labels or writer. Changes are solely whether to accept an already-winning ready-state C request.",
+  "mechanism": {
+    "base": "Call the existing prechoice(model,state,{kind:third,z:[0,0]}) exactly. Let W be its requested_C mask and w the original A/B requested_w. W retains its original strict scoreC>max(scoreA,scoreB) and neighborhood>0 rule.",
+    "comparator": "Compute the actual fallback response on this SAME ready state as hAB=(1-w)*hA+w*hB, preserving the existing scalar w0 operation order where applicable. Recompute its hypothetical D_AB=min(rho,dt*max(-hAB,0)), survivor, neighborhood and original admit. Do NOT take a weighted average of candidate birth or net scores: mixed-response admission may be nonlinear.",
+    "partition": "G = W & (B_C > B_AB), R = W & ~G, using strict unrounded comparison, no fitted epsilon. G and R are disjoint and union to W. Call G birth-increasing and R non-birth-increasing; R may be called deletion-saving only where D_C<D_AB is actually recorded. Explicitly record any winning C with nonpositive net advantage over the exact mixed fallback; do not silently reclassify or discard it.",
+    "arms": {
+      "both": "requested_C=G|R=W; exact existing fixed conditional midpoint.",
+      "birth_gain_only": "requested_C=G; reject non-birth-increasing winners and use unchanged original A/B fallback there.",
+      "non_birth_gain_only": "requested_C=R; reject birth-increasing winners and use unchanged original A/B fallback there.",
+      "neither": "requested_C=False everywhere; original two-response greedy, starting from this SAME midpoint256 body."
+    },
+    "execution": "Every arm recomputes W/G/R on its own current ready state before each step; lock its accepted C mask and original w. After actor, recompute actual response from actual rho exactly as ThirdRate does. Only original native pays/converts/deletes once; original pump follows once. Hypothetical admitted births are never substituted for actual births.",
+    "interpretation": "This is a factorial intervention on available selection classes in a feedback system, not a replay of baseline masks, not mediation proportions, and not clean separation of all biological birth and death pathways. Birth-increasing C can also reduce deletion. After-actor responses and subsequent resources/costs can differ.",
+    "no_new_training": "No fitted coefficients, outer search, rate or threshold scan, new response, enlarged neighborhood or online memory. Additional ready-admit arithmetic is unpriced as in the existing selector; document it without calling this fully priced sensing."
+  },
+  "protocol": {
+    "contexts": "Both already-used seeds5601/5602 crossed with ring/separate. Four related mechanism contexts, not a new independent holdout/world. Parents are actual fixed-midpoint256 bodies from the completed task.",
+    "horizon": "Exactly257..384,128 scientific native per logical future, original fixed center inputs and half-life64. The finite source ends at384; do not extend supply/window to rescue a gate.",
+    "state": "Fork each complete actual256 parent into four roles; physical/world/stock/RNG/cumulative ledger and observational labels identical. Retain life0/L128/L256 history. L256 equals registered body256 and post256 starts zero already; do not re-register or assign descendants to ancestors.",
+    "read_only": "Reuse the two5602 both arms257..384 only after pure full-state/input/observer equivalence and source-SHA checks. Existing rows from129..256 are not new future data. Execute the two5601 both futures once. All other12 futures new. In particular neither must run from midpoint256; the old original-greedy trajectory from a different acquired body is NOT this control.",
+    "logical_futures": 16,
+    "new_scientific_futures": 14,
+    "reused_futures": 2,
+    "scientific_native": 1792,
+    "reused_native_reference": 256,
+    "order": "Freeze parent/arm order, complete implementation/plan/source hashes before first native. No result-driven additional policy, site threshold or extra context. Stop at exactly384 for every complete arm. Preserve early deaths and incomplete coverage, never fill missing values with0.",
+    "alias": "Four policies are distinct even if an initial mask is empty. Do not alias entire futures from an initial agreement. Existing both reference reuse is the sole planned zero-native future reuse."
+  },
+  "outcomes": {
+    "primary": "For birth_gain_only versus both, actual post256 retained tissue at384 must strictly increase, while finalM/finalE and bodytime257..384 do not decline (1e-8 accounting tolerance; also report exact0); minM>=32. Report each context and require all4 for a shared two-seed/two-shape advantage. A mean, uptake or old L256 gain cannot rescue a failed context.",
+    "maintenance": "Two fixed windows257..320 and321..384 separately require born>=death,deltaE>=0,minM>=32, with1e-8 and zero-tolerance results. State whether any target gain also retains BOTH maintenance windows. A primary target gain with maintenance loss is a tradeoff, not useful maintained renewal.",
+    "required_contrasts": [
+      "birth_gain_only-both",
+      "non_birth_gain_only-both",
+      "both-neither",
+      "birth_gain_only-neither",
+      "non_birth_gain_only-neither",
+      "both-birth_gain_only-non_birth_gain_only+neither"
+    ],
+    "fields": "For every contrast list post256, L256, M/E, bodytime, cumulative admitted births, actual post256 deletion, old256 deletion, uptake, pump/motion/basal/conversion costs, death energy/heat/exports/arrears. Keep life0/L128 reports distinct. Verify M=L256+post256 and true new-tissue birth-minus-deletion ledger; this is accounting, not age-specific or mechanistic attribution.",
+    "falsification": "If birth_gain_only does not improve retained new tissue under the guards, close the conservation-veto candidate without tuning it. If withdrawing non-birth-increasing winners worsens both renewal and maintenance, retain their conditional support role; it does not establish that all conserving behavior is necessary or sufficient. If neither/birth-only/other wins, report conditional result against both, not a new learning method.",
+    "historical_limits": "No inference about life0 formation from these mature-parent interventions; no correction of previous mixed selection or ring-negative results. All current curves are fixed physiology."
+  },
+  "records": {
+    "per_step": "Every returned native settled exactly once; continuous scalar physical/label/cost accounts, all actual births/deaths/refusals; G/R/W counts, affected rho, ready B/D deltas against exact fallback, net-score exceptions and actual after-actor h. Counts/sites are not independent samples.",
+    "receipts": [
+      257,
+      258,
+      264,
+      288,
+      320,
+      352,
+      384
+    ],
+    "fields": [
+      256,
+      257,
+      264,
+      288,
+      320,
+      352,
+      384
+    ],
+    "joints": [
+      256,
+      320,
+      384
+    ],
+    "missing": "For old read-only baselines retain originally absent G/R or new diagnostic fields as null. Pure recomputation from a saved exact prestate must be labelled a separate read-only calculation. Never reverse-engineer full fields or new cohort ages from sparse snapshots.",
+    "checkpoint": "Complete recoverable body/world/labels/policy/RNG/ledger and wrapper phase for last known settled state; source and complete raw manifests. No replay of unknown completed native. Keep old sources immutable in an isolated selector adapter.",
+    "visual": "Inspect all four contexts and four policies actual body/L256/post256 sequences and window curves, retain grossly similar morphology as such. Consolidate existing paper/projection items; no redundant broadcast."
+  },
+  "budget": {
+    "native_cap": 1796,
+    "science_cap": 1792,
+    "affected_native": 4,
+    "worker_seconds": 600,
+    "cpu": 2,
+    "gpu": 0,
+    "jobs": 1,
+    "raw_cap_bytes": 536870912,
+    "shutdown_reserve_worker_seconds": 90,
+    "boundary": "Two5601 actual256 parents: one old ThirdBody midpoint step and one new both-mode step from independent identical restored copies,2 native per parent=4. Explicitly authorized diagnostic copies, fully charged; demand full resulting state, native receipt, costs and observational labels equality. Then scientific trajectories run once. No boundary on old acquisition. Pure mask partition/fallback/zero-mode/both-mode/checkpoint/center-input/reference checks0native.",
+    "control": "PI has read running/started=true; executor must re-read before new native. This is a NEW independent authorization, not reuse of sealed197.564890/4100-budget balance or any older allowance. No other executor may borrow it.",
+    "recovery": "One runner job. All attempts count including failure and shutdown; same-job explicit recovery only from a proven settled checkpoint. Unknown native remains unknown, not replayed. No automatic second job, scheduler/timer, widened search or use of remaining seconds after native cap."
+  },
+  "handoff": "d3 implement, freeze the isolated selector and actually run the bounded factorial. Update only current short result leaf or PI pointer if coordinated; do not grow the long next chain or remove others entries. Return scientific choice once on completion. The PI closes this result and authorizes this named mechanism, not an unbounded continuation.",
+  "native_by_PI": 0
+}

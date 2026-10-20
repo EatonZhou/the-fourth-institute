@@ -1,0 +1,15 @@
+{
+  "task": "conversion_time_birth_branch_20261019",
+  "job": "a2de8da7-8ed8-46ac-bf42-fca0b7cb8a49",
+  "failed_finished_at": "2026-10-18T23:15:11.319920+00:00",
+  "prior_attempted_native": 0,
+  "prior_committed_native": 0,
+  "unknown_native": 0,
+  "proof": "top-level numpy import failure; no module main/ForwardPermit/raw directory/pending transaction",
+  "stdout_sha256": "4ab929a055d24a70e1a20f1c58eb691115c85b49688e759b5db8502586c946af",
+  "original_plan_sha256": "b68ba6f9db758a18c71ea220b549dbb24af7c4b363128e8e7cabc6c11e25dd3b",
+  "new_plan_sha256": "8b39e153f7040632f2ac191b7d6d78ed61135c9b47a4586cfb2ffa43d0aa6d33",
+  "run_sha256": "7ea912c33f117e60ff88c822934507f73348db19c640d022fd8dfa5a120d1457",
+  "recovery": "same original argv appended --resume; bootstrap re-execs literal venv path and consumes resume only with no prior transaction; scientific code unchanged",
+  "source_binding_fix_only": true
+}

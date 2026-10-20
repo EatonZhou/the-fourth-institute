@@ -1,0 +1,50 @@
+[
+  {
+    "context": "compact_p512/plus",
+    "env": "same",
+    "full_same_parent": true,
+    "first_actual_action_and_response_equal": true
+  },
+  {
+    "context": "compact_p512/plus",
+    "env": "reverse",
+    "full_same_parent": true,
+    "first_actual_action_and_response_equal": true
+  },
+  {
+    "context": "compact_p512/minus",
+    "env": "same",
+    "full_same_parent": true,
+    "first_actual_action_and_response_equal": true
+  },
+  {
+    "context": "compact_p512/minus",
+    "env": "reverse",
+    "full_same_parent": true,
+    "first_actual_action_and_response_equal": true
+  },
+  {
+    "context": "soft_p512/plus",
+    "env": "same",
+    "full_same_parent": true,
+    "first_actual_action_and_response_equal": true
+  },
+  {
+    "context": "soft_p512/plus",
+    "env": "reverse",
+    "full_same_parent": true,
+    "first_actual_action_and_response_equal": true
+  },
+  {
+    "context": "soft_p512/minus",
+    "env": "same",
+    "full_same_parent": true,
+    "first_actual_action_and_response_equal": true
+  },
+  {
+    "context": "soft_p512/minus",
+    "env": "reverse",
+    "full_same_parent": true,
+    "first_actual_action_and_response_equal": true
+  }
+]

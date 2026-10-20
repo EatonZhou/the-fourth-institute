@@ -1,0 +1,89 @@
+{
+  "schema": "material-action-response-learning-handoff-v1",
+  "task": "material_action_response_20261018",
+  "status": "completed_candidate_closed",
+  "objective_met": false,
+  "owner": "resident_d3ccfa2d95b7",
+  "job_id": "a8ace198-bb5f-4dd2-a836-f659d641cc07",
+  "host_source": {
+    "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/material_action_response_20261018/handoff.json",
+    "sha256": "cbf40055bfde856e0ebeccdbf2fc04425da83bd5f9e89dad29705a3f59b865ff",
+    "core_sha256": "15691ada9fd805c076f7c5770ba955dbf6cc454ea3af129b1ba03fe958467b5b"
+  },
+  "plan": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/plan.json",
+    "sha256": "e0a6338d96fbd48c4b7f65e977969f95c0a56d8a13e9c3b24ce89c07f005735c"
+  },
+  "result": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/result.json",
+    "sha256": "e795e747230c8734e2331987f33cbb4ae9ce84edab2a187fdbb2c867738d95b5"
+  },
+  "summary": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/summary.json",
+    "sha256": "9e4227ef836e68a4d336dd64af92fe9be7c42ba79e2853333b45109eea8ebaa0"
+  },
+  "manifest": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/manifest.json",
+    "sha256": "fd0f9db377e924980b00c9e8c85b98b3201927355b9e26124c92be77207d533c",
+    "attachments": 29
+  },
+  "report": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/REPORT.txt",
+  "method": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/METHOD.txt",
+  "checks": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/checks.json",
+  "usage": {
+    "d3": {
+      "job_id": "a8ace198-bb5f-4dd2-a836-f659d641cc07",
+      "status": "completed",
+      "returncode": 0,
+      "started_at": "2026-10-18T09:59:48.314692+00:00",
+      "finished_at": "2026-10-18T10:01:48.097646+00:00",
+      "attempted": 2464,
+      "committed": 2464,
+      "failed_steps": 0,
+      "stage_steps": {
+        "development": 288,
+        "shared_acquisition": 256,
+        "evaluation": 1920
+      },
+      "worker_seconds": 239.565908,
+      "worker_cap": 420,
+      "host_cap": 9216,
+      "unused_steps": 6752,
+      "unused_worker_seconds": 180.434092,
+      "script_seconds": 118.7191547889961,
+      "cpu_threads": 2,
+      "gpu": 0
+    },
+    "ce2": {
+      "actual_host_steps": 2051,
+      "worker_seconds": 109.358436,
+      "failed_steps": 1,
+      "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/material_action_response_20261018/handoff.json",
+      "sha256": "cbf40055bfde856e0ebeccdbf2fc04425da83bd5f9e89dad29705a3f59b865ff"
+    },
+    "joint": {
+      "actual_host_steps": 4515,
+      "host_cap": 12288,
+      "worker_seconds": 348.924344,
+      "worker_cap": 600,
+      "unused_steps": 7773,
+      "unused_worker_seconds": 251.075656,
+      "old_budget_used": 0
+    },
+    "unused_status": "not used; no automatic transfer or further run for this closed candidate"
+  },
+  "raw_manifest": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/material_action_response/raw_manifest.json",
+    "sha256": "ecf8e76c52969a8053a11e87fb2443dc4adf8f5a6d12f3b1997b95cb79f3624a",
+    "file_count": 204
+  },
+  "comparison": "model versus recent: four dependent contexts all negative in uptake/end energy; no robust gain from content updates or native no-drive baseline",
+  "scope_gaps": [
+    "Only3 predetermined saved blocks per stage, last native receipt of each block; intermediate8-step K/fields not retained.",
+    "All-step scalar fees retain movement/basal; synthesis/template are actually charged by native host but not separately accumulated in this worker scalar ledger. Sampled receipts and full energy/heat/death accounting do not replace missing full-horizon subfee series.",
+    "No same-target common offline forecast panel; model/recent/frozen RMSE compares their own changing trajectories.",
+    "Local learner targets condition on surviving readable carriers; lost-mass/whole-body outcome auditing does not remove survivor bias.",
+    "No capacity-matched global or position-locked memory arm; no claim of material-specific storage superiority."
+  ],
+  "no_new_scientific_jobs": true
+}

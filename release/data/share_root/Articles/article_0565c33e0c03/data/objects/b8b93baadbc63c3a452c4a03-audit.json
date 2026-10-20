@@ -1,0 +1,143 @@
+{
+  "saved_receipts": 56,
+  "receipt_max_errors": {
+    "fee": 0,
+    "pay_excess": 0,
+    "cap_excess": 0,
+    "registration": 3.8510861166685117e-16,
+    "P": 1.1102230246251565e-16,
+    "F": 0,
+    "E": 1.1102230246251565e-16,
+    "new_tissue": 5.551115123125783e-17,
+    "no_newborn_payer": 0,
+    "off_q": 0,
+    "first_native_and_pump_within_P_exact": 0
+  },
+  "first_inherited_eligible": {
+    "b2--P_on_recycle_on": 0.539491450111989,
+    "b2--P_on_recycle_off": 0.539491450111989,
+    "b2--P_off_recycle_on": 0.539491450111989,
+    "b2--P_off_recycle_off": 0.539491450111989,
+    "b6--P_on_recycle_on": 0.35293886899820237,
+    "b6--P_on_recycle_off": 0.35293886899820237,
+    "b6--P_off_recycle_on": 0.35293886899820237,
+    "b6--P_off_recycle_off": 0.35293886899820237
+  },
+  "per_step_max_checks": {
+    "check_material_error": 2.8421709430404014e-14,
+    "check_energy_error": 5.684341886080803e-14,
+    "check_max_density": 0.990601543386472,
+    "check_attempted_body_steps": 2048.0,
+    "check_reconstruction_error": 5.551115123125783e-17,
+    "check_K_column_error": 0,
+    "check_transport_error": 1.4210854715202004e-14,
+    "check_exchange_material_error": 2.679800825688972e-14,
+    "check_exchange_energy_error": 6.428191312579656e-14,
+    "check_whole_material_error": 5.0348614166750855e-14,
+    "check_whole_energy_error": 1.0902390101819037e-13,
+    "check_input_material_array_error": 0,
+    "check_input_energy_array_error": 0,
+    "check_cargo_P_error": 7.105427357601002e-15,
+    "check_cargo_F_error": 1.4210854715202004e-14,
+    "check_cargo_E_heat_error": 1.4210854715202004e-14,
+    "check_cargo_capacity_excess": 0,
+    "check_cargo_payable_excess": 0,
+    "check_cargo_negative": 0,
+    "check_cargo_newborn_payer": 0,
+    "check_request_partition_error": 6.938893903907228e-18,
+    "check_founder_excess": 0,
+    "check_recycle_material_error": 2.8421709430404014e-14,
+    "check_recycle_energy_error": 5.684341886080803e-14,
+    "check_recycle_payable_excess": 0,
+    "check_recycle_capacity_excess": 0,
+    "check_recycle_eligible_excess": 8.673617379884035e-18,
+    "check_recycle_negative": 8.673617379884035e-19,
+    "check_recycle_newborn_payer": 0,
+    "check_recycle_no_F_or_deathE_change": 0,
+    "check_L256_excess": 3.469446951953614e-18,
+    "check_L256_balance_error": 4.796163466380676e-14,
+    "check_eligible_balance_error": 7.815970093361102e-14,
+    "check_A_balance_error": 2.788741459980315e-14,
+    "check_L384_balance_error": 3.5527136788005016e-14,
+    "check_L384_excess": 3.469446951953614e-18,
+    "check_continuation_F_array_error": 0,
+    "check_continuation_P_array_error": 0
+  },
+  "whole_balance_max": {
+    "M": 4.973799150320701e-14,
+    "L256": 1.4210854715202004e-14,
+    "L384": 2.1316282072803006e-14,
+    "post256": 5.3290705182007514e-14,
+    "post384": 6.217248937900877e-14,
+    "eligible": 1.4210854715202004e-14,
+    "P": 1.3500311979441904e-13,
+    "waste": 1.4210854715202004e-14,
+    "heat": 9.592326932761353e-14,
+    "energy_all": 1.8474111129762605e-13,
+    "A": 1.1746159600534156e-13
+  },
+  "source_bytes_unchanged": true,
+  "pure_checks": {
+    "native": 0,
+    "old_step_AST_only_horizon": true,
+    "parents": [
+      {
+        "parent": "b2--paid_recycle",
+        "arm": "P_on_recycle_on",
+        "full_inheritance_exact": true,
+        "inputs_exact": true,
+        "checkpoint_exact": true
+      },
+      {
+        "parent": "b2--paid_recycle",
+        "arm": "P_on_recycle_off",
+        "full_inheritance_exact": true,
+        "inputs_exact": true,
+        "checkpoint_exact": true
+      },
+      {
+        "parent": "b2--paid_recycle",
+        "arm": "P_off_recycle_on",
+        "full_inheritance_exact": true,
+        "inputs_exact": true,
+        "checkpoint_exact": true
+      },
+      {
+        "parent": "b2--paid_recycle",
+        "arm": "P_off_recycle_off",
+        "full_inheritance_exact": true,
+        "inputs_exact": true,
+        "checkpoint_exact": true
+      },
+      {
+        "parent": "b6--paid_recycle",
+        "arm": "P_on_recycle_on",
+        "full_inheritance_exact": true,
+        "inputs_exact": true,
+        "checkpoint_exact": true
+      },
+      {
+        "parent": "b6--paid_recycle",
+        "arm": "P_on_recycle_off",
+        "full_inheritance_exact": true,
+        "inputs_exact": true,
+        "checkpoint_exact": true
+      },
+      {
+        "parent": "b6--paid_recycle",
+        "arm": "P_off_recycle_on",
+        "full_inheritance_exact": true,
+        "inputs_exact": true,
+        "checkpoint_exact": true
+      },
+      {
+        "parent": "b6--paid_recycle",
+        "arm": "P_off_recycle_off",
+        "full_inheritance_exact": true,
+        "inputs_exact": true,
+        "checkpoint_exact": true
+      }
+    ]
+  },
+  "native_boundary": 0
+}

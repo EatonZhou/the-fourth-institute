@@ -1,0 +1,69 @@
+Native investment / unchanged physical host
+
+Physics: environment_evolution.material_action_response.core.MaterialActionBody
+SHA15691ada9fd805c076f7c5770ba955dbf6cc454ea3af129b1ba03fe958467b5b.
+No physical source was edited. Native parent clocks are128; postclock=128+offset.
+from_formation(path,sha,world=geometry(96,development|heldout_rotated));
+observe_local(); step(action,permit=ForwardPermit(...)) -> maps,checks;
+save(path), restore(path). Each step consumes one authorized native call.
+
+Carried intent: local_learning.native_investment_action.intent.MaterialIntent,
+SHA281cdf539552d744002768036509eaab3476e6c74a9ddf156bf093872ecb0d88.
+intent=MaterialIntent(rho, fixed_action(obs,'shear_x'),clock=128)
+a=intent.readout(rho) during investment, otherwise zeros(2,96,96).
+maps,checks=env.step(a,permit=permit)
+tag=intent.advance(maps,final_body=env.state['body'],clock=env.clock)
+Receipt advance happens once after each real step, also throughout withdrawal.
+Euler arms refresh the fixed action in laboratory coordinates; their carried
+intent is a passive evaluator-only tracer, never used to choose an action.
+None has zero active requests throughout. All arms share action norm bound1.
+Original pressure/cohesion still create passive flux when action is zero.
+
+K_weights has four source columns +y,-y,+x,-x. advect(extensive,K) then multiply
+by destination keep. survivor+born equals actual new body. Signed extensive
+intent is divided by final total body; mixing cancels, births dilute, no fresh
+normalization or ancestor commands are imposed. All initial material, not only
+formation founders, is registered. Cohort death is an observed terminal event.
+Unknown/missing receipts are distinct. Uptake precedes death/birth; tag uptake
+uses transported cohort/transported body before death, a descriptive convention.
+No cohort-specific causal net-energy allocation is supplied.
+
+Locally readable: current body/energy/fuel/precursor/polarity and face permeability,
+local four-neighbour stencil; actual completed uptake, current energy, K and
+keep for lawful carrying. Full arrays do not authorize a global policy reduction.
+World/input arrays, path/geometry identity, global sums, initial-registration
+and dead-mass evaluator ledgers are not learner features. No paid writer mask
+or local learning-energy charge exists in this host; arithmetic/storage remain
+unpriced. Do not convert missing feedback or complete death into live zero labels.
+
+New raw process_POSTCLOCK.npz is saved EVERY step, holding actual K_weights,
+keep, old_body, transported_body, survivor, born, death, uptake, energy,
+actor_action_requested; plus post-step intent_after/cohort_after/cohort_death,
+postclock and offset. Physical flux old_body*K is a derived identity, not an
+extra independent observation. Sparse full_receipt files contain actual four
+face flux/request/work maps and all individual fee maps at1,8,active end,end.
+steps.csv saves all-step motor/basal requests/paid/unpaid, synthesis_heat,
+template_heat,birth_fuel,newborn_energy,precursor_spent, injury/starvation/rule
+death, heat/waste/dead energy, M/E/U/bodytime ingredients and actual external
+input. Synthesis/template heat are components of the physical ledger; do not
+sum birth_fuel and its heat/newborn-energy partitions as separate costs.
+
+Complete new body+world snapshots: initial128, active end, offset136 when reached,
+terminal and last_state; corresponding complete intent checkpoints. A short
+8+128 path ends at264, a long128+128 path at384. No formation prefix was replayed.
+Every process file is post-step; requested is that step's source action.
+A pre-step body is maps.old_body; absent other pre-state arrays are not fabricated.
+
+Six old development paths are exact source-hash and full-initial-state matches,
+referenced by plan.references and original manifest. Their offset136 scalar
+prefix is valid, but no full136 snapshot or complete intermediate K exists.
+Old missing synthesis/template/death categories, carried initial-cohort records,
+and actual mass-weighted action history stay null. Only already-saved fields
+may be consumed; old founder_mass is not the new all-initial-material cohort.
+
+Evaluation: same offset and cumulative input versus none, never rescale time.
+First/sustained positive whole-E excess uses frozen1e-9 tolerance; sustained
+means all subsequent observed values positive, not infinite persistence.
+All investment/withdrawal windows were fixed before execution. Costs and actual
+amplitudes differ across coordinate frames; this is not information-only or a
+proof that material memory is necessary. Current ce2 stage has no learning.

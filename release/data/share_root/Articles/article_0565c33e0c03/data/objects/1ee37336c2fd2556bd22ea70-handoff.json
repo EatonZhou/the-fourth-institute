@@ -1,0 +1,116 @@
+{
+  "task": "self_generated_contact_reversal_20261019",
+  "status": "complete_direction_active",
+  "owner": "resident_d3ccfa2d95b7",
+  "native": 16258,
+  "worker_seconds": 177.181498,
+  "unknown": 0,
+  "job": "ea785e90-138c-461f-998c-64b770243fa7",
+  "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/self_generated_contact_reversal_20261019/ea785e90-138c-461f-998c-64b770243fa7",
+  "groups": {
+    "reactor": {
+      "n": 4,
+      "survived": 0,
+      "acquisition_pass": 2,
+      "retentionA_pass": 2,
+      "reversal_pass": 0,
+      "retentionB_pass": 0
+    },
+    "fast_delta": {
+      "n": 4,
+      "survived": 4,
+      "acquisition_pass": 4,
+      "retentionA_pass": 4,
+      "reversal_pass": 2,
+      "retentionB_pass": 0
+    },
+    "joint_delta": {
+      "n": 4,
+      "survived": 4,
+      "acquisition_pass": 4,
+      "retentionA_pass": 4,
+      "reversal_pass": 2,
+      "retentionB_pass": 2
+    }
+  },
+  "claim": "Self-generated finite-support contact supports simple learning; reversal and retention conditional, no general superiority.",
+  "limits": [
+    "All 12 lives retained; reactor failures are failures",
+    "Good-contact fraction requires absolute exposure; tiny-contact ratio1 not success",
+    "8/8 erase probes still pass: position/body confounds remain",
+    "No birth, preset motor/sensing/exploration and replenished contact reservoir",
+    "Two related mirrored seeds; no independent-world claim",
+    "Per-step compute wall-time not stored; CA clock and feedback-count curves retained"
+  ],
+  "next_question": "Recontact after learned avoidance: common exploration and same-body association intervention before adding gates; not yet a new simulation result",
+  "files": {
+    "plan.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_contact_reversal_20261019/plan.json",
+      "sha256": "50d3986da8552661838facdbdc31a4332c87f8f5a6637e901189f880af18892d"
+    },
+    "control.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_contact_reversal_20261019/control.json",
+      "sha256": "ca4c6a5668b5ded8ebaa79d71d1eac806b9fd8591dcc15c978b84eb220020df8"
+    },
+    "result.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_contact_reversal_20261019/result.json",
+      "sha256": "95e66e22964f2549fde9d896662a503f4b3daf892a1d227a459c7512435b1028"
+    },
+    "outcomes.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_contact_reversal_20261019/outcomes.json",
+      "sha256": "41c9b2d484c034b450b12bec6682861944cb26dce9321862c50814d6b46e5631"
+    },
+    "summary.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_contact_reversal_20261019/summary.json",
+      "sha256": "1e3ff0b67bdcfed6872c425ad358c298e8acb16e46dbcbebf7111ef97164894f"
+    },
+    "accounting.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_contact_reversal_20261019/accounting.json",
+      "sha256": "ddd6f48b5b88731693551225c4a4630eb9145c9a6cf509d804de81a6164635ca"
+    },
+    "life_comparisons.csv": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_contact_reversal_20261019/life_comparisons.csv",
+      "sha256": "ee5c520877fa249d97d245c7e7bb940ec7e38e1548a9a74267af040e000bcf57"
+    },
+    "phase_metrics.csv": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_contact_reversal_20261019/phase_metrics.csv",
+      "sha256": "4bfa7ab860f7d5ed43377c1761152ff6567fe752a9f6099d89d2f3ec7aa42f07"
+    },
+    "blocks.csv": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_contact_reversal_20261019/blocks.csv",
+      "sha256": "49b7c589a52a5fddbf42f2589c95f3737bf5e4d37205539748918ae740b0a696"
+    },
+    "feedback_exposure.csv": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_contact_reversal_20261019/feedback_exposure.csv",
+      "sha256": "6c47b65a43115784c05b007d9a4ace93028e29467c9b8e08c5de307b79b7a433"
+    },
+    "freeze_erase_comparisons.csv": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_contact_reversal_20261019/freeze_erase_comparisons.csv",
+      "sha256": "7cd82a6f4941da0b871f9077afcb6615c327f290a0e99b43e7eb8342e1c121f2"
+    },
+    "erase_checks.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_contact_reversal_20261019/erase_checks.json",
+      "sha256": "381049a0a3f3d8d3eba55df888a4d492a8bbe540e7925376a616e7e9122c102a"
+    },
+    "REPORT.txt": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_contact_reversal_20261019/REPORT.txt",
+      "sha256": "32d33f49695cb4a7606ac20b6d9c7354650216aefba8645e88c0c5830a01f026"
+    },
+    "all_lives_wall_clock.png": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_contact_reversal_20261019/all_lives_wall_clock.png",
+      "sha256": "d3dee10bb3bc89dbf3f296ccb17fd3073fefeb0a19d423105ce6ec82a53edf65"
+    },
+    "feedback_clock.png": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_contact_reversal_20261019/feedback_clock.png",
+      "sha256": "5c1184f7c0678c37ef27c7ed02f831dd484fbc9e9f91217dd58eab029dcd3157"
+    },
+    "all_conditions_actual.gif": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_contact_reversal_20261019/all_conditions_actual.gif",
+      "sha256": "f9d123c87e9b5aa8a73bedf3d708d44545b8aabe0bf7b1fd0ab0505edf3e6e99"
+    },
+    "all_conditions_sequence.png": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_contact_reversal_20261019/all_conditions_sequence.png",
+      "sha256": "8fe6c0a42a5cc1459bb08976e2555f7b3ab18f87c5d50644b82baa0e90236727"
+    }
+  }
+}

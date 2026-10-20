@@ -1,0 +1,43 @@
+.managementLayout { display:grid; grid-template-columns:160px minmax(0, 1fr); gap:16px; min-width:0; }
+.managementTabs { display:flex; flex-direction:column; align-items:stretch; gap:8px; margin:0; }
+.managementTabs .portalButton { justify-content:flex-start; text-align:left; white-space:normal; }
+.managementStage { min-width:0; height: min(70vh, 760px); min-height:360px; overflow:hidden; }
+.managementView { height:100%; overflow:auto; overscroll-behavior:contain; scrollbar-gutter:stable; padding:0 8px 12px 0; box-sizing:border-box; }
+.managementView[hidden], [data-management-users][hidden], [data-access-authorization-section][hidden] { display:none !important; }
+.managementUserPermissions { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0; }
+@media (max-width:600px) { .managementLayout { grid-template-columns:108px minmax(0, 1fr); gap:8px; } .managementTabs .portalButton { padding:8px; } }
+
+.managementCreationPermissions { border-top:1px solid var(--border); padding-top:12px; }
+.managementExecutionGroup { display:grid; gap:14px; margin-top:16px; }
+.managementExecutionGroup h3 { margin:0; color:var(--muted); font-size:12px; font-weight:650; }
+.managementExecutionGroup [data-embeddings-status], .managementExecutionGroup [data-telepus-status], .managementExecutionGroup [data-wall-scheduling-status] { margin:0; color:var(--muted); font-size:12px; line-height:1.5; overflow-wrap:anywhere; }
+[data-management-telepus] { display:grid; gap:8px; }
+[data-management-telepus][hidden] { display:none; }
+.managementDays { display:inline-flex; align-items:center; gap:6px; flex:0 0 auto; font-size:13px; }
+.managementDays input { width:72px; }
+
+.managementResourceTypeTable { overflow:auto; margin-top:12px; }
+.managementResourceTypeTable table { width:100%; border-collapse:collapse; font-size:13px; }
+.managementResourceTypeTable th, .managementResourceTypeTable td { text-align:left; vertical-align:top; padding:10px; border-bottom:1px solid var(--border); }
+.managementResourceTypeTable th { white-space:nowrap; color:var(--muted); }
+.managementResourceTypeTable code { overflow-wrap:anywhere; }
+.managementResourceTypes pre { overflow:auto; white-space:pre-wrap; overflow-wrap:anywhere; padding:12px; border:1px solid var(--border); border-radius:8px; }
+.managementNetwork { min-width:0; }
+.managementNetworkHeader { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+.managementNetworkHeader h2 { margin:0; }
+.managementNetworkSection { margin-top:20px; padding-top:16px; border-top:1px solid var(--border); }
+.managementNetworkSection fieldset { min-width:0; margin:0; padding:0; border:0; }
+.managementNetworkSection legend { padding:0; font-size:17px; font-weight:650; }
+.managementNetworkSection p, .managementNetworkSection small { line-height:1.6; overflow-wrap:anywhere; }
+.managementNetworkFields { display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap:14px; }
+.managementNetwork .portalField { min-width:0; }
+.managementNetworkSection h3 { margin:0 0 12px; font-size:17px; }
+.managementNetworkUrls { display:grid; gap:8px; }
+.managementNetworkUrl { display:flex; gap:8px; align-items:center; }
+.managementNetworkUrl input { flex:1; min-width:0; }
+.managementNetworkAdvanced { margin:14px 0; }
+.managementNetworkAdvanced summary { cursor:pointer; }
+.managementNetworkAdvanced .portalField { margin-top:10px; max-width:260px; }
+.managementNetwork textarea { width:100%; min-height:130px; box-sizing:border-box; resize:vertical; padding:10px; border:1px solid var(--border); border-radius:8px; background:var(--panel); color:var(--text); font:inherit; line-height:1.5; }
+.managementNetworkHint, .managementNetwork [data-network-source] { color:var(--muted); }
+.managementNetwork fieldset:disabled { opacity:.65; }

@@ -1,0 +1,20 @@
+{
+  "id": "449ad358-e82a-4da7-a1e6-5ab5b14bb1a4",
+  "name": "association_polarity_expression_20261019",
+  "command": [
+    "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+    "-m",
+    "local_learning.association_polarity_expression.run",
+    "run"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "d3-association_polarity_expression_20261019-v1",
+  "status": "running",
+  "created_at": "2026-10-19T03:32:06.699038+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/449ad358-e82a-4da7-a1e6-5ab5b14bb1a4",
+  "pid": 3386262,
+  "manual_pause": false,
+  "create_time": 1792380726.38,
+  "started_at": "2026-10-19T03:32:06.990597+00:00"
+}

@@ -1,0 +1,16 @@
+{
+  "id": "validation_202610195401_double_lobe_prestate_greedy",
+  "source": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278/validation_202610195401_double_lobe_prefix/state128.bin",
+  "source_sha256": "88132ae0098ca0d1c9f180792b0fd9ae563465e77d433642da783caf3c9c0e7f",
+  "shape": "double_lobe",
+  "seed": 202610195401,
+  "policy": {
+    "kind": "greedy"
+  },
+  "canonical_policy": {
+    "kind": "greedy"
+  },
+  "stage": "validation",
+  "start": 128,
+  "end": 384
+}

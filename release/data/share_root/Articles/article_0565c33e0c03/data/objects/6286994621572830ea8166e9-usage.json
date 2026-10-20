@@ -1,0 +1,66 @@
+{
+  "batches": [
+    {
+      "batch": "opportunity",
+      "job": "29e08413-cd1d-4681-9b38-04c53b79f7e7",
+      "native": 2304,
+      "worker_seconds": 1.319436,
+      "raw_bytes": 8586787,
+      "status": "completed",
+      "returncode": 0
+    },
+    {
+      "batch": "delay",
+      "job": "b7032a3a-31c6-4965-a20d-b1e0aa4a9c87",
+      "native": 6912,
+      "worker_seconds": 6.98804,
+      "raw_bytes": 30436027,
+      "status": "completed",
+      "returncode": 0
+    },
+    {
+      "batch": "path_probe",
+      "job": "df578238-aea6-4a00-a0f4-b8349ff6cac4",
+      "native": 1152,
+      "worker_seconds": 1.313383,
+      "raw_bytes": 6004732,
+      "status": "completed",
+      "returncode": 0
+    },
+    {
+      "batch": "action_probe",
+      "job": "9b42efeb-1cd0-4914-8c47-d45ce8cc35b1",
+      "native": 1440,
+      "worker_seconds": 1.431251,
+      "raw_bytes": 5288119,
+      "status": "completed",
+      "returncode": 0
+    },
+    {
+      "batch": "pacing",
+      "job": "704ff2af-28cb-41ed-9f0d-965b3c4694bd",
+      "native": 3456,
+      "worker_seconds": 3.350795,
+      "raw_bytes": 15112302,
+      "status": "completed",
+      "returncode": 0
+    },
+    {
+      "batch": "sparse",
+      "job": "d4b59280-695b-4ed6-858d-1c6cf7baca76",
+      "native": 5184,
+      "worker_seconds": 3.713248,
+      "raw_bytes": 22497829,
+      "status": "completed",
+      "returncode": 0
+    }
+  ],
+  "native": 20448,
+  "worker_seconds": 18.116153,
+  "raw_bytes": 87925796,
+  "independent_founders": 13,
+  "complete576_step_paths": 31,
+  "additional96_step_founder_prefixes": 3,
+  "causal_branches": 24,
+  "replication": "13 independent founder/exploration RNG histories; only sparse-condition3 also have independent frozen resource-pulse histories. Paired arms and24 causal continuations are dependent, not independent replicas."
+}

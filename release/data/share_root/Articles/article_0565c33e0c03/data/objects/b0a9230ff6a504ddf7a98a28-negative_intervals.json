@@ -1,0 +1,103 @@
+[
+  {
+    "branch": "reference_anisotropic--connected_trilobe--uninjured",
+    "M_loss": [
+      [
+        287,
+        288
+      ],
+      [
+        295,
+        329
+      ],
+      [
+        369,
+        384
+      ]
+    ],
+    "E_loss": [
+      [
+        264,
+        265
+      ],
+      [
+        273,
+        276
+      ],
+      [
+        280,
+        283
+      ],
+      [
+        286,
+        288
+      ],
+      [
+        299,
+        299
+      ],
+      [
+        304,
+        330
+      ],
+      [
+        347,
+        351
+      ],
+      [
+        356,
+        358
+      ],
+      [
+        360,
+        363
+      ],
+      [
+        375,
+        378
+      ]
+    ],
+    "starvation": [],
+    "basal_unpaid": [],
+    "motor_unpaid": []
+  },
+  {
+    "branch": "reference_anisotropic--connected_trilobe--excised",
+    "M_loss": [
+      [
+        257,
+        273
+      ]
+    ],
+    "E_loss": [
+      [
+        257,
+        273
+      ]
+    ],
+    "starvation": [],
+    "basal_unpaid": [],
+    "motor_unpaid": []
+  },
+  {
+    "branch": "compact_ring_core_outer--bridged_longbody--uninjured",
+    "M_loss": [],
+    "E_loss": [],
+    "starvation": [],
+    "basal_unpaid": [],
+    "motor_unpaid": []
+  },
+  {
+    "branch": "compact_ring_core_outer--bridged_longbody--excised",
+    "M_loss": [
+      [
+        383,
+        384
+      ]
+    ],
+    "E_loss": [],
+    "starvation": [],
+    "basal_unpaid": [],
+    "motor_unpaid": []
+  }
+]

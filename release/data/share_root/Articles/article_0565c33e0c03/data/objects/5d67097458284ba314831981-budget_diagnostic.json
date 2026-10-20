@@ -1,0 +1,1037 @@
+{
+  "scope": "posthoc saved-evidence diagnosis, not a new trial",
+  "paths": [
+    {
+      "id": "stable-6201-compact-error_directed",
+      "world": "stable",
+      "policy": "error_directed",
+      "seed": 6201,
+      "morphology": "compact",
+      "first_budget_full": null,
+      "triggers": 10,
+      "reversals": []
+    },
+    {
+      "id": "stable-6201-compact-error_random",
+      "world": "stable",
+      "policy": "error_random",
+      "seed": 6201,
+      "morphology": "compact",
+      "first_budget_full": 80,
+      "triggers": 12,
+      "reversals": []
+    },
+    {
+      "id": "stable-6201-compact-scheduled_random",
+      "world": "stable",
+      "policy": "scheduled_random",
+      "seed": 6201,
+      "morphology": "compact",
+      "first_budget_full": 95,
+      "triggers": 0,
+      "reversals": []
+    },
+    {
+      "id": "stable-6201-ring-error_directed",
+      "world": "stable",
+      "policy": "error_directed",
+      "seed": 6201,
+      "morphology": "ring",
+      "first_budget_full": null,
+      "triggers": 10,
+      "reversals": []
+    },
+    {
+      "id": "stable-6201-ring-error_random",
+      "world": "stable",
+      "policy": "error_random",
+      "seed": 6201,
+      "morphology": "ring",
+      "first_budget_full": 80,
+      "triggers": 12,
+      "reversals": []
+    },
+    {
+      "id": "stable-6201-ring-scheduled_random",
+      "world": "stable",
+      "policy": "scheduled_random",
+      "seed": 6201,
+      "morphology": "ring",
+      "first_budget_full": 95,
+      "triggers": 0,
+      "reversals": []
+    },
+    {
+      "id": "stable-6202-compact-error_directed",
+      "world": "stable",
+      "policy": "error_directed",
+      "seed": 6202,
+      "morphology": "compact",
+      "first_budget_full": null,
+      "triggers": 1,
+      "reversals": []
+    },
+    {
+      "id": "stable-6202-compact-error_random",
+      "world": "stable",
+      "policy": "error_random",
+      "seed": 6202,
+      "morphology": "compact",
+      "first_budget_full": null,
+      "triggers": 1,
+      "reversals": []
+    },
+    {
+      "id": "stable-6202-compact-scheduled_random",
+      "world": "stable",
+      "policy": "scheduled_random",
+      "seed": 6202,
+      "morphology": "compact",
+      "first_budget_full": null,
+      "triggers": 0,
+      "reversals": []
+    },
+    {
+      "id": "stable-6202-ring-error_directed",
+      "world": "stable",
+      "policy": "error_directed",
+      "seed": 6202,
+      "morphology": "ring",
+      "first_budget_full": null,
+      "triggers": 1,
+      "reversals": []
+    },
+    {
+      "id": "stable-6202-ring-error_random",
+      "world": "stable",
+      "policy": "error_random",
+      "seed": 6202,
+      "morphology": "ring",
+      "first_budget_full": null,
+      "triggers": 1,
+      "reversals": []
+    },
+    {
+      "id": "stable-6202-ring-scheduled_random",
+      "world": "stable",
+      "policy": "scheduled_random",
+      "seed": 6202,
+      "morphology": "ring",
+      "first_budget_full": null,
+      "triggers": 0,
+      "reversals": []
+    },
+    {
+      "id": "stable-6203-compact-error_directed",
+      "world": "stable",
+      "policy": "error_directed",
+      "seed": 6203,
+      "morphology": "compact",
+      "first_budget_full": 62,
+      "triggers": 12,
+      "reversals": []
+    },
+    {
+      "id": "stable-6203-compact-error_random",
+      "world": "stable",
+      "policy": "error_random",
+      "seed": 6203,
+      "morphology": "compact",
+      "first_budget_full": 57,
+      "triggers": 12,
+      "reversals": []
+    },
+    {
+      "id": "stable-6203-compact-scheduled_random",
+      "world": "stable",
+      "policy": "scheduled_random",
+      "seed": 6203,
+      "morphology": "compact",
+      "first_budget_full": 95,
+      "triggers": 0,
+      "reversals": []
+    },
+    {
+      "id": "stable-6203-ring-error_directed",
+      "world": "stable",
+      "policy": "error_directed",
+      "seed": 6203,
+      "morphology": "ring",
+      "first_budget_full": 62,
+      "triggers": 12,
+      "reversals": []
+    },
+    {
+      "id": "stable-6203-ring-error_random",
+      "world": "stable",
+      "policy": "error_random",
+      "seed": 6203,
+      "morphology": "ring",
+      "first_budget_full": 57,
+      "triggers": 12,
+      "reversals": []
+    },
+    {
+      "id": "stable-6203-ring-scheduled_random",
+      "world": "stable",
+      "policy": "scheduled_random",
+      "seed": 6203,
+      "morphology": "ring",
+      "first_budget_full": 95,
+      "triggers": 0,
+      "reversals": []
+    },
+    {
+      "id": "stable-6204-compact-error_directed",
+      "world": "stable",
+      "policy": "error_directed",
+      "seed": 6204,
+      "morphology": "compact",
+      "first_budget_full": 65,
+      "triggers": 12,
+      "reversals": []
+    },
+    {
+      "id": "stable-6204-compact-error_random",
+      "world": "stable",
+      "policy": "error_random",
+      "seed": 6204,
+      "morphology": "compact",
+      "first_budget_full": 58,
+      "triggers": 12,
+      "reversals": []
+    },
+    {
+      "id": "stable-6204-compact-scheduled_random",
+      "world": "stable",
+      "policy": "scheduled_random",
+      "seed": 6204,
+      "morphology": "compact",
+      "first_budget_full": 95,
+      "triggers": 0,
+      "reversals": []
+    },
+    {
+      "id": "stable-6204-ring-error_directed",
+      "world": "stable",
+      "policy": "error_directed",
+      "seed": 6204,
+      "morphology": "ring",
+      "first_budget_full": 65,
+      "triggers": 12,
+      "reversals": []
+    },
+    {
+      "id": "stable-6204-ring-error_random",
+      "world": "stable",
+      "policy": "error_random",
+      "seed": 6204,
+      "morphology": "ring",
+      "first_budget_full": 58,
+      "triggers": 12,
+      "reversals": []
+    },
+    {
+      "id": "stable-6204-ring-scheduled_random",
+      "world": "stable",
+      "policy": "scheduled_random",
+      "seed": 6204,
+      "morphology": "ring",
+      "first_budget_full": 95,
+      "triggers": 0,
+      "reversals": []
+    },
+    {
+      "id": "persistent-6201-compact-error_directed",
+      "world": "persistent",
+      "policy": "error_directed",
+      "seed": 6201,
+      "morphology": "compact",
+      "first_budget_full": 53,
+      "triggers": 12,
+      "reversals": [
+        {
+          "cycle": 49,
+          "prior_probes": 9,
+          "prior_feedback": 49,
+          "mass": 19.340182280505065
+        },
+        {
+          "cycle": 85,
+          "prior_probes": 12,
+          "prior_feedback": 85,
+          "mass": 19.97397102140384
+        }
+      ]
+    },
+    {
+      "id": "persistent-6201-compact-error_random",
+      "world": "persistent",
+      "policy": "error_random",
+      "seed": 6201,
+      "morphology": "compact",
+      "first_budget_full": 51,
+      "triggers": 12,
+      "reversals": [
+        {
+          "cycle": 49,
+          "prior_probes": 10,
+          "prior_feedback": 49,
+          "mass": 19.339939187444443
+        },
+        {
+          "cycle": 85,
+          "prior_probes": 12,
+          "prior_feedback": 85,
+          "mass": 19.97843005371779
+        }
+      ]
+    },
+    {
+      "id": "persistent-6201-compact-scheduled_random",
+      "world": "persistent",
+      "policy": "scheduled_random",
+      "seed": 6201,
+      "morphology": "compact",
+      "first_budget_full": 95,
+      "triggers": 0,
+      "reversals": [
+        {
+          "cycle": 49,
+          "prior_probes": 6,
+          "prior_feedback": 49,
+          "mass": 19.9681319226782
+        },
+        {
+          "cycle": 85,
+          "prior_probes": 10,
+          "prior_feedback": 85,
+          "mass": 19.976017530203997
+        }
+      ]
+    },
+    {
+      "id": "persistent-6201-ring-error_directed",
+      "world": "persistent",
+      "policy": "error_directed",
+      "seed": 6201,
+      "morphology": "ring",
+      "first_budget_full": 53,
+      "triggers": 12,
+      "reversals": [
+        {
+          "cycle": 49,
+          "prior_probes": 9,
+          "prior_feedback": 49,
+          "mass": 19.343072979458142
+        },
+        {
+          "cycle": 85,
+          "prior_probes": 12,
+          "prior_feedback": 85,
+          "mass": 19.96810882553579
+        }
+      ]
+    },
+    {
+      "id": "persistent-6201-ring-error_random",
+      "world": "persistent",
+      "policy": "error_random",
+      "seed": 6201,
+      "morphology": "ring",
+      "first_budget_full": 51,
+      "triggers": 12,
+      "reversals": [
+        {
+          "cycle": 49,
+          "prior_probes": 10,
+          "prior_feedback": 49,
+          "mass": 19.343068761962307
+        },
+        {
+          "cycle": 85,
+          "prior_probes": 12,
+          "prior_feedback": 85,
+          "mass": 19.9689784502499
+        }
+      ]
+    },
+    {
+      "id": "persistent-6201-ring-scheduled_random",
+      "world": "persistent",
+      "policy": "scheduled_random",
+      "seed": 6201,
+      "morphology": "ring",
+      "first_budget_full": 95,
+      "triggers": 0,
+      "reversals": [
+        {
+          "cycle": 49,
+          "prior_probes": 6,
+          "prior_feedback": 49,
+          "mass": 19.97201818196002
+        },
+        {
+          "cycle": 85,
+          "prior_probes": 10,
+          "prior_feedback": 85,
+          "mass": 19.97175226510918
+        }
+      ]
+    },
+    {
+      "id": "persistent-6202-compact-error_directed",
+      "world": "persistent",
+      "policy": "error_directed",
+      "seed": 6202,
+      "morphology": "compact",
+      "first_budget_full": null,
+      "triggers": 5,
+      "reversals": [
+        {
+          "cycle": 63,
+          "prior_probes": 5,
+          "prior_feedback": 54,
+          "mass": 0.0
+        },
+        {
+          "cycle": 88,
+          "prior_probes": 5,
+          "prior_feedback": 54,
+          "mass": 0.0
+        }
+      ]
+    },
+    {
+      "id": "persistent-6202-compact-error_random",
+      "world": "persistent",
+      "policy": "error_random",
+      "seed": 6202,
+      "morphology": "compact",
+      "first_budget_full": null,
+      "triggers": 11,
+      "reversals": [
+        {
+          "cycle": 63,
+          "prior_probes": 11,
+          "prior_feedback": 55,
+          "mass": 0.0
+        },
+        {
+          "cycle": 88,
+          "prior_probes": 11,
+          "prior_feedback": 55,
+          "mass": 0.0
+        }
+      ]
+    },
+    {
+      "id": "persistent-6202-compact-scheduled_random",
+      "world": "persistent",
+      "policy": "scheduled_random",
+      "seed": 6202,
+      "morphology": "compact",
+      "first_budget_full": null,
+      "triggers": 0,
+      "reversals": [
+        {
+          "cycle": 63,
+          "prior_probes": 5,
+          "prior_feedback": 43,
+          "mass": 0.0
+        },
+        {
+          "cycle": 88,
+          "prior_probes": 5,
+          "prior_feedback": 43,
+          "mass": 0.0
+        }
+      ]
+    },
+    {
+      "id": "persistent-6202-ring-error_directed",
+      "world": "persistent",
+      "policy": "error_directed",
+      "seed": 6202,
+      "morphology": "ring",
+      "first_budget_full": null,
+      "triggers": 4,
+      "reversals": [
+        {
+          "cycle": 63,
+          "prior_probes": 4,
+          "prior_feedback": 29,
+          "mass": 0.0
+        },
+        {
+          "cycle": 88,
+          "prior_probes": 4,
+          "prior_feedback": 29,
+          "mass": 0.0
+        }
+      ]
+    },
+    {
+      "id": "persistent-6202-ring-error_random",
+      "world": "persistent",
+      "policy": "error_random",
+      "seed": 6202,
+      "morphology": "ring",
+      "first_budget_full": null,
+      "triggers": 11,
+      "reversals": [
+        {
+          "cycle": 63,
+          "prior_probes": 11,
+          "prior_feedback": 41,
+          "mass": 0.0
+        },
+        {
+          "cycle": 88,
+          "prior_probes": 11,
+          "prior_feedback": 41,
+          "mass": 0.0
+        }
+      ]
+    },
+    {
+      "id": "persistent-6202-ring-scheduled_random",
+      "world": "persistent",
+      "policy": "scheduled_random",
+      "seed": 6202,
+      "morphology": "ring",
+      "first_budget_full": null,
+      "triggers": 0,
+      "reversals": [
+        {
+          "cycle": 63,
+          "prior_probes": 4,
+          "prior_feedback": 32,
+          "mass": 0.0
+        },
+        {
+          "cycle": 88,
+          "prior_probes": 4,
+          "prior_feedback": 32,
+          "mass": 0.0
+        }
+      ]
+    },
+    {
+      "id": "persistent-6203-compact-error_directed",
+      "world": "persistent",
+      "policy": "error_directed",
+      "seed": 6203,
+      "morphology": "compact",
+      "first_budget_full": 57,
+      "triggers": 12,
+      "reversals": [
+        {
+          "cycle": 52,
+          "prior_probes": 9,
+          "prior_feedback": 52,
+          "mass": 19.47506009137375
+        },
+        {
+          "cycle": 82,
+          "prior_probes": 12,
+          "prior_feedback": 82,
+          "mass": 19.972016794401338
+        }
+      ]
+    },
+    {
+      "id": "persistent-6203-compact-error_random",
+      "world": "persistent",
+      "policy": "error_random",
+      "seed": 6203,
+      "morphology": "compact",
+      "first_budget_full": 52,
+      "triggers": 12,
+      "reversals": [
+        {
+          "cycle": 52,
+          "prior_probes": 11,
+          "prior_feedback": 52,
+          "mass": 19.728975004858423
+        },
+        {
+          "cycle": 82,
+          "prior_probes": 12,
+          "prior_feedback": 82,
+          "mass": 19.964799737223316
+        }
+      ]
+    },
+    {
+      "id": "persistent-6203-compact-scheduled_random",
+      "world": "persistent",
+      "policy": "scheduled_random",
+      "seed": 6203,
+      "morphology": "compact",
+      "first_budget_full": 95,
+      "triggers": 0,
+      "reversals": [
+        {
+          "cycle": 52,
+          "prior_probes": 6,
+          "prior_feedback": 52,
+          "mass": 19.951893684877565
+        },
+        {
+          "cycle": 82,
+          "prior_probes": 10,
+          "prior_feedback": 82,
+          "mass": 19.969997617071765
+        }
+      ]
+    },
+    {
+      "id": "persistent-6203-ring-error_directed",
+      "world": "persistent",
+      "policy": "error_directed",
+      "seed": 6203,
+      "morphology": "ring",
+      "first_budget_full": 57,
+      "triggers": 12,
+      "reversals": [
+        {
+          "cycle": 52,
+          "prior_probes": 9,
+          "prior_feedback": 52,
+          "mass": 19.467342062499334
+        },
+        {
+          "cycle": 82,
+          "prior_probes": 12,
+          "prior_feedback": 82,
+          "mass": 19.854799210450352
+        }
+      ]
+    },
+    {
+      "id": "persistent-6203-ring-error_random",
+      "world": "persistent",
+      "policy": "error_random",
+      "seed": 6203,
+      "morphology": "ring",
+      "first_budget_full": 52,
+      "triggers": 12,
+      "reversals": [
+        {
+          "cycle": 52,
+          "prior_probes": 11,
+          "prior_feedback": 52,
+          "mass": 19.71844102773391
+        },
+        {
+          "cycle": 82,
+          "prior_probes": 12,
+          "prior_feedback": 82,
+          "mass": 19.968241628476235
+        }
+      ]
+    },
+    {
+      "id": "persistent-6203-ring-scheduled_random",
+      "world": "persistent",
+      "policy": "scheduled_random",
+      "seed": 6203,
+      "morphology": "ring",
+      "first_budget_full": 95,
+      "triggers": 0,
+      "reversals": [
+        {
+          "cycle": 52,
+          "prior_probes": 6,
+          "prior_feedback": 52,
+          "mass": 19.741840655419992
+        },
+        {
+          "cycle": 82,
+          "prior_probes": 10,
+          "prior_feedback": 82,
+          "mass": 19.968452563042412
+        }
+      ]
+    },
+    {
+      "id": "persistent-6204-compact-error_directed",
+      "world": "persistent",
+      "policy": "error_directed",
+      "seed": 6204,
+      "morphology": "compact",
+      "first_budget_full": 59,
+      "triggers": 12,
+      "reversals": [
+        {
+          "cycle": 4,
+          "prior_probes": 0,
+          "prior_feedback": 4,
+          "mass": 19.84102360903121
+        },
+        {
+          "cycle": 83,
+          "prior_probes": 12,
+          "prior_feedback": 83,
+          "mass": 19.712933007747655
+        }
+      ]
+    },
+    {
+      "id": "persistent-6204-compact-error_random",
+      "world": "persistent",
+      "policy": "error_random",
+      "seed": 6204,
+      "morphology": "compact",
+      "first_budget_full": 47,
+      "triggers": 12,
+      "reversals": [
+        {
+          "cycle": 4,
+          "prior_probes": 0,
+          "prior_feedback": 4,
+          "mass": 19.84102360903121
+        },
+        {
+          "cycle": 83,
+          "prior_probes": 12,
+          "prior_feedback": 83,
+          "mass": 19.714285241164724
+        }
+      ]
+    },
+    {
+      "id": "persistent-6204-compact-scheduled_random",
+      "world": "persistent",
+      "policy": "scheduled_random",
+      "seed": 6204,
+      "morphology": "compact",
+      "first_budget_full": 95,
+      "triggers": 0,
+      "reversals": [
+        {
+          "cycle": 4,
+          "prior_probes": 0,
+          "prior_feedback": 4,
+          "mass": 19.84102360903121
+        },
+        {
+          "cycle": 83,
+          "prior_probes": 10,
+          "prior_feedback": 83,
+          "mass": 19.712834130142056
+        }
+      ]
+    },
+    {
+      "id": "persistent-6204-ring-error_directed",
+      "world": "persistent",
+      "policy": "error_directed",
+      "seed": 6204,
+      "morphology": "ring",
+      "first_budget_full": 59,
+      "triggers": 12,
+      "reversals": [
+        {
+          "cycle": 4,
+          "prior_probes": 0,
+          "prior_feedback": 4,
+          "mass": 19.84786855899946
+        },
+        {
+          "cycle": 83,
+          "prior_probes": 12,
+          "prior_feedback": 83,
+          "mass": 19.716843987458468
+        }
+      ]
+    },
+    {
+      "id": "persistent-6204-ring-error_random",
+      "world": "persistent",
+      "policy": "error_random",
+      "seed": 6204,
+      "morphology": "ring",
+      "first_budget_full": 47,
+      "triggers": 12,
+      "reversals": [
+        {
+          "cycle": 4,
+          "prior_probes": 0,
+          "prior_feedback": 4,
+          "mass": 19.84786855899946
+        },
+        {
+          "cycle": 83,
+          "prior_probes": 12,
+          "prior_feedback": 83,
+          "mass": 19.71571234889734
+        }
+      ]
+    },
+    {
+      "id": "persistent-6204-ring-scheduled_random",
+      "world": "persistent",
+      "policy": "scheduled_random",
+      "seed": 6204,
+      "morphology": "ring",
+      "first_budget_full": 95,
+      "triggers": 0,
+      "reversals": [
+        {
+          "cycle": 4,
+          "prior_probes": 0,
+          "prior_feedback": 4,
+          "mass": 19.84786855899946
+        },
+        {
+          "cycle": 83,
+          "prior_probes": 10,
+          "prior_feedback": 83,
+          "mass": 19.715530176401934
+        }
+      ]
+    },
+    {
+      "id": "iid-6201-compact-error_directed",
+      "world": "iid",
+      "policy": "error_directed",
+      "seed": 6201,
+      "morphology": "compact",
+      "first_budget_full": 51,
+      "triggers": 12,
+      "reversals": []
+    },
+    {
+      "id": "iid-6201-compact-error_random",
+      "world": "iid",
+      "policy": "error_random",
+      "seed": 6201,
+      "morphology": "compact",
+      "first_budget_full": 41,
+      "triggers": 12,
+      "reversals": []
+    },
+    {
+      "id": "iid-6201-compact-scheduled_random",
+      "world": "iid",
+      "policy": "scheduled_random",
+      "seed": 6201,
+      "morphology": "compact",
+      "first_budget_full": 95,
+      "triggers": 0,
+      "reversals": []
+    },
+    {
+      "id": "iid-6201-ring-error_directed",
+      "world": "iid",
+      "policy": "error_directed",
+      "seed": 6201,
+      "morphology": "ring",
+      "first_budget_full": 51,
+      "triggers": 12,
+      "reversals": []
+    },
+    {
+      "id": "iid-6201-ring-error_random",
+      "world": "iid",
+      "policy": "error_random",
+      "seed": 6201,
+      "morphology": "ring",
+      "first_budget_full": 41,
+      "triggers": 12,
+      "reversals": []
+    },
+    {
+      "id": "iid-6201-ring-scheduled_random",
+      "world": "iid",
+      "policy": "scheduled_random",
+      "seed": 6201,
+      "morphology": "ring",
+      "first_budget_full": 95,
+      "triggers": 0,
+      "reversals": []
+    },
+    {
+      "id": "iid-6202-compact-error_directed",
+      "world": "iid",
+      "policy": "error_directed",
+      "seed": 6202,
+      "morphology": "compact",
+      "first_budget_full": 31,
+      "triggers": 12,
+      "reversals": []
+    },
+    {
+      "id": "iid-6202-compact-error_random",
+      "world": "iid",
+      "policy": "error_random",
+      "seed": 6202,
+      "morphology": "compact",
+      "first_budget_full": 53,
+      "triggers": 12,
+      "reversals": []
+    },
+    {
+      "id": "iid-6202-compact-scheduled_random",
+      "world": "iid",
+      "policy": "scheduled_random",
+      "seed": 6202,
+      "morphology": "compact",
+      "first_budget_full": 95,
+      "triggers": 0,
+      "reversals": []
+    },
+    {
+      "id": "iid-6202-ring-error_directed",
+      "world": "iid",
+      "policy": "error_directed",
+      "seed": 6202,
+      "morphology": "ring",
+      "first_budget_full": 31,
+      "triggers": 12,
+      "reversals": []
+    },
+    {
+      "id": "iid-6202-ring-error_random",
+      "world": "iid",
+      "policy": "error_random",
+      "seed": 6202,
+      "morphology": "ring",
+      "first_budget_full": null,
+      "triggers": 11,
+      "reversals": []
+    },
+    {
+      "id": "iid-6202-ring-scheduled_random",
+      "world": "iid",
+      "policy": "scheduled_random",
+      "seed": 6202,
+      "morphology": "ring",
+      "first_budget_full": 95,
+      "triggers": 0,
+      "reversals": []
+    },
+    {
+      "id": "iid-6203-compact-error_directed",
+      "world": "iid",
+      "policy": "error_directed",
+      "seed": 6203,
+      "morphology": "compact",
+      "first_budget_full": 38,
+      "triggers": 12,
+      "reversals": []
+    },
+    {
+      "id": "iid-6203-compact-error_random",
+      "world": "iid",
+      "policy": "error_random",
+      "seed": 6203,
+      "morphology": "compact",
+      "first_budget_full": 30,
+      "triggers": 12,
+      "reversals": []
+    },
+    {
+      "id": "iid-6203-compact-scheduled_random",
+      "world": "iid",
+      "policy": "scheduled_random",
+      "seed": 6203,
+      "morphology": "compact",
+      "first_budget_full": 95,
+      "triggers": 0,
+      "reversals": []
+    },
+    {
+      "id": "iid-6203-ring-error_directed",
+      "world": "iid",
+      "policy": "error_directed",
+      "seed": 6203,
+      "morphology": "ring",
+      "first_budget_full": 38,
+      "triggers": 12,
+      "reversals": []
+    },
+    {
+      "id": "iid-6203-ring-error_random",
+      "world": "iid",
+      "policy": "error_random",
+      "seed": 6203,
+      "morphology": "ring",
+      "first_budget_full": 30,
+      "triggers": 12,
+      "reversals": []
+    },
+    {
+      "id": "iid-6203-ring-scheduled_random",
+      "world": "iid",
+      "policy": "scheduled_random",
+      "seed": 6203,
+      "morphology": "ring",
+      "first_budget_full": 95,
+      "triggers": 0,
+      "reversals": []
+    },
+    {
+      "id": "iid-6204-compact-error_directed",
+      "world": "iid",
+      "policy": "error_directed",
+      "seed": 6204,
+      "morphology": "compact",
+      "first_budget_full": 33,
+      "triggers": 12,
+      "reversals": []
+    },
+    {
+      "id": "iid-6204-compact-error_random",
+      "world": "iid",
+      "policy": "error_random",
+      "seed": 6204,
+      "morphology": "compact",
+      "first_budget_full": 39,
+      "triggers": 12,
+      "reversals": []
+    },
+    {
+      "id": "iid-6204-compact-scheduled_random",
+      "world": "iid",
+      "policy": "scheduled_random",
+      "seed": 6204,
+      "morphology": "compact",
+      "first_budget_full": 95,
+      "triggers": 0,
+      "reversals": []
+    },
+    {
+      "id": "iid-6204-ring-error_directed",
+      "world": "iid",
+      "policy": "error_directed",
+      "seed": 6204,
+      "morphology": "ring",
+      "first_budget_full": 33,
+      "triggers": 12,
+      "reversals": []
+    },
+    {
+      "id": "iid-6204-ring-error_random",
+      "world": "iid",
+      "policy": "error_random",
+      "seed": 6204,
+      "morphology": "ring",
+      "first_budget_full": 39,
+      "triggers": 12,
+      "reversals": []
+    },
+    {
+      "id": "iid-6204-ring-scheduled_random",
+      "world": "iid",
+      "policy": "scheduled_random",
+      "seed": 6204,
+      "morphology": "ring",
+      "first_budget_full": 95,
+      "triggers": 0,
+      "reversals": []
+    }
+  ]
+}

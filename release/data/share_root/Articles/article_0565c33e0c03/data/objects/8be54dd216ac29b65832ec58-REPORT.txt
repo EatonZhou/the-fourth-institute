@@ -1,0 +1,3384 @@
+P/F资源搬运384独立机制批
+物料与燃料搬运在两身体中呈不同的质量—能量权衡。独立新增384步补齐0ac多孔网格与6bd四叶身体的T10(P单开)、T01(F单开)，与只读T00/T11组成四格；八条续接都存留至224。每体四臂从同一真实128完整态出发，身体K均保留，能力及付费共同改变。0起完整路径和128起续接的全部绝对账分别保存；共同形成前缀在条件差与交互中抵消。
+
+0ac末M/E按T00、T10、T01、T11依次为997.221522/715.082266、1003.918954/614.531416、995.496507/801.301435、1003.223947/705.337963。P在F关闭/开启下分别使末M增加6.697433/7.727441、体时增加61.184863/88.649064，同时末E降低100.550849/95.963473；新增出生121.049014/156.841858大部分被新增规则死114.351582/149.114417抵消。P的质量条件差在129..224均正，能量条件差分别从131/132起持续为负。F在P关闭/开启下使末E增加86.219170/90.806546，但末M分别−1.725015/−0.695007；后者仅222..224转负，累计体时仍+26.222447，P关闭时体时为−1.241755。交互末M+1.030008/E+4.587377/体时+27.464201；能量交互147曾负。四臂末32净M依次−4.781221/−11.969466/−6.114682/−23.401895，负步29/22/32/32；有限窗末端不构成稳态。
+
+6bd末M/E按相同顺序为667.384685/450.374884、723.109463/433.836432、667.242001/499.122273、730.288798/483.628114。P在F关闭/开启下使末M增加55.724778/63.046797、体时增加109.780515/120.924407，而末E降低16.538452/15.494160；该M正/E负条件差覆盖129..224。F在P关闭时末M−0.142685/E+48.747389/体时+0.138310，体时144..154曾负；在P开启时三指标为+7.179335/+49.791681/+11.282201。交互末M+7.322019/E+1.044292/体时+11.143891，能量交互159..164曾负。四臂末32每步增体，净增依次41.571129/66.916278/41.263075/70.920501。F的能量条件效应在两身体、两种P条件下全窗均正，质量作用依身体和时间变化。
+
+实际129是可匹配的共同请求事件：每体四臂K、q、容量/模板拒绝、support、旧身体及L逐值相同；从末身体减出生重建的survivor仅保留至1.11e−16消减差。0ac与6bd的T10相对T00中，生成前F场、F/价、raw F缺口逐值相同；F缺口总量分别仍11.432606389和2.107857181，顺序F拒绝却由.078554872→.286307259、.121869997→.243360367。P不足减少后，部分原先被P挡住的请求暴露于F约束，顺序F拒绝增不能解释为F供应本身恶化。0ac的F单开首步只先改变E/F，身体与出生到135才分开，K/q/L到136才分开；其余单开分支首步出生已分化。后续不同身体轨迹上的掩码不作为固定组织比较。
+
+四类联合缺口保留仅P不足、仅F不足、两者同时不足、两者均足各自许可质量/格数/实际出生。全窗0ac T00的同时不足许可质量1734.556033、F独立缺口1735.766458，而顺序F拒绝仅10.875815；T11对应1457.144312、1495.480883与175.039970。6bd T00/T11的F独立缺口617.294516/511.495510，顺序F拒绝35.747903/216.564698。该全窗汇总描述各自产生的请求分布，不能单独作为同组织因果效果；P/F缺口互相重叠，禁止相加。原舍入affordability和等号诊断保留，按原规则从实际字段重建768个新旧身体步的出生逐值差为0。两独立库存重建最大差均2.22e−16。
+
+资源费用与剩余库存并列。0ac的T10/T01/T11搬运费为12.694184/11.977954/24.543008，6bd为7.771155/7.625310/15.883365；实际搬运无欠付。0ac四臂末P仍约1164..1321、F约1490..1633，6bd末P约2729..2859、F约2744..2879。原坐标场显示全域余库存与局部短缺共存；逐步生成请求仍非零。0ac原T00真实饥饿质量1.096875e−7、新T10为4.290262e−10，其余为0，保留原值。actor EU、出生F、物料及热/死亡能量全部分账，不把总费和分项重复相加。
+
+实际四张新atlas显示0ac保留有孔竖列网络、外围密度纹理调整，6bd四叶轮廓逐渐扩展并出现密度条带；这些图像描述不替代固定阈值统计，不作繁殖/个体计数。两体具有不同规则与历史，有限96周期域、不同演化掩码及能力与费用耦合均限制机制外推。无experienced或新记忆条件，适应评价为not_applicable、score/eligible=null。原576、1024及其他预算封存，85d未新增分支。
+
+
+四臂128..224完整绝对账：
+{"branch": "genome_0ac80448a534dc953505--T10", "stage_id": "genome_0ac80448a534dc953505/T10", "candidate": "genome_0ac80448a534dc953505", "stage": "continuation", "history": "untrained", "challenge": "none", "transport": "T10", "start": 128, "end": 224, "M_start": 981.5779761248489, "E_start": 444.4763946626209, "M_end": 1003.9189541888265, "E_end": 614.5314161851445, "precursor_end": 1195.9264034634011, "fuel_end": 1632.7005251581031, "heat_end": 875.5112356188772, "waste_end": 1967.4032527843483, "dead_energy_end": 1030.2557113871355, "founder_mass_end": 1.3853370045892175, "positive_request": 3919.891454401367, "births": 894.6279860680585, "rule_death": 872.2870080036517, "rule_death_energy": 517.1918528483403, "rejected_capacity": 98.87818999544984, "rejected_template": 668.151642660288, "rejected_precursor": 1594.6803026003495, "rejected_fuel": 663.553333077221, "birth_fuel": 375.7437541485846, "newborn_energy": 178.92559721361172, "synthesis_heat": 178.92559721361172, "template_heat": 17.89255972136117, "actor_resource_consumed": 669.7539694575125, "actor_energy_spent": 148.73850861097506, "actor_energy_lost_with_tissue": 3.0122935661568174e-11, "actor_mass_injury": 0.0, "actor_mass_starvation": 4.290262357865193e-10, "actor_reward": 521.015460846473, "actor_movement_requested": 90.07848663358547, "actor_movement_paid": 90.07848663358547, "actor_movement_unpaid": 0.0, "actor_basal_requested": 58.660021977389576, "actor_basal_paid": 58.660021977389576, "actor_basal_unpaid": 2.8137914986664788e-15, "body_time": 4888.335164782465, "P_flow": 634.7091844627612, "F_flow": 0.0, "P_requested": 634.7091844627612, "F_requested": 0.0, "P_rejected": 0.0, "F_rejected": 0.0, "P_fee": 12.694183689255224, "F_fee": 0.0, "transport_fee": 12.694183689255224, "transport_requested": 12.694183689255224, "transport_unpaid": 0.0, "physical_energy_spent": 148.73850861097506, "suppression_fee": 0.0, "external_M": 0.0, "external_E": 0.0, "start_already_extinct": false, "extinction_step": null, "first_zero_in_window": null, "origin_extinction_step": null, "zero_steps": 0, "zero_frames": 0, "last32_delta_M": -11.969465890469564, "last32_delta_E": 19.786526969845568, "last32_births": 200.15490477496553, "last32_negative_steps": 22, "minimum_edge_margin": 14, "final_components": 19, "final_holes": 22, "final_elongation": 1.0140409593018094, "first_starvation": 217, "first_transport_unpaid": null, "source_candidate": "double_shell_far_ring--bridged_longbody", "source_genotype": "double_shell_far_ring", "source_geometry": "bridged_longbody", "final_spread": 29.477973026877574, "niche_defined": true, "centroid_travel": 1.3749799088505927, "centroid_unavailable_steps": 0, "shape_change_L1": 1037.089535530187}
+{"branch": "genome_0ac80448a534dc953505--T01", "stage_id": "genome_0ac80448a534dc953505/T01", "candidate": "genome_0ac80448a534dc953505", "stage": "continuation", "history": "untrained", "challenge": "none", "transport": "T01", "start": 128, "end": 224, "M_start": 981.5779761248489, "E_start": 444.4763946626209, "M_end": 995.4965065155802, "E_end": 801.301435373085, "precursor_end": 1320.8327082929304, "fuel_end": 1526.0832140037232, "heat_end": 837.5527926527084, "waste_end": 1850.919395628065, "dead_energy_end": 988.0614463197437, "founder_mass_end": 1.4015471610538361, "positive_request": 4095.2664451666847, "births": 769.7216812385291, "rule_death": 755.8031508477976, "rule_death_energy": 474.99758778097845, "rejected_capacity": 60.59275635302797, "rejected_template": 707.8393615563825, "rejected_precursor": 2528.960731737212, "rejected_fuel": 28.15191428153339, "birth_fuel": 323.28310612018225, "newborn_energy": 153.94433624770582, "synthesis_heat": 153.94433624770582, "template_heat": 15.394433624770583, "actor_resource_consumed": 828.8319286402947, "actor_energy_spent": 138.97568271417305, "actor_energy_lost_with_tissue": 0.0, "actor_mass_injury": 0.0, "actor_mass_starvation": 0.0, "actor_reward": 689.8562459261217, "actor_movement_requested": 81.06478014685864, "actor_movement_paid": 81.06478014685864, "actor_movement_unpaid": 0.0, "actor_basal_requested": 57.91090256731441, "actor_basal_paid": 57.91090256731441, "actor_basal_unpaid": 2.62061370934927e-15, "body_time": 4825.908547276201, "P_flow": 0.0, "F_flow": 598.8976841192449, "P_requested": 0.0, "F_requested": 598.8976841192449, "P_rejected": 0.0, "F_rejected": 0.0, "P_fee": 0.0, "F_fee": 11.977953682384898, "transport_fee": 11.977953682384898, "transport_requested": 11.977953682384898, "transport_unpaid": 0.0, "physical_energy_spent": 138.97568271417305, "suppression_fee": 0.0, "external_M": 0.0, "external_E": 0.0, "start_already_extinct": false, "extinction_step": null, "first_zero_in_window": null, "origin_extinction_step": null, "zero_steps": 0, "zero_frames": 0, "last32_delta_M": -6.114681808431669, "last32_delta_E": 100.72719994640454, "last32_births": 168.80642093353856, "last32_negative_steps": 32, "minimum_edge_margin": 14, "final_components": 13, "final_holes": 25, "final_elongation": 1.017558311928546, "first_starvation": null, "first_transport_unpaid": null, "source_candidate": "double_shell_far_ring--bridged_longbody", "source_genotype": "double_shell_far_ring", "source_geometry": "bridged_longbody", "final_spread": 29.38764569409133, "niche_defined": true, "centroid_travel": 1.2698354236305438, "centroid_unavailable_steps": 0, "shape_change_L1": 1020.6635065584845}
+{"branch": "genome_6bd5bfd2f629f9414376--T10", "stage_id": "genome_6bd5bfd2f629f9414376/T10", "candidate": "genome_6bd5bfd2f629f9414376", "stage": "continuation", "history": "untrained", "challenge": "none", "transport": "T10", "start": 128, "end": 224, "M_start": 484.49521966831077, "E_start": 247.80043873632522, "M_end": 723.1094633914784, "E_end": 433.8364324342758, "precursor_end": 2743.5392291423923, "fuel_end": 2823.932376422862, "heat_end": 409.355787391885, "waste_end": 700.5999179027049, "dead_energy_end": 485.8742921002378, "founder_mass_end": 0.4584035878759238, "positive_request": 1720.694174336344, "births": 600.4153844315726, "rule_death": 361.80114070840506, "rule_death_energy": 259.1339472101569, "rejected_capacity": 0.0, "rejected_template": 93.85741347312793, "rejected_precursor": 734.5067103401655, "rejected_fuel": 291.91466609147795, "birth_fuel": 252.17446146126056, "newborn_energy": 120.08307688631454, "synthesis_heat": 120.08307688631454, "template_heat": 12.008307688631454, "actor_resource_consumed": 400.5883962907589, "actor_energy_spent": 67.73037766971534, "actor_energy_lost_with_tissue": 0.0, "actor_mass_injury": 0.0, "actor_mass_starvation": 0.0, "actor_reward": 332.8580186210436, "actor_movement_requested": 32.10677114668889, "actor_movement_paid": 32.10677114668889, "actor_movement_unpaid": 0.0, "actor_basal_requested": 35.62360652302644, "actor_basal_paid": 35.62360652302644, "actor_basal_unpaid": 1.2658359664281715e-15, "body_time": 2968.63387691887, "P_flow": 388.5577299625272, "F_flow": 0.0, "P_requested": 388.5577299625272, "F_requested": 0.0, "P_rejected": 0.0, "F_rejected": 0.0, "P_fee": 7.771154599250545, "F_fee": 0.0, "transport_fee": 7.771154599250545, "transport_requested": 7.771154599250545, "transport_unpaid": 0.0, "physical_energy_spent": 67.73037766971534, "suppression_fee": 0.0, "external_M": 0.0, "external_E": 0.0, "start_already_extinct": false, "extinction_step": null, "first_zero_in_window": null, "origin_extinction_step": null, "zero_steps": 0, "zero_frames": 0, "last32_delta_M": 66.91627792335248, "last32_delta_E": 39.617116571044676, "last32_births": 194.068464399064, "last32_negative_steps": 0, "minimum_edge_margin": 15, "final_components": 1, "final_holes": 19, "final_elongation": 1.0442102728942153, "first_starvation": null, "first_transport_unpaid": null, "source_candidate": "compact_ring_core_outer--connected_trilobe", "source_genotype": "compact_ring_core_outer", "source_geometry": "connected_trilobe", "final_spread": 25.242535057605068, "niche_defined": true, "centroid_travel": 2.136698375589902, "centroid_unavailable_steps": 0, "shape_change_L1": 979.217286961771}
+{"branch": "genome_6bd5bfd2f629f9414376--T01", "stage_id": "genome_6bd5bfd2f629f9414376/T01", "candidate": "genome_6bd5bfd2f629f9414376", "stage": "continuation", "history": "untrained", "challenge": "none", "transport": "T01", "start": 128, "end": 224, "M_start": 484.49521966831077, "E_start": 247.80043873632522, "M_end": 667.2420007541439, "E_end": 499.1222734026079, "precursor_end": 2858.343132450626, "fuel_end": 2812.4973417486303, "heat_end": 380.67773665091653, "waste_end": 641.6634772318059, "dead_energy_end": 460.7015365471054, "founder_mass_end": 0.45927526226998366, "positive_request": 1670.6099738923708, "births": 485.6114811233391, "rule_death": 302.86470003750605, "rule_death_energy": 233.9611916570245, "rejected_capacity": 0.0, "rejected_template": 69.30239717489164, "rejected_precursor": 1086.1891582464048, "rejected_fuel": 29.506937347735256, "birth_fuel": 203.95682207180243, "newborn_energy": 97.12229622466782, "synthesis_heat": 97.12229622466782, "template_heat": 9.712229622466783, "actor_resource_consumed": 460.24107035444825, "actor_energy_spent": 64.45503045874632, "actor_energy_lost_with_tissue": 0.0, "actor_mass_injury": 0.0, "actor_mass_starvation": 0.0, "actor_reward": 395.78603989570195, "actor_movement_requested": 30.147130401589394, "actor_movement_paid": 30.147130401589394, "actor_movement_unpaid": 0.0, "actor_basal_requested": 34.30790005715692, "actor_basal_paid": 34.30790005715692, "actor_basal_unpaid": 1.1946390391879184e-15, "body_time": 2858.9916714297437, "P_flow": 0.0, "F_flow": 381.26548985312763, "P_requested": 0.0, "F_requested": 381.26548985312763, "P_rejected": 0.0, "F_rejected": 0.0, "P_fee": 0.0, "F_fee": 7.6253097970625525, "transport_fee": 7.6253097970625525, "transport_requested": 7.6253097970625525, "transport_unpaid": 0.0, "physical_energy_spent": 64.45503045874632, "suppression_fee": 0.0, "external_M": 0.0, "external_E": 0.0, "start_already_extinct": false, "extinction_step": null, "first_zero_in_window": null, "origin_extinction_step": null, "zero_steps": 0, "zero_frames": 0, "last32_delta_M": 41.26307528754228, "last32_delta_E": 70.00853643056462, "last32_births": 136.58893713647754, "last32_negative_steps": 0, "minimum_edge_margin": 15, "final_components": 1, "final_holes": 16, "final_elongation": 1.0553366173197491, "first_starvation": null, "first_transport_unpaid": null, "source_candidate": "compact_ring_core_outer--connected_trilobe", "source_genotype": "compact_ring_core_outer", "source_geometry": "connected_trilobe", "final_spread": 24.3824930589797, "niche_defined": true, "centroid_travel": 1.9323600765878859, "centroid_unavailable_steps": 0, "shape_change_L1": 821.7087865796174}
+{"branch": "genome_0ac80448a534dc953505--T00", "stage_id": "genome_0ac80448a534dc953505/T00", "candidate": "genome_0ac80448a534dc953505", "stage": "continuation", "history": "untrained", "challenge": "none", "transport": "T00", "start": 128, "end": 224, "M_start": 981.5779761248489, "E_start": 444.4763946626209, "M_end": 997.2215215241717, "E_end": 715.0822655650062, "precursor_end": 1316.9754176608924, "fuel_end": 1628.675514320633, "heat_end": 826.7514237338943, "waste_end": 1853.0516712515118, "dead_energy_end": 982.489684729727, "founder_mass_end": 1.397407130804252, "positive_request": 4093.7159652104256, "births": 773.5789718705672, "rule_death": 757.9354263615568, "rule_death_energy": 469.4258261835599, "rejected_capacity": 62.445110621367306, "rejected_template": 708.1221136122614, "rejected_precursor": 2538.6939538583083, "rejected_fuel": 10.875815247921699, "birth_fuel": 324.90316818563826, "newborn_energy": 154.71579437411347, "synthesis_heat": 154.71579437411347, "template_heat": 15.471579437411346, "actor_resource_consumed": 724.619566257929, "actor_energy_spent": 139.30366353869536, "actor_energy_lost_with_tissue": 7.401893367396751e-09, "actor_mass_injury": 0.0, "actor_mass_starvation": 1.0968746705081482e-07, "actor_reward": 585.3159027030567, "actor_movement_requested": 81.37785991698621, "actor_movement_paid": 81.37785991698621, "actor_movement_unpaid": 0.0, "actor_basal_requested": 57.92580362170916, "actor_basal_paid": 57.92580362170916, "actor_basal_unpaid": 2.6292013537263588e-15, "body_time": 4827.150301809096, "P_flow": 0.0, "F_flow": 0.0, "P_requested": 0.0, "F_requested": 0.0, "P_rejected": 0.0, "F_rejected": 0.0, "P_fee": 0.0, "F_fee": 0.0, "transport_fee": 0.0, "transport_requested": 0.0, "transport_unpaid": 0.0, "physical_energy_spent": 139.30366353869536, "suppression_fee": 0.0, "external_M": 0.0, "external_E": 0.0, "start_already_extinct": false, "extinction_step": null, "first_zero_in_window": null, "origin_extinction_step": null, "zero_steps": 0, "zero_frames": 0, "last32_delta_M": -4.78122065013406, "last32_delta_E": 66.15989023564464, "last32_births": 171.40853776306062, "last32_negative_steps": 29, "minimum_edge_margin": 14, "final_components": 12, "final_holes": 25, "final_elongation": 1.0177617018393228, "first_starvation": 217, "first_transport_unpaid": null, "source_candidate": "double_shell_far_ring--bridged_longbody", "source_genotype": "double_shell_far_ring", "source_geometry": "bridged_longbody", "final_spread": 29.417335145633672, "niche_defined": true, "centroid_travel": 1.2400692225549506, "centroid_unavailable_steps": 0, "shape_change_L1": 1020.2207640139142, "execution_source": "old_readonly"}
+{"branch": "genome_0ac80448a534dc953505--T11", "stage_id": "genome_0ac80448a534dc953505/T11", "candidate": "genome_0ac80448a534dc953505", "stage": "continuation", "history": "untrained", "challenge": "none", "transport": "T11", "start": 128, "end": 224, "M_start": 981.5779761248489, "E_start": 444.4763946626209, "M_end": 1003.2239470405755, "E_end": 705.3379626480862, "precursor_end": 1163.9908505186445, "fuel_end": 1489.8703604196053, "heat_end": 895.4857684978731, "waste_end": 2000.0338128773558, "dead_energy_end": 1062.3047967836958, "founder_mass_end": 1.3669449861184024, "positive_request": 3892.5913904865633, "births": 926.563539012815, "rule_death": 904.9175680970884, "rule_death_energy": 549.2409382449306, "rejected_capacity": 96.90665891034925, "rejected_template": 645.1382803494263, "rejected_precursor": 2048.9429421145887, "rejected_fuel": 175.03997009938408, "birth_fuel": 389.15668638538233, "newborn_energy": 185.312707802563, "synthesis_heat": 185.312707802563, "template_heat": 18.5312707802563, "actor_resource_consumed": 799.1712019592127, "actor_energy_spent": 149.83839557594777, "actor_energy_lost_with_tissue": 0.0, "actor_mass_injury": 0.0, "actor_mass_starvation": 0.0, "actor_reward": 649.3328063832649, "actor_movement_requested": 90.86370423588629, "actor_movement_paid": 90.86370423588629, "actor_movement_unpaid": 0.0, "actor_basal_requested": 58.974691340061476, "actor_basal_paid": 58.974691340061476, "actor_basal_unpaid": 2.830806916229774e-15, "body_time": 4914.557611671789, "P_flow": 622.9630787079927, "F_flow": 604.187319063608, "P_requested": 622.9630787079927, "F_requested": 604.187319063608, "P_rejected": 0.0, "F_rejected": 0.0, "P_fee": 12.459261574159855, "F_fee": 12.083746381272162, "transport_fee": 24.543007955432017, "transport_requested": 24.543007955432017, "transport_unpaid": 0.0, "physical_energy_spent": 149.83839557594777, "suppression_fee": 0.0, "external_M": 0.0, "external_E": 0.0, "start_already_extinct": false, "extinction_step": null, "first_zero_in_window": null, "origin_extinction_step": null, "zero_steps": 0, "zero_frames": 0, "last32_delta_M": -23.401894601191316, "last32_delta_E": 43.67339229234483, "last32_births": 208.03005304285801, "last32_negative_steps": 32, "minimum_edge_margin": 14, "final_components": 19, "final_holes": 24, "final_elongation": 1.0139211705440938, "first_starvation": null, "first_transport_unpaid": null, "source_candidate": "double_shell_far_ring--bridged_longbody", "source_genotype": "double_shell_far_ring", "source_geometry": "bridged_longbody", "final_spread": 29.514134489887258, "niche_defined": true, "centroid_travel": 1.1499059622568892, "centroid_unavailable_steps": 0, "shape_change_L1": 1037.1672210821803, "execution_source": "old_readonly"}
+{"branch": "genome_6bd5bfd2f629f9414376--T00", "stage_id": "genome_6bd5bfd2f629f9414376/T00", "candidate": "genome_6bd5bfd2f629f9414376", "stage": "continuation", "history": "untrained", "challenge": "none", "transport": "T00", "start": 128, "end": 224, "M_start": 484.49521966831077, "E_start": 247.80043873632522, "M_end": 667.3846852548666, "E_end": 450.3748841968409, "precursor_end": 2859.280148210785, "fuel_end": 2879.0333284427034, "heat_end": 372.7819171618861, "waste_end": 640.5837769709244, "dead_energy_end": 450.80875854783017, "founder_mass_end": 0.4600888004681193, "positive_request": 1675.8152607840454, "births": 484.6744653631804, "rule_death": 301.78499977662455, "rule_death_energy": 224.0684136577493, "rejected_capacity": 0.0, "rejected_template": 69.40654078088643, "rejected_precursor": 1085.9863516396542, "rejected_fuel": 35.74790300032457, "birth_fuel": 203.56327545253578, "newborn_energy": 96.93489307263609, "synthesis_heat": 96.93489307263609, "template_heat": 9.693489307263608, "actor_resource_consumed": 394.09863027964224, "actor_energy_spent": 64.39066423401336, "actor_energy_lost_with_tissue": 0.0, "actor_mass_injury": 0.0, "actor_mass_starvation": 0.0, "actor_reward": 329.7079660456289, "actor_movement_requested": 30.08442389379665, "actor_movement_paid": 30.08442389379665, "actor_movement_unpaid": 0.0, "actor_basal_requested": 34.30624034021672, "actor_basal_paid": 34.30624034021672, "actor_basal_unpaid": 1.1893420161807245e-15, "body_time": 2858.853361684726, "P_flow": 0.0, "F_flow": 0.0, "P_requested": 0.0, "F_requested": 0.0, "P_rejected": 0.0, "F_rejected": 0.0, "P_fee": 0.0, "F_fee": 0.0, "transport_fee": 0.0, "transport_requested": 0.0, "transport_unpaid": 0.0, "physical_energy_spent": 64.39066423401336, "suppression_fee": 0.0, "external_M": 0.0, "external_E": 0.0, "start_already_extinct": false, "extinction_step": null, "first_zero_in_window": null, "origin_extinction_step": null, "zero_steps": 0, "zero_frames": 0, "last32_delta_M": 41.57112855324135, "last32_delta_E": 46.45227922810011, "last32_births": 136.40466914880213, "last32_negative_steps": 0, "minimum_edge_margin": 15, "final_components": 1, "final_holes": 14, "final_elongation": 1.0541430192317223, "first_starvation": null, "first_transport_unpaid": null, "source_candidate": "compact_ring_core_outer--connected_trilobe", "source_genotype": "compact_ring_core_outer", "source_geometry": "connected_trilobe", "final_spread": 24.407080861648467, "niche_defined": true, "centroid_travel": 1.9680260134847127, "centroid_unavailable_steps": 0, "shape_change_L1": 822.77591751942, "execution_source": "old_readonly"}
+{"branch": "genome_6bd5bfd2f629f9414376--T11", "stage_id": "genome_6bd5bfd2f629f9414376/T11", "candidate": "genome_6bd5bfd2f629f9414376", "stage": "continuation", "history": "untrained", "challenge": "none", "transport": "T11", "start": 128, "end": 224, "M_start": 484.49521966831077, "E_start": 247.80043873632522, "M_end": 730.2887980685086, "E_end": 483.6281135937062, "precursor_end": 2728.8821361390815, "fuel_end": 2744.13634417517, "heat_end": 421.2690500304295, "waste_end": 708.0776762289856, "dead_energy_end": 503.9653805499544, "founder_mass_end": 0.460119381629292, "positive_request": 1702.084877902007, "births": 615.0724774348837, "rule_death": 369.2788990346857, "rule_death_energy": 277.2250356598735, "rejected_capacity": 0.0, "rejected_template": 94.80384235840127, "rejected_precursor": 775.6438604667753, "rejected_fuel": 216.5646976419467, "birth_fuel": 258.33044052265114, "newborn_energy": 123.01449548697674, "synthesis_heat": 123.01449548697674, "template_heat": 12.301449548697674, "actor_resource_consumed": 474.2284494770599, "actor_energy_spent": 68.30686956892848, "actor_energy_lost_with_tissue": 0.0, "actor_mass_injury": 0.0, "actor_mass_starvation": 0.0, "actor_reward": 405.9215799081314, "actor_movement_requested": 32.54787663211073, "actor_movement_paid": 32.54787663211073, "actor_movement_unpaid": 0.0, "actor_basal_requested": 35.75899293681775, "actor_basal_paid": 35.75899293681775, "actor_basal_unpaid": 1.2714400369234898e-15, "body_time": 2979.9160780681455, "P_flow": 389.32982715754804, "F_flow": 404.8384167351326, "P_requested": 389.32982715754804, "F_requested": 404.8384167351326, "P_rejected": 0.0, "F_rejected": 0.0, "P_fee": 7.786596543150961, "F_fee": 8.096768334702654, "transport_fee": 15.883364877853614, "transport_requested": 15.883364877853614, "transport_unpaid": 0.0, "physical_energy_spent": 68.30686956892848, "suppression_fee": 0.0, "external_M": 0.0, "external_E": 0.0, "start_already_extinct": false, "extinction_step": null, "first_zero_in_window": null, "origin_extinction_step": null, "zero_steps": 0, "zero_frames": 0, "last32_delta_M": 70.92050114147582, "last32_delta_E": 60.71903441854664, "last32_births": 201.91258662796707, "last32_negative_steps": 0, "minimum_edge_margin": 15, "final_components": 1, "final_holes": 20, "final_elongation": 1.0428988059997122, "first_starvation": null, "first_transport_unpaid": null, "source_candidate": "compact_ring_core_outer--connected_trilobe", "source_genotype": "compact_ring_core_outer", "source_geometry": "connected_trilobe", "final_spread": 25.231501694877768, "niche_defined": true, "centroid_travel": 2.00627584863209, "centroid_unavailable_steps": 0, "shape_change_L1": 988.4651227166115, "execution_source": "old_readonly"}
+条件作用及交互，两起算完整指标：
+{"effect": "genome_0ac80448a534dc953505/P_at_F0", "start": 0, "end": 224, "M_end": 6.697432664654798, "E_end": -100.55084937986169, "precursor_end": -121.04901419749126, "fuel_end": 4.025010837470063, "heat_end": 48.75981188498292, "waste_end": 114.35158153283646, "dead_energy_end": 47.76602665740859, "founder_mass_end": -0.012070126215034449, "positive_request": -173.82451080905957, "births": 121.04901419749103, "rule_death": 114.35158164209497, "rule_death_energy": 47.7660266647805, "rejected_capacity": 36.433079374082524, "rejected_template": -39.970470951973425, "rejected_precursor": -944.0136512579584, "rejected_fuel": 652.6775178292993, "birth_fuel": 50.84058596294631, "newborn_energy": 24.209802839498252, "synthesis_heat": 24.209802839498252, "template_heat": 2.420980283949824, "actor_resource_consumed": -54.86559680041637, "actor_energy_spent": 9.434845072279671, "actor_energy_lost_with_tissue": -7.371770431735183e-09, "actor_mass_injury": 0.0, "actor_mass_starvation": -1.092584408150283e-07, "actor_reward": -64.30044185658369, "actor_movement_requested": 8.70062671659926, "actor_movement_paid": 8.70062671659926, "actor_movement_unpaid": 0.0, "actor_basal_requested": 0.7342183556804116, "actor_basal_paid": 0.7342183556804258, "actor_basal_unpaid": 1.8459014494012002e-16, "body_time": 61.18486297336858, "P_flow": 634.7091844627612, "F_flow": 0.0, "P_requested": 634.7091844627612, "F_requested": 0.0, "P_rejected": 0.0, "F_rejected": 0.0, "P_fee": 12.694183689255224, "F_fee": 0.0, "transport_fee": 12.694183689255224, "transport_requested": 12.694183689255224, "transport_unpaid": 0.0, "physical_energy_spent": 9.434845072279671, "suppression_fee": 0.0, "external_M": 0.0, "external_E": 0.0}
+{"effect": "genome_0ac80448a534dc953505/P_at_F0", "start": 128, "end": 224, "M_end": 6.697432664654798, "E_end": -100.55084937986169, "precursor_end": -121.04901419749126, "fuel_end": 4.025010837470063, "heat_end": 48.75981188498292, "waste_end": 114.35158153283646, "dead_energy_end": 47.76602665740859, "founder_mass_end": -0.012070126215034449, "positive_request": -173.82451080905867, "births": 121.04901419749126, "rule_death": 114.35158164209497, "rule_death_energy": 47.76602666478044, "rejected_capacity": 36.43307937408254, "rejected_template": -39.970470951973425, "rejected_precursor": -944.0136512579588, "rejected_fuel": 652.6775178292994, "birth_fuel": 50.84058596294636, "newborn_energy": 24.209802839498252, "synthesis_heat": 24.209802839498252, "template_heat": 2.420980283949824, "actor_resource_consumed": -54.86559680041648, "actor_energy_spent": 9.4348450722797, "actor_energy_lost_with_tissue": -7.371770431735183e-09, "actor_mass_injury": 0.0, "actor_mass_starvation": -1.092584408150283e-07, "actor_reward": -64.30044185658369, "actor_movement_requested": 8.70062671659926, "actor_movement_paid": 8.70062671659926, "actor_movement_unpaid": 0.0, "actor_basal_requested": 0.7342183556804187, "actor_basal_paid": 0.7342183556804187, "actor_basal_unpaid": 1.8459014494012002e-16, "body_time": 61.18486297336858, "P_flow": 634.7091844627612, "F_flow": 0.0, "P_requested": 634.7091844627612, "F_requested": 0.0, "P_rejected": 0.0, "F_rejected": 0.0, "P_fee": 12.694183689255224, "F_fee": 0.0, "transport_fee": 12.694183689255224, "transport_requested": 12.694183689255224, "transport_unpaid": 0.0, "physical_energy_spent": 9.4348450722797, "suppression_fee": 0.0, "external_M": 0.0, "external_E": 0.0}
+{"effect": "genome_0ac80448a534dc953505/P_at_F1", "start": 0, "end": 224, "M_end": 7.727440524995245, "E_end": -95.96347272499884, "precursor_end": -156.84185777428593, "fuel_end": -36.212853584117966, "heat_end": 57.93297584516472, "waste_end": 149.11441724929068, "dead_energy_end": 74.24335046395208, "founder_mass_end": -0.034602174935433716, "positive_request": -202.67505468012132, "births": 156.84185777428593, "rule_death": 149.1144172492909, "rule_death_energy": 74.2433504639522, "rejected_capacity": 36.313902557321285, "rejected_template": -62.701081206956246, "rejected_precursor": -480.0177896226228, "rejected_fuel": 146.8880558178507, "birth_fuel": 65.87358026520019, "newborn_energy": 31.368371554857163, "synthesis_heat": 31.368371554857163, "template_heat": 3.136837155485722, "actor_resource_consumed": -29.660726681082224, "actor_energy_spent": 10.862712861774725, "actor_energy_lost_with_tissue": 0.0, "actor_mass_injury": 0.0, "actor_mass_starvation": 0.0, "actor_reward": -40.52343954285675, "actor_movement_requested": 9.79892408902765, "actor_movement_paid": 9.79892408902765, "actor_movement_unpaid": 0.0, "actor_basal_requested": 1.0637887727470599, "actor_basal_paid": 1.0637887727470599, "actor_basal_unpaid": 2.1019320688050377e-16, "body_time": 88.64906439558854, "P_flow": 622.9630787079927, "F_flow": 5.289634944363115, "P_requested": 622.9630787079927, "F_requested": 5.289634944363115, "P_rejected": 0.0, "F_rejected": 0.0, "P_fee": 12.459261574159855, "F_fee": 0.10579269888726373, "transport_fee": 12.565054273047119, "transport_requested": 12.565054273047119, "transport_unpaid": 0.0, "physical_energy_spent": 10.862712861774725, "suppression_fee": 0.0, "external_M": 0.0, "external_E": 0.0}
+{"effect": "genome_0ac80448a534dc953505/P_at_F1", "start": 128, "end": 224, "M_end": 7.727440524995245, "E_end": -95.96347272499884, "precursor_end": -156.84185777428593, "fuel_end": -36.212853584117966, "heat_end": 57.93297584516472, "waste_end": 149.11441724929068, "dead_energy_end": 74.24335046395208, "founder_mass_end": -0.034602174935433716, "positive_request": -202.67505468012132, "births": 156.84185777428593, "rule_death": 149.1144172492908, "rule_death_energy": 74.24335046395214, "rejected_capacity": 36.31390255732128, "rejected_template": -62.701081206956246, "rejected_precursor": -480.01778962262324, "rejected_fuel": 146.8880558178507, "birth_fuel": 65.87358026520008, "newborn_energy": 31.36837155485719, "synthesis_heat": 31.36837155485719, "template_heat": 3.1368371554857166, "actor_resource_consumed": -29.660726681081997, "actor_energy_spent": 10.862712861774725, "actor_energy_lost_with_tissue": 0.0, "actor_mass_injury": 0.0, "actor_mass_starvation": 0.0, "actor_reward": -40.52343954285675, "actor_movement_requested": 9.79892408902765, "actor_movement_paid": 9.79892408902765, "actor_movement_unpaid": 0.0, "actor_basal_requested": 1.063788772747067, "actor_basal_paid": 1.063788772747067, "actor_basal_unpaid": 2.1019320688050377e-16, "body_time": 88.64906439558854, "P_flow": 622.9630787079927, "F_flow": 5.289634944363115, "P_requested": 622.9630787079927, "F_requested": 5.289634944363115, "P_rejected": 0.0, "F_rejected": 0.0, "P_fee": 12.459261574159855, "F_fee": 0.10579269888726373, "transport_fee": 12.565054273047119, "transport_requested": 12.565054273047119, "transport_unpaid": 0.0, "physical_energy_spent": 10.862712861774725, "suppression_fee": 0.0, "external_M": 0.0, "external_E": 0.0}
+{"effect": "genome_0ac80448a534dc953505/F_at_P0", "start": 0, "end": 224, "M_end": -1.7250150085915266, "E_end": 86.21916980807885, "precursor_end": 3.85729063203803, "fuel_end": -102.59230031690981, "heat_end": 10.801368918814092, "waste_end": -2.1322756234467306, "dead_energy_end": 5.571761590016763, "founder_mass_end": 0.004140030249584203, "positive_request": 1.5504799562586413, "births": -3.857290632038257, "rule_death": -2.1322755137591685, "rule_death_energy": 5.571761597418572, "rejected_capacity": -1.8523542683393401, "rejected_template": -0.2827520558788592, "rejected_precursor": -9.733222121096333, "rejected_fuel": 17.276099033611693, "birth_fuel": -1.620062065456068, "newborn_energy": -0.7714581264076514, "synthesis_heat": -0.7714581264076514, "template_heat": -0.07714581264076514, "actor_resource_consumed": 104.21236238236588, "actor_energy_spent": -0.3279808245223137, "actor_energy_lost_with_tissue": -7.401893367396751e-09, "actor_mass_injury": 0.0, "actor_mass_starvation": -1.0968746705081482e-07, "actor_reward": 104.54034322306507, "actor_movement_requested": -0.3130797701275583, "actor_movement_paid": -0.3130797701275583, "actor_movement_unpaid": 0.0, "actor_basal_requested": -0.01490105439475542, "actor_basal_paid": -0.014901054394741209, "actor_basal_unpaid": -8.587644377088645e-18, "body_time": -1.2417545328953565, "P_flow": 0.0, "F_flow": 598.8976841192449, "P_requested": 0.0, "F_requested": 598.8976841192449, "P_rejected": 0.0, "F_rejected": 0.0, "P_fee": 0.0, "F_fee": 11.977953682384898, "transport_fee": 11.977953682384898, "transport_requested": 11.977953682384898, "transport_unpaid": 0.0, "physical_energy_spent": -0.3279808245223137, "suppression_fee": 0.0, "external_M": 0.0, "external_E": 0.0}
+{"effect": "genome_0ac80448a534dc953505/F_at_P0", "start": 128, "end": 224, "M_end": -1.7250150085915266, "E_end": 86.21916980807885, "precursor_end": 3.85729063203803, "fuel_end": -102.59230031690981, "heat_end": 10.801368918814092, "waste_end": -2.1322756234467306, "dead_energy_end": 5.571761590016763, "founder_mass_end": 0.004140030249584203, "positive_request": 1.550479956259096, "births": -3.8572906320381435, "rule_death": -2.1322755137591685, "rule_death_energy": 5.571761597418572, "rejected_capacity": -1.852354268339333, "rejected_template": -0.2827520558788592, "rejected_precursor": -9.733222121096333, "rejected_fuel": 17.276099033611693, "birth_fuel": -1.6200620654560112, "newborn_energy": -0.7714581264076514, "synthesis_heat": -0.7714581264076514, "template_heat": -0.07714581264076337, "actor_resource_consumed": 104.21236238236565, "actor_energy_spent": -0.3279808245223137, "actor_energy_lost_with_tissue": -7.401893367396751e-09, "actor_mass_injury": 0.0, "actor_mass_starvation": -1.0968746705081482e-07, "actor_reward": 104.54034322306495, "actor_movement_requested": -0.3130797701275725, "actor_movement_paid": -0.3130797701275725, "actor_movement_unpaid": 0.0, "actor_basal_requested": -0.014901054394748314, "actor_basal_paid": -0.014901054394748314, "actor_basal_unpaid": -8.587644377088645e-18, "body_time": -1.2417545328953565, "P_flow": 0.0, "F_flow": 598.8976841192449, "P_requested": 0.0, "F_requested": 598.8976841192449, "P_rejected": 0.0, "F_rejected": 0.0, "P_fee": 0.0, "F_fee": 11.977953682384898, "transport_fee": 11.977953682384898, "transport_requested": 11.977953682384898, "transport_unpaid": 0.0, "physical_energy_spent": -0.3279808245223137, "suppression_fee": 0.0, "external_M": 0.0, "external_E": 0.0}
+{"effect": "genome_0ac80448a534dc953505/F_at_P1", "start": 0, "end": 224, "M_end": -0.6950071482510793, "E_end": 90.8065464629417, "precursor_end": -31.935552944756637, "fuel_end": -142.83016473849784, "heat_end": 19.974532878995888, "waste_end": 32.63056009300749, "dead_energy_end": 32.04908539656026, "founder_mass_end": -0.018392018470815064, "positive_request": -27.300063914803104, "births": 31.935552944756637, "rule_death": 32.63056009343677, "rule_death_energy": 32.04908539659027, "rejected_capacity": -1.9715310851005796, "rejected_template": -23.01336231086168, "rejected_precursor": 454.26263951423925, "rejected_fuel": -488.51336297783695, "birth_fuel": 13.412932236797815, "newborn_energy": 6.387110588951259, "synthesis_heat": 6.387110588951259, "template_heat": 0.638711058895133, "actor_resource_consumed": 129.41723250170003, "actor_energy_spent": 1.0998869649727396, "actor_energy_lost_with_tissue": -3.0122935661568174e-11, "actor_mass_injury": 0.0, "actor_mass_starvation": -4.290262357865193e-10, "actor_reward": 128.317345536792, "actor_movement_requested": 0.7852176023008326, "actor_movement_paid": 0.7852176023008326, "actor_movement_unpaid": 0.0, "actor_basal_requested": 0.3146693626718928, "actor_basal_paid": 0.3146693626718928, "actor_basal_unpaid": 1.7015417563295108e-17, "body_time": 26.2224468893246, "P_flow": -11.74610575476845, "F_flow": 604.187319063608, "P_requested": -11.74610575476845, "F_requested": 604.187319063608, "P_rejected": 0.0, "F_rejected": 0.0, "P_fee": -0.23492211509536887, "F_fee": 12.083746381272162, "transport_fee": 11.848824266176793, "transport_requested": 11.848824266176793, "transport_unpaid": 0.0, "physical_energy_spent": 1.0998869649727396, "suppression_fee": 0.0, "external_M": 0.0, "external_E": 0.0}
+{"effect": "genome_0ac80448a534dc953505/F_at_P1", "start": 128, "end": 224, "M_end": -0.6950071482510793, "E_end": 90.8065464629417, "precursor_end": -31.935552944756637, "fuel_end": -142.83016473849784, "heat_end": 19.974532878995888, "waste_end": 32.63056009300749, "dead_energy_end": 32.04908539656026, "founder_mass_end": -0.018392018470815064, "positive_request": -27.30006391480356, "births": 31.935552944756523, "rule_death": 32.63056009343666, "rule_death_energy": 32.04908539659027, "rejected_capacity": -1.9715310851005938, "rejected_template": -23.01336231086168, "rejected_precursor": 454.26263951423925, "rejected_fuel": -488.513362977837, "birth_fuel": 13.412932236797701, "newborn_energy": 6.387110588951288, "synthesis_heat": 6.387110588951288, "template_heat": 0.6387110588951295, "actor_resource_consumed": 129.41723250170014, "actor_energy_spent": 1.0998869649727112, "actor_energy_lost_with_tissue": -3.0122935661568174e-11, "actor_mass_injury": 0.0, "actor_mass_starvation": -4.290262357865193e-10, "actor_reward": 128.3173455367919, "actor_movement_requested": 0.7852176023008184, "actor_movement_paid": 0.7852176023008184, "actor_movement_unpaid": 0.0, "actor_basal_requested": 0.31466936267189993, "actor_basal_paid": 0.31466936267189993, "actor_basal_unpaid": 1.7015417563295108e-17, "body_time": 26.2224468893246, "P_flow": -11.74610575476845, "F_flow": 604.187319063608, "P_requested": -11.74610575476845, "F_requested": 604.187319063608, "P_rejected": 0.0, "F_rejected": 0.0, "P_fee": -0.23492211509536887, "F_fee": 12.083746381272162, "transport_fee": 11.848824266176793, "transport_requested": 11.848824266176793, "transport_unpaid": 0.0, "physical_energy_spent": 1.0998869649727112, "suppression_fee": 0.0, "external_M": 0.0, "external_E": 0.0}
+{"effect": "genome_0ac80448a534dc953505/interaction", "start": 0, "end": 224, "M_end": 1.0300078603404472, "E_end": 4.587376654862851, "precursor_end": -35.79284357679467, "fuel_end": -40.23786442158803, "heat_end": 9.173163960181796, "waste_end": 34.76283571645422, "dead_energy_end": 26.477323806543495, "founder_mass_end": -0.022532048720399267, "positive_request": -28.850543871061745, "births": 35.792843576794894, "rule_death": 34.76283560719594, "rule_death_energy": 26.4773237991717, "rejected_capacity": -0.11917681676123948, "rejected_template": -22.73061025498282, "rejected_precursor": 463.9958616353356, "rejected_fuel": -505.7894620114486, "birth_fuel": 15.032994302253883, "newborn_energy": 7.158568715358911, "synthesis_heat": 7.158568715358911, "template_heat": 0.7158568715358982, "actor_resource_consumed": 25.204870119334146, "actor_energy_spent": 1.4278677894950533, "actor_energy_lost_with_tissue": 7.371770431735183e-09, "actor_mass_injury": 0.0, "actor_mass_starvation": 1.092584408150283e-07, "actor_reward": 23.77700231372694, "actor_movement_requested": 1.0982973724283909, "actor_movement_paid": 1.0982973724283909, "actor_movement_unpaid": 0.0, "actor_basal_requested": 0.32957041706664825, "actor_basal_paid": 0.32957041706663404, "actor_basal_unpaid": 2.5603061940383753e-17, "body_time": 27.464201422219958, "P_flow": -11.74610575476845, "F_flow": 5.289634944363115, "P_requested": -11.74610575476845, "F_requested": 5.289634944363115, "P_rejected": 0.0, "F_rejected": 0.0, "P_fee": -0.23492211509536887, "F_fee": 0.10579269888726373, "transport_fee": -0.12912941620810514, "transport_requested": -0.12912941620810514, "transport_unpaid": 0.0, "physical_energy_spent": 1.4278677894950533, "suppression_fee": 0.0, "external_M": 0.0, "external_E": 0.0}
+{"effect": "genome_0ac80448a534dc953505/interaction", "start": 128, "end": 224, "M_end": 1.0300078603404472, "E_end": 4.587376654862851, "precursor_end": -35.79284357679467, "fuel_end": -40.23786442158803, "heat_end": 9.173163960181796, "waste_end": 34.76283571645422, "dead_energy_end": 26.477323806543495, "founder_mass_end": -0.022532048720399267, "positive_request": -28.850543871062655, "births": 35.79284357679467, "rule_death": 34.762835607195825, "rule_death_energy": 26.4773237991717, "rejected_capacity": -0.1191768167612608, "rejected_template": -22.73061025498282, "rejected_precursor": 463.9958616353356, "rejected_fuel": -505.7894620114487, "birth_fuel": 15.032994302253712, "newborn_energy": 7.158568715358939, "synthesis_heat": 7.158568715358939, "template_heat": 0.7158568715358928, "actor_resource_consumed": 25.204870119334487, "actor_energy_spent": 1.427867789495025, "actor_energy_lost_with_tissue": 7.371770431735183e-09, "actor_mass_injury": 0.0, "actor_mass_starvation": 1.092584408150283e-07, "actor_reward": 23.77700231372694, "actor_movement_requested": 1.0982973724283909, "actor_movement_paid": 1.0982973724283909, "actor_movement_unpaid": 0.0, "actor_basal_requested": 0.32957041706664825, "actor_basal_paid": 0.32957041706664825, "actor_basal_unpaid": 2.5603061940383753e-17, "body_time": 27.464201422219958, "P_flow": -11.74610575476845, "F_flow": 5.289634944363115, "P_requested": -11.74610575476845, "F_requested": 5.289634944363115, "P_rejected": 0.0, "F_rejected": 0.0, "P_fee": -0.23492211509536887, "F_fee": 0.10579269888726373, "transport_fee": -0.12912941620810514, "transport_requested": -0.12912941620810514, "transport_unpaid": 0.0, "physical_energy_spent": 1.427867789495025, "suppression_fee": 0.0, "external_M": 0.0, "external_E": 0.0}
+{"effect": "genome_6bd5bfd2f629f9414376/P_at_F0", "start": 0, "end": 224, "M_end": 55.7247781366118, "E_end": -16.538451762565103, "precursor_end": -115.74091906839249, "fuel_end": -55.100952019841316, "heat_end": 36.573870229998874, "waste_end": 60.016140931780456, "dead_energy_end": 35.06553355240766, "founder_mass_end": -0.0016852125921955063, "positive_request": 44.8789135522984, "births": 115.74091906839249, "rule_death": 60.01614093178057, "rule_death_energy": 35.0655335524076, "rejected_capacity": 0.0, "rejected_template": 24.450872692241504, "rejected_precursor": -351.4796412994888, "rejected_fuel": 256.1667630911534, "birth_fuel": 48.61118600872476, "newborn_energy": 23.14818381367843, "synthesis_heat": 23.14818381367843, "template_heat": 2.314818381367843, "actor_resource_consumed": 6.4897660111166715, "actor_energy_spent": 3.339713435701981, "actor_energy_lost_with_tissue": 0.0, "actor_mass_injury": 0.0, "actor_mass_starvation": 0.0, "actor_reward": 3.1500525754147475, "actor_movement_requested": 2.0223472528922457, "actor_movement_paid": 2.0223472528922457, "actor_movement_unpaid": 0.0, "actor_basal_requested": 1.317366182809721, "actor_basal_paid": 1.317366182809721, "actor_basal_unpaid": 7.6493950247447e-17, "body_time": 109.78051523414433, "P_flow": 388.5577299625272, "F_flow": 0.0, "P_requested": 388.5577299625272, "F_requested": 0.0, "P_rejected": 0.0, "F_rejected": 0.0, "P_fee": 7.771154599250545, "F_fee": 0.0, "transport_fee": 7.771154599250545, "transport_requested": 7.771154599250545, "transport_unpaid": 0.0, "physical_energy_spent": 3.339713435701981, "suppression_fee": 0.0, "external_M": 0.0, "external_E": 0.0}
+{"effect": "genome_6bd5bfd2f629f9414376/P_at_F0", "start": 128, "end": 224, "M_end": 55.7247781366118, "E_end": -16.538451762565103, "precursor_end": -115.74091906839249, "fuel_end": -55.100952019841316, "heat_end": 36.573870229998874, "waste_end": 60.016140931780456, "dead_energy_end": 35.06553355240766, "founder_mass_end": -0.0016852125921955063, "positive_request": 44.87891355229863, "births": 115.74091906839226, "rule_death": 60.01614093178051, "rule_death_energy": 35.06553355240763, "rejected_capacity": 0.0, "rejected_template": 24.450872692241504, "rejected_precursor": -351.4796412994888, "rejected_fuel": 256.16676309115337, "birth_fuel": 48.611186008724786, "newborn_energy": 23.148183813678457, "synthesis_heat": 23.148183813678457, "template_heat": 2.3148183813678465, "actor_resource_consumed": 6.4897660111166715, "actor_energy_spent": 3.339713435701981, "actor_energy_lost_with_tissue": 0.0, "actor_mass_injury": 0.0, "actor_mass_starvation": 0.0, "actor_reward": 3.1500525754146906, "actor_movement_requested": 2.022347252892242, "actor_movement_paid": 2.022347252892242, "actor_movement_unpaid": 0.0, "actor_basal_requested": 1.317366182809721, "actor_basal_paid": 1.317366182809721, "actor_basal_unpaid": 7.6493950247447e-17, "body_time": 109.78051523414388, "P_flow": 388.5577299625272, "F_flow": 0.0, "P_requested": 388.5577299625272, "F_requested": 0.0, "P_rejected": 0.0, "F_rejected": 0.0, "P_fee": 7.771154599250545, "F_fee": 0.0, "transport_fee": 7.771154599250545, "transport_requested": 7.771154599250545, "transport_unpaid": 0.0, "physical_energy_spent": 3.339713435701981, "suppression_fee": 0.0, "external_M": 0.0, "external_E": 0.0}
+{"effect": "genome_6bd5bfd2f629f9414376/P_at_F1", "start": 0, "end": 224, "M_end": 63.04679731436477, "E_end": -15.494159808901713, "precursor_end": -129.46099631154448, "fuel_end": -68.36099757346028, "heat_end": 40.591313379513, "waste_end": 66.41419899717971, "dead_energy_end": 43.263844002849, "founder_mass_end": 0.0008441193593083374, "positive_request": 31.474904009636248, "births": 129.46099631154448, "rule_death": 66.41419899717971, "rule_death_energy": 43.263844002849, "rejected_capacity": 0.0, "rejected_template": 25.501445183509617, "rejected_precursor": -310.54529777962966, "rejected_fuel": 187.05776029421148, "birth_fuel": 54.37361845084877, "newborn_energy": 25.892199262308907, "synthesis_heat": 25.892199262308907, "template_heat": 2.589219926230893, "actor_resource_consumed": 13.987379122611628, "actor_energy_spent": 3.851839110182155, "actor_energy_lost_with_tissue": 0.0, "actor_mass_injury": 0.0, "actor_mass_starvation": 0.0, "actor_reward": 10.135540012429374, "actor_movement_requested": 2.400746230521335, "actor_movement_paid": 2.400746230521335, "actor_movement_unpaid": 0.0, "actor_basal_requested": 1.4510928796608198, "actor_basal_paid": 1.451092879660827, "actor_basal_unpaid": 7.680099773557142e-17, "body_time": 120.9244066384017, "P_flow": 389.32982715754804, "F_flow": 23.572926882004992, "P_requested": 389.32982715754804, "F_requested": 23.572926882004992, "P_rejected": 0.0, "F_rejected": 0.0, "P_fee": 7.786596543150961, "F_fee": 0.4714585376401015, "transport_fee": 8.258055080791062, "transport_requested": 8.258055080791062, "transport_unpaid": 0.0, "physical_energy_spent": 3.851839110182155, "suppression_fee": 0.0, "external_M": 0.0, "external_E": 0.0}
+{"effect": "genome_6bd5bfd2f629f9414376/P_at_F1", "start": 128, "end": 224, "M_end": 63.04679731436477, "E_end": -15.494159808901713, "precursor_end": -129.46099631154448, "fuel_end": -68.36099757346028, "heat_end": 40.591313379513, "waste_end": 66.41419899717971, "dead_energy_end": 43.263844002849, "founder_mass_end": 0.0008441193593083374, "positive_request": 31.474904009636248, "births": 129.4609963115446, "rule_death": 66.41419899717965, "rule_death_energy": 43.26384400284903, "rejected_capacity": 0.0, "rejected_template": 25.50144518350963, "rejected_precursor": -310.54529777962944, "rejected_fuel": 187.05776029421145, "birth_fuel": 54.37361845084871, "newborn_energy": 25.89219926230892, "synthesis_heat": 25.89219926230892, "template_heat": 2.589219926230891, "actor_resource_consumed": 13.987379122611628, "actor_energy_spent": 3.851839110182155, "actor_energy_lost_with_tissue": 0.0, "actor_mass_injury": 0.0, "actor_mass_starvation": 0.0, "actor_reward": 10.13554001242943, "actor_movement_requested": 2.400746230521335, "actor_movement_paid": 2.400746230521335, "actor_movement_unpaid": 0.0, "actor_basal_requested": 1.451092879660827, "actor_basal_paid": 1.451092879660827, "actor_basal_unpaid": 7.680099773557142e-17, "body_time": 120.9244066384017, "P_flow": 389.32982715754804, "F_flow": 23.572926882004992, "P_requested": 389.32982715754804, "F_requested": 23.572926882004992, "P_rejected": 0.0, "F_rejected": 0.0, "P_fee": 7.786596543150961, "F_fee": 0.4714585376401015, "transport_fee": 8.258055080791062, "transport_requested": 8.258055080791062, "transport_unpaid": 0.0, "physical_energy_spent": 3.851839110182155, "suppression_fee": 0.0, "external_M": 0.0, "external_E": 0.0}
+{"effect": "genome_6bd5bfd2f629f9414376/F_at_P0", "start": 0, "end": 224, "M_end": -0.14268450072268024, "E_end": 48.74738920576698, "precursor_end": -0.9370157601588289, "fuel_end": -66.53598669407302, "heat_end": 7.89581948903043, "waste_end": 1.0797002608815092, "dead_energy_end": 9.89277799927521, "founder_mass_end": -0.0008135381981356216, "positive_request": -5.205286891674859, "births": 0.9370157601588289, "rule_death": 1.0797002608815092, "rule_death_energy": 9.89277799927521, "rejected_capacity": 0.0, "rejected_template": -0.10414360599479267, "rejected_precursor": 0.20280660675075524, "rejected_fuel": -6.24096565258931, "birth_fuel": 0.39354661926654444, "newborn_energy": 0.1874031520317203, "synthesis_heat": 0.1874031520317203, "template_heat": 0.01874031520317132, "actor_resource_consumed": 66.14244007480602, "actor_energy_spent": 0.06436622473296438, "actor_energy_lost_with_tissue": 0.0, "actor_mass_injury": 0.0, "actor_mass_starvation": 0.0, "actor_reward": 66.07807385007311, "actor_movement_requested": 0.06270650779274689, "actor_movement_paid": 0.06270650779274689, "actor_movement_unpaid": 0.0, "actor_basal_requested": 0.0016597169402103873, "actor_basal_paid": 0.0016597169402032819, "actor_basal_unpaid": 5.2970230071938305e-18, "body_time": 0.13830974501797755, "P_flow": 0.0, "F_flow": 381.26548985312763, "P_requested": 0.0, "F_requested": 381.26548985312763, "P_rejected": 0.0, "F_rejected": 0.0, "P_fee": 0.0, "F_fee": 7.6253097970625525, "transport_fee": 7.6253097970625525, "transport_requested": 7.6253097970625525, "transport_unpaid": 0.0, "physical_energy_spent": 0.06436622473296438, "suppression_fee": 0.0, "external_M": 0.0, "external_E": 0.0}
+{"effect": "genome_6bd5bfd2f629f9414376/F_at_P0", "start": 128, "end": 224, "M_end": -0.14268450072268024, "E_end": 48.74738920576698, "precursor_end": -0.9370157601588289, "fuel_end": -66.53598669407302, "heat_end": 7.89581948903043, "waste_end": 1.0797002608815092, "dead_energy_end": 9.89277799927521, "founder_mass_end": -0.0008135381981356216, "positive_request": -5.205286891674632, "births": 0.9370157601587152, "rule_death": 1.0797002608815092, "rule_death_energy": 9.89277799927521, "rejected_capacity": 0.0, "rejected_template": -0.10414360599479267, "rejected_precursor": 0.20280660675052786, "rejected_fuel": -6.240965652589313, "birth_fuel": 0.3935466192666581, "newborn_energy": 0.18740315203173452, "synthesis_heat": 0.18740315203173452, "template_heat": 0.018740315203174873, "actor_resource_consumed": 66.14244007480602, "actor_energy_spent": 0.06436622473296438, "actor_energy_lost_with_tissue": 0.0, "actor_mass_injury": 0.0, "actor_mass_starvation": 0.0, "actor_reward": 66.07807385007305, "actor_movement_requested": 0.06270650779274334, "actor_movement_paid": 0.06270650779274334, "actor_movement_unpaid": 0.0, "actor_basal_requested": 0.0016597169402032819, "actor_basal_paid": 0.0016597169402032819, "actor_basal_unpaid": 5.2970230071938305e-18, "body_time": 0.1383097450175228, "P_flow": 0.0, "F_flow": 381.26548985312763, "P_requested": 0.0, "F_requested": 381.26548985312763, "P_rejected": 0.0, "F_rejected": 0.0, "P_fee": 0.0, "F_fee": 7.6253097970625525, "transport_fee": 7.6253097970625525, "transport_requested": 7.6253097970625525, "transport_unpaid": 0.0, "physical_energy_spent": 0.06436622473296438, "suppression_fee": 0.0, "external_M": 0.0, "external_E": 0.0}
+{"effect": "genome_6bd5bfd2f629f9414376/F_at_P1", "start": 0, "end": 224, "M_end": 7.179334677030283, "E_end": 49.79168115943037, "precursor_end": -14.65709300331082, "fuel_end": -79.79603224769198, "heat_end": 11.913262638544552, "waste_end": 7.477758326280764, "dead_energy_end": 18.09108844971655, "founder_mass_end": 0.0017157937533682222, "positive_request": -18.60929643433701, "births": 14.65709300331082, "rule_death": 7.47775832628065, "rule_death_energy": 18.091088449716608, "rejected_capacity": 0.0, "rejected_template": 0.9464288852733205, "rejected_precursor": 41.13715012660987, "rejected_fuel": -75.34996844953125, "birth_fuel": 6.155979061390553, "newborn_energy": 2.931418600662198, "synthesis_heat": 2.931418600662198, "template_heat": 0.2931418600662212, "actor_resource_consumed": 73.64005318630097, "actor_energy_spent": 0.5764918992131385, "actor_energy_lost_with_tissue": 0.0, "actor_mass_injury": 0.0, "actor_mass_starvation": 0.0, "actor_reward": 73.06356128708774, "actor_movement_requested": 0.44110548542183636, "actor_movement_paid": 0.44110548542183636, "actor_movement_unpaid": 0.0, "actor_basal_requested": 0.13538641379130922, "actor_basal_paid": 0.13538641379130922, "actor_basal_unpaid": 5.6040704953182575e-18, "body_time": 11.282201149275352, "P_flow": 0.7720971950208195, "F_flow": 404.8384167351326, "P_requested": 0.7720971950208195, "F_requested": 404.8384167351326, "P_rejected": 0.0, "F_rejected": 0.0, "P_fee": 0.015441943900415644, "F_fee": 8.096768334702654, "transport_fee": 8.112210278603069, "transport_requested": 8.112210278603069, "transport_unpaid": 0.0, "physical_energy_spent": 0.5764918992131385, "suppression_fee": 0.0, "external_M": 0.0, "external_E": 0.0}
+{"effect": "genome_6bd5bfd2f629f9414376/F_at_P1", "start": 128, "end": 224, "M_end": 7.179334677030283, "E_end": 49.79168115943037, "precursor_end": -14.65709300331082, "fuel_end": -79.79603224769198, "heat_end": 11.913262638544552, "waste_end": 7.477758326280764, "dead_energy_end": 18.09108844971655, "founder_mass_end": 0.0017157937533682222, "positive_request": -18.60929643433701, "births": 14.657093003311047, "rule_death": 7.47775832628065, "rule_death_energy": 18.091088449716608, "rejected_capacity": 0.0, "rejected_template": 0.9464288852733347, "rejected_precursor": 41.13715012660987, "rejected_fuel": -75.34996844953125, "birth_fuel": 6.155979061390582, "newborn_energy": 2.931418600662198, "synthesis_heat": 2.931418600662198, "template_heat": 0.29314186006621945, "actor_resource_consumed": 73.64005318630097, "actor_energy_spent": 0.5764918992131385, "actor_energy_lost_with_tissue": 0.0, "actor_mass_injury": 0.0, "actor_mass_starvation": 0.0, "actor_reward": 73.0635612870878, "actor_movement_requested": 0.44110548542183636, "actor_movement_paid": 0.44110548542183636, "actor_movement_unpaid": 0.0, "actor_basal_requested": 0.13538641379130922, "actor_basal_paid": 0.13538641379130922, "actor_basal_unpaid": 5.6040704953182575e-18, "body_time": 11.282201149275352, "P_flow": 0.7720971950208195, "F_flow": 404.8384167351326, "P_requested": 0.7720971950208195, "F_requested": 404.8384167351326, "P_rejected": 0.0, "F_rejected": 0.0, "P_fee": 0.015441943900415644, "F_fee": 8.096768334702654, "transport_fee": 8.112210278603069, "transport_requested": 8.112210278603069, "transport_unpaid": 0.0, "physical_energy_spent": 0.5764918992131385, "suppression_fee": 0.0, "external_M": 0.0, "external_E": 0.0}
+{"effect": "genome_6bd5bfd2f629f9414376/interaction", "start": 0, "end": 224, "M_end": 7.3220191777529635, "E_end": 1.0442919536633894, "precursor_end": -13.72007724315199, "fuel_end": -13.260045553618966, "heat_end": 4.017443149514122, "waste_end": 6.398058065399255, "dead_energy_end": 8.19831045044134, "founder_mass_end": 0.0025293319515038437, "positive_request": -13.404009542662152, "births": 13.72007724315199, "rule_death": 6.398058065399141, "rule_death_energy": 8.198310450441397, "rejected_capacity": 0.0, "rejected_template": 1.0505724912681131, "rejected_precursor": 40.93434351985911, "rejected_fuel": -69.10900279694194, "birth_fuel": 5.762432442124009, "newborn_energy": 2.7440154486304777, "synthesis_heat": 2.7440154486304777, "template_heat": 0.2744015448630499, "actor_resource_consumed": 7.497613111494957, "actor_energy_spent": 0.5121256744801741, "actor_energy_lost_with_tissue": 0.0, "actor_mass_injury": 0.0, "actor_mass_starvation": 0.0, "actor_reward": 6.985487437014626, "actor_movement_requested": 0.3783989776290895, "actor_movement_paid": 0.3783989776290895, "actor_movement_unpaid": 0.0, "actor_basal_requested": 0.13372669685109884, "actor_basal_paid": 0.13372669685110594, "actor_basal_unpaid": 3.07047488124427e-19, "body_time": 11.143891404257374, "P_flow": 0.7720971950208195, "F_flow": 23.572926882004992, "P_requested": 0.7720971950208195, "F_requested": 23.572926882004992, "P_rejected": 0.0, "F_rejected": 0.0, "P_fee": 0.015441943900415644, "F_fee": 0.4714585376401015, "transport_fee": 0.48690048154051624, "transport_requested": 0.48690048154051624, "transport_unpaid": 0.0, "physical_energy_spent": 0.5121256744801741, "suppression_fee": 0.0, "external_M": 0.0, "external_E": 0.0}
+{"effect": "genome_6bd5bfd2f629f9414376/interaction", "start": 128, "end": 224, "M_end": 7.3220191777529635, "E_end": 1.0442919536633894, "precursor_end": -13.72007724315199, "fuel_end": -13.260045553618966, "heat_end": 4.017443149514122, "waste_end": 6.398058065399255, "dead_energy_end": 8.19831045044134, "founder_mass_end": 0.0025293319515038437, "positive_request": -13.40400954266238, "births": 13.720077243152332, "rule_death": 6.398058065399141, "rule_death_energy": 8.198310450441397, "rejected_capacity": 0.0, "rejected_template": 1.0505724912681274, "rejected_precursor": 40.93434351985934, "rejected_fuel": -69.10900279694194, "birth_fuel": 5.762432442123924, "newborn_energy": 2.7440154486304635, "synthesis_heat": 2.7440154486304635, "template_heat": 0.2744015448630446, "actor_resource_consumed": 7.497613111494957, "actor_energy_spent": 0.5121256744801741, "actor_energy_lost_with_tissue": 0.0, "actor_mass_injury": 0.0, "actor_mass_starvation": 0.0, "actor_reward": 6.98548743701474, "actor_movement_requested": 0.378398977629093, "actor_movement_paid": 0.378398977629093, "actor_movement_unpaid": 0.0, "actor_basal_requested": 0.13372669685110594, "actor_basal_paid": 0.13372669685110594, "actor_basal_unpaid": 3.07047488124427e-19, "body_time": 11.143891404257829, "P_flow": 0.7720971950208195, "F_flow": 23.572926882004992, "P_requested": 0.7720971950208195, "F_requested": 23.572926882004992, "P_rejected": 0.0, "F_rejected": 0.0, "P_fee": 0.015441943900415644, "F_fee": 0.4714585376401015, "transport_fee": 0.48690048154051624, "transport_requested": 0.48690048154051624, "transport_unpaid": 0.0, "physical_energy_spent": 0.5121256744801741, "suppression_fee": 0.0, "external_M": 0.0, "external_E": 0.0}
+0..224完整路径：
+{"candidate": "genome_0ac80448a534dc953505", "transport": "T00", "stage_id": "genome_0ac80448a534dc953505/T00", "start": 0, "end": 224, "M_start": 71.24861043657577, "E_start": 56.998888349260625, "M_end": 997.2215215241717, "E_end": 715.0822655650062, "precursor_end": 1316.9754176608924, "fuel_end": 1628.675514320633, "heat_end": 826.7514237338943, "waste_end": 1853.0516712515118, "dead_energy_end": 982.489684729727, "founder_mass_end": 1.397407130804252, "positive_request": 6967.65359780099, "births": 2779.024582339108, "rule_death": 1853.0516711418243, "rule_death_energy": 982.489684722325, "rejected_capacity": 71.03838337221066, "rejected_template": 833.5700590771131, "rejected_precursor": 3269.5627644894903, "rejected_fuel": 14.457808523067415, "birth_fuel": 1167.1903245824253, "newborn_energy": 555.8049164678216, "synthesis_heat": 555.8049164678216, "template_heat": 55.58049164678216, "actor_resource_consumed": 1300.1341610969414, "actor_energy_spent": 215.36601561929055, "actor_energy_lost_with_tissue": 7.401893367396751e-09, "actor_mass_injury": 0.0, "actor_mass_starvation": 1.0968746705081482e-07, "actor_reward": 1084.768145461474, "actor_movement_requested": 121.66830991112346, "actor_movement_paid": 121.66830991112346, "actor_movement_unpaid": 0.0, "actor_basal_requested": 93.69770570816709, "actor_basal_paid": 93.69770570816708, "actor_basal_unpaid": 4.050501232443286e-15, "body_time": 7808.142142347257, "P_flow": 0.0, "F_flow": 0.0, "P_requested": 0.0, "F_requested": 0.0, "P_rejected": 0.0, "F_rejected": 0.0, "P_fee": 0.0, "F_fee": 0.0, "transport_fee": 0.0, "transport_requested": 0.0, "transport_unpaid": 0.0, "physical_energy_spent": 215.36601561929055, "suppression_fee": 0.0, "external_M": 0.0, "external_E": 0.0, "execution_source": "old_readonly", "prefix_replayed": false, "prefix_stage": "genome_0ac80448a534dc953505/formation", "origin_extinction_step": null}
+{"candidate": "genome_0ac80448a534dc953505", "transport": "T10", "stage_id": "genome_0ac80448a534dc953505/T10", "start": 0, "end": 224, "M_start": 71.24861043657577, "E_start": 56.998888349260625, "M_end": 1003.9189541888265, "E_end": 614.5314161851445, "precursor_end": 1195.9264034634011, "fuel_end": 1632.7005251581031, "heat_end": 875.5112356188772, "waste_end": 1967.4032527843483, "dead_energy_end": 1030.2557113871355, "founder_mass_end": 1.3853370045892175, "positive_request": 6793.82908699193, "births": 2900.073596536599, "rule_death": 1967.4032527839192, "rule_death_energy": 1030.2557113871055, "rejected_capacity": 107.47146274629318, "rejected_template": 793.5995881251397, "rejected_precursor": 2325.549113231532, "rejected_fuel": 667.1353263523667, "birth_fuel": 1218.0309105453716, "newborn_energy": 580.0147193073199, "synthesis_heat": 580.0147193073199, "template_heat": 58.00147193073198, "actor_resource_consumed": 1245.268564296525, "actor_energy_spent": 224.80086069157022, "actor_energy_lost_with_tissue": 3.0122935661568174e-11, "actor_mass_injury": 0.0, "actor_mass_starvation": 4.290262357865193e-10, "actor_reward": 1020.4677036048903, "actor_movement_requested": 130.36893662772272, "actor_movement_paid": 130.36893662772272, "actor_movement_unpaid": 0.0, "actor_basal_requested": 94.4319240638475, "actor_basal_paid": 94.4319240638475, "actor_basal_unpaid": 4.235091377383406e-15, "body_time": 7869.327005320625, "P_flow": 634.7091844627612, "F_flow": 0.0, "P_requested": 634.7091844627612, "F_requested": 0.0, "P_rejected": 0.0, "F_rejected": 0.0, "P_fee": 12.694183689255224, "F_fee": 0.0, "transport_fee": 12.694183689255224, "transport_requested": 12.694183689255224, "transport_unpaid": 0.0, "physical_energy_spent": 224.80086069157022, "suppression_fee": 0.0, "external_M": 0.0, "external_E": 0.0, "execution_source": "new", "prefix_replayed": false, "prefix_stage": "genome_0ac80448a534dc953505/formation", "origin_extinction_step": null}
+{"candidate": "genome_0ac80448a534dc953505", "transport": "T01", "stage_id": "genome_0ac80448a534dc953505/T01", "start": 0, "end": 224, "M_start": 71.24861043657577, "E_start": 56.998888349260625, "M_end": 995.4965065155802, "E_end": 801.301435373085, "precursor_end": 1320.8327082929304, "fuel_end": 1526.0832140037232, "heat_end": 837.5527926527084, "waste_end": 1850.919395628065, "dead_energy_end": 988.0614463197437, "founder_mass_end": 1.4015471610538361, "positive_request": 6969.204077757248, "births": 2775.1672917070696, "rule_death": 1850.919395628065, "rule_death_energy": 988.0614463197436, "rejected_capacity": 69.18602910387132, "rejected_template": 833.2873070212343, "rejected_precursor": 3259.829542368394, "rejected_fuel": 31.73390755667911, "birth_fuel": 1165.5702625169693, "newborn_energy": 555.033458341414, "synthesis_heat": 555.033458341414, "template_heat": 55.50334583414139, "actor_resource_consumed": 1404.3465234793073, "actor_energy_spent": 215.03803479476824, "actor_energy_lost_with_tissue": 0.0, "actor_mass_injury": 0.0, "actor_mass_starvation": 0.0, "actor_reward": 1189.308488684539, "actor_movement_requested": 121.3552301409959, "actor_movement_paid": 121.3552301409959, "actor_movement_unpaid": 0.0, "actor_basal_requested": 93.68280465377234, "actor_basal_paid": 93.68280465377234, "actor_basal_unpaid": 4.041913588066197e-15, "body_time": 7806.900387814361, "P_flow": 0.0, "F_flow": 598.8976841192449, "P_requested": 0.0, "F_requested": 598.8976841192449, "P_rejected": 0.0, "F_rejected": 0.0, "P_fee": 0.0, "F_fee": 11.977953682384898, "transport_fee": 11.977953682384898, "transport_requested": 11.977953682384898, "transport_unpaid": 0.0, "physical_energy_spent": 215.03803479476824, "suppression_fee": 0.0, "external_M": 0.0, "external_E": 0.0, "execution_source": "new", "prefix_replayed": false, "prefix_stage": "genome_0ac80448a534dc953505/formation", "origin_extinction_step": null}
+{"candidate": "genome_0ac80448a534dc953505", "transport": "T11", "stage_id": "genome_0ac80448a534dc953505/T11", "start": 0, "end": 224, "M_start": 71.24861043657577, "E_start": 56.998888349260625, "M_end": 1003.2239470405755, "E_end": 705.3379626480862, "precursor_end": 1163.9908505186445, "fuel_end": 1489.8703604196053, "heat_end": 895.4857684978731, "waste_end": 2000.0338128773558, "dead_energy_end": 1062.3047967836958, "founder_mass_end": 1.3669449861184024, "positive_request": 6766.529023077127, "births": 2932.0091494813555, "rule_death": 2000.033812877356, "rule_death_energy": 1062.3047967836958, "rejected_capacity": 105.4999316611926, "rejected_template": 770.586225814278, "rejected_precursor": 2779.811752745771, "rejected_fuel": 178.6219633745298, "birth_fuel": 1231.4438427821694, "newborn_energy": 586.4018298962711, "synthesis_heat": 586.4018298962711, "template_heat": 58.640182989627114, "actor_resource_consumed": 1374.685796798225, "actor_energy_spent": 225.90074765654296, "actor_energy_lost_with_tissue": 0.0, "actor_mass_injury": 0.0, "actor_mass_starvation": 0.0, "actor_reward": 1148.7850491416823, "actor_movement_requested": 131.15415423002355, "actor_movement_paid": 131.15415423002355, "actor_movement_unpaid": 0.0, "actor_basal_requested": 94.7465934265194, "actor_basal_paid": 94.7465934265194, "actor_basal_unpaid": 4.252106794946701e-15, "body_time": 7895.54945220995, "P_flow": 622.9630787079927, "F_flow": 604.187319063608, "P_requested": 622.9630787079927, "F_requested": 604.187319063608, "P_rejected": 0.0, "F_rejected": 0.0, "P_fee": 12.459261574159855, "F_fee": 12.083746381272162, "transport_fee": 24.543007955432017, "transport_requested": 24.543007955432017, "transport_unpaid": 0.0, "physical_energy_spent": 225.90074765654296, "suppression_fee": 0.0, "external_M": 0.0, "external_E": 0.0, "execution_source": "old_readonly", "prefix_replayed": false, "prefix_stage": "genome_0ac80448a534dc953505/formation", "origin_extinction_step": null}
+{"candidate": "genome_6bd5bfd2f629f9414376", "transport": "T00", "stage_id": "genome_6bd5bfd2f629f9414376/T00", "start": 0, "end": 224, "M_start": 71.24861043657577, "E_start": 56.998888349260625, "M_end": 667.3846852548666, "E_end": 450.3748841968409, "precursor_end": 2859.280148210785, "fuel_end": 2879.0333284427034, "heat_end": 372.7819171618861, "waste_end": 640.5837769709244, "dead_energy_end": 450.80875854783017, "founder_mass_end": 0.4600888004681193, "positive_request": 2685.017917525164, "births": 1236.7198517892152, "rule_death": 640.5837769709244, "rule_death_energy": 450.80875854783017, "rejected_capacity": 0.0, "rejected_template": 69.43420027017211, "rejected_precursor": 1340.4617513347814, "rejected_fuel": 38.40211413099532, "birth_fuel": 519.4223377514705, "newborn_energy": 247.3439703578431, "synthesis_heat": 247.3439703578431, "template_heat": 24.73439703578431, "actor_resource_consumed": 697.5443338058261, "actor_energy_spent": 100.70354976825872, "actor_energy_lost_with_tissue": 0.0, "actor_mass_injury": 0.0, "actor_mass_starvation": 0.0, "actor_reward": 596.8407840375673, "actor_movement_requested": 46.89476108074767, "actor_movement_paid": 46.89476108074767, "actor_movement_unpaid": 0.0, "actor_basal_requested": 53.80878868751106, "actor_basal_paid": 53.80878868751106, "actor_basal_unpaid": 1.847110097919606e-15, "body_time": 4484.065723959255, "P_flow": 0.0, "F_flow": 0.0, "P_requested": 0.0, "F_requested": 0.0, "P_rejected": 0.0, "F_rejected": 0.0, "P_fee": 0.0, "F_fee": 0.0, "transport_fee": 0.0, "transport_requested": 0.0, "transport_unpaid": 0.0, "physical_energy_spent": 100.70354976825872, "suppression_fee": 0.0, "external_M": 0.0, "external_E": 0.0, "execution_source": "old_readonly", "prefix_replayed": false, "prefix_stage": "genome_6bd5bfd2f629f9414376/formation", "origin_extinction_step": null}
+{"candidate": "genome_6bd5bfd2f629f9414376", "transport": "T10", "stage_id": "genome_6bd5bfd2f629f9414376/T10", "start": 0, "end": 224, "M_start": 71.24861043657577, "E_start": 56.998888349260625, "M_end": 723.1094633914784, "E_end": 433.8364324342758, "precursor_end": 2743.5392291423923, "fuel_end": 2823.932376422862, "heat_end": 409.355787391885, "waste_end": 700.5999179027049, "dead_energy_end": 485.8742921002378, "founder_mass_end": 0.4584035878759238, "positive_request": 2729.8968310774626, "births": 1352.4607708576077, "rule_death": 700.599917902705, "rule_death_energy": 485.87429210023777, "rejected_capacity": 0.0, "rejected_template": 93.88507296241362, "rejected_precursor": 988.9821100352926, "rejected_fuel": 294.5688772221487, "birth_fuel": 568.0335237601953, "newborn_energy": 270.4921541715215, "synthesis_heat": 270.4921541715215, "template_heat": 27.04921541715215, "actor_resource_consumed": 704.0340998169428, "actor_energy_spent": 104.0432632039607, "actor_energy_lost_with_tissue": 0.0, "actor_mass_injury": 0.0, "actor_mass_starvation": 0.0, "actor_reward": 599.9908366129821, "actor_movement_requested": 48.917108333639916, "actor_movement_paid": 48.917108333639916, "actor_movement_unpaid": 0.0, "actor_basal_requested": 55.12615487032078, "actor_basal_paid": 55.12615487032078, "actor_basal_unpaid": 1.923604048167053e-15, "body_time": 4593.846239193399, "P_flow": 388.5577299625272, "F_flow": 0.0, "P_requested": 388.5577299625272, "F_requested": 0.0, "P_rejected": 0.0, "F_rejected": 0.0, "P_fee": 7.771154599250545, "F_fee": 0.0, "transport_fee": 7.771154599250545, "transport_requested": 7.771154599250545, "transport_unpaid": 0.0, "physical_energy_spent": 104.0432632039607, "suppression_fee": 0.0, "external_M": 0.0, "external_E": 0.0, "execution_source": "new", "prefix_replayed": false, "prefix_stage": "genome_6bd5bfd2f629f9414376/formation", "origin_extinction_step": null}
+{"candidate": "genome_6bd5bfd2f629f9414376", "transport": "T01", "stage_id": "genome_6bd5bfd2f629f9414376/T01", "start": 0, "end": 224, "M_start": 71.24861043657577, "E_start": 56.998888349260625, "M_end": 667.2420007541439, "E_end": 499.1222734026079, "precursor_end": 2858.343132450626, "fuel_end": 2812.4973417486303, "heat_end": 380.67773665091653, "waste_end": 641.6634772318059, "dead_energy_end": 460.7015365471054, "founder_mass_end": 0.45927526226998366, "positive_request": 2679.8126306334893, "births": 1237.656867549374, "rule_death": 641.6634772318059, "rule_death_energy": 460.7015365471054, "rejected_capacity": 0.0, "rejected_template": 69.33005666417732, "rejected_precursor": 1340.6645579415322, "rejected_fuel": 32.16114847840601, "birth_fuel": 519.8158843707371, "newborn_energy": 247.5313735098748, "synthesis_heat": 247.5313735098748, "template_heat": 24.75313735098748, "actor_resource_consumed": 763.6867738806321, "actor_energy_spent": 100.76791599299169, "actor_energy_lost_with_tissue": 0.0, "actor_mass_injury": 0.0, "actor_mass_starvation": 0.0, "actor_reward": 662.9188578876405, "actor_movement_requested": 46.95746758854042, "actor_movement_paid": 46.95746758854042, "actor_movement_unpaid": 0.0, "actor_basal_requested": 53.81044840445127, "actor_basal_paid": 53.810448404451265, "actor_basal_unpaid": 1.8524071209267997e-15, "body_time": 4484.204033704273, "P_flow": 0.0, "F_flow": 381.26548985312763, "P_requested": 0.0, "F_requested": 381.26548985312763, "P_rejected": 0.0, "F_rejected": 0.0, "P_fee": 0.0, "F_fee": 7.6253097970625525, "transport_fee": 7.6253097970625525, "transport_requested": 7.6253097970625525, "transport_unpaid": 0.0, "physical_energy_spent": 100.76791599299169, "suppression_fee": 0.0, "external_M": 0.0, "external_E": 0.0, "execution_source": "new", "prefix_replayed": false, "prefix_stage": "genome_6bd5bfd2f629f9414376/formation", "origin_extinction_step": null}
+{"candidate": "genome_6bd5bfd2f629f9414376", "transport": "T11", "stage_id": "genome_6bd5bfd2f629f9414376/T11", "start": 0, "end": 224, "M_start": 71.24861043657577, "E_start": 56.998888349260625, "M_end": 730.2887980685086, "E_end": 483.6281135937062, "precursor_end": 2728.8821361390815, "fuel_end": 2744.13634417517, "heat_end": 421.2690500304295, "waste_end": 708.0776762289856, "dead_energy_end": 503.9653805499544, "founder_mass_end": 0.460119381629292, "positive_request": 2711.2875346431256, "births": 1367.1178638609185, "rule_death": 708.0776762289856, "rule_death_energy": 503.9653805499544, "rejected_capacity": 0.0, "rejected_template": 94.83150184768694, "rejected_precursor": 1030.1192601619025, "rejected_fuel": 219.21890877261748, "birth_fuel": 574.1895028215858, "newborn_energy": 273.4235727721837, "synthesis_heat": 273.4235727721837, "template_heat": 27.342357277218373, "actor_resource_consumed": 777.6741530032438, "actor_energy_spent": 104.61975510317384, "actor_energy_lost_with_tissue": 0.0, "actor_mass_injury": 0.0, "actor_mass_starvation": 0.0, "actor_reward": 673.0543979000698, "actor_movement_requested": 49.35821381906175, "actor_movement_paid": 49.35821381906175, "actor_movement_unpaid": 0.0, "actor_basal_requested": 55.26154128411209, "actor_basal_paid": 55.26154128411209, "actor_basal_unpaid": 1.929208118662371e-15, "body_time": 4605.128440342674, "P_flow": 389.32982715754804, "F_flow": 404.8384167351326, "P_requested": 389.32982715754804, "F_requested": 404.8384167351326, "P_rejected": 0.0, "F_rejected": 0.0, "P_fee": 7.786596543150961, "F_fee": 8.096768334702654, "transport_fee": 15.883364877853614, "transport_requested": 15.883364877853614, "transport_unpaid": 0.0, "physical_energy_spent": 104.61975510317384, "suppression_fee": 0.0, "external_M": 0.0, "external_E": 0.0, "execution_source": "old_readonly", "prefix_replayed": false, "prefix_stage": "genome_6bd5bfd2f629f9414376/formation", "origin_extinction_step": null}
+实际联合约束诊断：
+{"stage_id": "genome_0ac80448a534dc953505/T10", "L_sum": 3152.8616217456292, "licensed_cells": 203019, "L_negative_cells": 0, "L_negative_sum": 0.0, "P_deficit_sum": 1594.6803026003495, "F_deficit_sum": 1847.9177286714018, "exact_P_equal_cells": 0, "exact_F_equal_cells": 0, "near_P_equal_8ulp_cells": 0, "near_F_equal_8ulp_cells": 0, "affordability_nextafter_cells": 13993, "F_class_changed_nextafter_cells": 0, "actual_births": 894.6279860680585, "ordered_P_rejection": 1594.6803026003495, "ordered_F_rejection": 663.553333077221, "P_only_cells": 30897, "P_only_licensed_mass": 478.20584612889843, "P_only_actual_births": 74.59879608255737, "F_only_cells": 35320, "F_only_licensed_mass": 474.3688080473887, "F_only_actual_births": 0.4507973061044273, "both_cells": 65514, "both_licensed_mass": 1381.9364372272676, "both_actual_births": 1.2278623373223316, "neither_cells": 71288, "neither_licensed_mass": 818.3505303420744, "neither_actual_births": 818.3505303420744, "max_birth_error": 0.0}
+{"stage_id": "genome_0ac80448a534dc953505/T01", "L_sum": 3326.8343272572743, "licensed_cells": 210255, "L_negative_cells": 0, "L_negative_sum": 0.0, "P_deficit_sum": 2528.960731737212, "F_deficit_sum": 1333.6017636157212, "exact_P_equal_cells": 0, "exact_F_equal_cells": 0, "near_P_equal_8ulp_cells": 0, "near_F_equal_8ulp_cells": 0, "affordability_nextafter_cells": 16050, "F_class_changed_nextafter_cells": 0, "actual_births": 769.7216812385291, "ordered_P_rejection": 2528.960731737212, "ordered_F_rejection": 28.15191428153339, "P_only_cells": 72390, "P_only_licensed_mass": 1195.5737675474252, "P_only_actual_births": 6.738490593052336, "F_only_cells": 2532, "F_only_licensed_mass": 28.5632215857237, "F_only_actual_births": 0.8330955486347714, "both_cells": 68883, "both_licensed_mass": 1340.6749010191675, "both_actual_births": 0.12765799188401183, "neither_cells": 66450, "neither_licensed_mass": 762.0224371049579, "neither_actual_births": 762.0224371049579, "max_birth_error": 0.0}
+{"stage_id": "genome_6bd5bfd2f629f9414376/T10", "L_sum": 1626.836760863216, "licensed_cells": 149009, "L_negative_cells": 0, "L_negative_sum": 0.0, "P_deficit_sum": 734.5067103401655, "F_deficit_sum": 624.2721895641529, "exact_P_equal_cells": 0, "exact_F_equal_cells": 0, "near_P_equal_8ulp_cells": 0, "near_F_equal_8ulp_cells": 0, "affordability_nextafter_cells": 17618, "F_class_changed_nextafter_cells": 0, "actual_births": 600.4153844315726, "ordered_P_rejection": 734.5067103401655, "ordered_F_rejection": 291.91466609147795, "P_only_cells": 21480, "P_only_licensed_mass": 431.7801464851106, "P_only_actual_births": 37.78556822810208, "F_only_cells": 26575, "F_only_licensed_mass": 215.29615499857152, "F_only_actual_births": 0.09589912671837521, "both_cells": 22075, "both_licensed_mass": 417.72690630639414, "both_actual_births": 0.5003640036124282, "neither_cells": 78879, "neither_licensed_mass": 562.0335530731398, "neither_actual_births": 562.0335530731398, "max_birth_error": 0.0}
+{"stage_id": "genome_6bd5bfd2f629f9414376/T01", "L_sum": 1601.3075767174792, "licensed_cells": 145853, "L_negative_cells": 0, "L_negative_sum": 0.0, "P_deficit_sum": 1086.1891582464048, "F_deficit_sum": 489.2739982009125, "exact_P_equal_cells": 0, "exact_F_equal_cells": 0, "near_P_equal_8ulp_cells": 0, "near_F_equal_8ulp_cells": 0, "affordability_nextafter_cells": 18837, "F_class_changed_nextafter_cells": 0, "actual_births": 485.6114811233391, "ordered_P_rejection": 1086.1891582464048, "ordered_F_rejection": 29.506937347735256, "P_only_cells": 35886, "P_only_licensed_mass": 616.8247839267393, "P_only_actual_births": 4.811816920233816, "F_only_cells": 3579, "F_only_licensed_mass": 29.104563772281193, "F_only_actual_births": 0.1628330796954101, "both_cells": 33271, "both_licensed_mass": 474.75179008001277, "both_actual_births": 0.010392184963986249, "neither_cells": 73117, "neither_licensed_mass": 480.62643893844586, "neither_actual_births": 480.62643893844586, "max_birth_error": 0.0}
+{"stage_id": "genome_0ac80448a534dc953505/T00", "L_sum": 3323.148740976797, "licensed_cells": 209928, "L_negative_cells": 0, "L_negative_sum": 0.0, "P_deficit_sum": 2538.6939538583083, "F_deficit_sum": 1735.7664579709115, "exact_P_equal_cells": 0, "exact_F_equal_cells": 0, "near_P_equal_8ulp_cells": 0, "near_F_equal_8ulp_cells": 0, "affordability_nextafter_cells": 14437, "F_class_changed_nextafter_cells": 0, "actual_births": 773.5789718705672, "ordered_P_rejection": 2538.6939538583083, "ordered_F_rejection": 10.875815247921699, "P_only_cells": 51947, "P_only_licensed_mass": 811.2408336505359, "P_only_actual_births": 6.715056884427464, "F_only_cells": 1384, "F_only_licensed_mass": 10.5237593748808, "F_only_actual_births": 0.0180784434348249, "both_cells": 89919, "both_licensed_mass": 1734.5560325170748, "both_actual_births": 0.017721108399479896, "neither_cells": 66678, "neither_licensed_mass": 766.8281154343055, "neither_actual_births": 766.8281154343055, "max_birth_error": 0.0}
+{"stage_id": "genome_0ac80448a534dc953505/T11", "L_sum": 3150.546451226788, "licensed_cells": 201208, "L_negative_cells": 0, "L_negative_sum": 0.0, "P_deficit_sum": 2048.9429421145887, "F_deficit_sum": 1495.4808834052278, "exact_P_equal_cells": 0, "exact_F_equal_cells": 0, "near_P_equal_8ulp_cells": 0, "near_F_equal_8ulp_cells": 0, "affordability_nextafter_cells": 15522, "F_class_changed_nextafter_cells": 0, "actual_births": 926.563539012815, "ordered_P_rejection": 2048.9429421145887, "ordered_F_rejection": 175.03997009938408, "P_only_cells": 48373, "P_only_licensed_mass": 809.9573314864203, "P_only_actual_births": 111.27502803527234, "F_only_cells": 8818, "F_only_licensed_mass": 72.25470525147193, "F_only_actual_births": 1.4570520845081303, "both_cells": 72290, "both_licensed_mass": 1457.144312333571, "both_actual_births": 2.6413567377099825, "neither_cells": 71727, "neither_licensed_mass": 811.1901021553246, "neither_actual_births": 811.1901021553246, "max_birth_error": 0.0}
+{"stage_id": "genome_6bd5bfd2f629f9414376/T00", "L_sum": 1606.408720003159, "licensed_cells": 146113, "L_negative_cells": 0, "L_negative_sum": 0.0, "P_deficit_sum": 1085.9863516396542, "F_deficit_sum": 617.2945159399613, "exact_P_equal_cells": 0, "exact_F_equal_cells": 0, "near_P_equal_8ulp_cells": 0, "near_F_equal_8ulp_cells": 0, "affordability_nextafter_cells": 17977, "F_class_changed_nextafter_cells": 0, "actual_births": 484.6744653631804, "ordered_P_rejection": 1085.9863516396542, "ordered_F_rejection": 35.74790300032457, "P_only_cells": 26958, "P_only_licensed_mass": 496.6436173684902, "P_only_actual_births": 4.603968796329418, "F_only_cells": 5003, "F_only_licensed_mass": 31.829383729874074, "F_only_actual_births": 0.10018546029879659, "both_cells": 42032, "both_licensed_mass": 597.9725616164428, "both_actual_births": 0.0071538182001406455, "neither_cells": 72120, "neither_licensed_mass": 479.963157288352, "neither_actual_births": 479.963157288352, "max_birth_error": 0.0}
+{"stage_id": "genome_6bd5bfd2f629f9414376/T11", "L_sum": 1607.2810355436056, "licensed_cells": 147782, "L_negative_cells": 0, "L_negative_sum": 0.0, "P_deficit_sum": 775.6438604667753, "F_deficit_sum": 511.4955104080758, "exact_P_equal_cells": 0, "exact_F_equal_cells": 0, "near_P_equal_8ulp_cells": 0, "near_F_equal_8ulp_cells": 0, "affordability_nextafter_cells": 18350, "F_class_changed_nextafter_cells": 0, "actual_births": 615.0724774348837, "ordered_P_rejection": 775.6438604667753, "ordered_F_rejection": 216.5646976419467, "P_only_cells": 27000, "P_only_licensed_mass": 517.3050458632187, "P_only_actual_births": 45.278574520824485, "F_only_cells": 18877, "F_only_licensed_mass": 156.78439547707293, "F_only_actual_births": 1.1566416153526424, "both_cells": 20218, "both_licensed_mass": 365.14925301918913, "both_actual_births": 0.5949201145815625, "neither_cells": 81687, "neither_licensed_mass": 568.042341184125, "neither_actual_births": 568.042341184125, "max_birth_error": 0.0}
+全部正/负/零区间：
+[
+  {
+    "effect": "genome_0ac80448a534dc953505/P_at_F0",
+    "start": 0,
+    "M": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          130
+        ]
+      ],
+      "negative": [
+        [
+          131,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "precursor": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "fuel": {
+      "positive": [
+        [
+          219,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          218
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          129
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "rule_death": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          129
+        ]
+      ]
+    },
+    "rejected_precursor": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "rejected_fuel": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "transport_fee": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "genome_0ac80448a534dc953505/P_at_F0",
+    "start": 128,
+    "M": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          130
+        ]
+      ],
+      "negative": [
+        [
+          131,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "precursor": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "fuel": {
+      "positive": [
+        [
+          219,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          218
+        ]
+      ],
+      "zero": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          129,
+          129
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    },
+    "rule_death": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          129,
+          129
+        ]
+      ]
+    },
+    "rejected_precursor": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "rejected_fuel": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    },
+    "transport_fee": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    }
+  },
+  {
+    "effect": "genome_0ac80448a534dc953505/P_at_F1",
+    "start": 0,
+    "M": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          131
+        ]
+      ],
+      "negative": [
+        [
+          132,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "precursor": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "fuel": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          129
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "rule_death": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          129
+        ]
+      ]
+    },
+    "rejected_precursor": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "rejected_fuel": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "transport_fee": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "genome_0ac80448a534dc953505/P_at_F1",
+    "start": 128,
+    "M": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          131
+        ]
+      ],
+      "negative": [
+        [
+          132,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "precursor": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "fuel": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          129,
+          129
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    },
+    "rule_death": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          129,
+          129
+        ]
+      ]
+    },
+    "rejected_precursor": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "rejected_fuel": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    },
+    "transport_fee": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    }
+  },
+  {
+    "effect": "genome_0ac80448a534dc953505/F_at_P0",
+    "start": 0,
+    "M": {
+      "positive": [
+        [
+          151,
+          159
+        ],
+        [
+          200,
+          208
+        ]
+      ],
+      "negative": [
+        [
+          135,
+          150
+        ],
+        [
+          160,
+          199
+        ],
+        [
+          209,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          134
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "precursor": {
+      "positive": [
+        [
+          135,
+          150
+        ],
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          151,
+          160
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          134
+        ]
+      ]
+    },
+    "fuel": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          136,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          135
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          151,
+          160
+        ]
+      ],
+      "negative": [
+        [
+          135,
+          150
+        ],
+        [
+          161,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          134
+        ]
+      ]
+    },
+    "rule_death": {
+      "positive": [
+        [
+          152,
+          166
+        ]
+      ],
+      "negative": [
+        [
+          136,
+          151
+        ],
+        [
+          167,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          135
+        ]
+      ]
+    },
+    "rejected_precursor": {
+      "positive": [
+        [
+          136,
+          154
+        ]
+      ],
+      "negative": [
+        [
+          155,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          135
+        ]
+      ]
+    },
+    "rejected_fuel": {
+      "positive": [
+        [
+          135,
+          150
+        ],
+        [
+          162,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          151,
+          161
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          134
+        ]
+      ]
+    },
+    "transport_fee": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "genome_0ac80448a534dc953505/F_at_P0",
+    "start": 128,
+    "M": {
+      "positive": [
+        [
+          151,
+          159
+        ],
+        [
+          200,
+          208
+        ]
+      ],
+      "negative": [
+        [
+          135,
+          150
+        ],
+        [
+          160,
+          199
+        ],
+        [
+          209,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          129,
+          134
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    },
+    "precursor": {
+      "positive": [
+        [
+          135,
+          150
+        ],
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          151,
+          160
+        ]
+      ],
+      "zero": [
+        [
+          129,
+          134
+        ]
+      ]
+    },
+    "fuel": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "body_time": {
+      "positive": [],
+      "negative": [
+        [
+          136,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          129,
+          135
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          151,
+          160
+        ]
+      ],
+      "negative": [
+        [
+          135,
+          150
+        ],
+        [
+          161,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          129,
+          134
+        ]
+      ]
+    },
+    "rule_death": {
+      "positive": [
+        [
+          152,
+          166
+        ]
+      ],
+      "negative": [
+        [
+          136,
+          151
+        ],
+        [
+          167,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          129,
+          135
+        ]
+      ]
+    },
+    "rejected_precursor": {
+      "positive": [
+        [
+          136,
+          154
+        ]
+      ],
+      "negative": [
+        [
+          155,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          129,
+          135
+        ]
+      ]
+    },
+    "rejected_fuel": {
+      "positive": [
+        [
+          135,
+          150
+        ],
+        [
+          162,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          151,
+          161
+        ]
+      ],
+      "zero": [
+        [
+          129,
+          134
+        ]
+      ]
+    },
+    "transport_fee": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    }
+  },
+  {
+    "effect": "genome_0ac80448a534dc953505/F_at_P1",
+    "start": 0,
+    "M": {
+      "positive": [
+        [
+          129,
+          221
+        ]
+      ],
+      "negative": [
+        [
+          222,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "precursor": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "fuel": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          129
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "rule_death": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          129
+        ]
+      ]
+    },
+    "rejected_precursor": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          129
+        ]
+      ]
+    },
+    "rejected_fuel": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "transport_fee": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "genome_0ac80448a534dc953505/F_at_P1",
+    "start": 128,
+    "M": {
+      "positive": [
+        [
+          129,
+          221
+        ]
+      ],
+      "negative": [
+        [
+          222,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    },
+    "precursor": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "fuel": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          129,
+          129
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    },
+    "rule_death": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          129,
+          129
+        ]
+      ]
+    },
+    "rejected_precursor": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          129,
+          129
+        ]
+      ]
+    },
+    "rejected_fuel": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "transport_fee": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    }
+  },
+  {
+    "effect": "genome_0ac80448a534dc953505/interaction",
+    "start": 0,
+    "M": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          146
+        ],
+        [
+          148,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          147,
+          147
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "precursor": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "fuel": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          129
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "rule_death": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          129
+        ]
+      ]
+    },
+    "rejected_precursor": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          129
+        ]
+      ]
+    },
+    "rejected_fuel": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "transport_fee": {
+      "positive": [
+        [
+          130,
+          213
+        ]
+      ],
+      "negative": [
+        [
+          214,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          129
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "genome_0ac80448a534dc953505/interaction",
+    "start": 128,
+    "M": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          146
+        ],
+        [
+          148,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          147,
+          147
+        ]
+      ],
+      "zero": []
+    },
+    "precursor": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "fuel": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          129,
+          129
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    },
+    "rule_death": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          129,
+          129
+        ]
+      ]
+    },
+    "rejected_precursor": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          129,
+          129
+        ]
+      ]
+    },
+    "rejected_fuel": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "transport_fee": {
+      "positive": [
+        [
+          130,
+          213
+        ]
+      ],
+      "negative": [
+        [
+          214,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          129,
+          129
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "genome_6bd5bfd2f629f9414376/P_at_F0",
+    "start": 0,
+    "M": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "precursor": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "fuel": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          129
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "rule_death": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          129
+        ]
+      ]
+    },
+    "rejected_precursor": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "rejected_fuel": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "transport_fee": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "genome_6bd5bfd2f629f9414376/P_at_F0",
+    "start": 128,
+    "M": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "precursor": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "fuel": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          129,
+          129
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    },
+    "rule_death": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          129,
+          129
+        ]
+      ]
+    },
+    "rejected_precursor": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "rejected_fuel": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    },
+    "transport_fee": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    }
+  },
+  {
+    "effect": "genome_6bd5bfd2f629f9414376/P_at_F1",
+    "start": 0,
+    "M": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "precursor": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "fuel": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          129
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "rule_death": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          129
+        ]
+      ]
+    },
+    "rejected_precursor": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "rejected_fuel": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "transport_fee": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "genome_6bd5bfd2f629f9414376/P_at_F1",
+    "start": 128,
+    "M": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    },
+    "E": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "precursor": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "fuel": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          129,
+          129
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    },
+    "rule_death": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          129,
+          129
+        ]
+      ]
+    },
+    "rejected_precursor": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "rejected_fuel": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    },
+    "transport_fee": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    }
+  },
+  {
+    "effect": "genome_6bd5bfd2f629f9414376/F_at_P0",
+    "start": 0,
+    "M": {
+      "positive": [
+        [
+          129,
+          139
+        ],
+        [
+          148,
+          200
+        ]
+      ],
+      "negative": [
+        [
+          140,
+          147
+        ],
+        [
+          201,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "precursor": {
+      "positive": [
+        [
+          140,
+          147
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          139
+        ],
+        [
+          148,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "fuel": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          143
+        ],
+        [
+          155,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          144,
+          154
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          129
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          139
+        ],
+        [
+          148,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          140,
+          147
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "rule_death": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          129
+        ]
+      ]
+    },
+    "rejected_precursor": {
+      "positive": [
+        [
+          190,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          130,
+          189
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          129
+        ]
+      ]
+    },
+    "rejected_fuel": {
+      "positive": [
+        [
+          140,
+          152
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          139
+        ],
+        [
+          153,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "transport_fee": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "genome_6bd5bfd2f629f9414376/F_at_P0",
+    "start": 128,
+    "M": {
+      "positive": [
+        [
+          129,
+          139
+        ],
+        [
+          148,
+          200
+        ]
+      ],
+      "negative": [
+        [
+          140,
+          147
+        ],
+        [
+          201,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    },
+    "precursor": {
+      "positive": [
+        [
+          140,
+          147
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          139
+        ],
+        [
+          148,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "fuel": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          143
+        ],
+        [
+          155,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          144,
+          154
+        ]
+      ],
+      "zero": [
+        [
+          129,
+          129
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          139
+        ],
+        [
+          148,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          140,
+          147
+        ]
+      ],
+      "zero": []
+    },
+    "rule_death": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          129,
+          129
+        ]
+      ]
+    },
+    "rejected_precursor": {
+      "positive": [
+        [
+          190,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          130,
+          189
+        ]
+      ],
+      "zero": [
+        [
+          129,
+          129
+        ]
+      ]
+    },
+    "rejected_fuel": {
+      "positive": [
+        [
+          140,
+          152
+        ]
+      ],
+      "negative": [
+        [
+          129,
+          139
+        ],
+        [
+          153,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "transport_fee": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    }
+  },
+  {
+    "effect": "genome_6bd5bfd2f629f9414376/F_at_P1",
+    "start": 0,
+    "M": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "precursor": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "fuel": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          129
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "rule_death": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          129
+        ]
+      ]
+    },
+    "rejected_precursor": {
+      "positive": [
+        [
+          130,
+          145
+        ],
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          146,
+          160
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          129
+        ]
+      ]
+    },
+    "rejected_fuel": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "transport_fee": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "genome_6bd5bfd2f629f9414376/F_at_P1",
+    "start": 128,
+    "M": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    },
+    "precursor": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "fuel": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          129,
+          129
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    },
+    "rule_death": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          129,
+          129
+        ]
+      ]
+    },
+    "rejected_precursor": {
+      "positive": [
+        [
+          130,
+          145
+        ],
+        [
+          161,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          146,
+          160
+        ]
+      ],
+      "zero": [
+        [
+          129,
+          129
+        ]
+      ]
+    },
+    "rejected_fuel": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "transport_fee": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    }
+  },
+  {
+    "effect": "genome_6bd5bfd2f629f9414376/interaction",
+    "start": 0,
+    "M": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          158
+        ],
+        [
+          165,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          159,
+          164
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "precursor": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "fuel": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          129
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "rule_death": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          129
+        ]
+      ]
+    },
+    "rejected_precursor": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          129
+        ]
+      ]
+    },
+    "rejected_fuel": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": [
+        [
+          1,
+          128
+        ]
+      ]
+    },
+    "transport_fee": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          1,
+          129
+        ]
+      ]
+    }
+  },
+  {
+    "effect": "genome_6bd5bfd2f629f9414376/interaction",
+    "start": 128,
+    "M": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    },
+    "E": {
+      "positive": [
+        [
+          129,
+          158
+        ],
+        [
+          165,
+          224
+        ]
+      ],
+      "negative": [
+        [
+          159,
+          164
+        ]
+      ],
+      "zero": []
+    },
+    "precursor": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "fuel": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "body_time": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          129,
+          129
+        ]
+      ]
+    },
+    "births": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    },
+    "rule_death": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          129,
+          129
+        ]
+      ]
+    },
+    "rejected_precursor": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          129,
+          129
+        ]
+      ]
+    },
+    "rejected_fuel": {
+      "positive": [],
+      "negative": [
+        [
+          129,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "transport_fee": {
+      "positive": [
+        [
+          130,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": [
+        [
+          129,
+          129
+        ]
+      ]
+    }
+  }
+]
+
+[
+  {
+    "stage_id": "genome_0ac80448a534dc953505/T10",
+    "M_change": {
+      "positive": [
+        [
+          129,
+          162
+        ],
+        [
+          165,
+          165
+        ],
+        [
+          213,
+          218
+        ],
+        [
+          220,
+          223
+        ]
+      ],
+      "negative": [
+        [
+          163,
+          164
+        ],
+        [
+          166,
+          212
+        ],
+        [
+          219,
+          219
+        ],
+        [
+          224,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "E_change": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    }
+  },
+  {
+    "stage_id": "genome_0ac80448a534dc953505/T01",
+    "M_change": {
+      "positive": [
+        [
+          129,
+          153
+        ]
+      ],
+      "negative": [
+        [
+          154,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "E_change": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    }
+  },
+  {
+    "stage_id": "genome_6bd5bfd2f629f9414376/T10",
+    "M_change": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    },
+    "E_change": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    }
+  },
+  {
+    "stage_id": "genome_6bd5bfd2f629f9414376/T01",
+    "M_change": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    },
+    "E_change": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    }
+  },
+  {
+    "stage_id": "genome_0ac80448a534dc953505/T00",
+    "M_change": {
+      "positive": [
+        [
+          129,
+          153
+        ],
+        [
+          212,
+          212
+        ],
+        [
+          215,
+          216
+        ]
+      ],
+      "negative": [
+        [
+          154,
+          211
+        ],
+        [
+          213,
+          214
+        ],
+        [
+          217,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "E_change": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    }
+  },
+  {
+    "stage_id": "genome_0ac80448a534dc953505/T11",
+    "M_change": {
+      "positive": [
+        [
+          129,
+          167
+        ]
+      ],
+      "negative": [
+        [
+          168,
+          224
+        ]
+      ],
+      "zero": []
+    },
+    "E_change": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    }
+  },
+  {
+    "stage_id": "genome_6bd5bfd2f629f9414376/T00",
+    "M_change": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    },
+    "E_change": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    }
+  },
+  {
+    "stage_id": "genome_6bd5bfd2f629f9414376/T11",
+    "M_change": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    },
+    "E_change": {
+      "positive": [
+        [
+          129,
+          224
+        ]
+      ],
+      "negative": [],
+      "zero": []
+    }
+  }
+]
+
+全部逐步及固定窗：all_per_step、fixed_windows/segments、cycle_windows/segments、effect_steps/windows；原始局部诊断数组由admission_diagnostic_manifest逐文件SHA定位。

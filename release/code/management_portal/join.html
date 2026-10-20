@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="referrer" content="no-referrer" /><title data-portal-site-title="[&quot;加入 Portal&quot;]">加入 Portal</title>
+  <link rel="alternate" type="text/markdown" href="/guide/agent.md" title="Agent guide" />
+  <link rel="stylesheet" href="/static/portal_components.css" />
+  <link rel="stylesheet" href="/static/portal_design_system.css" data-portal-skin="default" />
+  <link rel="stylesheet" href="/static/portal_themes.css" data-portal-skin-provider="themes" />
+  <script src="/static/portal_state.js"></script>
+  <script src="/static/portal_overlay.js"></script>
+  <script src="/static/portal_text.js"></script>
+  <script src="/static/portal_translations.js"></script>
+  <script src="/static/portal_i18n.js"></script>
+  <script src="/static/portal_theme.js"></script>
+  <script src="/static/portal_ui_primitives.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; } [hidden] { display: none !important; }
+    body { margin: 0; min-height: 100vh; display: flex; flex-direction: column; background: var(--bg); color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+    main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 32px 16px; }
+    .joinCard { --portal-detail-width: 440px; width: 100%; max-width: 440px; padding: 32px 36px 28px; }
+    .joinCard h1 { margin: 0 0 6px; font-size: 20px; }
+    .joinLead { margin: 0 0 20px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .joinForm, .joinStep { display: grid; gap: 14px; }
+    .joinInvitation { margin: 0; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+    .joinInvitation.is-valid { border-color: var(--accent); }
+    .joinInvitation.is-error { border-color: var(--danger); color: var(--danger); }
+    .joinAudience { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; border: 0; margin: 0; padding: 0; min-width: 0; }
+    .joinAudience legend { padding: 0; margin-bottom: 6px; font-size: 12px; font-weight: 600; }
+    .joinChoice { display: grid; gap: 2px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 13px; }
+    .joinChoice input { position: absolute; opacity: 0; pointer-events: none; }
+    .joinChoice strong { font-size: 14px; }
+    .joinChoice small { color: var(--muted); line-height: 1.4; }
+    .joinChoice:has(input:checked) { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+    .joinChoice:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .joinRules { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; font-size: 12px; color: var(--muted); }
+    .joinRules li::before { content: "○ "; }
+    .joinRules li.is-met { color: var(--accent); }
+    .joinRules li.is-met::before { content: "✓ "; }
+    .joinSubmit { width: 100%; }
+    .joinNote { margin: 0; font-size: 13px; line-height: 1.55; }
+    .joinNote.is-muted { color: var(--muted); font-size: 12px; }
+    .joinCode { margin: 0; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre; overflow-x: auto; }
+    .joinRow { display: flex; gap: 8px; flex-wrap: wrap; }
+    .joinSecret textarea { width: 100%; overflow-wrap: anywhere; resize: none; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .joinStatus { margin: 0; font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+    .joinStatus.is-error { color: var(--danger); }
+    .joinLinks { display: flex; justify-content: center; gap: 16px; margin-top: 18px; font-size: 12px; }
+    .joinLinks a { color: var(--accent); }
+    details.joinAlternative summary { cursor: pointer; font-size: 13px; color: var(--accent); }
+    details.joinAlternative[open] summary { margin-bottom: 10px; }
+  </style>
+</head>
+<body class="portalBoardShell">
+  <header class="portalSiteHeader">
+    <div class="portalNavShell"><div class="portalNavTop" data-portal-public-language><a class="portalBrand" href="/guide" data-portal-site-name>Portal</a></div></div>
+  </header>
+  <main>
+    <div class="portalDetailSurface joinCard">
+      <h1><!--portal-i18n:"加入 Portal"-->加入 Portal</h1>
+      <p class="joinLead"><!--portal-i18n:"Portal 的账号由管理员邀请创建。打开邀请链接，或把邀请码粘贴到下面。"-->Portal 的账号由管理员邀请创建。打开邀请链接，或把邀请码粘贴到下面。</p>
+      <form class="joinForm" data-join-form novalidate>
+        <label class="portalField" data-invitation-field><span><!--portal-i18n:"邀请码"-->邀请码</span><input name="invitation" required autocomplete="off" spellcheck="false" /></label>
+        <p class="joinInvitation" data-invitation-summary role="status" hidden></p>
+        <fieldset class="joinAudience" data-audience hidden>
+          <legend><!--portal-i18n:"谁来使用这个账号？"-->谁来使用这个账号？</legend>
+          <label class="joinChoice"><input type="radio" name="audience" value="human" checked /><strong><!--portal-i18n:"我自己"-->我自己</strong><small><!--portal-i18n:"设置密码，在浏览器中使用 Portal"-->设置密码，在浏览器中使用 Portal</small></label>
+          <label class="joinChoice"><input type="radio" name="audience" value="agent" /><strong><!--portal-i18n:"一个 agent"-->一个 agent</strong><small><!--portal-i18n:"用个人访问令牌调用 Portal API"-->用个人访问令牌调用 Portal API</small></label>
+        </fieldset>
+        <div class="joinStep" data-step="human" hidden>
+          <label class="portalField"><span><!--portal-i18n:"密码"-->密码</span><input name="password" type="password" minlength="12" maxlength="256" autocomplete="new-password" /></label>
+          <ul class="joinRules" data-password-rules>
+            <li data-rule="length"><!--portal-i18n:"至少 12 个字符"-->至少 12 个字符</li>
+            <li data-rule="classes"><!--portal-i18n:"包含大写字母、小写字母、数字、符号中的至少三种"-->包含大写字母、小写字母、数字、符号中的至少三种</li>
+          </ul>
+          <label class="portalField"><span><!--portal-i18n:"确认密码"-->确认密码</span><input name="confirm" type="password" minlength="12" maxlength="256" autocomplete="new-password" /></label>
+          <button class="portalButton is-primary joinSubmit" type="submit" data-human-submit><!--portal-i18n:"创建账号"-->创建账号</button>
+        </div>
+        <div class="joinStep" data-step="agent" hidden>
+          <p class="joinNote"><!--portal-i18n:"推荐在 agent 运行的机器上用命令行领取邀请：令牌在那台机器上生成，只保存在本地文件里。"-->推荐在 agent 运行的机器上用命令行领取邀请：令牌在那台机器上生成，只保存在本地文件里。</p>
+          <pre class="joinCode" data-cli-command></pre>
+          <div class="joinRow"><button class="portalButton" type="button" data-copy-command><!--portal-i18n:"复制命令"-->复制命令</button><a class="portalButton" href="/guide#agent"><!--portal-i18n:"Agent 指引"-->Agent 指引</a></div>
+          <p class="joinNote is-muted"><!--portal-i18n:"命令运行后会提示输入邀请链接或邀请码。"-->命令运行后会提示输入邀请链接或邀请码。</p>
+          <details class="joinAlternative">
+            <summary><!--portal-i18n:"改为在浏览器中生成令牌"-->改为在浏览器中生成令牌</summary>
+            <div class="joinStep">
+              <p class="joinNote is-muted"><!--portal-i18n:"令牌只显示一次。请直接交给 agent，保存在只有它能读的位置。"-->令牌只显示一次。请直接交给 agent，保存在只有它能读的位置。</p>
+              <label class="portalField"><span><!--portal-i18n:"令牌名称"-->令牌名称</span><input name="token_name" maxlength="120" value="Agent" autocomplete="off" /></label>
+              <button class="portalButton is-primary joinSubmit" type="submit" data-agent-submit><!--portal-i18n:"创建账号并生成令牌"-->创建账号并生成令牌</button>
+            </div>
+          </details>
+        </div>
+        <p class="joinStatus" data-status role="status"></p>
+      </form>
+      <div class="joinStep" data-done="human" hidden>
+        <p class="joinNote" data-done-message></p>
+        <p class="joinNote" data-done-admin hidden></p>
+        <p class="joinNote is-muted"><!--portal-i18n:"登录后建议在账号菜单 →“菜单”→ 账户安全中添加 Passkey 或双重身份验证。"-->登录后建议在账号菜单 →“菜单”→ 账户安全中添加 Passkey 或双重身份验证。</p>
+        <a class="portalButton is-primary joinSubmit" data-login-link href="/login"><!--portal-i18n:"登录"-->登录</a>
+        <a class="portalButton joinSubmit" data-admin-guide href="/guide#admin" target="_blank" rel="noopener" hidden><!--portal-i18n:"打开管理员指引"-->打开管理员指引</a>
+      </div>
+      <div class="joinStep joinSecret" data-done="agent" hidden>
+        <p class="joinNote" data-done-message></p>
+        <p class="joinNote" data-done-admin hidden></p>
+        <label class="portalField"><span><!--portal-i18n:"个人访问令牌（只显示这一次）"-->个人访问令牌（只显示这一次）</span><textarea readonly rows="2" spellcheck="false" data-token></textarea></label>
+        <div class="joinRow"><button class="portalButton" type="button" data-copy-token><!--portal-i18n:"复制令牌"-->复制令牌</button></div>
+        <p class="joinNote"><!--portal-i18n:"把令牌和下面的说明交给 agent："-->把令牌和下面的说明交给 agent：</p>
+        <pre class="joinCode" data-agent-handoff></pre>
+        <div class="joinRow"><button class="portalButton" type="button" data-copy-handoff><!--portal-i18n:"复制说明"-->复制说明</button><a class="portalButton" href="/guide#agent"><!--portal-i18n:"Agent 指引"-->Agent 指引</a></div>
+        <p class="joinStatus" data-copy-status role="status"></p>
+      </div>
+      <div class="joinLinks"><a href="/login"><!--portal-i18n:"已有账号？登录"-->已有账号？登录</a><a href="/guide"><!--portal-i18n:"Guide"-->Guide</a></div>
+    </div>
+  </main>
+  <script type="module">
+    import {newSecret, secretDigest} from "/static/portal_user_enrollment.js";
+    const t = (text) => window.PortalI18n?.t(text) || text;
+    const $ = (selector, root = document) => root.querySelector(selector);
+    const form = $("[data-join-form]"), status = $("[data-status]"), summary = $("[data-invitation-summary]");
+    const params = new URLSearchParams(location.hash.slice(1));
+    form.elements.invitation.value = params.get("invite") || "";
+    if (params.get("for") === "agent") form.elements.audience.value = "agent";
+    history.replaceState(null, "", location.pathname);
+    $("[data-cli-command]").textContent =
+      `curl -fsSO ${location.origin}/guide/portal_user.py\n` +
+      `python3 portal_user.py --url ${location.origin} \\\n  --credentials ~/.config/portal/credentials.json join`;
+
+    let invitation = null, previewSeq = 0, agentSecret = "";
+    const fail = (node, message) => { node.textContent = message; node.classList.add("is-error"); };
+    const say = (node, message) => { node.textContent = message; node.classList.remove("is-error"); };
+    const invitationSecret = () => {
+      const raw = form.elements.invitation.value.trim();
+      // Accept a pasted link as well as the bare code.
+      return raw.includes("#") ? new URLSearchParams(raw.split("#")[1]).get("invite") || "" : raw;
+    };
+
+    function showSteps() {
+      const audience = invitation ? form.elements.audience.value : "";
+      $("[data-audience]").hidden = !invitation;
+      for (const step of form.querySelectorAll("[data-step]")) step.hidden = step.dataset.step !== audience;
+      for (const name of ["password", "confirm"]) form.elements[name].required = audience === "human";
+    }
+
+    async function preview() {
+      const seq = ++previewSeq, secret = invitationSecret();
+      invitation = null; say(status, ""); showSteps();
+      if (!secret) { summary.hidden = true; return; }
+      try {
+        const response = await fetch("/api/auth/invitations/preview", {method: "POST", credentials: "omit",
+          headers: {"Content-Type": "application/json"}, body: JSON.stringify({invitation_secret: secret})});
+        const result = await response.json();
+        if (seq !== previewSeq) return;
+        summary.hidden = false;
+        if (!response.ok) { summary.className = "joinInvitation is-error"; summary.textContent = t("邀请码无效、已过期或已被使用。请向邀请你的人要一个新的邀请。"); return; }
+        invitation = result;
+        const name = result.display_name && result.display_name !== result.username ? `${result.display_name}（${result.username}）` : result.username;
+        const until = new Date(result.expires_at * 1000).toLocaleString(document.documentElement.lang || undefined, {dateStyle: "medium", timeStyle: "short"});
+        summary.className = "joinInvitation is-valid";
+        summary.textContent = result.first_admin
+          ? window.PortalI18n.text`你将以 ${name} 成为这个 Portal 的首个管理员，设置链接有效至 ${until}。`
+          : window.PortalI18n.text`你受邀以 ${name} 加入 Portal，邀请有效至 ${until}。`;
+        $("[data-invitation-field]").hidden = true;
+        showSteps();
+      } catch (error) {
+        if (seq === previewSeq) { summary.hidden = false; summary.className = "joinInvitation is-error"; summary.textContent = t("暂时无法检查邀请，请稍后重试。"); }
+      }
+    }
+
+    function checkRules() {
+      const value = form.elements.password.value;
+      const classes = [/[A-Z]/, /[a-z]/, /[0-9]/, /[^A-Za-z0-9]/].filter(pattern => pattern.test(value)).length;
+      $('[data-rule="length"]').classList.toggle("is-met", value.length >= 12);
+      $('[data-rule="classes"]').classList.toggle("is-met", classes >= 3);
+      return value.length >= 12 && classes >= 3;
+    }
+
+    let previewTimer = 0;
+    form.elements.invitation.addEventListener("input", () => { clearTimeout(previewTimer); previewTimer = setTimeout(preview, 250); });
+    form.addEventListener("change", event => { if (event.target.name === "audience") { say(status, ""); showSteps(); } });
+    form.elements.password.addEventListener("input", checkRules);
+
+    async function accept(payload) {
+      const response = await fetch("/api/auth/invitations/accept", {method: "POST", credentials: "omit",
+        headers: {"Content-Type": "application/json"}, body: JSON.stringify({invitation_secret: invitationSecret(), ...payload})});
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error === "Invitation is invalid, expired or already used"
+        ? t("邀请码无效、已过期或已被使用。请向邀请你的人要一个新的邀请。") : (result.error || t("无法创建账号。")));
+      return result;
+    }
+
+    function finish(kind, result) {
+      form.hidden = true; $("[data-invitation-summary]").hidden = true; $(".joinLead").hidden = true;
+      const done = $(`[data-done="${kind}"]`); done.hidden = false;
+      $("[data-done-message]", done).textContent = window.PortalI18n.text`账号 ${result.username} 已创建。`;
+      // Present only for the Portal's first account, which is its first administrator.
+      const admin = result.administrator, note = $("[data-done-admin]", done);
+      if (admin) {
+        note.hidden = false;
+        note.className = "joinNote";
+        note.textContent = t("你是这个 Portal 的首个管理员。登录后按管理员指引完成搭建。");
+        for (const link of done.querySelectorAll("[data-admin-guide]")) link.hidden = false;
+      }
+      return done;
+    }
+
+    form.addEventListener("submit", async event => {
+      event.preventDefault();
+      if (!invitation) { await preview(); if (!invitation) return; }
+      const agent = form.elements.audience.value === "agent";
+      const button = $(agent ? "[data-agent-submit]" : "[data-human-submit]"); button.disabled = true;
+      try {
+        if (agent) {
+          // Keep the same secret across retries so a lost response cannot create a second, unknown token.
+          agentSecret ||= newSecret("dbu_");
+          const result = await accept({secret_sha256: await secretDigest(agentSecret), token_name: form.elements.token_name.value.trim() || "Agent"});
+          finish("agent", result);
+          $("[data-token]").value = agentSecret;
+          $("[data-agent-handoff]").textContent =
+            `Portal: ${location.origin}\nUser: ${result.username}\n` +
+            `Token: ${t("（上面的个人访问令牌）")}\n` +
+            `API: POST ${location.origin}/api/instructions/execute\n     Authorization: Bearer <token>\n` +
+            `Guide: ${location.origin}/guide/agent.md`;
+        } else {
+          if (!checkRules()) throw new Error(t("密码不符合要求。"));
+          if (form.elements.password.value !== form.elements.confirm.value) throw new Error(t("两次输入的密码不一致。"));
+          const result = await accept({password: form.elements.password.value});
+          const done = finish("human", result);
+          $("[data-login-link]", done).href = `/login?username=${encodeURIComponent(result.username)}`;
+          form.reset();
+        }
+      } catch (error) { fail(status, error.message); }
+      finally { button.disabled = false; }
+    });
+
+    async function copy(text) {
+      const node = $("[data-copy-status]") || status;
+      try { await navigator.clipboard.writeText(text); say(node, t("已复制。")); }
+      catch { say(node, t("请选中文字后手动复制。")); }
+    }
+    $("[data-copy-command]").addEventListener("click", () => copy($("[data-cli-command]").textContent).then(() => say(status, t("已复制。"))));
+    $("[data-copy-token]").addEventListener("click", () => copy(agentSecret));
+    $("[data-copy-handoff]").addEventListener("click", () => copy($("[data-agent-handoff]").textContent.replace(t("（上面的个人访问令牌）"), agentSecret)));
+    if (form.elements.invitation.value) preview(); else showSteps();
+  </script>
+</body>
+</html>

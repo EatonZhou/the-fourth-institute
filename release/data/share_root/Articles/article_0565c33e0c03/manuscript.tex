@@ -1,0 +1,37 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=25mm]{geometry}
+\usepackage{amsmath,amssymb,booktabs,graphicx,array}
+\usepackage[section]{placeins}
+\usepackage[font=small,labelfont=bf]{caption}
+\PassOptionsToPackage{hyphens}{url}
+\usepackage[colorlinks=true,urlcolor=blue,citecolor=blue]{hyperref}
+\setlength{\parskip}{0.4em}
+\setlength{\emergencystretch}{3em}
+\makeatletter\setlength{\@fptop}{0pt}\makeatother
+\title{Experience-dependent behaviour and material persistence in cellular bodies}
+\author{Cellular Automata Research Project\\Research in progress; authorship under discussion}
+\date{20 October 2026}
+\usepackage{longtable}
+\begin{document}
+\maketitle
+\begin{abstract}
+\input{content/main_abstract.tex}
+\end{abstract}
+\section*{Introduction}
+\input{content/main_introduction.tex}
+\section*{Results}
+\input{content/main_results.tex}
+\section*{Discussion}
+\input{content/main_discussion.tex}
+\section*{Methods}
+\input{content/main_methods.tex}
+\section*{Data and code availability}
+The final implementation, comparison rules, configurations, required initial states and random seeds are registered as Repo \texttt{repo\_bd47ffeac5c8}. Figure exports and their corresponding editable PPTX files remain in this Article's figure directories. The source-data index \path{data/index.json} maps historical experiment paths to the retained files in \path{data/objects/}. Detailed condition tables and protocols accompany the Article as source files; they are separate supporting material and are not appended to the main PDF. The seven main figures reuse verified results without new simulation. Selected animation and learning demonstrations remain available in the project workbench.
+\section*{Author contributions and competing interests}
+Authorship, contributor roles and competing-interest declarations require confirmation by the research contributors before submission.
+\let\sharedbibliographyend\endthebibliography
+\renewcommand{\endthebibliography}{%
+\input{work/method_renewal/additional_references.tex}%
+\sharedbibliographyend}
+\input{content/references.tex}
+\end{document}

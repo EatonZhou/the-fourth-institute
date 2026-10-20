@@ -1,0 +1,8 @@
+RoutingBody.from_parent(original_paid_recycle_joint384, arm): P_on_demand / P_on_uniform / P_off_demand / P_off_uniform.
+Exactly one inherited native(permit), then settle(): original pump, original recycling, then new fresh-P routing once. Original cores byte-identical.
+route(state,maps,faces,mode) is a pure two-candidate planner plus selected conservative update; no host call, one-hop only. Uses actual original pump_sent and post-recycle energy; old pre-pump energy assertions are not reused.
+D=[min([positive_request-rejected_capacity-rejected_template-born]+,F/.42)-P]+ on positive template support. Uniform reaches all supported permeable neighbors, gated on at least one reachable positive-D neighbor.
+C=min(fresh_q,max(.05*survivor-original_sent,0),post_oldE_after_basal/.08). Candidate allocation then faces; common min source sum; only downward corrections. Fee .08*sent is heat. All bounds checked before commit.
+checkpoint/restore ready, native_done, original_done, base_settled, routing_pending; native_in_progress refuses replay. Complete current every8, scheduled joints every64.
+Same-job one diagnostic-failure recovery retained actual385; source amendment and immutable failure evidence accompany original frozen plan. All native attempts and both runner times counted. No automatic future recovery.
+L384/life0/L256 are offline diagnostics, not controller inputs. No new writer. Old baseline absent candidate fields are null.

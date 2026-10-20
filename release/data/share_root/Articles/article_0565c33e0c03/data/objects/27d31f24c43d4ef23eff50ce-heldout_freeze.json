@@ -1,0 +1,93 @@
+{
+  "selected": "ema",
+  "arms": [
+    "ema",
+    "flux",
+    "demand",
+    "diffusion",
+    "none",
+    "frozen_ema"
+  ],
+  "development_pairs": [
+    {
+      "body": 0,
+      "E": 0.00884184410786304,
+      "body_time": 0.14194328850788906,
+      "U": 0.19476483111051834
+    },
+    {
+      "body": 1,
+      "E": -0.34807858065330777,
+      "body_time": 0.10101129503317452,
+      "U": -0.06258405642831377
+    }
+  ],
+  "source_sha256": {
+    "/share/Projects/元胞自动机研究/src/local_learning/rule_geometry_resource_support/run.py": "f71fbfd5c1536a4d6a37494d80f3df5a552c19dfc9f702c96211a3e84e64abc4",
+    "/share/Projects/元胞自动机研究/src/local_learning/rule_geometry_resource_support/core.py": "006c505f6e388d132f75466b21b8a5ec355e8cc5c0e64b8b5218f3f73e196d39",
+    "/share/Projects/元胞自动机研究/src/local_learning/resource_matched_morphogenesis/core.py": "dae6fbd6db1fe1a83f34a6039aee8e292f6d63717270095db981d1e808928a83",
+    "/share/Projects/元胞自动机研究/src/local_learning/resource_matched_morphogenesis/run.py": "327dcf4c234b52023767c8d63f48546aa755edd14650025cc850edaeec4c1e3c",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/material_action_response/core.py": "15691ada9fd805c076f7c5770ba955dbf6cc454ea3af129b1ba03fe958467b5b",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/resource_wave_actionability/core.py": "fcfb8954f7fa94e21954657545d3e0d4dd3155cf20adef2a87851a129c85726d",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_actor/model.py": "3941450e97d2311f833d1c9c8964f348218467d4cd8d41a68b6584b72b24b5b0",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/regenerative_actor/conversion.py": "d2b73ccf44d6720e01e2166c055f9a427406dc483b21746476b9f8cc5f95189a",
+    "/share/Projects/元胞自动机研究/src/local_learning/material_transport.py": "dd5622a2df6a5d50642a31ad586215d5e30e33929cf8f57ee9efff36fdef08d5",
+    "/share/Projects/元胞自动机研究/src/morphology_evolution/dual_kernel.py": "529d42e50876a68bce54a512f8a9cafd48a8f68276cf8507a0e2243b3f450d6e",
+    "/share/Projects/元胞自动机研究/src/simulation/snapshot.py": "e99d3eccee47ded2abe1518e3fb80d2d630a8ff21a2a339ff6723c2878dfc382",
+    "/share/Projects/元胞自动机研究/src/local_learning/tissue_replacement_pf_location/run.py": "119021f849311b93549f71b3dbdcef2859d52c4a1210ed3bb8299314a26a61a9",
+    "/share/Projects/元胞自动机研究/src/local_learning/tissue_replacement_pf_location/core.py": "adf452a8599221a1a21bf9aab22754576a39f5bea357e5f1630d447250ca721f",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/local_metabolic_translocation/run.py": "ea3e60da9d111cb393582aa6ddb39eea991e186d12ea6b40c79b7df35f1ed06f",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/local_metabolic_translocation/core.py": "14917689b4a891b8ed27a1574630331b56a64d1538cf785e505b5a8fab3e393e",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--diffusion/state384/native/body.npz": "fe52c6fbc0a89f2bed74e14b414fe1627c18061d40037a926c290b37b5fbcdbf",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--diffusion/state384/native/exchange.npz": "618c3820b03d777f9345c1f94cb821aa1581dde03fa55b8b65609a4c53d62d65",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--diffusion/state384/native/observer.npz": "4d1c3860af1123b21fd15b05ebd5816ad0eaa0a6e30119732ca7a0f64231bbbd",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--diffusion/state384/native/ready.json": "3f718551c11463d2c1c26d9595075e41bcec27fef9cc8c7b0bf4d5fb5e51a7c9",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--diffusion/state384/pump.npz": "1fc80314b3070a286d7afec473458cf77a6c21c8cd286bd66a3b57c59f6588aa",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--diffusion/state384/ready.json": "c0d1e86c579bb4c8cd4508934384ede854eaf279c2a93cb4dee83fc99fcb0d61",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--diffusion/state384/native/body.npz": "c0f8a8ee5a4bc0b2ba2944e5caceaf29e40b7f35c26a650a5ce94bab54792562",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--diffusion/state384/native/exchange.npz": "66ed08dcf38c76a349f7cf5efc18d6c3d932982926d5464418eef88fda458ab9",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--diffusion/state384/native/observer.npz": "0b3f23429209221eb8d6b4239362376c78bfd6841923c5f1a9463205cb9ca503",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--diffusion/state384/native/ready.json": "3f718551c11463d2c1c26d9595075e41bcec27fef9cc8c7b0bf4d5fb5e51a7c9",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--diffusion/state384/pump.npz": "db435692c6fac9340195b45bd353f6fa5c23145900dd7d92ee6dcd0753820c9a",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--diffusion/state384/ready.json": "c0d1e86c579bb4c8cd4508934384ede854eaf279c2a93cb4dee83fc99fcb0d61",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/metabolic_maintenance_withdrawal/run.py": "de568f32e51efe21f42a0188bd301ddbf0904c78bfad8f066eec5e02b7596445",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/metabolic_maintenance_withdrawal/core.py": "c8260577edb1cec138f3f3869d889860ae93ff3d45fe212ff3cc08c1b2249a12",
+    "/share/Projects/元胞自动机研究/src/local_learning/consumption_qualified_transport/run.py": "816d89cab3dc1c74b59311a3a3d3362d7fddbf569f6caed8fd03872c1f24618f",
+    "/share/Projects/元胞自动机研究/src/local_learning/consumption_qualified_transport/core.py": "751e06baaed88a15470aeb98817f018edbab9afab69aace9cc1001c473b7bcb6",
+    "/share/Projects/元胞自动机研究/knowledge_base/research/experience_learning/consumption_qualified_transport_20261019.json": "a45b4ceef888aa049b70a49361b19681a9df842561f7c051862502e00dd0585f",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/metabolic_maintenance_withdrawal_20261018/handoff.json": "fa8c06064d97a71f8d7e9ffbdcb17bb6a1d896bbd409384d1bb1d3b5eac0f6a2",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/metabolic_maintenance_withdrawal_20261018/plan.json": "cd9087fc54cea553716f0dc54514b8994a4995217794f89b47b3dc7fd4e77630",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/pump_gradient_feedback/planner.py": "5d36a87e619b20af3977f8808987f4de6898ae510158552d881989dd31c0cbc6",
+    "/share/Projects/元胞自动机研究/src/local_learning/local_terminal_feedback/experiment.py": "1b820d4bed26a3c8452a2dd139fa29dedbb451c3d7f866835ed3b4d6890e1f7f",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/consumption_qualified_transport_20261019/91308130-146d-4f81-942f-061cd2fabada/dev_b0_prefix/final.joint": "e15c6293d33bc17463886fabe5b08168b59caa8991c4135f32a4f77a9eb5925f"
+  },
+  "review": [],
+  "attempted_before_heldout": 1215,
+  "body_time_unit": "mass * native dt(.05)",
+  "environment": {
+    "prefix": 64,
+    "future": 160,
+    "initial_shift": [
+      1,
+      0
+    ],
+    "static_label": "heldout_202610190301_static",
+    "changed_label": "heldout_202610190302_shift",
+    "change_shift": [
+      -1,
+      0
+    ],
+    "change_clock": 528,
+    "arms": [
+      "selected",
+      "ema_if_distinct",
+      "flux",
+      "demand",
+      "diffusion",
+      "none",
+      "frozen_selected"
+    ],
+    "common_prefix": "one per body, reused exactly across all arms and both schedules"
+  },
+  "no_training": true
+}

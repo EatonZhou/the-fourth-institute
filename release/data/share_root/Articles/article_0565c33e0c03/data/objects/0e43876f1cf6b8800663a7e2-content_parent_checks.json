@@ -1,0 +1,74 @@
+[
+  {
+    "condition": 0,
+    "arm": "erase_gain",
+    "parent_sha256": "473ac48fa124f4f6a0b9b81f44315173360b03e79f1c207d2a74ebb0e529d37b",
+    "errors": {
+      "body": 0.0,
+      "energy": 0.0,
+      "memory": 0.0,
+      "eligibility": 0.0,
+      "nongain_aux": 0.0
+    },
+    "rng_equal": true,
+    "original_gain_mass_mean": 0.6630486616781113,
+    "new_gain_mass_mean": 0.0,
+    "other_aux_error": 0.0,
+    "body_energy_rng_unchanged": true,
+    "initial_command_difference": 0.8727497008426045
+  },
+  {
+    "condition": 0,
+    "arm": "homogenize_gain",
+    "parent_sha256": "473ac48fa124f4f6a0b9b81f44315173360b03e79f1c207d2a74ebb0e529d37b",
+    "errors": {
+      "body": 0.0,
+      "energy": 0.0,
+      "memory": 0.0,
+      "eligibility": 0.0,
+      "nongain_aux": 0.0
+    },
+    "rng_equal": true,
+    "original_gain_mass_mean": 0.6630486616781113,
+    "new_gain_mass_mean": 0.6630486616781113,
+    "other_aux_error": 0.0,
+    "body_energy_rng_unchanged": true,
+    "initial_command_difference": 0.5836348813395296
+  },
+  {
+    "condition": 1,
+    "arm": "erase_gain",
+    "parent_sha256": "6ffad6d52a5437997aeeff372a0b2eef2b7d7de078554da884610739983d2635",
+    "errors": {
+      "body": 0.0,
+      "energy": 0.0,
+      "memory": 0.0,
+      "eligibility": 0.0,
+      "nongain_aux": 0.0
+    },
+    "rng_equal": true,
+    "original_gain_mass_mean": 0.6703399133701903,
+    "new_gain_mass_mean": 0.0,
+    "other_aux_error": 0.0,
+    "body_energy_rng_unchanged": true,
+    "initial_command_difference": 0.8797269368242715
+  },
+  {
+    "condition": 1,
+    "arm": "homogenize_gain",
+    "parent_sha256": "6ffad6d52a5437997aeeff372a0b2eef2b7d7de078554da884610739983d2635",
+    "errors": {
+      "body": 0.0,
+      "energy": 0.0,
+      "memory": 0.0,
+      "eligibility": 0.0,
+      "nongain_aux": 0.0
+    },
+    "rng_equal": true,
+    "original_gain_mass_mean": 0.6703399133701903,
+    "new_gain_mass_mean": 0.6703399133701903,
+    "other_aux_error": 0.0,
+    "body_energy_rng_unchanged": true,
+    "initial_command_difference": 0.5865646581347687
+  }
+]

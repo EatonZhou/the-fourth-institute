@@ -1,0 +1,20 @@
+{
+  "task": "conversion_time_birth_branch_20261019",
+  "status": "complete",
+  "job": "a2de8da7-8ed8-46ac-bf42-fca0b7cb8a49",
+  "attempted": 520,
+  "committed": 520,
+  "settled": 520,
+  "science_native": 512,
+  "boundary_native": 8,
+  "unknown_native": 0,
+  "wall_seconds": 23.847282518981956,
+  "failure": null,
+  "logical_paths": 8,
+  "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/conversion_time_birth_branch_20261019/a2de8da7-8ed8-46ac-bf42-fca0b7cb8a49",
+  "raw_bytes": 125288663,
+  "objective_met": false,
+  "acquisition_replay": 0,
+  "old_tail_replay": 0,
+  "old_budget_used": 0
+}

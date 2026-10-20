@@ -1,0 +1,79 @@
+{
+  "figure": "local_evidence",
+  "author": "resident_a388058f90eb",
+  "sources": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_local_plasticity_report/handoff.json",
+      "copy": "source/prototype_handoff.json",
+      "sha256": "c359bf6d7397cc82608a3f344e17b1be6d36f9aa87c1db89bf7d7c83dbcc4866"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_local_plasticity_report/METHOD.txt",
+      "copy": "source/prototype_METHOD.txt",
+      "sha256": "3d3180149ef179a98481cf9270fbc76e7eeb50485e70963a76253faae8defce2"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_local_plasticity_report/REPORT.txt",
+      "copy": "source/prototype_REPORT.txt",
+      "sha256": "fce2472a2edb21f4ab74a1b35d79d49c90e7d7250e5ed5fcab73ab4dd9f675f5"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_local_plasticity_report/paired_world_seed_effects.csv",
+      "copy": "source/prototype_paired_world_seed_effects.csv",
+      "sha256": "890c5044df16071df14dedaf595df8969d93e93f5a1c62a7c6e69dcaca2ce2ab"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_local_plasticity_report/fresh_aggregate.csv",
+      "copy": "source/prototype_fresh_aggregate.csv",
+      "sha256": "2743e47c8065dfbcd4dba746fdde03501173b7e76fc444e0b678bc1bbaf1cf11"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_local_plasticity_report/illustrative_same_cue_actions.json",
+      "copy": "source/prototype_illustrative_same_cue_actions.json",
+      "sha256": "a01da7fc017fbf155117bea348f2e02d4d617b2b7c60dc99873b569a552f1cc8"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling_report/handoff.json",
+      "copy": "source/host_handoff.json",
+      "sha256": "7f62a85ac064cbced6885b3427b9027b0375aefbd32ab9752da68a9db3eba1f8"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling_report/METHOD_AND_LIMITS.txt",
+      "copy": "source/host_METHOD_AND_LIMITS.txt",
+      "sha256": "221c284ea0cfa58db5aec9b1e4e7136c4085d4a04f9bedd77b4ae2d373ef1919"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling_report/aggregate.csv",
+      "copy": "source/host_aggregate.csv",
+      "sha256": "2dbda6511fbd6c7d521edda529d22dfc9c67b4317e5c285587aa9d5b86397006"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling_report/paired_effects.csv",
+      "copy": "source/host_paired_effects.csv",
+      "sha256": "2b9a33e23246c01eaab7a5adc14b74a0dfb57c54a69f97cf46ec7fde40fce1a0"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling_report/all_outcomes.csv",
+      "copy": "source/host_all_outcomes.csv",
+      "sha256": "d96c16dd7aca3e2f3e264998ff28604d6c3050eaa21115ce50f31e0ab518d303"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling_report/first_divergences.json",
+      "copy": "source/host_first_divergences.json",
+      "sha256": "8b8eda609cc1136fcb05afbc6f8850d52e6771036a8c9e92197af55a504d6d0f"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/method_renewal_ecology_local_coupling/cycles.csv",
+      "copy": "source/host_cycles.csv",
+      "sha256": "084d0a9874727f2f50a730e310de6bd2ce115da7665a6e14843ebb115a2e6fd1"
+    },
+    {
+      "path": "PI intervals supplied in task message 2026-10-18",
+      "copy": "source/pi_exploratory_intervals.json",
+      "sha256": "b767c05fd985021dc3c2676aa3312b71e32a91c3897d59893dbe87eaa95622a0"
+    }
+  ],
+  "selection": "Mechanism comparison of distinct prototypes; means are descriptive. Prototype differences are paired-world averages across 12 fresh worlds. Host curves are six dependent contexts (three shapes x two seeds), not six independent replications.",
+  "new_forward_updates": 0,
+  "implementation_boundary": "Fixed direct/borrowed rule was not ported to the host. Host uses hand-set selected-action n/d EMA, shared energy and global action."
+}

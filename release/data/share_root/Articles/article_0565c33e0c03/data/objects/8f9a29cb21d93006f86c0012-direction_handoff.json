@@ -1,0 +1,113 @@
+{
+  "task": "material_action_map_direction_20261019",
+  "owner": "resident_d3ccfa2d95b7",
+  "status": "four_actual_batches_complete_scientific_choice_required",
+  "report": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_coupling_transport_20261019/REPORT.txt",
+  "report_sha256": "ce5712589b04e9af405c66739c9dac98fc38c02baa37ab0b7919ae1dc5b1ad12",
+  "comparison": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_coupling_transport_20261019/all_phase_comparisons.csv",
+  "accounting": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_coupling_transport_20261019/direction_accounting.json",
+  "native": 16831,
+  "worker_seconds": 52.962982,
+  "unknown": 0,
+  "old_replay": 0,
+  "paths": 30,
+  "batches": [
+    {
+      "task": "material_action_map_20261019",
+      "plan": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_action_map_20261019/plan.json",
+      "plan_sha256": "ec8949279cb8699023611df912704155cae0305a2a897b83e706860069bbca58",
+      "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/material_action_map/run.py",
+      "analysis": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_action_map_20261019/analysis.json",
+      "analysis_sha256": "6713b8258affb81dab3ee9338a27b0e234a961396350f26be3d81e904136504b",
+      "animation": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_action_map_20261019/actual_sequence.gif",
+      "curves": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_action_map_20261019/curves.png",
+      "accounting": {
+        "native": 6400,
+        "attempted": 6400,
+        "unknown": 0,
+        "job": "9bd95da2-d847-4166-a786-1333c27bc6dd",
+        "worker_seconds": 18.751938,
+        "raw_bytes": 34648456,
+        "old_replay": 0,
+        "plan_sha256": "ec8949279cb8699023611df912704155cae0305a2a897b83e706860069bbca58",
+        "result_sha256": "7d3aafa9692aaf4df5b6a38e0a6da71bdb513d55e1163c458993069e1f8530fb"
+      }
+    },
+    {
+      "task": "action_map_change_separation_20261019",
+      "plan": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/action_map_change_separation_20261019/plan.json",
+      "plan_sha256": "432507994ade08da821eb7fc1668d305cc49bca259292d929f139cd7e6011a22",
+      "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/action_map_change_separation/run.py",
+      "analysis": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/action_map_change_separation_20261019/analysis.json",
+      "analysis_sha256": "8e6d30d389f32787726ce394ba8ed0aa5d0a03fc08a16c4d1f92debf088f9e83",
+      "animation": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/action_map_change_separation_20261019/actual_sequence.gif",
+      "curves": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/action_map_change_separation_20261019/curves.png",
+      "accounting": {
+        "native": 4480,
+        "attempted": 4480,
+        "unknown": 0,
+        "job": "c1e8cdc0-fe9e-487c-a941-071e17bf148b",
+        "worker_seconds": 12.928298,
+        "raw_bytes": 30019508,
+        "old_replay": 0,
+        "plan_sha256": "432507994ade08da821eb7fc1668d305cc49bca259292d929f139cd7e6011a22",
+        "result_sha256": "e008bb190ad6d745297be66ad26f43817f4282ca8b881008fed24e985315a0d2"
+      }
+    },
+    {
+      "task": "action_map_content_20261019",
+      "plan": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/action_map_content_20261019/plan.json",
+      "plan_sha256": "fef7598aaff54638a43b9c863e1abbcf1824a38e86590e6e5c78c5c65fafa4c6",
+      "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/action_map_content/run.py",
+      "analysis": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/action_map_content_20261019/analysis.json",
+      "analysis_sha256": "ece5dfcb5d960c6344850bba9a3da8cd3f82646082e0e9c7102feccfed02ac61",
+      "animation": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/action_map_content_20261019/actual_sequence.gif",
+      "curves": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/action_map_content_20261019/curves.png",
+      "accounting": {
+        "native": 1792,
+        "attempted": 1792,
+        "unknown": 0,
+        "job": "0a5a955d-c452-4931-a3d7-0ae327e1d193",
+        "worker_seconds": 6.394316,
+        "raw_bytes": 11505211,
+        "old_replay": 0,
+        "plan_sha256": "fef7598aaff54638a43b9c863e1abbcf1824a38e86590e6e5c78c5c65fafa4c6",
+        "result_sha256": "09de16b942a686c2b57049108904f67506fcc955abd2cb03fc73304625954dd8"
+      }
+    },
+    {
+      "task": "material_coupling_transport_20261019",
+      "plan": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_coupling_transport_20261019/plan.json",
+      "plan_sha256": "305ac4bcdfeab532168cd22dfd662f4fcf3246b570bbb6a032ab41039f9d5f57",
+      "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/material_coupling_transport/run.py",
+      "analysis": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_coupling_transport_20261019/analysis.json",
+      "analysis_sha256": "5c597471acdfda542eb6e201ce71e2db28fb119fb6040683121a12a56d89c750",
+      "animation": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_coupling_transport_20261019/actual_sequence.gif",
+      "curves": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_coupling_transport_20261019/curves.png",
+      "accounting": {
+        "native": 4159,
+        "attempted": 4159,
+        "unknown": 0,
+        "job": "bab92c9d-930b-45db-a7fc-4efd0ef31c54",
+        "worker_seconds": 14.88843,
+        "raw_bytes": 24297710,
+        "old_replay": 0,
+        "plan_sha256": "305ac4bcdfeab532168cd22dfd662f4fcf3246b570bbb6a032ab41039f9d5f57",
+        "result_sha256": "ca014ecab85a07ffe1422a151fa9309f73294970844b84442ae1edac392f71c4"
+      }
+    }
+  ],
+  "findings": [
+    "标准局部IV取得未知交叉执行器下有用行为2/2；固定反射初始0/2。",
+    "只变奖励时冻结已学映射仍通过；只变执行器时持续辨识2/2守住好区，冻结2/2后期失败。",
+    "同父旋转矩阵内容失败2/2、均质统计成功2/2：方向内容有作用，空间特殊性未立。",
+    "携带与Euler强同行共同反转窗均未过；异质材料批亦如此，关闭独特携带优势。",
+    "30路径保全，1条固定反射319连通失败；无birth，不称新算法或真实再生学习。"
+  ],
+  "scientific_question": "将普通局部2×2 IV动作辨识作为强核心交ce检验真实材料更替后的重标定，还是先把d3下一独立问题限制为不读直接K、仅局部支付的辨识？当前普通IV已足够获得行为，携带优势未成立；不宜继续调该估计器。跨线实验需ce唯一整合而不能拼接两个宿主结论。",
+  "requires_pi_choice": true,
+  "pending_experiment_running": false,
+  "animation_scope": "all frames actual saved fields; no interpolation",
+  "source_notes": "Map updates use actual paid source command and K displacement with independent noise instruments, not raw total-flow OLS; preset paid-gradient goal and motor axes retained.",
+  "route": "event_source_e021e281f383/scientific_result_requires_choice"
+}

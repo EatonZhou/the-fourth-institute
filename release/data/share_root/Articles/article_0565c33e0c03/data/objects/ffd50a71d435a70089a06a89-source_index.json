@@ -1,0 +1,39 @@
+{
+  "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/noisy_evidence_preparation_20261018/bb737931-b8ac-4671-864e-1b04060e5f87",
+  "result": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/bb737931-b8ac-4671-864e-1b04060e5f87/result.json",
+    "sha256": "55f443dc9cc693471ec95a48283424bf3d25b95b6db7d8990f2514ee43362920"
+  },
+  "audit_index": {
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/noisy_evidence_preparation_20261018/bb737931-b8ac-4671-864e-1b04060e5f87/audit_index.json",
+    "sha256": "3e5b98f6864130515b78f84c1f877f775146e68d726306bb99e434b1a82b73d6"
+  },
+  "stages": {
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/noisy_evidence_preparation_20261018/bb737931-b8ac-4671-864e-1b04060e5f87/stages.json",
+    "sha256": "25e3168ed32393546df5342cbffa573b0c3141d50f0caa7fff10aa4443692279"
+  },
+  "cycles": {
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/noisy_evidence_preparation_20261018/bb737931-b8ac-4671-864e-1b04060e5f87/cycles.json",
+    "sha256": "513459fea507987db5e13af8aaf77875387bb7433a432a229588eca0826e95c7"
+  },
+  "tapes": {
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/noisy_evidence_preparation_20261018/bb737931-b8ac-4671-864e-1b04060e5f87/tape_index.json",
+    "sha256": "bb05282530ff963917152c8408e50ac350f2b6c8fe69722dfc2634c41ef9328a"
+  },
+  "final_states": {
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/noisy_evidence_preparation_20261018/bb737931-b8ac-4671-864e-1b04060e5f87/final_index.json",
+    "sha256": "67487d9f9a504ae05aff0499e23578a3f100058850634bd65433f3a29e3583b8"
+  },
+  "ledger": {
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/noisy_evidence_preparation_20261018/bb737931-b8ac-4671-864e-1b04060e5f87/per_step.jsonl",
+    "sha256": "096d5f786835365d1727ff2fc5dc50e360f70881d872d05bdc1b76bf7057b4f5"
+  },
+  "training": {
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/noisy_evidence_preparation_20261018/bb737931-b8ac-4671-864e-1b04060e5f87/training.json",
+    "sha256": "fc7b4191d73b77ec999a04d2428105c5b6f755ad6bb8ec6ec0a1b57f6eed0d2f"
+  },
+  "frozen_rule": {
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/noisy_evidence_preparation_20261018/bb737931-b8ac-4671-864e-1b04060e5f87/frozen_rule.json",
+    "sha256": "54d7fcdec445fcc4c19f36993537e281f18bfa857a0907a1624e893646fcf5a8"
+  }
+}

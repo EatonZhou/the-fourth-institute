@@ -1,0 +1,125 @@
+{
+  "schema": "tfi.native-dependency-catalog.v1",
+  "packages": {
+    "linux/x86_64": {
+      "postgres": {
+        "version": "16.15",
+        "url": "https://github.com/theseus-rs/postgresql-binaries/releases/download/16.15.1/postgresql-16.15.1-x86_64-unknown-linux-gnu.tar.gz",
+        "sha256": "0c42e7c05f0cb596b82ac07990c96fc261ec2e8106055d557c76442d712dbf74",
+        "provider": "theseus-rs PostgreSQL build"
+      },
+      "nats": {
+        "version": "2.15.1",
+        "url": "https://github.com/nats-io/nats-server/releases/download/v2.15.1/nats-server-v2.15.1-linux-amd64.tar.gz",
+        "sha256": "bf5edc7b1ce98e885c368cb43a886eb148dc5d0551d99f3cf6141fb5e1954c70",
+        "provider": "NATS project"
+      },
+      "node": {
+        "version": "22.23.3",
+        "url": "https://nodejs.org/dist/v22.23.3/node-v22.23.3-linux-x64.tar.gz",
+        "sha256": "1084aa36196bba4c3a5e69a1ee388a6e4ff729dad09445fbcd434b28fe3c24af",
+        "provider": "Node.js project (includes npm)"
+      }
+    },
+    "linux/aarch64": {
+      "postgres": {
+        "version": "16.15",
+        "url": "https://github.com/theseus-rs/postgresql-binaries/releases/download/16.15.1/postgresql-16.15.1-aarch64-unknown-linux-gnu.tar.gz",
+        "sha256": "0a6fdf1639ac702fc8a97cd9e4ffeeea6281cf5c9f614beec3e4687525556bd8",
+        "provider": "theseus-rs PostgreSQL build"
+      },
+      "nats": {
+        "version": "2.15.1",
+        "url": "https://github.com/nats-io/nats-server/releases/download/v2.15.1/nats-server-v2.15.1-linux-arm64.tar.gz",
+        "sha256": "e2fbab4cad7d3c76e3052eb959570393c9d73ba756b70bf8e9eea61e9ae6d49c",
+        "provider": "NATS project"
+      },
+      "node": {
+        "version": "22.23.3",
+        "url": "https://nodejs.org/dist/v22.23.3/node-v22.23.3-linux-arm64.tar.gz",
+        "sha256": "5ced2d48d1d7198739b7f86804de0171aefb6823b684b12341d3321afc3cb0b2",
+        "provider": "Node.js project (includes npm)"
+      }
+    },
+    "macos/x86_64": {
+      "postgres": {
+        "version": "16.15",
+        "url": "https://github.com/theseus-rs/postgresql-binaries/releases/download/16.15.1/postgresql-16.15.1-x86_64-apple-darwin.tar.gz",
+        "sha256": "1b10aa67f9c111dd288f96d800c995dc424ab1e474fb8dd60ea6d05edb055f4c",
+        "provider": "theseus-rs PostgreSQL build"
+      },
+      "nats": {
+        "version": "2.15.1",
+        "url": "https://github.com/nats-io/nats-server/releases/download/v2.15.1/nats-server-v2.15.1-darwin-amd64.tar.gz",
+        "sha256": "3cba5976a4fbd022669d3401cab4147faeb2b4c079712c882edb9ae4e52feb06",
+        "provider": "NATS project"
+      },
+      "node": {
+        "version": "22.23.3",
+        "url": "https://nodejs.org/dist/v22.23.3/node-v22.23.3-darwin-x64.tar.gz",
+        "sha256": "8a677b0219178efd6eb0e475457c4afb452b521a92f6e67845a73bd85727f2a8",
+        "provider": "Node.js project (includes npm)"
+      }
+    },
+    "macos/aarch64": {
+      "postgres": {
+        "version": "16.15",
+        "url": "https://github.com/theseus-rs/postgresql-binaries/releases/download/16.15.1/postgresql-16.15.1-aarch64-apple-darwin.tar.gz",
+        "sha256": "0a70b8a3bbb991b5671dc7678ba9a8cf1a389f2fc595ac4834fb1e29e757b89e",
+        "provider": "theseus-rs PostgreSQL build"
+      },
+      "nats": {
+        "version": "2.15.1",
+        "url": "https://github.com/nats-io/nats-server/releases/download/v2.15.1/nats-server-v2.15.1-darwin-arm64.tar.gz",
+        "sha256": "ed0fe39222ec2e317c4d0e1a9cdc16c63ec523d94f9355d24a902a4db2655ffd",
+        "provider": "NATS project"
+      },
+      "node": {
+        "version": "22.23.3",
+        "url": "https://nodejs.org/dist/v22.23.3/node-v22.23.3-darwin-arm64.tar.gz",
+        "sha256": "23b25245dcfb9af7262f8ff142e9e2e0af025368117329e7a7458a51e5922f53",
+        "provider": "Node.js project (includes npm)"
+      }
+    },
+    "windows/x86_64": {
+      "postgres": {
+        "version": "16.15",
+        "url": "https://github.com/theseus-rs/postgresql-binaries/releases/download/16.15.1/postgresql-16.15.1-x86_64-pc-windows-msvc.tar.gz",
+        "sha256": "9d617660ac12b599b57481b4b7a3b9658d35fe3ebc2fd72c95ea595d775c95ad",
+        "provider": "theseus-rs PostgreSQL build"
+      },
+      "nats": {
+        "version": "2.15.1",
+        "url": "https://github.com/nats-io/nats-server/releases/download/v2.15.1/nats-server-v2.15.1-windows-amd64.zip",
+        "sha256": "4f7edfa376750b2720463bd22766ed469a5f13f378a643097866fcd953cbf7e3",
+        "provider": "NATS project"
+      },
+      "node": {
+        "version": "22.23.3",
+        "url": "https://nodejs.org/dist/v22.23.3/node-v22.23.3-win-x64.zip",
+        "sha256": "2b0ff57b049cda1bbcea2240eec20467018713c1efe1f7360c2681859b90ed71",
+        "provider": "Node.js project (includes npm)"
+      }
+    },
+    "windows/aarch64": {
+      "postgres": {
+        "version": "16.15",
+        "url": "https://github.com/theseus-rs/postgresql-binaries/releases/download/16.15.1/postgresql-16.15.1-aarch64-pc-windows-msvc.tar.gz",
+        "sha256": "51862a60500d3826394b8a0df5ec5d14840d180cdf97ea239295031c125d1104",
+        "provider": "theseus-rs PostgreSQL build"
+      },
+      "nats": {
+        "version": "2.15.1",
+        "url": "https://github.com/nats-io/nats-server/releases/download/v2.15.1/nats-server-v2.15.1-windows-arm64.zip",
+        "sha256": "888a62b665b3123edde84c2e39751e4d9ced1e0dc7a7a234a40c53f2bba40b6f",
+        "provider": "NATS project"
+      },
+      "node": {
+        "version": "22.23.3",
+        "url": "https://nodejs.org/dist/v22.23.3/node-v22.23.3-win-arm64.zip",
+        "sha256": "33dad22e4cef5ee8f9fbb1b0d037fdacd0e56d12a4580f0d63f68b894deab535",
+        "provider": "Node.js project (includes npm)"
+      }
+    }
+  }
+}

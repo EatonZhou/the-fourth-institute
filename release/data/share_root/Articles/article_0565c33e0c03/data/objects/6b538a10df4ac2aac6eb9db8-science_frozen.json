@@ -1,0 +1,9 @@
+{
+  "plan_sha": "6ed09e2addce3b96ad684e2afe94c387fdca62ad7fc66b65d06f373092d38190",
+  "source_unchanged": true,
+  "pilot_actual": 1920,
+  "science_steps": 26112,
+  "total_planned": 28032,
+  "no_new_arms_or_parameters": true,
+  "analysis_clarification": "reversal exposure wait before first legally completed feedback separated from subsequent recovery; missing choice measurements during forced exposures remain missing; existing actual costs retained"
+}

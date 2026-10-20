@@ -1,0 +1,14 @@
+{
+  "task": "lifetime_cue_reversal_20261019",
+  "mode": "science",
+  "job": "58bb9d10-1c13-4a48-b8ab-0270124d4a72",
+  "status": "complete",
+  "attempted": 26112,
+  "returned": 26112,
+  "unknown": 0,
+  "wall": 33.81539975502528,
+  "error": null,
+  "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/lifetime_cue_reversal_20261019/58bb9d10-1c13-4a48-b8ab-0270124d4a72",
+  "raw_bytes": 72061760,
+  "paths": 72
+}

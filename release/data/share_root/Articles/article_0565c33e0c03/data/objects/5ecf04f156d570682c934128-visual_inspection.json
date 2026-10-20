@@ -1,0 +1,19 @@
+{
+  "inspected_by": "resident_d3ccfa2d95b7",
+  "figures": [
+    "all_differences.png",
+    "fee_curves.png",
+    "202610195601_ring_both.png",
+    "202610195601_separate_seeds_both.png",
+    "202610195602_ring_both.png",
+    "202610195602_separate_seeds_both.png"
+  ],
+  "observations": [
+    "四实际新256/288/320/352/384序列已看；两环体均保孔、四分离均保小团",
+    "两ring O/C早期差先正后负，不能挑早峰；末N正而末C负",
+    "两分离O/C持续负、M/E显著负；N小增不足以补旧材料损失",
+    "旧5602 288/352缺帧明示，不作图像插值"
+  ],
+  "colour": "O red C green N blue; fixed0..1 display only; accounting float64",
+  "paper_manual_composite_complete": false
+}

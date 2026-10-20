@@ -1,0 +1,13 @@
+{
+  "task": "self_generated_recontact_learning_20261019",
+  "status": "complete",
+  "job": "2d40f3c4-19e3-4162-a16a-3829488b76c2",
+  "attempted": 4520,
+  "returned": 4520,
+  "unknown": 0,
+  "wall": 14.943810826982372,
+  "error": null,
+  "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/self_generated_recontact_learning_20261019/2d40f3c4-19e3-4162-a16a-3829488b76c2",
+  "raw_bytes": 22941438,
+  "paths": 16
+}

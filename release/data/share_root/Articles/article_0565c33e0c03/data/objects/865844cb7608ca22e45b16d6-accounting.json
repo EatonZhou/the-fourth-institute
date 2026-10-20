@@ -1,0 +1,17 @@
+{
+  "job_id": "10238c47-5624-4f8b-acee-a5a478f50549",
+  "body_cap": 1536,
+  "attempted": 1536,
+  "committed": 1536,
+  "remaining": 0,
+  "failed_attempts": 0,
+  "previews": 0,
+  "independent_energy": 0,
+  "prefix_replay": 0,
+  "static_initial_embeds": 2,
+  "static_arm_restores": 6,
+  "saved_first_last_restores": 12,
+  "new_policy_operator_checks": 0,
+  "old_checks_repeated": false,
+  "old_budgets_unchanged": true
+}

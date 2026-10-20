@@ -1,0 +1,14 @@
+{
+  "task": "coordinated_feedback_retention_20261019",
+  "status": "complete",
+  "job": "7650ded9-1c29-4999-ba79-570fb4f52048",
+  "attempted": 2048,
+  "returned": 2048,
+  "unknown": 0,
+  "known_readonly": 1024,
+  "wall": 6.357036445988342,
+  "error": null,
+  "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/coordinated_feedback_retention_20261019/7650ded9-1c29-4999-ba79-570fb4f52048",
+  "raw_bytes": 13837533,
+  "paths": 8
+}

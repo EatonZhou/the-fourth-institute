@@ -1,0 +1,34 @@
+{
+  "status": "passed",
+  "chronological_feedback_count": [
+    {
+      "id": "pure",
+      "seed": 0,
+      "morphology": "synthetic",
+      "policy": "error_directed",
+      "switch_cycle": 1,
+      "old_state": 0,
+      "new_state": 1,
+      "available_cycles": 3,
+      "recovered": true,
+      "elapsed_cycles": 3,
+      "feedback_to_recovery": 2
+    }
+  ],
+  "missing_breaks_recovery_streak": [
+    {
+      "id": "pure",
+      "seed": 0,
+      "morphology": "synthetic",
+      "policy": "error_directed",
+      "switch_cycle": 1,
+      "old_state": 0,
+      "new_state": 1,
+      "available_cycles": 3,
+      "recovered": false,
+      "elapsed_cycles": null,
+      "feedback_to_recovery": null
+    }
+  ],
+  "body_steps": 0
+}

@@ -1,0 +1,56 @@
+{
+  "edition": 3,
+  "core": [
+    {
+      "label": "thm:blind",
+      "role": "整个策略类别的不可辨别不变量",
+      "basis": "分布相同与历史归纳"
+    },
+    {
+      "label": "thm:floor",
+      "role": "不可辨别类的精确渐近Bayes误差",
+      "basis": "有限实验识别与类内后验"
+    },
+    {
+      "label": "thm:upper",
+      "role": "独立定义的覆盖率到可执行组织",
+      "basis": "实验设计、乘积亲和度、最大似然"
+    },
+    {
+      "label": "thm:adaptive-lower",
+      "role": "全部自适应组织的必要调用",
+      "basis": "序贯换测度与局部分配规划"
+    },
+    {
+      "label": "thm:main",
+      "role": "固定有限d和统一M下连接上下界",
+      "basis": "局部到全局平均与KL/Hellinger比较"
+    },
+    {
+      "label": "thm:dimension",
+      "role": "覆盖率不能替代任务规模的精确实例",
+      "basis": "随机线性观察、Fano和二点下界"
+    },
+    {
+      "label": "thm:span",
+      "role": "共同偏差模型的可辨别性和表示取得",
+      "basis": "二元线性代数"
+    },
+    {
+      "label": "thm:garbling",
+      "role": "消息压缩对覆盖率的影响",
+      "basis": "统计实验后处理"
+    },
+    {
+      "label": "thm:stop",
+      "role": "通信接收端完整证据前缀的可靠停止",
+      "basis": "Ville不等式与似然比鞅"
+    },
+    {
+      "label": "thm:robust",
+      "role": "概率表和消息精度的显式风险代价",
+      "basis": "分数扰动与亲和度估计"
+    }
+  ],
+  "priority_note": "以上为推导依赖和书内作用，不是未经核验的首创清单。"
+}

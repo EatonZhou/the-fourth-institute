@@ -1,0 +1,776 @@
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+#resourceBackupContent {
+  display: grid;
+  gap: 12px;
+}
+
+/* Overview --------------------------------------------------------------- */
+
+.resourceBackupHero {
+  display: grid;
+  grid-template-columns: minmax(400px, .9fr) minmax(0, 1.45fr);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--panel);
+  box-shadow: 0 10px 30px color-mix(in srgb, var(--text) 5%, transparent);
+}
+
+.resourceBackupHealth {
+  --backup-health-color: var(--accent);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  min-height: 126px;
+  padding: 20px;
+  border-right: 1px solid var(--border);
+}
+
+.resourceBackupHealth[data-status="healthy"] { --backup-health-color: var(--success, #2e8b66); }
+.resourceBackupHealth[data-status="running"] { --backup-health-color: var(--accent); }
+.resourceBackupHealth[data-status="warning"],
+.resourceBackupHealth[data-status="setup_required"] { --backup-health-color: var(--warning, #b27a19); }
+.resourceBackupHealth[data-status="error"] { --backup-health-color: var(--danger, #c94f57); }
+
+.resourceBackupHealthMark {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--backup-health-color) 24%, var(--border));
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--backup-health-color) 9%, var(--panel));
+  color: var(--backup-health-color);
+}
+
+.resourceBackupHealthMark svg {
+  width: 23px;
+  height: 23px;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.resourceBackupEyebrow {
+  margin: 0 0 5px;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.resourceBackupHealth h1 {
+  margin: 0;
+  font-size: clamp(19px, 1.65vw, 25px);
+  font-weight: 720;
+  letter-spacing: -.022em;
+}
+
+.resourceBackupHealth p {
+  max-width: 660px;
+  margin: 7px 0 0;
+  color: var(--muted);
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+.resourceBackupHeroMetrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-self: center;
+  min-width: 0;
+  margin: 12px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--panel-2) 66%, var(--panel));
+}
+
+.resourceBackupHeroMetric {
+  min-width: 0;
+  padding: 14px;
+}
+
+.resourceBackupHeroMetric + .resourceBackupHeroMetric {
+  border-left: 1px solid var(--border);
+}
+
+.resourceBackupHeroMetric dt {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .035em;
+}
+
+.resourceBackupHeroMetric dd {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+  margin: 7px 0 0;
+}
+
+.resourceBackupHeroMetric strong,
+.resourceBackupHeroMetric small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resourceBackupHeroMetric strong {
+  font-size: 15px;
+  font-weight: 680;
+}
+
+.resourceBackupHeroMetric small {
+  color: var(--muted);
+  font-size: 9.5px;
+}
+
+/* Page composition ------------------------------------------------------- */
+
+.resourceBackupLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.85fr) minmax(320px, .75fr);
+  align-items: start;
+  gap: 12px;
+}
+
+.resourceBackupColumn {
+  display: grid;
+  min-width: 0;
+  gap: 12px;
+}
+
+.resourceBackupPanel {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+  box-shadow: 0 7px 22px color-mix(in srgb, var(--text) 4%, transparent);
+}
+
+.resourceBackupPanelHeader {
+  display: flex;
+  min-height: 58px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+}
+
+.resourceBackupPanelHeading {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.resourceBackupPanelHeading h2 {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 720;
+}
+
+.resourceBackupPanelHeading p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10.5px;
+  line-height: 1.4;
+}
+
+.resourceBackupPanelMeta {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.resourceBackupPanelBody {
+  padding: 14px 16px;
+}
+
+.resourceBackupProtectionBody {
+  display: grid;
+}
+
+.resourceBackupGroup + .resourceBackupGroup {
+  border-top: 1px solid var(--border);
+}
+
+.resourceBackupSubheading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 16px 9px;
+}
+
+.resourceBackupSubheading > div {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.resourceBackupSubheading h3 {
+  margin: 0;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.resourceBackupSubheading p,
+.resourceBackupSubheading > span {
+  margin: 0;
+  color: var(--muted);
+  font-size: 9.5px;
+  line-height: 1.4;
+}
+
+.resourceBackupSubheading > span {
+  flex: 0 0 auto;
+}
+
+/* Active run ------------------------------------------------------------- */
+
+.resourceBackupActive {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.resourceBackupPulse {
+  position: relative;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.resourceBackupPulse::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  border-radius: inherit;
+  will-change: opacity, transform;
+  animation: resourceBackupPulse 1.8s ease-out infinite;
+}
+
+@keyframes resourceBackupPulse {
+  0% { opacity: .58; transform: scale(1); }
+  70%, 100% { opacity: 0; transform: scale(2.5); }
+}
+
+.resourceBackupActiveMain {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.resourceBackupActiveMain strong { font-size: 12px; }
+.resourceBackupActiveMain span { color: var(--muted); font-size: 10px; }
+
+.resourceBackupProgress {
+  grid-column: 2 / -1;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--panel-2);
+}
+
+.resourceBackupProgress > span {
+  display: block;
+  width: var(--backup-progress, 18%);
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width 180ms ease;
+}
+
+/* Policies --------------------------------------------------------------- */
+
+.resourceBackupPlanGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0 16px 14px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--panel-2) 52%, var(--panel));
+}
+
+.resourceBackupPlan {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+  padding: 13px;
+}
+
+.resourceBackupPlan + .resourceBackupPlan {
+  border-left: 1px solid var(--border);
+}
+
+.resourceBackupPlanTop {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.resourceBackupPlanTop strong {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 11.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resourceBackupPlan p {
+  min-height: 29px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.resourceBackupPlanMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--muted);
+  font: 9.5px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* Coverage --------------------------------------------------------------- */
+
+.resourceBackupCoverageGrid {
+  display: grid;
+  border-top: 1px solid var(--border);
+}
+
+.resourceBackupCoverage {
+  display: grid;
+  grid-template-columns:
+    minmax(160px, .72fr)
+    minmax(230px, 1.4fr)
+    minmax(120px, .62fr)
+    auto;
+  min-width: 0;
+  align-items: center;
+  gap: 16px;
+  padding: 11px 16px;
+}
+
+.resourceBackupCoverage + .resourceBackupCoverage {
+  border-top: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+}
+
+.resourceBackupCoverageIdentity,
+.resourceBackupCoverageSnapshot {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.resourceBackupCoverageIdentity strong,
+.resourceBackupCoverageSnapshot strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resourceBackupCoverageIdentity strong {
+  font-size: 11.5px;
+}
+
+.resourceBackupCoverageIdentity span,
+.resourceBackupCoverageSnapshot span {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.resourceBackupCoverageIdentity span {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.resourceBackupCoverage p {
+  min-width: 0;
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.resourceBackupCoverageSnapshot strong {
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.resourceBackupCoverage > .portalStatus {
+  justify-self: end;
+}
+
+/* Runs ------------------------------------------------------------------- */
+
+.resourceBackupRunsPanel .resourceBackupPanelBody {
+  padding: 5px 8px 8px;
+}
+
+.resourceBackupRunList {
+  display: grid;
+}
+
+.resourceBackupRun {
+  appearance: none;
+  display: grid;
+  grid-template-columns: minmax(130px, .8fr) minmax(160px, 1fr) minmax(120px, .65fr) auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 50px;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.resourceBackupRun + .resourceBackupRun {
+  border-top: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+}
+
+.resourceBackupRun:hover {
+  background: var(--panel-2);
+}
+
+.resourceBackupRun:focus-visible {
+  outline: none;
+  box-shadow: var(--portal-focus-ring);
+}
+
+.resourceBackupRunPrimary,
+.resourceBackupRunMeta {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.resourceBackupRunPrimary strong,
+.resourceBackupRunMeta strong {
+  overflow: hidden;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resourceBackupRunPrimary span,
+.resourceBackupRunMeta span,
+.resourceBackupRunTime {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 9.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resourceBackupRunEmpty {
+  padding: 20px 12px;
+  color: var(--muted);
+  font-size: 10.5px;
+  text-align: center;
+}
+
+/* Side rail -------------------------------------------------------------- */
+
+.resourceBackupRepository .resourceBackupPanelBody {
+  padding-block: 4px;
+}
+
+.resourceBackupDetailGrid.resourceBackupRepositoryGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+
+.resourceBackupDetailGrid.resourceBackupRepositoryGrid > div {
+  display: grid;
+  grid-template-columns: minmax(88px, .62fr) minmax(0, 1.38fr);
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.resourceBackupDetailGrid.resourceBackupRepositoryGrid > div + div {
+  border-top: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+}
+
+.resourceBackupDetailGrid.resourceBackupRepositoryGrid dt {
+  margin: 0;
+}
+
+.resourceBackupWarnings {
+  display: grid;
+}
+
+.resourceBackupAttention .resourceBackupPanelBody {
+  padding-block: 4px 8px;
+}
+
+.resourceBackupWarning {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 9px;
+  padding: 11px 0;
+}
+
+.resourceBackupWarning + .resourceBackupWarning {
+  border-top: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+}
+
+.resourceBackupWarningMark {
+  display: grid;
+  width: 21px;
+  height: 21px;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--warning, #b27a19) 12%, var(--panel));
+  color: var(--warning, #9a6510);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.resourceBackupWarning strong {
+  display: block;
+  font-size: 11px;
+}
+
+.resourceBackupWarning p {
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.resourceBackupRecovery {
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--accent) 5%, var(--panel)), var(--panel) 72%);
+}
+
+.resourceBackupRestore {
+  display: grid;
+  gap: 10px;
+}
+
+.resourceBackupRestore p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10.5px;
+  line-height: 1.5;
+}
+
+.resourceBackupRestore .portalButton {
+  justify-self: start;
+  text-decoration: none;
+}
+
+/* Detail dialog ---------------------------------------------------------- */
+
+.resourceBackupDetailGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  margin: 0;
+}
+
+.resourceBackupDetailGrid > div {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--panel-2);
+}
+
+.resourceBackupDetailGrid dt {
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.resourceBackupDetailGrid dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font: 10.5px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* Responsive ------------------------------------------------------------- */
+
+@media (max-width: 1240px) {
+  .resourceBackupHero {
+    grid-template-columns: minmax(360px, .82fr) minmax(0, 1.35fr);
+  }
+
+  .resourceBackupLayout {
+    grid-template-columns: minmax(0, 1.55fr) minmax(300px, .72fr);
+  }
+}
+
+@media (max-width: 1080px) {
+  .resourceBackupLayout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .resourceBackupRail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .resourceBackupRecovery {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 920px) {
+  .resourceBackupHero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .resourceBackupHealth {
+    min-height: 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .resourceBackupCoverage {
+    grid-template-columns: minmax(150px, .72fr) minmax(210px, 1.35fr) minmax(110px, .6fr) auto;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 760px) {
+  .resourceBackupHealth {
+    grid-template-columns: auto minmax(0, 1fr);
+    padding: 16px;
+  }
+
+  .resourceBackupHealthMark {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+  }
+
+  .resourceBackupHealth h1 {
+    font-size: 19px;
+  }
+
+  .resourceBackupHeroMetrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 10px;
+  }
+
+  .resourceBackupHeroMetric {
+    padding: 12px;
+  }
+
+  .resourceBackupHeroMetric:nth-child(3) {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--border);
+    border-left: 0;
+  }
+
+  .resourceBackupRail {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .resourceBackupRecovery {
+    grid-column: auto;
+  }
+
+  .resourceBackupPanelHeader {
+    min-height: 54px;
+    padding: 11px 13px;
+  }
+
+  .resourceBackupSubheading {
+    padding-inline: 13px;
+  }
+
+  .resourceBackupPlanGrid {
+    grid-template-columns: minmax(0, 1fr);
+    margin-inline: 13px;
+  }
+
+  .resourceBackupPlan + .resourceBackupPlan {
+    border-top: 1px solid var(--border);
+    border-left: 0;
+  }
+
+  .resourceBackupCoverage {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 7px 10px;
+    padding: 12px 13px;
+  }
+
+  .resourceBackupCoverageIdentity {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .resourceBackupCoverage > .portalStatus {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: start;
+  }
+
+  .resourceBackupCoverage p,
+  .resourceBackupCoverageSnapshot {
+    grid-column: 1 / -1;
+  }
+
+  .resourceBackupCoverageSnapshot {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .resourceBackupRun {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .resourceBackupRunMeta,
+  .resourceBackupRunTime {
+    display: none;
+  }
+
+  .resourceBackupDetailGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-portal-motion="full"]) .resourceBackupPulse::after { animation: none; opacity: .35; transform: scale(1.45); }
+}
+
+:root[data-portal-motion="reduced"] .resourceBackupPulse::after { animation: none; opacity: .35; transform: scale(1.45); }

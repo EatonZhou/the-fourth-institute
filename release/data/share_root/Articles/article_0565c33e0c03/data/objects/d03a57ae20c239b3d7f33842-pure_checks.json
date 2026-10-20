@@ -1,0 +1,51 @@
+{
+  "native": 0,
+  "control": {
+    "research.desired_state": "running",
+    "research.started": true
+  },
+  "parents": [
+    {
+      "parent": "202610197503_0_0_fast_delta_life",
+      "sha256": "9eb2f0fa06814391a93d93596a280ddeffe6784a3f27cab6bc67c05d38a25d3b",
+      "native": 0,
+      "original_rates_bitwise_equal": true,
+      "reconstruction_error": 8.881784197001252e-16,
+      "neighbor_mass_sum_error": 4.440892098500626e-16,
+      "M": 24.000000000000007,
+      "E": 64.92237957246172
+    },
+    {
+      "parent": "202610197503_0_1_fast_delta_life",
+      "sha256": "1b507d298780ccbec87cd5c0b9a8043661bd083abf6276d62d106a828bc613dd",
+      "native": 0,
+      "original_rates_bitwise_equal": true,
+      "reconstruction_error": 8.881784197001252e-16,
+      "neighbor_mass_sum_error": 4.996003610813204e-16,
+      "M": 23.999999999999986,
+      "E": 93.34593173365278
+    },
+    {
+      "parent": "202610197504_1_0_fast_delta_life",
+      "sha256": "13dc391356d4e10de38a8d5b3cc343f8f6cfc08355597a398ea21ea701ae0ca8",
+      "native": 0,
+      "original_rates_bitwise_equal": true,
+      "reconstruction_error": 8.881784197001252e-16,
+      "neighbor_mass_sum_error": 6.661338147750939e-16,
+      "M": 24.000000000000007,
+      "E": 64.94088627125905
+    },
+    {
+      "parent": "202610197504_1_1_fast_delta_life",
+      "sha256": "b91181daf83046a7a9bbffa864846b9cb2619aa7d05c191a8ccaf302c8c1792f",
+      "native": 0,
+      "original_rates_bitwise_equal": true,
+      "reconstruction_error": 8.881784197001252e-16,
+      "neighbor_mass_sum_error": 2.220446049250313e-16,
+      "M": 24.000000000000007,
+      "E": 93.34300998147663
+    }
+  ],
+  "no_empty_bridge": true,
+  "one_hop": true
+}

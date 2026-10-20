@@ -1,0 +1,148 @@
+"""One frozen sequential CPU job, including physical boundary calls."""
+import csv
+import json
+import os
+from pathlib import Path
+import signal
+import time
+import numpy as np
+from .core import MaterialActionBody, fixed_action, sha
+from environment_evolution.regenerative_actor.model import ForwardPermit
+from environment_evolution.regenerative_actor.runner import control
+
+SRC=Path(__file__).resolve().parents[2]
+OUT=SRC/'environment_evolution/results/material_action_response_20261018'
+DECISION=SRC.parent/'knowledge_base/research/experience_learning/material_action_response_20261018.json'
+STOP=False
+
+def write(path, value):
+    path.parent.mkdir(parents=True,exist_ok=True)
+    tmp=path.with_suffix(path.suffix+'.tmp')
+    tmp.write_text(json.dumps(value,indent=2,ensure_ascii=False)+'\n');tmp.replace(path)
+
+def prepare():
+    OUT.mkdir(parents=True,exist_ok=True)
+    if (OUT/'plan.json').exists(): raise RuntimeError('plan already frozen')
+    sources=[]
+    for r in csv.DictReader(open(SRC/'environment_evolution/results/experience_diverse_generation_screen_20261018/source_packets.csv')):
+        if r['step']=='128' and any(s in r['branch'] for s in ('0ac804','6bd5bf')):
+            body=MaterialActionBody.from_formation(r['path'],r['sha256'])
+            sources.append(dict(name=r['branch'].split('--')[0],path=r['path'],sha256=r['sha256'],
+                M=float(body.state['body'].sum()),E=float(body.state['energy'].sum())))
+    assert len(sources)==2
+    files=[__file__,str(Path(__file__).with_name('core.py')),str(DECISION)]
+    files += [str(SRC/p) for p in ['environment_evolution/regenerative_actor/model.py',
+        'environment_evolution/regenerative_actor/conversion.py','local_learning/material_transport.py',
+        'morphology_evolution/dual_kernel.py','simulation/core.py','simulation/snapshot.py']]
+    plan=dict(task='material_action_response_20261018',sources=sources,
+        source_sha256={p:sha(p) for p in files},
+        modes=['none','gradient','shear_x','shear_y'],horizon=256,active_steps=128,
+        geometry='development',gain='inherited polarity_gain=.5',
+        fuel_source='.004 * max(two fixed Gaussian patches)',precursor_source='.001 * same patch',
+        initial_stock='unmodified actual complete step128',resistance='symmetric face .2 at x=56+-1 outside central gap',
+        boundary_calls=2,planned_host_steps=2050,host_cap=3072,worker_cap=180,
+        script_wall_limit=82,cpu_threads=2,gpu=0,raw_cap_bytes=4*1024**3,
+        joint_cap_steps=12288,joint_worker_cap=600,d3_reserved_steps=9216,d3_reserved_worker=420,
+        samples=[1,2,4,8,16,32,64,96,128,129,160,192,224,256],
+        request_key='ce2-material-action-response-20261018-pilot-v1',
+        intervention='same complete 128 state per body, local actuator only; 128 active + 128 no-drive',
+        comparisons='same upper bound, not matched actual flux/work; fixed gradient is a strong baseline',
+        policy_information='current local body/energy/fuel/precursor/polarity, face permeability and 4-neighbour stencil; no future supply',
+        legacy='old run/brake and allocation policies disabled; inherited contents transported, T00 stock transport retained')
+    write(OUT/'plan.json',plan)
+    print(json.dumps(dict(plan=str(OUT/'plan.json'),sha256=sha(OUT/'plan.json'),planned_host_steps=2050)))
+
+def main():
+    start=time.monotonic();plan=json.loads((OUT/'plan.json').read_text())
+    for p,d in plan['source_sha256'].items():
+        if sha(p)!=d: raise RuntimeError('frozen source changed: '+p)
+    control()
+    run=Path(os.environ['LENIA_RUN_DIR'])
+    raw=Path('/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018')/os.environ['LENIA_JOB_ID']
+    raw.mkdir(parents=True,exist_ok=False)
+    permit=ForwardPermit(plan['host_cap'],str(DECISION))
+    results=[];checks_log=[];committed=0
+    def halt(*_):
+        global STOP
+        STOP=True
+    signal.signal(signal.SIGTERM,halt);signal.signal(signal.SIGINT,halt)
+    def gate():
+        if STOP or time.monotonic()-start>plan['script_wall_limit']:raise InterruptedError('time or stop gate')
+    def advance(env,a,context):
+        nonlocal committed
+        gate();write(run/'pending.json',dict(context=context,next_attempt=permit.attempted+1))
+        maps,checks=env.step(a,permit=permit);committed+=1
+        (run/'pending.json').unlink()
+        assert max(abs(checks[k]) for k in ('material_error','energy_error','reconstruction_error','K_column_error','transport_error'))<1e-8
+        assert maps['K_weights'].min()>=0 and maps['K_stay'].min()>=0
+        assert maps['keep'].min()>=-1e-12 and maps['keep'].max()<=1+1e-12
+        return maps,checks
+    try:
+        for source in plan['sources']:
+            control();env=MaterialActionBody.from_formation(source['path'],source['sha256'])
+            env.state['energy'][:]=0
+            a=np.zeros((2,)+env.state['body'].shape);a[1]=1
+            maps,checks=advance(env,a,source['name']+'/zero_donor_energy')
+            assert np.max(maps['K_weights'])==0
+            assert maps['actor_movement_paid'].sum()==0
+            checks_log.append(dict(source=source['name'],check='current food cannot prepay donor work',**checks))
+            np.savez_compressed(raw/(source['name']+'_boundary.npz'),**maps)
+        for source in plan['sources']:
+            for mode in plan['modes']:
+                control();gate();folder=raw/(source['name']+'--'+mode);folder.mkdir()
+                env=MaterialActionBody.from_formation(source['path'],source['sha256'])
+                env.save(folder/'initial128.npz')
+                restored=MaterialActionBody.restore(folder/'initial128.npz')
+                assert all(np.array_equal(env.state[k],restored.state[k]) for k in env.state)
+                initial={k:float(env.state[k].sum()) for k in ('body','energy','fuel','precursor','waste','heat','dead_energy')}
+                rows=[];maxerrors={};last=None
+                try:
+                    for j in range(plan['horizon']):
+                        local=env.observe_local()
+                        a=fixed_action(local, mode if j<plan['active_steps'] else 'none')
+                        maps,checks=advance(env,a,f'{source["name"]}/{mode}/{j+1}')
+                        for k in ('material_error','energy_error','reconstruction_error','K_column_error','transport_error'):
+                            maxerrors[k]=max(maxerrors.get(k,0),abs(checks[k]))
+                        row=dict(step=env.clock,offset=j+1,active=j<128,
+                            M=float(env.state['body'].sum()),E=float(env.state['energy'].sum()),
+                            U=float(maps['uptake'].sum()),born=float(maps['born'].sum()),death=float(maps['death'].sum()),
+                            moved=float(maps['actor_flux_executed'].sum()),
+                            requested_work=float(maps['actor_movement_intended_source'].sum()),
+                            denied_work=float(maps['actor_movement_denied_source'].sum()),
+                            movement_paid=float(maps['actor_movement_paid'].sum()),
+                            basal_paid=float(maps['actor_basal_paid'].sum()),
+                            basal_unpaid=float(maps['actor_basal_unpaid'].sum()),
+                            heat=float(env.state['heat'].sum()),waste=float(env.state['waste'].sum()),
+                            dead_energy=float(env.state['dead_energy'].sum()),
+                            fuel=float(env.state['fuel'].sum()),precursor=float(env.state['precursor'].sum()),
+                            input_E=env.input_energy,input_M=env.input_material,
+                            founder=float(env.state['founder_mass'].sum()))
+                        rows.append(row);last=row
+                        if j+1 in plan['samples']:
+                            np.savez_compressed(folder/f'receipt_{env.clock:06d}.npz',**maps,
+                                state_body=env.state['body'],state_energy=env.state['energy'],
+                                state_fuel=env.state['fuel'],state_precursor=env.state['precursor'])
+                        if j+1==128:env.save(folder/'withdraw256.npz')
+                    env.save(folder/'final384.npz')
+                finally:
+                    if rows:
+                        with (folder/'steps.csv').open('w') as f:
+                            w=csv.DictWriter(f,fieldnames=list(rows[0]));w.writeheader();w.writerows(rows)
+                        result=dict(source=source['name'],mode=mode,steps=len(rows),initial=initial,final=last,
+                            totals={k:sum(r[k] for r in rows) for k in ['U','born','death','moved','movement_paid','basal_paid','basal_unpaid']},
+                            recovery_U=sum(r['U'] for r in rows if not r['active']),
+                            body_time=sum(r['M']*.05 for r in rows),max_errors=maxerrors,raw_directory=str(folder))
+                        results.append(result);write(folder/'outcome.json',result)
+        assert permit.attempted==plan['planned_host_steps']
+    finally:
+        sizes=sum(p.stat().st_size for p in raw.rglob('*') if p.is_file())
+        result=dict(status='completed' if permit.attempted==2050 and len(results)==8 and all(r['steps']==256 for r in results) else 'incomplete',
+            job_id=os.environ['LENIA_JOB_ID'],attempted_host_steps=permit.attempted,committed_host_steps=committed,
+            script_seconds=time.monotonic()-start,raw_bytes=sizes,raw_directory=str(raw),boundaries=checks_log,
+            outcomes=results,plan_sha256=sha(OUT/'plan.json'),raw_cap_ok=sizes<=plan['raw_cap_bytes'])
+        write(run/'result.json',result);write(OUT/'result.json',result)
+        print(json.dumps({k:v for k,v in result.items() if k not in ('outcomes','boundaries')}),flush=True)
+
+if __name__=='__main__':
+    import sys
+    prepare() if '--prepare' in sys.argv else main()

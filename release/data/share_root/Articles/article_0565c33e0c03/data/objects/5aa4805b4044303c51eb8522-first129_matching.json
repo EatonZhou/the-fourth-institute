@@ -1,0 +1,296 @@
+[
+  {
+    "candidate": "genome_0ac80448a534dc953505",
+    "step": 129,
+    "arm": "T10",
+    "reference": "T00",
+    "fields": {
+      "actor_transport_weights": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      },
+      "positive_request": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      },
+      "rejected_capacity": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      },
+      "rejected_template": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      },
+      "template_support": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      },
+      "joint_old_body": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      },
+      "L_raw": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      },
+      "survivor_reconstructed": {
+        "exact": false,
+        "max_abs": 1.1102230246251565e-16,
+        "within_1e12": true
+      }
+    },
+    "survivor_note": "survivor reconstructed as next body minus actual births; raw cancellation retained, not a replay"
+  },
+  {
+    "candidate": "genome_0ac80448a534dc953505",
+    "step": 129,
+    "arm": "T01",
+    "reference": "T00",
+    "fields": {
+      "actor_transport_weights": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      },
+      "positive_request": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      },
+      "rejected_capacity": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      },
+      "rejected_template": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      },
+      "template_support": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      },
+      "joint_old_body": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      },
+      "L_raw": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      },
+      "survivor_reconstructed": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      }
+    },
+    "survivor_note": "survivor reconstructed as next body minus actual births; raw cancellation retained, not a replay"
+  },
+  {
+    "candidate": "genome_0ac80448a534dc953505",
+    "step": 129,
+    "arm": "T11",
+    "reference": "T00",
+    "fields": {
+      "actor_transport_weights": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      },
+      "positive_request": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      },
+      "rejected_capacity": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      },
+      "rejected_template": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      },
+      "template_support": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      },
+      "joint_old_body": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      },
+      "L_raw": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      },
+      "survivor_reconstructed": {
+        "exact": false,
+        "max_abs": 1.1102230246251565e-16,
+        "within_1e12": true
+      }
+    },
+    "survivor_note": "survivor reconstructed as next body minus actual births; raw cancellation retained, not a replay"
+  },
+  {
+    "candidate": "genome_6bd5bfd2f629f9414376",
+    "step": 129,
+    "arm": "T10",
+    "reference": "T00",
+    "fields": {
+      "actor_transport_weights": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      },
+      "positive_request": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      },
+      "rejected_capacity": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      },
+      "rejected_template": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      },
+      "template_support": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      },
+      "joint_old_body": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      },
+      "L_raw": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      },
+      "survivor_reconstructed": {
+        "exact": false,
+        "max_abs": 5.551115123125783e-17,
+        "within_1e12": true
+      }
+    },
+    "survivor_note": "survivor reconstructed as next body minus actual births; raw cancellation retained, not a replay"
+  },
+  {
+    "candidate": "genome_6bd5bfd2f629f9414376",
+    "step": 129,
+    "arm": "T01",
+    "reference": "T00",
+    "fields": {
+      "actor_transport_weights": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      },
+      "positive_request": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      },
+      "rejected_capacity": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      },
+      "rejected_template": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      },
+      "template_support": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      },
+      "joint_old_body": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      },
+      "L_raw": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      },
+      "survivor_reconstructed": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      }
+    },
+    "survivor_note": "survivor reconstructed as next body minus actual births; raw cancellation retained, not a replay"
+  },
+  {
+    "candidate": "genome_6bd5bfd2f629f9414376",
+    "step": 129,
+    "arm": "T11",
+    "reference": "T00",
+    "fields": {
+      "actor_transport_weights": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      },
+      "positive_request": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      },
+      "rejected_capacity": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      },
+      "rejected_template": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      },
+      "template_support": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      },
+      "joint_old_body": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      },
+      "L_raw": {
+        "exact": true,
+        "max_abs": 0.0,
+        "within_1e12": true
+      },
+      "survivor_reconstructed": {
+        "exact": false,
+        "max_abs": 5.551115123125783e-17,
+        "within_1e12": true
+      }
+    },
+    "survivor_note": "survivor reconstructed as next body minus actual births; raw cancellation retained, not a replay"
+  }
+]

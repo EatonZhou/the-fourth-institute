@@ -1,0 +1,26 @@
+[
+  {
+    "branch": "reference_anisotropic--connected_trilobe--excised",
+    "step": 257,
+    "sha256": "cd638e95fa06d6d1be93d13996eff0c9c34f859a6ca1d60f9bbd62fc8532eeb4",
+    "native_calls": 0
+  },
+  {
+    "branch": "reference_anisotropic--connected_trilobe--excised",
+    "step": 384,
+    "sha256": "a95ac10b8282b5703aa729d1b46eef96bfa75d2e0c512364e6c9ccd7d6e75be0",
+    "native_calls": 0
+  },
+  {
+    "branch": "compact_ring_core_outer--bridged_longbody--excised",
+    "step": 257,
+    "sha256": "2b9cd056dba26a01352cbf65589e7ff2427bc38bcf1b9aa0c1c72225e1cec8da",
+    "native_calls": 0
+  },
+  {
+    "branch": "compact_ring_core_outer--bridged_longbody--excised",
+    "step": 384,
+    "sha256": "2870ef26d27d37f4dfdba5f97918dddfa23e2ae527d348b44c5926ee0b3a9620",
+    "native_calls": 0
+  }
+]

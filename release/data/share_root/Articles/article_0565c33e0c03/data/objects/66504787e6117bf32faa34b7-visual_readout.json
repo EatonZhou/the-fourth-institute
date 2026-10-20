@@ -1,0 +1,21 @@
+{
+  "personally_viewed": [
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/developmental_history_rule_swap_20261019/actual_compact_colocated.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/developmental_history_rule_swap_20261019/actual_compact_separated.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/developmental_history_rule_swap_20261019/actual_double_lobe_colocated.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/developmental_history_rule_swap_20261019/actual_double_lobe_separated.png"
+  ],
+  "clocks": [
+    128,
+    192,
+    256
+  ],
+  "coordinate_system": "actual grid coordinates; same crop per context, shared density 0..1",
+  "observations": {
+    "compact_colocated": "dense rim and lower-density core; current child rule retains a thicker edge",
+    "compact_separated": "narrowing compact oval/diamond; no gross topology event",
+    "double_lobe_colocated": "connected asymmetric lobes with unequal low-density interiors",
+    "double_lobe_separated": "contracted connected elongated body; extra M under child rule is founder retention"
+  },
+  "limitation": "finite saved frames, not stability; no post128 lineage inference"
+}

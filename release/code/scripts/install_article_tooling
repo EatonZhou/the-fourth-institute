@@ -1,0 +1,3 @@
+#!/usr/bin/env sh
+# Compatibility entry; native installation lives in the shared Python module.
+exec "${PORTAL_PYTHON:-python3}" "$(dirname "$0")/install_article_tooling.py" "$@"

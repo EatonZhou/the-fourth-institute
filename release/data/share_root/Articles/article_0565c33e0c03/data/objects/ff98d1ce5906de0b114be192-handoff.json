@@ -1,0 +1,70 @@
+{
+  "task": "resource_matched_morphogenesis_20261018",
+  "owner": "resident_d3ccfa2d95b7",
+  "status": "completed",
+  "objective_met": false,
+  "result": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/resource_matched_morphogenesis_20261018/result.json",
+    "sha256": "6e92caa4d83b99f81a1d3b5a12d31dfa6e9313eb1e33c26248640c0da59b7fc3",
+    "bytes": 798
+  },
+  "summary": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/resource_matched_morphogenesis_20261018/summary.json",
+    "sha256": "8a5eae2dcb0b895c2a887a9744d6d32ef685d222d1bf2d810a73f104578654fe",
+    "bytes": 4150
+  },
+  "report": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/resource_matched_morphogenesis_20261018/REPORT.txt",
+    "sha256": "fba79afe310aa2ebfa3ec1b791b8cd518d2ce487f3fc561efb1fcabe18b4df04",
+    "bytes": 3623
+  },
+  "plan": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/resource_matched_morphogenesis_20261018/plan.json",
+    "sha256": "ab089934ef4aae2e336d441a255d27e23bef164e48b268d442f5f8428112a676",
+    "bytes": 56392
+  },
+  "manifest": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/resource_matched_morphogenesis_20261018/manifest.json",
+    "sha256": "e8a0c37d82d7a12c1b5a0d90b11433ecd070f973bf75ebb12cbeb1095acb244d",
+    "bytes": 13057
+  },
+  "raw_manifest": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/resource_matched_morphogenesis_20261018/raw_manifest.json",
+    "sha256": "16c899868a6559247cad8c5e59e059adc75a45fb138ed43a4de6f433e36ff597",
+    "bytes": 123732
+  },
+  "figures": [
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/resource_matched_morphogenesis_20261018/formation_generation_1.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/resource_matched_morphogenesis_20261018/formation_generation_2.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/resource_matched_morphogenesis_20261018/formation_curves.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/resource_matched_morphogenesis_20261018/actual_deployment.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/resource_matched_morphogenesis_20261018/deployment_sequence.png"
+  ],
+  "budget": {
+    "native_cap": 4160,
+    "worker_cap": 1500,
+    "attempted": 2563,
+    "committed": 2563,
+    "failed_calls": 0,
+    "counts": {
+      "boundary": 3,
+      "formation": 2048,
+      "deployment": 512
+    },
+    "job_attempts": 2,
+    "first_attempt_export_failure": true,
+    "replayed_steps": 0,
+    "worker_seconds": 257.971584,
+    "remaining_steps": 1597,
+    "remaining_worker_seconds": 1242.028416,
+    "old_budget_used": 0,
+    "unused_not_transferable": true
+  },
+  "total_artifact_bytes": 304848073,
+  "scope": "Actual new life0 hereditary search and qualified-parent paired deployment only; no lifetime learning",
+  "visual_readout": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/resource_matched_morphogenesis_20261018/VISUAL_REVIEW.txt",
+    "sha256": "8c8e14b0b7818503a5a860d5baf6ba6358de732c04d492b3dea14bbeaf78cd40",
+    "bytes": 1549
+  }
+}

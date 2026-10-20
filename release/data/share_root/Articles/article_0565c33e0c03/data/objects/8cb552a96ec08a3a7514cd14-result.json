@@ -1,0 +1,19 @@
+{
+  "task": "turnover_compatible_morphogenesis_20261019",
+  "status": "completed",
+  "job": "890654b4-a7fa-462d-acf4-3d995635b0b9",
+  "attempted": 6144,
+  "committed": 6144,
+  "settled": 6144,
+  "extra_boundary_native": 0,
+  "wall_seconds": 153.5839511359809,
+  "failure": null,
+  "complete_paths": 36,
+  "formation_paths": 24,
+  "future_paths": 12,
+  "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/turnover_compatible_morphogenesis_20261019/890654b4-a7fa-462d-acf4-3d995635b0b9",
+  "raw_bytes": 742625831,
+  "objective_met": false,
+  "old_steps_replayed": 0,
+  "old_budget_used": 0
+}

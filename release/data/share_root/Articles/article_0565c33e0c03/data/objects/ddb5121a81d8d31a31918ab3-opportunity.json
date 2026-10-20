@@ -1,0 +1,22 @@
+{
+  "related_g0_full": true,
+  "related_g0_uniform": true,
+  "related_g0_instant": true,
+  "related_g0_delta": true,
+  "related_g0_risk": true,
+  "related_g1_full": true,
+  "related_g1_uniform": true,
+  "related_g1_instant": true,
+  "related_g1_delta": true,
+  "related_g1_risk": true,
+  "independent_g0_full": true,
+  "independent_g0_uniform": true,
+  "independent_g0_instant": true,
+  "independent_g0_delta": true,
+  "independent_g0_risk": true,
+  "independent_g1_full": true,
+  "independent_g1_uniform": true,
+  "independent_g1_instant": true,
+  "independent_g1_delta": true,
+  "independent_g1_risk": true
+}

@@ -1,0 +1,19 @@
+{
+  "id": "69288aa8-ecae-4fe6-8f45-36cd8e06f3fc",
+  "name": "renewable-independent-ports-pilot1",
+  "command": [
+    "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+    "-m",
+    "environment_evolution.renewable_independent_ports.run"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "ce2-renewable-independent-ports-20261018-pilot1-v1",
+  "status": "running",
+  "created_at": "2026-10-18T05:56:52.825890+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/69288aa8-ecae-4fe6-8f45-36cd8e06f3fc",
+  "pid": 3440912,
+  "manual_pause": false,
+  "create_time": 1792303012.28,
+  "started_at": "2026-10-18T05:56:52.893866+00:00"
+}

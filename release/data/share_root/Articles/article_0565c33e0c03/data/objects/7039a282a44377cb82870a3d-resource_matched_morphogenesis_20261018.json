@@ -1,0 +1,75 @@
+{
+  "schema": "lenia.pi.scientific-decision.v1",
+  "task": "resource_matched_morphogenesis_20261018",
+  "status": "authorized_outer_search",
+  "objective_met": false,
+  "owner": "resident_d3ccfa2d95b7",
+  "environment_consultant": "resident_ce2a5ab005bc",
+  "previous": {
+    "task": "resource_wave_actionability_20261018",
+    "handoff": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_wave_actionability_20261018/handoff.json",
+    "sha256": "e6d9e671e85a45f90b3144511c719c3123e3b374dba3ebb7c0a2fe11cff3ffff",
+    "job": "10de5fe4-9082-41f9-95c5-38e56834b7d1",
+    "attempted": 3090,
+    "committed": 3090,
+    "worker_seconds": 419.117056,
+    "unused_frozen": [
+      46,
+      780.882944
+    ],
+    "d3_launched": false
+  },
+  "judgment": {
+    "conclusion": "8个主动对照全部未过原身体效用门：摄取均增加、末E均下降；0ac间歇体时增但E降，不能放宽原门限。12轨晚64步M/E均下降，旧初始外库存远大于新补给，不能称可维持生态。",
+    "pivot": "停止围绕0ac/6bd形成后巨库存身体追加固定趋化、描述率或校准扫描。重新打开身体生成规则/初态搜索，让身体实际在有限初始物资与明确新资源流下形成，再问其动作用途。",
+    "question": "在固定物理价格和输入下，是否可演化出形态不同、资源需求相称的身体；先前主动动作不合算是否部分依赖所用身体？本批只探索这两个问题，不把新身体筛选当经验学习。",
+    "novelty": "双核变异、多目标外层选择及初态搜索本身不是新方法贡献。遗传参数跨代变、个体内固定；身体/能量动态变化不称生命期学习。核心方法目标保持未完成。"
+  },
+  "budget": {
+    "native_steps": 4160,
+    "runner_worker_seconds": 1500,
+    "cpu_threads": 2,
+    "gpu": 0,
+    "max_parallel_native_jobs": 1,
+    "max_raw_bytes": 2147483648,
+    "boundary_max": 64,
+    "first_generation": 1024,
+    "second_generation": 1024,
+    "paired_deployment": 2048,
+    "old_budget_used": 0,
+    "unused_not_transferable": true,
+    "rule": "唯一统一runner具名作业，所有实际forward含实现边界/失败/preview都计入；两代及配对串行执行。每阶段完整保存；步额或时间不足在完整边界停止，不重演/自动重投。"
+  },
+  "physical": {
+    "core": "沿原MaterialActionBody SHA15691ada9fd805c076f7c5770ba955dbf6cc454ea3af129b1ba03fe958467b5b，复用已完成resource_wave_actionability/core.py真实step/交换账；隔离life0初始化与遗传规则。不得改旧源码/结果。",
+    "fixed": "能量转化、基础/运动/生成/模板价格、真实K/keep、死亡/出生守恒、局部能池和原运输规则固定。不得把基础费调小、η调大、免除生成成本或加入强制M20/E上限来制造维持。",
+    "environment": "原96域development双峰输入与墙；胞外P/F半衰64，流出单列sink，输入P=.001*patch/F=.004*patch。训练128步源静止；配对部署后256步开始沿+x每16步移动输入mask一格，库存不移动，所有候选同规则。新任务供给窗口总384步，显式新授权，不续用旧256额度。",
+    "life0": "新构造的受控初态，不是迁移旧形成末态。所有候选M0=64、E0=64（energy=rho），胞外precursor=fuel=0；其余真实控制/极性/存量按中性合法初始化。初始M/E视为明确实验赠予，不声称它们由环境自发合成。body各格<=1；调整空间支持以满足总量，不可裁剪后暗改M/E。初态配置与完整账写入manifest。",
+    "initialization_scope": "完全新身体与新物资条件，不是对旧0ac/6bd的纯单因素效应。与旧轨只能作背景比较，不能将跨批差归因一个基因或去库存。"
+  },
+  "search": {
+    "stages": "第一代8个新life0各128步；按预冻结选择规则得4个父基因，各产生2个新子基因，第二代8个新life0各128步。每次都是真实新形成，不能拿旧动态帧代替，不补无效提议或死亡样本。各代个体中遗传规则固定。",
+    "diversity": "四个确实不同的初态几何族（可用紧凑连通体、环、双叶、分离多种子），每族2候选；位置/尺度需在首次前向前冻结。至少有正输入区域接触且无需瞬时全域传感；不依据结果挪位置救活。相同M/E；旋转/换色不计新族。",
+    "genes": "用现有d3合法双核genome构造器，开放两核径向形状/尺度、mu/sigma、混合权重和初态空间分布；从至少四种既有不同规则来源或独立合法规则起点提出。原代谢价格不作基因。d3自主选一次合理范围/种子/扰动，在首次前向前写proposal plan与源码SHA，无阈值扫描、无结果后放宽范围。",
+    "policy_during_formation": "零额外驱动，原生被动运输/极性状态仍按真实物理付费。未学习控制器，外层搜索不能把内部调参写成个体学习。",
+    "selection": "维持资格为M128>=M0/2且晚64平均M>=M0/2。族内先优先有资格者，再按(E128-E0、晚64 ΔE、最小M/M0)非支配排序；同层用预定candidate ID。若族内两者都无资格，仍按真实体时与末M的Pareto次序选一个合法基因进入第二代，不降低部署门限。死亡身体不复活，而是新子基因从统一life0独立形成。每族一基因父；仅当两提议均无法合法构造时该族缺额不补。全M/E/U/欠费与阴性保留，缩尘不算维持。",
+    "stage2": "每个有效第一代父基因作两个变异，重新life0并计全步；从两代同族的真实个体中按同规则选最多一部署父。选定后基因/状态冻结。旧父基因可保留，禁止将有害子代静默丢出表。",
+    "interpretation": "这是小规模探索性两代选择；选择过的种子/身体不作独立确认样本。需要亲看实际形态及动态，不用单一排名声称多样性。"
+  },
+  "deployment": {
+    "allocation": "最多四个实际clock128形成父，各从同完整身体/环境/输入cursor/RNG分出passive与原continuous_gradient，各256步；不重演128取得、不补未成形父。各父两臂共同换到同一移动补给协议；零额外动力仍有被动流费用。",
+    "criterion": "沿原有限动作效用：256体时严格增加且末E不低于同父passive（1e-8数值容差），M/U/费用全部另列。新形成维持性另报晚64 M/E斜率、基础欠付及对初赠库存的依赖，不把一窗E增长当无限稳态。",
+    "anti_rescue": "不依据已看数据更换动作幅度、目标、身体部署选择准则、输入、方向或观察窗找胜。若标准趋化已足够，保其解释力；无动作机会也保有真实新形态/生理失败，不强派学习。"
+  },
+  "evidence": {
+    "required": "逐候选基因/亲子/初态指纹、真实逐步物能/输入/流出/费用账与完整末状态，预定0/32/64/96/128形态帧；部署再存每32步真实状态。原始完整恢复字段保持，可控制收据采样以不超2GiB，缺场不补跑。",
+    "closure": "交付时区分新形成、外层选择、配对未来与边界的实际步数；初始化与身体维持账分别说明。当前方法没有局部writer、合法反馈新通道或终末通信，勿为本批引入它们。",
+    "handoff": "d3是唯一科学执行/提交者，可自主与ce2解决当前已有生态接口，不另开物理runner或重复host矩阵。实际新形态/动作过程由责任方直接交投影和主笔一次有明确接续的请求；需要PI选新方向时交一次enqueue_and_trigger，不退成纯info后全体空闲。"
+  },
+  "operations": [
+    "每次新前向前读running/started，用户暂停/停止优先。",
+    "无定时/轮询/cron/通用完工触发；原总启动不动。",
+    "原所有余额不借用；此新4160/1500独立预算。",
+    "代码/合法范围/初态/选择在首次前向前冻结，常规实现选择由owner自主解决，非等待新审批。"
+  ]
+}

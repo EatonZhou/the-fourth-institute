@@ -1,0 +1,578 @@
+[
+  {
+    "key": "compact_p512/plus/food0/current",
+    "viable": true,
+    "minimum_mass_ratio": 0.9916127034324327,
+    "eligible": 256,
+    "writes": 256,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.004703689911091788,
+    "energy_residual": -9.045281884612066e-15,
+    "stock_residual": 1.7763568394002505e-15,
+    "max_uptake_error": 0.0,
+    "stage_offsets": [
+      1,
+      16,
+      17,
+      32,
+      64,
+      128,
+      192,
+      256
+    ],
+    "actual_angle": "minus",
+    "same_full_parent": true,
+    "FIFO_and_update_chronology": true,
+    "limiting_cells_sum": [
+      245186,
+      1940,
+      15018
+    ],
+    "tied_cells": 0,
+    "exclusive_limiting_U": [
+      2.111337214936954,
+      0.13243670940311367,
+      8.363716687648921
+    ]
+  },
+  {
+    "key": "compact_p512/plus/food0/history16",
+    "viable": true,
+    "minimum_mass_ratio": 0.9916169811949858,
+    "eligible": 256,
+    "writes": 256,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.0049205482697339984,
+    "energy_residual": 9.114670823651139e-15,
+    "stock_residual": 0.0,
+    "max_uptake_error": 0.0,
+    "stage_offsets": [
+      1,
+      16,
+      17,
+      32,
+      64,
+      128,
+      192,
+      256
+    ],
+    "actual_angle": "minus",
+    "same_full_parent": true,
+    "FIFO_and_update_chronology": true,
+    "limiting_cells_sum": [
+      245143,
+      2514,
+      14487
+    ],
+    "tied_cells": 0,
+    "exclusive_limiting_U": [
+      2.148031056280393,
+      0.1558695003106018,
+      7.659963061663253
+    ]
+  },
+  {
+    "key": "compact_p512/plus/food16/current",
+    "viable": true,
+    "minimum_mass_ratio": 0.9915255915378907,
+    "eligible": 256,
+    "writes": 256,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.004724659666991308,
+    "energy_residual": -1.0927023175177908e-14,
+    "stock_residual": 0.0,
+    "max_uptake_error": 0.0,
+    "stage_offsets": [
+      1,
+      16,
+      17,
+      32,
+      64,
+      128,
+      192,
+      256
+    ],
+    "actual_angle": "minus",
+    "same_full_parent": true,
+    "FIFO_and_update_chronology": true,
+    "limiting_cells_sum": [
+      244473,
+      1751,
+      15920
+    ],
+    "tied_cells": 0,
+    "exclusive_limiting_U": [
+      1.7896894312369789,
+      0.11009193014242037,
+      8.940439010046378
+    ]
+  },
+  {
+    "key": "compact_p512/plus/food16/history16",
+    "viable": true,
+    "minimum_mass_ratio": 0.9914870350630376,
+    "eligible": 256,
+    "writes": 256,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.004963491819144516,
+    "energy_residual": -2.2062213167473033e-14,
+    "stock_residual": 3.552713678800501e-15,
+    "max_uptake_error": 0.0,
+    "stage_offsets": [
+      1,
+      16,
+      17,
+      32,
+      64,
+      128,
+      192,
+      256
+    ],
+    "actual_angle": "minus",
+    "same_full_parent": true,
+    "FIFO_and_update_chronology": true,
+    "limiting_cells_sum": [
+      244650,
+      2332,
+      15162
+    ],
+    "tied_cells": 0,
+    "exclusive_limiting_U": [
+      2.010050123263953,
+      0.135691455785823,
+      8.290581202274199
+    ]
+  },
+  {
+    "key": "compact_p512/minus/food0/current",
+    "viable": true,
+    "minimum_mass_ratio": 0.9958883925579857,
+    "eligible": 256,
+    "writes": 256,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.004289976053744385,
+    "energy_residual": -3.382710778154774e-15,
+    "stock_residual": 1.7763568394002505e-15,
+    "max_uptake_error": 0.0,
+    "stage_offsets": [
+      1,
+      16,
+      17,
+      32,
+      64,
+      128,
+      192,
+      256
+    ],
+    "actual_angle": "plus",
+    "same_full_parent": true,
+    "FIFO_and_update_chronology": true,
+    "limiting_cells_sum": [
+      243016,
+      1757,
+      17369
+    ],
+    "tied_cells": 0,
+    "exclusive_limiting_U": [
+      1.6601174586400058,
+      0.06228889141933005,
+      8.586328403708379
+    ]
+  },
+  {
+    "key": "compact_p512/minus/food0/history16",
+    "viable": true,
+    "minimum_mass_ratio": 0.9957137492141652,
+    "eligible": 256,
+    "writes": 256,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.004433021634459553,
+    "energy_residual": -1.2849747307863701e-14,
+    "stock_residual": 1.7763568394002505e-15,
+    "max_uptake_error": 0.0,
+    "stage_offsets": [
+      1,
+      16,
+      17,
+      32,
+      64,
+      128,
+      192,
+      256
+    ],
+    "actual_angle": "plus",
+    "same_full_parent": true,
+    "FIFO_and_update_chronology": true,
+    "limiting_cells_sum": [
+      242946,
+      2223,
+      16973
+    ],
+    "tied_cells": 0,
+    "exclusive_limiting_U": [
+      1.6910400706632727,
+      0.07325575811698706,
+      7.95681941360259
+    ]
+  },
+  {
+    "key": "compact_p512/minus/food16/current",
+    "viable": true,
+    "minimum_mass_ratio": 0.995880507815952,
+    "eligible": 256,
+    "writes": 256,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.004268618368834133,
+    "energy_residual": 8.395627942858752e-15,
+    "stock_residual": 0.0,
+    "max_uptake_error": 0.0,
+    "stage_offsets": [
+      1,
+      16,
+      17,
+      32,
+      64,
+      128,
+      192,
+      256
+    ],
+    "actual_angle": "plus",
+    "same_full_parent": true,
+    "FIFO_and_update_chronology": true,
+    "limiting_cells_sum": [
+      242105,
+      1633,
+      18404
+    ],
+    "tied_cells": 0,
+    "exclusive_limiting_U": [
+      1.3996950785588476,
+      0.049534654104301704,
+      9.152135529432961
+    ]
+  },
+  {
+    "key": "compact_p512/minus/food16/history16",
+    "viable": true,
+    "minimum_mass_ratio": 0.9956834813143304,
+    "eligible": 256,
+    "writes": 256,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.004422958045594156,
+    "energy_residual": -2.7033496968753568e-15,
+    "stock_residual": 0.0,
+    "max_uptake_error": 0.0,
+    "stage_offsets": [
+      1,
+      16,
+      17,
+      32,
+      64,
+      128,
+      192,
+      256
+    ],
+    "actual_angle": "plus",
+    "same_full_parent": true,
+    "FIFO_and_update_chronology": true,
+    "limiting_cells_sum": [
+      242436,
+      1969,
+      17737
+    ],
+    "tied_cells": 0,
+    "exclusive_limiting_U": [
+      1.3587975180313836,
+      0.05659513869716928,
+      8.849466584101917
+    ]
+  },
+  {
+    "key": "soft_p512/plus/food0/current",
+    "viable": true,
+    "minimum_mass_ratio": 0.864475909091699,
+    "eligible": 256,
+    "writes": 256,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.07154559115814753,
+    "energy_residual": -5.904998712225051e-15,
+    "stock_residual": 8.881784197001252e-16,
+    "max_uptake_error": 0.0,
+    "stage_offsets": [
+      1,
+      16,
+      17,
+      32,
+      64,
+      128,
+      192,
+      256
+    ],
+    "actual_angle": "minus",
+    "same_full_parent": true,
+    "FIFO_and_update_chronology": true,
+    "limiting_cells_sum": [
+      251502,
+      10,
+      10632
+    ],
+    "tied_cells": 0,
+    "exclusive_limiting_U": [
+      2.846054383613245,
+      0.014017384557809424,
+      2.4972094863605028
+    ]
+  },
+  {
+    "key": "soft_p512/plus/food0/history16",
+    "viable": true,
+    "minimum_mass_ratio": 0.8639836825687081,
+    "eligible": 256,
+    "writes": 256,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.07260440651260168,
+    "energy_residual": -6.300515664747763e-15,
+    "stock_residual": -1.7763568394002505e-15,
+    "max_uptake_error": 0.0,
+    "stage_offsets": [
+      1,
+      16,
+      17,
+      32,
+      64,
+      128,
+      192,
+      256
+    ],
+    "actual_angle": "minus",
+    "same_full_parent": true,
+    "FIFO_and_update_chronology": true,
+    "limiting_cells_sum": [
+      251341,
+      82,
+      10721
+    ],
+    "tied_cells": 0,
+    "exclusive_limiting_U": [
+      2.9305567457091883,
+      0.11132203258316879,
+      2.373531531284571
+    ]
+  },
+  {
+    "key": "soft_p512/plus/food16/current",
+    "viable": true,
+    "minimum_mass_ratio": 0.8633249381483953,
+    "eligible": 256,
+    "writes": 256,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.07181295308660839,
+    "energy_residual": -4.2674197509029455e-15,
+    "stock_residual": 8.881784197001252e-16,
+    "max_uptake_error": 0.0,
+    "stage_offsets": [
+      1,
+      16,
+      17,
+      32,
+      64,
+      128,
+      192,
+      256
+    ],
+    "actual_angle": "minus",
+    "same_full_parent": true,
+    "FIFO_and_update_chronology": true,
+    "limiting_cells_sum": [
+      251548,
+      39,
+      10557
+    ],
+    "tied_cells": 0,
+    "exclusive_limiting_U": [
+      2.587049927948093,
+      0.05175333243319124,
+      2.5341682313356437
+    ]
+  },
+  {
+    "key": "soft_p512/plus/food16/history16",
+    "viable": true,
+    "minimum_mass_ratio": 0.8625149228735824,
+    "eligible": 256,
+    "writes": 256,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.07283276755553306,
+    "energy_residual": -6.501743587961073e-15,
+    "stock_residual": -8.881784197001252e-16,
+    "max_uptake_error": 0.0,
+    "stage_offsets": [
+      1,
+      16,
+      17,
+      32,
+      64,
+      128,
+      192,
+      256
+    ],
+    "actual_angle": "minus",
+    "same_full_parent": true,
+    "FIFO_and_update_chronology": true,
+    "limiting_cells_sum": [
+      251454,
+      2,
+      10688
+    ],
+    "tied_cells": 0,
+    "exclusive_limiting_U": [
+      2.7191664197171073,
+      0.002863561077365484,
+      2.4380850740989515
+    ]
+  },
+  {
+    "key": "soft_p512/minus/food0/current",
+    "viable": true,
+    "minimum_mass_ratio": 0.9042994799009841,
+    "eligible": 256,
+    "writes": 256,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.0568959350096718,
+    "energy_residual": -8.715250743307479e-15,
+    "stock_residual": 8.881784197001252e-16,
+    "max_uptake_error": 0.0,
+    "stage_offsets": [
+      1,
+      16,
+      17,
+      32,
+      64,
+      128,
+      192,
+      256
+    ],
+    "actual_angle": "plus",
+    "same_full_parent": true,
+    "FIFO_and_update_chronology": true,
+    "limiting_cells_sum": [
+      251711,
+      1,
+      10428
+    ],
+    "tied_cells": 0,
+    "exclusive_limiting_U": [
+      2.8709243818799006,
+      0.001496505370254958,
+      2.725110685391267
+    ]
+  },
+  {
+    "key": "soft_p512/minus/food0/history16",
+    "viable": true,
+    "minimum_mass_ratio": 0.9033381704179317,
+    "eligible": 256,
+    "writes": 256,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.05724098984355502,
+    "energy_residual": 2.7269853042355408e-15,
+    "stock_residual": 8.881784197001252e-16,
+    "max_uptake_error": 0.0,
+    "stage_offsets": [
+      1,
+      16,
+      17,
+      32,
+      64,
+      128,
+      192,
+      256
+    ],
+    "actual_angle": "plus",
+    "same_full_parent": true,
+    "FIFO_and_update_chronology": true,
+    "limiting_cells_sum": [
+      251568,
+      31,
+      10541
+    ],
+    "tied_cells": 0,
+    "exclusive_limiting_U": [
+      2.9915399655213677,
+      0.044365821292930624,
+      2.5740658654255393
+    ]
+  },
+  {
+    "key": "soft_p512/minus/food16/current",
+    "viable": true,
+    "minimum_mass_ratio": 0.9036815484919205,
+    "eligible": 256,
+    "writes": 256,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.057111864033888175,
+    "energy_residual": 6.730727086790012e-16,
+    "stock_residual": 0.0,
+    "max_uptake_error": 0.0,
+    "stage_offsets": [
+      1,
+      16,
+      17,
+      32,
+      64,
+      128,
+      192,
+      256
+    ],
+    "actual_angle": "plus",
+    "same_full_parent": true,
+    "FIFO_and_update_chronology": true,
+    "limiting_cells_sum": [
+      251792,
+      25,
+      10323
+    ],
+    "tied_cells": 0,
+    "exclusive_limiting_U": [
+      2.6509585958469404,
+      0.03779754581162429,
+      2.769347589734362
+    ]
+  },
+  {
+    "key": "soft_p512/minus/food16/history16",
+    "viable": true,
+    "minimum_mass_ratio": 0.9025234761265205,
+    "eligible": 256,
+    "writes": 256,
+    "motor_unpaid": 0.0,
+    "basal_unpaid": 0.05752520052810192,
+    "energy_residual": 2.0816681711721685e-16,
+    "stock_residual": 3.552713678800501e-15,
+    "max_uptake_error": 0.0,
+    "stage_offsets": [
+      1,
+      16,
+      17,
+      32,
+      64,
+      128,
+      192,
+      256
+    ],
+    "actual_angle": "plus",
+    "same_full_parent": true,
+    "FIFO_and_update_chronology": true,
+    "limiting_cells_sum": [
+      251706,
+      0,
+      10434
+    ],
+    "tied_cells": 0,
+    "exclusive_limiting_U": [
+      2.775250349681367,
+      0.0,
+      2.63356964719734
+    ]
+  }
+]

@@ -1,0 +1,19 @@
+{
+  "id": "1d9a8271-7d8f-4b47-b278-ceddb02d049a",
+  "name": "spatial_birth_request_coordination_20261019",
+  "command": [
+    "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+    "-m",
+    "local_learning.spatial_birth_request_coordination.run"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "d3-spatial-birth-request-coordination-20261019-v1",
+  "status": "running",
+  "created_at": "2026-10-18T20:34:51.067980+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/1d9a8271-7d8f-4b47-b278-ceddb02d049a",
+  "pid": 3515183,
+  "manual_pause": false,
+  "create_time": 1792355690.65,
+  "started_at": "2026-10-18T20:34:51.262076+00:00"
+}

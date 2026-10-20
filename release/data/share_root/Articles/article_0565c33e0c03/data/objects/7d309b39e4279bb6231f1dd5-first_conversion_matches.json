@@ -1,0 +1,62 @@
+[
+  {
+    "seed": 202610195401,
+    "shape": "compact",
+    "first_state_exact": true,
+    "candidates_exact": true,
+    "conversion_totals_difference": [
+      1.4210854715202004e-14,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "postsettle_E_difference": -0.0011447410294778138,
+    "born_layout_equal": false
+  },
+  {
+    "seed": 202610195401,
+    "shape": "double_lobe",
+    "first_state_exact": true,
+    "candidates_exact": true,
+    "conversion_totals_difference": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "postsettle_E_difference": -0.00018315466294893668,
+    "born_layout_equal": false
+  },
+  {
+    "seed": 202610195402,
+    "shape": "compact",
+    "first_state_exact": true,
+    "candidates_exact": true,
+    "conversion_totals_difference": [
+      1.4210854715202004e-14,
+      0.0,
+      0.0,
+      0.0,
+      2.220446049250313e-16
+    ],
+    "postsettle_E_difference": -0.0004566514415671463,
+    "born_layout_equal": false
+  },
+  {
+    "seed": 202610195402,
+    "shape": "double_lobe",
+    "first_state_exact": true,
+    "candidates_exact": true,
+    "conversion_totals_difference": [
+      0.0,
+      1.4210854715202004e-14,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "postsettle_E_difference": -0.0001270828990982409,
+    "born_layout_equal": false
+  }
+]

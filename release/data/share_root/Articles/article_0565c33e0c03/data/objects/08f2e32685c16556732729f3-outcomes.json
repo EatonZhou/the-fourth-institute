@@ -1,0 +1,3770 @@
+[
+  {
+    "id": "202610195401_compact_full_directed",
+    "seed": 202610195401,
+    "shape": "compact",
+    "arm": "full_directed",
+    "status": "complete",
+    "steps": 256,
+    "initial": {
+      "clock": 128,
+      "body": 65.467610426054,
+      "energy": 81.55679184362992,
+      "precursor": 3.4462016373446756,
+      "fuel": 23.743449917047883,
+      "heat": 15.787148939322776,
+      "waste": 18.22367954884468,
+      "dead_energy": 23.574053608564363,
+      "founder_mass": 47.500562575389,
+      "new_tissue": 17.967047850665004
+    },
+    "initial_state_hash": {
+      "body": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "27a712af7377482ee10c02494f83ddc4fef66ead38d9e33242d8be1801cc7870"
+      },
+      "energy": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "ffcfb25136e37bd23cb8c97a08cf02ebe40d6507c392dbc955e4a5bc1a0860dc"
+      },
+      "memory": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "eligibility": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "polarity": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "precursor": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "0e4b11ce1480b6eca7a99a34e47517aa0ec29440d7901184440b7576ba3df95b"
+      },
+      "fuel": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "133ee9daca1b743ee53707df6a3564d898dc534f847bfcac86722aab881cbb97"
+      },
+      "waste": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "f5ee8fa3e7a68acc4b48affe95f76388acef693b80137db3c3b868f76f325d4f"
+      },
+      "heat": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "c5459e7da5eb727a1bfd6fd351ffd06a9d4ed12a2aba1e47d543aeab3a6078e6"
+      },
+      "dead_energy": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "2d67ae70bf59526ed2dbf9386b5ba11d7253ea3116c667989a7c61f3ceb14e7d"
+      },
+      "founder_mass": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "f93894a789defba2056664123e1aa5ec465f2cb43563cee60c6cd34dd66d05c4"
+      },
+      "c_theta": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "c_value": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "c_trace": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "c_food": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+      },
+      "c_run": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+      },
+      "c_remaining": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+      }
+    },
+    "first": {
+      "conversion_totals": [
+        67.07392368634115,
+        82.26809228194298,
+        16.222091263862858,
+        23.581599442152424,
+        1.610688866864174
+      ],
+      "candidate_common_hash": {
+        "coord_R": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "a76a1d1ab92dbcb1ead5e9e334aa3511c324653b15f13a9d30b02f8e743f71ff"
+        },
+        "coord_survivor": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "3abd0b25f10071a6675313598cde2e7ad5fcbdefb21b8abaf1183217a825c329"
+        },
+        "coord_P": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "3bc3741a5c80ceffc07eb0dd7d31a863b361168c81872131d4471fba47faa729"
+        },
+        "coord_F": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "a49a4bee57944ebf046548f6c9eb64a6b9c9821c55b0f318f6e6579bd37d5e7f"
+        },
+        "coord_support": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "dcacf70db519ef188a675c63ea99107b2b26edb46424a1c8eae62ca0983e9367"
+        },
+        "coord_q": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "c220385226a033210127573aac00a5de94cda854a9e7b5daab01744c7ccfb831"
+        },
+        "coord_fD": {
+          "dtype": "<f8",
+          "shape": [
+            4,
+            96,
+            96
+          ],
+          "sha256": "06cd21c48a6b7386bb10b980b72cae8cbaafe4552b6d46c6affdefcc82b34652"
+        },
+        "coord_fU": {
+          "dtype": "<f8",
+          "shape": [
+            4,
+            96,
+            96
+          ],
+          "sha256": "6397d49736594fc667e7f2d79a5eedafb2a6fc4885a0aa5f9a57f8a0ebca5623"
+        },
+        "actual_hA": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "8b573c6d75675528e7e3309ceeaad1c21101a0e352165aac4ed128342bd03f63"
+        },
+        "actual_hB": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "81cc3235f34a99e74ae286504ea885c28cd7192362f25173ba1199f20591dd86"
+        },
+        "applied_w": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "8d4ba54c582c481cbea44213ab4c2834fd12303300c4b63b150a58d050daf594"
+        }
+      },
+      "postsettle_M": 67.07392368634115,
+      "postsettle_E": 82.23411461099589,
+      "firstborn_hash": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "4f6a9ace9879d68af9130585a4fec066c03ba166e48aee48241f78518e93a6ae"
+      }
+    },
+    "M": 64.05295667247916,
+    "E": 95.15386171217938,
+    "bodytime": 839.0406260537452,
+    "dt": 0.05,
+    "L128": 34.279815290023116,
+    "post128_live": 29.77314138245604,
+    "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/spatial_birth_request_coordination_20261019/1d9a8271-7d8f-4b47-b278-ceddb02d049a/202610195401_compact_full_directed/steps.csv",
+    "final": "/data/dataset/lenia-research/lineage_75e3399f4877/spatial_birth_request_coordination_20261019/1d9a8271-7d8f-4b47-b278-ceddb02d049a/202610195401_compact_full_directed/state384.bin",
+    "maximum_errors": {
+      "check_material_error": 2.842170943040401e-14,
+      "check_energy_error": 5.684341886080802e-14,
+      "check_max_density": 0.7368234530595028,
+      "check_attempted_body_steps": 260.0,
+      "check_coord_request_sum_error": 1.7763568394002505e-15,
+      "check_coord_source_excess": 0.0,
+      "check_coord_receiver_excess": 3.469446951953614e-18,
+      "check_coord_matched_source_error": 6.938893903907228e-18,
+      "check_coord_negative": 0.0,
+      "check_reconstruction_error": 5.551115123125783e-17,
+      "check_K_column_error": 0.0,
+      "check_transport_error": 2.842170943040401e-14,
+      "check_exchange_material_error": 2.2162827129079687e-14,
+      "check_exchange_energy_error": 5.540012892879531e-14,
+      "check_whole_material_error": 3.094746681142624e-14,
+      "check_whole_energy_error": 6.80566714095221e-14,
+      "check_input_material_array_error": 0.0,
+      "check_input_energy_array_error": 0.0,
+      "check_cargo_P_error": 8.881784197001252e-16,
+      "check_cargo_F_error": 7.105427357601002e-15,
+      "check_cargo_E_heat_error": 0.0,
+      "check_cargo_capacity_excess": 0.0,
+      "check_cargo_payable_excess": 0.0,
+      "check_cargo_negative": 0.0,
+      "check_cargo_newborn_payer": 0.0,
+      "check_request_partition_error": 6.938893903907228e-18,
+      "check_founder_excess": 0.0,
+      "check_L128_conservation_error": 2.0317081350640365e-14,
+      "check_L128_excess": 0.0
+    }
+  },
+  {
+    "id": "202610195401_compact_matched_directed",
+    "seed": 202610195401,
+    "shape": "compact",
+    "arm": "matched_directed",
+    "status": "complete",
+    "steps": 256,
+    "initial": {
+      "clock": 128,
+      "body": 65.467610426054,
+      "energy": 81.55679184362992,
+      "precursor": 3.4462016373446756,
+      "fuel": 23.743449917047883,
+      "heat": 15.787148939322776,
+      "waste": 18.22367954884468,
+      "dead_energy": 23.574053608564363,
+      "founder_mass": 47.500562575389,
+      "new_tissue": 17.967047850665004
+    },
+    "initial_state_hash": {
+      "body": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "27a712af7377482ee10c02494f83ddc4fef66ead38d9e33242d8be1801cc7870"
+      },
+      "energy": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "ffcfb25136e37bd23cb8c97a08cf02ebe40d6507c392dbc955e4a5bc1a0860dc"
+      },
+      "memory": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "eligibility": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "polarity": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "precursor": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "0e4b11ce1480b6eca7a99a34e47517aa0ec29440d7901184440b7576ba3df95b"
+      },
+      "fuel": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "133ee9daca1b743ee53707df6a3564d898dc534f847bfcac86722aab881cbb97"
+      },
+      "waste": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "f5ee8fa3e7a68acc4b48affe95f76388acef693b80137db3c3b868f76f325d4f"
+      },
+      "heat": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "c5459e7da5eb727a1bfd6fd351ffd06a9d4ed12a2aba1e47d543aeab3a6078e6"
+      },
+      "dead_energy": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "2d67ae70bf59526ed2dbf9386b5ba11d7253ea3116c667989a7c61f3ceb14e7d"
+      },
+      "founder_mass": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "f93894a789defba2056664123e1aa5ec465f2cb43563cee60c6cd34dd66d05c4"
+      },
+      "c_theta": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "c_value": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "c_trace": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "c_food": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+      },
+      "c_run": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+      },
+      "c_remaining": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+      }
+    },
+    "first": {
+      "conversion_totals": [
+        66.63012060859653,
+        82.17933166639406,
+        16.124454586759043,
+        23.581599442152424,
+        1.1668857891195545
+      ],
+      "candidate_common_hash": {
+        "coord_R": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "a76a1d1ab92dbcb1ead5e9e334aa3511c324653b15f13a9d30b02f8e743f71ff"
+        },
+        "coord_survivor": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "3abd0b25f10071a6675313598cde2e7ad5fcbdefb21b8abaf1183217a825c329"
+        },
+        "coord_P": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "3bc3741a5c80ceffc07eb0dd7d31a863b361168c81872131d4471fba47faa729"
+        },
+        "coord_F": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "a49a4bee57944ebf046548f6c9eb64a6b9c9821c55b0f318f6e6579bd37d5e7f"
+        },
+        "coord_support": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "dcacf70db519ef188a675c63ea99107b2b26edb46424a1c8eae62ca0983e9367"
+        },
+        "coord_q": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "c220385226a033210127573aac00a5de94cda854a9e7b5daab01744c7ccfb831"
+        },
+        "coord_fD": {
+          "dtype": "<f8",
+          "shape": [
+            4,
+            96,
+            96
+          ],
+          "sha256": "06cd21c48a6b7386bb10b980b72cae8cbaafe4552b6d46c6affdefcc82b34652"
+        },
+        "coord_fU": {
+          "dtype": "<f8",
+          "shape": [
+            4,
+            96,
+            96
+          ],
+          "sha256": "6397d49736594fc667e7f2d79a5eedafb2a6fc4885a0aa5f9a57f8a0ebca5623"
+        },
+        "actual_hA": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "8b573c6d75675528e7e3309ceeaad1c21101a0e352165aac4ed128342bd03f63"
+        },
+        "actual_hB": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "81cc3235f34a99e74ae286504ea885c28cd7192362f25173ba1199f20591dd86"
+        },
+        "applied_w": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "8d4ba54c582c481cbea44213ab4c2834fd12303300c4b63b150a58d050daf594"
+        }
+      },
+      "postsettle_M": 66.63012060859653,
+      "postsettle_E": 82.11093005188039,
+      "firstborn_hash": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "b3730172e2da54018c11237a73b78837a138df5324036f48c92058af7ff528cd"
+      }
+    },
+    "M": 64.13213813420558,
+    "E": 94.92982183732045,
+    "bodytime": 839.3404166229038,
+    "dt": 0.05,
+    "L128": 34.186036542160394,
+    "post128_live": 29.94610159204518,
+    "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/spatial_birth_request_coordination_20261019/1d9a8271-7d8f-4b47-b278-ceddb02d049a/202610195401_compact_matched_directed/steps.csv",
+    "final": "/data/dataset/lenia-research/lineage_75e3399f4877/spatial_birth_request_coordination_20261019/1d9a8271-7d8f-4b47-b278-ceddb02d049a/202610195401_compact_matched_directed/state384.bin",
+    "maximum_errors": {
+      "check_material_error": 2.842170943040401e-14,
+      "check_energy_error": 5.684341886080802e-14,
+      "check_max_density": 0.7273333136918705,
+      "check_attempted_body_steps": 516.0,
+      "check_coord_request_sum_error": 1.7763568394002505e-15,
+      "check_coord_source_excess": 0.0,
+      "check_coord_receiver_excess": 4.336808689942018e-19,
+      "check_coord_matched_source_error": 6.938893903907228e-18,
+      "check_coord_negative": 0.0,
+      "check_reconstruction_error": 5.551115123125783e-17,
+      "check_K_column_error": 0.0,
+      "check_transport_error": 2.842170943040401e-14,
+      "check_exchange_material_error": 2.3203661214665772e-14,
+      "check_exchange_energy_error": 5.823119764158946e-14,
+      "check_whole_material_error": 3.9218628344883655e-14,
+      "check_whole_energy_error": 6.561418075534675e-14,
+      "check_input_material_array_error": 0.0,
+      "check_input_energy_array_error": 0.0,
+      "check_cargo_P_error": 1.3322676295501878e-15,
+      "check_cargo_F_error": 7.105427357601002e-15,
+      "check_cargo_E_heat_error": 0.0,
+      "check_cargo_capacity_excess": 0.0,
+      "check_cargo_payable_excess": 0.0,
+      "check_cargo_negative": 0.0,
+      "check_cargo_newborn_payer": 0.0,
+      "check_request_partition_error": 6.938893903907228e-18,
+      "check_founder_excess": 0.0,
+      "check_L128_conservation_error": 1.837419105754634e-14,
+      "check_L128_excess": 0.0
+    }
+  },
+  {
+    "id": "202610195401_compact_matched_uniform",
+    "seed": 202610195401,
+    "shape": "compact",
+    "arm": "matched_uniform",
+    "status": "complete",
+    "steps": 256,
+    "initial": {
+      "clock": 128,
+      "body": 65.467610426054,
+      "energy": 81.55679184362992,
+      "precursor": 3.4462016373446756,
+      "fuel": 23.743449917047883,
+      "heat": 15.787148939322776,
+      "waste": 18.22367954884468,
+      "dead_energy": 23.574053608564363,
+      "founder_mass": 47.500562575389,
+      "new_tissue": 17.967047850665004
+    },
+    "initial_state_hash": {
+      "body": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "27a712af7377482ee10c02494f83ddc4fef66ead38d9e33242d8be1801cc7870"
+      },
+      "energy": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "ffcfb25136e37bd23cb8c97a08cf02ebe40d6507c392dbc955e4a5bc1a0860dc"
+      },
+      "memory": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "eligibility": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "polarity": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "precursor": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "0e4b11ce1480b6eca7a99a34e47517aa0ec29440d7901184440b7576ba3df95b"
+      },
+      "fuel": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "133ee9daca1b743ee53707df6a3564d898dc534f847bfcac86722aab881cbb97"
+      },
+      "waste": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "f5ee8fa3e7a68acc4b48affe95f76388acef693b80137db3c3b868f76f325d4f"
+      },
+      "heat": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "c5459e7da5eb727a1bfd6fd351ffd06a9d4ed12a2aba1e47d543aeab3a6078e6"
+      },
+      "dead_energy": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "2d67ae70bf59526ed2dbf9386b5ba11d7253ea3116c667989a7c61f3ceb14e7d"
+      },
+      "founder_mass": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "f93894a789defba2056664123e1aa5ec465f2cb43563cee60c6cd34dd66d05c4"
+      },
+      "c_theta": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "c_value": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "c_trace": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "c_food": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+      },
+      "c_run": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+      },
+      "c_remaining": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+      }
+    },
+    "first": {
+      "conversion_totals": [
+        66.63012060859651,
+        82.17933166639406,
+        16.124454586759043,
+        23.581599442152424,
+        1.1668857891195545
+      ],
+      "candidate_common_hash": {
+        "coord_R": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "a76a1d1ab92dbcb1ead5e9e334aa3511c324653b15f13a9d30b02f8e743f71ff"
+        },
+        "coord_survivor": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "3abd0b25f10071a6675313598cde2e7ad5fcbdefb21b8abaf1183217a825c329"
+        },
+        "coord_P": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "3bc3741a5c80ceffc07eb0dd7d31a863b361168c81872131d4471fba47faa729"
+        },
+        "coord_F": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "a49a4bee57944ebf046548f6c9eb64a6b9c9821c55b0f318f6e6579bd37d5e7f"
+        },
+        "coord_support": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "dcacf70db519ef188a675c63ea99107b2b26edb46424a1c8eae62ca0983e9367"
+        },
+        "coord_q": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "c220385226a033210127573aac00a5de94cda854a9e7b5daab01744c7ccfb831"
+        },
+        "coord_fD": {
+          "dtype": "<f8",
+          "shape": [
+            4,
+            96,
+            96
+          ],
+          "sha256": "06cd21c48a6b7386bb10b980b72cae8cbaafe4552b6d46c6affdefcc82b34652"
+        },
+        "coord_fU": {
+          "dtype": "<f8",
+          "shape": [
+            4,
+            96,
+            96
+          ],
+          "sha256": "6397d49736594fc667e7f2d79a5eedafb2a6fc4885a0aa5f9a57f8a0ebca5623"
+        },
+        "actual_hA": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "8b573c6d75675528e7e3309ceeaad1c21101a0e352165aac4ed128342bd03f63"
+        },
+        "actual_hB": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "81cc3235f34a99e74ae286504ea885c28cd7192362f25173ba1199f20591dd86"
+        },
+        "applied_w": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "8d4ba54c582c481cbea44213ab4c2834fd12303300c4b63b150a58d050daf594"
+        }
+      },
+      "postsettle_M": 66.63012060859651,
+      "postsettle_E": 82.11207479290987,
+      "firstborn_hash": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "3440457c42a99cf0b834f6faf97ddc9a20fc20bd0ea921fb16e89b344f624731"
+      }
+    },
+    "M": 64.13182906365496,
+    "E": 94.91929427722306,
+    "bodytime": 839.3253950320488,
+    "dt": 0.05,
+    "L128": 34.194738371451805,
+    "post128_live": 29.937090692203164,
+    "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/spatial_birth_request_coordination_20261019/1d9a8271-7d8f-4b47-b278-ceddb02d049a/202610195401_compact_matched_uniform/steps.csv",
+    "final": "/data/dataset/lenia-research/lineage_75e3399f4877/spatial_birth_request_coordination_20261019/1d9a8271-7d8f-4b47-b278-ceddb02d049a/202610195401_compact_matched_uniform/state384.bin",
+    "maximum_errors": {
+      "check_material_error": 2.842170943040401e-14,
+      "check_energy_error": 5.684341886080802e-14,
+      "check_max_density": 0.7255313978118948,
+      "check_attempted_body_steps": 772.0,
+      "check_coord_request_sum_error": 1.7763568394002505e-15,
+      "check_coord_source_excess": 0.0,
+      "check_coord_receiver_excess": 3.469446951953614e-18,
+      "check_coord_matched_source_error": 6.938893903907228e-18,
+      "check_coord_negative": 0.0,
+      "check_reconstruction_error": 5.551115123125783e-17,
+      "check_K_column_error": 0.0,
+      "check_transport_error": 2.842170943040401e-14,
+      "check_exchange_material_error": 2.4751034555237084e-14,
+      "check_exchange_energy_error": 5.517808432387028e-14,
+      "check_whole_material_error": 3.03368441478824e-14,
+      "check_whole_energy_error": 7.738254481637341e-14,
+      "check_input_material_array_error": 0.0,
+      "check_input_energy_array_error": 0.0,
+      "check_cargo_P_error": 8.881784197001252e-16,
+      "check_cargo_F_error": 7.105427357601002e-15,
+      "check_cargo_E_heat_error": 0.0,
+      "check_cargo_capacity_excess": 0.0,
+      "check_cargo_payable_excess": 0.0,
+      "check_cargo_negative": 0.0,
+      "check_cargo_newborn_payer": 0.0,
+      "check_request_partition_error": 6.938893903907228e-18,
+      "check_founder_excess": 0.0,
+      "check_L128_conservation_error": 1.6264767310758543e-14,
+      "check_L128_excess": 0.0
+    }
+  },
+  {
+    "id": "202610195401_double_lobe_full_directed",
+    "seed": 202610195401,
+    "shape": "double_lobe",
+    "arm": "full_directed",
+    "status": "complete",
+    "steps": 256,
+    "initial": {
+      "clock": 128,
+      "body": 56.41985050196516,
+      "energy": 66.83842046759007,
+      "precursor": 2.093301379512553,
+      "fuel": 25.294513049073647,
+      "heat": 17.68504996635822,
+      "waste": 29.01696185868237,
+      "dead_energy": 33.748206675633405,
+      "founder_mass": 37.421896714399935,
+      "new_tissue": 18.997953787565226
+    },
+    "initial_state_hash": {
+      "body": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "2a7fb4448186791d6fcfaaaa21fbca1d8407189591f34f70f8cd878645496377"
+      },
+      "energy": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "f0f958636c64861390d7b81d85c32043f4b83793fb6e409f0d2fb68d8735e1ba"
+      },
+      "memory": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "eligibility": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "polarity": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "precursor": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "c21bafccd5ff18dd85fa60359e097a755e1275800e10c40d213ffd8a2748729f"
+      },
+      "fuel": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "91540195531b8a42bd99d72d272aff0e1bc2a7ed8248ba33165e36f4be31aa8e"
+      },
+      "waste": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "7807b2f66bb743c437567880419840b2f7ac15265ac82f0a83ad6d0356b04c13"
+      },
+      "heat": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "a9a1239832c5a003ffd3d5f9e7c08f7b687c62358c014ccb074d4c770dc6881c"
+      },
+      "dead_energy": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "0223a169990ed4d3481d2700b9e267a2925168ee95de316d5731d166b5809378"
+      },
+      "founder_mass": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "14cba5af7b76b9c008e42811a6723dfeb85884fd8612f85480fef840fda11185"
+      },
+      "c_theta": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "c_value": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "c_trace": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "c_food": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+      },
+      "c_run": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+      },
+      "c_remaining": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+      }
+    },
+    "first": {
+      "conversion_totals": [
+        57.291164157633936,
+        67.34040943993827,
+        17.95056923665527,
+        33.760881572563285,
+        0.8863630322283893
+      ],
+      "candidate_common_hash": {
+        "coord_R": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "29c66e8db7cb4cf27687fb536ccca0f6d362a94e7b1b07af031565db62e58cb8"
+        },
+        "coord_survivor": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "6de0e2a07ee7798110aa58f92a52f4b6cb21dab14b3fad779ce3dfd233256667"
+        },
+        "coord_P": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "777ca431ca39c0ebc66c4f4f089ba9772c7bad19706d49e78ac5f86a2e2f45a0"
+        },
+        "coord_F": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "2351bb1379ecdec9960ce2ee7445c7f26ff550dc618d877f226605f6726eac10"
+        },
+        "coord_support": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "6c815988a3717914758cf893cf80b19435c707901f19ee048c726db069c81689"
+        },
+        "coord_q": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "04899a89102c236911d04b544f6bea0a3607bed76a43ab3fed807d844f1d8703"
+        },
+        "coord_fD": {
+          "dtype": "<f8",
+          "shape": [
+            4,
+            96,
+            96
+          ],
+          "sha256": "647b8cfad84701996d513710ada00f6da9060bf901816abe2d4db7e01c53c767"
+        },
+        "coord_fU": {
+          "dtype": "<f8",
+          "shape": [
+            4,
+            96,
+            96
+          ],
+          "sha256": "accb5ceccbccab78a74374a786826fa0a844d5b5b0c6ae60527513bda2c0c946"
+        },
+        "actual_hA": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "8fe91e7bfec432f974fe833679bf38958be7366bbbd170ad9b29aea75afe36e1"
+        },
+        "actual_hB": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "59a475d78d6abc725b9241f4f0c09564f6cd6edaf4a63376affd161761e8bef9"
+        },
+        "applied_w": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "9e793b636c2e9b99d26a0422e69ff3e288c3e70bc65104183c59e3121b614fe9"
+        }
+      },
+      "postsettle_M": 57.291164157633936,
+      "postsettle_E": 67.30324608117388,
+      "firstborn_hash": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "e58847dec492340d90ea4803bb15d2f09066024dbfef926ac7d87ff482e33147"
+      }
+    },
+    "M": 58.39261294937269,
+    "E": 90.31258668117931,
+    "bodytime": 762.3645616965855,
+    "dt": 0.05,
+    "L128": 27.18319300134886,
+    "post128_live": 31.20941994802383,
+    "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/spatial_birth_request_coordination_20261019/1d9a8271-7d8f-4b47-b278-ceddb02d049a/202610195401_double_lobe_full_directed/steps.csv",
+    "final": "/data/dataset/lenia-research/lineage_75e3399f4877/spatial_birth_request_coordination_20261019/1d9a8271-7d8f-4b47-b278-ceddb02d049a/202610195401_double_lobe_full_directed/state384.bin",
+    "maximum_errors": {
+      "check_material_error": 2.842170943040401e-14,
+      "check_energy_error": 5.684341886080802e-14,
+      "check_max_density": 0.9354352309500934,
+      "check_attempted_body_steps": 1028.0,
+      "check_coord_request_sum_error": 1.7763568394002505e-15,
+      "check_coord_source_excess": 0.0,
+      "check_coord_receiver_excess": 8.673617379884035e-19,
+      "check_coord_matched_source_error": 8.673617379884035e-19,
+      "check_coord_negative": 0.0,
+      "check_reconstruction_error": 5.551115123125783e-17,
+      "check_K_column_error": 0.0,
+      "check_transport_error": 1.4210854715202004e-14,
+      "check_exchange_material_error": 2.38073449843057e-14,
+      "check_exchange_energy_error": 4.374278717023117e-14,
+      "check_whole_material_error": 4.030109579389318e-14,
+      "check_whole_energy_error": 6.084022174945858e-14,
+      "check_input_material_array_error": 0.0,
+      "check_input_energy_array_error": 0.0,
+      "check_cargo_P_error": 4.440892098500626e-16,
+      "check_cargo_F_error": 7.105427357601002e-15,
+      "check_cargo_E_heat_error": 0.0,
+      "check_cargo_capacity_excess": 0.0,
+      "check_cargo_payable_excess": 0.0,
+      "check_cargo_negative": 0.0,
+      "check_cargo_newborn_payer": 0.0,
+      "check_request_partition_error": 6.938893903907228e-18,
+      "check_founder_excess": 0.0,
+      "check_L128_conservation_error": 2.1593837828959295e-14,
+      "check_L128_excess": 0.0
+    }
+  },
+  {
+    "id": "202610195401_double_lobe_matched_directed",
+    "seed": 202610195401,
+    "shape": "double_lobe",
+    "arm": "matched_directed",
+    "status": "complete",
+    "steps": 256,
+    "initial": {
+      "clock": 128,
+      "body": 56.41985050196516,
+      "energy": 66.83842046759007,
+      "precursor": 2.093301379512553,
+      "fuel": 25.294513049073647,
+      "heat": 17.68504996635822,
+      "waste": 29.01696185868237,
+      "dead_energy": 33.748206675633405,
+      "founder_mass": 37.421896714399935,
+      "new_tissue": 18.997953787565226
+    },
+    "initial_state_hash": {
+      "body": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "2a7fb4448186791d6fcfaaaa21fbca1d8407189591f34f70f8cd878645496377"
+      },
+      "energy": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "f0f958636c64861390d7b81d85c32043f4b83793fb6e409f0d2fb68d8735e1ba"
+      },
+      "memory": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "eligibility": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "polarity": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "precursor": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "c21bafccd5ff18dd85fa60359e097a755e1275800e10c40d213ffd8a2748729f"
+      },
+      "fuel": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "91540195531b8a42bd99d72d272aff0e1bc2a7ed8248ba33165e36f4be31aa8e"
+      },
+      "waste": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "7807b2f66bb743c437567880419840b2f7ac15265ac82f0a83ad6d0356b04c13"
+      },
+      "heat": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "a9a1239832c5a003ffd3d5f9e7c08f7b687c62358c014ccb074d4c770dc6881c"
+      },
+      "dead_energy": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "0223a169990ed4d3481d2700b9e267a2925168ee95de316d5731d166b5809378"
+      },
+      "founder_mass": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "14cba5af7b76b9c008e42811a6723dfeb85884fd8612f85480fef840fda11185"
+      },
+      "c_theta": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "c_value": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "c_trace": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "c_food": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+      },
+      "c_run": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+      },
+      "c_remaining": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+      }
+    },
+    "first": {
+      "conversion_totals": [
+        57.0606014398958,
+        67.29429689639065,
+        17.899845438752877,
+        33.760881572563285,
+        0.6558003144902528
+      ],
+      "candidate_common_hash": {
+        "coord_R": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "29c66e8db7cb4cf27687fb536ccca0f6d362a94e7b1b07af031565db62e58cb8"
+        },
+        "coord_survivor": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "6de0e2a07ee7798110aa58f92a52f4b6cb21dab14b3fad779ce3dfd233256667"
+        },
+        "coord_P": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "777ca431ca39c0ebc66c4f4f089ba9772c7bad19706d49e78ac5f86a2e2f45a0"
+        },
+        "coord_F": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "2351bb1379ecdec9960ce2ee7445c7f26ff550dc618d877f226605f6726eac10"
+        },
+        "coord_support": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "6c815988a3717914758cf893cf80b19435c707901f19ee048c726db069c81689"
+        },
+        "coord_q": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "04899a89102c236911d04b544f6bea0a3607bed76a43ab3fed807d844f1d8703"
+        },
+        "coord_fD": {
+          "dtype": "<f8",
+          "shape": [
+            4,
+            96,
+            96
+          ],
+          "sha256": "647b8cfad84701996d513710ada00f6da9060bf901816abe2d4db7e01c53c767"
+        },
+        "coord_fU": {
+          "dtype": "<f8",
+          "shape": [
+            4,
+            96,
+            96
+          ],
+          "sha256": "accb5ceccbccab78a74374a786826fa0a844d5b5b0c6ae60527513bda2c0c946"
+        },
+        "actual_hA": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "8fe91e7bfec432f974fe833679bf38958be7366bbbd170ad9b29aea75afe36e1"
+        },
+        "actual_hB": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "59a475d78d6abc725b9241f4f0c09564f6cd6edaf4a63376affd161761e8bef9"
+        },
+        "applied_w": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "9e793b636c2e9b99d26a0422e69ff3e288c3e70bc65104183c59e3121b614fe9"
+        }
+      },
+      "postsettle_M": 57.0606014398958,
+      "postsettle_E": 67.2430382713984,
+      "firstborn_hash": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "12366b773a5f262a2568d1eac8992241e7d234691202e73845611b4ada8d087a"
+      }
+    },
+    "M": 58.54460736048837,
+    "E": 89.99525959697047,
+    "bodytime": 763.0966028596667,
+    "dt": 0.05,
+    "L128": 27.11805718134851,
+    "post128_live": 31.42655017913986,
+    "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/spatial_birth_request_coordination_20261019/1d9a8271-7d8f-4b47-b278-ceddb02d049a/202610195401_double_lobe_matched_directed/steps.csv",
+    "final": "/data/dataset/lenia-research/lineage_75e3399f4877/spatial_birth_request_coordination_20261019/1d9a8271-7d8f-4b47-b278-ceddb02d049a/202610195401_double_lobe_matched_directed/state384.bin",
+    "maximum_errors": {
+      "check_material_error": 2.842170943040401e-14,
+      "check_energy_error": 5.684341886080802e-14,
+      "check_max_density": 0.9013312580304155,
+      "check_attempted_body_steps": 1284.0,
+      "check_coord_request_sum_error": 1.7763568394002505e-15,
+      "check_coord_source_excess": 0.0,
+      "check_coord_receiver_excess": 8.673617379884035e-19,
+      "check_coord_matched_source_error": 1.734723475976807e-18,
+      "check_coord_negative": 0.0,
+      "check_reconstruction_error": 5.551115123125783e-17,
+      "check_K_column_error": 0.0,
+      "check_transport_error": 2.1316282072803006e-14,
+      "check_exchange_material_error": 2.5344309984021152e-14,
+      "check_exchange_energy_error": 5.156985949383852e-14,
+      "check_whole_material_error": 3.530509218307998e-14,
+      "check_whole_energy_error": 5.417888360170764e-14,
+      "check_input_material_array_error": 0.0,
+      "check_input_energy_array_error": 0.0,
+      "check_cargo_P_error": 4.440892098500626e-16,
+      "check_cargo_F_error": 7.105427357601002e-15,
+      "check_cargo_E_heat_error": 0.0,
+      "check_cargo_capacity_excess": 0.0,
+      "check_cargo_payable_excess": 0.0,
+      "check_cargo_negative": 0.0,
+      "check_cargo_newborn_payer": 0.0,
+      "check_request_partition_error": 6.938893903907228e-18,
+      "check_founder_excess": 0.0,
+      "check_L128_conservation_error": 1.7041923427996153e-14,
+      "check_L128_excess": 0.0
+    }
+  },
+  {
+    "id": "202610195401_double_lobe_matched_uniform",
+    "seed": 202610195401,
+    "shape": "double_lobe",
+    "arm": "matched_uniform",
+    "status": "complete",
+    "steps": 256,
+    "initial": {
+      "clock": 128,
+      "body": 56.41985050196516,
+      "energy": 66.83842046759007,
+      "precursor": 2.093301379512553,
+      "fuel": 25.294513049073647,
+      "heat": 17.68504996635822,
+      "waste": 29.01696185868237,
+      "dead_energy": 33.748206675633405,
+      "founder_mass": 37.421896714399935,
+      "new_tissue": 18.997953787565226
+    },
+    "initial_state_hash": {
+      "body": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "2a7fb4448186791d6fcfaaaa21fbca1d8407189591f34f70f8cd878645496377"
+      },
+      "energy": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "f0f958636c64861390d7b81d85c32043f4b83793fb6e409f0d2fb68d8735e1ba"
+      },
+      "memory": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "eligibility": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "polarity": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "precursor": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "c21bafccd5ff18dd85fa60359e097a755e1275800e10c40d213ffd8a2748729f"
+      },
+      "fuel": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "91540195531b8a42bd99d72d272aff0e1bc2a7ed8248ba33165e36f4be31aa8e"
+      },
+      "waste": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "7807b2f66bb743c437567880419840b2f7ac15265ac82f0a83ad6d0356b04c13"
+      },
+      "heat": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "a9a1239832c5a003ffd3d5f9e7c08f7b687c62358c014ccb074d4c770dc6881c"
+      },
+      "dead_energy": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "0223a169990ed4d3481d2700b9e267a2925168ee95de316d5731d166b5809378"
+      },
+      "founder_mass": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "14cba5af7b76b9c008e42811a6723dfeb85884fd8612f85480fef840fda11185"
+      },
+      "c_theta": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "c_value": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "c_trace": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "c_food": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+      },
+      "c_run": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+      },
+      "c_remaining": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+      }
+    },
+    "first": {
+      "conversion_totals": [
+        57.0606014398958,
+        67.29429689639065,
+        17.899845438752877,
+        33.760881572563285,
+        0.6558003144902528
+      ],
+      "candidate_common_hash": {
+        "coord_R": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "29c66e8db7cb4cf27687fb536ccca0f6d362a94e7b1b07af031565db62e58cb8"
+        },
+        "coord_survivor": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "6de0e2a07ee7798110aa58f92a52f4b6cb21dab14b3fad779ce3dfd233256667"
+        },
+        "coord_P": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "777ca431ca39c0ebc66c4f4f089ba9772c7bad19706d49e78ac5f86a2e2f45a0"
+        },
+        "coord_F": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "2351bb1379ecdec9960ce2ee7445c7f26ff550dc618d877f226605f6726eac10"
+        },
+        "coord_support": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "6c815988a3717914758cf893cf80b19435c707901f19ee048c726db069c81689"
+        },
+        "coord_q": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "04899a89102c236911d04b544f6bea0a3607bed76a43ab3fed807d844f1d8703"
+        },
+        "coord_fD": {
+          "dtype": "<f8",
+          "shape": [
+            4,
+            96,
+            96
+          ],
+          "sha256": "647b8cfad84701996d513710ada00f6da9060bf901816abe2d4db7e01c53c767"
+        },
+        "coord_fU": {
+          "dtype": "<f8",
+          "shape": [
+            4,
+            96,
+            96
+          ],
+          "sha256": "accb5ceccbccab78a74374a786826fa0a844d5b5b0c6ae60527513bda2c0c946"
+        },
+        "actual_hA": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "8fe91e7bfec432f974fe833679bf38958be7366bbbd170ad9b29aea75afe36e1"
+        },
+        "actual_hB": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "59a475d78d6abc725b9241f4f0c09564f6cd6edaf4a63376affd161761e8bef9"
+        },
+        "applied_w": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "9e793b636c2e9b99d26a0422e69ff3e288c3e70bc65104183c59e3121b614fe9"
+        }
+      },
+      "postsettle_M": 57.0606014398958,
+      "postsettle_E": 67.24322142606135,
+      "firstborn_hash": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "b0872ed223b3e141887d3f3b499eebbbfa1aba8127ca137f0ac871020a9ed0f6"
+      }
+    },
+    "M": 58.54489254736519,
+    "E": 90.00150587814323,
+    "bodytime": 763.0809723885727,
+    "dt": 0.05,
+    "L128": 27.129259022052473,
+    "post128_live": 31.415633525312707,
+    "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/spatial_birth_request_coordination_20261019/1d9a8271-7d8f-4b47-b278-ceddb02d049a/202610195401_double_lobe_matched_uniform/steps.csv",
+    "final": "/data/dataset/lenia-research/lineage_75e3399f4877/spatial_birth_request_coordination_20261019/1d9a8271-7d8f-4b47-b278-ceddb02d049a/202610195401_double_lobe_matched_uniform/state384.bin",
+    "maximum_errors": {
+      "check_material_error": 2.842170943040401e-14,
+      "check_energy_error": 5.684341886080802e-14,
+      "check_max_density": 0.9010236530599184,
+      "check_attempted_body_steps": 1540.0,
+      "check_coord_request_sum_error": 1.7763568394002505e-15,
+      "check_coord_source_excess": 0.0,
+      "check_coord_receiver_excess": 8.673617379884035e-19,
+      "check_coord_matched_source_error": 1.734723475976807e-18,
+      "check_coord_negative": 0.0,
+      "check_reconstruction_error": 5.551115123125783e-17,
+      "check_K_column_error": 0.0,
+      "check_transport_error": 1.4210854715202004e-14,
+      "check_exchange_material_error": 2.2397014798336556e-14,
+      "check_exchange_energy_error": 5.168088179630104e-14,
+      "check_whole_material_error": 3.430589146091734e-14,
+      "check_whole_energy_error": 5.595524044110789e-14,
+      "check_input_material_array_error": 0.0,
+      "check_input_energy_array_error": 0.0,
+      "check_cargo_P_error": 4.440892098500626e-16,
+      "check_cargo_F_error": 1.0658141036401503e-14,
+      "check_cargo_E_heat_error": 0.0,
+      "check_cargo_capacity_excess": 0.0,
+      "check_cargo_payable_excess": 0.0,
+      "check_cargo_negative": 0.0,
+      "check_cargo_newborn_payer": 0.0,
+      "check_request_partition_error": 6.938893903907228e-18,
+      "check_founder_excess": 0.0,
+      "check_L128_conservation_error": 1.2545520178264269e-14,
+      "check_L128_excess": 0.0
+    }
+  },
+  {
+    "id": "202610195402_compact_full_directed",
+    "seed": 202610195402,
+    "shape": "compact",
+    "arm": "full_directed",
+    "status": "complete",
+    "steps": 256,
+    "initial": {
+      "clock": 128,
+      "body": 65.34569546631178,
+      "energy": 85.1581478279968,
+      "precursor": 3.200164706838863,
+      "fuel": 22.725467716985527,
+      "heat": 16.140786555595334,
+      "waste": 18.12580698601615,
+      "dead_energy": 25.000099224607006,
+      "founder_mass": 47.67615755351546,
+      "new_tissue": 17.669537912796336
+    },
+    "initial_state_hash": {
+      "body": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "1072b75189da06e2007ebab025fda1ec00817a9cb0e7221acab3cfd706db4702"
+      },
+      "energy": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "fa8b890bd9d41e9d5452b74650f08748076f38050a00ed9295fd077556d234b5"
+      },
+      "memory": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "eligibility": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "polarity": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "precursor": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "40de859f44d9c5399f738e139783cb36e0a9fe24c88b48d8ed5b7df3a188cfff"
+      },
+      "fuel": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "84593e3791ddb7218b5ef2166008ea2339fe6512ec4d433ede795edad075f785"
+      },
+      "waste": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "a2b0e6b2cb7858366cb044c286375a2aa4f0e03d969f284f2709e10e41141ec6"
+      },
+      "heat": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "f0fd01ed54873a7e5128b41baf636a228d0785989b95149ae7b3e8e319943cb1"
+      },
+      "dead_energy": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "16557266cbf7a632472135439da7757482eb95ed35b619d89dfe0f324009c489"
+      },
+      "founder_mass": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "cea2a416e15fe96bee1d545fa7a19687e231ee2626c084be6cd5ef50a4e8ae1b"
+      },
+      "c_theta": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "c_value": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "c_trace": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "c_food": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+      },
+      "c_run": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+      },
+      "c_remaining": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+      }
+    },
+    "first": {
+      "conversion_totals": [
+        66.50517543731263,
+        85.64635793301909,
+        16.477956013459746,
+        25.017081150969865,
+        1.1698731659908796
+      ],
+      "candidate_common_hash": {
+        "coord_R": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "17d2e764c450137bb1f01b83395e01c034cae07d4143b17cd85c0954c4f58691"
+        },
+        "coord_survivor": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "20ef728284952c82df9711c04f2daf406d505324b1f4200d930b89d7cbb3f670"
+        },
+        "coord_P": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "225e03d0ef9d63c49c2ecfb0695b2af439646313cdc9f1e417f310bd3ba7294f"
+        },
+        "coord_F": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "d98ee5ae84dab0dc1102c51a260baea7c09242ac7033194ce56262df0c7246d3"
+        },
+        "coord_support": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "2e9b1e20f72ce3526a763913cc3161f88a81d8cc4e8f918c45019113b29d534e"
+        },
+        "coord_q": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "913bf79ebbf907fd9a1b65f5944ae87a8d481a8bf34a8d141a1ede32551560ce"
+        },
+        "coord_fD": {
+          "dtype": "<f8",
+          "shape": [
+            4,
+            96,
+            96
+          ],
+          "sha256": "1963ae4e440eb0e96de11df9aad3e4e8066788c7b9736d626bca303a364a041d"
+        },
+        "coord_fU": {
+          "dtype": "<f8",
+          "shape": [
+            4,
+            96,
+            96
+          ],
+          "sha256": "dc9e9b5c80c94fc3ee64186b34f59d3bd649ad7ca4556858752bd34d9802fb89"
+        },
+        "actual_hA": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "2e4fb9b684478c7880738d0200aff2a21c002bf07e3dd2ceba879adf8bdc1721"
+        },
+        "actual_hB": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "92b381ac97e9a14c19bb1a4b84d79678e10de312e137d2e0d27f03c197e67e14"
+        },
+        "applied_w": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "6ef412ad7d9e25dd06b3d3f5bd333f2f8405ba3b4818dce7644f791ca41232cc"
+        }
+      },
+      "postsettle_M": 66.50517543731263,
+      "postsettle_E": 85.61009573036004,
+      "firstborn_hash": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "43c1fd93aa72f256133f9acf81204e52a085ffd68bd95e06ade8cc656370e604"
+      }
+    },
+    "M": 63.65872369343079,
+    "E": 99.37233039358031,
+    "bodytime": 842.7443544681967,
+    "dt": 0.05,
+    "L128": 33.35299470954162,
+    "post128_live": 30.30572898388916,
+    "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/spatial_birth_request_coordination_20261019/1d9a8271-7d8f-4b47-b278-ceddb02d049a/202610195402_compact_full_directed/steps.csv",
+    "final": "/data/dataset/lenia-research/lineage_75e3399f4877/spatial_birth_request_coordination_20261019/1d9a8271-7d8f-4b47-b278-ceddb02d049a/202610195402_compact_full_directed/state384.bin",
+    "maximum_errors": {
+      "check_material_error": 2.842170943040401e-14,
+      "check_energy_error": 5.684341886080802e-14,
+      "check_max_density": 0.7453307599852645,
+      "check_attempted_body_steps": 1796.0,
+      "check_coord_request_sum_error": 1.7763568394002505e-15,
+      "check_coord_source_excess": 0.0,
+      "check_coord_receiver_excess": 3.469446951953614e-18,
+      "check_coord_matched_source_error": 1.734723475976807e-18,
+      "check_coord_negative": 0.0,
+      "check_reconstruction_error": 5.551115123125783e-17,
+      "check_K_column_error": 0.0,
+      "check_transport_error": 2.842170943040401e-14,
+      "check_exchange_material_error": 2.2211399386407038e-14,
+      "check_exchange_energy_error": 4.2521541843143495e-14,
+      "check_whole_material_error": 3.294586825575152e-14,
+      "check_whole_energy_error": 7.527312106958561e-14,
+      "check_input_material_array_error": 0.0,
+      "check_input_energy_array_error": 0.0,
+      "check_cargo_P_error": 1.3322676295501878e-15,
+      "check_cargo_F_error": 7.105427357601002e-15,
+      "check_cargo_E_heat_error": 0.0,
+      "check_cargo_capacity_excess": 0.0,
+      "check_cargo_payable_excess": 0.0,
+      "check_cargo_negative": 0.0,
+      "check_cargo_newborn_payer": 0.0,
+      "check_request_partition_error": 6.938893903907228e-18,
+      "check_founder_excess": 0.0,
+      "check_L128_conservation_error": 1.6930901125533637e-14,
+      "check_L128_excess": 0.0
+    }
+  },
+  {
+    "id": "202610195402_compact_matched_directed",
+    "seed": 202610195402,
+    "shape": "compact",
+    "arm": "matched_directed",
+    "status": "complete",
+    "steps": 256,
+    "initial": {
+      "clock": 128,
+      "body": 65.34569546631178,
+      "energy": 85.1581478279968,
+      "precursor": 3.200164706838863,
+      "fuel": 22.725467716985527,
+      "heat": 16.140786555595334,
+      "waste": 18.12580698601615,
+      "dead_energy": 25.000099224607006,
+      "founder_mass": 47.67615755351546,
+      "new_tissue": 17.669537912796336
+    },
+    "initial_state_hash": {
+      "body": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "1072b75189da06e2007ebab025fda1ec00817a9cb0e7221acab3cfd706db4702"
+      },
+      "energy": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "fa8b890bd9d41e9d5452b74650f08748076f38050a00ed9295fd077556d234b5"
+      },
+      "memory": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "eligibility": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "polarity": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "precursor": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "40de859f44d9c5399f738e139783cb36e0a9fe24c88b48d8ed5b7df3a188cfff"
+      },
+      "fuel": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "84593e3791ddb7218b5ef2166008ea2339fe6512ec4d433ede795edad075f785"
+      },
+      "waste": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "a2b0e6b2cb7858366cb044c286375a2aa4f0e03d969f284f2709e10e41141ec6"
+      },
+      "heat": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "f0fd01ed54873a7e5128b41baf636a228d0785989b95149ae7b3e8e319943cb1"
+      },
+      "dead_energy": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "16557266cbf7a632472135439da7757482eb95ed35b619d89dfe0f324009c489"
+      },
+      "founder_mass": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "cea2a416e15fe96bee1d545fa7a19687e231ee2626c084be6cd5ef50a4e8ae1b"
+      },
+      "c_theta": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "c_value": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "c_trace": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "c_food": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+      },
+      "c_run": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+      },
+      "c_remaining": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+      }
+    },
+    "first": {
+      "conversion_totals": [
+        66.18375790882207,
+        85.58207442732098,
+        16.407244157191823,
+        25.017081150969865,
+        0.8484556375003185
+      ],
+      "candidate_common_hash": {
+        "coord_R": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "17d2e764c450137bb1f01b83395e01c034cae07d4143b17cd85c0954c4f58691"
+        },
+        "coord_survivor": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "20ef728284952c82df9711c04f2daf406d505324b1f4200d930b89d7cbb3f670"
+        },
+        "coord_P": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "225e03d0ef9d63c49c2ecfb0695b2af439646313cdc9f1e417f310bd3ba7294f"
+        },
+        "coord_F": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "d98ee5ae84dab0dc1102c51a260baea7c09242ac7033194ce56262df0c7246d3"
+        },
+        "coord_support": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "2e9b1e20f72ce3526a763913cc3161f88a81d8cc4e8f918c45019113b29d534e"
+        },
+        "coord_q": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "913bf79ebbf907fd9a1b65f5944ae87a8d481a8bf34a8d141a1ede32551560ce"
+        },
+        "coord_fD": {
+          "dtype": "<f8",
+          "shape": [
+            4,
+            96,
+            96
+          ],
+          "sha256": "1963ae4e440eb0e96de11df9aad3e4e8066788c7b9736d626bca303a364a041d"
+        },
+        "coord_fU": {
+          "dtype": "<f8",
+          "shape": [
+            4,
+            96,
+            96
+          ],
+          "sha256": "dc9e9b5c80c94fc3ee64186b34f59d3bd649ad7ca4556858752bd34d9802fb89"
+        },
+        "actual_hA": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "2e4fb9b684478c7880738d0200aff2a21c002bf07e3dd2ceba879adf8bdc1721"
+        },
+        "actual_hB": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "92b381ac97e9a14c19bb1a4b84d79678e10de312e137d2e0d27f03c197e67e14"
+        },
+        "applied_w": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "6ef412ad7d9e25dd06b3d3f5bd333f2f8405ba3b4818dce7644f791ca41232cc"
+        }
+      },
+      "postsettle_M": 66.18375790882207,
+      "postsettle_E": 85.52481347062195,
+      "firstborn_hash": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "f9c3e0c718e84aecf80251cca6a07a16900663df0cedcd9599470249c81996bb"
+      }
+    },
+    "M": 63.766321042285156,
+    "E": 99.23157011179958,
+    "bodytime": 843.3325496025641,
+    "dt": 0.05,
+    "L128": 33.5477154236215,
+    "post128_live": 30.21860561866366,
+    "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/spatial_birth_request_coordination_20261019/1d9a8271-7d8f-4b47-b278-ceddb02d049a/202610195402_compact_matched_directed/steps.csv",
+    "final": "/data/dataset/lenia-research/lineage_75e3399f4877/spatial_birth_request_coordination_20261019/1d9a8271-7d8f-4b47-b278-ceddb02d049a/202610195402_compact_matched_directed/state384.bin",
+    "maximum_errors": {
+      "check_material_error": 2.842170943040401e-14,
+      "check_energy_error": 5.684341886080802e-14,
+      "check_max_density": 0.7242907505672472,
+      "check_attempted_body_steps": 2052.0,
+      "check_coord_request_sum_error": 1.7763568394002505e-15,
+      "check_coord_source_excess": 0.0,
+      "check_coord_receiver_excess": 4.336808689942018e-19,
+      "check_coord_matched_source_error": 3.469446951953614e-18,
+      "check_coord_negative": 0.0,
+      "check_reconstruction_error": 5.551115123125783e-17,
+      "check_K_column_error": 0.0,
+      "check_transport_error": 2.842170943040401e-14,
+      "check_exchange_material_error": 2.0511370379949767e-14,
+      "check_exchange_energy_error": 4.779510121011299e-14,
+      "check_whole_material_error": 3.1558089474970075e-14,
+      "check_whole_energy_error": 6.405986852087153e-14,
+      "check_input_material_array_error": 0.0,
+      "check_input_energy_array_error": 0.0,
+      "check_cargo_P_error": 1.7763568394002505e-15,
+      "check_cargo_F_error": 7.105427357601002e-15,
+      "check_cargo_E_heat_error": 0.0,
+      "check_cargo_capacity_excess": 0.0,
+      "check_cargo_payable_excess": 0.0,
+      "check_cargo_negative": 0.0,
+      "check_cargo_newborn_payer": 0.0,
+      "check_request_partition_error": 6.938893903907228e-18,
+      "check_founder_excess": 0.0,
+      "check_L128_conservation_error": 1.7985612998927536e-14,
+      "check_L128_excess": 0.0
+    }
+  },
+  {
+    "id": "202610195402_compact_matched_uniform",
+    "seed": 202610195402,
+    "shape": "compact",
+    "arm": "matched_uniform",
+    "status": "complete",
+    "steps": 256,
+    "initial": {
+      "clock": 128,
+      "body": 65.34569546631178,
+      "energy": 85.1581478279968,
+      "precursor": 3.200164706838863,
+      "fuel": 22.725467716985527,
+      "heat": 16.140786555595334,
+      "waste": 18.12580698601615,
+      "dead_energy": 25.000099224607006,
+      "founder_mass": 47.67615755351546,
+      "new_tissue": 17.669537912796336
+    },
+    "initial_state_hash": {
+      "body": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "1072b75189da06e2007ebab025fda1ec00817a9cb0e7221acab3cfd706db4702"
+      },
+      "energy": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "fa8b890bd9d41e9d5452b74650f08748076f38050a00ed9295fd077556d234b5"
+      },
+      "memory": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "eligibility": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "polarity": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "precursor": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "40de859f44d9c5399f738e139783cb36e0a9fe24c88b48d8ed5b7df3a188cfff"
+      },
+      "fuel": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "84593e3791ddb7218b5ef2166008ea2339fe6512ec4d433ede795edad075f785"
+      },
+      "waste": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "a2b0e6b2cb7858366cb044c286375a2aa4f0e03d969f284f2709e10e41141ec6"
+      },
+      "heat": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "f0fd01ed54873a7e5128b41baf636a228d0785989b95149ae7b3e8e319943cb1"
+      },
+      "dead_energy": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "16557266cbf7a632472135439da7757482eb95ed35b619d89dfe0f324009c489"
+      },
+      "founder_mass": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "cea2a416e15fe96bee1d545fa7a19687e231ee2626c084be6cd5ef50a4e8ae1b"
+      },
+      "c_theta": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "c_value": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "c_trace": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "c_food": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+      },
+      "c_run": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+      },
+      "c_remaining": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+      }
+    },
+    "first": {
+      "conversion_totals": [
+        66.18375790882206,
+        85.58207442732098,
+        16.407244157191823,
+        25.017081150969865,
+        0.8484556375003183
+      ],
+      "candidate_common_hash": {
+        "coord_R": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "17d2e764c450137bb1f01b83395e01c034cae07d4143b17cd85c0954c4f58691"
+        },
+        "coord_survivor": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "20ef728284952c82df9711c04f2daf406d505324b1f4200d930b89d7cbb3f670"
+        },
+        "coord_P": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "225e03d0ef9d63c49c2ecfb0695b2af439646313cdc9f1e417f310bd3ba7294f"
+        },
+        "coord_F": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "d98ee5ae84dab0dc1102c51a260baea7c09242ac7033194ce56262df0c7246d3"
+        },
+        "coord_support": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "2e9b1e20f72ce3526a763913cc3161f88a81d8cc4e8f918c45019113b29d534e"
+        },
+        "coord_q": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "913bf79ebbf907fd9a1b65f5944ae87a8d481a8bf34a8d141a1ede32551560ce"
+        },
+        "coord_fD": {
+          "dtype": "<f8",
+          "shape": [
+            4,
+            96,
+            96
+          ],
+          "sha256": "1963ae4e440eb0e96de11df9aad3e4e8066788c7b9736d626bca303a364a041d"
+        },
+        "coord_fU": {
+          "dtype": "<f8",
+          "shape": [
+            4,
+            96,
+            96
+          ],
+          "sha256": "dc9e9b5c80c94fc3ee64186b34f59d3bd649ad7ca4556858752bd34d9802fb89"
+        },
+        "actual_hA": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "2e4fb9b684478c7880738d0200aff2a21c002bf07e3dd2ceba879adf8bdc1721"
+        },
+        "actual_hB": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "92b381ac97e9a14c19bb1a4b84d79678e10de312e137d2e0d27f03c197e67e14"
+        },
+        "applied_w": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "6ef412ad7d9e25dd06b3d3f5bd333f2f8405ba3b4818dce7644f791ca41232cc"
+        }
+      },
+      "postsettle_M": 66.18375790882206,
+      "postsettle_E": 85.52527012206352,
+      "firstborn_hash": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "a22732e7f870690c2a561991854fe21d1a4b093aecaec7215f8f0d2bf5ec38f2"
+      }
+    },
+    "M": 63.76550504946672,
+    "E": 99.22585681648542,
+    "bodytime": 843.3018508826685,
+    "dt": 0.05,
+    "L128": 33.57314186688578,
+    "post128_live": 30.192363182580937,
+    "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/spatial_birth_request_coordination_20261019/1d9a8271-7d8f-4b47-b278-ceddb02d049a/202610195402_compact_matched_uniform/steps.csv",
+    "final": "/data/dataset/lenia-research/lineage_75e3399f4877/spatial_birth_request_coordination_20261019/1d9a8271-7d8f-4b47-b278-ceddb02d049a/202610195402_compact_matched_uniform/state384.bin",
+    "maximum_errors": {
+      "check_material_error": 2.842170943040401e-14,
+      "check_energy_error": 5.684341886080802e-14,
+      "check_max_density": 0.7243703773612529,
+      "check_attempted_body_steps": 2308.0,
+      "check_coord_request_sum_error": 1.7763568394002505e-15,
+      "check_coord_source_excess": 0.0,
+      "check_coord_receiver_excess": 4.336808689942018e-19,
+      "check_coord_matched_source_error": 1.734723475976807e-18,
+      "check_coord_negative": 0.0,
+      "check_reconstruction_error": 5.551115123125783e-17,
+      "check_K_column_error": 0.0,
+      "check_transport_error": 2.842170943040401e-14,
+      "check_exchange_material_error": 1.642436187054841e-14,
+      "check_exchange_energy_error": 5.417888360170764e-14,
+      "check_whole_material_error": 3.727573805178963e-14,
+      "check_whole_energy_error": 8.08242361927114e-14,
+      "check_input_material_array_error": 0.0,
+      "check_input_energy_array_error": 0.0,
+      "check_cargo_P_error": 1.3322676295501878e-15,
+      "check_cargo_F_error": 7.105427357601002e-15,
+      "check_cargo_E_heat_error": 0.0,
+      "check_cargo_capacity_excess": 0.0,
+      "check_cargo_payable_excess": 0.0,
+      "check_cargo_negative": 0.0,
+      "check_cargo_newborn_payer": 0.0,
+      "check_request_partition_error": 6.938893903907228e-18,
+      "check_founder_excess": 0.0,
+      "check_L128_conservation_error": 1.6930901125533637e-14,
+      "check_L128_excess": 0.0
+    }
+  },
+  {
+    "id": "202610195402_double_lobe_full_directed",
+    "seed": 202610195402,
+    "shape": "double_lobe",
+    "arm": "full_directed",
+    "status": "complete",
+    "steps": 256,
+    "initial": {
+      "clock": 128,
+      "body": 56.7384334464042,
+      "energy": 68.7939761477548,
+      "precursor": 2.355089127564543,
+      "fuel": 25.750402518063346,
+      "heat": 17.427042604855206,
+      "waste": 28.401076570308906,
+      "dead_energy": 33.47129537238417,
+      "founder_mass": 37.70251299625058,
+      "new_tissue": 19.03592045015361
+    },
+    "initial_state_hash": {
+      "body": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "b25f4ce31d109ddd7e4e1bdf64253f26bd62b5ed29c0d5b19751805a4fbf65db"
+      },
+      "energy": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "1a6f6b776c545d9eea797f2f0441fbcbe68b8a8cb74ed8c30e0ecd0f89648569"
+      },
+      "memory": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "eligibility": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "polarity": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "precursor": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "4d7c61922c3c394a0236ca673d8ddda9a736d80102ef7ef5429e28141ff2d319"
+      },
+      "fuel": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "9c16d9eea52413f447d84822c41cf1ad236b61724d60860598d12184fe7465b5"
+      },
+      "waste": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "7269e3088132cee658ec7ae7d6deea04941f53ae0da84ac7d65befa3f1e69041"
+      },
+      "heat": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "a75bd59c7ea24c7cad9264642ce0bed0df30ad3884aa55d51ea9ea1469536814"
+      },
+      "dead_energy": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "babcc5de422cd7d81b871b55d864bba56efee70d8e8390432e419d6536be2973"
+      },
+      "founder_mass": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "8897729d064d75e87ee1260aeeba013f36a55cccf4957213cf6998c51bbcb63d"
+      },
+      "c_theta": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "c_value": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "c_trace": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "c_food": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+      },
+      "c_run": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+      },
+      "c_remaining": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+      }
+    },
+    "first": {
+      "conversion_totals": [
+        57.76689758268475,
+        69.24632650839361,
+        17.730901319080463,
+        33.510840385728805,
+        1.062227061944347
+      ],
+      "candidate_common_hash": {
+        "coord_R": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "bd72068c5fa4c1a45195627b334e91d1b531421e8c76298a4ca002ff3d82cf39"
+        },
+        "coord_survivor": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "acfe631259e7089f48b0e2b5037e310de003be12b9fc8d347c36aeb04db5334e"
+        },
+        "coord_P": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "c8311427657e636c4ff57d24bfd4472b03a0c1e760e105d66112914a6ec19162"
+        },
+        "coord_F": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "59abd028d0cf231d6457fb1ffcc96345d27b71d9a1a555f0f9f1738387f7bc4c"
+        },
+        "coord_support": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "1d46eef618a88f8ef96c7af86c8879461a19d42f353c87c23398830d6b8e1bf6"
+        },
+        "coord_q": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "36b5eac19313a8b534d7d77fdd88294c5d93b4af47b4890688e3c42a4e947aca"
+        },
+        "coord_fD": {
+          "dtype": "<f8",
+          "shape": [
+            4,
+            96,
+            96
+          ],
+          "sha256": "71268138199eaf1aa200d5d79a210c7887e9ee7c13764206c8d93d0cde3cc793"
+        },
+        "coord_fU": {
+          "dtype": "<f8",
+          "shape": [
+            4,
+            96,
+            96
+          ],
+          "sha256": "589c48586b4ef9ffbd371f42e4450dac55380b5b48cef055d8dab0d6b33d3205"
+        },
+        "actual_hA": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "7cb3f9ff89f211d3d37c3830c074e278ebcabe5e6a945376d212c5bc838b9b9c"
+        },
+        "actual_hB": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "4b34f15f1b7be0daf762ee7372ee0237cf5569fcb5f02ca5c1693f9e804f7be6"
+        },
+        "applied_w": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "01c7cb2363bf7e1e2c9f7abdfe49c5cec42da47f2ba9a4e83f9a0d0ba0cd13ec"
+        }
+      },
+      "postsettle_M": 57.76689758268475,
+      "postsettle_E": 69.22346013348488,
+      "firstborn_hash": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "3e9a87d9c394cf678e952042e0f7bc202e4f87e6b829f1f922441778aca53ad0"
+      }
+    },
+    "M": 58.88339882164274,
+    "E": 91.81538041369419,
+    "bodytime": 766.1932441422115,
+    "dt": 0.05,
+    "L128": 27.80342651225729,
+    "post128_live": 31.079972309385454,
+    "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/spatial_birth_request_coordination_20261019/1d9a8271-7d8f-4b47-b278-ceddb02d049a/202610195402_double_lobe_full_directed/steps.csv",
+    "final": "/data/dataset/lenia-research/lineage_75e3399f4877/spatial_birth_request_coordination_20261019/1d9a8271-7d8f-4b47-b278-ceddb02d049a/202610195402_double_lobe_full_directed/state384.bin",
+    "maximum_errors": {
+      "check_material_error": 2.842170943040401e-14,
+      "check_energy_error": 5.684341886080802e-14,
+      "check_max_density": 0.9186877097247259,
+      "check_attempted_body_steps": 2564.0,
+      "check_coord_request_sum_error": 1.7763568394002505e-15,
+      "check_coord_source_excess": 0.0,
+      "check_coord_receiver_excess": 1.3877787807814457e-17,
+      "check_coord_matched_source_error": 3.469446951953614e-18,
+      "check_coord_negative": 0.0,
+      "check_reconstruction_error": 5.551115123125783e-17,
+      "check_K_column_error": 0.0,
+      "check_transport_error": 2.1316282072803006e-14,
+      "check_exchange_material_error": 2.5732888042639956e-14,
+      "check_exchange_energy_error": 5.156985949383852e-14,
+      "check_whole_material_error": 3.452793606584237e-14,
+      "check_whole_energy_error": 7.194245199571014e-14,
+      "check_input_material_array_error": 0.0,
+      "check_input_energy_array_error": 0.0,
+      "check_cargo_P_error": 3.3306690738754696e-16,
+      "check_cargo_F_error": 7.105427357601002e-15,
+      "check_cargo_E_heat_error": 0.0,
+      "check_cargo_capacity_excess": 0.0,
+      "check_cargo_payable_excess": 0.0,
+      "check_cargo_negative": 0.0,
+      "check_cargo_newborn_payer": 0.0,
+      "check_request_partition_error": 6.938893903907228e-18,
+      "check_founder_excess": 0.0,
+      "check_L128_conservation_error": 1.749989042565403e-14,
+      "check_L128_excess": 0.0
+    }
+  },
+  {
+    "id": "202610195402_double_lobe_matched_directed",
+    "seed": 202610195402,
+    "shape": "double_lobe",
+    "arm": "matched_directed",
+    "status": "complete",
+    "steps": 256,
+    "initial": {
+      "clock": 128,
+      "body": 56.7384334464042,
+      "energy": 68.7939761477548,
+      "precursor": 2.355089127564543,
+      "fuel": 25.750402518063346,
+      "heat": 17.427042604855206,
+      "waste": 28.401076570308906,
+      "dead_energy": 33.47129537238417,
+      "founder_mass": 37.70251299625058,
+      "new_tissue": 19.03592045015361
+    },
+    "initial_state_hash": {
+      "body": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "b25f4ce31d109ddd7e4e1bdf64253f26bd62b5ed29c0d5b19751805a4fbf65db"
+      },
+      "energy": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "1a6f6b776c545d9eea797f2f0441fbcbe68b8a8cb74ed8c30e0ecd0f89648569"
+      },
+      "memory": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "eligibility": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "polarity": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "precursor": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "4d7c61922c3c394a0236ca673d8ddda9a736d80102ef7ef5429e28141ff2d319"
+      },
+      "fuel": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "9c16d9eea52413f447d84822c41cf1ad236b61724d60860598d12184fe7465b5"
+      },
+      "waste": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "7269e3088132cee658ec7ae7d6deea04941f53ae0da84ac7d65befa3f1e69041"
+      },
+      "heat": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "a75bd59c7ea24c7cad9264642ce0bed0df30ad3884aa55d51ea9ea1469536814"
+      },
+      "dead_energy": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "babcc5de422cd7d81b871b55d864bba56efee70d8e8390432e419d6536be2973"
+      },
+      "founder_mass": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "8897729d064d75e87ee1260aeeba013f36a55cccf4957213cf6998c51bbcb63d"
+      },
+      "c_theta": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "c_value": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "c_trace": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "c_food": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+      },
+      "c_run": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+      },
+      "c_remaining": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+      }
+    },
+    "first": {
+      "conversion_totals": [
+        57.447028319631144,
+        69.18235265578289,
+        17.66053008120867,
+        33.510840385728805,
+        0.7423577988907479
+      ],
+      "candidate_common_hash": {
+        "coord_R": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "bd72068c5fa4c1a45195627b334e91d1b531421e8c76298a4ca002ff3d82cf39"
+        },
+        "coord_survivor": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "acfe631259e7089f48b0e2b5037e310de003be12b9fc8d347c36aeb04db5334e"
+        },
+        "coord_P": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "c8311427657e636c4ff57d24bfd4472b03a0c1e760e105d66112914a6ec19162"
+        },
+        "coord_F": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "59abd028d0cf231d6457fb1ffcc96345d27b71d9a1a555f0f9f1738387f7bc4c"
+        },
+        "coord_support": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "1d46eef618a88f8ef96c7af86c8879461a19d42f353c87c23398830d6b8e1bf6"
+        },
+        "coord_q": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "36b5eac19313a8b534d7d77fdd88294c5d93b4af47b4890688e3c42a4e947aca"
+        },
+        "coord_fD": {
+          "dtype": "<f8",
+          "shape": [
+            4,
+            96,
+            96
+          ],
+          "sha256": "71268138199eaf1aa200d5d79a210c7887e9ee7c13764206c8d93d0cde3cc793"
+        },
+        "coord_fU": {
+          "dtype": "<f8",
+          "shape": [
+            4,
+            96,
+            96
+          ],
+          "sha256": "589c48586b4ef9ffbd371f42e4450dac55380b5b48cef055d8dab0d6b33d3205"
+        },
+        "actual_hA": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "7cb3f9ff89f211d3d37c3830c074e278ebcabe5e6a945376d212c5bc838b9b9c"
+        },
+        "actual_hB": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "4b34f15f1b7be0daf762ee7372ee0237cf5569fcb5f02ca5c1693f9e804f7be6"
+        },
+        "applied_w": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "01c7cb2363bf7e1e2c9f7abdfe49c5cec42da47f2ba9a4e83f9a0d0ba0cd13ec"
+        }
+      },
+      "postsettle_M": 57.447028319631144,
+      "postsettle_E": 69.14029206648445,
+      "firstborn_hash": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "e1e152c75115efa790f4b0f3e05f394064631f97b0f96728227bdaa51dfa36d0"
+      }
+    },
+    "M": 58.978472413682795,
+    "E": 91.73931801831125,
+    "bodytime": 767.3106974658076,
+    "dt": 0.05,
+    "L128": 27.68293131887283,
+    "post128_live": 31.295541094809966,
+    "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/spatial_birth_request_coordination_20261019/1d9a8271-7d8f-4b47-b278-ceddb02d049a/202610195402_double_lobe_matched_directed/steps.csv",
+    "final": "/data/dataset/lenia-research/lineage_75e3399f4877/spatial_birth_request_coordination_20261019/1d9a8271-7d8f-4b47-b278-ceddb02d049a/202610195402_double_lobe_matched_directed/state384.bin",
+    "maximum_errors": {
+      "check_material_error": 2.842170943040401e-14,
+      "check_energy_error": 5.684341886080802e-14,
+      "check_max_density": 0.9163759636993094,
+      "check_attempted_body_steps": 2820.0,
+      "check_coord_request_sum_error": 1.7763568394002505e-15,
+      "check_coord_source_excess": 0.0,
+      "check_coord_receiver_excess": 8.673617379884035e-19,
+      "check_coord_matched_source_error": 1.734723475976807e-18,
+      "check_coord_negative": 0.0,
+      "check_reconstruction_error": 5.551115123125783e-17,
+      "check_K_column_error": 0.0,
+      "check_transport_error": 2.1316282072803006e-14,
+      "check_exchange_material_error": 1.9807072648703183e-14,
+      "check_exchange_energy_error": 5.806466418789569e-14,
+      "check_whole_material_error": 3.930189507173054e-14,
+      "check_whole_energy_error": 7.549516567451064e-14,
+      "check_input_material_array_error": 0.0,
+      "check_input_energy_array_error": 0.0,
+      "check_cargo_P_error": 4.440892098500626e-16,
+      "check_cargo_F_error": 7.105427357601002e-15,
+      "check_cargo_E_heat_error": 0.0,
+      "check_cargo_capacity_excess": 0.0,
+      "check_cargo_payable_excess": 0.0,
+      "check_cargo_negative": 0.0,
+      "check_cargo_newborn_payer": 0.0,
+      "check_request_partition_error": 6.938893903907228e-18,
+      "check_founder_excess": 0.0,
+      "check_L128_conservation_error": 1.2045919817182948e-14,
+      "check_L128_excess": 0.0
+    }
+  },
+  {
+    "id": "202610195402_double_lobe_matched_uniform",
+    "seed": 202610195402,
+    "shape": "double_lobe",
+    "arm": "matched_uniform",
+    "status": "complete",
+    "steps": 256,
+    "initial": {
+      "clock": 128,
+      "body": 56.7384334464042,
+      "energy": 68.7939761477548,
+      "precursor": 2.355089127564543,
+      "fuel": 25.750402518063346,
+      "heat": 17.427042604855206,
+      "waste": 28.401076570308906,
+      "dead_energy": 33.47129537238417,
+      "founder_mass": 37.70251299625058,
+      "new_tissue": 19.03592045015361
+    },
+    "initial_state_hash": {
+      "body": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "b25f4ce31d109ddd7e4e1bdf64253f26bd62b5ed29c0d5b19751805a4fbf65db"
+      },
+      "energy": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "1a6f6b776c545d9eea797f2f0441fbcbe68b8a8cb74ed8c30e0ecd0f89648569"
+      },
+      "memory": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "eligibility": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "polarity": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "precursor": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "4d7c61922c3c394a0236ca673d8ddda9a736d80102ef7ef5429e28141ff2d319"
+      },
+      "fuel": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "9c16d9eea52413f447d84822c41cf1ad236b61724d60860598d12184fe7465b5"
+      },
+      "waste": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "7269e3088132cee658ec7ae7d6deea04941f53ae0da84ac7d65befa3f1e69041"
+      },
+      "heat": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "a75bd59c7ea24c7cad9264642ce0bed0df30ad3884aa55d51ea9ea1469536814"
+      },
+      "dead_energy": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "babcc5de422cd7d81b871b55d864bba56efee70d8e8390432e419d6536be2973"
+      },
+      "founder_mass": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "8897729d064d75e87ee1260aeeba013f36a55cccf4957213cf6998c51bbcb63d"
+      },
+      "c_theta": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "c_value": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "c_trace": {
+        "dtype": "<f8",
+        "shape": [
+          2,
+          96,
+          96
+        ],
+        "sha256": "8123c216413f82bbaa0339c27a43d9822c2a043e20662b27c97874429b996e9a"
+      },
+      "c_food": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+      },
+      "c_run": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+      },
+      "c_remaining": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "484eaa327eae22dd9073858b0599e43fb5e06cabfbc8de88c83763edcb8d2446"
+      }
+    },
+    "first": {
+      "conversion_totals": [
+        57.447028319631144,
+        69.18235265578288,
+        17.66053008120867,
+        33.510840385728805,
+        0.7423577988907479
+      ],
+      "candidate_common_hash": {
+        "coord_R": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "bd72068c5fa4c1a45195627b334e91d1b531421e8c76298a4ca002ff3d82cf39"
+        },
+        "coord_survivor": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "acfe631259e7089f48b0e2b5037e310de003be12b9fc8d347c36aeb04db5334e"
+        },
+        "coord_P": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "c8311427657e636c4ff57d24bfd4472b03a0c1e760e105d66112914a6ec19162"
+        },
+        "coord_F": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "59abd028d0cf231d6457fb1ffcc96345d27b71d9a1a555f0f9f1738387f7bc4c"
+        },
+        "coord_support": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "1d46eef618a88f8ef96c7af86c8879461a19d42f353c87c23398830d6b8e1bf6"
+        },
+        "coord_q": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "36b5eac19313a8b534d7d77fdd88294c5d93b4af47b4890688e3c42a4e947aca"
+        },
+        "coord_fD": {
+          "dtype": "<f8",
+          "shape": [
+            4,
+            96,
+            96
+          ],
+          "sha256": "71268138199eaf1aa200d5d79a210c7887e9ee7c13764206c8d93d0cde3cc793"
+        },
+        "coord_fU": {
+          "dtype": "<f8",
+          "shape": [
+            4,
+            96,
+            96
+          ],
+          "sha256": "589c48586b4ef9ffbd371f42e4450dac55380b5b48cef055d8dab0d6b33d3205"
+        },
+        "actual_hA": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "7cb3f9ff89f211d3d37c3830c074e278ebcabe5e6a945376d212c5bc838b9b9c"
+        },
+        "actual_hB": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "4b34f15f1b7be0daf762ee7372ee0237cf5569fcb5f02ca5c1693f9e804f7be6"
+        },
+        "applied_w": {
+          "dtype": "<f8",
+          "shape": [
+            96,
+            96
+          ],
+          "sha256": "01c7cb2363bf7e1e2c9f7abdfe49c5cec42da47f2ba9a4e83f9a0d0ba0cd13ec"
+        }
+      },
+      "postsettle_M": 57.447028319631144,
+      "postsettle_E": 69.14041914938355,
+      "firstborn_hash": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "991fc2be12cdf0908957c6ebe3f3b87eb80db0c5ee690d9762af977948e0a7c4"
+      }
+    },
+    "M": 58.97359614627639,
+    "E": 91.79297364543558,
+    "bodytime": 767.3095759776311,
+    "dt": 0.05,
+    "L128": 27.70291040656025,
+    "post128_live": 31.27068573971616,
+    "rows": "/data/dataset/lenia-research/lineage_75e3399f4877/spatial_birth_request_coordination_20261019/1d9a8271-7d8f-4b47-b278-ceddb02d049a/202610195402_double_lobe_matched_uniform/steps.csv",
+    "final": "/data/dataset/lenia-research/lineage_75e3399f4877/spatial_birth_request_coordination_20261019/1d9a8271-7d8f-4b47-b278-ceddb02d049a/202610195402_double_lobe_matched_uniform/state384.bin",
+    "maximum_errors": {
+      "check_material_error": 2.842170943040401e-14,
+      "check_energy_error": 5.684341886080802e-14,
+      "check_max_density": 0.9164494308537653,
+      "check_attempted_body_steps": 3076.0,
+      "check_coord_request_sum_error": 1.7763568394002505e-15,
+      "check_coord_source_excess": 0.0,
+      "check_coord_receiver_excess": 8.673617379884035e-19,
+      "check_coord_matched_source_error": 1.734723475976807e-18,
+      "check_coord_negative": 0.0,
+      "check_reconstruction_error": 5.551115123125783e-17,
+      "check_K_column_error": 0.0,
+      "check_transport_error": 1.4210854715202004e-14,
+      "check_exchange_material_error": 2.6109323036926924e-14,
+      "check_exchange_energy_error": 4.18554080283684e-14,
+      "check_whole_material_error": 3.4555691641458e-14,
+      "check_whole_energy_error": 5.67323965583455e-14,
+      "check_input_material_array_error": 0.0,
+      "check_input_energy_array_error": 0.0,
+      "check_cargo_P_error": 4.440892098500626e-16,
+      "check_cargo_F_error": 7.105427357601002e-15,
+      "check_cargo_E_heat_error": 0.0,
+      "check_cargo_capacity_excess": 0.0,
+      "check_cargo_payable_excess": 0.0,
+      "check_cargo_negative": 0.0,
+      "check_cargo_newborn_payer": 0.0,
+      "check_request_partition_error": 6.938893903907228e-18,
+      "check_founder_excess": 0.0,
+      "check_L128_conservation_error": 1.7236212457305555e-14,
+      "check_L128_excess": 0.0
+    }
+  }
+]

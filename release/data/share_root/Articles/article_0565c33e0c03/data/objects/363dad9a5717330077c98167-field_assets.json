@@ -1,0 +1,192 @@
+[
+  {
+    "asset": "0ac_body.png",
+    "npz": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_resource_factorial_20261018/genome_0ac80448a534dc953505-first129-fields.npz",
+    "field": "body",
+    "crop_xy": [
+      12,
+      83,
+      12,
+      83
+    ],
+    "y_up": true,
+    "linear_scale": [
+      0,
+      1.1
+    ],
+    "unit": "M/cell",
+    "no_interpolation": true,
+    "formula": "raw array"
+  },
+  {
+    "asset": "0ac_L.png",
+    "npz": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_resource_factorial_20261018/genome_0ac80448a534dc953505-first129-fields.npz",
+    "field": "L",
+    "crop_xy": [
+      12,
+      83,
+      12,
+      83
+    ],
+    "y_up": true,
+    "linear_scale": [
+      0,
+      0.05
+    ],
+    "unit": "M/cell",
+    "no_interpolation": true,
+    "formula": "raw array"
+  },
+  {
+    "asset": "0ac_F.png",
+    "npz": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_resource_factorial_20261018/genome_0ac80448a534dc953505-first129-fields.npz",
+    "field": "F",
+    "crop_xy": [
+      12,
+      83,
+      12,
+      83
+    ],
+    "y_up": true,
+    "linear_scale": [
+      0,
+      1.75
+    ],
+    "unit": "F/cell",
+    "no_interpolation": true,
+    "formula": "raw array"
+  },
+  {
+    "asset": "0ac_P00.png",
+    "npz": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_resource_factorial_20261018/genome_0ac80448a534dc953505-first129-fields.npz",
+    "field": "P00",
+    "crop_xy": [
+      12,
+      83,
+      12,
+      83
+    ],
+    "y_up": true,
+    "linear_scale": [
+      0,
+      0.05
+    ],
+    "unit": "M/cell",
+    "no_interpolation": true,
+    "formula": "min(L_raw,P_actual)"
+  },
+  {
+    "asset": "0ac_P10.png",
+    "npz": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_resource_factorial_20261018/genome_0ac80448a534dc953505-first129-fields.npz",
+    "field": "P10",
+    "crop_xy": [
+      12,
+      83,
+      12,
+      83
+    ],
+    "y_up": true,
+    "linear_scale": [
+      0,
+      0.05
+    ],
+    "unit": "M/cell",
+    "no_interpolation": true,
+    "formula": "min(L_raw,P_actual)"
+  },
+  {
+    "asset": "6bd_body.png",
+    "npz": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_resource_factorial_20261018/genome_6bd5bfd2f629f9414376-first129-fields.npz",
+    "field": "body",
+    "crop_xy": [
+      12,
+      83,
+      12,
+      83
+    ],
+    "y_up": true,
+    "linear_scale": [
+      0,
+      1.1
+    ],
+    "unit": "M/cell",
+    "no_interpolation": true,
+    "formula": "raw array"
+  },
+  {
+    "asset": "6bd_L.png",
+    "npz": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_resource_factorial_20261018/genome_6bd5bfd2f629f9414376-first129-fields.npz",
+    "field": "L",
+    "crop_xy": [
+      12,
+      83,
+      12,
+      83
+    ],
+    "y_up": true,
+    "linear_scale": [
+      0,
+      0.05
+    ],
+    "unit": "M/cell",
+    "no_interpolation": true,
+    "formula": "raw array"
+  },
+  {
+    "asset": "6bd_F.png",
+    "npz": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_resource_factorial_20261018/genome_6bd5bfd2f629f9414376-first129-fields.npz",
+    "field": "F",
+    "crop_xy": [
+      12,
+      83,
+      12,
+      83
+    ],
+    "y_up": true,
+    "linear_scale": [
+      0,
+      1.75
+    ],
+    "unit": "F/cell",
+    "no_interpolation": true,
+    "formula": "raw array"
+  },
+  {
+    "asset": "6bd_P00.png",
+    "npz": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_resource_factorial_20261018/genome_6bd5bfd2f629f9414376-first129-fields.npz",
+    "field": "P00",
+    "crop_xy": [
+      12,
+      83,
+      12,
+      83
+    ],
+    "y_up": true,
+    "linear_scale": [
+      0,
+      0.05
+    ],
+    "unit": "M/cell",
+    "no_interpolation": true,
+    "formula": "min(L_raw,P_actual)"
+  },
+  {
+    "asset": "6bd_P10.png",
+    "npz": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_resource_factorial_20261018/genome_6bd5bfd2f629f9414376-first129-fields.npz",
+    "field": "P10",
+    "crop_xy": [
+      12,
+      83,
+      12,
+      83
+    ],
+    "y_up": true,
+    "linear_scale": [
+      0,
+      0.05
+    ],
+    "unit": "M/cell",
+    "no_interpolation": true,
+    "formula": "min(L_raw,P_actual)"
+  }
+]

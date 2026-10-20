@@ -1,0 +1,674 @@
+{
+  "<div class=\"testEmpty\" role=\"note\">当前账号可以查看配置与记录；执行测试和更换 Resident 需要 Test Lab 操作权限。</div>": {
+    "en": "<div class=\"testEmpty\" role=\"note\">The current account can view configurations and records; running tests and changing Resident require Test Lab operation permission.</div>",
+    "zh-CN": "<div class=\"testEmpty\" role=\"note\">当前账号可以查看配置与记录；执行测试和更换 Resident 需要 Test Lab 操作权限。</div>"
+  },
+  "<div class=\"testEmpty\" role=\"note\">当前账号可以生成和查看运行计划；启动测试需要 Test Lab 操作权限。</div>": {
+    "en": "<div class=\"testEmpty\" role=\"note\">The current account can generate and view run plans; starting tests requires Test Lab operation permission.</div>",
+    "zh-CN": "<div class=\"testEmpty\" role=\"note\">当前账号可以生成和查看运行计划；启动测试需要 Test Lab 操作权限。</div>"
+  },
+  "<div class=\"testEmpty\">暂无 TAU 用例。</div>": {
+    "en": "<div class=\"testEmpty\">No TAU cases.</div>",
+    "zh-CN": "<div class=\"testEmpty\">暂无 TAU 用例。</div>"
+  },
+  "<div class=\"testEmpty\">暂无运行记录。</div>": {
+    "en": "<div class=\"testEmpty\">No run records.</div>",
+    "zh-CN": "<div class=\"testEmpty\">暂无运行记录。</div>"
+  },
+  "<div class=\"testEmpty\">这个模块还没有用例结果。</div>": {
+    "en": "<div class=\"testEmpty\">This module has no case results yet.</div>",
+    "zh-CN": "<div class=\"testEmpty\">这个模块还没有用例结果。</div>"
+  },
+  "<em>未关联</em>": {
+    "en": "<em>Not associated</em>",
+    "zh-CN": "<em>未关联</em>"
+  },
+  "<span class=\"testMuted\">当前目录没有匹配用例</span>": {
+    "en": "<span class=\"testMuted\">No matching test cases in the current directory</span>",
+    "zh-CN": "<span class=\"testMuted\">当前目录没有匹配用例</span>"
+  },
+  "AI 使用": {
+    "en": "AI usage",
+    "zh-CN": "AI 使用"
+  },
+  "AI 使用用例": {
+    "en": "AI use cases",
+    "zh-CN": "AI 使用用例"
+  },
+  "Function Block 定义": {
+    "en": "Function Block definition",
+    "zh-CN": "Function Block 定义"
+  },
+  "Live 原始状态": {
+    "en": "Live raw state",
+    "zh-CN": "Live 原始状态"
+  },
+  "P0": {
+    "en": "P0",
+    "zh-CN": "P0"
+  },
+  "P1": {
+    "en": "P1",
+    "zh-CN": "P1"
+  },
+  "P2": {
+    "en": "P2",
+    "zh-CN": "P2"
+  },
+  "P3": {
+    "en": "P3",
+    "zh-CN": "P3"
+  },
+  "Portal 行为演示": {
+    "en": "Portal behavior demo",
+    "zh-CN": "Portal 行为演示"
+  },
+  "Runner 原始输出 · 按需展开": {
+    "en": "Runner raw output · expand on demand",
+    "zh-CN": "Runner 原始输出 · 按需展开"
+  },
+  "TAU · Agent 真实使用": {
+    "en": "TAU · Agent real usage",
+    "zh-CN": "TAU · Agent 真实使用"
+  },
+  "TAU · Agent 真实使用报告": {
+    "en": "TAU · Agent real usage report",
+    "zh-CN": "TAU · Agent 真实使用报告"
+  },
+  "TAU · Agent 真实使用摘要": {
+    "en": "TAU · Agent real usage summary",
+    "zh-CN": "TAU · Agent 真实使用摘要"
+  },
+  "Test 测试工作台": {
+    "en": "Test workbench",
+    "zh-CN": "Test 测试工作台"
+  },
+  "Test 生产组件只读验证": {
+    "en": "Test production component read-only verification",
+    "zh-CN": "Test 生产组件只读验证"
+  },
+  "WALL 设计点（一对一）": {
+    "en": "WALL design point (one-to-one)",
+    "zh-CN": "WALL 设计点（一对一）"
+  },
+  "case_id is required": {
+    "en": "case_id is required",
+    "zh-CN": "case_id 为必填项"
+  },
+  "disabled title=\"当前模板没有匹配的测试用例\"": {
+    "en": "disabled title=\"The current template has no matching test cases\"",
+    "zh-CN": "disabled title=\"当前模板没有匹配的测试用例\""
+  },
+  "resolved Test resource has no detail": {
+    "en": "resolved Test resource has no detail",
+    "zh-CN": "解析后的 Test 资源没有详情"
+  },
+  "run_ids 必须是测试运行 ID 数组": {
+    "en": "run_ids must be an array of test run IDs",
+    "zh-CN": "run_ids 必须是测试运行 ID 数组"
+  },
+  "source#point": {
+    "en": "source#point",
+    "zh-CN": "source#point"
+  },
+  "testDemoTitle": {
+    "en": "testDemoTitle",
+    "zh-CN": "testDemoTitle"
+  },
+  "。请从最近运行中选择其他报告，或": {
+    "en": "。Please select another report from recent runs, or",
+    "zh-CN": "。请从最近运行中选择其他报告，或"
+  },
+  "不同维度按 AND；同一维度多选按 OR。P0 阻断核心能力，P1 影响主要流程，P2 影响局部体验，P3 为低风险细节。设计点用例直接约束架构或关键产品决策。": {
+    "en": "Different dimensions use AND; multiple selections in the same dimension use OR. P0 blocks core capabilities, P1 affects main flows, P2 affects local experience, P3 is low-risk detail. Design point cases directly constrain architecture or key product decisions.",
+    "zh-CN": "不同维度按 AND；同一维度多选按 OR。P0 阻断核心能力，P1 影响主要流程，P2 影响局部体验，P3 为低风险细节。设计点用例直接约束架构或关键产品决策。"
+  },
+  "与 AI 讨论 / Live 化": {
+    "en": "Discuss with AI / Go Live",
+    "zh-CN": "与 AI 讨论 / Live 化"
+  },
+  "中止 TAU · Agent 真实使用": {
+    "en": "Abort TAU · Agent real usage",
+    "zh-CN": "中止 TAU · Agent 真实使用"
+  },
+  "中止运行": {
+    "en": "Abort run",
+    "zh-CN": "中止运行"
+  },
+  "为此模块更换 Resident，保留 Lineage": {
+    "en": "Replace Resident for this module, keep Lineage",
+    "zh-CN": "为此模块更换 Resident，保留 Lineage"
+  },
+  "为此用例生成运行计划": {
+    "en": "Generate run plan for this case",
+    "zh-CN": "为此用例生成运行计划"
+  },
+  "产品缺陷": {
+    "en": "Product defect",
+    "zh-CN": "产品缺陷"
+  },
+  "任务 Prompt": {
+    "en": "Task Prompt",
+    "zh-CN": "任务 Prompt"
+  },
+  "先为这些模块建立最小可执行覆盖。": {
+    "en": "First establish minimal executable coverage for these modules.",
+    "zh-CN": "先为这些模块建立最小可执行覆盖。"
+  },
+  "先看覆盖结论，再按需展开模块明细。": {
+    "en": "Review coverage conclusions first, then expand module details as needed.",
+    "zh-CN": "先看覆盖结论，再按需展开模块明细。"
+  },
+  "全选可删除报告": {
+    "en": "Select all to delete report",
+    "zh-CN": "全选可删除报告"
+  },
+  "全部功能模块": {
+    "en": "All functional modules",
+    "zh-CN": "全部功能模块"
+  },
+  "全部用例": {
+    "en": "All use cases",
+    "zh-CN": "全部用例"
+  },
+  "共享对话工作区": {
+    "en": "Shared conversation workspace",
+    "zh-CN": "共享对话工作区"
+  },
+  "共享预览": {
+    "en": "Shared preview",
+    "zh-CN": "共享预览"
+  },
+  "关联设计": {
+    "en": "Related design",
+    "zh-CN": "关联设计"
+  },
+  "关键设计点": {
+    "en": "Key design point",
+    "zh-CN": "关键设计点"
+  },
+  "关键路径": {
+    "en": "Critical path",
+    "zh-CN": "关键路径"
+  },
+  "其他运行元数据": {
+    "en": "Other run metadata",
+    "zh-CN": "其他运行元数据"
+  },
+  "准备运行": {
+    "en": "Ready to run",
+    "zh-CN": "准备运行"
+  },
+  "删除报告": {
+    "en": "Delete report",
+    "zh-CN": "删除报告"
+  },
+  "删除此报告": {
+    "en": "Delete This Report",
+    "zh-CN": "删除此报告"
+  },
+  "删除运行报告": {
+    "en": "Delete run report",
+    "zh-CN": "删除运行报告"
+  },
+  "删除这份运行报告？": {
+    "en": "Delete this run report?",
+    "zh-CN": "删除这份运行报告？"
+  },
+  "刷新测试目录": {
+    "en": "Refresh Test Directory",
+    "zh-CN": "刷新测试目录"
+  },
+  "前提未满足": {
+    "en": "Precondition not met",
+    "zh-CN": "前提未满足"
+  },
+  "功能模块": {
+    "en": "Function Module",
+    "zh-CN": "功能模块"
+  },
+  "加入 TAU": {
+    "en": "Join TAU",
+    "zh-CN": "加入 TAU"
+  },
+  "即时模板": {
+    "en": "Instant template",
+    "zh-CN": "即时模板"
+  },
+  "只读演示沙盒 · 写请求已阻止": {
+    "en": "Read-only demo sandbox · write requests blocked",
+    "zh-CN": "只读演示沙盒 · 写请求已阻止"
+  },
+  "可选实现": {
+    "en": "Optional implementation",
+    "zh-CN": "可选实现"
+  },
+  "启动运行": {
+    "en": "Start run",
+    "zh-CN": "启动运行"
+  },
+  "审查当前测试目录的实际分布和待确认缺口。": {
+    "en": "Review the actual distribution of the current test directory and gaps to be confirmed.",
+    "zh-CN": "审查当前测试目录的实际分布和待确认缺口。"
+  },
+  "审查摘要": {
+    "en": "Review summary",
+    "zh-CN": "审查摘要"
+  },
+  "审查结论": {
+    "en": "Review conclusion",
+    "zh-CN": "审查结论"
+  },
+  "尚未 Live 化": {
+    "en": "Not yet Live",
+    "zh-CN": "尚未 Live 化"
+  },
+  "尚未 Live 化。可通过 TAU · Agent 真实使用面板创建受控的 Live 化任务。": {
+    "en": "Not yet Live. A controlled Live-ification task can be created via the TAU · Agent real usage panel.",
+    "zh-CN": "尚未 Live 化。可通过 TAU · Agent 真实使用面板创建受控的 Live 化任务。"
+  },
+  "展开完整内容": {
+    "en": "Expand full content",
+    "zh-CN": "展开完整内容"
+  },
+  "已中止": {
+    "en": "Aborted",
+    "zh-CN": "已中止"
+  },
+  "已排除条目": {
+    "en": "Excluded items",
+    "zh-CN": "已排除条目"
+  },
+  "已登记动态呈现": {
+    "en": "Dynamic presentation registered",
+    "zh-CN": "已登记动态呈现"
+  },
+  "已运行 · 重新生成计划后可再次运行": {
+    "en": "Already run · Can run again after regenerating the plan",
+    "zh-CN": "已运行 · 重新生成计划后可再次运行"
+  },
+  "并行修改": {
+    "en": "Concurrent change",
+    "zh-CN": "并行修改"
+  },
+  "当前 TAU · Agent 真实使用": {
+    "en": "Current TAU · Agent actual usage",
+    "zh-CN": "当前 TAU · Agent 真实使用"
+  },
+  "当前会话尚无此用例的运行证据。": {
+    "en": "There is no run evidence for this use case in the current session yet.",
+    "zh-CN": "当前会话尚无此用例的运行证据。"
+  },
+  "当前模块分布没有明显空洞。": {
+    "en": "There are no obvious gaps in the current module distribution.",
+    "zh-CN": "当前模块分布没有明显空洞。"
+  },
+  "当前模块分布没有明显空洞，可继续核对用例质量与运行证据。": {
+    "en": "The current module distribution has no obvious gaps; you can continue checking case quality and run evidence.",
+    "zh-CN": "当前模块分布没有明显空洞，可继续核对用例质量与运行证据。"
+  },
+  "当前目录没有测试用例，暂时无法计算覆盖分布。": {
+    "en": "The current directory has no test cases, so coverage distribution cannot be calculated for now.",
+    "zh-CN": "当前目录没有测试用例，暂时无法计算覆盖分布。"
+  },
+  "当前组合筛选没有测试用例。": {
+    "en": "There are no test cases for the current combined filter.",
+    "zh-CN": "当前组合筛选没有测试用例。"
+  },
+  "当前设计点": {
+    "en": "Current design point",
+    "zh-CN": "当前设计点"
+  },
+  "待审查信号": {
+    "en": "Signal pending review",
+    "zh-CN": "待审查信号"
+  },
+  "所需功能": {
+    "en": "Required features",
+    "zh-CN": "所需功能"
+  },
+  "打开历史运行": {
+    "en": "Open run history",
+    "zh-CN": "打开历史运行"
+  },
+  "打开测试用例": {
+    "en": "Open test case",
+    "zh-CN": "打开测试用例"
+  },
+  "打开运行控制台并准备生成计划": {
+    "en": "Open run console and prepare to generate plan",
+    "zh-CN": "打开运行控制台并准备生成计划"
+  },
+  "按目录即时组合测试，并送往运行控制台确认。": {
+    "en": "Compose tests immediately by directory and send to the run console for confirmation.",
+    "zh-CN": "按目录即时组合测试，并送往运行控制台确认。"
+  },
+  "按缺口类型归组，展开后查看模块": {
+    "en": "Group by gap type, expand to view modules",
+    "zh-CN": "按缺口类型归组，展开后查看模块"
+  },
+  "收起完整内容": {
+    "en": "Collapse full content",
+    "zh-CN": "收起完整内容"
+  },
+  "无外部副作用": {
+    "en": "No external side effects",
+    "zh-CN": "无外部副作用"
+  },
+  "无附加 Profile": {
+    "en": "No attached Profile",
+    "zh-CN": "无附加 Profile"
+  },
+  "暂无输出": {
+    "en": "No output yet",
+    "zh-CN": "暂无输出"
+  },
+  "暂无运行证据": {
+    "en": "No run evidence yet",
+    "zh-CN": "暂无运行证据"
+  },
+  "更换后，该模块后续测试将使用一个新的 Resident；模块 Lineage 会继续保留。": {
+    "en": "After replacement, subsequent tests for this module will use a new Resident; the module Lineage will be preserved.",
+    "zh-CN": "更换后，该模块后续测试将使用一个新的 Resident；模块 Lineage 会继续保留。"
+  },
+  "有 Live": {
+    "en": "Has Live",
+    "zh-CN": "有 Live"
+  },
+  "未命名测试用例": {
+    "en": "Unnamed test case",
+    "zh-CN": "未命名测试用例"
+  },
+  "未绑定 WALL 设计点；文档引用不代表点级绑定。": {
+    "en": "No WALL design point is bound; document references do not imply point-level binding.",
+    "zh-CN": "未绑定 WALL 设计点；文档引用不代表点级绑定。"
+  },
+  "本次运行没有提供结果摘要。": {
+    "en": "This run did not provide a result summary.",
+    "zh-CN": "本次运行没有提供结果摘要。"
+  },
+  "架构约束": {
+    "en": "Architecture constraints",
+    "zh-CN": "架构约束"
+  },
+  "查看运行计划、执行进度与结果。": {
+    "en": "View the run plan, execution progress, and results.",
+    "zh-CN": "查看运行计划、执行进度与结果。"
+  },
+  "标题、说明与分类写在测试源码的 docstring 中；修改源码后目录随之更新。": {
+    "en": "The title, description and classification are written in the test's docstring; the catalog follows changes to the source.",
+    "zh-CN": "标题、说明与分类写在测试源码的 docstring 中；修改源码后目录随之更新。"
+  },
+  "核心": {
+    "en": "Core",
+    "zh-CN": "核心"
+  },
+  "模块分布": {
+    "en": "Module distribution",
+    "zh-CN": "模块分布"
+  },
+  "正在中止…": {
+    "en": "Aborting…",
+    "zh-CN": "正在中止…"
+  },
+  "正在准备只读演示…": {
+    "en": "Preparing read-only demo…",
+    "zh-CN": "正在准备只读演示…"
+  },
+  "正在加载测试用例详情…": {
+    "en": "Loading test case details…",
+    "zh-CN": "正在加载测试用例详情…"
+  },
+  "正在加载测试目录…": {
+    "en": "Loading test directory…",
+    "zh-CN": "正在加载测试目录…"
+  },
+  "正在加载测试目录与当前用例…": {
+    "en": "Loading test directory and current test case…",
+    "zh-CN": "正在加载测试目录与当前用例…"
+  },
+  "正在生成…": {
+    "en": "Generating…",
+    "zh-CN": "正在生成…"
+  },
+  "正在载入测试目录，覆盖数据随后显示。": {
+    "en": "Loading test catalog; coverage data will appear shortly.",
+    "zh-CN": "正在载入测试目录，覆盖数据随后显示。"
+  },
+  "正在验证 WALL 设计点…": {
+    "en": "Validating WALL design point…",
+    "zh-CN": "正在验证 WALL 设计点…"
+  },
+  "此操作无法撤销；正在执行的运行不会被删除。": {
+    "en": "This operation cannot be undone; running executions will not be deleted.",
+    "zh-CN": "此操作无法撤销；正在执行的运行不会被删除。"
+  },
+  "此测试用例尚无可执行实现。": {
+    "en": "This test case has no executable implementation yet.",
+    "zh-CN": "此测试用例尚无可执行实现。"
+  },
+  "没有测试用例": {
+    "en": "No test cases",
+    "zh-CN": "没有测试用例"
+  },
+  "测试实现": {
+    "en": "Test implementation",
+    "zh-CN": "测试实现"
+  },
+  "测试工作台": {
+    "en": "Test workbench",
+    "zh-CN": "测试工作台"
+  },
+  "测试工作台视图": {
+    "en": "Test workbench view",
+    "zh-CN": "测试工作台视图"
+  },
+  "测试方面": {
+    "en": "Test aspects",
+    "zh-CN": "测试方面"
+  },
+  "测试目录": {
+    "en": "Test directory",
+    "zh-CN": "测试目录"
+  },
+  "测试目录、运行、TAU 与审查": {
+    "en": "Test directory, runs, TAU, and review",
+    "zh-CN": "测试目录、运行、TAU 与审查"
+  },
+  "测试目录概览": {
+    "en": "Test directory overview",
+    "zh-CN": "测试目录概览"
+  },
+  "测试覆盖分布表，可横向滚动": {
+    "en": "Test coverage distribution table, horizontally scrollable",
+    "zh-CN": "测试覆盖分布表，可横向滚动"
+  },
+  "测试问题": {
+    "en": "Test problem",
+    "zh-CN": "测试问题"
+  },
+  "浏览、筛选并运行 Portal 测试用例。": {
+    "en": "Browse, filter, and run Portal test cases.",
+    "zh-CN": "浏览、筛选并运行 Portal 测试用例。"
+  },
+  "清除本组": {
+    "en": "Clear this group",
+    "zh-CN": "清除本组"
+  },
+  "源码 / SPEC 诊断原始记录": {
+    "en": "Source / SPEC diagnostic raw records",
+    "zh-CN": "源码 / SPEC 诊断原始记录"
+  },
+  "生成运行计划": {
+    "en": "Generate run plan",
+    "zh-CN": "生成运行计划"
+  },
+  "用例 ·": {
+    "en": "Use case ·",
+    "zh-CN": "用例 ·"
+  },
+  "用例运行所需的可选功能；核心用例不需要任何可选功能": {
+    "en": "The optional features a case needs to run; core cases need none",
+    "zh-CN": "用例运行所需的可选功能；核心用例不需要任何可选功能"
+  },
+  "用户体验原始记录": {
+    "en": "User experience raw records",
+    "zh-CN": "用户体验原始记录"
+  },
+  "目录与用例": {
+    "en": "Directory and use cases",
+    "zh-CN": "目录与用例"
+  },
+  "确认关键风险是否已有高重要级用例。": {
+    "en": "Confirm whether key risks already have high-importance use cases.",
+    "zh-CN": "确认关键风险是否已有高重要级用例。"
+  },
+  "确认并运行": {
+    "en": "Confirm and run",
+    "zh-CN": "确认并运行"
+  },
+  "等待可审查的目录数据": {
+    "en": "Waiting for reviewable directory data",
+    "zh-CN": "等待可审查的目录数据"
+  },
+  "等待输出…": {
+    "en": "Waiting for output…",
+    "zh-CN": "等待输出…"
+  },
+  "筛选中…": {
+    "en": "Filtering…",
+    "zh-CN": "筛选中…"
+  },
+  "组合规则：": {
+    "en": "Combination rule:",
+    "zh-CN": "组合规则："
+  },
+  "缺口模块": {
+    "en": "Gap module",
+    "zh-CN": "缺口模块"
+  },
+  "缺实现": {
+    "en": "Missing implementation",
+    "zh-CN": "缺实现"
+  },
+  "缺少 P0/P1": {
+    "en": "Missing P0/P1",
+    "zh-CN": "缺少 P0/P1"
+  },
+  "缺少设计点": {
+    "en": "Missing design point",
+    "zh-CN": "缺少设计点"
+  },
+  "自然语言描述": {
+    "en": "Natural language description",
+    "zh-CN": "自然语言描述"
+  },
+  "自然语言目标 / 模块 / key": {
+    "en": "Natural language goal / module / key",
+    "zh-CN": "自然语言目标 / 模块 / key"
+  },
+  "补充设计依据，或确认现有用例为设计点。": {
+    "en": "Add design rationale, or confirm the existing use case is a design point.",
+    "zh-CN": "补充设计依据，或确认现有用例为设计点。"
+  },
+  "覆盖审查": {
+    "en": "Coverage review",
+    "zh-CN": "覆盖审查"
+  },
+  "观察与改进项": {
+    "en": "Observations and improvements",
+    "zh-CN": "观察与改进项"
+  },
+  "计划确认后在这里显示执行状态。": {
+    "en": "Execution status will be shown here after the plan is confirmed.",
+    "zh-CN": "计划确认后在这里显示执行状态。"
+  },
+  "请从测试目录选择一个测试用例。": {
+    "en": "Please select a test case from the test directory.",
+    "zh-CN": "请从测试目录选择一个测试用例。"
+  },
+  "请重新选择设计点": {
+    "en": "Please reselect the design point",
+    "zh-CN": "请重新选择设计点"
+  },
+  "身份详情": {
+    "en": "Identity details",
+    "zh-CN": "身份详情"
+  },
+  "运行与观察": {
+    "en": "Run and observe",
+    "zh-CN": "运行与观察"
+  },
+  "运行已结束，没有 Runner 原始输出。": {
+    "en": "Run ended with no raw runner output.",
+    "zh-CN": "运行已结束，没有 Runner 原始输出。"
+  },
+  "运行报告已不存在：": {
+    "en": "Run report no longer exists:",
+    "zh-CN": "运行报告已不存在："
+  },
+  "运行控制台": {
+    "en": "Run console",
+    "zh-CN": "运行控制台"
+  },
+  "运行证据": {
+    "en": "Run evidence",
+    "zh-CN": "运行证据"
+  },
+  "运行配置": {
+    "en": "Run configuration",
+    "zh-CN": "运行配置"
+  },
+  "返回墙面": {
+    "en": "Return to wall",
+    "zh-CN": "返回墙面"
+  },
+  "退出演示": {
+    "en": "Exit demo",
+    "zh-CN": "退出演示"
+  },
+  "选择任务；模块并发，模块内顺序执行。": {
+    "en": "Select tasks; modules run concurrently, and tasks within a module run sequentially.",
+    "zh-CN": "选择任务；模块并发，模块内顺序执行。"
+  },
+  "选择功能模块；展开可查看完整名称": {
+    "en": "Select a function block; expand to view the full name",
+    "zh-CN": "选择功能模块；展开可查看完整名称"
+  },
+  "选择本组": {
+    "en": "Select this group",
+    "zh-CN": "选择本组"
+  },
+  "重新生成计划": {
+    "en": "Regenerate plan",
+    "zh-CN": "重新生成计划"
+  },
+  "门禁": {
+    "en": "Gate",
+    "zh-CN": "门禁"
+  },
+  "门禁组合": {
+    "en": "Gate combination",
+    "zh-CN": "门禁组合"
+  },
+  "门禁编排": {
+    "en": "Gate orchestration",
+    "zh-CN": "门禁编排"
+  },
+  "隔离环境": {
+    "en": "Isolated environment",
+    "zh-CN": "隔离环境"
+  },
+  "非设计点": {
+    "en": "Non-design point",
+    "zh-CN": "非设计点"
+  },
+  "预览源码": {
+    "en": "Preview source",
+    "zh-CN": "预览源码"
+  },
+  "验证只读表单保护（不会发送网络请求）": {
+    "en": "Verify read-only form protection (no network request will be sent)",
+    "zh-CN": "验证只读表单保护（不会发送网络请求）"
+  }
+}

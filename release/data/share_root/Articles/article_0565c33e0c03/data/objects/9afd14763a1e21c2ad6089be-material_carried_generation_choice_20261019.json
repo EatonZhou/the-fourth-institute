@@ -1,0 +1,195 @@
+{
+  "task": "material_carried_generation_choice_20261019",
+  "owner": "resident_d3ccfa2d95b7",
+  "objective_met": false,
+  "choice": "关闭both的全来源空间支配及从事后存留图逐格拼接writer的路径；保整体支持、来源异质性、两G史分离体恢复阳性与fixed both强同行。结束本来源图分析链，独立检验一次可执行生成构造。",
+  "completed": {
+    "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/paired_policy_material_fate_20261019/handoff.json",
+    "sha256": "5dc7368d2b463bb6d79f0e2fa756e4fbd3bd4361dbc3e434ce9ee7e49cd72bec",
+    "native": 0,
+    "runner_worker_seconds": 0,
+    "new_fits": 0,
+    "charged_cpu_seconds": 9.198719,
+    "sealed_cpu_seconds": 50.801281,
+    "new_bytes": 5345855,
+    "evidence": "16/16父×16/64horizon空间支配失败(0/1e-8同)。64步偏G来源占初始M21.8792%–38.0410%，负贡献−3.28745..−.71509；既存总体净增+3.42574..+17.74975，N仍6/8少。C/O率差为来源权重恒等式，不识别年龄特异。50:50政策遗漏界不解释旧84锚误差。",
+    "pi_visual": "亲看两张8父实际来源图：两形态都存在正负来源，白区为无初始材料；微量C反例与M的明确量级分开。"
+  },
+  "question": "运动前选定的局部A/B/C生成响应，若按同一步真实K随既存材料运输到接收格，能否较空间驻定fixed both同时改善真实新生留存并保护既存O/C与身体能量？",
+  "rationale": "源码显示ThirdBody在ready锁requested_w/C，RegenerativeBody在actor运动后对after.body计算响应，原mask仍按原Euler格应用。材料携带选择是一个当下可计算、无需未来存留图的不同构造。来源异质性并不证明这种框架差异是原因；此次从实际因果干预检验有限价值，允许失败。",
+  "controls": {
+    "desired_state": "running",
+    "started": true,
+    "read_instructions": [
+      "inst_lin_c2ab0bc0eac0078904d9",
+      "inst_lin_f55deba9e9392a6f9a9a"
+    ]
+  },
+  "parents": [
+    {
+      "id": "202610195601_ring_birth_gain_only",
+      "seed": 202610195601,
+      "shape": "ring",
+      "history": "birth_gain_only",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/renewal_preservation_choice_factorial_20261019/1fbc79b1-1983-4beb-82f0-a9e579e8ca6e/202610195601_ring_birth_gain_only/state320.bin",
+      "sha256": "9eb846f3adfb820a50dd64e6f30f79da8d38072f8c91407e3dcd539fd3296838",
+      "baseline_id": "202610195601_ring_birth_gain_only__future_both",
+      "baseline_rows": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195601_ring_birth_gain_only__future_both/steps.csv",
+      "baseline_rows_sha256": "3571362c15b426ec1d22c465fea7a3aee7e3ef83f37f728fc9ffa000059199f9",
+      "baseline_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195601_ring_birth_gain_only__future_both"
+    },
+    {
+      "id": "202610195601_ring_both",
+      "seed": 202610195601,
+      "shape": "ring",
+      "history": "both",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/renewal_preservation_choice_factorial_20261019/1fbc79b1-1983-4beb-82f0-a9e579e8ca6e/202610195601_ring_both/state320.bin",
+      "sha256": "40453de1bb20dea82b1c2e1440eda02c4b2055eb29fec33ae43fa1700273538d",
+      "baseline_id": "202610195601_ring_both__future_both",
+      "baseline_rows": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195601_ring_both__future_both/steps.csv",
+      "baseline_rows_sha256": "9d4528f7e953f16d8d3778604cec61dcdb267242dee8539b56c447752f7be7b9",
+      "baseline_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195601_ring_both__future_both"
+    },
+    {
+      "id": "202610195601_separate_seeds_birth_gain_only",
+      "seed": 202610195601,
+      "shape": "separate_seeds",
+      "history": "birth_gain_only",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/renewal_preservation_choice_factorial_20261019/1fbc79b1-1983-4beb-82f0-a9e579e8ca6e/202610195601_separate_seeds_birth_gain_only/state320.bin",
+      "sha256": "3b4aca15f2f86ea52a00fa44254b884c77caf795be276f8f615f7beeae2f5175",
+      "baseline_id": "202610195601_separate_seeds_birth_gain_only__future_both",
+      "baseline_rows": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195601_separate_seeds_birth_gain_only__future_both/steps.csv",
+      "baseline_rows_sha256": "a71afd9b7e7725488e11983e5fe343a6b373b50932c8d7f78bd3efafcd81004d",
+      "baseline_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195601_separate_seeds_birth_gain_only__future_both"
+    },
+    {
+      "id": "202610195601_separate_seeds_both",
+      "seed": 202610195601,
+      "shape": "separate_seeds",
+      "history": "both",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/renewal_preservation_choice_factorial_20261019/1fbc79b1-1983-4beb-82f0-a9e579e8ca6e/202610195601_separate_seeds_both/state320.bin",
+      "sha256": "fac7f15ebff5997637456adeb499c4cbfb707e766cbb702181768f344282a4af",
+      "baseline_id": "202610195601_separate_seeds_both__future_both",
+      "baseline_rows": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195601_separate_seeds_both__future_both/steps.csv",
+      "baseline_rows_sha256": "8eafe98edc5980fd8950b92ea42adde30028bcd1a31faa5e9b8ce375050f5127",
+      "baseline_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195601_separate_seeds_both__future_both"
+    },
+    {
+      "id": "202610195602_ring_birth_gain_only",
+      "seed": 202610195602,
+      "shape": "ring",
+      "history": "birth_gain_only",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/renewal_preservation_choice_factorial_20261019/1fbc79b1-1983-4beb-82f0-a9e579e8ca6e/202610195602_ring_birth_gain_only/state320.bin",
+      "sha256": "f5a3011955fe809f61e05a763701d986aa5fbb640b32c9e157cc90b5e1d753aa",
+      "baseline_id": "202610195602_ring_birth_gain_only__future_both",
+      "baseline_rows": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195602_ring_birth_gain_only__future_both/steps.csv",
+      "baseline_rows_sha256": "6d96fb0a71da8bd5c811820a700bce084b8980222fed3674742c948f9f12c81e",
+      "baseline_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195602_ring_birth_gain_only__future_both"
+    },
+    {
+      "id": "202610195602_ring_both",
+      "seed": 202610195602,
+      "shape": "ring",
+      "history": "both",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/third_response_generation_search_20261019/b9f8bccb-57c5-4366-9788-7fdc1e301114/validation_ring_midpoint/state320.bin",
+      "sha256": "9bb0398ca84a95dd1d3cfda9d332d04e4feef80da4a821419e2c6ddf26fd2bb6",
+      "baseline_id": "202610195602_ring_both__future_both",
+      "baseline_rows": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195602_ring_both__future_both/steps.csv",
+      "baseline_rows_sha256": "94be78f00f078437ea153a2e0273ec72a60d4d9787211ffef32bea94413a7015",
+      "baseline_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195602_ring_both__future_both"
+    },
+    {
+      "id": "202610195602_separate_seeds_birth_gain_only",
+      "seed": 202610195602,
+      "shape": "separate_seeds",
+      "history": "birth_gain_only",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/renewal_preservation_choice_factorial_20261019/1fbc79b1-1983-4beb-82f0-a9e579e8ca6e/202610195602_separate_seeds_birth_gain_only/state320.bin",
+      "sha256": "a7c3d27d033c707fc3dac3b6ffc70d5c42237bd9e7e805678fa8586dc022e5d4",
+      "baseline_id": "202610195602_separate_seeds_birth_gain_only__future_both",
+      "baseline_rows": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195602_separate_seeds_birth_gain_only__future_both/steps.csv",
+      "baseline_rows_sha256": "e1fbf9e950be3d6c1f5535178f30d4a6fa56ad4d4364a50c81e03bdeb4b01cce",
+      "baseline_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195602_separate_seeds_birth_gain_only__future_both"
+    },
+    {
+      "id": "202610195602_separate_seeds_both",
+      "seed": 202610195602,
+      "shape": "separate_seeds",
+      "history": "both",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/third_response_generation_search_20261019/b9f8bccb-57c5-4366-9788-7fdc1e301114/validation_separate_seeds_midpoint/state320.bin",
+      "sha256": "20335dda007c0430774b0384588a6b41ce84309f5eb3c9532329dc6563f4e6f9",
+      "baseline_id": "202610195602_separate_seeds_both__future_both",
+      "baseline_rows": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195602_separate_seeds_both__future_both/steps.csv",
+      "baseline_rows_sha256": "952b9df3067bd80629d379d9e07dac29aeafc6b0d252543689b82fbaf9a7f7d5",
+      "baseline_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/postbirth_cohort_policy_crossover_20261019/5df9843e-6c1d-4b3a-8120-6c233c2a0dfb/202610195602_separate_seeds_both__future_both"
+    }
+  ],
+  "source_bindings": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/postbirth_cohort_policy_crossover_20261019/handoff.json",
+      "sha256": "38e3b6e66d258e3b551a5b695e0ba3f13d27d6835785f14c60061056006422eb"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/postbirth_cohort_policy_crossover_20261019/outcomes.json",
+      "sha256": "021523dacdacc4a90bef38108295553c47701802f744698c8fe4335da6353450"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/postbirth_cohort_policy_crossover_20261019/raw_manifest.json",
+      "sha256": "6787f20f8d3b5c3833cdc09ca0c3e9f79104670970626b908f2f54044b810f33"
+    }
+  ],
+  "mechanism": {
+    "ready": "每步照原fixed midpoint both运行原prechoice，MU0=.17975814283267433、SIGMA0=.04345259224059916、z=[0,0]、AB greedy及原tie保持。c=requested_C(bool)，w=requested_w，qA=(1-c)*(1-w),qB=(1-c)*w,qC=c。使用本步ready rho；不可读取标签、未来、事后来源图或预测模型。",
+    "carrier": "把三个选择视为本步既存材料的被动广延分量L_i=rho*q_i。actor实际advance只调用一次，得到原metrics.transport_weights=K与after.body。m=原advect(rho,K)，l_i=原advect(L_i,K)。actor保留比例r=divide(after.body,m)；幸存分量为l_i*r，非负且和等after.body。不要重算/替换K，不调用第二次actor/native，不改变付款。",
+    "application": "对after.body>0的位置，q_i_carried=divide(l_i,m)，等于幸存分量除after.body；对after.body==0的位置明确回退原Euler q_i，保空位出生语义。不按新生、O/C、年龄、未来或坐标筛格。接收格按实际after.body计算原hA/hB/hC，h_carried=qA_carried*hA+qB_carried*hB+qC_carried*hC，然后原signed死亡与admit各一次，原pump/settle各一次。",
+    "numerical": "三个q使用同一m归一，不做阈值裁剪/硬argmax/重新寻优或整场重标；保q和1的浮点残差，超过1e-12停止查实现。某格三个q与原Euler完全相等时直接复用原h表达式结果，避免仅改变算术结合律造成假分化；disabled整体走原rate路径。保存原h、携带h及实差。",
+    "lifetime": "每一步从当步fixed both选择重新生成三通道，用完即弃；不跨步积累参数、不写入遗传或记忆状态。它是同一步选择随材料搬运的固定生成构造，不是经验学习。下一步的新组织正常参加原ready选择。",
+    "adapter": "在隔离模块中仅在原actor已结算、h调用之前接入当前s/rho、实际K/after；可用严格单一AST插入或局部wrapper。不得改原物理文件。保原layout_mode=original_prestate_greedy_reference；不再接conversion正请求hook、重排D、pooling-order或回收/储备机制。原规则死亡量可随新h变化，必须按实记，不称同D/等实际流量或成本。",
+    "assumptions": "选择通道运输是利用既有K的控制信息模型延拓，未增加独立惯性、携带热或算术代价；如实披露额外计算未物理定价。本构造同时含材料关联与接收格凸混合，单次结果不能把收益唯一归于参考系而排除混合平滑。"
+  },
+  "pure_preflight": {
+    "native": 0,
+    "anchors": [
+      321,
+      328,
+      352,
+      384
+    ],
+    "sources": "只读取8条原futureboth的32份既存receipt；核源SHA，使用pre_body/requested_w/requested_C/K_weights/transported_body/actor_body_after_actor/actual_hA/B/C。不看未来损益来选择参数或父态。",
+    "checks": "核原advect(pre_body,K)=transported_body；三个携带分量守恒、actor后分量和=after.body及q分区。现成伴随恒等式不重复。核disabled表达式原样，无native。另记录非重复h差格数、质量加权L1和最大绝对差。",
+    "activation": "全部32收据质量加权sum(after.body*abs(h_carried-h_both))都≤1e-10时，不开启身体job，结论仅为此固定保存面板未证明有效动作差，保原量并关闭本候选；否则在所有8父执行，不筛有利父，不按纯shadow即时birth预测择优。",
+    "bounded": "纯数组实现/预检和后处理离线CPU合计独立60秒、wall300秒、1线程，含失败；结果前冻结脚本/plan。不得自动改构造以制造非零。"
+  },
+  "experiment": {
+    "future": "8个真实320共同父各仅1条新material_carried轨，321..384共64，绝对止384，共512科学步。初始化原完整状态/库存/E/RNG/cursor/缓存/全部旧标签，attach320为futureboth后只换生成选择应用。O=L256@320，C=post256活到320，N=321后出生；不重置life0/L128/L256，不复用不同C定义。",
+    "baseline": "8条postbirth原futureboth全部512步/完整末态仅SHA绑定只读，不重演。原futureG也只保诊断参考，不能把候选只胜G称胜强基线。",
+    "boundary": "同job最多8次disabled的321实际检查，各用独立共同320恢复，与原321保存全部同名物理/费用/数组/观察器收据逐值比较。原321缺完整joint，不能宣称未知RNG/cache全态等价。disabled8步单独结算不混科学计数，不用候选差异救失败检查。纯检查之外不加其他native。",
+    "fork": "候选和disabled从同源320全态纯比较，仅候选模式/新增只读临时选择字段不同。第一步actor/K及h以前费用逐值保持原；此后实际轨迹/流量/成本允许分化。",
+    "order": "沿parents冻结顺序，每父disabled321通过，再从原320独立恢复候选并完成64。逐步attempt/returned/settled；失败保原证据，unknown native不重演，已完成身体步绝不再跑。不得额外第二job。"
+  },
+  "evaluation": {
+    "primary": "逐父相对原fixed both要求：末O、末C及各自全64体时均不降(1e-8)；末N严格增加>1e-8且N体时不降；末M、末E、全64身体体时均不降、全程M>=32且原单64维护门通过。0容差并列。8/8才支持这8相关父的共同有限增益；条件成功逐父保留，不用均值救门。",
+    "maintenance": "原321..384 born>=death、E增/不降、minM阈值按原口径，分别列原门及0容差；不从单64升级为两窗/稳态/长期学习。",
+    "secondary": "O/C/N真实K/actor_keep/rule_keep、出生量及各阶段删除、所有旧标签、P/F输入/库存/外排、E/热、基础/运动/泵/合成费用与真实欠付逐项保留。即时h/admit影子不是未来因果中介。8父相关已知身体，未用新独立世界或新形态验证。"
+  },
+  "budget": {
+    "native_cap": 520,
+    "science_native": 512,
+    "disabled_boundary_native": 8,
+    "runner_worker_seconds_cap": 450,
+    "cpu_threads": 2,
+    "gpu": 0,
+    "science_wall_seconds_cap": 180,
+    "total_runner_wall_seconds_cap": 225,
+    "shutdown_worker_seconds_reserve": 60,
+    "new_raw_bytes_cap": 1073741824,
+    "offline_cpu_seconds_cap": 60,
+    "offline_wall_seconds_cap": 300,
+    "accounting": "只本新批预算，旧50.801281离线秒及所有历史native/worker余量不转用。开始新job前再次核running/started；使用literal src/.venv/bin/python，勿resolve其解释器symlink。实际attempt失败与收尾全计worker，达到最早限前停并保存完整已结算态。worker包括重启/失败；未知不重演，不自动第二job/续预算，部分覆盖明报。"
+  },
+  "outputs": [
+    "唯一handoff/REPORT/METHOD、冻结plan/源SHA、纯预检、真实job/native/worker/offline CPU/原件盘账；只读旧参考清单与空缺明确null。",
+    "512逐钟标量及连续真实K/keep/born；预定321/322/324/328/336/352/368/384完整实际收据含q0/l/q_carried/h差；320/352/384完整joint，O/C/N实际场及所有生死费用。",
+    "亲看全部8父实际体与O/C/N过程、两形态所有反例；宏观相近不称新形态。论文/投影只沿在办项合并实物，发表图按手工编辑规范。shared仅本人短叶，objective_met=false。"
+  ],
+  "stop": "不扫强度/时间/阈值/邻域、不硬化q/扩历史、不训练writer、不使用来源oracle，不自动重复或追加。结果交一次科学取舍。"
+}

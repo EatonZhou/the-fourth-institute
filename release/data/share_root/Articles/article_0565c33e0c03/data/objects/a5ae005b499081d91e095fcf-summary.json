@@ -1,0 +1,305 @@
+{
+  "status": "incomplete",
+  "objective_met": false,
+  "contexts": 2,
+  "completed_futures": 6,
+  "survival": [
+    {
+      "label": "b0_prefix",
+      "alive": true
+    },
+    {
+      "label": "b0_recent",
+      "alive": true
+    },
+    {
+      "label": "b0_ignore",
+      "alive": true
+    },
+    {
+      "label": "b0_frozen",
+      "alive": true
+    },
+    {
+      "label": "b0_euler_unit",
+      "alive": true
+    },
+    {
+      "label": "b0_euler",
+      "alive": true
+    },
+    {
+      "label": "b0_none",
+      "alive": true
+    },
+    {
+      "label": "b1_prefix",
+      "alive": true
+    }
+  ],
+  "pairs": [
+    {
+      "body": 0,
+      "comparison": "recent-minus-ignore",
+      "M": 2.5675051693569912,
+      "E": 1.0610310384699915,
+      "U": -4.5067567989489135,
+      "body_time": 8.629498513998442,
+      "movement": -1.1920578294263038,
+      "communication": -0.0017152000000031364,
+      "basal": 0.10260297481518421,
+      "death": -10.883865028395348,
+      "born": -8.31635985903904
+    },
+    {
+      "body": 0,
+      "comparison": "recent-minus-frozen",
+      "M": 7.424484804211943,
+      "E": 3.7011137167613697,
+      "U": 3.0811411156818167,
+      "body_time": 7.7698366683443965,
+      "movement": 1.1618702942635224,
+      "communication": -0.03978240000000177,
+      "basal": 0.09051798482374807,
+      "death": -0.7799551077098386,
+      "born": 6.644529696502104
+    },
+    {
+      "body": 0,
+      "comparison": "recent-minus-euler_unit",
+      "M": 0.8798362344962243,
+      "E": 28.84389953457878,
+      "U": 3.1063817739468504,
+      "body_time": -14.136664819787256,
+      "movement": -30.472851728152236,
+      "communication": -0.19238399999999523,
+      "basal": -0.1636985904389121,
+      "death": -4.80205313922886,
+      "born": -3.9222169047332045
+    },
+    {
+      "body": 0,
+      "comparison": "recent-minus-euler",
+      "M": 2.931218604108494,
+      "E": 37.04831986569309,
+      "U": 4.718804748039133,
+      "body_time": -7.065236264732448,
+      "movement": -36.34710449567528,
+      "communication": -0.24353280000000055,
+      "basal": -0.08008968911190095,
+      "death": -12.511720963407583,
+      "born": -9.580502359299203
+    },
+    {
+      "body": 0,
+      "comparison": "recent-minus-none",
+      "M": 1.0413689119015999,
+      "E": -49.997286923636466,
+      "U": 58.531369665511875,
+      "body_time": -26.514654875504675,
+      "movement": 50.430899323307045,
+      "communication": 0.9495807999999979,
+      "basal": -0.32007193340517404,
+      "death": 131.16842738953403,
+      "born": 132.20979630143535
+    }
+  ],
+  "decision_differences": [
+    {
+      "body": 0,
+      "unit": 0,
+      "other": "ignore",
+      "clock": 192,
+      "current_body_exact": true,
+      "different_grid_cells": 698,
+      "different_current_mass": 267.3963893089632,
+      "first_recent_frozen_codes_exact": null
+    },
+    {
+      "body": 0,
+      "unit": 0,
+      "other": "frozen",
+      "clock": 192,
+      "current_body_exact": true,
+      "different_grid_cells": 0,
+      "different_current_mass": 0.0,
+      "first_recent_frozen_codes_exact": true
+    },
+    {
+      "body": 0,
+      "unit": 1,
+      "other": "ignore",
+      "clock": 256,
+      "current_body_exact": false,
+      "different_grid_cells": 1270,
+      "different_current_mass": 388.16266065396803,
+      "first_recent_frozen_codes_exact": null
+    },
+    {
+      "body": 0,
+      "unit": 1,
+      "other": "frozen",
+      "clock": 256,
+      "current_body_exact": true,
+      "different_grid_cells": 1763,
+      "different_current_mass": 589.9088006205708,
+      "first_recent_frozen_codes_exact": null
+    }
+  ],
+  "target": "legally received descriptive net contact-minus-motor-minus-basal per exposure; not causal return",
+  "scope": "two bodies, one previously used rotated layout; no statistical replicate or new-confirmation claim",
+  "shared_complete_starts": [
+    {
+      "body": 0,
+      "arm": "recent",
+      "exact_physical_and_records": true,
+      "parent": "/data/dataset/lenia-research/lineage_75e3399f4877/local_terminal_feedback_learning_20261018/c21fd89a-f2ec-483c-b6b2-289375575b3d/b0_prefix_unit0_complete",
+      "exact_learner": true,
+      "clock": 192,
+      "common_rng": {
+        "bit_generator": "PCG64",
+        "state": {
+          "state": 199160415152895933591209969603847976726,
+          "inc": 223008453313334544184450020728309026981
+        },
+        "has_uint32": 0,
+        "uinteger": 1236040126
+      }
+    },
+    {
+      "body": 0,
+      "arm": "ignore",
+      "exact_physical_and_records": true,
+      "parent": "/data/dataset/lenia-research/lineage_75e3399f4877/local_terminal_feedback_learning_20261018/c21fd89a-f2ec-483c-b6b2-289375575b3d/b0_prefix_unit0_complete",
+      "exact_learner": true,
+      "clock": 192,
+      "common_rng": {
+        "bit_generator": "PCG64",
+        "state": {
+          "state": 199160415152895933591209969603847976726,
+          "inc": 223008453313334544184450020728309026981
+        },
+        "has_uint32": 0,
+        "uinteger": 1236040126
+      }
+    },
+    {
+      "body": 0,
+      "arm": "frozen",
+      "exact_physical_and_records": true,
+      "parent": "/data/dataset/lenia-research/lineage_75e3399f4877/local_terminal_feedback_learning_20261018/c21fd89a-f2ec-483c-b6b2-289375575b3d/b0_prefix_unit0_complete",
+      "exact_learner": true,
+      "clock": 192,
+      "common_rng": {
+        "bit_generator": "PCG64",
+        "state": {
+          "state": 199160415152895933591209969603847976726,
+          "inc": 223008453313334544184450020728309026981
+        },
+        "has_uint32": 0,
+        "uinteger": 1236040126
+      }
+    },
+    {
+      "body": 0,
+      "arm": "euler_unit",
+      "exact_physical_and_records": true,
+      "parent": "/data/dataset/lenia-research/lineage_75e3399f4877/local_terminal_feedback_learning_20261018/c21fd89a-f2ec-483c-b6b2-289375575b3d/b0_prefix_unit0_complete",
+      "exact_learner": true,
+      "clock": 192,
+      "common_rng": {
+        "bit_generator": "PCG64",
+        "state": {
+          "state": 199160415152895933591209969603847976726,
+          "inc": 223008453313334544184450020728309026981
+        },
+        "has_uint32": 0,
+        "uinteger": 1236040126
+      }
+    },
+    {
+      "body": 0,
+      "arm": "euler",
+      "exact_physical_and_records": true,
+      "parent": "/data/dataset/lenia-research/lineage_75e3399f4877/local_terminal_feedback_learning_20261018/c21fd89a-f2ec-483c-b6b2-289375575b3d/b0_prefix_unit0_complete",
+      "exact_learner": true,
+      "clock": 192,
+      "common_rng": {
+        "bit_generator": "PCG64",
+        "state": {
+          "state": 199160415152895933591209969603847976726,
+          "inc": 223008453313334544184450020728309026981
+        },
+        "has_uint32": 0,
+        "uinteger": 1236040126
+      }
+    },
+    {
+      "body": 0,
+      "arm": "none",
+      "exact_physical_and_records": true,
+      "parent": "/data/dataset/lenia-research/lineage_75e3399f4877/local_terminal_feedback_learning_20261018/c21fd89a-f2ec-483c-b6b2-289375575b3d/b0_prefix_unit0_complete",
+      "exact_learner": true,
+      "clock": 192,
+      "common_rng": {
+        "bit_generator": "PCG64",
+        "state": {
+          "state": 199160415152895933591209969603847976726,
+          "inc": 223008453313334544184450020728309026981
+        },
+        "has_uint32": 0,
+        "uinteger": 1236040126
+      }
+    },
+    {
+      "body": 1,
+      "arm": "recent",
+      "exact_physical_and_records": true,
+      "parent": "/data/dataset/lenia-research/lineage_75e3399f4877/local_terminal_feedback_learning_20261018/c21fd89a-f2ec-483c-b6b2-289375575b3d/b1_prefix_unit0_complete",
+      "exact_learner": true,
+      "clock": 192,
+      "common_rng": {
+        "bit_generator": "PCG64",
+        "state": {
+          "state": 200225771815313691197677538917579327271,
+          "inc": 109837144191872202687217998512609544813
+        },
+        "has_uint32": 0,
+        "uinteger": 884835163
+      }
+    }
+  ],
+  "usage": {
+    "job": "c21fd89a-f2ec-483c-b6b2-289375575b3d",
+    "runner_status": "failed",
+    "returncode": 1,
+    "attempted": 896,
+    "committed": 896,
+    "failed_attempts": 0,
+    "runner_worker_seconds": 397.27592,
+    "script_wall_seconds": 195.44220344198402,
+    "d3_cap_steps": 4864,
+    "d3_cap_worker_seconds": 420,
+    "d3_unused_steps": 3968,
+    "d3_unused_worker_seconds": 22.724080000000015,
+    "ce2_steps": 771,
+    "ce2_worker_seconds": 174.508036,
+    "combined_steps": 1667,
+    "combined_worker_seconds": 571.783956,
+    "raw_bytes": 244766289,
+    "ce2_raw_bytes": 719432132,
+    "old_budget_used": 0,
+    "ce2_unused_not_transferred": true
+  },
+  "sparse_arrays": "unit pre/complete feedback + offsets1,32,64 maps; all-step scalar costs. Intermediate arrays not reconstructed.",
+  "planned_futures": 12,
+  "not_run_futures": [
+    "b1_recent",
+    "b1_ignore",
+    "b1_frozen",
+    "b1_euler_unit",
+    "b1_euler",
+    "b1_none"
+  ],
+  "complete_comparison_contexts": 1
+}

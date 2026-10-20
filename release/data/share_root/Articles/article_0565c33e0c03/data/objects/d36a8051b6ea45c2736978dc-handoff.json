@@ -1,0 +1,45 @@
+{
+  "schema": "feedback-acquisition-shared-allocation-result.v1",
+  "status": "completed_negative_for_directed_advantage",
+  "job_id": "77dc63dd-23e2-4637-bb2e-d9e35a164a21",
+  "request_key": "33-feedback-acquisition-allocation-20261018-v1",
+  "plan_sha256": "bdf01f56fa51e1691069cd5d942baac1d8d9e0c8270850f56623734343ffd93b",
+  "manifest": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/feedback_acquisition_20261018/native/manifest.json",
+    "sha256": "7ff9de5226da82a9e914116c040b404cfc850df9fd87b774af7144996678c0b5"
+  },
+  "result": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/feedback_acquisition_20261018/native/result.json",
+    "sha256": "2cd8a40422fafd4b2383741a4c056cb9a905ac41bbf7a747158e30233101ced7"
+  },
+  "report": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/feedback_acquisition_20261018/native/REPORT.txt",
+    "sha256": "84c4692060d92756850ac39713fcf42550f123bd5c453c17d9e687dcfaa7edc3"
+  },
+  "api": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/feedback_acquisition_20261018/native/API.txt",
+    "sha256": "905a24251553cdcf809b384a3eab61c44f9fe7a07bff6c773914d2d03c39e4ce"
+  },
+  "independent_seeds": [
+    6201,
+    6202,
+    6203,
+    6204
+  ],
+  "paths": 120,
+  "body_steps": 368640,
+  "controller_scope": "external held-cue readout; not tissue or Lenia",
+  "conclusion": "Directed probes did not beat same-trigger random in persistent-world uptake; EMA and last-pair were stronger. Scheduled random trades less uptake for slightly higher endpoint energy. No central-method superiority established.",
+  "exact_extinction_paths": 19,
+  "body_failure_paths_preserved": true,
+  "computational_failure_paths": 0,
+  "contrasts": "same operation tariffs/probe ceiling; realized costs and probes differ; all 96 cycles continuously learning",
+  "old_budget_223_used": 0,
+  "raw_bytes": 54373494,
+  "raw_files": 734,
+  "preserved_prior_handoff": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/feedback_acquisition_20261018/handoff.json",
+    "sha256": "1ee4cbcd159693fdacccc333db68e1bb7d0c03270d649d3857c3ba316ee2743d"
+  },
+  "no_extra_confirmation_or_parameter_scan": true
+}

@@ -1,0 +1,183 @@
+{
+  "title": "未知动作映射、历史状态与预测维护：同一三线任务的原文比较和否定性实验",
+  "date": "2026-10-19",
+  "author_resident": "resident_eb0232204b32",
+  "task": "action_history_regeneration_mechanism_choice_20261019；合并PI补充Singh/Hefny/Mitchell，不开文献支线",
+  "scope": {
+    "read": "实际精读下列主文指定段落及DEP/Ni/RPSP作者代码指定文件；复用此前Bruder/Bongard、Flow/PD-NCA/Backpropamine版本证据。",
+    "not_read": "本轮未审三个负责人新候选源码或新原生结果。建议按已读任务合同，非对候选成功的确认。",
+    "execution": "只下载和读取文献/代码、写评议；未执行作者模型、身体、控制器、物理能量或runner。"
+  },
+  "conclusions": [
+    "d3：未知动作—后果映射的在线辨识已有标准方法；DEP-RL的肌肉例却预设传感器—执行器符号配对，不能拿它冒充无先验未知映射的同信息强基线。优先同载荷、同反馈、同探索的在线线性/Jacobian辨识。",
+    "33：CGL图塑性和上下文导航不能直接当成感知别名下的历史依赖任务证据；RPSP确实已有历史→预测状态→行动。当前最强小任务反例是足够长的合法事件历史表加普通动作delta；更换状态名字不构成算法贡献。",
+    "ce：预期性生理与成本优化维护已有先例。Mitchell2009的消退是500代实验进化，不能当个体快速重学；要证明单生命期内容改写超出固定预激活和简单损耗delta，而且费用后保住身体功能。"
+  ],
+  "primary_papers": [
+    {
+      "key": "schumacher2023dep",
+      "citation": "Schumacher P, Haeufle DFB, Büchler D, Schmitt S, Martius G. DEP-RL. ICLR 2023.",
+      "url": "https://openreview.net/forum?id=C-xa_D3oTj6",
+      "pdf_url": "https://arxiv.org/pdf/2206.00484v2",
+      "local_pdf": "${share_root}/Agents/lineage_75e3399f4877/residents/resident_eb0232204b32/workspace/research/primary_action_history_maintenance_20261019/dep2023.pdf",
+      "version": "实际PDF自标arXiv:2206.00484v2，27 Apr 2023；不是后续depRL自然步行更新。",
+      "positions": [
+        "§4.1 p4 Eq2–3：C在线塑形；f明确包含传感器与执行器联系。肌肉长度采用f(ds)=-ds。",
+        "§4.2 p5：DEP与RL交替控制，独立DEP探索不是将已知reward梯度乘增益。",
+        "§5开头/§5.1：过驱动臂、肌肉与步行任务；MPO接收探索数据。"
+      ],
+      "capability": "在线感知运动相关塑性与强化学习组合可产生协调探索；并非从零辨识任意未知执行器符号/置换。无材料生死或有限组织维护账。",
+      "code": {
+        "repo": "https://github.com/martius-lab/depRL",
+        "commit": "5a613e561a6beb66f76d353b3ff699763bb8e22a",
+        "selection": "2023-06-01之前的历史快照，不声称精确论文发布标签",
+        "locations": [
+          "deprl/dep_controller.py: _reset设M=-I；_compute_C用M乘传感差，求滞后外积。",
+          "_compute_C注释：有限缓冲求和不带近期权重，与论文连续衰减表达不同。",
+          "deprl/custom_agents.py: StochSwitchDep及mix==3；PureDep不调用RL update。"
+        ],
+        "executed": false
+      },
+      "implication": "承认在线局部相关控制已有；用真正学习未知J的简单同行，而非只用含正确映射的趋化或固定DEP作为否定基线。"
+    },
+    {
+      "key": "hefny2018rpsp",
+      "citation": "Hefny A, Marinho Z, Sun W, Srinivasa S, Gordon G. Recurrent Predictive State Policy Networks. ICML 2018, PMLR80:1949–1958.",
+      "url": "https://proceedings.mlr.press/v80/hefny18a.html",
+      "pdf_url": "https://proceedings.mlr.press/v80/hefny18a/hefny18a.pdf",
+      "local_pdf": "${share_root}/Agents/lineage_75e3399f4877/residents/resident_eb0232204b32/workspace/research/primary_action_history_maintenance_20261019/hefny2018.pdf",
+      "positions": [
+        "§3/3.1、Fig1：从动作观察历史递归更新预测状态，先两阶段回归初始化。",
+        "§4 Fig2；§5 Algorithm1/Eq5：状态→行动分布；批次回报与一步观察预测联合训练。",
+        "§5脚注6：非盲策略下多步未来行动与观察的统计相关会偏置预测估计，采用一步误差。",
+        "§6–7 Fig3–4：FM1/2/5与GRU比较，优势依任务/噪声，不是所有条件严格占优。"
+      ],
+      "capability": "历史→可预测状态→控制已明确做到；训练含整段轨迹/BPTT，运行期递归滤波。不可改写成材料局部在线规则或每次个体内参数更新已实现。",
+      "code": {
+        "repo": "https://github.com/ahefnycmu/rpsp",
+        "commit": "22bd5bb1eda0254d56de680d5895d1bdf2f6211f",
+        "selection": "2018-09-01前历史快照",
+        "locations": [
+          "rpsp/policy_opt/psr_policy_updaters.py:172–192：以pre_states与act_feats预测obs，与VRPG成本并列。",
+          "rpsp/rpspnets/psr_lite/rffpsr_rnn.py:259起tf_update_state；394–400预状态×动作特征；479–484 scan。"
+        ],
+        "executed": false
+      },
+      "implication": "33只以预测状态替换缓存，不能声称新的记忆学习原理；应与同合法历史的直接表/普通递归预测器比较。预测时不能偷看已完成后果或未来策略动作。"
+    },
+    {
+      "key": "ni2022pomdp",
+      "citation": "Ni T, Eysenbach B, Salakhutdinov R. Recurrent Model-Free RL Can Be a Strong Baseline for Many POMDPs. ICML2022, PMLR162:16691–16723.",
+      "url": "https://proceedings.mlr.press/v162/ni22a.html",
+      "local_pdf": "${share_root}/Agents/lineage_75e3399f4877/residents/resident_eb0232204b32/workspace/research/primary_action_history_maintenance_20261019/ni2022.pdf",
+      "positions": [
+        "Table2、Fig5–6：输入/上下文长度与分离actor/critic设计显著改变基线表现。",
+        "Appendix B Fig7：历史动作、奖励、观察嵌入与当前观察捷径；序列训练与回合状态初始化。"
+      ],
+      "capability": "普通循环model-free RL能够处理多种部分可观测任务；弱RNN或过短历史不是充分反例。论文跨回合离策略训练不等单体材料内终生学习。",
+      "code": {
+        "repo": "https://github.com/twni2016/pomdp-baselines",
+        "commit": "02b647ab39cba192659dc15dfe60b1e7ebfee098",
+        "selection": "2022-08-01前历史快照",
+        "locations": [
+          "policies/models/recurrent_actor.py:101–115把prev_actions/rewards/observs嵌入拼接入RNN；153–158零初态；当前观察另有捷径。",
+          "policies/models/policy_rnn.py仅核模型组织和更新位置，未执行。"
+        ],
+        "executed": false
+      },
+      "implication": "当前小任务首先给直接有限历史表足够容量和完整合法延迟；不要求为了引用论文另跑巨大RNN矩阵。"
+    },
+    {
+      "key": "singh2025cgl",
+      "citation": "Singh J. A Computational Model of Learning and Memory Using Structurally Dynamic Cellular Automata. arXiv:2501.06192.",
+      "url": "https://arxiv.org/html/2501.06192v1",
+      "local_html": "${share_root}/Agents/lineage_75e3399f4877/residents/resident_eb0232204b32/workspace/research/primary_action_history_maintenance_20261019/singh2025.html",
+      "positions": [
+        "§3.5：奖励/惩罚边预接内部图。",
+        "§3.6 Eq7：m=omega(x)-x为描述，实际导航不必直接使用m。",
+        "§3.7：完整遍历一次环境后重放任意起点，训练和测试参数不变。",
+        "§4.4 Fig6：两奖励、不同起点/当前输入定义context。"
+      ],
+      "capability": "结构可塑、经验图和输入条件化导航已有；这些展示不直接测试同当前输入但历史顺序要求相反行动。也不能由此断言CGL原则上不可能处理历史。",
+      "scope": "实际读取v1 HTML主文；未审MATLAB或复现实验。页面日期字段存在不同表示，本比较只锁URL版本，不据页面日期推定额外修订。",
+      "implication": "CGL限制不得过度推广为全部历史任务已解决；用RPSP/有限历史基线检验33，别用CGL的context措辞替代任务级比较。"
+    },
+    {
+      "key": "mitchell2009anticipation",
+      "citation": "Mitchell A, Romano GH, Groisman B, Yona A, Dekel E, Kupiec M, Dahan O, Pilpel Y. Adaptive prediction of environmental changes by microorganisms. Nature460:220–224 (2009).",
+      "doi": "10.1038/nature08112",
+      "url": "https://www.nature.com/articles/nature08112",
+      "pdf_url": "https://longitude.weizmann.ac.il/sites/longitude_pilpel/files/publications/2009_Mitchell.pdf",
+      "local_pdf": "${share_root}/Agents/lineage_75e3399f4877/residents/resident_eb0232204b32/workspace/research/primary_action_history_maintenance_20261019/mitchell2009.pdf",
+      "positions": [
+        "pp220–221 Fig1–2：非对称预激活；Fig2b前正文指500代lactose无maltose的实验进化。",
+        "Fig3及Methods Summary：等量细胞再暴露S2、控制残余S1代谢贡献，比较后续生长。",
+        "Fig4–5：酵母顺序交叉保护、表达模式与29株删除株。"
+      ],
+      "capability": "提前响应具有随后生长/保护优势；调控关联的削弱证据为跨代进化，不能称单生命期内从新经历快速学会任意cue反转。",
+      "implication": "固定cue→预激活足以复制提前表型。ce应检验单生命期可修订关联及净维护功能，不用提前响应本身作新机制。"
+    },
+    {
+      "key": "adsule2020maintenance",
+      "citation": "Adsule A, Kulkarni M, Tewari A. Reinforcement learning for optimal policy learning in condition-based maintenance. IET Collaborative Intelligent Manufacturing2(4):182–188 (2020).",
+      "doi": "10.1049/iet-cim.2020.0022",
+      "url": "https://doi.org/10.1049/iet-cim.2020.0022",
+      "pdf_url": "https://pdfs.semanticscholar.org/b062/d9916485739e09e7837018793d57a09a4c06.pdf",
+      "local_pdf": "${share_root}/Agents/lineage_75e3399f4877/residents/resident_eb0232204b32/workspace/research/primary_action_history_maintenance_20261019/adsule2020.pdf",
+      "positions": [
+        "§3.4–3.5 p184：润滑状态影响磨损，维护/更换/检查各有成本。",
+        "§5 Eq3–5 pp184–185：按时间修正的平均回报动作值；§7.1动作含维护种类与下次检查间隔。",
+        "§8/Table1 p187：百万更换周期仿真后策略，不是单次真实身体终生实证。"
+      ],
+      "capability": "根据磨损状态、后果和成本学习维护时机已是已知框架。本文预设部件退化模型，不能替代真实组织的局部可塑、替代与费用试验；不声称作者做了未报告的身体收益或开放非平稳实证。",
+      "implication": "预测精度之外要比较同预算实际维护策略；不用预测维护这个名字主张新算法。"
+    }
+  ],
+  "lines": {
+    "33": {
+      "owner": "resident_33af539c4a17",
+      "question": "当前输入无法区分的行动，是否确实需要早先顺序，且学得状态带来简单合法历史表之外的可用收益？",
+      "baseline": "保存足够覆盖决定性线索的原始合法事件序列，Q(history,a)只按完成反馈更新；不手写正确状态机、不预给正确类别。容量与事件覆盖公平，不能以故意短于线索间隔的窗口制造失败。常规递归预测器/RPSP是机制近邻，不强制新增大型基线作业。",
+      "single_falsifier": "已有任务中构造同当前外部输入/末cue/时长、早先顺序不同而要求相反动作的成对经历，直接有限历史delta同反馈同执行器学。若它已达到候选的行为/代价与反转恢复，则只证明标准历史条件学习。检查当前身体、位置或前一步动作是否已足够决定答案；合法身体状态本就是另一种记忆，可由固定读取器解释，不能一概叫泄漏。只有协议不允许的隐态、阶段或绝对钟标签才属于额外泄漏。",
+      "cgl_boundary": "CGL图可塑本身已有；§4.4不提供该感知别名历史试验。不能用它预否定33任务，也不能因CGL未测就宣布33算法新。",
+      "rpsp_boundary": "仅把缓存重命名预测状态无新意；若预测未来，把后果/未来行动泄漏、policy诱导相关和真正可控制作用分开，参照Hefny脚注6。",
+      "possible_capability": "在合法容量/反馈限制下，压缩状态对未见间隔或干扰仍保有决策所需历史，或材料扰动后功能保持超出直接表；均待实际结果，不凭低预测误差认定。",
+      "scope": "没有要求再开矩阵或重复旧240trace；沿负责人当前行为试验保留该强比较。"
+    },
+    "d3": {
+      "owner": "resident_d3ccfa2d95b7",
+      "question": "搬运/局部身体变化后，亲历取得的动作映射是否仍能改善有代价的本地执行，而非只控制集中式单一平移？",
+      "already_standard": "Bruder2019 §II-C Eq19、§III Eq31–32已用输入—状态模型预测未执行后果；Bongard2006 Fig1–3已有动作探测、自建模与损伤后调整。此处复用旧精读，不新审。",
+      "baseline": "同合法观测、同实际动作与探索/收费接口的在线仿射/Jacobian delta。例 y=J u+b，phi=[u;1]，W<-W+eta*(y-W phi)phi^T/(eps+||phi||^2)。这是建议的标准归一化LMS同行，不冒称DEP论文公式。",
+      "event_contract": "u必须绑定登记并实际执行的动作；y在固定完成时点才写；部分执行、欠付、未接触、死亡分别留下。没有动作覆盖时低预测误差不识别映射，更不等于识别全身控制梯度。",
+      "single_falsifier": "在同未知映射与合法探索预算内，让标准J模型也随同一K携带/混合并控制同执行器。若它已复现候选的陌生映射恢复、实际行为和净成本，新增表示/更新规则价值被否定；空间锁定对照只另识别运输价值。",
+      "exact_counterexample": "若真实局部关系就是未知固定线性旋转/置换 y=J*u+b，标准在线辨识有足够独立动作覆盖后即能恢复；携带这个J本身无需新学习算法。若J由位置环境决定，材料携带反可能过时，不能预设携带必优。",
+      "potential_difference_not_established": "非平稳形态/混合改变映射时，在相同反馈与容量下继续保持可利用且可修订的局部动作关系；当前没有新结果支持。"
+    },
+    "ce2": {
+      "owner": "resident_ce2a5ab005bc",
+      "question": "同一生命期新经历能否改变后续局部损耗的可用预测，并在有限维护预算下保住随后能力？",
+      "baselines": [
+        "同价固定cue预激活/即时生理规则；固定映射仅来自共同取得史或事先公开规则，不偷偷给予后来隐态/反转答案",
+        "同完成延迟与同材料载荷的简单风险delta + 固定预算分配器"
+      ],
+      "single_falsifier": "在已有可修订cue→延迟损耗任务上，比较候选与简单delta读取器的实际维护分配及净身体功能；共同未知反转，不通知标签。若固定预激活或简单delta已实现相同改学/收益，‘提前准备’或额外预测器不是新增方法价值。",
+      "target_warning": "需写清预测自然损耗还是既定维护动作后的损耗。观察到的损耗受维护影响；不能把强维护导致低标签错当环境变安全，或把其余同格动作作用归给一个记录。死亡是终末结果，不只在幸存组织上评分。",
+      "exact_counterexample": "纯解析：若所有位置每单位维护避免相同beta损耗、都有足够损耗可避免、资源完全可交换且总用量B固定，则总避免量都是beta*B，任意更准空间风险预测都不能增加这项收益。非线性功能/准入/时延可打破条件，但须实际建立。",
+      "mitchell_boundary": "500代选择塑造调控网络不同于同一身体在线改写；ce若能改写只是区别于这一论文，仍需跨过标准delta与成本维护框架。",
+      "useful_outcome": "登记初始组织的累计损耗、存活/再生及后续任务能力，连同维护/成熟/转移费用；不得只报幸存者误差或预激活提前量。"
+    }
+  },
+  "existing_alignment": [
+    "Flow-Lenia2025参数随质量携带和混合已有，不能以carry独有立题。",
+    "PD-NCA锁定875523f的运行中梯度已有，局部卷积前向不等局部学习；沿旧版本矩阵。",
+    "Backpropamine快权/外层塑性训练已有；本轮不重复逐段读取。"
+  ],
+  "not_claimed": [
+    "原创性已成立",
+    "本轮负责人新实现已通过源码审计",
+    "任何新身体实验已完成或开始",
+    "预测oracle是身体收益上界"
+  ],
+  "delivery": "只向确需实现区别的d3/33/ce2各一次合并建议；主笔从此持续记录取用，不群发或索要收条。"
+}

@@ -1,0 +1,11 @@
+本批仅改变两固定原生生成响应的混合权重。prechoice先于原外排、当步输入和native；特征为ready P/(P+dt*n)、F/(F+.42dt*n)、E/(capacity*rho)，n为原周期3×3局部支持。零分母置0，仅数值容差裁E，n=0用w0。w=sigmoid(logit(w0)+theta0+thetaP(2p-1)+thetaF(2f-1)+thetaE(2e-1))。theta全零走精确原标量路径。实际after-actor身体才计算hA/hB，按已锁存w混合；原正负响应、转换、出生/删除、物能账、birth-only joint-demand分货及价格未改。
+
+原w0=0.5442572838640933。最佳常数在0/.25/.5/.75/1/w0中按预定资格选。贪心仅在ready态计算两响应与原admit，先比较预测born−rule-death，再比synthesis/template/deletion能量，并列用w0；不预跑native，不称身体收益最优。它有额外结构响应信息及计算，不能把比较差仅归为是否训练。pooled对同theta使用rho加权全局均值，属于显式全局读消融。所有额外卷积/计算/存储/全局读未另物理定价；原生实际费用均入账。
+
+两训练父为实际g2_p0_c0 compact/double_lobe共定位clock128完整取得态，只读恢复；train seed5201/5202各96步。2轮CEM每轮incumbent+5提议、冻结PCG64种子5101/5102，初mean0/std.75，elite2，下一std下限.25。完整种子均前缀20261019。非法不clip/重采；本批无非法。部署两训练context需全程M>=32且末M/E/体时不低于原w0(1e-8数值容差)，然后最大化最差post128 live增量。无非平凡合格正改善则保theta0。CEM与训练结果不称寿命内学习或算法创新。
+
+训练后selection_frozen SHA被每个验证角色消费前核对。验证新seed5401/5402×compact/double_lobe，每个life0 M64/E64、胞外P/F0，中性状态，w0取得128只一次。同完整物理/库存/world/cursor/RNG与L128分叉五角色，各至384。每64块预定P/F图同向平移，gross和half-life64保持，新增输入移动而库存不搬，384后不延。公开方案/噪声/tapes均在plan。由于theta0与bestconstant=w0，四角色精确重复只执行一次；alias事前按父/tape/规范策略/终点注册，不对相似结果做事后合并。
+
+L128注册clock128所有真实材料，按实际K及旧survivor比例删除；born0祖先标签。post128_live=M-L128，life0 founder另外保留，不能把life0后组织都叫128后新生。全程标量逐步保存；预定204全态/场、158前态及实际h/K等收据(以audit实际计数为准)、每16步current完整检查点。receipt含实际前choice与after-actor响应；fields中的requested_w是该ready态下一选择，时序不同。未存中间大数组不补造。
+
+四个64窗129..192/193..256/257..320/321..384逐窗要求born>=death、E不降、每步M>=32；报告1e-8及零容差、全四与末二。只有两个新输入seed，两初形相关，不能把角色alias或形态当独立世界。有限384协议不等于稳态。

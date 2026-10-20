@@ -1,0 +1,225 @@
+{
+  "schema": "d3-anticipatory-actual-result-manifest-v1",
+  "files": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/METHOD.md",
+      "sha256": "fa342d32893613899eaa475fdbb17ff1675a3ace19ca8791e36483ad3da1478d",
+      "bytes": 2814
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/REPORT.md",
+      "sha256": "e6ecc09d841b4e39c0faabd17a101dcb62751b0ab1bb7698da27845b709dc52e",
+      "bytes": 6560
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/actual_preparation_atlas.pdf",
+      "sha256": "fa8164b48546e1a7a4d2e3252b53d2e0d843526d5f50bb1504b530a69d9d00f5",
+      "bytes": 34399
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/actual_preparation_atlas.png",
+      "sha256": "20a1f5cbd495addd4ff2afa2809a07ed19942216e817277051b5b3434ffcf1f8",
+      "bytes": 75750
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/adaptation_lags.csv",
+      "sha256": "731742090f0e6cfc669ed23d30e41d7e74f52e39af15589ba05ea5e00b326bbe",
+      "bytes": 2211
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/analysis_spec.json",
+      "sha256": "896b2b697c3b79b105000e6565d16bdf1196ff7217e0b3985f933ff4c15ca642",
+      "bytes": 1722
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/analysis_summary.json",
+      "sha256": "a85a20a708451cac8817fa190d1ab2a05953222cfd321bbb582a941af3653d0f",
+      "bytes": 23390
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/checks.json",
+      "sha256": "63deee1e3ce4cea029ce3f150b8594f9e8e1bebd93f8b07bf92f69fbf8817b51",
+      "bytes": 317
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/condition_means.csv",
+      "sha256": "73722b40747e24e5de4887f95f087f6b3137b37be1a933ce3a9c8e8da670cdb0",
+      "bytes": 4339
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/cycle_observations.csv",
+      "sha256": "ee4dd7ea4c32370c14bad9f662daba2934b572507d3e331ed17afa0d93f981df",
+      "bytes": 452481
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/cycles.json",
+      "sha256": "679bab920dab860d00cc26ce61a7cacf70d80f9fa8907f7b648e52b8b6819d00",
+      "bytes": 1570266
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/feasibility_receipt.json",
+      "sha256": "e3fce4cec7ecce09d719ecef6797790a8029cac9dbcf9d1776142b77e7ad61c3",
+      "bytes": 5295
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/figure_sources.json",
+      "sha256": "bb2910df3886ff634b5a1102d0749edd90ef2ffd791540c9801c4651fbbf3994",
+      "bytes": 5403
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/final_source_receipt.json",
+      "sha256": "407a773ba9f6496e2aa5e219f0dd55cc0712dbf6211c536e7abac6a04addb2d3",
+      "bytes": 498
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/frames.json",
+      "sha256": "6878951247c96369b3607e35aa8568f73609ff3f783e63727bb66b8c9c40c651",
+      "bytes": 297094
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/grouped_contrasts.json",
+      "sha256": "fe7dc1b7ce5b3b350dcf0339165254b9da44d0e5e5308bf6df95750e11502dee",
+      "bytes": 101784
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/heldout_process.pdf",
+      "sha256": "2d91fa4515b1e586311d58081a168478988f14181bd466984a666fe944168cdb",
+      "bytes": 23450
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/heldout_process.png",
+      "sha256": "aa7528418cfe21d1abee08d8d1cfb851bc2e41cbcbddb11d79fff940bdf2410a",
+      "bytes": 513745
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/heldout_vectors.csv",
+      "sha256": "3f88cb1550a795da71ddf3f3af46ead63dd910c276ada8c9c412f48f3f15cb72",
+      "bytes": 69265
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/implementation_note.json",
+      "sha256": "1198b150deba0c977ae92e16b32b66af417174f26ddb02167b812d3498d7a08a",
+      "bytes": 2552
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/interpretation.json",
+      "sha256": "caf835003000ec3654f831b58085e455d685a861872aafcd406e7d235662e952",
+      "bytes": 2524
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/joint_usage.json",
+      "sha256": "bcd3a3fd9bd029fded97bf156e73c3119d1ebd674b0f85882754be1254da2f56",
+      "bytes": 814
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/outcomes.json",
+      "sha256": "b0e139117b60ff6daeb6bbecdc9eb060e84ba5780a742f1309f50e3e12f7d7df",
+      "bytes": 823278
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/paired_differences.csv",
+      "sha256": "bfc1435f20afd8cde45cff25279880c20cf3336da2875d0378befcb58ccc052c",
+      "bytes": 29909
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/paired_intake.pdf",
+      "sha256": "45b5746cee5b6b9c50fdf255dfa073ed1b8916422d63ede4593a5398fc07c4bc",
+      "bytes": 19654
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/paired_intake.png",
+      "sha256": "085de987dfba46cfda9d56f3636c362115e2864d319edcc33a1bbf8221ca65bc",
+      "bytes": 54511
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/plan.json",
+      "sha256": "2d74c0c87ccbc51f0a306a0f514ff700576c0ceab88100bdc1233b958d978aa8",
+      "bytes": 4641
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/pre_api_seed_manifest.json",
+      "sha256": "e3a04735b07de6498a0e78e99eee00dbfb1bea149b9810deeb28fd36cbacd053",
+      "bytes": 902
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/raw_manifest.json",
+      "sha256": "2d579de2c54f4a0dd9ce0d0eb937b5500058d75f7f3a7d71653c06fdd94ac007",
+      "bytes": 303143
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/result.json",
+      "sha256": "ab40bb146eadc33ac4e6e18500210d97c1751f0505612d1a88d8aae76d292364",
+      "bytes": 1093
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/seed_manifest.json",
+      "sha256": "d0d9e8f2bceec82896aff0260d948a445773c4345207c132daa38ac2d857f27a",
+      "bytes": 1143
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/source/anticipatory_analysis.py",
+      "sha256": "02ca557d38a166adf61488481f9df80f40e4556564d20d7682422ac5dae0172b",
+      "bytes": 15479
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/source/anticipatory_controller.py",
+      "sha256": "3a9d7df3496b9857e552fc07eb6d52b2eb794cc0ee6bb26478056c9ed9affbfc",
+      "bytes": 3823
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/source/anticipatory_experiment.py",
+      "sha256": "aa78280712b6f1a190edfceba947bb011232e6acdd456970e05d5117cc04ff0a",
+      "bytes": 14114
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/source/anticipatory_io.py",
+      "sha256": "341c04d4d2fcdfcc629892317021e286a5a4391b11ebe65cf3f713276113574d",
+      "bytes": 2565
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/source/anticipatory_package.py",
+      "sha256": "bf849e27f46ddca8ff786f7a5b747f76f2ffa3f0c2dafcc4233747de7b43f462",
+      "bytes": 15241
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/source/anticipatory_rule.py",
+      "sha256": "d8ab9323558e7d8b1e72522e0e20232faa600c5992767691778aea5bca619ae1",
+      "bytes": 6940
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/source/anticipatory_search.py",
+      "sha256": "d98733800aa52ef8b630dcef1d0c0bb7385e3732c2ae21f2d99a8bdd2ef0702b",
+      "bytes": 2360
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/source/ce2_host_core.py",
+      "sha256": "4ea2ebf8f3ec025624b30688122dbb3ea7f5717606f9eccb1ea5c4765b726817",
+      "bytes": 11959
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/stages.json",
+      "sha256": "41f8aa45caf21e60fb2e9ef7795eb22875803771ff9f893df0f58eb16a4adf0f",
+      "bytes": 1484884
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/trained_rule.json",
+      "sha256": "cace61819fa2cb144f409e54e333f0d7f164661e7d0dba848d9f341fb1b034bf",
+      "bytes": 67370
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/training_candidates.csv",
+      "sha256": "5040ba2734270ad587c2527b88ae4fb0635aeef8b43ad90434524692c61fe5a1",
+      "bytes": 4543
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/training_progress.json",
+      "sha256": "376722e50c4f8f5b76c217990c96b1109d05eafff9392c4208250a0ae6e42b0a",
+      "bytes": 62894
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/anticipatory_material_allocation/visual_review.json",
+      "sha256": "bea549fde18b10d19dfbc4061f30ec27167541a6c875eacf108f220924263e68",
+      "bytes": 376
+    }
+  ]
+}

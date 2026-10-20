@@ -1,0 +1,330 @@
+{
+  "schema": "tfi.portal-protocol-scenario.v1",
+  "scenario_id": "resident-submit-observe-project",
+  "protocol_id": "resident-execution",
+  "status": "simulated",
+  "author": "resident_60ae6d0cdf74",
+  "review_status": "data_owner_checked__ui_review_pending",
+  "title": "Resident 提交执行、观察结果并回写输入",
+  "source_refs": [
+    "decision_edc470e09f5a",
+    "decision_6ad0384e020d"
+  ],
+  "source_versions": [
+    {
+      "ref": "decision_edc470e09f5a",
+      "response_version": "25",
+      "body_version": "25",
+      "observed_at": "2026-10-15T08:02:32.371038+00:00",
+      "actor": "resident_60ae6d0cdf74",
+      "temporal_scope": "observed_now_not_commit_snapshot",
+      "body_sha256": "435875ef8b63a5df2b891f4fbb7815d99078ab22fe0f7dce5a22c32d63e93281",
+      "body": {
+        "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-435875ef8b63a5df2b891f4fbb7815d99078ab22fe0f7dce5a22c32d63e93281.md",
+        "sha256": "435875ef8b63a5df2b891f4fbb7815d99078ab22fe0f7dce5a22c32d63e93281",
+        "size": 32175
+      }
+    },
+    {
+      "ref": "decision_6ad0384e020d",
+      "response_version": "33",
+      "body_version": "33",
+      "observed_at": "2026-10-15T08:02:32.371038+00:00",
+      "actor": "resident_60ae6d0cdf74",
+      "temporal_scope": "observed_now_not_commit_snapshot",
+      "body_sha256": "9c449bd773b55bdf79c99237ee25d4fae9ce6c44590a37bc81fc0c3b7edf26fb",
+      "body": {
+        "address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-9c449bd773b55bdf79c99237ee25d4fae9ce6c44590a37bc81fc0c3b7edf26fb.md",
+        "sha256": "9c449bd773b55bdf79c99237ee25d4fae9ce6c44590a37bc81fc0c3b7edf26fb",
+        "size": 34111
+      }
+    }
+  ],
+  "preconditions": [
+    "按条件阅读的规范模拟；播放不执行指令，不代表某次真实请求。",
+    "参与者映射到固定地图 ID；根边界内角色不创建新组件。"
+  ],
+  "participants": [
+    {
+      "id": "resident",
+      "module_id": "lineage.conversation",
+      "role": "输入工作记录、执行调用与回复投影"
+    },
+    {
+      "id": "service",
+      "module_id": "execution",
+      "role": "ExecutionService 提交与观察门面"
+    },
+    {
+      "id": "scheduler",
+      "module_id": "execution.scheduling",
+      "role": "权威执行状态与取消意图"
+    },
+    {
+      "id": "agentdata",
+      "module_id": "execution.agent-data",
+      "role": "模型内容、事件、结果记录"
+    }
+  ],
+  "steps": [
+    {
+      "id": "prepare",
+      "from": "resident",
+      "to": "resident",
+      "condition": "输入已开始处理，当前轮次尚未提交",
+      "request": "准备稳定 execution_id、输入身份与工作记录",
+      "result": "重试沿用本次执行 ID；终态后重做另建 ID",
+      "source_refs": [
+        {
+          "ref": "decision_edc470e09f5a",
+          "section": "执行请求与模型会话",
+          "body_version": "25",
+          "response_version": "25",
+          "body_sha256": "435875ef8b63a5df2b891f4fbb7815d99078ab22fe0f7dce5a22c32d63e93281",
+          "snapshot_address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-435875ef8b63a5df2b891f4fbb7815d99078ab22fe0f7dce5a22c32d63e93281.md",
+          "line_start": 126,
+          "line_end": 131,
+          "line_numbering": "1-based inclusive in frozen UTF-8 body",
+          "excerpt_sha256": "e252590b51788b95e4014ec6f68c7637a6c06027287910ae98cf5051376c1ca8"
+        }
+      ]
+    },
+    {
+      "id": "submit",
+      "from": "resident",
+      "to": "service",
+      "condition": "准备成功且未在提交前取消",
+      "request": "execution.submit(完整 ExecutionRequest)",
+      "result": "同 ID 同请求复用既有记录；新请求准备会话并持久入队",
+      "source_refs": [
+        {
+          "ref": "decision_6ad0384e020d",
+          "section": "提交与观察",
+          "body_version": "33",
+          "response_version": "33",
+          "body_sha256": "9c449bd773b55bdf79c99237ee25d4fae9ce6c44590a37bc81fc0c3b7edf26fb",
+          "snapshot_address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-9c449bd773b55bdf79c99237ee25d4fae9ce6c44590a37bc81fc0c3b7edf26fb.md",
+          "line_start": 209,
+          "line_end": 211,
+          "line_numbering": "1-based inclusive in frozen UTF-8 body",
+          "excerpt_sha256": "91a637c5ee99700c115f9d22d2f07a70e86f57fe97c505084cdbfaf0e701be8b"
+        }
+      ]
+    },
+    {
+      "id": "observe",
+      "from": "resident",
+      "to": "service",
+      "condition": "已取得 execution_id，观察者满足 actor 边界",
+      "request": "execution.status / wait，按事件游标增量观察",
+      "result": "返回快照；等待本身不续租或改变执行状态",
+      "source_refs": [
+        {
+          "ref": "decision_6ad0384e020d",
+          "section": "提交与观察",
+          "body_version": "33",
+          "response_version": "33",
+          "body_sha256": "9c449bd773b55bdf79c99237ee25d4fae9ce6c44590a37bc81fc0c3b7edf26fb",
+          "snapshot_address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-9c449bd773b55bdf79c99237ee25d4fae9ce6c44590a37bc81fc0c3b7edf26fb.md",
+          "line_start": 212,
+          "line_end": 213,
+          "line_numbering": "1-based inclusive in frozen UTF-8 body",
+          "excerpt_sha256": "3364201b38f3ccabff5e63f028fc8b871fd531d7f0b307b2225769cfc44ecf0a"
+        }
+      ]
+    },
+    {
+      "id": "content-ready",
+      "from": "agentdata",
+      "to": "resident",
+      "condition": "执行产生模型事实，投影器读取到相关结果",
+      "request": "读取已写入 AgentData 的文本、结构化响应、用量及错误",
+      "result": "投影失败时原模型交互仍可读取",
+      "source_refs": [
+        {
+          "ref": "decision_edc470e09f5a",
+          "section": "结果与终态",
+          "body_version": "25",
+          "response_version": "25",
+          "body_sha256": "435875ef8b63a5df2b891f4fbb7815d99078ab22fe0f7dce5a22c32d63e93281",
+          "snapshot_address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-435875ef8b63a5df2b891f4fbb7815d99078ab22fe0f7dce5a22c32d63e93281.md",
+          "line_start": 133,
+          "line_end": 136,
+          "line_numbering": "1-based inclusive in frozen UTF-8 body",
+          "excerpt_sha256": "e9c2575741baf346bfc33943ce610cf13b02fddf79c279dcd49373a9b3952ba4"
+        }
+      ]
+    },
+    {
+      "id": "input-terminal",
+      "from": "resident",
+      "to": "resident",
+      "condition": "结果可投影且本次输入未有不可逆终态",
+      "request": "提交回复消息/消息追加事件，再提交带回复 ID 的输入终态，最后空闲",
+      "result": "成功输入 completed；仅模型结束不能提前完成输入",
+      "source_refs": [
+        {
+          "ref": "decision_edc470e09f5a",
+          "section": "结果与终态",
+          "body_version": "25",
+          "response_version": "25",
+          "body_sha256": "435875ef8b63a5df2b891f4fbb7815d99078ab22fe0f7dce5a22c32d63e93281",
+          "snapshot_address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-435875ef8b63a5df2b891f4fbb7815d99078ab22fe0f7dce5a22c32d63e93281.md",
+          "line_start": 135,
+          "line_end": 138,
+          "line_numbering": "1-based inclusive in frozen UTF-8 body",
+          "excerpt_sha256": "a2970091e60d638fe458f18a5e9ac1693b3cff8be855866d7996662fe20fb4e8"
+        }
+      ]
+    }
+  ],
+  "branches": [
+    {
+      "id": "request-conflict",
+      "kind": "exception",
+      "at_step": "submit",
+      "condition": "相同 execution_id 配上不同首次请求摘要",
+      "steps": [
+        {
+          "id": "reject-conflict",
+          "from": "service",
+          "to": "resident",
+          "condition": "ID 已存在且请求不同",
+          "request": "拒绝本次提交",
+          "result": "不把不同输入静默合并到旧执行",
+          "source_refs": [
+            {
+              "ref": "decision_6ad0384e020d",
+              "section": "提交与观察",
+              "body_version": "33",
+              "response_version": "33",
+              "body_sha256": "9c449bd773b55bdf79c99237ee25d4fae9ce6c44590a37bc81fc0c3b7edf26fb",
+              "snapshot_address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-9c449bd773b55bdf79c99237ee25d4fae9ce6c44590a37bc81fc0c3b7edf26fb.md",
+              "line_start": 209,
+              "line_end": 211,
+              "line_numbering": "1-based inclusive in frozen UTF-8 body",
+              "excerpt_sha256": "91a637c5ee99700c115f9d22d2f07a70e86f57fe97c505084cdbfaf0e701be8b"
+            }
+          ]
+        }
+      ],
+      "source_refs": [
+        "decision_6ad0384e020d"
+      ]
+    },
+    {
+      "id": "cancel-running",
+      "kind": "concurrency",
+      "at_step": "observe",
+      "condition": "执行已领取/运行时收到有效取消请求",
+      "steps": [
+        {
+          "id": "cancel-intent",
+          "from": "resident",
+          "to": "scheduler",
+          "condition": "actor 为执行所有者且状态尚可取消",
+          "request": "execution.cancel 记录取消请求并通知 Worker",
+          "result": "取消请求不是 Provider 已停止的证明",
+          "source_refs": [
+            {
+              "ref": "decision_6ad0384e020d",
+              "section": "运行中的控制",
+              "body_version": "33",
+              "response_version": "33",
+              "body_sha256": "9c449bd773b55bdf79c99237ee25d4fae9ce6c44590a37bc81fc0c3b7edf26fb",
+              "snapshot_address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-9c449bd773b55bdf79c99237ee25d4fae9ce6c44590a37bc81fc0c3b7edf26fb.md",
+              "line_start": 221,
+              "line_end": 221,
+              "line_numbering": "1-based inclusive in frozen UTF-8 body",
+              "excerpt_sha256": "dc6f7673d6a42f52ca9f4324e588dc601c62dfea35fa1d375e5b199686eb1777"
+            }
+          ]
+        },
+        {
+          "id": "finish-cancelled",
+          "from": "scheduler",
+          "to": "scheduler",
+          "condition": "当前持有者随后提交 finish，取消意图已经记录",
+          "request": "校验持有者资格并提交执行结果",
+          "result": "Scheduler 强制保存 cancelled；之后仍按输入投影规则收尾",
+          "source_refs": [
+            {
+              "ref": "decision_6ad0384e020d",
+              "section": "scheduler.finish",
+              "body_version": "33",
+              "response_version": "33",
+              "body_sha256": "9c449bd773b55bdf79c99237ee25d4fae9ce6c44590a37bc81fc0c3b7edf26fb",
+              "snapshot_address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-9c449bd773b55bdf79c99237ee25d4fae9ce6c44590a37bc81fc0c3b7edf26fb.md",
+              "line_start": 280,
+              "line_end": 282,
+              "line_numbering": "1-based inclusive in frozen UTF-8 body",
+              "excerpt_sha256": "b7355452e5443e568eaa1281b5b602d9081f259931ccbf8cefcb87a3f292ab56"
+            },
+            {
+              "ref": "decision_edc470e09f5a",
+              "section": "结果与终态",
+              "body_version": "25",
+              "response_version": "25",
+              "body_sha256": "435875ef8b63a5df2b891f4fbb7815d99078ab22fe0f7dce5a22c32d63e93281",
+              "snapshot_address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-435875ef8b63a5df2b891f4fbb7815d99078ab22fe0f7dce5a22c32d63e93281.md",
+              "line_start": 135,
+              "line_end": 138,
+              "line_numbering": "1-based inclusive in frozen UTF-8 body",
+              "excerpt_sha256": "a2970091e60d638fe458f18a5e9ac1693b3cff8be855866d7996662fe20fb4e8"
+            }
+          ]
+        }
+      ],
+      "source_refs": [
+        "decision_6ad0384e020d",
+        "decision_edc470e09f5a"
+      ]
+    },
+    {
+      "id": "failed-execution",
+      "kind": "exception",
+      "at_step": "content-ready",
+      "condition": "模型或执行返回错误",
+      "steps": [
+        {
+          "id": "project-error",
+          "from": "resident",
+          "to": "resident",
+          "condition": "已取得实际执行错误",
+          "request": "按结果投影记录错误及输入状态",
+          "result": "输入进入 failed；迟到事件不能改回运行",
+          "source_refs": [
+            {
+              "ref": "decision_edc470e09f5a",
+              "section": "结果与终态",
+              "body_version": "25",
+              "response_version": "25",
+              "body_sha256": "435875ef8b63a5df2b891f4fbb7815d99078ab22fe0f7dce5a22c32d63e93281",
+              "snapshot_address": "workspace_13209cb6666b/file/architecture-evidence/objects/design-435875ef8b63a5df2b891f4fbb7815d99078ab22fe0f7dce5a22c32d63e93281.md",
+              "line_start": 135,
+              "line_end": 138,
+              "line_numbering": "1-based inclusive in frozen UTF-8 body",
+              "excerpt_sha256": "a2970091e60d638fe458f18a5e9ac1693b3cff8be855866d7996662fe20fb4e8"
+            }
+          ]
+        }
+      ],
+      "source_refs": [
+        "decision_edc470e09f5a"
+      ]
+    }
+  ],
+  "concurrency": {
+    "status": "partial",
+    "ordering": "conditional_partial_order_only",
+    "global_order": null,
+    "reason": "只采用本场景步骤和分支明确引用的先后条件，不从参与者排列建立全序。"
+  },
+  "limitations": [
+    "固定 Design 的当前观察不是历史提交的 Design 正文。",
+    "不可把模拟作为实际执行回执；真实终态从所属服务读取。",
+    "省略 Worker 和 Provider 内部调用；可另读原 0431 能力协议场景，两个场景不能拼成真实全序。",
+    "content-ready 表达存储就绪与读取关系，不声称 AgentData 主动推送网络消息。",
+    "排队取消、租约丢失、服务重启和所有错误码未完整展开。"
+  ]
+}

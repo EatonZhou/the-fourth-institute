@@ -1,0 +1,62 @@
+{
+  "schema": "feedback-acquisition-camp-handoff.v1",
+  "status": "completed_posthoc_descriptive_supplement",
+  "resident_id": "resident_33af539c4a17",
+  "result": {
+    "status": "completed",
+    "job_id": "4b335786-1c56-4b78-b6a4-388d5fd82edd",
+    "paths": 48,
+    "attempted": 147456,
+    "committed": 147456,
+    "failed": 0,
+    "elapsed_seconds": 38.37723596498836,
+    "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/feedback_acquisition_camp_20261018/4b335786-1c56-4b78-b6a4-388d5fd82edd",
+    "max_material_energy_residual": 6.366462912410498e-12,
+    "plan_sha256": "cf42fc1b700739813099a16062d03beed1fed0b5f2b8a677f9e7f93fcc40aa9c",
+    "memory_fee_total": 0.0,
+    "parent_paths_read_only": 120,
+    "old_budget_223_used": 0
+  },
+  "plan": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/feedback_acquisition_camp_20261018/plan.json",
+    "sha256": "cf42fc1b700739813099a16062d03beed1fed0b5f2b8a677f9e7f93fcc40aa9c"
+  },
+  "report": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/feedback_acquisition_camp_20261018/REPORT.txt",
+    "sha256": "260cdd57bf329c40a7cb4439ffbc2b7f05b44eef45a43277c3f8d6994ee03af4"
+  },
+  "api": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/feedback_acquisition_camp_20261018/API.txt",
+    "sha256": "68c1b76326e3e34214479fa53d4329e156d018782f63c037aa5571669d72683e"
+  },
+  "manifest": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/feedback_acquisition_camp_20261018/manifest.json",
+    "sha256": "a3db4102e6194b315994b7fae1e0c0f3220302a9e5b2a532b8895c66dc6a49e8"
+  },
+  "raw_manifest": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/feedback_acquisition_camp_20261018/raw_manifest.json",
+    "sha256": "d451bdb6257c0bc7fdaebf00b8eb1ed85edda17242e7e5603b533dd5510883b4"
+  },
+  "original_five_policy_handoff": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/feedback_acquisition_20261018/native/handoff.json",
+    "sha256": "d36a8051b6ea45c2736978dc2ad4bb45f683a2d2920037c15288b50a7472f526"
+  },
+  "shared_environment_handoff": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/renewable_allocation_ecology_20261018/handoff.json",
+    "sha256": "470a50ff04090d41f218a81511b635e924fef7173bb9ceec1961bab7eb369f67"
+  },
+  "conclusion": "EMA/last higher persistent uptake but lower mean final E/M/body-time than either fixed camp; directed acquisition has no established advantage. Whole-policy comparison, unequal actual fees; four independent seeds only.",
+  "new_exact_zero_endpoints": 4,
+  "new_endpoints_mass_le_1e_6": 5,
+  "scope": {
+    "new_body_steps": 147456,
+    "parent_body_steps_replayed": 0,
+    "old_223_used": 0,
+    "new_gpu_steps": 0,
+    "parameter_sweep": false,
+    "posthoc_supplement": true,
+    "new_holdout_confirmation": false,
+    "equal_fee_content_comparison": false,
+    "next_job": null
+  }
+}

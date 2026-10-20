@@ -1,0 +1,20 @@
+{
+  "id": "c3cc19b6-8107-4745-8167-71592256dbe2",
+  "name": "local_signal_action_coordination_20261019",
+  "command": [
+    "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+    "-m",
+    "local_learning.local_signal_action_coordination.run",
+    "run"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "d3-local-signal-action-coordination-v1",
+  "status": "running",
+  "created_at": "2026-10-19T03:12:36.999006+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/c3cc19b6-8107-4745-8167-71592256dbe2",
+  "pid": 3018211,
+  "manual_pause": false,
+  "create_time": 1792379556.49,
+  "started_at": "2026-10-19T03:12:37.103237+00:00"
+}

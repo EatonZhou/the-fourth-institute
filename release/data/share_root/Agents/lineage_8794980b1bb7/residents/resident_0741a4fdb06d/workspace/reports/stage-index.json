@@ -1,0 +1,7 @@
+{
+  "schema": "tfi.portal-stage-index.v1",
+  "schema_ref": "workspace_f9ff5e8a76df/file/reports/stage-report-schema.json",
+  "content_ref": "workspace_f9ff5e8a76df/file/reports/stage-content.json",
+  "report_refs": [],
+  "new_report_directory": "digests/"
+}

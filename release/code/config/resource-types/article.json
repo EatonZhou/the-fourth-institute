@@ -1,0 +1,16 @@
+{
+  "type": "article",
+  "category": "resource",
+  "description": "A TFI Portal authored article or manuscript. Its Git storage is not a Repo resource.",
+  "title": {
+    "zh": "文章",
+    "en": "Article"
+  },
+  "provider": "management_portal.resources.providers.article:install_resolver",
+  "catalog_section": "article",
+  "catalog_order": 40,
+  "registerable": true,
+  "scope": "project",
+  "unit": "article",
+  "enabled_by_default": true
+}

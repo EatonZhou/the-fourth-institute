@@ -1,0 +1,19 @@
+{
+  "id": "8de86188-a832-4e73-af13-b5bac20826a1",
+  "name": "birth_site_compatibility_cohort_20261019",
+  "command": [
+    "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+    "-m",
+    "local_learning.birth_site_compatibility_cohort.run"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "d3-birth-site-compatibility-cohort-20261019-v1",
+  "status": "running",
+  "created_at": "2026-10-18T20:52:18.712703+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/8de86188-a832-4e73-af13-b5bac20826a1",
+  "pid": 3695645,
+  "manual_pause": false,
+  "create_time": 1792356738.17,
+  "started_at": "2026-10-18T20:52:18.784190+00:00"
+}

@@ -1,0 +1,97 @@
+[
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/experience_diverse_generation_screen_20261018.json",
+    "sha256": "469b858c0bb7bad7dd82a0ecab55b4dceb4eda01db0fd5af3f688edb8e50a995",
+    "bytes": 9237
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/experience_adaptation_outer_search/genome.py",
+    "sha256": "cad661bf00f177b3cb3f38a5c7210a0095e4db76e5bfbab8a5b6c3541b15d10b",
+    "bytes": 7258
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/experience_adaptation_host/interface.py",
+    "sha256": "b4ae75ca53bacb912a418d3e9fa4bcdc96cda17e5f6ff20cc96d5da83c1cb7bc",
+    "bytes": 8241
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/reference_anisotropic--connected_trilobe.npz",
+    "sha256": "c73aa228328b141bf094093030fcd8c82fa49f7b022d5e3f4bffe171b29d300a",
+    "bytes": 836272
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/reference_anisotropic--bridged_longbody.npz",
+    "sha256": "b5f72ba5a169cf646907a88541e8aae7449fc519fae939b9164d3ee9576c278e",
+    "bytes": 836264
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/core_ring--connected_trilobe.npz",
+    "sha256": "a878d57858176d7701fc00bc8b7e6e2fa6139a6c2e73047b5f69b7c9c0ea99cd",
+    "bytes": 836092
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/core_ring--bridged_longbody.npz",
+    "sha256": "2d2674a2dcedfc93c000bb21956b749258883348c9aaff52fc0c1c2e1279ab35",
+    "bytes": 836084
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/double_shell_far_ring--connected_trilobe.npz",
+    "sha256": "dce0153ef2359470adf9b323df81a102be690bb2e5ae53afe8121a8456baec5c",
+    "bytes": 836160
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/double_shell_far_ring--bridged_longbody.npz",
+    "sha256": "55543f1b6810aad3806cf862ceb822faafac506690e2979db116df47afb8bdb1",
+    "bytes": 836152
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/compact_ring_core_outer--connected_trilobe.npz",
+    "sha256": "f580f0e32d439787b9e05dca7d9466368a7c5e4551ac4a77e74e16627653d23a",
+    "bytes": 836188
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/compact_ring_core_outer--bridged_longbody.npz",
+    "sha256": "eb468b8e2c146e7383b379c0c51fac7cf84edcac524e43726276e8880ce854c8",
+    "bytes": 836180
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/draws001_224.npy",
+    "sha256": "985ec671b00f346e7ba414e6460a68ac274f95fc4b317a100cc6399fad55a293",
+    "bytes": 16515200
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/forcing001_224.npz",
+    "sha256": "65fb316a56a7b2b15123b954bfabe580a7d232ea544d3615cc669faeeba28993",
+    "bytes": 48590
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_kernel_response_factorial_diagnostic/handoff.json",
+    "sha256": "ba407041357ab39e1b7e1b9a4a36be308ec9fbdc4e6c5ba101d35d8b6a23c9cc",
+    "bytes": 1098
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_kernel_response_factorial_exports/candidate_manifest.json",
+    "sha256": "eaaa54f46814ebfa74afacfae07b7f4a63d0bd50387470b32de224a973806bb5",
+    "bytes": 12216
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_kernel_response_factorial_exports/candidates/kg_compact_K1G0I0_1ed4f7c44a05de8a99d8.npz",
+    "sha256": "26411c19f453516849a7c2554186751a378cc3d119904eddb4dae7fb551b49fb",
+    "bytes": 1879056
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_kernel_response_factorial_exports/candidates/kg_compact_K0G1I0_181920f27bf5a3d9e463.npz",
+    "sha256": "fc003696060d8955552900fd4ba7544e0b29cf63c8a8f2ab372502045fa02b6f",
+    "bytes": 1879032
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_kernel_response_factorial_exports/candidates/kg_multi_ring_K1G0I0_cb82eef54317d221e0d6.npz",
+    "sha256": "57da505805547f495d7ddb7e90d49afc8eba359b03282c958120be348638d0c4",
+    "bytes": 1878828
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_kernel_response_factorial_exports/candidates/kg_multi_ring_K0G1I0_b6bf1f64e8ee4ab669e4.npz",
+    "sha256": "081f68b54f1d014e72c779595a6d786f79af4e1fea58320232eda8859ec282f8",
+    "bytes": 1879092
+  }
+]

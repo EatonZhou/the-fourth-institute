@@ -1,0 +1,31 @@
+[Unit]
+Description=TFI Portal Release SocietyService
+After=network-online.target @PORTAL_POSTGRES_UNIT@ portal-release-nats.service portal-release-resource-service.service portal-release-execution-service.service
+Wants=network-online.target @PORTAL_POSTGRES_UNIT@ portal-release-nats.service portal-release-resource-service.service portal-release-execution-service.service
+
+[Service]
+# Portal's request path runs ahead of agent commands and tests under CPU contention.
+CPUWeight=1000
+Environment=PYTHONDONTWRITEBYTECODE=1
+Type=simple
+UMask=0007
+WorkingDirectory=@PORTAL_SOURCE_ROOT@
+Environment=PORTAL_INSTANCE=release
+Environment=PORTAL_ISA_ROUTING=socket
+Environment=PORTAL_NATS_URL=nats://127.0.0.1:4224
+Environment=PORTAL_EXECUTION_SERVICE_SOCKET=@PORTAL_INSTANCES_ROOT@/release/execution-service.sock
+Environment=PORTAL_RESOURCE_SERVICE_MODE=client
+Environment=PORTAL_RESOURCE_SERVICE_SOCKET=@PORTAL_INSTANCES_ROOT@/release/resource-service.sock
+Environment=PORTAL_SOCIETY_SERVICE_MODE=local
+Environment=PORTAL_SOCIETY_SERVICE_PROCESS=1
+Environment=PORTAL_SOCIETY_SERVICE_SOCKET=@PORTAL_INSTANCES_ROOT@/release/society-service.sock
+Environment=PORTAL_LINEAGE_HOUSEKEEPING_SECONDS=300
+Environment=PORTAL_LINEAGE_READ_WORKERS=12
+EnvironmentFile=-@PORTAL_POSTGRES_ENV_FILE@
+ExecStart=@PORTAL_GROUP_COMMAND@@PORTAL_INSTANCES_ROOT@/dev/runtime-venv/bin/python @PORTAL_SOURCE_ROOT@/scripts/run_portal_shared_component.py society-service
+Restart=always
+RestartSec=2
+TimeoutStopSec=180
+
+[Install]
+WantedBy=portal-release-execution.target

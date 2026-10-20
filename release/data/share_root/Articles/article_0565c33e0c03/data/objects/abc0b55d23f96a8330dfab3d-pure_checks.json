@@ -1,0 +1,33 @@
+{
+  "native": 0,
+  "checks": [
+    {
+      "id": "202610197503_0_0_fast_delta_life_turn_once_write",
+      "initial_exact": true,
+      "M": 24.0,
+      "E": 17.91803998359546,
+      "largest": 0.9993116277612825
+    },
+    {
+      "id": "202610197503_0_0_joint_delta_life_turn_once_write",
+      "initial_exact": true,
+      "M": 24.0,
+      "E": 18.11245985460468,
+      "largest": 0.9993773643125219
+    },
+    {
+      "id": "202610197504_1_0_fast_delta_life_turn_once_write",
+      "initial_exact": true,
+      "M": 24.000000000000025,
+      "E": 17.929253340655688,
+      "largest": 0.999311430768724
+    },
+    {
+      "id": "202610197504_1_0_joint_delta_life_turn_once_write",
+      "initial_exact": true,
+      "M": 23.999999999999996,
+      "E": 18.131292405659934,
+      "largest": 0.9993775212557728
+    }
+  ]
+}

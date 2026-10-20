@@ -1,0 +1,32 @@
+{
+  "causal": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/physical_experience_content_probe_20261019/outcomes.json",
+    "sha256": "b417e26ddf0fed8c60133a6c70aa8f33f2bf552a4eea30aa72cbfc0e39f50881"
+  },
+  "actual_fields": [
+    {
+      "label": "factual",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199841_plastic_delta/post_006.npz",
+      "sha256": "ce7ad7f1de940906cb7ed8d755efb015a1745474091c2aa6b426f3d92b12cae6"
+    },
+    {
+      "label": "flip_compliance",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/296b6e82-917a-4b8c-8086-6c0db235d33e/raw/0_flip_compliance/final.npz",
+      "sha256": "1345e757ae53592ccbd9139f3eb6120f31f092b606e5c5e7ec6b56ae756253a7"
+    },
+    {
+      "label": "zero_compliance",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/296b6e82-917a-4b8c-8086-6c0db235d33e/raw/0_zero_compliance/final.npz",
+      "sha256": "928347836a1f91555efa5500e3f3eb7c65929b8df63fd1ed8d0189e841e26809"
+    },
+    {
+      "label": "zero_and_mirror_shape",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/296b6e82-917a-4b8c-8086-6c0db235d33e/raw/0_zero_and_mirror_shape/final.npz",
+      "sha256": "45f37c2981d1f9da8636151e9dbab8654c72c4e9db3d73900c85cc573af2ef92"
+    }
+  ],
+  "main_figures": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/physical_experience_comparison_20261019/figure_sources.json",
+    "sha256": "c0327d5d68ffa34ec180e1e7adace626a3f547804e47d8bb3258d244b92aa743"
+  }
+}

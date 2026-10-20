@@ -1,0 +1,96 @@
+{
+  "process": "all actual scalar512 paths, shared128 prefix referenced not rerun",
+  "fields": [
+    {
+      "parent": "g1_f1_c0--compact--supported",
+      "arm": "always",
+      "body": {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--always/state896/body.npz",
+        "sha256": "b3b015c2605142a2255a7f3d8a0d36332914e8e4a47b6b116491e2cced049c5e",
+        "bytes": 2379372
+      },
+      "diagnostics": {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--always/state896/continuation.npz",
+        "sha256": "fd866b178a92c94bc7e1339bd34eaf53ff02f458b9ee3fde1ba58d8c79dbadf4",
+        "bytes": 596232
+      }
+    },
+    {
+      "parent": "g1_f1_c0--compact--supported",
+      "arm": "off",
+      "body": {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--off/state896/body.npz",
+        "sha256": "cea1a13676c9345352b720112b68ad0da20a0a76e29dac82476ffef969c47f58",
+        "bytes": 2379372
+      },
+      "diagnostics": {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--off/state896/continuation.npz",
+        "sha256": "c4af7095ed429dc735051a2c2b1a49bc04f384d7c48e3b352d41f584505e7b22",
+        "bytes": 596216
+      }
+    },
+    {
+      "parent": "g1_f1_c0--compact--supported",
+      "arm": "restart",
+      "body": {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--restart/state896/body.npz",
+        "sha256": "9e9a79fbdd60464a7ac793c1bbb67dfe7c03fe8155af707490410e3ac031cafc",
+        "bytes": 2379372
+      },
+      "diagnostics": {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f1_c0--compact--supported--restart/state896/continuation.npz",
+        "sha256": "78aae4a667b44efbb2aa86a6a806b62796d82887be3b83b69bdfdeffc9e6c00b",
+        "bytes": 596240
+      }
+    },
+    {
+      "parent": "g1_f2_c0--compact--supported",
+      "arm": "always",
+      "body": {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--always/state896/body.npz",
+        "sha256": "fcd9ef57bb6fa114ccd1be86ec5c3444c28e150ae38bae8daaefbe8fa35dceed",
+        "bytes": 2379356
+      },
+      "diagnostics": {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--always/state896/continuation.npz",
+        "sha256": "fc9154bcaceffa50e294066d0a662f045a549298d6dcf4f6268d246ff5bda156",
+        "bytes": 596232
+      }
+    },
+    {
+      "parent": "g1_f2_c0--compact--supported",
+      "arm": "off",
+      "body": {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--off/state896/body.npz",
+        "sha256": "9d47e9a2cdca042631d56193440a9560bb059a38beb6167969eaa00d2272223b",
+        "bytes": 2379356
+      },
+      "diagnostics": {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--off/state896/continuation.npz",
+        "sha256": "6f2d7197c9b9f818d86c90bff7b009f59a49a499b73926769e7b77732396920f",
+        "bytes": 596220
+      }
+    },
+    {
+      "parent": "g1_f2_c0--compact--supported",
+      "arm": "restart",
+      "body": {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--restart/state896/body.npz",
+        "sha256": "b7009edea2f46abf3e19821f7695be5d14c37347b9f61a6ca03096c46c8ff304",
+        "bytes": 2379356
+      },
+      "diagnostics": {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/metabolic_maintenance_withdrawal_20261018/6e9a666a-8353-4033-89a9-ecc1cdbb4824/g1_f2_c0--compact--supported--restart/state896/continuation.npz",
+        "sha256": "25f21ba1cf29ade99a3492fb7bd0bd33c6a3182260a742ba7f1052b6585e4704",
+        "bytes": 596232
+      }
+    }
+  ],
+  "crop_y0_y1_x0_x1": [
+    34,
+    63,
+    48,
+    77
+  ],
+  "note": "common crop union of actual final body support>1e-6 plus6; full96 fields remain in exact snapshots"
+}

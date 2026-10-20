@@ -1,0 +1,230 @@
+[
+  {
+    "source": "genome_0ac80448a534dc953505",
+    "geometry": "development",
+    "mode": "none",
+    "frame": "euler",
+    "active_steps": 0,
+    "horizon": 256,
+    "id": "genome_0ac80448a534dc953505--development--none--euler--0",
+    "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018/0eb661f2-b286-43c6-b27e-ee8f3f2da135/genome_0ac80448a534dc953505--none",
+    "provenance": "exact_old_reference",
+    "files": [
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018/0eb661f2-b286-43c6-b27e-ee8f3f2da135/genome_0ac80448a534dc953505--none/initial128.npz",
+        "sha256": "0a8abf348b8a96a4676f9376408391a3b64fbbbd6e6bc20812f7f7ebcab27921",
+        "bytes": 2390804
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018/0eb661f2-b286-43c6-b27e-ee8f3f2da135/genome_0ac80448a534dc953505--none/withdraw256.npz",
+        "sha256": "f87cb309f093676302d153b4931903a4bf19e8b52633a60c9d28e901d63ce663",
+        "bytes": 2390932
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018/0eb661f2-b286-43c6-b27e-ee8f3f2da135/genome_0ac80448a534dc953505--none/final384.npz",
+        "sha256": "1d29f56f031c41189fe6f99b2fd91f508d8110d641d733226b8b97f3b593d948",
+        "bytes": 2390932
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018/0eb661f2-b286-43c6-b27e-ee8f3f2da135/genome_0ac80448a534dc953505--none/steps.csv",
+        "sha256": "6c224a2fc87b8a7127ebbd78675cfcc675e230b9ddb81b435ab0c3158e06a080",
+        "bytes": 93440
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018/0eb661f2-b286-43c6-b27e-ee8f3f2da135/genome_0ac80448a534dc953505--none/outcome.json",
+        "sha256": "128e6a626bf8d75234dc453ff2a03104060db412c12b2ea0b27bdb36f6b401e1",
+        "bytes": 1819
+      }
+    ]
+  },
+  {
+    "source": "genome_0ac80448a534dc953505",
+    "geometry": "development",
+    "mode": "gradient",
+    "frame": "euler",
+    "active_steps": 128,
+    "horizon": 256,
+    "id": "genome_0ac80448a534dc953505--development--gradient--euler--128",
+    "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018/0eb661f2-b286-43c6-b27e-ee8f3f2da135/genome_0ac80448a534dc953505--gradient",
+    "provenance": "exact_old_reference",
+    "files": [
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018/0eb661f2-b286-43c6-b27e-ee8f3f2da135/genome_0ac80448a534dc953505--gradient/initial128.npz",
+        "sha256": "0a8abf348b8a96a4676f9376408391a3b64fbbbd6e6bc20812f7f7ebcab27921",
+        "bytes": 2390804
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018/0eb661f2-b286-43c6-b27e-ee8f3f2da135/genome_0ac80448a534dc953505--gradient/withdraw256.npz",
+        "sha256": "8d02c20f6d850cc310e0c26fd37ef7ff158ffcd868e3328724317e46bf8b1ca5",
+        "bytes": 2390932
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018/0eb661f2-b286-43c6-b27e-ee8f3f2da135/genome_0ac80448a534dc953505--gradient/final384.npz",
+        "sha256": "946c7d1cc21fd709be6cc7fdc2a48f7bf5c91a6dc3dbca42c8f7b1fa5b8844d3",
+        "bytes": 2390932
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018/0eb661f2-b286-43c6-b27e-ee8f3f2da135/genome_0ac80448a534dc953505--gradient/steps.csv",
+        "sha256": "5d3ab3750d83c2a84c53b31b199e8d269cf461719811b16e758fe895ada15ef8",
+        "bytes": 94297
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018/0eb661f2-b286-43c6-b27e-ee8f3f2da135/genome_0ac80448a534dc953505--gradient/outcome.json",
+        "sha256": "04bc954a3bca80ebd0fcfb97532d119813f39a5cef7a018882d3fd55a868ca97",
+        "bytes": 1821
+      }
+    ]
+  },
+  {
+    "source": "genome_0ac80448a534dc953505",
+    "geometry": "development",
+    "mode": "shear_x",
+    "frame": "euler",
+    "active_steps": 128,
+    "horizon": 256,
+    "id": "genome_0ac80448a534dc953505--development--shear_x--euler--128",
+    "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018/0eb661f2-b286-43c6-b27e-ee8f3f2da135/genome_0ac80448a534dc953505--shear_x",
+    "provenance": "exact_old_reference",
+    "files": [
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018/0eb661f2-b286-43c6-b27e-ee8f3f2da135/genome_0ac80448a534dc953505--shear_x/initial128.npz",
+        "sha256": "0a8abf348b8a96a4676f9376408391a3b64fbbbd6e6bc20812f7f7ebcab27921",
+        "bytes": 2390804
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018/0eb661f2-b286-43c6-b27e-ee8f3f2da135/genome_0ac80448a534dc953505--shear_x/withdraw256.npz",
+        "sha256": "e77e8239ee47dec2ee804eca1928659d47b04f1af7adb5f00d8ceb409306d7fa",
+        "bytes": 2390932
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018/0eb661f2-b286-43c6-b27e-ee8f3f2da135/genome_0ac80448a534dc953505--shear_x/final384.npz",
+        "sha256": "55a815e8b8422ff5d3191d35c7bacf06a79e56d15f704c05a015a04bf251ee5b",
+        "bytes": 2390932
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018/0eb661f2-b286-43c6-b27e-ee8f3f2da135/genome_0ac80448a534dc953505--shear_x/steps.csv",
+        "sha256": "d45bdcccb9e416faf3ac17afb96f8a89c92e7d1cdeb10c3f4874a131cdf3cfa3",
+        "bytes": 93914
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018/0eb661f2-b286-43c6-b27e-ee8f3f2da135/genome_0ac80448a534dc953505--shear_x/outcome.json",
+        "sha256": "9f2868f07fd28ad75e8349a207940d8879accba19e2c1c4bcb8485a41840f3bb",
+        "bytes": 1818
+      }
+    ]
+  },
+  {
+    "source": "genome_6bd5bfd2f629f9414376",
+    "geometry": "development",
+    "mode": "none",
+    "frame": "euler",
+    "active_steps": 0,
+    "horizon": 256,
+    "id": "genome_6bd5bfd2f629f9414376--development--none--euler--0",
+    "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018/0eb661f2-b286-43c6-b27e-ee8f3f2da135/genome_6bd5bfd2f629f9414376--none",
+    "provenance": "exact_old_reference",
+    "files": [
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018/0eb661f2-b286-43c6-b27e-ee8f3f2da135/genome_6bd5bfd2f629f9414376--none/initial128.npz",
+        "sha256": "847ccb7c9b1800a1524d96e224d23da9a62a4231adf930cf63e552c3f0dfc4fd",
+        "bytes": 2390712
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018/0eb661f2-b286-43c6-b27e-ee8f3f2da135/genome_6bd5bfd2f629f9414376--none/withdraw256.npz",
+        "sha256": "13ce7f7d4a5a2b1816d50b67549f9e2be523467e9af420f09c50c37bb5b8db09",
+        "bytes": 2390840
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018/0eb661f2-b286-43c6-b27e-ee8f3f2da135/genome_6bd5bfd2f629f9414376--none/final384.npz",
+        "sha256": "6380ab243b31c2ee1fba92d2a001a848a3bcb80186e5f7a4ae74625e66bb9a49",
+        "bytes": 2390840
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018/0eb661f2-b286-43c6-b27e-ee8f3f2da135/genome_6bd5bfd2f629f9414376--none/steps.csv",
+        "sha256": "81267e581499216a598b13d9215073453cd61d53275c5a9022d234b046712ed9",
+        "bytes": 91563
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018/0eb661f2-b286-43c6-b27e-ee8f3f2da135/genome_6bd5bfd2f629f9414376--none/outcome.json",
+        "sha256": "22723d4ab3163491e52af0e97f6cbc21836d938d1d85df7f19c174491183e8e3",
+        "bytes": 1814
+      }
+    ]
+  },
+  {
+    "source": "genome_6bd5bfd2f629f9414376",
+    "geometry": "development",
+    "mode": "gradient",
+    "frame": "euler",
+    "active_steps": 128,
+    "horizon": 256,
+    "id": "genome_6bd5bfd2f629f9414376--development--gradient--euler--128",
+    "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018/0eb661f2-b286-43c6-b27e-ee8f3f2da135/genome_6bd5bfd2f629f9414376--gradient",
+    "provenance": "exact_old_reference",
+    "files": [
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018/0eb661f2-b286-43c6-b27e-ee8f3f2da135/genome_6bd5bfd2f629f9414376--gradient/initial128.npz",
+        "sha256": "847ccb7c9b1800a1524d96e224d23da9a62a4231adf930cf63e552c3f0dfc4fd",
+        "bytes": 2390712
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018/0eb661f2-b286-43c6-b27e-ee8f3f2da135/genome_6bd5bfd2f629f9414376--gradient/withdraw256.npz",
+        "sha256": "4cff753ca1d1871aab5ed7d74c4a0b766b4fa34b2ace5ead90022a4c5320f77d",
+        "bytes": 2390840
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018/0eb661f2-b286-43c6-b27e-ee8f3f2da135/genome_6bd5bfd2f629f9414376--gradient/final384.npz",
+        "sha256": "dae95ba07a5204562e3364754001d1835acd76d4857667885b478a89a4cda588",
+        "bytes": 2390840
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018/0eb661f2-b286-43c6-b27e-ee8f3f2da135/genome_6bd5bfd2f629f9414376--gradient/steps.csv",
+        "sha256": "3dd80312f6da29d189780ea1451d2d9ba5bdcc81e3995071fcd66df3d7a532bc",
+        "bytes": 91079
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018/0eb661f2-b286-43c6-b27e-ee8f3f2da135/genome_6bd5bfd2f629f9414376--gradient/outcome.json",
+        "sha256": "5e48ac51d6d451e223a55fc88dac58347e37a4ea5b5b2e9f90a8ecd9f3dcddfe",
+        "bytes": 1810
+      }
+    ]
+  },
+  {
+    "source": "genome_6bd5bfd2f629f9414376",
+    "geometry": "development",
+    "mode": "shear_x",
+    "frame": "euler",
+    "active_steps": 128,
+    "horizon": 256,
+    "id": "genome_6bd5bfd2f629f9414376--development--shear_x--euler--128",
+    "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018/0eb661f2-b286-43c6-b27e-ee8f3f2da135/genome_6bd5bfd2f629f9414376--shear_x",
+    "provenance": "exact_old_reference",
+    "files": [
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018/0eb661f2-b286-43c6-b27e-ee8f3f2da135/genome_6bd5bfd2f629f9414376--shear_x/initial128.npz",
+        "sha256": "847ccb7c9b1800a1524d96e224d23da9a62a4231adf930cf63e552c3f0dfc4fd",
+        "bytes": 2390712
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018/0eb661f2-b286-43c6-b27e-ee8f3f2da135/genome_6bd5bfd2f629f9414376--shear_x/withdraw256.npz",
+        "sha256": "62813a3f62507e4fd6c0868b2ad1080f37dcccf957cae9c71904fab851f8e2e3",
+        "bytes": 2390840
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018/0eb661f2-b286-43c6-b27e-ee8f3f2da135/genome_6bd5bfd2f629f9414376--shear_x/final384.npz",
+        "sha256": "50e69c870825eccab995a00d9e1f95a859c8df47cecdfd5a14c6b69981a8ea50",
+        "bytes": 2390840
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018/0eb661f2-b286-43c6-b27e-ee8f3f2da135/genome_6bd5bfd2f629f9414376--shear_x/steps.csv",
+        "sha256": "e7dd86380b1f63719d78e27a260a9be94d3482a72bc44d149a0d294e2404f07e",
+        "bytes": 92872
+      },
+      {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_response_20261018/0eb661f2-b286-43c6-b27e-ee8f3f2da135/genome_6bd5bfd2f629f9414376--shear_x/outcome.json",
+        "sha256": "3cc33a6950b8686ec54fa6880ecd2a6c653188a9895bbb97886a25068bfcceb7",
+        "bytes": 1821
+      }
+    ]
+  }
+]

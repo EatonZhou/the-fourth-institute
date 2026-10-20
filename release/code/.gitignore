@@ -1,0 +1,42 @@
+# Python bytecode and import caches
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Test and tool caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.vscode/
+node_modules/
+package-lock.json
+test-results/
+playwright-report/
+blob-report/
+
+# Local one-off maintenance scripts
+/scripts/.tmp_*.py
+
+# Portal instance data is never a source or publication input
+/portal_instances/
+/portal_data/
+/release-manifest.json
+
+# Portal secrets (never commit)
+management_portal/restart_notice.json
+management_portal/restart_notice_request.json
+
+# TODO board runtime task metadata
+
+# Pinned provider dependencies are installed from their lockfile
+management_portal/dsh_runtime/node_modules/
+
+# Catalog file write locks (runtime state).
+/tests/cases/case_ids.json.lock
+/tests/cases/live_cases.json.lock
+/tests/cases/tau_cases.json.lock
+/config/site.json

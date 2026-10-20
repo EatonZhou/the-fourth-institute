@@ -1,0 +1,22 @@
+{
+  "attempted": 11968,
+  "returned": 11968,
+  "jobs": [
+    {
+      "task": "temporal_credit_reassignment_20261019",
+      "mode": "science",
+      "job": "16ebe627-2fa2-40f3-bc70-43d0555679e6",
+      "status": "complete",
+      "attempted": 11968,
+      "returned": 11968,
+      "unknown": 0,
+      "wall": 17.037218148005195,
+      "error": null,
+      "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/temporal_credit_reassignment_20261019/16ebe627-2fa2-40f3-bc70-43d0555679e6",
+      "raw_bytes": 46960768,
+      "paths": 51,
+      "runner_worker_seconds": 35.809792
+    }
+  ],
+  "worker_seconds": 35.809792
+}

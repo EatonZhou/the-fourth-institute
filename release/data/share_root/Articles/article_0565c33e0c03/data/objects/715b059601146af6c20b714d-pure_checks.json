@@ -1,0 +1,66 @@
+{
+  "native": 0,
+  "parents": [
+    {
+      "id": "202610195601_ring_both",
+      "native": 0,
+      "disabled_choice_exact": true,
+      "unmodified_state": true,
+      "old_tags_exact": true,
+      "roundtrip_exact": true,
+      "tags_inert": true,
+      "all_center_inputs_exact": true,
+      "baseline_nested_cohorts_valid": true,
+      "baseline_C_time_initial_offset_removed": true,
+      "equal_potentials_float_error": 0.0,
+      "changed_mask_sites": 3,
+      "max_C_change": 1.921052661109199
+    },
+    {
+      "id": "202610195601_separate_seeds_both",
+      "native": 0,
+      "disabled_choice_exact": true,
+      "unmodified_state": true,
+      "old_tags_exact": true,
+      "roundtrip_exact": true,
+      "tags_inert": true,
+      "all_center_inputs_exact": true,
+      "baseline_nested_cohorts_valid": true,
+      "baseline_C_time_initial_offset_removed": true,
+      "equal_potentials_float_error": 0.0,
+      "changed_mask_sites": 6,
+      "max_C_change": 1.95385160280001
+    },
+    {
+      "id": "202610195602_ring_both",
+      "native": 0,
+      "disabled_choice_exact": true,
+      "unmodified_state": true,
+      "old_tags_exact": true,
+      "roundtrip_exact": true,
+      "tags_inert": true,
+      "all_center_inputs_exact": true,
+      "baseline_nested_cohorts_valid": true,
+      "baseline_C_time_initial_offset_removed": true,
+      "equal_potentials_float_error": 0.0,
+      "changed_mask_sites": 1,
+      "max_C_change": 1.9894411049558314
+    },
+    {
+      "id": "202610195602_separate_seeds_both",
+      "native": 0,
+      "disabled_choice_exact": true,
+      "unmodified_state": true,
+      "old_tags_exact": true,
+      "roundtrip_exact": true,
+      "tags_inert": true,
+      "all_center_inputs_exact": true,
+      "baseline_nested_cohorts_valid": true,
+      "baseline_C_time_initial_offset_removed": true,
+      "equal_potentials_float_error": 0.0,
+      "changed_mask_sites": 5,
+      "max_C_change": 1.9833737104344267
+    }
+  ],
+  "baseline_native_readonly": 512
+}

@@ -1,0 +1,23 @@
+{
+  "status": "completed",
+  "published": false,
+  "scientific_published": false,
+  "job_id": "b3bf4f0a-5671-4c2e-8b03-f3fa59d27a52",
+  "body_steps": 256,
+  "remaining": 0,
+  "reused_unique_future_packets": 256,
+  "plan": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/plan.json",
+  "plan_sha256": "cc918a725be7019e51b285daea2c35ee4827f66b279a4849adba6f11cf5654c1",
+  "source_manifest": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source_manifest.json",
+  "source_manifest_sha256": "968912f94312a861c6f5df3bf2294b40413a187b3bcf9817949996c30c6137b8",
+  "attachments": 197,
+  "pdfs": 10,
+  "report": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/REPORT.txt",
+  "method": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/METHOD.txt",
+  "interpretation": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/interpretation.json",
+  "accounting": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/accounting.json",
+  "projection": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/projection.json",
+  "paper_insert": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/paper_insert.tex",
+  "external_pulse": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/external_pulse.json",
+  "source_packets": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_excision_transfer_20261018/source_packets.csv"
+}

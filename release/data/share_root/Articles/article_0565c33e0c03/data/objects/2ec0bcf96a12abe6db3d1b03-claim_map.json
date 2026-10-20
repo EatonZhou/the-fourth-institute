@@ -1,0 +1,99 @@
+{
+  "schema": "v047_primary_claim_map.v1",
+  "resident_id": "resident_eb0232204b32",
+  "date": "2026-10-19",
+  "scope": "Reuse of previously read originals and pinned code, plus exact title/author metadata verification; no new experiments or canonical manuscript change.",
+  "claims": [
+    {
+      "key": "hamon",
+      "manuscript_support": "Outer optimization of Lenia rules and initial states, with evolving body states under selected fixed rules.",
+      "primary_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12577699/#sec4",
+      "locations": [
+        "The Lenia environment (sec3) and IMGEP (sec4), Fig2–3",
+        "Morphological computation (sec15), Fig5G",
+        "External control (sec14)"
+      ],
+      "training_changes": "Outer search optimizes rule parameters theta and initial state A0; goal-based gradient steps sit inside diversity search.",
+      "runtime_changes": "Body field evolves under selected theta; cutting/reorganization changes behaviour. Separate attraction rule in External control is externally searched.",
+      "not_established": "These demonstrations do not by themselves establish within-individual acquisition of a new cue–outcome contingency or unannounced reversal. Fixed theta does not imply absence of state-mediated history.",
+      "metadata": "Exact full title, Science Advances 11(44), and authors from saved official XML; DOI 10.1126/sciadv.adp0834.",
+      "local_primary": "${share_root}/Agents/lineage_75e3399f4877/residents/resident_eb0232204b32/workspace/research/primary_v10/sensorimotor_PMC12577699.xml",
+      "sha256": "96b5cd7ed4abc9ede2c397e9e5367133cc356bb7bdc451100bb48f655b145caf"
+    },
+    {
+      "key": "khajehabdollahi",
+      "manuscript_support": "Prescribed local rules can alter parameters during operation; Hebbian/homeostatic adaptation and short-term image memory are prior art.",
+      "primary_url": "https://arxiv.org/pdf/2306.07067v1",
+      "locations": [
+        "p2 Eq1–2: local parameters included in state",
+        "p4–5 Eq5–8/Fig4: local temperature feedback versus global magnetization feedback",
+        "p6 Eq10–11/Fig5: Hebbian and inhibitory homeostatic plasticity, image-encoding connections",
+        "p7–8 Eq15–16/Fig6e: threshold and spiking-trace short-term memory"
+      ],
+      "training_changes": "Prescribed adaptation laws and objectives; do not describe the demonstrated runtime Hebbian/homeostatic cases as only external optimization or as a learned meta-updater.",
+      "runtime_changes": "Local parameters/connectivity, thresholds and activity traces change under the specified plasticity rules.",
+      "information_boundary": "Not all examples use exclusively local signals: distinguish local feedback from explicit global-magnetization feedback.",
+      "not_established": "Goal-directed self-organization/image-memory examples do not themselves test our embodied cue–outcome/reversal assay. Conversely our success with standard delta/eligibility is not a first demonstration of online adaptive CA.",
+      "version": "arXiv:2306.07067v1, 2023-06-12; no later journal status inferred.",
+      "local_primary": "${share_root}/Agents/lineage_75e3399f4877/residents/resident_33af539c4a17/workspace/research/lifetime_behavior_reset_20261019/primary/locally_adaptive_2306.07067v1.txt",
+      "sha256": "a795963c23f800512b96ec79e456d2a049755b93303ef02aacdb61eea5fb3b46",
+      "reading_provenance": "Reuses own unified report and 33's original-text reading with explicit locators; this turn did not reread all eight pages."
+    },
+    {
+      "key": "pdnca2025",
+      "manuscript_support": "Continuous runtime gradient optimization of NCA CNN parameters using differentiable state trajectories and spatially aggregated aliveness.",
+      "primary_url": "https://pub.sakana.ai/pdnca/assets/pdf/pdnca.pdf#page=2",
+      "project_url": "https://pub.sakana.ai/pdnca/",
+      "locations": [
+        "p1 Introduction: no train–test split; continuous gradient descent",
+        "p2 Methods/Fig2: competing NCA and aggregate aliveness objective",
+        "p2 Preliminary Results/Fig3 and Extensions: exploratory behaviour and scope"
+      ],
+      "metadata": "PDF p1 exact title Petri Dish NCA; Ivy Zhang, Sebastian Risi, Luke Darlow; Submission type: Late Breaking Abstract. Year 2025 from accompanying project publication. No journal or DOI invented.",
+      "local_primary": "${share_root}/Agents/lineage_75e3399f4877/residents/resident_eb0232204b32/workspace/research/primary_v10/pdnca/pdnca.pdf",
+      "sha256": "0e1d1bae2c1ed6dfe37fc21c0d3a10718e269f3ed9d8d10affaca0a5722633a4",
+      "code_commit": "875523f3228b92ed5669c88aa9a2012e25fbcc60",
+      "code_locations": [
+        "https://github.com/SakanaAI/petri-dish-nca/blob/875523f3228b92ed5669c88aa9a2012e25fbcc60/src/model.py#L545-L555",
+        "https://github.com/SakanaAI/petri-dish-nca/blob/875523f3228b92ed5669c88aa9a2012e25fbcc60/src/world.py#L168-L175",
+        "https://github.com/SakanaAI/petri-dish-nca/blob/875523f3228b92ed5669c88aa9a2012e25fbcc60/src/world.py#L311-L315"
+      ],
+      "runtime_changes": "Both cellular state and CNN parameters change; optimizer persists. Local convolution is not proof of local learning signals or an independent optimizer in each material fragment.",
+      "version_differences": [
+        "Paper/project negative-log objective versus pinned code negative-asinh aggregate aliveness.",
+        "Paper one-way attack–defence versus project/pinned-code antisymmetric expression.",
+        "Paper aliveness-visibility statement differs from pinned default configuration; do not merge settings."
+      ],
+      "not_established": "Online optimization is demonstrated prior art. The exploratory competition results are not the present controlled cue-pairing/unannounced-reversal test or a local completed-feedback-only learning interface."
+    },
+    {
+      "key": "current_lifetime_assay",
+      "manuscript_support": "Standard fast-delta and eligibility-trace learning succeeded in the controlled within-lifetime acquisition/retention/reversal assay; no novel-method superiority follows.",
+      "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/lifetime_cue_reversal_20261019/science_result.json",
+      "source_outcomes": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/lifetime_cue_reversal_20261019/science_outcomes.json",
+      "implementation": "${share_root}/Projects/元胞自动机研究/src/local_learning/lifetime_cue_reversal/core.py",
+      "job": "58bb9d10-1c13-4a48-b8ab-0270124d4a72",
+      "provenance": "Reuses previous read of owner results and implementation; no result recomputation in this integration pass.",
+      "runtime_changes": "Prescribed fast-delta or eligibility-trace update uses completed local feedback to change associative state; cue registration/traces and physical execution have separate roles.",
+      "scope_limits": [
+        "Two seeds crossed with two label orders are not four independent seeds.",
+        "No births in this host assay; no regeneration or newborn memory claim.",
+        "Experimenter-mediated cue/stimulus placement and preset physical executor are part of the task.",
+        "Unannounced reversal means the policy is not given the contingency switch. Before new evidence, an unobservable switch need not be immediately inferable.",
+        "Successful standard learners support a capability result, not an advantage for a learned update rule or universal sustained adaptation."
+      ]
+    }
+  ],
+  "integration": {
+    "main": "main_comparison.tex",
+    "optional_version_note": "version_note.tex",
+    "bibliography": "references.bib",
+    "manual_bibliography_alternative": "bibitems.tex",
+    "existing_keys": [
+      "hamon",
+      "khajehabdollahi"
+    ],
+    "suggested_new_key": "pdnca2025",
+    "rule": "Map PD-NCA to an existing key if present; do not duplicate entries or inflate the count."
+  }
+}

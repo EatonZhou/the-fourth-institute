@@ -1,0 +1,10 @@
+{
+  "native_calls": 0,
+  "complementary_exchange": true,
+  "F_only_paid": true,
+  "old_energy_only": true,
+  "no_survivor_no_payer": true,
+  "faces": true,
+  "no_same_step_multihop": true,
+  "filled_PF_exact_original": true
+}

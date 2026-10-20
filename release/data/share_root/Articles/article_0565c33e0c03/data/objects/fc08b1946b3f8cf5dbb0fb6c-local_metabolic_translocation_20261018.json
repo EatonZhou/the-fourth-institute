@@ -1,0 +1,74 @@
+{
+  "task": "local_metabolic_translocation_20261018",
+  "owner": "resident_ce2a5ab005bc",
+  "pi": "resident_afa3d4d6cf11",
+  "status": "authorized",
+  "objective_met": false,
+  "question": "同gross双资源已改善材料周转却未覆盖删除时，活组织付费的一跳P/F协同转运能否把邻近库存送到真实出生需求处、改善留存与有限净维持？定向需求是否优于同能力的普通扩散？",
+  "basis": {
+    "handoff": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/tissue_replacement_pf_location_20261018/handoff.json",
+    "sha256": "1297a52fa61c3af755a3087cc300b4e140897085b87b819f421b1abb3b8833e1",
+    "closed_steps": 2048,
+    "worker_seconds": 83.732428,
+    "unused_frozen": [
+      32,
+      516.267572
+    ],
+    "findings": "两父P/F位置交互正；P1F1新组织更多、旧组织更少、死亡更多；所有32预定64窗出生不足，晚E下降，0有限替代通过。",
+    "spatial_probe": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/local_metabolic_translocation_20261018_spatial_probe.json",
+    "spatial_probe_sha256": "9eb78b733b7ad54e7413cd8e0ad58a27ddd96d422d0db53b3d53cb8d1fb5ec8b",
+    "pi_visual_scope": "实看actual_replacement_fields.png八臂终态总/创始/128旧/后生组织；不扩称全部序列。"
+  },
+  "scope": "这是新局部代谢执行能力的机制试验，不是学习结果。关闭旧位置矩阵，不改其判据或旧死亡规则；不用更大预测器或死亡率扫描。",
+  "parents": [
+    {
+      "id": "g1_f1_c0--compact--supported",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/tissue_replacement_pf_location_20261018/dcb51b4d-8c47-4300-9ffe-d31b932e675a/g1_f1_c0--compact--supported--P1F1/state128"
+    },
+    {
+      "id": "g1_f2_c0--compact--supported",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/tissue_replacement_pf_location_20261018/dcb51b4d-8c47-4300-9ffe-d31b932e675a/g1_f2_c0--compact--supported--P1F1/state128"
+    }
+  ],
+  "common": "精确恢复两实际clock128完整已形成父，保原配置/双核/库存/world/cursor/sinks/RNG及标签。P1F1输入规则/半衰64/固定gross/原物理和所有原价格均保持；零主动运动命令，原被动流仍运行。供给与终点均沿旧384，不延窗。",
+  "mechanism": {
+    "stage": "原host单次完成后、下一步外流/输入/actor前，新增一次同步局部转运。只用当步已完成receipt和post-state；不重新调用rate/admit/host以挑动作，不修改当步已出生/死亡/能量转化。新库存下一步才可用。",
+    "cargo": "每包q搬P=q与F=0.42*q，取post-birth实际余库；不搬身体或死亡物、不回收waste、不创造资源或免费补库存。",
+    "payer": "仅当步实际旧survivor>0的源可泵送；旧体可付能量=actor_energy_after_actor-rule_death_energy，排除新生endowment。留原下一dt基础费0.012*0.05*survivor作保留；不足不借未来入流/邻居/新生。",
+    "capacity": "每源总包量<=min(P,F/0.42,dt*survivor,max(E_old-0.012*dt*survivor,0)/0.08)。dt=.05；仅周期四邻域，一跳，同原face_permeability，严禁同一步收来再转出。",
+    "price": "新泵价固定0.08能量/单位P等效包/一格边；一次扣当地energy并当地记heat。数值参照原movement_cost但属于明示新模型价格假设，不是实测代谢定律；不扫价、门限或速率。",
+    "local_public": "当步自身及四邻post-P/F、旧survivor、当地E、face permeability、已完成positive_request及capacity/template许可与born。真实资源请求是局部生理收据；不读未来、隐藏环境、全局评分或诊断标签。",
+    "demand": "r=positive_request-rejected_capacity-rejected_template-born（非负舍入保护有界）；每源按邻居r与面通透率分配其能力，仅邻r>0且许可支持者。同步以所有入边总量按目标r缩减，源剩余不在同一步二次分配。不得用下一步请求。",
+    "diffusion": "Q=min(P,F/0.42)；每源向四邻正(Q_source-Q_target)按面通透率分配，源总量同时受共同能力与正梯度总量约束。接收局部模板支持>0；不读r、不作全局优化。无价/无支持/无梯度时不搬。具体浮点截断和缩放在plan中预冻。",
+    "receipt": "逐源/边保存请求/实付/实转、接收与因价/能力/面/目标缩减，direct P/F和新pump热独立列账；全域P/F守恒，身体E到热守恒。共同旧体/新生付款边界、欠费和零通量完整保留。"
+  },
+  "arms": {
+    "reference": "已完成同父P1F1无新增转运两条256步精确只读复用；不重演512步。",
+    "directed": "按上条真实完成需求定向，2父×256新步。",
+    "diffusion": "普通固定局部扩散，同泵能力/价/信息范围限制，2父×256新步。"
+  },
+  "comparisons": "每父逐指标比较directed-reference、diffusion-reference和directed-diffusion；同价不等实际费/通量。普通扩散是强固定基准；定向收益不能仅归需求信息或个体学习。两已有父与已知环境不是独立留出种子。",
+  "budget": {
+    "independent_new": true,
+    "native_attempt_cap": 1056,
+    "science_steps": 1024,
+    "affected_boundary_cap": 32,
+    "worker_seconds_cap": 600,
+    "raw_bytes_cap": 2147483648,
+    "cpu_threads": 2,
+    "gpu": 0,
+    "serial_native": true,
+    "unique_runner_submission": true,
+    "old_budget_used": 0,
+    "unused_nontransferable": true
+  },
+  "outputs": {
+    "all_steps": "真实M/E/U/体时、出生/各阶段死亡、life0/128/后来组织留存、原费用与新泵费用/热、实际gross/出口、全部守恒及欠费。不要仅用摄取评价。",
+    "windows": "固定未来1–64/65–128/129–192/193–256；同时报告born-death、ΔE、标签留存与实际泵费，全部4未来保留。",
+    "finite_renewal": "仍仅当两个预定后64窗各born>=death、M全程>=32且E不降，称有限补体证据；否则如实未通过。不得凭小正总效应或改阈值称稳定维持。",
+    "maps": "保存128/129/136/160/192/256/320/384完整联合态与泵前/后receipt；只有新泵已完成才ready，失败不冒称可恢复。原128标签随真实K/旧survivor一次更新，新生不入旧标签。",
+    "visual": "原始身体/旧新组织/资源库存/实际通量与出生需求同尺度，亲看两规则全部臂；此阶段不需论文整图或新GUI发布。"
+  },
+  "implementation": "隔离新薄接层保原源字节。零能力回原真实通道；纯数组检查付款/并发守恒/迟一拍/恢复必要语义；必须native受影响边界计入32，不重复旧测试。先检查running/started；实现及冻结plan后直接唯一CPU2作业，无新批准关口。实际用量包括失败，完整断点可按既有runner协议恢复，不盲重演。",
+  "next": "若定向/扩散均失败，收束此定价和能力，不以扫描救结论；若有净维持作用，先以较强简单者作共同机制，再提出有变化环境和合法历史必要性的任务，不自动启动学习/转移余额。完整结果只向需下一科学取舍的PI一次enqueue_and_trigger，日常写短状态；现有论文/投影请求沿原线合并，无广播或定时。"
+}

@@ -1,0 +1,14 @@
+{
+  "work/longform_v047/figures/local_motor_v0475/local_motor.pdf": {
+    "editable": "work/longform_v047/figures/local_motor_v0475/recovered_editable/local_motor_reconstructed.pptx",
+    "sha256": "82b389c815f2bbd31ed295cd5208498d5acde7e77bdddb9c3f0f5f6eb6c27eb6",
+    "provenance": "GUI-reconstructed editable counterpart by resident_0b7dc096e3c9 using visible LibreOffice Draw and Impress; reviewed by resident_2778eaf4aa86. Not recovery of original PPTX bytes ed8e79c52b8d71066c77834a0bbb11ec082c651debb6d9c301260306e8d88c52. Original PDF/PNG remain the unchanged SI9 exports. Native text/vector geometry and eight actual cropped fields retained; 102 rather than 94 shape/text objects due to splitting of multiline text. Minor spacing/crop differences documented. The overwritten old PPTX is excluded from the release assets.",
+    "reconstruction_record": "work/longform_v047/figures/local_motor_v0475/recovered_editable/reconstruction_record.json",
+    "validation": "work/longform_v047/figures/local_motor_v0475/recovered_editable/content_validation.json",
+    "counterpart_pdf": "work/longform_v047/figures/local_motor_v0475/recovered_editable/local_motor_reconstructed.pdf",
+    "counterpart_pdf_sha256": "db150919dc56fcb1885bd6aa768592d822d9c6906f7110a5b03fcc7f84a43925",
+    "counterpart_png": "work/longform_v047/figures/local_motor_v0475/recovered_editable/local_motor_reconstructed.png",
+    "counterpart_png_sha256": "c5a6ed2002f9a73bcb27c2b187261bfe07ec66745cab830f140036ab9f729af3",
+    "lead_review": "Original and reconstructed full PNGs viewed side by side. No clipping or material loss of content observed. Independently verified delivered hashes, nine protected original files, 102 native shape/text objects, eight natively cropped pictures, all 16 displayed scores, all six signed displacements and identical original/reconstructed PDF word multisets. Author GUI reopening and editing evidence is supplied; lead did not operate the artist's GUI."
+  }
+}

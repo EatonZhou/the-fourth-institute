@@ -1,0 +1,16 @@
+{
+  "animation": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/research/results/persistent_contact_remodeling_20261019/continuous_contacts.gif",
+    "seed": 202610199871,
+    "source": [
+      "${share_root}/Projects/元胞自动机研究/src/runs/jobs/637b27a6-59dc-4a48-b0be-50b5fd7fce18/raw/202610199871_plastic/states.npz",
+      "${share_root}/Projects/元胞自动机研究/src/runs/jobs/637b27a6-59dc-4a48-b0be-50b5fd7fce18/raw/202610199871_fixed_readout/states.npz",
+      "${share_root}/Projects/元胞自动机研究/src/runs/jobs/637b27a6-59dc-4a48-b0be-50b5fd7fce18/raw/202610199871_plastic_sign/states.npz",
+      "${share_root}/Projects/元胞自动机研究/src/runs/jobs/637b27a6-59dc-4a48-b0be-50b5fd7fce18/raw/202610199871_passive/states.npz"
+    ],
+    "sampling": "every4th actual native, no simulation interpolation"
+  },
+  "comparison": "seed_stage_metrics.csv",
+  "causal": "causal_results.json",
+  "boundary": "Moving-node spring body, not Eulerian CA/Lenia. Raw all-native float64 states/receipts retained."
+}

@@ -1,0 +1,4675 @@
+{
+  "task": "effort_body_spatial_opportunity_readout_20261019",
+  "native": 0,
+  "host_calls": 0,
+  "receipts": [
+    {
+      "key": "compact_p512/plus/width1.6/effort0.5",
+      "clock": 1985,
+      "available": 1.440823051866997,
+      "local_capacity": 0.12242636741121568,
+      "actual_U": 0.037990005102956144,
+      "unpriced_global_resource_relocation_upper": 0.12242636741121568,
+      "relocation_gap": 0.08443636230825954,
+      "capacity_utilization": 0.3103090119087844,
+      "pre_uptake_mass_low_specific": 0.13492474892599188,
+      "pre_uptake_mass": 22.645863202589013,
+      "pre_uptake_energy": 43.62239192855379,
+      "capacity_not_filled": 0.08443636230825952
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort0.5",
+      "clock": 2000,
+      "available": 1.5185008794154609,
+      "local_capacity": 0.12187165569068023,
+      "actual_U": 0.034265067440367,
+      "unpriced_global_resource_relocation_upper": 0.12187165569068023,
+      "relocation_gap": 0.08760658825031323,
+      "capacity_utilization": 0.2811569863901285,
+      "pre_uptake_mass_low_specific": 0.13272036095357884,
+      "pre_uptake_mass": 22.62599235013941,
+      "pre_uptake_energy": 43.602201795801,
+      "capacity_not_filled": 0.08760658825031323
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort0.5",
+      "clock": 2001,
+      "available": 1.5213090828776614,
+      "local_capacity": 0.1211404721747401,
+      "actual_U": 0.034453296052714424,
+      "unpriced_global_resource_relocation_upper": 0.1211404721747401,
+      "relocation_gap": 0.08668717612202567,
+      "capacity_utilization": 0.28440780718616465,
+      "pre_uptake_mass_low_specific": 0.13252205262912464,
+      "pre_uptake_mass": 22.624669571428214,
+      "pre_uptake_energy": 43.600814070231515,
+      "capacity_not_filled": 0.08668717612202566
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort0.5",
+      "clock": 2016,
+      "available": 1.5554559258858716,
+      "local_capacity": 0.13340853008012815,
+      "actual_U": 0.03247316777145212,
+      "unpriced_global_resource_relocation_upper": 0.13340853008012815,
+      "relocation_gap": 0.10093536230867603,
+      "capacity_utilization": 0.24341148015009242,
+      "pre_uptake_mass_low_specific": 0.13345401541864166,
+      "pre_uptake_mass": 22.60481165516039,
+      "pre_uptake_energy": 43.56600359404437,
+      "capacity_not_filled": 0.10093536230867603
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort0.5",
+      "clock": 2048,
+      "available": 1.598599734574002,
+      "local_capacity": 0.14729158417819282,
+      "actual_U": 0.032047177760326485,
+      "unpriced_global_resource_relocation_upper": 0.14729158417819282,
+      "relocation_gap": 0.11524440641786635,
+      "capacity_utilization": 0.21757643479179317,
+      "pre_uptake_mass_low_specific": 0.1276714131907961,
+      "pre_uptake_mass": 22.56396706921078,
+      "pre_uptake_energy": 43.43517859179525,
+      "capacity_not_filled": 0.11524440641786637
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort0.5",
+      "clock": 2112,
+      "available": 1.639576019955556,
+      "local_capacity": 0.20874092647403816,
+      "actual_U": 0.030721742116750494,
+      "unpriced_global_resource_relocation_upper": 0.20874092647403816,
+      "relocation_gap": 0.17801918435728767,
+      "capacity_utilization": 0.14717641928532624,
+      "pre_uptake_mass_low_specific": 0.11837533522767973,
+      "pre_uptake_mass": 22.48869332674905,
+      "pre_uptake_energy": 43.04298012636955,
+      "capacity_not_filled": 0.17801918435728764
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort1",
+      "clock": 1985,
+      "available": 1.440823051866997,
+      "local_capacity": 0.12395016873186107,
+      "actual_U": 0.039242780280138716,
+      "unpriced_global_resource_relocation_upper": 0.12395016873186107,
+      "relocation_gap": 0.08470738845172235,
+      "capacity_utilization": 0.3166012655055907,
+      "pre_uptake_mass_low_specific": 0.1340942686366574,
+      "pre_uptake_mass": 22.64586320258901,
+      "pre_uptake_energy": 43.62239192855378,
+      "capacity_not_filled": 0.08470738845172235
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort1",
+      "clock": 2000,
+      "available": 1.4431043611802072,
+      "local_capacity": 0.1227899653179179,
+      "actual_U": 0.04071359380021404,
+      "unpriced_global_resource_relocation_upper": 0.1227899653179179,
+      "relocation_gap": 0.08207637151770386,
+      "capacity_utilization": 0.33157101799647615,
+      "pre_uptake_mass_low_specific": 0.13691679093658338,
+      "pre_uptake_mass": 22.62615427021962,
+      "pre_uptake_energy": 43.60559274603928,
+      "capacity_not_filled": 0.08207637151770386
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort1",
+      "clock": 2001,
+      "available": 1.442933999664472,
+      "local_capacity": 0.12274470012513804,
+      "actual_U": 0.04086132207903074,
+      "unpriced_global_resource_relocation_upper": 0.12274470012513804,
+      "relocation_gap": 0.08188337804610729,
+      "capacity_utilization": 0.3328968341392556,
+      "pre_uptake_mass_low_specific": 0.1327383194705206,
+      "pre_uptake_mass": 22.62484955862014,
+      "pre_uptake_energy": 43.60463080009033,
+      "capacity_not_filled": 0.08188337804610729
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort1",
+      "clock": 2016,
+      "available": 1.4520387071271632,
+      "local_capacity": 0.13502079961085328,
+      "actual_U": 0.03888658285412861,
+      "unpriced_global_resource_relocation_upper": 0.13502079961085328,
+      "relocation_gap": 0.09613421675672468,
+      "capacity_utilization": 0.2880043887031078,
+      "pre_uptake_mass_low_specific": 0.12727330255326966,
+      "pre_uptake_mass": 22.605586543706334,
+      "pre_uptake_energy": 43.57915347982439,
+      "capacity_not_filled": 0.09613421675672468
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort1",
+      "clock": 2048,
+      "available": 1.4702386890698453,
+      "local_capacity": 0.1206102266550747,
+      "actual_U": 0.0370356340198529,
+      "unpriced_global_resource_relocation_upper": 0.1206102266550747,
+      "relocation_gap": 0.0835745926352218,
+      "capacity_utilization": 0.3070687705924696,
+      "pre_uptake_mass_low_specific": 0.12223639296533637,
+      "pre_uptake_mass": 22.565955158900675,
+      "pre_uptake_energy": 43.532647384020436,
+      "capacity_not_filled": 0.08357459263522182
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort1",
+      "clock": 2112,
+      "available": 1.4576531922934728,
+      "local_capacity": 0.1151293446289052,
+      "actual_U": 0.03911118772312074,
+      "unpriced_global_resource_relocation_upper": 0.1151293446289052,
+      "relocation_gap": 0.07601815690578445,
+      "capacity_utilization": 0.3397151946724554,
+      "pre_uptake_mass_low_specific": 0.11769656793006025,
+      "pre_uptake_mass": 22.490047976249514,
+      "pre_uptake_energy": 43.551101432805794,
+      "capacity_not_filled": 0.07601815690578445
+    },
+    {
+      "key": "compact_p512/plus/width4/effort0.5",
+      "clock": 1985,
+      "available": 1.440823051866997,
+      "local_capacity": 0.12242636741121568,
+      "actual_U": 0.05837565669948199,
+      "unpriced_global_resource_relocation_upper": 0.12242636741121568,
+      "relocation_gap": 0.06405071071173368,
+      "capacity_utilization": 0.4768225826990771,
+      "pre_uptake_mass_low_specific": 0.13492474892599188,
+      "pre_uptake_mass": 22.645863202589013,
+      "pre_uptake_energy": 43.62239192855379,
+      "capacity_not_filled": 0.06405071071173368
+    },
+    {
+      "key": "compact_p512/plus/width4/effort0.5",
+      "clock": 2000,
+      "available": 1.3107145121858121,
+      "local_capacity": 0.12575565124689067,
+      "actual_U": 0.051833043317357254,
+      "unpriced_global_resource_relocation_upper": 0.12575565124689067,
+      "relocation_gap": 0.07392260792953342,
+      "capacity_utilization": 0.4121726761654287,
+      "pre_uptake_mass_low_specific": 0.022243277041691305,
+      "pre_uptake_mass": 22.640076003883266,
+      "pre_uptake_energy": 43.89271504271962,
+      "capacity_not_filled": 0.07392260792953342
+    },
+    {
+      "key": "compact_p512/plus/width4/effort0.5",
+      "clock": 2001,
+      "available": 1.305509024599072,
+      "local_capacity": 0.1263313311200715,
+      "actual_U": 0.05195747571709586,
+      "unpriced_global_resource_relocation_upper": 0.1263313311200715,
+      "relocation_gap": 0.07437385540297564,
+      "capacity_utilization": 0.4112794130833065,
+      "pre_uptake_mass_low_specific": 0.021149000222473634,
+      "pre_uptake_mass": 22.63992008386866,
+      "pre_uptake_energy": 43.90883408044308,
+      "capacity_not_filled": 0.07437385540297566
+    },
+    {
+      "key": "compact_p512/plus/width4/effort0.5",
+      "clock": 2016,
+      "available": 1.2579696205877586,
+      "local_capacity": 0.1347864593114348,
+      "actual_U": 0.049684472035740675,
+      "unpriced_global_resource_relocation_upper": 0.1347864593114348,
+      "relocation_gap": 0.08510198727569412,
+      "capacity_utilization": 0.36861619697970377,
+      "pre_uptake_mass_low_specific": 0.014196711370785861,
+      "pre_uptake_mass": 22.63821849708145,
+      "pre_uptake_energy": 44.13039393428846,
+      "capacity_not_filled": 0.08510198727569411
+    },
+    {
+      "key": "compact_p512/plus/width4/effort0.5",
+      "clock": 2048,
+      "available": 1.332541821188435,
+      "local_capacity": 0.2339899772722442,
+      "actual_U": 0.040717901197079534,
+      "unpriced_global_resource_relocation_upper": 0.2339899772722442,
+      "relocation_gap": 0.19327207607516467,
+      "capacity_utilization": 0.17401557823865593,
+      "pre_uptake_mass_low_specific": 0.007839085717837296,
+      "pre_uptake_mass": 22.63647980141755,
+      "pre_uptake_energy": 44.39513903860704,
+      "capacity_not_filled": 0.1932720760751647
+    },
+    {
+      "key": "compact_p512/plus/width4/effort0.5",
+      "clock": 2112,
+      "available": 1.5677472439674158,
+      "local_capacity": 0.33704663542374247,
+      "actual_U": 0.0331300848713643,
+      "unpriced_global_resource_relocation_upper": 0.33704663542374247,
+      "relocation_gap": 0.30391655055237815,
+      "capacity_utilization": 0.09829525468994053,
+      "pre_uptake_mass_low_specific": 0.0012775589896077163,
+      "pre_uptake_mass": 22.635608486044006,
+      "pre_uptake_energy": 44.24621040376337,
+      "capacity_not_filled": 0.30391655055237815
+    },
+    {
+      "key": "compact_p512/plus/width4/effort1",
+      "clock": 1985,
+      "available": 1.440823051866997,
+      "local_capacity": 0.12395016873186107,
+      "actual_U": 0.059680677987633476,
+      "unpriced_global_resource_relocation_upper": 0.12395016873186107,
+      "relocation_gap": 0.0642694907442276,
+      "capacity_utilization": 0.4814892839455467,
+      "pre_uptake_mass_low_specific": 0.1340942686366574,
+      "pre_uptake_mass": 22.64586320258901,
+      "pre_uptake_energy": 43.62239192855378,
+      "capacity_not_filled": 0.0642694907442276
+    },
+    {
+      "key": "compact_p512/plus/width4/effort1",
+      "clock": 2000,
+      "available": 1.240334684335617,
+      "local_capacity": 0.13663416189223923,
+      "actual_U": 0.059451461346821596,
+      "unpriced_global_resource_relocation_upper": 0.13663416189223923,
+      "relocation_gap": 0.07718270054541763,
+      "capacity_utilization": 0.43511418025683674,
+      "pre_uptake_mass_low_specific": 0.022215120480905265,
+      "pre_uptake_mass": 22.64017519990822,
+      "pre_uptake_energy": 43.88897457173921,
+      "capacity_not_filled": 0.07718270054541763
+    },
+    {
+      "key": "compact_p512/plus/width4/effort1",
+      "clock": 2001,
+      "available": 1.2308176484559759,
+      "local_capacity": 0.13697021943356422,
+      "actual_U": 0.05942701871101291,
+      "unpriced_global_resource_relocation_upper": 0.13697021943356422,
+      "relocation_gap": 0.0775432007225513,
+      "capacity_utilization": 0.4338681719046036,
+      "pre_uptake_mass_low_specific": 0.021402906642371225,
+      "pre_uptake_mass": 22.640026490276636,
+      "pre_uptake_energy": 43.90668955988184,
+      "capacity_not_filled": 0.0775432007225513
+    },
+    {
+      "key": "compact_p512/plus/width4/effort1",
+      "clock": 2016,
+      "available": 1.1457713119492925,
+      "local_capacity": 0.13405670791413693,
+      "actual_U": 0.054941979322959286,
+      "unpriced_global_resource_relocation_upper": 0.13405670791413693,
+      "relocation_gap": 0.07911472859117764,
+      "capacity_utilization": 0.4098413289258865,
+      "pre_uptake_mass_low_specific": 0.013217059025572549,
+      "pre_uptake_mass": 22.638466538783444,
+      "pre_uptake_energy": 44.15188403903301,
+      "capacity_not_filled": 0.07911472859117766
+    },
+    {
+      "key": "compact_p512/plus/width4/effort1",
+      "clock": 2048,
+      "available": 1.2356677737660244,
+      "local_capacity": 0.24514994892580202,
+      "actual_U": 0.04546474816939307,
+      "unpriced_global_resource_relocation_upper": 0.24514994892580202,
+      "relocation_gap": 0.19968520075640894,
+      "capacity_utilization": 0.18545689431554233,
+      "pre_uptake_mass_low_specific": 0.004261802352442382,
+      "pre_uptake_mass": 22.637135518166723,
+      "pre_uptake_energy": 44.432054580540616,
+      "capacity_not_filled": 0.19968520075640894
+    },
+    {
+      "key": "compact_p512/plus/width4/effort1",
+      "clock": 2112,
+      "available": 1.4742780598318859,
+      "local_capacity": 0.31501510211367667,
+      "actual_U": 0.037056405480160905,
+      "unpriced_global_resource_relocation_upper": 0.31501510211367667,
+      "relocation_gap": 0.27795869663351574,
+      "capacity_utilization": 0.11763374273652662,
+      "pre_uptake_mass_low_specific": 0.00028184837236515825,
+      "pre_uptake_mass": 22.63659974672863,
+      "pre_uptake_energy": 44.449475319702145,
+      "capacity_not_filled": 0.2779586966335157
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort0.5",
+      "clock": 1985,
+      "available": 1.3928770981164125,
+      "local_capacity": 0.12809894929056073,
+      "actual_U": 0.04255885583894046,
+      "unpriced_global_resource_relocation_upper": 0.12809894929056073,
+      "relocation_gap": 0.08554009345162028,
+      "capacity_utilization": 0.3322342304495116,
+      "pre_uptake_mass_low_specific": 0.013264005180114549,
+      "pre_uptake_mass": 22.60254094714768,
+      "pre_uptake_energy": 44.451661401507096,
+      "capacity_not_filled": 0.0855400934516203
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort0.5",
+      "clock": 2000,
+      "available": 1.469005804551376,
+      "local_capacity": 0.12303473770743678,
+      "actual_U": 0.035534380057244484,
+      "unpriced_global_resource_relocation_upper": 0.12303473770743678,
+      "relocation_gap": 0.08750035765019229,
+      "capacity_utilization": 0.288815831360907,
+      "pre_uptake_mass_low_specific": 0.01286846321301938,
+      "pre_uptake_mass": 22.600718179092464,
+      "pre_uptake_energy": 44.4669160614326,
+      "capacity_not_filled": 0.08750035765019232
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort0.5",
+      "clock": 2001,
+      "available": 1.472696938883238,
+      "local_capacity": 0.1223837847335989,
+      "actual_U": 0.035608421901699834,
+      "unpriced_global_resource_relocation_upper": 0.1223837847335989,
+      "relocation_gap": 0.08677536283189907,
+      "capacity_utilization": 0.29095702489681213,
+      "pre_uptake_mass_low_specific": 0.012876807111922219,
+      "pre_uptake_mass": 22.600596555703607,
+      "pre_uptake_energy": 44.4666515513171,
+      "capacity_not_filled": 0.08677536283189906
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort0.5",
+      "clock": 2016,
+      "available": 1.5168324395554884,
+      "local_capacity": 0.12448134089231228,
+      "actual_U": 0.033559043106814596,
+      "unpriced_global_resource_relocation_upper": 0.12448134089231228,
+      "relocation_gap": 0.09092229778549768,
+      "capacity_utilization": 0.2695909512723375,
+      "pre_uptake_mass_low_specific": 0.01376490916702353,
+      "pre_uptake_mass": 22.598775161536526,
+      "pre_uptake_energy": 44.44799973657683,
+      "capacity_not_filled": 0.09092229778549771
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort0.5",
+      "clock": 2048,
+      "available": 1.576116387903368,
+      "local_capacity": 0.14664478768789105,
+      "actual_U": 0.03230842317095847,
+      "unpriced_global_resource_relocation_upper": 0.14664478768789105,
+      "relocation_gap": 0.11433636451693258,
+      "capacity_utilization": 0.220317569279868,
+      "pre_uptake_mass_low_specific": 0.013074272583522312,
+      "pre_uptake_mass": 22.59484412430843,
+      "pre_uptake_energy": 44.333518007350904,
+      "capacity_not_filled": 0.11433636451693258
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort0.5",
+      "clock": 2112,
+      "available": 1.629364038418344,
+      "local_capacity": 0.20545949641363448,
+      "actual_U": 0.03181481018634846,
+      "unpriced_global_resource_relocation_upper": 0.20545949641363448,
+      "relocation_gap": 0.17364468622728602,
+      "capacity_utilization": 0.15484711459770328,
+      "pre_uptake_mass_low_specific": 0.013977758590811398,
+      "pre_uptake_mass": 22.58661419203337,
+      "pre_uptake_energy": 43.977837665203225,
+      "capacity_not_filled": 0.173644686227286
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort1",
+      "clock": 1985,
+      "available": 1.3928770981164125,
+      "local_capacity": 0.12959541033813363,
+      "actual_U": 0.043439136058432734,
+      "unpriced_global_resource_relocation_upper": 0.12959541033813363,
+      "relocation_gap": 0.08615627427970089,
+      "capacity_utilization": 0.33519038942115,
+      "pre_uptake_mass_low_specific": 0.013256525724762866,
+      "pre_uptake_mass": 22.602540947147684,
+      "pre_uptake_energy": 44.4516614015071,
+      "capacity_not_filled": 0.08615627427970089
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort1",
+      "clock": 2000,
+      "available": 1.3979051844431123,
+      "local_capacity": 0.13348667593438449,
+      "actual_U": 0.04264933409585698,
+      "unpriced_global_resource_relocation_upper": 0.13348667593438449,
+      "relocation_gap": 0.09083734183852751,
+      "capacity_utilization": 0.319502555572073,
+      "pre_uptake_mass_low_specific": 0.012543123094696618,
+      "pre_uptake_mass": 22.600758947775915,
+      "pre_uptake_energy": 44.46278089711638,
+      "capacity_not_filled": 0.0908373418385275
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort1",
+      "clock": 2001,
+      "available": 1.3977974484784668,
+      "local_capacity": 0.13195180854804148,
+      "actual_U": 0.04269678890486749,
+      "unpriced_global_resource_relocation_upper": 0.13195180854804148,
+      "relocation_gap": 0.08925501964317398,
+      "capacity_utilization": 0.32357865628891547,
+      "pre_uptake_mass_low_specific": 0.012382425823830383,
+      "pre_uptake_mass": 22.600642333152447,
+      "pre_uptake_energy": 44.46357837467535,
+      "capacity_not_filled": 0.08925501964317402
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort1",
+      "clock": 2016,
+      "available": 1.408611722562752,
+      "local_capacity": 0.129726787260934,
+      "actual_U": 0.04059454352145816,
+      "unpriced_global_resource_relocation_upper": 0.129726787260934,
+      "relocation_gap": 0.08913224373947584,
+      "capacity_utilization": 0.31292337055881764,
+      "pre_uptake_mass_low_specific": 0.01294135023791044,
+      "pre_uptake_mass": 22.59888074830103,
+      "pre_uptake_energy": 44.46120141496663,
+      "capacity_not_filled": 0.08913224373947583
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort1",
+      "clock": 2048,
+      "available": 1.4410478084495035,
+      "local_capacity": 0.126815423818534,
+      "actual_U": 0.038075650349751855,
+      "unpriced_global_resource_relocation_upper": 0.126815423818534,
+      "relocation_gap": 0.08873977346878215,
+      "capacity_utilization": 0.30024463273675644,
+      "pre_uptake_mass_low_specific": 0.012840338613056584,
+      "pre_uptake_mass": 22.59512783734221,
+      "pre_uptake_energy": 44.43733656602625,
+      "capacity_not_filled": 0.08873977346878217
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort1",
+      "clock": 2112,
+      "available": 1.4520767072458,
+      "local_capacity": 0.10452272464309995,
+      "actual_U": 0.039154889096019545,
+      "unpriced_global_resource_relocation_upper": 0.10452272464309995,
+      "relocation_gap": 0.0653678355470804,
+      "capacity_utilization": 0.37460647174781003,
+      "pre_uptake_mass_low_specific": 0.014945242954479956,
+      "pre_uptake_mass": 22.587040566870325,
+      "pre_uptake_energy": 44.50039563555168,
+      "capacity_not_filled": 0.0653678355470804
+    },
+    {
+      "key": "compact_p512/minus/width4/effort0.5",
+      "clock": 1985,
+      "available": 1.392877098116413,
+      "local_capacity": 0.12809894929056073,
+      "actual_U": 0.05170504626409344,
+      "unpriced_global_resource_relocation_upper": 0.12809894929056073,
+      "relocation_gap": 0.07639390302646729,
+      "capacity_utilization": 0.4036336484447921,
+      "pre_uptake_mass_low_specific": 0.013264005180114549,
+      "pre_uptake_mass": 22.60254094714768,
+      "pre_uptake_energy": 44.451661401507096,
+      "capacity_not_filled": 0.0763939030264673
+    },
+    {
+      "key": "compact_p512/minus/width4/effort0.5",
+      "clock": 2000,
+      "available": 1.3659952190583806,
+      "local_capacity": 0.129642603570755,
+      "actual_U": 0.04430641858565717,
+      "unpriced_global_resource_relocation_upper": 0.129642603570755,
+      "relocation_gap": 0.08533618498509782,
+      "capacity_utilization": 0.34175816718673097,
+      "pre_uptake_mass_low_specific": 0.00039633600218158906,
+      "pre_uptake_mass": 22.60227183184477,
+      "pre_uptake_energy": 44.61025402010668,
+      "capacity_not_filled": 0.08533618498509785
+    },
+    {
+      "key": "compact_p512/minus/width4/effort0.5",
+      "clock": 2001,
+      "available": 1.3656535313952427,
+      "local_capacity": 0.129233190793037,
+      "actual_U": 0.04434344162746899,
+      "unpriced_global_resource_relocation_upper": 0.129233190793037,
+      "relocation_gap": 0.084889749165568,
+      "capacity_utilization": 0.3431273448821956,
+      "pre_uptake_mass_low_specific": 0.0003546161578533922,
+      "pre_uptake_mass": 22.602268875542027,
+      "pre_uptake_energy": 44.61875385828304,
+      "capacity_not_filled": 0.08488974916556803
+    },
+    {
+      "key": "compact_p512/minus/width4/effort0.5",
+      "clock": 2016,
+      "available": 1.372027765265744,
+      "local_capacity": 0.13325369061427558,
+      "actual_U": 0.0422977732869074,
+      "unpriced_global_resource_relocation_upper": 0.13325369061427558,
+      "relocation_gap": 0.09095591732736819,
+      "capacity_utilization": 0.3174229028248468,
+      "pre_uptake_mass_low_specific": 0.000142920547553278,
+      "pre_uptake_mass": 22.60224146568828,
+      "pre_uptake_energy": 44.72340667510551,
+      "capacity_not_filled": 0.09095591732736816
+    },
+    {
+      "key": "compact_p512/minus/width4/effort0.5",
+      "clock": 2048,
+      "available": 1.4983474324448451,
+      "local_capacity": 0.25300166519569156,
+      "actual_U": 0.033371780809605116,
+      "unpriced_global_resource_relocation_upper": 0.25300166519569156,
+      "relocation_gap": 0.21962988438608644,
+      "capacity_utilization": 0.13190340381274857,
+      "pre_uptake_mass_low_specific": 3.984265482256054e-05,
+      "pre_uptake_mass": 22.602224176586187,
+      "pre_uptake_energy": 44.71902073809424,
+      "capacity_not_filled": 0.21962988438608644
+    },
+    {
+      "key": "compact_p512/minus/width4/effort0.5",
+      "clock": 2112,
+      "available": 1.640359352769359,
+      "local_capacity": 0.3415151442648459,
+      "actual_U": 0.030595746276766173,
+      "unpriced_global_resource_relocation_upper": 0.3415151442648459,
+      "relocation_gap": 0.31091939798807977,
+      "capacity_utilization": 0.08958825630596073,
+      "pre_uptake_mass_low_specific": 7.608343265076458e-06,
+      "pre_uptake_mass": 22.6022168707045,
+      "pre_uptake_energy": 44.30653389422346,
+      "capacity_not_filled": 0.31091939798807977
+    },
+    {
+      "key": "compact_p512/minus/width4/effort1",
+      "clock": 1985,
+      "available": 1.392877098116413,
+      "local_capacity": 0.12959541033813363,
+      "actual_U": 0.052621046731675024,
+      "unpriced_global_resource_relocation_upper": 0.12959541033813363,
+      "relocation_gap": 0.0769743636064586,
+      "capacity_utilization": 0.4060409747102842,
+      "pre_uptake_mass_low_specific": 0.013256525724762866,
+      "pre_uptake_mass": 22.602540947147684,
+      "pre_uptake_energy": 44.4516614015071,
+      "capacity_not_filled": 0.0769743636064586
+    },
+    {
+      "key": "compact_p512/minus/width4/effort1",
+      "clock": 2000,
+      "available": 1.2947074049975502,
+      "local_capacity": 0.13689498639447353,
+      "actual_U": 0.05074613562106678,
+      "unpriced_global_resource_relocation_upper": 0.13689498639447353,
+      "relocation_gap": 0.08614885077340675,
+      "capacity_utilization": 0.37069389433180444,
+      "pre_uptake_mass_low_specific": 0.0003659093913908564,
+      "pre_uptake_mass": 22.602276809440596,
+      "pre_uptake_energy": 44.60659158434909,
+      "capacity_not_filled": 0.08614885077340675
+    },
+    {
+      "key": "compact_p512/minus/width4/effort1",
+      "clock": 2001,
+      "available": 1.2912213926168827,
+      "local_capacity": 0.13707763374651946,
+      "actual_U": 0.05051925364582477,
+      "unpriced_global_resource_relocation_upper": 0.13707763374651946,
+      "relocation_gap": 0.08655838010069469,
+      "capacity_utilization": 0.3685448330633115,
+      "pre_uptake_mass_low_specific": 0.00032006588423911343,
+      "pre_uptake_mass": 22.602274271747127,
+      "pre_uptake_energy": 44.61547598554159,
+      "capacity_not_filled": 0.08655838010069465
+    },
+    {
+      "key": "compact_p512/minus/width4/effort1",
+      "clock": 2016,
+      "available": 1.2761623805217448,
+      "local_capacity": 0.1547572679850074,
+      "actual_U": 0.04644454299109671,
+      "unpriced_global_resource_relocation_upper": 0.1547572679850074,
+      "relocation_gap": 0.1083127249939107,
+      "capacity_utilization": 0.30011219244059134,
+      "pre_uptake_mass_low_specific": 8.060778072518053e-05,
+      "pre_uptake_mass": 22.602254340594776,
+      "pre_uptake_energy": 44.72006920566413,
+      "capacity_not_filled": 0.10831272499391072
+    },
+    {
+      "key": "compact_p512/minus/width4/effort1",
+      "clock": 2048,
+      "available": 1.4007632154181553,
+      "local_capacity": 0.26713310586887956,
+      "actual_U": 0.03774661853885726,
+      "unpriced_global_resource_relocation_upper": 0.26713310586887956,
+      "relocation_gap": 0.22938648733002232,
+      "capacity_utilization": 0.14130266039502018,
+      "pre_uptake_mass_low_specific": 1.760703083492897e-05,
+      "pre_uptake_mass": 22.6022432136937,
+      "pre_uptake_energy": 44.73398996977948,
+      "capacity_not_filled": 0.2293864873300223
+    },
+    {
+      "key": "compact_p512/minus/width4/effort1",
+      "clock": 2112,
+      "available": 1.5634223978959714,
+      "local_capacity": 0.33091421970007623,
+      "actual_U": 0.03352947188875821,
+      "unpriced_global_resource_relocation_upper": 0.33091421970007623,
+      "relocation_gap": 0.297384747811318,
+      "capacity_utilization": 0.10132375670996434,
+      "pre_uptake_mass_low_specific": 4.963934326749818e-07,
+      "pre_uptake_mass": 22.602239276486884,
+      "pre_uptake_energy": 44.47086374525405,
+      "capacity_not_filled": 0.297384747811318
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort0.5",
+      "clock": 1985,
+      "available": 1.9240608138680064,
+      "local_capacity": 0.22142319978862654,
+      "actual_U": 0.017403368294230764,
+      "unpriced_global_resource_relocation_upper": 0.22142319978862654,
+      "relocation_gap": 0.2040198314943958,
+      "capacity_utilization": 0.07859776351730191,
+      "pre_uptake_mass_low_specific": 0.7245032824070989,
+      "pre_uptake_mass": 13.753358707173186,
+      "pre_uptake_energy": 14.86818015831645,
+      "capacity_not_filled": 0.20401983149439581
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort0.5",
+      "clock": 2000,
+      "available": 1.9491473108129296,
+      "local_capacity": 0.21849748000585795,
+      "actual_U": 0.017881839260145787,
+      "unpriced_global_resource_relocation_upper": 0.21849748000585795,
+      "relocation_gap": 0.20061564074571217,
+      "capacity_utilization": 0.08184002515574264,
+      "pre_uptake_mass_low_specific": 0.7014354766618718,
+      "pre_uptake_mass": 13.651069398526479,
+      "pre_uptake_energy": 14.804000423616934,
+      "capacity_not_filled": 0.20061564074571214
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort0.5",
+      "clock": 2001,
+      "available": 1.949386151458824,
+      "local_capacity": 0.21871683961390387,
+      "actual_U": 0.018329261302140756,
+      "unpriced_global_resource_relocation_upper": 0.21871683961390387,
+      "relocation_gap": 0.20038757831176313,
+      "capacity_utilization": 0.08380361262761937,
+      "pre_uptake_mass_low_specific": 0.7066663202172697,
+      "pre_uptake_mass": 13.644299866600658,
+      "pre_uptake_energy": 14.800266017149056,
+      "capacity_not_filled": 0.20038757831176313
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort0.5",
+      "clock": 2016,
+      "available": 1.937429171933728,
+      "local_capacity": 0.21567102215050526,
+      "actual_U": 0.018654539742640697,
+      "unpriced_global_resource_relocation_upper": 0.21567102215050526,
+      "relocation_gap": 0.19701648240786457,
+      "capacity_utilization": 0.08649534627615708,
+      "pre_uptake_mass_low_specific": 0.719024965537572,
+      "pre_uptake_mass": 13.543542415129837,
+      "pre_uptake_energy": 14.75945684083927,
+      "capacity_not_filled": 0.19701648240786457
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort0.5",
+      "clock": 2048,
+      "available": 1.921994429149881,
+      "local_capacity": 0.21246552985840045,
+      "actual_U": 0.01889397394348736,
+      "unpriced_global_resource_relocation_upper": 0.21246552985840045,
+      "relocation_gap": 0.1935715559149131,
+      "capacity_utilization": 0.08892724366196915,
+      "pre_uptake_mass_low_specific": 0.678841124061537,
+      "pre_uptake_mass": 13.340857018360122,
+      "pre_uptake_energy": 14.663132883022621,
+      "capacity_not_filled": 0.19357155591491304
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort0.5",
+      "clock": 2112,
+      "available": 1.9277379838961557,
+      "local_capacity": 0.2065208118505479,
+      "actual_U": 0.018495426251809464,
+      "unpriced_global_resource_relocation_upper": 0.2065208118505479,
+      "relocation_gap": 0.18802538559873844,
+      "capacity_utilization": 0.08955720290889606,
+      "pre_uptake_mass_low_specific": 0.5794008130410483,
+      "pre_uptake_mass": 12.971691204791405,
+      "pre_uptake_energy": 14.463173050075778,
+      "capacity_not_filled": 0.18802538559873844
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort1",
+      "clock": 1985,
+      "available": 1.9240608138680064,
+      "local_capacity": 0.22343060641073437,
+      "actual_U": 0.018778732431298593,
+      "unpriced_global_resource_relocation_upper": 0.22343060641073437,
+      "relocation_gap": 0.20465187397943577,
+      "capacity_utilization": 0.08404726967789494,
+      "pre_uptake_mass_low_specific": 0.7278825277957099,
+      "pre_uptake_mass": 13.753358707173188,
+      "pre_uptake_energy": 14.868180158316452,
+      "capacity_not_filled": 0.2046518739794358
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort1",
+      "clock": 2000,
+      "available": 1.923045016041534,
+      "local_capacity": 0.2238201033117012,
+      "actual_U": 0.021171709444905127,
+      "unpriced_global_resource_relocation_upper": 0.2238201033117012,
+      "relocation_gap": 0.2026483938667961,
+      "capacity_utilization": 0.09459252824765486,
+      "pre_uptake_mass_low_specific": 0.7003378512956074,
+      "pre_uptake_mass": 13.653284088146101,
+      "pre_uptake_energy": 14.782659509165294,
+      "capacity_not_filled": 0.20264839386679606
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort1",
+      "clock": 2001,
+      "available": 1.9212401178699765,
+      "local_capacity": 0.22398521794736015,
+      "actual_U": 0.02072469235802834,
+      "unpriced_global_resource_relocation_upper": 0.22398521794736015,
+      "relocation_gap": 0.2032605255893318,
+      "capacity_utilization": 0.09252705400808614,
+      "pre_uptake_mass_low_specific": 0.700786339778968,
+      "pre_uptake_mass": 13.646752475305325,
+      "pre_uptake_energy": 14.778793036722185,
+      "capacity_not_filled": 0.20326052558933183
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort1",
+      "clock": 2016,
+      "available": 1.9035990714232367,
+      "local_capacity": 0.2219133676595922,
+      "actual_U": 0.021013910644736775,
+      "unpriced_global_resource_relocation_upper": 0.2219133676595922,
+      "relocation_gap": 0.2008994570148554,
+      "capacity_utilization": 0.09469420822350559,
+      "pre_uptake_mass_low_specific": 0.6439865159808169,
+      "pre_uptake_mass": 13.552357293090793,
+      "pre_uptake_energy": 14.719659546538658,
+      "capacity_not_filled": 0.20089945701485543
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort1",
+      "clock": 2048,
+      "available": 1.9081806730493003,
+      "local_capacity": 0.21660348782725358,
+      "actual_U": 0.018328803868064493,
+      "unpriced_global_resource_relocation_upper": 0.21660348782725358,
+      "relocation_gap": 0.1982746839591891,
+      "capacity_utilization": 0.08461915388307205,
+      "pre_uptake_mass_low_specific": 0.6464990183729727,
+      "pre_uptake_mass": 13.363496394852554,
+      "pre_uptake_energy": 14.57948754850175,
+      "capacity_not_filled": 0.19827468395918907
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort1",
+      "clock": 2112,
+      "available": 1.9445093597209768,
+      "local_capacity": 0.20758221733900314,
+      "actual_U": 0.01625630241156358,
+      "unpriced_global_resource_relocation_upper": 0.20758221733900314,
+      "relocation_gap": 0.19132591492743956,
+      "capacity_utilization": 0.07831259642542195,
+      "pre_uptake_mass_low_specific": 0.587424131894438,
+      "pre_uptake_mass": 13.01198737697332,
+      "pre_uptake_energy": 14.29149496244916,
+      "capacity_not_filled": 0.19132591492743956
+    },
+    {
+      "key": "soft_p512/plus/width4/effort0.5",
+      "clock": 1985,
+      "available": 1.9240608138680064,
+      "local_capacity": 0.22142319978862654,
+      "actual_U": 0.07285116762799405,
+      "unpriced_global_resource_relocation_upper": 0.22142319978862654,
+      "relocation_gap": 0.14857203216063247,
+      "capacity_utilization": 0.32901325469751463,
+      "pre_uptake_mass_low_specific": 0.7245032824070989,
+      "pre_uptake_mass": 13.753358707173186,
+      "pre_uptake_energy": 14.86818015831645,
+      "capacity_not_filled": 0.1485720321606325
+    },
+    {
+      "key": "soft_p512/plus/width4/effort0.5",
+      "clock": 2000,
+      "available": 1.3610357530070254,
+      "local_capacity": 0.21567857280565522,
+      "actual_U": 0.07115301415539156,
+      "unpriced_global_resource_relocation_upper": 0.21567857280565522,
+      "relocation_gap": 0.14452555865026367,
+      "capacity_utilization": 0.3299030275923909,
+      "pre_uptake_mass_low_specific": 0.2630923229750932,
+      "pre_uptake_mass": 13.699565856636076,
+      "pre_uptake_energy": 15.61879315728822,
+      "capacity_not_filled": 0.14452555865026367
+    },
+    {
+      "key": "soft_p512/plus/width4/effort0.5",
+      "clock": 2001,
+      "available": 1.3351959424407864,
+      "local_capacity": 0.215704755552208,
+      "actual_U": 0.07130359697525909,
+      "unpriced_global_resource_relocation_upper": 0.215704755552208,
+      "relocation_gap": 0.1444011585769489,
+      "capacity_utilization": 0.3305610800870876,
+      "pre_uptake_mass_low_specific": 0.25743675982564357,
+      "pre_uptake_mass": 13.697614425754557,
+      "pre_uptake_energy": 15.668050225052516,
+      "capacity_not_filled": 0.1444011585769489
+    },
+    {
+      "key": "soft_p512/plus/width4/effort0.5",
+      "clock": 2016,
+      "available": 1.0560089460654785,
+      "local_capacity": 0.21147868467397074,
+      "actual_U": 0.07060209313827495,
+      "unpriced_global_resource_relocation_upper": 0.21147868467397074,
+      "relocation_gap": 0.1408765915356958,
+      "capacity_utilization": 0.3338496891406324,
+      "pre_uptake_mass_low_specific": 0.17287870516633055,
+      "pre_uptake_mass": 13.675986983547013,
+      "pre_uptake_energy": 16.402654457465857,
+      "capacity_not_filled": 0.14087659153569576
+    },
+    {
+      "key": "soft_p512/plus/width4/effort0.5",
+      "clock": 2048,
+      "available": 0.8642751708891624,
+      "local_capacity": 0.19878025654596776,
+      "actual_U": 0.0659279416318875,
+      "unpriced_global_resource_relocation_upper": 0.19878025654596776,
+      "relocation_gap": 0.13285231491408026,
+      "capacity_utilization": 0.33166242350955877,
+      "pre_uptake_mass_low_specific": 0.11554557791370615,
+      "pre_uptake_mass": 13.651887000541334,
+      "pre_uptake_energy": 17.89223573328969,
+      "capacity_not_filled": 0.13285231491408028
+    },
+    {
+      "key": "soft_p512/plus/width4/effort0.5",
+      "clock": 2112,
+      "available": 0.9945641016873723,
+      "local_capacity": 0.17504262679765864,
+      "actual_U": 0.05583434743532689,
+      "unpriced_global_resource_relocation_upper": 0.17504262679765864,
+      "relocation_gap": 0.11920827936233175,
+      "capacity_utilization": 0.3189757172683936,
+      "pre_uptake_mass_low_specific": 0.07176413879269047,
+      "pre_uptake_mass": 13.624328417702436,
+      "pre_uptake_energy": 20.392103143903654,
+      "capacity_not_filled": 0.11920827936233175
+    },
+    {
+      "key": "soft_p512/plus/width4/effort1",
+      "clock": 1985,
+      "available": 1.9240608138680064,
+      "local_capacity": 0.22343060641073437,
+      "actual_U": 0.07464605581004827,
+      "unpriced_global_resource_relocation_upper": 0.22343060641073437,
+      "relocation_gap": 0.1487845506006861,
+      "capacity_utilization": 0.3340905572839282,
+      "pre_uptake_mass_low_specific": 0.7278825277957099,
+      "pre_uptake_mass": 13.753358707173188,
+      "pre_uptake_energy": 14.868180158316452,
+      "capacity_not_filled": 0.14878455060068613
+    },
+    {
+      "key": "soft_p512/plus/width4/effort1",
+      "clock": 2000,
+      "available": 1.327901404807718,
+      "local_capacity": 0.22089432505141343,
+      "actual_U": 0.07480633561040068,
+      "unpriced_global_resource_relocation_upper": 0.22089432505141343,
+      "relocation_gap": 0.14608798944101276,
+      "capacity_utilization": 0.3386521387228459,
+      "pre_uptake_mass_low_specific": 0.28345440554004353,
+      "pre_uptake_mass": 13.700476009192109,
+      "pre_uptake_energy": 15.606363841891767,
+      "capacity_not_filled": 0.1460879894410127
+    },
+    {
+      "key": "soft_p512/plus/width4/effort1",
+      "clock": 2001,
+      "available": 1.299967949290557,
+      "local_capacity": 0.22102947107609294,
+      "actual_U": 0.07497733636077844,
+      "unpriced_global_resource_relocation_upper": 0.22102947107609294,
+      "relocation_gap": 0.1460521347153145,
+      "capacity_utilization": 0.3392187295013084,
+      "pre_uptake_mass_low_specific": 0.27481066314503466,
+      "pre_uptake_mass": 13.698594038194216,
+      "pre_uptake_energy": 15.655854633035432,
+      "capacity_not_filled": 0.1460521347153145
+    },
+    {
+      "key": "soft_p512/plus/width4/effort1",
+      "clock": 2016,
+      "available": 1.007512137803801,
+      "local_capacity": 0.21547846147224076,
+      "actual_U": 0.07264596981042586,
+      "unpriced_global_resource_relocation_upper": 0.21547846147224076,
+      "relocation_gap": 0.1428324916618149,
+      "capacity_utilization": 0.33713796411055474,
+      "pre_uptake_mass_low_specific": 0.16283936861695314,
+      "pre_uptake_mass": 13.678778444512185,
+      "pre_uptake_energy": 16.388293449170583,
+      "capacity_not_filled": 0.14283249166181491
+    },
+    {
+      "key": "soft_p512/plus/width4/effort1",
+      "clock": 2048,
+      "available": 0.8408928951797807,
+      "local_capacity": 0.20402212861807412,
+      "actual_U": 0.06726202566830837,
+      "unpriced_global_resource_relocation_upper": 0.20402212861807412,
+      "relocation_gap": 0.13676010294976576,
+      "capacity_utilization": 0.329680050511686,
+      "pre_uptake_mass_low_specific": 0.05868322072970582,
+      "pre_uptake_mass": 13.662372575093087,
+      "pre_uptake_energy": 17.85341814837865,
+      "capacity_not_filled": 0.13676010294976576
+    },
+    {
+      "key": "soft_p512/plus/width4/effort1",
+      "clock": 2112,
+      "available": 1.0067727843481882,
+      "local_capacity": 0.17439134901569925,
+      "actual_U": 0.05422890756030825,
+      "unpriced_global_resource_relocation_upper": 0.17439134901569925,
+      "relocation_gap": 0.120162441455391,
+      "capacity_utilization": 0.31096099586583503,
+      "pre_uptake_mass_low_specific": 0.009289796523192598,
+      "pre_uptake_mass": 13.655565241250626,
+      "pre_uptake_energy": 20.28258380840115,
+      "capacity_not_filled": 0.12016244145539101
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort0.5",
+      "clock": 1985,
+      "available": 1.8997907030995507,
+      "local_capacity": 0.2329827610031416,
+      "actual_U": 0.01769289614530593,
+      "unpriced_global_resource_relocation_upper": 0.2329827610031416,
+      "relocation_gap": 0.2152898648578357,
+      "capacity_utilization": 0.0759407952293404,
+      "pre_uptake_mass_low_specific": 0.6455448885893836,
+      "pre_uptake_mass": 14.642575880933485,
+      "pre_uptake_energy": 16.326532487728606,
+      "capacity_not_filled": 0.2152898648578357
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort0.5",
+      "clock": 2000,
+      "available": 1.9312342582117503,
+      "local_capacity": 0.2317502781900235,
+      "actual_U": 0.01848125410162743,
+      "unpriced_global_resource_relocation_upper": 0.2317502781900235,
+      "relocation_gap": 0.21326902408839607,
+      "capacity_utilization": 0.07974641603870584,
+      "pre_uptake_mass_low_specific": 0.6169548340349832,
+      "pre_uptake_mass": 14.552227951667128,
+      "pre_uptake_energy": 16.24861045834996,
+      "capacity_not_filled": 0.21326902408839604
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort0.5",
+      "clock": 2001,
+      "available": 1.9316585519019065,
+      "local_capacity": 0.23178661239797904,
+      "actual_U": 0.018940561917659485,
+      "unpriced_global_resource_relocation_upper": 0.23178661239797904,
+      "relocation_gap": 0.21284605048031957,
+      "capacity_utilization": 0.08171551290951361,
+      "pre_uptake_mass_low_specific": 0.6294527750350027,
+      "pre_uptake_mass": 14.546218954977746,
+      "pre_uptake_energy": 16.243993636509487,
+      "capacity_not_filled": 0.21284605048031957
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort0.5",
+      "clock": 2016,
+      "available": 1.9202174448622735,
+      "local_capacity": 0.2297170749348036,
+      "actual_U": 0.02065675442155638,
+      "unpriced_global_resource_relocation_upper": 0.2297170749348036,
+      "relocation_gap": 0.20906032051324722,
+      "capacity_utilization": 0.08992259033168958,
+      "pre_uptake_mass_low_specific": 0.6758385635399815,
+      "pre_uptake_mass": 14.457299950974965,
+      "pre_uptake_energy": 16.191016518554644,
+      "capacity_not_filled": 0.20906032051324716
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort0.5",
+      "clock": 2048,
+      "available": 1.8981206783678428,
+      "local_capacity": 0.22903162490998552,
+      "actual_U": 0.02209769293254628,
+      "unpriced_global_resource_relocation_upper": 0.22903162490998552,
+      "relocation_gap": 0.20693393197743926,
+      "capacity_utilization": 0.09648315136056498,
+      "pre_uptake_mass_low_specific": 0.5912421848616335,
+      "pre_uptake_mass": 14.27379303648694,
+      "pre_uptake_energy": 16.08184487412143,
+      "capacity_not_filled": 0.20693393197743926
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort0.5",
+      "clock": 2112,
+      "available": 1.8985110958638134,
+      "local_capacity": 0.220064103137582,
+      "actual_U": 0.019273126239018144,
+      "unpriced_global_resource_relocation_upper": 0.220064103137582,
+      "relocation_gap": 0.20079097689856387,
+      "capacity_utilization": 0.08757960050835173,
+      "pre_uptake_mass_low_specific": 0.6094458147928548,
+      "pre_uptake_mass": 13.930426634050427,
+      "pre_uptake_energy": 15.860434031748994,
+      "capacity_not_filled": 0.2007909768985639
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort1",
+      "clock": 1985,
+      "available": 1.8997907030995507,
+      "local_capacity": 0.2352761215337645,
+      "actual_U": 0.019410595404527973,
+      "unpriced_global_resource_relocation_upper": 0.2352761215337645,
+      "relocation_gap": 0.21586552612923654,
+      "capacity_utilization": 0.08250134045899067,
+      "pre_uptake_mass_low_specific": 0.6485882200422753,
+      "pre_uptake_mass": 14.642575880933485,
+      "pre_uptake_energy": 16.326532487728603,
+      "capacity_not_filled": 0.2158655261292366
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort1",
+      "clock": 2000,
+      "available": 1.9035129425185138,
+      "local_capacity": 0.23672971818992075,
+      "actual_U": 0.022036622329849816,
+      "unpriced_global_resource_relocation_upper": 0.23672971818992075,
+      "relocation_gap": 0.21469309586007093,
+      "capacity_utilization": 0.09308768877159113,
+      "pre_uptake_mass_low_specific": 0.6119762537318698,
+      "pre_uptake_mass": 14.55419609708207,
+      "pre_uptake_energy": 16.224956100690264,
+      "capacity_not_filled": 0.2146930958600709
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort1",
+      "clock": 2001,
+      "available": 1.9017078967693453,
+      "local_capacity": 0.2369563743478893,
+      "actual_U": 0.021435383088539033,
+      "unpriced_global_resource_relocation_upper": 0.2369563743478893,
+      "relocation_gap": 0.21552099125935026,
+      "capacity_utilization": 0.09046130600001717,
+      "pre_uptake_mass_low_specific": 0.6231583756410102,
+      "pre_uptake_mass": 14.548464426976558,
+      "pre_uptake_energy": 16.220234754952216,
+      "capacity_not_filled": 0.21552099125935026
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort1",
+      "clock": 2016,
+      "available": 1.8804982623889592,
+      "local_capacity": 0.23397082596583071,
+      "actual_U": 0.022292582580524058,
+      "unpriced_global_resource_relocation_upper": 0.23397082596583071,
+      "relocation_gap": 0.21167824338530666,
+      "capacity_utilization": 0.09527932590954602,
+      "pre_uptake_mass_low_specific": 0.5953136417520698,
+      "pre_uptake_mass": 14.464728196287888,
+      "pre_uptake_energy": 16.151692230256426,
+      "capacity_not_filled": 0.21167824338530666
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort1",
+      "clock": 2048,
+      "available": 1.8846420138159337,
+      "local_capacity": 0.23101937369029715,
+      "actual_U": 0.01959979193832857,
+      "unpriced_global_resource_relocation_upper": 0.23101937369029715,
+      "relocation_gap": 0.2114195817519686,
+      "capacity_utilization": 0.08484046868122802,
+      "pre_uptake_mass_low_specific": 0.6207794224252208,
+      "pre_uptake_mass": 14.295627069931209,
+      "pre_uptake_energy": 15.988093214865897,
+      "capacity_not_filled": 0.21141958175196862
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort1",
+      "clock": 2112,
+      "available": 1.9182373573674287,
+      "local_capacity": 0.2216297954029906,
+      "actual_U": 0.01772472240794591,
+      "unpriced_global_resource_relocation_upper": 0.2216297954029906,
+      "relocation_gap": 0.20390507299504468,
+      "capacity_utilization": 0.07997445639345088,
+      "pre_uptake_mass_low_specific": 0.5393605036408822,
+      "pre_uptake_mass": 13.967757415715248,
+      "pre_uptake_energy": 15.664638391416709,
+      "capacity_not_filled": 0.2039050729950447
+    },
+    {
+      "key": "soft_p512/minus/width4/effort0.5",
+      "clock": 1985,
+      "available": 1.899790703099551,
+      "local_capacity": 0.2329827610031416,
+      "actual_U": 0.07349792754955917,
+      "unpriced_global_resource_relocation_upper": 0.2329827610031416,
+      "relocation_gap": 0.15948483345358244,
+      "capacity_utilization": 0.3154650894903254,
+      "pre_uptake_mass_low_specific": 0.6455448885893836,
+      "pre_uptake_mass": 14.642575880933485,
+      "pre_uptake_energy": 16.326532487728606,
+      "capacity_not_filled": 0.15948483345358244
+    },
+    {
+      "key": "soft_p512/minus/width4/effort0.5",
+      "clock": 2000,
+      "available": 1.3374867363564644,
+      "local_capacity": 0.22871870454967705,
+      "actual_U": 0.07236022320746818,
+      "unpriced_global_resource_relocation_upper": 0.22871870454967705,
+      "relocation_gap": 0.15635848134220887,
+      "capacity_utilization": 0.3163721277187968,
+      "pre_uptake_mass_low_specific": 0.2578009767561441,
+      "pre_uptake_mass": 14.593283308025667,
+      "pre_uptake_energy": 17.070859020940073,
+      "capacity_not_filled": 0.15635848134220887
+    },
+    {
+      "key": "soft_p512/minus/width4/effort0.5",
+      "clock": 2001,
+      "available": 1.311489299490226,
+      "local_capacity": 0.22874964328071856,
+      "actual_U": 0.07251145358676718,
+      "unpriced_global_resource_relocation_upper": 0.22874964328071856,
+      "relocation_gap": 0.15623818969395137,
+      "capacity_utilization": 0.3169904553590148,
+      "pre_uptake_mass_low_specific": 0.2483134701277106,
+      "pre_uptake_mass": 14.591341004932959,
+      "pre_uptake_energy": 17.119886865803394,
+      "capacity_not_filled": 0.15623818969395137
+    },
+    {
+      "key": "soft_p512/minus/width4/effort0.5",
+      "clock": 2016,
+      "available": 1.0339561620063653,
+      "local_capacity": 0.22378183838579763,
+      "actual_U": 0.07133191498020139,
+      "unpriced_global_resource_relocation_upper": 0.22378183838579763,
+      "relocation_gap": 0.15244992340559624,
+      "capacity_utilization": 0.3187564973759215,
+      "pre_uptake_mass_low_specific": 0.16758129592267712,
+      "pre_uptake_mass": 14.56895219474743,
+      "pre_uptake_energy": 17.845937557982825,
+      "capacity_not_filled": 0.15244992340559624
+    },
+    {
+      "key": "soft_p512/minus/width4/effort0.5",
+      "clock": 2048,
+      "available": 0.83679431602209,
+      "local_capacity": 0.21425205442864093,
+      "actual_U": 0.06929292901988393,
+      "unpriced_global_resource_relocation_upper": 0.21425205442864093,
+      "relocation_gap": 0.144959125408757,
+      "capacity_utilization": 0.32341780434578155,
+      "pre_uptake_mass_low_specific": 0.1073278042272663,
+      "pre_uptake_mass": 14.541943765958727,
+      "pre_uptake_energy": 19.327865041992066,
+      "capacity_not_filled": 0.14495912540875697
+    },
+    {
+      "key": "soft_p512/minus/width4/effort0.5",
+      "clock": 2112,
+      "available": 0.9448354646309663,
+      "local_capacity": 0.18531481146123152,
+      "actual_U": 0.05738578631441059,
+      "unpriced_global_resource_relocation_upper": 0.18531481146123152,
+      "relocation_gap": 0.12792902514682092,
+      "capacity_utilization": 0.30966648516605966,
+      "pre_uptake_mass_low_specific": 0.06737060978241598,
+      "pre_uptake_mass": 14.508966088243598,
+      "pre_uptake_energy": 21.867640785456256,
+      "capacity_not_filled": 0.12792902514682092
+    },
+    {
+      "key": "soft_p512/minus/width4/effort1",
+      "clock": 1985,
+      "available": 1.899790703099551,
+      "local_capacity": 0.2352761215337645,
+      "actual_U": 0.07523012442551477,
+      "unpriced_global_resource_relocation_upper": 0.2352761215337645,
+      "relocation_gap": 0.16004599710824974,
+      "capacity_utilization": 0.3197524845916779,
+      "pre_uptake_mass_low_specific": 0.6485882200422753,
+      "pre_uptake_mass": 14.642575880933485,
+      "pre_uptake_energy": 16.326532487728603,
+      "capacity_not_filled": 0.1600459971082498
+    },
+    {
+      "key": "soft_p512/minus/width4/effort1",
+      "clock": 2000,
+      "available": 1.3061661980447348,
+      "local_capacity": 0.23458392072670764,
+      "actual_U": 0.07531604790002774,
+      "unpriced_global_resource_relocation_upper": 0.23458392072670764,
+      "relocation_gap": 0.1592678728266799,
+      "capacity_utilization": 0.32106227769878404,
+      "pre_uptake_mass_low_specific": 0.2453159670908492,
+      "pre_uptake_mass": 14.59402360111633,
+      "pre_uptake_energy": 17.05323480836498,
+      "capacity_not_filled": 0.15926787282667995
+    },
+    {
+      "key": "soft_p512/minus/width4/effort1",
+      "clock": 2001,
+      "available": 1.2786661418269034,
+      "local_capacity": 0.2344621990106836,
+      "actual_U": 0.07553738288637138,
+      "unpriced_global_resource_relocation_upper": 0.2344621990106836,
+      "relocation_gap": 0.15892481612431222,
+      "capacity_utilization": 0.3221729694812314,
+      "pre_uptake_mass_low_specific": 0.23092988531287545,
+      "pre_uptake_mass": 14.59215650341065,
+      "pre_uptake_energy": 17.101562894808186,
+      "capacity_not_filled": 0.15892481612431222
+    },
+    {
+      "key": "soft_p512/minus/width4/effort1",
+      "clock": 2016,
+      "available": 0.987016601546105,
+      "local_capacity": 0.2309898480888159,
+      "actual_U": 0.07437054633235188,
+      "unpriced_global_resource_relocation_upper": 0.2309898480888159,
+      "relocation_gap": 0.15661930175646402,
+      "capacity_utilization": 0.321964566614877,
+      "pre_uptake_mass_low_specific": 0.13785103203073057,
+      "pre_uptake_mass": 14.571641432028798,
+      "pre_uptake_energy": 17.821597379385313,
+      "capacity_not_filled": 0.156619301756464
+    },
+    {
+      "key": "soft_p512/minus/width4/effort1",
+      "clock": 2048,
+      "available": 0.808663852040908,
+      "local_capacity": 0.21701073693787387,
+      "actual_U": 0.06818963090487418,
+      "unpriced_global_resource_relocation_upper": 0.21701073693787387,
+      "relocation_gap": 0.1488211060329997,
+      "capacity_utilization": 0.3142223830353408,
+      "pre_uptake_mass_low_specific": 0.06700942992905323,
+      "pre_uptake_mass": 14.551622601520396,
+      "pre_uptake_energy": 19.28557258713588,
+      "capacity_not_filled": 0.1488211060329997
+    },
+    {
+      "key": "soft_p512/minus/width4/effort1",
+      "clock": 2112,
+      "available": 0.9655053547424385,
+      "local_capacity": 0.1881662691314199,
+      "actual_U": 0.05718842541588436,
+      "unpriced_global_resource_relocation_upper": 0.1881662691314199,
+      "relocation_gap": 0.13097784371553553,
+      "capacity_utilization": 0.303924957857046,
+      "pre_uptake_mass_low_specific": 0.025324914890658815,
+      "pre_uptake_mass": 14.53872275991229,
+      "pre_uptake_energy": 21.725815745642464,
+      "capacity_not_filled": 0.13097784371553556
+    }
+  ],
+  "post_states": [
+    {
+      "key": "compact_p512/plus/width1.6/effort0.5",
+      "clock": 1985,
+      "mass": 22.644535991802165,
+      "energy": 43.62646203565948,
+      "mean_specific": 1.926577875186016,
+      "low_specific_mass": 0.13476833654038795,
+      "low_specific_mass_fraction": 0.005951472646168468,
+      "energy_in_low_specific": 0.0037473261738840075
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort0.5",
+      "clock": 1992,
+      "mass": 22.63525030526883,
+      "energy": 43.6138400420372,
+      "mean_specific": 1.926810592056283,
+      "low_specific_mass": 0.1314129707969743,
+      "low_specific_mass_fraction": 0.005805677826605928,
+      "energy_in_low_specific": 0.0034926718588294725
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort0.5",
+      "clock": 2000,
+      "mass": 22.624669571428214,
+      "energy": 43.60081407023152,
+      "mean_specific": 1.9271359492159494,
+      "low_specific_mass": 0.1337613532494633,
+      "low_specific_mass_fraction": 0.005912190356069781,
+      "energy_in_low_specific": 0.003690397683096595
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort0.5",
+      "clock": 2008,
+      "mass": 22.61405064481706,
+      "energy": 43.587408969355934,
+      "mean_specific": 1.9274481009153388,
+      "low_specific_mass": 0.13436758758040745,
+      "low_specific_mass_fraction": 0.005941774416747551,
+      "energy_in_low_specific": 0.0037060062357953906
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort0.5",
+      "clock": 2016,
+      "mass": 22.60350093081702,
+      "energy": 43.56161533674432,
+      "mean_specific": 1.927206562827334,
+      "low_specific_mass": 0.13214329107527367,
+      "low_specific_mass_fraction": 0.005846142660808485,
+      "energy_in_low_specific": 0.00362473335388207
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort0.5",
+      "clock": 2024,
+      "mass": 22.593119987987613,
+      "energy": 43.53044289423727,
+      "mean_specific": 1.9267123317798376,
+      "low_specific_mass": 0.1268766761619815,
+      "low_specific_mass_fraction": 0.005615721787404295,
+      "energy_in_low_specific": 0.003317469614762181
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort0.5",
+      "clock": 2032,
+      "mass": 22.582862396326565,
+      "energy": 43.50263070618197,
+      "mean_specific": 1.9263559217036328,
+      "low_specific_mass": 0.12147873027562149,
+      "low_specific_mass_fraction": 0.0053792441429117415,
+      "energy_in_low_specific": 0.002967180018404199
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort0.5",
+      "clock": 2040,
+      "mass": 22.572733292759477,
+      "energy": 43.46793646970112,
+      "mean_specific": 1.9256833413100254,
+      "low_specific_mass": 0.1250714793346167,
+      "low_specific_mass_fraction": 0.0055408212072720125,
+      "energy_in_low_specific": 0.0033187579307622987
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort0.5",
+      "clock": 2048,
+      "mass": 22.562725833151145,
+      "energy": 43.429916488250115,
+      "mean_specific": 1.9248523786270122,
+      "low_specific_mass": 0.1275369266794329,
+      "low_specific_mass_fraction": 0.005652549590973817,
+      "energy_in_low_specific": 0.003623747763955012
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort0.5",
+      "clock": 2056,
+      "mass": 22.55290492999622,
+      "energy": 43.375440428493164,
+      "mean_specific": 1.9232750975153619,
+      "low_specific_mass": 0.1248860385665083,
+      "low_specific_mass_fraction": 0.00553747018196335,
+      "energy_in_low_specific": 0.0035175993434570334
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort0.5",
+      "clock": 2064,
+      "mass": 22.54320250338077,
+      "energy": 43.33047160904593,
+      "mean_specific": 1.9221080768159593,
+      "low_specific_mass": 0.1267942793200165,
+      "low_specific_mass_fraction": 0.005624501634184467,
+      "energy_in_low_specific": 0.003773740519825453
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort0.5",
+      "clock": 2072,
+      "mass": 22.53372330434925,
+      "energy": 43.2812712495091,
+      "mean_specific": 1.920733234580694,
+      "low_specific_mass": 0.11767281300372952,
+      "low_specific_mass_fraction": 0.0052220758821964145,
+      "energy_in_low_specific": 0.003190111106592624
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort0.5",
+      "clock": 2080,
+      "mass": 22.524348614273958,
+      "energy": 43.23183229000405,
+      "mean_specific": 1.919337736701851,
+      "low_specific_mass": 0.12334462895591361,
+      "low_specific_mass_fraction": 0.005476057535255364,
+      "energy_in_low_specific": 0.0036774902048956493
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort0.5",
+      "clock": 2088,
+      "mass": 22.51502764679448,
+      "energy": 43.187871487757434,
+      "mean_specific": 1.9181798115138535,
+      "low_specific_mass": 0.11782219068451971,
+      "low_specific_mass_fraction": 0.005233046680326611,
+      "energy_in_low_specific": 0.0032429472973146346
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort0.5",
+      "clock": 2096,
+      "mass": 22.50574053815474,
+      "energy": 43.13372149532032,
+      "mean_specific": 1.9165653057358532,
+      "low_specific_mass": 0.1209230348544816,
+      "low_specific_mass_fraction": 0.005372986267635882,
+      "energy_in_low_specific": 0.0035477904824369327
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort0.5",
+      "clock": 2104,
+      "mass": 22.496602216482906,
+      "energy": 43.08719836089482,
+      "mean_specific": 1.9152758246009927,
+      "low_specific_mass": 0.11720665399461433,
+      "low_specific_mass_fraction": 0.0052099713933128474,
+      "energy_in_low_specific": 0.0033765879474231325
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort0.5",
+      "clock": 2112,
+      "mass": 22.48756060691246,
+      "energy": 43.03678721756482,
+      "mean_specific": 1.913804167995693,
+      "low_specific_mass": 0.12053333369966608,
+      "low_specific_mass_fraction": 0.005360000393400398,
+      "energy_in_low_specific": 0.003638760554960945
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort1",
+      "clock": 1985,
+      "mass": 22.64453993664275,
+      "energy": 43.62047656731474,
+      "mean_specific": 1.9263132167560324,
+      "low_specific_mass": 0.13621105139686351,
+      "low_specific_mass_fraction": 0.006015182987950692,
+      "energy_in_low_specific": 0.003883623973440372
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort1",
+      "clock": 1992,
+      "mass": 22.635316832439607,
+      "energy": 43.61072463968274,
+      "mean_specific": 1.926667294410583,
+      "low_specific_mass": 0.13325943075020039,
+      "low_specific_mass_fraction": 0.005887235055584502,
+      "energy_in_low_specific": 0.0037021417815937658
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort1",
+      "clock": 2000,
+      "mass": 22.62484955862014,
+      "energy": 43.60463080009032,
+      "mean_specific": 1.9272893146587493,
+      "low_specific_mass": 0.13983226459783582,
+      "low_specific_mass_fraction": 0.006180472680515981,
+      "energy_in_low_specific": 0.004271370269074986
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort1",
+      "clock": 2008,
+      "mass": 22.614511402666686,
+      "energy": 43.59918056534807,
+      "mean_specific": 1.9279293630994339,
+      "low_specific_mass": 0.13093362449350593,
+      "low_specific_mass_fraction": 0.0057898055881970695,
+      "energy_in_low_specific": 0.0036719518553375136
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort1",
+      "clock": 2016,
+      "mass": 22.604315850796517,
+      "energy": 43.576581052989674,
+      "mean_specific": 1.9277991574982416,
+      "low_specific_mass": 0.12900708245389345,
+      "low_specific_mass_fraction": 0.005707188100954959,
+      "energy_in_low_specific": 0.0035855805983603466
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort1",
+      "clock": 2024,
+      "mass": 22.594219276130676,
+      "energy": 43.56103731277109,
+      "mean_specific": 1.9279726721423163,
+      "low_specific_mass": 0.12911919403962283,
+      "low_specific_mass_fraction": 0.0057147004046308805,
+      "energy_in_low_specific": 0.0036946393333807644
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort1",
+      "clock": 2032,
+      "mass": 22.58425267621584,
+      "energy": 43.55314169788434,
+      "mean_specific": 1.928473893836278,
+      "low_specific_mass": 0.1291982187797168,
+      "low_specific_mass_fraction": 0.0057207214527748955,
+      "energy_in_low_specific": 0.0037642832843823417
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort1",
+      "clock": 2040,
+      "mass": 22.574469315294287,
+      "energy": 43.54547508847839,
+      "mean_specific": 1.928970044889435,
+      "low_specific_mass": 0.12376870163068189,
+      "low_specific_mass_fraction": 0.005482684881846951,
+      "energy_in_low_specific": 0.003469675778722748
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort1",
+      "clock": 2048,
+      "mass": 22.564738143952148,
+      "energy": 43.53008238702783,
+      "mean_specific": 1.929119766838281,
+      "low_specific_mass": 0.12391116148796696,
+      "low_specific_mass_fraction": 0.005491362704830586,
+      "energy_in_low_specific": 0.003461962775501898
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort1",
+      "clock": 2056,
+      "mass": 22.555050614465983,
+      "energy": 43.51439731310583,
+      "mean_specific": 1.9292529224118562,
+      "low_specific_mass": 0.12424246606937875,
+      "low_specific_mass_fraction": 0.005508409987326483,
+      "energy_in_low_specific": 0.003569276133478524
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort1",
+      "clock": 2064,
+      "mass": 22.54549981509723,
+      "energy": 43.5123590691515,
+      "mean_specific": 1.9299797931298979,
+      "low_specific_mass": 0.1258948016042274,
+      "low_specific_mass_fraction": 0.0055840324072089975,
+      "energy_in_low_specific": 0.0037740714452789495
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort1",
+      "clock": 2072,
+      "mass": 22.536029358231318,
+      "energy": 43.513580970951224,
+      "mean_specific": 1.9308450605588967,
+      "low_specific_mass": 0.12443667620756863,
+      "low_specific_mass_fraction": 0.005521677054530369,
+      "energy_in_low_specific": 0.003708487384370217
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort1",
+      "clock": 2080,
+      "mass": 22.52658575134014,
+      "energy": 43.5193062734847,
+      "mean_specific": 1.9319086680011273,
+      "low_specific_mass": 0.11952812426139703,
+      "low_specific_mass_fraction": 0.0053060914592565865,
+      "energy_in_low_specific": 0.003303167054682998
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort1",
+      "clock": 2088,
+      "mass": 22.517166706004417,
+      "energy": 43.52798743508012,
+      "mean_specific": 1.9331023304753954,
+      "low_specific_mass": 0.12487842788843971,
+      "low_specific_mass_fraction": 0.005545921008576079,
+      "energy_in_low_specific": 0.0037570726781598
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort1",
+      "clock": 2096,
+      "mass": 22.50775771535013,
+      "energy": 43.53393801759616,
+      "mean_specific": 1.934174810665672,
+      "low_specific_mass": 0.12157924376750603,
+      "low_specific_mass_fraction": 0.00540165952135649,
+      "energy_in_low_specific": 0.003495902268211873
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort1",
+      "clock": 2104,
+      "mass": 22.498335789395757,
+      "energy": 43.54198103703242,
+      "mean_specific": 1.9353423046319391,
+      "low_specific_mass": 0.11952407408149042,
+      "low_specific_mass_fraction": 0.0053125740143778214,
+      "energy_in_low_specific": 0.0033087975083966655
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort1",
+      "clock": 2112,
+      "mass": 22.488862766372577,
+      "energy": 43.552396256964215,
+      "mean_specific": 1.9366206601646294,
+      "low_specific_mass": 0.11854167539465195,
+      "low_specific_mass_fraction": 0.005271128052411187,
+      "energy_in_low_specific": 0.003201639305765414
+    },
+    {
+      "key": "compact_p512/plus/width4/effort0.5",
+      "clock": 1985,
+      "mass": 22.644812016338882,
+      "energy": 43.646805949261136,
+      "mean_specific": 1.9274527833469632,
+      "low_specific_mass": 0.12223207939837263,
+      "low_specific_mass_fraction": 0.0053977961623253344,
+      "energy_in_low_specific": 0.004203620440351091
+    },
+    {
+      "key": "compact_p512/plus/width4/effort0.5",
+      "clock": 1992,
+      "mass": 22.64149252864669,
+      "energy": 43.77458157160903,
+      "mean_specific": 1.9333787963061237,
+      "low_specific_mass": 0.041439223840848076,
+      "low_specific_mass_fraction": 0.0018302337528507866,
+      "energy_in_low_specific": 0.0018709392636847453
+    },
+    {
+      "key": "compact_p512/plus/width4/effort0.5",
+      "clock": 2000,
+      "mass": 22.639920083868653,
+      "energy": 43.90883408044308,
+      "mean_specific": 1.939442980266035,
+      "low_specific_mass": 0.02141976365883775,
+      "low_specific_mass_fraction": 0.000946105974733529,
+      "energy_in_low_specific": 0.0008861620077554016
+    },
+    {
+      "key": "compact_p512/plus/width4/effort0.5",
+      "clock": 2008,
+      "mass": 22.638897333368575,
+      "energy": 44.034598364088914,
+      "mean_specific": 1.9450858279737933,
+      "low_specific_mass": 0.017045653875691083,
+      "low_specific_mass_fraction": 0.0007529365774616002,
+      "energy_in_low_specific": 0.0007769021905768096
+    },
+    {
+      "key": "compact_p512/plus/width4/effort0.5",
+      "clock": 2016,
+      "mass": 22.638133999439116,
+      "energy": 44.1431310251955,
+      "mean_specific": 1.9499456548092344,
+      "low_specific_mass": 0.014112213728452503,
+      "low_specific_mass_fraction": 0.0006233823745721334,
+      "energy_in_low_specific": 0.0006804295527454096
+    },
+    {
+      "key": "compact_p512/plus/width4/effort0.5",
+      "clock": 2024,
+      "mass": 22.63755578953284,
+      "energy": 44.24085133652661,
+      "mean_specific": 1.9543121946488016,
+      "low_specific_mass": 0.012652143566024893,
+      "low_specific_mass_fraction": 0.0005589006023289403,
+      "energy_in_low_specific": 0.0006754689990251762
+    },
+    {
+      "key": "compact_p512/plus/width4/effort0.5",
+      "clock": 2032,
+      "mass": 22.637116733295624,
+      "energy": 44.32012914271165,
+      "mean_specific": 1.9578522152303848,
+      "low_specific_mass": 0.009306206923929644,
+      "low_specific_mass_fraction": 0.0004111038977963869,
+      "energy_in_low_specific": 0.0004780491879329794
+    },
+    {
+      "key": "compact_p512/plus/width4/effort0.5",
+      "clock": 2040,
+      "mass": 22.6367512917307,
+      "energy": 44.36887472916318,
+      "mean_specific": 1.9600372048692039,
+      "low_specific_mass": 0.00878747736053971,
+      "low_specific_mass_fraction": 0.0003881951631349951,
+      "energy_in_low_specific": 0.00047823296246233296
+    },
+    {
+      "key": "compact_p512/plus/width4/effort0.5",
+      "clock": 2048,
+      "mass": 22.636444495922614,
+      "energy": 44.39839599529387,
+      "mean_specific": 1.961367917266827,
+      "low_specific_mass": 0.007759314200930614,
+      "low_specific_mass_fraction": 0.0003427797241889405,
+      "energy_in_low_specific": 0.00043319350563477646
+    },
+    {
+      "key": "compact_p512/plus/width4/effort0.5",
+      "clock": 2056,
+      "mass": 22.636213470222575,
+      "energy": 44.40678437896593,
+      "mean_specific": 1.9617585086561429,
+      "low_specific_mass": 0.007071716037194904,
+      "low_specific_mass_fraction": 0.00031240719860225677,
+      "energy_in_low_specific": 0.0004410902861515085
+    },
+    {
+      "key": "compact_p512/plus/width4/effort0.5",
+      "clock": 2064,
+      "mass": 22.6360666132861,
+      "energy": 44.40665380810984,
+      "mean_specific": 1.9617654677710492,
+      "low_specific_mass": 0.003466823213923818,
+      "low_specific_mass_fraction": 0.00015315484236510363,
+      "energy_in_low_specific": 0.00019036936975368288
+    },
+    {
+      "key": "compact_p512/plus/width4/effort0.5",
+      "clock": 2072,
+      "mass": 22.63594893070487,
+      "energy": 44.39952350478972,
+      "mean_specific": 1.961460667750638,
+      "low_specific_mass": 0.003146211349956524,
+      "low_specific_mass_fraction": 0.00013899180279951945,
+      "energy_in_low_specific": 0.00017982005466523783
+    },
+    {
+      "key": "compact_p512/plus/width4/effort0.5",
+      "clock": 2080,
+      "mass": 22.63585116507189,
+      "energy": 44.38195578174228,
+      "mean_specific": 1.9606930376987801,
+      "low_specific_mass": 0.0024729906839162296,
+      "low_specific_mass_fraction": 0.00010925105779685292,
+      "energy_in_low_specific": 0.0001383748710877059
+    },
+    {
+      "key": "compact_p512/plus/width4/effort0.5",
+      "clock": 2088,
+      "mass": 22.635771861014568,
+      "energy": 44.355139543103014,
+      "mean_specific": 1.9595152228714392,
+      "low_specific_mass": 0.002153110107375338,
+      "low_specific_mass_fraction": 9.511980066752769e-05,
+      "energy_in_low_specific": 0.00012444306440067572
+    },
+    {
+      "key": "compact_p512/plus/width4/effort0.5",
+      "clock": 2096,
+      "mass": 22.63570769863949,
+      "energy": 44.31410384878585,
+      "mean_specific": 1.9577079028745954,
+      "low_specific_mass": 0.0016750229789445595,
+      "low_specific_mass_fraction": 7.399914335548855e-05,
+      "energy_in_low_specific": 9.484022029196401e-05
+    },
+    {
+      "key": "compact_p512/plus/width4/effort0.5",
+      "clock": 2104,
+      "mass": 22.63565201815307,
+      "energy": 44.273738191102446,
+      "mean_specific": 1.9559294406715706,
+      "low_specific_mass": 0.0015671663655778324,
+      "low_specific_mass_fraction": 6.923442560086252e-05,
+      "energy_in_low_specific": 9.020509367704863e-05
+    },
+    {
+      "key": "compact_p512/plus/width4/effort0.5",
+      "clock": 2112,
+      "mass": 22.63560272290909,
+      "energy": 44.242326619667494,
+      "mean_specific": 1.9545459938157785,
+      "low_specific_mass": 0.0012684961474760525,
+      "low_specific_mass_fraction": 5.603986617914221e-05,
+      "energy_in_low_specific": 7.088686712496978e-05
+    },
+    {
+      "key": "compact_p512/plus/width4/effort1",
+      "clock": 1985,
+      "mass": 22.6448153570173,
+      "energy": 43.64087861339609,
+      "mean_specific": 1.9271907465508398,
+      "low_specific_mass": 0.12282729448909749,
+      "low_specific_mass_fraction": 0.005424080194632061,
+      "energy_in_low_specific": 0.004268917626389851
+    },
+    {
+      "key": "compact_p512/plus/width4/effort1",
+      "clock": 1992,
+      "mass": 22.641537529334112,
+      "energy": 43.76902784708068,
+      "mean_specific": 1.9331296644662066,
+      "low_specific_mass": 0.03943211801313429,
+      "low_specific_mass_fraction": 0.001741583051153063,
+      "energy_in_low_specific": 0.0017359626307866791
+    },
+    {
+      "key": "compact_p512/plus/width4/effort1",
+      "clock": 2000,
+      "mass": 22.640026490276636,
+      "energy": 43.906689559881826,
+      "mean_specific": 1.9393391425022726,
+      "low_specific_mass": 0.02169032277705318,
+      "low_specific_mass_fraction": 0.0009580520052115958,
+      "energy_in_low_specific": 0.0009460989475569567
+    },
+    {
+      "key": "compact_p512/plus/width4/effort1",
+      "clock": 2008,
+      "mass": 22.639069510339798,
+      "energy": 44.04382693465165,
+      "mean_specific": 1.945478674136134,
+      "low_specific_mass": 0.015943817017942372,
+      "low_specific_mass_fraction": 0.0007042611451261482,
+      "energy_in_low_specific": 0.0007355044763025726
+    },
+    {
+      "key": "compact_p512/plus/width4/effort1",
+      "clock": 2016,
+      "mass": 22.638394928706713,
+      "energy": 44.16527591774764,
+      "mean_specific": 1.9509013804571311,
+      "low_specific_mass": 0.013094108901582498,
+      "low_specific_mass_fraction": 0.0005784027066768085,
+      "energy_in_low_specific": 0.0006674125469593586
+    },
+    {
+      "key": "compact_p512/plus/width4/effort1",
+      "clock": 2024,
+      "mass": 22.637925084872865,
+      "energy": 44.267827128939366,
+      "mean_specific": 1.9554719331817232,
+      "low_specific_mass": 0.00913549083029688,
+      "low_specific_mass_fraction": 0.00040354806352819875,
+      "energy_in_low_specific": 0.00045959409191785724
+    },
+    {
+      "key": "compact_p512/plus/width4/effort1",
+      "clock": 2032,
+      "mass": 22.63757379134251,
+      "energy": 44.339675233684524,
+      "mean_specific": 1.9586761214950403,
+      "low_specific_mass": 0.007084376237885187,
+      "low_specific_mass_fraction": 0.0003129476817252619,
+      "energy_in_low_specific": 0.0003607093106767927
+    },
+    {
+      "key": "compact_p512/plus/width4/effort1",
+      "clock": 2040,
+      "mass": 22.637308235637946,
+      "energy": 44.390834755971106,
+      "mean_specific": 1.9609590634140217,
+      "low_specific_mass": 0.00603380897504827,
+      "low_specific_mass_fraction": 0.00026654268750686696,
+      "energy_in_low_specific": 0.00032878332327408835
+    },
+    {
+      "key": "compact_p512/plus/width4/effort1",
+      "clock": 2048,
+      "mass": 22.63711438778921,
+      "energy": 44.43776052100262,
+      "mean_specific": 1.9630488126601948,
+      "low_specific_mass": 0.0042101754694702,
+      "low_specific_mass_fraction": 0.0001859855190616181,
+      "energy_in_low_specific": 0.00022472365885016916
+    },
+    {
+      "key": "compact_p512/plus/width4/effort1",
+      "clock": 2056,
+      "mass": 22.636979882558997,
+      "energy": 44.46531823116024,
+      "mean_specific": 1.9642778525159716,
+      "low_specific_mass": 0.0022945235036945016,
+      "low_specific_mass_fraction": 0.0001013617326868922,
+      "energy_in_low_specific": 0.00010742150993382376
+    },
+    {
+      "key": "compact_p512/plus/width4/effort1",
+      "clock": 2064,
+      "mass": 22.636881050415916,
+      "energy": 44.48371932196622,
+      "mean_specific": 1.9650993095247502,
+      "low_specific_mass": 0.001519464534096485,
+      "low_specific_mass_fraction": 6.712340497405085e-05,
+      "energy_in_low_specific": 6.344298923899648e-05
+    },
+    {
+      "key": "compact_p512/plus/width4/effort1",
+      "clock": 2072,
+      "mass": 22.636806566939168,
+      "energy": 44.488831581481605,
+      "mean_specific": 1.9653316138000272,
+      "low_specific_mass": 0.0009250598502235872,
+      "low_specific_mass_fraction": 4.086529818099996e-05,
+      "energy_in_low_specific": 3.078078740292631e-05
+    },
+    {
+      "key": "compact_p512/plus/width4/effort1",
+      "clock": 2080,
+      "mass": 22.636749147250498,
+      "energy": 44.49298858840193,
+      "mean_specific": 1.9655202387488633,
+      "low_specific_mass": 0.0006679171011369111,
+      "low_specific_mass_fraction": 2.950587545906686e-05,
+      "energy_in_low_specific": 1.8838436156984293e-05
+    },
+    {
+      "key": "compact_p512/plus/width4/effort1",
+      "clock": 2088,
+      "mass": 22.63670218052954,
+      "energy": 44.48996157247033,
+      "mean_specific": 1.965390595222717,
+      "low_specific_mass": 0.0004724861594137583,
+      "low_specific_mass_fraction": 2.0872570379096865e-05,
+      "energy_in_low_specific": 8.952631496074113e-06
+    },
+    {
+      "key": "compact_p512/plus/width4/effort1",
+      "clock": 2096,
+      "mass": 22.63666195644152,
+      "energy": 44.47366088028495,
+      "mean_specific": 1.9646739862026992,
+      "low_specific_mass": 0.0003594073609695463,
+      "low_specific_mass_fraction": 1.5877224374385856e-05,
+      "energy_in_low_specific": 3.7761566431041943e-06
+    },
+    {
+      "key": "compact_p512/plus/width4/effort1",
+      "clock": 2104,
+      "mass": 22.636626865773387,
+      "energy": 44.458581051697095,
+      "mean_specific": 1.964010862365653,
+      "low_specific_mass": 0.00030967499708369595,
+      "low_specific_mass_fraction": 1.3680262475498282e-05,
+      "energy_in_low_specific": 2.8458192198099976e-06
+    },
+    {
+      "key": "compact_p512/plus/width4/effort1",
+      "clock": 2112,
+      "mass": 22.63659613083867,
+      "energy": 44.448519078934865,
+      "mean_specific": 1.9635690287543281,
+      "low_specific_mass": 0.0002782324824006492,
+      "low_specific_mass_fraction": 1.2291268563191922e-05,
+      "energy_in_low_specific": 3.109226853758918e-06
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort0.5",
+      "clock": 1985,
+      "mass": 22.602420162943556,
+      "energy": 44.46031691993851,
+      "mean_specific": 1.9670600139019963,
+      "low_specific_mass": 0.013143220975988242,
+      "low_specific_mass_fraction": 0.0005814961796673625,
+      "energy_in_low_specific": 0.00041118851886503627
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort0.5",
+      "clock": 1992,
+      "mass": 22.601569852747012,
+      "energy": 44.46786499548501,
+      "mean_specific": 1.9674679805518178,
+      "low_specific_mass": 0.013097709083733741,
+      "low_specific_mass_fraction": 0.0005795043958922984,
+      "energy_in_low_specific": 0.00040257278705521074
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort0.5",
+      "clock": 2000,
+      "mass": 22.600596555703607,
+      "energy": 44.4666515513171,
+      "mean_specific": 1.9674990189626325,
+      "low_specific_mass": 0.013094763179635304,
+      "low_specific_mass_fraction": 0.0005793990060112214,
+      "energy_in_low_specific": 0.0004028894772270077
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort0.5",
+      "clock": 2008,
+      "mass": 22.599629316804762,
+      "energy": 44.4629062839656,
+      "mean_specific": 1.967417503211153,
+      "low_specific_mass": 0.013912561323689449,
+      "low_specific_mass_fraction": 0.0006156101557534958,
+      "energy_in_low_specific": 0.00047220161107609066
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort0.5",
+      "clock": 2016,
+      "mass": 22.598652122015135,
+      "energy": 44.4445474988044,
+      "mean_specific": 1.9666901927972706,
+      "low_specific_mass": 0.013714499081128194,
+      "low_specific_mass_fraction": 0.0006068724367754578,
+      "energy_in_low_specific": 0.0004448723404721883
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort0.5",
+      "clock": 2024,
+      "mass": 22.59766605360544,
+      "energy": 44.41929463123027,
+      "mean_specific": 1.9656585120720114,
+      "low_specific_mass": 0.013540429311393525,
+      "low_specific_mass_fraction": 0.0005991959204668909,
+      "energy_in_low_specific": 0.0004284358626133045
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort0.5",
+      "clock": 2032,
+      "mass": 22.596677668719522,
+      "energy": 44.39406278104155,
+      "mean_specific": 1.9646278728176065,
+      "low_specific_mass": 0.013053020559778883,
+      "low_specific_mass_fraction": 0.0005776521996349985,
+      "energy_in_low_specific": 0.0003904245772770644
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort0.5",
+      "clock": 2040,
+      "mass": 22.59569731073452,
+      "energy": 44.364309675454265,
+      "mean_specific": 1.963396352206318,
+      "low_specific_mass": 0.012826170779275638,
+      "low_specific_mass_fraction": 0.0005676377499172075,
+      "energy_in_low_specific": 0.00037947112547903063
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort0.5",
+      "clock": 2048,
+      "mass": 22.594722327428933,
+      "energy": 44.328202656726866,
+      "mean_specific": 1.9618830457108343,
+      "low_specific_mass": 0.01397643946311449,
+      "low_specific_mass_fraction": 0.0006185709769111767,
+      "energy_in_low_specific": 0.00047253812244943546
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort0.5",
+      "clock": 2056,
+      "mass": 22.593731591313766,
+      "energy": 44.28415214661719,
+      "mean_specific": 1.9600193959833698,
+      "low_specific_mass": 0.014473245200584428,
+      "low_specific_mass_fraction": 0.0006405867548744677,
+      "energy_in_low_specific": 0.0004915314208822429
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort0.5",
+      "clock": 2064,
+      "mass": 22.592716082654288,
+      "energy": 44.24302936074251,
+      "mean_specific": 1.9582873169778112,
+      "low_specific_mass": 0.013428774577843227,
+      "low_specific_mass_fraction": 0.0005943851340721827,
+      "energy_in_low_specific": 0.0003996535938535525
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort0.5",
+      "clock": 2072,
+      "mass": 22.591702160100084,
+      "energy": 44.19975559838699,
+      "mean_specific": 1.956459733983638,
+      "low_specific_mass": 0.014101862060388524,
+      "low_specific_mass_fraction": 0.0006242053812702199,
+      "energy_in_low_specific": 0.0004567231722515009
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort0.5",
+      "clock": 2080,
+      "mass": 22.590685377059945,
+      "energy": 44.158837720249274,
+      "mean_specific": 1.9547365200832303,
+      "low_specific_mass": 0.01342771860734068,
+      "low_specific_mass_fraction": 0.0005943918204879282,
+      "energy_in_low_specific": 0.00039993574359731434
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort0.5",
+      "clock": 2088,
+      "mass": 22.589660684319558,
+      "energy": 44.11596211763399,
+      "mean_specific": 1.9529271702720508,
+      "low_specific_mass": 0.013998375546751866,
+      "low_specific_mass_fraction": 0.0006196806469283858,
+      "energy_in_low_specific": 0.0004353650518971647
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort0.5",
+      "clock": 2096,
+      "mass": 22.588616896162613,
+      "energy": 44.06451800745239,
+      "mean_specific": 1.9507399771314966,
+      "low_specific_mass": 0.014821740995336622,
+      "low_specific_mass_fraction": 0.0006561597402563661,
+      "energy_in_low_specific": 0.00048688719978950967
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort0.5",
+      "clock": 2104,
+      "mass": 22.587550179792593,
+      "energy": 44.02342593908712,
+      "mean_specific": 1.9490128672064495,
+      "low_specific_mass": 0.014009949851262795,
+      "low_specific_mass_fraction": 0.0006202509674465033,
+      "energy_in_low_specific": 0.0004114750640407225
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort0.5",
+      "clock": 2112,
+      "mass": 22.586479908535736,
+      "energy": 43.97236347361523,
+      "mean_specific": 1.9468444685352444,
+      "low_specific_mass": 0.01427346680979232,
+      "low_specific_mass_fraction": 0.0006319473803617439,
+      "energy_in_low_specific": 0.0004301009421619593
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort1",
+      "clock": 1985,
+      "mass": 22.60242053129552,
+      "energy": 44.45400326626848,
+      "mean_specific": 1.9667806465558435,
+      "low_specific_mass": 0.013360242709977963,
+      "low_specific_mass_fraction": 0.0005910978734104715,
+      "energy_in_low_specific": 0.00043050050248272286
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort1",
+      "clock": 1992,
+      "mass": 22.601583216845444,
+      "energy": 44.45762361307322,
+      "mean_specific": 1.967013690436429,
+      "low_specific_mass": 0.012803210036834975,
+      "low_specific_mass_fraction": 0.00056647403476109,
+      "energy_in_low_specific": 0.00039462536307160995
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort1",
+      "clock": 2000,
+      "mass": 22.600642333152447,
+      "energy": 44.46357837467535,
+      "mean_specific": 1.9673590564040113,
+      "low_specific_mass": 0.013093744359381695,
+      "low_specific_mass_fraction": 0.0005793527531814764,
+      "energy_in_low_specific": 0.0004293690727626022
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort1",
+      "clock": 2008,
+      "mass": 22.599702701238456,
+      "energy": 44.47071748116432,
+      "mean_specific": 1.9677567474693967,
+      "low_specific_mass": 0.012836279489561482,
+      "low_specific_mass_fraction": 0.0005679844402934583,
+      "energy_in_low_specific": 0.0004019798028640486
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort1",
+      "clock": 2016,
+      "mass": 22.59876331651404,
+      "energy": 44.45991296756592,
+      "mean_specific": 1.9673604411386905,
+      "low_specific_mass": 0.013042321345610087,
+      "low_specific_mass_fraction": 0.0005771254454476902,
+      "energy_in_low_specific": 0.0004208589944680572
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort1",
+      "clock": 2024,
+      "mass": 22.597825308910025,
+      "energy": 44.45356469625879,
+      "mean_specific": 1.9671611798296065,
+      "low_specific_mass": 0.012837516448661315,
+      "low_specific_mass_fraction": 0.0005680863655318041,
+      "energy_in_low_specific": 0.00040730797479732254
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort1",
+      "clock": 2032,
+      "mass": 22.59689808159556,
+      "energy": 44.44988498645263,
+      "mean_specific": 1.9670790577515427,
+      "low_specific_mass": 0.0121016237972204,
+      "low_specific_mass_fraction": 0.0005355435845009533,
+      "energy_in_low_specific": 0.0003566371214470773
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort1",
+      "clock": 2040,
+      "mass": 22.595966285243243,
+      "energy": 44.447007166880894,
+      "mean_specific": 1.9670328148749239,
+      "low_specific_mass": 0.013494887081149796,
+      "low_specific_mass_fraction": 0.0005972254919659226,
+      "energy_in_low_specific": 0.00045332277979847024
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort1",
+      "clock": 2048,
+      "mass": 22.59500689874182,
+      "energy": 44.43533532915175,
+      "mean_specific": 1.9665997681826815,
+      "low_specific_mass": 0.012936146705085097,
+      "low_specific_mass_fraction": 0.0005725223613808869,
+      "energy_in_low_specific": 0.00039380833431863137
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort1",
+      "clock": 2056,
+      "mass": 22.59403756588925,
+      "energy": 44.429063632666924,
+      "mean_specific": 1.9664065576195433,
+      "low_specific_mass": 0.012297502002661671,
+      "low_specific_mass_fraction": 0.0005442808513883105,
+      "energy_in_low_specific": 0.00034049884070803233
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort1",
+      "clock": 2064,
+      "mass": 22.593068369231474,
+      "energy": 44.43294320498793,
+      "mean_specific": 1.96666262761809,
+      "low_specific_mass": 0.012617364273872198,
+      "low_specific_mass_fraction": 0.0005584617400200162,
+      "energy_in_low_specific": 0.0003682974180988409
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort1",
+      "clock": 2072,
+      "mass": 22.592091019111756,
+      "energy": 44.44376916371131,
+      "mean_specific": 1.9672268992770146,
+      "low_specific_mass": 0.013784037489432539,
+      "low_specific_mass_fraction": 0.0006101266800745423,
+      "energy_in_low_specific": 0.0004470238379804255
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort1",
+      "clock": 2080,
+      "mass": 22.591083581765904,
+      "energy": 44.458440883063034,
+      "mean_specific": 1.9679640740627014,
+      "low_specific_mass": 0.013526673888540688,
+      "low_specific_mass_fraction": 0.0005987616237876507,
+      "energy_in_low_specific": 0.000408272043755591
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort1",
+      "clock": 2088,
+      "mass": 22.590065538939285,
+      "energy": 44.471634256097445,
+      "mean_specific": 1.968636796535191,
+      "low_specific_mass": 0.013788526664639669,
+      "low_specific_mass_fraction": 0.0006103801089408928,
+      "energy_in_low_specific": 0.0004264208044380364
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort1",
+      "clock": 2096,
+      "mass": 22.589035995677513,
+      "energy": 44.48012165396106,
+      "mean_specific": 1.969102252193165,
+      "low_specific_mass": 0.01409877460382208,
+      "low_specific_mass_fraction": 0.0006241423762625341,
+      "energy_in_low_specific": 0.000442228980846387
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort1",
+      "clock": 2104,
+      "mass": 22.587984516336377,
+      "energy": 44.488996492576604,
+      "mean_specific": 1.9695868155213534,
+      "low_specific_mass": 0.014166086206274756,
+      "low_specific_mass_fraction": 0.0006271514041471639,
+      "energy_in_low_specific": 0.0004268125400329108
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort1",
+      "clock": 2112,
+      "mass": 22.586903467374075,
+      "energy": 44.501884261040416,
+      "mean_specific": 1.9702516693056975,
+      "low_specific_mass": 0.015190833803408275,
+      "low_specific_mass_fraction": 0.0006725505258102714,
+      "energy_in_low_specific": 0.0004885035333142083
+    },
+    {
+      "key": "compact_p512/minus/width4/effort0.5",
+      "clock": 1985,
+      "mass": 22.602455419781577,
+      "energy": 44.469458686260324,
+      "mean_specific": 1.9674614045401826,
+      "low_specific_mass": 0.010732112719554664,
+      "low_specific_mass_fraction": 0.00047482065643903284,
+      "energy_in_low_specific": 0.0004047792232853131
+    },
+    {
+      "key": "compact_p512/minus/width4/effort0.5",
+      "clock": 1992,
+      "mass": 22.602300991137056,
+      "energy": 44.54473911901135,
+      "mean_specific": 1.97080550057618,
+      "low_specific_mass": 0.0010024447433445573,
+      "low_specific_mass_fraction": 4.4351446507045526e-05,
+      "energy_in_low_specific": 4.585927959872226e-05
+    },
+    {
+      "key": "compact_p512/minus/width4/effort0.5",
+      "clock": 2000,
+      "mass": 22.60226887554202,
+      "energy": 44.618753858283036,
+      "mean_specific": 1.9740829606077785,
+      "low_specific_mass": 0.00035972700367376003,
+      "low_specific_mass_fraction": 1.591552625334095e-05,
+      "energy_in_low_specific": 1.3093800299283574e-05
+    },
+    {
+      "key": "compact_p512/minus/width4/effort0.5",
+      "clock": 2008,
+      "mass": 22.602251058373135,
+      "energy": 44.6817753063712,
+      "mean_specific": 1.9768727986860661,
+      "low_specific_mass": 0.00025076104377099367,
+      "low_specific_mass_fraction": 1.1094516343676211e-05,
+      "energy_in_low_specific": 1.0738299152604657e-05
+    },
+    {
+      "key": "compact_p512/minus/width4/effort0.5",
+      "clock": 2016,
+      "mass": 22.602240420479415,
+      "energy": 44.728681541770655,
+      "mean_specific": 1.9789490205246616,
+      "low_specific_mass": 0.00014043078681819858,
+      "low_specific_mass_fraction": 6.213135698307023e-06,
+      "energy_in_low_specific": 5.689899427212075e-06
+    },
+    {
+      "key": "compact_p512/minus/width4/effort0.5",
+      "clock": 2024,
+      "mass": 22.602233921847084,
+      "energy": 44.75615749084419,
+      "mean_specific": 1.9801652193141561,
+      "low_specific_mass": 8.341057016367555e-05,
+      "low_specific_mass_fraction": 3.6903684145597556e-06,
+      "energy_in_low_specific": 3.0463243471215593e-06
+    },
+    {
+      "key": "compact_p512/minus/width4/effort0.5",
+      "clock": 2032,
+      "mass": 22.602229385299168,
+      "energy": 44.769408900974334,
+      "mean_specific": 1.9807519045042978,
+      "low_specific_mass": 6.524164966987722e-05,
+      "low_specific_mass_fraction": 2.8865139167338675e-06,
+      "energy_in_low_specific": 2.6537997864526004e-06
+    },
+    {
+      "key": "compact_p512/minus/width4/effort0.5",
+      "clock": 2040,
+      "mass": 22.602226234949786,
+      "energy": 44.746166422825375,
+      "mean_specific": 1.97972385364564,
+      "low_specific_mass": 5.142402604096433e-05,
+      "low_specific_mass_fraction": 2.2751752639944573e-06,
+      "energy_in_low_specific": 2.317178837253767e-06
+    },
+    {
+      "key": "compact_p512/minus/width4/effort0.5",
+      "clock": 2048,
+      "mass": 22.602223923515417,
+      "energy": 44.71474825612347,
+      "mean_specific": 1.978334008522149,
+      "low_specific_mass": 4.502774464727813e-05,
+      "low_specific_mass_fraction": 1.992182043663019e-06,
+      "energy_in_low_specific": 2.2592253721269466e-06
+    },
+    {
+      "key": "compact_p512/minus/width4/effort0.5",
+      "clock": 2056,
+      "mass": 22.602222196903316,
+      "energy": 44.67042624039301,
+      "mean_specific": 1.97637320132678,
+      "low_specific_mass": 4.335817968506303e-05,
+      "low_specific_mass_fraction": 1.9183149031692756e-06,
+      "energy_in_low_specific": 2.448261883947523e-06
+    },
+    {
+      "key": "compact_p512/minus/width4/effort0.5",
+      "clock": 2064,
+      "mass": 22.602220804367498,
+      "energy": 44.626827766866235,
+      "mean_specific": 1.9744443766447435,
+      "low_specific_mass": 3.028954207005733e-05,
+      "low_specific_mass_fraction": 1.3401135371708423e-06,
+      "energy_in_low_specific": 1.549474713695176e-06
+    },
+    {
+      "key": "compact_p512/minus/width4/effort0.5",
+      "clock": 2072,
+      "mass": 22.602219616854953,
+      "energy": 44.5760333968608,
+      "mean_specific": 1.9721971626016548,
+      "low_specific_mass": 2.1149891477538725e-05,
+      "low_specific_mass_fraction": 9.357440037334565e-07,
+      "energy_in_low_specific": 9.789893083649291e-07
+    },
+    {
+      "key": "compact_p512/minus/width4/effort0.5",
+      "clock": 2080,
+      "mass": 22.602218665686102,
+      "energy": 44.51669649703125,
+      "mean_specific": 1.9695719767818607,
+      "low_specific_mass": 1.5169391715754825e-05,
+      "low_specific_mass_fraction": 6.711461357014683e-07,
+      "energy_in_low_specific": 6.426877712330983e-07
+    },
+    {
+      "key": "compact_p512/minus/width4/effort0.5",
+      "clock": 2088,
+      "mass": 22.602217919434256,
+      "energy": 44.45926571948929,
+      "mean_specific": 1.9670311063261408,
+      "low_specific_mass": 1.249523637927736e-05,
+      "low_specific_mass_fraction": 5.528323115818415e-07,
+      "energy_in_low_specific": 5.669051302945387e-07
+    },
+    {
+      "key": "compact_p512/minus/width4/effort0.5",
+      "clock": 2096,
+      "mass": 22.602217406367757,
+      "energy": 44.39915411579159,
+      "mean_specific": 1.9643716064461423,
+      "low_specific_mass": 1.1829743461629079e-05,
+      "low_specific_mass_fraction": 5.23388623732832e-07,
+      "energy_in_low_specific": 6.643978843211001e-07
+    },
+    {
+      "key": "compact_p512/minus/width4/effort0.5",
+      "clock": 2104,
+      "mass": 22.602217065783965,
+      "energy": 44.34827981052317,
+      "mean_specific": 1.962120781401536,
+      "low_specific_mass": 1.0449278951292845e-05,
+      "low_specific_mass_fraction": 4.6231212278335887e-07,
+      "energy_in_low_specific": 6.497860401368361e-07
+    },
+    {
+      "key": "compact_p512/minus/width4/effort0.5",
+      "clock": 2112,
+      "mass": 22.60221684817923,
+      "energy": 44.2998041102549,
+      "mean_specific": 1.9599760681803902,
+      "low_specific_mass": 7.585817994865651e-06,
+      "low_specific_mass_fraction": 3.356227420442939e-07,
+      "energy_in_low_specific": 4.869988033738514e-07
+    },
+    {
+      "key": "compact_p512/minus/width4/effort1",
+      "clock": 1985,
+      "mass": 22.60245585096086,
+      "energy": 44.46318095992868,
+      "mean_specific": 1.9671836216876621,
+      "low_specific_mass": 0.01050481145122775,
+      "low_specific_mass_fraction": 0.00046476416193425176,
+      "energy_in_low_specific": 0.0003888835207323877
+    },
+    {
+      "key": "compact_p512/minus/width4/effort1",
+      "clock": 1992,
+      "mass": 22.60230373644158,
+      "energy": 44.53565248925898,
+      "mean_specific": 1.9704032389164992,
+      "low_specific_mass": 0.0009032361664596513,
+      "low_specific_mass_fraction": 3.996212850654547e-05,
+      "energy_in_low_specific": 3.932589095795529e-05
+    },
+    {
+      "key": "compact_p512/minus/width4/effort1",
+      "clock": 2000,
+      "mass": 22.602274271747127,
+      "energy": 44.61547598554158,
+      "mean_specific": 1.973937465280252,
+      "low_specific_mass": 0.00032736855332657724,
+      "low_specific_mass_fraction": 1.4483876683851606e-05,
+      "energy_in_low_specific": 1.2723783556223552e-05
+    },
+    {
+      "key": "compact_p512/minus/width4/effort1",
+      "clock": 2008,
+      "mass": 22.60226058268743,
+      "energy": 44.678386446670594,
+      "mean_specific": 1.976722031109257,
+      "low_specific_mass": 0.0001740842322671284,
+      "low_specific_mass_fraction": 7.702071729960987e-06,
+      "energy_in_low_specific": 7.473502396136606e-06
+    },
+    {
+      "key": "compact_p512/minus/width4/effort1",
+      "clock": 2016,
+      "mass": 22.602253665154457,
+      "energy": 44.72461660024155,
+      "mean_specific": 1.9787680141468724,
+      "low_specific_mass": 7.99323404058001e-05,
+      "low_specific_mass_fraction": 3.5364765651237045e-06,
+      "energy_in_low_specific": 2.8140583337505023e-06
+    },
+    {
+      "key": "compact_p512/minus/width4/effort1",
+      "clock": 2024,
+      "mass": 22.602249395973377,
+      "energy": 44.75580225389856,
+      "mean_specific": 1.9801481467535647,
+      "low_specific_mass": 4.724582797815629e-05,
+      "low_specific_mass_fraction": 2.0903153111200164e-06,
+      "energy_in_low_specific": 1.4067774581560844e-06
+    },
+    {
+      "key": "compact_p512/minus/width4/effort1",
+      "clock": 2032,
+      "mass": 22.602246487686045,
+      "energy": 44.75740829678427,
+      "mean_specific": 1.9802194583254635,
+      "low_specific_mass": 3.137376157831773e-05,
+      "low_specific_mass_fraction": 1.388081560627635e-06,
+      "energy_in_low_specific": 8.643046657949907e-07
+    },
+    {
+      "key": "compact_p512/minus/width4/effort1",
+      "clock": 2040,
+      "mass": 22.602244485575984,
+      "energy": 44.75013671739595,
+      "mean_specific": 1.9798979143843005,
+      "low_specific_mass": 1.818953835538812e-05,
+      "low_specific_mass_fraction": 8.047669056493965e-07,
+      "energy_in_low_specific": 3.247035792706692e-07
+    },
+    {
+      "key": "compact_p512/minus/width4/effort1",
+      "clock": 2048,
+      "mass": 22.602243064259206,
+      "energy": 44.7316369334227,
+      "mean_specific": 1.9790795456118502,
+      "low_specific_mass": 1.970963991413388e-05,
+      "low_specific_mass_fraction": 8.720214121270388e-07,
+      "energy_in_low_specific": 7.850465263583752e-07
+    },
+    {
+      "key": "compact_p512/minus/width4/effort1",
+      "clock": 2056,
+      "mass": 22.60224199635544,
+      "energy": 44.70295326470518,
+      "mean_specific": 1.9778105761328204,
+      "low_specific_mass": 1.178458799293108e-05,
+      "low_specific_mass_fraction": 5.213902229182095e-07,
+      "energy_in_low_specific": 2.7893793291805835e-07
+    },
+    {
+      "key": "compact_p512/minus/width4/effort1",
+      "clock": 2064,
+      "mass": 22.60224109002572,
+      "energy": 44.668267621882265,
+      "mean_specific": 1.9762760446615266,
+      "low_specific_mass": 1.0387551750532443e-05,
+      "low_specific_mass_fraction": 4.595806101332327e-07,
+      "energy_in_low_specific": 2.8526172455033574e-07
+    },
+    {
+      "key": "compact_p512/minus/width4/effort1",
+      "clock": 2072,
+      "mass": 22.60224036074742,
+      "energy": 44.63447598773335,
+      "mean_specific": 1.974781051583214,
+      "low_specific_mass": 6.902171915890271e-06,
+      "low_specific_mass_fraction": 3.053755647991891e-07,
+      "energy_in_low_specific": 1.1515011146511168e-07
+    },
+    {
+      "key": "compact_p512/minus/width4/effort1",
+      "clock": 2080,
+      "mass": 22.60223981894311,
+      "energy": 44.60376029581106,
+      "mean_specific": 1.9734221321918857,
+      "low_specific_mass": 5.8896745288393695e-06,
+      "low_specific_mass_fraction": 2.6057924241221385e-07,
+      "energy_in_low_specific": 1.8101761372833175e-07
+    },
+    {
+      "key": "compact_p512/minus/width4/effort1",
+      "clock": 2088,
+      "mass": 22.602239507280494,
+      "energy": 44.56331509030859,
+      "mean_specific": 1.971632725861264,
+      "low_specific_mass": 3.5101145049492763e-06,
+      "low_specific_mass_fraction": 1.5529941198165872e-07,
+      "energy_in_low_specific": 1.2734237092606514e-07
+    },
+    {
+      "key": "compact_p512/minus/width4/effort1",
+      "clock": 2096,
+      "mass": 22.602239348862984,
+      "energy": 44.52899206851018,
+      "mean_specific": 1.9701141723707225,
+      "low_specific_mass": 2.5778543521012356e-06,
+      "low_specific_mass_fraction": 1.1405305077573722e-07,
+      "energy_in_low_specific": 1.4341452131040827e-07
+    },
+    {
+      "key": "compact_p512/minus/width4/effort1",
+      "clock": 2104,
+      "mass": 22.60223929713618,
+      "energy": 44.49754507143519,
+      "mean_specific": 1.9687228546895907,
+      "low_specific_mass": 1.5172030791634237e-06,
+      "low_specific_mass_fraction": 6.712622847753237e-08,
+      "energy_in_low_specific": 9.783937636127778e-08
+    },
+    {
+      "key": "compact_p512/minus/width4/effort1",
+      "clock": 2112,
+      "mass": 22.60223927486143,
+      "energy": 44.46669292454496,
+      "mean_specific": 1.967357852635492,
+      "low_specific_mass": 4.947679747979105e-07,
+      "low_specific_mass_fraction": 2.189021931770271e-08,
+      "energy_in_low_specific": 3.092653847578138e-08
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort0.5",
+      "clock": 1985,
+      "mass": 13.746547656566806,
+      "energy": 14.864885495075558,
+      "mean_specific": 1.0813540873278475,
+      "low_specific_mass": 0.7412788486163248,
+      "low_specific_mass_fraction": 0.05392472838532746,
+      "energy_in_low_specific": 0.023199611616951304
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort0.5",
+      "clock": 1992,
+      "mass": 13.698725336711064,
+      "energy": 14.834676319158607,
+      "mean_specific": 1.0829238454327805,
+      "low_specific_mass": 0.7231085481822233,
+      "low_specific_mass_fraction": 0.052786557172905174,
+      "energy_in_low_specific": 0.021624589526718772
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort0.5",
+      "clock": 2000,
+      "mass": 13.644299866600658,
+      "energy": 14.800266017149058,
+      "mean_specific": 1.084721543930447,
+      "low_specific_mass": 0.6946659447360513,
+      "low_specific_mass_fraction": 0.050912538681189244,
+      "energy_in_low_specific": 0.01968934024471863
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort0.5",
+      "clock": 2008,
+      "mass": 13.590374058689816,
+      "energy": 14.779987615802447,
+      "mean_specific": 1.087533540429079,
+      "low_specific_mass": 0.7056144281352091,
+      "low_specific_mass_fraction": 0.05192016239494398,
+      "energy_in_low_specific": 0.020823280142090613
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort0.5",
+      "clock": 2016,
+      "mass": 13.536904951001176,
+      "energy": 14.755932615525518,
+      "mean_specific": 1.0900521698967964,
+      "low_specific_mass": 0.7123875014089118,
+      "low_specific_mass_fraction": 0.05262558199141557,
+      "energy_in_low_specific": 0.021805859596879213
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort0.5",
+      "clock": 2024,
+      "mass": 13.484833880476922,
+      "energy": 14.727745951270713,
+      "mean_specific": 1.092171107320295,
+      "low_specific_mass": 0.6652063225276494,
+      "low_specific_mass_fraction": 0.04932996048922205,
+      "energy_in_low_specific": 0.01921505476835183
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort0.5",
+      "clock": 2032,
+      "mass": 13.434186004121841,
+      "energy": 14.699296564579395,
+      "mean_specific": 1.0941709873653227,
+      "low_specific_mass": 0.6812379529586683,
+      "low_specific_mass_fraction": 0.05070928396775604,
+      "energy_in_low_specific": 0.02126585341963554
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort0.5",
+      "clock": 2040,
+      "mass": 13.384297131149072,
+      "energy": 14.670975612774594,
+      "mean_specific": 1.0961334367443962,
+      "low_specific_mass": 0.6660199023657956,
+      "low_specific_mass_fraction": 0.04976129084998999,
+      "energy_in_low_specific": 0.020228132849445555
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort0.5",
+      "clock": 2048,
+      "mass": 13.334727008015037,
+      "energy": 14.659944446155647,
+      "mean_specific": 1.099380920010141,
+      "low_specific_mass": 0.685500664928547,
+      "low_specific_mass_fraction": 0.051407176503614704,
+      "energy_in_low_specific": 0.02234381302210702
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort0.5",
+      "clock": 2056,
+      "mass": 13.286279436003149,
+      "energy": 14.635085120101563,
+      "mean_specific": 1.1015186900588152,
+      "low_specific_mass": 0.6929754217367257,
+      "low_specific_mass_fraction": 0.052157221671772266,
+      "energy_in_low_specific": 0.023544281582998046
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort0.5",
+      "clock": 2064,
+      "mass": 13.23858210304581,
+      "energy": 14.605098552653743,
+      "mean_specific": 1.1032222664762217,
+      "low_specific_mass": 0.6102927792220844,
+      "low_specific_mass_fraction": 0.04609955767707736,
+      "energy_in_low_specific": 0.017360573715241027
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort0.5",
+      "clock": 2072,
+      "mass": 13.191566127735088,
+      "energy": 14.583883752927505,
+      "mean_specific": 1.1055460444734524,
+      "low_specific_mass": 0.6166289589234817,
+      "low_specific_mass_fraction": 0.046744181316502494,
+      "energy_in_low_specific": 0.01845540125624931
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort0.5",
+      "clock": 2080,
+      "mass": 13.145500188656698,
+      "energy": 14.558802657151345,
+      "mean_specific": 1.1075122626154759,
+      "low_specific_mass": 0.6563998953195336,
+      "low_specific_mass_fraction": 0.04993342861810185,
+      "energy_in_low_specific": 0.02235278598410063
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort0.5",
+      "clock": 2088,
+      "mass": 13.100042386962034,
+      "energy": 14.53871410491325,
+      "mean_specific": 1.109821913201065,
+      "low_specific_mass": 0.6105418773790323,
+      "low_specific_mass_fraction": 0.0466060993807685,
+      "energy_in_low_specific": 0.018742778685190416
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort0.5",
+      "clock": 2096,
+      "mass": 13.05492768947361,
+      "energy": 14.504016423420277,
+      "mean_specific": 1.1109993688525053,
+      "low_specific_mass": 0.6308118814551598,
+      "low_specific_mass_fraction": 0.048319829604555616,
+      "energy_in_low_specific": 0.020747650198739774
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort0.5",
+      "clock": 2104,
+      "mass": 13.010401271035665,
+      "energy": 14.48224685815293,
+      "mean_specific": 1.1131283775538847,
+      "low_specific_mass": 0.6066200210430399,
+      "low_specific_mass_fraction": 0.04662577336438688,
+      "energy_in_low_specific": 0.019144657039052514
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort0.5",
+      "clock": 2112,
+      "mass": 12.96616164607006,
+      "energy": 14.460318770289813,
+      "mean_specific": 1.1152351146781068,
+      "low_specific_mass": 0.582305883125033,
+      "low_specific_mass_fraction": 0.04490965784785857,
+      "energy_in_low_specific": 0.017272281302750405
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort1",
+      "clock": 1985,
+      "mass": 13.746568650318189,
+      "energy": 14.862077242811658,
+      "mean_specific": 1.0811481483757512,
+      "low_specific_mass": 0.7443956472812072,
+      "low_specific_mass_fraction": 0.054151378879847,
+      "energy_in_low_specific": 0.02355989662971613
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort1",
+      "clock": 1992,
+      "mass": 13.699498226300493,
+      "energy": 14.822480032543542,
+      "mean_specific": 1.0819724772172408,
+      "low_specific_mass": 0.7200803471676541,
+      "low_specific_mass_fraction": 0.05256253442810289,
+      "energy_in_low_specific": 0.022217306294803275
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort1",
+      "clock": 2000,
+      "mass": 13.646752475305325,
+      "energy": 14.778793036722185,
+      "mean_specific": 1.082953110160484,
+      "low_specific_mass": 0.7073787395944309,
+      "low_specific_mass_fraction": 0.051834950540392534,
+      "energy_in_low_specific": 0.021964797783887893
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort1",
+      "clock": 2008,
+      "mass": 13.595668941431903,
+      "energy": 14.744848304725988,
+      "mean_specific": 1.0845254005701799,
+      "low_specific_mass": 0.6791913674743458,
+      "low_specific_mass_fraction": 0.049956450866831204,
+      "energy_in_low_specific": 0.021050692970899402
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort1",
+      "clock": 2016,
+      "mass": 13.546237185788458,
+      "energy": 14.715917819790299,
+      "mean_specific": 1.0863472725273826,
+      "low_specific_mass": 0.6501311285923359,
+      "low_specific_mass_fraction": 0.04799348480878493,
+      "energy_in_low_specific": 0.019569365149442235
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort1",
+      "clock": 2024,
+      "mass": 13.4976319902275,
+      "energy": 14.671650230168476,
+      "mean_specific": 1.086979570993711,
+      "low_specific_mass": 0.6668623549405539,
+      "low_specific_mass_fraction": 0.04940587766975517,
+      "energy_in_low_specific": 0.021469542460372283
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort1",
+      "clock": 2032,
+      "mass": 13.450276619101576,
+      "energy": 14.625843205379773,
+      "mean_specific": 1.0874009226404089,
+      "low_specific_mass": 0.6174188195769162,
+      "low_specific_mass_fraction": 0.045903800870539815,
+      "energy_in_low_specific": 0.018409073721040337
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort1",
+      "clock": 2040,
+      "mass": 13.403843175013904,
+      "energy": 14.60589935153714,
+      "mean_specific": 1.0896799642332422,
+      "low_specific_mass": 0.634481516132769,
+      "low_specific_mass_fraction": 0.047335790776447284,
+      "energy_in_low_specific": 0.020008331581756085
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort1",
+      "clock": 2048,
+      "mass": 13.357801086157775,
+      "energy": 14.574633459491613,
+      "mean_specific": 1.0910952607757276,
+      "low_specific_mass": 0.6481341157814287,
+      "low_specific_mass_fraction": 0.04852101866175171,
+      "energy_in_low_specific": 0.02165837098932449
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort1",
+      "clock": 2056,
+      "mass": 13.312823049645996,
+      "energy": 14.53019319799207,
+      "mean_specific": 1.09144342592148,
+      "low_specific_mass": 0.5908577216294254,
+      "low_specific_mass_fraction": 0.04438260160343204,
+      "energy_in_low_specific": 0.017613860940989032
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort1",
+      "clock": 2064,
+      "mass": 13.268244481095502,
+      "energy": 14.49551261259079,
+      "mean_specific": 1.0924966474083206,
+      "low_specific_mass": 0.6315950731397869,
+      "low_specific_mass_fraction": 0.0476020074878541,
+      "energy_in_low_specific": 0.021137535445233925
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort1",
+      "clock": 2072,
+      "mass": 13.224277438763853,
+      "energy": 14.462313168923327,
+      "mean_specific": 1.0936184026607354,
+      "low_specific_mass": 0.5981662406316692,
+      "low_specific_mass_fraction": 0.045232432804100574,
+      "energy_in_low_specific": 0.018949579495060553
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort1",
+      "clock": 2080,
+      "mass": 13.180791290468578,
+      "energy": 14.428022837288765,
+      "mean_specific": 1.09462493710238,
+      "low_specific_mass": 0.6112366970474502,
+      "low_specific_mass_fraction": 0.04637329304269112,
+      "energy_in_low_specific": 0.020053669819945975
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort1",
+      "clock": 2088,
+      "mass": 13.137327502318637,
+      "energy": 14.381387167234264,
+      "mean_specific": 1.0946965556500026,
+      "low_specific_mass": 0.5767487720843205,
+      "low_specific_mass_fraction": 0.043901529590590536,
+      "energy_in_low_specific": 0.01744874272677438
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort1",
+      "clock": 2096,
+      "mass": 13.094155470531874,
+      "energy": 14.354031844703293,
+      "mean_specific": 1.0962166958385935,
+      "low_specific_mass": 0.5618490377542369,
+      "low_specific_mass_fraction": 0.04290838298190872,
+      "energy_in_low_specific": 0.01630096286177873
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort1",
+      "clock": 2104,
+      "mass": 13.05048902909437,
+      "energy": 14.320884188954658,
+      "mean_specific": 1.0973446402681237,
+      "low_specific_mass": 0.6199153084085344,
+      "low_specific_mass_fraction": 0.04750130872693841,
+      "energy_in_low_specific": 0.020446677024994267
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort1",
+      "clock": 2112,
+      "mass": 13.006485109924245,
+      "energy": 14.286566260060201,
+      "mean_specific": 1.0984186841654264,
+      "low_specific_mass": 0.5819218648453635,
+      "low_specific_mass_fraction": 0.04474090116793689,
+      "energy_in_low_specific": 0.017388290024017764
+    },
+    {
+      "key": "soft_p512/plus/width4/effort0.5",
+      "clock": 1985,
+      "mass": 13.747123006742092,
+      "energy": 14.920093344719396,
+      "mean_specific": 1.0853247866773315,
+      "low_specific_mass": 0.689251034320514,
+      "low_specific_mass_fraction": 0.05013783858502467,
+      "energy_in_low_specific": 0.022078789716644683
+    },
+    {
+      "key": "soft_p512/plus/width4/effort0.5",
+      "clock": 1992,
+      "mass": 13.716554148855014,
+      "energy": 15.27334430824172,
+      "mean_specific": 1.1134971759300538,
+      "low_specific_mass": 0.4737498433527819,
+      "low_specific_mass_fraction": 0.03453854650457732,
+      "energy_in_low_specific": 0.02101965825706701
+    },
+    {
+      "key": "soft_p512/plus/width4/effort0.5",
+      "clock": 2000,
+      "mass": 13.697614425754557,
+      "energy": 15.668050225052514,
+      "mean_specific": 1.1438524795670333,
+      "low_specific_mass": 0.25451650383355034,
+      "low_specific_mass_fraction": 0.018581082509886014,
+      "energy_in_low_specific": 0.010007974944780285
+    },
+    {
+      "key": "soft_p512/plus/width4/effort0.5",
+      "clock": 2008,
+      "mass": 13.684632179818312,
+      "energy": 16.062598070787026,
+      "mean_specific": 1.1737690761228985,
+      "low_specific_mass": 0.21226471696006316,
+      "low_specific_mass_fraction": 0.015511174445236814,
+      "energy_in_low_specific": 0.009487990067739527
+    },
+    {
+      "key": "soft_p512/plus/width4/effort0.5",
+      "clock": 2016,
+      "mass": 13.674906827594842,
+      "energy": 16.450709692722107,
+      "mean_specific": 1.2029851391401016,
+      "low_specific_mass": 0.16844268028966256,
+      "low_specific_mass_fraction": 0.012317647382412802,
+      "energy_in_low_specific": 0.007741627680918997
+    },
+    {
+      "key": "soft_p512/plus/width4/effort0.5",
+      "clock": 2024,
+      "mass": 13.667347860692557,
+      "energy": 16.832242984452115,
+      "mean_specific": 1.2315661499230464,
+      "low_specific_mass": 0.15482226833633306,
+      "low_specific_mass_fraction": 0.011327894037262606,
+      "energy_in_low_specific": 0.007840210110670449
+    },
+    {
+      "key": "soft_p512/plus/width4/effort0.5",
+      "clock": 2032,
+      "mass": 13.661176574233007,
+      "energy": 17.20591357389469,
+      "mean_specific": 1.2594752348306206,
+      "low_specific_mass": 0.1454342132444078,
+      "low_specific_mass_fraction": 0.010645804367884254,
+      "energy_in_low_specific": 0.00783917286619056
+    },
+    {
+      "key": "soft_p512/plus/width4/effort0.5",
+      "clock": 2040,
+      "mass": 13.655928590061592,
+      "energy": 17.57357207285082,
+      "mean_specific": 1.2868822472929728,
+      "low_specific_mass": 0.13395838525060363,
+      "low_specific_mass_fraction": 0.009809540549889435,
+      "energy_in_low_specific": 0.0074423620160113555
+    },
+    {
+      "key": "soft_p512/plus/width4/effort0.5",
+      "clock": 2048,
+      "mass": 13.651346166339312,
+      "energy": 17.935414543375117,
+      "mean_specific": 1.3138202141265167,
+      "low_specific_mass": 0.1149945285306971,
+      "low_specific_mass_fraction": 0.00842367683959578,
+      "energy_in_low_specific": 0.006326508944816552
+    },
+    {
+      "key": "soft_p512/plus/width4/effort0.5",
+      "clock": 2056,
+      "mass": 13.647262309204795,
+      "energy": 18.281867193973966,
+      "mean_specific": 1.3395996046506138,
+      "low_specific_mass": 0.11826717569869433,
+      "low_specific_mass_fraction": 0.008666000038625004,
+      "energy_in_low_specific": 0.006836518674184491
+    },
+    {
+      "key": "soft_p512/plus/width4/effort0.5",
+      "clock": 2064,
+      "mass": 13.643422666707052,
+      "energy": 18.62015353443251,
+      "mean_specific": 1.3647714352403504,
+      "low_specific_mass": 0.10901215461779179,
+      "low_specific_mass_fraction": 0.007990088504976496,
+      "energy_in_low_specific": 0.006221130939016241
+    },
+    {
+      "key": "soft_p512/plus/width4/effort0.5",
+      "clock": 2072,
+      "mass": 13.639774314355778,
+      "energy": 18.946194492158035,
+      "mean_specific": 1.3890401743830383,
+      "low_specific_mass": 0.09743013585051005,
+      "low_specific_mass_fraction": 0.007143090025174789,
+      "energy_in_low_specific": 0.005437118301096789
+    },
+    {
+      "key": "soft_p512/plus/width4/effort0.5",
+      "clock": 2080,
+      "mass": 13.636346083039546,
+      "energy": 19.264717708713714,
+      "mean_specific": 1.4127477838564508,
+      "low_specific_mass": 0.09013737857721195,
+      "low_specific_mass_fraction": 0.006610082937783601,
+      "energy_in_low_specific": 0.004987424148599231
+    },
+    {
+      "key": "soft_p512/plus/width4/effort0.5",
+      "clock": 2088,
+      "mass": 13.633127587412126,
+      "energy": 19.574185093920185,
+      "mean_specific": 1.435780965769998,
+      "low_specific_mass": 0.08251667954938849,
+      "low_specific_mass_fraction": 0.006052659525139235,
+      "energy_in_low_specific": 0.004513415377099303
+    },
+    {
+      "key": "soft_p512/plus/width4/effort0.5",
+      "clock": 2096,
+      "mass": 13.629996306549323,
+      "energy": 19.872766597482332,
+      "mean_specific": 1.4580170199997273,
+      "low_specific_mass": 0.08193875363955816,
+      "low_specific_mass_fraction": 0.0060116489980401484,
+      "energy_in_low_specific": 0.0044872473952183595
+    },
+    {
+      "key": "soft_p512/plus/width4/effort0.5",
+      "clock": 2104,
+      "mass": 13.626937899876422,
+      "energy": 20.1564577796799,
+      "mean_specific": 1.4791626649933358,
+      "low_specific_mass": 0.07339657118704658,
+      "low_specific_mass_fraction": 0.005386138230490666,
+      "energy_in_low_specific": 0.0038701950424094036
+    },
+    {
+      "key": "soft_p512/plus/width4/effort0.5",
+      "clock": 2112,
+      "mass": 13.623961537478152,
+      "energy": 20.42531378716191,
+      "mean_specific": 1.4992198657471192,
+      "low_specific_mass": 0.07265864006915777,
+      "low_specific_mass_fraction": 0.005333150704314684,
+      "energy_in_low_specific": 0.0038633100826767756
+    },
+    {
+      "key": "soft_p512/plus/width4/effort1",
+      "clock": 1985,
+      "mass": 13.747146637919776,
+      "energy": 14.917728813084942,
+      "mean_specific": 1.085150919386883,
+      "low_specific_mass": 0.6796755015569564,
+      "low_specific_mass_fraction": 0.04944120547038881,
+      "energy_in_low_specific": 0.02143780969221804
+    },
+    {
+      "key": "soft_p512/plus/width4/effort1",
+      "clock": 1992,
+      "mass": 13.716992565030392,
+      "energy": 15.26310626012791,
+      "mean_specific": 1.1127152098222408,
+      "low_specific_mass": 0.4647942832530909,
+      "low_specific_mass_fraction": 0.0338845618709469,
+      "energy_in_low_specific": 0.020719919306230437
+    },
+    {
+      "key": "soft_p512/plus/width4/effort1",
+      "clock": 2000,
+      "mass": 13.698594038194216,
+      "energy": 15.655854633035434,
+      "mean_specific": 1.142880399943528,
+      "low_specific_mass": 0.2764689268759741,
+      "low_specific_mass_fraction": 0.020182284846541734,
+      "energy_in_low_specific": 0.012132286818902153
+    },
+    {
+      "key": "soft_p512/plus/width4/effort1",
+      "clock": 2008,
+      "mass": 13.686387376960422,
+      "energy": 16.050658855951102,
+      "mean_specific": 1.1727462049606079,
+      "low_specific_mass": 0.19813847353565983,
+      "low_specific_mass_fraction": 0.0144770470160157,
+      "energy_in_low_specific": 0.008995098951256667
+    },
+    {
+      "key": "soft_p512/plus/width4/effort1",
+      "clock": 2016,
+      "mass": 13.677864742692858,
+      "energy": 16.435786179419672,
+      "mean_specific": 1.2016339164488508,
+      "low_specific_mass": 0.16180353953374133,
+      "low_specific_mass_fraction": 0.01182959055214973,
+      "energy_in_low_specific": 0.008093858379301572
+    },
+    {
+      "key": "soft_p512/plus/width4/effort1",
+      "clock": 2024,
+      "mass": 13.67179555901703,
+      "energy": 16.81389957130526,
+      "mean_specific": 1.2298238002992885,
+      "low_specific_mass": 0.1327523941070301,
+      "low_specific_mass_fraction": 0.009709945817575895,
+      "energy_in_low_specific": 0.0071664543196272665
+    },
+    {
+      "key": "soft_p512/plus/width4/effort1",
+      "clock": 2032,
+      "mass": 13.667483048071174,
+      "energy": 17.18675044698206,
+      "mean_specific": 1.257491989310171,
+      "low_specific_mass": 0.11040616705270495,
+      "low_specific_mass_fraction": 0.008078017486056882,
+      "energy_in_low_specific": 0.006389549032078025
+    },
+    {
+      "key": "soft_p512/plus/width4/effort1",
+      "clock": 2040,
+      "mass": 13.664406049965267,
+      "energy": 17.55228142952147,
+      "mean_specific": 1.2845257499916058,
+      "low_specific_mass": 0.08104423516842943,
+      "low_specific_mass_fraction": 0.005931047048227569,
+      "energy_in_low_specific": 0.004705187159286872
+    },
+    {
+      "key": "soft_p512/plus/width4/effort1",
+      "clock": 2048,
+      "mass": 13.66211915911309,
+      "energy": 17.896777456950304,
+      "mean_specific": 1.3099561823842354,
+      "low_specific_mass": 0.06117524143405982,
+      "low_specific_mass_fraction": 0.0044777271169717395,
+      "energy_in_low_specific": 0.0035500824289166383
+    },
+    {
+      "key": "soft_p512/plus/width4/effort1",
+      "clock": 2056,
+      "mass": 13.660411965194262,
+      "energy": 18.237988576676003,
+      "mean_specific": 1.3350979914181997,
+      "low_specific_mass": 0.04886160929060173,
+      "low_specific_mass_fraction": 0.0035768767014565566,
+      "energy_in_low_specific": 0.002934466334050477
+    },
+    {
+      "key": "soft_p512/plus/width4/effort1",
+      "clock": 2064,
+      "mass": 13.659142851326205,
+      "energy": 18.568794167594426,
+      "mean_specific": 1.35944065961588,
+      "low_specific_mass": 0.03656726544957071,
+      "low_specific_mass_fraction": 0.002677127389880126,
+      "energy_in_low_specific": 0.00217359735562815
+    },
+    {
+      "key": "soft_p512/plus/width4/effort1",
+      "clock": 2072,
+      "mass": 13.658152287546436,
+      "energy": 18.886747425119957,
+      "mean_specific": 1.3828186293061746,
+      "low_specific_mass": 0.020464375487568378,
+      "low_specific_mass_fraction": 0.001498326790969221,
+      "energy_in_low_specific": 0.0010514374966497243
+    },
+    {
+      "key": "soft_p512/plus/width4/effort1",
+      "clock": 2080,
+      "mass": 13.657383457312879,
+      "energy": 19.19550094944865,
+      "mean_specific": 1.4055035512069753,
+      "low_specific_mass": 0.013228079490943876,
+      "low_specific_mass_fraction": 0.0009685661629322467,
+      "energy_in_low_specific": 0.0006035768934608666
+    },
+    {
+      "key": "soft_p512/plus/width4/effort1",
+      "clock": 2088,
+      "mass": 13.656784984714196,
+      "energy": 19.491534556948785,
+      "mean_specific": 1.4272418126788495,
+      "low_specific_mass": 0.013163314228103937,
+      "low_specific_mass_fraction": 0.000963866257163557,
+      "energy_in_low_specific": 0.0006956261222228936
+    },
+    {
+      "key": "soft_p512/plus/width4/effort1",
+      "clock": 2096,
+      "mass": 13.656302541887214,
+      "energy": 19.77865658571415,
+      "mean_specific": 1.4483171067020653,
+      "low_specific_mass": 0.008272663483033292,
+      "low_specific_mass_fraction": 0.0006057762309863166,
+      "energy_in_low_specific": 0.0003646382700831976
+    },
+    {
+      "key": "soft_p512/plus/width4/effort1",
+      "clock": 2104,
+      "mass": 13.655888948383229,
+      "energy": 20.04938670402781,
+      "mean_specific": 1.4681861268651817,
+      "low_specific_mass": 0.008572867392160342,
+      "low_specific_mass_fraction": 0.0006277780541833796,
+      "energy_in_low_specific": 0.00042834137810702946
+    },
+    {
+      "key": "soft_p512/plus/width4/effort1",
+      "clock": 2112,
+      "mass": 13.655520887760108,
+      "energy": 20.314318975860985,
+      "mean_specific": 1.4876268099058292,
+      "low_specific_mass": 0.009284247475311556,
+      "low_specific_mass_fraction": 0.0006798896615971151,
+      "energy_in_low_specific": 0.0005076973806326575
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort0.5",
+      "clock": 1985,
+      "mass": 14.636551398737469,
+      "energy": 16.32212470318086,
+      "mean_specific": 1.1151619161183548,
+      "low_specific_mass": 0.6578395711414443,
+      "low_specific_mass_fraction": 0.044944984185153664,
+      "energy_in_low_specific": 0.02069200334045372
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort0.5",
+      "clock": 1992,
+      "mass": 14.594372409262306,
+      "energy": 16.288324246467013,
+      "mean_specific": 1.1160688373368932,
+      "low_specific_mass": 0.6290984135784665,
+      "low_specific_mass_fraction": 0.043105547531403936,
+      "energy_in_low_specific": 0.018405219271100063
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort0.5",
+      "clock": 2000,
+      "mass": 14.546218954977748,
+      "energy": 16.243993636509487,
+      "mean_specific": 1.11671587556784,
+      "low_specific_mass": 0.6237259054894548,
+      "low_specific_mass_fraction": 0.04287890258079846,
+      "energy_in_low_specific": 0.018045569974142847
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort0.5",
+      "clock": 2008,
+      "mass": 14.498465386584224,
+      "energy": 16.215654953000882,
+      "mean_specific": 1.1184394017318284,
+      "low_specific_mass": 0.6365168775014354,
+      "low_specific_mass_fraction": 0.04390236211416,
+      "energy_in_low_specific": 0.019450582317264705
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort0.5",
+      "clock": 2016,
+      "mass": 14.451460511879388,
+      "energy": 16.187964269548825,
+      "mean_specific": 1.120161125323077,
+      "low_specific_mass": 0.6889248764847693,
+      "low_specific_mass_fraction": 0.04767164370123417,
+      "energy_in_low_specific": 0.024158382310540055
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort0.5",
+      "clock": 2024,
+      "mass": 14.404795363762899,
+      "energy": 16.161929864166403,
+      "mean_specific": 1.1219826075991195,
+      "low_specific_mass": 0.6733696096224348,
+      "low_specific_mass_fraction": 0.046746211425979844,
+      "energy_in_low_specific": 0.023028148434060557
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort0.5",
+      "clock": 2032,
+      "mass": 14.358732315992347,
+      "energy": 16.128043904439977,
+      "mean_specific": 1.1232219912949433,
+      "low_specific_mass": 0.6002342657406919,
+      "low_specific_mass_fraction": 0.041802733871719865,
+      "energy_in_low_specific": 0.0176696988886917
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort0.5",
+      "clock": 2040,
+      "mass": 14.313084058512203,
+      "energy": 16.090468730222554,
+      "mean_specific": 1.1241790144209567,
+      "low_specific_mass": 0.6118228967860437,
+      "low_specific_mass_fraction": 0.04274570695490212,
+      "energy_in_low_specific": 0.01886053012133142
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort0.5",
+      "clock": 2048,
+      "mass": 14.26826526167607,
+      "energy": 16.080249309017013,
+      "mean_specific": 1.1269939978062962,
+      "low_specific_mass": 0.6219384586668507,
+      "low_specific_mass_fraction": 0.04358893301047254,
+      "energy_in_low_specific": 0.020451716440649113
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort0.5",
+      "clock": 2056,
+      "mass": 14.224496478092817,
+      "energy": 16.05198695524364,
+      "mean_specific": 1.1284748799344386,
+      "low_specific_mass": 0.6035517938460143,
+      "low_specific_mass_fraction": 0.042430450510184736,
+      "energy_in_low_specific": 0.019398268845628786
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort0.5",
+      "clock": 2064,
+      "mass": 14.180627540785455,
+      "energy": 16.01937443913773,
+      "mean_specific": 1.1296661161901183,
+      "low_specific_mass": 0.6287147964267564,
+      "low_specific_mass_fraction": 0.04433617585811949,
+      "energy_in_low_specific": 0.02106557211988221
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort0.5",
+      "clock": 2072,
+      "mass": 14.136657573911847,
+      "energy": 15.993434128184,
+      "mean_specific": 1.1313448065473903,
+      "low_specific_mass": 0.5779037436560364,
+      "low_specific_mass_fraction": 0.04087980066253531,
+      "energy_in_low_specific": 0.017304120926197618
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort0.5",
+      "clock": 2080,
+      "mass": 14.093626493681239,
+      "energy": 15.965927540931071,
+      "mean_specific": 1.1328473582075744,
+      "low_specific_mass": 0.5628894841720374,
+      "low_specific_mass_fraction": 0.0399392934405069,
+      "energy_in_low_specific": 0.01668888214261765
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort0.5",
+      "clock": 2088,
+      "mass": 14.051075229116432,
+      "energy": 15.940437396246239,
+      "mean_specific": 1.1344638852416573,
+      "low_specific_mass": 0.5970839073962191,
+      "low_specific_mass_fraction": 0.042493823259799404,
+      "energy_in_low_specific": 0.019694305454774526
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort0.5",
+      "clock": 2096,
+      "mass": 14.00908739101122,
+      "energy": 15.906612315486733,
+      "mean_specific": 1.135449574373634,
+      "low_specific_mass": 0.609955345506818,
+      "low_specific_mass_fraction": 0.043539977193531476,
+      "energy_in_low_specific": 0.02117298859976162
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort0.5",
+      "clock": 2104,
+      "mass": 13.967391086300513,
+      "energy": 15.883685790043025,
+      "mean_specific": 1.1371977552502308,
+      "low_specific_mass": 0.6124519757354954,
+      "low_specific_mass_fraction": 0.04384870244924982,
+      "energy_in_low_specific": 0.021279854180363218
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort0.5",
+      "clock": 2112,
+      "mass": 13.925090670344787,
+      "energy": 15.856747564917178,
+      "mean_specific": 1.1387177247388482,
+      "low_specific_mass": 0.6101418460632354,
+      "low_specific_mass_fraction": 0.043816005260390034,
+      "energy_in_low_specific": 0.020521193234486437
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort1",
+      "clock": 1985,
+      "mass": 14.636576545464779,
+      "energy": 16.319370789486687,
+      "mean_specific": 1.1149718473301962,
+      "low_specific_mass": 0.6425888845735707,
+      "low_specific_mass_fraction": 0.04390294974904362,
+      "energy_in_low_specific": 0.019605228796023392
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort1",
+      "clock": 1992,
+      "mass": 14.594971000082035,
+      "energy": 16.272270814388648,
+      "mean_specific": 1.114923134434264,
+      "low_specific_mass": 0.6267573972200848,
+      "low_specific_mass_fraction": 0.04294338078620108,
+      "energy_in_low_specific": 0.018865966374408655
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort1",
+      "clock": 2000,
+      "mass": 14.548464426976558,
+      "energy": 16.220234754952216,
+      "mean_specific": 1.1149104317068521,
+      "low_specific_mass": 0.6062445836263566,
+      "low_specific_mass_fraction": 0.04167069223486052,
+      "energy_in_low_specific": 0.01811632403109311
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort1",
+      "clock": 2008,
+      "mass": 14.503485942725584,
+      "energy": 16.178464105649965,
+      "mean_specific": 1.1154879709291192,
+      "low_specific_mass": 0.6432038899432679,
+      "low_specific_mass_fraction": 0.04434822721125713,
+      "energy_in_low_specific": 0.022005860509212632
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort1",
+      "clock": 2016,
+      "mass": 14.45921841461108,
+      "energy": 16.147488678497904,
+      "mean_specific": 1.1167608245118439,
+      "low_specific_mass": 0.6010320996786007,
+      "low_specific_mass_fraction": 0.04156739890388931,
+      "energy_in_low_specific": 0.018872893910351185
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort1",
+      "clock": 2024,
+      "mass": 14.415683939204438,
+      "energy": 16.09777438718607,
+      "mean_specific": 1.1166847480199724,
+      "low_specific_mass": 0.589315639259121,
+      "low_specific_mass_fraction": 0.04088017202267017,
+      "energy_in_low_specific": 0.018536551639381782
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort1",
+      "clock": 2032,
+      "mass": 14.37322686098932,
+      "energy": 16.043525387484813,
+      "mean_specific": 1.1162090143465895,
+      "low_specific_mass": 0.5590867559619694,
+      "low_specific_mass_fraction": 0.038897789714806404,
+      "energy_in_low_specific": 0.016937496138776167
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort1",
+      "clock": 2040,
+      "mass": 14.331627474935573,
+      "energy": 16.01526588230244,
+      "mean_specific": 1.117477126049457,
+      "low_specific_mass": 0.5943101120790266,
+      "low_specific_mass_fraction": 0.041468431489613385,
+      "energy_in_low_specific": 0.02018760565071913
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort1",
+      "clock": 2048,
+      "mass": 14.290469351815986,
+      "energy": 15.982806274125394,
+      "mean_specific": 1.1184241665298664,
+      "low_specific_mass": 0.6204037520132332,
+      "low_specific_mass_fraction": 0.04341381215267043,
+      "energy_in_low_specific": 0.02228909543253238
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort1",
+      "clock": 2056,
+      "mass": 14.248955983811257,
+      "energy": 15.935035352888828,
+      "mean_specific": 1.118330028599512,
+      "low_specific_mass": 0.5726729314481864,
+      "low_specific_mass_fraction": 0.04019051866668831,
+      "energy_in_low_specific": 0.018317743719796144
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort1",
+      "clock": 2064,
+      "mass": 14.207841093039985,
+      "energy": 15.892288521778163,
+      "mean_specific": 1.118557592086481,
+      "low_specific_mass": 0.5483200045566546,
+      "low_specific_mass_fraction": 0.03859277429737449,
+      "energy_in_low_specific": 0.016727879418727856
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort1",
+      "clock": 2072,
+      "mass": 14.167148940621939,
+      "energy": 15.855156603758996,
+      "mean_specific": 1.1191494259156813,
+      "low_specific_mass": 0.5324633185390955,
+      "low_specific_mass_fraction": 0.03758436653491696,
+      "energy_in_low_specific": 0.01576372641955825
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort1",
+      "clock": 2080,
+      "mass": 14.126803700478971,
+      "energy": 15.81445586368428,
+      "mean_specific": 1.1194645440672535,
+      "low_specific_mass": 0.5594169260913142,
+      "low_specific_mass_fraction": 0.03959968142491759,
+      "energy_in_low_specific": 0.01801401275721132
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort1",
+      "clock": 2088,
+      "mass": 14.086056724562749,
+      "energy": 15.765818786361951,
+      "mean_specific": 1.1192499856166342,
+      "low_specific_mass": 0.5737328153007925,
+      "low_specific_mass_fraction": 0.040730548408224015,
+      "energy_in_low_specific": 0.018709636261830122
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort1",
+      "clock": 2096,
+      "mass": 14.04498848054643,
+      "energy": 15.734904776461216,
+      "mean_specific": 1.1203216576685322,
+      "low_specific_mass": 0.5324047960668047,
+      "low_specific_mass_fraction": 0.037907100942391886,
+      "energy_in_low_specific": 0.01540955021495468
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort1",
+      "clock": 2104,
+      "mass": 14.003954592247178,
+      "energy": 15.695643034582233,
+      "mean_specific": 1.1208007660401584,
+      "low_specific_mass": 0.5663682384148618,
+      "low_specific_mass_fraction": 0.04044345007576736,
+      "energy_in_low_specific": 0.018027265215913343
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort1",
+      "clock": 2112,
+      "mass": 13.96255254602828,
+      "energy": 15.659595866174145,
+      "mean_specific": 1.1215424840516426,
+      "low_specific_mass": 0.541174617689717,
+      "low_specific_mass_fraction": 0.038759003119644975,
+      "energy_in_low_specific": 0.015704462889640683
+    },
+    {
+      "key": "soft_p512/minus/width4/effort0.5",
+      "clock": 1985,
+      "mass": 14.63704898958781,
+      "energy": 16.377731961327903,
+      "mean_specific": 1.1189230816251514,
+      "low_specific_mass": 0.6149685065766057,
+      "low_specific_mass_fraction": 0.042014514470373694,
+      "energy_in_low_specific": 0.019892530568968378
+    },
+    {
+      "key": "soft_p512/minus/width4/effort0.5",
+      "clock": 1992,
+      "mass": 14.60960632806512,
+      "energy": 16.726795388280475,
+      "mean_specific": 1.1449175982345414,
+      "low_specific_mass": 0.3977829516011788,
+      "low_specific_mass_fraction": 0.02722749283374159,
+      "energy_in_low_specific": 0.01634532504772954
+    },
+    {
+      "key": "soft_p512/minus/width4/effort0.5",
+      "clock": 2000,
+      "mass": 14.591341004932959,
+      "energy": 17.119886865803394,
+      "mean_specific": 1.1732908483199453,
+      "low_specific_mass": 0.25340673668392855,
+      "low_specific_mass_fraction": 0.01736692580882444,
+      "energy_in_low_specific": 0.009968494278956986
+    },
+    {
+      "key": "soft_p512/minus/width4/effort0.5",
+      "clock": 2008,
+      "mass": 14.578095804903667,
+      "energy": 17.509937123892808,
+      "mean_specific": 1.20111277619694,
+      "low_specific_mass": 0.18583370979379685,
+      "low_specific_mass_fraction": 0.012747461141755395,
+      "energy_in_low_specific": 0.007064571659430321
+    },
+    {
+      "key": "soft_p512/minus/width4/effort0.5",
+      "clock": 2016,
+      "mass": 14.567789102476699,
+      "energy": 17.89322671792757,
+      "mean_specific": 1.2282733221944782,
+      "low_specific_mass": 0.16080879424928113,
+      "low_specific_mass_fraction": 0.011038654741503754,
+      "energy_in_low_specific": 0.0066929149872441765
+    },
+    {
+      "key": "soft_p512/minus/width4/effort0.5",
+      "clock": 2024,
+      "mass": 14.5594628636778,
+      "energy": 18.274585770136298,
+      "mean_specific": 1.2551689537755404,
+      "low_specific_mass": 0.13665705573059153,
+      "low_specific_mass_fraction": 0.009386133060685675,
+      "energy_in_low_specific": 0.005847931479281049
+    },
+    {
+      "key": "soft_p512/minus/width4/effort0.5",
+      "clock": 2032,
+      "mass": 14.552514351891016,
+      "energy": 18.647235657401854,
+      "mean_specific": 1.2813755208548379,
+      "low_specific_mass": 0.11925568556971658,
+      "low_specific_mass_fraction": 0.008194850916207478,
+      "energy_in_low_specific": 0.005269435220258824
+    },
+    {
+      "key": "soft_p512/minus/width4/effort0.5",
+      "clock": 2040,
+      "mass": 14.546576108095959,
+      "energy": 19.008823927369903,
+      "mean_specific": 1.306755884416709,
+      "low_specific_mass": 0.10809744168494964,
+      "low_specific_mass_fraction": 0.007431126120791239,
+      "energy_in_low_specific": 0.004929386537957586
+    },
+    {
+      "key": "soft_p512/minus/width4/effort0.5",
+      "clock": 2048,
+      "mass": 14.54131073122578,
+      "energy": 19.372896868200847,
+      "mean_specific": 1.3322662053153018,
+      "low_specific_mass": 0.10666396937274943,
+      "low_specific_mass_fraction": 0.007335237609887595,
+      "energy_in_low_specific": 0.005172474372916985
+    },
+    {
+      "key": "soft_p512/minus/width4/effort0.5",
+      "clock": 2056,
+      "mass": 14.53650197074209,
+      "energy": 19.724734263327818,
+      "mean_specific": 1.3569106448737245,
+      "low_specific_mass": 0.09343641555406366,
+      "low_specific_mass_fraction": 0.006427709757280329,
+      "energy_in_low_specific": 0.004407224514487849
+    },
+    {
+      "key": "soft_p512/minus/width4/effort0.5",
+      "clock": 2064,
+      "mass": 14.53206988972872,
+      "energy": 20.064670518614445,
+      "mean_specific": 1.38071662680319,
+      "low_specific_mass": 0.10026361447057497,
+      "low_specific_mass_fraction": 0.00689947235537598,
+      "energy_in_low_specific": 0.005132921177740037
+    },
+    {
+      "key": "soft_p512/minus/width4/effort0.5",
+      "clock": 2072,
+      "mass": 14.527776133204437,
+      "energy": 20.395681916676736,
+      "mean_specific": 1.4039094304365494,
+      "low_specific_mass": 0.09826759717012537,
+      "low_specific_mass_fraction": 0.006764118352947815,
+      "energy_in_low_specific": 0.005034595042963945
+    },
+    {
+      "key": "soft_p512/minus/width4/effort0.5",
+      "clock": 2080,
+      "mass": 14.523614348024712,
+      "energy": 20.713697260297188,
+      "mean_specific": 1.4262081575523493,
+      "low_specific_mass": 0.08686739567049576,
+      "low_specific_mass_fraction": 0.00598111417646601,
+      "energy_in_low_specific": 0.004242301428204786
+    },
+    {
+      "key": "soft_p512/minus/width4/effort0.5",
+      "clock": 2088,
+      "mass": 14.51962126539231,
+      "energy": 21.031395808669735,
+      "mean_specific": 1.4484810191845925,
+      "low_specific_mass": 0.08618754022911422,
+      "low_specific_mass_fraction": 0.005935935838391546,
+      "energy_in_low_specific": 0.004298559338857194
+    },
+    {
+      "key": "soft_p512/minus/width4/effort0.5",
+      "clock": 2096,
+      "mass": 14.51580956605418,
+      "energy": 21.33383217224476,
+      "mean_specific": 1.4696963386826738,
+      "low_specific_mass": 0.08019314371964399,
+      "low_specific_mass_fraction": 0.005524538149575823,
+      "energy_in_low_specific": 0.003930034806779672
+    },
+    {
+      "key": "soft_p512/minus/width4/effort0.5",
+      "clock": 2104,
+      "mass": 14.512093835295246,
+      "energy": 21.624368476047778,
+      "mean_specific": 1.4900929336230297,
+      "low_specific_mass": 0.07884940991079666,
+      "low_specific_mass_fraction": 0.005433358604602248,
+      "energy_in_low_specific": 0.003876385249546293
+    },
+    {
+      "key": "soft_p512/minus/width4/effort0.5",
+      "clock": 2112,
+      "mass": 14.508536137335476,
+      "energy": 21.9009528317604,
+      "mean_specific": 1.509521885905614,
+      "low_specific_mass": 0.0691734531734464,
+      "low_specific_mass_fraction": 0.004767776191799199,
+      "energy_in_low_specific": 0.0032511396399016266
+    },
+    {
+      "key": "soft_p512/minus/width4/effort1",
+      "clock": 1985,
+      "mass": 14.637065267438825,
+      "energy": 16.375014585812075,
+      "mean_specific": 1.1187361869759125,
+      "low_specific_mass": 0.5949999532537401,
+      "low_specific_mass_fraction": 0.04065022204808768,
+      "energy_in_low_specific": 0.01838103415076227
+    },
+    {
+      "key": "soft_p512/minus/width4/effort1",
+      "clock": 1992,
+      "mass": 14.60998265730913,
+      "energy": 16.716927998703152,
+      "mean_specific": 1.1442127202211259,
+      "low_specific_mass": 0.38443615669890374,
+      "low_specific_mass_fraction": 0.02631325209045178,
+      "energy_in_low_specific": 0.015530572183637932
+    },
+    {
+      "key": "soft_p512/minus/width4/effort1",
+      "clock": 2000,
+      "mass": 14.592156503410651,
+      "energy": 17.10156289480819,
+      "mean_specific": 1.1719695365665117,
+      "low_specific_mass": 0.23371302156031687,
+      "low_specific_mass_fraction": 0.016016345596738268,
+      "energy_in_low_specific": 0.00879258881338899
+    },
+    {
+      "key": "soft_p512/minus/width4/effort1",
+      "clock": 2008,
+      "mass": 14.579758353510105,
+      "energy": 17.489762747536503,
+      "mean_specific": 1.1995920867457868,
+      "low_specific_mass": 0.17296261351482312,
+      "low_specific_mass_fraction": 0.01186320166089598,
+      "energy_in_low_specific": 0.006695125663910633
+    },
+    {
+      "key": "soft_p512/minus/width4/effort1",
+      "clock": 2016,
+      "mass": 14.57063794097716,
+      "energy": 17.869132153392346,
+      "mean_specific": 1.2263795329879685,
+      "low_specific_mass": 0.1368475409790932,
+      "low_specific_mass_fraction": 0.009392007510819785,
+      "energy_in_low_specific": 0.005623310558644714
+    },
+    {
+      "key": "soft_p512/minus/width4/effort1",
+      "clock": 2024,
+      "mass": 14.563770585445514,
+      "energy": 18.250252885124045,
+      "mean_specific": 1.2531269136690921,
+      "low_specific_mass": 0.11240710231719434,
+      "low_specific_mass_fraction": 0.007718269225521155,
+      "energy_in_low_specific": 0.004976299519108781
+    },
+    {
+      "key": "soft_p512/minus/width4/effort1",
+      "clock": 2032,
+      "mass": 14.55856456919292,
+      "energy": 18.62057270802013,
+      "mean_specific": 1.2790115824621022,
+      "low_specific_mass": 0.09209749865442685,
+      "low_specific_mass_fraction": 0.006326001318104703,
+      "energy_in_low_specific": 0.004308434356596817
+    },
+    {
+      "key": "soft_p512/minus/width4/effort1",
+      "clock": 2040,
+      "mass": 14.554516779265876,
+      "energy": 18.982182346900977,
+      "mean_specific": 1.3042124747104404,
+      "low_specific_mass": 0.08031274300343627,
+      "low_specific_mass_fraction": 0.005518063170454994,
+      "energy_in_low_specific": 0.00398902014549777
+    },
+    {
+      "key": "soft_p512/minus/width4/effort1",
+      "clock": 2048,
+      "mass": 14.551250561778463,
+      "energy": 19.328266496508643,
+      "mean_specific": 1.328289030172973,
+      "low_specific_mass": 0.06541098826469824,
+      "low_specific_mass_fraction": 0.004495214207671761,
+      "energy_in_low_specific": 0.0032588992176538537
+    },
+    {
+      "key": "soft_p512/minus/width4/effort1",
+      "clock": 2056,
+      "mass": 14.54860577777944,
+      "energy": 19.66719201118175,
+      "mean_specific": 1.3518265812948274,
+      "low_specific_mass": 0.054771885794722114,
+      "low_specific_mass_fraction": 0.003764751525426375,
+      "energy_in_low_specific": 0.002788771078633775
+    },
+    {
+      "key": "soft_p512/minus/width4/effort1",
+      "clock": 2064,
+      "mass": 14.54643831700827,
+      "energy": 19.999892450329426,
+      "mean_specific": 1.3748996155948885,
+      "low_specific_mass": 0.048663885607156857,
+      "low_specific_mass_fraction": 0.0033454158706504203,
+      "energy_in_low_specific": 0.0025641063125172356
+    },
+    {
+      "key": "soft_p512/minus/width4/effort1",
+      "clock": 2072,
+      "mass": 14.544607054445052,
+      "energy": 20.312724821941295,
+      "mean_specific": 1.3965812033219156,
+      "low_specific_mass": 0.0398706923856433,
+      "low_specific_mass_fraction": 0.0027412698216180554,
+      "energy_in_low_specific": 0.002057998796295749
+    },
+    {
+      "key": "soft_p512/minus/width4/effort1",
+      "clock": 2080,
+      "mass": 14.543031706243283,
+      "energy": 20.626063341766553,
+      "mean_specific": 1.4182780976068312,
+      "low_specific_mass": 0.03888833108025625,
+      "low_specific_mass_fraction": 0.0026740181734982806,
+      "energy_in_low_specific": 0.0021317105351590206
+    },
+    {
+      "key": "soft_p512/minus/width4/effort1",
+      "clock": 2088,
+      "mass": 14.541672336979396,
+      "energy": 20.926337392329884,
+      "mean_specific": 1.4390598899078697,
+      "low_specific_mass": 0.03244341126919955,
+      "low_specific_mass_fraction": 0.002231064661434856,
+      "energy_in_low_specific": 0.0017502124775289833
+    },
+    {
+      "key": "soft_p512/minus/width4/effort1",
+      "clock": 2096,
+      "mass": 14.540506659793458,
+      "energy": 21.212508645597218,
+      "mean_specific": 1.458856224333144,
+      "low_specific_mass": 0.02630999611515091,
+      "low_specific_mass_fraction": 0.001809427740774793,
+      "energy_in_low_specific": 0.0013844748882722115
+    },
+    {
+      "key": "soft_p512/minus/width4/effort1",
+      "clock": 2104,
+      "mass": 14.53949788529958,
+      "energy": 21.49010919446738,
+      "mean_specific": 1.4780502988480324,
+      "low_specific_mass": 0.02813208047248203,
+      "low_specific_mass_fraction": 0.0019348729023803135,
+      "energy_in_low_specific": 0.001619411636367667
+    },
+    {
+      "key": "soft_p512/minus/width4/effort1",
+      "clock": 2112,
+      "mass": 14.538616839182453,
+      "energy": 21.759077223187525,
+      "mean_specific": 1.4966401180988205,
+      "low_specific_mass": 0.025218994160823405,
+      "low_specific_mass_fraction": 0.0017346212806748362,
+      "energy_in_low_specific": 0.0014547335538974576
+    }
+  ],
+  "groups": [
+    {
+      "key": "compact_p512/plus/width1.6/effort0.5",
+      "all_receipt_U": 0.20195045624456667,
+      "all_receipt_bound": 0.8548795360089951,
+      "late_receipt_utilization": [
+        0.21757643479179317,
+        0.14717641928532624
+      ],
+      "late_receipt_gap": [
+        0.11524440641786635,
+        0.17801918435728767
+      ],
+      "late_receipt_capacity": [
+        0.14729158417819282,
+        0.20874092647403816
+      ],
+      "late_receipt_available": [
+        1.598599734574002,
+        1.639576019955556
+      ],
+      "terminal": {
+        "key": "compact_p512/plus/width1.6/effort0.5",
+        "clock": 2112,
+        "mass": 22.48756060691246,
+        "energy": 43.03678721756482,
+        "mean_specific": 1.913804167995693,
+        "low_specific_mass": 0.12053333369966608,
+        "low_specific_mass_fraction": 0.005360000393400398,
+        "energy_in_low_specific": 0.003638760554960945
+      }
+    },
+    {
+      "key": "compact_p512/plus/width1.6/effort1",
+      "all_receipt_U": 0.23585110075648574,
+      "all_receipt_bound": 0.7402452050697502,
+      "late_receipt_utilization": [
+        0.3070687705924696,
+        0.3397151946724554
+      ],
+      "late_receipt_gap": [
+        0.0835745926352218,
+        0.07601815690578445
+      ],
+      "late_receipt_capacity": [
+        0.1206102266550747,
+        0.1151293446289052
+      ],
+      "late_receipt_available": [
+        1.4702386890698453,
+        1.4576531922934728
+      ],
+      "terminal": {
+        "key": "compact_p512/plus/width1.6/effort1",
+        "clock": 2112,
+        "mass": 22.488862766372577,
+        "energy": 43.552396256964215,
+        "mean_specific": 1.9366206601646294,
+        "low_specific_mass": 0.11854167539465195,
+        "low_specific_mass_fraction": 0.005271128052411187,
+        "energy_in_low_specific": 0.003201639305765414
+      }
+    },
+    {
+      "key": "compact_p512/plus/width4/effort0.5",
+      "all_receipt_U": 0.2856986338381196,
+      "all_receipt_bound": 1.0803364217855993,
+      "late_receipt_utilization": [
+        0.17401557823865593,
+        0.09829525468994053
+      ],
+      "late_receipt_gap": [
+        0.19327207607516467,
+        0.30391655055237815
+      ],
+      "late_receipt_capacity": [
+        0.2339899772722442,
+        0.33704663542374247
+      ],
+      "late_receipt_available": [
+        1.332541821188435,
+        1.5677472439674158
+      ],
+      "terminal": {
+        "key": "compact_p512/plus/width4/effort0.5",
+        "clock": 2112,
+        "mass": 22.63560272290909,
+        "energy": 44.242326619667494,
+        "mean_specific": 1.9545459938157785,
+        "low_specific_mass": 0.0012684961474760525,
+        "low_specific_mass_fraction": 5.603986617914221e-05,
+        "energy_in_low_specific": 7.088686712496978e-05
+      }
+    },
+    {
+      "key": "compact_p512/plus/width4/effort1",
+      "all_receipt_U": 0.31602229101798124,
+      "all_receipt_bound": 1.0917763090112802,
+      "late_receipt_utilization": [
+        0.18545689431554233,
+        0.11763374273652662
+      ],
+      "late_receipt_gap": [
+        0.19968520075640894,
+        0.27795869663351574
+      ],
+      "late_receipt_capacity": [
+        0.24514994892580202,
+        0.31501510211367667
+      ],
+      "late_receipt_available": [
+        1.2356677737660244,
+        1.4742780598318859
+      ],
+      "terminal": {
+        "key": "compact_p512/plus/width4/effort1",
+        "clock": 2112,
+        "mass": 22.63659613083867,
+        "energy": 44.448519078934865,
+        "mean_specific": 1.9635690287543281,
+        "low_specific_mass": 0.0002782324824006492,
+        "low_specific_mass_fraction": 1.2291268563191922e-05,
+        "energy_in_low_specific": 3.109226853758918e-06
+      }
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort0.5",
+      "all_receipt_U": 0.2113839342620063,
+      "all_receipt_bound": 0.8501030967254342,
+      "late_receipt_utilization": [
+        0.220317569279868,
+        0.15484711459770328
+      ],
+      "late_receipt_gap": [
+        0.11433636451693258,
+        0.17364468622728602
+      ],
+      "late_receipt_capacity": [
+        0.14664478768789105,
+        0.20545949641363448
+      ],
+      "late_receipt_available": [
+        1.576116387903368,
+        1.629364038418344
+      ],
+      "terminal": {
+        "key": "compact_p512/minus/width1.6/effort0.5",
+        "clock": 2112,
+        "mass": 22.586479908535736,
+        "energy": 43.97236347361523,
+        "mean_specific": 1.9468444685352444,
+        "low_specific_mass": 0.01427346680979232,
+        "low_specific_mass_fraction": 0.0006319473803617439,
+        "energy_in_low_specific": 0.0004301009421619593
+      }
+    },
+    {
+      "key": "compact_p512/minus/width1.6/effort1",
+      "all_receipt_U": 0.24661034202638676,
+      "all_receipt_bound": 0.7560988305431275,
+      "late_receipt_utilization": [
+        0.30024463273675644,
+        0.37460647174781003
+      ],
+      "late_receipt_gap": [
+        0.08873977346878215,
+        0.0653678355470804
+      ],
+      "late_receipt_capacity": [
+        0.126815423818534,
+        0.10452272464309995
+      ],
+      "late_receipt_available": [
+        1.4410478084495035,
+        1.4520767072458
+      ],
+      "terminal": {
+        "key": "compact_p512/minus/width1.6/effort1",
+        "clock": 2112,
+        "mass": 22.586903467374075,
+        "energy": 44.501884261040416,
+        "mean_specific": 1.9702516693056975,
+        "low_specific_mass": 0.015190833803408275,
+        "low_specific_mass_fraction": 0.0006725505258102714,
+        "energy_in_low_specific": 0.0004885035333142083
+      }
+    },
+    {
+      "key": "compact_p512/minus/width4/effort0.5",
+      "all_receipt_U": 0.2466202068504983,
+      "all_receipt_bound": 1.1147452437291658,
+      "late_receipt_utilization": [
+        0.13190340381274857,
+        0.08958825630596073
+      ],
+      "late_receipt_gap": [
+        0.21962988438608644,
+        0.31091939798807977
+      ],
+      "late_receipt_capacity": [
+        0.25300166519569156,
+        0.3415151442648459
+      ],
+      "late_receipt_available": [
+        1.4983474324448451,
+        1.640359352769359
+      ],
+      "terminal": {
+        "key": "compact_p512/minus/width4/effort0.5",
+        "clock": 2112,
+        "mass": 22.60221684817923,
+        "energy": 44.2998041102549,
+        "mean_specific": 1.9599760681803902,
+        "low_specific_mass": 7.585817994865651e-06,
+        "low_specific_mass_fraction": 3.356227420442939e-07,
+        "energy_in_low_specific": 4.869988033738514e-07
+      }
+    },
+    {
+      "key": "compact_p512/minus/width4/effort1",
+      "all_receipt_U": 0.27160706941727875,
+      "all_receipt_bound": 1.1563726240330898,
+      "late_receipt_utilization": [
+        0.14130266039502018,
+        0.10132375670996434
+      ],
+      "late_receipt_gap": [
+        0.22938648733002232,
+        0.297384747811318
+      ],
+      "late_receipt_capacity": [
+        0.26713310586887956,
+        0.33091421970007623
+      ],
+      "late_receipt_available": [
+        1.4007632154181553,
+        1.5634223978959714
+      ],
+      "terminal": {
+        "key": "compact_p512/minus/width4/effort1",
+        "clock": 2112,
+        "mass": 22.60223927486143,
+        "energy": 44.46669292454496,
+        "mean_specific": 1.967357852635492,
+        "low_specific_mass": 4.947679747979105e-07,
+        "low_specific_mass_fraction": 2.189021931770271e-08,
+        "energy_in_low_specific": 3.092653847578138e-08
+      }
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort0.5",
+      "all_receipt_U": 0.10965840879445482,
+      "all_receipt_bound": 1.293294883267842,
+      "late_receipt_utilization": [
+        0.08892724366196915,
+        0.08955720290889606
+      ],
+      "late_receipt_gap": [
+        0.1935715559149131,
+        0.18802538559873844
+      ],
+      "late_receipt_capacity": [
+        0.21246552985840045,
+        0.2065208118505479
+      ],
+      "late_receipt_available": [
+        1.921994429149881,
+        1.9277379838961557
+      ],
+      "terminal": {
+        "key": "soft_p512/plus/width1.6/effort0.5",
+        "clock": 2112,
+        "mass": 12.96616164607006,
+        "energy": 14.460318770289813,
+        "mean_specific": 1.1152351146781068,
+        "low_specific_mass": 0.582305883125033,
+        "low_specific_mass_fraction": 0.04490965784785857,
+        "energy_in_low_specific": 0.017272281302750405
+      }
+    },
+    {
+      "key": "soft_p512/plus/width1.6/effort1",
+      "all_receipt_U": 0.1162741511585969,
+      "all_receipt_bound": 1.3173350004956446,
+      "late_receipt_utilization": [
+        0.08461915388307205,
+        0.07831259642542195
+      ],
+      "late_receipt_gap": [
+        0.1982746839591891,
+        0.19132591492743956
+      ],
+      "late_receipt_capacity": [
+        0.21660348782725358,
+        0.20758221733900314
+      ],
+      "late_receipt_available": [
+        1.9081806730493003,
+        1.9445093597209768
+      ],
+      "terminal": {
+        "key": "soft_p512/plus/width1.6/effort1",
+        "clock": 2112,
+        "mass": 13.006485109924245,
+        "energy": 14.286566260060201,
+        "mean_specific": 1.0984186841654264,
+        "low_specific_mass": 0.5819218648453635,
+        "low_specific_mass_fraction": 0.04474090116793689,
+        "energy_in_low_specific": 0.017388290024017764
+      }
+    },
+    {
+      "key": "soft_p512/plus/width4/effort0.5",
+      "all_receipt_U": 0.40767216096413406,
+      "all_receipt_bound": 1.238108096164087,
+      "late_receipt_utilization": [
+        0.33166242350955877,
+        0.3189757172683936
+      ],
+      "late_receipt_gap": [
+        0.13285231491408026,
+        0.11920827936233175
+      ],
+      "late_receipt_capacity": [
+        0.19878025654596776,
+        0.17504262679765864
+      ],
+      "late_receipt_available": [
+        0.8642751708891624,
+        0.9945641016873723
+      ],
+      "terminal": {
+        "key": "soft_p512/plus/width4/effort0.5",
+        "clock": 2112,
+        "mass": 13.623961537478152,
+        "energy": 20.42531378716191,
+        "mean_specific": 1.4992198657471192,
+        "low_specific_mass": 0.07265864006915777,
+        "low_specific_mass_fraction": 0.005333150704314684,
+        "energy_in_low_specific": 0.0038633100826767756
+      }
+    },
+    {
+      "key": "soft_p512/plus/width4/effort1",
+      "all_receipt_U": 0.41856663082026985,
+      "all_receipt_bound": 1.2592463416442548,
+      "late_receipt_utilization": [
+        0.329680050511686,
+        0.31096099586583503
+      ],
+      "late_receipt_gap": [
+        0.13676010294976576,
+        0.120162441455391
+      ],
+      "late_receipt_capacity": [
+        0.20402212861807412,
+        0.17439134901569925
+      ],
+      "late_receipt_available": [
+        0.8408928951797807,
+        1.0067727843481882
+      ],
+      "terminal": {
+        "key": "soft_p512/plus/width4/effort1",
+        "clock": 2112,
+        "mass": 13.655520887760108,
+        "energy": 20.314318975860985,
+        "mean_specific": 1.4876268099058292,
+        "low_specific_mass": 0.009284247475311556,
+        "low_specific_mass_fraction": 0.0006798896615971151,
+        "energy_in_low_specific": 0.0005076973806326575
+      }
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort0.5",
+      "all_receipt_U": 0.11714228575771365,
+      "all_receipt_bound": 1.3753324545735153,
+      "late_receipt_utilization": [
+        0.09648315136056498,
+        0.08757960050835173
+      ],
+      "late_receipt_gap": [
+        0.20693393197743926,
+        0.20079097689856387
+      ],
+      "late_receipt_capacity": [
+        0.22903162490998552,
+        0.220064103137582
+      ],
+      "late_receipt_available": [
+        1.8981206783678428,
+        1.8985110958638134
+      ],
+      "terminal": {
+        "key": "soft_p512/minus/width1.6/effort0.5",
+        "clock": 2112,
+        "mass": 13.925090670344787,
+        "energy": 15.856747564917178,
+        "mean_specific": 1.1387177247388482,
+        "low_specific_mass": 0.6101418460632354,
+        "low_specific_mass_fraction": 0.043816005260390034,
+        "energy_in_low_specific": 0.020521193234486437
+      }
+    },
+    {
+      "key": "soft_p512/minus/width1.6/effort1",
+      "all_receipt_U": 0.12249969774971536,
+      "all_receipt_bound": 1.395582209130693,
+      "late_receipt_utilization": [
+        0.08484046868122802,
+        0.07997445639345088
+      ],
+      "late_receipt_gap": [
+        0.2114195817519686,
+        0.20390507299504468
+      ],
+      "late_receipt_capacity": [
+        0.23101937369029715,
+        0.2216297954029906
+      ],
+      "late_receipt_available": [
+        1.8846420138159337,
+        1.9182373573674287
+      ],
+      "terminal": {
+        "key": "soft_p512/minus/width1.6/effort1",
+        "clock": 2112,
+        "mass": 13.96255254602828,
+        "energy": 15.659595866174145,
+        "mean_specific": 1.1215424840516426,
+        "low_specific_mass": 0.541174617689717,
+        "low_specific_mass_fraction": 0.038759003119644975,
+        "energy_in_low_specific": 0.015704462889640683
+      }
+    },
+    {
+      "key": "soft_p512/minus/width4/effort0.5",
+      "all_receipt_U": 0.41638023465829044,
+      "all_receipt_bound": 1.3137998131092072,
+      "late_receipt_utilization": [
+        0.32341780434578155,
+        0.30966648516605966
+      ],
+      "late_receipt_gap": [
+        0.144959125408757,
+        0.12792902514682092
+      ],
+      "late_receipt_capacity": [
+        0.21425205442864093,
+        0.18531481146123152
+      ],
+      "late_receipt_available": [
+        0.83679431602209,
+        0.9448354646309663
+      ],
+      "terminal": {
+        "key": "soft_p512/minus/width4/effort0.5",
+        "clock": 2112,
+        "mass": 14.508536137335476,
+        "energy": 21.9009528317604,
+        "mean_specific": 1.509521885905614,
+        "low_specific_mass": 0.0691734531734464,
+        "low_specific_mass_fraction": 0.004767776191799199,
+        "energy_in_low_specific": 0.0032511396399016266
+      }
+    },
+    {
+      "key": "soft_p512/minus/width4/effort1",
+      "all_receipt_U": 0.4258321578650243,
+      "all_receipt_bound": 1.3404890954292654,
+      "late_receipt_utilization": [
+        0.3142223830353408,
+        0.303924957857046
+      ],
+      "late_receipt_gap": [
+        0.1488211060329997,
+        0.13097784371553553
+      ],
+      "late_receipt_capacity": [
+        0.21701073693787387,
+        0.1881662691314199
+      ],
+      "late_receipt_available": [
+        0.808663852040908,
+        0.9655053547424385
+      ],
+      "terminal": {
+        "key": "soft_p512/minus/width4/effort1",
+        "clock": 2112,
+        "mass": 14.538616839182453,
+        "energy": 21.759077223187525,
+        "mean_specific": 1.4966401180988205,
+        "low_specific_mass": 0.025218994160823405,
+        "low_specific_mass_fraction": 0.0017346212806748362,
+        "energy_in_low_specific": 0.0014547335538974576
+      }
+    }
+  ],
+  "source_refs": {
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/plus/width1.6/effort0.5/stage_1985.npz": "c25087a1e27c500f9dfc5a2c8482e0ae6e130db936f5d7ee12907c4af116d54e",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/plus/width1.6/effort0.5/stage_2000.npz": "ba615971758b1c9db5100515f42a3b86b84ecad4d55d64ae1e88b40806e46283",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/plus/width1.6/effort0.5/stage_2001.npz": "e295fd2d16676fecb6f91f48f1fb08fb801556b2efd037de33641c5bc36f1d28",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/plus/width1.6/effort0.5/stage_2016.npz": "fee47d1df04f99f9a3331cf8047675c2e4c719c414e538ea13f0c61276c6ad03",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/plus/width1.6/effort0.5/stage_2048.npz": "09911906821b6d751935e0236332a0e2232f50aa2d5a7c6ff56a5262b6524236",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/plus/width1.6/effort0.5/stage_2112.npz": "dd75f71eddcfe600b5c4bec60a8b3ac82ee2546aae0cc5644d511edb4e1320a8",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/plus/width1.6/effort1/stage_1985.npz": "17d77c37a19b0af66e0e75273213e693c820afe25e503348da8dd511e1ca0f91",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/plus/width1.6/effort1/stage_2000.npz": "30d1cdbaa9805d8f7e86a1eb06819b00985d567ac7410495347c41374086d18b",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/plus/width1.6/effort1/stage_2001.npz": "814828d8327848462e6aee0b6acb984a4ed01ed370a3a09670f3363a3201de9a",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/plus/width1.6/effort1/stage_2016.npz": "ca194529554e1dd0ec9227c2b5f8ddb7df65866031c7920a4993a19f48bd2ea0",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/plus/width1.6/effort1/stage_2048.npz": "2aaff8c3fa12ec59226bca2056fe1b6bacb74248a6635bed827940587758fc8f",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/plus/width1.6/effort1/stage_2112.npz": "9387b6980912dc8ca3f3f0349d1f0a552c59eae3cb350875e92d8d539e5627da",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/plus/width4/effort0.5/stage_1985.npz": "abeb53c721a91cb1f23b59061fed89f053aea5dca0f7c85e895c62080592fba7",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/plus/width4/effort0.5/stage_2000.npz": "9e8f52f55d6136e104451d462f4f2d4e0e6f61cb19a2fa93585b87210d652cb5",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/plus/width4/effort0.5/stage_2001.npz": "47e8f432fe90c0caf1a9b7a54f6e92c2c0a200efd35c8e7ec421acf2ebea830f",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/plus/width4/effort0.5/stage_2016.npz": "9db0d64c962e3326bfa4df2dac4588580c3485e59c56bf0088fe0966a0f1d05b",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/plus/width4/effort0.5/stage_2048.npz": "7ae68656d2cc1d6b455052aab03d9a7ab0a2aa5d0ff67aca47aae44eb074cf26",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/plus/width4/effort0.5/stage_2112.npz": "b17ba47b2f3370d6c7521521488c92441062ad91e6124ebed21ea2675d3d8094",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/plus/width4/effort1/stage_1985.npz": "8a082d5292b6c4e9e73235ebb543e939ac8074bfd1aa1537985ada5b7017f394",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/plus/width4/effort1/stage_2000.npz": "0a16ed1def08ab8924d1eabb5385ae187508458085d17f163d5e02a684b98d60",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/plus/width4/effort1/stage_2001.npz": "91c3a32f3b22a438d3c1c7dca6baed9eac5eff9f3000e216a225599ffadcb71f",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/plus/width4/effort1/stage_2016.npz": "0164554dc40709798fb4698adecace407b363f243219b268989d8a9ab8bc3c2b",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/plus/width4/effort1/stage_2048.npz": "cd6279299057c54eac9c93e4695353b2742999fb5223a4db0cd5fd29efd44abd",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/plus/width4/effort1/stage_2112.npz": "76b9b2bbefcc4a98f2e6e3aab1f14ac05b701314f3ce1ab8e37bff444564266e",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/minus/width1.6/effort0.5/stage_1985.npz": "40ec7015e0cf6a3cbe32622a3c5147b0446602c42e1acd4a52954d75bd558d42",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/minus/width1.6/effort0.5/stage_2000.npz": "e759454ab72156a43db779715ddec756cd4432c462d936303d08085ebfb31ed1",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/minus/width1.6/effort0.5/stage_2001.npz": "55a2d200000caa0fcc7fc6ea17964a049e1a36a311d572dabfadd198a32999ac",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/minus/width1.6/effort0.5/stage_2016.npz": "f0ff0c2960798e324edea6752c36487e8930bb40699f8a6ca3cc6ddc3260f849",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/minus/width1.6/effort0.5/stage_2048.npz": "4f5658520364f266d845bee8da5312914cd71630e1329e915517a19240b39da7",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/minus/width1.6/effort0.5/stage_2112.npz": "737f20431e3f535cd0ce951d5c982125a697193fafa3d75ea0252dc05cc187a5",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/minus/width1.6/effort1/stage_1985.npz": "bf4f63bdc3bf2755bf3735d3693550d3ac06e28fa4369ab6bbed4f151ce2d96c",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/minus/width1.6/effort1/stage_2000.npz": "77b7bc10c623c37e65fc90267ab3e056d058eab2039413b3a4406afc3b52daca",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/minus/width1.6/effort1/stage_2001.npz": "5ec63d7e24606c73a9e5b0d33a28fdc43d9ac1b3edf2affedf0b22d433c7dfb0",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/minus/width1.6/effort1/stage_2016.npz": "80b4fea523cd2523d525720b99c2d498b68834dfd403d2a1ed9cc7b87564587c",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/minus/width1.6/effort1/stage_2048.npz": "1bde887544ed1d511015b0c3d9742d10583a77761ab50c0e28cc75b2020c5198",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/minus/width1.6/effort1/stage_2112.npz": "bc0b612111d781eb1e6a08e522d98fed99447576d5c79265aab40db78b4afd8c",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/minus/width4/effort0.5/stage_1985.npz": "42206e4e09995a989ef43821b03baffab6b4919eb701066837f659691962d70a",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/minus/width4/effort0.5/stage_2000.npz": "399684f4e04016cfdf0c279db948fe955fd20fd12e320667d8b82115c92339de",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/minus/width4/effort0.5/stage_2001.npz": "85071e6e6a9524a668a3115a6809387987172448dad0f99ce31b118eb183d434",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/minus/width4/effort0.5/stage_2016.npz": "c82ed8bf2fe60459e18b747b2f59ed2756d053af40da60ca6626b3dae9a5bdff",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/minus/width4/effort0.5/stage_2048.npz": "54708a8e1ab1e18664cf736b803c4c0ab73381418fe751665478b3fdfd739473",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/minus/width4/effort0.5/stage_2112.npz": "79c282aae9eee93faff57764616674691d1a9a93228117948e84fb6d6672b16b",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/minus/width4/effort1/stage_1985.npz": "254902ef2cf21a46d762ee5299ee8f5e0e4008f3ef57ba9b1c47d836a18cc757",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/minus/width4/effort1/stage_2000.npz": "74cd77061525d7f98704e748c4ed5892a9f9b99355b533c8003fa4369ce6275d",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/minus/width4/effort1/stage_2001.npz": "a59812c251a6a57506dc7ae35704f2df1c2fb580434079ab293fae6af9bfe908",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/minus/width4/effort1/stage_2016.npz": "e1266dd34f1b936dee1b910795eeaefabb9fd1a0fafe22ba69adc71d193eb3df",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/minus/width4/effort1/stage_2048.npz": "1efba301d6980a005d11f2d418d66de20315dedeb9859368c9432b9b86c2762d",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/compact_p512/minus/width4/effort1/stage_2112.npz": "ed1018166796dc096e9946574086a53880085579889b51d77a6f0b6c9f9499fd",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/plus/width1.6/effort0.5/stage_1985.npz": "2e4ebc5e92dbe993464f3de6de13cdbd24099eaef1cd3f2609aa45a1f0cc9aaf",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/plus/width1.6/effort0.5/stage_2000.npz": "b0ec9673c446ba4dbb4f50002b781524a47cde280a79aeb522a93ea631b180ba",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/plus/width1.6/effort0.5/stage_2001.npz": "ddcf279688511fdfb8faf4cd99bc64a0631f6c0b09703d0a3f55c90e24a3d4e6",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/plus/width1.6/effort0.5/stage_2016.npz": "0d6554f56b0af4a9261bc5ea4f47b98caf7a02b0975aec6671f6320ee197691b",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/plus/width1.6/effort0.5/stage_2048.npz": "da1569c59be769dc7866848055e2ebc4e5679e72e33864182d2bfea39b157e22",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/plus/width1.6/effort0.5/stage_2112.npz": "de142d5f9039f6709c94b857732feff436f209b4e83feece25943c08d303bd7d",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/plus/width1.6/effort1/stage_1985.npz": "723cd9bb55a217712ea9ad28606d8d2c65c8037b3e544b80d9fe98746dfefbbf",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/plus/width1.6/effort1/stage_2000.npz": "e9db43a8cae19eb53b73c2d6bb53a02cb4827286835bd51e3eeab7f28016096b",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/plus/width1.6/effort1/stage_2001.npz": "f7caa9ce2906111b6f3ce708ac920ecf2d298648513aa9d108ceeca09b52fdf6",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/plus/width1.6/effort1/stage_2016.npz": "989a8ddb386ab65bc67ba52afe050f330dc14fbab9226e3cc463e20eba224e64",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/plus/width1.6/effort1/stage_2048.npz": "91eaa9b9163a650a763f223457919ad4e0411a05cd46bbd1b77f20a08f902d68",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/plus/width1.6/effort1/stage_2112.npz": "c984b0bc5f7756a69441cf4039097bc0a935c3a81bcae7e1e6cd26ef02f040f2",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/plus/width4/effort0.5/stage_1985.npz": "3bbe64a4a058645a41a7ae55e018ccf1cddb598e4767433b0f33b649c44bc11f",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/plus/width4/effort0.5/stage_2000.npz": "19e0270df2c77014d1b5d94fb7ed6a2c5bedf8d00d6a3853c40d05dee70ff19f",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/plus/width4/effort0.5/stage_2001.npz": "378f39f40435ea47db619288fec32f31f19821980dd5eca8594b7c47818ade3b",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/plus/width4/effort0.5/stage_2016.npz": "d229905642455a019572e43e41a3548a286032677d3d9d21fc7f125fab955b7e",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/plus/width4/effort0.5/stage_2048.npz": "691ba304ba5af5b3c9fed3fc5609867b97caa58abec8b6fb40421c537abf1f22",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/plus/width4/effort0.5/stage_2112.npz": "41ee5faef0f4dba5ed1d8f5de64047fe4a85c5e02ddc5d1e004612e1ddb67afe",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/plus/width4/effort1/stage_1985.npz": "6dd98b50da3e158ac2eab1a899cb1612c7d5b1a4df4a2a661476c7729e92d704",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/plus/width4/effort1/stage_2000.npz": "92c7d85d6dc41a5c3982ac888622a6c338f3037d97cf716c1ef516420dce45a8",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/plus/width4/effort1/stage_2001.npz": "03662d768d82881c9488a5156b45d9bc4eff6f4c0d7f92e6c9dcdbbc3a6bf4c5",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/plus/width4/effort1/stage_2016.npz": "6297f01df79d8d2388fc34344cb0b59fb50b83b37959858a9533466e3a9afa75",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/plus/width4/effort1/stage_2048.npz": "b73260189e50f06df451c181e807cf6fe23abba2f60ea2c3cefc75c992823257",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/plus/width4/effort1/stage_2112.npz": "b08bdde5eecf52f8faca84274e801760c2ae322051965649b8871ec8cfe744d9",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/minus/width1.6/effort0.5/stage_1985.npz": "41d1473462621e53ded4ff1c41db0cc83ef75826dd7451d46abb7c48cfa2a4f2",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/minus/width1.6/effort0.5/stage_2000.npz": "ad0fa86923958eb3d88770e85fec3f561cf4d02f88103a9fbbef4360b588b024",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/minus/width1.6/effort0.5/stage_2001.npz": "7bf3f0231c2107cf5e33d69cfb75cfe0b320ae2bd292fc29d75ebd26e13631be",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/minus/width1.6/effort0.5/stage_2016.npz": "126f7d3ae1fa4265b7e1ba31ac5a014dd443821503d7d934d443ed9079081d60",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/minus/width1.6/effort0.5/stage_2048.npz": "2a8dd29b6e86e2415a713db7e935976526b39454923ec336cca1544e8fed7812",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/minus/width1.6/effort0.5/stage_2112.npz": "3f2e028a681ed70908a61a226f8dcd7fb8612589e692202a74011cb133877c65",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/minus/width1.6/effort1/stage_1985.npz": "461d717e02971c5d55f2d130e16e90abeb2618bf3ae9a52d103b26d090b8342e",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/minus/width1.6/effort1/stage_2000.npz": "fc66fcf8032b19a2f5ed326f3a4f1f85b8c83afa2f50dc573dad96de4fe3622d",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/minus/width1.6/effort1/stage_2001.npz": "74543ed9f6af09112235f4f77b3240814e2fedde69f01470533fb3da7904068e",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/minus/width1.6/effort1/stage_2016.npz": "6a9d8ed01fdd5a015de91d538df3702e258ef4261892a3913375f354f36c73d1",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/minus/width1.6/effort1/stage_2048.npz": "71c2014430b0d942b85ca3d0bb89b74c30d0d8405e069957cdfe6ba4d8e4a697",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/minus/width1.6/effort1/stage_2112.npz": "6c62f79300cf255e99f2a15cf607d0da24c1b235fff340dc74f30d322408c6b4",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/minus/width4/effort0.5/stage_1985.npz": "87b40099ec1c5f9eafba43c411b3899f0238f656df9a0b16be716b5e4ce3ed52",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/minus/width4/effort0.5/stage_2000.npz": "311033959ed1ba60e76b44489614de9983ae901c2adfd4bfe152c00d4afc2694",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/minus/width4/effort0.5/stage_2001.npz": "e803f02538448659bf22dcebc94be1a66f22b36d2084176b8f8a83f737d0a9f5",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/minus/width4/effort0.5/stage_2016.npz": "ce341c35299840c0d14f3bff2be18ce3d70a9e0339f8385649807504d0f946c0",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/minus/width4/effort0.5/stage_2048.npz": "25a78af0114ae1b4b47f3595f6ca4e4a3a6503f798bcbfc16fe495e149b81878",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/minus/width4/effort0.5/stage_2112.npz": "61491084b42f4cd416c9a1167fdf5bf830c28665c4030305d2c5e4139a7bf0f7",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/minus/width4/effort1/stage_1985.npz": "5cd48bf165a77ae5ed29492aff17680ffc35680ebf995d2cb970de5aa5fdb020",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/minus/width4/effort1/stage_2000.npz": "e7ee8bcf37c61b5e0d8410afa67f6eec64ecf819e69bf090ddacdc72f607a99a",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/minus/width4/effort1/stage_2001.npz": "d18a03064d4e50632c2ea3903d3cf931517e79645ebd9bf62992d9bb7e80bb21",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/minus/width4/effort1/stage_2016.npz": "11a9bdef4dc0f0a7def5a8ea777a7dfc330658372684660ac200a4d8a3543ed4",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/minus/width4/effort1/stage_2048.npz": "89f53a12da089889a644d0ec6498caa470686ea43a554acdccf8d4337293f464",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/resource_conditioned_effort_opportunity_20261019/soft_p512/minus/width4/effort1/stage_2112.npz": "30145dffb289fc785171f949b80efc477cf802535d5c480341088cdceca15e1d"
+  },
+  "source_sha": "7637c72221696e303ff377e1c66967822ba9b4b1d49b67587d9a81797033982d",
+  "interpretation": [
+    "The bound freely relocates all saved pre-uptake external resource to fixed local min(rate,room). It ignores transport reach, capacity, payment and feedback; it is not deployable or a future-U prediction.",
+    "Post-frame low specific energy is a spatial coexistence diagnostic, not an attribution of death or cause of effort response.",
+    "No receipt selection: all six predeclared offsets for all16 paths. Not independent samples. No dynamics or missing stage replay."
+  ]
+}

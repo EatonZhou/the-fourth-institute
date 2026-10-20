@@ -1,0 +1,53 @@
+{
+  "extra_native": 0,
+  "integrated_first_steps": [
+    {
+      "id": "b2--P_on_protected",
+      "baseline_first_native_pump_recycle_exact": true,
+      "error": 0.0,
+      "extra_native": 0
+    },
+    {
+      "id": "b2--P_on_leaky",
+      "baseline_first_native_pump_recycle_exact": true,
+      "error": 0.0,
+      "extra_native": 0
+    },
+    {
+      "id": "b2--P_off_protected",
+      "baseline_first_native_pump_recycle_exact": true,
+      "error": 0.0,
+      "extra_native": 0
+    },
+    {
+      "id": "b2--P_off_leaky",
+      "baseline_first_native_pump_recycle_exact": true,
+      "error": 0.0,
+      "extra_native": 0
+    },
+    {
+      "id": "b6--P_on_protected",
+      "baseline_first_native_pump_recycle_exact": true,
+      "error": 0.0,
+      "extra_native": 0
+    },
+    {
+      "id": "b6--P_on_leaky",
+      "baseline_first_native_pump_recycle_exact": true,
+      "error": 0.0,
+      "extra_native": 0
+    },
+    {
+      "id": "b6--P_off_protected",
+      "baseline_first_native_pump_recycle_exact": true,
+      "error": 0.0,
+      "extra_native": 0
+    },
+    {
+      "id": "b6--P_off_leaky",
+      "baseline_first_native_pump_recycle_exact": true,
+      "error": 0.0,
+      "extra_native": 0
+    }
+  ]
+}

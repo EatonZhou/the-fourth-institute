@@ -1,0 +1,41 @@
+{
+  "id": "191e27ad-3229-4cfd-9149-d776628c19d4",
+  "name": "response_pooling_order_20261019",
+  "command": [
+    "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+    "-m",
+    "local_learning.response_pooling_order.run"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "d3-response-pooling-order-20261019-v1",
+  "status": "completed",
+  "created_at": "2026-10-18T23:31:27.983700+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/191e27ad-3229-4cfd-9149-d776628c19d4",
+  "pid": 546894,
+  "manual_pause": false,
+  "create_time": 1792366287.44,
+  "started_at": "2026-10-18T23:31:28.052947+00:00",
+  "returncode": 0,
+  "finished_at": "2026-10-18T23:31:52.932242+00:00",
+  "result": {
+    "task": "response_pooling_order_20261019",
+    "status": "complete",
+    "job": "191e27ad-3229-4cfd-9149-d776628c19d4",
+    "attempted": 516,
+    "committed": 516,
+    "settled": 516,
+    "science_native": 512,
+    "boundary_native": 4,
+    "unknown_native": 0,
+    "wall_seconds": 24.622903091018088,
+    "failure": null,
+    "logical_paths": 4,
+    "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/response_pooling_order_20261019/191e27ad-3229-4cfd-9149-d776628c19d4",
+    "raw_bytes": 59086832,
+    "objective_met": false,
+    "acquisition_replay": 0,
+    "old_tail_replay": 0,
+    "old_budget_used": 0
+  }
+}

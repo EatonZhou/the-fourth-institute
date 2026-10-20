@@ -1,0 +1,99 @@
+{
+  "source_hashes_match": true,
+  "all_ledger_steps": true,
+  "summary_reconstruction_error": 4.547473508864641e-13,
+  "physical_max_error": 1.8189894035458565e-12,
+  "pool_compatibility_max_error": 2.220446049250313e-16,
+  "registration_max_error": 2.2737367544323206e-13,
+  "native_in_cap": true,
+  "worker_in_cap": true,
+  "data_in_cap": true,
+  "common_start": [
+    {
+      "body": 0,
+      "arm": "context_matching",
+      "parent": "/data/dataset/lenia-research/lineage_75e3399f4877/contextual_terminal_records_learning_20261018/71d32015-92aa-404e-8032-4ac39cbb8ebb/b0_prefix_unit0_complete",
+      "exact_physical_records_controller_rng": true,
+      "clock": 192
+    },
+    {
+      "body": 0,
+      "arm": "context_reversed",
+      "parent": "/data/dataset/lenia-research/lineage_75e3399f4877/contextual_terminal_records_learning_20261018/71d32015-92aa-404e-8032-4ac39cbb8ebb/b0_prefix_unit0_complete",
+      "exact_physical_records_controller_rng": true,
+      "clock": 192
+    },
+    {
+      "body": 0,
+      "arm": "context_pooled",
+      "parent": "/data/dataset/lenia-research/lineage_75e3399f4877/contextual_terminal_records_learning_20261018/71d32015-92aa-404e-8032-4ac39cbb8ebb/b0_prefix_unit0_complete",
+      "exact_physical_records_controller_rng": true,
+      "clock": 192
+    },
+    {
+      "body": 0,
+      "arm": "fixed_gradient",
+      "parent": "/data/dataset/lenia-research/lineage_75e3399f4877/contextual_terminal_records_learning_20261018/71d32015-92aa-404e-8032-4ac39cbb8ebb/b0_prefix_unit0_complete",
+      "exact_physical_records_controller_rng": true,
+      "clock": 192
+    },
+    {
+      "body": 0,
+      "arm": "full_euler",
+      "parent": "/data/dataset/lenia-research/lineage_75e3399f4877/contextual_terminal_records_learning_20261018/71d32015-92aa-404e-8032-4ac39cbb8ebb/b0_prefix_unit0_complete",
+      "exact_physical_records_controller_rng": true,
+      "clock": 192
+    },
+    {
+      "body": 0,
+      "arm": "none",
+      "parent": "/data/dataset/lenia-research/lineage_75e3399f4877/contextual_terminal_records_learning_20261018/71d32015-92aa-404e-8032-4ac39cbb8ebb/b0_prefix_unit0_complete",
+      "exact_physical_records_controller_rng": true,
+      "clock": 192
+    },
+    {
+      "body": 1,
+      "arm": "context_matching",
+      "parent": "/data/dataset/lenia-research/lineage_75e3399f4877/contextual_terminal_records_learning_20261018/71d32015-92aa-404e-8032-4ac39cbb8ebb/b1_prefix_unit0_complete",
+      "exact_physical_records_controller_rng": true,
+      "clock": 192
+    },
+    {
+      "body": 1,
+      "arm": "context_reversed",
+      "parent": "/data/dataset/lenia-research/lineage_75e3399f4877/contextual_terminal_records_learning_20261018/71d32015-92aa-404e-8032-4ac39cbb8ebb/b1_prefix_unit0_complete",
+      "exact_physical_records_controller_rng": true,
+      "clock": 192
+    },
+    {
+      "body": 1,
+      "arm": "context_pooled",
+      "parent": "/data/dataset/lenia-research/lineage_75e3399f4877/contextual_terminal_records_learning_20261018/71d32015-92aa-404e-8032-4ac39cbb8ebb/b1_prefix_unit0_complete",
+      "exact_physical_records_controller_rng": true,
+      "clock": 192
+    },
+    {
+      "body": 1,
+      "arm": "fixed_gradient",
+      "parent": "/data/dataset/lenia-research/lineage_75e3399f4877/contextual_terminal_records_learning_20261018/71d32015-92aa-404e-8032-4ac39cbb8ebb/b1_prefix_unit0_complete",
+      "exact_physical_records_controller_rng": true,
+      "clock": 192
+    },
+    {
+      "body": 1,
+      "arm": "full_euler",
+      "parent": "/data/dataset/lenia-research/lineage_75e3399f4877/contextual_terminal_records_learning_20261018/71d32015-92aa-404e-8032-4ac39cbb8ebb/b1_prefix_unit0_complete",
+      "exact_physical_records_controller_rng": true,
+      "clock": 192
+    },
+    {
+      "body": 1,
+      "arm": "none",
+      "parent": "/data/dataset/lenia-research/lineage_75e3399f4877/contextual_terminal_records_learning_20261018/71d32015-92aa-404e-8032-4ac39cbb8ebb/b1_prefix_unit0_complete",
+      "exact_physical_records_controller_rng": true,
+      "clock": 192
+    }
+  ],
+  "missing_later_physics_not_reconstructed": true,
+  "scoring_unit": "body within known layout, not cells or message counts"
+}

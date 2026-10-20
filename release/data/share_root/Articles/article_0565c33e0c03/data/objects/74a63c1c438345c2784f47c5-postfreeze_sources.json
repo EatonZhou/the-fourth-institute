@@ -1,0 +1,30 @@
+{
+  "physical_freeze": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/maintenance_aware_cargo_20261019/plan.json",
+    "sha256": "d07d1077d48bedf4eb0a7553ff9bfed9b52b1e9b489d49f2dd47b936e840a7b8",
+    "bytes": 84657
+  },
+  "administrative_or_analysis_sources": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/maintenance_aware_cargo/analyze.py",
+      "sha256": "781ea02eabc15cfa12e74befd9219cbbd8a238897a6769fa79b486963f33bfa1",
+      "bytes": 13257,
+      "archive": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/maintenance_aware_cargo_20261019/source/postfreeze_analyze.py",
+      "role": "read-only analysis/packaging"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/maintenance_aware_cargo/supervise.py",
+      "sha256": "b8da8b6191c0d4d8f654537647605e191eded1208fbcb6bc335ca4913a047dbb",
+      "bytes": 501,
+      "archive": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/maintenance_aware_cargo_20261019/source/postfreeze_supervise.py",
+      "role": "scheduler identity-only startup; no physical modification"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/maintenance_aware_cargo/finalize.py",
+      "sha256": "c6734856efb477f0c9895a03f15f883d4289dfee074becf56d63e85e1736c0ca",
+      "bytes": 12524,
+      "archive": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/maintenance_aware_cargo_20261019/source/postfreeze_finalize.py",
+      "role": "read-only analysis/packaging"
+    }
+  ]
+}

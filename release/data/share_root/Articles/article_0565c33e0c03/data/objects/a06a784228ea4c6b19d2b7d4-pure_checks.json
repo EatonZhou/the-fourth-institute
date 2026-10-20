@@ -1,0 +1,135 @@
+{
+  "native": 0,
+  "old_saved_arrays": [
+    {
+      "seed": 202610195401,
+      "shape": "compact",
+      "clock": 256,
+      "pure_matched_birth": [
+        0.15296145694047053,
+        0.15296145694047053
+      ],
+      "cohort_checks": {
+        "cohort_reconstruction_error": 0.0,
+        "cohort_transport_error": 0.0,
+        "cohort_balance_error": 1.4210854715202004e-14,
+        "cohort_negative_error": 0.0,
+        "cohort_registration_roundoff": 0.0
+      }
+    },
+    {
+      "seed": 202610195401,
+      "shape": "compact",
+      "clock": 320,
+      "pure_matched_birth": [
+        0.15717242182657332,
+        0.15717242182657332
+      ],
+      "cohort_checks": {
+        "cohort_reconstruction_error": 0.0,
+        "cohort_transport_error": 0.0,
+        "cohort_balance_error": 0.0,
+        "cohort_negative_error": 0.0,
+        "cohort_registration_roundoff": 0.0
+      }
+    },
+    {
+      "seed": 202610195401,
+      "shape": "double_lobe",
+      "clock": 256,
+      "pure_matched_birth": [
+        0.1874278987833833,
+        0.1874278987833833
+      ],
+      "cohort_checks": {
+        "cohort_reconstruction_error": 0.0,
+        "cohort_transport_error": 0.0,
+        "cohort_balance_error": 0.0,
+        "cohort_negative_error": 0.0,
+        "cohort_registration_roundoff": 0.0
+      }
+    },
+    {
+      "seed": 202610195401,
+      "shape": "double_lobe",
+      "clock": 320,
+      "pure_matched_birth": [
+        0.1841824538449624,
+        0.1841824538449624
+      ],
+      "cohort_checks": {
+        "cohort_reconstruction_error": 0.0,
+        "cohort_transport_error": 7.105427357601002e-15,
+        "cohort_balance_error": 7.105427357601002e-15,
+        "cohort_negative_error": 0.0,
+        "cohort_registration_roundoff": 0.0
+      }
+    },
+    {
+      "seed": 202610195402,
+      "shape": "compact",
+      "clock": 256,
+      "pure_matched_birth": [
+        0.15529146746519878,
+        0.15529146746519878
+      ],
+      "cohort_checks": {
+        "cohort_reconstruction_error": 0.0,
+        "cohort_transport_error": 0.0,
+        "cohort_balance_error": 0.0,
+        "cohort_negative_error": 0.0,
+        "cohort_registration_roundoff": 0.0
+      }
+    },
+    {
+      "seed": 202610195402,
+      "shape": "compact",
+      "clock": 320,
+      "pure_matched_birth": [
+        0.14138891519547114,
+        0.14138891519547114
+      ],
+      "cohort_checks": {
+        "cohort_reconstruction_error": 0.0,
+        "cohort_transport_error": 2.842170943040401e-14,
+        "cohort_balance_error": 0.0,
+        "cohort_negative_error": 0.0,
+        "cohort_registration_roundoff": 0.0
+      }
+    },
+    {
+      "seed": 202610195402,
+      "shape": "double_lobe",
+      "clock": 256,
+      "pure_matched_birth": [
+        0.18740697353852784,
+        0.18740697353852787
+      ],
+      "cohort_checks": {
+        "cohort_reconstruction_error": 0.0,
+        "cohort_transport_error": 0.0,
+        "cohort_balance_error": 7.105427357601002e-15,
+        "cohort_negative_error": 0.0,
+        "cohort_registration_roundoff": 0.0
+      }
+    },
+    {
+      "seed": 202610195402,
+      "shape": "double_lobe",
+      "clock": 320,
+      "pure_matched_birth": [
+        0.1887843559518074,
+        0.1887843559518074
+      ],
+      "cohort_checks": {
+        "cohort_reconstruction_error": 0.0,
+        "cohort_transport_error": 1.4210854715202004e-14,
+        "cohort_balance_error": 1.4210854715202004e-14,
+        "cohort_negative_error": 0.0,
+        "cohort_registration_roundoff": 0.0
+      }
+    }
+  ],
+  "zero_resource_support_cases": true,
+  "roundtrip": true
+}

@@ -1,0 +1,21 @@
+{
+  "business_ref": "lifetime_cue_reversal_20261019",
+  "direction_handoff_sha256": "fb1b4f86fbdcf731c919e03661c0b06c67c332d44ea47f4bf312494a804b7540",
+  "recipients": [
+    {
+      "resident_id": "resident_afa3d4d6cf11",
+      "message_id": "msg_bcb10a5654c45b8bff853cf070d886d8",
+      "status": "committed"
+    },
+    {
+      "resident_id": "resident_78225d1bc049",
+      "message_id": "msg_af49906b2047fe10367c1a3e039a71ba",
+      "status": "committed"
+    },
+    {
+      "resident_id": "resident_a48ab8bd3f81",
+      "message_id": "msg_99349962a2119322b8af27edbec20b98",
+      "status": "committed"
+    }
+  ]
+}

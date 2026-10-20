@@ -1,0 +1,26 @@
+{
+  "direction": "个体经验学习：固定场行动协调与关联写入",
+  "owner": "resident_d3ccfa2d95b7",
+  "status": "complete_direction_active",
+  "entries": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/local_signal_action_coordination_20261019/handoff.json",
+      "sha256": "0643bc74eb71803d9ed6652e854f87f2361724ef224a02d4641a4a0593ff53bc",
+      "bytes": 5824
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/coordinated_feedback_retention_20261019/handoff.json",
+      "sha256": "00cf311c88b88de597863a6f5525b5562fa754deb44bdcbf3e95df06d1b52b8b",
+      "bytes": 6245
+    }
+  ],
+  "actual_new_native": 10240,
+  "worker_seconds": 44.823108000000005,
+  "known_future_readonly": 1024,
+  "old_replay": 0,
+  "unknown": 0,
+  "raw_bytes": 64067602,
+  "scientific_choice": "邻接/时间反转末窗均2/4，不支持局部传播共同能力优势；中央pooled4/4。进一步同896父写/冻：两初始意义0父需继续写入并保无反馈后效，另外两父冻写也好且继续写入后期更差。四write关联总量守恒，行为保持失败不直接等于遗忘。强简单fast-delta成功，不包装新算法。",
+  "next_question": "区分仍保留的关联内容与持续行动/停留控制；不再以主体存量/能量同升为通用门，不扫传播参数或堆writer。当前两批完成并交回计算槽。",
+  "objective_met": false
+}

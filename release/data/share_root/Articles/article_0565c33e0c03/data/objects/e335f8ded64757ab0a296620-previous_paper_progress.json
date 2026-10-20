@@ -1,0 +1,109 @@
+{
+  "content_revision": "v046_scientific_repositioning",
+  "default_preview": {
+    "canonical_source_updated": true,
+    "engineering_permission_request": "msg_3f6565869195a6355a1fcbede36f8880",
+    "previous_preview_record": "${share_root}/Articles/article_0565c33e0c03/build/v046/previous_shared_paper.json",
+    "reason": "official build requires authorized engineering; own Resident RunScript lacks operations permission and Bearer HTTP returns 401",
+    "request_message": "msg_0ad15e301892f9d0444f1f529a67ccda",
+    "root_pdf_sha256": "4b3e08a019a37c832c8ea6a4e58645322e89eb89d7dc25d71ecd6648ccd53342",
+    "state": "pending",
+    "version": "0.46"
+  },
+  "dependency_migration": {
+    "author_deleted_bytes": 0,
+    "author_deleted_files": 0,
+    "bytes_moved": 320831764,
+    "files_moved": 3966,
+    "manifest": "maintenance/dependency_migration/manifest.json",
+    "status": "complete_readonly_default_pass"
+  },
+  "details": "${share_root}/Articles/article_0565c33e0c03/build/v046/validation.json",
+  "editable_figures": {
+    "previous_inventory": "${share_root}/Articles/article_0565c33e0c03/build/v046/previous_shared_paper.json",
+    "source_register": "${share_root}/Articles/article_0565c33e0c03/work/method_renewal/source_register.json",
+    "status": "existing LibreOffice Impress sources retained; no figure changed or added in v046"
+  },
+  "editorial_followup": "Scientific positioning corrected; original empirical screens remain local and original decisions preserved. No new figure or new result from pending lifetime experiment.",
+  "figure_legends_pages": [
+    4,
+    5
+  ],
+  "figure_legends_pdf": "${share_root}/Articles/article_0565c33e0c03/manuscript.pdf",
+  "figure_software": "LibreOffice Impress 24.2.7",
+  "figures": 2,
+  "formal_figures_completed": {
+    "current_main": 2,
+    "current_supplementary": 8,
+    "new_this_revision": 0,
+    "original_editor_sources_preserved": true
+  },
+  "historical_paper_progress": "article_0565c33e0c03/file/build/v040/paper_progress_before_default_sync.json",
+  "literature_status": "50 cited / 50 entries; no undefined, unused or duplicate keys.",
+  "main_figure_pages": [
+    4,
+    5
+  ],
+  "main_observation": "同一可演化元胞身体能否从自身经历习得新行为、在环境变化后重学并保持，仍未被当前结果证明。行为收益、存续条件与真实物能代价分开；旧联合门仅作各批局部筛法，原阴性与有限固定生理阳性完整保留。",
+  "main_pages": 8,
+  "main_reference_count": 52,
+  "manuscript_version": "0.46",
+  "next_research_module": "lifetime_cue_reversal_20261019",
+  "next_research_record": {
+    "dispatch_message": "msg_8750ebab8ab2cc3171eee0a2ae87fa8a",
+    "results_included": false,
+    "status_at_PI_message": "running"
+  },
+  "next_research_supplementary": "article_0565c33e0c03/file/supplementary.pdf",
+  "next_research_updated_at": "2026-10-18T04:56:56.862723+00:00",
+  "ongoing_research_note": "Acquisition, unannounced reversal and neutral retention within one continuing body are under investigation. No result or learning capability from the pending experiment is claimed.",
+  "paid_omission_body_record": "article_0565c33e0c03/file/build/v039/paid_local_omission_body_integration.json",
+  "pdf": "${share_root}/Articles/article_0565c33e0c03/manuscript.pdf",
+  "previous_paper_metadata": "${share_root}/Articles/article_0565c33e0c03/build/v046/previous_shared_paper.json",
+  "publication_manifest": "${share_root}/Articles/article_0565c33e0c03/build/v046/repositioning.json",
+  "published_at": null,
+  "reference_count": 52,
+  "resource_id": "article_0565c33e0c03",
+  "scientific_scope": "Research in progress: acquisition, relearning and retention in one evolving cellular body remain unestablished.",
+  "source": "${share_root}/Articles/article_0565c33e0c03/manuscript.tex",
+  "source_data": "article_0565c33e0c03/file/source_data/source_data.zip",
+  "stage_report": "${share_root}/Articles/article_0565c33e0c03/build/v046/repositioning.json",
+  "status": "v046 canonical source and local PDF revised; actual Article default compilation pending authorized engineering action",
+  "supplementary_figures": 8,
+  "supplementary_figures_manifest": {
+    "count": 8,
+    "current_source": "${share_root}/Articles/article_0565c33e0c03/manuscript.tex",
+    "historical_inventory": "${share_root}/Articles/article_0565c33e0c03/build/v046/previous_shared_paper.json"
+  },
+  "supplementary_pages": 72,
+  "supplementary_pdf": "${share_root}/Articles/article_0565c33e0c03/manuscript.pdf",
+  "supplementary_start_page": 13,
+  "supplementary_tables": 15,
+  "title": "Can an evolving cellular body learn from its own experience?",
+  "total_pdf_pages": 84,
+  "updated_at": "2026-10-19T01:30:30.658756+00:00",
+  "version": "0.46",
+  "working_draft": {
+    "default_article_changed": true,
+    "main_figures": 2,
+    "main_pages": 8,
+    "new_gui_assets": 0,
+    "new_science_runs": 0,
+    "new_science_steps": 0,
+    "pages": 84,
+    "pdf": "${share_root}/Articles/article_0565c33e0c03/manuscript.pdf",
+    "pdf_sha256": "4b3e08a019a37c832c8ea6a4e58645322e89eb89d7dc25d71ecd6648ccd53342",
+    "preview_source_synchronized": false,
+    "record": "${share_root}/Articles/article_0565c33e0c03/build/v046/repositioning.json",
+    "references": 52,
+    "source": "${share_root}/Articles/article_0565c33e0c03/manuscript.tex",
+    "status": "canonical_revised_default_preview_pending",
+    "summary": "同一可演化元胞身体能否从自身经历习得新行为、在环境变化后重学并保持，仍未被当前结果证明。行为收益、存续条件与真实物能代价分开；旧联合门仅作各批局部筛法，原阴性与有限固定生理阳性完整保留。",
+    "supplementary_figures": 8,
+    "supplementary_tables": 15,
+    "title": "Can an evolving cellular body learn from its own experience?",
+    "updated_at": "2026-10-19T01:29:50.095147+00:00",
+    "validation": "${share_root}/Articles/article_0565c33e0c03/build/v046/validation.json",
+    "version": "0.46"
+  }
+}

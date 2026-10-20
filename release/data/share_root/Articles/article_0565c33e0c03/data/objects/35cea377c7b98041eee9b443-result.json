@@ -1,0 +1,13 @@
+{
+  "status": "completed",
+  "job_id": "4bc7de9e-dbb5-40b9-9d34-e933083e77df",
+  "runs": 216,
+  "actual_steps": 331776,
+  "elapsed_seconds": 22.66251475608442,
+  "max_material_residual": 1.1866063687193673e-12,
+  "max_energy_residual": 1.3642420526593924e-12,
+  "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_ecology_behavior_20261018/4bc7de9e-dbb5-40b9-9d34-e933083e77df",
+  "data_bytes": 53248764,
+  "physics": "new explicitly reduced controlled-density model",
+  "old_budget_changed": false
+}

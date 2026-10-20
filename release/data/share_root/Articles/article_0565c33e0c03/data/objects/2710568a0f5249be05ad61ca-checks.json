@@ -1,0 +1,112 @@
+{
+  "status": "passed",
+  "cases": [
+    {
+      "stage_id": "genome_0ac80448a534dc953505/T00",
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_generation_screen_20261018/780163bf-a09a-488b-a297-5e0f4261d7b5/genome_0ac80448a534dc953505--formation/transactions/000128.npz",
+      "source_sha256": "670dc066addc49b41e0574aa0a03f89cacd1c9797df80027d7e8bd2ef4030af8",
+      "initial_M": 981.5779761248489,
+      "initial_E": 444.4763946626209,
+      "complete_fields_exact": true,
+      "config_exact": true,
+      "ledger_exact": true,
+      "ready_restore_exact": true,
+      "switch_only": [
+        "P_enabled",
+        "F_enabled"
+      ],
+      "checked_packet": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_transport_continuation_20261018/component_checks/genome_0ac80448a534dc953505--T00-ready128.npz",
+      "sha256": "f69eaf373dec3bfe6e1c41200e5293199d68ba29be4abe1f687f6af33034fb42"
+    },
+    {
+      "stage_id": "genome_0ac80448a534dc953505/T11",
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_generation_screen_20261018/780163bf-a09a-488b-a297-5e0f4261d7b5/genome_0ac80448a534dc953505--formation/transactions/000128.npz",
+      "source_sha256": "670dc066addc49b41e0574aa0a03f89cacd1c9797df80027d7e8bd2ef4030af8",
+      "initial_M": 981.5779761248489,
+      "initial_E": 444.4763946626209,
+      "complete_fields_exact": true,
+      "config_exact": true,
+      "ledger_exact": true,
+      "ready_restore_exact": true,
+      "switch_only": [
+        "P_enabled",
+        "F_enabled"
+      ],
+      "checked_packet": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_transport_continuation_20261018/component_checks/genome_0ac80448a534dc953505--T11-ready128.npz",
+      "sha256": "01ad4d3de6597cebb2f2f452b12b27425e55b695f5c589e891ece773021185c8"
+    },
+    {
+      "stage_id": "genome_6bd5bfd2f629f9414376/T00",
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_generation_screen_20261018/780163bf-a09a-488b-a297-5e0f4261d7b5/genome_6bd5bfd2f629f9414376--formation/transactions/000128.npz",
+      "source_sha256": "1df02c60d6bda5dfeaaad9ee213ee089fc0fa8ababaedb2cf1d2446ee51a5fe5",
+      "initial_M": 484.49521966831077,
+      "initial_E": 247.80043873632522,
+      "complete_fields_exact": true,
+      "config_exact": true,
+      "ledger_exact": true,
+      "ready_restore_exact": true,
+      "switch_only": [
+        "P_enabled",
+        "F_enabled"
+      ],
+      "checked_packet": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_transport_continuation_20261018/component_checks/genome_6bd5bfd2f629f9414376--T00-ready128.npz",
+      "sha256": "d83f58b8c5c264d1cf1fc22b87c91b67ebeb0c6078205a2663dc2b01ae6753b9"
+    },
+    {
+      "stage_id": "genome_6bd5bfd2f629f9414376/T11",
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_generation_screen_20261018/780163bf-a09a-488b-a297-5e0f4261d7b5/genome_6bd5bfd2f629f9414376--formation/transactions/000128.npz",
+      "source_sha256": "1df02c60d6bda5dfeaaad9ee213ee089fc0fa8ababaedb2cf1d2446ee51a5fe5",
+      "initial_M": 484.49521966831077,
+      "initial_E": 247.80043873632522,
+      "complete_fields_exact": true,
+      "config_exact": true,
+      "ledger_exact": true,
+      "ready_restore_exact": true,
+      "switch_only": [
+        "P_enabled",
+        "F_enabled"
+      ],
+      "checked_packet": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_transport_continuation_20261018/component_checks/genome_6bd5bfd2f629f9414376--T11-ready128.npz",
+      "sha256": "d644b26583eb77f175be1de15df60a6bd25f9b5a036774d759b9e8d08de8bd03"
+    },
+    {
+      "stage_id": "genome_85dffefe3eb5bacdfbf5/T00",
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_generation_screen_20261018/780163bf-a09a-488b-a297-5e0f4261d7b5/genome_85dffefe3eb5bacdfbf5--formation/transactions/000128.npz",
+      "source_sha256": "77457fda32ad7c63a3f2a503878280d3ca0f6fa9310bd83809b803ce68929b89",
+      "initial_M": 99.65515674191388,
+      "initial_E": 90.92669798852123,
+      "complete_fields_exact": true,
+      "config_exact": true,
+      "ledger_exact": true,
+      "ready_restore_exact": true,
+      "switch_only": [
+        "P_enabled",
+        "F_enabled"
+      ],
+      "checked_packet": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_transport_continuation_20261018/component_checks/genome_85dffefe3eb5bacdfbf5--T00-ready128.npz",
+      "sha256": "d9be6bba79b7ec94464230549711f811cd27c303984c09bd86a2b961d1193682"
+    },
+    {
+      "stage_id": "genome_85dffefe3eb5bacdfbf5/T11",
+      "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_generation_screen_20261018/780163bf-a09a-488b-a297-5e0f4261d7b5/genome_85dffefe3eb5bacdfbf5--formation/transactions/000128.npz",
+      "source_sha256": "77457fda32ad7c63a3f2a503878280d3ca0f6fa9310bd83809b803ce68929b89",
+      "initial_M": 99.65515674191388,
+      "initial_E": 90.92669798852123,
+      "complete_fields_exact": true,
+      "config_exact": true,
+      "ledger_exact": true,
+      "ready_restore_exact": true,
+      "switch_only": [
+        "P_enabled",
+        "F_enabled"
+      ],
+      "checked_packet": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_transport_continuation_20261018/component_checks/genome_85dffefe3eb5bacdfbf5--T11-ready128.npz",
+      "sha256": "6b4c9b80e41f1a9929589d7c23ea9100e2d68089089adb1cc067dd9b46911be6"
+    }
+  ],
+  "native_body_steps": 0,
+  "energy_steps": 0,
+  "old_suites_repeated": false,
+  "source_roundtrip_only": true,
+  "unknown_inflight": "unchanged original rejection"
+}

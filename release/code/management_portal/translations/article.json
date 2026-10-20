@@ -1,0 +1,1214 @@
+{
+  "Article Workspace": {
+    "en": "Article Workspace",
+    "zh-CN": "文章工作区"
+  },
+  "(无提交信息)": {
+    "en": "(no commit message)",
+    "zh-CN": "(无提交信息)"
+  },
+  "/share/Projects/Example/article": {
+    "en": "/share/Projects/Example/article",
+    "zh-CN": "/share/Projects/Example/article"
+  },
+  "0 registered": {
+    "en": "0 registered",
+    "zh-CN": "0 个已注册"
+  },
+  "11 px": {
+    "en": "11 px",
+    "zh-CN": "11 px"
+  },
+  "12 px": {
+    "en": "12 px",
+    "zh-CN": "12 px"
+  },
+  "13 px": {
+    "en": "13 px",
+    "zh-CN": "13 px"
+  },
+  "14 px": {
+    "en": "14 px",
+    "zh-CN": "14 px"
+  },
+  "16 px": {
+    "en": "16 px",
+    "zh-CN": "16 px"
+  },
+  "2 个空格": {
+    "en": "2 spaces",
+    "zh-CN": "2 个空格"
+  },
+  "4 个空格": {
+    "en": "4 spaces",
+    "zh-CN": "4 个空格"
+  },
+  "8 个空格": {
+    "en": "8 spaces",
+    "zh-CN": "8 个空格"
+  },
+  "<div class=\"articleResourceSearchEmpty\">当前语义检索没有匹配的 Article。</div>": {
+    "en": "<div class=\"articleResourceSearchEmpty\">No Article matches the current semantic search.</div>",
+    "zh-CN": "<div class=\"articleResourceSearchEmpty\">当前语义检索没有匹配的 Article。</div>"
+  },
+  "<div class=\"articleResourceSearchEmpty\">没有匹配的 Article。</div>": {
+    "en": "<div class=\"articleResourceSearchEmpty\">No matching Article.</div>",
+    "zh-CN": "<div class=\"articleResourceSearchEmpty\">没有匹配的 Article。</div>"
+  },
+  "Aa": {
+    "en": "Aa",
+    "zh-CN": "Aa"
+  },
+  "Article Editor": {
+    "en": "Article Editor",
+    "zh-CN": "文章编辑器"
+  },
+  "Article Monaco initialization failed": {
+    "en": "Article Monaco initialization failed",
+    "zh-CN": "Article Monaco 初始化失败"
+  },
+  "Article PDF Output": {
+    "en": "Article PDF Output",
+    "zh-CN": "文章 PDF 输出"
+  },
+  "Article Workbench": {
+    "en": "Article Workbench",
+    "zh-CN": "文章工作台"
+  },
+  "Article files": {
+    "en": "Article files",
+    "zh-CN": "Article 文件"
+  },
+  "Article registry": {
+    "en": "Article registry",
+    "zh-CN": "文章注册表"
+  },
+  "Article workspace views": {
+    "en": "Article workspace views",
+    "zh-CN": "文章工作区视图"
+  },
+  "Article 工程语义导航": {
+    "en": "Article engineering semantic navigation",
+    "zh-CN": "Article 工程语义导航"
+  },
+  "Article 更改": {
+    "en": "Article changes",
+    "zh-CN": "Article 更改"
+  },
+  "Article 标题 / Project / ID": {
+    "en": "Article title / Project / ID",
+    "zh-CN": "Article 标题 / Project / ID"
+  },
+  "Article 注册已解除；原始目录和文件保持不变。": {
+    "en": "Article registration has been removed; the original directory and files remain unchanged.",
+    "zh-CN": "Article 注册已解除；原始目录和文件保持不变。"
+  },
+  "Article 注册管理": {
+    "en": "Article registry management",
+    "zh-CN": "Article 注册管理"
+  },
+  "Article 目录已注册。": {
+    "en": "Article directory registered.",
+    "zh-CN": "Article 目录已注册。"
+  },
+  "Article 目录必须位于已登记的 Project 内": {
+    "en": "The Article directory must be located within a registered Project",
+    "zh-CN": "Article 目录必须位于已登记的 Project 内"
+  },
+  "Article 语义检索任务": {
+    "en": "Article semantic retrieval task",
+    "zh-CN": "Article 语义检索任务"
+  },
+  "Article 项目": {
+    "en": "Article project",
+    "zh-CN": "Article 项目"
+  },
+  "Enter text to search the current Article project.": {
+    "en": "Enter text to search the current Article project.",
+    "zh-CN": "输入文本以搜索当前 Article 项目。"
+  },
+  "File tree": {
+    "en": "File tree",
+    "zh-CN": "文件树"
+  },
+  "Git diff": {
+    "en": "Git diff",
+    "zh-CN": "Git 差异"
+  },
+  "Git 左右对照 Diff": {
+    "en": "Git side-by-side diff",
+    "zh-CN": "Git 左右对照 Diff"
+  },
+  "LaTeX": {
+    "en": "LaTeX",
+    "zh-CN": "LaTeX"
+  },
+  "LaTeX Log": {
+    "en": "LaTeX Log",
+    "zh-CN": "LaTeX 日志"
+  },
+  "LaTeX compilation failed": {
+    "en": "LaTeX compilation failed",
+    "zh-CN": "LaTeX 编译失败"
+  },
+  "LaTeX compilation is already running": {
+    "en": "LaTeX compilation is already running",
+    "zh-CN": "LaTeX 编译已在运行"
+  },
+  "LaTeX diagnostic": {
+    "en": "LaTeX diagnostic",
+    "zh-CN": "LaTeX 诊断"
+  },
+  "LaTeX semantic problem": {
+    "en": "LaTeX semantic problem",
+    "zh-CN": "LaTeX 语义问题"
+  },
+  "LaTeX source editor": {
+    "en": "LaTeX source editor",
+    "zh-CN": "LaTeX 源编辑器"
+  },
+  "LaTeX 编译器": {
+    "en": "LaTeX compiler",
+    "zh-CN": "LaTeX 编译器"
+  },
+  "LaTeX 编译已停止。": {
+    "en": "LaTeX compilation has stopped.",
+    "zh-CN": "LaTeX 编译已停止。"
+  },
+  "LaTeX 编译配置已保存。": {
+    "en": "LaTeX compilation configuration has been saved.",
+    "zh-CN": "LaTeX 编译配置已保存。"
+  },
+  "Ln 1, Col 1": {
+    "en": "Ln 1, Col 1",
+    "zh-CN": "第 1 行，第 1 列"
+  },
+  "Monaco · TexLab 不可用": {
+    "en": "Monaco · TexLab unavailable",
+    "zh-CN": "Monaco · TexLab 不可用"
+  },
+  "Monaco · TexLab 启动中": {
+    "en": "Monaco · TexLab starting",
+    "zh-CN": "Monaco · TexLab 启动中"
+  },
+  "Monaco · TexLab 连接中": {
+    "en": "Monaco · TexLab connecting",
+    "zh-CN": "Monaco · TexLab 连接中"
+  },
+  "NEW FILE": {
+    "en": "NEW FILE",
+    "zh-CN": "新建文件"
+  },
+  "NEW FOLDER": {
+    "en": "NEW FOLDER",
+    "zh-CN": "新建文件夹"
+  },
+  "Navigation / Chat": {
+    "en": "Navigation / Chat",
+    "zh-CN": "导航 / Chat"
+  },
+  "No Project": {
+    "en": "No Project",
+    "zh-CN": "无项目"
+  },
+  "Open a .tex file to view its outline.": {
+    "en": "Open a .tex file to view its outline.",
+    "zh-CN": "打开一个 .tex 文件以查看其大纲。"
+  },
+  "Open a file from File tree": {
+    "en": "Open a file from File tree",
+    "zh-CN": "从文件树打开文件"
+  },
+  "Open files": {
+    "en": "Open files",
+    "zh-CN": "打开文件"
+  },
+  "Opening Resource…": {
+    "en": "Opening Resource…",
+    "zh-CN": "正在打开资源…"
+  },
+  "Opening linked file…": {
+    "en": "Opening linked file…",
+    "zh-CN": "正在打开链接文件…"
+  },
+  "Opening…": {
+    "en": "Opening…",
+    "zh-CN": "正在打开…"
+  },
+  "PDF / Build": {
+    "en": "PDF / Build",
+    "zh-CN": "PDF / 构建"
+  },
+  "PDF 已生成；LaTeX 留下了需要检查的诊断。": {
+    "en": "PDF generated; LaTeX left diagnostics that need to be checked.",
+    "zh-CN": "PDF 已生成；LaTeX 留下了需要检查的诊断。"
+  },
+  "PDF 编译完成。": {
+    "en": "PDF compilation complete.",
+    "zh-CN": "PDF 编译完成。"
+  },
+  "PDF 缩放控制": {
+    "en": "PDF zoom controls",
+    "zh-CN": "PDF 缩放控制"
+  },
+  "PDF、日志和中间文件写入 Portal 构建缓存；LaTeX 工程目录只保存源文件。": {
+    "en": "PDFs, logs, and intermediate files are written to the Portal build cache; the LaTeX project directory only stores source files.",
+    "zh-CN": "PDF、日志和中间文件写入 Portal 构建缓存；LaTeX 工程目录只保存源文件。"
+  },
+  "Project semantic problem": {
+    "en": "Project semantic problem",
+    "zh-CN": "Project 语义问题"
+  },
+  "REGISTER MANUSCRIPT": {
+    "en": "REGISTER MANUSCRIPT",
+    "zh-CN": "注册手稿"
+  },
+  "Raw LaTeX log": {
+    "en": "Raw LaTeX log",
+    "zh-CN": "原始 LaTeX 日志"
+  },
+  "Read-only Resource": {
+    "en": "Read-only Resource",
+    "zh-CN": "只读资源"
+  },
+  "Read-only linked file": {
+    "en": "Read-only linked file",
+    "zh-CN": "只读链接文件"
+  },
+  "Saving…": {
+    "en": "Saving…",
+    "zh-CN": "正在保存…"
+  },
+  "Search Article registry": {
+    "en": "Search Article registry",
+    "zh-CN": "搜索 Article 注册表"
+  },
+  "Search all project files": {
+    "en": "Search all project files",
+    "zh-CN": "搜索所有项目文件"
+  },
+  "Search articles": {
+    "en": "Search articles",
+    "zh-CN": "搜索文章"
+  },
+  "Search articles or ID": {
+    "en": "Search articles or ID",
+    "zh-CN": "搜索文章或 ID"
+  },
+  "Search title, project or ID": {
+    "en": "Search title, project or ID",
+    "zh-CN": "搜索标题、项目或 ID"
+  },
+  "Select an Article project": {
+    "en": "Select an Article project",
+    "zh-CN": "选择 Article 项目"
+  },
+  "Select an Article project to start a Chat Workspace.": {
+    "en": "Select an Article project to start a Chat Workspace.",
+    "zh-CN": "选择 Article 项目以启动 Chat Workspace。"
+  },
+  "Select an Article project.": {
+    "en": "Select an Article project.",
+    "zh-CN": "选择一个 Article 项目。"
+  },
+  "SyncTeX command line utility is not available": {
+    "en": "SyncTeX command line utility is not available",
+    "zh-CN": "SyncTeX 命令行工具不可用"
+  },
+  "SyncTeX data is unavailable; recompile the Article to generate it": {
+    "en": "SyncTeX data is unavailable; recompile the Article to generate it",
+    "zh-CN": "SyncTeX 数据不可用；请重新编译 Article 以生成"
+  },
+  "Tab 宽度": {
+    "en": "Tab width",
+    "zh-CN": "Tab 宽度"
+  },
+  "TeX Live": {
+    "en": "TeX Live",
+    "zh-CN": "TeX Live"
+  },
+  "TeX 环境": {
+    "en": "TeX environment",
+    "zh-CN": "TeX 环境"
+  },
+  "TexLab diagnostic": {
+    "en": "TexLab diagnostic",
+    "zh-CN": "TexLab 诊断"
+  },
+  "TexLab document path required": {
+    "en": "TexLab document path required",
+    "zh-CN": "需要 TexLab 文档路径"
+  },
+  "TexLab is not installed; run scripts/install_article_tooling first": {
+    "en": "TexLab is not installed; run scripts/install_article_tooling first",
+    "zh-CN": "TexLab 未安装；请先运行 scripts/install_article_tooling"
+  },
+  "TexLab payload must be an object": {
+    "en": "TexLab payload must be an object",
+    "zh-CN": "TexLab 载荷必须是对象"
+  },
+  "TexLab process is not running": {
+    "en": "TexLab process is not running",
+    "zh-CN": "TexLab 进程未运行"
+  },
+  "TexLab supports LaTeX and bibliography source files": {
+    "en": "TexLab supports LaTeX and bibliography source files",
+    "zh-CN": "TexLab 支持 LaTeX 和参考文献源文件"
+  },
+  "UTF-8 · LaTeX": {
+    "en": "UTF-8 · LaTeX",
+    "zh-CN": "UTF-8 · LaTeX"
+  },
+  "Unable to open Resource": {
+    "en": "Unable to open Resource",
+    "zh-CN": "无法打开 Resource"
+  },
+  "Unable to open file": {
+    "en": "Unable to open file",
+    "zh-CN": "无法打开文件"
+  },
+  "Unable to open linked file": {
+    "en": "Unable to open linked file",
+    "zh-CN": "无法打开链接文件"
+  },
+  "Unsaved changes": {
+    "en": "Unsaved changes",
+    "zh-CN": "未保存的更改"
+  },
+  "[草稿]": {
+    "en": "[Draft]",
+    "zh-CN": "[草稿]"
+  },
+  "article directory path required": {
+    "en": "article directory path required",
+    "zh-CN": "需要文章目录路径"
+  },
+  "article entry kind must be file or directory": {
+    "en": "article entry kind must be file or directory",
+    "zh-CN": "文章条目类型必须是 file 或 directory"
+  },
+  "article file path required": {
+    "en": "article file path required",
+    "zh-CN": "需要文章文件路径"
+  },
+  "article has no manuscript root": {
+    "en": "article has no manuscript root",
+    "zh-CN": "文章没有手稿根目录"
+  },
+  "article path escapes the article root": {
+    "en": "article path escapes the article root",
+    "zh-CN": "文章路径超出文章根目录"
+  },
+  "article primary file must be .tex, .md, or .markdown": {
+    "en": "article primary file must be .tex, .md, or .markdown",
+    "zh-CN": "文章主文件必须是 .tex、.md 或 .markdown"
+  },
+  "article search query is too long": {
+    "en": "article search query is too long",
+    "zh-CN": "文章搜索查询过长"
+  },
+  "article settings must be an object": {
+    "en": "article settings must be an object",
+    "zh-CN": "文章设置必须是对象"
+  },
+  "article-relative path escapes the article root": {
+    "en": "article-relative path escapes the article root",
+    "zh-CN": "文章相对路径超出文章根目录"
+  },
+  "article-relative path must not escape the article root": {
+    "en": "article-relative path must not escape the article root",
+    "zh-CN": "文章相对路径不得超出文章根目录"
+  },
+  "articleBuildSummary": {
+    "en": "articleBuildSummary",
+    "zh-CN": "articleBuildSummary"
+  },
+  "articleCodeMode": {
+    "en": "articleCodeMode",
+    "zh-CN": "articleCodeMode"
+  },
+  "articleCursorStatus": {
+    "en": "articleCursorStatus",
+    "zh-CN": "articleCursorStatus"
+  },
+  "articleEditorState": {
+    "en": "articleEditorState",
+    "zh-CN": "articleEditorState"
+  },
+  "articleEncodingStatus": {
+    "en": "articleEncodingStatus",
+    "zh-CN": "articleEncodingStatus"
+  },
+  "articleEntryEyebrow": {
+    "en": "articleEntryEyebrow",
+    "zh-CN": "articleEntryEyebrow"
+  },
+  "articleEntryPath": {
+    "en": "articleEntryPath",
+    "zh-CN": "articleEntryPath"
+  },
+  "articleEntryTitle": {
+    "en": "articleEntryTitle",
+    "zh-CN": "articleEntryTitle"
+  },
+  "articleEnvironmentPolicy": {
+    "en": "articleEnvironmentPolicy",
+    "zh-CN": "articleEnvironmentPolicy"
+  },
+  "articleEnvironmentProfile": {
+    "en": "articleEnvironmentProfile",
+    "zh-CN": "articleEnvironmentProfile"
+  },
+  "articleGitDiff": {
+    "en": "articleGitDiff",
+    "zh-CN": "articleGitDiff"
+  },
+  "articleGitDiffEmpty": {
+    "en": "articleGitDiffEmpty",
+    "zh-CN": "articleGitDiffEmpty"
+  },
+  "articleGitDiffLayout": {
+    "en": "articleGitDiffLayout",
+    "zh-CN": "articleGitDiffLayout"
+  },
+  "articleGitDiffTitle": {
+    "en": "articleGitDiffTitle",
+    "zh-CN": "articleGitDiffTitle"
+  },
+  "articleGitHistoryCount": {
+    "en": "articleGitHistoryCount",
+    "zh-CN": "articleGitHistoryCount"
+  },
+  "articleGitMessage": {
+    "en": "articleGitMessage",
+    "zh-CN": "articleGitMessage"
+  },
+  "articleGitSummary": {
+    "en": "articleGitSummary",
+    "zh-CN": "articleGitSummary"
+  },
+  "articleLanguageStatus": {
+    "en": "articleLanguageStatus",
+    "zh-CN": "articleLanguageStatus"
+  },
+  "articleLatexmkPath": {
+    "en": "articleLatexmkPath",
+    "zh-CN": "articleLatexmkPath"
+  },
+  "articleLibraryMeta": {
+    "en": "articleLibraryMeta",
+    "zh-CN": "articleLibraryMeta"
+  },
+  "articleLineNumbers": {
+    "en": "articleLineNumbers",
+    "zh-CN": "articleLineNumbers"
+  },
+  "articleLogBadge": {
+    "en": "articleLogBadge",
+    "zh-CN": "articleLogBadge"
+  },
+  "articleOutlineCount": {
+    "en": "articleOutlineCount",
+    "zh-CN": "articleOutlineCount"
+  },
+  "articleOutlineToggle": {
+    "en": "articleOutlineToggle",
+    "zh-CN": "articleOutlineToggle"
+  },
+  "articlePdfDownload": {
+    "en": "articlePdfDownload",
+    "zh-CN": "articlePdfDownload"
+  },
+  "articlePdfZoomValue": {
+    "en": "articlePdfZoomValue",
+    "zh-CN": "articlePdfZoomValue"
+  },
+  "articleRegisterPreflight": {
+    "en": "articleRegisterPreflight",
+    "zh-CN": "articleRegisterPreflight"
+  },
+  "articleSendContext": {
+    "en": "articleSendContext",
+    "zh-CN": "articleSendContext"
+  },
+  "articleSourceEditor": {
+    "en": "articleSourceEditor",
+    "zh-CN": "articleSourceEditor"
+  },
+  "articleSyncHint": {
+    "en": "articleSyncHint",
+    "zh-CN": "articleSyncHint"
+  },
+  "articleSyncToPdf": {
+    "en": "articleSyncToPdf",
+    "zh-CN": "articleSyncToPdf"
+  },
+  "articleSyntaxLayer": {
+    "en": "articleSyntaxLayer",
+    "zh-CN": "articleSyntaxLayer"
+  },
+  "articleSyntaxStatus": {
+    "en": "articleSyntaxStatus",
+    "zh-CN": "articleSyntaxStatus"
+  },
+  "articleTexLive": {
+    "en": "articleTexLive",
+    "zh-CN": "articleTexLive"
+  },
+  "articleTreeToggle": {
+    "en": "articleTreeToggle",
+    "zh-CN": "articleTreeToggle"
+  },
+  "articleVisualMode": {
+    "en": "articleVisualMode",
+    "zh-CN": "articleVisualMode"
+  },
+  "articleWordWrap": {
+    "en": "articleWordWrap",
+    "zh-CN": "articleWordWrap"
+  },
+  "auto_compile must be a boolean": {
+    "en": "auto_compile must be a boolean",
+    "zh-CN": "auto_compile 必须是 boolean"
+  },
+  "binary article files cannot be opened in the text editor": {
+    "en": "binary article files cannot be opened in the text editor",
+    "zh-CN": "二进制文章文件无法在文本编辑器中打开"
+  },
+  "compiled article PDF not found": {
+    "en": "compiled article PDF not found",
+    "zh-CN": "未找到编译后的文章 PDF"
+  },
+  "from_scratch must be a boolean": {
+    "en": "from_scratch must be a boolean",
+    "zh-CN": "from_scratch 必须是布尔值"
+  },
+  "invalid article section key": {
+    "en": "invalid article section key",
+    "zh-CN": "无效的文章章节键"
+  },
+  "invalid article-relative path": {
+    "en": "invalid article-relative path",
+    "zh-CN": "无效的文章相对路径"
+  },
+  "latexmk is not available on the Portal host": {
+    "en": "latexmk is not available on the Portal host",
+    "zh-CN": "Portal 主机上 latexmk 不可用"
+  },
+  "only LaTeX (.tex) articles can be compiled to PDF": {
+    "en": "only LaTeX (.tex) articles can be compiled to PDF",
+    "zh-CN": "只有 LaTeX (.tex) 文章可以编译为 PDF"
+  },
+  "paths must be a list": {
+    "en": "paths must be a list",
+    "zh-CN": "paths 必须是列表"
+  },
+  "problem error": {
+    "en": "problem error",
+    "zh-CN": "问题错误"
+  },
+  "sections/method.tex": {
+    "en": "sections/method.tex",
+    "zh-CN": "sections/method.tex"
+  },
+  "shell_escape must be a boolean": {
+    "en": "shell_escape must be a boolean",
+    "zh-CN": "shell_escape 必须是布尔值"
+  },
+  "syntaxIssue": {
+    "en": "syntaxIssue",
+    "zh-CN": "syntaxIssue"
+  },
+  "syntax_check must be a boolean": {
+    "en": "syntax_check must be a boolean",
+    "zh-CN": "syntax_check 必须是布尔值"
+  },
+  "texCommand": {
+    "en": "texCommand",
+    "zh-CN": "texCommand"
+  },
+  "texEnvironment": {
+    "en": "texEnvironment",
+    "zh-CN": "texEnvironment"
+  },
+  "the main document must be a .tex file": {
+    "en": "the main document must be a .tex file",
+    "zh-CN": "主文档必须是 .tex 文件"
+  },
+  "uploaded article filename is invalid": {
+    "en": "uploaded article filename is invalid",
+    "zh-CN": "上传的文章文件名无效"
+  },
+  "uploaded article path escapes the article root": {
+    "en": "uploaded article path escapes the article root",
+    "zh-CN": "上传的文章路径超出文章根目录"
+  },
+  "use_project_latexmkrc must be a boolean": {
+    "en": "use_project_latexmkrc must be a boolean",
+    "zh-CN": "use_project_latexmkrc 必须是布尔值"
+  },
+  "下载 PDF": {
+    "en": "Download PDF",
+    "zh-CN": "下载 PDF"
+  },
+  "不检查语法": {
+    "en": "Do not check syntax",
+    "zh-CN": "不检查语法"
+  },
+  "不闪烁光标": {
+    "en": "Do not blink cursor",
+    "zh-CN": "不闪烁光标"
+  },
+  "专注编辑": {
+    "en": "Focus editing",
+    "zh-CN": "专注编辑"
+  },
+  "主文档": {
+    "en": "Main document",
+    "zh-CN": "主文档"
+  },
+  "仅在工程确实依赖 minted 等外部命令时启用": {
+    "en": "Enable only when the project actually depends on external commands like minted",
+    "zh-CN": "仅在工程确实依赖 minted 等外部命令时启用"
+  },
+  "仅显式读取工程根目录的": {
+    "en": "Only explicitly read the project root directory's",
+    "zh-CN": "仅显式读取工程根目录的"
+  },
+  "从头重新编译": {
+    "en": "Recompile from scratch",
+    "zh-CN": "从头重新编译"
+  },
+  "保存文件": {
+    "en": "Save file",
+    "zh-CN": "保存文件"
+  },
+  "保存编译配置": {
+    "en": "Save build configuration",
+    "zh-CN": "保存编译配置"
+  },
+  "保持文本光标常亮，减少视觉干扰": {
+    "en": "Keep the text cursor always visible to reduce visual distraction",
+    "zh-CN": "保持文本光标常亮，减少视觉干扰"
+  },
+  "停止编译": {
+    "en": "Stop build",
+    "zh-CN": "停止编译"
+  },
+  "允许 Shell Escape": {
+    "en": "Allow Shell Escape",
+    "zh-CN": "允许 Shell Escape"
+  },
+  "关闭 Article projects": {
+    "en": "Close Article projects",
+    "zh-CN": "关闭 Article projects"
+  },
+  "关闭 Git diff": {
+    "en": "Close Git diff",
+    "zh-CN": "关闭 Git diff"
+  },
+  "出错后仍尝试编译": {
+    "en": "Still attempt compilation after an error",
+    "zh-CN": "出错后仍尝试编译"
+  },
+  "切换 Article？": {
+    "en": "Switch Article?",
+    "zh-CN": "切换 Article？"
+  },
+  "切换并排或内联 Diff": {
+    "en": "Switch between side-by-side or inline Diff",
+    "zh-CN": "切换并排或内联 Diff"
+  },
+  "切换并放弃修改": {
+    "en": "Switch and discard changes",
+    "zh-CN": "切换并放弃修改"
+  },
+  "创建新文件": {
+    "en": "Create new file",
+    "zh-CN": "创建新文件"
+  },
+  "创建新文件夹": {
+    "en": "Create new folder",
+    "zh-CN": "创建新文件夹"
+  },
+  "创建本地 Git 仓库，之后可以逐行审阅大模型修改、选择要提交的文件，并随时回看历史版本。": {
+    "en": "Create a local Git repository, then review large model changes line by line, choose files to commit, and revisit historical versions at any time.",
+    "zh-CN": "创建本地 Git 仓库，之后可以逐行审阅大模型修改、选择要提交的文件，并随时回看历史版本。"
+  },
+  "刷新 Git 状态": {
+    "en": "Refresh Git Status",
+    "zh-CN": "刷新 Git 状态"
+  },
+  "加载 Article 语义检索": {
+    "en": "Load Article semantic search",
+    "zh-CN": "加载 Article 语义检索"
+  },
+  "双击 PDF 返回源码": {
+    "en": "Double-click PDF to return to source",
+    "zh-CN": "双击 PDF 返回源码"
+  },
+  "只改变源码编辑区的显示大小": {
+    "en": "Only change the display size of the source code editor area",
+    "zh-CN": "只改变源码编辑区的显示大小"
+  },
+  "只读预览": {
+    "en": "Read-only preview",
+    "zh-CN": "只读预览"
+  },
+  "可以围绕当前 Article 的结构、论证、LaTeX 修改或编译问题和 Agent 讨论。": {
+    "en": "You can discuss the current Article's structure, argumentation, LaTeX changes, or compilation issues with the Agent.",
+    "zh-CN": "可以围绕当前 Article 的结构、论证、LaTeX 修改或编译问题和 Agent 讨论。"
+  },
+  "启用 Git 版本管理": {
+    "en": "Enable Git version control",
+    "zh-CN": "启用 Git 版本管理"
+  },
+  "在 PDF 中定位当前源码": {
+    "en": "Locate the current source in the PDF",
+    "zh-CN": "在 PDF 中定位当前源码"
+  },
+  "在编辑器中打开": {
+    "en": "Open in editor",
+    "zh-CN": "在编辑器中打开"
+  },
+  "基础编辑器 · Monaco 初始化失败": {
+    "en": "Basic editor · Monaco initialization failed",
+    "zh-CN": "基础编辑器 · Monaco 初始化失败"
+  },
+  "基础编辑器 · Monaco 加载失败": {
+    "en": "Basic editor · Monaco failed to load",
+    "zh-CN": "基础编辑器 · Monaco 加载失败"
+  },
+  "基础编辑器 · Monaco 加载超时": {
+    "en": "Basic editor · Monaco load timed out",
+    "zh-CN": "基础编辑器 · Monaco 加载超时"
+  },
+  "基础编辑器 · Monaco 未加载": {
+    "en": "Basic editor · Monaco not loaded",
+    "zh-CN": "基础编辑器 · Monaco 未加载"
+  },
+  "大纲": {
+    "en": "Outline",
+    "zh-CN": "大纲"
+  },
+  "实时代码检查": {
+    "en": "Real-time code check",
+    "zh-CN": "实时代码检查"
+  },
+  "尚无 PDF": {
+    "en": "No PDF yet",
+    "zh-CN": "尚无 PDF"
+  },
+  "尚未检查构建条件": {
+    "en": "Build conditions not yet checked",
+    "zh-CN": "尚未检查构建条件"
+  },
+  "尚未编译": {
+    "en": "Not yet compiled",
+    "zh-CN": "尚未编译"
+  },
+  "工作树干净，没有未提交的稿件改动。": {
+    "en": "Working tree is clean, no uncommitted draft changes.",
+    "zh-CN": "工作树干净，没有未提交的稿件改动。"
+  },
+  "工程导航": {
+    "en": "Project navigation",
+    "zh-CN": "工程导航"
+  },
+  "已为当前 Article 初始化 Git 仓库": {
+    "en": "Initialized Git repository for the current Article",
+    "zh-CN": "已为当前 Article 初始化 Git 仓库"
+  },
+  "并排": {
+    "en": "Side by side",
+    "zh-CN": "并排"
+  },
+  "开启语法检查": {
+    "en": "Enable syntax check",
+    "zh-CN": "开启语法检查"
+  },
+  "开始记录稿件版本": {
+    "en": "Start recording draft versions",
+    "zh-CN": "开始记录稿件版本"
+  },
+  "当前 Article": {
+    "en": "Current Article",
+    "zh-CN": "当前 Article"
+  },
+  "当前 Article 目录尚未纳入 Git 管理。": {
+    "en": "The current Article directory is not yet under Git management.",
+    "zh-CN": "当前 Article 目录尚未纳入 Git 管理。"
+  },
+  "当前打开的文件中有未保存修改。切换 Article 会放弃这些修改。": {
+    "en": "There are unsaved changes in the currently open file. Switching Article will discard these changes.",
+    "zh-CN": "当前打开的文件中有未保存修改。切换 Article 会放弃这些修改。"
+  },
+  "当前未选择 Article": {
+    "en": "No Article is currently selected",
+    "zh-CN": "当前未选择 Article"
+  },
+  "当前没有正在运行的编译。": {
+    "en": "There is currently no running compilation.",
+    "zh-CN": "当前没有正在运行的编译。"
+  },
+  "快速草稿 · 图片以空框显示": {
+    "en": "Quick draft · images shown as empty boxes",
+    "zh-CN": "快速草稿 · 图片以空框显示"
+  },
+  "快速草稿已生成；图片已替换为空框。": {
+    "en": "Quick draft generated; images have been replaced with empty boxes.",
+    "zh-CN": "快速草稿已生成；图片已替换为空框。"
+  },
+  "恢复默认设置": {
+    "en": "Restore default settings",
+    "zh-CN": "恢复默认设置"
+  },
+  "所在 Project": {
+    "en": "Project",
+    "zh-CN": "所在 Project"
+  },
+  "打开此面板以查看稿件变更。": {
+    "en": "Open this panel to view manuscript changes.",
+    "zh-CN": "打开此面板以查看稿件变更。"
+  },
+  "打开编译选项": {
+    "en": "Open compile options",
+    "zh-CN": "打开编译选项"
+  },
+  "把当前稿件上下文发送到 Chat Workspace": {
+    "en": "Send current manuscript context to Chat Workspace",
+    "zh-CN": "把当前稿件上下文发送到 Chat Workspace"
+  },
+  "把当前选区或光标上下文带到 Chat Workspace": {
+    "en": "Bring current selection or cursor context to Chat Workspace",
+    "zh-CN": "把当前选区或光标上下文带到 Chat Workspace"
+  },
+  "折叠 Article registry": {
+    "en": "Collapse Article registry",
+    "zh-CN": "折叠 Article registry"
+  },
+  "折叠 Search": {
+    "en": "Collapse Search",
+    "zh-CN": "折叠 Search"
+  },
+  "折叠左侧功能面板": {
+    "en": "Collapse left function panel",
+    "zh-CN": "折叠左侧功能面板"
+  },
+  "折叠源代码管理": {
+    "en": "Collapse source control",
+    "zh-CN": "折叠源代码管理"
+  },
+  "折叠设置": {
+    "en": "Collapse settings",
+    "zh-CN": "折叠设置"
+  },
+  "按 Tab 时插入对应数量的空格": {
+    "en": "Insert the corresponding number of spaces when pressing Tab",
+    "zh-CN": "按 Tab 时插入对应数量的空格"
+  },
+  "按编辑区宽度换行，不修改源文件": {
+    "en": "Wrap at editor width without modifying the source file",
+    "zh-CN": "按编辑区宽度换行，不修改源文件"
+  },
+  "提交已暂存更改": {
+    "en": "Commit staged changes",
+    "zh-CN": "提交已暂存更改"
+  },
+  "搜索 Article": {
+    "en": "Search Article",
+    "zh-CN": "搜索 Article"
+  },
+  "放大 PDF": {
+    "en": "Zoom in PDF",
+    "zh-CN": "放大 PDF"
+  },
+  "文献": {
+    "en": "Literature",
+    "zh-CN": "文献"
+  },
+  "文献库": {
+    "en": "Literature library",
+    "zh-CN": "文献库"
+  },
+  "无法渲染 PDF": {
+    "en": "Unable to render PDF",
+    "zh-CN": "无法渲染 PDF"
+  },
+  "旧版本": {
+    "en": "Old version",
+    "zh-CN": "旧版本"
+  },
+  "显示与缩进": {
+    "en": "Display and indentation",
+    "zh-CN": "显示与缩进"
+  },
+  "最近提交": {
+    "en": "Recently submitted",
+    "zh-CN": "最近提交"
+  },
+  "未识别主文档": {
+    "en": "Primary document not identified",
+    "zh-CN": "未识别主文档"
+  },
+  "未识别编译器": {
+    "en": "Compiler not identified",
+    "zh-CN": "未识别编译器"
+  },
+  "未选择 Article": {
+    "en": "No Article selected",
+    "zh-CN": "未选择 Article"
+  },
+  "本次更改的文件": {
+    "en": "Files changed this time",
+    "zh-CN": "本次更改的文件"
+  },
+  "构建前提醒": {
+    "en": "Pre-build reminder",
+    "zh-CN": "构建前提醒"
+  },
+  "构建条件不完整": {
+    "en": "Build conditions are incomplete",
+    "zh-CN": "构建条件不完整"
+  },
+  "构建配置已识别": {
+    "en": "Build configuration identified",
+    "zh-CN": "构建配置已识别"
+  },
+  "构建隔离": {
+    "en": "Build isolation",
+    "zh-CN": "构建隔离"
+  },
+  "构建预检通过": {
+    "en": "Build precheck passed",
+    "zh-CN": "构建预检通过"
+  },
+  "查看 LaTeX Log": {
+    "en": "View LaTeX Log",
+    "zh-CN": "查看 LaTeX Log"
+  },
+  "校对": {
+    "en": "Proofread",
+    "zh-CN": "校对"
+  },
+  "根据输入内容发起 Article 语义检索": {
+    "en": "Initiate Article semantic search based on input content",
+    "zh-CN": "根据输入内容发起 Article 语义检索"
+  },
+  "检查目录": {
+    "en": "Check directory",
+    "zh-CN": "检查目录"
+  },
+  "检查目录后按目录填入": {
+    "en": "Filled in from the directory after checking it",
+    "zh-CN": "检查目录后按目录填入"
+  },
+  "检测到多个主文档，请确认要注册的主文档。": {
+    "en": "Multiple main documents detected. Please confirm the main document to register.",
+    "zh-CN": "检测到多个主文档，请确认要注册的主文档。"
+  },
+  "正在停止 LaTeX 编译…": {
+    "en": "Stopping LaTeX compilation…",
+    "zh-CN": "正在停止 LaTeX 编译…"
+  },
+  "正在加载 Article…": {
+    "en": "Loading Article…",
+    "zh-CN": "正在加载 Article…"
+  },
+  "正在加载 PDF…": {
+    "en": "Loading PDF…",
+    "zh-CN": "正在加载 PDF…"
+  },
+  "正在编译快速草稿…": {
+    "en": "Compiling quick draft…",
+    "zh-CN": "正在编译快速草稿…"
+  },
+  "正在读取构建状态…": {
+    "en": "Reading build status…",
+    "zh-CN": "正在读取构建状态…"
+  },
+  "注册 Article 目录": {
+    "en": "Register Article directory",
+    "zh-CN": "注册 Article 目录"
+  },
+  "注册新 Article": {
+    "en": "Register new Article",
+    "zh-CN": "注册新 Article"
+  },
+  "注册目录": {
+    "en": "Register directory",
+    "zh-CN": "注册目录"
+  },
+  "源代码管理": {
+    "en": "Source control",
+    "zh-CN": "源代码管理"
+  },
+  "版本控制尚未启用": {
+    "en": "Version control is not yet enabled",
+    "zh-CN": "版本控制尚未启用"
+  },
+  "环境指纹": {
+    "en": "Environment fingerprint",
+    "zh-CN": "环境指纹"
+  },
+  "目录已变化，请重新检查。": {
+    "en": "Directory has changed, please check again.",
+    "zh-CN": "目录已变化，请重新检查。"
+  },
+  "目录暂不可注册": {
+    "en": "Directory is temporarily unavailable for registration",
+    "zh-CN": "目录暂不可注册"
+  },
+  "目录路径": {
+    "en": "Directory path",
+    "zh-CN": "目录路径"
+  },
+  "编译 Article 后将在此显示文档。": {
+    "en": "The document will be displayed here after compiling the Article.",
+    "zh-CN": "编译 Article 后将在此显示文档。"
+  },
+  "编译中…": {
+    "en": "Compiling…",
+    "zh-CN": "编译中…"
+  },
+  "编译器": {
+    "en": "Compiler",
+    "zh-CN": "编译器"
+  },
+  "编译模式": {
+    "en": "Compile mode",
+    "zh-CN": "编译模式"
+  },
+  "编译选项": {
+    "en": "Compile options",
+    "zh-CN": "编译选项"
+  },
+  "编译错误处理": {
+    "en": "Compile error handling",
+    "zh-CN": "编译错误处理"
+  },
+  "编辑器与 LaTeX 编译器": {
+    "en": "Editor and LaTeX compiler",
+    "zh-CN": "编辑器与 LaTeX 编译器"
+  },
+  "编辑器与 LaTeX 设置": {
+    "en": "Editor and LaTeX settings",
+    "zh-CN": "编辑器与 LaTeX 设置"
+  },
+  "编辑器偏好保存在当前浏览器；实时代码检查跟随当前 Article。": {
+    "en": "Editor preferences are saved in the current browser; live code checking follows the current Article.",
+    "zh-CN": "编辑器偏好保存在当前浏览器；实时代码检查跟随当前 Article。"
+  },
+  "编辑器字号": {
+    "en": "Editor font size",
+    "zh-CN": "编辑器字号"
+  },
+  "编辑器设置已恢复默认值。": {
+    "en": "Editor settings have been restored to defaults.",
+    "zh-CN": "编辑器设置已恢复默认值。"
+  },
+  "编辑行为": {
+    "en": "Edit behavior",
+    "zh-CN": "编辑行为"
+  },
+  "缩小 PDF": {
+    "en": "Zoom out PDF",
+    "zh-CN": "缩小 PDF"
+  },
+  "缺失 ·": {
+    "en": "Missing ·",
+    "zh-CN": "缺失 ·"
+  },
+  "自动编译": {
+    "en": "Auto compile",
+    "zh-CN": "自动编译"
+  },
+  "自动闭合括号": {
+    "en": "Auto-close brackets",
+    "zh-CN": "自动闭合括号"
+  },
+  "解除 Article 注册？": {
+    "en": "Unregister Article?",
+    "zh-CN": "解除 Article 注册？"
+  },
+  "解除当前注册": {
+    "en": "Unregister current registration",
+    "zh-CN": "解除当前注册"
+  },
+  "设置分类": {
+    "en": "Settings category",
+    "zh-CN": "设置分类"
+  },
+  "询问 Agent": {
+    "en": "Ask Agent",
+    "zh-CN": "询问 Agent"
+  },
+  "语义结果": {
+    "en": "Semantic results",
+    "zh-CN": "语义结果"
+  },
+  "语法检查": {
+    "en": "Grammar check",
+    "zh-CN": "语法检查"
+  },
+  "请选择主文档": {
+    "en": "Please select the main document",
+    "zh-CN": "请选择主文档"
+  },
+  "读取工程 latexmkrc": {
+    "en": "Read project latexmkrc",
+    "zh-CN": "读取工程 latexmkrc"
+  },
+  "调整 File outline 高度": {
+    "en": "Adjust File outline height",
+    "zh-CN": "调整 File outline 高度"
+  },
+  "输入左括号时插入对应的右括号": {
+    "en": "Insert the matching closing bracket when typing an opening bracket",
+    "zh-CN": "输入左括号时插入对应的右括号"
+  },
+  "输入时标出常见 LaTeX 语法问题": {
+    "en": "Flag common LaTeX syntax issues while typing",
+    "zh-CN": "输入时标出常见 LaTeX 语法问题"
+  },
+  "输入目录后检查主文档、编译器与依赖。": {
+    "en": "After entering the directory, check the main document, compiler, and dependencies.",
+    "zh-CN": "输入目录后检查主文档、编译器与依赖。"
+  },
+  "返回 PDF": {
+    "en": "Return PDF",
+    "zh-CN": "返回 PDF"
+  },
+  "这个编译问题没有可定位的工程源文件。": {
+    "en": "This compilation issue has no locatable project source file.",
+    "zh-CN": "这个编译问题没有可定位的工程源文件。"
+  },
+  "适合面板宽度": {
+    "en": "Fit to panel width",
+    "zh-CN": "适合面板宽度"
+  },
+  "适宽": {
+    "en": "Fit width",
+    "zh-CN": "适宽"
+  },
+  "选择 Article": {
+    "en": "Select Article",
+    "zh-CN": "选择 Article"
+  },
+  "选择已注册 Project 内包含主稿的目录。系统会识别 `.tex`、`.md` 或 `.markdown`，并从主稿读取标题。": {
+    "en": "Select a directory containing the main document within a registered Project. The system will detect `.tex`, `.md`, or `.markdown` and read the title from the main document.",
+    "zh-CN": "选择已注册 Project 内包含主稿的目录。系统会识别 `.tex`、`.md` 或 `.markdown`，并从主稿读取标题。"
+  },
+  "遇到第一个错误时停止": {
+    "en": "Stop at the first error",
+    "zh-CN": "遇到第一个错误时停止"
+  },
+  "（不是独立主文档）": {
+    "en": "(not a standalone main document)",
+    "zh-CN": "（不是独立主文档）"
+  },
+  "，不读取用户级配置": {
+    "en": "，does not read user-level configuration",
+    "zh-CN": "，不读取用户级配置"
+  }
+}

@@ -1,0 +1,228 @@
+{
+  "job_id": "d49c1613-97e8-4969-aaa9-c0e67758a897",
+  "status": "complete",
+  "native": 80,
+  "committed": 80,
+  "unknown": 0,
+  "reuse_steps": 16,
+  "branches": {
+    "fragile_0": {
+      "read_only_reuse": true,
+      "n": 16,
+      "centroid_change_yx": [
+        -0.5997955220116538,
+        0.2680346493205761
+      ],
+      "material_transport_yx": [
+        0.327178546308889,
+        0.0023129312877118433
+      ],
+      "residual_yx": [
+        -0.9269740683205427,
+        0.26572171803286426
+      ],
+      "M": 46.00804646351644,
+      "E": 21.635211717687326,
+      "sums": {
+        "births": 10.421309998034653,
+        "rule_death": 8.916190419242126,
+        "actor_resource_consumed": 6.5100877574451586,
+        "actor_mass_injury": 0.0,
+        "actor_mass_starvation": 0.0,
+        "actor_movement_paid": 1.48164507036558,
+        "actor_movement_unpaid": 0.0,
+        "actor_movement_denied_source": 0.0,
+        "actor_basal_paid": 0.4338889308138206,
+        "actor_basal_unpaid": 3.8706511151913655e-17,
+        "copy_paid": 0.04168223359207204,
+        "copy_denied": 3.006400066571635e-06,
+        "holding_paid": 0.07231482180230343,
+        "holding_denied": 0.0,
+        "P_pump_fee": 0.14151869773232262,
+        "F_pump_fee": 0.12148143165383957
+      }
+    },
+    "fragile_1": {
+      "read_only_reuse": false,
+      "n": 16,
+      "centroid_change_yx": [
+        -1.1971762037097768,
+        0.2524599103626599
+      ],
+      "material_transport_yx": [
+        -0.3204680060886805,
+        0.0028427553273133797
+      ],
+      "residual_yx": [
+        -0.8767081976210964,
+        0.24961715503534654
+      ],
+      "M": 46.30733803886529,
+      "E": 21.687969202872615,
+      "sums": {
+        "births": 11.002833124561773,
+        "rule_death": 9.198421970420391,
+        "actor_resource_consumed": 6.596761139497564,
+        "actor_mass_injury": 0.0,
+        "actor_mass_starvation": 0.0,
+        "actor_movement_paid": 1.4731576809129732,
+        "actor_movement_unpaid": 0.0,
+        "actor_movement_denied_source": 0.0,
+        "actor_basal_paid": 0.43562903336459824,
+        "actor_basal_unpaid": 3.9233103454701045e-17,
+        "copy_paid": 0.04401133249824709,
+        "copy_denied": 0.0,
+        "holding_paid": 0.07260483889409972,
+        "holding_denied": 0.0,
+        "P_pump_fee": 0.14912698041649264,
+        "F_pump_fee": 0.13110347751047657
+      }
+    },
+    "fragile_4": {
+      "read_only_reuse": false,
+      "n": 16,
+      "centroid_change_yx": [
+        -0.8419062990172357,
+        0.26864765891187403
+      ],
+      "material_transport_yx": [
+        -0.0028405951837861005,
+        0.002990189402676667
+      ],
+      "residual_yx": [
+        -0.8390657038334496,
+        0.2656574695091974
+      ],
+      "M": 46.55893923151395,
+      "E": 22.643730681942408,
+      "sums": {
+        "births": 10.60568832915436,
+        "rule_death": 8.549675982364318,
+        "actor_resource_consumed": 6.5852521880351045,
+        "actor_mass_injury": 0.0,
+        "actor_mass_starvation": 0.0,
+        "actor_movement_paid": 0.6530049384046709,
+        "actor_movement_unpaid": 0.0,
+        "actor_movement_denied_source": 0.0,
+        "actor_basal_paid": 0.43711712600498753,
+        "actor_basal_unpaid": 2.2440616338765896e-17,
+        "copy_paid": 0.04241492278271393,
+        "copy_denied": 7.830533903512228e-06,
+        "holding_paid": 0.0728528543341646,
+        "holding_denied": 0.0,
+        "P_pump_fee": 0.14431729387328276,
+        "F_pump_fee": 0.12571455604184423
+      }
+    },
+    "multi_0": {
+      "read_only_reuse": false,
+      "n": 16,
+      "centroid_change_yx": [
+        0.07737389909287629,
+        0.047770337837597765
+      ],
+      "material_transport_yx": [
+        0.331186591228803,
+        -0.0011762267053684002
+      ],
+      "residual_yx": [
+        -0.2538126921359267,
+        0.04894656454296616
+      ],
+      "M": 838.2901675940262,
+      "E": 533.2141123642899,
+      "sums": {
+        "births": 94.98897315262762,
+        "rule_death": 83.27182477019568,
+        "actor_resource_consumed": 108.23551662560605,
+        "actor_mass_injury": 0.0,
+        "actor_mass_starvation": 0.0,
+        "actor_movement_paid": 27.458611951968024,
+        "actor_movement_unpaid": 0.0,
+        "actor_movement_denied_source": 0.0,
+        "actor_basal_paid": 7.993471235754956,
+        "actor_basal_unpaid": 7.0802587337938175e-16,
+        "copy_paid": 0.37989746995084117,
+        "copy_denied": 5.842265966929339e-05,
+        "holding_paid": 1.3322452059591594,
+        "holding_denied": 0.0,
+        "P_pump_fee": 1.8971446896949473,
+        "F_pump_fee": 1.602470210226345
+      }
+    },
+    "multi_1": {
+      "read_only_reuse": false,
+      "n": 16,
+      "centroid_change_yx": [
+        -0.5221191193736701,
+        0.06091966486890499
+      ],
+      "material_transport_yx": [
+        -0.330831709816102,
+        -0.0011962028227919164
+      ],
+      "residual_yx": [
+        -0.19128740955756807,
+        0.062115867691696906
+      ],
+      "M": 838.3013548815668,
+      "E": 533.64547708706,
+      "sums": {
+        "births": 94.40792866922699,
+        "rule_death": 82.67959299925433,
+        "actor_resource_consumed": 108.37880676857608,
+        "actor_mass_injury": 0.0,
+        "actor_mass_starvation": 0.0,
+        "actor_movement_paid": 27.449619757172357,
+        "actor_movement_unpaid": 0.0,
+        "actor_movement_denied_source": 0.0,
+        "actor_basal_paid": 7.994841228805039,
+        "actor_basal_unpaid": 6.996642251320844e-16,
+        "copy_paid": 0.3775916560985722,
+        "copy_denied": 4.005857833579275e-05,
+        "holding_paid": 1.3324735381341732,
+        "holding_denied": 0.0,
+        "P_pump_fee": 1.9147344161685003,
+        "F_pump_fee": 1.6190762434476689
+      }
+    },
+    "multi_4": {
+      "read_only_reuse": false,
+      "n": 16,
+      "centroid_change_yx": [
+        -0.21070527502238434,
+        0.05305633480669769
+      ],
+      "material_transport_yx": [
+        0.0004862042344874986,
+        -0.0012985724491646102
+      ],
+      "residual_yx": [
+        -0.21119147925687184,
+        0.054354907255862304
+      ],
+      "M": 839.3137653889246,
+      "E": 549.8898169530969,
+      "sums": {
+        "births": 93.14842932938313,
+        "rule_death": 80.40768315205281,
+        "actor_resource_consumed": 108.19296447470191,
+        "actor_mass_injury": 0.0,
+        "actor_mass_starvation": 0.0,
+        "actor_movement_paid": 10.907824439899272,
+        "actor_movement_unpaid": 0.0,
+        "actor_movement_denied_source": 0.0,
+        "actor_basal_paid": 8.001595069612934,
+        "actor_basal_unpaid": 3.687489758674828e-16,
+        "copy_paid": 0.3724890139456889,
+        "copy_denied": 0.00010470337184368482,
+        "holding_paid": 1.3335991782688223,
+        "holding_denied": 0.0,
+        "P_pump_fee": 1.8812593194508616,
+        "F_pump_fee": 1.5808092788508323
+      }
+    }
+  },
+  "wall": 1.0929089810233563,
+  "raw_bytes": 3162335
+}

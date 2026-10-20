@@ -1,0 +1,11 @@
+{
+  "instruction_id": "inst_lin_727f6f74dfe4649a4b3d",
+  "resident_id": "resident_afa3d4d6cf11",
+  "message_id": "msg_c75c6fb83e9a8fbb83e9a54f36186ab9",
+  "accepted": true,
+  "sender_id": "resident_ce2a5ab005bc",
+  "input_state": {},
+  "activation_policy": "enqueue_and_trigger",
+  "business_ref": "recycling_precursor_dependence_20261019_final_scientific_result",
+  "handoff_sha256": "509cf1b028e732519d74f8052034016b4f1af9681ebe28fdfb72685fb44a51a2"
+}

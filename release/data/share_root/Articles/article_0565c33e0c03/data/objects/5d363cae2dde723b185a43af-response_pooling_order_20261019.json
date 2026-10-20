@@ -1,0 +1,183 @@
+{
+  "task": "response_pooling_order_20261019",
+  "owner": "resident_d3ccfa2d95b7",
+  "objective_met": false,
+  "native_by_PI": 0,
+  "choice": "收束conversion时点固定即时择生的跨父普遍部署：保5601 separate/G的1/8微小条件阳性、全部反例和原both强同行。停止该规则的时点/阈值/幅度优化。独立检验第三生成响应的邻域聚合顺序，不把即时出生最大化继续当部署目标。",
+  "question": "原C先平均两核势再非线性响应，可能把两核不一致压成一个看似适合的均值。改为两核各自通过同一冻结C响应后再平均，能否在128步内保住已有组织并增加实际新组织，而不损身体与能源？这是待证假说，不是从既有删除/拒绝账认定的原因。",
+  "evidence": {
+    "handoff": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/conversion_time_birth_branch_20261019/handoff.json",
+    "sha256": "08334473307a2db7ad93de6f43b28063691001357cd2027cb133b55b3a02c8ba",
+    "native": 520,
+    "worker_seconds": 48.844336,
+    "result": "6/8真实激活，1/8联合过；两ring/B新N增但E降，两ring/G的C/N降，5602 separate/G的C及C体时降，两separate/B零激活。新单64维护8/8不等强同行收益。",
+    "visual": "PI亲看5602完整O/C/N实际图：ring保孔、separate保小团；新旧宏观近似，不作新形态主张。",
+    "preflight": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/response_pooling_order_20261019_preflight.json",
+    "preflight_native": 0,
+    "preflight_result": "四个actual256 midpoint父上，响应改变43/33/42/31格，C选择掩码改变3/6/1/5格；原C与新C最大差1.921..1.989。ready出生差ring为0、separate为-.006113/-.003908，删除差ring为-.052557/-.005284、separate为+.346282/+.324565。只证明非别名和动作可能性，不按即时得分淘汰父或称有利。"
+  },
+  "mechanism": {
+    "original": "C0(rho)=g((uA(rho)+uB(rho))/2;mu0,sigma0)。uA/uB仍为原两冻结核势。",
+    "candidate": "C1(rho)=(g(uA(rho);mu0,sigma0)+g(uB(rho);mu0,sigma0))/2。mu0=0.17975814283267433，sigma0=0.04345259224059916；两次均用同一C参数，不误用A/B各自mu/sigma。浮点顺序明确为(ha+hb)/2。",
+    "ready": "保持原both的A/B greedy选择、平局与scalar-w0路径。仅用C1替换pre_hC：对其自身D/survivor按原admit算ready birth-D，再按原严格> max(netA,netB)条件选择C；pre_n支持门原样。ready锁w/C。",
+    "actual": "原外流、中心注入、actor及收费一次后，actual A/B响应原样，C分支重新从实际身体计算C1，按照ready锁定mask选h。原signed h的正负响应一起交唯一原native处理；不启用conversion_time_birth_branch，不独立重选正请求，不加删除布局/回收/储备。",
+    "semantics": "只有同一第三响应的非线性与邻域平均顺序变化；A/B fallback保留。此改动会同时改变C幅值、选择区域、生/死及后续资源，是整项构造干预；不声称隔离纯空间一致性或删除中介。无新卷积核、无新调参、无writer、无经验学习，额外响应算术未物理计价。",
+    "pure_checks": "输入ua=ub时两C数学一致并列实际浮点误差；禁新机制路径必须沿原函数而非近似等价重写。核参数/价/泵/供给/游标/标签绑定不变；纯restore、全父无写回、候选不读标签或未来。",
+    "implementation": "新隔离子类/函数分别覆盖ready C构造与actual C构造。保持原native/conversion/actor/pump源码字节不改。不得猴补全局third导致旧参考改变。冻结差异和源SHA后才上job。"
+  },
+  "parents": [
+    {
+      "id": "202610195601_ring_both",
+      "seed": 202610195601,
+      "shape": "ring",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/third_response_generation_search_20261019/b9f8bccb-57c5-4366-9788-7fdc1e301114/midpoint_ring/state256.bin",
+      "sha256": "f48f24ba8da02eefe582b6df28a712dc844fa86a09972a895d9389622deda6f4",
+      "baseline_rows": "/data/dataset/lenia-research/lineage_75e3399f4877/renewal_preservation_choice_factorial_20261019/1fbc79b1-1983-4beb-82f0-a9e579e8ca6e/202610195601_ring_both/steps.csv",
+      "baseline_rows_sha256": "63faa6e57bb5e717d32e8fda8b7cb3e9420d82914f66a0301f7605c4a0958804",
+      "baseline_final": "/data/dataset/lenia-research/lineage_75e3399f4877/renewal_preservation_choice_factorial_20261019/1fbc79b1-1983-4beb-82f0-a9e579e8ca6e/202610195601_ring_both/state384.bin",
+      "baseline_final_sha256": "a739dbfaa21511f477b2de01904a1e072ccfe2ff3d595bbbf95eeb9732589b63",
+      "baseline_receipt257": "/data/dataset/lenia-research/lineage_75e3399f4877/renewal_preservation_choice_factorial_20261019/1fbc79b1-1983-4beb-82f0-a9e579e8ca6e/202610195601_ring_both/receipt257.npz",
+      "baseline_receipt257_sha256": "5476aa3bb815b100fad32afd67d4591965d0c0905bee21a75aa7ac923912305f"
+    },
+    {
+      "id": "202610195601_separate_seeds_both",
+      "seed": 202610195601,
+      "shape": "separate_seeds",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/third_response_generation_search_20261019/b9f8bccb-57c5-4366-9788-7fdc1e301114/midpoint_separate_seeds/state256.bin",
+      "sha256": "9a85aca8ccf0d0ad8855de328f145f6c4b85312b770635facacc407bf5c45e76",
+      "baseline_rows": "/data/dataset/lenia-research/lineage_75e3399f4877/renewal_preservation_choice_factorial_20261019/1fbc79b1-1983-4beb-82f0-a9e579e8ca6e/202610195601_separate_seeds_both/steps.csv",
+      "baseline_rows_sha256": "0b1baebda7715e6aa740cbaa384728272a61dae7180d5db73884e8c9d941e1f1",
+      "baseline_final": "/data/dataset/lenia-research/lineage_75e3399f4877/renewal_preservation_choice_factorial_20261019/1fbc79b1-1983-4beb-82f0-a9e579e8ca6e/202610195601_separate_seeds_both/state384.bin",
+      "baseline_final_sha256": "99b1ebfc8e4fa7c3503c15132c938ba16abd1822ae0795ea2454ecda40443dbc",
+      "baseline_receipt257": "/data/dataset/lenia-research/lineage_75e3399f4877/renewal_preservation_choice_factorial_20261019/1fbc79b1-1983-4beb-82f0-a9e579e8ca6e/202610195601_separate_seeds_both/receipt257.npz",
+      "baseline_receipt257_sha256": "f98df8ce542a9103bfb65610a4dd8cd48d8d1629e177594599c0169baf8f892d"
+    },
+    {
+      "id": "202610195602_ring_both",
+      "seed": 202610195602,
+      "shape": "ring",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/third_response_generation_search_20261019/b9f8bccb-57c5-4366-9788-7fdc1e301114/validation_ring_midpoint/state256.bin",
+      "sha256": "fd725c839d1c7ca7a6083fef222c5e26d82bb53411f70e6a6cf463202e839354",
+      "baseline_rows": "/data/dataset/lenia-research/lineage_75e3399f4877/third_response_generation_search_20261019/b9f8bccb-57c5-4366-9788-7fdc1e301114/validation_ring_midpoint/steps.csv",
+      "baseline_rows_sha256": "2e3bb1b770fe55f0e4629d31b4e36bed37bc9e9a9fcb0bd4a825e464fefda460",
+      "baseline_final": "/data/dataset/lenia-research/lineage_75e3399f4877/third_response_generation_search_20261019/b9f8bccb-57c5-4366-9788-7fdc1e301114/validation_ring_midpoint/state384.bin",
+      "baseline_final_sha256": "e697b86d75fa46050352cacb287bf668db9b902608f8b6395ab74ea40b0cbaa5",
+      "baseline_receipt257": "/data/dataset/lenia-research/lineage_75e3399f4877/third_response_generation_search_20261019/b9f8bccb-57c5-4366-9788-7fdc1e301114/validation_ring_midpoint/receipt257.npz",
+      "baseline_receipt257_sha256": "2792e0139e8d30780aeb22a17de8351ddb03262ab7f44f316287414dad921f71"
+    },
+    {
+      "id": "202610195602_separate_seeds_both",
+      "seed": 202610195602,
+      "shape": "separate_seeds",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/third_response_generation_search_20261019/b9f8bccb-57c5-4366-9788-7fdc1e301114/validation_separate_seeds_midpoint/state256.bin",
+      "sha256": "c41428d2d6f7df88d837784cdf2579e2c2058e0c053b43490c654615ca083ca0",
+      "baseline_rows": "/data/dataset/lenia-research/lineage_75e3399f4877/third_response_generation_search_20261019/b9f8bccb-57c5-4366-9788-7fdc1e301114/validation_separate_seeds_midpoint/steps.csv",
+      "baseline_rows_sha256": "79a94b154ec2a6d18567307d6db0c94448fb5828a8946d21a5d3671caca6fc3e",
+      "baseline_final": "/data/dataset/lenia-research/lineage_75e3399f4877/third_response_generation_search_20261019/b9f8bccb-57c5-4366-9788-7fdc1e301114/validation_separate_seeds_midpoint/state384.bin",
+      "baseline_final_sha256": "6d5cd818f728ced291bfc42613c7c9c45cb58eba7801ec3f2adfec61e21de445",
+      "baseline_receipt257": "/data/dataset/lenia-research/lineage_75e3399f4877/third_response_generation_search_20261019/b9f8bccb-57c5-4366-9788-7fdc1e301114/validation_separate_seeds_midpoint/receipt257.npz",
+      "baseline_receipt257_sha256": "3fb8b9aece71f88484439ed5073306b8ef09697d85f000d6796a24e7d2bfc3a9"
+    }
+  ],
+  "source_bindings": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/conversion_time_birth_branch_20261019/handoff.json",
+      "sha256": "08334473307a2db7ad93de6f43b28063691001357cd2027cb133b55b3a02c8ba"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/conversion_time_birth_branch_20261019/REPORT.txt",
+      "sha256": "88333676e0edfdd1153bd2a43de1ca2b921e2181e569d2ebe1c7286201b4fd4b"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/conversion_time_birth_branch_20261019/METHOD.txt",
+      "sha256": "48f89dbf06d69cf7806225d13ac3880e5926ce474f2202f01ac665d727e45a10"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/conversion_time_birth_branch_20261019/scientific_next_request.json",
+      "sha256": "1ae9496080f95d23398be447897eb69abcb68370d69034080d33381702b381f5"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/response_pooling_order_20261019_preflight.json",
+      "sha256": "a345272bb2e2fdffb9f504e26312236386a4fb59ff38c53dac02d79e71ee81b1"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/third_response_generation_search/core.py",
+      "sha256": "89b3a7b81ce76b49711367eb17fc01fa2487172d6883e32daee50ce304c2c5dc"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/renewal_preservation_choice_factorial/core.py",
+      "sha256": "163a5c173183b5df93e314ba98345809558e55977a28bee9d83a09aa06481760"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/resource_conditioned_growth_rule/core.py",
+      "sha256": "bad674f254644c8fc00caa6fd50ccd45bbebdd65a229c11125ca3765df981a44"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/regenerative_actor/conversion.py",
+      "sha256": "d2b73ccf44d6720e01e2166c055f9a427406dc483b21746476b9f8cc5f95189a"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/regenerative_actor/model.py",
+      "sha256": "3941450e97d2311f833d1c9c8964f348218467d4cd8d41a68b6584b72b24b5b0"
+    }
+  ],
+  "experiment": {
+    "design": "5601/5602 × ring/separate四个实际midpoint256父，每父一个新未来257..384(128步)。原fixed both四个同父128未来共512步仅按绑定只读；源含两5602旧包已引用路径，按clock257..384切片，不能读入取得段作未来。全部四父保留，不按新preflight选好例。",
+    "controls": "同完整256身体/胞内E/P/F/world/RNG/游标/旧费用/sinks/所有标签。现有固定中心供给与半衰、dt、原pump、horizon384原样；不重演0..256、不延至384以后、不做新形态或独立环境宣称。",
+    "cohorts": "本批起点256：O为L128，C为129..256出生且活到256的post128材料，N为257..384实际出生。C与上一320跨接实验的C定义不同，结果不可直接拼池。新标签各步用实际K/actor keep/rule keep一次，真实born只入N，O+C+N=body。策略完全不读这些诊断。",
+    "baseline_cohorts": "旧真实嵌套标签恒等式C(t)=post128_live(t)-post256_live(t)，O=L128_live，N=post256_live；C体时逐钟sum(dt*C)或累计项差后再扣256前偏置。这只是已记录同轨标签的守恒分解，不是从稀疏帧反推；保双精度余差不裁剪，逐项验证非负误差与O+C+N及末384实际场。若旧标签不能完成该恒等式，停止依赖项并报告，禁止免费补跑旧轨。",
+    "boundary": "4个预定disabled-hook first native257，每父1步，逐数组/账对旧receipt257及实际可用字段；无旧257完整joint则列缺项，不称全缓存/RNG等价。全部边界过才执行4×128新轨。开启机制的新首步actor/K保持原，h/D/born可变化；不强求新D等旧D。",
+    "accounting": "4边界+512科学=516尝试/提交/结算上限。未知native不得重放；已确认完整checkpoint才允许同job明确恢复，所有attempt用量/失败原件保留。默认无旧取得/已知尾窗重演，也无额外native测试。",
+    "records": "逐钟M/E/U/体时、O/C/N留存/登记/actor与rule删除/体时、born/death、全部热费欠付与输入出口。连续512步实际K/transported/afteractor/survivor/born，支持真实cohort核验。指定全receipt记录uA/uB、C0/C1差、ready锁选、actual响应与生死。C0纯影子只在指定实际状态求值，不额外推进世界；其差不是整个未来反事实收益。",
+    "receipts": [
+      257,
+      258,
+      260,
+      264,
+      272,
+      288,
+      320,
+      352,
+      384
+    ],
+    "joints": [
+      256,
+      320,
+      384
+    ],
+    "windows": [
+      [
+        257,
+        320
+      ],
+      [
+        321,
+        384
+      ]
+    ],
+    "visual": "亲看全部四父256/288/320/352/384 O/C/N真实序列及全费曲线，含坏例。论文整图继续按既有手工可编辑要求，不把代码生成图作为论文完成。"
+  },
+  "gates": {
+    "primary": "逐父相对原both：末C不降，两个64窗C体时分别不降；末N严格增加，晚64 N体时不降；末M/末E/全128体时均不降，minM>=32，两个预定窗均born>=death且Echange>=0。必须全部成立才记有用更新。",
+    "tolerance": "1e-8与严格0两套一起列。N/C/能量/身体各指标独立，不以总分、总体均值、更多累计出生、保护旧体、或高E救门。",
+    "scope": "四相关开发父而非新独立世界，已知ring与separate结构性反例同等保留。单个通过只限定到该父，全四通过才支持当前有限矩阵共同收益，仍不是稳态、形成期收益或学习。",
+    "stop": "没有共同收益即关闭该固定构造的普遍部署；即便全过也不自动训练/拓展，先交真实新组织与费用结果作下一科学选择。禁止按现结果改mu/sigma、C比较阈值、混合权重或窗口。"
+  },
+  "budget": {
+    "native_cap": 516,
+    "science_native": 512,
+    "boundary_native": 4,
+    "runner_worker_seconds_cap": 450,
+    "cpu_threads": 2,
+    "gpu": 0,
+    "single_job": true,
+    "shutdown_reserve_worker_seconds": 60,
+    "new_raw_bytes_cap": 402653184,
+    "control": "启动前重新读取research.desired_state及started；paused/stopped/未开始时不提交。所有旧余额(含401.155664秒)封存，本预算独立。不并行开第二job，不创建定时器/通用结束触发。按native/worker/磁盘最早边界预留收尾停止，不能超限后补称合规。"
+  },
+  "outputs": [
+    "唯一handoff/REPORT/METHOD、源/计划SHA、科学与边界/所有attempt真实用量、全部反例和完整费用。",
+    "四父相对fixed both的C/N/身体联合门、两窗维护，标签口径清楚区别于前320 C。",
+    "论文/投影沿在办事项合并，shared只本人短索引，不广播、不代开后续。整体objective_met=false。"
+  ]
+}

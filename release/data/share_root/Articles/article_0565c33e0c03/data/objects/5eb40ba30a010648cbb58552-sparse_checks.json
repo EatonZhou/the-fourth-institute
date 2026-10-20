@@ -1,0 +1,65 @@
+[
+  {
+    "seed": 202610199961,
+    "arm": "diffusion",
+    "maximum_distal_energy": 4.244289231891194,
+    "maximum_residual": 2.3849032557837768e-14,
+    "minimum_mass": 15.0
+  },
+  {
+    "seed": 202610199961,
+    "arm": "no_signal",
+    "maximum_distal_energy": 4.242067796667729,
+    "maximum_residual": 2.923350580705253e-14,
+    "minimum_mass": 15.0
+  },
+  {
+    "seed": 202610199961,
+    "arm": "global_diagnostic",
+    "maximum_distal_energy": 4.247339447592941,
+    "maximum_residual": 2.355575587018044e-14,
+    "minimum_mass": 15.0
+  },
+  {
+    "seed": 202610199962,
+    "arm": "diffusion",
+    "maximum_distal_energy": 4.180469777761957,
+    "maximum_residual": 3.121716210183201e-14,
+    "minimum_mass": 15.0
+  },
+  {
+    "seed": 202610199962,
+    "arm": "no_signal",
+    "maximum_distal_energy": 4.179563695074702,
+    "maximum_residual": 3.121716210183201e-14,
+    "minimum_mass": 15.0
+  },
+  {
+    "seed": 202610199962,
+    "arm": "global_diagnostic",
+    "maximum_distal_energy": 4.179783528159914,
+    "maximum_residual": 3.121716210183201e-14,
+    "minimum_mass": 15.0
+  },
+  {
+    "seed": 202610199963,
+    "arm": "diffusion",
+    "maximum_distal_energy": 4.317062884587115,
+    "maximum_residual": 2.665744144522697e-14,
+    "minimum_mass": 15.0
+  },
+  {
+    "seed": 202610199963,
+    "arm": "no_signal",
+    "maximum_distal_energy": 4.306094436953649,
+    "maximum_residual": 3.064735965008225e-14,
+    "minimum_mass": 15.0
+  },
+  {
+    "seed": 202610199963,
+    "arm": "global_diagnostic",
+    "maximum_distal_energy": 4.313875270705537,
+    "maximum_residual": 2.223563130496209e-14,
+    "minimum_mass": 15.0
+  }
+]

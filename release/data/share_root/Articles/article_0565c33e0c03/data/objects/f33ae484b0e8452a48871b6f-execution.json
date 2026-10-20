@@ -1,0 +1,102 @@
+{
+  "job_id": "5b23ab89-9a5b-469a-b540-b14ad2a6646a",
+  "status": "finished_all_stops_preserved",
+  "committed": 768,
+  "unknown": 0,
+  "old_native_replay": 0,
+  "branches": {
+    "g0_block_keep": {
+      "status": "complete",
+      "steps": 96,
+      "t": 288,
+      "M": 94.98059031948418,
+      "centroid_y": 31.335806333826127,
+      "centroid_x": 27.442179826252033,
+      "largest_component": 0.9810935882250574,
+      "components": 1,
+      "edge_fraction": 1.6521188125530714e-10
+    },
+    "g0_block_instant": {
+      "status": "complete",
+      "steps": 96,
+      "t": 288,
+      "M": 94.84058050490633,
+      "centroid_y": 31.33974102008581,
+      "centroid_x": 27.142844522542653,
+      "largest_component": 0.982192871574428,
+      "components": 1,
+      "edge_fraction": 5.32735324992497e-10
+    },
+    "g0_impulse_keep": {
+      "status": "complete",
+      "steps": 96,
+      "t": 288,
+      "M": 94.54018746622434,
+      "centroid_y": 31.33634004849601,
+      "centroid_x": 27.43503335872721,
+      "largest_component": 0.9811369934047511,
+      "components": 1,
+      "edge_fraction": 1.647344364745292e-10
+    },
+    "g0_impulse_instant": {
+      "status": "complete",
+      "steps": 96,
+      "t": 288,
+      "M": 94.14787932430698,
+      "centroid_y": 31.34209998370864,
+      "centroid_x": 27.113000209336395,
+      "largest_component": 0.9820987262833196,
+      "components": 1,
+      "edge_fraction": 5.323771176566084e-10
+    },
+    "g1_block_keep": {
+      "status": "complete",
+      "steps": 96,
+      "t": 288,
+      "M": 91.08613987637116,
+      "centroid_y": 31.53093245385826,
+      "centroid_x": 36.358434691528075,
+      "largest_component": 0.9797281843955225,
+      "components": 1,
+      "edge_fraction": 6.336500515059298e-10
+    },
+    "g1_block_instant": {
+      "status": "complete",
+      "steps": 96,
+      "t": 288,
+      "M": 90.78449162671409,
+      "centroid_y": 31.529170719489084,
+      "centroid_x": 36.339345205549705,
+      "largest_component": 0.9797636333914845,
+      "components": 1,
+      "edge_fraction": 6.341180543927169e-10
+    },
+    "g1_impulse_keep": {
+      "status": "complete",
+      "steps": 96,
+      "t": 288,
+      "M": 90.59253424591066,
+      "centroid_y": 31.53203815075677,
+      "centroid_x": 36.36346806532041,
+      "largest_component": 0.9797536988337464,
+      "components": 1,
+      "edge_fraction": 6.31552722204e-10
+    },
+    "g1_impulse_instant": {
+      "status": "complete",
+      "steps": 96,
+      "t": 288,
+      "M": 90.28251524155215,
+      "centroid_y": 31.529843395985505,
+      "centroid_x": 36.347403185295676,
+      "largest_component": 0.9796215771626312,
+      "components": 1,
+      "edge_fraction": 6.322343306433252e-10
+    }
+  },
+  "native": 768,
+  "science_wall": 10.67748541396577,
+  "raw_bytes": 14257123,
+  "all_files_bytes": 17843380,
+  "observed_all_files_peak": 17843380
+}

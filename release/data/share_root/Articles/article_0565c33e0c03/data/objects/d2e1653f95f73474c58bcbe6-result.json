@@ -1,0 +1,19 @@
+{
+  "task": "renewal_preservation_choice_factorial_20261019",
+  "status": "complete",
+  "job": "1fbc79b1-1983-4beb-82f0-a9e579e8ca6e",
+  "attempted": 1796,
+  "committed": 1796,
+  "settled": 1796,
+  "science_native": 1792,
+  "boundary_native": 4,
+  "unknown_native": 0,
+  "wall_seconds": 56.85078842006624,
+  "failure": null,
+  "logical_paths": 16,
+  "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/renewal_preservation_choice_factorial_20261019/1fbc79b1-1983-4beb-82f0-a9e579e8ca6e",
+  "raw_bytes": 142825812,
+  "objective_met": false,
+  "old_acquisition_replayed": 0,
+  "old_budget_used": 0
+}

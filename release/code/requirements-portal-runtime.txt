@@ -1,0 +1,16 @@
+nats-py
+aiohttp
+jsonschema
+markdown-it-py
+packaging
+PyYAML
+Pillow
+psycopg
+psycopg-binary
+psycopg-pool
+qrcode
+starlette
+uvicorn
+webauthn
+cryptography
+psutil>=5.9.8

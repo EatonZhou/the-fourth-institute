@@ -1,0 +1,20 @@
+{
+  "task": "material_action_credit_20261019",
+  "status": "complete_direction_active",
+  "native": 5376,
+  "worker_seconds": 18.432334,
+  "unknown": 0,
+  "raw_bytes": 28817483,
+  "finding": "来源返回的标准即时局部运动学习取得2/2，反转0/2；资格迹/邻接无优势。无中央五动作、无birth，反馈递送位置改变有效；完整适应未成。",
+  "report": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_action_credit_20261019/REPORT.txt",
+  "animation": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_action_credit_20261019/actual_local_motor.gif",
+  "files": {
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/material_action_credit_20261019/REPORT.txt": "1cd054f85b76e36f4ed7db3bc918716f1aafc3dcbfb1f0c51bbadda127c1d38d",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/material_action_credit_20261019/summary.json": "b222762d9c643f622250fec28968490fe57db4ee94eddd578086f38bbc807ee7",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/material_action_credit_20261019/plan.json": "b2a4a1d1545452021085a4fa9ea100a2470627a7c85cc78c0b42fb0533bb870d",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/material_action_credit_20261019/comparisons.csv": "8b53f7b83b853d23cba609f213cb260611e5ef06be783b05164c4253f38b86f4",
+    "/share/Projects/元胞自动机研究/src/local_learning/results_20261019/material_action_credit_20261019/actual_local_motor.gif": "2d900ad33476c1af9d0e61b4e4b051ee84c1babd539af2a1588b568b92cd9de1"
+  },
+  "next_actual": "local_motor_expression_20261019 frozen768 samebody nofeedback probes; wait occupied sharedslot",
+  "requires_pi_choice": false
+}

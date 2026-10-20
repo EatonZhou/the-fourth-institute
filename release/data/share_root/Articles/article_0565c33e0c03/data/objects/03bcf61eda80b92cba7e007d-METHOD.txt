@@ -1,0 +1,17 @@
+不同身体上的局部能量反馈部署
+
+两具受体均由PI在本次运行前从已完成8体首窗中指定：reference_anisotropic--connected_trilobe、compact_ring_core_outer--bridged_longbody。原完整128态中央嵌入96×96的[16:80,16:80]，全部18数组包括核均逐值保留，外围无组织/P/F/E。核保整数位移和系数，不重归一化；仅两配置size改96。原128以前不重放。原源、配置、全部核系数的位移、存量、三臂初包恢复见static_checks.json。
+
+每身体open/suppress/reserve三条新未来，各129..384共256步。原96公共带逐值复用，中央与原384带129..384逐值同，外围无刺激。六条是条件配对未来，身体、规则、历史和嵌域均有差异；身体间不作纯形态中介或独立复现。旧长体仅研究背景，本次统计没有混入旧未来。
+
+每步固定阶段：旧rho/P/F/E→P与F各四邻接共同旧场请求，双端旧rho支持，D=1、dt=.05、每资源κ=.02，源合并费用同比付款缩流→更新P/F及剩余E→旧格摄取策略→原.02抑制费真实扣E→原actor及生成各一次。open请求a1；suppress请求a0；reserve只以资源付款后的E>=.1456rho请求a0，否则a1，空格a1、等号a0。阈值=.08+.05*.012+.8*.08+.05*.02。两受体的movement/basal/starvation/dt及donor_energy/face_potential配置兼容；该参照不锁定能量储备，不保证混合后收体无饥饿。没有滞回、感知费、当前h/q输入、学习或调参。
+
+抑制仍走原执行器的全付/欠付回a1；旧空格实际a1，新流入组织可以摄取。旧格quota不随K移动，保留quota不等于实际剩F。原.42F出生、fresh-brake仅自然到期sample替换、held动作和随机带保留，learn=false。原物理、转换、两个执行器、策略及旧批源均冻结。免费局部感知沿既有假设。
+
+运行前仅静态嵌入、配置与初包恢复，未重做旧policy/mock套件。所有1536身体尝试在联合步之前计数；无预览、独立能量、前缀重演。统一runner CPU2线程/GPU0，/data专属目录，64GiB软预算和4GiB写前门禁。完整ready可恢复，未知inflight拒绝重放；首末packet恢复只读且受native guard保护。
+
+per_step.csv是全部保存收据的逐步原位账，source_packets.csv给每包绝对路径及SHA。fixed_windows/segments在1/8/32/64/128/256切分，effects分别为同身体reserve-open、reserve-suppress、suppress-open；符号段完整，不以终点替代中途。body_time=.05*旧M逐步积分。ΔM=生−规则死−伤损−饥饿，ΔE按摄取/新生携能/物理费/抑制费/资源搬运费/组织携能损失/规则死亡携能分账；路径恒等式不作中介拆分。actor_reward与整体E分别保存。
+
+阈值、资源付款后E、requested/actual a全场逐步保存并与源rho核对。first_separation同时报逐值首差和1e−12阈值首差，空格requested差不当有效动作；真正有体格actual a差另列。首步和首有效动作空间图从原packet取值，不重新计算动力学。
+
+每8步展示，包括128和384，每轨33态；完整逐步零尾仍留原子包。坐标固定0..95、rho统一0..1，GIF与SVG/PDF/PNG atlas由真实帧生成。几何读出rho>.01，8邻接连通分量和4邻接孔洞，均为非周期图像描述；边距与跨周期bbox短距只作几何警示，不能识别卷积/周期作用起点。全部核非零系数支持与可见几何支持不混淆。有限窗存留、增长或多孔形态都不称稳态。

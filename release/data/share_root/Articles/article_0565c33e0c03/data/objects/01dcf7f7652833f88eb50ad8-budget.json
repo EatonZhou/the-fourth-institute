@@ -1,0 +1,29 @@
+{
+  "native_cap": 3080,
+  "attempted": 3076,
+  "returned": 3076,
+  "settled": 3076,
+  "science": 3072,
+  "boundary": 4,
+  "failed_native": 0,
+  "worker_cap": 900,
+  "runner_worker_seconds": 310.395638,
+  "runner_start": "2026-10-18T20:34:51.262076+00:00",
+  "runner_finish": "2026-10-18T20:37:26.459895+00:00",
+  "cpu_threads": 2,
+  "gpu": 0,
+  "unused_sealed": [
+    4,
+    589.604362
+  ],
+  "old_budget_used": 0,
+  "baseline_replayed": 0,
+  "acquisition_replayed": 0,
+  "submission_adaptor_error_before_job": {
+    "error": "missing spec in request envelope",
+    "native": 0,
+    "job_created": false
+  },
+  "raw_cap_bytes": 1073741824,
+  "raw_bytes": 54544897
+}

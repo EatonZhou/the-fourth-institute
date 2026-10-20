@@ -1,0 +1,146 @@
+[
+  {
+    "parent": "202610197503_0_0_fast_delta_life",
+    "arm": "both_on",
+    "initial_exact": true,
+    "Q_transport_error": null,
+    "first16_actual_components_count": 0,
+    "old_unavailable_components_null": true,
+    "no_payment_or_writing": true
+  },
+  {
+    "parent": "202610197503_0_0_fast_delta_life",
+    "arm": "cue_only",
+    "initial_exact": true,
+    "Q_transport_error": 0.0,
+    "first16_actual_components_count": 16,
+    "old_unavailable_components_null": false,
+    "no_payment_or_writing": true
+  },
+  {
+    "parent": "202610197503_0_0_fast_delta_life",
+    "arm": "polarity_only",
+    "initial_exact": true,
+    "Q_transport_error": 0.0,
+    "first16_actual_components_count": 16,
+    "old_unavailable_components_null": false,
+    "no_payment_or_writing": true
+  },
+  {
+    "parent": "202610197503_0_0_fast_delta_life",
+    "arm": "both_off",
+    "initial_exact": true,
+    "Q_transport_error": 0.0,
+    "first16_actual_components_count": 16,
+    "old_unavailable_components_null": false,
+    "no_payment_or_writing": true
+  },
+  {
+    "parent": "202610197503_0_1_fast_delta_life",
+    "arm": "both_on",
+    "initial_exact": true,
+    "Q_transport_error": null,
+    "first16_actual_components_count": 0,
+    "old_unavailable_components_null": true,
+    "no_payment_or_writing": true
+  },
+  {
+    "parent": "202610197503_0_1_fast_delta_life",
+    "arm": "cue_only",
+    "initial_exact": true,
+    "Q_transport_error": 0.0,
+    "first16_actual_components_count": 16,
+    "old_unavailable_components_null": false,
+    "no_payment_or_writing": true
+  },
+  {
+    "parent": "202610197503_0_1_fast_delta_life",
+    "arm": "polarity_only",
+    "initial_exact": true,
+    "Q_transport_error": 0.0,
+    "first16_actual_components_count": 16,
+    "old_unavailable_components_null": false,
+    "no_payment_or_writing": true
+  },
+  {
+    "parent": "202610197503_0_1_fast_delta_life",
+    "arm": "both_off",
+    "initial_exact": true,
+    "Q_transport_error": 0.0,
+    "first16_actual_components_count": 16,
+    "old_unavailable_components_null": false,
+    "no_payment_or_writing": true
+  },
+  {
+    "parent": "202610197504_1_0_fast_delta_life",
+    "arm": "both_on",
+    "initial_exact": true,
+    "Q_transport_error": null,
+    "first16_actual_components_count": 0,
+    "old_unavailable_components_null": true,
+    "no_payment_or_writing": true
+  },
+  {
+    "parent": "202610197504_1_0_fast_delta_life",
+    "arm": "cue_only",
+    "initial_exact": true,
+    "Q_transport_error": 0.0,
+    "first16_actual_components_count": 16,
+    "old_unavailable_components_null": false,
+    "no_payment_or_writing": true
+  },
+  {
+    "parent": "202610197504_1_0_fast_delta_life",
+    "arm": "polarity_only",
+    "initial_exact": true,
+    "Q_transport_error": 0.0,
+    "first16_actual_components_count": 16,
+    "old_unavailable_components_null": false,
+    "no_payment_or_writing": true
+  },
+  {
+    "parent": "202610197504_1_0_fast_delta_life",
+    "arm": "both_off",
+    "initial_exact": true,
+    "Q_transport_error": 0.0,
+    "first16_actual_components_count": 16,
+    "old_unavailable_components_null": false,
+    "no_payment_or_writing": true
+  },
+  {
+    "parent": "202610197504_1_1_fast_delta_life",
+    "arm": "both_on",
+    "initial_exact": true,
+    "Q_transport_error": null,
+    "first16_actual_components_count": 0,
+    "old_unavailable_components_null": true,
+    "no_payment_or_writing": true
+  },
+  {
+    "parent": "202610197504_1_1_fast_delta_life",
+    "arm": "cue_only",
+    "initial_exact": true,
+    "Q_transport_error": 0.0,
+    "first16_actual_components_count": 16,
+    "old_unavailable_components_null": false,
+    "no_payment_or_writing": true
+  },
+  {
+    "parent": "202610197504_1_1_fast_delta_life",
+    "arm": "polarity_only",
+    "initial_exact": true,
+    "Q_transport_error": 0.0,
+    "first16_actual_components_count": 16,
+    "old_unavailable_components_null": false,
+    "no_payment_or_writing": true
+  },
+  {
+    "parent": "202610197504_1_1_fast_delta_life",
+    "arm": "both_off",
+    "initial_exact": true,
+    "Q_transport_error": 0.0,
+    "first16_actual_components_count": 16,
+    "old_unavailable_components_null": false,
+    "no_payment_or_writing": true
+  }
+]

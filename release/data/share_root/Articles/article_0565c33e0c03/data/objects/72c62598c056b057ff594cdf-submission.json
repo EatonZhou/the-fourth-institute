@@ -1,0 +1,20 @@
+{
+  "id": "a0744c61-f535-4d48-92ef-e9979a9d4e27",
+  "name": "d3 odd state gain learning 7040",
+  "command": [
+    "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+    "-m",
+    "local_learning.state_gated_motor_gain.run",
+    "run"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "d3-state-gated-motor-gain-20261019-v1",
+  "status": "running",
+  "created_at": "2026-10-19T10:07:12.892838+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/a0744c61-f535-4d48-92ef-e9979a9d4e27",
+  "pid": 3009823,
+  "manual_pause": false,
+  "create_time": 1792404432.42,
+  "started_at": "2026-10-19T10:07:13.036561+00:00"
+}

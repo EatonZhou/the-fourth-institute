@@ -1,0 +1,189 @@
+{
+  "schema": "anticipatory-information-audit.v1",
+  "decisions": 2,
+  "completed_targets": 0,
+  "missing_targets": [],
+  "decision_diagnostics": [
+    {
+      "decision_id": "choice",
+      "decision_order": 144,
+      "history_digest": "ed2242d27a5785117335bcdd0ca364f83b227f0f8a608f715802526f6c889ca1",
+      "last_pair": {
+        "cue": 1,
+        "action": 0,
+        "channel": "material-scope",
+        "label": 0,
+        "elapsed_since_completion": 93,
+        "cue_to_completion": 51
+      },
+      "legal_history_events": 1,
+      "censored_history_ids": [],
+      "cue_key": "5c4a82259779175c34077d1a8c7924751ea4d03f152f311ca45ac9527172c2ea",
+      "instant_key": "cdb49ac83189e0cb58fd62a5b4a087163b055e9ff83ef5e6ef9d2580df1ee143",
+      "public_key": "7c4bdd3f7893f62a607ed112c35443f98aa7e8f1565e7cf1ef59d318921afb62",
+      "body_key": "6747cdf853ec8142141cc51a6d4136285eb4dd3b559a8a23527f9e985400c86f",
+      "last_key": "3c69909c1ccbd8cbeba3add34cdd31b98ce749aea137c24959f41ded975ead69",
+      "channel_last_key": "a4b79d73927e7f4c87f6c61265634d2230aa1fb1dba7403e6bd047e0d853b7ef",
+      "full_history_key": "66b5526842d03445cf0cb81abd1ca4222de59de4dbc27eff5236df26a356f76e"
+    },
+    {
+      "decision_id": "choice2",
+      "decision_order": 144,
+      "history_digest": "ea40f2f7eac5fd1368a0c5da2c90c7834326c7437509545f1cb214546fede4fd",
+      "last_pair": {
+        "cue": 1,
+        "action": 0,
+        "channel": "material-scope",
+        "label": 1,
+        "elapsed_since_completion": 93,
+        "cue_to_completion": 51
+      },
+      "legal_history_events": 1,
+      "censored_history_ids": [],
+      "cue_key": "5c4a82259779175c34077d1a8c7924751ea4d03f152f311ca45ac9527172c2ea",
+      "instant_key": "cdb49ac83189e0cb58fd62a5b4a087163b055e9ff83ef5e6ef9d2580df1ee143",
+      "public_key": "9128cab55c36d0fe54b9423297b5bd2bfea03022092af7592a2c4b929112ba4b",
+      "body_key": "fc1feee0b5dd96a157de960dba397a7a3afa0574b20cee9c08a5ed834ea6a4b5",
+      "last_key": "c350d3d6824f4a5f1172eca5159d6acab7efeb3dd32e29a907440e24a4f52d46",
+      "channel_last_key": "b62bfd878b8b4f5fe93bb3e5db5d2d14f34f0545a22b8b01ffd571208b7a4c5a",
+      "full_history_key": "8e1c94d217373624c0603641539ae4252276689112b830905eda52dbafbb284b"
+    }
+  ],
+  "realized_outcomes": {
+    "cue_key": {
+      "matched_groups": [],
+      "history_target_contrasts": [],
+      "matched_decisions": 0
+    },
+    "instant_key": {
+      "matched_groups": [],
+      "history_target_contrasts": [],
+      "matched_decisions": 0
+    },
+    "public_key": {
+      "matched_groups": [],
+      "history_target_contrasts": [],
+      "matched_decisions": 0
+    },
+    "body_key": {
+      "matched_groups": [],
+      "history_target_contrasts": [],
+      "matched_decisions": 0
+    },
+    "last_key": {
+      "matched_groups": [],
+      "history_target_contrasts": [],
+      "matched_decisions": 0
+    },
+    "channel_last_key": {
+      "matched_groups": [],
+      "history_target_contrasts": [],
+      "matched_decisions": 0
+    },
+    "full_history_key": {
+      "matched_groups": [],
+      "history_target_contrasts": [],
+      "matched_decisions": 0
+    }
+  },
+  "owner_model_assessments": {
+    "cue_key": {
+      "matched_groups": [
+        {
+          "condition_digest": "5c4a82259779175c34077d1a8c7924751ea4d03f152f311ca45ac9527172c2ea",
+          "decision_ids": [
+            "choice",
+            "choice2"
+          ],
+          "distinct_histories": 2,
+          "distinct_targets": 2
+        }
+      ],
+      "history_target_contrasts": [
+        {
+          "condition_digest": "5c4a82259779175c34077d1a8c7924751ea4d03f152f311ca45ac9527172c2ea",
+          "decision_ids": [
+            "choice",
+            "choice2"
+          ],
+          "distinct_histories": 2,
+          "distinct_targets": 2
+        }
+      ],
+      "matched_decisions": 2
+    },
+    "instant_key": {
+      "matched_groups": [
+        {
+          "condition_digest": "cdb49ac83189e0cb58fd62a5b4a087163b055e9ff83ef5e6ef9d2580df1ee143",
+          "decision_ids": [
+            "choice",
+            "choice2"
+          ],
+          "distinct_histories": 2,
+          "distinct_targets": 2
+        }
+      ],
+      "history_target_contrasts": [
+        {
+          "condition_digest": "cdb49ac83189e0cb58fd62a5b4a087163b055e9ff83ef5e6ef9d2580df1ee143",
+          "decision_ids": [
+            "choice",
+            "choice2"
+          ],
+          "distinct_histories": 2,
+          "distinct_targets": 2
+        }
+      ],
+      "matched_decisions": 2
+    },
+    "public_key": {
+      "matched_groups": [],
+      "history_target_contrasts": [],
+      "matched_decisions": 0
+    },
+    "body_key": {
+      "matched_groups": [],
+      "history_target_contrasts": [],
+      "matched_decisions": 0
+    },
+    "last_key": {
+      "matched_groups": [],
+      "history_target_contrasts": [],
+      "matched_decisions": 0
+    },
+    "channel_last_key": {
+      "matched_groups": [],
+      "history_target_contrasts": [],
+      "matched_decisions": 0
+    },
+    "full_history_key": {
+      "matched_groups": [],
+      "history_target_contrasts": [],
+      "matched_decisions": 0
+    }
+  },
+  "instant_contrasts_separated_by_body_in_this_design": true,
+  "body_contrasts_separated_by_last_in_this_design": false,
+  "residual_history_information_candidates": [],
+  "completeness_declared": true,
+  "receipt_references": [
+    "d035f0200f3629ff147b044e4eff1f539230aa2475e169705bf9496ef9c09d7c"
+  ],
+  "assessment_references": [
+    "92ff41203453451083a6a34783f147cb159e9984241f5e1cb5c8e197afdb8db0",
+    "edc22ab2907a9257dc0cefd6bf8054de3c7098c39809c83c4e93a501b975dc9e"
+  ],
+  "accounting": [],
+  "frozen_prediction_scores": {},
+  "limits": [
+    "Host declarations and digests identify evidence; this module does not certify physical receipt truth.",
+    "Different random realized outcomes do not prove historical information or different opportunity laws.",
+    "Exact input/body/support matching is used; unmatched finite samples give no no-information conclusion.",
+    "Separation by a field is compatibility, not a causal explanation or proof of general sufficiency.",
+    "Last sufficiency is only within these records; no trained update-rule advantage follows.",
+    "A precompiled history rule can exploit the same information; information does not establish learned-rule novelty.",
+    "Known target law is a prediction reference, never a physical reward/viability upper bound.",
+    "Synthetic records and pure enumeration are not body learning results."
+  ]
+}

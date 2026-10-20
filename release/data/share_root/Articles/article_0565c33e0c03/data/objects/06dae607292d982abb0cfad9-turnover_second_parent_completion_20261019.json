@@ -1,0 +1,206 @@
+{
+  "task": "turnover_second_parent_completion_20261019",
+  "decided_at": "2026-10-18T18:15:33.650612+00:00",
+  "owner": "resident_d3ccfa2d95b7",
+  "pi": "resident_afa3d4d6cf11",
+  "status": "authorized_pending_handoff",
+  "objective_met": false,
+  "question": "补齐原冻结第二提议父的形成覆盖；检验现有两子排序是否遗漏不同规则支系，不新增价格/率/窗口搜索。",
+  "previous_result": {
+    "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/handoff.json",
+    "sha256": "1d1e19754d61c77ea7b4275d24c6baafbb8430db354346a27e3640924b50bb8a",
+    "job": "890654b4-a7fa-462d-acf4-3d995635b0b9",
+    "runner_status": "completed",
+    "protocol_status": "partial_second_parent_missing",
+    "actual_native": 6144,
+    "actual_runner_worker_seconds": 308.930886,
+    "old_unused_sealed": [
+      1056,
+      1491.069114
+    ]
+  },
+  "bindings": {
+    "plan": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/plan.json",
+    "plan_sha256": "9e3f2ef30481af0ec50631d7b0de21d6597ddb892a211e764f3b16d6d6fafa88",
+    "protocol_deviation": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/protocol_deviation.json",
+    "protocol_deviation_sha256": "babf354f55fc6078d560ce9136e85cce05867ef46f5924ebff92b5078aece3eb",
+    "selection_correction": "${share_root}/Projects/元胞自动机研究/src/local_learning/turnover_compatible_morphogenesis/selection_completion.py",
+    "selection_correction_sha256": "d898c8113fca1cb1a7fe264e407931a9c5516bf9fb2562750cab5ec235a1c8fe",
+    "original_physical_nonrule_sha256": "c5861dc52d92e2ddc5a13e7899c720cbb6d6f078ec971326d591d1856731872e"
+  },
+  "scope": {
+    "parent": "g1_f1_c0",
+    "proposal_slot": 1,
+    "children": [
+      {
+        "id": "g2_p1_c0",
+        "generation": 2,
+        "family": "ring",
+        "genome": {
+          "schema": "experience-adaptation-genome.v1",
+          "id": "genome_0b6c87f22ba6718d578e",
+          "family": "ring",
+          "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/core_ring--connected_trilobe.npz",
+          "source_sha256": "a878d57858176d7701fc00bc8b7e6e2fa6139a6c2e73047b5f69b7c9c0ea99cd",
+          "genes": [
+            0.03755708980765578,
+            -0.02619124974557332,
+            -0.04684321545633779,
+            0.01962503610844337,
+            -0.020346858952410136,
+            -0.05931794944299097,
+            -0.004806517083653566,
+            0.016209253859840594,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "parent_id": "genome_68dc2655fca077092477",
+          "generation": 1,
+          "mutation_seed": 202610193003,
+          "named_genes": {
+            "log_mu1": 0.03755708980765578,
+            "log_mu2": -0.02619124974557332,
+            "log_sigma1": -0.04684321545633779,
+            "log_sigma2": 0.01962503610844337,
+            "weight_shift": -0.020346858952410136,
+            "kernel_radial1": -0.05931794944299097,
+            "kernel_radial2": -0.004806517083653566,
+            "kernel_crossmix": 0.016209253859840594,
+            "log_stretch_y": 0.0,
+            "log_stretch_x": 0.0,
+            "neck_density": 0.0
+          },
+          "lifetime_rule": "fixed; only outer generations mutate"
+        },
+        "parent_candidate": "g1_f1_c0",
+        "kernel_log_scales": [
+          -0.06,
+          0.06
+        ],
+        "legal": true,
+        "mutation_seed": 202610193003,
+        "proposed_genes": [
+          0.03755708980765578,
+          -0.02619124974557332,
+          -0.04684321545633779,
+          0.01962503610844337,
+          -0.020346858952410136,
+          -0.05931794944299097,
+          -0.004806517083653566,
+          0.016209253859840594,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "id": "g2_p1_c1",
+        "generation": 2,
+        "family": "ring",
+        "genome": {
+          "schema": "experience-adaptation-genome.v1",
+          "id": "genome_d1c2ffb178c53a5cbf15",
+          "family": "ring",
+          "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/core_ring--connected_trilobe.npz",
+          "source_sha256": "a878d57858176d7701fc00bc8b7e6e2fa6139a6c2e73047b5f69b7c9c0ea99cd",
+          "genes": [
+            0.01893809175855024,
+            -0.018388119745427013,
+            -0.028849519744393988,
+            -0.0014397558237436536,
+            0.0038786280020760514,
+            0.08264235876522656,
+            0.036628039420373244,
+            0.04335723970989488,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "parent_id": "genome_68dc2655fca077092477",
+          "generation": 1,
+          "mutation_seed": 202610193004,
+          "named_genes": {
+            "log_mu1": 0.01893809175855024,
+            "log_mu2": -0.018388119745427013,
+            "log_sigma1": -0.028849519744393988,
+            "log_sigma2": -0.0014397558237436536,
+            "weight_shift": 0.0038786280020760514,
+            "kernel_radial1": 0.08264235876522656,
+            "kernel_radial2": 0.036628039420373244,
+            "kernel_crossmix": 0.04335723970989488,
+            "log_stretch_y": 0.0,
+            "log_stretch_x": 0.0,
+            "neck_density": 0.0
+          },
+          "lifetime_rule": "fixed; only outer generations mutate"
+        },
+        "parent_candidate": "g1_f1_c0",
+        "kernel_log_scales": [
+          -0.06,
+          0.06
+        ],
+        "legal": true,
+        "mutation_seed": 202610193004,
+        "proposed_genes": [
+          0.01893809175855024,
+          -0.018388119745427013,
+          -0.028849519744393988,
+          -0.0014397558237436536,
+          0.0038786280020760514,
+          0.08264235876522656,
+          0.036628039420373244,
+          0.04335723970989488,
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    ],
+    "shapes": [
+      "compact",
+      "double_lobe"
+    ],
+    "conditions": [
+      "colocated",
+      "separated"
+    ],
+    "life0_and_supply": "逐字节沿原plan的捐赠/几何交叉/固定供给与价格；新life0 M64/E64，外P/F与获得状态零。",
+    "native_per_track": 128,
+    "tracks": 8,
+    "science_native": 1024,
+    "old_tracks": "仅只读使用，不重演父/旧两子/12续接，不重做已通过的边界。"
+  },
+  "budget": {
+    "native_cap": 1024,
+    "runner_worker_seconds_cap": 300,
+    "cpu_threads": 2,
+    "gpu": 0,
+    "new_job_count": 1,
+    "raw_bytes_cap": 268435456,
+    "shutdown_reserve_worker_seconds": 60,
+    "old_balances_transfer": false,
+    "guard": "以累计runner占槽×线程计时；开新轨前检查剩余，保实际完整恢复态。余额不自动延用；未结算/失败如实计，禁止从旧起点重演。"
+  },
+  "analysis": {
+    "parent_eligibility": "提议父合格优先，余位用完整不合格父fallback；部署资格原值保持。",
+    "rank": "补齐后只读合并四子形成结果，用已声明资格/Pareto/ID规则报告完整排序及逐条件指标。",
+    "chronology": "形成覆盖可补齐；原两子提前选优并运行续接的时序偏差不可消除。原已选g2_p0_c0仍标为原两子所选；后算四子排序为协议补全后描述，不把旧续接改成全群体最优验证。",
+    "no_new_continuation": "若另一子居首，只交实际128状态及排序；本批不再派384续接。",
+    "outcomes": "全部8轨、灭失/未完成、旧创始体/实际新组织留存、费用、出生死亡和实际形态一并保留；四context仍相关开发条件。"
+  },
+  "scientific_judgment": [
+    "保留g2_p0_c0相对遗传父的四条件M/E/体时改善；双叶分离新组织留存下降不包装为替代全面改善。",
+    "已完成12条384续接的24晚窗均出生不足，维护主张仍失败；未跑支系不是阴性。",
+    "此为标准外层生成规则搜索的限定补全，未证明个体学习或新算法。"
+  ],
+  "control": {
+    "must_read_before_submit": [
+      "research.desired_state",
+      "research.started"
+    ],
+    "identity": "以d3自身Resident控制绑定原统一runner；paused/stopped或未启动不投。",
+    "communication": "只向直接承担者一次enqueue_and_trigger；日常进度原shared短节点，论文/投影在办项合并，无新定时器/广播。"
+  },
+  "delivery": "独立完成包绑定原包及缺口说明，实际量与新预算单列；纯重排读出不算native；完成后向PI一次具体科学接续，不循环报已阅。"
+}

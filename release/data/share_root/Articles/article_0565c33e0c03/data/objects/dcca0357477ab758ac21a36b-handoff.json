@@ -1,0 +1,47 @@
+{
+  "owner": "resident_ce2a5ab005bc",
+  "task": "joint_behavior_actual_renewal_20261019",
+  "status": "complete_with_prespecified_survival_truncation",
+  "objective_met": false,
+  "accounting": {
+    "native": 4035,
+    "main_native": 3955,
+    "diagnostic_native": 80,
+    "diagnostic_readonly_reuse": 16,
+    "old_acquisition_replay": 0,
+    "unknown": 0,
+    "worker_seconds": 137.354014,
+    "main_worker_seconds": 134.299296,
+    "diagnostic_worker_seconds": 3.054718,
+    "native_cap": 8192,
+    "worker_cap": 240,
+    "raw_bytes": 52308777,
+    "raw_cap": 134217728,
+    "unused_not_transferred": true,
+    "jobs": [
+      "f2820274-9c4a-46c3-a7d2-cc74c5f7c7c2",
+      "d49c1613-97e8-4969-aaa9-c0e67758a897"
+    ]
+  },
+  "scientific_question": "现有紧凑核的付费搬运能改变却未能逆转更新体的北向迁移，多环又已碎裂。建议下一阶段选无强自发迁移的真实再生紧凑宿主，保留本joint薄接口；是否把跨组重心放在这一宿主替换，而非继续给当前身体加学习器或调高动作增益？",
+  "requires_pi_choice": true,
+  "result": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/joint_behavior_actual_renewal_20261019/analysis/integrated_result.json",
+  "result_sha256": "e649815f6a001bef132db874eb1c3b77d7ef10adb4786b1a163d40a5c5cba289",
+  "assets": {
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/joint_behavior_actual_renewal_20261019/analysis/REPORT.txt": "5d7046fb91ba4366d67cc85595ac7b43a840d9e77437f140e5429ad8ba3bbf17",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/joint_behavior_actual_renewal_20261019/analysis/discussion_insert.tex": "c75ff8ba2aade20178f750743576967d2340a28ed6342da84e4258f11d529070",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/joint_behavior_actual_renewal_20261019/analysis/result.json": "6899517211f626a1504534e9d1d4d96bda9e66e46f508a79e8b0209656340629",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/joint_behavior_actual_renewal_20261019/analysis/integrated_result.json": "e649815f6a001bef132db874eb1c3b77d7ef10adb4786b1a163d40a5c5cba289",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/joint_behavior_actual_renewal_20261019/analysis/validation.json": "1dc3129e61d3a85a68e9052f8f84a58fcb2b8ecafe593feb77bd5bb68e41c012",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/joint_behavior_actual_renewal_20261019/analysis/actual_joint_renewal.gif": "e5959211381156809bb7a86e279b80ce45ddf12f2d64a0ccdb37c93cd481f764",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/joint_behavior_actual_renewal_20261019/analysis/actual_retention_replacement.gif": "714f23828ae173fda99332da07ffe943d87e858159ad4ae33e407d18f4b8e30c",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/joint_behavior_actual_renewal_20261019/analysis/actual_terminal_cohorts.png": "53920d4072b5dce9a8cdfadb32708626fbbe5addaceeb595753e59cbb7e50419",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/joint_behavior_actual_renewal_20261019/analysis/actual_metrics.png": "6b90e916809147a21a4d6080ab1bd0b1d25927b4aa03a0f4f48d5e9255aaa3f1",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/joint_renewal_motor_diagnostic_20261019/execution.json": "1bc84740a5a8140a1b9fedd72388600a940394380f525d66eaeea4e6fd4d6092",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/joint_renewal_motor_diagnostic_20261019/plan.json": "29dba95985c215ba4a530c0d887395d40cec0d9beb0053f04367481d4c6b56af"
+  },
+  "raw_root": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/joint_behavior_actual_renewal_20261019/raw",
+  "source_root": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/joint_renewal",
+  "prewrite_newborn_controls": "not eligible; not run",
+  "scope": "0/4 complete behaviour; integration functional; strong host/action limit; no new algorithm claim"
+}

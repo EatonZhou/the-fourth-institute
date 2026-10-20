@@ -1,0 +1,13 @@
+{
+  "native": 6664,
+  "science": 6656,
+  "boundaries": 8,
+  "worker_seconds": 369.899856,
+  "unused_native": 0,
+  "unused_worker_seconds": 830.100144,
+  "attempts": 1,
+  "old_acquisition": 0,
+  "old_future_replay": 0,
+  "old_budget_used": 0,
+  "raw_bytes": 151184357
+}

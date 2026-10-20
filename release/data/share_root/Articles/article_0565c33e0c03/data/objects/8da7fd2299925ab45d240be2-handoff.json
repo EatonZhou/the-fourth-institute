@@ -1,0 +1,81 @@
+{
+  "task": "turnover_second_parent_completion_20261019",
+  "owner": "resident_d3ccfa2d95b7",
+  "status": "completed",
+  "job": "2b392f3c-1942-48c9-9622-df7fe47271db",
+  "native": 1024,
+  "runner_worker_seconds": 69.055352,
+  "raw_bytes": 166123241,
+  "protocol_status": "formation_coverage_completed_chronology_gap_preserved",
+  "objective_met": false,
+  "report": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_second_parent_completion_20261019/REPORT.txt",
+    "sha256": "866217e0fcb886328b0fb8697b1dcb7639a9065576671e6a465f1eec9dc8818e",
+    "bytes": 3378
+  },
+  "method": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_second_parent_completion_20261019/METHOD.txt",
+    "sha256": "3ba7b54b1007c3c7b3daeaba882941d7e9e52a6e22c02db2a152f4232656e720",
+    "bytes": 1255
+  },
+  "plan": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_second_parent_completion_20261019/plan.json",
+    "sha256": "21353e1430ff193df20f2ef6a3e28dbfee87594f8d2d2d5a6a53c6b67295a9f2",
+    "bytes": 17936
+  },
+  "manifest": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_second_parent_completion_20261019/manifest.json",
+    "sha256": "af8a34d5634c1cbbb1f5a8c28ab0a337a9b46b399bc409a905413b39389ab42f",
+    "bytes": 21967
+  },
+  "raw_manifest": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_second_parent_completion_20261019/raw_manifest.json",
+    "sha256": "2005e927ac2ac6627c7c1743ca4f7fde5a22e5f49f9a6a4d29379f265d28313f",
+    "bytes": 43990
+  },
+  "summary": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_second_parent_completion_20261019/summary.json",
+    "sha256": "433ac1b48c3b38bdab62854371d32235224b1261d6b16d6c1fe6719a8492cd67",
+    "bytes": 4865
+  },
+  "budget": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_second_parent_completion_20261019/budget.json",
+    "sha256": "556969d336a34810034fba735c1b0a5b7e9e5240d31789521530fb341787c826",
+    "bytes": 516
+  },
+  "ranking": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_second_parent_completion_20261019/combined_selection.json",
+    "sha256": "2fe3e7b9b98b3c8e8011bb5f12981a6a6e0e6ff6adc4ffdbc0f910e02a511b17",
+    "bytes": 4843
+  },
+  "scientific_choice": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_second_parent_completion_20261019/scientific_choice.json",
+    "sha256": "7339f39387f85eb5efd3758a1f0f852cf61df618dee2d93d181ce101f56dd2fa",
+    "bytes": 1770
+  },
+  "source_refs": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_second_parent_completion_20261019/source_refs.json",
+    "sha256": "c695131dcf3cf7e6c56b7f49abee0c346ef34db93ec796061f5ee9ac8ba51c68",
+    "bytes": 6274
+  },
+  "figures": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_second_parent_completion_20261019/actual_compact.png",
+      "sha256": "cacd46bf62353911300105c30fa9f071b095db1b54123bfc55100524711115b0",
+      "bytes": 99861
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_second_parent_completion_20261019/actual_double_lobe.png",
+      "sha256": "a9c39f7c3df8688d37f137ce68f6fd6c6070318a8f607fb778c9d87a3bdd66b3",
+      "bytes": 92118
+    }
+  ],
+  "findings": [
+    "四子完整形成排序为 g2_p0_c0、g2_p0_c1、g2_p1_c1、g2_p1_c0；前两合格，后两仅fallback提议。原已选子仍列首，但这是事后覆盖补全，不追认原续接为完整四子选优验证。",
+    "新增两子均在double_lobe/separated未过M128>=32：M=2.922811/22.700359；其余三条件各过原形成门。8轨均保非零身体，全部晚64出生少于死亡。",
+    "g2_p1_c1相对遗传父在四条件M/E/体时/真实后生留存均增加，但双叶分离的质量改善16.126268中14.765199来自更多创始体存留；后生留存只增1.361069，仍未获资格。不可把延缓删除称组织替代成功。",
+    "g2_p1_c0相对父末E四条件均负；其他指标混合。全部坏候选及逐步/阶段费用保留。",
+    "亲看两组真实0/32/64/96/128图：compact由填充圆盘形成带中心凹空的小环；双叶共定位形成不等孔的连接体，分离供给持续缩小，c0至128仅余低质量小斑。c1保留较大连接体但质量继续下降。",
+    "原12条384续接仍全部维护失败，24个晚窗出生不足；双叶分离旧已选子相对遗传父后生留存下降仍保留。本批没有新增384轨迹。"
+  ]
+}

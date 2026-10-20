@@ -1,0 +1,12 @@
+{
+  "status": "passed_pure_channel",
+  "native_steps": 0,
+  "cases": [
+    "no old recipient",
+    "insufficient old E",
+    "four-way conservative split",
+    "actor then rule payment priority",
+    "disjoint stage record"
+  ],
+  "packet_price": 2.56e-05
+}

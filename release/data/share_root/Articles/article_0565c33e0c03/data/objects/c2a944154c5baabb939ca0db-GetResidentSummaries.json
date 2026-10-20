@@ -1,0 +1,59 @@
+{
+  "schema": "dirtybase.hatg-instruction-result.v2",
+  "instruction_id": "inst_lin_26d493f7eba3c7887d60",
+  "instruction": "GetResidentSummaries",
+  "status": "committed",
+  "replayed": false,
+  "result": {
+    "summaries": [
+      {
+        "resident_id": "resident_d3ccfa2d95b7",
+        "title": "身体生成与局部学习 · 外层搜索",
+        "lineage_id": "lineage_75e3399f4877",
+        "summary": {
+          "current_focus": "turnover_compatible_morphogenesis_20261019实际6144步/308.930886 runner worker秒，唯一job completed；但原定第二父两子漏跑1024步，科学协议部分完成。已运行支系有限遗传改善，12条384未来全部维护失败。",
+          "active_threads": [
+            "无在跑原生作业。PI取舍请求msg_5986b67743a1f48e0eeaf91d0b635182待处理：是否只补原预冻结f1 slot1两个子，或封存部分搜索。原单job约束不自行突破。1056步/1491.069114worker秒封存。论文msg_f991cb8dbad38d399d882794e7aff7fd、投影msg_7ab175308039c0cad5b9f2dd4953dad1已沿在办项合并。"
+          ],
+          "durable_expertise": [
+            "区分生命期固定规则、局部经历状态、实际身体结果与跨代遗传。",
+            "创始材料/广延载荷沿真实K与旧survivor删除，新生无祖先历史；死亡和未知区分。",
+            "同取得态强对照、实际费用及形态全过程并列；不以摄取单项或幸存均值宣布成功。"
+          ],
+          "recent_results": [
+            "唯一入口 ${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/turnover_compatible_morphogenesis_20261019/handoff.json SHA1d1e19754d61c77ea7b4275d24c6baafbb8430db354346a27e3640924b50bb8a。原件742625831B、36完整已运行轨、180状态。旧取得重演0、旧余额不动。",
+            "冻结rank错误地在有合格父时过滤不合格提议父；G1仅f2合格，实际一父两子而非两父四子。缺跑不是阴性，g2_p0_c0仅在两已运行子中被选，不能称全群体最优。原core/run和结果不回写；纯选择修正、明确未执行基因/种子和补缺请求已交PI，0额外native。",
+            "新life0 M64/E64、外P/F0、固定中性compact/double_lobe，完整交叉原四规则及共定位/分离静态供给。原localE/half-life64/价格与固定birth-only joint-demand保持；生命周期规则固定，前8基因外层变异，不是个体学习或新算法。",
+            "所选子对遗传父四context末M/E/体时均正，双叶分离后生留存−1.264761、创始存留+2.662698，不能称替代全面提高。遗传父/子有不同128取得史。",
+            "同子128全态pump/none只policy差核对成立；泵在四条件M/体时/后生均正，但compact共定位末E−1.724400。持续运输有条件价值，实际费用不同。",
+            "12条384未来与24晚64窗均出生不足，零/1e-8容差维护0/12。所选子共定位晚E增而M降，分离E也降；未达可持续替代、旧512或稳态。相关开发条件不作独立生态重复。",
+            "亲看G1/G2/续接六图，保f1小环、f2及子厚缘中心/双叶、分离收缩和全部灭失。子父形态差异有限。来源SHA不变、全费用/出口/死亡账留存，基础欠付.00222003039保留。",
+            "此前consumption_qualified_transport/maintenance_aware_cargo等阴性和预算封存不动。核心科学目标未完成。"
+          ],
+          "primary_ownership": [
+            "src/local_learning：身体生成、局部经历方法和本人唯一科学runner，复用共享原生物理。"
+          ],
+          "supporting_expertise": [
+            "来源冻结、阶段账、局部信息边界、只读形态展示；实施偏差明确披露，不把runner完成当协议完成。"
+          ],
+          "branch_delta": "实际已运行子代有有限遗传改善，但维护失败；第二父漏跑的实施缺口已交PI作具体补全取舍，未自动追加第二job。",
+          "route_when": [
+            "需要真实身体/规则小搜索、合法局部反馈及完整状态强基准时。"
+          ],
+          "avoid_when": [
+            "不把EMA/CEM/遗传或命名本身叫创新；不以格或相关布局扩独立样本。",
+            "不重演旧取得或用封存额度；paused/stopped或startedfalse不启动新原生。"
+          ]
+        },
+        "pending_requests": [],
+        "summary_updated_at": "2026-10-18T18:13:37Z",
+        "summary_stale": false,
+        "revision": 218,
+        "source_versions": {},
+        "missing_message_ids": [],
+        "writer_id": "resident_d3ccfa2d95b7"
+      }
+    ],
+    "unavailable_resident_ids": []
+  }
+}

@@ -1,0 +1,90 @@
+[
+  {
+    "context": "compact_p512/plus",
+    "environment": "same",
+    "delta_E": -0.006090882189013769,
+    "uptake": -0.004200853099312951,
+    "minus_motor": -0.0018795827802907672,
+    "minus_basal": -1.2945483699233762e-05,
+    "minus_tissue_energy": 2.499174297512178e-06,
+    "reconstructed": -0.00609088218900544,
+    "residual": -8.328407408164651e-15
+  },
+  {
+    "context": "compact_p512/plus",
+    "environment": "reverse",
+    "delta_E": 1.5378604553810007,
+    "uptake": 1.0059147188639077,
+    "minus_motor": 0.5315079627515584,
+    "minus_basal": 0.0005159932516793919,
+    "minus_tissue_energy": -7.821948614979114e-05,
+    "reconstructed": 1.5378604553809958,
+    "residual": 4.884981308350689e-15
+  },
+  {
+    "context": "compact_p512/minus",
+    "environment": "same",
+    "delta_E": -0.0036082906355687783,
+    "uptake": -0.0034686971857329496,
+    "minus_motor": -0.00012664431852449365,
+    "minus_basal": -1.266671274224862e-05,
+    "minus_tissue_energy": -2.8241856734744376e-07,
+    "reconstructed": -0.003608290635567039,
+    "residual": -1.7390602846667491e-15
+  },
+  {
+    "context": "compact_p512/minus",
+    "environment": "reverse",
+    "delta_E": 1.5549214674902956,
+    "uptake": 0.8060794555292081,
+    "minus_motor": 0.7483941800442245,
+    "minus_basal": 0.0004913991503996407,
+    "minus_tissue_energy": -4.356723351651255e-05,
+    "reconstructed": 1.5549214674903158,
+    "residual": -2.020605904817785e-14
+  },
+  {
+    "context": "soft_p512/plus",
+    "environment": "same",
+    "delta_E": 0.0005891266770063908,
+    "uptake": -0.000546393964284908,
+    "minus_motor": 0.0010707641444216431,
+    "minus_basal": 5.6693709305610795e-05,
+    "minus_tissue_energy": 8.06278756568593e-06,
+    "reconstructed": 0.0005891266770080318,
+    "residual": -1.6410484082740595e-15
+  },
+  {
+    "context": "soft_p512/plus",
+    "environment": "reverse",
+    "delta_E": -0.09065059708202483,
+    "uptake": -0.5046375735029691,
+    "minus_motor": 0.4098605165507204,
+    "minus_basal": 0.003834427237132898,
+    "minus_tissue_energy": 0.00029203263309196363,
+    "reconstructed": -0.09065059708202383,
+    "residual": -9.992007221626409e-16
+  },
+  {
+    "context": "soft_p512/minus",
+    "environment": "same",
+    "delta_E": 0.00031203169352878035,
+    "uptake": -0.0007274109390604799,
+    "minus_motor": 0.0009709367269936653,
+    "minus_basal": 8.071575321655367e-05,
+    "minus_tissue_energy": -1.2209847618115457e-05,
+    "reconstructed": 0.00031203169353162356,
+    "residual": -2.843211777125987e-15
+  },
+  {
+    "context": "soft_p512/minus",
+    "environment": "reverse",
+    "delta_E": -0.27643611037409954,
+    "uptake": -0.9024248616342712,
+    "minus_motor": 0.6204164334626282,
+    "minus_basal": 0.005605636865450236,
+    "minus_tissue_energy": -3.331906790628603e-05,
+    "reconstructed": -0.276436110374099,
+    "residual": -5.551115123125783e-16
+  }
+]

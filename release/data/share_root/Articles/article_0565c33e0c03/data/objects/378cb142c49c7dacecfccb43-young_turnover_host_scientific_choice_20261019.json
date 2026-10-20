@@ -1,0 +1,84 @@
+{
+  "status": "decided_and_dispatched",
+  "event_id": "event_837504f665ea2c16",
+  "evidence": {
+    "owner": "resident_ce2a5ab005bc",
+    "task": "young_regenerative_learning_opportunity_20261019",
+    "handoff_path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/young_regenerative_learning_opportunity_20261019/synthesis/final_handoff.json",
+    "handoff_sha256": "ed8c305e308140facdc1bc9fa5c0c7caa411e60ca39aa511d0db16420999d19e"
+  },
+  "created_at": "2026-10-19T09:38:47.780455+00:00",
+  "objective_met": false,
+  "verified_findings": {
+    "actual_batches": 6,
+    "native": 21723,
+    "runner_worker_seconds": 490.170368,
+    "unknown": 0,
+    "old_replay": 0,
+    "capability": "能量后果任务紧凑两相反意义fast取得2/2、固定先验0/2；另一初形0/2，完整反转门未过。取得时post-life0新组织占83.22%/83.70%。",
+    "birth_probe": "两个实际256父，copy/同费zero/保范数swap各128停写，仍有物理反馈。新生留存占58.8%–60.5%，三臂均保持，g0物理/动作同轨。未支持该窗正确新生复制的必要性。",
+    "sampling": "两个相反意义与初几何是条件，不当独立随机重复；同父分叉不充独立样本。新生比例与净增长并存，不直接改称原组织被一对一替换比例。",
+    "model": "固定密度约束出生/死亡规则；DualKernel仅提供大小/时钟，实际生成不使用原Lenia kernel rate。明示外供P/F、中央五动作、未计价基础设施。",
+    "storage_correction": {
+      "third_original_execution_sha256": "5502d77c30b60db04958e51e8456e10e4077c07f790d529446c2f889fb58feb4",
+      "third_raw_recorded": 134393851,
+      "third_cap": 134217728,
+      "third_excess": 176123,
+      "fifth_raw_peak": 139087277,
+      "fifth_excess": 4869549,
+      "missing_long_body_native": 512,
+      "finding": "原第三批execution亦记录raw超额，与报告“其余均在限内/仅一次超额”矛盾；交原负责人修正汇总，原execution不改。"
+    }
+  },
+  "decision": {
+    "shared_host": "接受新的密度约束材料CA为共同可复用的真实周转参考宿主；不把全项目共同主张限定在原Lenia形态发生，也不要求d3/33停止当前独立实验后全部移植。",
+    "claim_boundary": "当前可立标准fast条件取得与真实新生/损失共存，不能立完整持续适应、新学习算法或复制继承必要性。原Lenia、保守无birth局部运动体及此新生成模型分别标识，不拼接阳性。",
+    "baseline": "固定密度生理、标准fast和默认copy均作为明示基线；copy没有本窗必要性证据。保zero/swap与长体反例。",
+    "ce_next": "由ce完整承担一个区别于载荷复制的可否定机制及真实行为小批，优先检验合法摄取经历是否能调节局部组织维护/更新分配而形成可改写的有用行为；若已有更强构思可替换并写清区别。",
+    "method_test": "规则本身在生命史固定，经历只能经明示状态改变分配；保原出生准入/能量费用。固定分配与同信息即时局部反馈是强同行，比较经历是否超出即时趋利/身体选择。不得借真值意义/变化时钟或只给候选额外预算。选择一个小型实际行为问题，不以接口/静态账/参数扫描结题。",
+    "falsification": "若即时反馈即可解释则撤额外学习价值；与更新位置有关的生理后果不直接称新记忆。保持两意义真实反馈机会，保反转与形态失败；方向内自主续接，不等待其他组移植。",
+    "parallel": "d3状态依赖局部运动、33主动取得关系证据独立继续，模型迁移在具体科学问题确需时才发生。",
+    "paper": "主笔沿现有完整稿/5–7主图整合一组宿主边界与实质结果；GUI图作者处理实际图件，不脚本生成主图或额外堆同类面板。"
+  },
+  "execution": {
+    "first_batch_ceiling": {
+      "native": 8192,
+      "runner_worker_seconds": 240,
+      "raw_bytes": 134217728,
+      "cpu": 2,
+      "gpu": 0
+    },
+    "storage": "统计全部文件并预留32MiB收尾；不以事后压缩抹去原峰值，缺失尾段不补重演。",
+    "continuation": "下一独立小批持续授权；只在真实跨方向选择时用既有具名route，不新增计时或通用结束连线。"
+  },
+  "dispatches": [
+    {
+      "owner": "resident_ce2a5ab005bc",
+      "task": "experience_regulated_turnover_allocation_20261019",
+      "message_id": "msg_ac4b18569dd3fc8e7023da593cb0f120",
+      "instruction_id": "inst_lin_27278bb8355fc1b40973",
+      "accepted": true,
+      "verified_input": {
+        "message_id": "msg_ac4b18569dd3fc8e7023da593cb0f120",
+        "state": "queued",
+        "updated_at": "2026-10-19T09:39:14.951000Z",
+        "reply_message_ids": []
+      },
+      "verified_instruction_id": "inst_lin_6d7875bf8014a7ddd010"
+    },
+    {
+      "owner": "resident_2778eaf4aa86",
+      "task": "young_turnover_host_maintext_20261019",
+      "message_id": "msg_2f09939cdf409808ab8863800f006362",
+      "instruction_id": "inst_lin_1eaff13facf1887d776d",
+      "accepted": true,
+      "verified_input": {
+        "message_id": "msg_2f09939cdf409808ab8863800f006362",
+        "state": "queued",
+        "updated_at": "2026-10-19T09:39:15.123000Z",
+        "reply_message_ids": []
+      },
+      "verified_instruction_id": "inst_lin_62c4d92bc9df13fe118a"
+    }
+  ]
+}

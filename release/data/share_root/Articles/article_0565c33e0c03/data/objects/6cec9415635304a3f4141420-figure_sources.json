@@ -1,0 +1,78 @@
+{
+  "process": "all four new256 scalar paths and two frozen old256 scalar paths",
+  "fields": [
+    {
+      "id": "g1_f1_c0--compact--supported--directed",
+      "state": {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--directed/state384/native/body.npz",
+        "sha256": "bedc7bc001236786197649743e5a09d1f475446ab91db1bc17ddc33be0653781",
+        "bytes": 2379360
+      },
+      "observer": {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--directed/state384/native/observer.npz",
+        "sha256": "3a7df45bf53abf96556121e6d4b260614ab83f1c7ce443b1905e2d7b0df116dd",
+        "bytes": 75198
+      },
+      "receipt": {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--directed/receipt384.npz",
+        "sha256": "e9bf0ac2006113c7cad713da3ca1fd847487df42bf611fa6ea561675d3063c7d",
+        "bytes": 152600
+      }
+    },
+    {
+      "id": "g1_f1_c0--compact--supported--diffusion",
+      "state": {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--diffusion/state384/native/body.npz",
+        "sha256": "fe52c6fbc0a89f2bed74e14b414fe1627c18061d40037a926c290b37b5fbcdbf",
+        "bytes": 2379360
+      },
+      "observer": {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--diffusion/state384/native/observer.npz",
+        "sha256": "4d1c3860af1123b21fd15b05ebd5816ad0eaa0a6e30119732ca7a0f64231bbbd",
+        "bytes": 75198
+      },
+      "receipt": {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f1_c0--compact--supported--diffusion/receipt384.npz",
+        "sha256": "7c10af48b39eba55aa865504605102cf9023b1fafb206a9d3ed45625c8f71f86",
+        "bytes": 172258
+      }
+    },
+    {
+      "id": "g1_f2_c0--compact--supported--directed",
+      "state": {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--directed/state384/native/body.npz",
+        "sha256": "a9d68cbba1c872cb4de93e1efe4313844d8211476573fe4f5e9e0afd01bc00d6",
+        "bytes": 2379344
+      },
+      "observer": {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--directed/state384/native/observer.npz",
+        "sha256": "fb75ce8c60e63a03591d8e685087e3bf25e33c46051e96f2955668c0d19e4ba8",
+        "bytes": 75198
+      },
+      "receipt": {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--directed/receipt384.npz",
+        "sha256": "ce66e2ec5e473ed2f1355d31835d3422a7da05dcd36938537329e85f558f7625",
+        "bytes": 158947
+      }
+    },
+    {
+      "id": "g1_f2_c0--compact--supported--diffusion",
+      "state": {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--diffusion/state384/native/body.npz",
+        "sha256": "c0f8a8ee5a4bc0b2ba2944e5caceaf29e40b7f35c26a650a5ce94bab54792562",
+        "bytes": 2379344
+      },
+      "observer": {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--diffusion/state384/native/observer.npz",
+        "sha256": "0b3f23429209221eb8d6b4239362376c78bfd6841923c5f1a9463205cb9ca503",
+        "bytes": 75198
+      },
+      "receipt": {
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/local_metabolic_translocation_20261018/39f866d1-9576-42d7-8e8a-9014b210c7b3/g1_f2_c0--compact--supported--diffusion/receipt384.npz",
+        "sha256": "8a06c5e2fa1f01c68cf9596a7738e555b2068e07237a5219aaf6bddc17615c35",
+        "bytes": 236706
+      }
+    }
+  ],
+  "clocks": "state128 is actual parent; all later stateN complete original native + pump. receiptN native arrays are pre-pump; pump_* separates before/after; no new uptake assigned to the pump at N."
+}

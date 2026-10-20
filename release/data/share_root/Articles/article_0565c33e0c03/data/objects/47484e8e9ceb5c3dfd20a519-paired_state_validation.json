@@ -1,0 +1,66 @@
+[
+  {
+    "context": "compact_p512/plus",
+    "kind": "main",
+    "physical_inventory_full_parent_equal": true,
+    "predictor_sensor_clock_equal": true,
+    "only_A_reset": false,
+    "main_only_method_diff": true
+  },
+  {
+    "context": "compact_p512/plus",
+    "kind": "probe",
+    "physical_inventory_full_parent_equal": true,
+    "predictor_sensor_clock_equal": true,
+    "only_A_reset": true,
+    "main_only_method_diff": false
+  },
+  {
+    "context": "compact_p512/minus",
+    "kind": "main",
+    "physical_inventory_full_parent_equal": true,
+    "predictor_sensor_clock_equal": true,
+    "only_A_reset": false,
+    "main_only_method_diff": true
+  },
+  {
+    "context": "compact_p512/minus",
+    "kind": "probe",
+    "physical_inventory_full_parent_equal": true,
+    "predictor_sensor_clock_equal": true,
+    "only_A_reset": true,
+    "main_only_method_diff": false
+  },
+  {
+    "context": "soft_p512/plus",
+    "kind": "main",
+    "physical_inventory_full_parent_equal": true,
+    "predictor_sensor_clock_equal": true,
+    "only_A_reset": false,
+    "main_only_method_diff": true
+  },
+  {
+    "context": "soft_p512/plus",
+    "kind": "probe",
+    "physical_inventory_full_parent_equal": true,
+    "predictor_sensor_clock_equal": true,
+    "only_A_reset": true,
+    "main_only_method_diff": false
+  },
+  {
+    "context": "soft_p512/minus",
+    "kind": "main",
+    "physical_inventory_full_parent_equal": true,
+    "predictor_sensor_clock_equal": true,
+    "only_A_reset": false,
+    "main_only_method_diff": true
+  },
+  {
+    "context": "soft_p512/minus",
+    "kind": "probe",
+    "physical_inventory_full_parent_equal": true,
+    "predictor_sensor_clock_equal": true,
+    "only_A_reset": true,
+    "main_only_method_diff": false
+  }
+]

@@ -1,0 +1,8 @@
+本批是固定生成规则的历史顺序与实验室库存交换试验。无训练/写入器/搜索，未修改原greedy、原删除off、核/价格/容量/birth-only泵/外排。
+从旧两seed×ring/separate_seeds四个完整ready128父恢复，旧取得不重演。H_U=D32→U32→中心64；H_D=U32→D32→中心64；H_C=中心128。U/D是life0既存fixed_P/F整体dy−4/+4，P/F共同位移、gross相同，只移动新增输入位置，不移动库存。HU/HD逐格累计新增P/F精确相同；中性仅gross相同。193..256叫共同中心输入段，不假设洗净。
+实际256历史完整保存；先登记L256=rho、post256=0，随后仅用真实donor precursor/fuel逐值替换对应recipient两数组。所有其他动态身体/库存外字段/world/cursor/累积账/标签保留B。ownPF也执行同一复制路径，交换净额0；交叉两支成对P/F守恒，各支实际移出/移入数组及物质/燃料能量净额单列。供给继续至384，不能把库存交换当免费生物技能；外部定位/交换工作未物理定价。混合后的每支物能起点允许不同。
+每父HU/HD身体史×HU/HD胞外PF史×U/D探测共8支，另HC ownPF两个探测，全部128步。无捏造未执行反事实。两历史的身体包包含rho、胞内E及继承物理状态，不能单称几何记忆。旧控制字段虽搬运/继承，VectorAdapter在learn=False且command0时不以它们选动作；实际力来自原被动势。Greedy只在外排/本步输入前读取ready body/E/P/F，核只对body卷积。实际native使用body/E、燃料、hazard和固定面渗透率，memory/eligibility/polarity及c_theta/value/trace/food/run/remaining按旧机制搬运；polarity不代替当前零命令。生成转换读取实际survivor/P/F/模板支持；birth-only泵读取同状态P/F/E与当步实际survivor/出生/模板/请求收据、面渗透率。完整源绑定见plan/source。热/waste/dead_energy累加但无回收；founder与三时期cohort均诊断，不进入选w/泵/生成。
+创始材料/L128原账保留；各分区沿实际K，再依actor和rule存活率删除，born只进入更新组织分区。L256在实际256注册且交换不改。所有真实死亡保终末，完成路径未知0。质量份额只是描述分摊，不能当个体因果信用；不重建未保存中间K。
+每native保存唯一clock/leg、M/E/输入/出口/全部motor/basal/synthesis/template/泵费、生成请求各拒绝、生死、标签账。history160/192/256与probe1/8/64/128收据含prechoice与actual h/w/完整K及泵。完整ready状态128/160/192/256/320/384，probe指定稀疏场1/8/32/64/96/128。外部工作/额外计算/存储未另收费，原实际费用全部保留。
+IB(R)=[Y(BU,R,U)−Y(BD,R,U)]−[Y(BU,R,D)−Y(BD,R,D)]；IR(B)=[Y(B,RU,U)−Y(B,RD,U)]−[Y(B,RU,D)−Y(B,RD,D)]。正号固定表示末次暴露匹配，负号反匹配。共主指标为probe体时与384真实post256留存。两donor下共主符号均一致才称方向特异身体响应；不计算中介百分比。
+净匹配门另要求HU/HU/U及HD/HD/D相比HC同探测的M/E/体时全部>=−1e−8，且post256>1e−8，两方向都满足才称该父有净匹配优势。每probe两64窗各born−death>=−1e−8、deltaE>=−1e−8、minM>=32，另给零容差；历史费用与未来费用分别及累积从128给出。不能把旧ring原输入维护阳性移植到当前挑战。四父为已选相关机制开发，无独立进化重复/新留出/稳态主张。

@@ -1,0 +1,1182 @@
+{
+  "task": "material_coupling_transport_20261019",
+  "status": "complete",
+  "accounting": {
+    "native": 4159,
+    "attempted": 4159,
+    "unknown": 0,
+    "job": "bab92c9d-930b-45db-a7fc-4efd0ef31c54",
+    "worker_seconds": 14.88843,
+    "raw_bytes": 24297710,
+    "old_replay": 0,
+    "plan_sha256": "305ac4bcdfeab532168cd22dfd662f4fcf3246b570bbb6a032ab41039f9d5f57",
+    "result_sha256": "ca014ecab85a07ffe1422a151fa9309f73294970844b84442ae1edac392f71c4"
+  },
+  "paths": [
+    {
+      "condition": 0,
+      "arm": "carried",
+      "alive": true,
+      "start_clock": 0,
+      "end_clock": 768,
+      "opportunity64": {
+        "paid_steps": 64,
+        "completed_motion_steps": 64,
+        "displacement_2d": 2.70380003790427
+      },
+      "first_postchange_paid": 321,
+      "first_postchange_motion_feedback": 321,
+      "unidentifiable_wait": 0,
+      "first32_good": 682,
+      "feedback_to_first32_good": 361,
+      "final_energy": 126.51998208159125,
+      "movement": 2.464868177873023,
+      "gain": 26.604701637387915,
+      "loss": 19.501451377923736,
+      "unpaid": 0.0,
+      "min_mass": 23.999999999999996,
+      "balance_max": 7.327992379568826e-14,
+      "phases": {
+        "acquisition": {
+          "score": 0.9344775320593941,
+          "positive_fraction": 0.999574905132477,
+          "gate": true,
+          "first_feedback": 1,
+          "first_map_sample": 1,
+          "final": {
+            "t": 320,
+            "phase": "acquisition",
+            "mass": 24.000000000000007,
+            "energy": 158.2286631929955,
+            "connected": 0.9965742252738408,
+            "field_score": 0.9464967954358082,
+            "positive_mass": 23.994980187386542,
+            "strong_mass": 23.930526720573944,
+            "dy": 6.889182227290856,
+            "dx": 7.513691131015861,
+            "mean_y": 0.22068990751205284,
+            "mean_x": -0.22539180821127253,
+            "response_alignment": 0.026553941371855266,
+            "movement": 0.00511639383761876,
+            "unpaid": 0.0,
+            "basal": 0.028800000000000013,
+            "death": 0.0,
+            "gain": 0.11356795998177857,
+            "loss": 3.0840324616331283e-07,
+            "paid_mass": 23.988447171193762,
+            "map_sample_mass": 23.988250157356926,
+            "map_writes": true,
+            "gradient_observed_mass": 23.988447171193762,
+            "balance": 3.50832578540841e-14
+          },
+          "gain": 25.13389934876921,
+          "loss": 0.5256563425471391,
+          "movement": 1.1635798132266593
+        },
+        "change": {
+          "score": 0.06670351623512244,
+          "positive_fraction": 0.5898724852694112,
+          "gate": false,
+          "first_feedback": 321,
+          "first_map_sample": 321,
+          "final": {
+            "t": 640,
+            "phase": "change",
+            "mass": 24.000000000000004,
+            "energy": 130.59802701612784,
+            "connected": 0.9996744844081142,
+            "field_score": 0.20383469158854345,
+            "positive_mass": 18.61919430074144,
+            "strong_mass": 3.3047147285854104,
+            "dy": -0.0636966134517234,
+            "dx": -4.654854906758242,
+            "mean_y": -0.27995939398777475,
+            "mean_x": 0.26499206841304523,
+            "response_alignment": 0.0390870624597375,
+            "movement": 0.0030953498516567337,
+            "unpaid": 0.0,
+            "basal": 0.028800000000000006,
+            "death": 0.0,
+            "gain": 0.029145512792884812,
+            "loss": 0.004677841125762814,
+            "paid_mass": 23.83773944401063,
+            "map_sample_mass": 23.99828561469855,
+            "map_writes": true,
+            "gradient_observed_mass": 23.83773944401063,
+            "balance": 5.03225933146112e-14
+          },
+          "gain": 1.4708022886187109,
+          "loss": 18.975795035376596,
+          "movement": 0.9096434301097839
+        },
+        "retention": {
+          "score": 0.5581160362252453,
+          "positive_fraction": 0.9615741552970005,
+          "gate": true,
+          "first_feedback": null,
+          "first_map_sample": 641,
+          "final": {
+            "t": 768,
+            "phase": "retention",
+            "mass": 24.0,
+            "energy": 126.51998208159125,
+            "connected": 0.9986520618381629,
+            "field_score": 0.651812873095524,
+            "positive_mass": 23.491791158446553,
+            "strong_mass": 18.18354201209517,
+            "dy": -4.712608358571416,
+            "dx": -7.4233545393616645,
+            "mean_y": -0.3044934245808602,
+            "mean_x": 0.319376228726844,
+            "response_alignment": 0.04113574914907076,
+            "movement": 0.003153916400366756,
+            "unpaid": 0.0,
+            "basal": 0.028800000000000003,
+            "death": 0.0,
+            "gain": 0.0,
+            "loss": 0.0,
+            "paid_mass": 0.0,
+            "map_sample_mass": 23.99600687445005,
+            "map_writes": false,
+            "gradient_observed_mass": 0.0,
+            "balance": 1.2372047830666588e-14
+          },
+          "gain": 0.0,
+          "loss": 0.0,
+          "movement": 0.39164493453658
+        }
+      },
+      "maps": [
+        {
+          "t": 0,
+          "mean_J": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "massweighted_orientation": 0.0,
+          "occupied_J_norm": 0.0
+        },
+        {
+          "t": 64,
+          "mean_J": [
+            [
+              -0.0012176784002385368,
+              -0.06364325546865217
+            ],
+            [
+              0.061433628496791313,
+              -0.0004273766730473469
+            ]
+          ],
+          "massweighted_orientation": 0.9981794200845604,
+          "occupied_J_norm": 0.10559198583885997
+        },
+        {
+          "t": 320,
+          "mean_J": [
+            [
+              -0.002722595911660772,
+              -0.0532894603695412
+            ],
+            [
+              0.05360069595845078,
+              -0.0003342547083349988
+            ]
+          ],
+          "massweighted_orientation": 0.9871453042687747,
+          "occupied_J_norm": 0.07754349897764909
+        },
+        {
+          "t": 640,
+          "mean_J": [
+            [
+              8.692890679271181e-06,
+              -0.06902796686458189
+            ],
+            [
+              0.0675531775130089,
+              -2.196477389714707e-05
+            ]
+          ],
+          "massweighted_orientation": 0.9997392600514942,
+          "occupied_J_norm": 0.09692171033673025
+        },
+        {
+          "t": 768,
+          "mean_J": [
+            [
+              2.0926129226594373e-05,
+              -0.06909189020720492
+            ],
+            [
+              0.06765888409522948,
+              -4.4262351135932895e-05
+            ]
+          ],
+          "massweighted_orientation": 0.9998777311973422,
+          "occupied_J_norm": 0.09688652755651002
+        }
+      ]
+    },
+    {
+      "condition": 0,
+      "arm": "euler",
+      "alive": true,
+      "start_clock": 0,
+      "end_clock": 768,
+      "opportunity64": {
+        "paid_steps": 64,
+        "completed_motion_steps": 64,
+        "displacement_2d": 2.654047434786142
+      },
+      "first_postchange_paid": 321,
+      "first_postchange_motion_feedback": 321,
+      "unidentifiable_wait": 0,
+      "first32_good": 685,
+      "feedback_to_first32_good": 364,
+      "final_energy": 126.2960477346697,
+      "movement": 2.470057652335078,
+      "gain": 26.381346712507433,
+      "loss": 19.496841325502572,
+      "unpaid": 0.0,
+      "min_mass": 23.99999999999999,
+      "balance_max": 6.59962349662058e-14,
+      "phases": {
+        "acquisition": {
+          "score": 0.9343293345602774,
+          "positive_fraction": 0.9995018705079747,
+          "gate": true,
+          "first_feedback": 1,
+          "first_map_sample": 1,
+          "final": {
+            "t": 320,
+            "phase": "acquisition",
+            "mass": 23.999999999999996,
+            "energy": 158.05782206518376,
+            "connected": 0.9969062680751252,
+            "field_score": 0.9455106188230397,
+            "positive_mass": 23.993410774406733,
+            "strong_mass": 23.93806687857017,
+            "dy": 7.125980000188253,
+            "dx": 7.189642106093849,
+            "mean_y": 0.2659410690763419,
+            "mean_x": -0.19687677915032156,
+            "response_alignment": 0.028933825777529582,
+            "movement": 0.005006644618522895,
+            "unpaid": 0.0,
+            "basal": 0.028799999999999996,
+            "death": 0.0,
+            "gain": 0.11345634036046706,
+            "loss": 3.1372806715575927e-07,
+            "paid_mass": 23.988334208670928,
+            "map_sample_mass": 23.988244024419853,
+            "map_writes": true,
+            "gradient_observed_mass": 23.988334208670928,
+            "balance": -2.1935044140634804e-14
+          },
+          "gain": 24.983441492897636,
+          "loss": 0.5381090085397199,
+          "movement": 1.171510419174122
+        },
+        "change": {
+          "score": 0.0600391647979339,
+          "positive_fraction": 0.5916006456194587,
+          "gate": false,
+          "first_feedback": 321,
+          "first_map_sample": 321,
+          "final": {
+            "t": 640,
+            "phase": "change",
+            "mass": 23.999999999999993,
+            "energy": 130.37349112055333,
+            "connected": 0.9996620441746088,
+            "field_score": 0.19387564377028146,
+            "positive_mass": 18.712480160534184,
+            "strong_mass": 3.029647092211653,
+            "dy": 1.842350400592192,
+            "dx": -4.620806025215485,
+            "mean_y": -0.36059390942338937,
+            "mean_x": 0.16004415795058577,
+            "response_alignment": 0.039353441973051226,
+            "movement": 0.003108809102239326,
+            "unpaid": 0.0,
+            "basal": 0.028799999999999996,
+            "death": 0.0,
+            "gain": 0.02789584080185054,
+            "loss": 0.004623848012934336,
+            "paid_mass": 23.87672976663427,
+            "map_sample_mass": 23.998443026003404,
+            "map_writes": true,
+            "gradient_observed_mass": 23.87672976663427,
+            "balance": -4.1234377023968705e-15
+          },
+          "gain": 1.3979052196097934,
+          "loss": 18.958732316962852,
+          "movement": 0.9075038472773447
+        },
+        "retention": {
+          "score": 0.5330734844720424,
+          "positive_fraction": 0.9645883578289884,
+          "gate": true,
+          "first_feedback": null,
+          "first_map_sample": 641,
+          "final": {
+            "t": 768,
+            "phase": "retention",
+            "mass": 23.999999999999996,
+            "energy": 126.2960477346697,
+            "connected": 0.9989559357450005,
+            "field_score": 0.6199401577093919,
+            "positive_mass": 23.54921055030749,
+            "strong_mass": 17.235899959372738,
+            "dy": -4.5493333037551515,
+            "dx": -7.73180197379321,
+            "mean_y": -0.41049949553122844,
+            "mean_x": 0.16169287941212634,
+            "response_alignment": 0.04110233150987222,
+            "movement": 0.003209044481752378,
+            "unpaid": 0.0,
+            "basal": 0.028799999999999996,
+            "death": 0.0,
+            "gain": 0.0,
+            "loss": 0.0,
+            "paid_mass": 0.0,
+            "map_sample_mass": 23.995980608691337,
+            "map_writes": false,
+            "gradient_observed_mass": 0.0,
+            "balance": -1.4155343563970746e-15
+          },
+          "gain": 0.0,
+          "loss": 0.0,
+          "movement": 0.39104338588361165
+        }
+      },
+      "maps": [
+        {
+          "t": 0,
+          "mean_J": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "massweighted_orientation": 0.0,
+          "occupied_J_norm": 0.0
+        },
+        {
+          "t": 64,
+          "mean_J": [
+            [
+              -0.012892443189522741,
+              -0.06199571938045229
+            ],
+            [
+              0.06325955654712297,
+              -0.014132010261158522
+            ]
+          ],
+          "massweighted_orientation": 0.9768077692319707,
+          "occupied_J_norm": 0.10916904436828476
+        },
+        {
+          "t": 320,
+          "mean_J": [
+            [
+              -0.007111330837692537,
+              -0.04750483923940544
+            ],
+            [
+              0.04972846746863877,
+              -0.004066970697197402
+            ]
+          ],
+          "massweighted_orientation": 0.9448045701666618,
+          "occupied_J_norm": 0.07400953613533708
+        },
+        {
+          "t": 640,
+          "mean_J": [
+            [
+              0.00121111273508655,
+              -0.06929279974014861
+            ],
+            [
+              0.06791583148742032,
+              0.0012959190971099748
+            ]
+          ],
+          "massweighted_orientation": 0.9990594014476938,
+          "occupied_J_norm": 0.0974845017503858
+        },
+        {
+          "t": 768,
+          "mean_J": [
+            [
+              0.0072516693894081425,
+              -0.0663776790879113
+            ],
+            [
+              0.06854375870316673,
+              0.00826551637053329
+            ]
+          ],
+          "massweighted_orientation": 0.9839291083673859,
+          "occupied_J_norm": 0.0973255543184505
+        }
+      ]
+    },
+    {
+      "condition": 0,
+      "arm": "reflex",
+      "alive": true,
+      "start_clock": 0,
+      "end_clock": 768,
+      "opportunity64": {
+        "paid_steps": 64,
+        "completed_motion_steps": 64,
+        "displacement_2d": 2.2318954856826103
+      },
+      "first_postchange_paid": 321,
+      "first_postchange_motion_feedback": 321,
+      "unidentifiable_wait": 0,
+      "first32_good": null,
+      "feedback_to_first32_good": null,
+      "final_energy": 119.8179102634347,
+      "movement": 2.3009200135871097,
+      "gain": 7.70946144803802,
+      "loss": 7.472231171016087,
+      "unpaid": 0.0,
+      "min_mass": 23.99999999999999,
+      "balance_max": 6.681634412419868e-14,
+      "phases": {
+        "acquisition": {
+          "score": 0.007492384970544687,
+          "positive_fraction": 0.5379514817884209,
+          "gate": false,
+          "first_feedback": 1,
+          "first_map_sample": 1,
+          "final": {
+            "t": 320,
+            "phase": "acquisition",
+            "mass": 24.0,
+            "energy": 134.33014298036022,
+            "connected": 0.9933838988650301,
+            "field_score": 0.0012606761783028237,
+            "positive_mass": 12.665384198359131,
+            "strong_mass": 1.636791015827728,
+            "dy": -9.416726894924762,
+            "dx": 3.510727383078393,
+            "mean_y": -0.026969310930771023,
+            "mean_x": 0.5612817017714423,
+            "response_alignment": -0.000992182508644908,
+            "movement": 0.0029150905927133276,
+            "unpaid": 0.0,
+            "basal": 0.0288,
+            "death": 0.0,
+            "gain": 0.0162828189166081,
+            "loss": 0.01613051112434942,
+            "paid_mass": 23.98645359996664,
+            "map_sample_mass": 23.9864718738262,
+            "map_writes": false,
+            "gradient_observed_mass": 23.98645359996664,
+            "balance": 5.2111093218343285e-15
+          },
+          "gain": 4.1711042682077935,
+          "loss": 3.6517180918889527,
+          "movement": 0.9732431959585479
+        },
+        "change": {
+          "score": 0.003854163445669503,
+          "positive_fraction": 0.47366966733170796,
+          "gate": false,
+          "first_feedback": 321,
+          "first_map_sample": 321,
+          "final": {
+            "t": 640,
+            "phase": "change",
+            "mass": 24.0,
+            "energy": 123.8789272440472,
+            "connected": 0.9730995043625733,
+            "field_score": 0.007187586887368068,
+            "positive_mass": 11.846020396372124,
+            "strong_mass": 0.3649601244548882,
+            "dy": 0.09280339681247618,
+            "dx": -0.1363721988420057,
+            "mean_y": -0.47622393316940453,
+            "mean_x": -0.7187888572559915,
+            "response_alignment": 0.004546385151152468,
+            "movement": 0.0027452496847308505,
+            "unpaid": 0.0,
+            "basal": 0.028800000000000006,
+            "death": 0.0,
+            "gain": 0.011173775979078374,
+            "loss": 0.010309099808419753,
+            "paid_mass": 23.182235668497647,
+            "map_sample_mass": 23.99727873981297,
+            "map_writes": false,
+            "gradient_observed_mass": 23.182235668497647,
+            "balance": 3.92602617083071e-14
+          },
+          "gain": 3.5383571798302262,
+          "loss": 3.8205130791271347,
+          "movement": 0.9530598370160871
+        },
+        "retention": {
+          "score": 0.025494060340229677,
+          "positive_fraction": 0.585496072217573,
+          "gate": false,
+          "first_feedback": null,
+          "first_map_sample": 641,
+          "final": {
+            "t": 768,
+            "phase": "retention",
+            "mass": 24.0,
+            "energy": 119.8179102634347,
+            "connected": 0.9920842859184638,
+            "field_score": 0.03428587068340093,
+            "positive_mass": 14.960612461669246,
+            "strong_mass": 0.2601317636752751,
+            "dy": 4.182987539760708,
+            "dx": -3.1376622694305336,
+            "mean_y": -0.4778239780307567,
+            "mean_x": -0.7217343356974236,
+            "response_alignment": -0.00026186908672466274,
+            "movement": 0.0029030377048933228,
+            "unpaid": 0.0,
+            "basal": 0.028800000000000006,
+            "death": 0.0,
+            "gain": 0.0,
+            "loss": 0.0,
+            "paid_mass": 0.0,
+            "map_sample_mass": 23.99602649914716,
+            "map_writes": false,
+            "gradient_observed_mass": 0.0,
+            "balance": 6.744604874597826e-15
+          },
+          "gain": 0.0,
+          "loss": 0.0,
+          "movement": 0.3746169806124746
+        }
+      },
+      "maps": [
+        {
+          "t": 0,
+          "mean_J": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "massweighted_orientation": 0.0,
+          "occupied_J_norm": 0.0
+        },
+        {
+          "t": 64,
+          "mean_J": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "massweighted_orientation": 0.0,
+          "occupied_J_norm": 0.0
+        },
+        {
+          "t": 320,
+          "mean_J": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "massweighted_orientation": 0.0,
+          "occupied_J_norm": 0.0
+        },
+        {
+          "t": 640,
+          "mean_J": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "massweighted_orientation": 0.0,
+          "occupied_J_norm": 0.0
+        },
+        {
+          "t": 768,
+          "mean_J": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "massweighted_orientation": 0.0,
+          "occupied_J_norm": 0.0
+        }
+      ]
+    },
+    {
+      "condition": 1,
+      "arm": "carried",
+      "alive": true,
+      "start_clock": 0,
+      "end_clock": 768,
+      "opportunity64": {
+        "paid_steps": 64,
+        "completed_motion_steps": 64,
+        "displacement_2d": 2.712259668625811
+      },
+      "first_postchange_paid": 321,
+      "first_postchange_motion_feedback": 321,
+      "unidentifiable_wait": 0,
+      "first32_good": 680,
+      "feedback_to_first32_good": 359,
+      "final_energy": 126.6660967277052,
+      "movement": 2.4707123000468876,
+      "gain": 26.564155380186815,
+      "loss": 19.308946352434734,
+      "unpaid": 0.0,
+      "min_mass": 23.999999999999986,
+      "balance_max": 8.230995908724975e-14,
+      "phases": {
+        "acquisition": {
+          "score": 0.9327343998363002,
+          "positive_fraction": 0.9995704079959258,
+          "gate": true,
+          "first_feedback": 1,
+          "first_map_sample": 1,
+          "final": {
+            "t": 320,
+            "phase": "acquisition",
+            "mass": 23.99999999999999,
+            "energy": 158.1019511613905,
+            "connected": 0.9969656950629607,
+            "field_score": 0.9450378458592936,
+            "positive_mass": 23.994887298510818,
+            "strong_mass": 23.932375881180754,
+            "dy": -6.849279417623727,
+            "dx": -7.46081165361576,
+            "mean_y": 0.21014318136345705,
+            "mean_x": -0.2633473225930986,
+            "response_alignment": 0.02018210378699969,
+            "movement": 0.0054886576515548865,
+            "unpaid": 0.0,
+            "basal": 0.02879999999999999,
+            "death": 0.0,
+            "gain": 0.11339442170680576,
+            "loss": 2.0950280405306325e-07,
+            "paid_mass": 23.988644567418454,
+            "map_sample_mass": 23.988542643220434,
+            "map_writes": true,
+            "gradient_observed_mass": 23.988644567418454,
+            "balance": -4.7957982098919524e-14
+          },
+          "gain": 25.029508076171606,
+          "loss": 0.5461037017981334,
+          "movement": 1.165453212982897
+        },
+        "change": {
+          "score": 0.07815448363000843,
+          "positive_fraction": 0.6033958538948725,
+          "gate": false,
+          "first_feedback": 321,
+          "first_map_sample": 321,
+          "final": {
+            "t": 640,
+            "phase": "change",
+            "mass": 23.999999999999993,
+            "energy": 130.74490964070856,
+            "connected": 0.9996631506295447,
+            "field_score": 0.21610496654128153,
+            "positive_mass": 18.77257198247458,
+            "strong_mass": 3.5905901299380787,
+            "dy": 0.3051484704516252,
+            "dx": 4.812583557249972,
+            "mean_y": -0.2724150903802927,
+            "mean_x": 0.27658240496110914,
+            "response_alignment": 0.04058921720918901,
+            "movement": 0.0030564811746402075,
+            "unpaid": 0.0,
+            "basal": 0.028799999999999992,
+            "death": 0.0,
+            "gain": 0.030413061040181037,
+            "loss": 0.004474591309533319,
+            "paid_mass": 23.845949123523624,
+            "map_sample_mass": 23.99858670736699,
+            "map_writes": true,
+            "gradient_observed_mass": 23.845949123523624,
+            "balance": -1.7128659601794993e-14
+          },
+          "gain": 1.5346473040152082,
+          "loss": 18.762842650636603,
+          "movement": 0.9128461740606256
+        },
+        "retention": {
+          "score": 0.5695484484584337,
+          "positive_fraction": 0.9621722742970993,
+          "gate": true,
+          "first_feedback": null,
+          "first_map_sample": 641,
+          "final": {
+            "t": 768,
+            "phase": "retention",
+            "mass": 23.999999999999993,
+            "energy": 126.6660967277052,
+            "connected": 0.9987223959716339,
+            "field_score": 0.6624262383236283,
+            "positive_mass": 23.48474977412065,
+            "strong_mass": 18.355670618370823,
+            "dy": 4.8353330822451905,
+            "dx": 7.570927138432829,
+            "mean_y": -0.2921318538721203,
+            "mean_x": 0.33338585782430796,
+            "response_alignment": 0.038403772695726195,
+            "movement": 0.002859554879076059,
+            "unpaid": 0.0,
+            "basal": 0.028799999999999996,
+            "death": 0.0,
+            "gain": 0.0,
+            "loss": 0.0,
+            "paid_mass": 0.0,
+            "map_sample_mass": 23.996172633172073,
+            "map_writes": false,
+            "gradient_observed_mass": 0.0,
+            "balance": 3.434752482434078e-14
+          },
+          "gain": 0.0,
+          "loss": 0.0,
+          "movement": 0.3924129130033651
+        }
+      },
+      "maps": [
+        {
+          "t": 0,
+          "mean_J": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "massweighted_orientation": 0.0,
+          "occupied_J_norm": 0.0
+        },
+        {
+          "t": 64,
+          "mean_J": [
+            [
+              2.4498073438497445e-05,
+              0.06403537599789542
+            ],
+            [
+              -0.06203673325152078,
+              0.0019002657159025579
+            ]
+          ],
+          "massweighted_orientation": 0.998733331151168,
+          "occupied_J_norm": 0.10711792545443384
+        },
+        {
+          "t": 320,
+          "mean_J": [
+            [
+              -0.0013963418516756696,
+              0.051514749788879745
+            ],
+            [
+              -0.05480229039826482,
+              -0.0006964282013111245
+            ]
+          ],
+          "massweighted_orientation": 0.9925034540031327,
+          "occupied_J_norm": 0.07672495450682902
+        },
+        {
+          "t": 640,
+          "mean_J": [
+            [
+              -7.433840966396672e-05,
+              0.06886810079129439
+            ],
+            [
+              -0.06761271603450646,
+              -0.00020893832732483183
+            ]
+          ],
+          "massweighted_orientation": 0.9997539239304164,
+          "occupied_J_norm": 0.09686125597805496
+        },
+        {
+          "t": 768,
+          "mean_J": [
+            [
+              -4.970960048369345e-05,
+              0.06890647847845989
+            ],
+            [
+              -0.06774235919971662,
+              -0.00019486460620436226
+            ]
+          ],
+          "massweighted_orientation": 0.9998865286133837,
+          "occupied_J_norm": 0.09681116094500121
+        }
+      ]
+    },
+    {
+      "condition": 1,
+      "arm": "euler",
+      "alive": true,
+      "start_clock": 0,
+      "end_clock": 768,
+      "opportunity64": {
+        "paid_steps": 64,
+        "completed_motion_steps": 64,
+        "displacement_2d": 2.663260628085549
+      },
+      "first_postchange_paid": 321,
+      "first_postchange_motion_feedback": 321,
+      "unidentifiable_wait": 0,
+      "first32_good": 684,
+      "feedback_to_first32_good": 363,
+      "final_energy": 126.43434402991029,
+      "movement": 2.466516927953452,
+      "gain": 26.324658974169523,
+      "loss": 19.30539801630584,
+      "unpaid": 0.0,
+      "min_mass": 23.999999999999993,
+      "balance_max": 7.702661098402531e-14,
+      "phases": {
+        "acquisition": {
+          "score": 0.9322062916509464,
+          "positive_fraction": 0.9995254372628659,
+          "gate": true,
+          "first_feedback": 1,
+          "first_map_sample": 1,
+          "final": {
+            "t": 320,
+            "phase": "acquisition",
+            "mass": 24.0,
+            "energy": 157.9578742684827,
+            "connected": 0.9969810138376758,
+            "field_score": 0.9441498876549551,
+            "positive_mass": 23.993739481416796,
+            "strong_mass": 23.94231297372206,
+            "dy": -7.105172936013224,
+            "dx": -7.15975079544571,
+            "mean_y": 0.3162710747621988,
+            "mean_x": -0.19171030911168832,
+            "response_alignment": 0.019152910761104324,
+            "movement": 0.005361987107881868,
+            "unpaid": 0.0,
+            "basal": 0.028800000000000006,
+            "death": 0.0,
+            "gain": 0.11329336026607743,
+            "loss": 2.710241424507607e-07,
+            "paid_mass": 23.988733673510314,
+            "map_sample_mass": 23.988715690991185,
+            "map_writes": true,
+            "gradient_observed_mass": 23.988733673510314,
+            "balance": 3.147752150097226e-14
+          },
+          "gain": 24.88910375370546,
+          "loss": 0.5482495411339767,
+          "movement": 1.1669799440888657
+        },
+        "change": {
+          "score": 0.06832244465793928,
+          "positive_fraction": 0.6032851667713938,
+          "gate": false,
+          "first_feedback": 321,
+          "first_map_sample": 321,
+          "final": {
+            "t": 640,
+            "phase": "change",
+            "mass": 24.0,
+            "energy": 130.51243098459577,
+            "connected": 0.9997183442968959,
+            "field_score": 0.2018296847687704,
+            "positive_mass": 18.837049579627298,
+            "strong_mass": 3.141010072968122,
+            "dy": -1.657029443998626,
+            "dx": 4.790349354110168,
+            "mean_y": -0.3523441395391916,
+            "mean_x": 0.17745339874751362,
+            "response_alignment": 0.03991248411260982,
+            "movement": 0.003020907339781434,
+            "unpaid": 0.0,
+            "basal": 0.0288,
+            "death": 0.0,
+            "gain": 0.028658276689156877,
+            "loss": 0.0044334077096961615,
+            "paid_mass": 23.87793744500685,
+            "map_sample_mass": 23.99873146849893,
+            "map_writes": true,
+            "gradient_observed_mass": 23.87793744500685,
+            "balance": -1.234949642547889e-14
+          },
+          "gain": 1.435555220464064,
+          "loss": 18.757148475171867,
+          "movement": 0.9078500291790979
+        },
+        "retention": {
+          "score": 0.5375315469384873,
+          "positive_fraction": 0.9650829082884183,
+          "gate": true,
+          "first_feedback": null,
+          "first_map_sample": 641,
+          "final": {
+            "t": 768,
+            "phase": "retention",
+            "mass": 23.999999999999996,
+            "energy": 126.43434402991029,
+            "connected": 0.9988272581542127,
+            "field_score": 0.6219826042124136,
+            "positive_mass": 23.541799781493335,
+            "strong_mass": 17.109300056002702,
+            "dy": 4.4836152833066745,
+            "dx": 7.930354992595655,
+            "mean_y": -0.4029351644905782,
+            "mean_x": 0.1844876757028262,
+            "response_alignment": 0.037380419811704674,
+            "movement": 0.002928155086859203,
+            "unpaid": 0.0,
+            "basal": 0.028800000000000003,
+            "death": 0.0,
+            "gain": 0.0,
+            "loss": 0.0,
+            "paid_mass": 0.0,
+            "map_sample_mass": 23.99616307815335,
+            "map_writes": false,
+            "gradient_observed_mass": 0.0,
+            "balance": -7.903400156550333e-15
+          },
+          "gain": 0.0,
+          "loss": 0.0,
+          "movement": 0.3916869546854882
+        }
+      },
+      "maps": [
+        {
+          "t": 0,
+          "mean_J": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "massweighted_orientation": 0.0,
+          "occupied_J_norm": 0.0
+        },
+        {
+          "t": 64,
+          "mean_J": [
+            [
+              0.013395692037309103,
+              0.06306460654281193
+            ],
+            [
+              -0.06313890489048646,
+              0.014785126002602391
+            ]
+          ],
+          "massweighted_orientation": 0.9751262377325123,
+          "occupied_J_norm": 0.11051507246688018
+        },
+        {
+          "t": 320,
+          "mean_J": [
+            [
+              0.0025547355569814213,
+              0.0474172758986364
+            ],
+            [
+              -0.052780563164251455,
+              0.002384391548071078
+            ]
+          ],
+          "massweighted_orientation": 0.9619415008717112,
+          "occupied_J_norm": 0.07490044154990835
+        },
+        {
+          "t": 640,
+          "mean_J": [
+            [
+              -0.001315289876577166,
+              0.06913860101910833
+            ],
+            [
+              -0.06802997006843821,
+              -0.0014556050594859975
+            ]
+          ],
+          "massweighted_orientation": 0.9990659381326855,
+          "occupied_J_norm": 0.09746693988721811
+        },
+        {
+          "t": 768,
+          "mean_J": [
+            [
+              -0.007218509532472138,
+              0.06623549793528417
+            ],
+            [
+              -0.06825936155928444,
+              -0.007994459071921764
+            ]
+          ],
+          "massweighted_orientation": 0.9827566002492598,
+          "occupied_J_norm": 0.09716432083994647
+        }
+      ]
+    },
+    {
+      "condition": 1,
+      "arm": "reflex",
+      "alive": false,
+      "start_clock": 0,
+      "end_clock": 319,
+      "opportunity64": {
+        "paid_steps": 64,
+        "completed_motion_steps": 64,
+        "displacement_2d": 2.1558781641062845
+      },
+      "first_postchange_paid": null,
+      "first_postchange_motion_feedback": null,
+      "unidentifiable_wait": null,
+      "first32_good": null,
+      "feedback_to_first32_good": null,
+      "final_energy": 133.81010829516825,
+      "movement": 1.0586967528928641,
+      "gain": 10.647161016580093,
+      "loss": 10.591155968518976,
+      "unpaid": 0.0,
+      "min_mass": 23.99999999999999,
+      "balance_max": 4.563363575904589e-14,
+      "phases": {
+        "acquisition": {
+          "score": 0.0003680821174122113,
+          "positive_fraction": 0.46623826678564995,
+          "gate": false,
+          "first_feedback": 1,
+          "first_map_sample": 1,
+          "final": {
+            "t": 319,
+            "phase": "acquisition",
+            "mass": 23.999999999999993,
+            "energy": 133.81010829516825,
+            "connected": 0.6617249145432481,
+            "field_score": -0.004355404187105969,
+            "positive_mass": 11.234546419164781,
+            "strong_mass": 9.50298516096326,
+            "dy": -9.063862932379818,
+            "dx": 7.5085724967748995,
+            "mean_y": 0.08770725205117438,
+            "mean_x": 0.09293606661414036,
+            "response_alignment": -0.006283608866950603,
+            "movement": 0.003389059867760887,
+            "unpaid": 0.0,
+            "basal": 0.028799999999999996,
+            "death": 0.0,
+            "gain": 0.045746491453330235,
+            "loss": 0.046270516447645786,
+            "paid_mass": 23.989765182505028,
+            "map_sample_mass": 23.9896019966564,
+            "map_writes": false,
+            "gradient_observed_mass": 23.989765182505028,
+            "balance": 2.3724078257458814e-14
+          },
+          "gain": 10.647161016580093,
+          "loss": 10.591155968518976,
+          "movement": 1.0586967528928641
+        }
+      },
+      "maps": [
+        {
+          "t": 0,
+          "mean_J": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "massweighted_orientation": 0.0,
+          "occupied_J_norm": 0.0
+        },
+        {
+          "t": 64,
+          "mean_J": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "massweighted_orientation": 0.0,
+          "occupied_J_norm": 0.0
+        },
+        {
+          "t": 319,
+          "mean_J": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "massweighted_orientation": 0.0,
+          "occupied_J_norm": 0.0
+        }
+      ]
+    }
+  ],
+  "animation": "Actual stored density frames every16; no interpolation. Blank panels indicate fork not yet begun. Substrate background is evaluation only, not a policy input."
+}

@@ -1,0 +1,16 @@
+{
+  "type": "search",
+  "category": "resource",
+  "description": "A durable saved search whose identity is independent of search method and Portal surface.",
+  "title": {
+    "zh": "搜索",
+    "en": "Search"
+  },
+  "provider": "management_portal.resources.providers.search:install_resolver",
+  "catalog_section": "",
+  "catalog_order": 0,
+  "registerable": false,
+  "scope": "shared",
+  "unit": "core",
+  "enabled_by_default": true
+}

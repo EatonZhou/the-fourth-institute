@@ -1,0 +1,82 @@
+[
+  {
+    "history": "g1_f2_c0",
+    "shape": "compact",
+    "condition": "colocated",
+    "old_diagonal_full_receiver_exact": true,
+    "reference_clock_range": [
+      129,
+      256
+    ]
+  },
+  {
+    "history": "g2_p0_c0",
+    "shape": "compact",
+    "condition": "colocated",
+    "old_diagonal_full_receiver_exact": true,
+    "reference_clock_range": [
+      129,
+      256
+    ]
+  },
+  {
+    "history": "g1_f2_c0",
+    "shape": "compact",
+    "condition": "separated",
+    "old_diagonal_full_receiver_exact": true,
+    "reference_clock_range": [
+      129,
+      256
+    ]
+  },
+  {
+    "history": "g2_p0_c0",
+    "shape": "compact",
+    "condition": "separated",
+    "old_diagonal_full_receiver_exact": true,
+    "reference_clock_range": [
+      129,
+      256
+    ]
+  },
+  {
+    "history": "g1_f2_c0",
+    "shape": "double_lobe",
+    "condition": "colocated",
+    "old_diagonal_full_receiver_exact": true,
+    "reference_clock_range": [
+      129,
+      256
+    ]
+  },
+  {
+    "history": "g2_p0_c0",
+    "shape": "double_lobe",
+    "condition": "colocated",
+    "old_diagonal_full_receiver_exact": true,
+    "reference_clock_range": [
+      129,
+      256
+    ]
+  },
+  {
+    "history": "g1_f2_c0",
+    "shape": "double_lobe",
+    "condition": "separated",
+    "old_diagonal_full_receiver_exact": true,
+    "reference_clock_range": [
+      129,
+      256
+    ]
+  },
+  {
+    "history": "g2_p0_c0",
+    "shape": "double_lobe",
+    "condition": "separated",
+    "old_diagonal_full_receiver_exact": true,
+    "reference_clock_range": [
+      129,
+      256
+    ]
+  }
+]

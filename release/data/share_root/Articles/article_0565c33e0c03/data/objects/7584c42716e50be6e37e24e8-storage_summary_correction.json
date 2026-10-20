@@ -1,0 +1,24 @@
+{
+  "corrected_at": "2026-10-19T10:01:18.647893+00:00",
+  "records": [
+    {
+      "task": "homeostatic_regenerative_learning_20261019",
+      "execution": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/homeostatic_regenerative_learning_20261019/execution.json",
+      "sha256": "5502d77c30b60db04958e51e8456e10e4077c07f790d529446c2f889fb58feb4",
+      "recorded_bytes": 134393851,
+      "excess_bytes": 176123
+    },
+    {
+      "task": "energetic_cue_regenerative_learning_20261019",
+      "execution": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/energetic_cue_regenerative_learning_20261019/execution.json",
+      "sha256": "9c97d56babc6912640cff4fe9e38633cd20dc0e96cdae41055ece3891d517265",
+      "recorded_bytes": 139087277,
+      "excess_bytes": 4869549
+    }
+  ],
+  "archive": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/young_regenerative_learning_opportunity_20261019/synthesis/revisions/pre_storage_correction_20261019",
+  "previous_handoff_sha256": "ed8c305e308140facdc1bc9fa5c0c7caa411e60ca39aa511d0db16420999d19e",
+  "stage": "worker-finalization all-raw-files footprint before offline analysis/compression; observed peak lower bound, not continuous peak meter",
+  "original_execution_unchanged": true,
+  "missing_longbody_steps": 512
+}

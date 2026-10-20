@@ -1,0 +1,2 @@
+# Python tests; TAU browser dependencies are installed separately.
+pytest

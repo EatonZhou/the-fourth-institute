@@ -1,0 +1,16 @@
+[
+  {
+    "seed": 8301,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/feedback_update_control_20261018/8038712e-7eda-4725-99fe-ecf966797d3d/tape-8301.npz",
+    "sha256": "6a2f834007fd33e4a6f5770e95c0bf01ad1fb7566c7578859f134652cce87f76",
+    "future_direct_reversals": [
+      52
+    ]
+  },
+  {
+    "seed": 8302,
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/feedback_update_control_20261018/8038712e-7eda-4725-99fe-ecf966797d3d/tape-8302.npz",
+    "sha256": "ffb6c178d6f06471a804eb92267833cddb45fba8c5129fa106024608a8d980e6",
+    "future_direct_reversals": []
+  }
+]

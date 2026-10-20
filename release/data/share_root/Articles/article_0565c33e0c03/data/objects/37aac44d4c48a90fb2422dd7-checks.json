@@ -1,0 +1,48 @@
+{
+  "status": "complete",
+  "native": 0,
+  "trajectories": 16,
+  "actual_saved_maps": 1024,
+  "birth_clock_cohorts": 1024,
+  "cohort_clock_age_rows": 33280,
+  "primary_paired_clock_age_rows": 2072,
+  "positive_primary_clock_age_points": 1779,
+  "negative_primary_clock_age_points": 293,
+  "primary_parent_age_summaries": 40,
+  "positive_under_both_common_weightings": 39,
+  "eligible_common_clocks_by_age": {
+    "1": 63,
+    "4": 60,
+    "8": 56,
+    "16": 48,
+    "32": 32
+  },
+  "bilateral_birth_clock_pairs": 512,
+  "single_sided_zero": 0,
+  "both_zero": 0,
+  "right_censored_clock_counts_by_age": {
+    "1": 1,
+    "4": 4,
+    "8": 8,
+    "16": 16,
+    "32": 32
+  },
+  "max_original_N_reconstruction_error": 8.881784197001252e-15,
+  "max_endpoint_identity_error": 3.247402347028583e-15,
+  "pure_checks": "pure_checks.json",
+  "detailed_errors": {
+    "age0_birth_exact": 0.0,
+    "age0_no_actor_deletion": 0.0,
+    "age0_no_rule_deletion": 0.0,
+    "per_cohort_balance": 8.326672684688674e-17,
+    "registration_sum": 5.329070518200751e-15,
+    "live_sum": 8.881784197001252e-15,
+    "actor_deleted_sum": 2.812414082680294e-23,
+    "rule_deleted_sum": 6.661338147750939e-16,
+    "bodytime_sum": 7.105427357601002e-15,
+    "current_born": 0.0,
+    "ordered_request_partition": 3.552713678800501e-15,
+    "cohort_transport": 5.551115123125783e-17
+  },
+  "result_scope": "accounting complete; research objective not established; no new physical result"
+}

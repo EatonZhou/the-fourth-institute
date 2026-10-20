@@ -1,0 +1,339 @@
+{
+  "schema": "lenia.r4v5.saved-dwell-audit.v1",
+  "source_job": "8dd4b8d8-e454-4598-a40d-638bb866ae5f",
+  "simulation_updates": 0,
+  "method": {
+    "activity": "32-update trailing mean of sum(abs(A[t]-A[t-1])) / M[t-1]",
+    "activity_cutoffs": [
+      0.001,
+      0.003,
+      0.01
+    ],
+    "density_cutoffs": [
+      0.05,
+      0.1,
+      0.2
+    ],
+    "ring_indicator": "largest enclosed hole >=4 pixels after integer periodic centering; checked only at saved frames",
+    "tail_definition": "last uninterrupted qualifying run through the observed endpoint; no claim of permanent arrest",
+    "time": "absolute lifetime updates, dt=0.1; no frame interpolation"
+  },
+  "branches": {
+    "old_sham/new_sham": {
+      "frame_mass_max_error": 0.0,
+      "minimum_axis_concentration": 0.9494399497327324,
+      "centered_support_border_hits": 0,
+      "activity_tail_runs": {
+        "0.001": null,
+        "0.003": null,
+        "0.01": null
+      },
+      "closed_hole_tail_runs": {
+        "0.05": {
+          "first_passing_sample": 4080,
+          "last_failing_sample": 4064,
+          "observed_end": 4096,
+          "right_censored": true
+        },
+        "0.1": null,
+        "0.2": null
+      },
+      "final_hole_areas": {
+        "0.05": 34,
+        "0.1": 0,
+        "0.2": 0
+      },
+      "final_components": {
+        "0.05": 2,
+        "0.1": 2,
+        "0.2": 3
+      },
+      "joint_tail_runs_at_saved_frames": {
+        "activity=0.001,density=0.05": null,
+        "activity=0.001,density=0.1": null,
+        "activity=0.001,density=0.2": null,
+        "activity=0.003,density=0.05": null,
+        "activity=0.003,density=0.1": null,
+        "activity=0.003,density=0.2": null,
+        "activity=0.01,density=0.05": null,
+        "activity=0.01,density=0.1": null,
+        "activity=0.01,density=0.2": null
+      }
+    },
+    "old_sham/new_probe": {
+      "frame_mass_max_error": 0.0,
+      "minimum_axis_concentration": 0.9440631735786308,
+      "centered_support_border_hits": 0,
+      "activity_tail_runs": {
+        "0.001": {
+          "first_passing_sample": 4095,
+          "last_failing_sample": 4094,
+          "observed_end": 4096,
+          "right_censored": true
+        },
+        "0.003": {
+          "first_passing_sample": 4061,
+          "last_failing_sample": 4060,
+          "observed_end": 4096,
+          "right_censored": true
+        },
+        "0.01": {
+          "first_passing_sample": 4026,
+          "last_failing_sample": 4025,
+          "observed_end": 4096,
+          "right_censored": true
+        }
+      },
+      "closed_hole_tail_runs": {
+        "0.05": {
+          "first_passing_sample": 3968,
+          "last_failing_sample": 3952,
+          "observed_end": 4096,
+          "right_censored": true
+        },
+        "0.1": {
+          "first_passing_sample": 3968,
+          "last_failing_sample": 3952,
+          "observed_end": 4096,
+          "right_censored": true
+        },
+        "0.2": {
+          "first_passing_sample": 3984,
+          "last_failing_sample": 3968,
+          "observed_end": 4096,
+          "right_censored": true
+        }
+      },
+      "final_hole_areas": {
+        "0.05": 32,
+        "0.1": 32,
+        "0.2": 32
+      },
+      "final_components": {
+        "0.05": 1,
+        "0.1": 1,
+        "0.2": 1
+      },
+      "joint_tail_runs_at_saved_frames": {
+        "activity=0.001,density=0.05": {
+          "first_passing_sample": 4096,
+          "last_failing_sample": 4080,
+          "observed_end": 4096,
+          "right_censored": true
+        },
+        "activity=0.001,density=0.1": {
+          "first_passing_sample": 4096,
+          "last_failing_sample": 4080,
+          "observed_end": 4096,
+          "right_censored": true
+        },
+        "activity=0.001,density=0.2": {
+          "first_passing_sample": 4096,
+          "last_failing_sample": 4080,
+          "observed_end": 4096,
+          "right_censored": true
+        },
+        "activity=0.003,density=0.05": {
+          "first_passing_sample": 4064,
+          "last_failing_sample": 4048,
+          "observed_end": 4096,
+          "right_censored": true
+        },
+        "activity=0.003,density=0.1": {
+          "first_passing_sample": 4064,
+          "last_failing_sample": 4048,
+          "observed_end": 4096,
+          "right_censored": true
+        },
+        "activity=0.003,density=0.2": {
+          "first_passing_sample": 4064,
+          "last_failing_sample": 4048,
+          "observed_end": 4096,
+          "right_censored": true
+        },
+        "activity=0.01,density=0.05": {
+          "first_passing_sample": 4032,
+          "last_failing_sample": 4016,
+          "observed_end": 4096,
+          "right_censored": true
+        },
+        "activity=0.01,density=0.1": {
+          "first_passing_sample": 4032,
+          "last_failing_sample": 4016,
+          "observed_end": 4096,
+          "right_censored": true
+        },
+        "activity=0.01,density=0.2": {
+          "first_passing_sample": 4032,
+          "last_failing_sample": 4016,
+          "observed_end": 4096,
+          "right_censored": true
+        }
+      }
+    },
+    "old_probe/new_sham": {
+      "frame_mass_max_error": 0.0,
+      "minimum_axis_concentration": 0.9423272103868534,
+      "centered_support_border_hits": 0,
+      "activity_tail_runs": {
+        "0.001": null,
+        "0.003": null,
+        "0.01": null
+      },
+      "closed_hole_tail_runs": {
+        "0.05": null,
+        "0.1": null,
+        "0.2": null
+      },
+      "final_hole_areas": {
+        "0.05": 0,
+        "0.1": 0,
+        "0.2": 0
+      },
+      "final_components": {
+        "0.05": 1,
+        "0.1": 1,
+        "0.2": 1
+      },
+      "joint_tail_runs_at_saved_frames": {
+        "activity=0.001,density=0.05": null,
+        "activity=0.001,density=0.1": null,
+        "activity=0.001,density=0.2": null,
+        "activity=0.003,density=0.05": null,
+        "activity=0.003,density=0.1": null,
+        "activity=0.003,density=0.2": null,
+        "activity=0.01,density=0.05": null,
+        "activity=0.01,density=0.1": null,
+        "activity=0.01,density=0.2": null
+      }
+    },
+    "old_probe/new_probe": {
+      "frame_mass_max_error": 0.0,
+      "minimum_axis_concentration": 0.9512295025775791,
+      "centered_support_border_hits": 0,
+      "activity_tail_runs": {
+        "0.001": {
+          "first_passing_sample": 3784,
+          "last_failing_sample": 3783,
+          "observed_end": 4096,
+          "right_censored": true
+        },
+        "0.003": {
+          "first_passing_sample": 3755,
+          "last_failing_sample": 3754,
+          "observed_end": 4096,
+          "right_censored": true
+        },
+        "0.01": {
+          "first_passing_sample": 3729,
+          "last_failing_sample": 3728,
+          "observed_end": 4096,
+          "right_censored": true
+        }
+      },
+      "closed_hole_tail_runs": {
+        "0.05": {
+          "first_passing_sample": 3680,
+          "last_failing_sample": 3664,
+          "observed_end": 4096,
+          "right_censored": true
+        },
+        "0.1": {
+          "first_passing_sample": 3696,
+          "last_failing_sample": 3680,
+          "observed_end": 4096,
+          "right_censored": true
+        },
+        "0.2": {
+          "first_passing_sample": 3696,
+          "last_failing_sample": 3680,
+          "observed_end": 4096,
+          "right_censored": true
+        }
+      },
+      "final_hole_areas": {
+        "0.05": 34,
+        "0.1": 34,
+        "0.2": 34
+      },
+      "final_components": {
+        "0.05": 1,
+        "0.1": 1,
+        "0.2": 1
+      },
+      "joint_tail_runs_at_saved_frames": {
+        "activity=0.001,density=0.05": {
+          "first_passing_sample": 3792,
+          "last_failing_sample": 3776,
+          "observed_end": 4096,
+          "right_censored": true
+        },
+        "activity=0.001,density=0.1": {
+          "first_passing_sample": 3792,
+          "last_failing_sample": 3776,
+          "observed_end": 4096,
+          "right_censored": true
+        },
+        "activity=0.001,density=0.2": {
+          "first_passing_sample": 3792,
+          "last_failing_sample": 3776,
+          "observed_end": 4096,
+          "right_censored": true
+        },
+        "activity=0.003,density=0.05": {
+          "first_passing_sample": 3760,
+          "last_failing_sample": 3744,
+          "observed_end": 4096,
+          "right_censored": true
+        },
+        "activity=0.003,density=0.1": {
+          "first_passing_sample": 3760,
+          "last_failing_sample": 3744,
+          "observed_end": 4096,
+          "right_censored": true
+        },
+        "activity=0.003,density=0.2": {
+          "first_passing_sample": 3760,
+          "last_failing_sample": 3744,
+          "observed_end": 4096,
+          "right_censored": true
+        },
+        "activity=0.01,density=0.05": {
+          "first_passing_sample": 3744,
+          "last_failing_sample": 3728,
+          "observed_end": 4096,
+          "right_censored": true
+        },
+        "activity=0.01,density=0.1": {
+          "first_passing_sample": 3744,
+          "last_failing_sample": 3728,
+          "observed_end": 4096,
+          "right_censored": true
+        },
+        "activity=0.01,density=0.2": {
+          "first_passing_sample": 3744,
+          "last_failing_sample": 3728,
+          "observed_end": 4096,
+          "right_censored": true
+        }
+      }
+    }
+  },
+  "sources_sha256": {
+    "old_sham/new_sham": "e0040ed325f1d9c332db75c56d18630fca41890b31fbdac62bd837f6ffea1f64",
+    "old_sham/new_probe": "2853be5707e669b22b9ca9de15ea13397744766ee042d641488628d17d4ceb2a",
+    "old_probe/new_sham": "1366dad6b974e6f3e57b32ae0613a7e20da5f6e5ea4ab5437ade1bf3fbf4a22a",
+    "old_probe/new_probe": "2faa879d7502da66e032f7058ce356c8c3de825d3a534d924eda6f5bedc493ba"
+  },
+  "limits": [
+    "Exploratory threshold descriptions of four deterministic branches, not independent samples.",
+    "Topology depends on density threshold and pixel connectivity; every specified threshold is reported.",
+    "Low activity and an enclosed hole are separate observations, not proof of a stable ring attractor.",
+    "History branches start with different bodies; this does not isolate learned memory or explain D solely by timing."
+  ],
+  "same_history_clone_max_errors": {
+    "old_sham": 0.0,
+    "old_probe": 0.0
+  },
+  "code_sha256": "ccd8fbe18e9dae0668987c17a907c65657dc0a44a157c4bf3a1c2bc16e738277"
+}

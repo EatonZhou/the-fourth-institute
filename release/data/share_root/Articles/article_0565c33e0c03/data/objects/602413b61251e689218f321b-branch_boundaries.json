@@ -1,0 +1,402 @@
+[
+  {
+    "stage_id": "genome_93e6148d32bbb0862163/formation",
+    "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/candidates/genome_93e6148d32bbb0862163.npz",
+    "source_sha256": "cfc25c642daa522c210b790b44ef1ac6ac9251e4d479a4ffd0e185d2e953aeeb",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_93e6148d32bbb0862163--formation/initial0.npz",
+    "step": 0,
+    "fields_exact": true,
+    "transport_before": "T11",
+    "transport": "T00"
+  },
+  {
+    "stage_id": "genome_93e6148d32bbb0862163/naive/acquisition",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_93e6148d32bbb0862163--formation/transactions/000128.npz",
+    "source_sha256": "c0d754b1c4ac3132189a5900c4a1ac2b5dfe183ec2825b05584a57e7d1480911",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_93e6148d32bbb0862163--naive--acquisition/initial128.npz",
+    "step": 128,
+    "fields_exact": true,
+    "transport_before": "T00",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "genome_93e6148d32bbb0862163/naive/none",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_93e6148d32bbb0862163--naive--acquisition/transactions/000160.npz",
+    "source_sha256": "2fcb6e8cc4a36cec3042227a2b3474735d457c5f48ba94bbd57ff71ba19b30a6",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_93e6148d32bbb0862163--naive--none/initial160.npz",
+    "step": 160,
+    "fields_exact": true,
+    "transport_before": "T11",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "genome_93e6148d32bbb0862163/naive/x",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_93e6148d32bbb0862163--naive--acquisition/transactions/000160.npz",
+    "source_sha256": "2fcb6e8cc4a36cec3042227a2b3474735d457c5f48ba94bbd57ff71ba19b30a6",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_93e6148d32bbb0862163--naive--x/initial160.npz",
+    "step": 160,
+    "fields_exact": true,
+    "transport_before": "T11",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "genome_93e6148d32bbb0862163/experienced/acquisition",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_93e6148d32bbb0862163--formation/transactions/000128.npz",
+    "source_sha256": "c0d754b1c4ac3132189a5900c4a1ac2b5dfe183ec2825b05584a57e7d1480911",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_93e6148d32bbb0862163--experienced--acquisition/initial128.npz",
+    "step": 128,
+    "fields_exact": true,
+    "transport_before": "T00",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "genome_93e6148d32bbb0862163/experienced/none",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_93e6148d32bbb0862163--experienced--acquisition/transactions/000160.npz",
+    "source_sha256": "77e4d6a8c1326de81997110958175d75aef0997bc2f21d651b4a5ee2726f0a7a",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_93e6148d32bbb0862163--experienced--none/initial160.npz",
+    "step": 160,
+    "fields_exact": true,
+    "transport_before": "T11",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "genome_93e6148d32bbb0862163/experienced/x",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_93e6148d32bbb0862163--experienced--acquisition/transactions/000160.npz",
+    "source_sha256": "77e4d6a8c1326de81997110958175d75aef0997bc2f21d651b4a5ee2726f0a7a",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_93e6148d32bbb0862163--experienced--x/initial160.npz",
+    "step": 160,
+    "fields_exact": true,
+    "transport_before": "T11",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "genome_93e6148d32bbb0862163/low_cost_T00/acquisition",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_93e6148d32bbb0862163--formation/transactions/000128.npz",
+    "source_sha256": "c0d754b1c4ac3132189a5900c4a1ac2b5dfe183ec2825b05584a57e7d1480911",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_93e6148d32bbb0862163--low_cost_T00--acquisition/initial128.npz",
+    "step": 128,
+    "fields_exact": true,
+    "transport_before": "T00",
+    "transport": "T00"
+  },
+  {
+    "stage_id": "genome_93e6148d32bbb0862163/low_cost_T00/none",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_93e6148d32bbb0862163--low_cost_T00--acquisition/transactions/000160.npz",
+    "source_sha256": "7e3933558dd65f8b5cc99cce8252817f59bd25cd911adf76e06abb77c6a4ae4a",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_93e6148d32bbb0862163--low_cost_T00--none/initial160.npz",
+    "step": 160,
+    "fields_exact": true,
+    "transport_before": "T00",
+    "transport": "T00"
+  },
+  {
+    "stage_id": "genome_93e6148d32bbb0862163/low_cost_T00/x",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_93e6148d32bbb0862163--low_cost_T00--acquisition/transactions/000160.npz",
+    "source_sha256": "7e3933558dd65f8b5cc99cce8252817f59bd25cd911adf76e06abb77c6a4ae4a",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_93e6148d32bbb0862163--low_cost_T00--x/initial160.npz",
+    "step": 160,
+    "fields_exact": true,
+    "transport_before": "T00",
+    "transport": "T00"
+  },
+  {
+    "stage_id": "genome_d02e7f60565f83066e5d/formation",
+    "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/candidates/genome_d02e7f60565f83066e5d.npz",
+    "source_sha256": "ff37d942c7168eeb4832aa42f0f94d14ceaa86ca8e454741efe4a183e049a185",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_d02e7f60565f83066e5d--formation/initial0.npz",
+    "step": 0,
+    "fields_exact": true,
+    "transport_before": "T11",
+    "transport": "T00"
+  },
+  {
+    "stage_id": "genome_d02e7f60565f83066e5d/naive/acquisition",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_d02e7f60565f83066e5d--formation/transactions/000128.npz",
+    "source_sha256": "9001cfddcda69ca6730f8af5c4c6e8f641b0c549478083553551a45919ca9e27",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_d02e7f60565f83066e5d--naive--acquisition/initial128.npz",
+    "step": 128,
+    "fields_exact": true,
+    "transport_before": "T00",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "genome_d02e7f60565f83066e5d/naive/none",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_d02e7f60565f83066e5d--naive--acquisition/transactions/000160.npz",
+    "source_sha256": "0a38b09e49456d3adeeb9e82aa4432a72dbe307ed1d18d7157768af4ac7ef1cb",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_d02e7f60565f83066e5d--naive--none/initial160.npz",
+    "step": 160,
+    "fields_exact": true,
+    "transport_before": "T11",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "genome_d02e7f60565f83066e5d/naive/x",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_d02e7f60565f83066e5d--naive--acquisition/transactions/000160.npz",
+    "source_sha256": "0a38b09e49456d3adeeb9e82aa4432a72dbe307ed1d18d7157768af4ac7ef1cb",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_d02e7f60565f83066e5d--naive--x/initial160.npz",
+    "step": 160,
+    "fields_exact": true,
+    "transport_before": "T11",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "genome_d02e7f60565f83066e5d/experienced/acquisition",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_d02e7f60565f83066e5d--formation/transactions/000128.npz",
+    "source_sha256": "9001cfddcda69ca6730f8af5c4c6e8f641b0c549478083553551a45919ca9e27",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_d02e7f60565f83066e5d--experienced--acquisition/initial128.npz",
+    "step": 128,
+    "fields_exact": true,
+    "transport_before": "T00",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "genome_d02e7f60565f83066e5d/experienced/none",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_d02e7f60565f83066e5d--experienced--acquisition/transactions/000160.npz",
+    "source_sha256": "2ebe1bec805226a6841cba227dcf13c42c660e68cc1c565e75e1470fc6cb96ab",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_d02e7f60565f83066e5d--experienced--none/initial160.npz",
+    "step": 160,
+    "fields_exact": true,
+    "transport_before": "T11",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "genome_d02e7f60565f83066e5d/experienced/x",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_d02e7f60565f83066e5d--experienced--acquisition/transactions/000160.npz",
+    "source_sha256": "2ebe1bec805226a6841cba227dcf13c42c660e68cc1c565e75e1470fc6cb96ab",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_d02e7f60565f83066e5d--experienced--x/initial160.npz",
+    "step": 160,
+    "fields_exact": true,
+    "transport_before": "T11",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "genome_d02e7f60565f83066e5d/low_cost_T00/acquisition",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_d02e7f60565f83066e5d--formation/transactions/000128.npz",
+    "source_sha256": "9001cfddcda69ca6730f8af5c4c6e8f641b0c549478083553551a45919ca9e27",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_d02e7f60565f83066e5d--low_cost_T00--acquisition/initial128.npz",
+    "step": 128,
+    "fields_exact": true,
+    "transport_before": "T00",
+    "transport": "T00"
+  },
+  {
+    "stage_id": "genome_d02e7f60565f83066e5d/low_cost_T00/none",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_d02e7f60565f83066e5d--low_cost_T00--acquisition/transactions/000160.npz",
+    "source_sha256": "03c8c69ff12ca127c292dff56c5c2548bc7f78f6fcc99272c09775d9dad6e9b5",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_d02e7f60565f83066e5d--low_cost_T00--none/initial160.npz",
+    "step": 160,
+    "fields_exact": true,
+    "transport_before": "T00",
+    "transport": "T00"
+  },
+  {
+    "stage_id": "genome_d02e7f60565f83066e5d/low_cost_T00/x",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_d02e7f60565f83066e5d--low_cost_T00--acquisition/transactions/000160.npz",
+    "source_sha256": "03c8c69ff12ca127c292dff56c5c2548bc7f78f6fcc99272c09775d9dad6e9b5",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_d02e7f60565f83066e5d--low_cost_T00--x/initial160.npz",
+    "step": 160,
+    "fields_exact": true,
+    "transport_before": "T00",
+    "transport": "T00"
+  },
+  {
+    "stage_id": "genome_8d60f7d250e8e9f2a25b/formation",
+    "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/candidates/genome_8d60f7d250e8e9f2a25b.npz",
+    "source_sha256": "3fae7135bd9572011a4cdbf2bf174e96832481bca6f1de24277fc8894ea0d4a1",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_8d60f7d250e8e9f2a25b--formation/initial0.npz",
+    "step": 0,
+    "fields_exact": true,
+    "transport_before": "T11",
+    "transport": "T00"
+  },
+  {
+    "stage_id": "genome_8d60f7d250e8e9f2a25b/naive/acquisition",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_8d60f7d250e8e9f2a25b--formation/transactions/000128.npz",
+    "source_sha256": "821edbfebd5c905d79b15ff63f8e8ec46b82aa937077daa39382be85de7c42b8",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_8d60f7d250e8e9f2a25b--naive--acquisition/initial128.npz",
+    "step": 128,
+    "fields_exact": true,
+    "transport_before": "T00",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "genome_8d60f7d250e8e9f2a25b/naive/none",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_8d60f7d250e8e9f2a25b--naive--acquisition/transactions/000160.npz",
+    "source_sha256": "53e6abd39a117c44de3efa05c6ed9156244ff230fa5361ae556c55b9724e538f",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_8d60f7d250e8e9f2a25b--naive--none/initial160.npz",
+    "step": 160,
+    "fields_exact": true,
+    "transport_before": "T11",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "genome_8d60f7d250e8e9f2a25b/naive/x",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_8d60f7d250e8e9f2a25b--naive--acquisition/transactions/000160.npz",
+    "source_sha256": "53e6abd39a117c44de3efa05c6ed9156244ff230fa5361ae556c55b9724e538f",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_8d60f7d250e8e9f2a25b--naive--x/initial160.npz",
+    "step": 160,
+    "fields_exact": true,
+    "transport_before": "T11",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "genome_8d60f7d250e8e9f2a25b/experienced/acquisition",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_8d60f7d250e8e9f2a25b--formation/transactions/000128.npz",
+    "source_sha256": "821edbfebd5c905d79b15ff63f8e8ec46b82aa937077daa39382be85de7c42b8",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_8d60f7d250e8e9f2a25b--experienced--acquisition/initial128.npz",
+    "step": 128,
+    "fields_exact": true,
+    "transport_before": "T00",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "genome_8d60f7d250e8e9f2a25b/experienced/none",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_8d60f7d250e8e9f2a25b--experienced--acquisition/transactions/000160.npz",
+    "source_sha256": "4711dad052dea1d2f954f04bd21be784359513ba057bb9cb288c2ecaa3604a54",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_8d60f7d250e8e9f2a25b--experienced--none/initial160.npz",
+    "step": 160,
+    "fields_exact": true,
+    "transport_before": "T11",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "genome_8d60f7d250e8e9f2a25b/experienced/x",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_8d60f7d250e8e9f2a25b--experienced--acquisition/transactions/000160.npz",
+    "source_sha256": "4711dad052dea1d2f954f04bd21be784359513ba057bb9cb288c2ecaa3604a54",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_8d60f7d250e8e9f2a25b--experienced--x/initial160.npz",
+    "step": 160,
+    "fields_exact": true,
+    "transport_before": "T11",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "genome_8d60f7d250e8e9f2a25b/low_cost_T00/acquisition",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_8d60f7d250e8e9f2a25b--formation/transactions/000128.npz",
+    "source_sha256": "821edbfebd5c905d79b15ff63f8e8ec46b82aa937077daa39382be85de7c42b8",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_8d60f7d250e8e9f2a25b--low_cost_T00--acquisition/initial128.npz",
+    "step": 128,
+    "fields_exact": true,
+    "transport_before": "T00",
+    "transport": "T00"
+  },
+  {
+    "stage_id": "genome_8d60f7d250e8e9f2a25b/low_cost_T00/none",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_8d60f7d250e8e9f2a25b--low_cost_T00--acquisition/transactions/000160.npz",
+    "source_sha256": "1e0ecd40d1495b47c2bf2352df924b55d2153c22827022b13ca90b88472bcec5",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_8d60f7d250e8e9f2a25b--low_cost_T00--none/initial160.npz",
+    "step": 160,
+    "fields_exact": true,
+    "transport_before": "T00",
+    "transport": "T00"
+  },
+  {
+    "stage_id": "genome_8d60f7d250e8e9f2a25b/low_cost_T00/x",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_8d60f7d250e8e9f2a25b--low_cost_T00--acquisition/transactions/000160.npz",
+    "source_sha256": "1e0ecd40d1495b47c2bf2352df924b55d2153c22827022b13ca90b88472bcec5",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_8d60f7d250e8e9f2a25b--low_cost_T00--x/initial160.npz",
+    "step": 160,
+    "fields_exact": true,
+    "transport_before": "T00",
+    "transport": "T00"
+  },
+  {
+    "stage_id": "genome_a6a821dffd4f4046c97a/formation",
+    "source": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/candidates/genome_a6a821dffd4f4046c97a.npz",
+    "source_sha256": "7efd847ad3efa0db001afe56a162b297d3a536ec48326890d4b09b6ceb793b4a",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_a6a821dffd4f4046c97a--formation/initial0.npz",
+    "step": 0,
+    "fields_exact": true,
+    "transport_before": "T11",
+    "transport": "T00"
+  },
+  {
+    "stage_id": "genome_a6a821dffd4f4046c97a/naive/acquisition",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_a6a821dffd4f4046c97a--formation/transactions/000128.npz",
+    "source_sha256": "501aec393a20049addd8ea64b3decfd6f176f5c07e33c8e53198f46139f45896",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_a6a821dffd4f4046c97a--naive--acquisition/initial128.npz",
+    "step": 128,
+    "fields_exact": true,
+    "transport_before": "T00",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "genome_a6a821dffd4f4046c97a/naive/none",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_a6a821dffd4f4046c97a--naive--acquisition/transactions/000160.npz",
+    "source_sha256": "23ecce107ab99d741c3baad8435c9add338cace406a83599420b62a0ffb14465",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_a6a821dffd4f4046c97a--naive--none/initial160.npz",
+    "step": 160,
+    "fields_exact": true,
+    "transport_before": "T11",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "genome_a6a821dffd4f4046c97a/naive/x",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_a6a821dffd4f4046c97a--naive--acquisition/transactions/000160.npz",
+    "source_sha256": "23ecce107ab99d741c3baad8435c9add338cace406a83599420b62a0ffb14465",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_a6a821dffd4f4046c97a--naive--x/initial160.npz",
+    "step": 160,
+    "fields_exact": true,
+    "transport_before": "T11",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "genome_a6a821dffd4f4046c97a/experienced/acquisition",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_a6a821dffd4f4046c97a--formation/transactions/000128.npz",
+    "source_sha256": "501aec393a20049addd8ea64b3decfd6f176f5c07e33c8e53198f46139f45896",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_a6a821dffd4f4046c97a--experienced--acquisition/initial128.npz",
+    "step": 128,
+    "fields_exact": true,
+    "transport_before": "T00",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "genome_a6a821dffd4f4046c97a/experienced/none",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_a6a821dffd4f4046c97a--experienced--acquisition/transactions/000160.npz",
+    "source_sha256": "e255491a0ab9a0bdb91ced1b283b1420518efa7cbf6049b388e59877167364d0",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_a6a821dffd4f4046c97a--experienced--none/initial160.npz",
+    "step": 160,
+    "fields_exact": true,
+    "transport_before": "T11",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "genome_a6a821dffd4f4046c97a/experienced/x",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_a6a821dffd4f4046c97a--experienced--acquisition/transactions/000160.npz",
+    "source_sha256": "e255491a0ab9a0bdb91ced1b283b1420518efa7cbf6049b388e59877167364d0",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_a6a821dffd4f4046c97a--experienced--x/initial160.npz",
+    "step": 160,
+    "fields_exact": true,
+    "transport_before": "T11",
+    "transport": "T11"
+  },
+  {
+    "stage_id": "genome_a6a821dffd4f4046c97a/low_cost_T00/acquisition",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_a6a821dffd4f4046c97a--formation/transactions/000128.npz",
+    "source_sha256": "501aec393a20049addd8ea64b3decfd6f176f5c07e33c8e53198f46139f45896",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_a6a821dffd4f4046c97a--low_cost_T00--acquisition/initial128.npz",
+    "step": 128,
+    "fields_exact": true,
+    "transport_before": "T00",
+    "transport": "T00"
+  },
+  {
+    "stage_id": "genome_a6a821dffd4f4046c97a/low_cost_T00/none",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_a6a821dffd4f4046c97a--low_cost_T00--acquisition/transactions/000160.npz",
+    "source_sha256": "bd4abb7c71c9e99883feba3fa9f0f94339adf9c3bd81b7a674705dcf30462853",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_a6a821dffd4f4046c97a--low_cost_T00--none/initial160.npz",
+    "step": 160,
+    "fields_exact": true,
+    "transport_before": "T00",
+    "transport": "T00"
+  },
+  {
+    "stage_id": "genome_a6a821dffd4f4046c97a/low_cost_T00/x",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_a6a821dffd4f4046c97a--low_cost_T00--acquisition/transactions/000160.npz",
+    "source_sha256": "bd4abb7c71c9e99883feba3fa9f0f94339adf9c3bd81b7a674705dcf30462853",
+    "initial": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_adaptation_outer_search_native_20261018/ace081b7-fcbb-4ec8-85c5-3b1663ee0660/genome_a6a821dffd4f4046c97a--low_cost_T00--x/initial160.npz",
+    "step": 160,
+    "fields_exact": true,
+    "transport_before": "T00",
+    "transport": "T00"
+  }
+]

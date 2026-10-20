@@ -1,0 +1,299 @@
+{
+  "schema": "tfi.projection-libraries.v1",
+  "libraries": {
+    "d3": {
+      "package": "d3",
+      "version": "7.9.0",
+      "entry": "d3/7.9.0/d3.min.js",
+      "files": [
+        {
+          "path": "d3/7.9.0/d3.min.js",
+          "sha256": "f2094bbf6141b359722c4fe454eb6c4b0f0e42cc10cc7af921fc158fceb86539",
+          "size": 279706,
+          "content_type": "application/javascript"
+        },
+        {
+          "path": "d3/7.9.0/d3.js",
+          "sha256": "0c0d58be2106c14e242fc75bc09a17467800630751580665f6e9552a0c064ea2",
+          "size": 587043,
+          "content_type": "application/javascript"
+        },
+        {
+          "path": "d3/7.9.0/LICENSE",
+          "sha256": "3e6849627f74ff73c257a3ae1efb574015d94fc1035c05ec3c15805165efcbc4",
+          "size": 731,
+          "content_type": "text/plain"
+        },
+        {
+          "path": "d3/7.9.0/package.json",
+          "sha256": "7b8169c299e9b62e31dd518dfff1f5cc456856f0fd6a1afcfcd5f260317beb88",
+          "size": 2231,
+          "content_type": "application/json"
+        }
+      ],
+      "licenses": [
+        {
+          "path": "d3/7.9.0/LICENSE",
+          "spdx": "ISC",
+          "package": "d3"
+        }
+      ],
+      "origin": {
+        "url": "https://registry.npmjs.org/d3/7.9.0",
+        "tarball": "https://registry.npmjs.org/d3/-/d3-7.9.0.tgz",
+        "integrity": "sha512-e1U46jVP+w7Iut8Jt8ri1YsPOvFpg46k+K8TpCb0P+zjCkjkPnV7WzfDJzMHy1LnA+wj5pLT1wjO901gLXeEhA==",
+        "sha256": "7e36605710a2ba54846797c8c6d888911341b215ae53257dc32a49a0b824355e",
+        "repository": "git+https://github.com/d3/d3.git"
+      },
+      "dependencies": []
+    },
+    "dagre": {
+      "package": "@dagrejs/dagre",
+      "version": "1.1.5",
+      "entry": "dagre/1.1.5/dagre.min.js",
+      "files": [
+        {
+          "path": "dagre/1.1.5/dagre.min.js",
+          "sha256": "072c8b304372ca2ea7e30e4811f071ddec36557e2f13758650c98a723acca420",
+          "size": 96135,
+          "content_type": "application/javascript"
+        },
+        {
+          "path": "dagre/1.1.5/dagre.js",
+          "sha256": "aaf61be76ad59bc10bf2e27d50826025ea187171b02c0c854450fbfe5c0706f5",
+          "size": 116225,
+          "content_type": "application/javascript"
+        },
+        {
+          "path": "dagre/1.1.5/LICENSE",
+          "sha256": "6a349742a6cb219d5a2fc8d0844f6d89a6efc62e20c664450d884fc7ff2d6015",
+          "size": 1062,
+          "content_type": "text/plain"
+        },
+        {
+          "path": "dagre/1.1.5/package.json",
+          "sha256": "9e4469610b3c5f175201404dfc6c621aa3cb2f0f2e1854936e51f05f8ea51ba0",
+          "size": 1119,
+          "content_type": "application/json"
+        },
+        {
+          "path": "dagre/1.1.5/graphlib-LICENSE",
+          "sha256": "6a349742a6cb219d5a2fc8d0844f6d89a6efc62e20c664450d884fc7ff2d6015",
+          "size": 1062,
+          "content_type": "text/plain"
+        }
+      ],
+      "licenses": [
+        {
+          "path": "dagre/1.1.5/LICENSE",
+          "spdx": "MIT",
+          "package": "@dagrejs/dagre"
+        },
+        {
+          "path": "dagre/1.1.5/graphlib-LICENSE",
+          "spdx": "MIT",
+          "package": "@dagrejs/graphlib"
+        }
+      ],
+      "origin": {
+        "url": "https://registry.npmjs.org/@dagrejs%2fdagre/1.1.5",
+        "tarball": "https://registry.npmjs.org/@dagrejs/dagre/-/dagre-1.1.5.tgz",
+        "integrity": "sha512-Ghgrh08s12DCL5SeiR6AoyE80mQELTWhJBRmXfFoqDiFkR458vPEdgTbbjA0T+9ETNxUblnD0QW55tfdvi5pjQ==",
+        "sha256": "760513c350e8685205b59671995835996636df2db66b2437d75b09d31d6172d9",
+        "repository": "git+https://github.com/dagrejs/dagre.git"
+      },
+      "dependencies": [
+        {
+          "package": "@dagrejs/graphlib",
+          "version": "2.2.4",
+          "origin": {
+            "url": "https://registry.npmjs.org/@dagrejs%2fgraphlib/2.2.4",
+            "tarball": "https://registry.npmjs.org/@dagrejs/graphlib/-/graphlib-2.2.4.tgz",
+            "integrity": "sha512-mepCf/e9+SKYy1d02/UkvSy6+6MoyXhVxP8lLDfA7BPE1X1d4dR0sZznmbM8/XVJ1GPM+Svnx7Xj6ZweByWUkw==",
+            "sha256": "bb9d64d04cfa124ebaef8898953ea270a5f7128f3efe7347da88758ea78ddfd3",
+            "repository": "git+https://github.com/dagrejs/graphlib.git"
+          }
+        }
+      ]
+    },
+    "cytoscape": {
+      "package": "cytoscape",
+      "version": "3.33.1",
+      "entry": "cytoscape/3.33.1/cytoscape.min.js",
+      "files": [
+        {
+          "path": "cytoscape/3.33.1/cytoscape.min.js",
+          "sha256": "f55947f3daa3bae53209d4b885c195c157f595c225e508a6b382598d9452d6e2",
+          "size": 434037,
+          "content_type": "application/javascript"
+        },
+        {
+          "path": "cytoscape/3.33.1/cytoscape.esm.mjs",
+          "sha256": "b62081aac9ba224ef44b1a14371dce4a55ee3d61dbb0e16589ed943dd112b0be",
+          "size": 1105243,
+          "content_type": "application/javascript"
+        },
+        {
+          "path": "cytoscape/3.33.1/LICENSE",
+          "sha256": "e4b62495bacaefaf330f38f226e20d1d60d658d444998ba7406a191f96a2e701",
+          "size": 1082,
+          "content_type": "text/plain"
+        },
+        {
+          "path": "cytoscape/3.33.1/package.json",
+          "sha256": "ef3ad8c6c929e9a3c62b90702b3de2576e1e61a63f21b439efc31e88578d4093",
+          "size": 5093,
+          "content_type": "application/json"
+        }
+      ],
+      "licenses": [
+        {
+          "path": "cytoscape/3.33.1/LICENSE",
+          "spdx": "MIT",
+          "package": "cytoscape"
+        }
+      ],
+      "origin": {
+        "url": "https://registry.npmjs.org/cytoscape/3.33.1",
+        "tarball": "https://registry.npmjs.org/cytoscape/-/cytoscape-3.33.1.tgz",
+        "integrity": "sha512-iJc4TwyANnOGR1OmWhsS9ayRS3s+XQ185FmuHObThD+5AeJCakAAbWv8KimMTt08xCCLNgneQwFp+JRJOr9qGQ==",
+        "sha256": "2ef5c37203a0147af105d3cd8e1c25a5158eff638ae9f2425dfe3cd78c4a61fe",
+        "repository": "git+https://github.com/cytoscape/cytoscape.js.git"
+      },
+      "dependencies": []
+    },
+    "marked": {
+      "package": "marked",
+      "version": "18.1.1",
+      "entry": "marked/18.1.1/marked.umd.js",
+      "files": [
+        {
+          "path": "marked/18.1.1/marked.umd.js",
+          "sha256": "b82b9334406d8bdd16b6236c08de1cb65b2a859873ca9503d9cc0b292ca3c12a",
+          "size": 47956,
+          "content_type": "application/javascript"
+        },
+        {
+          "path": "marked/18.1.1/marked.esm.js",
+          "sha256": "930457e5d55439f90465015cc507d3323366e80df5f7a701b61189d4e1046bda",
+          "size": 47076,
+          "content_type": "application/javascript"
+        },
+        {
+          "path": "marked/18.1.1/LICENSE",
+          "sha256": "8e3a3f82f59a60958f56ca08f445647c32a4733dc7ca6c2c46f6eb898471ab9c",
+          "size": 2942,
+          "content_type": "text/plain"
+        },
+        {
+          "path": "marked/18.1.1/package.json",
+          "sha256": "741412e7c86bad3b51bae1e059fdfa7939b0e6c09414dbd3a380b8fa8d6f2c8a",
+          "size": 3406,
+          "content_type": "application/json"
+        }
+      ],
+      "licenses": [
+        {
+          "path": "marked/18.1.1/LICENSE",
+          "spdx": "MIT",
+          "package": "marked"
+        }
+      ],
+      "origin": {
+        "url": "https://registry.npmjs.org/marked/18.1.1",
+        "tarball": "https://registry.npmjs.org/marked/-/marked-18.1.1.tgz",
+        "integrity": "sha512-zEGgrtUG8crk+TrMacJSVABU4DYDDkS8uqgU3ohrn/2fW9C2AEfUrO3m6IhpIpQpl7YcVpiXXC9cSMWDANT3dg==",
+        "sha256": "c05b3cff890d35e1208805a01fd0501571d09a81e725de0559b10bdfae90adad",
+        "repository": "git+https://github.com/markedjs/marked.git"
+      },
+      "dependencies": []
+    },
+    "dompurify": {
+      "package": "dompurify",
+      "version": "3.4.17",
+      "entry": "dompurify/3.4.17/purify.min.js",
+      "files": [
+        {
+          "path": "dompurify/3.4.17/purify.min.js",
+          "sha256": "cd37898f9782adf54820c413191b5691803f0f137c799d6edcfd38523b4c2c31",
+          "size": 29828,
+          "content_type": "application/javascript"
+        },
+        {
+          "path": "dompurify/3.4.17/purify.es.mjs",
+          "sha256": "60c5d5ccbb466de3de3ba863461a92bf134f8c156cef7992da43e0f659bc5cbd",
+          "size": 85820,
+          "content_type": "application/javascript"
+        },
+        {
+          "path": "dompurify/3.4.17/LICENSE-MPL",
+          "sha256": "fab3dd6bdab226f1c08630b1dd917e11fcb4ec5e1e020e2c16f83a0a13863e85",
+          "size": 16726,
+          "content_type": "text/plain"
+        },
+        {
+          "path": "dompurify/3.4.17/LICENSE",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "size": 11358,
+          "content_type": "text/plain"
+        },
+        {
+          "path": "dompurify/3.4.17/package.json",
+          "sha256": "e6235e2a233d3f5550e2be3bf826a39f4ff5180a710779c1e16dcdf4b9eb20b9",
+          "size": 6662,
+          "content_type": "application/json"
+        }
+      ],
+      "licenses": [
+        {
+          "path": "dompurify/3.4.17/LICENSE",
+          "spdx": "(MPL-2.0 OR Apache-2.0)",
+          "package": "dompurify"
+        },
+        {
+          "path": "dompurify/3.4.17/LICENSE-MPL",
+          "spdx": "MPL-2.0",
+          "package": "dompurify"
+        }
+      ],
+      "origin": {
+        "url": "https://registry.npmjs.org/dompurify/3.4.17",
+        "tarball": "https://registry.npmjs.org/dompurify/-/dompurify-3.4.17.tgz",
+        "integrity": "sha512-B/pSlYVHQ58kqISD/yDjuJ1yfzI34m1gF4lAod2bwSRhiN4K5Cl3H8Af7hqB2PmTL911tdEudnnXn5FnhRoz0w==",
+        "sha256": "056cbdae276897208b88c21d1d779adfa09ad7be488a2f510a28e900d3bbffe7",
+        "repository": "git://github.com/cure53/DOMPurify.git"
+      },
+      "dependencies": []
+    },
+    "portal-graph": {
+      "package": "portal-graph",
+      "version": "1.0.0",
+      "entry": "portal-graph/1.0.0/geometry.js",
+      "files": [
+        {
+          "path": "portal-graph/1.0.0/geometry.js",
+          "sha256": "4f3411416933a625f4d65c4c247b8cd658c26b31b951e79745df27df49790681",
+          "size": 5692,
+          "content_type": "application/javascript"
+        },
+        {
+          "path": "portal-graph/1.0.0/LICENSE.txt",
+          "sha256": "5dc1e9b73def0dccb9a255101a6457e71c37ebb3bfc9a19dd68ee149f854804a",
+          "size": 231,
+          "content_type": "text/plain"
+        }
+      ],
+      "licenses": [
+        {
+          "path": "portal-graph/1.0.0/LICENSE.txt",
+          "spdx": "LicenseRef-Portal",
+          "package": "portal-graph"
+        }
+      ],
+      "origin": {
+        "source": "management_portal/static/lineage_graph.js"
+      },
+      "dependencies": []
+    }
+  }
+}

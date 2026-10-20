@@ -1,0 +1,19 @@
+{
+  "task": "tissue_replacement_pf_location_20261018",
+  "recipient": "resident_afa3d4d6cf11",
+  "status": "completed_no_finite_renewal",
+  "evidence": [
+    "conditional P/F placement interaction on body, energy and post128 tissue",
+    "more new tissue and less retained128 material together",
+    "all32 arm-windows birth below death; all last16 windows E down"
+  ],
+  "recommendation": "Close this fixed maintenance matrix. Next, use saved local birth/death/request fields to define a causal maintenance-rule intervention targeting spatial replacement rather than treating ordered rejection or higher uptake as proof of single-resource shortage. Decide scope before any new native task.",
+  "no_automatic_work": [
+    "no horizon extension",
+    "no death-rate sweep",
+    "no old or unused budget transfer",
+    "no learned-behavior claim"
+  ],
+  "downstream": "Merge new package with existing rule_geometry manuscript/projection request; do not send duplicate completion requests.",
+  "native_in_analysis": 0
+}

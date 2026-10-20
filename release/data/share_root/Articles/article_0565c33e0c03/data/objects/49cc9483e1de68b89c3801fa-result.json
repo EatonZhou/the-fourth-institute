@@ -1,0 +1,14 @@
+{
+  "task": "value_conditioned_propulsion_brake_20261019",
+  "status": "complete",
+  "job": "0eaa029b-ce1b-43e8-88ce-8896a3ae9ae0",
+  "attempted": 12288,
+  "returned": 12288,
+  "unknown": 0,
+  "old_replay": 0,
+  "wall": 39.64179937902372,
+  "error": null,
+  "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/value_conditioned_propulsion_brake_20261019/0eaa029b-ce1b-43e8-88ce-8896a3ae9ae0",
+  "raw_bytes": 41115051,
+  "paths": 12
+}

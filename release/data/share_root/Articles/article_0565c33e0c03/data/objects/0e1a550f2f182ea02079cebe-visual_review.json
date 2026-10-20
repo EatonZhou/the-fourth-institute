@@ -1,0 +1,18 @@
+{
+  "reviewed": true,
+  "files": [
+    "body_202610195401_compact.png",
+    "body_202610195401_double_lobe.png",
+    "body_202610195402_compact.png",
+    "body_202610195402_double_lobe.png",
+    "deletion_compact.png",
+    "deletion_double_lobe.png",
+    "outcome_curves.png"
+  ],
+  "observations": [
+    "四组形态序列宏观接近，compact与double_lobe仍可区分；未产生新形态族。",
+    "首seed Dnew空间与分数场确实改变，第一步出生图近似，不以图色差夸大后果。",
+    "真实曲线显示两新臂末M/E高于reference，但末窗净出生仍负；L256持续减少、post256实增。"
+  ],
+  "rendering": "共享case crop/共同列色标、nearest像素、真实数组；无生成图片或未执行插值轨迹。"
+}

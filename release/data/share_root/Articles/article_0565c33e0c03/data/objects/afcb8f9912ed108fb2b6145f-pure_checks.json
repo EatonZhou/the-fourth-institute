@@ -1,0 +1,34 @@
+{
+  "native": 0,
+  "algebraic_double_not_native": true,
+  "parents": [
+    {
+      "context": "compact_p512",
+      "angle": "minus",
+      "alpha1_old_entry_equal": true,
+      "alpha_half_command_half": true,
+      "learn_saw_actual_u": true
+    },
+    {
+      "context": "compact_p512",
+      "angle": "plus",
+      "alpha1_old_entry_equal": true,
+      "alpha_half_command_half": true,
+      "learn_saw_actual_u": true
+    },
+    {
+      "context": "soft_p512",
+      "angle": "minus",
+      "alpha1_old_entry_equal": true,
+      "alpha_half_command_half": true,
+      "learn_saw_actual_u": true
+    },
+    {
+      "context": "soft_p512",
+      "angle": "plus",
+      "alpha1_old_entry_equal": true,
+      "alpha_half_command_half": true,
+      "learn_saw_actual_u": true
+    }
+  ]
+}

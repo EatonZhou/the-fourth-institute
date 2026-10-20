@@ -1,0 +1,534 @@
+[
+  {
+    "task": "scalar_outcome_motor_learning_20261019",
+    "condition": 0,
+    "arm": "reward_delta",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c0_reward_delta/state_0768.npz",
+    "sha256": "355c2680c85833ebb016abdf4aeac94a9bffcd79db8becefd4c650eab46bffee"
+  },
+  {
+    "task": "scalar_outcome_motor_learning_20261019",
+    "condition": 0,
+    "arm": "reward_delta",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c0_reward_delta/state_0000.npz",
+    "sha256": "6f3059c5a0d0bb63563e69171eb8b6cde62e099b74ed4cd8918bef64df8a3ef0"
+  },
+  {
+    "task": "scalar_outcome_motor_learning_20261019",
+    "condition": 0,
+    "arm": "reward_delta",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c0_reward_delta/state_0640.npz",
+    "sha256": "4ac2757e6657773b52b617be585bbcb8b9df6524cf4ebe50b4f81cf3cde353cb"
+  },
+  {
+    "task": "scalar_outcome_motor_learning_20261019",
+    "condition": 0,
+    "arm": "reward_delta",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c0_reward_delta/state_0320.npz",
+    "sha256": "d0034d6020dc93f7c10c903627e1300be653a86a76fac31ea77ed43904a96866"
+  },
+  {
+    "task": "scalar_outcome_motor_learning_20261019",
+    "condition": 0,
+    "arm": "reward_delta",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c0_reward_delta/state_0064.npz",
+    "sha256": "e6736d762332e59bcc0d96ed23d8deaab92eeb204212e9e8f1fde2f7a0dcc83b"
+  },
+  {
+    "task": "scalar_outcome_motor_learning_20261019",
+    "condition": 0,
+    "arm": "context_delta",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c0_context_delta/state_0768.npz",
+    "sha256": "ce70215dbe479a27bff64c295080abf72556f74e8f3e581c75cab1ea4ed4003a"
+  },
+  {
+    "task": "scalar_outcome_motor_learning_20261019",
+    "condition": 0,
+    "arm": "context_delta",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c0_context_delta/state_0000.npz",
+    "sha256": "6f3059c5a0d0bb63563e69171eb8b6cde62e099b74ed4cd8918bef64df8a3ef0"
+  },
+  {
+    "task": "scalar_outcome_motor_learning_20261019",
+    "condition": 0,
+    "arm": "context_delta",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c0_context_delta/state_0640.npz",
+    "sha256": "7ecfb57a6ba2926f1ae2ea9bd3857f428b36fed6796c6e9e80b13433f64a34c6"
+  },
+  {
+    "task": "scalar_outcome_motor_learning_20261019",
+    "condition": 0,
+    "arm": "context_delta",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c0_context_delta/state_0320.npz",
+    "sha256": "4d538d8469d1af47578bb18be8d8baa4cf606d1477c557b20eb01a498adbbe61"
+  },
+  {
+    "task": "scalar_outcome_motor_learning_20261019",
+    "condition": 0,
+    "arm": "context_delta",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c0_context_delta/state_0064.npz",
+    "sha256": "2f41c614671875b52b63fe56294f390c9cb4b0cf2893e10e8d34686c7eef246b"
+  },
+  {
+    "task": "scalar_outcome_motor_learning_20261019",
+    "condition": 0,
+    "arm": "run_tumble",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c0_run_tumble/state_0768.npz",
+    "sha256": "3abc7bdc9d4f2cb3bff4d3347e1d8b43c75acecbe9a0c820175c08a816b6ee76"
+  },
+  {
+    "task": "scalar_outcome_motor_learning_20261019",
+    "condition": 0,
+    "arm": "run_tumble",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c0_run_tumble/state_0000.npz",
+    "sha256": "6f3059c5a0d0bb63563e69171eb8b6cde62e099b74ed4cd8918bef64df8a3ef0"
+  },
+  {
+    "task": "scalar_outcome_motor_learning_20261019",
+    "condition": 0,
+    "arm": "run_tumble",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c0_run_tumble/state_0640.npz",
+    "sha256": "762b72522419eaf339c0551aebfe3170b1df7af90334ef948c513dda2def1b96"
+  },
+  {
+    "task": "scalar_outcome_motor_learning_20261019",
+    "condition": 0,
+    "arm": "run_tumble",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c0_run_tumble/state_0320.npz",
+    "sha256": "23226a47a39376e54ece73b20babb96d4b01f7984fa588bc137ef748b010494c"
+  },
+  {
+    "task": "scalar_outcome_motor_learning_20261019",
+    "condition": 0,
+    "arm": "run_tumble",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c0_run_tumble/state_0064.npz",
+    "sha256": "09c380feef8567068a8ea00c3d6e737bc788ca4fb0c9d8e7d48647da19cf4ef3"
+  },
+  {
+    "task": "scalar_outcome_motor_learning_20261019",
+    "condition": 0,
+    "arm": "random",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c0_random/state_0768.npz",
+    "sha256": "68ad6129d988aa259e9b13b969ead05b73ce63a6a3fdeddf79768b1d2d642a6c"
+  },
+  {
+    "task": "scalar_outcome_motor_learning_20261019",
+    "condition": 0,
+    "arm": "random",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c0_random/state_0000.npz",
+    "sha256": "6f3059c5a0d0bb63563e69171eb8b6cde62e099b74ed4cd8918bef64df8a3ef0"
+  },
+  {
+    "task": "scalar_outcome_motor_learning_20261019",
+    "condition": 0,
+    "arm": "random",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c0_random/state_0640.npz",
+    "sha256": "a1b62c29ce3cbc6e27acc89f97f9c63f200b0894c3a6e62ed77983a23f7744fb"
+  },
+  {
+    "task": "scalar_outcome_motor_learning_20261019",
+    "condition": 0,
+    "arm": "random",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c0_random/state_0320.npz",
+    "sha256": "f2b77826584d08aae68f2a28e25c36c2ecd212451710598284eccf4cabed1203"
+  },
+  {
+    "task": "scalar_outcome_motor_learning_20261019",
+    "condition": 0,
+    "arm": "random",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c0_random/state_0064.npz",
+    "sha256": "e24a3f985a2b99de8c70ac4fdae798f204742d7ffab9cfff17c20e0a6fe1f0eb"
+  },
+  {
+    "task": "scalar_outcome_motor_learning_20261019",
+    "condition": 1,
+    "arm": "reward_delta",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c1_reward_delta/state_0768.npz",
+    "sha256": "95d00a2f2cb58a12adfd2afc196bb314bcfd6f0bb1b1e0b9e9642904249c580c"
+  },
+  {
+    "task": "scalar_outcome_motor_learning_20261019",
+    "condition": 1,
+    "arm": "reward_delta",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c1_reward_delta/state_0000.npz",
+    "sha256": "12d98e7dad7e9aa1ab3b21903a6291fe3b714b0e36c167a8124c620c0062bb96"
+  },
+  {
+    "task": "scalar_outcome_motor_learning_20261019",
+    "condition": 1,
+    "arm": "reward_delta",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c1_reward_delta/state_0640.npz",
+    "sha256": "fdf4f820a45bb56934a2462bb654e81c70dac0a457d20a6c9a9f4ac848bfc4cf"
+  },
+  {
+    "task": "scalar_outcome_motor_learning_20261019",
+    "condition": 1,
+    "arm": "reward_delta",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c1_reward_delta/state_0320.npz",
+    "sha256": "10ba830af0d0b1e1d8d4854f3a6f82f1604cec9a0fa15b95ca0a92bf87847a4b"
+  },
+  {
+    "task": "scalar_outcome_motor_learning_20261019",
+    "condition": 1,
+    "arm": "reward_delta",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c1_reward_delta/state_0064.npz",
+    "sha256": "d3535ba331421f3382d525e29049cd783e9c16a3ccde341033736afa3ff98d76"
+  },
+  {
+    "task": "scalar_outcome_motor_learning_20261019",
+    "condition": 1,
+    "arm": "context_delta",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c1_context_delta/state_0768.npz",
+    "sha256": "416e9dafa54bb7c07863696ef2463c3e41bbd351cffac98796cc2aa5d14f6e6f"
+  },
+  {
+    "task": "scalar_outcome_motor_learning_20261019",
+    "condition": 1,
+    "arm": "context_delta",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c1_context_delta/state_0000.npz",
+    "sha256": "12d98e7dad7e9aa1ab3b21903a6291fe3b714b0e36c167a8124c620c0062bb96"
+  },
+  {
+    "task": "scalar_outcome_motor_learning_20261019",
+    "condition": 1,
+    "arm": "context_delta",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c1_context_delta/state_0640.npz",
+    "sha256": "ff02b6eb04620e255702184bc9a23fa2275139c1a4aa01ae44d4dc98c2635180"
+  },
+  {
+    "task": "scalar_outcome_motor_learning_20261019",
+    "condition": 1,
+    "arm": "context_delta",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c1_context_delta/state_0320.npz",
+    "sha256": "cecee74d8a8f25a2a4dcd7a6c106be5b8a971a9a808f8ad3c620262eee35c356"
+  },
+  {
+    "task": "scalar_outcome_motor_learning_20261019",
+    "condition": 1,
+    "arm": "context_delta",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c1_context_delta/state_0064.npz",
+    "sha256": "8c45d5caf0c3974a164eeaa3ef68aba3a1f1ee520bb7c19d857a17110d1ef193"
+  },
+  {
+    "task": "scalar_outcome_motor_learning_20261019",
+    "condition": 1,
+    "arm": "run_tumble",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c1_run_tumble/state_0768.npz",
+    "sha256": "df56d20d9311af87e4991246197f67affa5911945c59ee92fa1f2ad2ed79beb0"
+  },
+  {
+    "task": "scalar_outcome_motor_learning_20261019",
+    "condition": 1,
+    "arm": "run_tumble",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c1_run_tumble/state_0000.npz",
+    "sha256": "12d98e7dad7e9aa1ab3b21903a6291fe3b714b0e36c167a8124c620c0062bb96"
+  },
+  {
+    "task": "scalar_outcome_motor_learning_20261019",
+    "condition": 1,
+    "arm": "run_tumble",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c1_run_tumble/state_0640.npz",
+    "sha256": "5feefda177341905d6a7c6c5fa98cc50ebd91b8b572a266871a5bc199b1a8b6c"
+  },
+  {
+    "task": "scalar_outcome_motor_learning_20261019",
+    "condition": 1,
+    "arm": "run_tumble",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c1_run_tumble/state_0320.npz",
+    "sha256": "995980aa293dfab8729539c45495a3f2a5e5976df8147e3a6b33278df6f7a243"
+  },
+  {
+    "task": "scalar_outcome_motor_learning_20261019",
+    "condition": 1,
+    "arm": "run_tumble",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c1_run_tumble/state_0064.npz",
+    "sha256": "06b394553838bf0f0cf9c39778d7a1e92e62df03d431a6889e125fc5671696d1"
+  },
+  {
+    "task": "scalar_outcome_motor_learning_20261019",
+    "condition": 1,
+    "arm": "random",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c1_random/state_0768.npz",
+    "sha256": "02049d4cd2cdcfbc627dd6eba766e1ec413e1b1986c28fc081fd6a85545baa61"
+  },
+  {
+    "task": "scalar_outcome_motor_learning_20261019",
+    "condition": 1,
+    "arm": "random",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c1_random/state_0000.npz",
+    "sha256": "12d98e7dad7e9aa1ab3b21903a6291fe3b714b0e36c167a8124c620c0062bb96"
+  },
+  {
+    "task": "scalar_outcome_motor_learning_20261019",
+    "condition": 1,
+    "arm": "random",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c1_random/state_0640.npz",
+    "sha256": "6d7454e64bbffb07ec6fe218b02c2b3db6a1b1822b1428c25fd0331958317d84"
+  },
+  {
+    "task": "scalar_outcome_motor_learning_20261019",
+    "condition": 1,
+    "arm": "random",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c1_random/state_0320.npz",
+    "sha256": "261f23f1290248d4cd222be13c1414704b7f8e2e1f5e6ea44f17c7cf59135bde"
+  },
+  {
+    "task": "scalar_outcome_motor_learning_20261019",
+    "condition": 1,
+    "arm": "random",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_outcome_motor_learning_20261019/3999fdc9-0cc7-45c4-94a7-5d93556ef4ed/c1_random/state_0064.npz",
+    "sha256": "60cebfea10186281d424a814bea7bfe80ccb75dc6071bd68999fa93de329f05d"
+  },
+  {
+    "task": "scalar_response_estimation_20261019",
+    "condition": 0,
+    "arm": "spsa",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_response_estimation_20261019/7c0a58b9-0d08-4afa-8fa0-16ea61ef2114/c0_spsa/state_0768.npz",
+    "sha256": "73e2bb84d934d2f2389cb8f7252f63e014aee7de07f2b7cca0122ade70cc54af"
+  },
+  {
+    "task": "scalar_response_estimation_20261019",
+    "condition": 0,
+    "arm": "spsa",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_response_estimation_20261019/7c0a58b9-0d08-4afa-8fa0-16ea61ef2114/c0_spsa/state_0000.npz",
+    "sha256": "6f3059c5a0d0bb63563e69171eb8b6cde62e099b74ed4cd8918bef64df8a3ef0"
+  },
+  {
+    "task": "scalar_response_estimation_20261019",
+    "condition": 0,
+    "arm": "spsa",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_response_estimation_20261019/7c0a58b9-0d08-4afa-8fa0-16ea61ef2114/c0_spsa/state_0640.npz",
+    "sha256": "b194fae861f436c5fbe8d6f1e028b943e4934fac335e954bef69447cd64bb861"
+  },
+  {
+    "task": "scalar_response_estimation_20261019",
+    "condition": 0,
+    "arm": "spsa",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_response_estimation_20261019/7c0a58b9-0d08-4afa-8fa0-16ea61ef2114/c0_spsa/state_0320.npz",
+    "sha256": "f463877f7f1de6a9d229f63f2cbce057812515bd26c029255c47e6333ac94264"
+  },
+  {
+    "task": "scalar_response_estimation_20261019",
+    "condition": 0,
+    "arm": "spsa",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_response_estimation_20261019/7c0a58b9-0d08-4afa-8fa0-16ea61ef2114/c0_spsa/state_0064.npz",
+    "sha256": "9cf061cdf19fb50c9e7174624306f6c0ac1618a2321e42f38604fa296534e655"
+  },
+  {
+    "task": "scalar_response_estimation_20261019",
+    "condition": 1,
+    "arm": "spsa",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_response_estimation_20261019/7c0a58b9-0d08-4afa-8fa0-16ea61ef2114/c1_spsa/state_0768.npz",
+    "sha256": "a6fba53f972b6a7fa10aaf6e53b32b30cb35fb6a7e538480ef7649706af44110"
+  },
+  {
+    "task": "scalar_response_estimation_20261019",
+    "condition": 1,
+    "arm": "spsa",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_response_estimation_20261019/7c0a58b9-0d08-4afa-8fa0-16ea61ef2114/c1_spsa/state_0000.npz",
+    "sha256": "12d98e7dad7e9aa1ab3b21903a6291fe3b714b0e36c167a8124c620c0062bb96"
+  },
+  {
+    "task": "scalar_response_estimation_20261019",
+    "condition": 1,
+    "arm": "spsa",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_response_estimation_20261019/7c0a58b9-0d08-4afa-8fa0-16ea61ef2114/c1_spsa/state_0640.npz",
+    "sha256": "57a0bcf831140e141ba7fa2dd7187bbcd680046705de20f4a7c63ab890d306bc"
+  },
+  {
+    "task": "scalar_response_estimation_20261019",
+    "condition": 1,
+    "arm": "spsa",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_response_estimation_20261019/7c0a58b9-0d08-4afa-8fa0-16ea61ef2114/c1_spsa/state_0320.npz",
+    "sha256": "9d3ea1d7ccf16901357d44a2dee3df49031d30ff283153d712b5e83f1ac9ab98"
+  },
+  {
+    "task": "scalar_response_estimation_20261019",
+    "condition": 1,
+    "arm": "spsa",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_response_estimation_20261019/7c0a58b9-0d08-4afa-8fa0-16ea61ef2114/c1_spsa/state_0064.npz",
+    "sha256": "6cecc804ab180336328fe713f60e226ae4f447fceaeeb7136709eaf571410ecd"
+  },
+  {
+    "task": "scalar_response_content_20261019",
+    "condition": 0,
+    "arm": "clear",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_response_content_20261019/23af092e-5711-43cf-ae16-da1976fcfc98/c0_clear/state_0768.npz",
+    "sha256": "d85bce6dd92a0d8005aadb1e9de2e40287c429f6b4636145b3686a76b5337698"
+  },
+  {
+    "task": "scalar_response_content_20261019",
+    "condition": 0,
+    "arm": "clear",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_response_content_20261019/23af092e-5711-43cf-ae16-da1976fcfc98/c0_clear/state_0640.npz",
+    "sha256": "0dd4ecebc277d901a3cd986def6a01fa2ab169fbf67a25f5eef0c7655eec11de"
+  },
+  {
+    "task": "scalar_response_content_20261019",
+    "condition": 0,
+    "arm": "rotate90",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_response_content_20261019/23af092e-5711-43cf-ae16-da1976fcfc98/c0_rotate90/state_0768.npz",
+    "sha256": "b21f03a53f7f6a88a5e5dd59a52fb7d81fcc2cdec867940970961cb17ec2d2e3"
+  },
+  {
+    "task": "scalar_response_content_20261019",
+    "condition": 0,
+    "arm": "rotate90",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_response_content_20261019/23af092e-5711-43cf-ae16-da1976fcfc98/c0_rotate90/state_0640.npz",
+    "sha256": "a956d96ea9785e8f8b34bf00a53b0d25577ec7ed71e0640d17ec450bffacd73c"
+  },
+  {
+    "task": "scalar_response_content_20261019",
+    "condition": 1,
+    "arm": "clear",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_response_content_20261019/23af092e-5711-43cf-ae16-da1976fcfc98/c1_clear/state_0768.npz",
+    "sha256": "41e51a276ebc8e56c1fade014f4f80764f08ce6ac6fd22f3ce6a4b4ae1fd43ac"
+  },
+  {
+    "task": "scalar_response_content_20261019",
+    "condition": 1,
+    "arm": "clear",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_response_content_20261019/23af092e-5711-43cf-ae16-da1976fcfc98/c1_clear/state_0640.npz",
+    "sha256": "87fcea536cc550e774f0e7989a2349d07f5bdd1724dc441e7e54be561ce6f3dd"
+  },
+  {
+    "task": "scalar_response_content_20261019",
+    "condition": 1,
+    "arm": "rotate90",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_response_content_20261019/23af092e-5711-43cf-ae16-da1976fcfc98/c1_rotate90/state_0768.npz",
+    "sha256": "6d05ee3605ecfa9decfe97ab7276818fa2c1c025d3518ddbf194743a67ed7b57"
+  },
+  {
+    "task": "scalar_response_content_20261019",
+    "condition": 1,
+    "arm": "rotate90",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_response_content_20261019/23af092e-5711-43cf-ae16-da1976fcfc98/c1_rotate90/state_0640.npz",
+    "sha256": "787d5b28800bcee154c9a1c1855220696f4117b82c692dc558256c949df114d4"
+  },
+  {
+    "task": "scalar_actuator_relearning_20261019",
+    "condition": 0,
+    "arm": "continue",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_actuator_relearning_20261019/458ba50f-7b9a-454a-97fa-bb8555be4c6d/c0_continue/state_0768.npz",
+    "sha256": "17d4d6204193d2181e09759c51829051a6ca25a645892fcc5fc99f9a20384081"
+  },
+  {
+    "task": "scalar_actuator_relearning_20261019",
+    "condition": 0,
+    "arm": "continue",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_actuator_relearning_20261019/458ba50f-7b9a-454a-97fa-bb8555be4c6d/c0_continue/state_0640.npz",
+    "sha256": "aefbfab5ab63f9dc18092fe51471263c292fd884c6a9fbc89b0ad80824fcb608"
+  },
+  {
+    "task": "scalar_actuator_relearning_20261019",
+    "condition": 0,
+    "arm": "continue",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_actuator_relearning_20261019/458ba50f-7b9a-454a-97fa-bb8555be4c6d/c0_continue/state_0320.npz",
+    "sha256": "f463877f7f1de6a9d229f63f2cbce057812515bd26c029255c47e6333ac94264"
+  },
+  {
+    "task": "scalar_actuator_relearning_20261019",
+    "condition": 0,
+    "arm": "frozen",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_actuator_relearning_20261019/458ba50f-7b9a-454a-97fa-bb8555be4c6d/c0_frozen/state_0768.npz",
+    "sha256": "329a690dc4a3fa78062a0bf2cd63e9bf1191baa25b9757ece45aa6a8a7c3b333"
+  },
+  {
+    "task": "scalar_actuator_relearning_20261019",
+    "condition": 0,
+    "arm": "frozen",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_actuator_relearning_20261019/458ba50f-7b9a-454a-97fa-bb8555be4c6d/c0_frozen/state_0640.npz",
+    "sha256": "cbacc96e44add498406f383acc29c093aa752e9727a2193cb004564a1370ade6"
+  },
+  {
+    "task": "scalar_actuator_relearning_20261019",
+    "condition": 0,
+    "arm": "frozen",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_actuator_relearning_20261019/458ba50f-7b9a-454a-97fa-bb8555be4c6d/c0_frozen/state_0320.npz",
+    "sha256": "f463877f7f1de6a9d229f63f2cbce057812515bd26c029255c47e6333ac94264"
+  },
+  {
+    "task": "scalar_actuator_relearning_20261019",
+    "condition": 0,
+    "arm": "run_tumble",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_actuator_relearning_20261019/458ba50f-7b9a-454a-97fa-bb8555be4c6d/c0_run_tumble/state_0768.npz",
+    "sha256": "b50547499de9da6648b1b60cc121bdb389643f11015bc892772e4941df5ba63b"
+  },
+  {
+    "task": "scalar_actuator_relearning_20261019",
+    "condition": 0,
+    "arm": "run_tumble",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_actuator_relearning_20261019/458ba50f-7b9a-454a-97fa-bb8555be4c6d/c0_run_tumble/state_0640.npz",
+    "sha256": "751fc9a85acab043a9f7fb4b0baab1fe44897761c1863d051bef98e6699a7477"
+  },
+  {
+    "task": "scalar_actuator_relearning_20261019",
+    "condition": 0,
+    "arm": "run_tumble",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_actuator_relearning_20261019/458ba50f-7b9a-454a-97fa-bb8555be4c6d/c0_run_tumble/state_0320.npz",
+    "sha256": "403b509869b5381a2f97c902b2ae37f74cf4229d8857c774a8dfb1067ca5598c"
+  },
+  {
+    "task": "scalar_actuator_relearning_20261019",
+    "condition": 1,
+    "arm": "continue",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_actuator_relearning_20261019/458ba50f-7b9a-454a-97fa-bb8555be4c6d/c1_continue/state_0768.npz",
+    "sha256": "f83b28cc5d651c0374ad84d55441c0ff66e598ceb5ff9e65c01eadfe222fe0df"
+  },
+  {
+    "task": "scalar_actuator_relearning_20261019",
+    "condition": 1,
+    "arm": "continue",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_actuator_relearning_20261019/458ba50f-7b9a-454a-97fa-bb8555be4c6d/c1_continue/state_0640.npz",
+    "sha256": "a110748d66c3d89b3f268490c42c478facc42f81d0b14c41a03c0574eac4f103"
+  },
+  {
+    "task": "scalar_actuator_relearning_20261019",
+    "condition": 1,
+    "arm": "continue",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_actuator_relearning_20261019/458ba50f-7b9a-454a-97fa-bb8555be4c6d/c1_continue/state_0320.npz",
+    "sha256": "9d3ea1d7ccf16901357d44a2dee3df49031d30ff283153d712b5e83f1ac9ab98"
+  },
+  {
+    "task": "scalar_actuator_relearning_20261019",
+    "condition": 1,
+    "arm": "frozen",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_actuator_relearning_20261019/458ba50f-7b9a-454a-97fa-bb8555be4c6d/c1_frozen/state_0768.npz",
+    "sha256": "69924c7cc0d516e7a70854c50eb26b63a174f20d1ab73c4b39703b4df9d88cce"
+  },
+  {
+    "task": "scalar_actuator_relearning_20261019",
+    "condition": 1,
+    "arm": "frozen",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_actuator_relearning_20261019/458ba50f-7b9a-454a-97fa-bb8555be4c6d/c1_frozen/state_0640.npz",
+    "sha256": "ceb653a4a16dd987443fed87b5ac7c20222ab539456ce2a3f888057fe5e4ed2c"
+  },
+  {
+    "task": "scalar_actuator_relearning_20261019",
+    "condition": 1,
+    "arm": "frozen",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_actuator_relearning_20261019/458ba50f-7b9a-454a-97fa-bb8555be4c6d/c1_frozen/state_0320.npz",
+    "sha256": "9d3ea1d7ccf16901357d44a2dee3df49031d30ff283153d712b5e83f1ac9ab98"
+  },
+  {
+    "task": "scalar_actuator_relearning_20261019",
+    "condition": 1,
+    "arm": "run_tumble",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_actuator_relearning_20261019/458ba50f-7b9a-454a-97fa-bb8555be4c6d/c1_run_tumble/state_0768.npz",
+    "sha256": "9c6334917a06e56142aa4466e4502598ace4f2a4c9a7fd9f2e45f0fae51cefbb"
+  },
+  {
+    "task": "scalar_actuator_relearning_20261019",
+    "condition": 1,
+    "arm": "run_tumble",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_actuator_relearning_20261019/458ba50f-7b9a-454a-97fa-bb8555be4c6d/c1_run_tumble/state_0640.npz",
+    "sha256": "8c8de7d438a972b3e9491e22537d31cb2f0b9ee3cb344b0f6c96052f184d9fb1"
+  },
+  {
+    "task": "scalar_actuator_relearning_20261019",
+    "condition": 1,
+    "arm": "run_tumble",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/scalar_actuator_relearning_20261019/458ba50f-7b9a-454a-97fa-bb8555be4c6d/c1_run_tumble/state_0320.npz",
+    "sha256": "5b74b025d53a570c9f228a0ad3f28e4896b3e7c20279f86c0562d99658ba6e18"
+  }
+]

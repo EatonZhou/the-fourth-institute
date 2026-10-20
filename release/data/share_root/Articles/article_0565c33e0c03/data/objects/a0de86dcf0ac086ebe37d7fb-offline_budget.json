@@ -1,0 +1,26 @@
+{
+  "cap_cpu": 60,
+  "cap_wall": 300,
+  "metadata_reserve_cpu": 3.0,
+  "attempts": [
+    {
+      "argv": [
+        "local_learning.material_carried_generation_choice.run",
+        "--prepare"
+      ],
+      "exit": 0,
+      "cpu": 1.7587620000000002,
+      "wall": 1.9634072430199012
+    },
+    {
+      "argv": [
+        "local_learning.material_carried_generation_choice.analyze"
+      ],
+      "exit": 0,
+      "cpu": 3.1620600000000003,
+      "wall": 3.1630784169537947
+    }
+  ],
+  "charged_cpu": 7.920822,
+  "charged_wall": 5.126485659973696
+}

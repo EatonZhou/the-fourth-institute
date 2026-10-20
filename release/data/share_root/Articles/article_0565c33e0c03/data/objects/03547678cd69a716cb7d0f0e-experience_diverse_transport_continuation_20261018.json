@@ -1,0 +1,127 @@
+{
+  "schema": "lenia.pi-native-authorization.v1",
+  "revision": 1,
+  "status": "authorized_not_submitted",
+  "scientific_owner": "resident_afa3d4d6cf11",
+  "native_owner": "resident_ce2a5ab005bc",
+  "archive_owner": "resident_d3ccfa2d95b7",
+  "shared_key": "research.experience_diverse_transport_continuation_20261018",
+  "execution_key": "ce2-experience-diverse-transport-continuation-20261018-v1",
+  "question": "已形成的多孔扩张、四叶扩张与慢增长双环中，付费P/F搬运如何改变后续生成、身体持续、库存和费用？增长与局部资源受限的关系是否一致？",
+  "source_handoff": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_generation_screen_20261018/handoff.json",
+  "source_handoff_sha256": "6e9f3989341f8d02ed0a96e7412cb7dae40e766e0ab62b852bddeb0389269d91",
+  "sources": [
+    {
+      "candidate_id": "genome_0ac80448a534dc953505",
+      "source_candidate": "double_shell_far_ring--bridged_longbody",
+      "selection_reason": "多孔网格持续扩展/高周转与高材料消耗",
+      "complete_state128": {
+        "branch": "genome_0ac80448a534dc953505--formation",
+        "stage_id": "genome_0ac80448a534dc953505/formation",
+        "step": "128",
+        "kind": "new_atomic",
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_generation_screen_20261018/780163bf-a09a-488b-a297-5e0f4261d7b5/genome_0ac80448a534dc953505--formation/transactions/000128.npz",
+        "sha256": "670dc066addc49b41e0574aa0a03f89cacd1c9797df80027d7e8bd2ef4030af8"
+      },
+      "selection_is_exploratory": true
+    },
+    {
+      "candidate_id": "genome_6bd5bfd2f629f9414376",
+      "source_candidate": "compact_ring_core_outer--connected_trilobe",
+      "selection_reason": "四叶轮廓扩张",
+      "complete_state128": {
+        "branch": "genome_6bd5bfd2f629f9414376--formation",
+        "stage_id": "genome_6bd5bfd2f629f9414376/formation",
+        "step": "128",
+        "kind": "new_atomic",
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_generation_screen_20261018/780163bf-a09a-488b-a297-5e0f4261d7b5/genome_6bd5bfd2f629f9414376--formation/transactions/000128.npz",
+        "sha256": "1df02c60d6bda5dfeaaad9ee213ee089fc0fa8ababaedb2cf1d2446ee51a5fe5"
+      },
+      "selection_is_exploratory": true
+    },
+    {
+      "candidate_id": "genome_85dffefe3eb5bacdfbf5",
+      "source_candidate": "compact_ring_core_outer--bridged_longbody",
+      "selection_reason": "双小环连接/慢增长与低绝对周转",
+      "complete_state128": {
+        "branch": "genome_85dffefe3eb5bacdfbf5--formation",
+        "stage_id": "genome_85dffefe3eb5bacdfbf5/formation",
+        "step": "128",
+        "kind": "new_atomic",
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_generation_screen_20261018/780163bf-a09a-488b-a297-5e0f4261d7b5/genome_85dffefe3eb5bacdfbf5--formation/transactions/000128.npz",
+        "sha256": "77457fda32ad7c63a3f2a503878280d3ca0f6fa9310bd83809b803ce68929b89"
+      },
+      "selection_is_exploratory": true
+    }
+  ],
+  "body_cap": 576,
+  "new_branches": 6,
+  "budget_decomposition": "3 bodies x 2 matched T00/T11 futures x 96 steps = 576",
+  "old_unique_steps_read_only": 384,
+  "branch_contract": {
+    "start": 128,
+    "end": 224,
+    "first_step": 129,
+    "branches": [
+      "T00",
+      "T11"
+    ],
+    "independent_full_parent_restore": true,
+    "switch_only": "P/F transport capability; T00 disables both, T11 enables both with existing fees",
+    "body_K": "unchanged, remains active",
+    "policy": "fresh-brake/open, learn=false, requested_a=1",
+    "birth_price_components": [
+      0.2,
+      0.2,
+      0.02
+    ],
+    "no_new_history_injury_memory_rule_mutation_or_inventory_reset": true,
+    "preserve": "all fields/config/kernels/held/clock/ledger cumulative accounts; initial save before any native step"
+  },
+  "environment": {
+    "draws": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/draws001_224.npy",
+    "draws_sha256": "985ec671b00f346e7ba414e6460a68ac274f95fc4b317a100cc6399fad55a293",
+    "forcing": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/host_integration/forcing001_224.npz",
+    "forcing_sha256": "65fb316a56a7b2b15123b954bfabe580a7d232ea544d3615cc669faeeba28993",
+    "tape": "original t=129..224 via tape[t-1]; same original absolute clock, no new forcing",
+    "physics": "existing dt=.05, density capacity, conversion, .2+.2+.02 birth components and original fees unchanged"
+  },
+  "execution": {
+    "cpu": 2,
+    "gpu": 0,
+    "single_research_slot": true,
+    "read_control_before_start_and_resume": true,
+    "require_started_true": true,
+    "require_desired_state": "running",
+    "data_free_gate_bytes": 4294967296,
+    "raw_on_data": true,
+    "preview_cap": 0,
+    "independent_energy_cap": 0,
+    "replay_cap": 0,
+    "unknown_inflight": "reject; only full ready restore",
+    "flow": "ce2 reuse existing T00/T11 full ready branch path, only new source bindings and necessary boundary checks; freeze plan/source then one unique submission without further approval",
+    "stop": "at224 or run-control stop; no extension, rescue, replays, extra policies or free diagnostic forwards"
+  },
+  "accounting": {
+    "failed_native_attempts": "charge same cap; no replacement quota",
+    "all_completed_packets": "preserve including zero tails",
+    "separate": "new576, old384 shared prefixes; no replay; 128..224 continuation and0..224 complete paths separately",
+    "outcomes": [
+      "absolute M/E/body-time and birth/death",
+      "local P/F remaining and rejected precursor/fuel requests",
+      "paid P/F flows and fee/underpayment",
+      "physical EU, birth F and resource consumed",
+      "full fixed windows and signs including late decline and zero tails",
+      "initial/first separation fields only using actual committed packets",
+      "fixed original coords/scale, min edge margin and finite-domain qualification"
+    ]
+  },
+  "interpretation": [
+    "T11 changes both capability and charges; not pure cost mediation",
+    "different rule/state/history bundles, not pure shape mediation or independent replicates",
+    "only within-body matched T11 minus T00 effect; do not rank highest final M as best",
+    "finite periodic96 domain retained even if support approaches boundary; no automatic recenter/resize",
+    "no experienced condition: adaptation evaluation not_applicable, score/eligible null"
+  ],
+  "display_cadence": 8
+}

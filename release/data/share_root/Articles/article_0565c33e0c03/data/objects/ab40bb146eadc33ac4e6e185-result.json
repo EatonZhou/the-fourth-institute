@@ -1,0 +1,30 @@
+{
+  "status": "completed",
+  "job_id": "3786e0f1-73a7-4da8-9bdb-ae8fff7fb44e",
+  "key": "d3-anticipatory-material-allocation-20261018-v1",
+  "budget": {
+    "attempted": 100864,
+    "committed": 100864,
+    "failed": 0,
+    "script_allocated_worker_seconds": 33.244626939995214,
+    "runner_slot_usage_finalized_separately": true
+  },
+  "elapsed_seconds": 16.627551806974225,
+  "cpu_seconds": 16.659848,
+  "plan_sha256": "2d74c0c87ccbc51f0a306a0f514ff700576c0ceab88100bdc1233b958d978aa8",
+  "trained_rule_sha256": "cace61819fa2cb144f409e54e333f0d7f164661e7d0dba848d9f341fb1b034bf",
+  "heldout_paths": 56,
+  "physical_stages": 126,
+  "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/anticipatory_material_allocation_20261018/3786e0f1-73a7-4da8-9bdb-ae8fff7fb44e",
+  "source_frozen": true,
+  "semantic_checks": {
+    "invalid_not_negative": true,
+    "unpaid_censored": true,
+    "actual_transport": true,
+    "newborn_no_history": true,
+    "cue_swap_preserves_values": true,
+    "freeze_preserves_content": true,
+    "host_steps": 0
+  },
+  "max_ledger_error": 5.968558980384842e-13
+}

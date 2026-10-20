@@ -1,0 +1,216 @@
+[
+  {
+    "id": "202610197403_0_distractor_fast_delta_life",
+    "reversal_boundary": 640,
+    "first_feedback": null,
+    "first_choice": null,
+    "first_probe_after_pulses": 16,
+    "unobserved_choice_before_feedback": null
+  },
+  {
+    "id": "202610197403_0_distractor_fixed_trace_life",
+    "reversal_boundary": 640,
+    "first_feedback": null,
+    "first_choice": null,
+    "first_probe_after_pulses": 16,
+    "unobserved_choice_before_feedback": null
+  },
+  {
+    "id": "202610197403_0_distractor_lag1_delta_life",
+    "reversal_boundary": 640,
+    "first_feedback": 665,
+    "first_choice": [
+      801,
+      864
+    ],
+    "first_probe_after_pulses": 16,
+    "unobserved_choice_before_feedback": null
+  },
+  {
+    "id": "202610197403_0_distractor_joint_delta_life",
+    "reversal_boundary": 640,
+    "first_feedback": 665,
+    "first_choice": [
+      801,
+      864
+    ],
+    "first_probe_after_pulses": 16,
+    "unobserved_choice_before_feedback": null
+  },
+  {
+    "id": "202610197403_0_distractor_gated_lags_life",
+    "reversal_boundary": 640,
+    "first_feedback": 665,
+    "first_choice": [
+      801,
+      864
+    ],
+    "first_probe_after_pulses": 16,
+    "unobserved_choice_before_feedback": null
+  },
+  {
+    "id": "202610197403_1_distractor_fast_delta_life",
+    "reversal_boundary": 640,
+    "first_feedback": 665,
+    "first_choice": [
+      801,
+      864
+    ],
+    "first_probe_after_pulses": 16,
+    "unobserved_choice_before_feedback": null
+  },
+  {
+    "id": "202610197403_1_distractor_fixed_trace_life",
+    "reversal_boundary": 640,
+    "first_feedback": 665,
+    "first_choice": [
+      801,
+      864
+    ],
+    "first_probe_after_pulses": 16,
+    "unobserved_choice_before_feedback": null
+  },
+  {
+    "id": "202610197403_1_distractor_lag1_delta_life",
+    "reversal_boundary": 640,
+    "first_feedback": 665,
+    "first_choice": [
+      801,
+      864
+    ],
+    "first_probe_after_pulses": 16,
+    "unobserved_choice_before_feedback": null
+  },
+  {
+    "id": "202610197403_1_distractor_joint_delta_life",
+    "reversal_boundary": 640,
+    "first_feedback": 665,
+    "first_choice": [
+      801,
+      864
+    ],
+    "first_probe_after_pulses": 16,
+    "unobserved_choice_before_feedback": null
+  },
+  {
+    "id": "202610197403_1_distractor_gated_lags_life",
+    "reversal_boundary": 640,
+    "first_feedback": 665,
+    "first_choice": [
+      801,
+      864
+    ],
+    "first_probe_after_pulses": 16,
+    "unobserved_choice_before_feedback": null
+  },
+  {
+    "id": "202610197404_0_distractor_fast_delta_life",
+    "reversal_boundary": 640,
+    "first_feedback": 665,
+    "first_choice": [
+      801,
+      864
+    ],
+    "first_probe_after_pulses": 16,
+    "unobserved_choice_before_feedback": null
+  },
+  {
+    "id": "202610197404_0_distractor_fixed_trace_life",
+    "reversal_boundary": 640,
+    "first_feedback": 665,
+    "first_choice": [
+      801,
+      864
+    ],
+    "first_probe_after_pulses": 16,
+    "unobserved_choice_before_feedback": null
+  },
+  {
+    "id": "202610197404_0_distractor_lag1_delta_life",
+    "reversal_boundary": 640,
+    "first_feedback": 665,
+    "first_choice": [
+      801,
+      864
+    ],
+    "first_probe_after_pulses": 16,
+    "unobserved_choice_before_feedback": null
+  },
+  {
+    "id": "202610197404_0_distractor_joint_delta_life",
+    "reversal_boundary": 640,
+    "first_feedback": 665,
+    "first_choice": [
+      801,
+      864
+    ],
+    "first_probe_after_pulses": 16,
+    "unobserved_choice_before_feedback": null
+  },
+  {
+    "id": "202610197404_0_distractor_gated_lags_life",
+    "reversal_boundary": 640,
+    "first_feedback": 665,
+    "first_choice": [
+      801,
+      864
+    ],
+    "first_probe_after_pulses": 16,
+    "unobserved_choice_before_feedback": null
+  },
+  {
+    "id": "202610197404_1_distractor_fast_delta_life",
+    "reversal_boundary": 640,
+    "first_feedback": 665,
+    "first_choice": [
+      801,
+      864
+    ],
+    "first_probe_after_pulses": 16,
+    "unobserved_choice_before_feedback": null
+  },
+  {
+    "id": "202610197404_1_distractor_fixed_trace_life",
+    "reversal_boundary": 640,
+    "first_feedback": 665,
+    "first_choice": [
+      801,
+      864
+    ],
+    "first_probe_after_pulses": 16,
+    "unobserved_choice_before_feedback": null
+  },
+  {
+    "id": "202610197404_1_distractor_lag1_delta_life",
+    "reversal_boundary": 640,
+    "first_feedback": 665,
+    "first_choice": [
+      801,
+      864
+    ],
+    "first_probe_after_pulses": 16,
+    "unobserved_choice_before_feedback": null
+  },
+  {
+    "id": "202610197404_1_distractor_joint_delta_life",
+    "reversal_boundary": 640,
+    "first_feedback": 665,
+    "first_choice": [
+      801,
+      864
+    ],
+    "first_probe_after_pulses": 16,
+    "unobserved_choice_before_feedback": null
+  },
+  {
+    "id": "202610197404_1_distractor_gated_lags_life",
+    "reversal_boundary": 640,
+    "first_feedback": 665,
+    "first_choice": [
+      801,
+      864
+    ],
+    "first_probe_after_pulses": 16,
+    "unobserved_choice_before_feedback": null
+  }
+]

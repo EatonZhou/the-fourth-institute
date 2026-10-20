@@ -1,0 +1,1198 @@
+{
+  "/share/.../paper.pdf": {
+    "en": "/share/.../paper.pdf",
+    "zh-CN": "/share/.../paper.pdf"
+  },
+  "/srv/agent-staging/.../analysis.md": {
+    "en": "/srv/agent-staging/.../analysis.md",
+    "zh-CN": "/srv/agent-staging/.../analysis.md"
+  },
+  "AI Review": {
+    "en": "AI Review",
+    "zh-CN": "AI 审查"
+  },
+  "AI review response missing one or more reviewers": {
+    "en": "AI review response missing one or more reviewers",
+    "zh-CN": "AI review 响应缺少一个或多个 reviewer"
+  },
+  "AI review response missing reviewers": {
+    "en": "AI review response missing reviewers",
+    "zh-CN": "AI review 响应缺少 reviewer"
+  },
+  "AI review response was not a JSON object": {
+    "en": "AI review response was not a JSON object",
+    "zh-CN": "AI review 响应不是 JSON 对象"
+  },
+  "AI review reviewer must be an object": {
+    "en": "AI review reviewer must be an object",
+    "zh-CN": "AI review reviewer 必须是对象"
+  },
+  "AI review reviewers must contain unique A/B/C with nonempty bodies": {
+    "en": "AI review reviewers must contain unique A/B/C with nonempty bodies",
+    "zh-CN": "AI review reviewers 必须包含唯一的 A/B/C 且正文非空"
+  },
+  "AI reviews": {
+    "en": "AI reviews",
+    "zh-CN": "AI 评审"
+  },
+  "Abstract / note": {
+    "en": "Abstract / note",
+    "zh-CN": "摘要 / 备注"
+  },
+  "Add note": {
+    "en": "Add note",
+    "zh-CN": "添加备注"
+  },
+  "Add to Chat": {
+    "en": "Add to Chat",
+    "zh-CN": "添加到聊天"
+  },
+  "Agent-ready paper library API": {
+    "en": "Agent-ready paper library API",
+    "zh-CN": "面向代理的论文库 API"
+  },
+  "All projects": {
+    "en": "All projects",
+    "zh-CN": "所有项目"
+  },
+  "All tags": {
+    "en": "All tags",
+    "zh-CN": "所有标签"
+  },
+  "All venues": {
+    "en": "All venues",
+    "zh-CN": "所有会议/期刊"
+  },
+  "All years": {
+    "en": "All years",
+    "zh-CN": "所有年份"
+  },
+  "Analysis markdown path or URL": {
+    "en": "Analysis markdown path or URL",
+    "zh-CN": "Analysis markdown 路径或 URL"
+  },
+  "Analysis missing": {
+    "en": "Analysis missing",
+    "zh-CN": "缺少分析"
+  },
+  "Analysis ready": {
+    "en": "Analysis ready",
+    "zh-CN": "分析已就绪"
+  },
+  "Analysis 阅读面板": {
+    "en": "Analysis reading panel",
+    "zh-CN": "Analysis 阅读面板"
+  },
+  "Analyzed": {
+    "en": "Analyzed",
+    "zh-CN": "已分析"
+  },
+  "Ask about architecture, related work, review concerns...": {
+    "en": "Ask about architecture, related work, review concerns...",
+    "zh-CN": "询问架构、相关工作、评审关注点……"
+  },
+  "Author action memo": {
+    "en": "Author action memo",
+    "zh-CN": "作者操作备忘"
+  },
+  "Authors": {
+    "en": "Authors",
+    "zh-CN": "作者"
+  },
+  "Auto extracting...": {
+    "en": "Auto extracting...",
+    "zh-CN": "正在自动提取……"
+  },
+  "Automatic figure extraction is running.": {
+    "en": "Automatic figure extraction is running.",
+    "zh-CN": "自动图表提取正在运行。"
+  },
+  "Automatic refs and figures extraction is queued.": {
+    "en": "Automatic refs and figures extraction is queued.",
+    "zh-CN": "自动参考文献和图表提取已排队。"
+  },
+  "Automatic refs and figures extraction is running.": {
+    "en": "Automatic refs and figures extraction is running.",
+    "zh-CN": "自动参考文献和图表提取正在运行。"
+  },
+  "Browse, read, chat, and review papers from one workspace.": {
+    "en": "Browse, read, chat, and review papers from one workspace.",
+    "zh-CN": "在一个工作区中浏览、阅读、聊天和审阅论文。"
+  },
+  "CCF A/B": {
+    "en": "CCF A/B",
+    "zh-CN": "CCF A/B"
+  },
+  "CCF A/B + Curated": {
+    "en": "CCF A/B + Curated",
+    "zh-CN": "CCF A/B + 精选"
+  },
+  "CCF A/B Proceedings": {
+    "en": "CCF A/B Proceedings",
+    "zh-CN": "CCF A/B 会议论文集"
+  },
+  "CCF enrichment request cache identity mismatch": {
+    "en": "CCF enrichment request cache identity mismatch",
+    "zh-CN": "CCF 增强请求缓存标识不匹配"
+  },
+  "CCF enrichment request has no paper": {
+    "en": "CCF enrichment request has no paper",
+    "zh-CN": "CCF 增强请求没有论文"
+  },
+  "CCF enrichment request is outside its work root": {
+    "en": "CCF enrichment request is outside its work root",
+    "zh-CN": "CCF 增强请求在其工作根目录之外"
+  },
+  "CCF v7 + curated venues from DBLP": {
+    "en": "CCF v7 + curated venues from DBLP",
+    "zh-CN": "CCF v7 + 来自 DBLP 的精选会议/期刊"
+  },
+  "CCF venue not found": {
+    "en": "CCF venue not found",
+    "zh-CN": "未找到 CCF 会议/期刊"
+  },
+  "CCF venue year or issue not found": {
+    "en": "CCF venue year or issue not found",
+    "zh-CN": "未找到 CCF 会议/期刊年份或期号"
+  },
+  "CIM, systolic array": {
+    "en": "CIM, systolic array",
+    "zh-CN": "CIM，脉动阵列"
+  },
+  "Codex note": {
+    "en": "Codex note",
+    "zh-CN": "Codex 备注"
+  },
+  "Collapse Paper Library": {
+    "en": "Collapse Paper Library",
+    "zh-CN": "折叠论文库"
+  },
+  "Collect papers": {
+    "en": "Collect papers",
+    "zh-CN": "收集论文"
+  },
+  "Collect papers by need...": {
+    "en": "Collect papers by need...",
+    "zh-CN": "按需收集论文..."
+  },
+  "Collector claimed a pre-existing paper was newly registered": {
+    "en": "Collector claimed a pre-existing paper was newly registered",
+    "zh-CN": "Collector 声称一篇已存在的论文是新注册的"
+  },
+  "Collector did not return a structured business result": {
+    "en": "Collector did not return a structured business result",
+    "zh-CN": "Collector 未返回结构化业务结果"
+  },
+  "Collector input delivery is unconfirmed; inspect the original workflow; no resubmission": {
+    "en": "Collector input delivery is unconfirmed; inspect the original workflow; no resubmission",
+    "zh-CN": "Collector 输入投递未确认；请检查原始工作流；不要重新提交"
+  },
+  "Collector invocation has no original library snapshot; no resubmission": {
+    "en": "Collector invocation has no original library snapshot; no resubmission",
+    "zh-CN": "Collector 调用没有原始库快照；不要重新提交"
+  },
+  "Collector job does not satisfy the current execution contract": {
+    "en": "Collector job does not satisfy the current execution contract",
+    "zh-CN": "Collector 任务不满足当前执行契约"
+  },
+  "Collector request identity disagrees with authenticated caller": {
+    "en": "Collector request identity disagrees with authenticated caller",
+    "zh-CN": "Collector 请求身份与已认证调用方不一致"
+  },
+  "Collector requires the original authenticated User or Resident request context": {
+    "en": "Collector requires the original authenticated User or Resident request context",
+    "zh-CN": "Collector 需要原始已认证的 User 或 Resident 请求上下文"
+  },
+  "Collector result exceeds the requested limit or has no papers list": {
+    "en": "Collector result exceeds the requested limit or has no papers list",
+    "zh-CN": "Collector 结果超出请求限制或没有 papers 列表"
+  },
+  "Collector result is not a saved, currently authorized Paper resource": {
+    "en": "Collector result is not a saved, currently authorized Paper resource",
+    "zh-CN": "Collector 结果不是已保存且当前已授权的 Paper 资源"
+  },
+  "Collector result lacks a confirmed Resident input and linked reply": {
+    "en": "Collector result lacks a confirmed Resident input and linked reply",
+    "zh-CN": "Collector 结果缺少已确认的 Resident 输入和关联回复"
+  },
+  "Collector result requires a verified paper and action": {
+    "en": "Collector result requires a verified paper and action",
+    "zh-CN": "Collector 结果需要已验证的论文和操作"
+  },
+  "Collector result schema/job identity mismatch": {
+    "en": "Collector result schema/job identity mismatch",
+    "zh-CN": "Collector 结果 schema/job 身份不匹配"
+  },
+  "Collector returned duplicate paper IDs": {
+    "en": "Collector returned duplicate paper IDs",
+    "zh-CN": "Collector 返回了重复的论文 ID"
+  },
+  "Collector 任务已中断（执行进程重启或长时间没有更新）；请重新收集。": {
+    "en": "Collector job was interrupted (execution process restarted or no updates for a long time); please collect again.",
+    "zh-CN": "Collector 任务已中断（执行进程重启或长时间没有更新）；请重新收集。"
+  },
+  "Could not locate this reference on arXiv": {
+    "en": "Could not locate this reference on arXiv",
+    "zh-CN": "无法在 arXiv 上找到此参考文献"
+  },
+  "Curated": {
+    "en": "Curated",
+    "zh-CN": "精选"
+  },
+  "Current paper library view.": {
+    "en": "Current paper library view.",
+    "zh-CN": "当前论文库视图。"
+  },
+  "DBLP Paper": {
+    "en": "DBLP Paper",
+    "zh-CN": "DBLP 论文"
+  },
+  "DBLP 作者列表与论文目录不一致，本地缓存未改动。": {
+    "en": "The DBLP author list is inconsistent with the paper directory; the local cache was not modified.",
+    "zh-CN": "DBLP 作者列表与论文目录不一致，本地缓存未改动。"
+  },
+  "DBLP 未返回可识别的年份或期次目录，本地缓存未改动。": {
+    "en": "DBLP did not return a recognizable year or issue directory; the local cache was not modified.",
+    "zh-CN": "DBLP 未返回可识别的年份或期次目录，本地缓存未改动。"
+  },
+  "DBLP 未返回此目录的论文列表，本地缓存未改动。": {
+    "en": "DBLP did not return a paper list for this directory; the local cache was not modified.",
+    "zh-CN": "DBLP 未返回此目录的论文列表，本地缓存未改动。"
+  },
+  "DBLP 目录不属于当前会议或期刊，本地缓存未改动。": {
+    "en": "The DBLP directory does not belong to the current conference or journal; the local cache was not modified.",
+    "zh-CN": "DBLP 目录不属于当前会议或期刊，本地缓存未改动。"
+  },
+  "DBLP 目录数据超过单次读取上限，未缓存不完整结果。": {
+    "en": "The DBLP directory data exceeds the single-read limit; incomplete results were not cached.",
+    "zh-CN": "DBLP 目录数据超过单次读取上限，未缓存不完整结果。"
+  },
+  "DBLP 目录条目超过单次读取上限，未缓存不完整结果。": {
+    "en": "The DBLP directory entries exceed the single-read limit; incomplete results were not cached.",
+    "zh-CN": "DBLP 目录条目超过单次读取上限，未缓存不完整结果。"
+  },
+  "DBLP 结构化数据接口暂不可用，本地缓存未改动，请稍后重试。": {
+    "en": "The DBLP structured data interface is temporarily unavailable; the local cache was not modified, please try again later.",
+    "zh-CN": "DBLP 结构化数据接口暂不可用，本地缓存未改动，请稍后重试。"
+  },
+  "DBLP 结构化数据接口缺少结果列表，本地缓存未改动。": {
+    "en": "The DBLP structured data interface is missing a result list; the local cache was not modified.",
+    "zh-CN": "DBLP 结构化数据接口缺少结果列表，本地缓存未改动。"
+  },
+  "DBLP 结构化数据接口返回了无效数据，本地缓存未改动。": {
+    "en": "The DBLP structured data interface returned invalid data; the local cache was not modified.",
+    "zh-CN": "DBLP 结构化数据接口返回了无效数据，本地缓存未改动。"
+  },
+  "DBLP 论文标识与当前目录不一致，本地缓存未改动。": {
+    "en": "The DBLP paper identifier is inconsistent with the current directory; the local cache was not modified.",
+    "zh-CN": "DBLP 论文标识与当前目录不一致，本地缓存未改动。"
+  },
+  "DBLP 论文缺少有效标题或年份，本地缓存未改动。": {
+    "en": "A DBLP paper is missing a valid title or year; the local cache was not modified.",
+    "zh-CN": "DBLP 论文缺少有效标题或年份，本地缓存未改动。"
+  },
+  "DBLP 返回了无效目录地址，本地缓存未改动。": {
+    "en": "DBLP returned an invalid directory address; the local cache was not modified.",
+    "zh-CN": "DBLP 返回了无效目录地址，本地缓存未改动。"
+  },
+  "DBLP 返回了无效目录年份，本地缓存未改动。": {
+    "en": "DBLP returned an invalid directory year; the local cache was not modified.",
+    "zh-CN": "DBLP 返回了无效目录年份，本地缓存未改动。"
+  },
+  "DBLP 返回了无效论文数量，本地缓存未改动。": {
+    "en": "DBLP returned an invalid paper count; the local cache was not modified.",
+    "zh-CN": "DBLP 返回了无效论文数量，本地缓存未改动。"
+  },
+  "DBLP 返回了访问验证页面，未获取到论文目录。本地缓存未改动，请稍后重试。": {
+    "en": "DBLP returned an access verification page and no paper directory was obtained. The local cache was not modified, please try again later.",
+    "zh-CN": "DBLP 返回了访问验证页面，未获取到论文目录。本地缓存未改动，请稍后重试。"
+  },
+  "DOI": {
+    "en": "DOI",
+    "zh-CN": "DOI"
+  },
+  "Deep Read AI execution returned empty output": {
+    "en": "Deep Read AI execution returned empty output",
+    "zh-CN": "Deep Read AI 执行返回了空输出"
+  },
+  "Deep Read input delivery is unconfirmed; inspect the original workflow; no input was resubmitted": {
+    "en": "Deep Read input delivery is unconfirmed; inspect the original workflow; no input was resubmitted",
+    "zh-CN": "Deep Read 输入投递未确认；请检查原始工作流；未重新提交任何输入"
+  },
+  "Deep Read job id required": {
+    "en": "Deep Read job id required",
+    "zh-CN": "Deep Read 作业 ID 为必填项"
+  },
+  "Deep Read job not found": {
+    "en": "Deep Read job not found",
+    "zh-CN": "未找到 Deep Read 作业"
+  },
+  "Delete PDF": {
+    "en": "Delete PDF",
+    "zh-CN": "删除 PDF"
+  },
+  "Deleting PDF...": {
+    "en": "Deleting PDF...",
+    "zh-CN": "正在删除 PDF..."
+  },
+  "Enriching abstract and metadata overview in the background...": {
+    "en": "Enriching abstract and metadata overview in the background...",
+    "zh-CN": "正在后台丰富摘要和元数据概览..."
+  },
+  "Exp task was interrupted or stopped updating. Please generate Exp again.": {
+    "en": "Exp task was interrupted or stopped updating. Please generate Exp again.",
+    "zh-CN": "Exp 任务被中断或停止更新。请重新生成 Exp。"
+  },
+  "Explaining...": {
+    "en": "Explaining...",
+    "zh-CN": "正在解释..."
+  },
+  "Extract Figures": {
+    "en": "Extract Figures",
+    "zh-CN": "提取图表"
+  },
+  "Extract datasets, baselines, metrics, implementation settings, results, and reproduction risks.": {
+    "en": "Extract datasets, baselines, metrics, implementation settings, results, and reproduction risks.",
+    "zh-CN": "提取数据集、基线、指标、实现设置、结果和复现风险。"
+  },
+  "Extract figures from this paper PDF.": {
+    "en": "Extract figures from this paper PDF.",
+    "zh-CN": "从此论文 PDF 中提取图表。"
+  },
+  "Extracting figures from PDF...": {
+    "en": "Extracting figures from PDF...",
+    "zh-CN": "正在从 PDF 提取图表..."
+  },
+  "Extracting refs from the current PDF...": {
+    "en": "Extracting refs from the current PDF...",
+    "zh-CN": "正在从当前 PDF 提取参考文献..."
+  },
+  "Extracting...": {
+    "en": "Extracting...",
+    "zh-CN": "正在提取..."
+  },
+  "Fetch DBLP paper list": {
+    "en": "Fetch DBLP paper list",
+    "zh-CN": "获取 DBLP 论文列表"
+  },
+  "Fetch year / issue list": {
+    "en": "Fetch year / issue list",
+    "zh-CN": "获取年份 / 期号列表"
+  },
+  "Fetching...": {
+    "en": "Fetching...",
+    "zh-CN": "正在获取..."
+  },
+  "Figure": {
+    "en": "Figure",
+    "zh-CN": "图表"
+  },
+  "Figure explanation did not return a successful generated artifact": {
+    "en": "Figure explanation did not return a successful generated artifact",
+    "zh-CN": "图表解释未返回成功的生成产物"
+  },
+  "Figure explanation generation result schema or Paper/Figure identity mismatch": {
+    "en": "Figure explanation generation result schema or Paper/Figure identity mismatch",
+    "zh-CN": "图表解释生成结果 schema 或 Paper/Figure 身份不匹配"
+  },
+  "Figure explanation requires a structured generation result, not a submission claim or free text": {
+    "en": "Figure explanation requires a structured generation result, not a submission claim or free text",
+    "zh-CN": "图表解释需要结构化的生成结果，而非提交声明或自由文本"
+  },
+  "Figure explanation returned no generated content": {
+    "en": "Figure explanation returned no generated content",
+    "zh-CN": "图表解释未返回生成内容"
+  },
+  "Figure image missing": {
+    "en": "Figure image missing",
+    "zh-CN": "图表图片缺失"
+  },
+  "Figure input delivery is unconfirmed; inspect the original workflow; no input was resubmitted": {
+    "en": "Figure input delivery is unconfirmed; inspect the original workflow; no input was resubmitted",
+    "zh-CN": "图表输入投递未确认；请检查原始工作流；未重新提交任何输入"
+  },
+  "Figure input image is outside this paper's artifacts": {
+    "en": "Figure input image is outside this paper's artifacts",
+    "zh-CN": "图表输入图片不在此论文的产物中"
+  },
+  "Figure task interrupted before its Resident input binding was saved. Check the Resident before retrying; no input was resubmitted.": {
+    "en": "Figure task interrupted before its Resident input binding was saved. Check the Resident before retrying; no input was resubmitted.",
+    "zh-CN": "图表任务在保存其 Resident 输入绑定前被中断。重试前请检查 Resident；未重新提交任何输入。"
+  },
+  "Figures": {
+    "en": "Figures",
+    "zh-CN": "图表"
+  },
+  "Find Ref": {
+    "en": "Find Ref",
+    "zh-CN": "查找引用"
+  },
+  "Generate AI Review": {
+    "en": "Generate AI Review",
+    "zh-CN": "生成 AI 审查"
+  },
+  "Generate Exp": {
+    "en": "Generate Exp",
+    "zh-CN": "生成 Exp"
+  },
+  "Generate Image": {
+    "en": "Generate Image",
+    "zh-CN": "生成图像"
+  },
+  "Generate Variant": {
+    "en": "Generate Variant",
+    "zh-CN": "生成变体"
+  },
+  "Generate review from PDF text, analysis, and related papers.": {
+    "en": "Generate review from PDF text, analysis, and related papers.",
+    "zh-CN": "根据 PDF 文本、分析和相关论文生成审查。"
+  },
+  "Generated Figure": {
+    "en": "Generated Figure",
+    "zh-CN": "生成的图"
+  },
+  "Generating Exp in the background. You can leave this page and come back later.": {
+    "en": "Generating Exp in the background. You can leave this page and come back later.",
+    "zh-CN": "正在后台生成 Exp。你可以离开此页面，稍后再回来。"
+  },
+  "Generating image in the background.": {
+    "en": "Generating image in the background.",
+    "zh-CN": "正在后台生成图像。"
+  },
+  "Generating...": {
+    "en": "Generating...",
+    "zh-CN": "Generating..."
+  },
+  "ISCA": {
+    "en": "ISCA",
+    "zh-CN": "ISCA"
+  },
+  "Investigating...": {
+    "en": "Investigating...",
+    "zh-CN": "调查中..."
+  },
+  "Job:": {
+    "en": "Job:",
+    "zh-CN": "Job:"
+  },
+  "LLM inference": {
+    "en": "LLM inference",
+    "zh-CN": "LLM 推理"
+  },
+  "LLM, Quantization, DSA": {
+    "en": "LLM, Quantization, DSA",
+    "zh-CN": "LLM、量化、DSA"
+  },
+  "Library chat across all papers.": {
+    "en": "Library chat across all papers.",
+    "zh-CN": "跨所有论文的文库聊天。"
+  },
+  "Loading PDF...": {
+    "en": "Loading PDF...",
+    "zh-CN": "正在加载 PDF..."
+  },
+  "Metadata overview is still being prepared.": {
+    "en": "Metadata overview is still being prepared.",
+    "zh-CN": "元数据概览仍在准备中。"
+  },
+  "No AI review yet.": {
+    "en": "No AI review yet.",
+    "zh-CN": "尚无 AI 审查。"
+  },
+  "No DBLP papers found for this venue entry.": {
+    "en": "No DBLP papers found for this venue entry.",
+    "zh-CN": "未找到该 venue 条目的 DBLP 论文。"
+  },
+  "No Exp extraction yet.": {
+    "en": "No Exp extraction yet.",
+    "zh-CN": "尚无 Exp 提取。"
+  },
+  "No PDF registered for this paper.": {
+    "en": "No PDF registered for this paper.",
+    "zh-CN": "该论文未登记 PDF。"
+  },
+  "No PDF selected": {
+    "en": "No PDF selected",
+    "zh-CN": "未选择 PDF"
+  },
+  "No explanation yet.": {
+    "en": "No explanation yet.",
+    "zh-CN": "暂无说明。"
+  },
+  "No figures extracted yet.": {
+    "en": "No figures extracted yet.",
+    "zh-CN": "尚未提取图表。"
+  },
+  "No local year or issue cache yet.": {
+    "en": "No local year or issue cache yet.",
+    "zh-CN": "尚无本地年份或期号缓存。"
+  },
+  "No notes yet.": {
+    "en": "No notes yet.",
+    "zh-CN": "尚无笔记。"
+  },
+  "No paper matches current filters.": {
+    "en": "No paper matches current filters.",
+    "zh-CN": "没有匹配当前筛选条件的论文。"
+  },
+  "No paper matches this list search.": {
+    "en": "No paper matches this list search.",
+    "zh-CN": "没有匹配此列表搜索的论文。"
+  },
+  "No refs found in this paper.": {
+    "en": "No refs found in this paper.",
+    "zh-CN": "此论文中未找到参考文献。"
+  },
+  "Open image": {
+    "en": "Open image",
+    "zh-CN": "打开图片"
+  },
+  "Open registered paper": {
+    "en": "Open registered paper",
+    "zh-CN": "打开已注册论文"
+  },
+  "PDF available": {
+    "en": "PDF available",
+    "zh-CN": "PDF 可用"
+  },
+  "PDF changed during figure extraction": {
+    "en": "PDF changed during figure extraction",
+    "zh-CN": "PDF 在图表提取期间发生变化"
+  },
+  "PDF missing": {
+    "en": "PDF missing",
+    "zh-CN": "PDF 缺失"
+  },
+  "PDF not found": {
+    "en": "PDF not found",
+    "zh-CN": "未找到 PDF"
+  },
+  "PDF path or URL": {
+    "en": "PDF path or URL",
+    "zh-CN": "PDF 路径或 URL"
+  },
+  "PDF text extraction returned too little text": {
+    "en": "PDF text extraction returned too little text",
+    "zh-CN": "PDF 文本提取返回的文本过少"
+  },
+  "PDF 阅读面板": {
+    "en": "PDF reading panel",
+    "zh-CN": "PDF 阅读面板"
+  },
+  "Paper API 身份校验暂不可用": {
+    "en": "Paper API identity verification is temporarily unavailable",
+    "zh-CN": "Paper API 身份校验暂不可用"
+  },
+  "Paper Library search": {
+    "en": "Paper Library search",
+    "zh-CN": "Paper Library 搜索"
+  },
+  "Paper Research": {
+    "en": "Paper Research",
+    "zh-CN": "论文研究"
+  },
+  "Paper Research Workspace": {
+    "en": "Paper Research Workspace",
+    "zh-CN": "论文研究工作区"
+  },
+  "Paper Resident reply does not reference the confirmed input identity": {
+    "en": "Paper Resident reply does not reference the confirmed input identity",
+    "zh-CN": "Paper Resident 回复未引用已确认的输入身份"
+  },
+  "Paper Resident reply is missing its message identity": {
+    "en": "Paper Resident reply is missing its message identity",
+    "zh-CN": "Paper Resident 回复缺少其消息身份"
+  },
+  "Paper Resident reply must be a canonical agent message": {
+    "en": "Paper Resident reply must be a canonical agent message",
+    "zh-CN": "Paper Resident 回复必须是规范的 agent 消息"
+  },
+  "Paper Workbench": {
+    "en": "Paper Workbench",
+    "zh-CN": "论文工作台"
+  },
+  "Paper cannot resume an unconfirmed input identity": {
+    "en": "Paper cannot resume an unconfirmed input identity",
+    "zh-CN": "Paper 无法恢复未确认的输入身份"
+  },
+  "Paper changed during figure extraction": {
+    "en": "Paper changed during figure extraction",
+    "zh-CN": "论文在图表提取期间发生变化"
+  },
+  "Paper collection": {
+    "en": "Paper collection",
+    "zh-CN": "论文集合"
+  },
+  "Paper completion did not return a canonical Resident input identity": {
+    "en": "Paper completion did not return a canonical Resident input identity",
+    "zh-CN": "论文完成未返回规范的 Resident 输入身份"
+  },
+  "Paper figure artifact location is missing": {
+    "en": "Paper figure artifact location is missing",
+    "zh-CN": "论文图表产物位置缺失"
+  },
+  "Paper figure metadata must be a list of objects": {
+    "en": "Paper figure metadata must be a list of objects",
+    "zh-CN": "论文图表元数据必须是对象列表"
+  },
+  "Paper input identity cannot also identify a Resident reply": {
+    "en": "Paper input identity cannot also identify a Resident reply",
+    "zh-CN": "论文输入身份不能同时标识 Resident 回复"
+  },
+  "Paper job belongs to another paper": {
+    "en": "Paper job belongs to another paper",
+    "zh-CN": "论文作业属于另一篇论文"
+  },
+  "Paper job has no associated paper": {
+    "en": "Paper job has no associated paper",
+    "zh-CN": "论文作业没有关联的论文"
+  },
+  "Paper job not found": {
+    "en": "Paper job not found",
+    "zh-CN": "未找到论文作业"
+  },
+  "Paper resume message_id does not match its confirmed input_message_id": {
+    "en": "Paper resume message_id does not match its confirmed input_message_id",
+    "zh-CN": "论文恢复 message_id 与其已确认的 input_message_id 不匹配"
+  },
+  "Paper review job belongs to another paper": {
+    "en": "Paper review job belongs to another paper",
+    "zh-CN": "论文审查作业属于另一篇论文"
+  },
+  "Paper review job needs a User or Resident": {
+    "en": "Paper review job needs a User or Resident",
+    "zh-CN": "论文审查作业需要 User 或 Resident"
+  },
+  "Paper review job not found": {
+    "en": "Paper review job not found",
+    "zh-CN": "未找到论文审查作业"
+  },
+  "Paper review job result is invalid": {
+    "en": "Paper review job result is invalid",
+    "zh-CN": "论文审查作业结果无效"
+  },
+  "Paper selection actions": {
+    "en": "Paper selection actions",
+    "zh-CN": "Paper 选择操作"
+  },
+  "Paper status requires an authenticated actor": {
+    "en": "Paper status requires an authenticated actor",
+    "zh-CN": "论文状态需要已认证的执行者"
+  },
+  "Papers registered today.": {
+    "en": "Papers registered today.",
+    "zh-CN": "今日注册的论文。"
+  },
+  "Please describe how to modify this figure.": {
+    "en": "Please describe how to modify this figure.",
+    "zh-CN": "请描述如何修改此图表。"
+  },
+  "Please wait for pasted images to finish uploading.": {
+    "en": "Please wait for pasted images to finish uploading.",
+    "zh-CN": "请等待粘贴的图片上传完成。"
+  },
+  "Re-extract Figures": {
+    "en": "Re-extract Figures",
+    "zh-CN": "重新提取图表"
+  },
+  "Reading local cache…": {
+    "en": "Reading local cache…",
+    "zh-CN": "正在读取本地缓存…"
+  },
+  "Regenerate Exp": {
+    "en": "Regenerate Exp",
+    "zh-CN": "重新生成 Exp"
+  },
+  "Regist Ref": {
+    "en": "Regist Ref",
+    "zh-CN": "注册引用"
+  },
+  "Register Paper & Analysis": {
+    "en": "Register Paper & Analysis",
+    "zh-CN": "注册论文与分析"
+  },
+  "Register paper": {
+    "en": "Register paper",
+    "zh-CN": "注册论文"
+  },
+  "Registered papers": {
+    "en": "Registered papers",
+    "zh-CN": "已注册论文"
+  },
+  "Registering...": {
+    "en": "Registering...",
+    "zh-CN": "正在注册…"
+  },
+  "Related project / Folder": {
+    "en": "Related project / Folder",
+    "zh-CN": "相关项目 / 文件夹"
+  },
+  "Remove failed image uploads before generating.": {
+    "en": "Remove failed image uploads before generating.",
+    "zh-CN": "生成前请移除失败的图片上传。"
+  },
+  "Remove image": {
+    "en": "Remove image",
+    "zh-CN": "移除图片"
+  },
+  "Research Chat 输入框尚未就绪，请稍后重试。": {
+    "en": "Research Chat input box is not ready yet, please try again later.",
+    "zh-CN": "Research Chat 输入框尚未就绪，请稍后重试。"
+  },
+  "Research Workspace": {
+    "en": "Research Workspace",
+    "zh-CN": "研究工作区"
+  },
+  "Retry web investigation": {
+    "en": "Retry web investigation",
+    "zh-CN": "重试网络调查"
+  },
+  "Reviews": {
+    "en": "Reviews",
+    "zh-CN": "Reviews"
+  },
+  "Search CCF": {
+    "en": "Search CCF",
+    "zh-CN": "搜索 CCF"
+  },
+  "Search CCF, year / issue, e.g. PPoPP or 2025": {
+    "en": "Search CCF, year / issue, e.g. PPoPP or 2025",
+    "zh-CN": "搜索 CCF、年份 / 期号，例如 PPoPP 或 2025"
+  },
+  "Search papers": {
+    "en": "Search papers",
+    "zh-CN": "搜索论文"
+  },
+  "Search title, author, DOI, ID...": {
+    "en": "Search title, author, DOI, ID...",
+    "zh-CN": "搜索标题、作者、DOI、ID..."
+  },
+  "Search title, tags, analysis, ID...": {
+    "en": "Search title, tags, analysis, ID...",
+    "zh-CN": "搜索标题、标签、分析、ID..."
+  },
+  "Selected paper:": {
+    "en": "Selected paper:",
+    "zh-CN": "所选论文："
+  },
+  "Starting": {
+    "en": "Starting",
+    "zh-CN": "正在启动"
+  },
+  "Untitled DBLP paper": {
+    "en": "Untitled DBLP paper",
+    "zh-CN": "无标题 DBLP 论文"
+  },
+  "Upload PDF": {
+    "en": "Upload PDF",
+    "zh-CN": "上传 PDF"
+  },
+  "Uploading...": {
+    "en": "Uploading...",
+    "zh-CN": "上传中..."
+  },
+  "Venue": {
+    "en": "Venue",
+    "zh-CN": "Venue"
+  },
+  "Web investigation": {
+    "en": "Web investigation",
+    "zh-CN": "Web 调查"
+  },
+  "Web investigation is running in the background. Fast metadata may appear first.": {
+    "en": "Web investigation is running in the background. Fast metadata may appear first.",
+    "zh-CN": "Web 调查正在后台运行。快速元数据可能会先显示。"
+  },
+  "accelerator, GPU, PIM": {
+    "en": "accelerator, GPU, PIM",
+    "zh-CN": "加速器、GPU、PIM"
+  },
+  "arXiv ID": {
+    "en": "arXiv ID",
+    "zh-CN": "arXiv ID"
+  },
+  "authenticated actor required": {
+    "en": "authenticated actor required",
+    "zh-CN": "需要已认证的操作者"
+  },
+  "ccfPaperSearchEmpty": {
+    "en": "ccfPaperSearchEmpty",
+    "zh-CN": "ccfPaperSearchEmpty"
+  },
+  "ccfYearsState": {
+    "en": "ccfYearsState",
+    "zh-CN": "ccfYearsState"
+  },
+  "collection direction required": {
+    "en": "collection direction required",
+    "zh-CN": "采集方向为必填项"
+  },
+  "current collection": {
+    "en": "current collection",
+    "zh-CN": "当前采集"
+  },
+  "current search": {
+    "en": "current search",
+    "zh-CN": "当前搜索"
+  },
+  "empty JSON text": {
+    "en": "empty JSON text",
+    "zh-CN": "JSON 文本为空"
+  },
+  "empty paper summary": {
+    "en": "empty paper summary",
+    "zh-CN": "论文摘要为空"
+  },
+  "favorite must be a boolean": {
+    "en": "favorite must be a boolean",
+    "zh-CN": "favorite 必须是布尔值"
+  },
+  "figure draft not found": {
+    "en": "figure draft not found",
+    "zh-CN": "figure 草稿未找到"
+  },
+  "figure not found": {
+    "en": "figure not found",
+    "zh-CN": "figure 未找到"
+  },
+  "generated figure not found": {
+    "en": "generated figure not found",
+    "zh-CN": "生成的 figure 未找到"
+  },
+  "image dimensions are too large": {
+    "en": "image dimensions are too large",
+    "zh-CN": "图像尺寸过大"
+  },
+  "image file is too large": {
+    "en": "image file is too large",
+    "zh-CN": "图像文件过大"
+  },
+  "image file required": {
+    "en": "image file required",
+    "zh-CN": "图像文件必填"
+  },
+  "invalid DBLP venue identity": {
+    "en": "invalid DBLP venue identity",
+    "zh-CN": "无效的 DBLP venue 身份"
+  },
+  "invalid paper registration upload id": {
+    "en": "invalid paper registration upload id",
+    "zh-CN": "无效的论文登记上传 ID"
+  },
+  "invalid paper-relative path": {
+    "en": "invalid paper-relative path",
+    "zh-CN": "无效的论文相对路径"
+  },
+  "libraryMeta": {
+    "en": "libraryMeta",
+    "zh-CN": "libraryMeta"
+  },
+  "local PDF unavailable": {
+    "en": "local PDF unavailable",
+    "zh-CN": "本地 PDF 不可用"
+  },
+  "no JSON object found": {
+    "en": "no JSON object found",
+    "zh-CN": "未找到 JSON 对象"
+  },
+  "note body required": {
+    "en": "note body required",
+    "zh-CN": "需要笔记正文"
+  },
+  "note not found": {
+    "en": "note not found",
+    "zh-CN": "未找到笔记"
+  },
+  "note_id required": {
+    "en": "note_id required",
+    "zh-CN": "需要 note_id"
+  },
+  "paper collection job id required": {
+    "en": "paper collection job id required",
+    "zh-CN": "需要论文收集任务 ID"
+  },
+  "paper collection job not found": {
+    "en": "paper collection job not found",
+    "zh-CN": "未找到论文收集任务"
+  },
+  "paper has no analysis, PDF text, or abstract for AI review": {
+    "en": "paper has no analysis, PDF text, or abstract for AI review",
+    "zh-CN": "论文没有分析、PDF 文本或摘要可供 AI 审阅"
+  },
+  "paper has no analysis, PDF text, or abstract for Exp extraction": {
+    "en": "paper has no analysis, PDF text, or abstract for Exp extraction",
+    "zh-CN": "论文没有分析、PDF 文本或摘要可供 Exp 提取"
+  },
+  "paper has no figure store": {
+    "en": "paper has no figure store",
+    "zh-CN": "论文没有图表存储"
+  },
+  "paper has no local or remote PDF": {
+    "en": "paper has no local or remote PDF",
+    "zh-CN": "论文没有本地或远程 PDF"
+  },
+  "paper id and kind required": {
+    "en": "paper id and kind required",
+    "zh-CN": "需要论文 ID 和类型"
+  },
+  "paper id required": {
+    "en": "paper id required",
+    "zh-CN": "需要论文 ID"
+  },
+  "paper not found": {
+    "en": "paper not found",
+    "zh-CN": "未找到论文"
+  },
+  "paper registration upload id required": {
+    "en": "paper registration upload id required",
+    "zh-CN": "需要论文注册上传 ID"
+  },
+  "paper registration upload needs a User or Resident": {
+    "en": "paper registration upload needs a User or Resident",
+    "zh-CN": "论文注册上传需要 User 或 Resident"
+  },
+  "paper registration upload not found": {
+    "en": "paper registration upload not found",
+    "zh-CN": "未找到论文注册上传"
+  },
+  "paper store manifest not found": {
+    "en": "paper store manifest not found",
+    "zh-CN": "未找到论文存储清单"
+  },
+  "paper store path unavailable": {
+    "en": "paper store path unavailable",
+    "zh-CN": "论文存储路径不可用"
+  },
+  "paper store root unavailable": {
+    "en": "paper store root unavailable",
+    "zh-CN": "论文存储根目录不可用"
+  },
+  "paper title required": {
+    "en": "paper title required",
+    "zh-CN": "需要论文标题"
+  },
+  "paper-relative path escapes the Paper package": {
+    "en": "paper-relative path escapes the Paper package",
+    "zh-CN": "论文相对路径逃逸出 Paper 包"
+  },
+  "paper-relative path must not escape the Paper package": {
+    "en": "paper-relative path must not escape the Paper package",
+    "zh-CN": "paper 相对路径不得逃逸 Paper 包"
+  },
+  "paper_id and figure_id required": {
+    "en": "paper_id and figure_id required",
+    "zh-CN": "需要 paper_id 和 figure_id"
+  },
+  "paper_id or job_id required": {
+    "en": "paper_id or job_id required",
+    "zh-CN": "需要 paper_id 或 job_id"
+  },
+  "paper_id required": {
+    "en": "paper_id required",
+    "zh-CN": "需要 paper_id"
+  },
+  "paper_id, figure_id and generated_id required": {
+    "en": "paper_id, figure_id and generated_id required",
+    "zh-CN": "需要 paper_id、figure_id 和 generated_id"
+  },
+  "pdf file is too large": {
+    "en": "pdf file is too large",
+    "zh-CN": "pdf 文件过大"
+  },
+  "pdf file required": {
+    "en": "pdf file required",
+    "zh-CN": "需要 pdf 文件"
+  },
+  "pdftoppm did not write page image": {
+    "en": "pdftoppm did not write page image",
+    "zh-CN": "pdftoppm 未写入页面图像"
+  },
+  "quantization, scheduling": {
+    "en": "quantization, scheduling",
+    "zh-CN": "量化、调度"
+  },
+  "ref not found": {
+    "en": "ref not found",
+    "zh-CN": "未找到 ref"
+  },
+  "ref_id required": {
+    "en": "ref_id required",
+    "zh-CN": "ref_id 必填"
+  },
+  "remote PDF did not return PDF bytes": {
+    "en": "remote PDF did not return PDF bytes",
+    "zh-CN": "远程 PDF 未返回 PDF 字节"
+  },
+  "review not found": {
+    "en": "review not found",
+    "zh-CN": "未找到审查"
+  },
+  "review paper has no reviews directory": {
+    "en": "review paper has no reviews directory",
+    "zh-CN": "审查论文没有 reviews 目录"
+  },
+  "review_id required": {
+    "en": "review_id required",
+    "zh-CN": "需要 review_id"
+  },
+  "source image missing": {
+    "en": "source image missing",
+    "zh-CN": "源图像缺失"
+  },
+  "unknown asset kind": {
+    "en": "unknown asset kind",
+    "zh-CN": "未知的资产类型"
+  },
+  "uploaded file does not look like a PDF": {
+    "en": "uploaded file does not look like a PDF",
+    "zh-CN": "上传的文件不像是 PDF"
+  },
+  "uploaded file is not a readable image": {
+    "en": "uploaded file is not a readable image",
+    "zh-CN": "上传的文件不是可读图像"
+  },
+  "uploaded file must be a PDF": {
+    "en": "uploaded file must be a PDF",
+    "zh-CN": "上传的文件必须是 PDF"
+  },
+  "uploaded registration PDF not found": {
+    "en": "uploaded registration PDF not found",
+    "zh-CN": "未找到上传的注册 PDF"
+  },
+  "valid paper_id required": {
+    "en": "valid paper_id required",
+    "zh-CN": "需要有效的 paper_id"
+  },
+  "venue and year required": {
+    "en": "venue and year required",
+    "zh-CN": "场地和年份必填"
+  },
+  "venue required": {
+    "en": "venue required",
+    "zh-CN": "场地必填"
+  },
+  "workspaceSummary": {
+    "en": "workspaceSummary",
+    "zh-CN": "workspaceSummary"
+  },
+  "保存笔记": {
+    "en": "Save note",
+    "zh-CN": "保存笔记"
+  },
+  "元数据概览": {
+    "en": "Metadata overview",
+    "zh-CN": "元数据概览"
+  },
+  "切换到论文库目录": {
+    "en": "Switch to paper library directory",
+    "zh-CN": "切换到论文库目录"
+  },
+  "删除收集任务": {
+    "en": "Delete Collection Task",
+    "zh-CN": "删除收集任务"
+  },
+  "只看收藏": {
+    "en": "Show only favorites",
+    "zh-CN": "只看收藏"
+  },
+  "同一套接口服务 Paper 页面、Research Chat，以及之后的 deep-read / review agent。": {
+    "en": "The same set of interfaces serves the Paper page, Research Chat, and later the deep-read / review agent.",
+    "zh-CN": "同一套接口服务 Paper 页面、Research Chat，以及之后的 deep-read / review agent。"
+  },
+  "后台评审任务处理中，可离开或刷新页面。": {
+    "en": "Background review task is processing; you can leave or refresh the page.",
+    "zh-CN": "后台评审任务处理中，可离开或刷新页面。"
+  },
+  "后台评审失败，可重试。": {
+    "en": "Background review failed; you can retry.",
+    "zh-CN": "后台评审失败，可重试。"
+  },
+  "后台评审正在进行，完成后从论文产物恢复显示。": {
+    "en": "Background review is in progress; display will be restored from the paper artifact when complete.",
+    "zh-CN": "后台评审正在进行，完成后从论文产物恢复显示。"
+  },
+  "在新标签页打开 PDF": {
+    "en": "Open PDF in new tab",
+    "zh-CN": "在新标签页打开 PDF"
+  },
+  "尚未注册 PDF": {
+    "en": "PDF not registered yet",
+    "zh-CN": "尚未注册 PDF"
+  },
+  "展开 Analysis 面板": {
+    "en": "Expand Analysis panel",
+    "zh-CN": "展开 Analysis 面板"
+  },
+  "展开 PDF 面板": {
+    "en": "Expand PDF panel",
+    "zh-CN": "展开 PDF 面板"
+  },
+  "已添加到 Research Chat 输入框。": {
+    "en": "Added to the Research Chat input box.",
+    "zh-CN": "已添加到 Research Chat 输入框。"
+  },
+  "收藏论文": {
+    "en": "Favorite paper",
+    "zh-CN": "收藏论文"
+  },
+  "收起 Analysis 面板": {
+    "en": "Collapse Analysis panel",
+    "zh-CN": "收起 Analysis 面板"
+  },
+  "收起 PDF 面板": {
+    "en": "Collapse PDF panel",
+    "zh-CN": "收起 PDF 面板"
+  },
+  "收集任务未完成": {
+    "en": "Collection task incomplete",
+    "zh-CN": "收集任务未完成"
+  },
+  "最多收集": {
+    "en": "Max collected",
+    "zh-CN": "最多收集"
+  },
+  "最多收集论文数": {
+    "en": "Max papers collected",
+    "zh-CN": "最多收集论文数"
+  },
+  "最多收集论文数（1–50）": {
+    "en": "Max papers collected (1–50)",
+    "zh-CN": "最多收集论文数（1–50）"
+  },
+  "未从公开元数据中找到摘要。": {
+    "en": "No abstract found from public metadata.",
+    "zh-CN": "未从公开元数据中找到摘要。"
+  },
+  "查看未完成评审的原始输出": {
+    "en": "View raw output of incomplete reviews",
+    "zh-CN": "查看未完成评审的原始输出"
+  },
+  "根据输入需求收集论文": {
+    "en": "Collect papers based on input requirements",
+    "zh-CN": "根据输入需求收集论文"
+  },
+  "没有读到选中文本。原生浏览器 PDF viewer 有时不允许页面读取选区；可以先复制 PDF 文字，再粘贴到 Research Chat。": {
+    "en": "No selected text was read. Native browser PDF viewers sometimes do not allow pages to read the selection; you can copy the PDF text first, then paste it into Research Chat.",
+    "zh-CN": "没有读到选中文本。原生浏览器 PDF viewer 有时不允许页面读取选区；可以先复制 PDF 文字，再粘贴到 Research Chat。"
+  },
+  "网页综合调查": {
+    "en": "Web comprehensive investigation",
+    "zh-CN": "网页综合调查"
+  },
+  "评审未完成：原始输出不是完整的结构化评审。": {
+    "en": "Review incomplete: the raw output is not a complete structured review.",
+    "zh-CN": "评审未完成：原始输出不是完整的结构化评审。"
+  },
+  "请输入论文收集需求。": {
+    "en": "Please enter the paper collection requirements.",
+    "zh-CN": "请输入论文收集需求。"
+  },
+  "请选择 PDF 文件。": {
+    "en": "Please select a PDF file.",
+    "zh-CN": "请选择 PDF 文件。"
+  },
+  "阅读与讨论": {
+    "en": "Reading and discussion",
+    "zh-CN": "阅读与讨论"
+  }
+}

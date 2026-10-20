@@ -1,0 +1,146 @@
+{
+  "job_id": "41b7b410-5e39-4abc-8f15-8290b80ed1d4",
+  "status": "finished_all_stops_preserved",
+  "committed": 2304,
+  "unknown": 0,
+  "old_native_replay": 0,
+  "branches": {
+    "g0_keep": {
+      "status": "complete",
+      "steps": 192,
+      "t": 320,
+      "M": 97.05454484932471,
+      "centroid_y": 31.669390396652577,
+      "centroid_x": 27.318818812013216,
+      "largest_component": 0.9814825387631357,
+      "components": 1,
+      "edge_fraction": 7.183965251992834e-10
+    },
+    "g0_freeze": {
+      "status": "complete",
+      "steps": 192,
+      "t": 320,
+      "M": 95.87069232642247,
+      "centroid_y": 31.67811849306073,
+      "centroid_x": 27.576591163364252,
+      "largest_component": 0.9806092949112434,
+      "components": 1,
+      "edge_fraction": 2.3228535459596207e-10
+    },
+    "g0_fixed0": {
+      "status": "complete",
+      "steps": 192,
+      "t": 320,
+      "M": 95.84890090393773,
+      "centroid_y": 31.67898225307555,
+      "centroid_x": 27.666575775411232,
+      "largest_component": 0.9812979666739392,
+      "components": 1,
+      "edge_fraction": 2.2932509625202444e-10
+    },
+    "g0_fixed1": {
+      "status": "complete",
+      "steps": 192,
+      "t": 320,
+      "M": 97.55240416988367,
+      "centroid_y": 31.65469073719387,
+      "centroid_x": 27.36315244476568,
+      "largest_component": 0.9815421641624396,
+      "components": 1,
+      "edge_fraction": 7.057091105075792e-10
+    },
+    "g0_instant": {
+      "status": "complete",
+      "steps": 192,
+      "t": 320,
+      "M": 96.7148258769757,
+      "centroid_y": 31.665646490247187,
+      "centroid_x": 27.61591768565081,
+      "largest_component": 0.9809154976380373,
+      "components": 1,
+      "edge_fraction": 2.3069264443854478e-10
+    },
+    "g0_uniform": {
+      "status": "complete",
+      "steps": 192,
+      "t": 320,
+      "M": 96.27281238493674,
+      "centroid_y": 31.669639911137384,
+      "centroid_x": 27.59431087444548,
+      "largest_component": 0.9807762095256751,
+      "components": 1,
+      "edge_fraction": 2.308916329680547e-10
+    },
+    "g1_keep": {
+      "status": "complete",
+      "steps": 192,
+      "t": 320,
+      "M": 90.56079898324828,
+      "centroid_y": 31.27724675011871,
+      "centroid_x": 36.45389939627085,
+      "largest_component": 0.9797699797646534,
+      "components": 1,
+      "edge_fraction": 1.0888578532056808e-09
+    },
+    "g1_freeze": {
+      "status": "complete",
+      "steps": 192,
+      "t": 320,
+      "M": 90.06211217845083,
+      "centroid_y": 31.27580259896868,
+      "centroid_x": 36.55207184806914,
+      "largest_component": 0.9797232478052595,
+      "components": 1,
+      "edge_fraction": 1.1005444605901328e-09
+    },
+    "g1_fixed0": {
+      "status": "complete",
+      "steps": 192,
+      "t": 320,
+      "M": 91.3627737873945,
+      "centroid_y": 31.29278208844021,
+      "centroid_x": 36.299398752046066,
+      "largest_component": 0.9805219708819465,
+      "components": 1,
+      "edge_fraction": 1.0511599887598371e-09
+    },
+    "g1_fixed1": {
+      "status": "complete",
+      "steps": 192,
+      "t": 320,
+      "M": 89.8774976265852,
+      "centroid_y": 31.26038380891513,
+      "centroid_x": 36.4878991051915,
+      "largest_component": 0.9797880582274128,
+      "components": 1,
+      "edge_fraction": 1.0896413444690982e-09
+    },
+    "g1_instant": {
+      "status": "complete",
+      "steps": 192,
+      "t": 320,
+      "M": 90.81860976083648,
+      "centroid_y": 31.274857939940357,
+      "centroid_x": 36.42590886387568,
+      "largest_component": 0.9803474856446615,
+      "components": 1,
+      "edge_fraction": 1.0822889384569672e-09
+    },
+    "g1_uniform": {
+      "status": "complete",
+      "steps": 192,
+      "t": 320,
+      "M": 90.58477822203272,
+      "centroid_y": 31.274377637766634,
+      "centroid_x": 36.43617619769255,
+      "largest_component": 0.9804715770346458,
+      "components": 1,
+      "edge_fraction": 1.0812212732428187e-09
+    }
+  },
+  "native": 2304,
+  "science_wall": 34.47131824400276,
+  "raw_bytes": 41930129,
+  "all_files_bytes": 43822515,
+  "observed_all_files_peak": 43822515
+}

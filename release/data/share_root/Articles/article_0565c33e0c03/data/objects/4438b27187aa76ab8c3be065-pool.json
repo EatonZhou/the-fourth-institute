@@ -1,0 +1,1511 @@
+{
+  "schema": "lenia.research-candidate-pool.v1",
+  "owner": "resident_ce2a5ab005bc",
+  "candidates": {
+    "m2026101607-g1-0060": {
+      "candidate_id": "m2026101607-g1-0060",
+      "parent_id": "founder:paired_orbium",
+      "outer_generation": 1,
+      "origin": "paired_orbium",
+      "observations": [
+        {
+          "job_id": "5c0cbcd4-0be6-486a-ab56-35b3ed084979",
+          "run_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979",
+          "projection_record": {
+            "candidate_id": "m2026101607-g1-0060",
+            "parent_id": "founder:paired_orbium",
+            "outer_generation": 1,
+            "origin": "paired_orbium",
+            "description": "multiple smooth bodies",
+            "components_at_end": 2,
+            "centroid_concentration": [
+              0.09574712816109021,
+              0.7211181872468813
+            ],
+            "centroid_speed": null,
+            "speed_caveat": "Periodic centroid is not an interpretable organism speed for distributed patterns.",
+            "config": {
+              "size": 64,
+              "radius": 17.312394884565038,
+              "mu": 0.15816724304290594,
+              "sigma": 0.01736313349689692,
+              "dt": 0.09236343019463927,
+              "dtype": "float64"
+            },
+            "genome": "candidates/m2026101607-g1-0060/genome.json",
+            "initial": "candidates/m2026101607-g1-0060/initial.npz",
+            "restart": "candidates/m2026101607-g1-0060/long/restart.npz",
+            "frames": "candidates/m2026101607-g1-0060/long/trajectory.npz",
+            "lifetime_steps": [
+              0,
+              4096
+            ],
+            "damage_control_all_active": true
+          }
+        }
+      ],
+      "latest_description": "multiple smooth bodies",
+      "environment_assay": {
+        "job_id": "41a0e2a0-44ab-450a-800e-d71176365daa",
+        "control_active": true,
+        "outcomes": [
+          {
+            "intensity": 0.3,
+            "active": true,
+            "components": 2,
+            "mass": 286.4450641871076,
+            "mean_activity": 55.59510659890236,
+            "source": "m2026101607-g1-0060/0.3"
+          },
+          {
+            "intensity": 0.45,
+            "active": true,
+            "components": 6,
+            "mass": 921.4358999094939,
+            "mean_activity": 1.3359370592386122,
+            "source": "m2026101607-g1-0060/0.45"
+          }
+        ],
+        "time_convention": "same update-indexed pulse; evolved dt differs"
+      },
+      "lifetime_state_branches": {
+        "fe2335cd-d69c-4fbc-9ebd-93c6a42d359f": {
+          "run_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/fe2335cd-d69c-4fbc-9ebd-93c6a42d359f",
+          "diagnosis": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/fe2335cd-d69c-4fbc-9ebd-93c6a42d359f/diagnosis.json",
+          "projection_manifest": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/fe2335cd-d69c-4fbc-9ebd-93c6a42d359f/projection_manifest.json",
+          "same_genome_donors": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/fe2335cd-d69c-4fbc-9ebd-93c6a42d359f/same_genome_donors.json",
+          "genome_changed": false,
+          "lifetime_range": [
+            4608,
+            7168
+          ],
+          "new_continuations": 6,
+          "interpretation": "Finite persistence of distinct body states; second pulse changes the two-body state into a saturated field, while the previously saturated field remains close to its own sham.",
+          "donor_assessment": {
+            "path": "${share_root}/Projects/元胞自动机研究/src/research/encounter_morphogenesis/donor_assessment_0060.json",
+            "sha256": "90aac4edbcffc8a0a2384e04acf965f6cc2bd70de4ee72611319e296fd7d3000",
+            "assessed_lifetime_step": 6656,
+            "persistent_fields": [
+              "body"
+            ],
+            "decision": "retain_as_same_rule_history_macrostates; no encounter continuation requested",
+            "mass_ratio_pulse_to_unperturbed": 3.197936337592059,
+            "metric_definitions": {
+              "mass_fraction_above_point95": "sum(A[A > .95]) / sum(A), not count(A > .95) / A.size",
+              "smallest_periodic_axis_spans_yx": "Shortest periodic axis-aligned support spans at A > .1; not independent organism sizes."
+            },
+            "sourceRef": null,
+            "new_body_updates": 0
+          }
+        }
+      }
+    },
+    "m2026101607-g2-0133": {
+      "candidate_id": "m2026101607-g2-0133",
+      "parent_id": "m2026101607-g1-0071",
+      "outer_generation": 2,
+      "origin": "paired_orbium",
+      "observations": [
+        {
+          "job_id": "5c0cbcd4-0be6-486a-ab56-35b3ed084979",
+          "run_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979",
+          "projection_record": {
+            "candidate_id": "m2026101607-g2-0133",
+            "parent_id": "m2026101607-g1-0071",
+            "outer_generation": 2,
+            "origin": "paired_orbium",
+            "description": "distributed pattern",
+            "components_at_end": 53,
+            "centroid_concentration": [
+              0.009389836051518803,
+              0.007694818173662738
+            ],
+            "centroid_speed": null,
+            "speed_caveat": "Periodic centroid is not an interpretable organism speed for distributed patterns.",
+            "config": {
+              "size": 64,
+              "radius": 8.519206137130956,
+              "mu": 0.1229216678539288,
+              "sigma": 0.01735408928748723,
+              "dt": 0.10360039403441842,
+              "dtype": "float64"
+            },
+            "genome": "candidates/m2026101607-g2-0133/genome.json",
+            "initial": "candidates/m2026101607-g2-0133/initial.npz",
+            "restart": "candidates/m2026101607-g2-0133/long/restart.npz",
+            "frames": "candidates/m2026101607-g2-0133/long/trajectory.npz",
+            "lifetime_steps": [
+              0,
+              4096
+            ],
+            "damage_control_all_active": true
+          }
+        }
+      ],
+      "latest_description": "distributed pattern",
+      "environment_assay": {
+        "job_id": "41a0e2a0-44ab-450a-800e-d71176365daa",
+        "control_active": true,
+        "outcomes": [
+          {
+            "intensity": 0.3,
+            "active": true,
+            "components": 54,
+            "mass": 683.0423085473499,
+            "mean_activity": 2.7983792663027693,
+            "source": "m2026101607-g2-0133/0.3"
+          },
+          {
+            "intensity": 0.45,
+            "active": true,
+            "components": 57,
+            "mass": 685.5356877670455,
+            "mean_activity": 2.953993515371171,
+            "source": "m2026101607-g2-0133/0.45"
+          }
+        ],
+        "time_convention": "same update-indexed pulse; evolved dt differs"
+      }
+    },
+    "m2026101607-g2-0165": {
+      "candidate_id": "m2026101607-g2-0165",
+      "parent_id": "m2026101607-g1-0041",
+      "outer_generation": 2,
+      "origin": "stretched_orbium",
+      "observations": [
+        {
+          "job_id": "5c0cbcd4-0be6-486a-ab56-35b3ed084979",
+          "run_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979",
+          "projection_record": {
+            "candidate_id": "m2026101607-g2-0165",
+            "parent_id": "m2026101607-g1-0041",
+            "outer_generation": 2,
+            "origin": "stretched_orbium",
+            "description": "distributed pattern",
+            "components_at_end": 24,
+            "centroid_concentration": [
+              0.017038623600766373,
+              0.015149887134314538
+            ],
+            "centroid_speed": null,
+            "speed_caveat": "Periodic centroid is not an interpretable organism speed for distributed patterns.",
+            "config": {
+              "size": 64,
+              "radius": 12.927214813367051,
+              "mu": 0.14126464820280016,
+              "sigma": 0.02129813208102701,
+              "dt": 0.10869712869090481,
+              "dtype": "float64"
+            },
+            "genome": "candidates/m2026101607-g2-0165/genome.json",
+            "initial": "candidates/m2026101607-g2-0165/initial.npz",
+            "restart": "candidates/m2026101607-g2-0165/long/restart.npz",
+            "frames": "candidates/m2026101607-g2-0165/long/trajectory.npz",
+            "lifetime_steps": [
+              0,
+              4096
+            ],
+            "damage_control_all_active": true
+          }
+        }
+      ],
+      "latest_description": "distributed pattern",
+      "environment_assay": {
+        "job_id": "41a0e2a0-44ab-450a-800e-d71176365daa",
+        "control_active": true,
+        "outcomes": [
+          {
+            "intensity": 0.3,
+            "active": true,
+            "components": 24,
+            "mass": 782.4364300639119,
+            "mean_activity": 0.17936484113326215,
+            "source": "m2026101607-g2-0165/0.3"
+          },
+          {
+            "intensity": 0.45,
+            "active": true,
+            "components": 24,
+            "mass": 784.428440636149,
+            "mean_activity": 0.23819749463741108,
+            "source": "m2026101607-g2-0165/0.45"
+          }
+        ],
+        "time_convention": "same update-indexed pulse; evolved dt differs"
+      }
+    },
+    "m2026101607-g1-0062": {
+      "candidate_id": "m2026101607-g1-0062",
+      "parent_id": "founder:paired_orbium",
+      "outer_generation": 1,
+      "origin": "paired_orbium",
+      "observations": [
+        {
+          "job_id": "5c0cbcd4-0be6-486a-ab56-35b3ed084979",
+          "run_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979",
+          "projection_record": {
+            "candidate_id": "m2026101607-g1-0062",
+            "parent_id": "founder:paired_orbium",
+            "outer_generation": 1,
+            "origin": "paired_orbium",
+            "description": "distributed pattern",
+            "components_at_end": 44,
+            "centroid_concentration": [
+              0.019675945659671745,
+              0.007156852079310758
+            ],
+            "centroid_speed": null,
+            "speed_caveat": "Periodic centroid is not an interpretable organism speed for distributed patterns.",
+            "config": {
+              "size": 64,
+              "radius": 9.574235038004854,
+              "mu": 0.12321854078576643,
+              "sigma": 0.01323906380005953,
+              "dt": 0.08144392266544702,
+              "dtype": "float64"
+            },
+            "genome": "candidates/m2026101607-g1-0062/genome.json",
+            "initial": "candidates/m2026101607-g1-0062/initial.npz",
+            "restart": "candidates/m2026101607-g1-0062/long/restart.npz",
+            "frames": "candidates/m2026101607-g1-0062/long/trajectory.npz",
+            "lifetime_steps": [
+              0,
+              4096
+            ],
+            "damage_control_all_active": true
+          }
+        }
+      ],
+      "latest_description": "distributed pattern",
+      "environment_assay": {
+        "job_id": "41a0e2a0-44ab-450a-800e-d71176365daa",
+        "control_active": true,
+        "outcomes": [
+          {
+            "intensity": 0.3,
+            "active": true,
+            "components": 45,
+            "mass": 693.8275972064929,
+            "mean_activity": 4.829727399299767,
+            "source": "m2026101607-g1-0062/0.3"
+          },
+          {
+            "intensity": 0.45,
+            "active": true,
+            "components": 48,
+            "mass": 687.4876279309524,
+            "mean_activity": 4.918099141898406,
+            "source": "m2026101607-g1-0062/0.45"
+          }
+        ],
+        "time_convention": "same update-indexed pulse; evolved dt differs"
+      }
+    },
+    "m2026101607-g2-0136": {
+      "candidate_id": "m2026101607-g2-0136",
+      "parent_id": "m2026101607-g1-0013",
+      "outer_generation": 2,
+      "origin": "orbium",
+      "observations": [
+        {
+          "job_id": "5c0cbcd4-0be6-486a-ab56-35b3ed084979",
+          "run_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979",
+          "projection_record": {
+            "candidate_id": "m2026101607-g2-0136",
+            "parent_id": "m2026101607-g1-0013",
+            "outer_generation": 2,
+            "origin": "orbium",
+            "description": "distributed pattern",
+            "components_at_end": 10,
+            "centroid_concentration": [
+              0.010199098291039918,
+              0.011753987390588343
+            ],
+            "centroid_speed": null,
+            "speed_caveat": "Periodic centroid is not an interpretable organism speed for distributed patterns.",
+            "config": {
+              "size": 64,
+              "radius": 20.036788730882083,
+              "mu": 0.12517735601438898,
+              "sigma": 0.0261400118845587,
+              "dt": 0.08485923816117273,
+              "dtype": "float64"
+            },
+            "genome": "candidates/m2026101607-g2-0136/genome.json",
+            "initial": "candidates/m2026101607-g2-0136/initial.npz",
+            "restart": "candidates/m2026101607-g2-0136/long/restart.npz",
+            "frames": "candidates/m2026101607-g2-0136/long/trajectory.npz",
+            "lifetime_steps": [
+              0,
+              4096
+            ],
+            "damage_control_all_active": true
+          }
+        }
+      ],
+      "latest_description": "distributed pattern",
+      "environment_assay": {
+        "job_id": "41a0e2a0-44ab-450a-800e-d71176365daa",
+        "control_active": true,
+        "outcomes": [
+          {
+            "intensity": 0.3,
+            "active": true,
+            "components": 10,
+            "mass": 759.7060905463352,
+            "mean_activity": 0.06565964903601332,
+            "source": "m2026101607-g2-0136/0.3"
+          },
+          {
+            "intensity": 0.45,
+            "active": true,
+            "components": 10,
+            "mass": 759.0682692289531,
+            "mean_activity": 0.050161481209354625,
+            "source": "m2026101607-g2-0136/0.45"
+          }
+        ],
+        "time_convention": "same update-indexed pulse; evolved dt differs"
+      }
+    },
+    "m2026101607-g1-0065": {
+      "candidate_id": "m2026101607-g1-0065",
+      "parent_id": "founder:paired_orbium",
+      "outer_generation": 1,
+      "origin": "paired_orbium",
+      "observations": [
+        {
+          "job_id": "5c0cbcd4-0be6-486a-ab56-35b3ed084979",
+          "run_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979",
+          "projection_record": {
+            "candidate_id": "m2026101607-g1-0065",
+            "parent_id": "founder:paired_orbium",
+            "outer_generation": 1,
+            "origin": "paired_orbium",
+            "description": "distributed pattern",
+            "components_at_end": 40,
+            "centroid_concentration": [
+              0.012014129802758965,
+              0.008992985642405733
+            ],
+            "centroid_speed": null,
+            "speed_caveat": "Periodic centroid is not an interpretable organism speed for distributed patterns.",
+            "config": {
+              "size": 64,
+              "radius": 11.750303311883911,
+              "mu": 0.12515418162602815,
+              "sigma": 0.01604130877463207,
+              "dt": 0.10664713495589373,
+              "dtype": "float64"
+            },
+            "genome": "candidates/m2026101607-g1-0065/genome.json",
+            "initial": "candidates/m2026101607-g1-0065/initial.npz",
+            "restart": "candidates/m2026101607-g1-0065/long/restart.npz",
+            "frames": "candidates/m2026101607-g1-0065/long/trajectory.npz",
+            "lifetime_steps": [
+              0,
+              4096
+            ],
+            "damage_control_all_active": true
+          }
+        }
+      ],
+      "latest_description": "distributed pattern",
+      "environment_assay": {
+        "job_id": "41a0e2a0-44ab-450a-800e-d71176365daa",
+        "control_active": true,
+        "outcomes": [
+          {
+            "intensity": 0.3,
+            "active": true,
+            "components": 39,
+            "mass": 697.9602745343254,
+            "mean_activity": 1.5694352950759263,
+            "source": "m2026101607-g1-0065/0.3"
+          },
+          {
+            "intensity": 0.45,
+            "active": true,
+            "components": 42,
+            "mass": 697.1464894473661,
+            "mean_activity": 1.3289659054485898,
+            "source": "m2026101607-g1-0065/0.45"
+          }
+        ],
+        "time_convention": "same update-indexed pulse; evolved dt differs"
+      }
+    },
+    "m2026101607-g1-0075": {
+      "candidate_id": "m2026101607-g1-0075",
+      "parent_id": "founder:annulus",
+      "outer_generation": 1,
+      "origin": "annulus",
+      "observations": [
+        {
+          "job_id": "5c0cbcd4-0be6-486a-ab56-35b3ed084979",
+          "run_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979",
+          "projection_record": {
+            "candidate_id": "m2026101607-g1-0075",
+            "parent_id": "founder:annulus",
+            "outer_generation": 1,
+            "origin": "annulus",
+            "description": "distributed pattern",
+            "components_at_end": 10,
+            "centroid_concentration": [
+              0.004892283791976775,
+              0.005506825525794992
+            ],
+            "centroid_speed": null,
+            "speed_caveat": "Periodic centroid is not an interpretable organism speed for distributed patterns.",
+            "config": {
+              "size": 64,
+              "radius": 13.89177246148769,
+              "mu": 0.1511650904010384,
+              "sigma": 0.014062449889049674,
+              "dt": 0.10490095002190926,
+              "dtype": "float64"
+            },
+            "genome": "candidates/m2026101607-g1-0075/genome.json",
+            "initial": "candidates/m2026101607-g1-0075/initial.npz",
+            "restart": "candidates/m2026101607-g1-0075/long/restart.npz",
+            "frames": "candidates/m2026101607-g1-0075/long/trajectory.npz",
+            "lifetime_steps": [
+              0,
+              4096
+            ],
+            "damage_control_all_active": true
+          }
+        }
+      ],
+      "latest_description": "distributed pattern",
+      "environment_assay": {
+        "job_id": "41a0e2a0-44ab-450a-800e-d71176365daa",
+        "control_active": true,
+        "outcomes": [
+          {
+            "intensity": 0.3,
+            "active": true,
+            "components": 9,
+            "mass": 869.2637159976039,
+            "mean_activity": 2.217566155227414,
+            "source": "m2026101607-g1-0075/0.3"
+          },
+          {
+            "intensity": 0.45,
+            "active": true,
+            "components": 10,
+            "mass": 866.3419868896823,
+            "mean_activity": 2.0658369900164084,
+            "source": "m2026101607-g1-0075/0.45"
+          }
+        ],
+        "time_convention": "same update-indexed pulse; evolved dt differs"
+      }
+    },
+    "m2026101607-g2-0145": {
+      "candidate_id": "m2026101607-g2-0145",
+      "parent_id": "m2026101607-g1-0071",
+      "outer_generation": 2,
+      "origin": "paired_orbium",
+      "observations": [
+        {
+          "job_id": "5c0cbcd4-0be6-486a-ab56-35b3ed084979",
+          "run_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979",
+          "projection_record": {
+            "candidate_id": "m2026101607-g2-0145",
+            "parent_id": "m2026101607-g1-0071",
+            "outer_generation": 2,
+            "origin": "paired_orbium",
+            "description": "distributed pattern",
+            "components_at_end": 66,
+            "centroid_concentration": [
+              0.005076221800126269,
+              0.012007960360628228
+            ],
+            "centroid_speed": null,
+            "speed_caveat": "Periodic centroid is not an interpretable organism speed for distributed patterns.",
+            "config": {
+              "size": 64,
+              "radius": 8.192184041856418,
+              "mu": 0.12033436302617032,
+              "sigma": 0.016084982773665546,
+              "dt": 0.0976285415349769,
+              "dtype": "float64"
+            },
+            "genome": "candidates/m2026101607-g2-0145/genome.json",
+            "initial": "candidates/m2026101607-g2-0145/initial.npz",
+            "restart": "candidates/m2026101607-g2-0145/long/restart.npz",
+            "frames": "candidates/m2026101607-g2-0145/long/trajectory.npz",
+            "lifetime_steps": [
+              0,
+              4096
+            ],
+            "damage_control_all_active": true
+          }
+        }
+      ],
+      "latest_description": "distributed pattern",
+      "environment_assay": {
+        "job_id": "41a0e2a0-44ab-450a-800e-d71176365daa",
+        "control_active": true,
+        "outcomes": [
+          {
+            "intensity": 0.3,
+            "active": true,
+            "components": 66,
+            "mass": 677.4400604497578,
+            "mean_activity": 5.717818127074211,
+            "source": "m2026101607-g2-0145/0.3"
+          },
+          {
+            "intensity": 0.45,
+            "active": true,
+            "components": 62,
+            "mass": 675.3900753716733,
+            "mean_activity": 4.978403576910559,
+            "source": "m2026101607-g2-0145/0.45"
+          }
+        ],
+        "time_convention": "same update-indexed pulse; evolved dt differs"
+      }
+    },
+    "m2026101607-g2-0167": {
+      "candidate_id": "m2026101607-g2-0167",
+      "parent_id": "m2026101607-g1-0088",
+      "outer_generation": 2,
+      "origin": "annulus",
+      "observations": [
+        {
+          "job_id": "5c0cbcd4-0be6-486a-ab56-35b3ed084979",
+          "run_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979",
+          "projection_record": {
+            "candidate_id": "m2026101607-g2-0167",
+            "parent_id": "m2026101607-g1-0088",
+            "outer_generation": 2,
+            "origin": "annulus",
+            "description": "distributed pattern",
+            "components_at_end": 16,
+            "centroid_concentration": [
+              0.010335394139676598,
+              0.006600617570375293
+            ],
+            "centroid_speed": null,
+            "speed_caveat": "Periodic centroid is not an interpretable organism speed for distributed patterns.",
+            "config": {
+              "size": 64,
+              "radius": 16.39803429966616,
+              "mu": 0.16632356024590825,
+              "sigma": 0.028564980504605833,
+              "dt": 0.0993018894506021,
+              "dtype": "float64"
+            },
+            "genome": "candidates/m2026101607-g2-0167/genome.json",
+            "initial": "candidates/m2026101607-g2-0167/initial.npz",
+            "restart": "candidates/m2026101607-g2-0167/long/restart.npz",
+            "frames": "candidates/m2026101607-g2-0167/long/trajectory.npz",
+            "lifetime_steps": [
+              0,
+              4096
+            ],
+            "damage_control_all_active": true
+          }
+        }
+      ],
+      "latest_description": "distributed pattern",
+      "environment_assay": {
+        "job_id": "41a0e2a0-44ab-450a-800e-d71176365daa",
+        "control_active": true,
+        "outcomes": [
+          {
+            "intensity": 0.3,
+            "active": true,
+            "components": 16,
+            "mass": 892.4773858194994,
+            "mean_activity": 0.061695304935171474,
+            "source": "m2026101607-g2-0167/0.3"
+          },
+          {
+            "intensity": 0.45,
+            "active": true,
+            "components": 16,
+            "mass": 893.0246953146565,
+            "mean_activity": 0.07165457481032841,
+            "source": "m2026101607-g2-0167/0.45"
+          }
+        ],
+        "time_convention": "same update-indexed pulse; evolved dt differs"
+      }
+    },
+    "m2026101607-g1-0069": {
+      "candidate_id": "m2026101607-g1-0069",
+      "parent_id": "founder:paired_orbium",
+      "outer_generation": 1,
+      "origin": "paired_orbium",
+      "observations": [
+        {
+          "job_id": "5c0cbcd4-0be6-486a-ab56-35b3ed084979",
+          "run_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979",
+          "projection_record": {
+            "candidate_id": "m2026101607-g1-0069",
+            "parent_id": "founder:paired_orbium",
+            "outer_generation": 1,
+            "origin": "paired_orbium",
+            "description": "distributed pattern",
+            "components_at_end": 4,
+            "centroid_concentration": [
+              0.001903743044032635,
+              0.0023191200950162375
+            ],
+            "centroid_speed": null,
+            "speed_caveat": "Periodic centroid is not an interpretable organism speed for distributed patterns.",
+            "config": {
+              "size": 64,
+              "radius": 17.760078394976418,
+              "mu": 0.1976755250358027,
+              "sigma": 0.023206910609093766,
+              "dt": 0.09381030039306112,
+              "dtype": "float64"
+            },
+            "genome": "candidates/m2026101607-g1-0069/genome.json",
+            "initial": "candidates/m2026101607-g1-0069/initial.npz",
+            "restart": "candidates/m2026101607-g1-0069/long/restart.npz",
+            "frames": "candidates/m2026101607-g1-0069/long/trajectory.npz",
+            "lifetime_steps": [
+              0,
+              4096
+            ],
+            "damage_control_all_active": true
+          }
+        }
+      ],
+      "latest_description": "distributed pattern",
+      "environment_assay": {
+        "job_id": "41a0e2a0-44ab-450a-800e-d71176365daa",
+        "control_active": true,
+        "outcomes": [
+          {
+            "intensity": 0.3,
+            "active": true,
+            "components": 4,
+            "mass": 1197.4500880735027,
+            "mean_activity": 0.025493833358488455,
+            "source": "m2026101607-g1-0069/0.3"
+          },
+          {
+            "intensity": 0.45,
+            "active": true,
+            "components": 4,
+            "mass": 1197.6747400241252,
+            "mean_activity": 0.11353406064106672,
+            "source": "m2026101607-g1-0069/0.45"
+          }
+        ],
+        "time_convention": "same update-indexed pulse; evolved dt differs"
+      }
+    },
+    "m2026101607-g1-0055": {
+      "candidate_id": "m2026101607-g1-0055",
+      "parent_id": "founder:paired_orbium",
+      "outer_generation": 1,
+      "origin": "paired_orbium",
+      "observations": [
+        {
+          "job_id": "5c0cbcd4-0be6-486a-ab56-35b3ed084979",
+          "run_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979",
+          "projection_record": {
+            "candidate_id": "m2026101607-g1-0055",
+            "parent_id": "founder:paired_orbium",
+            "outer_generation": 1,
+            "origin": "paired_orbium",
+            "description": "localized motile",
+            "components_at_end": 1,
+            "centroid_concentration": [
+              0.9443649439689559,
+              0.9358554482548083
+            ],
+            "centroid_speed": 0.5540362320066884,
+            "speed_caveat": "Periodic centroid is not an interpretable organism speed for distributed patterns.",
+            "config": {
+              "size": 64,
+              "radius": 11.722681357393762,
+              "mu": 0.15312444012408633,
+              "sigma": 0.014403804810106845,
+              "dt": 0.10471936988260648,
+              "dtype": "float64"
+            },
+            "genome": "candidates/m2026101607-g1-0055/genome.json",
+            "initial": "candidates/m2026101607-g1-0055/initial.npz",
+            "restart": "candidates/m2026101607-g1-0055/long/restart.npz",
+            "frames": "candidates/m2026101607-g1-0055/long/trajectory.npz",
+            "lifetime_steps": [
+              0,
+              4096
+            ],
+            "damage_control_all_active": true
+          }
+        }
+      ],
+      "latest_description": "localized motile",
+      "environment_assay": {
+        "job_id": "41a0e2a0-44ab-450a-800e-d71176365daa",
+        "control_active": true,
+        "outcomes": [
+          {
+            "intensity": 0.3,
+            "active": false,
+            "components": 0,
+            "mass": 0.0,
+            "mean_activity": 0.0,
+            "source": "m2026101607-g1-0055/0.3"
+          },
+          {
+            "intensity": 0.45,
+            "active": false,
+            "components": 0,
+            "mass": 0.0,
+            "mean_activity": 0.0,
+            "source": "m2026101607-g1-0055/0.45"
+          }
+        ],
+        "time_convention": "same update-indexed pulse; evolved dt differs"
+      }
+    },
+    "m2026101607-g2-0128": {
+      "candidate_id": "m2026101607-g2-0128",
+      "parent_id": "m2026101607-g1-0055",
+      "outer_generation": 2,
+      "origin": "paired_orbium",
+      "observations": [
+        {
+          "job_id": "5c0cbcd4-0be6-486a-ab56-35b3ed084979",
+          "run_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979",
+          "projection_record": {
+            "candidate_id": "m2026101607-g2-0128",
+            "parent_id": "m2026101607-g1-0055",
+            "outer_generation": 2,
+            "origin": "paired_orbium",
+            "description": "distributed pattern",
+            "components_at_end": 23,
+            "centroid_concentration": [
+              0.010595657774520359,
+              0.015201720213237466
+            ],
+            "centroid_speed": null,
+            "speed_caveat": "Periodic centroid is not an interpretable organism speed for distributed patterns.",
+            "config": {
+              "size": 64,
+              "radius": 11.15992637973517,
+              "mu": 0.15394233048453487,
+              "sigma": 0.017490271243100233,
+              "dt": 0.11008806068086836,
+              "dtype": "float64"
+            },
+            "genome": "candidates/m2026101607-g2-0128/genome.json",
+            "initial": "candidates/m2026101607-g2-0128/initial.npz",
+            "restart": "candidates/m2026101607-g2-0128/long/restart.npz",
+            "frames": "candidates/m2026101607-g2-0128/long/trajectory.npz",
+            "lifetime_steps": [
+              0,
+              4096
+            ],
+            "damage_control_all_active": true
+          }
+        }
+      ],
+      "latest_description": "distributed pattern",
+      "environment_assay": {
+        "job_id": "41a0e2a0-44ab-450a-800e-d71176365daa",
+        "control_active": true,
+        "outcomes": [
+          {
+            "intensity": 0.3,
+            "active": true,
+            "components": 19,
+            "mass": 894.2492634210581,
+            "mean_activity": 2.458783368927688,
+            "source": "m2026101607-g2-0128/0.3"
+          },
+          {
+            "intensity": 0.45,
+            "active": true,
+            "components": 23,
+            "mass": 893.9009589844285,
+            "mean_activity": 2.502997381280455,
+            "source": "m2026101607-g2-0128/0.45"
+          }
+        ],
+        "time_convention": "same update-indexed pulse; evolved dt differs"
+      }
+    },
+    "m2026101607-g1-0003": {
+      "candidate_id": "m2026101607-g1-0003",
+      "parent_id": "founder:orbium",
+      "outer_generation": 1,
+      "origin": "orbium",
+      "observations": [
+        {
+          "job_id": "d4fa3c8b-aeb4-4f96-83f4-1e4b5bc0af3b",
+          "run_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/d4fa3c8b-aeb4-4f96-83f4-1e4b5bc0af3b",
+          "projection_record": {
+            "candidate_id": "m2026101607-g1-0003",
+            "parent_id": "founder:orbium",
+            "outer_generation": 1,
+            "origin": "orbium",
+            "description": "localized motile",
+            "components_at_end": 1,
+            "centroid_concentration": [
+              0.9546065854422144,
+              0.9442692105322271
+            ],
+            "centroid_speed": 0.4643510092753736,
+            "speed_caveat": "Periodic centroid is not an interpretable organism speed for distributed patterns.",
+            "config": {
+              "size": 64,
+              "radius": 10.643443472788118,
+              "mu": 0.14695130360723174,
+              "sigma": 0.014860467046755246,
+              "dt": 0.08854873286546422,
+              "dtype": "float64"
+            },
+            "genome": "candidates/m2026101607-g1-0003/genome.json",
+            "initial": "candidates/m2026101607-g1-0003/initial.npz",
+            "restart": "candidates/m2026101607-g1-0003/long/restart.npz",
+            "frames": "candidates/m2026101607-g1-0003/long/trajectory.npz",
+            "lifetime_steps": [
+              512,
+              4096
+            ],
+            "damage_control_all_active": false
+          }
+        }
+      ],
+      "latest_description": "localized motile",
+      "environment_assay": {
+        "job_id": "41a0e2a0-44ab-450a-800e-d71176365daa",
+        "control_active": true,
+        "outcomes": [
+          {
+            "intensity": 0.3,
+            "active": true,
+            "components": 1,
+            "mass": 48.734396804885456,
+            "mean_activity": 9.186992105541833,
+            "source": "m2026101607-g1-0003/0.3"
+          },
+          {
+            "intensity": 0.45,
+            "active": false,
+            "components": 0,
+            "mass": 0.0,
+            "mean_activity": 0.0,
+            "source": "m2026101607-g1-0003/0.45"
+          }
+        ],
+        "time_convention": "same update-indexed pulse; evolved dt differs"
+      }
+    },
+    "m2026101607-g1-0007": {
+      "candidate_id": "m2026101607-g1-0007",
+      "parent_id": "founder:orbium",
+      "outer_generation": 1,
+      "origin": "orbium",
+      "observations": [
+        {
+          "job_id": "d4fa3c8b-aeb4-4f96-83f4-1e4b5bc0af3b",
+          "run_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/d4fa3c8b-aeb4-4f96-83f4-1e4b5bc0af3b",
+          "projection_record": {
+            "candidate_id": "m2026101607-g1-0007",
+            "parent_id": "founder:orbium",
+            "outer_generation": 1,
+            "origin": "orbium",
+            "description": "localized motile",
+            "components_at_end": 1,
+            "centroid_concentration": [
+              0.9208110147560189,
+              0.9024153937916367
+            ],
+            "centroid_speed": 0.7295913382908634,
+            "speed_caveat": "Periodic centroid is not an interpretable organism speed for distributed patterns.",
+            "config": {
+              "size": 64,
+              "radius": 14.520264793368508,
+              "mu": 0.14732992492290903,
+              "sigma": 0.013489645876084349,
+              "dt": 0.10966170915830223,
+              "dtype": "float64"
+            },
+            "genome": "candidates/m2026101607-g1-0007/genome.json",
+            "initial": "candidates/m2026101607-g1-0007/initial.npz",
+            "restart": "candidates/m2026101607-g1-0007/long/restart.npz",
+            "frames": "candidates/m2026101607-g1-0007/long/trajectory.npz",
+            "lifetime_steps": [
+              512,
+              4096
+            ],
+            "damage_control_all_active": false
+          }
+        }
+      ],
+      "latest_description": "localized motile",
+      "environment_assay": {
+        "job_id": "41a0e2a0-44ab-450a-800e-d71176365daa",
+        "control_active": true,
+        "outcomes": [
+          {
+            "intensity": 0.3,
+            "active": false,
+            "components": 0,
+            "mass": 0.0,
+            "mean_activity": 0.0,
+            "source": "m2026101607-g1-0007/0.3"
+          },
+          {
+            "intensity": 0.45,
+            "active": false,
+            "components": 0,
+            "mass": 0.0,
+            "mean_activity": 0.0,
+            "source": "m2026101607-g1-0007/0.45"
+          }
+        ],
+        "time_convention": "same update-indexed pulse; evolved dt differs"
+      }
+    },
+    "m2026101607-g1-0063": {
+      "candidate_id": "m2026101607-g1-0063",
+      "parent_id": "founder:paired_orbium",
+      "outer_generation": 1,
+      "origin": "paired_orbium",
+      "observations": [
+        {
+          "job_id": "d4fa3c8b-aeb4-4f96-83f4-1e4b5bc0af3b",
+          "run_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/d4fa3c8b-aeb4-4f96-83f4-1e4b5bc0af3b",
+          "projection_record": {
+            "candidate_id": "m2026101607-g1-0063",
+            "parent_id": "founder:paired_orbium",
+            "outer_generation": 1,
+            "origin": "paired_orbium",
+            "description": "localized motile",
+            "components_at_end": 1,
+            "centroid_concentration": [
+              0.8413840277504794,
+              0.8618858264675976
+            ],
+            "centroid_speed": 1.038434299960294,
+            "speed_caveat": "Periodic centroid is not an interpretable organism speed for distributed patterns.",
+            "config": {
+              "size": 64,
+              "radius": 18.07920864028216,
+              "mu": 0.14731981871745128,
+              "sigma": 0.01611228279294342,
+              "dt": 0.11436097655150484,
+              "dtype": "float64"
+            },
+            "genome": "candidates/m2026101607-g1-0063/genome.json",
+            "initial": "candidates/m2026101607-g1-0063/initial.npz",
+            "restart": "candidates/m2026101607-g1-0063/long/restart.npz",
+            "frames": "candidates/m2026101607-g1-0063/long/trajectory.npz",
+            "lifetime_steps": [
+              512,
+              4096
+            ],
+            "damage_control_all_active": false
+          }
+        }
+      ],
+      "latest_description": "localized motile",
+      "environment_assay": {
+        "job_id": "41a0e2a0-44ab-450a-800e-d71176365daa",
+        "control_active": true,
+        "outcomes": [
+          {
+            "intensity": 0.3,
+            "active": true,
+            "components": 1,
+            "mass": 145.00621942404302,
+            "mean_activity": 35.22489950995438,
+            "source": "m2026101607-g1-0063/0.3"
+          },
+          {
+            "intensity": 0.45,
+            "active": false,
+            "components": 0,
+            "mass": 0.0,
+            "mean_activity": 0.0,
+            "source": "m2026101607-g1-0063/0.45"
+          }
+        ],
+        "time_convention": "same update-indexed pulse; evolved dt differs"
+      }
+    },
+    "m2026101607-g1-0082": {
+      "candidate_id": "m2026101607-g1-0082",
+      "parent_id": "founder:annulus",
+      "outer_generation": 1,
+      "origin": "annulus",
+      "observations": [
+        {
+          "job_id": "d4fa3c8b-aeb4-4f96-83f4-1e4b5bc0af3b",
+          "run_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/d4fa3c8b-aeb4-4f96-83f4-1e4b5bc0af3b",
+          "projection_record": {
+            "candidate_id": "m2026101607-g1-0082",
+            "parent_id": "founder:annulus",
+            "outer_generation": 1,
+            "origin": "annulus",
+            "description": "localized motile",
+            "components_at_end": 1,
+            "centroid_concentration": [
+              0.9295955236706358,
+              0.9338008799671446
+            ],
+            "centroid_speed": 0.6550662657300712,
+            "speed_caveat": "Periodic centroid is not an interpretable organism speed for distributed patterns.",
+            "config": {
+              "size": 64,
+              "radius": 12.351887716873172,
+              "mu": 0.15490376554840232,
+              "sigma": 0.015062892992669585,
+              "dt": 0.1168287245522893,
+              "dtype": "float64"
+            },
+            "genome": "candidates/m2026101607-g1-0082/genome.json",
+            "initial": "candidates/m2026101607-g1-0082/initial.npz",
+            "restart": "candidates/m2026101607-g1-0082/long/restart.npz",
+            "frames": "candidates/m2026101607-g1-0082/long/trajectory.npz",
+            "lifetime_steps": [
+              512,
+              4096
+            ],
+            "damage_control_all_active": false
+          }
+        }
+      ],
+      "latest_description": "localized motile",
+      "environment_assay": {
+        "job_id": "41a0e2a0-44ab-450a-800e-d71176365daa",
+        "control_active": true,
+        "outcomes": [
+          {
+            "intensity": 0.3,
+            "active": false,
+            "components": 0,
+            "mass": 0.0,
+            "mean_activity": 0.0,
+            "source": "m2026101607-g1-0082/0.3"
+          },
+          {
+            "intensity": 0.45,
+            "active": false,
+            "components": 0,
+            "mass": 0.0,
+            "mean_activity": 0.0,
+            "source": "m2026101607-g1-0082/0.45"
+          }
+        ],
+        "time_convention": "same update-indexed pulse; evolved dt differs"
+      },
+      "assembly_observations": {
+        "739c8a1e-8ead-4343-8743-4ef3aa7997cd": {
+          "index": "${share_root}/Projects/元胞自动机研究/src/morphology_evolution/handoffs/donor_encounters_v1.json",
+          "sourceRef": "information_307d59b12f6f/file/information_307d59b12f6f/donors_20261016/progress.json",
+          "sourceRef_scope": "assembly observations only",
+          "event_type": "manual_clone_assembly",
+          "donor_lifetime_step": 4096,
+          "assembly_updates_observed": 2048,
+          "new_outer_generation_started": false,
+          "finding": "Parallel pair remains two components at512, becomes one component by the end of2048; head-on assembly disappears at54 while isolated controls remain active."
+        }
+      }
+    },
+    "m2026101607-g2-0161": {
+      "candidate_id": "m2026101607-g2-0161",
+      "parent_id": "m2026101607-g1-0062",
+      "outer_generation": 2,
+      "origin": "paired_orbium",
+      "observations": [
+        {
+          "job_id": "d4fa3c8b-aeb4-4f96-83f4-1e4b5bc0af3b",
+          "run_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/d4fa3c8b-aeb4-4f96-83f4-1e4b5bc0af3b",
+          "projection_record": {
+            "candidate_id": "m2026101607-g2-0161",
+            "parent_id": "m2026101607-g1-0062",
+            "outer_generation": 2,
+            "origin": "paired_orbium",
+            "description": "localized motile",
+            "components_at_end": 1,
+            "centroid_concentration": [
+              0.9682896705227865,
+              0.9483705111831295
+            ],
+            "centroid_speed": 0.410252170856403,
+            "speed_caveat": "Periodic centroid is not an interpretable organism speed for distributed patterns.",
+            "config": {
+              "size": 64,
+              "radius": 9.198894039746325,
+              "mu": 0.1203104356754759,
+              "sigma": 0.013121955472950973,
+              "dt": 0.08057164350344485,
+              "dtype": "float64"
+            },
+            "genome": "candidates/m2026101607-g2-0161/genome.json",
+            "initial": "candidates/m2026101607-g2-0161/initial.npz",
+            "restart": "candidates/m2026101607-g2-0161/long/restart.npz",
+            "frames": "candidates/m2026101607-g2-0161/long/trajectory.npz",
+            "lifetime_steps": [
+              512,
+              4096
+            ],
+            "damage_control_all_active": false
+          }
+        }
+      ],
+      "latest_description": "localized motile",
+      "environment_assay": {
+        "job_id": "41a0e2a0-44ab-450a-800e-d71176365daa",
+        "control_active": true,
+        "outcomes": [
+          {
+            "intensity": 0.3,
+            "active": true,
+            "components": 1,
+            "mass": 31.7524959606771,
+            "mean_activity": 6.173314007564027,
+            "source": "m2026101607-g2-0161/0.3"
+          },
+          {
+            "intensity": 0.45,
+            "active": true,
+            "components": 1,
+            "mass": 33.051843893030224,
+            "mean_activity": 6.145292120805934,
+            "source": "m2026101607-g2-0161/0.45"
+          }
+        ],
+        "time_convention": "same update-indexed pulse; evolved dt differs"
+      },
+      "assembly_observations": {
+        "739c8a1e-8ead-4343-8743-4ef3aa7997cd": {
+          "index": "${share_root}/Projects/元胞自动机研究/src/morphology_evolution/handoffs/donor_encounters_v1.json",
+          "sourceRef": "information_307d59b12f6f/file/information_307d59b12f6f/donors_20261016/progress.json",
+          "sourceRef_scope": "assembly observations only",
+          "event_type": "manual_clone_assembly",
+          "donor_lifetime_step": 4096,
+          "assembly_updates_observed": 512,
+          "new_outer_generation_started": false,
+          "finding": "Head-on assembly disappears at89; parallel field matches independent-world max to L1 3.14348e-10, so no interacting novel combination is established."
+        }
+      }
+    }
+  },
+  "batches": {
+    "5c0cbcd4-0be6-486a-ab56-35b3ed084979": {
+      "run_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979",
+      "projection_manifest": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/projection_manifest.json",
+      "montage": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidate_montage.png",
+      "replay": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/5c0cbcd4-0be6-486a-ab56-35b3ed084979/candidate_replay.gif"
+    },
+    "d4fa3c8b-aeb4-4f96-83f4-1e4b5bc0af3b": {
+      "run_path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/d4fa3c8b-aeb4-4f96-83f4-1e4b5bc0af3b",
+      "projection_manifest": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/d4fa3c8b-aeb4-4f96-83f4-1e4b5bc0af3b/projection_manifest.json",
+      "montage": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/d4fa3c8b-aeb4-4f96-83f4-1e4b5bc0af3b/candidate_montage.png",
+      "replay": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/d4fa3c8b-aeb4-4f96-83f4-1e4b5bc0af3b/candidate_replay.gif"
+    }
+  },
+  "limits": "Externally searched candidates, not validated species or learned adaptation. Distributed patterns and localized/multiple bodies remain separate. Known source templates stay outside searched candidates.",
+  "environment_assays": {
+    "41a0e2a0-44ab-450a-800e-d71176365daa": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/41a0e2a0-44ab-450a-800e-d71176365daa",
+      "levels": [
+        0.3,
+        0.45
+      ],
+      "control_active": 17,
+      "active_counts": [
+        14,
+        12
+      ],
+      "limits": "Heterogeneous candidate counts, not repeated-world survival probabilities. Rules/initial bodies/dt differ."
+    },
+    "2d551c20-ea81-411c-a60a-c4e547b261f6": {
+      "status": "completed",
+      "body_updates": 16384,
+      "analysis": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/2d551c20-ea81-411c-a60a-c4e547b261f6/analysis.json",
+      "projection_manifest": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/2d551c20-ea81-411c-a60a-c4e547b261f6/projection_manifest.json",
+      "analyzer_sha256": "e87273c534f4f5a61b5eb035258c52039a4e704eba3857c5d5d6eb0bca87ef8d",
+      "handoff": "${share_root}/Projects/元胞自动机研究/src/morphology_evolution/handoffs/foraging_material_worlds_v1.json",
+      "kind": "lifetime_environment_or_state_intervention",
+      "new_genomes": 0
+    },
+    "e195abff-2522-4f69-a977-9349f3758901": {
+      "status": "completed",
+      "body_updates": 12288,
+      "analysis": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/e195abff-2522-4f69-a977-9349f3758901/analysis.json",
+      "projection_manifest": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/e195abff-2522-4f69-a977-9349f3758901/projection_manifest.json",
+      "analyzer_sha256": "e87273c534f4f5a61b5eb035258c52039a4e704eba3857c5d5d6eb0bca87ef8d",
+      "handoff": "${share_root}/Projects/元胞自动机研究/src/morphology_evolution/handoffs/foraging_material_worlds_v1.json",
+      "kind": "lifetime_environment_or_state_intervention",
+      "new_genomes": 0
+    },
+    "9f5a974b-b6f2-4a28-9943-f8eb0a16cf1c": {
+      "status": "completed",
+      "body_updates": 17280,
+      "analysis": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9f5a974b-b6f2-4a28-9943-f8eb0a16cf1c/analysis.json",
+      "projection_manifest": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9f5a974b-b6f2-4a28-9943-f8eb0a16cf1c/projection_manifest.json",
+      "analyzer_sha256": "490b08a41a99329f129f5a135bbe7adc6e96a7b4eb5379c4c4ff927bfb34d597",
+      "handoff": "${share_root}/Projects/元胞自动机研究/src/morphology_evolution/handoffs/foraging_material_worlds_v1.json",
+      "kind": "lifetime_environment_or_state_intervention",
+      "new_genomes": 0
+    },
+    "29b7afe4-1bee-4a95-9775-5d3324909663": {
+      "status": "completed",
+      "body_updates": 1024,
+      "analysis": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/29b7afe4-1bee-4a95-9775-5d3324909663/analysis.json",
+      "projection_manifest": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/29b7afe4-1bee-4a95-9775-5d3324909663/projection_manifest.json",
+      "analyzer_sha256": "736474772fd567b3c4a74850b5dc941bb30c87a7534b648742d6145791c9facb",
+      "handoff": "${share_root}/Projects/元胞自动机研究/src/morphology_evolution/handoffs/foraging_material_worlds_v1.json",
+      "kind": "lifetime_environment_or_state_intervention",
+      "new_genomes": 0
+    },
+    "d49b3ea3-3cf2-4845-b8e1-52374fac3263": {
+      "status": "completed",
+      "body_updates": 1024,
+      "analysis": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/d49b3ea3-3cf2-4845-b8e1-52374fac3263/analysis.json",
+      "projection_manifest": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/d49b3ea3-3cf2-4845-b8e1-52374fac3263/projection_manifest.json",
+      "analyzer_sha256": "e465f4feeca1f69255ebc0a4fa7fa659a97236d9eef40a7cadadb8a870890228",
+      "handoff": "${share_root}/Projects/元胞自动机研究/src/morphology_evolution/handoffs/stock_cue_cross_v1.json",
+      "kind": "lifetime_environment_intervention",
+      "new_genomes": 0
+    },
+    "90a6dcd2-5336-4665-b51e-d6e4315cb0a6": {
+      "status": "completed",
+      "body_updates": 1024,
+      "analysis": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/90a6dcd2-5336-4665-b51e-d6e4315cb0a6/analysis.json",
+      "projection_manifest": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/90a6dcd2-5336-4665-b51e-d6e4315cb0a6/projection_manifest.json",
+      "analyzer_sha256": "e465f4feeca1f69255ebc0a4fa7fa659a97236d9eef40a7cadadb8a870890228",
+      "handoff": "${share_root}/Projects/元胞自动机研究/src/morphology_evolution/handoffs/stock_cue_cross_v1.json",
+      "kind": "lifetime_environment_intervention",
+      "new_genomes": 0
+    }
+  },
+  "selected_representatives": [
+    {
+      "candidate_id": "m2026101607-g2-0161",
+      "reason": "compact single-body persistence under both common pulse levels"
+    },
+    {
+      "candidate_id": "m2026101607-g1-0063",
+      "reason": "fast single body; loses activity at .45, preserve speed/robustness tradeoff"
+    },
+    {
+      "candidate_id": "m2026101607-g1-0060",
+      "reason": "multiple bodies; high pulse changes morphology, not identity-preserving recovery"
+    },
+    {
+      "candidate_id": "m2026101607-g2-0136",
+      "reason": "sparse distributed rings"
+    },
+    {
+      "candidate_id": "m2026101607-g1-0069",
+      "reason": "distributed stripe field"
+    },
+    {
+      "candidate_id": "m2026101607-g2-0145",
+      "reason": "fine many-component pattern"
+    }
+  ],
+  "phase": "first_search_and_common_environment_completed",
+  "external_routes": {
+    "local_learning_outer_search": {
+      "index": "${share_root}/Projects/元胞自动机研究/src/morphology_evolution/native_routes/local_learning_outer_search.json",
+      "native_catalog": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261016/outer_search/candidates.json",
+      "events": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261016/outer_search/events.json",
+      "selected_checkpoints": 9,
+      "all_checkpoint_nodes": 64,
+      "source_owner": "resident_d3ccfa2d95b7",
+      "assessment": "finite screens plus recorded long continuations"
+    }
+  },
+  "catalog_counts": {
+    "morphology_candidates": 17,
+    "external_selected_checkpoints": 9,
+    "total_indexed_entries": 26,
+    "interpretation": "Source entries, not species, independent populations or equally tested active organisms.",
+    "scope": "Original morphology and LocalLearner routes only; experimental_rule_routes have separate trial counts."
+  },
+  "experimental_rule_routes": {
+    "fixed_dual_kernel_v1": {
+      "schema": "lenia.fixed-dual-kernel-route.v1",
+      "owner": "resident_ce2a5ab005bc",
+      "catalog": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/4abde81f-62f4-46b0-9672-b1f8108276bd/candidate_catalog.json",
+      "analysis": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/4abde81f-62f4-46b0-9672-b1f8108276bd/analysis.json",
+      "projection_manifest": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/4abde81f-62f4-46b0-9672-b1f8108276bd/projection_manifest.json",
+      "events": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/4abde81f-62f4-46b0-9672-b1f8108276bd/combined_events.json",
+      "loader": "morphology_evolution.dual_kernel.load_candidate",
+      "sourceRef": null,
+      "jobs": [
+        "e5675e43-73f7-42af-b913-392217941cc8",
+        "025c6b49-fee7-4f7e-a280-b4f4132614c6",
+        "4abde81f-62f4-46b0-9672-b1f8108276bd"
+      ],
+      "status": "completed",
+      "all_jobs_completed_rc0": true,
+      "budget": {
+        "new_combinations": 48,
+        "dual_combinations": 36,
+        "closure_controls": 12,
+        "screen_updates": 512,
+        "extended_candidates": 8,
+        "extension_end": 3072,
+        "assayed_candidates": 4,
+        "probe_and_sham_updates": 512,
+        "total_body_updates": 49152,
+        "run_and_save_seconds": 9.895901310024783
+      },
+      "screen_nonzero": 15,
+      "screen_dual_nonzero": 6,
+      "extended_nonzero": 7,
+      "extended_dual_nonzero": 5,
+      "representatives": [
+        "dk2026101619-r2-v5",
+        "dk2026101619-r4-v5",
+        "dk2026101619-r2-v4"
+      ],
+      "representative_semantics": [
+        "active multiple structures",
+        "non-Orbium intermittent ring/moving structure",
+        "attractive early transient that later goes extinct"
+      ],
+      "counts_scope": "48 experimental rule/initial combinations, including12 closure controls; separately archived from original17 morphology records and9 optimization checkpoints. Not48 species or independently evolved populations.",
+      "limit": "Fixed-body-only lifetime dynamics; not learning, natural reproduction or a new method claim.",
+      "index": "${share_root}/Projects/元胞自动机研究/src/morphology_evolution/native_routes/fixed_dual_kernel_v1.json",
+      "lifetime_followups": {
+        "dk2026101619-r4-v5": {
+          "8dd4b8d8-e454-4598-a40d-638bb866ae5f": {
+            "job_id": "8dd4b8d8-e454-4598-a40d-638bb866ae5f",
+            "candidate_id": "dk2026101619-r4-v5",
+            "kind": "lifetime_environment_branch",
+            "status": "completed",
+            "returncode": 0,
+            "analysis": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/8dd4b8d8-e454-4598-a40d-638bb866ae5f/analysis.json",
+            "interpretation": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/8dd4b8d8-e454-4598-a40d-638bb866ae5f/interpretation.json",
+            "projection_manifest": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/8dd4b8d8-e454-4598-a40d-638bb866ae5f/projection_manifest.json",
+            "source_restarts": {
+              "old_sham": {
+                "restart": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/4abde81f-62f4-46b0-9672-b1f8108276bd/candidates/dk2026101619-r4-v5/sham/restart.npz",
+                "sha256": "c3f30c3b27cd8cdac6f4dc23191926a27537cbbc47da4370424166e855351657",
+                "lifetime_step": 3584,
+                "prior_treatment": "sham",
+                "initial_mass": 49.77869150026845
+              },
+              "old_probe": {
+                "restart": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/4abde81f-62f4-46b0-9672-b1f8108276bd/candidates/dk2026101619-r4-v5/probe/restart.npz",
+                "sha256": "b06c6bc79bd11180e955c097cf760f2d5514c76088e447e6e4712e4efe5dc020",
+                "lifetime_step": 3584,
+                "prior_treatment": "probe",
+                "initial_mass": 48.62310598488428
+              }
+            },
+            "lifetime_range": [
+              3584,
+              4096
+            ],
+            "new_continuations": 4,
+            "new_genotypes": 0,
+            "sourceRef": null,
+            "primary_summary": {
+              "endpoint_D": 1.6874074966066814,
+              "endpoint_ancestor_percent": 3.3972251463923424,
+              "mean_D_0_to_512_inclusive": -0.03293952153869309,
+              "mean_ancestor_percent": -0.06631650689380802,
+              "trapezoidal_time_mean_D": -0.03465171542510331,
+              "cumulative_mean_sign_change_steps": [
+                8,
+                48,
+                71,
+                102,
+                145,
+                153,
+                379,
+                499
+              ]
+            },
+            "limits": [
+              "History branches start with different bodies; this is history-caused body-state dependence, not a same-state memory intervention.",
+              "D != 0 or a smaller response is not learning, adaptation or resistance benefit.",
+              "Mass differences combine growth, deformation and clipping, not isolated instantaneous damage.",
+              "Four deterministic counterfactual continuations of one genotype, not four independent samples."
+            ],
+            "external_dwell_audit": {
+              "status": "completed_by_principal",
+              "reported_by": "resident_afa3d4d6cf11",
+              "request_message_id": "msg_007e7dc50a34203c7e3985fbfc89b2fe",
+              "audit": "${share_root}/Projects/元胞自动机研究/src/analysis/runs/r4v5_dwell_20261016_v1/audit.json",
+              "audit_sha256": "6be56c78aefef496394dd128fe584ca2eb5b851882054505b14b05fc0c228e31",
+              "script": "${share_root}/Projects/元胞自动机研究/src/analysis/r4v5_dwell_audit.py",
+              "descriptors": "${share_root}/Projects/元胞自动机研究/src/analysis/runs/r4v5_dwell_20261016_v1/descriptors.npz",
+              "figure": "${share_root}/Projects/元胞自动机研究/src/analysis/runs/r4v5_dwell_20261016_v1/dwell_timing.png",
+              "pdf": "${share_root}/Projects/元胞自动机研究/src/analysis/runs/r4v5_dwell_20261016_v1/dwell_timing.pdf",
+              "new_body_updates": 0,
+              "reanalysis_performed_during_ingestion": false,
+              "method": "32-update trailing mean of sum(abs(delta A))/previous mass; cutoffs .001/.003/.01; separate enclosed-hole analysis at density .05/.1/.2.",
+              "low_activity_tail_start": {
+                "cutoffs": [
+                  0.001,
+                  0.003,
+                  0.01
+                ],
+                "old_probe/new_probe": [
+                  3784,
+                  3755,
+                  3729
+                ],
+                "old_sham/new_probe": [
+                  4095,
+                  4061,
+                  4026
+                ]
+              },
+              "earlier_tail_start_updates": [
+                311,
+                306,
+                297
+              ],
+              "hole_at_density_point1": {
+                "old_probe/new_probe": {
+                  "last_failing_frame": 3680,
+                  "first_passing_frame": 3696
+                },
+                "old_sham/new_probe": {
+                  "last_failing_frame": 3952,
+                  "first_passing_frame": 3968
+                }
+              },
+              "observed_end": 4096,
+              "right_censored": true,
+              "limit": "Finite history-dependent timing evidence only. Closed hole is distinct from low activity; no permanent dwell, ring attractor, learning/protection or full timing explanation of D.",
+              "projection_note": "Audit uses integer periodic centering only for diagnostic topology. Published lifetime frames retain original coordinates; no transformed frames added."
+            },
+            "branch_decision": "closed; no further duration/intensity expansion; retain existing r4-v5 as a localized donor"
+          }
+        }
+      }
+    }
+  },
+  "current_environment_focus": {
+    "handoff": "${share_root}/Projects/元胞自动机研究/src/morphology_evolution/handoffs/foraging_material_worlds_v1.json",
+    "stage": "actual material uptake and tissue-carried state: stock versus clamped cue",
+    "new_genomes": 0
+  },
+  "environment_analyses": {
+    "material_information_budget_v1": {
+      "handoff": "${share_root}/Projects/元胞自动机研究/src/morphology_evolution/handoffs/material_information_budget_v1.json",
+      "new_body_updates": 0,
+      "new_genomes": 0
+    },
+    "material_policy_controls_v1": {
+      "handoff": "${share_root}/Projects/元胞自动机研究/src/morphology_evolution/handoffs/material_policy_controls_v1.json",
+      "new_genomes": 0,
+      "new_test_arms": 20
+    }
+  }
+}

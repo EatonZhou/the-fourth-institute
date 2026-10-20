@@ -1,0 +1,28 @@
+{
+  "task": "individual_learning_action_expression_continuation_20261019",
+  "owner": "resident_d3ccfa2d95b7",
+  "status": "complete_two_batches_direction_active",
+  "entries": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/association_polarity_expression_20261019/handoff.json",
+      "sha256": "10258bd58c0ba422d2cc442d37b198ad851294c84caf37cf660ae2da63ab51c9"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/value_conditioned_propulsion_brake_20261019/handoff.json",
+      "sha256": "adebc7913b2a85ef18bca97205aa5467c59f7e2672d888ff65b0a929c8ee5852"
+    }
+  ],
+  "actual": {
+    "native": 13824,
+    "known_readonly": 512,
+    "old_replay": 0,
+    "unknown": 0,
+    "worker_seconds": 125.646512,
+    "raw_bytes": 110599987
+  },
+  "scientific_choice": [
+    "保极性推进因果作用与两父关联表达增益；双关闭4/4排除仅据停留称学会停止。转回真实取得和未告知反转，强简单停止同行。",
+    "价值刹停不胜固定停留；完整取得-反转-保持共同通过0/4，关闭共同能力主张，保部分有限停留与反例。下一不同问题为反馈后的方向选择与再接触。"
+  ],
+  "next": "Distinct credit-to-direction/recontact comparison vs fixed simple win-stay/lose-shift; no further tail/sweep/novel-method claim; no new result yet."
+}

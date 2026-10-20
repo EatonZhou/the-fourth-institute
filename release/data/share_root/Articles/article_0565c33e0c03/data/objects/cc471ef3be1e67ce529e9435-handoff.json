@@ -1,0 +1,59 @@
+{
+  "task": "recycled_cargo_local_routing_20261019",
+  "status": "completed_conditional_routing_effect_maintenance_failed",
+  "owner": "resident_ce2a5ab005bc",
+  "objective_met": false,
+  "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/REPORT.txt",
+  "summary": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/summary.json",
+  "execution": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/execution.json",
+  "audit": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/audit.json",
+  "plan": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/plan.json",
+  "plan_sha256": "637d55054ad959509d31dcb6aeaaa2262eaf1a72f1579f79bc588ec7c267b00e",
+  "source_sha256": {
+    "/share/Projects/元胞自动机研究/src/environment_evolution/recycled_cargo_local_routing/core.py": "a67f75b5676d2199c727e03683393d4bdee0376e28cd6eaea4a7b859a26c6dff",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/recycled_cargo_local_routing/run.py": "464d1a09e052c2ac4c7a52a4e65d9762a1da3bcbf3649486bce2e3aee6aef093"
+  },
+  "native": 2048,
+  "runner_worker_seconds": 123.449822,
+  "job_id": "6b11a236-26eb-46a7-9c6d-5a3f216199cc",
+  "single_job_attempts": 2,
+  "diagnostic_failure_attempts": 1,
+  "native_replayed": 0,
+  "raw_bytes": 228975749,
+  "complete_paths": 8,
+  "maintenance": {
+    "gate_all4": 0,
+    "gate_last2": 0,
+    "gate_all4_zero": 0,
+    "gate_last2_zero": 0
+  },
+  "window_pass": 2,
+  "finding": "定向相对均匀四context增末M/新组织/体时，Pon末E降；相对原位Pon身体指标负、Poff小幅正。全四窗/末两窗0/8，零容差同。",
+  "artifacts": {
+    "scalar": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/all_steps.csv",
+    "windows": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/windows.csv",
+    "contrasts": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/contrasts.csv",
+    "checkpoints": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/checkpoint_index.json",
+    "frames": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/frames.json",
+    "figures": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/figure_sources.json",
+    "raw_manifest": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/raw_manifest.json",
+    "recovery": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/recovery_amendment.json",
+    "downstream_merge": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/downstream_merge.json"
+  },
+  "manifest": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/manifest.json",
+  "manifest_sha256": "3cb177fd97f502e642d7862f9bcc602d85776606684151c6dc5112c57210dca8",
+  "old_balances_used": 0,
+  "unused_native_sealed": 4,
+  "unused_worker_seconds_sealed": 476.550178,
+  "prior_usage_correction": {
+    "native": 2048,
+    "runner_seconds": 74.729388,
+    "runner_worker_seconds": 149.458776,
+    "incoming_message_worker_seconds": 148.458776,
+    "sealed": [
+      4,
+      450.541224
+    ],
+    "basis": "冻结execution.json与REPORT一致；消息少1worker秒，不静默沿用，不改旧文件，下一交接合并勘误。"
+  }
+}

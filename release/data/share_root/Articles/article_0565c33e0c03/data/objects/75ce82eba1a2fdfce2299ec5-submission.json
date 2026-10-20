@@ -1,0 +1,19 @@
+{
+  "id": "6b11a236-26eb-46a7-9c6d-5a3f216199cc",
+  "name": "recycled_cargo_local_routing_20261019",
+  "command": [
+    "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+    "-m",
+    "environment_evolution.recycled_cargo_local_routing.run"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "ce2-recycled-cargo-local-routing-20261019-v1",
+  "status": "running",
+  "created_at": "2026-10-18T19:22:47.807581+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/6b11a236-26eb-46a7-9c6d-5a3f216199cc",
+  "pid": 2711083,
+  "manual_pause": false,
+  "create_time": 1792351367.28,
+  "started_at": "2026-10-18T19:22:47.889718+00:00"
+}

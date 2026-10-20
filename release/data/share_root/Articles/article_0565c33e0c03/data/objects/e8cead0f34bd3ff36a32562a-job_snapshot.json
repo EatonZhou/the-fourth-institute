@@ -1,0 +1,40 @@
+{
+  "id": "43568f01-955a-4ddc-ba37-62903b18f278",
+  "name": "resource_conditioned_growth_rule_20261019",
+  "command": [
+    "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+    "-m",
+    "local_learning.resource_conditioned_growth_rule.run"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "d3-resource-conditioned-growth-rule-20261019-v1",
+  "status": "completed",
+  "created_at": "2026-10-18T20:03:36.084508+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/43568f01-955a-4ddc-ba37-62903b18f278",
+  "pid": 3032947,
+  "manual_pause": false,
+  "create_time": 1792353815.59,
+  "started_at": "2026-10-18T20:03:36.204093+00:00",
+  "returncode": 0,
+  "finished_at": "2026-10-18T20:05:49.691450+00:00",
+  "result": {
+    "task": "resource_conditioned_growth_rule_20261019",
+    "status": "completed",
+    "job": "43568f01-955a-4ddc-ba37-62903b18f278",
+    "attempted": 5828,
+    "committed": 5828,
+    "settled": 5828,
+    "science_native": 5824,
+    "boundary_native": 4,
+    "wall_seconds": 133.01994667795952,
+    "failure": null,
+    "actual_paths": 46,
+    "alias_roles": 18,
+    "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/resource_conditioned_growth_rule_20261019/43568f01-955a-4ddc-ba37-62903b18f278",
+    "raw_bytes": 96247580,
+    "objective_met": false,
+    "old_prefix_replayed": 0,
+    "old_budget_used": 0
+  }
+}

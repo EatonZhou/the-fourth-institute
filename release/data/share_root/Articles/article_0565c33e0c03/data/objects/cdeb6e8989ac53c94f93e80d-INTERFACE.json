@@ -1,0 +1,12 @@
+{
+  "schema": "outer-search-host-interface.v1",
+  "native_host_owner": "ce2",
+  "snapshots": "lenia.state-snapshot.v1; complete config, fields and kernels; step0; no persistent runtime ledger yet",
+  "lifetime": "Freeze rule/kernels once per individual, restore exact complete physical/controller/inventory ledger at forks",
+  "phase_dag": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/native_draft.json",
+  "candidates": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_adaptation_outer_search/candidate_manifest.json",
+  "export": "materialize(Genome,destination,grid=96)",
+  "proposal": "mutate(parent,seed)",
+  "selection": "evaluate(...) and update_archive(records); accepts complete staged summaries only",
+  "prohibited": "No local runner, model.step, prepare, transport, previews or new forward permission in this package"
+}

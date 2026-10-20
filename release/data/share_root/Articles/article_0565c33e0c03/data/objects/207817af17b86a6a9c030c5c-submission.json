@@ -1,0 +1,19 @@
+{
+  "id": "981ed2bf-6b89-4f95-bdf5-5c92a4755d9f",
+  "name": "spatial_coverage_acquired_body_20261019",
+  "command": [
+    "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+    "-m",
+    "local_learning.spatial_coverage_acquired_body.run"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "d3-spatial-coverage-acquired-body-20261019-v1",
+  "status": "running",
+  "created_at": "2026-10-18T21:52:47.489213+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/981ed2bf-6b89-4f95-bdf5-5c92a4755d9f",
+  "pid": 4108639,
+  "manual_pause": false,
+  "create_time": 1792360366.94,
+  "started_at": "2026-10-18T21:52:47.549494+00:00"
+}

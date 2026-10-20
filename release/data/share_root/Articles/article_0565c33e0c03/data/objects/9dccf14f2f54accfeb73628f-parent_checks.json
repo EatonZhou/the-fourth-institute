@@ -1,0 +1,164 @@
+[
+  {
+    "task": "material_action_map",
+    "condition": 0,
+    "arm": "frozen",
+    "parent_sha256": "77b7c4760d64922d2d4fbec2b4fd77164650108fa54b01de9d406b6685f7d1c0",
+    "body_energy_memory_eligibility_equal": true,
+    "sensory_equal": true,
+    "rng_equal": true
+  },
+  {
+    "task": "material_action_map",
+    "condition": 0,
+    "arm": "erase_frozen",
+    "parent_sha256": "77b7c4760d64922d2d4fbec2b4fd77164650108fa54b01de9d406b6685f7d1c0",
+    "body_energy_memory_eligibility_equal": true,
+    "sensory_equal": true,
+    "rng_equal": true
+  },
+  {
+    "task": "material_action_map",
+    "condition": 1,
+    "arm": "frozen",
+    "parent_sha256": "32a3aa4eae30f85ad2543cbecedc4c79580127074e388582761abd15d6c1a86d",
+    "body_energy_memory_eligibility_equal": true,
+    "sensory_equal": true,
+    "rng_equal": true
+  },
+  {
+    "task": "material_action_map",
+    "condition": 1,
+    "arm": "erase_frozen",
+    "parent_sha256": "32a3aa4eae30f85ad2543cbecedc4c79580127074e388582761abd15d6c1a86d",
+    "body_energy_memory_eligibility_equal": true,
+    "sensory_equal": true,
+    "rng_equal": true
+  },
+  {
+    "task": "action_map_change_separation",
+    "condition": 0,
+    "arm": "reward_write",
+    "parent_sha256": "77b7c4760d64922d2d4fbec2b4fd77164650108fa54b01de9d406b6685f7d1c0",
+    "body_energy_memory_eligibility_equal": true,
+    "sensory_equal": true,
+    "rng_equal": true
+  },
+  {
+    "task": "action_map_change_separation",
+    "condition": 0,
+    "arm": "reward_frozen",
+    "parent_sha256": "77b7c4760d64922d2d4fbec2b4fd77164650108fa54b01de9d406b6685f7d1c0",
+    "body_energy_memory_eligibility_equal": true,
+    "sensory_equal": true,
+    "rng_equal": true
+  },
+  {
+    "task": "action_map_change_separation",
+    "condition": 0,
+    "arm": "reward_clear",
+    "parent_sha256": "77b7c4760d64922d2d4fbec2b4fd77164650108fa54b01de9d406b6685f7d1c0",
+    "body_energy_memory_eligibility_equal": true,
+    "sensory_equal": true,
+    "rng_equal": true
+  },
+  {
+    "task": "action_map_change_separation",
+    "condition": 0,
+    "arm": "actuator_write",
+    "parent_sha256": "77b7c4760d64922d2d4fbec2b4fd77164650108fa54b01de9d406b6685f7d1c0",
+    "body_energy_memory_eligibility_equal": true,
+    "sensory_equal": true,
+    "rng_equal": true
+  },
+  {
+    "task": "action_map_change_separation",
+    "condition": 0,
+    "arm": "actuator_frozen",
+    "parent_sha256": "77b7c4760d64922d2d4fbec2b4fd77164650108fa54b01de9d406b6685f7d1c0",
+    "body_energy_memory_eligibility_equal": true,
+    "sensory_equal": true,
+    "rng_equal": true
+  },
+  {
+    "task": "action_map_change_separation",
+    "condition": 1,
+    "arm": "reward_write",
+    "parent_sha256": "32a3aa4eae30f85ad2543cbecedc4c79580127074e388582761abd15d6c1a86d",
+    "body_energy_memory_eligibility_equal": true,
+    "sensory_equal": true,
+    "rng_equal": true
+  },
+  {
+    "task": "action_map_change_separation",
+    "condition": 1,
+    "arm": "reward_frozen",
+    "parent_sha256": "32a3aa4eae30f85ad2543cbecedc4c79580127074e388582761abd15d6c1a86d",
+    "body_energy_memory_eligibility_equal": true,
+    "sensory_equal": true,
+    "rng_equal": true
+  },
+  {
+    "task": "action_map_change_separation",
+    "condition": 1,
+    "arm": "reward_clear",
+    "parent_sha256": "32a3aa4eae30f85ad2543cbecedc4c79580127074e388582761abd15d6c1a86d",
+    "body_energy_memory_eligibility_equal": true,
+    "sensory_equal": true,
+    "rng_equal": true
+  },
+  {
+    "task": "action_map_change_separation",
+    "condition": 1,
+    "arm": "actuator_write",
+    "parent_sha256": "32a3aa4eae30f85ad2543cbecedc4c79580127074e388582761abd15d6c1a86d",
+    "body_energy_memory_eligibility_equal": true,
+    "sensory_equal": true,
+    "rng_equal": true
+  },
+  {
+    "task": "action_map_change_separation",
+    "condition": 1,
+    "arm": "actuator_frozen",
+    "parent_sha256": "32a3aa4eae30f85ad2543cbecedc4c79580127074e388582761abd15d6c1a86d",
+    "body_energy_memory_eligibility_equal": true,
+    "sensory_equal": true,
+    "rng_equal": true
+  },
+  {
+    "task": "action_map_content",
+    "condition": 0,
+    "arm": "reward_rotated",
+    "parent_sha256": "77b7c4760d64922d2d4fbec2b4fd77164650108fa54b01de9d406b6685f7d1c0",
+    "body_energy_memory_eligibility_equal": true,
+    "sensory_equal": true,
+    "rng_equal": true
+  },
+  {
+    "task": "action_map_content",
+    "condition": 0,
+    "arm": "reward_homogeneous",
+    "parent_sha256": "77b7c4760d64922d2d4fbec2b4fd77164650108fa54b01de9d406b6685f7d1c0",
+    "body_energy_memory_eligibility_equal": true,
+    "sensory_equal": true,
+    "rng_equal": true
+  },
+  {
+    "task": "action_map_content",
+    "condition": 1,
+    "arm": "reward_rotated",
+    "parent_sha256": "32a3aa4eae30f85ad2543cbecedc4c79580127074e388582761abd15d6c1a86d",
+    "body_energy_memory_eligibility_equal": true,
+    "sensory_equal": true,
+    "rng_equal": true
+  },
+  {
+    "task": "action_map_content",
+    "condition": 1,
+    "arm": "reward_homogeneous",
+    "parent_sha256": "32a3aa4eae30f85ad2543cbecedc4c79580127074e388582761abd15d6c1a86d",
+    "body_energy_memory_eligibility_equal": true,
+    "sensory_equal": true,
+    "rng_equal": true
+  }
+]

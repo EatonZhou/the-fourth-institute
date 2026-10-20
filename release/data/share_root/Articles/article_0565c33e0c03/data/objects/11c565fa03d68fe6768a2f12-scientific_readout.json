@@ -1,0 +1,97 @@
+{
+  "selected_theta": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "nonzero_CEM_proposals": 10,
+  "nonzero_eligible": 0,
+  "nonzero_positive_worst_new_tissue": 8,
+  "best_constant": {
+    "kind": "constant",
+    "w": 0.5442572838640933
+  },
+  "greedy_training_eligible": true,
+  "greedy_training_min_post128_gain": 1.6546909329336774,
+  "greedy_minus_original_mean": {
+    "M": 4.371466914025746,
+    "E": 3.6159540985230194,
+    "bodytime": 50.6729246368829,
+    "post128_live": 0.7056128179680439,
+    "L128": 3.6658540960577035,
+    "born": 5.195568089706379,
+    "death": 0.8241011756806405,
+    "U": 5.8339218402454165,
+    "pump_fee_paid": 1.5664777630616589,
+    "actor_basal_paid": 0.6077012516377724,
+    "actor_movement_paid": 0.6566027294363126,
+    "synthesis_heat": 1.0391136179412768,
+    "template_heat": 0.10391136179412766,
+    "external_material_out": -4.636217471971074,
+    "external_energy_out": -6.76918978156457
+  },
+  "paired_contexts": 4,
+  "distinct_new_input_seeds": 2,
+  "all_four_context_positive": [
+    "M",
+    "E",
+    "bodytime",
+    "post128_live",
+    "L128",
+    "U"
+  ],
+  "unique_validation_paths": 8,
+  "role_validation_paths": 20,
+  "unique_windows": 32,
+  "unique_windows_maintained": 4,
+  "unique_all4": 0,
+  "unique_last2": 0,
+  "zero_tolerance_changes": 0,
+  "all_validation_survive": true,
+  "training_complete_deaths": [
+    {
+      "id": "constant_0--compact",
+      "M": 0.0,
+      "E": 0.0,
+      "steps": 96,
+      "policy": {
+        "kind": "constant",
+        "w": 0.0
+      }
+    },
+    {
+      "id": "constant_0--double_lobe",
+      "M": 0.0,
+      "E": 0.0,
+      "steps": 96,
+      "policy": {
+        "kind": "constant",
+        "w": 0.0
+      }
+    },
+    {
+      "id": "constant_1--compact",
+      "M": 0.0,
+      "E": 0.0,
+      "steps": 96,
+      "policy": {
+        "kind": "constant",
+        "w": 0.25
+      }
+    },
+    {
+      "id": "constant_1--double_lobe",
+      "M": 0.0,
+      "E": 0.0,
+      "steps": 96,
+      "policy": {
+        "kind": "constant",
+        "w": 0.25
+      }
+    }
+  ],
+  "conclusion": "No trained nontrivial resource-only mixture passed deployment. Prestate greedy improves finite-window body outcomes but none meets late replacement maintenance.",
+  "new_tissue_scope": "post128_live = current body minus physically carried surviving all-material label registered at clock128; born never receives that label.",
+  "aliases": "learned, best_constant, pooled_same_phi, original_w0 are identical theta0/w0 at each validation parent; not four independent runs or evidence of local-vs-global equivalence in general."
+}

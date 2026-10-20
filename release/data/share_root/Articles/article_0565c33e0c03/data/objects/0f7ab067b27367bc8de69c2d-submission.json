@@ -1,0 +1,21 @@
+{
+  "id": "780163bf-a09a-488b-a297-5e0f4261d7b5",
+  "name": "experience-diverse-generation-screen",
+  "command": [
+    "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+    "-m",
+    "environment_evolution.experience_diverse_generation_screen.run",
+    "--contract",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_diverse_generation_screen_20261018/plan.json"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "ce2-experience-diverse-generation-screen-20261018-v1",
+  "status": "running",
+  "created_at": "2026-10-18T02:31:38.648701+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/780163bf-a09a-488b-a297-5e0f4261d7b5",
+  "pid": 1614675,
+  "manual_pause": false,
+  "create_time": 1792290698.1,
+  "started_at": "2026-10-18T02:31:38.717666+00:00"
+}

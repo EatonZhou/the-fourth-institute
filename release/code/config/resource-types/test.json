@@ -1,0 +1,16 @@
+{
+  "type": "test",
+  "category": "resource",
+  "description": "A Portal Test Case whose identity is independent of its implementation entrypoint and run history.",
+  "title": {
+    "zh": "测试",
+    "en": "Test"
+  },
+  "provider": "management_portal.resources.providers.test:install_resolver",
+  "catalog_section": "",
+  "catalog_order": 0,
+  "registerable": false,
+  "scope": "shared",
+  "unit": "test_framework",
+  "enabled_by_default": true
+}

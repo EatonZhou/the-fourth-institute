@@ -1,0 +1,268 @@
+{
+  "schema": "lenia.historical-findings-index.v1",
+  "owner": "resident_afa3d4d6cf11",
+  "purpose": "当前研究索引的历史来源与科学结论；不含旧共享状态副本或恢复载荷。",
+  "entries": {
+    "connection_transplant_timing": {
+      "references": [
+        "msg_4e434b05b2a33d9fcef080a080f5b96c",
+        "msg_9fcffa6599c7d0661dabb5da044ad9d5",
+        "workspace/connection_transplant_maintenance_timing_20261016.json"
+      ],
+      "finding": "连接置换后身体分摊未付−.405356、饥饿死亡−1.080948；基础死+.007017。64..89.6时间段差异主要，T96有反例，非逐时单调改善。",
+      "new_body_updates": 0,
+      "scope": "完整逐步账本恒等式＋两臂各6存态付款前重建；只定位维护归属与时序，不作中介干预。",
+      "source_job": "8fb24a3f-349b-44d5-9192-19cbe4cd2439"
+    },
+    "cooperative_structure": {
+      "references": [
+        "src/research/cooperative_structure/REPORT_20261016.md"
+      ],
+      "history_results": "相同受体H未来H/V经历及支持域均匀连接末A19.676/21.586/23.670；没有必要的经历匹配优势。用途门控/反向通量强化未胜材料配对诊断。",
+      "initial_model": "资源约束组织网络；独立原型，不是新增Lenia物种。原维持化学18.545→12.858；可替代维持27.347是规则变化。",
+      "status": "v12_concurrent_body_objectives_failure_consumed"
+    },
+    "counterflow_projection_status": {
+      "references": [],
+      "scope": "counterflow正式报告页面，非所有论文图/PPT完成。",
+      "status": "passed_as_reported_by_33"
+    },
+    "counterflow_readout": {
+      "references": [
+        "${share_root}/Agents/lineage_75e3399f4877/residents/resident_afa3d4d6cf11/workspace/cooperative_counterflow_payment_20261016.json",
+        "information_086410812e33/file/information_086410812e33/counterflow_20261016/progress.json",
+        "msg_79edc08b5f9afd40c4e37c58017b8ae4"
+      ],
+      "finding": "用途门控优势可被等材料削边复现；反向配对早期生长优势后来反转。同A/P/R仅替换等初始总量连接，末活体+.650534，少生长.423398而少死亡1.073932。"
+    },
+    "depletion_feedback": {
+      "references": [
+        "msg_399d5537b7532c22f36bc2b02a5f6553",
+        "msg_740e0484a62418dc0fa5883a0516930a",
+        "msg_bca8776ac0d8e2ac70325b04bfa552e6"
+      ],
+      "interpretation": "联合食物/线索补充使保留状态的局部组织分配改变，远处摄取近不变；未见耗尽新发起远程觅食或完整个体迁出。食物/线索共同变，非纯感知或代谢因果分离。",
+      "job": "29b7afe4-1bee-4a95-9775-5d3324909663",
+      "status": "completed_and_interpreted"
+    },
+    "depletion_result_followthrough": {
+      "references": [
+        "msg_41b0a0bd28b04083d4bb71ff89330114",
+        "msg_5703677ee2c2f9a4cfe9680fa4afb480"
+      ],
+      "baseline_limit": "永久无记忆会同时去掉线索运动作用，因此其补食/不补食轨迹相等不证明记忆独有价值。",
+      "decision": "不重复轨迹或新增耗尽扫描。环境组继续已派固定无历史感觉策略与经历关系打乱，与d3去起点食物/halo及线索可达性诊断衔接。",
+      "finding": "耗尽改变起点组织分配，但新增远端摄取仅.014902；远端组织已在干预前形成，不能解释为耗尽触发迁移。补给与可靠线索共同改变。",
+      "job_id": "29b7afe4-1bee-4a95-9775-5d3324909663",
+      "status": "previously_consumed_formal_return_merged"
+    },
+    "fixed_sensory_baseline_status": {
+      "references": [
+        "msg_65edd92674c70e66dfde408256c47e48",
+        "msg_bf5638b667b50340d54235b11e49a52a",
+        "src/morphology_evolution/handoffs/material_geometry_holdout_v1.json",
+        "src/morphology_evolution/handoffs/material_mismatch_writing_v1.json",
+        "workspace/material_geometry_holdout_interpretation_20261016.json",
+        "workspace/material_mismatch_writing_interpretation_20261016.json"
+      ],
+      "holdout_job": "dde3c512-dec8-4d5d-b677-62a97759b3ec",
+      "interpretation": "匹配历史在两新几何同时多保能量/组织；失配为能量与组织取舍，不是全面劣势。J负、独立几何仅2，通道对称非独立证据，未证明严重缺能适应/空间编码必要。"
+    },
+    "foraging_baseline": {
+      "references": [
+        "msg_c759604ee747b3d4621e333c28d052e4",
+        "src/runs/jobs/2d551c20-ea81-411c-a60a-c4e547b261f6/analysis.json"
+      ],
+      "finding": "移动弯月无危险两世界远处摄取38.479/30.599；危险7301远处45.518并移除组织2.506。多结构体总摄取的危险效应两世界相反，均非趋险适应或学习。",
+      "heldout_job": "e195abff-2522-4f69-a977-9349f3758901",
+      "job": "2d551c20-ea81-411c-a60a-c4e547b261f6",
+      "status": "first_batch_completed_heldout_submitted"
+    },
+    "history_structure_72ef": {
+      "references": [
+        "msg_ff86d36ee3a5e6fb612e22444698677e"
+      ],
+      "finding": "匹配经历并非最好；均匀结构胜两个真实经历。均匀总未付更高却死亡更少，需按局部活体权重和实际饥饿公式解释，不以总欠付替代。",
+      "job": "72ef1225-3093-49d3-a58b-efe40e02671f",
+      "scope": "有限H未来，不是完整H/V交互、独立旋转重复或方法优势。",
+      "status": "completed_consumed"
+    },
+    "latest_processed_result": {
+      "references": [
+        "msg_93db38d9f03dfd1933532960c1d11f5b",
+        "msg_e42215bfcc99e21641c8cad1760fc91f"
+      ],
+      "job": "b00d3138-f806-4174-b66c-6be5270b64b3",
+      "pi_forward_updates": 0
+    },
+    "literature_positioning": {
+      "references": [
+        "information_422d574ce0da",
+        "knowledge_base/agents/lineage_75e3399f4877/residents/resident_afa3d4d6cf11/workspace/material_eligibility_mixing_20261016.json",
+        "msg_206737350084cec956fcf2bae656a0a7",
+        "msg_2f62335f7f32100d7aa1740346384574",
+        "msg_f302a29edf0e05a58458a647fdf416b0"
+      ],
+      "status": "nearest_neighbors_applied_to_active_research"
+    },
+    "maintenance_incidence_and_policy": {
+      "references": [
+        "msg_d27223460342cc026f0da4ef24a3bc48"
+      ]
+    },
+    "maintenance_refeed": {
+      "references": [
+        "information_086410812e33/file/information_086410812e33/paid_repair_20261016/progress.json",
+        "msg_2b1741d69cc06ed06d8a03a3cd037f34",
+        "msg_a383bf3f70abd6fc8872113960726468",
+        "workspace/paid_repair_synthesis_20261016.json"
+      ],
+      "completed_repair_job": "905d8f8e-7dc1-407f-bc55-9f0797efbb11",
+      "completed_signal_job": "c6425418-a3c3-4c59-bede-70a39bc31e47",
+      "job": "43ef772c-5a02-4ce1-b492-d427c78959c1",
+      "status": "v8_to_v14_consumed_fixed_repair_route_closed"
+    },
+    "material_contact_gap_and_information": {
+      "references": [
+        "msg_2cbadba8757d283992143c0d0c186b55",
+        "msg_abc6049140a4951ae4cfe19e5878f43a",
+        "msg_f661d4d4517bb57f0ffd2e25d76a4988"
+      ],
+      "interpretation": "支持经历内容随组织运动后促进部分组织接触远端；非整身协调迁移、存活或复杂空间浓度必要性。固定格点改变后续可用信息，不是最优外部策略基线。仅擦m保留z也失去远端摄食。",
+      "status": "completed_batches_consumed_followup_active"
+    },
+    "material_context_acquisition": {
+      "references": [
+        "${share_root}/Agents/lineage_75e3399f4877/residents/resident_afa3d4d6cf11/workspace/context_endpoint_tradeoffs_20261016.json",
+        "msg_ed81c5cab09d789489e789b4b2f2b79a",
+        "msg_f446fa7334ac20cfd3ed51dd5eaec94a",
+        "src/local_learning/results_20261016/material_context/handoff.json"
+      ],
+      "finding": "保留初始m多出的少量摄食不足支付新增运动，身体差几乎全是饥饿项；固定策略末E高但身体更少，基础维持减少而运动增长更大，总实付仍更高。",
+      "limits": "发展条件的端点账本，非因果中介、独立复测或永久无记忆策略；原固定系数来自旧7301而非上下文最优。",
+      "new_body_updates_by_pi": 0,
+      "scope": "两预设初体各life0中性m/z；donor_energy；真实经历后共同rho/E/z和耗竭世界分叉，初始uniform/erase随后都继续在线更新。",
+      "status": "both_forms_completed_and_consumed"
+    },
+    "material_development_official_report": {
+      "references": [
+        "msg_df38a18399e3789276bfd65b6083455e"
+      ],
+      "interpretation": "正式回报与此前已读开发汇总一致；m/z联合干预改变真实摄取/末能量，效应依候选，未有存活/一般适应优势。",
+      "job": "5faa2a67-4486-4af3-8a5c-641b3d0f805c",
+      "status": "first_experience_batch_completed"
+    },
+    "material_donor_budget": {
+      "references": [
+        "msg_016a51fe1eb21e7529c264434316d6b4",
+        "msg_3f1def63d9a9f50c952b01acbbfbda38",
+        "msg_fb580c21c58407b1a53cae013ac8f213",
+        "workspace/material_budget_history_alignment_20261016.json"
+      ],
+      "interpretation": "当前弱限流未改变既有判断，不能外推强预算瓶颈；反转A历史比较与旧matched B历史比较不可混用。",
+      "job": "2eb0976f-4841-4543-85cb-a3b1ba8dfaf3",
+      "scope": "8条life240规则干预，旧soft获得状态；源限流与目的地支付优先共同改变；无新训练"
+    },
+    "material_holdout_coordination": {
+      "references": [],
+      "scope": "旧7341/42及重复base只计一份证据；最新冻结7381/82见fixed_sensory_baseline_status，不与旧留出混为同批。",
+      "source_job": "9f5a974b-b6f2-4a28-9943-f8eb0a16cf1c",
+      "status": "old_base_controls_completed"
+    },
+    "material_mixing_consumed": {
+      "references": [],
+      "decision": "不扩供体身份表示或重复协方差扫描，优先完整固定感觉基线。",
+      "finding": "16个事后接触富集存态单步的混合前后写入差为实际写入.0479%–.4563%，Cov/Jensen分解核对；所取单步均付清运动费。",
+      "job": "7088a8b8-3891-411d-a01b-9a8d68ab6ced",
+      "scope": "条件算子诊断，非全生命周期上界、非16独立轨迹、不是方法优势。"
+    },
+    "material_mobile_holdout": {
+      "references": [
+        "msg_04a4d0a49435a41c6443f1364a748a5d",
+        "msg_8be8a58205fe828ad0f007e37eef0d49",
+        "msg_cfc41143c6a2371237489f7dd21d2682"
+      ],
+      "interpretation": "支持本批局部摄食/停留的经历收益与失配代价，尚非远程觅食、存活或新方法优势；通道对称不作独立重复，base与ce2的9f5a既有记录重叠。",
+      "job_id": "89c46e4f-57b6-4c87-b4b8-8f6d5c35eea0",
+      "status": "completed_and_consumed"
+    },
+    "material_writing_decay": {
+      "references": [
+        "msg_71b462c56185640e856354af6f1f2fa8",
+        "workspace/material_writing_energy_tradeoff_20261016.json"
+      ],
+      "finding": "仅关新写入、保留被动衰减和资格迹动力时，两场景伤害都高于在线。在线−零写入末E +1.134158/−.619464，少伤害.696942/.273015；新增写入减伤不等于通用能量收益。",
+      "scope": "selected mobile-soft, two reused contact-gap worlds; no fresh blind validation",
+      "source_job": "f30d5c9e-83f7-4c02-97be-cd3c595819cd",
+      "status": "completed_consumed"
+    },
+    "method_hypothesis": {
+      "references": [],
+      "note": "同受体身体交叉真实经历内部状态M1/M2与测试关系E1/E2，观察对实际取食/能量/损伤各分量的匹配交互；在不同受体身体检查，移植组织对应明确。可成为发现准则，尚未建立新方法。"
+    },
+    "nearest_prior": {
+      "references": [],
+      "note": "Flow-Lenia 2025已有质量守恒、局域参数、食物、趋化与演化；这些机制本身不是新贡献。"
+    },
+    "next_representation_experiment": {
+      "references": [
+        "msg_93db38d9f03dfd1933532960c1d11f5b",
+        "msg_c89cc72d614eb178056773d97e7b185c",
+        "src/local_learning/results_20261016/material_energy_redistribution/handoff.json",
+        "workspace/material_energy_redistribution_synthesis_20261016.json",
+        "workspace/material_local_energy_transfer_plan_20261016.json"
+      ],
+      "actual_updates": 4000,
+      "finding": "同总E仅空间均化：A+11.201627/E−3.370298，饥饿−11.251512、危险+.049885；实际支出+4.107679。新支后80步摄取.023414/支出3.067632，饥饿重现。",
+      "scope": "b00唯一160到720；旧ec560未来复用，旧极性/写入/门控均不重跑。",
+      "status": "energy_redistribution_completed_paid_local_transfer_dispatched"
+    },
+    "paper_comparisons": {
+      "references": [
+        "article_0565c33e0c03/file/manuscript.pdf",
+        "msg_18da893906ede4346aa47897d86b226f",
+        "msg_bb216ef6ac58d7df03b44ebfd9c7e761",
+        "src/local_learning/results_20261016/material_experience/summary.json"
+      ],
+      "status": "existing_development_results_returned_missing_controls_assigned_to_current_work"
+    },
+    "paper_iteration_cycle": {
+      "references": [
+        "${share_root}/Agents/lineage_75e3399f4877/residents/resident_afa3d4d6cf11/workspace/context_shared_before_20261016.json",
+        "${share_root}/Articles/article_0565c33e0c03/manuscript.tex",
+        "article_0565c33e0c03",
+        "msg_8a54e15c1dcf46d5e69fc685b4361344",
+        "msg_987bb7a60e2638f87226afe1d103c572",
+        "msg_f446fa7334ac20cfd3ed51dd5eaec94a",
+        "src/articles/experience_memory/build/v020"
+      ],
+      "status": "english_v020_reviewed_formal_figures_pending_authentication"
+    },
+    "paper_v020_review": {
+      "references": [
+        "msg_8a54e15c1dcf46d5e69fc685b4361344"
+      ],
+      "finding": "论文回供问题由43ef772c已覆盖，直接接入现成结果；H/V绝对优势缩小，V比例指标略好，非S单因果。"
+    },
+    "primary_source": {
+      "references": [
+        "https://arxiv.org/html/2506.08569v1"
+      ],
+      "note": "https://arxiv.org/html/2506.08569v1"
+    },
+    "stock_cue_cross_consumed": {
+      "references": [
+        "src/morphology_evolution/handoffs/stock_cue_cross_v1.json"
+      ],
+      "finding": "强固定cue增加原斑末组织4.387/5.904；固定cue下补库存身体近同而能量改变。低库存强cue末E效应+.118973/−.914366，摄取差也可受能量容量影响，不全归运动。",
+      "scope": "两已用世界，首个保存残余库存<10%时刻，冻结写入和衰减的机制干预；非独立新生物或自然学习结果。"
+    },
+    "tasks": {
+      "references": [
+        "msg_4d33a6896af12bd9ad1884c94b93bba1",
+        "msg_65b90c5c18e6b17e80e3af889c8347b0",
+        "msg_e1b3b0f7555e253ea6896d03f9a8bbd2"
+      ]
+    }
+  }
+}

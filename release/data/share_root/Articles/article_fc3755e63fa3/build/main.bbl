@@ -1,0 +1,58 @@
+\begin{thebibliography}{8}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Blackwell(1953)]{blackwell1953}
+David Blackwell.
+\newblock Equivalent comparisons of experiments.
+\newblock \emph{The Annals of Mathematical Statistics}, 24\penalty0 (2):\penalty0 265--272, 1953.
+\newblock \doi{10.1214/aoms/1177729032}.
+
+\bibitem[Chernoff(1959)]{chernoff1959}
+Herman Chernoff.
+\newblock Sequential design of experiments.
+\newblock \emph{The Annals of Mathematical Statistics}, 30\penalty0 (3):\penalty0 755--770, 1959.
+\newblock \doi{10.1214/aoms/1177706205}.
+
+\bibitem[Hoeffding(1963)]{hoeffding1963}
+Wassily Hoeffding.
+\newblock Probability inequalities for sums of bounded random variables.
+\newblock \emph{Journal of the American Statistical Association}, 58\penalty0 (301):\penalty0 13--30, 1963.
+\newblock \doi{10.1080/01621459.1963.10500830}.
+
+\bibitem[Howard et~al.(2020)Howard, Ramdas, McAuliffe, and Sekhon]{howard2020}
+Steven~R. Howard, Aaditya Ramdas, Jon McAuliffe, and Jasjeet Sekhon.
+\newblock Time-uniform {Chernoff} bounds via nonnegative supermartingales.
+\newblock \emph{Probability Surveys}, 17, 2020.
+\newblock \doi{10.1214/18-PS321}.
+\newblock URL \url{https://arxiv.org/abs/1808.03204}.
+
+\bibitem[Kaufmann et~al.(2016)Kaufmann, Capp{\'e}, and Garivier]{kaufmann2016}
+Emilie Kaufmann, Olivier Capp{\'e}, and Aur{\'e}lien Garivier.
+\newblock On the complexity of best-arm identification in multi-armed bandit models.
+\newblock \emph{Journal of Machine Learning Research}, 17\penalty0 (1):\penalty0 1--42, 2016.
+\newblock URL \url{https://www.jmlr.org/papers/v17/kaufman16a.html}.
+
+\bibitem[Naghshvar and Javidi(2013)]{naghshvar2013}
+Mohammad Naghshvar and Tara Javidi.
+\newblock Active sequential hypothesis testing.
+\newblock \emph{The Annals of Statistics}, 41\penalty0 (6):\penalty0 2703--2738, 2013.
+\newblock \doi{10.1214/13-AOS1144}.
+\newblock URL \url{https://arxiv.org/abs/1203.4626}.
+
+\bibitem[Shannon(1948)]{shannon1948}
+Claude~E. Shannon.
+\newblock A mathematical theory of communication.
+\newblock \emph{The Bell System Technical Journal}, 27:\penalty0 379--423 and 623--656, 1948.
+\newblock \doi{10.1002/j.1538-7305.1948.tb01338.x}.
+
+\bibitem[Xu et~al.(2020)Xu, Zhao, Song, Stewart, and Ermon]{xu2020}
+Yilun Xu, Shengjia Zhao, Jiaming Song, Russell Stewart, and Stefano Ermon.
+\newblock A theory of usable information under computational constraints.
+\newblock In \emph{International Conference on Learning Representations}, 2020.
+\newblock URL \url{https://arxiv.org/abs/2002.10689}.
+
+\end{thebibliography}

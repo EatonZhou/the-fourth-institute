@@ -1,0 +1,92 @@
+/* The directory reuses the collection board: toolbar, Project groups and item cards.
+   This file adds only what a workbench card carries beyond a resource card. */
+.workbenchCatalog { min-width: 0; color: var(--text); }
+.workbenchCatalog *, .workbenchCatalog *::before, .workbenchCatalog *::after { box-sizing: border-box; }
+.workbenchCatalogIcon { width: 15px; height: 15px; flex: 0 0 auto; }
+.workbenchCatalogCreate { display: inline-flex; align-items: center; gap: 5px; text-decoration: none; white-space: nowrap; }
+.workbenchCatalog [data-portal-board-action="filter"].is-filtered { border-color: var(--accent); color: var(--accent); }
+
+.workbenchCatalog .portalProjectItems.workbenchCatalogItems {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+}
+.workbenchCatalogCard { display: flex; flex-direction: column; gap: 0; min-height: 0; }
+.workbenchCatalogCardHead { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; min-width: 0; }
+.workbenchCatalogTitle { flex: 1 1 auto; overflow-wrap: anywhere; }
+.workbenchCatalogTitleLink { color: inherit; text-decoration: none; }
+.workbenchCatalogTitleLink:hover { color: var(--accent); }
+.workbenchCatalogStatus {
+  flex: 0 0 auto; padding: 1px 7px; border: 1px solid var(--border); border-radius: 999px;
+  background: var(--chip, var(--panel-2)); color: var(--muted); font-size: 11px; line-height: 1.5; white-space: nowrap;
+}
+.workbenchCatalogStatus.is-published {
+  border-color: color-mix(in srgb, var(--accent) 32%, var(--border));
+  background: color-mix(in srgb, var(--accent) 9%, var(--panel)); color: var(--accent);
+}
+.workbenchCatalogMeta { margin: 2px 0 6px; }
+.workbenchCatalogCardHead + .workbenchCatalogDescription { margin-top: 6px; }
+/* The Resident favorite star: muted until starred, then gold. */
+.workbenchCatalogFavorite {
+  display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: 25px; height: 23px;
+  margin: -1px -4px 0 0; padding: 0; border: none; border-radius: 6px; background: transparent; color: var(--muted); font-size: 14px; line-height: 1;
+}
+.workbenchCatalogFavorite:hover { background: var(--panel-2); color: var(--accent-2); }
+.workbenchCatalogFavorite.is-on, .workbenchCatalogFavorite.is-on:hover { background: transparent; color: #f5c518; }
+.workbenchCatalog .portalCollectionBadge.is-pending {
+  border-color: color-mix(in srgb, var(--warn, #b7791f) 40%, var(--border)); color: var(--warn, #b7791f);
+}
+.workbenchCatalogDescription { -webkit-line-clamp: 2; margin-bottom: 10px; overflow-wrap: anywhere; }
+.workbenchCatalogDescription.is-empty { font-style: italic; opacity: .7; }
+
+.workbenchCatalogTeam {
+  /* Team and actions sit at the card bottom, so a row of cards lines up. */
+  display: flex; align-items: center; gap: 6px; min-width: 0; margin-top: auto; padding-top: 9px;
+  border-top: 1px solid var(--border); color: var(--muted); font-size: 12px;
+}
+.workbenchCatalogTeamAvatar {
+  display: inline-flex; align-items: center; justify-content: center; flex: 0 0 24px; width: 24px; height: 24px;
+  overflow: hidden; border-radius: 7px; background: var(--panel-2); color: var(--accent);
+}
+.workbenchCatalogTeamName {
+  min-width: 0; overflow: hidden; color: var(--text); font-weight: 600; text-decoration: none; text-overflow: ellipsis; white-space: nowrap;
+}
+.workbenchCatalogTeamName:hover { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+.workbenchCatalogTeamDetail { flex: 0 0 auto; white-space: nowrap; }
+.workbenchCatalogTeamEmpty { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.workbenchCatalogTeamMore {
+  flex: 0 0 auto; padding: 0 6px; border: 1px solid var(--border); border-radius: 999px;
+  background: var(--panel-2); font-size: 11px; line-height: 18px; white-space: nowrap; cursor: default;
+}
+.workbenchCatalogTeam.is-loading .workbenchCatalogTeamEmpty { opacity: .7; }
+.workbenchCatalogActivity { display: inline-flex; align-items: center; gap: 5px; margin-left: auto; flex: 0 0 auto; white-space: nowrap; }
+.workbenchCatalogActivity::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--border); }
+.workbenchCatalogActivity.is-active { color: var(--accent); font-weight: 600; }
+.workbenchCatalogActivity.is-active::before { background: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
+
+.workbenchCatalogActions { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; }
+.workbenchCatalogOpen, .workbenchCatalogSettings {
+  display: inline-flex; align-items: center; gap: 5px; min-height: 28px; font-size: 12px; text-decoration: none;
+}
+.workbenchCatalogOpen { color: var(--accent); font-weight: 650; }
+.workbenchCatalogOpen:hover { text-decoration: underline; text-underline-offset: 3px; }
+.workbenchCatalogSettings { padding: 2px 6px; border-radius: 6px; color: var(--muted); }
+.workbenchCatalogSettings:hover { background: var(--panel-2); color: var(--text); }
+
+.workbenchCatalogEmpty {
+  display: flex; flex-direction: column; align-items: center; padding: 40px 20px; text-align: center;
+  border: 1px dashed var(--border); border-radius: var(--radius); background: var(--panel);
+}
+.workbenchCatalogEmptyMark {
+  display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; margin-bottom: 12px;
+  border-radius: 10px; background: color-mix(in srgb, var(--accent) 9%, var(--panel)); color: var(--accent);
+}
+.workbenchCatalogEmptyMark .workbenchCatalogIcon { width: 20px; height: 20px; }
+.workbenchCatalogEmpty h2 { margin: 0; font-size: 15px; font-weight: 650; }
+.workbenchCatalogEmpty p { margin: 6px 0 16px; max-width: 420px; color: var(--muted); font-size: 13px; }
+.workbenchCatalogEmpty .portalButton { display: inline-flex; align-items: center; gap: 5px; }
+.workbenchCatalogErrorDetails { max-width: 100%; margin-top: 16px; color: var(--muted); text-align: left; }
+.workbenchCatalogErrorDetails summary { cursor: pointer; }
+.workbenchCatalogErrorDetails pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; }
+
+@media (max-width: 640px) {
+  .workbenchCatalogTeamDetail { display: none; }
+}

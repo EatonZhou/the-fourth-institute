@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600" viewBox="0 0 1200 600">
+<rect width="1200" height="600" fill="white"/>
+<text x="28" y="41.56" text-anchor="start" font-family="Noto Sans CJK SC" font-size="26" font-weight="700" fill="#275D85">能力放大：组合、积累、反馈与交互</text>
+<polyline points="28,62 1172,62" fill="none" stroke="#91A2AE" stroke-width="1.7"/>
+<text x="30" y="583.0300000000001" text-anchor="start" font-family="Noto Sans CJK SC" font-size="13" font-weight="400" fill="#61717E">设计示意 · 实线：工作或依赖关系；虚线：反馈或关联；不表示实验测量</text>
+<rect x="35" y="100" width="260" height="170" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="165.0" y="126.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">组合</text>
+<text x="165.0" y="186.21" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">模块边界</text>
+<text x="165.0" y="206.27" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">协作协议</text>
+<text x="165.0" y="226.33" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">按需委派</text>
+<polyline points="165,270 165,325" fill="none" stroke="#275D85" stroke-width="1.7"/>
+<polygon points="165,325 161.66171577528317,316.6420182798114 168.33828422471683,316.6420182798114" fill="#275D85"/>
+<rect x="325" y="100" width="260" height="170" fill="#EDF5F1" stroke="#26756C" stroke-width="1.5"/>
+<text x="455.0" y="126.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#26756C">积累</text>
+<text x="455.0" y="186.21" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">设计理由</text>
+<text x="455.0" y="206.27" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">故障教训</text>
+<text x="455.0" y="226.33" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">可复用能力</text>
+<polyline points="455,270 455,325" fill="none" stroke="#275D85" stroke-width="1.7"/>
+<polygon points="455,325 451.66171577528314,316.6420182798114 458.33828422471686,316.6420182798114" fill="#275D85"/>
+<rect x="615" y="100" width="260" height="170" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="745.0" y="126.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">反馈</text>
+<text x="745.0" y="186.21" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">定向检查</text>
+<text x="745.0" y="206.27" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">真实使用</text>
+<text x="745.0" y="226.33" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">交付后观察</text>
+<polyline points="745,270 745,325" fill="none" stroke="#275D85" stroke-width="1.7"/>
+<polygon points="745,325 741.6617157752831,316.6420182798114 748.3382842247169,316.6420182798114" fill="#275D85"/>
+<rect x="905" y="100" width="260" height="170" fill="#EDF5F1" stroke="#26756C" stroke-width="1.5"/>
+<text x="1035.0" y="126.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#26756C">交互</text>
+<text x="1035.0" y="186.21" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">选择重点</text>
+<text x="1035.0" y="206.27" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">可操作表达</text>
+<text x="1035.0" y="226.33" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">准确的人类反馈</text>
+<polyline points="1035,270 1035,325" fill="none" stroke="#275D85" stroke-width="1.7"/>
+<polygon points="1035,325 1031.6617157752833,316.6420182798114 1038.3382842247167,316.6420182798114" fill="#275D85"/>
+<rect x="35" y="325" width="1130" height="85" fill="#EDF5F1" stroke="#26756C" stroke-width="1.5"/>
+<text x="600.0" y="373.39000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#26756C">工程能力：可承担的变化复杂度、质量与持续维护范围</text>
+<rect x="35" y="455" width="350" height="70" fill="#FAF3E7" stroke="#99651B" stroke-width="1.5"/>
+<text x="210.0" y="495.89000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#99651B">人：理解／决策／恢复</text>
+<rect x="425" y="455" width="350" height="70" fill="#F3F4F5" stroke="#263442" stroke-width="1.5"/>
+<text x="600.0" y="495.89000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#263442">机器：推理／工具／等待</text>
+<rect x="815" y="455" width="350" height="70" fill="#F3F4F5" stroke="#263442" stroke-width="1.5"/>
+<text x="990.0" y="495.89000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#263442">组织：协调／知识维护</text>
+<text x="600.0" y="435.27000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">收益需扣除以下成本；增加成员或 token 不自动产生放大</text>
+</svg>

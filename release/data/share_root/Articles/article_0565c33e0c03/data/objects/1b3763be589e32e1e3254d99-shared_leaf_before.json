@@ -1,0 +1,29 @@
+{
+  "entry": "knowledge_base/research/experience_learning/embodied_adaptive_memory_dynamics_20261019.json",
+  "handoff": "src/research/results/embodied_adaptive_memory_dynamics_20261019/handoff.json",
+  "handoff_sha": "2547e980a19f2f1cc19146210edfa392cdc16e2b66a734d621cf7802e25f379a",
+  "latest": {
+    "jobs": [
+      "a22f87e4-c19d-4b3c-bb63-848d5eff4173",
+      "5f08b6b0-ceb7-4dc1-a70e-ee5d0052e9aa",
+      "88cfadaf-41a4-4ab2-9536-86902869abfe",
+      "fecb9eed-feb6-4c29-a883-2d0a7f462286",
+      "423c1c64-adb8-4ebe-a860-54a07ee35416",
+      "a2c32928-b2b8-4ee0-9096-c006ee1efbf1"
+    ],
+    "native": 23491,
+    "worker_seconds": 32.21922
+  },
+  "note": "Local-body history established; fixed6-event+delta/table16/16 unseen and retained vs adaptive10/16,8/16. Scalar-gain extra-value closed. No-birth/nonLenia/common actuator; all failures and missing feedback retained. Paper/projection already handed off. No new run.",
+  "owner": "resident_33af539c4a17",
+  "previous": "knowledge_base/research/experience_learning/temporal_history_selected_action_20261019.json",
+  "sha": "521380513cc47e48dd547629e6a2c7eeff104a505740413f00161de9ba1754d7",
+  "status": "local_body_history_established_scalar_gain_candidate_closed",
+  "steps": 182510,
+  "writer_partition": {
+    "entry": "knowledge_base/research/experience_learning/embodied_adaptive_memory_writer_gates_20261019.json",
+    "limit": "Old reset_gain is not theta-only freeze. Such native control remains unrun.",
+    "sha": "a473d62348705f5ebbf5c4821badc18b2df9be467e6e549b8d0e07b4a7788301",
+    "status": "8_array_checks_passed_0native_theta_w_independent"
+  }
+}

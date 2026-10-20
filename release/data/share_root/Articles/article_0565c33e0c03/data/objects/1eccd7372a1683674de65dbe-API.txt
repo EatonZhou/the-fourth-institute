@@ -1,0 +1,10 @@
+隔离模块 environment_evolution.paid_local_turnover_recycling.core
+RecyclingBody.from_parent(actual_clock256_path, arm): 原TurnoverBody完整恢复，不改policy/pump/source；arm为none/paid_inert/paid_recycle。新eligible=0、L256=rho。
+native(permit=ForwardPermit): 单次旧native，phase ready -> native_done。
+settle(): native_done先原pump一次，phase original_done再新process；支持从两个完成阶段恢复，不重演已返回native。新P下一native才用。
+state/body/clock/policy暴露原完整实例。checkpoint(path)/restore(path)保存inner、pending、phase、eligible、L256、累计生死与处理费，并SHA绑定；native_in_progress未知返回态不允许自动恢复重演。运行的第一真实native_done保存后恢复已经验证，无额外native。
+process(state, receipt, eligible, arm)是纯数组操作；原始源码不改。完整公式在plan.json。
+新增receipt为recycle_*各格数组；survivor/newborn_energy/rule_death/K_weights及原四向货物流/费用原样保留。L256_transported/survivor/deleted与post256_tissue/death为离线诊断，不给控制器或新生广播奖励。
+raw各path: steps.csv全128钟；fields/receipt257,264,288,320,384.npz；joint256/320/384.bin及current.bin。paths.json/frames.json建立索引；原父路径及SHA在plan.json。
+重绘与只读汇总：从src运行 .venv/bin/python -m environment_evolution.paid_local_turnover_recycling.analyze 后运行同包finish_figures。两者0native；勿重跑prepare或run。
+恢复只适用于明确授权续接：RecyclingBody.restore返回实际阶段；必须依phase继续，不能重演先前native。此次没有partial也未追加预算。

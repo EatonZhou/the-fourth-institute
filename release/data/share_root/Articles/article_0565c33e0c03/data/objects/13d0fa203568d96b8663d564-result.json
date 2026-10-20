@@ -1,0 +1,291 @@
+{
+  "task": "material_action_credit_20261019",
+  "status": "complete",
+  "job": "b2633c74-3046-455c-9f37-37e5a61532e6",
+  "attempted": 5376,
+  "returned": 5376,
+  "unknown": 0,
+  "old_replay": 0,
+  "paths": [
+    {
+      "stage": "science",
+      "condition": 0,
+      "arm": "donor_immediate",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_credit_20261019/b2633c74-3046-455c-9f37-37e5a61532e6/science_c0_donor_immediate",
+      "steps": 896,
+      "alive": true,
+      "initial_sign": 1,
+      "endpoint_displacement": 0.962999095726451,
+      "first_feedback": 1,
+      "phases": {
+        "acquisition": {
+          "steps": 320,
+          "last64_score": 0.7215365917260392,
+          "last64_positive_fraction": 0.96398829917015,
+          "gain": 15.092750292703222,
+          "loss": 2.8720635109510484,
+          "movement": 0.9487358466178397,
+          "end_energy": 146.05595093513438,
+          "end_mass": 24.0,
+          "gate": true
+        },
+        "reversal": {
+          "steps": 320,
+          "last64_score": -0.18609901558788927,
+          "last64_positive_fraction": 0.3927401560871168,
+          "gain": 3.1029933768633504,
+          "loss": 25.387511495853644,
+          "movement": 1.017232154595156,
+          "end_energy": 113.53820066154891,
+          "end_mass": 23.999999999999996,
+          "gate": false
+        },
+        "retention": {
+          "steps": 256,
+          "last64_score": 0.017057797187434744,
+          "last64_positive_fraction": 0.43269048666655535,
+          "gain": 0.0,
+          "loss": 0.0,
+          "movement": 0.8568197043211201,
+          "end_energy": 105.30858095722778,
+          "end_mass": 23.999999999999996,
+          "gate": false
+        }
+      }
+    },
+    {
+      "stage": "science",
+      "condition": 0,
+      "arm": "donor_trace",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_credit_20261019/b2633c74-3046-455c-9f37-37e5a61532e6/science_c0_donor_trace",
+      "steps": 896,
+      "alive": true,
+      "initial_sign": 1,
+      "endpoint_displacement": 1.116626380168976,
+      "first_feedback": 1,
+      "phases": {
+        "acquisition": {
+          "steps": 320,
+          "last64_score": 0.046338331941982745,
+          "last64_positive_fraction": 0.45481278143296483,
+          "gain": 6.344798132177293,
+          "loss": 5.883057298557622,
+          "movement": 0.893660499643093,
+          "end_energy": 134.3520803339766,
+          "end_mass": 24.0,
+          "gate": false
+        },
+        "reversal": {
+          "steps": 320,
+          "last64_score": -0.08651916836434784,
+          "last64_positive_fraction": 0.31534009149748393,
+          "gain": 4.387410412398915,
+          "loss": 7.472303252041577,
+          "movement": 0.8838530059256758,
+          "end_energy": 121.16733448840824,
+          "end_mass": 24.0,
+          "gate": false
+        },
+        "retention": {
+          "steps": 256,
+          "last64_score": -0.05383901022324353,
+          "last64_positive_fraction": 0.3428162214138275,
+          "gain": 0.0,
+          "loss": 0.0,
+          "movement": 0.706203241776353,
+          "end_energy": 113.08833124663185,
+          "end_mass": 23.999999999999996,
+          "gate": false
+        }
+      }
+    },
+    {
+      "stage": "science",
+      "condition": 0,
+      "arm": "donor_neighbor",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_credit_20261019/b2633c74-3046-455c-9f37-37e5a61532e6/science_c0_donor_neighbor",
+      "steps": 896,
+      "alive": true,
+      "initial_sign": 1,
+      "endpoint_displacement": 1.0222338081715425,
+      "first_feedback": 1,
+      "phases": {
+        "acquisition": {
+          "steps": 320,
+          "last64_score": 0.043275348817175575,
+          "last64_positive_fraction": 0.4524260514405176,
+          "gain": 6.317424845141452,
+          "loss": 5.897968457649912,
+          "movement": 0.8937227344249352,
+          "end_energy": 134.30973365306667,
+          "end_mass": 23.999999999999996,
+          "gate": false
+        },
+        "reversal": {
+          "steps": 320,
+          "last64_score": -0.09489027534725702,
+          "last64_positive_fraction": 0.30484541608227606,
+          "gain": 4.241492010482717,
+          "loss": 7.419414990487359,
+          "movement": 0.8848147433372122,
+          "end_energy": 121.03099592972475,
+          "end_mass": 23.999999999999996,
+          "gate": false
+        },
+        "retention": {
+          "steps": 256,
+          "last64_score": -0.07410442105314863,
+          "last64_positive_fraction": 0.32108675192265634,
+          "gain": 0.0,
+          "loss": 0.0,
+          "movement": 0.7064483272932257,
+          "end_energy": 112.95174760243151,
+          "end_mass": 24.000000000000007,
+          "gate": false
+        }
+      }
+    },
+    {
+      "stage": "science",
+      "condition": 1,
+      "arm": "donor_immediate",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_credit_20261019/b2633c74-3046-455c-9f37-37e5a61532e6/science_c1_donor_immediate",
+      "steps": 896,
+      "alive": true,
+      "initial_sign": -1,
+      "endpoint_displacement": 6.519499323460575,
+      "first_feedback": 1,
+      "phases": {
+        "acquisition": {
+          "steps": 320,
+          "last64_score": 0.7406123562376952,
+          "last64_positive_fraction": 0.9666085788959442,
+          "gain": 15.60053697791308,
+          "loss": 2.828253365914122,
+          "movement": 0.9427801015341071,
+          "end_energy": 146.61350351046485,
+          "end_mass": 23.999999999999996,
+          "gate": true
+        },
+        "reversal": {
+          "steps": 320,
+          "last64_score": -0.011912449546627176,
+          "last64_positive_fraction": 0.4198684379394608,
+          "gain": 2.1905382721751607,
+          "loss": 24.648117599149916,
+          "movement": 1.0898576752296836,
+          "end_energy": 113.85006650826047,
+          "end_mass": 24.000000000000004,
+          "gate": false
+        },
+        "retention": {
+          "steps": 256,
+          "last64_score": 0.4481647061754157,
+          "last64_positive_fraction": 0.7795161253692869,
+          "gain": 0.0,
+          "loss": 0.0,
+          "movement": 0.9602044797147744,
+          "end_energy": 105.5170620285457,
+          "end_mass": 24.0,
+          "gate": true
+        }
+      }
+    },
+    {
+      "stage": "science",
+      "condition": 1,
+      "arm": "donor_trace",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_credit_20261019/b2633c74-3046-455c-9f37-37e5a61532e6/science_c1_donor_trace",
+      "steps": 896,
+      "alive": true,
+      "initial_sign": -1,
+      "endpoint_displacement": 0.6931473208505765,
+      "first_feedback": 1,
+      "phases": {
+        "acquisition": {
+          "steps": 320,
+          "last64_score": 0.06593089081273576,
+          "last64_positive_fraction": 0.4723283712748335,
+          "gain": 6.673466653790127,
+          "loss": 5.674314153642194,
+          "movement": 0.8842489434771242,
+          "end_energy": 134.8989035566708,
+          "end_mass": 24.000000000000007,
+          "gate": false
+        },
+        "reversal": {
+          "steps": 320,
+          "last64_score": -0.12745140785795028,
+          "last64_positive_fraction": 0.2631054036710164,
+          "gain": 3.468536713015697,
+          "loss": 7.967470864297679,
+          "movement": 0.8898862992568894,
+          "end_energy": 120.29408310613209,
+          "end_mass": 24.0,
+          "gate": false
+        },
+        "retention": {
+          "steps": 256,
+          "last64_score": -0.12081393624322297,
+          "last64_positive_fraction": 0.27174542870408736,
+          "gain": 0.0,
+          "loss": 0.0,
+          "movement": 0.7100632932571974,
+          "end_energy": 112.21121981287487,
+          "end_mass": 24.000000000000007,
+          "gate": false
+        }
+      }
+    },
+    {
+      "stage": "science",
+      "condition": 1,
+      "arm": "donor_neighbor",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_credit_20261019/b2633c74-3046-455c-9f37-37e5a61532e6/science_c1_donor_neighbor",
+      "steps": 896,
+      "alive": true,
+      "initial_sign": -1,
+      "endpoint_displacement": 0.5813353779108195,
+      "first_feedback": 1,
+      "phases": {
+        "acquisition": {
+          "steps": 320,
+          "last64_score": 0.06418230863440606,
+          "last64_positive_fraction": 0.4713013341484256,
+          "gain": 6.670490629925043,
+          "loss": 5.693929140587306,
+          "movement": 0.8840575299623492,
+          "end_energy": 134.87650395937538,
+          "end_mass": 24.0,
+          "gate": false
+        },
+        "reversal": {
+          "steps": 320,
+          "last64_score": -0.11169248701547366,
+          "last64_positive_fraction": 0.28477272837548134,
+          "gain": 3.7493865266214854,
+          "loss": 7.87059922377352,
+          "movement": 0.8888995546154965,
+          "end_energy": 120.65039170760788,
+          "end_mass": 24.000000000000007,
+          "gate": false
+        },
+        "retention": {
+          "steps": 256,
+          "last64_score": -0.09520591614282599,
+          "last64_positive_fraction": 0.3004928389607623,
+          "gain": 0.0,
+          "loss": 0.0,
+          "movement": 0.7098371716491333,
+          "end_energy": 112.56775453595876,
+          "end_mass": 24.000000000000007,
+          "gate": false
+        }
+      }
+    }
+  ],
+  "error": null,
+  "wall_seconds": 8.107622907031327,
+  "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/material_action_credit_20261019/b2633c74-3046-455c-9f37-37e5a61532e6",
+  "raw_bytes": 28817483
+}

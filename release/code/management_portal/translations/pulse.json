@@ -1,0 +1,18 @@
+{
+  "source_period、source_key 和 item_id 必填": {
+    "en": "source_period, source_key, and item_id are required",
+    "zh-CN": "source_period、source_key 和 item_id 必填"
+  },
+  "unknown publication action": {
+    "en": "unknown publication action",
+    "zh-CN": "未知的发布操作"
+  },
+  "只能发布自己的 Pulse 条目": {
+    "en": "You can only publish your own Pulse entries",
+    "zh-CN": "只能发布自己的 Pulse 条目"
+  },
+  "只能撤回自己发布的 Pulse 条目": {
+    "en": "You can only withdraw Pulse entries you published yourself",
+    "zh-CN": "只能撤回自己发布的 Pulse 条目"
+  }
+}

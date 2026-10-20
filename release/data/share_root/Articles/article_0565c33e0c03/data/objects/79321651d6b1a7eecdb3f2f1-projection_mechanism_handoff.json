@@ -1,0 +1,179 @@
+{
+  "task": "lifetime_cue_reversal_20261019",
+  "scope": "narrow mechanism/result handoff; no simulation",
+  "new_native": 0,
+  "simple_baseline": "fast_delta alpha=1, paired life",
+  "simple_baseline_paths": [
+    {
+      "id": "202610197401_0_paired_fast_delta_life",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/lifetime_cue_reversal_20261019/58bb9d10-1c13-4a48-b8ab-0270124d4a72/202610197401_0_paired_fast_delta_life"
+    },
+    {
+      "id": "202610197401_1_paired_fast_delta_life",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/lifetime_cue_reversal_20261019/58bb9d10-1c13-4a48-b8ab-0270124d4a72/202610197401_1_paired_fast_delta_life"
+    },
+    {
+      "id": "202610197402_0_paired_fast_delta_life",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/lifetime_cue_reversal_20261019/58bb9d10-1c13-4a48-b8ab-0270124d4a72/202610197402_0_paired_fast_delta_life"
+    },
+    {
+      "id": "202610197402_1_paired_fast_delta_life",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/lifetime_cue_reversal_20261019/58bb9d10-1c13-4a48-b8ab-0270124d4a72/202610197402_1_paired_fast_delta_life"
+    }
+  ],
+  "baseline_exact_rows": [
+    {
+      "seed": "202610197401",
+      "order": "0",
+      "arm": "fast_delta",
+      "pairing": "paired",
+      "alive": "True",
+      "M": "24.0",
+      "E": "41.87482078827308",
+      "minM": "23.999999999999993",
+      "min_largest": "0.9605201542281208",
+      "movement_paid": "3.417565104785444",
+      "movement_unpaid": "0.0",
+      "basal_paid": "27.648000000000003",
+      "mass_injury": "0.0",
+      "mass_starvation": "0.0",
+      "feedback_gain": "25.535038534001657",
+      "feedback_loss": "24.594652640943107",
+      "feedback_contact_mass": "768.0",
+      "initial": "0.4997783054725464",
+      "acquisition_0": "0.9999926631024749",
+      "acquisition_1": "0.9999904711870746",
+      "acquisition_retention": "0.9999911061677114",
+      "reversal_0": "0.9999963030415623",
+      "reversal_1": "0.9999812675609354",
+      "reversal_retention": "0.9788646462881913",
+      "freeze": "0.9999995072332648",
+      "erase": "0.4198398181600923",
+      "freeze_displacement": "4.198895586657979",
+      "erase_displacement": "-0.011991724986490482"
+    },
+    {
+      "seed": "202610197401",
+      "order": "1",
+      "arm": "fast_delta",
+      "pairing": "paired",
+      "alive": "True",
+      "M": "24.0",
+      "E": "42.28804976684188",
+      "minM": "23.999999999999986",
+      "min_largest": "0.9707111002286859",
+      "movement_paid": "3.5188655291764146",
+      "movement_unpaid": "0.0",
+      "basal_paid": "27.647999999999996",
+      "mass_injury": "0.0",
+      "mass_starvation": "0.0",
+      "feedback_gain": "27.090398381876348",
+      "feedback_loss": "25.635483085858002",
+      "feedback_contact_mass": "767.9999999999998",
+      "initial": "0.5002216945274537",
+      "acquisition_0": "0.9999927063522552",
+      "acquisition_1": "0.9999933685617095",
+      "acquisition_retention": "0.9999430751794118",
+      "reversal_0": "0.9999923588283156",
+      "reversal_1": "0.999991700425598",
+      "reversal_retention": "0.9999977237540567",
+      "freeze": "0.9999999062898991",
+      "erase": "0.5916986133654839",
+      "freeze_displacement": "3.9548476495305778",
+      "erase_displacement": "0.00790056556671459"
+    },
+    {
+      "seed": "202610197402",
+      "order": "0",
+      "arm": "fast_delta",
+      "pairing": "paired",
+      "alive": "True",
+      "M": "23.999999999999986",
+      "E": "41.88125294677988",
+      "minM": "23.999999999999986",
+      "min_largest": "0.9605087115385288",
+      "movement_paid": "3.4108719754608714",
+      "movement_unpaid": "0.0",
+      "basal_paid": "27.647999999999996",
+      "mass_injury": "0.0",
+      "mass_starvation": "0.0",
+      "feedback_gain": "25.534571338906296",
+      "feedback_loss": "24.594446416665573",
+      "feedback_contact_mass": "767.9999999999999",
+      "initial": "0.5022064033631518",
+      "acquisition_0": "0.9999928477670212",
+      "acquisition_1": "0.9999901958221887",
+      "acquisition_retention": "0.9999910458948209",
+      "reversal_0": "0.9999963129371016",
+      "reversal_1": "0.9999812037152451",
+      "reversal_retention": "0.9788790341990479",
+      "freeze": "0.9999995055679584",
+      "erase": "0.4193586707220909",
+      "freeze_displacement": "4.205134078694721",
+      "erase_displacement": "-0.01175369326402631"
+    },
+    {
+      "seed": "202610197402",
+      "order": "1",
+      "arm": "fast_delta",
+      "pairing": "paired",
+      "alive": "True",
+      "M": "24.000000000000004",
+      "E": "42.290393048746125",
+      "minM": "23.99999999999999",
+      "min_largest": "0.9705628274596748",
+      "movement_paid": "3.5169110814141575",
+      "movement_unpaid": "0.0",
+      "basal_paid": "27.648000000000003",
+      "mass_injury": "0.0",
+      "mass_starvation": "0.0",
+      "feedback_gain": "27.088698781596463",
+      "feedback_loss": "25.63339465143618",
+      "feedback_contact_mass": "768.0",
+      "initial": "0.49779359663684813",
+      "acquisition_0": "0.9999924987347776",
+      "acquisition_1": "0.9999935672794448",
+      "acquisition_retention": "0.999942831079257",
+      "reversal_0": "0.9999925885730995",
+      "reversal_1": "0.9999913568231787",
+      "reversal_retention": "0.9999979197922272",
+      "freeze": "0.9999998842448946",
+      "erase": "0.6533465051937353",
+      "freeze_displacement": "3.9631064755685657",
+      "erase_displacement": "0.00678249032792877"
+    }
+  ],
+  "note": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/lifetime_cue_reversal_20261019/projection_mechanism_note.txt",
+  "note_sha256": "d2e40f79a9f63cbb95104c99f39c64e9fbdd35ae229da4e5f1c22f166def149c",
+  "evidence": {
+    "plan.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/lifetime_cue_reversal_20261019/plan.json",
+      "sha256": "6ed09e2addce3b96ad684e2afe94c387fdca62ad7fc66b65d06f373092d38190"
+    },
+    "science_result.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/lifetime_cue_reversal_20261019/science_result.json",
+      "sha256": "3a3501f332597b8ca2ce5e16f5a394cc350304c0dfa4cf41cde35c3d0f765ec7"
+    },
+    "science_outcomes.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/lifetime_cue_reversal_20261019/science_outcomes.json",
+      "sha256": "49cb6ae940ec342f34dc1e0b8a96c7c2eabe7b03f7f37840bab6b42bb51ba98d"
+    },
+    "life_comparisons.csv": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/lifetime_cue_reversal_20261019/life_comparisons.csv",
+      "sha256": "2cd07b70123d0c2c79097ad0fba6989037d1fcdbe3a06246554479a0ae40bc79"
+    },
+    "q_erase_checks.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/lifetime_cue_reversal_20261019/q_erase_checks.json",
+      "sha256": "5eda7949d50fbcb0ff1ec066a78ab31e539afc30f4f669ca8db2abd3696a48d7"
+    },
+    "reversal_exposure_and_recovery.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/lifetime_cue_reversal_20261019/reversal_exposure_and_recovery.json",
+      "sha256": "59d29a5a1ca96e28a852b814e7b592df7f3ff047d88129272e5eb708e2509a0a"
+    },
+    "handoff.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/lifetime_cue_reversal_20261019/handoff.json",
+      "sha256": "d0ca1aa9384085b1ba4a20ba8176617adf171cc35f2cf18b7a18294907e738a8"
+    }
+  },
+  "metric_definition": "指标释义更正（零native，原数值不变）：每个探针末帧的 f=M_good/(M_0+M_1)，M_i=sum_x rho(x)*1[torus_distance(x,spot_i)<2.5]。这是两个半径2.5接触区的材料质量份额，不是高斯cue强度加权sum(rho*cue)，也不是整阶段正确率。感觉场及付费反馈场与此观察指标应分开；原CSV、模型源、实际轨迹和运行计数不变。"
+}

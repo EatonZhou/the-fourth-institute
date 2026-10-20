@@ -1,0 +1,15 @@
+{
+  "edition": 3,
+  "status": "passed",
+  "path": "思维论-LaTeX源码.zip",
+  "bytes": 58119,
+  "sha256": "94e295a57878c00d58da2a1476f8a9f7ed3fdfbc0c7509daac4d4c706479fa6b",
+  "file_count": 31,
+  "crc_test": "passed",
+  "excluded": [
+    "PDF",
+    "old edition archives",
+    "build cache",
+    "package-report.json (self-hash)"
+  ]
+}

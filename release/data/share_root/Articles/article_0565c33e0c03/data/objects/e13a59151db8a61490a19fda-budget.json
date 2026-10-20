@@ -1,0 +1,17 @@
+{
+  "native_cap": 1028,
+  "attempted": 1028,
+  "committed": 1028,
+  "settled": 1028,
+  "science_native": 1024,
+  "boundary_native": 4,
+  "worker_cap": 450,
+  "runner_worker_seconds": 49.649426,
+  "worker_unused": 400.350574,
+  "raw_bytes": 236791515,
+  "raw_cap": 402653184,
+  "cpu_threads": 2,
+  "gpu": 0,
+  "old_balances_used": 0,
+  "old_science_replayed": 0
+}

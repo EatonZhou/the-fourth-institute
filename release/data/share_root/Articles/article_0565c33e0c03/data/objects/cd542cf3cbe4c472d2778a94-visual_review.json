@@ -1,0 +1,15 @@
+{
+  "viewed": [
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_carried_generation_choice_20261019/202610195601_ring_birth_gain_only_actual.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_carried_generation_choice_20261019/202610195601_ring_both_actual.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_carried_generation_choice_20261019/202610195601_separate_seeds_birth_gain_only_actual.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_carried_generation_choice_20261019/202610195601_separate_seeds_both_actual.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_carried_generation_choice_20261019/202610195602_ring_birth_gain_only_actual.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_carried_generation_choice_20261019/202610195602_ring_both_actual.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_carried_generation_choice_20261019/202610195602_separate_seeds_birth_gain_only_actual.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_carried_generation_choice_20261019/202610195602_separate_seeds_both_actual.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_carried_generation_choice_20261019/cohort_curves.png"
+  ],
+  "observation": "已亲看8父320/352/384的实际密度与O/C/N同尺度场及全部逐钟曲线。四个ring仍保持偏亮一侧的环状形态，四个separate仍为四分离团块、两侧质量不同。新旧政策宏观形态近似，细小组织/付款差异以逐钟账为准，不称新形态。O/C缓慢流失而N增长，在同尺度图中N与旧体共存；图像近似不能推断逐材料等价。",
+  "synthetic_or_rerun_physics": false
+}

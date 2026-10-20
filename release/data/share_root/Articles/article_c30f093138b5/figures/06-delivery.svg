@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600" viewBox="0 0 1200 600">
+<rect width="1200" height="600" fill="white"/>
+<text x="28" y="41.56" text-anchor="start" font-family="Noto Sans CJK SC" font-size="26" font-weight="700" fill="#275D85">并行变化中的小批量交付</text>
+<polyline points="28,62 1172,62" fill="none" stroke="#91A2AE" stroke-width="1.7"/>
+<text x="30" y="583.0300000000001" text-anchor="start" font-family="Noto Sans CJK SC" font-size="13" font-weight="400" fill="#61717E">设计示意 · 实线：工作或依赖关系；虚线：反馈或关联；不表示实验测量</text>
+<text x="92.5" y="156.2" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#263442">模块 A</text>
+<polyline points="165,150 1165,150" fill="none" stroke="#91A2AE" stroke-width="1.7"/>
+<text x="92.5" y="271.2" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#263442">模块 B</text>
+<polyline points="165,265 1165,265" fill="none" stroke="#91A2AE" stroke-width="1.7"/>
+<text x="92.5" y="386.2" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#263442">发布工具</text>
+<polyline points="165,380 1165,380" fill="none" stroke="#91A2AE" stroke-width="1.7"/>
+<text x="92.5" y="501.2" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#263442">使用与验证</text>
+<polyline points="165,495 1165,495" fill="none" stroke="#91A2AE" stroke-width="1.7"/>
+<rect x="185" y="115" width="240" height="65" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="305.0" y="153.39" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#275D85">实现取消请求</text>
+<rect x="560" y="115" width="250" height="65" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="685.0" y="153.39" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#275D85">继续完善输出保留</text>
+<rect x="300" y="230" width="235" height="65" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="417.5" y="268.39" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#275D85">执行器响应与状态</text>
+<rect x="850" y="230" width="275" height="65" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="987.5" y="268.39" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#275D85">下一项独立变化</text>
+<rect x="560" y="335" width="180" height="85" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="650.0" y="361.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">捕获实际内容</text>
+<text x="650.0" y="398.77000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">范围＋依赖</text>
+<rect x="780" y="335" width="175" height="85" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="867.5" y="361.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">合成与切换</text>
+<text x="867.5" y="398.77000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">保留并行成果</text>
+<rect x="995" y="335" width="170" height="85" fill="#EFF4F8" stroke="#275D85" stroke-width="1.5"/>
+<text x="1080.0" y="361.7" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" font-weight="700" fill="#275D85">实际交付记录</text>
+<text x="1080.0" y="398.77000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="17" font-weight="400" fill="#263442">内容＋结果</text>
+<polyline points="425,147 485,147 485,377 560,377" fill="none" stroke="#275D85" stroke-width="1.7"/>
+<polygon points="560,377 551.6420182798114,380.33828422471686 551.6420182798114,373.66171577528314" fill="#275D85"/>
+<polyline points="535,262 545,262 545,377 560,377" fill="none" stroke="#275D85" stroke-width="1.7"/>
+<polygon points="560,377 551.6420182798114,380.33828422471686 551.6420182798114,373.66171577528314" fill="#275D85"/>
+<polyline points="740,377 780,377" fill="none" stroke="#275D85" stroke-width="1.7"/>
+<polygon points="780,377 771.6420182798114,380.33828422471686 771.6420182798114,373.66171577528314" fill="#275D85"/>
+<polyline points="955,377 995,377" fill="none" stroke="#275D85" stroke-width="1.7"/>
+<polygon points="995,377 986.6420182798114,380.33828422471686 986.6420182798114,373.66171577528314" fill="#275D85"/>
+<rect x="590" y="460" width="260" height="75" fill="#EDF5F1" stroke="#26756C" stroke-width="1.5"/>
+<text x="720.0" y="503.39000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#26756C">交付后观察与用户体验</text>
+<rect x="910" y="460" width="255" height="75" fill="#FAF3E7" stroke="#99651B" stroke-width="1.5"/>
+<text x="1037.5" y="503.39000000000004" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="19" font-weight="700" fill="#99651B">故障 → 局部修复</text>
+<polyline points="1080,420 1080,445 720,445 720,460" fill="none" stroke="#26756C" stroke-width="1.7"/>
+<polygon points="720,460 716.6617157752831,451.6420182798114 723.3382842247169,451.6420182798114" fill="#26756C"/>
+<polyline points="850,497 910,497" fill="none" stroke="#26756C" stroke-width="1.7"/>
+<polygon points="910,497 901.6420182798114,500.33828422471686 901.6420182798114,493.66171577528314" fill="#26756C"/>
+<text x="660.0" y="101.96000000000001" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="16" font-weight="400" fill="#263442">时间向右；仅示意依赖顺序，未表示真实耗时</text>
+</svg>

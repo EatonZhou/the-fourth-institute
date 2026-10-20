@@ -1,0 +1,1319 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title data-portal-i18n-text="&quot;Projects Board&quot;">Projects Board</title>
+    <link rel="stylesheet" href="/static/portal_components.css" />
+    <link rel="stylesheet" href="/static/portal_image_editor.css" />
+    <link rel="stylesheet" href="/static/portal_section_nav.css" />
+    <link rel="stylesheet" href="/static/portal_design_system.css" data-portal-skin="default" />
+    <link rel="stylesheet" href="/static/portal_themes.css" data-portal-skin-provider="themes" />
+    <link rel="stylesheet" href="/static/portal_board_toolbar.css" />
+    <link rel="stylesheet" href="/static/portal_workbench.css" />
+    <link rel="stylesheet" href="/static/project_page.css" />
+    <script src="/static/portal_state.js"></script>
+    <script src="/static/portal_text.js"></script>
+    <script src="/static/portal_translations.js"></script>
+    <script src="/static/portal_i18n.js"></script>
+    <script src="/static/portal_theme.js"></script>
+    <script src="/static/portal_page_state.js"></script>
+    <script src="/static/portal_api.js"></script>
+    <script src="/static/portal_resource_registration_service.js"></script>
+    <script src="/static/portal_instruction_client.js"></script>
+    <script src="/static/portal_resident_service.js"></script>
+    <script src="/static/portal_passkeys.js"></script>
+    <script src="/static/portal_identity.js"></script>
+    <script src="/static/portal_overlay.js"></script>
+    <script src="/static/portal_events.js"></script>
+    <script src="/static/portal_refresh_coordinator.js"></script>
+    <script src="/static/portal_conversation_store.js"></script>
+    <script src="/static/portal_ui_primitives.js"></script>
+    <script src="/static/portal_nav.js"></script>
+    <script src="/static/resident_protocol.js"></script>
+    <script src="/static/resident_projection.js"></script>
+    <script src="/static/portal_ui.js"></script>
+    <script src="/static/portal_form_controls.js"></script>
+    <script src="/static/portal_button_tooltips.js"></script>
+    <script src="/static/portal_toolbar.js"></script>
+    <script src="/static/portal_board_toolbar.js"></script>
+    <script src="/static/portal_detail_surface.js"></script>
+    <script src="/static/portal_resource_header.js"></script>
+    <script src="/static/portal_resource_routes.js"></script>
+    <script src="/static/portal_resource_chips.js"></script>
+    <script src="/static/portal_file_links.js"></script>
+    <script src="/static/portal_preview_contract.js"></script>
+    <script src="/static/portal_preview_runtime.js"></script>
+    <script src="/static/portal_pdf_preview.js"></script>
+    <script src="/static/portal_preview_renderers.js"></script>
+    <script src="/static/portal_editor_open_service.js"></script>
+    <script src="/static/portal_command_registry.js"></script>
+    <script src="/static/portal_workbench_context.js"></script>
+    <script src="/static/portal_workbench.js"></script>
+    <script src="/static/portal_workspace_surface.js"></script>
+    <script src="/static/markdown.js"></script>
+    <script src="/static/portal_image_editor.js"></script>
+    <script src="/static/portal_resident_runtime_controller.js"></script>
+    <script src="/static/portal_chat_workspace.js"></script>
+    <script src="/static/portal_command_palette.js"></script>
+    <script src="/static/project_summary.js"></script>
+    <script src="/static/project_board.js"></script>
+    <script src="/static/project_page.js"></script>
+    <script src="/static/project_research_maps.js"></script>
+  </head>
+  <body class="portalBoardShell">
+    <header class="portalSiteHeader">
+      <div class="portalNavShell">
+        <div class="portalNavTop">
+          <div class="portalNavMain">
+            <a class="portalBrand" data-portal-home="1" href="/"><span data-portal-site-name>TFI Portal</span></a>
+            <nav class="portalModuleNav" aria-label="Primary" data-portal-nav data-portal-nav-active="projects" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Primary&quot;}"></nav>
+          </div>
+          <div class="portalUser">
+            <span class="portalUsername" id="portalUsername"></span>
+            <a class="portalLogoutLink" href="/logout"><!--portal-i18n:"Logout"-->Logout</a>
+          </div>
+        </div>
+      </div>
+      <div class="projectToolbarWrap portalPageHeaderFrame">
+        <div class="portalBoardHeader">
+          <div data-portal-board-toolbar aria-label="Project filters" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Project filters&quot;}">
+            <div data-portal-board-search>
+            <label for="q"><!--portal-i18n:"搜索"-->搜索</label>
+              <input data-portal-board-search-input id="q" type="search" placeholder="name / id / tags / description / path"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;name / id / tags / description / path&quot;}"/>
+            </div>
+            <div data-portal-board-actions>
+              <div data-portal-board-filter data-portal-board-filter-auto data-portal-toolbar-priority="normal">
+                <button data-portal-board-action="filter" id="projectFilterToggle" type="button" aria-controls="projectFilterPanel"><span><!--portal-i18n:"筛选"-->筛选</span></button>
+                <div class="filter-panel" data-portal-board-filter-panel id="projectFilterPanel">
+                  <label class="portalField" for="tag">
+                    <span><!--portal-i18n:"标签"-->标签</span>
+                    <select class="portalBoardSelect" id="tag">
+                      <option value=""><!--portal-i18n:"全部"-->全部</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+              <button data-portal-board-action="refresh" data-portal-toolbar-priority="low" id="reload" type="button" title="重新读取" aria-label="重新读取" data-portal-i18n-attrs="{&quot;title&quot;: &quot;重新读取&quot;, &quot;aria-label&quot;: &quot;重新读取&quot;}"></button>
+              <button id="newProject" class="portalButton is-compact is-primary" data-portal-toolbar-priority="critical" type="button" title="新建项目" aria-label="新建项目" data-portal-icon="plus" data-portal-i18n-attrs="{&quot;title&quot;: &quot;新建项目&quot;, &quot;aria-label&quot;: &quot;新建项目&quot;}">
+                <span><!--portal-i18n:"新建项目"-->新建项目</span>
+              </button>
+            </div>
+            <span data-portal-board-meta id="meta"></span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="projectRegistryMain portalPageFrame">
+      <div id="board" class="projectRegistryRoot" aria-live="polite"></div>
+      <div id="error" class="projectPageError" hidden>
+        <div id="errorMsg"></div>
+        <div class="hint"><!--portal-i18n:"项目列表仍可继续浏览；请重试刚才的操作。"-->项目列表仍可继续浏览；请重试刚才的操作。</div>
+      </div>
+    </main>
+
+    <div class="portalDetailOverlay" data-portal-detail-overlay id="summaryModal" aria-hidden="true" hidden>
+      <div class="portalDetailSurface projectSummarySurface" data-portal-detail-surface data-portal-detail-size="workbench" role="dialog" aria-modal="true" aria-labelledby="summaryTitle">
+        <div class="portalDetailHeader" data-portal-detail-header>
+          <div class="left" id="projectDetailIdentity">
+            <div class="portalResourceIdentity">
+              <div class="portalResourceIdentityTitleRow">
+                <h2 class="portalResourceIdentityTitle" id="summaryTitle"><!--portal-i18n:"加载中..."-->加载中...</h2>
+                <span class="portalResourceIdentitySeparator" aria-hidden="true">|</span>
+                <span class="portalResourceIdentityType"><!--portal-i18n:"Project"-->Project</span>
+              </div>
+              <div class="portalResourceIdentityId" id="projectDetailId"></div>
+            </div>
+          </div>
+          <div class="projectDetailActions">
+            <label class="projectTypeControl" for="summaryProjectType">
+              <span><!--portal-i18n:"类型"-->类型</span>
+              <select id="summaryProjectType">
+                <option value="company"><!--portal-i18n:"公司项目"-->公司项目</option>
+                <option value="academic"><!--portal-i18n:"学术项目"-->学术项目</option>
+                <option value="personal"><!--portal-i18n:"个人项目"-->个人项目</option>
+                <option value="other"><!--portal-i18n:"其他"-->其他</option>
+              </select>
+            </label>
+            <button class="portalButton is-compact" id="projectMenuButton" type="button"><!--portal-i18n:"Menu"-->Menu</button>
+            <button class="portalButton is-compact" id="projectCopyLink" type="button"><!--portal-i18n:"复制链接"-->复制链接</button>
+            <button class="portalDetailClose" data-portal-detail-close id="summaryClose" type="button" aria-label="关闭" data-portal-icon="close" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;关闭&quot;}"></button>
+          </div>
+        </div>
+        <div class="portalDetailBody projectDetailBody" data-portal-detail-body>
+          <div class="projectDetailViewport">
+            <div class="projectDetailViewBar">
+              <nav class="portalSectionTabs" aria-label="Project detail views" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Project detail views&quot;}">
+                <button class="portalSectionLink active" data-project-detail-view="overview" type="button" aria-current="page"><!--portal-i18n:"Overview"-->Overview</button>
+                <button class="portalSectionLink" data-project-detail-view="research" type="button"><!--portal-i18n:"Research Map"-->Research Map</button>
+                <button class="portalSectionLink" data-project-detail-view="summary" type="button"><!--portal-i18n:"Summary"-->Summary</button>
+                <button class="portalSectionLink" data-project-detail-view="chat" type="button"><!--portal-i18n:"Chat"-->Chat</button>
+                <button class="portalSectionLink" data-project-detail-view="preview" type="button"><!--portal-i18n:"Preview"-->Preview</button>
+              </nav>
+              <div class="projectDetailViewHint" id="summarySub"><!--portal-i18n:"Project State · summary.md · Project Chat"-->Project State · summary.md · Project Chat</div>
+            </div>
+            <div class="projectDetailStage">
+              <section class="projectDetailPane projectOverviewPane" id="projectOverviewPane" data-project-detail-pane="overview" aria-label="Project overview" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Project overview&quot;}">
+                <div class="projectPageRoot" id="projectPageRoot">
+                  <div class="portalAsyncState" data-state="loading" data-density="panel" role="status">
+                    <span class="portalAsyncStateIcon" aria-hidden="true"></span>
+                    <span class="portalAsyncStateMessage"><!--portal-i18n:"正在加载 Project State。"-->正在加载 Project State。</span>
+                  </div>
+                </div>
+              </section>
+              <section class="projectDetailPane projectResearchPane" data-project-detail-pane="research" aria-label="Research Map" hidden data-portal-i18n-attrs='{"aria-label":"Research Map"}'>
+                <div id="projectResearchRoot"></div>
+              </section>
+              <section class="projectDetailPane projectSummaryPane" id="projectSummaryPane" data-project-detail-pane="summary" aria-label="Project summary" hidden data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Project summary&quot;}">
+                <div class="projectSummaryPaneHeader">
+                  <div>
+                    <h3><!--portal-i18n:"summary.md"-->summary.md</h3>
+                    <p id="projectSummaryPath"><!--portal-i18n:"Project summary"-->Project summary</p>
+                  </div>
+                  <div class="projectSummaryPaneActions">
+                    <button class="portalButton" id="summaryEdit" type="button"><!--portal-i18n:"编辑"-->编辑</button>
+                    <button class="portalButton" id="summaryCancelEdit" type="button" hidden><!--portal-i18n:"取消"-->取消</button>
+                    <button class="portalButton is-primary" id="summarySave" type="button" hidden><!--portal-i18n:"保存"-->保存</button>
+                  </div>
+                </div>
+                <div class="projectSummaryBody projectSummaryStateHost" id="summaryText">
+                  <div class="portalAsyncState" data-state="loading" data-density="panel" role="status">
+                    <span class="portalAsyncStateIcon" aria-hidden="true"></span>
+                    <span class="portalAsyncStateMessage"><!--portal-i18n:"正在加载项目摘要。"-->正在加载项目摘要。</span>
+                  </div>
+                </div>
+              </section>
+              <aside class="projectDetailPane projectChatPane" id="projectChatWorkspace" data-project-detail-pane="chat" aria-label="Project chat workspace" hidden data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Project chat workspace&quot;}"></aside>
+              <section class="projectDetailPane projectPreviewPane" id="projectPreviewPane" data-project-detail-pane="preview" aria-label="Project evidence preview" hidden data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Project evidence preview&quot;}">
+                <div class="projectPreviewRoot" id="projectPreviewRoot"></div>
+              </section>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="portalDetailOverlay" data-portal-detail-overlay id="createProjectModal" aria-hidden="true" hidden>
+      <div class="portalDetailSurface createProjectModalCard" data-portal-detail-surface role="dialog" aria-modal="true" aria-labelledby="createProjectTitle">
+        <form id="createProjectForm">
+          <div class="portalDetailHeader" data-portal-detail-header>
+            <div class="left">
+              <h3 class="modalTitle" id="createProjectTitle"><!--portal-i18n:"新建项目"-->新建项目</h3>
+              <div class="modalSub"><!--portal-i18n:"创建目录、初始化 summary.md，并写入 projects.yaml"-->创建目录、初始化 summary.md，并写入 projects.yaml</div>
+            </div>
+            <div class="projectDetailActions">
+              <button class="portalButton" id="createProjectCancel" type="button"><!--portal-i18n:"取消"-->取消</button>
+              <button class="portalButton is-primary" id="createProjectSubmit" type="submit"><!--portal-i18n:"创建"-->创建</button>
+            </div>
+          </div>
+          <div class="portalDetailBody projectDetailBody" data-portal-detail-body>
+            <div class="createProjectForm">
+              <div class="formRow">
+                <label for="newProjectId"><!--portal-i18n:"Project ID"-->Project ID</label>
+                <input id="newProjectId" name="id" autocomplete="off" required placeholder="ExampleProject"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;ExampleProject&quot;}"/>
+              </div>
+              <div class="formRow">
+                <label for="newProjectDescription"><!--portal-i18n:"简介"-->简介</label>
+                <textarea id="newProjectDescription" name="description" placeholder="项目目标、用途或当前方向"></textarea>
+              </div>
+              <div class="formGrid">
+                <div class="formRow">
+                  <label for="newProjectType"><!--portal-i18n:"类型"-->类型</label>
+                  <select id="newProjectType" name="project_type">
+                    <option value="company"><!--portal-i18n:"公司项目"-->公司项目</option>
+                    <option value="academic"><!--portal-i18n:"学术项目"-->学术项目</option>
+                    <option value="personal"><!--portal-i18n:"个人项目"-->个人项目</option>
+                    <option value="other"><!--portal-i18n:"其他"-->其他</option>
+                  </select>
+                </div>
+                <div class="formRow">
+                  <label for="newProjectStatus"><!--portal-i18n:"状态"-->状态</label>
+                  <select id="newProjectStatus" name="status"></select>
+                </div>
+              </div>
+              <div class="formRow">
+                <label><!--portal-i18n:"路径"-->路径</label>
+                <div class="projectPathPreview" id="newProjectPathPreview"><!--portal-i18n:"/share/Projects/ExampleProject"-->/share/Projects/ExampleProject</div>
+              </div>
+              <div class="formGrid">
+                <div class="formRow">
+                  <label for="newProjectTags"><!--portal-i18n:"标签"-->标签</label>
+                  <input id="newProjectTags" name="tags" autocomplete="off" placeholder="research, dev"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;research, dev&quot;}"/>
+                </div>
+                <div class="formRow">
+                  <label for="newProjectDdl"><!--portal-i18n:"DDL"-->DDL</label>
+                  <input id="newProjectDdl" name="ddl" autocomplete="off" placeholder="2026-08-30 23:59:59" />
+                </div>
+              </div>
+              <div class="formError" id="createProjectError"></div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      const els = {
+        board: document.getElementById("board"),
+        error: document.getElementById("error"),
+        errorMsg: document.getElementById("errorMsg"),
+        meta: document.getElementById("meta"),
+        q: document.getElementById("q"),
+        tag: document.getElementById("tag"),
+        reload: document.getElementById("reload"),
+        newProject: document.getElementById("newProject"),
+        createProjectModal: document.getElementById("createProjectModal"),
+        createProjectForm: document.getElementById("createProjectForm"),
+        createProjectCancel: document.getElementById("createProjectCancel"),
+        createProjectSubmit: document.getElementById("createProjectSubmit"),
+        createProjectError: document.getElementById("createProjectError"),
+        newProjectId: document.getElementById("newProjectId"),
+        newProjectDescription: document.getElementById("newProjectDescription"),
+        newProjectType: document.getElementById("newProjectType"),
+        newProjectStatus: document.getElementById("newProjectStatus"),
+        newProjectPathPreview: document.getElementById("newProjectPathPreview"),
+        newProjectTags: document.getElementById("newProjectTags"),
+        newProjectDdl: document.getElementById("newProjectDdl"),
+        summaryModal: document.getElementById("summaryModal"),
+        summaryTitle: document.getElementById("summaryTitle"),
+        summarySub: document.getElementById("summarySub"),
+        projectDetailIdentity: document.getElementById("projectDetailIdentity"),
+        projectDetailId: document.getElementById("projectDetailId"),
+        projectCopyLink: document.getElementById("projectCopyLink"),
+        summaryProjectType: document.getElementById("summaryProjectType"),
+        projectSummaryPath: document.getElementById("projectSummaryPath"),
+        summaryText: document.getElementById("summaryText"),
+        summaryEdit: document.getElementById("summaryEdit"),
+        summaryCancelEdit: document.getElementById("summaryCancelEdit"),
+        summarySave: document.getElementById("summarySave"),
+        summaryClose: document.getElementById("summaryClose"),
+        projectPageRoot: document.getElementById("projectPageRoot"),
+        projectOverviewPane: document.getElementById("projectOverviewPane"),
+        projectSummaryPane: document.getElementById("projectSummaryPane"),
+        projectPreviewPane: document.getElementById("projectPreviewPane"),
+        projectPreviewRoot: document.getElementById("projectPreviewRoot"),
+        projectPreviewPath: null,
+        projectDetailViews: Array.from(document.querySelectorAll("[data-project-detail-view]")),
+        projectDetailPanes: Array.from(document.querySelectorAll("[data-project-detail-pane]")),
+        projectChatWorkspace: document.getElementById("projectChatWorkspace"),
+      };
+      let portalUsername = "anonymous";
+      let savedProjectUiState = {};
+      let projectTagRestored = false;
+      let projectChatPanel = null;
+      const summaryState = {
+        projectId: "",
+        data: null,
+        text: "",
+        draft: "",
+        loading: false,
+        editing: false,
+        saving: false,
+        typeSaving: false,
+        projectPage: null,
+        view: "overview",
+        openedFromBoard: false,
+        detailHash: "",
+      };
+      let summaryDocumentSession = null;
+      let projectPageController = null;
+      let projectResearchController = null;
+      let projectPreviewPanel = null;
+      let projectBoardController = null;
+      const projectStateCache = new Map();
+      const projectStateRequests = new Map();
+      const summaryModalController = window.PortalUI.createDialogController({
+        modal: els.summaryModal,
+        backdropClose: true,
+        escapeClose: true,
+        dirty: () => summaryDocumentSession?.snapshot?.().dirty,
+        discardMessage: window.PortalI18n.t("当前 summary.md 尚未保存，确定关闭？"),
+        onClose: () => {
+          projectChatPanel?.closeSurface?.();
+          syncClosedProjectLocation();
+          summaryState.projectId = "";
+          syncSummaryButtons();
+        },
+      });
+      const createProjectModalController = window.PortalUI.createDialogController({
+        modal: els.createProjectModal,
+        backdropClose: true,
+        escapeClose: true,
+      });
+      function initSummaryDocumentSession() {
+        summaryDocumentSession = window.PortalDocumentSession.create({
+          canEdit: () => !!summaryState.projectId,
+          onStateChange: snapshot => {
+            summaryState.data = snapshot.payload;
+            summaryState.text = String(snapshot.payload?.content || "");
+            summaryState.draft = snapshot.draft;
+            summaryState.loading = snapshot.status === "loading";
+            summaryState.editing = snapshot.editing;
+            summaryState.saving = snapshot.saving;
+            syncSummaryButtons();
+          },
+          onPresent: payload => {
+            if (payload) renderSummaryBody();
+          },
+          onEditStart: renderSummaryBody,
+        });
+      }
+      const projectPageState = window.PortalPageState.create("projects", {
+        getUser: () => portalUsername || "anonymous",
+        delay: 160,
+      });
+
+      function writeProjectUiStateSoon() {
+        projectPageState.debounceWrite({
+          q: els.q.value || "",
+          tag: els.tag.value || "",
+          expandedProjectId: projectBoardController?.snapshot?.().expandedProjectId || "",
+        });
+      }
+
+      function writeProjectUiState() {
+        projectPageState.write({
+          q: els.q.value || "",
+          tag: els.tag.value || "",
+          expandedProjectId: projectBoardController?.snapshot?.().expandedProjectId || "",
+        });
+      }
+
+      function applyProjectUiState() {
+        savedProjectUiState = projectPageState.read();
+        if (typeof savedProjectUiState.q === "string") els.q.value = savedProjectUiState.q;
+        const params = new URLSearchParams(window.location.search);
+        const project = String(params.get("project") || "").trim();
+        const q = String(params.get("q") || "").trim();
+        const tag = String(params.get("tag") || "").trim();
+        if (project || q) els.q.value = project || q;
+        if (tag) savedProjectUiState.tag = tag;
+      }
+
+      function restoreProjectTagIfNeeded() {
+        if (projectTagRestored) return;
+        const tag = typeof savedProjectUiState.tag === "string" ? savedProjectUiState.tag : "";
+        if (tag && Array.from(els.tag.options).some(option => option.value === tag)) els.tag.value = tag;
+        projectTagRestored = true;
+      }
+
+      function applyPortalNavLinks() {
+        const portalOrigin = window.location.origin;
+        document.querySelectorAll("[data-portal-home]").forEach((link) => {
+          link.href = `${portalOrigin}/`;
+        });
+        document.querySelectorAll("[data-portal-path]").forEach((link) => {
+          link.href = `${portalOrigin}${link.dataset.portalPath || "/"}`;
+        });
+      }
+
+      function projectIdFromLocation() {
+        const path = window.location.pathname;
+        if (!path.startsWith("/projects/")) return "";
+        const suffix = path.slice("/projects/".length).replace(/^\/+|\/+$/g, "");
+        if (!suffix || suffix.includes("/")) return "";
+        try {
+          return decodeURIComponent(suffix);
+        } catch {
+          return "";
+        }
+      }
+
+      function projectSectionFromLocation() {
+        const hash = window.location.hash.replace(/^#/, "");
+        if (["research", "summary", "chat", "preview"].includes(hash)) {
+          return { view: hash, section: "" };
+        }
+        if (hash.startsWith("project-section-")) {
+          return { view: "overview", section: hash.slice("project-section-".length) };
+        }
+        return { view: "overview", section: "" };
+      }
+
+      function projectHashFromLocationState(locationState = {}) {
+        return locationState.view === "overview"
+          ? (locationState.section ? `project-section-${locationState.section}` : "")
+          : String(locationState.view || "").trim();
+      }
+
+      function projectDetailUrl(projectId, hash = "") {
+        const url = new URL(`/projects/${encodeURIComponent(String(projectId || "").trim())}`, window.location.origin);
+        if (hash) url.hash = hash.replace(/^#/, "");
+        return url;
+      }
+
+      function syncProjectDetailLocation(projectId, options = {}) {
+        const cleanId = String(projectId || "").trim();
+        if (!cleanId) return;
+        const currentId = projectIdFromLocation();
+        const hash = String(options.hash || "").replace(/^#/, "");
+        const url = projectDetailUrl(cleanId, hash);
+        const state = {
+          ...(history.state || {}),
+          portalProjectDetail: cleanId,
+        };
+        summaryState.detailHash = hash;
+        if (options.replace || currentId === cleanId) history.replaceState(state, "", url);
+        else history.pushState(state, "", url);
+      }
+
+      function syncClosedProjectLocation() {
+        const pathProjectId = projectIdFromLocation();
+        if (!pathProjectId) return;
+        if (summaryState.openedFromBoard && history.state?.portalProjectDetail === pathProjectId) {
+          history.back();
+          return;
+        }
+        history.replaceState(
+          { ...(history.state || {}), portalProjectDetail: "" },
+          "",
+          new URL("/projects/", window.location.origin),
+        );
+      }
+
+      function restoreProjectDetailLocationAfterPop() {
+        const projectId = String(summaryState.projectId || "").trim();
+        if (!projectId) return false;
+        history.pushState(
+          {
+            ...(history.state || {}),
+            portalProjectDetail: projectId,
+          },
+          "",
+          projectDetailUrl(projectId, summaryState.detailHash),
+        );
+        return true;
+      }
+
+      function mountProjectDetailIdentity(project = {}) {
+        const projectId = String(project.resource_id || summaryState.projectId || "").trim();
+        const title = String(project.resource_id || projectId || window.PortalI18n.t("Project")).trim();
+        window.PortalResourceHeader.mount(els.projectDetailIdentity, {
+          title,
+          type: "project",
+          resource_id: projectId,
+          copy_label: "project_id",
+        }, {
+          headingTag: "h2",
+          titleId: "summaryTitle",
+          idId: "projectDetailId",
+        });
+        els.summaryTitle = document.getElementById("summaryTitle");
+        els.projectDetailId = document.getElementById("projectDetailId");
+      }
+
+      function syncProjectViewLocation(view) {
+        if (!summaryState.projectId || projectIdFromLocation() !== summaryState.projectId) return;
+        const hash = view === "overview" ? "" : view;
+        syncProjectDetailLocation(summaryState.projectId, { replace: true, hash });
+      }
+
+      function setProjectDetailView(view, options = {}) {
+        const next = ["overview", "research", "summary", "chat", "preview"].includes(view)
+          ? view
+          : "overview";
+        summaryState.view = next;
+        els.projectDetailViews.forEach(button => {
+          const active = button.dataset.projectDetailView === next;
+          button.classList.toggle("active", active);
+          button.setAttribute("aria-selected", active ? "true" : "false");
+          if (active) button.setAttribute("aria-current", "page");
+          else button.removeAttribute("aria-current");
+        });
+        els.projectDetailPanes.forEach(pane => {
+          pane.hidden = pane.dataset.projectDetailPane !== next;
+        });
+        if (next === "overview") {
+          els.summarySub.textContent = summaryState.projectPage?.source?.relative_path || window.PortalI18n.t("Project State");
+          if (options.section) {
+            requestAnimationFrame(() => projectPageController?.scrollTo?.(options.section));
+          }
+        } else if (next === "research") {
+          els.summarySub.textContent = window.PortalI18n.t("Research Map");
+          projectResearchController.show();
+        } else if (next === "summary") {
+          els.summarySub.textContent = summaryState.data?.summary_path || "summary.md";
+        } else if (next === "chat") {
+          els.summarySub.textContent = window.PortalI18n.t("Project Chat · shared Chat Workspace");
+          renderProjectChat();
+        } else {
+          els.summarySub.textContent = els.projectPreviewPath.textContent || window.PortalI18n.t("Evidence Preview");
+        }
+        if (options.updateLocation !== false) syncProjectViewLocation(next);
+        if (options.focus) {
+          const activeButton = els.projectDetailViews.find(button => button.dataset.projectDetailView === next);
+          activeButton?.focus();
+        }
+      }
+
+      function syncProjectAnchorLocation(sectionId) {
+        if (!summaryState.projectId) return;
+        syncProjectDetailLocation(summaryState.projectId, {
+          replace: true,
+          hash: `project-section-${String(sectionId || "").trim()}`,
+        });
+      }
+
+      function initProjectPage() {
+        projectPageController = window.PortalProjectPage.create({
+          root: els.projectPageRoot,
+          onRequestView: view => setProjectDetailView(view, { focus: true }),
+          onAnchor: syncProjectAnchorLocation,
+        });
+      }
+
+      function initProjectBoard() {
+        projectBoardController = window.PortalProjectBoard.create({
+          root: els.board,
+          loadProjectState: projectId => fetchProjectStateContract(projectId),
+          onOpenProject: (projectId, options = {}) => {
+            openProjectSummary(projectId, {
+              openedFromBoard: true,
+              locationState: {
+                view: options.view || "overview",
+                section: "",
+              },
+            }).catch(error => setError(error?.message ? String(error.message) : String(error)));
+          },
+          onStatusChange: updateProjectStatus,
+          onEditDeadline: project => editProjectDeadline(project),
+          onSelectTag: selectedTag => {
+            els.tag.value = els.tag.value === selectedTag ? "" : selectedTag;
+            writeProjectUiState();
+            renderBoard();
+          },
+          onExpandedChange: writeProjectUiState,
+        });
+      }
+
+      function renderProjectPreviewEmpty() {
+        projectPreviewPanel?.clear?.({
+          status: window.PortalI18n.t("从 Overview 中选择 evidence file。"),
+          emptyText: window.PortalI18n.t("点击 Project State 中的文件证据，在这里使用共享 Preview 打开。"),
+        });
+      }
+
+      async function openProjectEvidencePreview(request = {}) {
+        const source = String(request.source || "");
+        const href = String(request.href || request.path || "").trim();
+        const resourceAddress = String(
+          window.PortalResourceChips?.resourceAddressFromPreviewRequest?.({
+            ...request,
+            href,
+          })
+          || "",
+        ).trim();
+        const path = resourceAddress || String(request.path || request.href || "").trim();
+        if (
+          !summaryModalController.isOpen()
+          || (!resourceAddress && !source.startsWith("project-state-evidence"))
+          || !path
+        ) return false;
+        setProjectDetailView("preview", { focus: true });
+        await projectPreviewPanel.openResource({
+          key: resourceAddress ? `resource:${resourceAddress}` : path,
+          path,
+          resourceAddress,
+          load: () => (
+            resourceAddress
+              ? (
+                typeof request.load === "function"
+                  ? request.load()
+                  : window.PortalResourceChips.loadTextPreview(resourceAddress)
+              )
+              : window.PortalFileLinks.load(path)
+          ),
+        });
+        return true;
+      }
+
+      function initProjectPreview() {
+        projectPreviewPanel = window.PortalWorkbench.createPanel("preview", {
+          root: els.projectPreviewRoot,
+          panelId: "projectEvidencePreview",
+          heading: window.PortalI18n.t("Evidence Preview"),
+          note: "从 Overview 中选择 evidence file。",
+          load: resource => resource.load(),
+          context: {
+            markdownLayout: "document",
+            renderMarkdown: (content, options = {}) => renderMarkdown(content || "（空文件）", options),
+            onResourcePreview: context => openProjectEvidencePreview({
+              ...context,
+              source: "project-state-resource-preview",
+              locatorKind: "resource",
+              resourceAddress: context.address,
+            }),
+            bindLinks: (root, current) => {
+              if (current.source === "resource") return;
+              window.PortalFileLinks?.enhance?.(root, {
+                basePath: current.path || current.rel_path || "",
+                source: "project-state-evidence-preview",
+              });
+            },
+          },
+        });
+        els.projectPreviewPath = projectPreviewPanel.root.querySelector(`#${CSS.escape(projectPreviewPanel.ids.path)}`);
+        projectPreviewPanel.registerPreviewHost(
+          "project-page",
+          openProjectEvidencePreview,
+          { priority: 40 },
+        );
+        renderProjectPreviewEmpty();
+      }
+
+      async function fetchProjectStateContract(projectId, options = {}) {
+        const cleanId = String(projectId || "").trim();
+        if (!cleanId) throw new Error("Project ID is required.");
+        if (!options.refresh && projectStateCache.has(cleanId)) {
+          return projectStateCache.get(cleanId);
+        }
+        if (!options.refresh && projectStateRequests.has(cleanId)) {
+          return projectStateRequests.get(cleanId);
+        }
+        const request = (async () => {
+          let data;
+          try {
+            data = (await window.PortalInstructionClient.execute("GetProject", { project_id: cleanId })).state || {};
+          } catch (cause) {
+            const error = new Error(cause?.message || "读取 Project State 失败");
+            error.title = cause?.code === "instruction.not_found" ? window.PortalI18n.t("Project not found") : window.PortalI18n.t("Project Page 加载失败");
+            throw error;
+          }
+          projectStateCache.set(cleanId, data);
+          return data;
+        })().finally(() => projectStateRequests.delete(cleanId));
+        projectStateRequests.set(cleanId, request);
+        return request;
+      }
+
+      async function loadProjectState(projectId) {
+        const cleanId = String(projectId || "").trim();
+        if (!cleanId) return;
+        projectPageController.renderLoading();
+        try {
+          const data = await fetchProjectStateContract(cleanId);
+          if (summaryState.projectId !== cleanId) return;
+          summaryState.projectPage = data;
+          projectPageController.render(data);
+          if (summaryState.view === "overview") {
+            els.summarySub.textContent = data.source?.relative_path || window.PortalI18n.t("Project State");
+            const locationState = projectSectionFromLocation();
+            if (locationState.section) {
+              requestAnimationFrame(() => projectPageController.scrollTo(locationState.section));
+            }
+          }
+        } catch (error) {
+          if (summaryState.projectId !== cleanId) return;
+          summaryState.projectPage = null;
+          projectPageController.renderError(error);
+        }
+      }
+
+      function copyProjectDeepLink() {
+        const projectId = summaryState.projectId;
+        if (!projectId) return;
+        const hash = summaryState.view === "overview"
+          ? window.location.hash
+          : `#${summaryState.view}`;
+        const url = projectDetailUrl(projectId, hash);
+        window.PortalUI.copyText(url.href, window.PortalI18n.t("Project link"));
+      }
+
+      const STATUS_LABEL = {
+        not_started: window.PortalI18n.t("未开始"),
+        active: window.PortalI18n.t("进行中"),
+        paused: window.PortalI18n.t("暂停"),
+        done: window.PortalI18n.t("完成"),
+        archived: window.PortalI18n.t("归档"),
+      };
+
+      const STATUS_ORDER = ["not_started", "active", "paused", "done", "archived"];
+
+      const PROJECT_TYPE_LABEL = {
+        company: window.PortalI18n.t("公司项目"),
+        academic: window.PortalI18n.t("学术项目"),
+        personal: window.PortalI18n.t("个人项目"),
+        other: window.PortalI18n.t("其他"),
+      };
+
+      let allProjects = [];
+      let projectStatusVocab = STATUS_ORDER.slice();
+
+      function normalizeProject(p) {
+        const tags = Array.isArray(p?.tags) ? p.tags.map(String).filter(Boolean) : [];
+        const status = (p?.status ? String(p.status) : "active").toLowerCase();
+        return {
+          resource_id: p?.resource_id ? String(p.resource_id) : "",
+          status,
+          project_type: normalizeProjectType(p?.project_type, tags),
+          description: p?.description ? String(p.description) : "",
+          path: p?.path ? String(p.path) : "",
+          ddl: p?.ddl ? String(p.ddl) : "",
+          tags,
+        };
+      }
+
+      function normalizeProjectType(value, tags = []) {
+        const raw = String(value || "").trim().toLowerCase();
+        if (raw in PROJECT_TYPE_LABEL) return raw;
+        const tagSet = new Set((Array.isArray(tags) ? tags : []).map((tag) => String(tag).toLowerCase()));
+        if (tagSet.has("research") || tagSet.has("paper")) return "academic";
+        return "company";
+      }
+
+      function escapeHtml(text) {
+        return String(text)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function renderMarkdown(text, options = {}) {
+        if (window.MD?.render) return window.MD.render(text || "", options) || "<p></p>";
+        return `<pre>${escapeHtml(text || "")}</pre>`;
+      }
+
+      function defaultProjectPath(id) {
+        const clean = String(id || "").replace(/\s+/g, "").replace(/[^A-Za-z0-9_.@+-]/g, "");
+        return clean ? `/share/Projects/${clean}` : "/share/Projects/ProjectName";
+      }
+
+      function renderCreateProjectStatusOptions() {
+        const options = (projectStatusVocab.length ? projectStatusVocab : STATUS_ORDER)
+          .map(status => window.PortalI18n.html`<option value="${escapeHtml(status)}">${escapeHtml(formatStatus(status))}</option>`)
+          .join("");
+        els.newProjectStatus.innerHTML = options;
+        els.newProjectStatus.value = projectStatusVocab.includes("active") ? "active" : (projectStatusVocab[0] || "active");
+      }
+
+      function openCreateProjectModal() {
+        els.createProjectForm.reset();
+        els.createProjectError.textContent = "";
+        renderCreateProjectStatusOptions();
+        els.newProjectPathPreview.textContent = defaultProjectPath("");
+        els.createProjectSubmit.disabled = false;
+        els.createProjectSubmit.textContent = window.PortalI18n.t("创建");
+        createProjectModalController.open();
+        setTimeout(() => els.newProjectId.focus(), 0);
+      }
+
+      function closeCreateProjectModal() {
+        createProjectModalController.close();
+      }
+
+      async function submitCreateProject(event) {
+        event.preventDefault();
+        const projectId = String(els.newProjectId.value || "").trim();
+        const body = {
+          id: projectId,
+          description: String(els.newProjectDescription.value || "").trim(),
+          project_type: String(els.newProjectType.value || "company"),
+          language: window.PortalI18n.locale(),
+          status: String(els.newProjectStatus.value || "active"),
+          tags: String(els.newProjectTags.value || "").trim(),
+          ddl: String(els.newProjectDdl.value || "").trim(),
+        };
+        els.createProjectError.textContent = "";
+        els.createProjectSubmit.disabled = true;
+        els.createProjectSubmit.textContent = window.PortalI18n.t("创建中...");
+        try {
+          const data = await window.PortalResourceRegistrationService.register({
+            resource_type: "project",
+            ...body,
+          });
+          closeCreateProjectModal();
+          await loadProjects();
+          const createdId = String(data.record?.resource_id || projectId);
+          if (createdId) {
+            openProjectSummary(createdId, { openedFromBoard: true }).catch((error) => setError(
+              error?.message ? String(error.message) : String(error),
+            ));
+          }
+        } catch (error) {
+          els.createProjectError.textContent = error?.message ? String(error.message) : window.PortalI18n.t("创建失败");
+        } finally {
+          els.createProjectSubmit.disabled = false;
+          els.createProjectSubmit.textContent = window.PortalI18n.t("创建");
+        }
+      }
+
+      function summaryWorkspaceId(projectId = summaryState.projectId) {
+        return window.PortalI18n.text`project:${String(projectId || "").trim()}`;
+      }
+
+      function summaryChatContext(projectId = summaryState.projectId) {
+        return { project_id: String(projectId || "").trim() };
+      }
+
+      function summaryChatIsLive() {
+        return ["queued", "running", "stopping"].includes(
+          String(projectChatPanel?.snapshot?.()?.state?.work_state || ""),
+        );
+      }
+
+      function syncSummaryButtons() {
+        const action = summaryDocumentSession?.actionState?.() || {};
+        els.summaryEdit.hidden = !!action.editing;
+        els.summaryCancelEdit.hidden = !action.editing;
+        els.summarySave.hidden = !action.editing;
+        els.summarySave.disabled = !action.canSave;
+        els.summaryCancelEdit.disabled = !!action.saving;
+        els.summaryEdit.disabled = !action.canEdit || !summaryState.projectId;
+        els.summaryClose.disabled = !!action.saving;
+        els.summaryProjectType.disabled = !!action.loading || summaryState.typeSaving || !summaryState.projectId;
+        els.summarySave.textContent = action.saving ? window.PortalI18n.t("保存中...") : window.PortalI18n.t("保存");
+      }
+
+      function renderSummaryBody() {
+        syncSummaryButtons();
+        if (summaryState.editing) {
+          els.summaryText.className = "projectSummaryEditorLayout";
+          els.summaryText.innerHTML = window.PortalI18n.html`<textarea class="projectSummaryEditor" id="projectSummaryEditor" spellcheck="false"></textarea>`;
+          const editor = document.getElementById("projectSummaryEditor");
+          editor.value = summaryState.draft;
+          editor.addEventListener("input", () => {
+            summaryDocumentSession.updateDraft(editor.value);
+          });
+          setTimeout(() => editor.focus(), 0);
+          return;
+        }
+        if (!summaryState.data?.exists && !summaryState.text.trim()) {
+          els.summaryText.className = "projectSummaryBody projectSummaryStateHost";
+          window.PortalUIPrimitives.renderAsyncState(els.summaryText, {
+            state: "empty",
+            title: window.PortalI18n.t("尚未创建项目摘要"),
+            message: window.PortalI18n.t("点击“编辑”创建 summary.md。"),
+          });
+          return;
+        }
+        els.summaryText.className = "markdownBody projectSummaryBody";
+        els.summaryText.innerHTML = renderMarkdown(summaryState.text || "", {
+          basePath: summaryState.data?.summary_path || summaryState.data?.path || "",
+        });
+        window.PortalChatWorkspace?.bindImagePreview?.(els.summaryText, { imagePreviewEditable: false });
+      }
+
+      async function setSummaryEditing(editing) {
+        if (!summaryState.projectId) return;
+        if (editing) summaryDocumentSession.beginEdit();
+        else await summaryDocumentSession.cancelEdit();
+      }
+
+      async function saveProjectSummary() {
+        if (!summaryState.projectId) return;
+        return summaryDocumentSession.save({
+          save: async ({ draft }) => {
+            const projectId = summaryState.projectId;
+            await window.PortalInstructionClient.execute("UpdateProject", {
+              project_id: projectId,
+              changes: { summary: draft },
+            }, { idempotencyKey: window.PortalI18n.text`project-summary:${projectId}:${globalThis.PortalUIPrimitives.randomUUID()}` });
+            const data = (await window.PortalInstructionClient.execute("GetProject", { project_id: projectId })).summary || {};
+            return { ...data, content: String(data.text || "") };
+          },
+          onSaved: data => {
+            els.projectSummaryPath.textContent = data.summary_path || data.path || "summary.md";
+            if (summaryState.view === "summary") {
+              els.summarySub.textContent = data.summary_path || data.path || "summary.md";
+            }
+            window.PortalUI.toast(window.PortalI18n.t("summary.md 已保存"));
+          },
+          onError: error => window.PortalUI.toast(
+            error?.message ? String(error.message) : window.PortalI18n.t("保存 summary.md 失败"),
+            "error",
+            { retry: saveProjectSummary },
+          ),
+        });
+      }
+
+      function renderProjectChat() {
+        projectChatPanel?.updateControls?.();
+      }
+
+      async function loadProjectChat(projectId, options = {}) {
+        const cleanId = String(projectId || "").trim();
+        if (!cleanId) return;
+        await projectChatPanel.openSurface({ project_id: cleanId }, {
+          force: options.force === true,
+        });
+      }
+
+      async function openProjectSummary(id, options = {}) {
+        const projectId = String(id || "").trim();
+        if (!projectId) return;
+        const project = allProjects.find((p) => p.resource_id === projectId) || {};
+        const locationState = options.locationState || projectSectionFromLocation();
+        summaryState.openedFromBoard = options.openedFromBoard !== false;
+        summaryState.detailHash = projectHashFromLocationState(locationState);
+        if (options.updateLocation !== false) {
+          syncProjectDetailLocation(projectId, {
+            replace: !!options.replaceLocation,
+            hash: summaryState.detailHash,
+          });
+        }
+
+        await summaryDocumentSession.open({
+          key: projectId,
+          onLoading: () => {
+            summaryState.projectId = projectId;
+            projectResearchController.reset(projectId);
+            summaryState.typeSaving = false;
+            summaryState.projectPage = null;
+            renderProjectPreviewEmpty();
+            els.summaryProjectType.value = project.project_type || "company";
+            mountProjectDetailIdentity({ resource_id: projectId });
+            els.projectSummaryPath.textContent = "summary.md";
+            els.summaryText.className = "projectSummaryBody projectSummaryStateHost";
+            window.PortalUIPrimitives.renderAsyncState(els.summaryText, {
+              state: "loading",
+              title: "",
+              message: window.PortalI18n.t("正在加载项目摘要。"),
+            });
+            projectPageController.renderLoading();
+            setProjectDetailView(locationState.view, {
+              updateLocation: false,
+              section: locationState.section,
+            });
+            summaryModalController.open();
+            renderProjectChat();
+            syncSummaryButtons();
+            loadProjectState(projectId);
+          },
+          load: async () => {
+            const data = (await window.PortalInstructionClient.execute("GetProject", { project_id: projectId })).summary || {};
+            return { ...data, content: String(data.text || "") };
+          },
+          onPresent: data => {
+            const title = data.resource_id || project.resource_id || projectId;
+            const latestProject = allProjects.find((p) => p.resource_id === projectId);
+            const projectType = normalizeProjectType(
+              data.project_type || latestProject?.project_type,
+              latestProject?.tags || project.tags,
+            );
+            if (latestProject) latestProject.project_type = projectType;
+            els.summaryProjectType.value = projectType;
+            mountProjectDetailIdentity({ resource_id: projectId, name: title });
+            els.projectSummaryPath.textContent = data.summary_path || data.path || "summary.md";
+            if (summaryState.view === "summary") {
+              els.summarySub.textContent = data.summary_path || data.path || "summary.md";
+            }
+            renderSummaryBody();
+            loadProjectChat(projectId, { silent: true }).catch((error) => setError(
+              error?.message ? String(error.message) : String(error),
+            ));
+          },
+          onError: error => {
+            els.summaryText.className = "projectSummaryBody projectSummaryStateHost";
+            window.PortalUIPrimitives.renderAsyncState(els.summaryText, {
+              state: "error",
+              title: window.PortalI18n.t("项目摘要加载失败"),
+              message: error?.message ? String(error.message) : window.PortalI18n.t("读取 summary.md 失败。"),
+            });
+          },
+        });
+      }
+
+      // Registry fields change through the UpdateProject instruction (decision_6591e7793116).
+      async function saveProjectChanges(id, changes) {
+        try {
+          await window.PortalInstructionClient.execute("UpdateProject", { project_id: id, changes }, {
+            idempotencyKey: `project-update:${globalThis.PortalUIPrimitives.randomUUID()}`,
+          });
+        } catch (cause) {
+          throw new Error(`保存失败：${cause?.message || cause}`);
+        }
+      }
+
+      async function updateProjectStatus(id, status) {
+        const project = allProjects.find((p) => p.resource_id === id);
+        if (!project || project.status === status) return;
+        const previous = project.status;
+        project.status = status;
+        renderBoard();
+        try {
+          await saveProjectChanges(id, { status: status });
+        } catch (e) {
+          project.status = previous;
+          renderBoard();
+          setError(e?.message ? String(e.message) : window.PortalI18n.t("保存失败"));
+        }
+      }
+
+      function normalizeDdlInput(value) {
+        const raw = String(value || "").trim();
+        if (!raw) return "";
+        if (raw.includes("T")) return raw;
+        if (/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}(:\d{2})?$/.test(raw)) {
+          return raw.replace(/\s+/, "T");
+        }
+        return raw;
+      }
+
+      async function editProjectDeadline(project) {
+        const id = String(project?.resource_id || "").trim();
+        if (!id) return;
+        const next = await window.PortalUI.prompt({
+          title: window.PortalI18n.t("设置截止时间"),
+          label: window.PortalI18n.t("截止时间（留空清除）"),
+          placeholder: "2026-01-31 18:00:00",
+          value: String(project.ddl || ""),
+          confirmLabel: "保存",
+        });
+        if (next === null) return;
+        updateProjectDdl(id, next);
+      }
+
+      async function updateProjectDdl(id, ddl) {
+        const project = allProjects.find((p) => p.resource_id === id);
+        if (!project) return;
+        const normalized = normalizeDdlInput(ddl);
+        const previous = project.ddl || "";
+        project.ddl = normalized;
+        renderBoard();
+        try {
+          await saveProjectChanges(id, { ddl: normalized });
+        } catch (e) {
+          project.ddl = previous;
+          renderBoard();
+          setError(e?.message ? String(e.message) : window.PortalI18n.t("保存失败"));
+        }
+      }
+
+      async function updateProjectType(id, projectType) {
+        const normalized = normalizeProjectType(projectType);
+        const project = allProjects.find((p) => p.resource_id === id);
+        if (!project || project.project_type === normalized) {
+          if (project) els.summaryProjectType.value = project.project_type;
+          return;
+        }
+        const previous = project.project_type || "company";
+        project.project_type = normalized;
+        summaryState.typeSaving = true;
+        syncSummaryButtons();
+        renderBoard();
+        try {
+          await saveProjectChanges(id, { project_type: normalized });
+        } catch (e) {
+          project.project_type = previous;
+          els.summaryProjectType.value = previous;
+          renderBoard();
+          setError(e?.message ? String(e.message) : window.PortalI18n.t("保存失败"));
+        } finally {
+          summaryState.typeSaving = false;
+          syncSummaryButtons();
+        }
+      }
+
+      function setError(message) {
+        els.error.hidden = false;
+        els.errorMsg.textContent = message;
+      }
+
+      function clearError() {
+        els.error.hidden = true;
+        els.errorMsg.textContent = "";
+      }
+
+      function computeAllTags(projects) {
+        const set = new Set();
+        for (const p of projects) {
+          for (const t of p.tags) set.add(t);
+        }
+        return Array.from(set).sort((a, b) => a.localeCompare(b));
+      }
+
+      function formatStatus(status) {
+        return STATUS_LABEL[status] || status || "unknown";
+      }
+
+      function renderTagOptions(tags) {
+        const current = els.tag.value;
+        els.tag.innerHTML = window.PortalI18n.html`<option value="">全部</option>` + tags.map((t) => window.PortalI18n.html`<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join("");
+        if (tags.includes(current)) els.tag.value = current;
+      }
+
+      function renderMeta(doc) {
+        const total = allProjects.length;
+        els.meta.textContent = window.PortalI18n.text`${total} 个项目`;
+      }
+
+      function renderBoard() {
+        projectBoardController.setProjects(allProjects, {
+          statuses: projectStatusVocab,
+          expandedProjectId: projectBoardController.snapshot().expandedProjectId
+            || String(savedProjectUiState.expandedProjectId || ""),
+          autoExpandFirst: true,
+        });
+        projectBoardController.setFilters({
+          query: els.q.value,
+          tag: els.tag.value,
+        });
+      }
+
+      async function loadProjects() {
+        clearError();
+        const result = await window.PortalAPI.requestResult(
+          new URL("/projects/api/projects", window.location.origin),
+          { cache: "no-store", detectLoginRedirect: false },
+        );
+        if (!result.response.ok) throw new Error(`读取失败：HTTP ${result.response.status}`);
+        const doc = window.PortalAPI.requireJson(result);
+        const projects = Array.isArray(doc?.projects) ? doc.projects : [];
+        projectStatusVocab = Array.isArray(doc?.status_vocab) ? doc.status_vocab.map(String).filter(Boolean) : STATUS_ORDER.slice();
+        allProjects = projects.map(normalizeProject).filter((p) => p.resource_id);
+        renderTagOptions(computeAllTags(allProjects));
+        restoreProjectTagIfNeeded();
+        renderMeta(doc);
+        renderBoard();
+      }
+
+      async function refreshProjects() {
+        projectStateCache.clear();
+        projectResearchController.reset(summaryState.projectId);
+        if (summaryState.view === "research") projectResearchController.show();
+        await loadProjects();
+        if (summaryState.projectId && summaryModalController.isOpen()) {
+          loadProjectState(summaryState.projectId);
+        }
+      }
+
+      function bindEvents() {
+        let t = null;
+        els.q.addEventListener("input", () => {
+          if (t) window.clearTimeout(t);
+          writeProjectUiStateSoon();
+          t = window.setTimeout(renderBoard, 80);
+        });
+        els.tag.addEventListener("change", () => {
+          writeProjectUiState();
+          renderBoard();
+        });
+        els.reload.addEventListener("click", () => refreshProjects().catch(error => {
+          setError(error?.message ? String(error.message) : String(error));
+        }));
+        els.newProject.addEventListener("click", openCreateProjectModal);
+        els.createProjectCancel.addEventListener("click", closeCreateProjectModal);
+        els.createProjectForm.addEventListener("submit", submitCreateProject);
+        els.newProjectId.addEventListener("input", () => {
+          els.newProjectPathPreview.textContent = defaultProjectPath(els.newProjectId.value);
+        });
+        els.summaryEdit.addEventListener("click", () => setSummaryEditing(true));
+        els.summaryCancelEdit.addEventListener("click", () => setSummaryEditing(false));
+        els.summarySave.addEventListener("click", () => saveProjectSummary());
+        els.summaryClose.addEventListener("click", () => summaryModalController.close());
+        els.projectCopyLink.addEventListener("click", copyProjectDeepLink);
+        // The Project Menu: settings, credentials, its Lineages and a Work Journal.
+        document.getElementById("projectMenuButton").addEventListener("click", () => {
+          const project = allProjects.find(item => item.resource_id === summaryState.projectId);
+          if (!project) return;
+          void window.PortalNav.openScopeMenu({
+            kind: "project", id: project.resource_id, record: project,
+            onChanged: detail => {
+              if (detail.type !== "settings") return;
+              Object.assign(project, detail.changes);
+              if (detail.changes.project_type) els.summaryProjectType.value = detail.changes.project_type;
+              renderBoard();
+            },
+          });
+        });
+        els.projectDetailViews.forEach(button => {
+          button.addEventListener("click", () => {
+            setProjectDetailView(button.dataset.projectDetailView, { focus: false });
+          });
+        });
+        els.summaryProjectType.addEventListener("change", () => updateProjectType(summaryState.projectId, els.summaryProjectType.value));
+        window.addEventListener("popstate", () => {
+          const projectId = projectIdFromLocation();
+          if (projectId) {
+            openProjectSummary(projectId, {
+              updateLocation: false,
+              openedFromBoard: false,
+              locationState: projectSectionFromLocation(),
+            }).catch((error) => setError(error?.message ? String(error.message) : String(error)));
+            return;
+          }
+          if (!summaryModalController.isOpen()) return;
+          if (!restoreProjectDetailLocationAfterPop()) return;
+          summaryModalController.close({
+            fromPopState: true,
+            routeRestored: true,
+          });
+        });
+        window.addEventListener("keydown", (e) => {
+          if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "r") {
+            e.preventDefault();
+            refreshProjects().catch(error => setError(
+              error?.message ? String(error.message) : String(error),
+            ));
+          }
+        });
+      }
+
+      async function init() {
+        initSummaryDocumentSession();
+        initProjectPage();
+        projectResearchController = window.PortalProjectResearchMaps.create({
+          root: document.getElementById("projectResearchRoot"),
+          pageState: projectPageState,
+          openPreview: openProjectEvidencePreview,
+        });
+        initProjectPreview();
+        initProjectBoard();
+        const currentUser = await window.PortalUI.loadCurrentUser();
+        portalUsername = currentUser.username || "anonymous";
+        applyProjectUiState();
+        applyPortalNavLinks();
+        projectChatPanel = window.PortalWorkbench.createPanel("chat", {
+          root: els.projectChatWorkspace,
+          id: "projectDetailChat",
+          draftNamespace: "project-detail-chat",
+          draftOwner: () => portalUsername || "anonymous",
+          title: window.PortalI18n.t("Project Chat"),
+          subtitle: window.PortalI18n.t("Codex session"),
+          placeholder: window.PortalI18n.t("讨论这个项目，Ctrl/⌘ + Enter 发送"),
+          refs: false,
+          historyScope: () => summaryWorkspaceId(),
+          canSend: payload => !!summaryState.projectId && !!String(payload?.text || "").trim(),
+          resolveResident: async target => {
+            const projectId = String(target?.project_id || "").trim();
+            const url = new URL("/chat-workspace/api/session", window.location.origin);
+            url.searchParams.set("surface", "project");
+            url.searchParams.set("workspace_key", summaryWorkspaceId(projectId));
+            url.searchParams.set("project_id", projectId);
+            return window.PortalAPI.request(url, { cache: "no-store" });
+          },
+          resolveBeforeSend: (target, payload) => window.PortalAPI.request("/chat-workspace/api/prepare", {
+            method: "POST", body: JSON.stringify({ surface: "project", workspace_key: summaryWorkspaceId(target.project_id),
+              message: payload.text || payload.plainText, context: summaryChatContext(target.project_id) }),
+          }),
+          initialContext: (_target, detail) => detail.initial_context,
+          onDetail: renderProjectChat,
+          onError: error => setError(error?.message ? String(error.message) : String(error)),
+          userName: portalUsername || "User",
+          assistantName: "Codex",
+          renderMarkdown,
+          previewUrlForPath: window.PortalFileLinks.imagePreviewUrl,
+        });
+        bindEvents();
+        try {
+          await loadProjects();
+        } catch (error) {
+          setError(error?.message ? String(error.message) : String(error));
+        }
+        const initialProjectId = projectIdFromLocation();
+        if (initialProjectId) {
+          openProjectSummary(initialProjectId, {
+            updateLocation: false,
+            openedFromBoard: false,
+            locationState: projectSectionFromLocation(),
+          }).catch((error) => setError(error?.message ? String(error.message) : String(error)));
+        }
+      }
+
+      init();
+    </script>
+  </body>
+</html>

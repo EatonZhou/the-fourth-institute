@@ -1,0 +1,574 @@
+[
+  {
+    "effect": "reference_anisotropic--connected_trilobe--reserve_T11_minus_open_T11",
+    "first_nonzero_exact": {
+      "transfer_requested_a": 129,
+      "transfer_actual_a": 129,
+      "actor_allocation_fee_paid": 129,
+      "actor_resource_consumed": 129,
+      "births": 129,
+      "rejected_fuel": 129,
+      "body": 129,
+      "energy": 129,
+      "actor_transport_weights": 130,
+      "actor_body_after_actor": 130,
+      "growth_rate": 130,
+      "positive_request": 130,
+      "rule_death": 130,
+      "rejected_precursor": 130
+    },
+    "first_above_1e_12": {
+      "transfer_requested_a": {
+        "step": 129,
+        "max_abs": 1.0,
+        "sum": -89.0
+      },
+      "transfer_actual_a": {
+        "step": 129,
+        "max_abs": 1.0,
+        "sum": -89.0
+      },
+      "actor_allocation_fee_paid": {
+        "step": 129,
+        "max_abs": 0.0008930867355534663,
+        "sum": 0.04506264877698403
+      },
+      "actor_resource_consumed": {
+        "step": 129,
+        "max_abs": 0.008945505036159259,
+        "sum": -0.3491724505865162
+      },
+      "births": {
+        "step": 129,
+        "max_abs": 0.014598159078539303,
+        "sum": 0.04916902113647103
+      },
+      "rejected_fuel": {
+        "step": 129,
+        "max_abs": 0.014598159078539303,
+        "sum": -0.04916902113647102
+      },
+      "body": {
+        "step": 129,
+        "max_abs": 0.014598159078539341,
+        "sum": 0.049169021136471036
+      },
+      "energy": {
+        "step": 129,
+        "max_abs": 0.009840055539775183,
+        "sum": -0.38141109698458114
+      },
+      "actor_transport_weights": {
+        "step": 130,
+        "max_abs": 0.0016330409057777415,
+        "sum": 0.005861438090994268
+      },
+      "actor_body_after_actor": {
+        "step": 130,
+        "max_abs": 0.010069291471692887,
+        "sum": 0.04916902113647117
+      },
+      "growth_rate": {
+        "step": 130,
+        "max_abs": 0.011037253939518044,
+        "sum": -0.3209310514303486
+      },
+      "positive_request": {
+        "step": 130,
+        "max_abs": 0.0005098549652753429,
+        "sum": -0.0005715912469356629
+      },
+      "rule_death": {
+        "step": 130,
+        "max_abs": 0.00033184480203756785,
+        "sum": 0.0012499661353665985
+      },
+      "rejected_precursor": {
+        "step": 130,
+        "max_abs": 0.00012024116435799606,
+        "sum": 0.00022337863217744384
+      }
+    },
+    "first_occupied_actual_gate_difference": 129,
+    "spatial": [
+      "reference_anisotropic--connected_trilobe--reserve_T11_minus_open_T11-step129"
+    ]
+  },
+  {
+    "effect": "reference_anisotropic--connected_trilobe--reserve_T11_minus_suppress_T11",
+    "first_nonzero_exact": {
+      "transfer_requested_a": 129,
+      "transfer_actual_a": 150,
+      "actor_allocation_fee_paid": 150,
+      "actor_resource_consumed": 150,
+      "energy": 150,
+      "births": 160,
+      "rejected_fuel": 160,
+      "body": 161,
+      "actor_transport_weights": 162,
+      "actor_body_after_actor": 162,
+      "growth_rate": 162,
+      "positive_request": 162,
+      "rule_death": 162,
+      "rejected_precursor": 162
+    },
+    "first_above_1e_12": {
+      "transfer_requested_a": {
+        "step": 129,
+        "max_abs": 1.0,
+        "sum": 9127.0
+      },
+      "transfer_actual_a": {
+        "step": 150,
+        "max_abs": 1.0,
+        "sum": 1.0
+      },
+      "actor_allocation_fee_paid": {
+        "step": 150,
+        "max_abs": 5.308638172285121e-05,
+        "sum": -5.308638172285121e-05
+      },
+      "actor_resource_consumed": {
+        "step": 150,
+        "max_abs": 0.0005637213953532885,
+        "sum": 0.0005637213953532885
+      },
+      "energy": {
+        "step": 150,
+        "max_abs": 0.00040189618122503986,
+        "sum": 0.00040231078934849836
+      },
+      "births": {
+        "step": 162,
+        "max_abs": 1.523958476773446e-12,
+        "sum": -3.030274815796208e-12
+      },
+      "rejected_fuel": {
+        "step": 162,
+        "max_abs": 1.5239068687500357e-12,
+        "sum": 3.0302253761771425e-12
+      },
+      "body": {
+        "step": 162,
+        "max_abs": 1.5240031459029524e-12,
+        "sum": -3.030725843899962e-12
+      },
+      "actor_body_after_actor": {
+        "step": 163,
+        "max_abs": 1.1911582831203305e-12,
+        "sum": -3.031028997627059e-12
+      },
+      "actor_transport_weights": {
+        "step": 164,
+        "max_abs": 2.599338062500567e-12,
+        "sum": -1.192986188964797e-11
+      },
+      "growth_rate": {
+        "step": 164,
+        "max_abs": 1.4981405005443094e-11,
+        "sum": 3.032698536742373e-10
+      },
+      "positive_request": {
+        "step": 165,
+        "max_abs": 3.983327556689176e-12,
+        "sum": -4.457187487746494e-13
+      },
+      "rule_death": {
+        "step": 165,
+        "max_abs": 3.879268434259231e-12,
+        "sum": 1.505451039195901e-11
+      },
+      "rejected_precursor": {
+        "step": 165,
+        "max_abs": 3.9643496818619894e-12,
+        "sum": -1.2341858438014164e-11
+      }
+    },
+    "first_occupied_actual_gate_difference": 150,
+    "spatial": [
+      "reference_anisotropic--connected_trilobe--reserve_T11_minus_suppress_T11-step129",
+      "reference_anisotropic--connected_trilobe--reserve_T11_minus_suppress_T11-step150"
+    ]
+  },
+  {
+    "effect": "reference_anisotropic--connected_trilobe--suppress_T11_minus_open_T11",
+    "first_nonzero_exact": {
+      "transfer_requested_a": 129,
+      "transfer_actual_a": 129,
+      "actor_allocation_fee_paid": 129,
+      "actor_resource_consumed": 129,
+      "births": 129,
+      "rejected_fuel": 129,
+      "body": 129,
+      "energy": 129,
+      "actor_transport_weights": 130,
+      "actor_body_after_actor": 130,
+      "growth_rate": 130,
+      "positive_request": 130,
+      "rule_death": 130,
+      "rejected_precursor": 130
+    },
+    "first_above_1e_12": {
+      "transfer_requested_a": {
+        "step": 129,
+        "max_abs": 1.0,
+        "sum": -9216.0
+      },
+      "transfer_actual_a": {
+        "step": 129,
+        "max_abs": 1.0,
+        "sum": -89.0
+      },
+      "actor_allocation_fee_paid": {
+        "step": 129,
+        "max_abs": 0.0008930867355534663,
+        "sum": 0.04506264877698403
+      },
+      "actor_resource_consumed": {
+        "step": 129,
+        "max_abs": 0.008945505036159259,
+        "sum": -0.3491724505865162
+      },
+      "births": {
+        "step": 129,
+        "max_abs": 0.014598159078539303,
+        "sum": 0.04916902113647103
+      },
+      "rejected_fuel": {
+        "step": 129,
+        "max_abs": 0.014598159078539303,
+        "sum": -0.04916902113647102
+      },
+      "body": {
+        "step": 129,
+        "max_abs": 0.014598159078539341,
+        "sum": 0.049169021136471036
+      },
+      "energy": {
+        "step": 129,
+        "max_abs": 0.009840055539775183,
+        "sum": -0.38141109698458114
+      },
+      "actor_transport_weights": {
+        "step": 130,
+        "max_abs": 0.0016330409057777415,
+        "sum": 0.005861438090994268
+      },
+      "actor_body_after_actor": {
+        "step": 130,
+        "max_abs": 0.010069291471692887,
+        "sum": 0.04916902113647117
+      },
+      "growth_rate": {
+        "step": 130,
+        "max_abs": 0.011037253939518044,
+        "sum": -0.3209310514303486
+      },
+      "positive_request": {
+        "step": 130,
+        "max_abs": 0.0005098549652753429,
+        "sum": -0.0005715912469356629
+      },
+      "rule_death": {
+        "step": 130,
+        "max_abs": 0.00033184480203756785,
+        "sum": 0.0012499661353665985
+      },
+      "rejected_precursor": {
+        "step": 130,
+        "max_abs": 0.00012024116435799606,
+        "sum": 0.00022337863217744384
+      }
+    },
+    "first_occupied_actual_gate_difference": 129,
+    "spatial": [
+      "reference_anisotropic--connected_trilobe--suppress_T11_minus_open_T11-step129"
+    ]
+  },
+  {
+    "effect": "compact_ring_core_outer--bridged_longbody--reserve_T11_minus_open_T11",
+    "first_nonzero_exact": {
+      "transfer_requested_a": 129,
+      "transfer_actual_a": 129,
+      "actor_allocation_fee_paid": 129,
+      "actor_resource_consumed": 129,
+      "births": 129,
+      "rejected_fuel": 129,
+      "body": 129,
+      "energy": 129,
+      "actor_transport_weights": 130,
+      "actor_body_after_actor": 130,
+      "growth_rate": 130,
+      "positive_request": 130,
+      "rule_death": 130,
+      "rejected_precursor": 130
+    },
+    "first_above_1e_12": {
+      "transfer_requested_a": {
+        "step": 129,
+        "max_abs": 1.0,
+        "sum": -1460.0
+      },
+      "transfer_actual_a": {
+        "step": 129,
+        "max_abs": 1.0,
+        "sum": -1460.0
+      },
+      "actor_allocation_fee_paid": {
+        "step": 129,
+        "max_abs": 0.0005856844037624329,
+        "sum": 0.34054314169395805
+      },
+      "actor_resource_consumed": {
+        "step": 129,
+        "max_abs": 0.005841236029317782,
+        "sum": -3.325264670899741
+      },
+      "births": {
+        "step": 129,
+        "max_abs": 0.0015013988709985655,
+        "sum": 0.006005595483994233
+      },
+      "rejected_fuel": {
+        "step": 129,
+        "max_abs": 0.0015013988709985655,
+        "sum": -0.006005595483994233
+      },
+      "body": {
+        "step": 129,
+        "max_abs": 0.0015013988709985382,
+        "sum": 0.006005595483994153
+      },
+      "energy": {
+        "step": 129,
+        "max_abs": 0.006420461141359163,
+        "sum": -3.618653755434907
+      },
+      "actor_transport_weights": {
+        "step": 130,
+        "max_abs": 6.693094952699976e-05,
+        "sum": 0.0001085247268585423
+      },
+      "actor_body_after_actor": {
+        "step": 130,
+        "max_abs": 0.001429368764742256,
+        "sum": 0.00600559548399351
+      },
+      "growth_rate": {
+        "step": 130,
+        "max_abs": 0.0008710503212296383,
+        "sum": -0.08506357047803158
+      },
+      "positive_request": {
+        "step": 130,
+        "max_abs": 3.293965826441374e-05,
+        "sum": -0.0014367821927488665
+      },
+      "rule_death": {
+        "step": 130,
+        "max_abs": 2.8414407973765057e-05,
+        "sum": 0.0010329063005884748
+      },
+      "rejected_precursor": {
+        "step": 130,
+        "max_abs": 0.00013723112040519236,
+        "sum": 0.0005542576763594121
+      }
+    },
+    "first_occupied_actual_gate_difference": 129,
+    "spatial": [
+      "compact_ring_core_outer--bridged_longbody--reserve_T11_minus_open_T11-step129"
+    ]
+  },
+  {
+    "effect": "compact_ring_core_outer--bridged_longbody--reserve_T11_minus_suppress_T11",
+    "first_nonzero_exact": {
+      "transfer_requested_a": 129,
+      "transfer_actual_a": 156,
+      "actor_allocation_fee_paid": 156,
+      "actor_resource_consumed": 156,
+      "energy": 156,
+      "births": 166,
+      "rejected_fuel": 166,
+      "body": 166,
+      "actor_transport_weights": 167,
+      "actor_body_after_actor": 167,
+      "growth_rate": 167,
+      "positive_request": 167,
+      "rule_death": 167,
+      "rejected_precursor": 167
+    },
+    "first_above_1e_12": {
+      "transfer_requested_a": {
+        "step": 129,
+        "max_abs": 1.0,
+        "sum": 7756.0
+      },
+      "transfer_actual_a": {
+        "step": 156,
+        "max_abs": 1.0,
+        "sum": 8.0
+      },
+      "actor_allocation_fee_paid": {
+        "step": 156,
+        "max_abs": 0.00027182774661991746,
+        "sum": -0.0018482975025048776
+      },
+      "actor_resource_consumed": {
+        "step": 156,
+        "max_abs": 0.0027413861189340364,
+        "sum": 0.01861372365382585
+      },
+      "energy": {
+        "step": 156,
+        "max_abs": 0.003011866648940001,
+        "sum": 0.020292317163226995
+      },
+      "births": {
+        "step": 166,
+        "max_abs": 6.292352107694103e-08,
+        "sum": -2.51694084307737e-07
+      },
+      "rejected_fuel": {
+        "step": 166,
+        "max_abs": 6.292352107721208e-08,
+        "sum": 2.516940843075473e-07
+      },
+      "body": {
+        "step": 166,
+        "max_abs": 6.29235210880541e-08,
+        "sum": -2.5169408431058304e-07
+      },
+      "actor_transport_weights": {
+        "step": 167,
+        "max_abs": 1.283949778744728e-09,
+        "sum": -2.0332824152532103e-08
+      },
+      "actor_body_after_actor": {
+        "step": 167,
+        "max_abs": 6.231163487968594e-08,
+        "sum": -2.5169408428895607e-07
+      },
+      "growth_rate": {
+        "step": 167,
+        "max_abs": 2.5695815836224156e-08,
+        "sum": 2.5707606555354368e-06
+      },
+      "positive_request": {
+        "step": 167,
+        "max_abs": 1.0161427229163356e-09,
+        "sum": 3.615988845171922e-08
+      },
+      "rule_death": {
+        "step": 167,
+        "max_abs": 1.2847907919846802e-09,
+        "sum": -3.240453840794213e-08
+      },
+      "rejected_precursor": {
+        "step": 167,
+        "max_abs": 1.361110724454849e-10,
+        "sum": -2.4452814106250623e-10
+      }
+    },
+    "first_occupied_actual_gate_difference": 156,
+    "spatial": [
+      "compact_ring_core_outer--bridged_longbody--reserve_T11_minus_suppress_T11-step129",
+      "compact_ring_core_outer--bridged_longbody--reserve_T11_minus_suppress_T11-step156"
+    ]
+  },
+  {
+    "effect": "compact_ring_core_outer--bridged_longbody--suppress_T11_minus_open_T11",
+    "first_nonzero_exact": {
+      "transfer_requested_a": 129,
+      "transfer_actual_a": 129,
+      "actor_allocation_fee_paid": 129,
+      "actor_resource_consumed": 129,
+      "births": 129,
+      "rejected_fuel": 129,
+      "body": 129,
+      "energy": 129,
+      "actor_transport_weights": 130,
+      "actor_body_after_actor": 130,
+      "growth_rate": 130,
+      "positive_request": 130,
+      "rule_death": 130,
+      "rejected_precursor": 130
+    },
+    "first_above_1e_12": {
+      "transfer_requested_a": {
+        "step": 129,
+        "max_abs": 1.0,
+        "sum": -9216.0
+      },
+      "transfer_actual_a": {
+        "step": 129,
+        "max_abs": 1.0,
+        "sum": -1460.0
+      },
+      "actor_allocation_fee_paid": {
+        "step": 129,
+        "max_abs": 0.0005856844037624329,
+        "sum": 0.34054314169395805
+      },
+      "actor_resource_consumed": {
+        "step": 129,
+        "max_abs": 0.005841236029317782,
+        "sum": -3.325264670899741
+      },
+      "births": {
+        "step": 129,
+        "max_abs": 0.0015013988709985655,
+        "sum": 0.006005595483994233
+      },
+      "rejected_fuel": {
+        "step": 129,
+        "max_abs": 0.0015013988709985655,
+        "sum": -0.006005595483994233
+      },
+      "body": {
+        "step": 129,
+        "max_abs": 0.0015013988709985382,
+        "sum": 0.006005595483994153
+      },
+      "energy": {
+        "step": 129,
+        "max_abs": 0.006420461141359163,
+        "sum": -3.618653755434907
+      },
+      "actor_transport_weights": {
+        "step": 130,
+        "max_abs": 6.693094952699976e-05,
+        "sum": 0.0001085247268585423
+      },
+      "actor_body_after_actor": {
+        "step": 130,
+        "max_abs": 0.001429368764742256,
+        "sum": 0.00600559548399351
+      },
+      "growth_rate": {
+        "step": 130,
+        "max_abs": 0.0008710503212296383,
+        "sum": -0.08506357047803158
+      },
+      "positive_request": {
+        "step": 130,
+        "max_abs": 3.293965826441374e-05,
+        "sum": -0.0014367821927488665
+      },
+      "rule_death": {
+        "step": 130,
+        "max_abs": 2.8414407973765057e-05,
+        "sum": 0.0010329063005884748
+      },
+      "rejected_precursor": {
+        "step": 130,
+        "max_abs": 0.00013723112040519236,
+        "sum": 0.0005542576763594121
+      }
+    },
+    "first_occupied_actual_gate_difference": 129,
+    "spatial": [
+      "compact_ring_core_outer--bridged_longbody--suppress_T11_minus_open_T11-step129"
+    ]
+  }
+]

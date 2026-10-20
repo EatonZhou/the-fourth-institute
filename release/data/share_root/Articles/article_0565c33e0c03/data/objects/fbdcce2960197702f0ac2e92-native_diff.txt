@@ -1,0 +1,86 @@
+--- frozen_RegenerativeBody.step
++++ AST_deletion_and_request_hooks
+@@ -2,61 +2,38 @@
+     if not isinstance(permit, ForwardPermit):
+         raise RuntimeError('explicit newly funded ForwardPermit required')
+     self.validate(s)
+-    permit.consume()  # failures after this point count; no silent retries
++    permit.consume()
+     old = State(*(s[k] for k in PHYSICAL))
+-    c = {k:s['c_'+k] for k in CONTROLLER}
+-    after, settled, metrics, audit = self.actor.advance(
+-        old, c, draw, cue, s['fuel'], hazard, learn=learn)
++    c = {k: s['c_' + k] for k in CONTROLLER}
++    after, settled, metrics, audit = self.actor.advance(old, c, draw, cue, s['fuel'], hazard, learn=learn)
+     w = metrics['transport_weights']
+     transported = advect(s['body'], w)
+     retention = divide(after.body, transported)
+-    founder = advect(s['founder_mass'], w)*retention
+-    fuel = s['fuel']-metrics['resource_consumed']
++    founder = advect(s['founder_mass'], w) * retention
++    fuel = s['fuel'] - metrics['resource_consumed']
+     h = self.rate(after.body)
+-    rule_death = np.minimum(after.body, self.dt*np.maximum(-h, 0))
+-    survivor = after.body-rule_death
++    rule_death = self.deletion_hook(np.minimum(after.body, self.dt * np.maximum(-h, 0)), after.body, h)
++    survivor = after.body - rule_death
+     survive_fraction = divide(survivor, after.body)
+-    death_energy = after.energy*(1-survive_fraction)
+-    own_energy = after.energy-death_energy
++    death_energy = after.energy * (1 - survive_fraction)
++    own_energy = after.energy - death_energy
+     support = neighborhood(survivor)
+-    request = self.dt*np.maximum(h, 0) if self.config['generation_enabled'] else np.zeros_like(h)
++    request = self.request_hook(self.dt * np.maximum(h, 0) if self.config['generation_enabled'] else np.zeros_like(h), survivor, s['precursor'], fuel, support)
+     conversion = admit(request, survivor, s['precursor'], fuel, support, self.conversion)
+     born = conversion['births']
+-    total = survivor+born
+-    # Only theta and true polarity are newborn templates. Other fields
+-    # retain survivors' extensive content, with zero newborn contribution.
++    total = survivor + born
+     inherited_theta, _ = template(survivor, settled['theta'])
+     inherited_p, _ = template(survivor, after.polarity)
+-    newcontroller = {k:divide(survivor*settled[k], total) for k in CONTROLLER}
+-    newcontroller['theta'] = divide(survivor*settled['theta']+born*inherited_theta, total)
+-    nxt = dict(body=total,
+-               energy=own_energy+conversion['newborn_energy'],
+-               memory=divide(survivor*after.memory, total),
+-               eligibility=divide(survivor*after.eligibility, total),
+-               polarity=divide(survivor*after.polarity+born*inherited_p, total),
+-               precursor=s['precursor']-born,
+-               fuel=fuel-conversion['birth_fuel'],
+-               waste=s['waste']+metrics['mass_injury']+metrics['mass_starvation']+rule_death,
+-               heat=s['heat']+metrics['energy_spent']+conversion['synthesis_heat']+conversion['template_heat'],
+-               dead_energy=s['dead_energy']+metrics['energy_lost_with_tissue']+death_energy,
+-               founder_mass=founder*survive_fraction,
+-               **{'c_'+k:v for k,v in newcontroller.items()})
++    newcontroller = {k: divide(survivor * settled[k], total) for k in CONTROLLER}
++    newcontroller['theta'] = divide(survivor * settled['theta'] + born * inherited_theta, total)
++    nxt = dict(body=total, energy=own_energy + conversion['newborn_energy'], memory=divide(survivor * after.memory, total), eligibility=divide(survivor * after.eligibility, total), polarity=divide(survivor * after.polarity + born * inherited_p, total), precursor=s['precursor'] - born, fuel=fuel - conversion['birth_fuel'], waste=s['waste'] + metrics['mass_injury'] + metrics['mass_starvation'] + rule_death, heat=s['heat'] + metrics['energy_spent'] + conversion['synthesis_heat'] + conversion['template_heat'], dead_energy=s['dead_energy'] + metrics['energy_lost_with_tissue'] + death_energy, founder_mass=founder * survive_fraction, **{'c_' + k: v for k, v in newcontroller.items()})
+     self.validate(nxt)
+-    maps = {**{'actor_'+k:v for k,v in metrics.items()},
+-            **{'controller_'+k:v for k,v in audit.items()},
+-            **conversion, 'growth_rate':h, 'rule_death':rule_death,
+-            'rule_death_energy':death_energy, 'template_support':support,
+-            'inherited_theta':inherited_theta, 'inherited_polarity':inherited_p,
+-            'actor_reward':audit['full_reward'],
+-            'founder_surviving':nxt['founder_mass'],
+-            'new_tissue_surviving':nxt['body']-nxt['founder_mass']}
+-    mat = lambda x: sum(float(x[k].sum()) for k in ('body', 'precursor', 'waste'))
+-    energy = lambda x: sum(float(x[k].sum()) for k in ('energy', 'fuel', 'heat', 'dead_energy'))
+-    checks = dict(material_error=mat(nxt)-mat(s), energy_error=energy(nxt)-energy(s),
+-                  max_density=float(total.max()), attempted_body_steps=permit.attempted)
+-    if max(abs(checks['material_error']),abs(checks['energy_error'])) > 1e-9:
++    maps = {**{'actor_' + k: v for k, v in metrics.items()}, **{'controller_' + k: v for k, v in audit.items()}, **conversion, 'growth_rate': h, 'rule_death': rule_death, 'rule_death_energy': death_energy, 'template_support': support, 'inherited_theta': inherited_theta, 'inherited_polarity': inherited_p, 'actor_reward': audit['full_reward'], 'founder_surviving': nxt['founder_mass'], 'new_tissue_surviving': nxt['body'] - nxt['founder_mass']}
++    mat = lambda x: sum((float(x[k].sum()) for k in ('body', 'precursor', 'waste')))
++    energy = lambda x: sum((float(x[k].sum()) for k in ('energy', 'fuel', 'heat', 'dead_energy')))
++    checks = dict(material_error=mat(nxt) - mat(s), energy_error=energy(nxt) - energy(s), max_density=float(total.max()), attempted_body_steps=permit.attempted)
++    if max(abs(checks['material_error']), abs(checks['energy_error'])) > 1e-09:
+         raise ArithmeticError(checks)
+-    # Retain actor's narrow reward separately from whole-body generation.
+-    maps['whole_energy_change'] = nxt['energy']-s['energy']
+-    maps['whole_mass_change'] = nxt['body']-s['body']
+-    return nxt, maps, checks
++    maps['whole_energy_change'] = nxt['energy'] - s['energy']
++    maps['whole_mass_change'] = nxt['body'] - s['body']
++    return (nxt, maps, checks)

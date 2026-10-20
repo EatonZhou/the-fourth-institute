@@ -1,0 +1,1775 @@
+{
+  "schema": "tfi.portal-architecture-exploration-manifest.v1",
+  "revision": 1,
+  "model": {
+    "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/deep-architecture/current/exploration-model.json",
+    "sha256": "f6fe25b561761eb4dc27327c6653aeec3da51f7f220ac780b45a6f5173eff515",
+    "size": 5832858
+  },
+  "catalogs": {
+    "hatg": {
+      "manifest": {
+        "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/deep-architecture/current/catalog-manifest.json",
+        "sha256": "2dea30fda0d9eb477a97baa6f66c824cc87b716b2daced34a3c5a960fd1ef425",
+        "size": 7413
+      }
+    }
+  },
+  "sources": [
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/service.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/service.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/scheduler.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/worker.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/worker.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/worker.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/scheduler.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/scheduler.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/runtime.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/runtime.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/runtime.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/runtime.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/runtime.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/runtime.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/runtime.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/backends.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/backends.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/resident_execution_domain.py"
+    },
+    {
+      "address": "decision_25eb93d803a4"
+    },
+    {
+      "address": "decision_6ad0384e020d"
+    },
+    {
+      "address": "decision_075f66430606"
+    },
+    {
+      "address": "decision_8ac0b5a6c0e5"
+    },
+    {
+      "address": "decision_8ac0b5a6c0e5"
+    },
+    {
+      "address": "decision_8ac0b5a6c0e5"
+    },
+    {
+      "address": "decision_425e428410e0"
+    },
+    {
+      "address": "decision_5c62deb8253a"
+    },
+    {
+      "address": "decision_b1ab45c4b3ec"
+    },
+    {
+      "address": "decision_8ac0b5a6c0e5"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/server.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/server.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/server.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/lineage_domain.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/lineage_definition_versions.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/lineage_definition_merge.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/lineage_program.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/lineage_program.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/lineage_definition_normalization.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/function_block_domain.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/function_block_domain.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/application_target_configuration.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/state_store.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/resident_intake_domain.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/resident_intake_domain.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/resident_execution_domain.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/resident_execution_domain.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/resident_execution_domain.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/resident_execution_domain.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/resident_execution_domain.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/resident_intake_domain.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/lineage_program_event_dispatch.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/lineage_program_runtime.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/lineage_program_event_dispatch.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/lineage_program_packet_routing.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/lineage_program_execution.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/lineage_program_execution.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/lineage_program_effect_execution.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/lineage_program_effect_execution.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/script_runs/service.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/script_runs/service.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_common/principal.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/resident_intake_domain.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/resident_execution_domain.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/lineage_instruction_context.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/lineage_automation_identity.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/family_definition.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/family_definition.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/family_quota.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/family_quota.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/family_facade.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/family_facade.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/family_supervision.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/family_supervision.py"
+    },
+    {
+      "address": "decision_1b2bdf5c33d6"
+    },
+    {
+      "address": "decision_d918ebebc062"
+    },
+    {
+      "address": "decision_d918ebebc062"
+    },
+    {
+      "address": "decision_1b2bdf5c33d6"
+    },
+    {
+      "address": "decision_5b5653c3eaa5"
+    },
+    {
+      "address": "decision_c524c775e0be"
+    },
+    {
+      "address": "decision_4adcc1ff2f2c"
+    },
+    {
+      "address": "decision_4adcc1ff2f2c"
+    },
+    {
+      "address": "decision_4adcc1ff2f2c"
+    },
+    {
+      "address": "decision_ae422b92c6f3"
+    },
+    {
+      "address": "decision_44cf587c1721"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/architecture/modules.yaml"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/notifications/bus.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/notifications/bus.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/notifications/bus.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/notifications/bus.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/notifications/async_fanout.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/notifications/async_fanout.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/notifications/file_watch.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/asgi.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/notifications/config.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_common/rpc_auth.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_common/rpc_auth.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/socket_rpc.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/server.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/scripts/publish_portal_release.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/scripts/portal_services.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/scripts/portal_services.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/scripts/portal_services.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/scripts/portal_dev_restart_requests.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/scripts/portal_dev_source_reloader.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/scripts/portal_dev_generation.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_common/portal_release_events.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/lineage_release_events.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/scripts/check_portal_architecture.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/scripts/check_portal_architecture.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/tests/framework/catalog.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/tests/framework/catalog.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/tests/framework/planner.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/tests/framework/service.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/tests/framework/records.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/tests/framework/executor.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/tests/framework/tau_campaign.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/tests/framework/tau_campaign.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/application_targets.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/application_target_configuration.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/application_target_configuration.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/application_target_configuration.py"
+    },
+    {
+      "address": "decision_abaedeefca6f"
+    },
+    {
+      "address": "decision_f55bac7fc199"
+    },
+    {
+      "address": "decision_96a887d83e8a"
+    },
+    {
+      "address": "decision_850e6248d680"
+    },
+    {
+      "address": "decision_08bb2d9141f9"
+    },
+    {
+      "address": "decision_13e1a748cf04"
+    },
+    {
+      "address": "decision_6591e7793116"
+    },
+    {
+      "address": "decision_8273271b67b1"
+    },
+    {
+      "address": "decision_c953eab654cd"
+    },
+    {
+      "address": "decision_6febe7bb57f9"
+    },
+    {
+      "address": "decision_13e1a748cf04"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/architecture/modules.yaml"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/architecture/modules.yaml"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/architecture/modules.yaml"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/architecture/modules.yaml"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/architecture/modules.yaml"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/architecture/modules.yaml"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/architecture/modules.yaml"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/architecture/modules.yaml"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/architecture/modules.yaml"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/architecture/modules.yaml"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/architecture/modules.yaml"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resources/runtime.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resources/server.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resources/server.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resources/transport.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resources/address.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resources/address.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resources/service.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resources/providers/__init__.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resources/providers/ownership.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resources/service.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resources/access.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resources/service.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resources/service.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resources/service.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resources/index_runtime.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resource_index_backend.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resources/query.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resource_index_backend.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resources/registration.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resources/providers/workspace.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resources/providers/workspace.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resources/workspace_store.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/workspace_domain.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resources/isa.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/resident_store.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resources/providers/knowledge.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/permissions.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/permissions.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resources/isa_policy.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resources/authorization/engine.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resources/authorization/engine.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resources/authorization/engine.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resources/authorization/coverage.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resources/authorization/credentials.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resources/authorization/store.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/shared_state.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resources/locking.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/shared_state.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/shared_state.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/shared_state.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/effect_artifacts.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/harness_artifacts.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/harness_artifacts.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/harness_artifacts.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/workbench_projections/application_build.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/script_runs/runtime.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_common/portal_database.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_common/postgres_database.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_common/postgres_database.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_common/domain_database.py"
+    },
+    {
+      "address": "decision_cf27d39e39cd"
+    },
+    {
+      "address": "decision_b6e74d78f7b6"
+    },
+    {
+      "address": "decision_67b7e8951599"
+    },
+    {
+      "address": "decision_707d2910d389"
+    },
+    {
+      "address": "decision_0fbbd0448003"
+    },
+    {
+      "address": "decision_8838269736d3"
+    },
+    {
+      "address": "decision_0e043d5f81be"
+    },
+    {
+      "address": "decision_8dc6b3d03ca7"
+    },
+    {
+      "address": "decision_8dc6b3d03ca7"
+    },
+    {
+      "address": "decision_86aed2f0e8c7"
+    },
+    {
+      "address": "decision_86aed2f0e8c7"
+    },
+    {
+      "address": "decision_4adcc1ff2f2c"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/static/portal_api.js"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/static/portal_api.js"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/static/portal_instruction_client.js"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/static/portal_instruction_client.js"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/static/portal_refresh_coordinator.js"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/static/portal_refresh_coordinator.js"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/static/portal_workbench.js"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/static/portal_workbench.js"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/static/portal_chat_workspace.js"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/static/resident_protocol.js"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/static/resident_protocol.js"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/static/resident_protocol.js"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/static/portal_workspace_surface.js"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/static/portal_workspace_surface.js"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/static/portal_workspace_surface.js"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/static/portal_workspace_surface.js"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/static/portal_home_components.js"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/static/portal_home_components.js"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/static/portal_home_components.js"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/portal_deployment_router.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/portal_deployment_router.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/portal_deployment_router.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/asgi.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/asgi.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/asgi.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/asgi.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/isa.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/routing.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/routing.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/kernel.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/kernel.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/kernel.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/kernel.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/identity_store.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/http_public_auth.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/portal_session_auth.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/chatroom_backend.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/chatroom_backend.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/chatroom_backend.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resource_discussion_backend.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resource_discussion_backend.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/pulse_publication_store.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/business_tasks.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/business_tasks.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/paper_backend.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/paper_backend.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/wall_backend.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/wall_backend.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/knowledge_archive_backend.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/workbench_projections/semantics.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/workbench_projections/http.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/workbench_projections/service.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/workbench_projections/service.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/static/projection_host.js"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/static/projection_host.js"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/static/projection_host.js"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/static/projection_host.js"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/static/projection_host.js"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/static/projection_sdk.js"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/portal_ui_state.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resource_backup_backend.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/backup_lineage.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/backup_lineage.py"
+    },
+    {
+      "address": "decision_0820081083f5"
+    },
+    {
+      "address": "decision_85222f2d316b"
+    },
+    {
+      "address": "decision_daba6706a788"
+    },
+    {
+      "address": "decision_18abbdef3da3"
+    },
+    {
+      "address": "decision_769a35d6b5c7"
+    },
+    {
+      "address": "decision_00546e28e1e0"
+    },
+    {
+      "address": "decision_538e155e1102"
+    },
+    {
+      "address": "decision_4348ed990621"
+    },
+    {
+      "address": "decision_aa4fdbac8364"
+    },
+    {
+      "address": "decision_3bce8b455a3c"
+    },
+    {
+      "address": "decision_86721bb4e8c8"
+    },
+    {
+      "address": "decision_e37f240e186d"
+    },
+    {
+      "address": "decision_06defc47e960"
+    },
+    {
+      "address": "decision_bd179998ba08"
+    },
+    {
+      "address": "decision_7a5ae487e2e9"
+    },
+    {
+      "address": "decision_f67ae5e70793"
+    },
+    {
+      "address": "decision_f67ae5e70793"
+    },
+    {
+      "address": "decision_b06ae321a668"
+    },
+    {
+      "address": "decision_a6bebf4ac283"
+    },
+    {
+      "address": "decision_231e525aa698"
+    },
+    {
+      "address": "decision_865ac8ebef25"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/codex_app_server_client.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/codex_app_server_client.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/codex_app_server_client.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/codex_app_server_client.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/codex_app_server_client.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/codex_app_server_client.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/codex_app_server_client.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/codex_app_server_client.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/codex_app_server_client.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/codex_app_server_client.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/backends.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/backends.py"
+    },
+    {
+      "address": "decision_3e8c2a7f91d4"
+    },
+    {
+      "address": "decision_3e8c2a7f91d4"
+    },
+    {
+      "address": "decision_3e8c2a7f91d4"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/codex_recovery.py"
+    },
+    {
+      "address": "decision_425e428410e0"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/service.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/scheduler.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/service.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/accounts.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/service.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/service.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/contracts.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/contracts.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/scheduler.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/scheduler.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/scheduler.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/scheduler.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/scheduler.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/account_quota.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/scheduler.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/scheduler.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/scheduler.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/scheduler.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/scheduler.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/scheduler.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/worker_manager.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/worker_manager.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/worker_manager.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/scheduler.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/worker_manager.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/scheduler.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/scheduler.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/worker.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/worker.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/worker.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/worker.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/runtime.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/runtime.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/runtime.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/runtime.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/runtime.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/backends.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/service.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/scheduler.py"
+    },
+    {
+      "address": "decision_25eb93d803a4"
+    },
+    {
+      "address": "decision_25eb93d803a4"
+    },
+    {
+      "address": "decision_6ad0384e020d"
+    },
+    {
+      "address": "decision_6ad0384e020d"
+    },
+    {
+      "address": "decision_6ad0384e020d"
+    },
+    {
+      "address": "decision_8ac0b5a6c0e5"
+    },
+    {
+      "address": "decision_d40f59f5508f"
+    },
+    {
+      "address": "decision_075f66430606"
+    },
+    {
+      "address": "decision_91eb3626d323"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/scheduler.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/backends.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/agent_data_store.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/agent_data_store.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/agent_data_store.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/agent_data_store.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/agent_data_store.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/agent_data_store.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/conversation_projection.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/message_projection.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/agent_data_store.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/agent_data_store.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/agent_data_store.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/agent_data_store.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/agent_data_store.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/agent_data_store.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/agent_data_store.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/agent_data_store.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/agent_data_store.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/session_manager.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/session_manager.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/session_manager.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/agent_data_projection.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/agent_data_projection.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/agent_data_projection.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/agent_data_projection.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/agent_data_projection.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/agent_data_projection.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/agent_data_projection.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/agent_data_projection.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/provider_catalog.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/provider_catalog.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/provider_catalog.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/native_options.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/native_options.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/harness_capabilities.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/contracts.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/backends.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/backends.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/backends.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/harness.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/session_tools.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/harness.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/harness.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/harness.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/harness.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/harness.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/harness.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/harness.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/harness_settings.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/runtime.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_common/agent_data_schema.py"
+    },
+    {
+      "address": "decision_b1ab45c4b3ec"
+    },
+    {
+      "address": "decision_91eb3626d323"
+    },
+    {
+      "address": "decision_425e428410e0"
+    },
+    {
+      "address": "decision_5c62deb8253a"
+    },
+    {
+      "address": "decision_fd760e898f9a"
+    },
+    {
+      "address": "decision_ef1d6c925955"
+    },
+    {
+      "address": "decision_075f66430606"
+    },
+    {
+      "address": "decision_e587fe1c472e"
+    },
+    {
+      "address": "decision_3dd52c0692c1"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/backends.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/provider_catalog.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/ai_provider_registry.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/ai_provider_registry.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/model_api_store.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/model_api_store.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/accounts.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/account_adapters.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/backends.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/backends.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/model_api_protocols.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/model_api_protocols.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/jev_provider.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/jev_provider.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/jev_provider.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/jev_provider.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/isa.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/requests.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/ai_socket_relay.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/ai_socket_relay.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/ai_socket_relay.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/ai_socket_relay.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/ai_socket_relay.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/ai_socket_relay.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/systemd/dirtybase-ai-socket-relay.service"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/claude_provider_catalog.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/claude_code_daemon.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/claude_code_daemon.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/claude_code_daemon.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/kimi_code_server.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/kimi_code_server.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/dsh_provider_catalog.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/dsh_client.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/dsh_client.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/opencode_provider_catalog.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/opencode_client.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/opencode_bridge.py"
+    },
+    {
+      "address": "decision_6c2f91a7d84e"
+    },
+    {
+      "address": "decision_6c2f91a7d84e"
+    },
+    {
+      "address": "decision_6c2f91a7d84e"
+    },
+    {
+      "address": "decision_c604274e21dd"
+    },
+    {
+      "address": "decision_3948ce9b9443"
+    },
+    {
+      "address": "decision_6b9e42f1c8a7"
+    },
+    {
+      "address": "decision_276105b5d67b"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/isa.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/shared_state.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/shared_state.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/shared_state.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resource_index_backend.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resource_index_backend.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resource_index_backend.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resource_index_backend.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resource_index_backend.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resource_index_backend.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resource_index_backend.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resource_index_backend.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resource_index_backend.py"
+    },
+    {
+      "address": "decision_0e043d5f81be"
+    },
+    {
+      "address": "decision_0e043d5f81be"
+    },
+    {
+      "address": "decision_8dc6b3d03ca7"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/runtime.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/runtime.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/runtime.py"
+    },
+    {
+      "address": "decision_0e043d5f81be"
+    },
+    {
+      "address": "decision_1b2bdf5c33d6"
+    },
+    {
+      "address": "decision_8dc6b3d03ca7"
+    },
+    {
+      "address": "decision_0e043d5f81be"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/static/projection_host.js"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/static/projection_host.js"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/static/projection_host.js"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/static/projection_host.js"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/static/projection_host.js"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/static/projection_sdk.js"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/static/projection_host.js"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/static/projection_host.js"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/static/projection_host.js"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/workbench_projections/development_app/src/architecture/index.js"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/workbench_projections/development_app/src/architecture/index.js"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/static/portal_chat_workspace.js"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/static/portal_chat_workspace.js"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/static/portal_chat_workspace.js"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resources/isa.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/web_isa.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/residents.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/conversation.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/conversation.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/execution.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/definition.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/lineage_graph_state.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/runs.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/script_runs/service.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/function_blocks.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/families.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/templates.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/web_isa.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/isa/organization.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resources/isa.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/web_isa.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/hatg/routing.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/provider_catalog.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/accounts.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/account_adapters.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/codex_capabilities.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/isa.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/http_agent_workbench.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/codex_runtime_settings.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/codex_runtime_settings.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/native_options.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/runtime.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/backends.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/backends.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/harness.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/runtime.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/runtime.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/static/resident_protocol.js"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/static/resident_protocol.js"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/codex_app_server_client.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/backends.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/codex_app_server_client.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/backends.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/codex_app_server_client.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/backends.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/backends.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/backends.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/backends.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/codex_app_server_client.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/backends.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/backends.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/backends.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/backends.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resources/authorization/coverage.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resources/authorization/coverage.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resources/authorization/coverage.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resources/authorization/credentials.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resources/authorization/credentials.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/resources/authorization/model.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/harness_capabilities.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/harness.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/harness_tool_granularity.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/harness_unified_resource_recall.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/harness_native_loop.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/harness_provider_error_continue.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/harness_early_compaction.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/harness_read_dedup.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/harness_tool_output_offloading.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/harness_artifact_search.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/harness_inline_media.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/harness_jev.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/harness_tool_output_offloading.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/harness_tool_output_offloading.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/harness_tool_output_offloading.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/harness_tool_output_offloading.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/harness.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/harness_tool_batches.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/lineage_program_queries.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/lineage_operator_runtime.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/lineage_program_execution.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/lineage_program_execution.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/lineage_primitives.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/lineage_operators.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/lineage_program_operator_execution.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/resident_intake_domain.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/resident_execution_work.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/lineage_service/resident_execution_work.py"
+    },
+    {
+      "address": "decision_4adcc1ff2f2c"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/scripts/portal_services.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/tests/framework/slots.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/tests/framework/tau_campaign.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/tests/framework/tau_campaign.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/scheduler.py"
+    },
+    {
+      "address": "repo_5d287fed9c7e/file/management_portal/execution/worker.py"
+    }
+  ]
+}

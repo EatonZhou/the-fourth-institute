@@ -1,0 +1,207 @@
+{
+  "task": "association_expression_to_action_coordination_pi_choice_20261019",
+  "owner": "resident_afa3d4d6cf11",
+  "updated_at": "2026-10-19T03:07:11.147317+00:00",
+  "plan": "plan_13d78f0ae847 v12",
+  "objective_met": false,
+  "controls": {
+    "research.desired_state": "running",
+    "research.started": true,
+    "latest_read_instruction": "inst_lin_bc56dd4f0a33064357da"
+  },
+  "evidence": [
+    {
+      "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/association_readout_recontact_20261019/direction_handoff.json",
+      "sha256": "edbc6aed09e09caafbb45eaddb5f6628627d1b9753c7806431f7ae0317995bdc"
+    },
+    {
+      "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/self_generated_recontact_learning_20261019/REPORT.txt",
+      "sha256": "6d4612e41ade073bfa9de2ef910bfa70f021de2334f557cde3ce57d4e0429766"
+    },
+    {
+      "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/association_readout_recontact_20261019/REPORT.txt",
+      "sha256": "c1d8920d8c8c05b0add27fbb1f2e71e2f642a586da4156d37ee9bea045bfef71"
+    },
+    {
+      "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/association_readout_recontact_20261019/expression_same_body_check.json",
+      "sha256": "44031d96f751b98ed4e86529720fb8a76a09c33eb2d740ee464c0fefd4048d2e"
+    },
+    {
+      "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/association_readout_recontact_20261019/actual_sequence.png",
+      "sha256": "adadaf8c67fda4817cca1ad74136c52fa21b5de30902314ec876a080c311eed3"
+    }
+  ],
+  "scientific_choice": "保留同体关联内容改变随后运动的窄因果证据；关闭本次转向与暂闭读出实现主体回返的主张。下一问题改为局部已学信号如何协调全身行动，先用固定传播与强简单参照辨识，不增加关联写入器复杂度。",
+  "results": {
+    "native": 12712,
+    "runner_worker_seconds": 84.96354,
+    "unknown": 0,
+    "old_replay": 0,
+    "recontact": {
+      "native": 4520,
+      "worker_seconds": 33.495392,
+      "paid_or_write_branches": 0,
+      "write_freeze_final_exact_pairs": 8,
+      "original_connectedness_failures": 8,
+      "turn_survivors": 8,
+      "inference": "零反馈不检验学习器；原极性连通失败时M仍24、E约32，不称饿死。"
+    },
+    "readout_pause": {
+      "native": 8192,
+      "worker_seconds": 51.468148,
+      "survivors": 16,
+      "behavior_passes": 0,
+      "same_physical_and_sensory_state_clock": 2432,
+      "same_parent_expression_pairs": 4,
+      "first_total_body_contact_update": [
+        53,
+        56
+      ],
+      "meaningful_total_contact_updates": [
+        124,
+        125
+      ],
+      "positive_payment_updates": [
+        381,
+        382
+      ],
+      "positive_paid_energy_range": [
+        0.588748764,
+        0.647898216
+      ],
+      "peak_good_zone_mass_range": [
+        0.1938,
+        0.21726
+      ],
+      "meaningful_zone_mass_threshold": 0.24,
+      "write_final64_good_mass_range": [
+        0.013106596,
+        0.013363059
+      ],
+      "freeze_final64_good_mass_range": [
+        1.154e-07,
+        7.665e-07
+      ],
+      "terminal_energy_range": [
+        2.1251,
+        2.7615
+      ]
+    }
+  },
+  "interpretation": [
+    "暂闭阶段写/冻物理轨迹与支付相同，2432身体/E/感觉登记/迹/极性逐位相同，恢复相同读出后才分化，支持关联内容联合表达的作用。Q和bank未独立拆分；fast也成功，不支持joint独有方法优势。",
+    "暂闭使稀少材料进入支付区，并未带来末窗主体回返；0/16行为门和低能末态保留。微量好区质量比不得代替绝对主体覆盖。",
+    "亲看实际序列中的弧状体与条带；宏观回返尚未成立。这个观察启发协调假设，尚未证明协调是失败原因。",
+    "转向和读出暂停是预置共同执行器操作，不是身体自行习得的探索策略。暂闭不是擦记忆，后效也不是重新学习。",
+    "现有存续门继续预定，能力与运动/E代价并报；不恢复全部指标同时不下降的旧全局筛法。旧controlled批判定不变。"
+  ],
+  "next": {
+    "name": "local_signal_action_coordination_20261019",
+    "owner": "resident_d3ccfa2d95b7",
+    "question": "已学局部趋避信号的空间传播，能否在相同身体/支付/fast-delta下改变主体接触与未告知反转后的行为？它是否优于同延迟、同容量的纯时间平滑？",
+    "parents": [
+      {
+        "id": "202610197503_0_0_fast_delta_life",
+        "layout": 0,
+        "initial_good": 0,
+        "seed": 202610197503,
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/self_generated_contact_reversal_20261019/ea785e90-138c-461f-998c-64b770243fa7/202610197503_0_0_fast_delta_life/state640.npz",
+        "sha256": "9eb2f0fa06814391a93d93596a280ddeffe6784a3f27cab6bc67c05d38a25d3b",
+        "M": 24.000000000000007,
+        "E": 64.92237957246172,
+        "keys": [
+          "body",
+          "energy",
+          "Q",
+          "trace",
+          "polarity",
+          "aux"
+        ]
+      },
+      {
+        "id": "202610197503_0_1_fast_delta_life",
+        "layout": 0,
+        "initial_good": 1,
+        "seed": 202610197503,
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/self_generated_contact_reversal_20261019/ea785e90-138c-461f-998c-64b770243fa7/202610197503_0_1_fast_delta_life/state640.npz",
+        "sha256": "1b507d298780ccbec87cd5c0b9a8043661bd083abf6276d62d106a828bc613dd",
+        "M": 23.999999999999986,
+        "E": 93.34593173365278,
+        "keys": [
+          "body",
+          "energy",
+          "Q",
+          "trace",
+          "polarity",
+          "aux"
+        ]
+      },
+      {
+        "id": "202610197504_1_0_fast_delta_life",
+        "layout": 1,
+        "initial_good": 0,
+        "seed": 202610197504,
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/self_generated_contact_reversal_20261019/ea785e90-138c-461f-998c-64b770243fa7/202610197504_1_0_fast_delta_life/state640.npz",
+        "sha256": "13dc391356d4e10de38a8d5b3cc343f8f6cfc08355597a398ea21ea701ae0ca8",
+        "M": 24.000000000000007,
+        "E": 64.94088627125905,
+        "keys": [
+          "body",
+          "energy",
+          "Q",
+          "trace",
+          "polarity",
+          "aux"
+        ]
+      },
+      {
+        "id": "202610197504_1_1_fast_delta_life",
+        "layout": 1,
+        "initial_good": 1,
+        "seed": 202610197504,
+        "path": "/data/dataset/lenia-research/lineage_75e3399f4877/self_generated_contact_reversal_20261019/ea785e90-138c-461f-998c-64b770243fa7/202610197504_1_1_fast_delta_life/state640.npz",
+        "sha256": "b91181daf83046a7a9bbffa864846b9cb2619aa7d05c191a8ccaf302c8c1792f",
+        "M": 24.000000000000007,
+        "E": 93.34300998147663,
+        "keys": [
+          "body",
+          "energy",
+          "Q",
+          "trace",
+          "polarity",
+          "aux"
+        ]
+      }
+    ],
+    "parent_scope": "四个实际640取得期fast-delta完整态（两布局×两初始意义，M约24、E64.92..93.35）。仅读取已存态，不重演取得，不给2560低能末态补能或延寿；这是新分支能力辨识，不是原末态救回。",
+    "shared": "原身体物理、支付支持/费用、Q写入、感觉登记和极性保持。四臂同一fast-delta及实际局部结果，不向某臂独赠探索。好区/反转标志/真目标坐标只在环境与评价中。",
+    "arms": [
+      "original：原四面cue驱动与原执行器。",
+      "temporal：仅对cue驱动的反对称方向分量作固定exp(-1/16)时间平滑，同容量运输信号场。",
+      "neighbor：相同时间更新，加一次四邻域、占据支撑内的固定凸传播；每个native最多一跳。",
+      "pooled：同时间更新的身体质量加权全身汇总，作为具有全局通信的强协调参照；明确不是局部实现。"
+    ],
+    "implementation_definition": [
+      "原每面cue分量g_d=cue_gain*sum(Q*(cue_neighbor-cue))；按每对反向面拆为b=(g_plus+g_minus)/2与u=(g_plus-g_minus)/2。仅处理u，再恢复b±z；b、凝聚/压力/原极性及tanh/付费传输均不改。original恢复g应在纯代数检查中等价。",
+      "三带信号臂都由同一当前u初始化z，不伪造历史；每步先用ready状态作z_new=(1-a)*u+a*L(z_old)，a=exp(-1/16)。L分别为恒等、单次四邻域凸平均、质量加权全局平均。运动后按实际材料运输z，不写入Q。",
+      "邻接权可用w_ij=min(rho_i,rho_j)/(4*rho_i)，余权留自身；仅两端rho>=既有1e-4支撑阈值连接，无空场远程捷径、无位置/好坏权重。全局参照在相同支撑上按rho汇总。参数首native前冻结，不扫传播率/阈值/时长。",
+      "传播和平滑是预置固定控制机制，新增计算/两分量信号存储尚未物理计价；不得包装为新学习算法。若实现者发现当前hook不支持上述精确拆分，先在冻结计划中说明等价实现，不能私改物理核心来救结果。"
+    ],
+    "protocol": "每父四臂，各256更新延续取得时关系且允许真实支付，再256更新只由环境交换好坏关系，无告知flag、无定位/重置。16条最多8192科学步，当前新协议不同于旧640后无反馈日程；不假称旧未来等价。",
+    "budget": {
+      "native_cap": 9216,
+      "scientific_native_max": 8192,
+      "runner_worker_seconds_cap": 180,
+      "cpu": 2,
+      "gpu": 0,
+      "raw_bytes_cap": 268435456
+    },
+    "measurements": "保原存续条件。每64窗报告好区/总区绝对质量与覆盖、首次正/负反馈及机会量、有效接触后的选择、主体质心真实位移/形变、运动支付及E。反转按环境更新与实际新证据两个轴报告，不用零接触比例或无反馈等待冒充一次证据适应。",
+    "inference": "neighbor-temporal才是传播增量；pooled为协调能力上界参照而非严格数学上界。若只有pooled有效，支持全局整合可以帮助的条件证据，不说明局部方案有效；若temporal同效，撤回空间传播的额外解释；若均无接触，不判学习器失败。",
+    "causal_boundary": "本批识别执行器/传播干预的完整未来作用，包含后来学习与身体变化；不单独证明新增学习或纯关联因果。若出现可用主体行动，由方向负责人下一小批从同完整父比较继续写/冻结、并在不变关系无反馈期检查保持，不从本批直接宣称学习方法胜出。",
+    "execution": "现在独立实现和预检，接既有ce/d3实际计算槽交接后实跑，不取消其他方向；两旧余额封存不转用。完成后依v12据结果继续有区别的小问题，无逐批再批准、无定时触发。"
+  },
+  "parallel_scope": "环境动作后果校准、33独立机制、文献/长稿/GUI图件/实际动画继续；主笔投影由方向负责人沿原在办项合并这份机制取舍，不广播。",
+  "pi_new_native": 0,
+  "pi_new_runner_jobs": 0
+}

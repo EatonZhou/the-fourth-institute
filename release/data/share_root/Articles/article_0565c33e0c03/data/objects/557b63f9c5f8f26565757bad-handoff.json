@@ -1,0 +1,114 @@
+{
+  "task": "material_carried_generation_choice_20261019",
+  "owner": "resident_d3ccfa2d95b7",
+  "status": "completed",
+  "objective_met": false,
+  "decision_sha256": "9afd14763a1e21c2ad6089bebca8eab5bfcb0438b373f364b16ea362d64d1632",
+  "scientific_choice": "收束本次材料携带选择固定构造的共同有用更新/部署主张；0/8过完整门(1e-8及0相同)。保8/8单64窗维护、3/8末N增加及其O/C/E/体时代价。fixed midpoint both继续强同行；不续扫权重/时点，不把未定价控制分量搬运当学习。",
+  "counts": {
+    "parents": 8,
+    "useful_update_tol": 0,
+    "useful_update_zero": 0,
+    "M_increased": 4,
+    "E_increased": 3,
+    "bodytime_increased": 4,
+    "O_live_increased": 3,
+    "C_live_increased": 1,
+    "N_live_increased": 3,
+    "maintenance": 8,
+    "maintenance_zero": 8
+  },
+  "native": 520,
+  "runner_worker_seconds": 46.641952,
+  "offline_cpu_seconds": 7.920822,
+  "raw_bytes": 110906639,
+  "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/material_carried_generation_choice_20261019/6a572590-d816-4d2c-9fc7-b146411e0a3e",
+  "artifacts": {
+    "REPORT.txt": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_carried_generation_choice_20261019/REPORT.txt",
+      "sha256": "38c5452efc11dc373884d12175e64c9b39a410c987fc3bb2587a7a6bba53e5ff"
+    },
+    "METHOD.txt": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_carried_generation_choice_20261019/METHOD.txt",
+      "sha256": "4d31972279f27b6218e9a22c027f14b92e389bc76670ba7fbad8e067265d794f"
+    },
+    "plan.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_carried_generation_choice_20261019/plan.json",
+      "sha256": "e9737f4c9ba5fc5012c2f067d49e5c665324461ef5c543ba1efceaf2268b4fd3"
+    },
+    "pure_checks.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_carried_generation_choice_20261019/pure_checks.json",
+      "sha256": "b3c7ef0278bb136b186978324c173eef075ebb41082a426e310a567d282236d2"
+    },
+    "result.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_carried_generation_choice_20261019/result.json",
+      "sha256": "f92721e97053cbec94aa612df8fbc84e65eaf19ce5bfa0309a3762d60ab58c4b"
+    },
+    "outcomes.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_carried_generation_choice_20261019/outcomes.json",
+      "sha256": "891522de4280b7ccf66ee54c143d87ef80ba8d7dc71b24580570017bbb4bd8e4"
+    },
+    "analysis.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_carried_generation_choice_20261019/analysis.json",
+      "sha256": "86e5a87fa4216e6197bfc993c0ba3663ced7a1df34e481c9e165b5b719c1940a"
+    },
+    "paired.csv": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_carried_generation_choice_20261019/paired.csv",
+      "sha256": "0e418762716852433fdd4ec36369b89df40dc50759b554d09436563c01e70d5e"
+    },
+    "gates.csv": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_carried_generation_choice_20261019/gates.csv",
+      "sha256": "b24f977387e3b76b8e0c91f06080e5f7dfcb2de5020a86bbaa18eddd8aa1dcaf"
+    },
+    "totals.csv": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_carried_generation_choice_20261019/totals.csv",
+      "sha256": "10d524867074671c586eff2a1f5c45080cf6318fc932cde5e1f88de30b14579e"
+    },
+    "curves.csv": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_carried_generation_choice_20261019/curves.csv",
+      "sha256": "da645023b4794104b2355e97d497783a9cab0710f5f4a784d27ad0243bcc4a26"
+    },
+    "raw_manifest.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_carried_generation_choice_20261019/raw_manifest.json",
+      "sha256": "118985d9e2708fbffaefefda2d0cac467e4b868f57dec9498a343363e89441a1"
+    },
+    "boundary_checks.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_carried_generation_choice_20261019/boundary_checks.json",
+      "sha256": "7c0412e2c3ce14f1342cff52840f1b8da76c76903a34d5c8ae07cb87b4c56c55"
+    },
+    "final_integrity.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_carried_generation_choice_20261019/final_integrity.json",
+      "sha256": "6bc24202d0b5ab11cadf9daef98ed42d3ac87087b6ffb63218f4172fc19407b2"
+    },
+    "budget.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_carried_generation_choice_20261019/budget.json",
+      "sha256": "8a88dcbad42fe66c5da21912ef29e840570569293dbe10f71b7abfc07a5294a3"
+    },
+    "runner_final.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_carried_generation_choice_20261019/runner_final.json",
+      "sha256": "91b74b769d506670a328b98aa7e88a48914f33fc6d70c57acfae5cf9e12deb22"
+    },
+    "visual_review.json": {
+      "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_carried_generation_choice_20261019/visual_review.json",
+      "sha256": "cd542cf3cbe4c472d2778a94650e77833c406e4ca511b70b87410f427bc8a59e"
+    }
+  },
+  "figures": [
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_carried_generation_choice_20261019/202610195601_ring_birth_gain_only_actual.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_carried_generation_choice_20261019/202610195601_ring_both_actual.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_carried_generation_choice_20261019/202610195601_separate_seeds_birth_gain_only_actual.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_carried_generation_choice_20261019/202610195601_separate_seeds_both_actual.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_carried_generation_choice_20261019/202610195602_ring_birth_gain_only_actual.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_carried_generation_choice_20261019/202610195602_ring_both_actual.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_carried_generation_choice_20261019/202610195602_separate_seeds_birth_gain_only_actual.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_carried_generation_choice_20261019/202610195602_separate_seeds_both_actual.png",
+    "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/material_carried_generation_choice_20261019/cohort_curves.png"
+  ],
+  "limitations": [
+    "单64窗口；8个相关已知父，非新独立世界。",
+    "材料关联与凸混合同时变化，不能唯一归因参考系。",
+    "额外算术与控制分量运输未物理定价；原actor/泵/转换费用全额。",
+    "旧321无完整joint：已核所有保存收据及共有物理/费用/观察器标量，未知RNG/cache未声称全态核验。"
+  ],
+  "next": "请求PI收束此构造，保fixed both及全部条件得失；本批无自动新分析/身体作业/扫描。"
+}

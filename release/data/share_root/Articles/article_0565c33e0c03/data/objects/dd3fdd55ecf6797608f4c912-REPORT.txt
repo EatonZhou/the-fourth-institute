@@ -1,0 +1,59 @@
+预测维护的强生理对照与时间尺度边界
+
+本次完成两个新独立小批，共3072个真实物理更新。主张收束为普通条件delta的有限内容表达及可修订性；没有新预测器优势，也没有跨过完整未知反转能力门。沿用外供密度约束材料CA，非原Lenia，不与d3动作映射或33历史行动线拼接阳性。
+
+第一小批：强简单同行
+两个真实delta128父态，每父六臂，128—224保持既有关系，224—320不通知地改变cue→应力关系。六臂为继续标准delta、停写所得内容、固定cue0高风险、固定cue1高风险、即时已完成应力、均匀分配。两种固定先验(.018/.002)各自在两个世界原样运行，没有按隐态选择正确臂；它们只知道事前公开的应力范围。所有臂用同一个受局部容量/实际P/旧能量限制的分配器，每步固定合成.0015×登记父态质量的保护材料，单位能量价.3。12条均完成192步，2304步，未知0。
+
+未知关系变化后，继续delta相对停写的组织损失减少9.17%/10.24%。但相对即时规则，损失反而多7.51%/4.83%；g0摄取略高但末能量更低，g1摄取和末质量更低。相对均匀分配也没有一致的净身体功能优势。不能从比冻结内容好推导比即时生理好，更不能将提前准备称为新方法。整个192步窗的总损失优势同样很小：相对即时约1.27%/.22%，摄取/末E存在方向相反的取舍。两个固定映射的全部结果保留，不能事后选每阶段较好的固定臂冒充自治策略。
+
+相同的是实际保护合成数量和合成价格，不是总支出：保护持有、出生、动作和预测载荷费用随身体变化。为隔离读出，各臂都携带并支付4个预测/资格标量；固定、即时与均匀臂并不需要其中全部内容，构成额外容量对照税。它们可用更便宜实现，所以此设计尤其不能证明预测法对最小即时生理的经济支配。上一批不匹配投入的满额固定保护仍是绝对保护强同行，原结果不改。
+
+标签与死亡登记
+学习目标是完成接触时的incident mechanical strain（入射机械应力），由身体所在格的当前机械传感提供，包括被保护层吸收的接触。它不是保护后的剩余组织损伤，也不是不可观测的反事实未维护损失；这是明确较强的传感假设。没有给未来损伤图、关系flag或绝对钟。真实作用仍按 demand=body×strain, absorbed=min(reserve,demand), injury=demand-absorbed 执行，先损伤再更新和购料。
+
+每条分支以128时登记的全部组织质量为分母，独立被动cohort通过真实冲击、K运输、饥饿与规则死亡减少；新生不写入旧cohort。报告累计旧组织死亡和后续摄取/损伤对登记质量的比值，不用幸存者平均误差代替死亡。全12条与终末状态都保留。实际新生存留约70.5—75.4质量单位；累计出生约130.6—133.9，二者没有互相替代。高周转不证明新生载荷的因果必要性。
+
+解析反例与已建立的物理区别
+若处处都有足够可避免损耗、单位维护避免量均为beta、没有局部限制且总用量B固定，总避免量就是beta B，空间预测更准确也不能增加它。纯解析检查保留该等式，没有算作native或生物结果。
+本模型的避免量实际为sum min(事前局部reserve, 当地demand)。有些地方的全部需求已被吸收，剩余保护没有当期边际收益；存量衰减、组织携带损失和局部容量又限制再分配。第一小批同量合成24.06—24.32单位，实际接触吸收约12.39—13.36，衰减约8.02—8.83，另有丢失与末存量。因此beta B反例的恒定边际收益条件不成立；本批不能单独把空间饱和、时间和身体路径的贡献一一识别。
+
+第二小批：预先指定的一次时间尺度干预
+取第一小批两个真实192态，冻结预测写入，从同父启动新的96步未来：四步分散冲击，或相同外部积分应力集中在第一步。两者警示、接触起点和间隔相同；各自比较原已学读出和即时规则，2父×2时间形式×2臂，共768步，全8条完成。冲击形状只在环境端，策略只感知当前刺激。这个试验保持已学关系，不能追认未知反转通过；也不是扫描持续时长挑最好结果。
+两形式的逐格外部积分应力相同，实际身体需求并非必然相同：身体会变，集中冲击的损伤非线性，后续反馈与运动仍可改变身体轨迹。预测器全程停写，排除了1次和4次反馈带来更新次数差异，但未排除全部时间集中伴随的物理变化。因此只解释为时间集中这一整体干预，不声称仅识别了事件内补料一个中介。
+相对即时规则，已学读出的分散冲击损失减少5.42%/6.51%，集中冲击减少8.69%/5.98%；四种条件下摄取、末质量和末能量均略高。集中冲击的绝对减损差额分别比分散冲击多.270942/.027582；第二父态效应很小，比例效应并非两父都增大。所有效果已由普通delta取得的内容产生，无需新增预测器。
+
+文献与新意边界
+Mitchell等2009的预期反应收益及实验进化中关联丢失，涉及500代选择；不等于同一身体的快速内容修订。原文 Fig2b 前正文与 Fig3 的等量细胞对照已核读：https://longitude.weizmann.ac.il/sites/longitude_pilpel/files/publications/2009_Mitchell.pdf
+Adsule等2020以假想磨损部件的退化模型及维护/检查成本学习策略；维护决策有代价并非本研究新概念。本次仅核读论文所述仿真范围，不声称有其真实物理实验：https://doi.org/10.1049/iet-cim.2020.0022 （可读原文镜像 https://pdfs.semanticscholar.org/b062/d9916485739e09e7837018793d57a09a4c06.pdf）。评议来源另见本handoff所列原记录。
+
+保留与关闭
+保留：同父内容对真实保护及后续身体功能的有限作用；简单delta可随合法反馈改变分配；真实组织周转、登记死亡和时间尺度边界。
+关闭：新预测器/提前准备本身的新方法主张；相对即时生理的一般净优势；从稳定映射表达推断完整未知反转；以累计出生替代存留新生或主张新生独有必要性。没有延长原保持窗、扫描gain、补旧风险臂128尾段或改写原execution。
+全部同父分支属于相关条件，只有两个来源身体，不作独立总体样本。供给装置、机械传感、中央预算协调与计算尚未完全物理计价。原三批风险尾缺128、第二批移动量辅助列错误及非严格等量yoke、第三/第五个更早宿主批存储超额继续保留。两次本轮批次均已结束，当前无本方排队/运行的后继。
+
+强同行完整逐臂表
+g1_fixed1: changed injury=5.865739, uptake=81.201580, cohort death/Mreg=0.219938, M=89.877498, E=84.074576; whole injury=15.687692, uptake=159.622004, cohort dead/Mreg=0.768246, bought=24.062300, reserve+predictor fee=9.261166
+g0_uniform: changed injury=7.789276, uptake=87.267856, cohort death/Mreg=0.233533, M=96.272812, E=99.586262; whole injury=15.161928, uptake=168.709283, cohort dead/Mreg=0.736529, bought=24.321063, reserve+predictor fee=9.463753
+g1_freeze: changed injury=5.803189, uptake=81.410608, cohort death/Mreg=0.218746, M=90.062112, E=85.044183; whole injury=15.622917, uptake=159.802343, cohort dead/Mreg=0.766042, bought=24.062300, reserve+predictor fee=9.264431
+g1_uniform: changed injury=5.199491, uptake=81.581870, cohort death/Mreg=0.216958, M=90.584778, E=84.427603; whole injury=15.580231, uptake=159.776301, cohort dead/Mreg=0.767732, bought=24.062300, reserve+predictor fee=9.264665
+g0_freeze: changed injury=8.976884, uptake=87.361833, cohort death/Mreg=0.240776, M=95.870692, E=99.535920; whole injury=15.230770, uptake=169.216404, cohort dead/Mreg=0.735014, bought=24.321063, reserve+predictor fee=9.461899
+g0_instant: changed injury=7.583854, uptake=87.546559, cohort death/Mreg=0.234218, M=96.714826, E=99.963436; whole injury=14.595228, uptake=169.103233, cohort dead/Mreg=0.734926, bought=24.321063, reserve+predictor fee=9.455002
+g0_fixed1: changed injury=6.263001, uptake=87.502602, cohort death/Mreg=0.225101, M=97.552404, E=98.972463; whole injury=14.847958, uptake=168.462817, cohort dead/Mreg=0.737258, bought=24.321063, reserve+predictor fee=9.467797
+g1_fixed0: changed injury=4.446580, uptake=81.813554, cohort death/Mreg=0.213170, M=91.362774, E=84.228277; whole injury=15.763110, uptake=159.775013, cohort dead/Mreg=0.768153, bought=24.062300, reserve+predictor fee=9.273301
+g1_keep: changed injury=5.209087, uptake=81.312258, cohort death/Mreg=0.218313, M=90.560799, E=84.828316; whole injury=15.102176, uptake=159.692730, cohort dead/Mreg=0.766472, bought=24.062300, reserve+predictor fee=9.258218
+g0_keep: changed injury=8.153712, uptake=87.655321, cohort death/Mreg=0.238922, M=97.054545, E=99.245534; whole injury=14.409332, uptake=169.487310, cohort dead/Mreg=0.733636, bought=24.321063, reserve+predictor fee=9.457639
+g0_fixed0: changed injury=9.458094, uptake=87.275160, cohort death/Mreg=0.244333, M=95.848901, E=98.535940; whole injury=15.433130, uptake=169.166239, cohort dead/Mreg=0.737927, bought=24.321063, reserve+predictor fee=9.462413
+g1_instant: changed injury=4.969237, uptake=81.700561, cohort death/Mreg=0.217182, M=90.818610, E=84.578185; whole injury=15.136063, uptake=159.974248, cohort dead/Mreg=0.767115, bought=24.062300, reserve+predictor fee=9.257452
+
+时间尺度逐臂表
+g0_block_instant: injury=5.865770, uptake=84.923275, M=94.840581, E=97.215613, cohort_dead/Mreg=0.476737, retained_new=50.193792, born=67.836444, bought=12.286629, fee=4.793988
+g1_impulse_keep: injury=3.230533, uptake=82.103404, M=90.592534, E=84.541659, cohort_dead/Mreg=0.486677, retained_new=48.440577, born=66.623288, bought=11.824676, fee=4.594403
+g0_block_keep: injury=5.547738, uptake=84.985031, M=94.980590, E=99.032791, cohort_dead/Mreg=0.474883, retained_new=50.175621, born=67.736038, bought=12.286629, fee=4.788463
+g1_impulse_instant: injury=3.436109, uptake=81.945077, M=90.282515, E=84.049486, cohort_dead/Mreg=0.488729, retained_new=48.299074, born=66.575320, bought=11.824676, fee=4.596733
+g1_block_instant: injury=2.734362, uptake=82.298605, M=90.784492, E=84.578966, cohort_dead/Mreg=0.484564, retained_new=48.459057, born=66.631017, bought=11.824676, fee=4.587273
+g0_impulse_instant: injury=6.778749, uptake=84.395951, M=94.147879, E=96.549785, cohort_dead/Mreg=0.481897, retained_new=49.941341, born=67.680546, bought=12.286629, fee=4.804328
+g0_impulse_keep: injury=6.189775, uptake=84.539185, M=94.540187, E=98.468591, cohort_dead/Mreg=0.478925, retained_new=50.080105, born=67.644320, bought=12.286629, fee=4.795501
+g1_block_keep: injury=2.556369, uptake=82.461224, M=91.086140, E=85.099470, cohort_dead/Mreg=0.482499, retained_new=48.591102, born=66.693015, bought=11.824676, fee=4.584961
+
+本轮用量：2304+768=3072 native；71.587090+32.328458=103.915548 runner-worker秒。每批独立预算与全文件/32MiB收尾护栏；两批逐步购料等量最大误差5.55e-17。

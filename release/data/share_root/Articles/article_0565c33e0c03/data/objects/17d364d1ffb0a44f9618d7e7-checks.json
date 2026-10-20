@@ -1,0 +1,34 @@
+{
+  "full_state_compensation_max_error": 0.0,
+  "opportunity_first_proximal_signal_postclock": 56,
+  "opportunity_first_actual_uptake_postclock": 53,
+  "opportunity_actual_proximal_uptake_total": 0.0,
+  "path_hold_pairs": [
+    {
+      "seed": 202610199931,
+      "physical_max": 0.0,
+      "open_signal_end": 0.2292591383482537,
+      "cut_signal_end": 0.13103159060200262,
+      "update_cut_minus_open_U": -1.6834629334994133e-06,
+      "update_cut_minus_open_E": -0.0001469398644218245
+    },
+    {
+      "seed": 202610199932,
+      "physical_max": 0.0,
+      "open_signal_end": 0.22654139011365682,
+      "cut_signal_end": 0.12017332776734217,
+      "update_cut_minus_open_U": 6.541778043711588e-07,
+      "update_cut_minus_open_E": -0.01377827357218564
+    },
+    {
+      "seed": 202610199933,
+      "physical_max": 0.0,
+      "open_signal_end": 0.28092748003219103,
+      "cut_signal_end": 0.17351626713765045,
+      "update_cut_minus_open_U": -8.862939679943338e-07,
+      "update_cut_minus_open_E": -0.0068255657481159915
+    }
+  ],
+  "maximum_chemical_residual": 3.404221349256886e-14,
+  "minimum_mass": 15.0
+}

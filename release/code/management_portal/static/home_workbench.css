@@ -1,0 +1,119 @@
+.agent-status-resident-menu.portalDetailSurface {
+  position: fixed;
+  width: max-content;
+  min-width: 0;
+  max-width: min(360px, calc(100vw - 16px));
+  padding: 12px;
+}
+
+.agent-status-resident-menu[hidden] {
+  display: none;
+}
+
+.agent-status-resident-menu:not([hidden]) {
+  display: grid;
+  gap: 10px;
+}
+
+.agent-status-resident-menu .portalButton {
+  justify-content: flex-start;
+}
+
+.agent-status-resident-menu strong,
+.agent-status-resident-menu small {
+  overflow-wrap: anywhere;
+}
+
+.homeWorkbenchRoot {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.homeWorkbenchGroup {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--panel);
+}
+
+.homeNestedWorkbench {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.homeWorkbenchStaging[hidden] {
+  display: none !important;
+}
+
+.homeWorkbenchGroup[data-portal-workbench-panel],
+.home-overview-section[data-portal-workbench-panel],
+.homeWorkbenchContentPanel[data-portal-workbench-panel] {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.home-overview-section[data-portal-workbench-panel] {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.homeWorkbenchContentPanel {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  padding: 14px;
+  overflow: auto;
+  background: var(--panel);
+}
+
+.homeWorkbenchContentPanel[data-home-component="agent-accounts"] {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+/* Add to the panel's 14px inset so ranking values clear the 42px launcher plus 8px. */
+.homeWorkbenchContentPanel[data-home-component="usage-attribution"] .agent-status-rows {
+  padding-right: 36px;
+}
+
+.homeWorkbenchContentPanel > .label {
+  margin-bottom: 10px;
+}
+
+.homeWorkbenchGroup.agent-status-card {
+  min-height: 0;
+  padding: 0;
+}
+
+.homeWorkbenchGroup .agent-status-panel {
+  display: contents;
+}
+
+.homeWorkbenchGroup .portalWorkbenchToolbar {
+  min-height: 28px;
+}
+
+.homeWorkbenchGroup .portalWorkbenchWorkspaceLabel {
+  margin-right: auto;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 750;
+}
+
+@media (max-width: 760px) {
+  .homeWorkbenchRoot {
+    min-height: 0;
+  }
+
+}

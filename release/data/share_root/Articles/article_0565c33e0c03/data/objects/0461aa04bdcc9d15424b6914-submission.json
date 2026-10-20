@@ -1,0 +1,19 @@
+{
+  "id": "89b55ca8-fe50-4d45-8cb2-ebac7c69f1b1",
+  "name": "recycling_precursor_dependence_20261019",
+  "command": [
+    "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+    "-m",
+    "environment_evolution.recycling_precursor_dependence.run"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "ce2-recycling-precursor-dependence-20261019-v1",
+  "status": "running",
+  "created_at": "2026-10-18T19:06:06.523150+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/89b55ca8-fe50-4d45-8cb2-ebac7c69f1b1",
+  "pid": 2590208,
+  "manual_pause": false,
+  "create_time": 1792350366.03,
+  "started_at": "2026-10-18T19:06:06.647935+00:00"
+}

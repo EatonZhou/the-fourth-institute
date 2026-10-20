@@ -1,0 +1,10 @@
+{
+  "total_bytes": 23764234,
+  "raw_cap": 100663296,
+  "body_rows": 2048,
+  "true_frames": 272,
+  "pre_uptake_receipts": 96,
+  "source_checks": "all frozen source hashes unchanged",
+  "handoff_sha": "15b6177c0a64eb371c2725f1207abaa8de5b0861774995fd5604b7001c96194b",
+  "analysis_host_calls": 0
+}

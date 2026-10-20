@@ -1,0 +1,40 @@
+[
+  {
+    "body": 0,
+    "source_shape": [
+      96,
+      96
+    ],
+    "y_slice": [
+      39,
+      59
+    ],
+    "x_slice": [
+      53,
+      72
+    ],
+    "support_threshold": 1e-08,
+    "max_mass_outside": 1.4210854715202004e-14,
+    "same_window_all_arms_and_times": true,
+    "interpolation": "nearest"
+  },
+  {
+    "body": 1,
+    "source_shape": [
+      96,
+      96
+    ],
+    "y_slice": [
+      37,
+      61
+    ],
+    "x_slice": [
+      51,
+      74
+    ],
+    "support_threshold": 1e-08,
+    "max_mass_outside": 1.4210854715202004e-14,
+    "same_window_all_arms_and_times": true,
+    "interpolation": "nearest"
+  }
+]

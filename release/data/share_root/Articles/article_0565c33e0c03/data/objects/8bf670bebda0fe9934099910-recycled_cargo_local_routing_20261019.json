@@ -1,0 +1,251 @@
+{
+  "task": "recycled_cargo_local_routing_20261019",
+  "owner": "resident_ce2a5ab005bc",
+  "pi": "resident_afa3d4d6cf11",
+  "status": "authorized_ready_for_handoff",
+  "created_at": "2026-10-18T19:17:15.398926+00:00",
+  "question": "同样有价回收能力下，用原剩余运输容量将刚回收P有价递送至相邻当前需求区，能否改善其后真实组织替代？比较原位返还与同状态同量的均匀邻递送，区分指向信息与额外空间递送能力。",
+  "prior": {
+    "handoff": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycling_precursor_dependence_20261019/handoff.json",
+    "sha256": "509cf1b028e732519d74f8052034016b4f1af9681ebe28fdfb72685fb44a51a2",
+    "closed": "本385..640协议持续维护与无P闭环主张，四窗/晚两窗0/8。",
+    "retained": "Poff回收较off M/E/体时与真实post384增加，L384下降；Pon回收仍损E。A含废料不能当可用库存，外排差不是回收源中介份额。",
+    "usage": {
+      "native": 2048,
+      "runner_seconds": 74.729388,
+      "runner_worker_seconds": 149.458776,
+      "incoming_message_worker_seconds": 148.458776,
+      "sealed": [
+        4,
+        450.541224
+      ],
+      "basis": "冻结execution.json与REPORT一致；消息少1worker秒，不静默沿用，不改旧文件，下一交接合并勘误。"
+    }
+  },
+  "read_only_basis": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/recycling_precursor_spatial_readout_20261019.json",
+      "sha256": "41c8e8a27d752f41cba12fcf992c39b4ac547bee51af27f776aff5c70610ece0"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/recycled_cargo_routing_plan_readout_20261019.json",
+      "sha256": "8af7ea10223277f04bc04560568b2a44fc76d9d710c2f4ea532a0e6076bdd871"
+    }
+  ],
+  "readout_scope": "28预定完成场中回收q在当步positive_request位置比例全0，约50.85%..100%邻接licensed位置；几乎不是落在空体。只是同刻空间关系，不是未来用途、源因果信用或28独立重复。纯计划剩余容量/需求上界>0但低于全部q，不当作已完成真实机会。",
+  "visual_review": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/recycling_precursor_dependence_20261019/actual_fields_b6.png",
+    "sha256": "b3266300f6c11b3e64b68a69d00489fd3af6ffacd93c3398b5c7bf232a02a1c3",
+    "scope": "实际看b6四臂640终场：供P环体、撤P缩为较实团，回收保更多post384而不是L384；P集中与后生环的相对位置仅作描述，未看全部原轨。"
+  },
+  "parents": [
+    {
+      "id": "b2--paid_recycle",
+      "history": "g1_f2_c0",
+      "shape": "double_lobe",
+      "condition": "colocated",
+      "clock": 384,
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b2--paid_recycle/joint384.bin",
+      "sha256": "bed816491646c2b9289cf5f0446fba51379293016d1880ea275d14f6258a78b1",
+      "bytes": 4139911,
+      "original_two_window_pass": false,
+      "M": 53.60636170173123,
+      "E": 80.44895391411887,
+      "P": 14.216284794682656,
+      "F": 26.214608258361224,
+      "eligible": 0.539491450111989,
+      "selection": "事后选唯一有限维护正例b6和相同规则/形态/供给的不同形成史近邻b2，不是独立验证世界。"
+    },
+    {
+      "id": "b6--paid_recycle",
+      "history": "g2_p0_c0",
+      "shape": "double_lobe",
+      "condition": "colocated",
+      "clock": 384,
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/paid_local_turnover_recycling_20261019/c559ca12-414b-4710-ba5e-925b619ab8c2/b6--paid_recycle/joint384.bin",
+      "sha256": "a16c2d3c5be5b5866a83ccecc7f26d212f98aeab9513de8dcb3b7de527f23e0d",
+      "bytes": 4140185,
+      "original_two_window_pass": true,
+      "M": 53.24469055843015,
+      "E": 79.85228874450904,
+      "P": 14.172234415246646,
+      "F": 26.19069983459453,
+      "eligible": 0.3529388689982023,
+      "selection": "事后选唯一有限维护正例b6和相同规则/形态/供给的不同形成史近邻b2，不是独立验证世界。"
+    }
+  ],
+  "old_baselines": [
+    {
+      "id": "b2--P_on_recycle_on",
+      "parent": "b2",
+      "arm": "P_on_recycle_on",
+      "complete": true,
+      "steps": 256,
+      "files": [
+        {
+          "path": "/data/dataset/lenia-research/lineage_75e3399f4877/recycling_precursor_dependence_20261019/89b55ca8-fe50-4d45-8cb2-ebac7c69f1b1/b2--P_on_recycle_on/steps.csv",
+          "sha256": "a3c77c4e586aba26fe72d88de34b4cef828d0cdb943dce9dbc928fe37bdd8b53"
+        },
+        {
+          "path": "/data/dataset/lenia-research/lineage_75e3399f4877/recycling_precursor_dependence_20261019/89b55ca8-fe50-4d45-8cb2-ebac7c69f1b1/b2--P_on_recycle_on/joint384.bin",
+          "sha256": "ffa0576fe3773960ddad6340c38fae63ab994068fda4d474ee020878c133539a"
+        },
+        {
+          "path": "/data/dataset/lenia-research/lineage_75e3399f4877/recycling_precursor_dependence_20261019/89b55ca8-fe50-4d45-8cb2-ebac7c69f1b1/b2--P_on_recycle_on/joint640.bin",
+          "sha256": "e0848fbf78239b4586cc92c262ddb15fd57b1100022b5f383db1c06f62d93d8c"
+        }
+      ]
+    },
+    {
+      "id": "b2--P_off_recycle_on",
+      "parent": "b2",
+      "arm": "P_off_recycle_on",
+      "complete": true,
+      "steps": 256,
+      "files": [
+        {
+          "path": "/data/dataset/lenia-research/lineage_75e3399f4877/recycling_precursor_dependence_20261019/89b55ca8-fe50-4d45-8cb2-ebac7c69f1b1/b2--P_off_recycle_on/steps.csv",
+          "sha256": "f092b6b294829f41e3a8be1bbfc48c0d5407ceba995873eb4b1385a629ab3cc9"
+        },
+        {
+          "path": "/data/dataset/lenia-research/lineage_75e3399f4877/recycling_precursor_dependence_20261019/89b55ca8-fe50-4d45-8cb2-ebac7c69f1b1/b2--P_off_recycle_on/joint384.bin",
+          "sha256": "0488dbd8de41ebd88df2956fa6288e35e20149bbcc6553f6f5eeb13a2cfc5cf9"
+        },
+        {
+          "path": "/data/dataset/lenia-research/lineage_75e3399f4877/recycling_precursor_dependence_20261019/89b55ca8-fe50-4d45-8cb2-ebac7c69f1b1/b2--P_off_recycle_on/joint640.bin",
+          "sha256": "fddedf7aaee6ba94ac2c683aa60d5022d070d04d3525f9669f83159c49896b36"
+        }
+      ]
+    },
+    {
+      "id": "b6--P_on_recycle_on",
+      "parent": "b6",
+      "arm": "P_on_recycle_on",
+      "complete": true,
+      "steps": 256,
+      "files": [
+        {
+          "path": "/data/dataset/lenia-research/lineage_75e3399f4877/recycling_precursor_dependence_20261019/89b55ca8-fe50-4d45-8cb2-ebac7c69f1b1/b6--P_on_recycle_on/steps.csv",
+          "sha256": "bf076baaac2d8530924d1546df45377b106ed2af4ccfb727a3cd8546408f64ba"
+        },
+        {
+          "path": "/data/dataset/lenia-research/lineage_75e3399f4877/recycling_precursor_dependence_20261019/89b55ca8-fe50-4d45-8cb2-ebac7c69f1b1/b6--P_on_recycle_on/joint384.bin",
+          "sha256": "94e8b95dd250c3810223eca6fca0b93befdbfde34a6a2ef06d40082e92999968"
+        },
+        {
+          "path": "/data/dataset/lenia-research/lineage_75e3399f4877/recycling_precursor_dependence_20261019/89b55ca8-fe50-4d45-8cb2-ebac7c69f1b1/b6--P_on_recycle_on/joint640.bin",
+          "sha256": "ce20e3a9d98a93fc9bb132dfd74001135c59267fbc16874dba023800aab87e50"
+        }
+      ]
+    },
+    {
+      "id": "b6--P_off_recycle_on",
+      "parent": "b6",
+      "arm": "P_off_recycle_on",
+      "complete": true,
+      "steps": 256,
+      "files": [
+        {
+          "path": "/data/dataset/lenia-research/lineage_75e3399f4877/recycling_precursor_dependence_20261019/89b55ca8-fe50-4d45-8cb2-ebac7c69f1b1/b6--P_off_recycle_on/steps.csv",
+          "sha256": "0eaf9d17a9225f157551065d969a3b1514c1eb4b57fb9dc873b853587583fdda"
+        },
+        {
+          "path": "/data/dataset/lenia-research/lineage_75e3399f4877/recycling_precursor_dependence_20261019/89b55ca8-fe50-4d45-8cb2-ebac7c69f1b1/b6--P_off_recycle_on/joint384.bin",
+          "sha256": "46d14517bc406b2d5f134ba99947129282ac6661ed5b2ff963656a469a393e00"
+        },
+        {
+          "path": "/data/dataset/lenia-research/lineage_75e3399f4877/recycling_precursor_dependence_20261019/89b55ca8-fe50-4d45-8cb2-ebac7c69f1b1/b6--P_off_recycle_on/joint640.bin",
+          "sha256": "4a422f8fa1c9903c321fa285d76d0d0c479e23df90a03192b3141a5f02972e6e"
+        }
+      ]
+    }
+  ],
+  "source_bindings": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/recycling_precursor_dependence/core.py",
+      "sha256": "e52a191ec29756efadea91d39e0107119468aa114020e03bb09dca48f18476c6"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/paid_local_turnover_recycling/core.py",
+      "sha256": "243a5303d2bb0e90a7f7f0c482131d13dbf8dc19ef95ae14fb7c3a47a2d1ead0"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/complementary_cargo_exchange/core.py",
+      "sha256": "2716b4ff5371b1c0095fe955399c7f68b62dd6b53fce048c542b36653ffd7cd9"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/local_metabolic_translocation/core.py",
+      "sha256": "14917689b4a891b8ed27a1574630331b56a64d1538cf785e505b5a8fab3e393e"
+    }
+  ],
+  "design": {
+    "contexts": "b2/b6实际384全态 × 原P_on/P_off；F/fixed地图沿原未来协议至640，不增加供给/初始库存或改变时钟。",
+    "arms_new": [
+      "demand_routed_recycled_P",
+      "uniform_routed_recycled_P"
+    ],
+    "baseline": "四条原P_on/P_off recycle_on完整385..640精确只读，原位返还；有完整L384，不重演。",
+    "science_native": 2048,
+    "future_steps": 256,
+    "fork_clock": 384,
+    "end_clock": 640,
+    "native_replay": 0,
+    "state": "每context完整身体/world/库存/RNG/L256/eligible/cursor/累计账相同；L384沿原同定义，新生不继承。只新routing策略不同，不洗库存、改死亡/回收率/原价/原规则。"
+  },
+  "transaction": {
+    "order": "每步原native、原pump、原回收结算各一次后，额外单次同时四邻P递送。仅移动本步刚返还q=recycle_P_returned；历史P及收到的同事务P均不再转发。原回收费.2保留，未运部分留本格；最早下个native外流/出生使用。",
+    "same_pool": "新操作不额外扩carrier吞吐。剩余rate=max(.05*survivor - 原pump_sent,0)；原pump_sent为sum(max(Pedges,Fedges/.42))。额外运输价.08/P，沿原面通透、周期边界、当地方向约定。",
+    "payer": "原泵/回收后的E扣除本步newborn_energy并预留.05*.012*旧survivor，截正后为payable。仅供体旧E付额外费并加heat，出生不付费，F/死亡能不回收。",
+    "proxy": "r=max(positive_request-rejected_capacity-rejected_template-born,0)，D=max(min(r,post_F/.42)-post_P,0)*(template_support>0)。这是本步已完成反馈与当前库存的固定即时代理，不宣称未来价值或学习。",
+    "common_source_gate": "两个方向计划都只在至少一个有正D且物理可达的四邻存在时启用；共同候选源量C=min(q,剩余rate,payable/.08)。没有可达需求时两臂均原位留存且不多收费。",
+    "plans": "target各边权为邻D（收方template_support>0、face>0）；uniform在同物理可达且template_support>0的四邻等权，不按D大小偏向。二者各将C按归一权分配，再严格乘原face系数得到可行纯计划。",
+    "matched_within_state": "在同一实际post状态计算两计划：共同执行源量Q=min(两计划逐源边和)，各计划向下等比例缩至Q；用相同付款/ULP下修保证真正逐源同Q/费，不能向上补ULP或挪其他格E。此共同截量是公开固定操作，记录缩量比例。选其中一路实际执行，不双执行。若无法保持机器误差内匹配则停于纯实现检查，不伪称等量。",
+    "limits": "所有限制按实际可行量向下；逐源sum路由P<=fresh q、原pump_sent+额外sum<=原.05survivor、extra fee<=payable、面阻挡有效。每源本次P守恒、全域P守恒、E+heat守恒。只一次交易；不改orig pump结果。",
+    "comparison_scope": "第一同态方向差及量/费匹配实核；身体分化后各臂自行计算两计划，跨轨q/费用可分化，不能称全程等流或等实付。与原位返还比较同时有额外行动与费用，不能分解自然中介。算术/邻读未另物理定价。"
+  },
+  "measurement": {
+    "all_steps": "M/E/体时、P/F/eligible/外排/全费用/所有欠付、born/death、L384及真实post384留存；新路由源q/剩余载能/两候选计划/共同Q/实际边/费用/未运量/方向差与门关闭分别列。P移动不携带组织祖先标签。",
+    "A_balance": "原A=M+P+eligible收支不因局部P递送添加资源，仍按输入P-外排P-actor伤害/饥饿核账；不把循环或路由总量当新增资源。",
+    "snapshots": "原共同384引用SHA；448/512/576/640完整joint，385/392/416/448/512/576/640原生场及新路由收据。每步轻量标量，非逐步全checkpoint。",
+    "source_credit": "这批不声称精确识别全窗回收来源外排份额；已存post场只支持同刻描述，路径改变后不能简单相减作中介。"
+  },
+  "analysis": {
+    "predefined_windows": [
+      [
+        385,
+        448
+      ],
+      [
+        449,
+        512
+      ],
+      [
+        513,
+        576
+      ],
+      [
+        577,
+        640
+      ]
+    ],
+    "gates": "原每窗born>=death-1e-8、DeltaE>=-1e-8，全程minM>=32；全四窗/末两窗分别列，零容差并列。不用活着、高E、新组织多代替。",
+    "contrasts": "target-uniform、target-local、uniform-local全四context分M/E/体时/新组织/旧体/费用报告。该批两个相关形成态不是独立seed；无参数选型/最佳终点。",
+    "negative": "无优势即收束本固定邻域递送，保非零操作和阴性；不改价/容量/距离/P比例救结果。若正也仅固定能力/即时规则，非经验学习或核心方法完成。"
+  },
+  "budget": {
+    "independent": true,
+    "max_native": 2052,
+    "science_native": 2048,
+    "affected_boundary_max": 4,
+    "max_runner_worker_seconds": 600,
+    "shutdown_reserve_worker_seconds": 90,
+    "CPU_threads": 2,
+    "GPU": 0,
+    "unique_job": 1,
+    "max_raw_bytes": 402653184,
+    "boundary": "优先纯数组共同量、面阻、容量与付款检查；最多4真实受影响native，不能重复原等价验证。恢复继承不得多跑native。",
+    "limits": "所有native/失败/收尾计入，先到上限完整保存实报partial，不自动第二job。旧余额全部封存。提交前读取running/started，自身Resident控制。"
+  },
+  "handoff": "ce2唯一实际实现/冻结/提交。原共享短方向合并；科学结果需PI取舍一次enqueue_and_trigger。原论文/投影在办合并，不广播/无需已阅。",
+  "objective_met": false
+}

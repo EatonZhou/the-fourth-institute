@@ -1,0 +1,37 @@
+[
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/handoff.json",
+    "sha256": "fc2cd49b5d86ab1c3a8f77218209c3aedae9017af336ee34f3dd0850f1788acb",
+    "bytes": 10297
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/METHOD.txt",
+    "sha256": "4bc3cbb18f42495bb6ba6f20d3a6c30b4c79e0437586bf421bfabad1eaa746a6",
+    "bytes": 4638
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/consumption_qualified_transport_20261019/REPORT.txt",
+    "sha256": "05f0e2acca7d4c8211d74f0cf147b953f66252691d9811cb8bf727412388c3a2",
+    "bytes": 7121
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/consumption_qualified_transport_method_20261019/handoff.json",
+    "sha256": "62115bde417f04d895d56388d6ae01dbe3c9b43916d48a5790c9a54be0ef4c1d",
+    "bytes": 1470
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/consumption_qualified_transport_method_20261019/REPORT.txt",
+    "sha256": "6d7cf008034e5149ce64a08064aabb888c1c7310e32ca8f18127c778188fbd6a",
+    "bytes": 9594
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/pump_gradient_feedback/planner.py",
+    "sha256": "5d36a87e619b20af3977f8808987f4de6898ae510158552d881989dd31c0cbc6",
+    "bytes": 5382
+  },
+  {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/consumption_qualified_transport/core.py",
+    "sha256": "751e06baaed88a15470aeb98817f018edbab9afab69aace9cc1001c473b7bcb6",
+    "bytes": 10194
+  }
+]

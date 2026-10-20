@@ -1,0 +1,542 @@
+[
+  {
+    "id": "predictive--1701--compact--event_rls",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/predictive--1701--compact--event_rls--cycles.npz",
+    "sha256": "7cf2699f5eb7d12ab17360d915ab7b4d58f8dc9d66a8d51f912a917dc7cd55c2"
+  },
+  {
+    "id": "predictive--1701--compact--freeze24",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/predictive--1701--compact--freeze24--cycles.npz",
+    "sha256": "7cf2699f5eb7d12ab17360d915ab7b4d58f8dc9d66a8d51f912a917dc7cd55c2"
+  },
+  {
+    "id": "predictive--1701--compact--current_rls",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/predictive--1701--compact--current_rls--cycles.npz",
+    "sha256": "a75c5186a2987d6bbea6ee6d63b5ecfa483ae449de7b0ea650e6cdaebb6923f4"
+  },
+  {
+    "id": "predictive--1701--compact--cue_last_pair",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/predictive--1701--compact--cue_last_pair--cycles.npz",
+    "sha256": "e9f56e119c892de2d6d82dc4c65c020946b925067460ff3025d06ec1d9236f82"
+  },
+  {
+    "id": "predictive--1701--compact--history_q",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/predictive--1701--compact--history_q--cycles.npz",
+    "sha256": "d63496b93f0d7ba24532df65b598d3c0982b1e1a500125943241822e685d2aa8"
+  },
+  {
+    "id": "predictive--1701--compact--reactive",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/predictive--1701--compact--reactive--cycles.npz",
+    "sha256": "2abfb76b17bd31b4dc26b61df29c3f20d47f5929e727de55f5fec6e153423a29"
+  },
+  {
+    "id": "predictive--1701--compact--camp_left",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/predictive--1701--compact--camp_left--cycles.npz",
+    "sha256": "f047b5f5b8a0e640c0c818089d1c6072069720d0057080e09f8d79d696445f06"
+  },
+  {
+    "id": "predictive--1701--compact--camp_right",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/predictive--1701--compact--camp_right--cycles.npz",
+    "sha256": "a3fdad54f68bc7074abe275023e193c0e6fd8c89dfe4dcf30e0e00be19c5bfcb"
+  },
+  {
+    "id": "predictive--1701--compact--oracle",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/predictive--1701--compact--oracle--cycles.npz",
+    "sha256": "118fe852c502c3c05fd70260b6912a84cf20098b3c54d7ffe19a336fabd75f07"
+  },
+  {
+    "id": "predictive--1701--ring--event_rls",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/predictive--1701--ring--event_rls--cycles.npz",
+    "sha256": "587e1a6bfe9ef49be11e973a979c3f80dd118e3ee7d50f3c5025cb9e8616104f"
+  },
+  {
+    "id": "predictive--1701--ring--freeze24",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/predictive--1701--ring--freeze24--cycles.npz",
+    "sha256": "587e1a6bfe9ef49be11e973a979c3f80dd118e3ee7d50f3c5025cb9e8616104f"
+  },
+  {
+    "id": "predictive--1701--ring--current_rls",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/predictive--1701--ring--current_rls--cycles.npz",
+    "sha256": "772fd7b13c2f6e4a750ddfe1c6c02b70e0fab809bcabd5f40736ab9bfcc576e9"
+  },
+  {
+    "id": "predictive--1701--ring--cue_last_pair",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/predictive--1701--ring--cue_last_pair--cycles.npz",
+    "sha256": "ee31816b388c7a448e45f86da944988fec803a4fe7a35f5a6ee8dac4e332fba4"
+  },
+  {
+    "id": "predictive--1701--ring--history_q",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/predictive--1701--ring--history_q--cycles.npz",
+    "sha256": "540a63ee5b192298c56d89665ec38dee6b20b5fb57cc7ad30ee6e953d9f4d220"
+  },
+  {
+    "id": "predictive--1701--ring--reactive",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/predictive--1701--ring--reactive--cycles.npz",
+    "sha256": "06d7c2b54f4da180f9de0a4ece55b105077532f97d03d387c3f4a811604ab006"
+  },
+  {
+    "id": "predictive--1701--ring--camp_left",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/predictive--1701--ring--camp_left--cycles.npz",
+    "sha256": "46bbe2b1e7e7bad99863a6164253afc3541c7337c7395c96fe29826204f5f70f"
+  },
+  {
+    "id": "predictive--1701--ring--camp_right",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/predictive--1701--ring--camp_right--cycles.npz",
+    "sha256": "64cd9fa77268ee0ba15d5d8fa82142345ae697c6fce8ae29f1db0b0ef2cd82b7"
+  },
+  {
+    "id": "predictive--1701--ring--oracle",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/predictive--1701--ring--oracle--cycles.npz",
+    "sha256": "b4629dc5f3155eb412d3f41ee5718f5b09d621e71b01df441f9e05e8ee56dceb"
+  },
+  {
+    "id": "predictive--1702--compact--event_rls",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/predictive--1702--compact--event_rls--cycles.npz",
+    "sha256": "5e7124d43c9beb63f332bd7934bbf44c52bc611de8a43065546c1185ddc8c836"
+  },
+  {
+    "id": "predictive--1702--compact--freeze24",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/predictive--1702--compact--freeze24--cycles.npz",
+    "sha256": "5e7124d43c9beb63f332bd7934bbf44c52bc611de8a43065546c1185ddc8c836"
+  },
+  {
+    "id": "predictive--1702--compact--current_rls",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/predictive--1702--compact--current_rls--cycles.npz",
+    "sha256": "23af6051e66944837f48c49dacb32af7e0d3cf81ff75a63901a44ddd233f3c8c"
+  },
+  {
+    "id": "predictive--1702--compact--cue_last_pair",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/predictive--1702--compact--cue_last_pair--cycles.npz",
+    "sha256": "b63908d9055039c816c3ed5235ccfead5d3ac8d0335880eb78aea752635ac729"
+  },
+  {
+    "id": "predictive--1702--compact--history_q",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/predictive--1702--compact--history_q--cycles.npz",
+    "sha256": "473e3f750a7be53d1857ac4643427482c3259d5258c8b1f15ca81f35f241d856"
+  },
+  {
+    "id": "predictive--1702--compact--reactive",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/predictive--1702--compact--reactive--cycles.npz",
+    "sha256": "5e4ee89332c906fcad7ef5fde5b883a5862e450173dd5bb071ccbca7052cb6b3"
+  },
+  {
+    "id": "predictive--1702--compact--camp_left",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/predictive--1702--compact--camp_left--cycles.npz",
+    "sha256": "e5fb36c37e21b779a6150a489435f65828e222a6a1e9d60f65bc9bbf9224e12c"
+  },
+  {
+    "id": "predictive--1702--compact--camp_right",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/predictive--1702--compact--camp_right--cycles.npz",
+    "sha256": "62492ae910a3bea787756874e396275393a78587cd123d9745427fd932e0d054"
+  },
+  {
+    "id": "predictive--1702--compact--oracle",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/predictive--1702--compact--oracle--cycles.npz",
+    "sha256": "6aa352826a3da758dabda2ff4fcb8b44dbeed2dd9f1fabdceb90bd65eca50322"
+  },
+  {
+    "id": "predictive--1702--ring--event_rls",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/predictive--1702--ring--event_rls--cycles.npz",
+    "sha256": "5cf6f758be2107db5e068bace9c254e9cab4a527ca34168cf89ebf55d4c938c4"
+  },
+  {
+    "id": "predictive--1702--ring--freeze24",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/predictive--1702--ring--freeze24--cycles.npz",
+    "sha256": "5cf6f758be2107db5e068bace9c254e9cab4a527ca34168cf89ebf55d4c938c4"
+  },
+  {
+    "id": "predictive--1702--ring--current_rls",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/predictive--1702--ring--current_rls--cycles.npz",
+    "sha256": "a12d2336aace4b0c17ea21446bb3667b67e1b2c53ff6ad90e2865b5cb403a9b4"
+  },
+  {
+    "id": "predictive--1702--ring--cue_last_pair",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/predictive--1702--ring--cue_last_pair--cycles.npz",
+    "sha256": "45e94fea5f5ea2f7e401dce1037d273a546b9f3fb06ca376bea39c1cee7d4959"
+  },
+  {
+    "id": "predictive--1702--ring--history_q",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/predictive--1702--ring--history_q--cycles.npz",
+    "sha256": "19f5e4dda13d592b64039909d16546ebf6d146998e767b57ef8a050fb159566f"
+  },
+  {
+    "id": "predictive--1702--ring--reactive",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/predictive--1702--ring--reactive--cycles.npz",
+    "sha256": "b075bb88bb495b0ee8d10dfc06e65a6139eec24fcff5ca32a42c805203e752f3"
+  },
+  {
+    "id": "predictive--1702--ring--camp_left",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/predictive--1702--ring--camp_left--cycles.npz",
+    "sha256": "bc0cf7f948cf73f6837b0a81a8073ec6c8993ed2f5fd0ddbd8e78a03abd801c9"
+  },
+  {
+    "id": "predictive--1702--ring--camp_right",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/predictive--1702--ring--camp_right--cycles.npz",
+    "sha256": "72b19880020dfb158ceb4da8b2062b384661ded87cc1ff2cdfd3b25372648916"
+  },
+  {
+    "id": "predictive--1702--ring--oracle",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/predictive--1702--ring--oracle--cycles.npz",
+    "sha256": "7df6b1efa8bd1cfb56fc6def16ed37fc4364c4f0f0641c3a28531ea9eb711811"
+  },
+  {
+    "id": "reversal--1701--compact--event_rls",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/reversal--1701--compact--event_rls--cycles.npz",
+    "sha256": "65dcfe008b9ff339fbf0381ea0fd6d71a1a5d4182aca9c87271cac6879bacad3"
+  },
+  {
+    "id": "reversal--1701--compact--freeze24",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/reversal--1701--compact--freeze24--cycles.npz",
+    "sha256": "65dcfe008b9ff339fbf0381ea0fd6d71a1a5d4182aca9c87271cac6879bacad3"
+  },
+  {
+    "id": "reversal--1701--compact--current_rls",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/reversal--1701--compact--current_rls--cycles.npz",
+    "sha256": "98d8021dd5fb21b825051935773580938d8bf62fb2236744a8643124f94acf2c"
+  },
+  {
+    "id": "reversal--1701--compact--cue_last_pair",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/reversal--1701--compact--cue_last_pair--cycles.npz",
+    "sha256": "520952e02328f7dce0934fca70e5e8ab3a217971e44163645cef28d17228ead0"
+  },
+  {
+    "id": "reversal--1701--compact--history_q",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/reversal--1701--compact--history_q--cycles.npz",
+    "sha256": "0ea65a2fcdf48e7633c617b899334cdd84123ff7eb8b1fd0b989bda3b7da8d70"
+  },
+  {
+    "id": "reversal--1701--compact--reactive",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/reversal--1701--compact--reactive--cycles.npz",
+    "sha256": "57feb05c02e500670f5beede732b6e6586e84282d347d3d63bef72dc2a6f9da1"
+  },
+  {
+    "id": "reversal--1701--compact--camp_left",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/reversal--1701--compact--camp_left--cycles.npz",
+    "sha256": "d3da22e620211e4a883925ea872995cb0b4cbccbd1da88d304f0c3e678aeb5b0"
+  },
+  {
+    "id": "reversal--1701--compact--camp_right",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/reversal--1701--compact--camp_right--cycles.npz",
+    "sha256": "a31d4061375cd9f48f99a4acfd03cb29ca277489b8b2d1b430a865d22492a9cc"
+  },
+  {
+    "id": "reversal--1701--compact--oracle",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/reversal--1701--compact--oracle--cycles.npz",
+    "sha256": "c5c9bd368943f420c9d4ac28ee1c401ca2985caf00b43e6b523d5e75d189ed27"
+  },
+  {
+    "id": "reversal--1701--ring--event_rls",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/reversal--1701--ring--event_rls--cycles.npz",
+    "sha256": "54ac3b5df265486e793d597f2aa432e9a3c6e2be8825430a96bf3eaca1a348e7"
+  },
+  {
+    "id": "reversal--1701--ring--freeze24",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/reversal--1701--ring--freeze24--cycles.npz",
+    "sha256": "54ac3b5df265486e793d597f2aa432e9a3c6e2be8825430a96bf3eaca1a348e7"
+  },
+  {
+    "id": "reversal--1701--ring--current_rls",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/reversal--1701--ring--current_rls--cycles.npz",
+    "sha256": "bb405b67793b7ceaaf9721f37c3a9b8eac16d55f817f58ef077b0129ff982af3"
+  },
+  {
+    "id": "reversal--1701--ring--cue_last_pair",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/reversal--1701--ring--cue_last_pair--cycles.npz",
+    "sha256": "94941bafe2c2fe62afee4a6bb94f6148368b161d38b3b70a2bc325210b00a661"
+  },
+  {
+    "id": "reversal--1701--ring--history_q",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/reversal--1701--ring--history_q--cycles.npz",
+    "sha256": "5e1079c75fc710a8e33fb3e0785808d4ea9489471573c28e7191ca9ace1af71e"
+  },
+  {
+    "id": "reversal--1701--ring--reactive",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/reversal--1701--ring--reactive--cycles.npz",
+    "sha256": "2b6590946fdba84c2fde91e1a5781be2ace701fe80b014f882d3cef904513ef8"
+  },
+  {
+    "id": "reversal--1701--ring--camp_left",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/reversal--1701--ring--camp_left--cycles.npz",
+    "sha256": "5a4fd9ae5df1dc3ea0b4334cfbe68e6478b774828ee62e85865db0d2dab05474"
+  },
+  {
+    "id": "reversal--1701--ring--camp_right",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/reversal--1701--ring--camp_right--cycles.npz",
+    "sha256": "59626b64b227e47e1082b49f2f68c9c4d16e4491edcf4c0be3b7cfc98e7a9a85"
+  },
+  {
+    "id": "reversal--1701--ring--oracle",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/reversal--1701--ring--oracle--cycles.npz",
+    "sha256": "4275fb13dd6208a2fea495c265b1459f6da09b3d02cd2f524b6f92e775156312"
+  },
+  {
+    "id": "reversal--1702--compact--event_rls",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/reversal--1702--compact--event_rls--cycles.npz",
+    "sha256": "7b7be339b4b3cc304b8c60a0b84115ad3fee41c96463e29b29d5cd4bc77bb183"
+  },
+  {
+    "id": "reversal--1702--compact--freeze24",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/reversal--1702--compact--freeze24--cycles.npz",
+    "sha256": "13445bcb51cf82da39704cb0eeeafb63bb0032b2530e6e5d77215fc211c3ab8e"
+  },
+  {
+    "id": "reversal--1702--compact--current_rls",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/reversal--1702--compact--current_rls--cycles.npz",
+    "sha256": "e04f31b6ff7537fa054ada89ab7e27918e4675f1e63b3d12c09d53602b0a1ede"
+  },
+  {
+    "id": "reversal--1702--compact--cue_last_pair",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/reversal--1702--compact--cue_last_pair--cycles.npz",
+    "sha256": "fd2cdbb8cf1e7b490cbe80ec81b7dabc01dc7f6c0c47110d3acfdf2c33f430a3"
+  },
+  {
+    "id": "reversal--1702--compact--history_q",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/reversal--1702--compact--history_q--cycles.npz",
+    "sha256": "2b308363bea0f4a03e344b99eebe9e32c71979f85d4160f86346cb136911471a"
+  },
+  {
+    "id": "reversal--1702--compact--reactive",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/reversal--1702--compact--reactive--cycles.npz",
+    "sha256": "bf0af43c56a3724aab5ba100ffbadf2b55921d221c9f463520e5729a6d120bec"
+  },
+  {
+    "id": "reversal--1702--compact--camp_left",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/reversal--1702--compact--camp_left--cycles.npz",
+    "sha256": "c42b8945565e600596c351d4e841128df5ff1ab9983bb78274a7836fd560d798"
+  },
+  {
+    "id": "reversal--1702--compact--camp_right",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/reversal--1702--compact--camp_right--cycles.npz",
+    "sha256": "ce7d88b6291d781c23adfd1bd55b5179f0537a125c652c3fbdfc16e1a411a881"
+  },
+  {
+    "id": "reversal--1702--compact--oracle",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/reversal--1702--compact--oracle--cycles.npz",
+    "sha256": "206213d8142e18fb8d736ed85481a1816350fc95c5be9096864bcbecfef849a3"
+  },
+  {
+    "id": "reversal--1702--ring--event_rls",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/reversal--1702--ring--event_rls--cycles.npz",
+    "sha256": "7e388b6a5cabd88d7f2c081cb2ed7575d5c5e5871597ab3d26a9bb2935694831"
+  },
+  {
+    "id": "reversal--1702--ring--freeze24",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/reversal--1702--ring--freeze24--cycles.npz",
+    "sha256": "7e388b6a5cabd88d7f2c081cb2ed7575d5c5e5871597ab3d26a9bb2935694831"
+  },
+  {
+    "id": "reversal--1702--ring--current_rls",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/reversal--1702--ring--current_rls--cycles.npz",
+    "sha256": "6ef5dcb147114196cbec28806c7d1535a02cf3cecef9aaa9e8c0a0b1d583111f"
+  },
+  {
+    "id": "reversal--1702--ring--cue_last_pair",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/reversal--1702--ring--cue_last_pair--cycles.npz",
+    "sha256": "0ba4ade7599e51aeb934d73578d266fb8e5353e0d8c2a5c56ae075f72cd08241"
+  },
+  {
+    "id": "reversal--1702--ring--history_q",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/reversal--1702--ring--history_q--cycles.npz",
+    "sha256": "da69716deefc7d9a96aeabc4464c04be61354f43bef1fa421152f0f58ee794fb"
+  },
+  {
+    "id": "reversal--1702--ring--reactive",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/reversal--1702--ring--reactive--cycles.npz",
+    "sha256": "495417f88143c1744427456e66252a7855fad7c07ee6fbb76d10382a34bb0fdf"
+  },
+  {
+    "id": "reversal--1702--ring--camp_left",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/reversal--1702--ring--camp_left--cycles.npz",
+    "sha256": "7d0cfaedac57658eae7cd558e8143ceb0edbfecd10ff9c082e4960fcca9a5ce7"
+  },
+  {
+    "id": "reversal--1702--ring--camp_right",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/reversal--1702--ring--camp_right--cycles.npz",
+    "sha256": "cb8597dded5be2c27cdeed83bed4cf8187eb409ff42d5817ae81e768b6cf4622"
+  },
+  {
+    "id": "reversal--1702--ring--oracle",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/reversal--1702--ring--oracle--cycles.npz",
+    "sha256": "3ca570ba56ad24325644c1dffd38fe27bb1cb65f3236330e70246543f356008e"
+  },
+  {
+    "id": "independent--1701--compact--event_rls",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/independent--1701--compact--event_rls--cycles.npz",
+    "sha256": "9cb6dde3f700d0d69dfe97d26aac77429d7f8d8547969c2509443a338f8de9eb"
+  },
+  {
+    "id": "independent--1701--compact--freeze24",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/independent--1701--compact--freeze24--cycles.npz",
+    "sha256": "9cb6dde3f700d0d69dfe97d26aac77429d7f8d8547969c2509443a338f8de9eb"
+  },
+  {
+    "id": "independent--1701--compact--current_rls",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/independent--1701--compact--current_rls--cycles.npz",
+    "sha256": "d5b5a8611a982f6ba59c9f1ff81b286f1b94aab7226ce5e6eabee9b85dc76f4c"
+  },
+  {
+    "id": "independent--1701--compact--cue_last_pair",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/independent--1701--compact--cue_last_pair--cycles.npz",
+    "sha256": "8732847a5d357e1062425c4bf0499242ae3abbc6827ccd4151ea9c4133834e80"
+  },
+  {
+    "id": "independent--1701--compact--history_q",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/independent--1701--compact--history_q--cycles.npz",
+    "sha256": "f72ab154b6c819e0515f29196be63849ed2af751275d6294456dfb2f20c68727"
+  },
+  {
+    "id": "independent--1701--compact--reactive",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/independent--1701--compact--reactive--cycles.npz",
+    "sha256": "44efd80886de3c1cabfa6d4aa4b64df2ca3cf7d17a8696927a56b157d1dfda3f"
+  },
+  {
+    "id": "independent--1701--compact--camp_left",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/independent--1701--compact--camp_left--cycles.npz",
+    "sha256": "591aea4032e80748e351406f222e849e868633d0d893a06325fbaed4f12428df"
+  },
+  {
+    "id": "independent--1701--compact--camp_right",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/independent--1701--compact--camp_right--cycles.npz",
+    "sha256": "9525ab994e852ec46c3e98cbc8775f92fa22c9ebc9343a2bc300e8503510385b"
+  },
+  {
+    "id": "independent--1701--compact--oracle",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/independent--1701--compact--oracle--cycles.npz",
+    "sha256": "a2c4aa3aa3fa222bec61f48a42a9fcecf3e65345d791af8f3ac2f5e3d8b65435"
+  },
+  {
+    "id": "independent--1701--ring--event_rls",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/independent--1701--ring--event_rls--cycles.npz",
+    "sha256": "67adc152d90b962c68b7cebd66fe23b09b4f1d957f49a6d9ca021a8931a78c5d"
+  },
+  {
+    "id": "independent--1701--ring--freeze24",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/independent--1701--ring--freeze24--cycles.npz",
+    "sha256": "67adc152d90b962c68b7cebd66fe23b09b4f1d957f49a6d9ca021a8931a78c5d"
+  },
+  {
+    "id": "independent--1701--ring--current_rls",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/independent--1701--ring--current_rls--cycles.npz",
+    "sha256": "d4f2a8156362979b43f387f8379cae1d1c9f4d7004aad28f5c85e35178c89ce8"
+  },
+  {
+    "id": "independent--1701--ring--cue_last_pair",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/independent--1701--ring--cue_last_pair--cycles.npz",
+    "sha256": "2afb8b658c52392edf3c1a3502a6e53eb8dc6e416a7ba8cd15009c8210818dac"
+  },
+  {
+    "id": "independent--1701--ring--history_q",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/independent--1701--ring--history_q--cycles.npz",
+    "sha256": "22aac228afcc2d75407edcad2c17da0d5f0e256b2d2428c08f55a64a508dc487"
+  },
+  {
+    "id": "independent--1701--ring--reactive",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/independent--1701--ring--reactive--cycles.npz",
+    "sha256": "4664c0b4e4c6c60f5f40a8f3b46ba9d8ecbeb0e3755df0a9b313dce3ce46ba5d"
+  },
+  {
+    "id": "independent--1701--ring--camp_left",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/independent--1701--ring--camp_left--cycles.npz",
+    "sha256": "70bb2fcf8cf6b7edaab28a5b2f9ed32a5b44b365acfa14215756ef857cbac644"
+  },
+  {
+    "id": "independent--1701--ring--camp_right",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/independent--1701--ring--camp_right--cycles.npz",
+    "sha256": "9bd5bf6d39527de3e04094b2b83bb367c30e51c004872252d6ba12d6e701f21f"
+  },
+  {
+    "id": "independent--1701--ring--oracle",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/independent--1701--ring--oracle--cycles.npz",
+    "sha256": "41cc48cffdce916848b1d22c8fc5de09aa664b363883f8704e6537860bce1a47"
+  },
+  {
+    "id": "independent--1702--compact--event_rls",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/independent--1702--compact--event_rls--cycles.npz",
+    "sha256": "d3545c696af951355fcd95d35ad95d215bad2320abf700677f077f2b8bf78c4f"
+  },
+  {
+    "id": "independent--1702--compact--freeze24",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/independent--1702--compact--freeze24--cycles.npz",
+    "sha256": "8f4fe223c40fdc4bcc01f4984f21c1fcc5063149e8d4f5c22b89ec547431f630"
+  },
+  {
+    "id": "independent--1702--compact--current_rls",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/independent--1702--compact--current_rls--cycles.npz",
+    "sha256": "e7227ededaa3f6e72b720316931911a041cd9819c6d054aaf388f5f88f755389"
+  },
+  {
+    "id": "independent--1702--compact--cue_last_pair",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/independent--1702--compact--cue_last_pair--cycles.npz",
+    "sha256": "96c568f8e23bf2d8b521f758c69ab53cb2268da245a04c8a9b2ee7ce7291da5d"
+  },
+  {
+    "id": "independent--1702--compact--history_q",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/independent--1702--compact--history_q--cycles.npz",
+    "sha256": "f3597806d273ee18086fddcbe7b9f317857342de29fce04d7bb4e56385b33149"
+  },
+  {
+    "id": "independent--1702--compact--reactive",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/independent--1702--compact--reactive--cycles.npz",
+    "sha256": "7f307f2363602f253715a5d18ed4654ce73344badf9097756852b38cd7412074"
+  },
+  {
+    "id": "independent--1702--compact--camp_left",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/independent--1702--compact--camp_left--cycles.npz",
+    "sha256": "29bd9785dfb32c010d6141a4b80e383a071f4122138ee5707c32868cb8303648"
+  },
+  {
+    "id": "independent--1702--compact--camp_right",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/independent--1702--compact--camp_right--cycles.npz",
+    "sha256": "1f5c66f1eab0ef1ce8b9b2a358f55a738f2705513d80fa594bcedd60c4bbc18d"
+  },
+  {
+    "id": "independent--1702--compact--oracle",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/independent--1702--compact--oracle--cycles.npz",
+    "sha256": "0606b3ae73852d677e82b87ebd01ca1de91275aba4aca3432fbed588bc95943b"
+  },
+  {
+    "id": "independent--1702--ring--event_rls",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/independent--1702--ring--event_rls--cycles.npz",
+    "sha256": "522d2ae0176b252602e065c92425d361a68fddbf6fb676e5278bb5fdfc9da325"
+  },
+  {
+    "id": "independent--1702--ring--freeze24",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/independent--1702--ring--freeze24--cycles.npz",
+    "sha256": "a128110c488590840ac0973a5df264c142b11ff11685525d7de9a3c2fa100019"
+  },
+  {
+    "id": "independent--1702--ring--current_rls",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/independent--1702--ring--current_rls--cycles.npz",
+    "sha256": "7980adbb1a0bd59b789bf61f082e09eda7fd52d8889f918eab3df210b8a6302e"
+  },
+  {
+    "id": "independent--1702--ring--cue_last_pair",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/independent--1702--ring--cue_last_pair--cycles.npz",
+    "sha256": "c4c1a520249c4a6cdb5877baf7e795ba262f34a07eab32fae3dab166b729c535"
+  },
+  {
+    "id": "independent--1702--ring--history_q",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/independent--1702--ring--history_q--cycles.npz",
+    "sha256": "a920a7da38e87920898a8c6f55540d63a482b8b56e3060b0d416d454fb6bea40"
+  },
+  {
+    "id": "independent--1702--ring--reactive",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/independent--1702--ring--reactive--cycles.npz",
+    "sha256": "7fd45105fe36ecdcb3cf9bb12e5e2404b6908f47f10c7bd30cdb8ce1bd1f264e"
+  },
+  {
+    "id": "independent--1702--ring--camp_left",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/independent--1702--ring--camp_left--cycles.npz",
+    "sha256": "5e669310d2ab1d2f8e1c6fe8b71da81248b02fbfada9bd5b6f975b55995d8511"
+  },
+  {
+    "id": "independent--1702--ring--camp_right",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/independent--1702--ring--camp_right--cycles.npz",
+    "sha256": "87b7a8a21e7547c993f73e865f86086496284ac0cf778dfd62113c8666d4f359"
+  },
+  {
+    "id": "independent--1702--ring--oracle",
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_reservoir_20261018/bc5b68db-3dc2-489c-9af1-79e45e344103/independent--1702--ring--oracle--cycles.npz",
+    "sha256": "4653cf5f175af788fc52cd1d8e702537e0a9006ac14b98046e7b460b575dd23c"
+  }
+]

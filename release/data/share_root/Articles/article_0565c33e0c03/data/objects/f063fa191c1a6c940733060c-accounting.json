@@ -1,0 +1,26 @@
+{
+  "batches": [
+    {
+      "task": "embodied_resource_prediction_20261019",
+      "native": 9216,
+      "unknown": 0,
+      "runner_worker_seconds": 18.768426,
+      "internal_worker_seconds": 17.58211364597082,
+      "raw_bytes": 31647273,
+      "job_id": "f9075338-2cb4-42b5-a787-375d65fc3076"
+    },
+    {
+      "task": "embodied_resource_tempo_20261019",
+      "native": 12288,
+      "unknown": 0,
+      "runner_worker_seconds": 56.52582,
+      "internal_worker_seconds": 55.359434796031564,
+      "raw_bytes": 38814497,
+      "job_id": "16551d15-9ae1-4edb-acba-25ce0c6340e8"
+    }
+  ],
+  "native": 21504,
+  "worker": 75.294246,
+  "analysis_native": 0,
+  "old_acquisition_replays": 0
+}

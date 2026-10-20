@@ -1,0 +1,21 @@
+{
+  "id": "10238c47-5624-4f8b-acee-a5a478f50549",
+  "name": "regenerative-reserve-morphology-transfer",
+  "command": [
+    "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+    "-m",
+    "environment_evolution.regenerative_reserve_morphology_transfer.run",
+    "--contract",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_reserve_morphology_transfer_20261018/plan.json"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "ce2-regenerative-reserve-morphology-transfer-20261018-v1",
+  "status": "running",
+  "created_at": "2026-10-17T23:06:15.108172+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/10238c47-5624-4f8b-acee-a5a478f50549",
+  "pid": 655450,
+  "manual_pause": false,
+  "create_time": 1792278374.56,
+  "started_at": "2026-10-17T23:06:15.171174+00:00"
+}

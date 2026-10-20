@@ -1,0 +1,18 @@
+{
+  "predictive_maintenance.pptx": {
+    "bytes": 14014,
+    "sha256": "863ffe5db89c9c41c327a6845730fd9832b0c2c2ea2cfeb872f64640013ff4f8"
+  },
+  "predictive_maintenance.pdf": {
+    "bytes": 53011,
+    "sha256": "ab422170cdde32ac5a381dd6dadbc3313c19d863c0dcd7419ef9525ef4e2674e"
+  },
+  "predictive_maintenance.png": {
+    "bytes": 674194,
+    "sha256": "c5fc5687a95d2bb62045424c90e74f6977d549f7f0541a00f6169a5a5ef0fb4b"
+  },
+  "caption.txt": {
+    "bytes": 3168,
+    "sha256": "251c5daa9e47fbb1f0c4b3e3da9a2d00fda1a86b01f4f70b9dda1d0117c7b15f"
+  }
+}

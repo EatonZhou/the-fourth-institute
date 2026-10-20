@@ -1,0 +1,71 @@
+{
+  "schema": "lenia.material-writing-sources.v1",
+  "source": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/36882b27-5e14-4a9a-a001-e64ab6c56ab4/7501-online",
+  "online_reused": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9bfb1b8c-a7b6-4c0f-a4d5-ae5073e26203/7501-online",
+  "parent_checkpoint_sha256": "41a6915d8eaa4c7b9b87922dbd507d93cd6ca3a709bd62e513167ad048387fe9",
+  "parent_world_sha256": "82d969eb046e5757b930b4c8945260e4a3749d732250016b373abb2b84fa0e00",
+  "source_hashes": {
+    "local_learning/run_material_writing_sources.py": "6a83b33c7dd11454b1c62b3a5a15582ba765535a080227d2c7fb01ec7ba32cc3",
+    "local_learning/material_transport.py": "4101300b009c12a6c2c6efdfdf8e0e0417fdf8aac6da422463b697fcd29c7dc8",
+    "local_learning/run_material_context.py": "486a87df9fb21a9432376f9ef2507b9148e770577687b32e8e780526542721ff",
+    "local_learning/run_material_experience.py": "71ec9bf562b8b1b2c164dae15ad1785def3402c9a32524cf609129e8935f01c3",
+    "environment_evolution/material_context_world.py": "8dbcb79f8f3e4b48282cc071774f8d940b0209f2c58d96d719d79cb0bf21e658",
+    "environment_evolution/material_world.py": "5cee34066eeaa1bff51fde903003bd4749cb2ff01582458c96642857e07f7f9b",
+    "simulation/snapshot.py": "e99d3eccee47ded2abe1518e3fb80d2d630a8ff21a2a339ff6723c2878dfc382"
+  },
+  "rule": {
+    "transport_scheme": "face_potential",
+    "dt": 0.1,
+    "mobility": 1.2,
+    "cohesion": 1.5,
+    "pressure": 1.5,
+    "interaction_sigma": 1.4,
+    "cue_gain": 28.0,
+    "learning_rate": 1.0,
+    "eligibility_time": 0.8,
+    "memory_time": 200.0,
+    "uptake_rate": 0.2,
+    "energy_capacity": 2.0,
+    "basal_cost": 0.012,
+    "movement_cost": 0.012,
+    "starvation_rate": 0.15,
+    "starvation_energy": 0.08,
+    "food_sensor_scale": 5.0,
+    "injury_sensor_scale": 25.0,
+    "action_budget": "donor_energy",
+    "polarity_gain": 0.5,
+    "polarity_turn_rate": 0.04,
+    "polarity_relaxation_rate": 0.5
+  },
+  "interventions": {
+    "no-new-writing": {
+      "learning_rate": 0.0
+    },
+    "food-target-zero": {
+      "food_sensor_scale": 0.0
+    },
+    "injury-target-zero": {
+      "injury_sensor_scale": 0.0
+    }
+  },
+  "common_initial_fields": [
+    "body",
+    "energy",
+    "memory",
+    "eligibility",
+    "polarity"
+  ],
+  "common_remaining_world": true,
+  "world_seed": 7501,
+  "life_start": 240,
+  "life_end": 720,
+  "steps": 480,
+  "plastic": true,
+  "target": "tanh(food_sensor_scale*uptake/(dt*rho_after_transport) - injury_sensor_scale*injury/(dt*rho_after_transport))",
+  "contact": "(actual_uptake + actual_injury) > 1e-14; unchanged in every arm",
+  "scope": "Only a scalar rule field changes at life240. Acquired m/z/p, all physical events, transport, decay and polarity are retained. No refill or prefix replay.",
+  "interpretation": "Target-term removal, not removal of physical food/hazard or all writing at those contacts; nonlinear and closed-loop effects are not additive.",
+  "unchanged_source_and_reused_online_initial_verified": true,
+  "reserved_worlds_used": [],
+  "expected_new_body_updates": 1440
+}

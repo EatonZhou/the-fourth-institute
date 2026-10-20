@@ -1,0 +1,7 @@
+{
+  "scope": "only saved tape/event consistency; no tape generation or body/controller replay",
+  "completed_labels": 10234,
+  "completed_no_arrival": 3994,
+  "missing_label": -1,
+  "frozen_source_copies_verified": 12
+}

@@ -1,0 +1,20 @@
+{
+  "native": 0,
+  "viewed": [
+    "figures/curves_202610195601_ring.png",
+    "figures/curves_202610195601_separate_seeds.png",
+    "figures/curves_202610195602_ring.png",
+    "figures/curves_202610195602_separate_seeds.png",
+    "figures/maps_202610195601_ring.png",
+    "figures/maps_202610195601_separate_seeds.png",
+    "figures/maps_202610195602_ring.png",
+    "figures/maps_202610195602_separate_seeds.png"
+  ],
+  "observations": [
+    "Both seeds/ring: all paths retain a ring-shaped body; C remains concentrated around the left crescent. B futures retain thicker O than G futures. C differences are small on the common density scale; full curves and endpoint amounts remain the evidence.",
+    "Both seeds/separate: four spatial components remain; left components carry most C and N. G-history to B improves filled left component density; G-to-G upper-left component develops a more pronounced hollow region. These are observed associations, not assigned geometric causes.",
+    "G-history separate C curves: 5601 approaches a flat near-one retention trajectory, 5602 remains near-one early then decreases slightly; endpoints .999632 and .985891. No new birth was added to C.",
+    "Both-history withdrawal shows early O/M/E losses with future G; restored B in G histories improves those curves but does not restore the same complete state as uninterrupted B. Ring N curves are lower for B; separate G-history N curves are higher for B."
+  ],
+  "limits": "All16 paths and clocks320/352/384 inspected with shared density0..1 and crop. Curves show all64 actual clocks, not selected peaks. Pictures do not establish mechanisms."
+}

@@ -1,0 +1,426 @@
+[
+  {
+    "key": "compact_p512/plus/fixed/main",
+    "windows16": [
+      {
+        "start": 1345,
+        "end": 1360,
+        "response_error": 0.05518876719829368,
+        "tracking": 1.5942187379290802
+      },
+      {
+        "start": 1361,
+        "end": 1376,
+        "response_error": 0.057356500607755115,
+        "tracking": 1.5823069383190231
+      },
+      {
+        "start": 1377,
+        "end": 1392,
+        "response_error": 0.05973477276107332,
+        "tracking": 1.4969188695041415
+      },
+      {
+        "start": 1393,
+        "end": 1408,
+        "response_error": 0.0626400926939492,
+        "tracking": 1.3341641844884147
+      },
+      {
+        "start": 1409,
+        "end": 1424,
+        "response_error": 0.043223574673167564,
+        "tracking": 1.3029812056176993
+      },
+      {
+        "start": 1425,
+        "end": 1440,
+        "response_error": 0.04683080935278081,
+        "tracking": 1.421961800951167
+      },
+      {
+        "start": 1441,
+        "end": 1456,
+        "response_error": 0.04951369502031864,
+        "tracking": 1.5243478132749768
+      },
+      {
+        "start": 1457,
+        "end": 1472,
+        "response_error": 0.05227345489489638,
+        "tracking": 1.598044862400942
+      }
+    ]
+  },
+  {
+    "key": "compact_p512/plus/last/main",
+    "windows16": [
+      {
+        "start": 1345,
+        "end": 1360,
+        "response_error": 0.0034117511771240066,
+        "tracking": 1.4513929155472085
+      },
+      {
+        "start": 1361,
+        "end": 1376,
+        "response_error": 1.3726195326363598e-05,
+        "tracking": 1.296290259371668
+      },
+      {
+        "start": 1377,
+        "end": 1392,
+        "response_error": 1.2673708250129374e-05,
+        "tracking": 1.25686386690111
+      },
+      {
+        "start": 1393,
+        "end": 1408,
+        "response_error": 1.2714120192792273e-05,
+        "tracking": 1.2751984083472896
+      },
+      {
+        "start": 1409,
+        "end": 1424,
+        "response_error": 5.782380555551771e-05,
+        "tracking": 1.2640741001812024
+      },
+      {
+        "start": 1425,
+        "end": 1440,
+        "response_error": 1.971193814452737e-05,
+        "tracking": 1.2255146360484621
+      },
+      {
+        "start": 1441,
+        "end": 1456,
+        "response_error": 2.0824198022556776e-05,
+        "tracking": 1.2103741742775902
+      },
+      {
+        "start": 1457,
+        "end": 1472,
+        "response_error": 3.697021300472792e-05,
+        "tracking": 1.2187369757587228
+      }
+    ]
+  },
+  {
+    "key": "compact_p512/minus/fixed/main",
+    "windows16": [
+      {
+        "start": 1345,
+        "end": 1360,
+        "response_error": 0.029076393917645077,
+        "tracking": 0.9638125835488167
+      },
+      {
+        "start": 1361,
+        "end": 1376,
+        "response_error": 0.023362480559496183,
+        "tracking": 0.9474670309020878
+      },
+      {
+        "start": 1377,
+        "end": 1392,
+        "response_error": 0.023005851060250992,
+        "tracking": 1.0906340815183815
+      },
+      {
+        "start": 1393,
+        "end": 1408,
+        "response_error": 0.026421669019514267,
+        "tracking": 1.3370360146000946
+      },
+      {
+        "start": 1409,
+        "end": 1424,
+        "response_error": 0.04669790803570474,
+        "tracking": 1.4549826448960923
+      },
+      {
+        "start": 1425,
+        "end": 1440,
+        "response_error": 0.04459935364037138,
+        "tracking": 1.3799256540020823
+      },
+      {
+        "start": 1441,
+        "end": 1456,
+        "response_error": 0.040667683136638794,
+        "tracking": 1.2795732824825623
+      },
+      {
+        "start": 1457,
+        "end": 1472,
+        "response_error": 0.036552540806383566,
+        "tracking": 1.1993912223684944
+      }
+    ]
+  },
+  {
+    "key": "compact_p512/minus/last/main",
+    "windows16": [
+      {
+        "start": 1345,
+        "end": 1360,
+        "response_error": 0.0021997989556997092,
+        "tracking": 0.9224837499668743
+      },
+      {
+        "start": 1361,
+        "end": 1376,
+        "response_error": 6.82363710433236e-05,
+        "tracking": 0.9393784003062711
+      },
+      {
+        "start": 1377,
+        "end": 1392,
+        "response_error": 3.91822801279186e-05,
+        "tracking": 1.0859114668921759
+      },
+      {
+        "start": 1393,
+        "end": 1408,
+        "response_error": 2.09325429373366e-05,
+        "tracking": 1.2343810323245352
+      },
+      {
+        "start": 1409,
+        "end": 1424,
+        "response_error": 6.644111042427728e-05,
+        "tracking": 1.2545120805343322
+      },
+      {
+        "start": 1425,
+        "end": 1440,
+        "response_error": 3.896967949149716e-05,
+        "tracking": 1.2052678613349859
+      },
+      {
+        "start": 1441,
+        "end": 1456,
+        "response_error": 3.139289295874424e-05,
+        "tracking": 1.1921299975470168
+      },
+      {
+        "start": 1457,
+        "end": 1472,
+        "response_error": 2.946593746746195e-05,
+        "tracking": 1.2113684872059505
+      }
+    ]
+  },
+  {
+    "key": "soft_p512/plus/fixed/main",
+    "windows16": [
+      {
+        "start": 1345,
+        "end": 1360,
+        "response_error": 0.05429264843626652,
+        "tracking": 1.5875887573630239
+      },
+      {
+        "start": 1361,
+        "end": 1376,
+        "response_error": 0.05557980155277371,
+        "tracking": 1.5471773090394998
+      },
+      {
+        "start": 1377,
+        "end": 1392,
+        "response_error": 0.057697936539890665,
+        "tracking": 1.4287048815325283
+      },
+      {
+        "start": 1393,
+        "end": 1408,
+        "response_error": 0.060850135761174845,
+        "tracking": 1.2385202590628948
+      },
+      {
+        "start": 1409,
+        "end": 1424,
+        "response_error": 0.040734401029614425,
+        "tracking": 1.1783507454599493
+      },
+      {
+        "start": 1425,
+        "end": 1440,
+        "response_error": 0.04400478345945694,
+        "tracking": 1.2711961213806826
+      },
+      {
+        "start": 1441,
+        "end": 1456,
+        "response_error": 0.04714189702433848,
+        "tracking": 1.365536312886865
+      },
+      {
+        "start": 1457,
+        "end": 1472,
+        "response_error": 0.0512677603262928,
+        "tracking": 1.4506171817269051
+      }
+    ]
+  },
+  {
+    "key": "soft_p512/plus/last/main",
+    "windows16": [
+      {
+        "start": 1345,
+        "end": 1360,
+        "response_error": 0.003621580317806131,
+        "tracking": 1.4308742034239879
+      },
+      {
+        "start": 1361,
+        "end": 1376,
+        "response_error": 3.713685284007974e-05,
+        "tracking": 1.235509533869634
+      },
+      {
+        "start": 1377,
+        "end": 1392,
+        "response_error": 1.8145372390160493e-05,
+        "tracking": 1.1686940074540284
+      },
+      {
+        "start": 1393,
+        "end": 1408,
+        "response_error": 1.4234808341796986e-05,
+        "tracking": 1.1711280945550566
+      },
+      {
+        "start": 1409,
+        "end": 1424,
+        "response_error": 0.0001335204605237054,
+        "tracking": 1.1481161363785044
+      },
+      {
+        "start": 1425,
+        "end": 1440,
+        "response_error": 4.9873941167979504e-05,
+        "tracking": 1.100681458456922
+      },
+      {
+        "start": 1441,
+        "end": 1456,
+        "response_error": 4.1914954224670944e-05,
+        "tracking": 1.072425921507276
+      },
+      {
+        "start": 1457,
+        "end": 1472,
+        "response_error": 2.6339030452436267e-05,
+        "tracking": 1.0553745927102165
+      }
+    ]
+  },
+  {
+    "key": "soft_p512/minus/fixed/main",
+    "windows16": [
+      {
+        "start": 1345,
+        "end": 1360,
+        "response_error": 0.02748245433455472,
+        "tracking": 0.9467314058013754
+      },
+      {
+        "start": 1361,
+        "end": 1376,
+        "response_error": 0.025023145575960554,
+        "tracking": 0.9832516007126391
+      },
+      {
+        "start": 1377,
+        "end": 1392,
+        "response_error": 0.026315308507960922,
+        "tracking": 1.1411080642882288
+      },
+      {
+        "start": 1393,
+        "end": 1408,
+        "response_error": 0.02895744663637962,
+        "tracking": 1.3715941193912085
+      },
+      {
+        "start": 1409,
+        "end": 1424,
+        "response_error": 0.048379865348053386,
+        "tracking": 1.397728827392445
+      },
+      {
+        "start": 1425,
+        "end": 1440,
+        "response_error": 0.042092499061274075,
+        "tracking": 1.1937672729418347
+      },
+      {
+        "start": 1441,
+        "end": 1456,
+        "response_error": 0.03711007151429608,
+        "tracking": 0.9849762178387031
+      },
+      {
+        "start": 1457,
+        "end": 1472,
+        "response_error": 0.031714529822379704,
+        "tracking": 0.8204778846832459
+      }
+    ]
+  },
+  {
+    "key": "soft_p512/minus/last/main",
+    "windows16": [
+      {
+        "start": 1345,
+        "end": 1360,
+        "response_error": 0.0019094048354057725,
+        "tracking": 0.8653206961649107
+      },
+      {
+        "start": 1361,
+        "end": 1376,
+        "response_error": 2.420215539371835e-05,
+        "tracking": 0.8413693105370019
+      },
+      {
+        "start": 1377,
+        "end": 1392,
+        "response_error": 1.793211768432905e-05,
+        "tracking": 0.9368147811468222
+      },
+      {
+        "start": 1393,
+        "end": 1408,
+        "response_error": 2.4829682834720864e-05,
+        "tracking": 1.0438598297917805
+      },
+      {
+        "start": 1409,
+        "end": 1424,
+        "response_error": 0.00015333303003286605,
+        "tracking": 1.0462488940976105
+      },
+      {
+        "start": 1425,
+        "end": 1440,
+        "response_error": 5.2255936362515235e-05,
+        "tracking": 1.0131919339363942
+      },
+      {
+        "start": 1441,
+        "end": 1456,
+        "response_error": 3.280959116693347e-05,
+        "tracking": 1.0101391015981127
+      },
+      {
+        "start": 1457,
+        "end": 1472,
+        "response_error": 2.711665687346225e-05,
+        "tracking": 1.0123946406014195
+      }
+    ]
+  }
+]

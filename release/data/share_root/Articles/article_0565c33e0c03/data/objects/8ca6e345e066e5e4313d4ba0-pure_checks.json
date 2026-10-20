@@ -1,0 +1,79 @@
+{
+  "native": 0,
+  "initial": [
+    {
+      "seed": 202610195601,
+      "shape": "compact",
+      "full_fingerprint": "3a10c3a0637476ef94bfd06e874b9d74723512d73438060b25542a429181eb8d",
+      "M": 63.999999999999986,
+      "E": 63.999999999999986,
+      "rule_sha": "49dc4c5f9528b21b65bd4f8b0838e5100f534c517527d534feac395d96c226c1",
+      "kernel_sha": "bf6b12c622fe17517f52b75e1b9a2e820bc91874d646f6398e7c3c691ad74bf6"
+    },
+    {
+      "seed": 202610195601,
+      "shape": "ring",
+      "full_fingerprint": "caf98659f0d35063bbc629585d827e8e9623e3ba5b6b6cdd7cce01f69cf9de68",
+      "M": 63.99999999999999,
+      "E": 63.99999999999999,
+      "rule_sha": "49dc4c5f9528b21b65bd4f8b0838e5100f534c517527d534feac395d96c226c1",
+      "kernel_sha": "bf6b12c622fe17517f52b75e1b9a2e820bc91874d646f6398e7c3c691ad74bf6"
+    },
+    {
+      "seed": 202610195601,
+      "shape": "double_lobe",
+      "full_fingerprint": "15b003c311b7c367650f6e4e6e26e8c8eece9f36f3c66960344f3f68b45c5fdb",
+      "M": 64.0,
+      "E": 64.0,
+      "rule_sha": "49dc4c5f9528b21b65bd4f8b0838e5100f534c517527d534feac395d96c226c1",
+      "kernel_sha": "bf6b12c622fe17517f52b75e1b9a2e820bc91874d646f6398e7c3c691ad74bf6"
+    },
+    {
+      "seed": 202610195601,
+      "shape": "separate_seeds",
+      "full_fingerprint": "2a6ce228f8e6d0761c409c84c4f8b799faa259e84a5c7125f846dd53a0dd84bc",
+      "M": 64.0,
+      "E": 64.0,
+      "rule_sha": "49dc4c5f9528b21b65bd4f8b0838e5100f534c517527d534feac395d96c226c1",
+      "kernel_sha": "bf6b12c622fe17517f52b75e1b9a2e820bc91874d646f6398e7c3c691ad74bf6"
+    },
+    {
+      "seed": 202610195602,
+      "shape": "compact",
+      "full_fingerprint": "f310eb8e5186a93cf3babbeb2111bcf44bbebb4f38611f02d1cfa6d1add552fe",
+      "M": 63.999999999999986,
+      "E": 63.999999999999986,
+      "rule_sha": "49dc4c5f9528b21b65bd4f8b0838e5100f534c517527d534feac395d96c226c1",
+      "kernel_sha": "bf6b12c622fe17517f52b75e1b9a2e820bc91874d646f6398e7c3c691ad74bf6"
+    },
+    {
+      "seed": 202610195602,
+      "shape": "ring",
+      "full_fingerprint": "540bf15c2dc3a08bdff758d036fe291638673b0c5210f28e439dacf694b8a15e",
+      "M": 63.99999999999999,
+      "E": 63.99999999999999,
+      "rule_sha": "49dc4c5f9528b21b65bd4f8b0838e5100f534c517527d534feac395d96c226c1",
+      "kernel_sha": "bf6b12c622fe17517f52b75e1b9a2e820bc91874d646f6398e7c3c691ad74bf6"
+    },
+    {
+      "seed": 202610195602,
+      "shape": "double_lobe",
+      "full_fingerprint": "a9884df431c95845c8084d5d358d91886891e79ff741b9a2374d9dd05960620a",
+      "M": 64.0,
+      "E": 64.0,
+      "rule_sha": "49dc4c5f9528b21b65bd4f8b0838e5100f534c517527d534feac395d96c226c1",
+      "kernel_sha": "bf6b12c622fe17517f52b75e1b9a2e820bc91874d646f6398e7c3c691ad74bf6"
+    },
+    {
+      "seed": 202610195602,
+      "shape": "separate_seeds",
+      "full_fingerprint": "b6881db5d11492321bf3bd9ddbc6fd5ad67ce5e767fba2d28a732f05f67f4db6",
+      "M": 64.0,
+      "E": 64.0,
+      "rule_sha": "49dc4c5f9528b21b65bd4f8b0838e5100f534c517527d534feac395d96c226c1",
+      "kernel_sha": "bf6b12c622fe17517f52b75e1b9a2e820bc91874d646f6398e7c3c691ad74bf6"
+    }
+  ],
+  "full_roundtrip": true,
+  "tape_exact": true
+}

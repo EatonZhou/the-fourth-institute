@@ -1,0 +1,21 @@
+{
+  "id": "d7dcd928-7204-4e24-ab92-1bd791394e7e",
+  "name": "experience-rule-initial-factorial",
+  "command": [
+    "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+    "-m",
+    "environment_evolution.experience_rule_initial_factorial.run",
+    "--contract",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_rule_initial_factorial_20261018/plan.json"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "ce2-experience-rule-initial-factorial-20261018-v1",
+  "status": "running",
+  "created_at": "2026-10-18T01:38:07.555562+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/d7dcd928-7204-4e24-ab92-1bd791394e7e",
+  "pid": 1351906,
+  "manual_pause": false,
+  "create_time": 1792287487.01,
+  "started_at": "2026-10-18T01:38:07.624941+00:00"
+}

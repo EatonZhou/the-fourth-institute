@@ -1,0 +1,10 @@
+{
+  "actual_native": 5,
+  "restored_state_exact": true,
+  "same_step_native_equal": true,
+  "first_pump_q": 0.2911208824320162,
+  "next_step_U_off": 0.4179286490632763,
+  "next_step_U_on": 0.43622306054692916,
+  "note": "next-step differences descriptive; no equality or benefit assumed",
+  "incomplete_rejected": true
+}

@@ -1,0 +1,16 @@
+{
+  "task": "consumption_qualified_transport_20261019",
+  "status": "method_support_complete_zero_native",
+  "owner": "resident_33af539c4a17",
+  "contract_sha256": "a45b4ceef888aa049b70a49361b19681a9df842561f7c051862502e00dd0585f",
+  "report": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/consumption_qualified_transport_method_20261019/REPORT.txt",
+  "sources": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/consumption_qualified_transport_method_20261019/sources.json",
+  "manifest": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/consumption_qualified_transport_method_20261019/manifest.json",
+  "manifest_sha256": "81f0a1627b0f13ed0b31b9d70957d495bc2173b3e95cc2b32e5d20d01db3d707",
+  "native_steps": 0,
+  "runner_calls": 0,
+  "scientific_outcome": "candidate unimplemented/unproven at review; no physical claim",
+  "actionable_decision": "merge candidate if EMA; same complete parent history vs current-demand with unchanged per-donor feasibility and prices; zero-native same-input shadow requests establish whether history has an action channel; retain required paid frozen and flux controls",
+  "key_counterexample": "proportional mixed consumption gives C_edge/L_edge=C_total/X_total for all incoming edges at same event; not an edge-specific utilization advantage",
+  "delivery": "one direct enqueue_and_trigger to d3; no acknowledgement requested"
+}

@@ -1,0 +1,4 @@
+claude-agent-sdk
+psycopg
+psycopg-binary
+psycopg-pool

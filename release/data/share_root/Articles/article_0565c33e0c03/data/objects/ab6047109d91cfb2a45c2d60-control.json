@@ -1,0 +1,9 @@
+{
+  "desired_state": "running",
+  "started": true,
+  "resident_id": "resident_d3ccfa2d95b7",
+  "instructions": [
+    "inst_lin_6026b31377c4bf4f2cb1",
+    "inst_lin_6b76560366da74e55feb"
+  ]
+}

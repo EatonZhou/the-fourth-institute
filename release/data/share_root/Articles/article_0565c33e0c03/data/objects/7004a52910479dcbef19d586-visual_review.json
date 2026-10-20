@@ -1,0 +1,14 @@
+{
+  "personally_viewed": true,
+  "images": [
+    "body_compact.png",
+    "body_ring.png",
+    "body_double_lobe.png",
+    "body_separate_seeds.png",
+    "curves_202610195601.png",
+    "curves_202610195602.png"
+  ],
+  "findings": "四种真实序列保不同初形：compact由圆盘形成略方/菱形密度团，ring中心孔持续且周向密度重排，double_lobe形成横向连接的异质团块，separate_seeds四个小团仍空间分离并逐渐缩小。两布局宏观差异小，不是新形态类型。曲线中ring总M/E四窗增长而创始体减少、真实post128增长；compact/双叶uniform的post128较高，分离初形M/E较低。参考与uniform共用裁剪/色标，实际保存场，未插值造运动。",
+  "novel_morphology_claim": false,
+  "finite_only": true
+}

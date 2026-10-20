@@ -1,0 +1,63 @@
+{
+  "prior_diagnostic": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/experience_kernel_response_factorial_diagnostic/handoff.json",
+  "prior_handoff_sha256": "ba407041357ab39e1b7e1b9a4a36be308ec9fbdc4e6c5ba101d35d8b6a23c9cc",
+  "consumer_rerun": false,
+  "field_order": [
+    "mu1",
+    "mu2",
+    "sigma1",
+    "sigma2",
+    "weight_second"
+  ],
+  "actual_response_packages": {
+    "compact": {
+      "G0": [
+        0.145,
+        0.040641070137555205,
+        0.02,
+        0.006166231331215273,
+        0.5
+      ],
+      "G1": [
+        0.14139163442848418,
+        0.04128217117836481,
+        0.021126606924387385,
+        0.006353614665762286,
+        0.5089439822725124
+      ],
+      "delta": [
+        -0.003608365571515809,
+        0.0006411010408096038,
+        0.0011266069243873848,
+        0.00018738333454701266,
+        0.008943982272512363
+      ]
+    },
+    "multi_ring": {
+      "G0": [
+        0.24,
+        0.11,
+        0.055,
+        0.035,
+        0.55
+      ],
+      "G1": [
+        0.24148523231813673,
+        0.1066721665332693,
+        0.05354231527749721,
+        0.035737824726875166,
+        0.5258822900737068
+      ],
+      "delta": [
+        0.0014852323181367422,
+        -0.003327833466730698,
+        -0.0014576847225027875,
+        0.0007378247268751623,
+        -0.02411770992629325
+      ]
+    }
+  },
+  "correction": "两支系各自不同五数值G替换的结果方向相反；不是同一数值改动跨背景翻号。",
+  "scope": "K/G package conditional mechanism only; no experienced branch and adaptation is not applicable.",
+  "original_source_and_diagnostic_unchanged": true
+}

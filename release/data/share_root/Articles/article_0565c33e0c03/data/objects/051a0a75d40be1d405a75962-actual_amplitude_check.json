@@ -1,0 +1,50 @@
+[
+  {
+    "key": "compact_p512/plus/width1.6",
+    "first_command_half": true,
+    "first_K_difference": 0.4636526871223027,
+    "first_displacement_difference": 0.019534059254249957
+  },
+  {
+    "key": "compact_p512/plus/width4",
+    "first_command_half": true,
+    "first_K_difference": 0.4636526871223027,
+    "first_displacement_difference": 0.01953362083890358
+  },
+  {
+    "key": "compact_p512/minus/width1.6",
+    "first_command_half": true,
+    "first_K_difference": 0.5092948382456228,
+    "first_displacement_difference": 0.019565645780711436
+  },
+  {
+    "key": "compact_p512/minus/width4",
+    "first_command_half": true,
+    "first_K_difference": 0.5092948382456228,
+    "first_displacement_difference": 0.019565594119766373
+  },
+  {
+    "key": "soft_p512/plus/width1.6",
+    "first_command_half": true,
+    "first_K_difference": 0.39228759708544664,
+    "first_displacement_difference": 0.01867578134844224
+  },
+  {
+    "key": "soft_p512/plus/width4",
+    "first_command_half": true,
+    "first_K_difference": 0.39228759708544664,
+    "first_displacement_difference": 0.018672078735052288
+  },
+  {
+    "key": "soft_p512/minus/width1.6",
+    "first_command_half": true,
+    "first_K_difference": 0.4025162790513472,
+    "first_displacement_difference": 0.01871902340139064
+  },
+  {
+    "key": "soft_p512/minus/width4",
+    "first_command_half": true,
+    "first_K_difference": 0.4025162790513472,
+    "first_displacement_difference": 0.018712852148167966
+  }
+]

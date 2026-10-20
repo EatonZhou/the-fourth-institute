@@ -1,0 +1,54 @@
+import assert from 'node:assert/strict';
+import {createServer} from 'node:http';
+import {createRequire} from 'node:module';
+import {build} from 'esbuild';
+import {fileURLToPath} from 'node:url';
+import path from 'node:path';
+const app=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+const require=createRequire(import.meta.url);
+const {chromium}=require(path.resolve(app,'../../test_framework/tau_runtime/node_modules/playwright'));
+const built=await build({stdin:{contents:"import {mount} from './src/architecture/index.js';window.mountArchitecture=mount;",resolveDir:app,loader:'js'},bundle:true,format:'iife',write:false,outdir:'/unused'});
+const server=createServer((req,res)=>res.end('<!doctype html><style>html,body,#app{height:100%;margin:0}</style><main id="app"></main>'));
+await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+const browser=await chromium.launch({headless:true});
+const errors=[];
+try {
+ const page=await browser.newPage({viewport:{width:1280,height:900}});page.setDefaultTimeout(10000);page.on('pageerror',error=>errors.push(error.message));
+ await page.goto(`http://127.0.0.1:${server.address().port}`);
+ await page.addStyleTag({content:built.outputFiles.find(f=>f.path.endsWith('.css')).text});
+ await page.addScriptTag({content:built.outputFiles.find(f=>f.path.endsWith('.js')).text});
+ await page.evaluate(async()=>{
+  window.reads=[];window.title='当前模块';
+  const repo='repo_5d287fed9c7e',mapRef=repo+'/file/architecture/modules.yaml',evolution=repo+'/file/architecture/evolution.yaml';
+  const resources={resolve:async()=>({readable:true}),read:async(ref,format)=>{
+   window.reads.push(ref);
+   let data;
+   if(ref.includes('architecture-evidence/manifest.json'))data={schema:'tfi.portal-architecture-evidence.v1',snapshots:[{commit:'obsolete',files:{'architecture/modules.yaml':{address:'archive:must-not-read'}}}],audits:[],scenario_catalog:[]};
+   else if(ref===mapRef)data={schema:'tfi.portal-architecture.v1',modules:[{id:'root',title:window.title,responsibility:'当前职责',designs:[],code_paths:[],instruction_owners:[]}],protocols:[{id:'p',title:'当前协议',description:'当前协议说明',modules:['root'],designs:[]}]};
+   else if(ref===evolution)data={schema:'tfi.portal-evolution.v1',plans:[],directions:[]};
+   else throw Error('Unexpected source: '+ref);
+   return {readable:true,data:format==='yaml'?data:JSON.stringify(data),metadata:{}};
+  }};
+  window.view=await window.mountArchitecture(document.querySelector('#app'),{resources,sdk:{createWorker:async()=>{throw Error('no worker');},cancelFeedback:async()=>{},focus:async()=>{},hatg:async()=>({instructions:[]})}});
+ });
+ await page.locator('[data-testid="architecture-state"]').filter({hasText:'当前'}).waitFor({state:'attached'});
+ await page.getByText('图层与导航',{exact:true}).click();
+ assert.equal(await page.getByLabel('历史提交').count(),0);
+ assert.equal(await page.getByLabel('提交时间尺').count(),0);
+ assert.equal(await page.getByRole('button',{name:'最近变化',exact:true}).count(),0);
+ await page.getByText('树形导航与关系文字',{exact:true}).click();
+ assert.match(await page.locator('.arch-tree').innerText(),/当前模块/);
+ await page.evaluate(()=>{window.title='更新的当前模块';});
+ await page.getByRole('button',{name:'刷新可读事实'}).click();
+ await page.waitForFunction(()=>document.querySelector('.arch-tree')?.textContent.includes('更新的当前模块'));
+ await page.getByRole('button',{name:'搜索 ⌘K'}).click();
+ await page.locator('.arch-search-panel input').fill('p');
+ await page.getByRole('button',{name:'查找',exact:true}).click();
+ await page.locator('.arch-search-result').filter({hasText:'当前协议'}).click();
+ await page.getByRole('button',{name:'来源位置',exact:true}).click();
+ await page.locator('.arch-source').waitFor({state:'visible'});
+ assert(!await page.evaluate(()=>window.reads.some(ref=>ref.includes('/commit/')||ref.startsWith('archive:'))));
+ assert.deepEqual(errors,[]);
+ console.log(JSON.stringify({currentGraph:true,currentProtocol:true,currentSource:true,refresh:true,historyControls:false,archivedReads:false,pageErrors:errors}));
+ await page.evaluate(()=>window.view.destroy());
+}finally{await browser.close();await new Promise(resolve=>server.close(resolve));}

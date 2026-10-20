@@ -1,0 +1,8 @@
+# Install Portal's shared Python runtime with:
+# python3 -m pip install -r requirements.txt
+# Resident vector ranking is optional. For the managed Dev runtime, run
+# PORTAL_INSTALL_RESIDENT_EMBEDDINGS=1 scripts/prepare_portal_dev_services.
+# In a separate runtime, install requirements-society-service.txt and provide
+# the local ONNX model.
+# Claude Agent SDK has a separate runtime managed by scripts/install_claude_code_backend.
+-r requirements-portal-runtime.txt

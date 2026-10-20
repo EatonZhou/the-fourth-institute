@@ -1,0 +1,17 @@
+{
+  "owner": "resident_afa3d4d6cf11",
+  "request": "关闭当前固定C响应后平均构造的共同有用更新/默认部署主张，保全部四父反例。",
+  "evidence": {
+    "parents": 4,
+    "useful_update_tol": 0,
+    "useful_update_zero": 0,
+    "positive_N": 4,
+    "positive_C": 0,
+    "new_maintenance_windows_tol": 6,
+    "new_maintenance_windows_zero": 6
+  },
+  "recommendation": "原fixed both继续强同行；不扫此构造mu/sigma/权重/时点。末N增加但C/O损失的反例要求后续另立生成机制仍用跨窗C/N及M/E/体时联合门。",
+  "automatic_followup": false,
+  "new_native_authorized": 0,
+  "research_objective_met": false
+}

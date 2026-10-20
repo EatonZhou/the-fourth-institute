@@ -1,0 +1,456 @@
+"""Family admission reviews and independent operating-role availability.
+
+The facade retains a request until its steward explicitly releases it in two
+cases: the chosen member's weekly quota is low, or the Router found that no
+member's duties cover it - then the steward decides whether a new
+member takes it. Platform supervision restores Router/Steward intake and
+migrates their accounts before admitting the next turn.
+"""
+from __future__ import annotations
+
+import logging
+import time
+from typing import Any
+
+from . import family_facade, resident_execution_work, resident_message_contract
+from .domain_ports import execution_port
+from .resident_account_policy import (
+    WEEKLY_RESERVE_PERCENT, fallback_account, resident_account, weekly_remaining, sufficient_weekly_reserve,
+    reserve_remaining,
+)
+from .state_store import get_lineage_data_store
+
+MIGRATION_FIELDS = frozenset({
+    "epoch", "attempts", "tried_accounts", "checked_at", "pending_restart", "owner_notified",
+    "status", "reason",
+})
+RECHECK_SECONDS = 60
+MAX_MIGRATIONS = 2
+
+
+def role_migration(record: dict[str, Any]) -> dict[str, Any]:
+    """Read this operating role's reserve operation, not Resident settings."""
+    state = get_lineage_data_store().family_quota_migrations.get(record['lineage_id'], record['resident_id'])
+    _validate_migration(state)
+    return state
+
+
+def _validate_migration(state: dict[str, Any]) -> None:
+    if set(state) - MIGRATION_FIELDS:
+        raise ValueError("Unknown steward reserve migration fields")
+
+
+def role_availability(record: dict[str, Any], *, execution_gate: dict[str, Any] | None = None) -> dict[str, Any]:
+    from .resident_lifecycle_domain import _resident_intake_state
+    state = role_migration(record)
+    intake = _resident_intake_state(record)
+    if intake != "open":
+        return {"status": "paused", "reason": "接单已关闭；门面开放时平台将恢复，关闭门面可暂停 Family", "intake": intake}
+    from .resident_work_recovery import latest_failed_input, recovery_entry
+    failed = latest_failed_input(record)
+    if failed:
+        recovery = recovery_entry(record, failed.get("message_id", ""))
+        if not recovery.get("disabled") and (recovery.get("owner_notified") or recovery.get("attempts", 0) >= 2):
+            reason = "自动恢复未成功" + ("，已通知 Family 创建人" if recovery.get("owner_notified") else "，等待恢复")
+            return {"status": "unavailable", "reason": reason, "intake": intake}
+    status, reason = state.get("status"), state.get("reason") or ""
+    if not status and execution_gate and execution_gate.get("state") != "open":
+        from .resident_execution_gate import HINTS
+        status = "unavailable" if execution_gate.get("state") == "closed" else "unknown"
+        reason = HINTS.get(execution_gate.get("reason"), "后端执行状态尚未确认")
+    return {"status": status or "available", "reason": reason, "intake": intake}
+
+
+def relay_message(facade_id: str, message_id: str, member_id: str, actor: str,
+                  *, quota_reviewed: bool = False, reason: str = "", scope_gap: str = "",
+                  scope_reviewed: bool = False) -> dict[str, Any]:
+    result = _relay_message(facade_id, message_id, member_id, actor, quota_reviewed=quota_reviewed,
+                            reason=reason, scope_gap=scope_gap, scope_reviewed=scope_reviewed)
+    if result["status"] in {"waiting_for_quota_review", "waiting_for_steward"}:
+        from . import changes
+        changes.resident_changed(facade_id)
+    return result
+
+
+
+
+def _relay_message(facade_id: str, message_id: str, member_id: str, actor: str,
+                   *, quota_reviewed: bool, reason: str, scope_gap: str = "",
+                   scope_reviewed: bool = False) -> dict[str, Any]:
+    from . import outward_messages, resident_conversation_stream, resident_protocol
+    from .resident_questions import answered_set
+    from .resident_workspace_domain import _find_resident
+
+    facade = _find_resident(facade_id)
+    if not family_facade.is_facade(facade):
+        raise ValueError("目标必须是 Family 门面")
+    steward_id = family_facade.family_steward_id(facade)
+    approved = quota_reviewed
+    if quota_reviewed and not reason.strip():
+        raise ValueError("额度复核需要填写判断理由")
+    # The steward's arrangement of a request no member owns, like its quota review, is a review.
+    arranging = scope_reviewed
+    if scope_reviewed and not reason.strip():
+        raise ValueError("安排成员需要填写判断理由")
+    if (approved or arranging) and not family_facade.is_own_steward(facade, actor):
+        raise PermissionError("只有本 Family 的 steward 可以批准复核")
+    mark = family_facade.relay_mark(facade_id, message_id)
+    if not (approved or arranging):
+        family_facade.validate_relay(mark, actor)
+    scope_gap = str(scope_gap or "").strip()
+    repository = resident_conversation_stream.get_repository()
+    message = repository.message(facade_id, message_id)
+    if not message:
+        raise KeyError("门面消息不存在")
+    # An inner facade routes without running a model; its final member owns quota admission.
+    to_steward = bool(steward_id) and member_id == steward_id
+    to_facade = family_facade.is_facade(_find_resident(member_id))
+    if not family_facade.is_relay_target(facade, member_id):
+        raise ValueError("所选 Resident 已不属于这个 Family")
+    state = repository.input_state(facade_id, message_id)
+    if state.get("state") == "cancelled":
+        # Its sender or an owner stopped it while it was being routed: the routing just ends.
+        return {"status": "withdrawn", "member_id": member_id}
+    if state.get("state") == "failed":
+        raise ValueError("门面请求已失败，不能放行")
+    arranged = (get_lineage_data_store().family_quota_reviews.get(facade['lineage_id'], facade_id)
+                .get("scope_requests") or {}).get(message_id) or {}
+    link = family_facade.relay_links(facade).get(message_id)
+    if arranged.get("status") == "arranged" and not (approved or arranging):
+        # A replayed Router relay finds the steward's arrangement in place.
+        return {"status": "arranged", "member_id": arranged["member_id"], "message_id": (link or {}).get("message_id", "")}
+    if link:
+        if link["resident_id"] != member_id:
+            raise ValueError("该门面请求已经投给其他成员")
+        return {"status": "relayed", "member_id": member_id, "message_id": link["message_id"]}
+    # The platform validates the original delegation before restoring its
+    # sender. Review messages, separately, speak as the facade.
+    from management_common.operation_identity import operation_identity_scope
+    from management_common.principal import OperationIdentity
+
+    pending_notices = []
+    existing_review = (get_lineage_data_store().family_quota_reviews.get(facade['lineage_id'], facade_id)
+                       .get("requests") or {}).get(message_id)
+    accounts = [] if existing_review or to_facade else list(execution_port.service().accounts().get("accounts") or [])
+
+    def prepare(reviews):
+        state = repository.input_state(facade_id, message_id).get("state")
+        if state == "cancelled":
+            return {"status": "withdrawn", "member_id": member_id}
+        if state == "failed":
+            raise ValueError("门面请求已失败，不能放行")
+        scopes = reviews.setdefault("scope_requests", {})
+        scope = scopes.get(message_id) or {}
+        if scope.get("status") == "waiting":
+            if not arranging:
+                if not repository.message(steward_id, scope["steward_message_id"]):
+                    pending_notices.append(dict(
+                        facade_id=facade_id, steward_id=steward_id, initiated_by=actor,
+                        content="", task_trigger="recruit", task_facts={"facade": facade_id,
+                            "message_id": message_id, "member_id": scope["suggested_member_id"],
+                            "gap": scope["gap"], "reason": scope["reason"]},
+                        message_id=scope["steward_message_id"], business_ref=f"{facade_id}/scope-review/{message_id}",
+                    ))
+                return {"status": "waiting_for_steward", "resident_id": facade_id, "message_id": message_id,
+                        "member_id": scope["suggested_member_id"], "steward_message_id": scope["steward_message_id"]}
+            scope.update({"status": "arranged", "member_id": member_id, "arranged_by": actor,
+                          "reason": reason.strip()[:500], "arranged_at": family_facade._now()})
+        elif arranging and scope.get("status") != "arranged":
+            raise ValueError("该请求没有等待安排成员的职责空缺")
+        elif scope_gap and not scope and not approved and steward_id:
+            # No member's duties cover it: the steward decides who takes it, maybe a new member.
+            review_id = resident_message_contract.derived_message_identity(
+                "family-scope-review", facade_id, message_id,
+            )
+            scopes[message_id] = {"status": "waiting", "suggested_member_id": member_id, "gap": scope_gap[:300],
+                                  "reason": reason.strip()[:300], "steward_message_id": review_id,
+                                  "created_at": family_facade._now()}
+            if not repository.message(steward_id, review_id):
+                pending_notices.append(dict(
+                    facade_id=facade_id, steward_id=steward_id, initiated_by=actor,
+                    content="", task_trigger="recruit", task_facts={"facade": facade_id,
+                        "message_id": message_id, "member_id": member_id,
+                        "gap": scope_gap[:300], "reason": reason.strip()[:300]},
+                    message_id=review_id, business_ref=f"{facade_id}/scope-review/{message_id}",
+                ))
+            return {"status": "waiting_for_steward", "resident_id": facade_id, "message_id": message_id,
+                    "member_id": member_id, "steward_message_id": review_id}
+        entries = reviews.setdefault("requests", {})
+        review = entries.get(message_id) or {}
+        if review and review["member_id"] != member_id:
+            # A typed answer to an outward Steward question could previously
+            # be selected for the sole business member, then fail admission
+            # because that member has no question set. No copy was accepted;
+            # let its verified original recipient retry instead of retaining
+            # the failed selection forever. Accepted copies still use reassign.
+            source_id = answered_set(message)
+            if (not to_steward or not source_id or review.get("status") != "delivering"
+                    or repository.message(review["member_id"], message_id) is not None
+                    or repository.message(review["member_id"], source_id) is not None):
+                raise ValueError("该门面请求已经选定其他成员")
+            review = {}
+        if review.get("status") == "relayed":
+            return dict(review["result"])
+        if approved and review.get("status") not in {"waiting", "delivering"}:
+            raise ValueError("该请求没有待放行的额度复核")
+        if not review:
+            account = resident_account(_find_resident(member_id) or {}, accounts)
+            # The steward keeps its own reserve (ensure_role_reserve) and does not review itself.
+            remaining = None if to_steward or to_facade else weekly_remaining(account)
+            review = {"member_id": member_id, "account_id": account.get("account_id", ""),
+                      "weekly_remaining_percent": remaining, "created_at": family_facade._now()}
+            entries[message_id] = review
+            if remaining is not None and remaining < WEEKLY_RESERVE_PERCENT:
+                review["status"] = "waiting"
+        if to_facade and review.get("status") == "waiting":
+            # Retire an earlier review of a facade's unused account, retaining
+            # its original observation; the inner Family still checks its worker.
+            review.update(status="delivering", quota_not_applicable="family_facade")
+        if review.get("status") == "waiting" and not approved:
+            if not steward_id:
+                raise ValueError("低周额度请求需要 Family steward 复核")
+            review_id = resident_message_contract.derived_message_identity(
+                "family-quota-review", facade_id, message_id,
+            )
+            if not repository.message(steward_id, review_id):
+                pending_notices.append(dict(
+                    facade_id=facade_id, steward_id=steward_id, initiated_by=actor,
+                    content="", task_trigger="quota", task_facts={"facade": facade_id,
+                        "message_id": message_id, "member_id": member_id, "account_id": review["account_id"],
+                        "weekly_remaining_percent": review["weekly_remaining_percent"]},
+                    message_id=review_id, business_ref=f"{facade_id}/quota-review/{message_id}",
+                ))
+            return {"status": "waiting_for_quota_review", "resident_id": facade_id,
+                    "message_id": message_id, "member_id": member_id,
+                    "steward_message_id": review_id}
+        if approved:
+            review["reviewed_by"] = actor
+            review["reason"] = reason.strip()
+        if repository.input_state(facade_id, message_id).get("state") in {"cancelled", "failed"}:
+            raise ValueError("门面请求已取消或失败，不能放行")
+        review["status"] = "delivering"
+        return {"status": "delivering", "member_id": member_id}
+
+    with get_lineage_data_store().family_quota_reviews.transaction(facade['lineage_id'], facade_id) as reviews:
+        admission = prepare(reviews)
+    for notice in pending_notices:
+        family_facade.tell_steward(**notice)
+    if admission["status"] != "delivering":
+        return admission
+    # An answer to a member's questions keeps the question set's answer ID,
+    # so the member's Conversation knows the set answered.
+    delivered_id = message_id if answered_set(message) else resident_message_contract.derived_message_identity(
+        "family-relay", facade_id, message_id, member_id,
+    )
+    # The validated facade request delegates this unchanged delivery on
+    # behalf of its original author. The approving steward remains the
+    # initiator, never the author of the member's input.
+    author = str(message["author_id"])
+    with operation_identity_scope(OperationIdentity.for_actor(author, initiated_by=actor)):
+        result = outward_messages.deliver_to_resident(
+            {"resident_id": member_id, "message": {
+                "role": "user", "message_id": delivered_id,
+                "content_parts": message["content_parts"],
+            }, "activation_policy": "enqueue_and_trigger"}, author,
+            delivery_context=resident_protocol.ResidentDeliveryContext(
+                lineage_id=facade["lineage_id"], business_ref=mark,
+            ),
+        )
+    # Delivery and its after-commit effects run without the review-row lock.
+    family_facade.complete_relay((facade_id, message_id), member_id, str(result.get("message_id") or delivered_id))
+    with get_lineage_data_store().family_quota_reviews.transaction(facade['lineage_id'], facade_id) as reviews:
+        review = reviews["requests"][message_id]
+        withdrawn = repository.input_state(facade_id, message_id).get("state") == "cancelled"
+        review["status"] = "withdrawn" if withdrawn else "relayed"
+        review["result"] = ({"status": "withdrawn", "member_id": member_id} if withdrawn else
+                            {"status": "relayed", "member_id": member_id,
+                             "message_id": str(result.get("message_id") or delivered_id)})
+        return dict(review["result"])
+
+
+def _restore_role_intake(record: dict[str, Any]) -> dict[str, Any] | None:
+    """Keep internal operating roles open unless their whole Family is paused.
+
+    Reuse the intake transition owner; this never overrides quota admission,
+    recreates a deleted role, requeues a cancelled input or restarts a Session.
+    """
+    from . import family_storage, resident_intake_domain
+    from .resident_lifecycle_domain import _resident_intake_state, _lifecycle_operations
+    from .resident_workspace_domain import _find_resident
+    if not family_facade.is_operating_role(record) or record.get("deleted_at"):
+        return None
+    with get_lineage_data_store().database.read() as connection:
+        facade_ids = family_storage.roles_of(connection, record["family"]["family_id"])["facade"]
+    facade = _find_resident(facade_ids[0]) if facade_ids else None
+    if not facade or facade.get("deleted_at") or _resident_intake_state(facade) != "open":
+        return None
+    if _resident_intake_state(record) != "open":
+        if _lifecycle_operations().pending(record["resident_id"]):
+            return record  # The migration owns its temporary intake hold.
+        resident_intake_domain.transition_resident_state(record["resident_id"], record["resident_id"],
+            transition="open", allow_quota_override=False)
+        record = _find_resident(record["resident_id"])
+    return record
+
+
+def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] | None = None) -> bool:
+    """Return whether the next turn must wait for a safe account migration."""
+    from .resident_lifecycle_domain import _lifecycle_operations, _state_lock
+    from .resident_restart_domain import restart_resident_session
+    from .resident_work_recovery import _intake_allows_recovery
+    from .resident_workspace_domain import _find_resident
+
+    record = _restore_role_intake(record)
+    if not record:
+        return False
+    resident_id = record["resident_id"]
+    if _lifecycle_operations().pending(resident_id):
+        return True
+    job = resident_execution_work.read(record)
+    if resident_execution_work.is_active(job) and (
+        not resident_execution_work.can_preserve_for_session_restart(job) or job.get("stop_requested_at")
+    ):
+        return False  # Let a turn already admitted to Execution finish.
+    if accounts is None:
+        try:
+            accounts = list(execution_port.service().accounts().get("accounts") or [])
+        except Exception:
+            logging.getLogger(__name__).exception("Family role account service unavailable for %s", resident_id)
+            return True
+    account = resident_account(record, accounts)
+    remaining = reserve_remaining(account)
+    if (remaining is not None and remaining > WEEKLY_RESERVE_PERCENT
+            or remaining is None and sufficient_weekly_reserve(account)):
+        if role_migration(record):
+            with get_lineage_data_store().family_quota_migrations.transaction(record['lineage_id'], resident_id) as healthy:
+                healthy.clear()
+        return False
+    if remaining is None:
+        return bool(role_migration(record).get("status"))  # Stale observations cannot clear an outstanding incident.
+    epoch = f"{account['account_id']}:{[(w.get('window'), w.get('resets_at')) for w in (account.get('quota_reserve') or {}).get('windows') or []]}"
+    now = time.time()
+    with _state_lock(resident_id), get_lineage_data_store().family_quota_migrations.transaction(record['lineage_id'], resident_id) as migration:
+        current = _find_resident(resident_id)
+        if (not current or current["lineage_id"] != record["lineage_id"]
+                or not _intake_allows_recovery(current)):
+            return False
+        current_job = resident_execution_work.read(current)
+        if (resident_account(current, accounts).get("account_id") != account.get("account_id")
+                or (resident_execution_work.is_active(current_job)
+                    and not resident_execution_work.can_preserve_for_session_restart(current_job))):
+            return False
+        _validate_migration(migration)
+        if migration.get("epoch") != epoch:
+            migration.clear()
+            migration.update({"epoch": epoch, "attempts": 0, "tried_accounts": []})
+        if now - float(migration.get("checked_at") or 0) < RECHECK_SECONDS:
+            return True
+        migration["checked_at"] = now
+        migration.update(status="waiting", reason=f"后端额度剩余 {remaining:g}%，正在寻找可用账号")
+        payload = migration.get("pending_restart")
+        if not payload and int(migration["attempts"]) < MAX_MIGRATIONS:
+            target = fallback_account(accounts, str(account["provider"]), str(account.get("backend_route_id") or ""),
+                                      migration["tried_accounts"], weekly_reserve=True)
+            if target:
+                migration["attempts"] += 1
+                migration["tried_accounts"].append(target["account_id"])
+                from .resident_work_recovery import latest_failed_input, recovery_entry
+                failed_id = str(latest_failed_input(current).get("message_id") or "")
+                resume_failed = not bool(recovery_entry(current, failed_id).get("disabled"))
+                payload = {"target_provider": target["provider"], "target_account": target.get("backend_route_id") or "",
+                           "context_strategy": "compact", "active_execution_policy": "wait", "resume_failed_input": resume_failed,
+                           "idempotency_key": f"steward-reserve:{resident_id}:{epoch}:{migration['attempts']}"}
+                migration["pending_restart"] = payload
+                migration.update(status="migrating", reason="正在保留上下文并切换可用后端")
+    if payload:
+        if _lifecycle_operations().pending(resident_id):
+            return True
+        restart_resident_session(resident_id, resident_id, payload, portal_reason="steward_weekly_reserve")
+        with _state_lock(resident_id), get_lineage_data_store().family_quota_migrations.transaction(record['lineage_id'], resident_id) as committed:
+            if committed.get("pending_restart") == payload:
+                committed["pending_restart"] = None
+    elif not migration.get("owner_notified"):
+        from . import lineage_human_notifications
+        from .family_owners import recipients
+        owners = recipients(record, creator_only=True)
+        reason = f"当前账号额度剩余 {remaining:g}%，没有安全备用后端或迁移已失败两次；原任务保留等待。"
+        with get_lineage_data_store().family_quota_migrations.transaction(record['lineage_id'], resident_id) as blocked:
+            blocked.update(status="unavailable", reason=reason)
+        if owners:
+            lineage_human_notifications.create_notification(
+                record["lineage_id"], title=f"Family 角色需要可用后端：{record.get('title') or resident_id}",
+                message=reason,
+                recipients=owners, severity="warning", created_by="portal",
+                notification_id=f"steward-reserve:{resident_id}:{epoch}",
+            )
+            from .family_owners import message_creator
+            message_creator(record, identity=f"role-reserve:{resident_id}:{epoch}",
+                            text=f"Family 内部角色 {record.get('title') or resident_id} 暂不可用。{reason}请补充可用账号后恢复。")
+            with _state_lock(resident_id), get_lineage_data_store().family_quota_migrations.transaction(record['lineage_id'], resident_id) as committed:
+                if committed.get("epoch") == epoch:
+                    committed["owner_notified"] = True
+    return True
+
+
+def check_role_availability(lineage_id: str, family_id: str, actor: str) -> dict[str, Any]:
+    """ISA entry for the Family's explicit operating-role supervision Effect."""
+    from .templates.familize import read_family
+    from . import lineage_domain
+    from .resident_workspace_domain import _find_resident
+    from .resident_lifecycle_domain import _resident_intake_state
+
+    lineage, block = read_family(lineage_id, family_id, actor)
+    family = block["family"]
+    if actor not in {family["facade"], family["steward"]}:
+        lineage_domain._ensure_manager(lineage, actor)
+    facade = _find_resident(family["facade"])
+    if facade.get("deleted_at") or _resident_intake_state(facade) != "open":
+        return {"family_id": block["id"], "paused": True, "waiting_count": 0}
+    roles = [_find_resident(family[role]) for role in ("router", "steward")]
+    restore_role_intakes(roles)
+    # Intake maintenance must not poll accounts or migrate idle roles. Quota
+    # admission belongs to the execution queue; report existing incidents only.
+    waiting = sum(bool(role_migration(r).get("status")) for r in roles)
+    return {"family_id": block["id"], "paused": False, "waiting_count": waiting,
+            "roles": [{"resident_id": r["resident_id"], **role_availability(_find_resident(r["resident_id"]))}
+                      for r in roles]}
+
+
+def restore_role_intakes(residents: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Restore role intake without querying accounts; lifecycle holds still win."""
+    roles = []
+    for record in residents:
+        try:
+            restored = _restore_role_intake(record)
+            if restored:
+                roles.append(restored)
+        except Exception:
+            logging.getLogger(__name__).exception("Family role intake recovery failed for %s", (record or {}).get("resident_id"))
+    return roles
+
+
+def reconcile_role_reserves(residents: list[dict[str, Any]] | None = None) -> int:
+    """Retry quota admission for durable pending inputs, never for idle roles."""
+    if residents is None:
+        residents = resident_execution_work.pending_records()
+    roles = []
+    for record in restore_role_intakes(residents):
+        job = resident_execution_work.read(record)
+        if (resident_execution_work.is_active(job)
+                and resident_execution_work.can_preserve_for_session_restart(job)
+                and not job.get("stop_requested_at")):
+            roles.append(record)
+    if not roles:
+        return 0
+    try:
+        accounts = list(execution_port.service().accounts().get("accounts") or [])
+    except Exception:
+        logging.getLogger(__name__).exception("Family role reserve scan deferred: account service unavailable")
+        return 0
+    waiting = 0
+    for record in roles:
+        try:
+            waiting += int(ensure_role_reserve(record, accounts))
+        except Exception:
+            logging.getLogger(__name__).exception("Family role reserve check deferred for %s", record.get("resident_id"))
+    return waiting

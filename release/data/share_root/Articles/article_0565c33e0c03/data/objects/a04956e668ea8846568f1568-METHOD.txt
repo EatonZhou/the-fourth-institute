@@ -1,0 +1,13 @@
+唯一新行为是ready320时把既有FactorialBody策略指定为both或birth_gain_only。没有调用attach256、重置旧标签、库存、E、规则、RNG、世界、供给或泵。原ready choice从当前状态重算W/G/R，锁request后只执行一次原native。两臂各自随未来状态变化，不能称后续同mask或同费用。
+
+O320=cohorts256.labels[0]；C320=labels[1]；N320=0。C为当时存活混龄材料，非全部出生样本，登记后分母固定；不恢复320以前已经死亡的材料。新观察器不送给任何策略或物理支付。
+每步每标签先advect(label,K)，乘a/t得actor后，再乘s/a得rule后；零分母置0。只有真实born加至N，O/C不追加。分别记录actor/rule删除和dt乘终步活质量的体时，登记量=活量+累计两阶段删除。O+C+N等rho，O等旧L256，C+N等旧post256。真实死亡是已知终末；未知步没有补0，本次unknown=0。
+
+保存的每步transport{clock}.npz含实际K_weights/transported_body/actor_body_after_actor/survivor/born；选定八时点完整receipt含实际h和全部m；七时点fields、320/352/384 joint含完整观察器与原状态。非策略标签可被后续只读重算，但禁止逆造旧稀疏K。
+rows中的C_live/C_retention指登记cohort；C_sites/requested_C指第三条响应选择，二者概念不同。ready P/F曝光按ocn_before加权；ready E曝光是pre_E/pre_body；actual h按ocn_after_actor加权。各自分母保存为{O,C,N}_ready_exposure_mass与_afteractor_h_mass，零分母null。这些是描述性暴露，不是死亡原因或新预测器。字段不等于同一阶段。
+
+因为全部八个已知尾窗缺连续K，授权各一次带诊断观察器重演。每步对旧67物理/费用标量做精确比较，完整最终base及原观察器精确比较；这是512旧已知未来测量步骤。另512为新跨接。0..320取得0重演；0额外边界；未改原生调用/价格/地图/止钟384。源和计划在首native前SHA冻结，单job/单attempt。
+
+主比较同320父未来both−G。质量严格正门为ΔC>1e-8及0；比例门用同分母1e-8/C320及0。体时单独报。完整更新还要求M/E/总体时/N不降、minM>=32、单64窗born>=death/E不降。逐项列guards.csv，不用均值或总分。O存活差另报，C与O差不作独立细胞统计或中介比例。交互跨史包含完整身体/能量/库存差。
+
+计算/观察/存储无新增物理价。生物材料运动、基础代谢、原生合成/模板、birth-only分货泵仍全部原价当地付款，真实微量欠付照存。没有本轮训练或writer，不能把策略外部切换称生命期学习。

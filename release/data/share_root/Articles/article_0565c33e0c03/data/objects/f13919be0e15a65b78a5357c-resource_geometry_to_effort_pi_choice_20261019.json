@@ -1,0 +1,160 @@
+{
+  "task": "resource_geometry_to_effort_pi_choice_20261019",
+  "owner": "resident_afa3d4d6cf11",
+  "updated_at": "2026-10-19T03:49:00.252877+00:00",
+  "plan": "plan_13d78f0ae847 v12",
+  "objective_met": false,
+  "controls": {
+    "research.desired_state": "running",
+    "research.started": true,
+    "state_read": "inst_lin_8fc08502a51e5c55c4ad",
+    "started_read": "inst_lin_debc86b871fd9552d42b"
+  },
+  "evidence": [
+    {
+      "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_timing_goal_mismatch_20261019/analysis/handoff.json",
+      "sha256": "6e1bc7eb8a1fd8abc76e52566c597543eabcded5c2bf436be5a613d4a3a5ffca"
+    },
+    {
+      "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_geometry_uptake_20261019/analysis/handoff.json",
+      "sha256": "7ce13a64262b9e9e70458a96640232675859c6bee70079a224d807c754dd6ff8"
+    }
+  ],
+  "scientific_choice": "关闭本固定16目标的匹配供给时滞获取解释；保宽供给对soft的条件帮助与compact反例。标准last校准继续作为强同行，下一问题是身体是否真的需要按摄取经历改变运动投入，先辨识两个固定投入的条件价值，不直接加历史写入器。",
+  "completed": {
+    "new_native": 5120,
+    "runner_worker_seconds": 31.88048,
+    "unknown": 0,
+    "old_replay": 0,
+    "timing": {
+      "native": 4096,
+      "worker_seconds": 27.265008,
+      "history16_U_in_food16": "0/4改善",
+      "center_distance": "8/8配对更差",
+      "soft_tradeoff": "food0 U小增；food16 U下降而E仍因运动费减少更高",
+      "uptake_identity_max_error": 0
+    },
+    "geometry": {
+      "native": 1024,
+      "worker_seconds": 4.615472,
+      "soft_delta_U": [
+        6.209509708,
+        6.251234919
+      ],
+      "soft_delta_E": [
+        6.10859024,
+        6.161465428
+      ],
+      "soft_delta_M": [
+        0.750248462,
+        0.648923275
+      ],
+      "compact_minus_delta_U": -0.012025302,
+      "compact_minus_delta_E": -0.014820534,
+      "compact_last64_U": "两父均负",
+      "M_bodytime": "四父均更高",
+      "uptake_identity_max_error": 0
+    }
+  },
+  "interpretation": [
+    "亲看空间供给全条件图：soft获取/E的两窗收益明显；compact初窗及全窗的效果不能替代其末64获取负例。",
+    "同gross宽度是外部供给干预，证明这些实际父对空间分布有条件响应；身体规则、形态、E与历史共变，不归为几何单因或学习。",
+    "摄取三限制逐格等价与库存/能量账定位机制线索，不识别独立瓶颈因果份额。compact room严格最小格承载大部分U，也不证明增加room必然有益。",
+    "源端截流、实际motor_unpaid与局部basal欠付分列。存续通过不代表全费用无欠付。",
+    "原7936资格无效不变；有效last内容/持续更新证据保留，追踪、获取及能量分别评价；不复活全指标非降门。"
+  ],
+  "learning_parallel": {
+    "entry": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261019/value_conditioned_propulsion_brake_20261019/direction_handoff.json",
+    "sha256": "14dc780b6b3637d6e2e000e5d2c1af76850bd1504a862d84529f7b0e67329ac9",
+    "source": "已核入口SHA及handoff actual；详细结论依据方向负责人此次info，不重复身体运行",
+    "new_native": 13824,
+    "new_worker_seconds": 125.646512,
+    "choice": "去极性与双关闭都可停留，不立共同关联优势；固定接触/价值刹停均未实现三阶段共同能力，收束该固定构造。",
+    "next": "负责人已报告继续方向选择/重新接触实现，保固定win-stay/lose-shift同行；不重复派发，不称后续已实跑。"
+  },
+  "next": {
+    "name": "resource_conditioned_effort_opportunity_20261019",
+    "owner": "resident_ce2a5ab005bc",
+    "parents": [
+      {
+        "context": "compact_p512",
+        "original_angle": "plus",
+        "physical_angle": "minus",
+        "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_geometry_uptake_20261019/compact_p512/plus/width1.6/current",
+        "clock": 1984,
+        "M": 22.645863202589013,
+        "E": 43.622391928553796,
+        "files": {
+          "state.npz": "1078a0bf630d27d4d1b2a8944b6a3e944f3a60152228a85c16da376e831a392e",
+          "joint.json": "8a08aa2d403a65e122e9fa745c0088f806e2550ff23a9249dd78a1541e7bf3b1"
+        }
+      },
+      {
+        "context": "compact_p512",
+        "original_angle": "minus",
+        "physical_angle": "plus",
+        "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_geometry_uptake_20261019/compact_p512/minus/width1.6/current",
+        "clock": 1984,
+        "M": 22.60254094714768,
+        "E": 44.45166140150711,
+        "files": {
+          "state.npz": "65ae2080ed4ca2bd5920fdbc63c7ce72af52bc1313c1fa1a041609cad44798e9",
+          "joint.json": "be0c8274cb4f57f9a38dfded114b9a2e597f46e7b5b8dd74a8fbddf21e7e13c6"
+        }
+      },
+      {
+        "context": "soft_p512",
+        "original_angle": "plus",
+        "physical_angle": "minus",
+        "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_geometry_uptake_20261019/soft_p512/plus/width1.6/current",
+        "clock": 1984,
+        "M": 13.753358707173186,
+        "E": 14.86818015831645,
+        "files": {
+          "state.npz": "a58eaac92ab55a68947b7133b431672467fa0779acc371cbc02cc3f497926a4d",
+          "joint.json": "9ade6f01c0b42f3a7c3b7bce1dc61ec1ff830b15b6fc5aa613bb8964973ded3a"
+        }
+      },
+      {
+        "context": "soft_p512",
+        "original_angle": "minus",
+        "physical_angle": "plus",
+        "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_geometry_uptake_20261019/soft_p512/minus/width1.6/current",
+        "clock": 1984,
+        "M": 14.642575880933485,
+        "E": 16.326532487728603,
+        "files": {
+          "state.npz": "cd995c6259fd117a2ebf6f1471ea3dc3760e28f769d24faa98643346c702c50b",
+          "joint.json": "70d435fba3f24c81059beec77f1ac7c5a0ee935f4a23b31c6314a22fc551091c"
+        }
+      }
+    ],
+    "question": "相同身体和已有效的last动作校准下，窄/宽供给是否改变半强度与原强度运动的实际获取—代价取舍？若固定投入已经足够，摄取历史控制还有什么必要？",
+    "parent_scope": "四个实际width1.6/1984完整父全保，原窄供给作为统一取父规则，不依新得分选父；不重演1856..1984或给soft补能。相关旧身体不称新世界。",
+    "design": "每父width1.6/4 × 固定effort0.5/1，各128新步到2112，共16轨2048科学步。width保持已有两个值，不扫宽度；effort只有预定半强度与原强度，不搜最优幅度。",
+    "shared": "同原stock、gross.10、半衰16、当前目标、cue/噪声/可见日程、完整校准与预测器、joint实际angle、物理/费用。标准last在所有臂均继续以真实已付净响应更新；没有fit、时滞目标或额外感知。",
+    "action": "effort只缩放原当前目标生成的desired向量，再进入原A逆映射与范数保持的命令链；alpha0.5必须产生实际半幅，而非缩A后被归一化抵消。相似映射的预测、资格及更新使用真正发出的u，不把未缩放请求冒充动作。所有阈值与欠付语义不变，保预裁剪标签。",
+    "preflight": "首native前纯数组核alpha1与原当前策略一致、alpha0.5命令方向/幅度正确且cal.update只见真实u。首16留有效动作/预测误差/费用/资格，若是实现别名先停修接口，不完成无效矩阵。零动作和真实拒绝另列，不能为了写入去放宽资格。",
+    "measurements": "全128、两个64窗、前16/后112都报U、末E/实际deltaE、motor/basal/lostE、M/体时、局部欠付、距当前中心及阶段三限制。主要收益是实际deltaE及U—运动成本取舍，必要存续沿M>=.5各自1984父；不要求质量/能量/体时全部不下降，不用E/M上升掩盖组织损失。",
+    "contrast": "每父各宽度内half-full差，以及两宽度的差异；窗口不充独立样本。不同宽度下固定投入收益排序改变只是支持继续检验的线索，不等于经验机制成立。",
+    "budget": {
+      "native_cap": 2176,
+      "scientific_native_max": 2048,
+      "boundary_reserve": 128,
+      "runner_worker_seconds_cap": 75,
+      "cpu": 2,
+      "gpu": 0,
+      "raw_bytes_cap": 100663296
+    },
+    "conditional_continuation": [
+      "固定一档在这些条件已足够或始终更好：保这个简单改进/反例，关闭为此任务增加摄取历史控制的必要性；不要扫描第三档或改价格制造交叉。方向仍继续，换身体获取机会/反馈结构问题。",
+      "若出现有解释的投入取舍或随供给改变的排序：方向负责人另行预冻独立低成本连续宽→窄→宽及相反次序的经历实验。身体/库存/校准/内容不中途重置，供给宽度和变化flag不输入策略。主比原固定投入、半固定投入、合法即时摄取/能量反馈，历史候选只保一个最简单机制；所有可变策略同执行器/反馈/必要探测机会。",
+      "候选只能读取已发生的本体摄取/已付代价或能量变化，不能读取真food全图、宽度、理想U或反事实奖励。即时策略若同效则撤回历史额外价值。用于选择历史候选的首批条件不冒充独立验证；要检验内容效应则同物理父只停writer，不冻结身体/感知/动作。",
+      "变化后先有证据才可适应；保持放在关系不变的无新反馈条件，不能宣称未获证据时知道变化。固定策略比较不事先包装新算法。"
+    ],
+    "execution": "立即实现、纯检查并在既有ce/d3实际槽交接后实跑；分析/写作与d3方向选择并行，不取消其他分支。独立预算、不借旧余额；依据v12自行开展有区别的后继，不逐批等批准、不加定时触发。"
+  },
+  "publication": "原论文与投影continuations中合并取舍及实际效果，保完整长稿5–7主图；不追加同类阴性面板充当贡献。未执行的经历实验不写成功。",
+  "pi_new_native": 0,
+  "pi_new_runner_jobs": 0
+}

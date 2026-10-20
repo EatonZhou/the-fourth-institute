@@ -1,0 +1,1336 @@
+{
+  "lineage_id": "lineage_75e3399f4877",
+  "key": "research.progress",
+  "value": {
+    "artifact_corrections": {
+      "formation_donor_loaders": {
+        "changed": "两条ce2记录由load_checkpoint改为load_snapshot(required_fields=('body',))，明确StateSnapshot字段访问。",
+        "path": "${share_root}/Projects/元胞自动机研究/src/analysis/runs/formation_donors_20261016_v1/catalog.json",
+        "verification": "加载原两文件，身体逐位相同、步号4096，源SHA保持，无模拟重跑。"
+      }
+    },
+    "artifacts": {
+      "adjoint_related_work": "information_ba5464dd54ec",
+      "body_baseline": "${share_root}/Projects/元胞自动机研究/src/body_memory/runs/20261016_body_response_v1",
+      "body_limits_paper_figure": "article_0565c33e0c03/file/extensions/body_limits.png",
+      "body_phase_v2": "${share_root}/Projects/元胞自动机研究/src/body_memory/runs/20261016_body_response_v2",
+      "body_v2_paper_figure": "article_0565c33e0c03/file/lenia_pilot/body_v2.png",
+      "budgeted_morphogenesis_pi": "workspace/budgeted_morphogenesis_synthesis_20261016.json",
+      "cooperative_formation_animation": "article_0565c33e0c03/file/extensions/cooperative_formation.gif",
+      "counterflow_summary": "article_0565c33e0c03/file/extensions/counterflow_summary.json",
+      "environment_calibration": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/runs/signed_memory_20261016_001",
+      "environment_contingency": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/runs/experience_contingency_20261016_v4",
+      "environment_state_branch_figure": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/fe2335cd-d69c-4fbc-9ebd-93c6a42d359f/state_branch_endpoints.png",
+      "environment_state_branch_projection": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/fe2335cd-d69c-4fbc-9ebd-93c6a42d359f/projection_manifest.json",
+      "environment_state_branch_report": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/fe2335cd-d69c-4fbc-9ebd-93c6a42d359f/result.json",
+      "extensions_synthesis": "article_0565c33e0c03/file/extensions/summary.json",
+      "fast_slow_representatives": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261016/fast_slow/representatives.json",
+      "fast_slow_summary": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261016/fast_slow/summary.json",
+      "figure_legends": "article_0565c33e0c03/file/figure_legends.pdf",
+      "formation_donor_catalog": "${share_root}/Projects/元胞自动机研究/src/analysis/runs/formation_donors_20261016_v1/catalog.json",
+      "formation_report": "information_307d59b12f6f",
+      "geometry_holdout_pi_analysis": "${share_root}/Agents/lineage_75e3399f4877/residents/resident_afa3d4d6cf11/workspace/material_geometry_holdout_interpretation_20261016.json",
+      "inventory_policy_summary": "article_0565c33e0c03/file/extensions/inventory_policy_summary.json",
+      "kernel_migration": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/268be5d2-5271-4bb5-b95b-4bad9e1a7fac/migration_comparison.json",
+      "learned_rule_rearrangement_report": "information_32b47995bdda",
+      "lenia_overview_figure": "article_0565c33e0c03/file/lenia_pilot/overview.png",
+      "life0_formation_report": "information_32b47995bdda/file/information_32b47995bdda/initial0_20261016/progress.json",
+      "local_energy_transfer_pi": "workspace/material_continuous_transfer_synthesis_20261016.json",
+      "local_environment": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/LOCAL_ADAPTATION.md",
+      "local_learning": "${share_root}/Projects/元胞自动机研究/src/local_learning/README.md",
+      "local_learning_paper_figure": "article_0565c33e0c03/file/extensions/local_experience.png",
+      "maintenance_analysis": "article_0565c33e0c03/file/synthesize_maintenance.py",
+      "maintenance_endpoints": "article_0565c33e0c03/file/extensions/maintenance_endpoints.csv",
+      "maintenance_summary": "article_0565c33e0c03/file/extensions/maintenance_summary.json",
+      "maintenance_timeseries": "article_0565c33e0c03/file/extensions/maintenance_timeseries.csv",
+      "manuscript": "article_0565c33e0c03",
+      "manuscript_pdf": "article_0565c33e0c03/file/manuscript.pdf",
+      "matched_histories": "${share_root}/Projects/元胞自动机研究/src/analysis/runs/orbium_matched_history_20261016_v1",
+      "material_carriage_animation": "article_0565c33e0c03/file/extensions/material_carriage_7341.gif",
+      "material_transport_contrasts": "article_0565c33e0c03/file/extensions/material_transport_contrasts.csv",
+      "material_transport_endpoints": "article_0565c33e0c03/file/extensions/material_transport_endpoints.csv",
+      "material_transport_summary": "article_0565c33e0c03/file/extensions/material_transport_summary.json",
+      "material_transport_synthesis": "article_0565c33e0c03/file/synthesize_material_transport.py",
+      "memory_influence": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/8fb3c383-7074-4fd4-979d-e496c62f9825",
+      "memory_influence_figure": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/8fb3c383-7074-4fd4-979d-e496c62f9825/memory_influence.png",
+      "morphology_contact_sheet": "${share_root}/Projects/元胞自动机研究/src/analysis/runs/morphology_review_20261016_v1/contact_01.png",
+      "morphology_contact_sheet_2": "${share_root}/Projects/元胞自动机研究/src/analysis/runs/morphology_review_20261016_v1/contact_02.png",
+      "morphology_environment": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/41a0e2a0-44ab-450a-800e-d71176365daa/candidate_environment.png",
+      "morphology_first_batch": "${share_root}/Projects/元胞自动机研究/src/morphology_evolution/first_batch_summary.json",
+      "morphology_pool": "${share_root}/Projects/元胞自动机研究/src/morphology_evolution/pool.json",
+      "morphology_review": "${share_root}/Projects/元胞自动机研究/src/analysis/runs/morphology_review_20261016_v1/review_notes.json",
+      "morphology_source_manifest": "${share_root}/Projects/元胞自动机研究/src/analysis/runs/morphology_review_20261016_v1/sources.json",
+      "outer_checkpoint_audit": "${share_root}/Projects/元胞自动机研究/src/analysis/runs/outer_checkpoint_audit_20261016_v1/audit.json",
+      "outer_checkpoint_figure": "${share_root}/Projects/元胞自动机研究/src/analysis/runs/outer_checkpoint_audit_20261016_v1/checkpoint_outcomes.png",
+      "outer_rule_candidates": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/12d8620a-dcaf-43dc-a20f-1802c06be7f2/result.json",
+      "outer_rule_summary": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261016/outer_search/summary.json",
+      "paired_replay": "${share_root}/Projects/元胞自动机研究/src/body_memory/runs/paired_replay_20261016_v1/index.json",
+      "paper_cooperative_animation": "article_0565c33e0c03/file/extensions/cooperative_formation.gif",
+      "paper_copy_influence_fields": "article_0565c33e0c03/file/extensions/copy_influence_fields.png",
+      "paper_copy_sensitivity_figure": "article_0565c33e0c03/file/extensions/copy_sensitivity.png",
+      "paper_copy_sensitivity_summary": "article_0565c33e0c03/file/extensions/copy_sensitivity_summary.json",
+      "paper_depletion_figure": "article_0565c33e0c03/file/extensions/depletion_branches.png",
+      "paper_depletion_summary": "article_0565c33e0c03/file/extensions/depletion_summary.json",
+      "paper_editorial_synthesis": "article_0565c33e0c03/file/extensions/editorial_synthesis_v031.json",
+      "paper_figure": "article_0565c33e0c03/file/figures/energy_path_v037/energy_path.png",
+      "paper_joint_policy_inventory_insert": "${share_root}/Agents/lineage_75e3399f4877/residents/resident_afa3d4d6cf11/workspace/paper_joint_policy_inventory_insert_20261016.tex",
+      "paper_maintenance_data": "article_0565c33e0c03/file/extensions/maintenance_timeseries.csv",
+      "paper_maintenance_summary": "article_0565c33e0c03/file/extensions/maintenance_summary.json",
+      "paper_material_action_animation": "article_0565c33e0c03/file/extensions/material_action.gif",
+      "paper_material_action_frames": "article_0565c33e0c03/file/extensions/material_action_frames.png",
+      "paper_material_energy_figure": "article_0565c33e0c03/file/extensions/material_energy.png",
+      "paper_material_energy_summary": "article_0565c33e0c03/file/extensions/material_energy_summary.json",
+      "paper_material_geometry_figure": "article_0565c33e0c03/file/extensions/material_geometry.png",
+      "paper_material_geometry_summary": "article_0565c33e0c03/file/extensions/material_geometry_summary.json",
+      "paper_mechanism_summary": "article_0565c33e0c03/file/mechanism/summary.json",
+      "paper_moving_crescent": "article_0565c33e0c03/file/extensions/moving_crescent.gif",
+      "paper_multiscale_report": "article_0565c33e0c03/file/extensions/multiscale_report.json",
+      "paper_multiscale_states": "article_0565c33e0c03/file/extensions/multiscale_states.png",
+      "paper_repaired_challenge_figure": "article_0565c33e0c03/file/extensions/repaired_challenge.png",
+      "paper_repaired_challenge_summary": "article_0565c33e0c03/file/extensions/repaired_challenge_summary.json",
+      "paper_rotation_figure": "article_0565c33e0c03/file/extensions/rotation_comparison.png",
+      "paper_rotation_summary": "article_0565c33e0c03/file/extensions/rotation_summary.json",
+      "paper_shifted_state_rule_cross": "article_0565c33e0c03/file/extensions/shifted_state_rule_cross_summary.json",
+      "paper_supplementary": "article_0565c33e0c03/file/supplementary.pdf",
+      "paper_withdrawal_summary": "article_0565c33e0c03/file/extensions/withdrawal_summary.json",
+      "payment_signal_pi_analysis": "${share_root}/Agents/lineage_75e3399f4877/residents/resident_afa3d4d6cf11/workspace/payment_signal_saved_operator_20261016.json",
+      "polarity_phase_accounting": "${share_root}/Agents/lineage_75e3399f4877/residents/resident_afa3d4d6cf11/workspace/polarity_phase_accounting_20261016.json",
+      "precursor_paper_summary": "article_0565c33e0c03/file/extensions/precursor_summary.json",
+      "precursor_state": "${share_root}/Projects/元胞自动机研究/src/body_memory/PRECURSOR_STATE.md",
+      "rearrangement_clipping_audit": "${share_root}/Projects/元胞自动机研究/src/analysis/runs/rearrangement_clipping_20261016_v1/audit.json",
+      "related_work": "information_9ca76e1066db",
+      "review_synthesis": "article_0565c33e0c03/file/review/summary.json",
+      "stage_report": "article_0565c33e0c03/file/progress.json",
+      "structure_cost_decomposition": "article_0565c33e0c03/file/extensions/structure_cost_decomposition.json",
+      "structure_retest_analysis": "article_0565c33e0c03/file/synthesize_structure_retest.py",
+      "structure_retest_endpoints": "article_0565c33e0c03/file/extensions/structure_retest_endpoints.csv",
+      "structure_retest_summary": "article_0565c33e0c03/file/extensions/structure_retest_summary.json",
+      "supplementary_pdf": "article_0565c33e0c03/file/supplementary.pdf",
+      "supplementary_source": "article_0565c33e0c03/file/supplementary.tex",
+      "triplet_growth_diagnostic": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/ee53c47a-8b66-42f3-b2fc-d05e15a42c47",
+      "triplet_mechanism": "${share_root}/Projects/元胞自动机研究/src/body_memory/TRIPLET_MECHANISM.md",
+      "triplet_order": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/7e33eef4-ead8-4b23-ba0a-427334d4d041",
+      "triplet_replay": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/18805a39-2f75-4ec1-a8f9-91c514ddd33e/index.json",
+      "writing_influence": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/ead5c7f4-7677-4e39-ab17-7ac6c1b1f1b0",
+      "writing_influence_figure": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/ead5c7f4-7677-4e39-ab17-7ac6c1b1f1b0/writing_influence.png"
+    },
+    "compute_policy": "CPU2槽×2线程；Thor受控GPU训练1槽已加载生产runner，实际通过暂停/继续/停止、单槽/幂等/断线保护；已退出GPU任务无科学checkpoint恢复则拒绝重投。提交前仍读started/desired，不占他项GPU。",
+    "continuation": {
+      "event_source": "event_source_e021e281f383",
+      "event_type": "resident.work_finished",
+      "family": "family_4ed85bf56e5b",
+      "policy": "PI先查started/desired，paused/stopped不启动科研；每次合并检查三者未处理实质结果，research.continuation_seen去重；无新证据不互发确认，不监听PI自身。总启动事件未改。",
+      "route_wire": "wire_c8d63412787a",
+      "status": "listening",
+      "watch_wires": [
+        "wire_0364587c0bf6",
+        "wire_5f660dc08b13",
+        "wire_3e11e2d940fd"
+      ],
+      "watched_residents": [
+        "resident_d3ccfa2d95b7",
+        "resident_ce2a5ab005bc",
+        "resident_33af539c4a17"
+      ]
+    },
+    "coupled_morphology_search": {
+      "control": "提交前读started/desired，CPU统一队列；首批不自动扩扫，实际片段逐批交投影。",
+      "dt": 0.05,
+      "extended_job": "42f6f6c7-4ddb-4488-bc1d-13211891f8f4",
+      "facade": "resident_5fe1227e36c0",
+      "findings": "新局域双峰形成移动弯月；多结构动态与迟发消亡保留。多窗/末窗选择不同尚无方法优势。r2规则仍有paired-Orbium来源；本批无dt收敛证据。",
+      "handoff": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261016/multiscale_slow/candidate_exchange_v1.json",
+      "max_combinations": 24,
+      "max_extended": 6,
+      "max_short_model_time": 51.2,
+      "max_total_extended_model_time": 204.8,
+      "message_id": "msg_924647068ba50cfff4cfbdcaa6814407",
+      "next": "首代代表父+c01+c04保留；父体P对照及两状态规则互换均完成。本组无待跑身体，不补未平移交叉/q0/新代/预留场。",
+      "owner": "resident_d3ccfa2d95b7",
+      "question": "多空间尺度增长与慢负反馈能否从不同局域初态产生持续且不同的动态身体？",
+      "scope": "可据失败选择明确不同的规则表示；含反馈关闭对照、非Orbium实际初始基因组及新局域初态，生命期规则固定。多时间窗动态描述保留多样性；同批数据比较终点与多窗选择，不重复训练，不称加机制本身是新方法。",
+      "screen_job": "c2b1cd8d-ec7b-4738-8890-d07f88341c90",
+      "status": "completed",
+      "summary": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261016/multiscale_slow/summary.json",
+      "work_item": "身体生成规则与适应机制的外层搜索"
+    },
+    "current_focus": "发展能从局部经历学得有用行为并在变化环境持续适应的方法；下一轮共用独立资源/部分观察任务与身体载荷接口。",
+    "environment_evolution_current": {
+      "completed_batch": "resource_timing_goal_mismatch_20261019",
+      "compute_slot": "Both unique serial jobs complete; no ce2 pending body job.",
+      "continuation": {
+        "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_geometry_uptake_20261019/analysis/handoff.json",
+        "native": 1024,
+        "runner_worker_seconds": 4.615472,
+        "sha256": "7ce13a64262b9e9e70458a96640232675859c6bee70079a224d807c754dd6ff8",
+        "task": "resource_geometry_uptake_20261019"
+      },
+      "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_timing_goal_mismatch_20261019/analysis/handoff.json",
+      "finding": "History16 U worsens4/4 in lagged supply; soft motor savings preserve higher E. Independent same-gross width4 gives soft U+6.21/+6.25 and E+6.11/+6.16 with reduced tissue loss; compact mixed and late-window counterexamples retained. External ecology intervention, not learning.",
+      "native": 4096,
+      "next": "Spatial resource/body uptake mismatch; develop lawful experienced uptake-guided behavior with fixed current and simple immediate feedback controls, separate learning content from environment help. No lag scan or fit resurrection.",
+      "objective_met": false,
+      "owner": "resident_ce2a5ab005bc",
+      "runner_worker_seconds": 27.265008,
+      "sha256": "6e1bc7eb8a1fd8abc76e52566c597543eabcded5c2bf436be5a613d4a3a5ffca",
+      "status": "active_research"
+    },
+    "execution_followup": {
+      "archive": "${share_root}/Agents/lineage_75e3399f4877/residents/resident_afa3d4d6cf11/workspace/polarity_research_progress.json",
+      "note": "旧相遇/初态/快慢/双核与控制故障已完成，详见归档；当前科研续接见research_renewal和research.continuation_seen，事件连线保持。",
+      "status": "historical_batches_closed"
+    },
+    "fast_slow_branch": {
+      "branch_end": 2048,
+      "conclusion": "b02快慢漂移在已测步长下定性一致；q重排改变暂态并与有限窗漂移反向一致，动态类型相近；newlocal剧烈形变步长敏感。",
+      "conditions": 28,
+      "continuation_job": "b883f316-75ab-4bdc-9fd6-834b4a7cf335",
+      "extended": 6,
+      "followup_job": "08411027-f409-4b87-8f6c-663bf507ada7",
+      "followup_max_continuations": 10,
+      "followup_message_id": "msg_2a9f37b686ed428170580d937600b813",
+      "followup_state": "completed",
+      "followup_summary": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261016/feedback_time/summary.json",
+      "new_short_trajectories": 25,
+      "reused_baselines": 3,
+      "scope": "q为固定环境占据痕迹；2条同A/m空间重排，dt=.05/Tq3.2，复用原基线；不称学习或渐近稳定。",
+      "screen_job": "16b3b143-0a79-419c-acfc-fb74ff6ee7dc",
+      "slow_location": "environment_fixed_grid",
+      "spatial_q_followup_message_id": "msg_6563ebe373a3fa7af6e7458d140e775b",
+      "spatial_q_followup_state": "completed",
+      "spatial_q_job": "3ba81e30-dbdf-4199-a009-fa5425d0575d",
+      "spatial_q_report": "information_bd6f1c162e2e",
+      "state_key": "research.fast_slow_rule_branch",
+      "status": "feedback_time_and_spatial_q_completed"
+    },
+    "findings": [
+      "原始固定规则Orbium的历史响应差异多受相位影响，可靠预警尚无稳定信息收益；这与增强局部学习模型的结果分开。",
+      "指定局部复制/读出规则下，前后部接收等量真实经历却留下不同长期预测；后部反转信息难以改写前部留下的旧预测，同身体记忆擦除和交换能改变即时成本。",
+      "环境独立复测中，较强组织记忆保留相对较弱保留，在慢变环境平均受益、较快变化环境平均受损；各8条环境序列中7条保留原方向。这里是指定成本，尚非存活或繁殖优势。",
+      "有限时记忆读出权重与逐次输入伴随已完成：前部反转可以改写旧预测，后部当下更新后仍难以保留；去掉后续学习覆盖，后部终末总输入灵敏度仍约3e-12。伴随代数和前部中性贡献集中已有近邻，科学重点转到真实经历的空间保留限制。",
+      "三脉冲损伤支线：逐步总质量代价匹配后危险时序仍4/4消亡；全体24相位省略第三脉冲有12例恢复、12例自然消亡，因此第三脉冲分别改变命运或加速已有失稳。",
+      "损伤支线出现单步额外刺激反而保护的非单调现象；此前等质量重分布与单步净移除应分别记量，不能简化成越少刺激越安全。",
+      "外加成本目标下的小种群跨代选择已有独立环境收益；高切换环境末代群体仍劣于纯不学习，尚无自然繁殖或稳定身体优势。",
+      "既有Orbium闭环对照已观察到旧记忆在反转后造成消亡；保守防御下限可使其活到反馈修正，但常数中性防御也存活，累计即时收益随关系持续时间改变方向。该结果不代替新形态与生成规则搜索。",
+      "单环核与初态搜索的17条活动记录中，.45×8更新后紧凑单体仅1/6活动：较小较慢g2-0161保留，较快g1-0063消亡；多体g1-0060由2变6组分且质量扩张，不称原个体恢复。dt随基因组变化，因此跨候选结果不证明形态单因果或匹配物理剂量下的普遍速度—抗扰权衡。",
+      "首批8分支可微外层优化实际更新规则/初态及αβ，7项通过448步门槛；多数非Orbium候选为饱和场。b5检查点32在64步仍有质量137.93、101步归零，而检查点16通过有限窗口后近静态。训练分数记录在Adam更新前，须与下一条日志对齐；参数更新与窗口通过均不等同经验适应收益。",
+      "固定规则初态组装产生多叶/弧状暂态，但三体与迎面分别134/83步消失；并行/前后/交叉的3个后继至2048仍近Orbium。V1随机规则代表与V2长窗续训多数趋于饱和斑点，单纯延长训练未在该批产生持续新体型。",
+      "两套学习核的6条同直方图重排中，b04集中与打乱到重排后384步活动大异，续至2048均近静态。末态两者各193格在A=1且仍有正增长，占质量99.94%/99.24%；内部格仅1/3，支持裁剪固定斑点而非增长处处为零。仅保存状态单步诊断，不证明扰动稳定性、相同吸引子或去裁剪后的动态。",
+      "0082/0161在各自固定规则下迎面54/89更新消亡而隔离供体活动。0082并行512步双体尚在，至2048只留活动单体；0161并行512步与隔离叠加最大差3.14e-10。本批未得到稳定新组合；来源标签不等同最终形态类型。",
+      "0060固定基因组：未扰双体与先扰饱和图案在life4608至6656继续保持不同类型，末256活动56.06与.333。life6656同强度再探测，双体变9组分且质量扩张，已有图案仍同类、质量均值相对sham仅+.697；无消亡但后者仅弱残余活动，不能据此声称经验收益。",
+      "快慢耦合在已测分支中改变动态类型：b02/b07到2048仍有L1=5.09/3.38，lag32经整数配准只余4.27%/14.37%，主要为图案漂移。newlocal g2/t32 L1=54.90、饱和质量0、配准剩85.97%，无耦合则L1=.00128、饱和99.41%。这是有限选中轨迹，q为环境占据痕迹；未检验步长细化或反馈因果，未称经验适应。",
+      "付费生成已有环、成对移动及解析双峰单弯月；后者后三窗A约27.6，每窗出生约244。q移位差跨段变号，状态作用不等于经历收益。",
+      "首代10f94857：c04 F/body-time .360032对父.370574，末A27.831对28.019、晚均更低且波动更大；c01末A24.776。c04请求少48.217、P拒绝多32.062但容量拒绝少34.801，出生少45.478是账本，非省料原因分解。",
+      "P布局/规则互换：88e2父体平移后A−.552501仍存续，592 c04在860消亡。4d7两非对角复用完整平移态：父态两规则末A27.467/26.003，c04态父/原规则680/860消亡。当前四参数非存亡差异充分解释，但作用仍在；c04换父先增A至576的29.005，672无出生请求，无饥饿欠维护。非状态决定所有规则结局、非P×规则完整交互或历史学习。"
+    ],
+    "formation_branch": {
+      "donor_encounter_report": "information_307d59b12f6f",
+      "donor_encounter_report_version": 3,
+      "donor_pool_handoff": "${share_root}/Projects/元胞自动机研究/src/morphology_evolution/handoffs/donor_encounters_v1.json",
+      "donor_short_job": "de3a28eb-50c0-4ea1-8135-4e4f30099cca",
+      "followup_message_id": "msg_6563ebe373a3fa7af6e7458d140e775b",
+      "life0_initial_mass": 72.02819553348581,
+      "life0_report": "information_32b47995bdda",
+      "life0_report_version": 2,
+      "life0_scope": "3条512步已完成；仅单团/双团续至2048，尾64 L1为2.94483e-8/9.45424e-4，均近静止饱和。原始life0参考未延长。",
+      "life64_trained_mass": 181.73500799708424,
+      "new_candidates_from_encounter_index": 0,
+      "new_extended_rollouts": 2,
+      "new_short_rollouts": 6,
+      "next": "life0/life64、相遇及同身体q空间重排均完成。不追加q种子或旧供体扫描；d3下一24组合形态扩张独立进行，33待真实有区别供体再选形成问题。",
+      "next_status": "await_fast_slow_feedback_and_dt_results",
+      "original_orbium_batch": {
+        "continued_to": 2048,
+        "exploratory_configurations": 10,
+        "extinct_by512": 7,
+        "orbium_like_successors": 3
+      },
+      "phase": "formation_and_spatial_q_completed",
+      "report": "information_32b47995bdda",
+      "reused_references": 2,
+      "state_key": "research.formation_branch"
+    },
+    "memory_influence_validation": {
+      "adjoint_duality_max_error": 1.2212453270876722e-15,
+      "forward_prediction_max_error": 2.220446049250313e-15,
+      "scope": "指定继承算子、四相位共同身体、未来轨迹已知；不是独立生物复制或在线策略。",
+      "seconds": 1.0514759700163268
+    },
+    "method_renewal_latest_pi": {
+      "archive": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/shared_history_birth_cohort_0e9c6f138d67fc56.json",
+      "core_scientific_goal_achieved": false,
+      "current": "pi_current_scientific_direction",
+      "path": [
+        "method_renewal_latest_pi"
+      ],
+      "sha256": "9cf1e9bf5a015f1d9d3a1bc65ab6c834fe1e2849631dc4ce9cbfc986e841b18c",
+      "status": "historical_closed"
+    },
+    "morphology_search": {
+      "classes": {
+        "compact_single_bodies": 6,
+        "distributed_patterns": 10,
+        "multiple_smooth_bodies": 1
+      },
+      "compact_single_pulse_active": {
+        ".3": 3,
+        ".45": 1
+      },
+      "control_active": 17,
+      "extended_trajectories": 18,
+      "new_species_count": null,
+      "observed_steps": 4096,
+      "phase": "first_batch_environment_assayed",
+      "pool_index_records": 26,
+      "pool_index_scope": "责任成员回报：17环境活动记录及9优化入选检查点；非26物种，不改变先前17条4096步活动记录的范围。",
+      "projection_owner": "resident_4b26ea4a30af",
+      "pulse_active": {
+        ".3": 14,
+        ".45": 12
+      },
+      "retained_candidates": 17,
+      "screened": 168,
+      "state_key": "research.morphology_search"
+    },
+    "morphology_state_branch": {
+      "candidate": "m2026101607-g1-0060",
+      "facade": "resident_4e35778304b2",
+      "free_lifetime_range": [
+        4608,
+        6656
+      ],
+      "free_tail256_activity": {
+        "first_pulse": 0.33280050607894124,
+        "unperturbed": 56.05952841095001
+      },
+      "interpretation": "同基因组有限观察期的状态分支持续；两身体不同，响应差不证明学习或抗扰提高。第二次双体向9组分转变不等于原6组分图案精确复现。",
+      "job_id": "fe2335cd-d69c-4fbc-9ebd-93c6a42d359f",
+      "max_new_continuations": 6,
+      "message_id": "msg_3493f5495f03a43b0584af51643a879b",
+      "new_continuations": 6,
+      "owner": "resident_ce2a5ab005bc",
+      "probe_lifetime_range": [
+        6656,
+        7168
+      ],
+      "probe_minus_sham_tail256_mass": {
+        "first_pulse": 0.6971903251694584,
+        "unperturbed": 582.3663207993194
+      },
+      "question": "同规则的受扰形态分支是否持续以及共同再探测后的去向",
+      "state_key": "research.environment_state_branches",
+      "status": "completed"
+    },
+    "next_questions": [
+      "局部经验随身体运动、生死和有限通信后是否仍优于最近配对/EMA？",
+      "当失败不能揭示另一端资源时，探测、保留与重新学习能否形成可泛化能力？",
+      "相近摄取下仍失能的身体，学习带来的收益能否覆盖真实行动和维持代价？"
+    ],
+    "outer_rule_search": {
+      "all_saved_checkpoint_nodes": 64,
+      "branches": 8,
+      "independent_initial_branches": 8,
+      "job_id": "12d8620a-dcaf-43dc-a20f-1802c06be7f2",
+      "long_replay_steps": 2112,
+      "new_species_count": null,
+      "next_state_key": "research.fast_slow_rule_branch",
+      "observed_steps": 448,
+      "phase": "two_batches_and_long_replay_completed",
+      "selected_short_window_checkpoints": 9,
+      "state_key": "research.outer_search_review"
+    },
+    "overall_objective_met": false,
+    "paper": {
+      "article_id": "article_0565c33e0c03",
+      "canonical_pdf": "${share_root}/Articles/article_0565c33e0c03/manuscript.pdf",
+      "cleanup_bytes": 2389548,
+      "default_pdf_sha256": "ba68123cbd16d9fe97c6a6f642925ff1d3aad2496239c79b1e0c2eecc9e2f72c",
+      "default_pdf_url": "/api/articles/article_0565c33e0c03/pdf",
+      "dependency_migration": {
+        "author_deleted_bytes": 0,
+        "author_deleted_files": 0,
+        "bytes_moved": 320831764,
+        "files_moved": 3966,
+        "manifest": "maintenance/dependency_migration/manifest.json",
+        "status": "complete_readonly_default_pass"
+      },
+      "figure_sources": "${share_root}/Articles/article_0565c33e0c03/work/longform_v047/data/main_figure_register.json",
+      "findings": "去极性cue-only与both-off均4/4停留，关联相对被动控制两正两负；life0固定/价值刹停取得、反转、保持各2/4却来自不同条件，三种规则完整三阶段均0/4。12/12存续不能代行为收益；瞬时恢复、微量失败和全部费用保留。",
+      "freeze_manifest": "${share_root}/Articles/article_0565c33e0c03/work/longform_v047/data/default_preview_freeze_v0473.json",
+      "local_pdf_sha256": "1a27823907b5ad73193993086efb24800418289eefaf4a65e4f0320321e87163",
+      "main_cited_references": 52,
+      "main_figure_pages": {
+        "1": 5,
+        "2": 8,
+        "3": 15,
+        "4": 17,
+        "5": 19,
+        "6": 21,
+        "7": 24
+      },
+      "main_figures": 7,
+      "main_pages_before_references": 36,
+      "main_tables": 3,
+      "manuscript_root": "${share_root}/Articles/article_0565c33e0c03",
+      "publication_record": "${share_root}/Articles/article_0565c33e0c03/work/longform_v047/data/publication_record.json",
+      "reader_update": "${share_root}/Articles/article_0565c33e0c03/work/longform_v047/data/reader_update.json",
+      "review": "${share_root}/Articles/article_0565c33e0c03/work/longform_v047/data/visual_review.json",
+      "scope": "保原阴性与局部门；行为收益、存续和物能代价分别报告；无新算法优势或课题完成主张。",
+      "status": "v0473已发布；停留与学习控制分开，完整生命史三阶段0/4及全部逐父反例入主文",
+      "supplementary_figures": 6,
+      "supplementary_tables": 25,
+      "title": "Experience-dependent behaviour and material persistence in cellular bodies",
+      "total_pages": 117,
+      "updated_at": "2026-10-19T03:51:06.753181+00:00",
+      "version": "0.47.3"
+    },
+    "pi_current_scientific_direction": {
+      "entry": "knowledge_base/research/experience_learning/lifetime_parallel_continuation_20261019.json",
+      "objective_met": false,
+      "question": "摄取与投入；续研",
+      "status": "running"
+    },
+    "projection_formation": {
+      "fast_slow_followup_note": "已送msg_a9b23fcdf64832d145ad8d12f6984e6c：newlocal保留暂态及消亡/步长敏感，b02显示同模型时间对照；未获此次宿主发布回执。",
+      "fast_slow_handoff": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261016/fast_slow/representatives.json",
+      "fast_slow_scope": "3个真实有限动态代表已由来源交投影；不把局域初态描述为已稳定局域生物。",
+      "life0_entry": "source_owner_reports_entry_replaced",
+      "life0_host_acceptance": "await_projection_receipt",
+      "sourceRef": "information_32b47995bdda/file/information_32b47995bdda/initial0_20261016/progress.json"
+    },
+    "projection_increment": {
+      "frames_per_clip": 113,
+      "grid": [
+        32,
+        32
+      ],
+      "lifetime_steps": "0..448，每4步采样；64步边界精确相同后去重",
+      "outer_optimization_clips": 8,
+      "scope": "八段外层优化生命片段正在接入，保留32/64同尺与真实检查点链。十二项环境扩展包已备，未覆盖已验收的六条默认墙。",
+      "source": "${share_root}/Agents/lineage_75e3399f4877/residents/resident_112dd56b5808/workspace/morphology-outer-optimization/",
+      "status": "integration_in_progress_not_confirmed_published"
+    },
+    "projection_wall": {
+      "contract": "${share_root}/Projects/元胞自动机研究/src/projection/MORPHOLOGY_CONTRACT.md",
+      "default_candidates": 6,
+      "evidence": "科研投影门面2026-10-15T19:33:25Z回报",
+      "formation_reports": "相遇/长暂态两份成果已加入共享报告并由TAU查看",
+      "latest_reported_release": {
+        "acceptance": "成员回报构建和本地检查完成，正式TAU页面观看尚待回执。",
+        "artifact": "c995abed",
+        "commit": "ee19cc6",
+        "revision": 13,
+        "scope": "12项代际候选+8段外层优化记录，数量不等物种；来源/有限窗口保留。",
+        "segments": 20
+      },
+      "revision": 11,
+      "sources": "${share_root}/Projects/元胞自动机研究/src/projection/scripts/morphology-sources.json",
+      "status": "host_viewing_acceptance_completed"
+    },
+    "r4v5_dwell_analysis": {
+      "audit": "${share_root}/Projects/元胞自动机研究/src/analysis/runs/r4v5_dwell_20261016_v1/audit.json",
+      "closed_hole_density01_first_passing_frames": {
+        "only_latest": 3968,
+        "two_pulses": 3696
+      },
+      "earlier_by_updates": [
+        311,
+        306,
+        297
+      ],
+      "figure": "${share_root}/Projects/元胞自动机研究/src/analysis/runs/r4v5_dwell_20261016_v1/dwell_timing.png",
+      "limits": "末尾连续低活动段仅观察到4096，右删失；孔出现先于活动降低，不作稳定吸引子/永久停止或全部D由时机解释。单基因组四路，不是统计重复。",
+      "low_activity_tail_start_only_latest": [
+        4095,
+        4061,
+        4026
+      ],
+      "low_activity_tail_start_two_pulses": [
+        3784,
+        3755,
+        3729
+      ],
+      "method": "32步尾均Σ|ΔA|/前步质量，描述阈值.001/.003/.01；闭合孔≥4格，密度阈值.05/.1/.2均保留，存帧间隔16。",
+      "owner": "resident_afa3d4d6cf11",
+      "script": "${share_root}/Projects/元胞自动机研究/src/analysis/r4v5_dwell_audit.py",
+      "simulation_updates": 0,
+      "source_job": "8dd4b8d8-e454-4598-a40d-638bb866ae5f",
+      "status": "completed",
+      "validation": "存帧质量与原逐步质量完全相同，同历史两克隆初态逐位相等，整数居中后支持不触边；轴向集中度均>.942。"
+    },
+    "research_renewal": {
+      "compute": "小网格、先短探索后按科学价值延长；CPU统一队列、GPU仅受控单槽可用时用；不设无意义固定小批门槛，避免无目标大扫参。",
+      "connection_transplant_timing": {
+        "historical_index_entry": "connection_transplant_timing"
+      },
+      "cooperative_structure": {
+        "historical_index_entry": "cooperative_structure"
+      },
+      "counterflow_projection_status": {
+        "historical_index_entry": "counterflow_projection_status"
+      },
+      "counterflow_readout": {
+        "historical_index_entry": "counterflow_readout"
+      },
+      "depletion_feedback": {
+        "historical_index_entry": "depletion_feedback"
+      },
+      "depletion_result_followthrough": {
+        "historical_index_entry": "depletion_result_followthrough"
+      },
+      "fixed_sensory_baseline_status": {
+        "historical_index_entry": "fixed_sensory_baseline_status"
+      },
+      "foraging_baseline": {
+        "historical_index_entry": "foraging_baseline"
+      },
+      "historical_findings": {
+        "entries": 30,
+        "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/historical_research_findings_index_20261018.json",
+        "scope": "仅迁出旧进展叙述；全部源、独立预算、授权、运行状态保持。",
+        "sha256": "aff76d332c302405225d8f24b43905b2248ad7429539097a3d9dc3f587a3563a"
+      },
+      "history_structure_72ef": {
+        "historical_index_entry": "history_structure_72ef"
+      },
+      "latest_processed_result": {
+        "historical_index_entry": "latest_processed_result"
+      },
+      "literature_positioning": {
+        "historical_index_entry": "literature_positioning"
+      },
+      "maintenance_incidence_and_policy": {
+        "historical_index_entry": "maintenance_incidence_and_policy"
+      },
+      "maintenance_refeed": {
+        "historical_index_entry": "maintenance_refeed"
+      },
+      "material_contact_gap_and_information": {
+        "historical_index_entry": "material_contact_gap_and_information"
+      },
+      "material_context_acquisition": {
+        "historical_index_entry": "material_context_acquisition"
+      },
+      "material_development_official_report": {
+        "historical_index_entry": "material_development_official_report"
+      },
+      "material_donor_budget": {
+        "historical_index_entry": "material_donor_budget"
+      },
+      "material_holdout_coordination": {
+        "historical_index_entry": "material_holdout_coordination"
+      },
+      "material_mixing_consumed": {
+        "historical_index_entry": "material_mixing_consumed"
+      },
+      "material_mobile_holdout": {
+        "historical_index_entry": "material_mobile_holdout"
+      },
+      "material_writing_decay": {
+        "historical_index_entry": "material_writing_decay"
+      },
+      "method_hypothesis": {
+        "historical_index_entry": "method_hypothesis"
+      },
+      "nearest_prior": {
+        "historical_index_entry": "nearest_prior"
+      },
+      "next_representation_experiment": {
+        "historical_index_entry": "next_representation_experiment"
+      },
+      "objective_status": "not_achieved",
+      "open_exploration_20261017": {
+        "analysis": "${share_root}/Projects/元胞自动机研究/src/research/results/method_renewal_paired_world_review_20261018/handoff.json",
+        "cleanup": "依赖迁3966件；工程2129冗余payload净释放334888960B磁盘块；投影9index与PI23回执另列，无回滚备份；受影响入口通过。",
+        "finding": "局部共享有条件小收益但异质/延迟受损；共同任务历史有用，复杂记忆未胜强基线。PI发现旧密度模型固定增长/维持比值排除无饥饿长期质量平衡，需与学习失败分开。",
+        "next": "继续独立资源部分观察任务与真实局部摄取/平移生死载荷；全文围绕实际中心方法重写。",
+        "objective_met": false,
+        "phase": "v10中心学习方法探索与全文重构",
+        "program": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/method_renewal_20261018.json",
+        "published": "论文v045/30页7主图；投影96；新方法稿在work/method_renewal未替换公开稿。",
+        "working_manuscript": "21页/7既有GUI主图/50引用，全章重写内部稿；默认v045保持。"
+      },
+      "paper_comparisons": {
+        "historical_index_entry": "paper_comparisons"
+      },
+      "paper_iteration_cycle": {
+        "historical_index_entry": "paper_iteration_cycle"
+      },
+      "paper_v020_review": {
+        "historical_index_entry": "paper_v020_review"
+      },
+      "primary_source": {
+        "historical_index_entry": "primary_source"
+      },
+      "reporting": "实质结果主动激活PI并继续有依据的下一步，不仅info归档；论文投影沿发现更新。",
+      "status": "active",
+      "stock_cue_cross_consumed": {
+        "historical_index_entry": "stock_cue_cross_consumed"
+      },
+      "tasks": {
+        "historical_index_entry": "tasks"
+      }
+    },
+    "software_validation": "研究主理人匹配历史脚本已迁入共享NumpyLenia与统一运行队列；单起始相位的既存轨迹迁移对照通过，最大绝对差7.02e-9。",
+    "spatial_rule_search": {
+      "analysis": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/4abde81f-62f4-46b0-9672-b1f8108276bd/analysis.json",
+      "budget": {
+        "extended_updates": [
+          2048,
+          4096
+        ],
+        "max_environment_candidates": 4,
+        "max_extended": 8,
+        "max_new_rule_initial_pairs": 48,
+        "short_updates": 512
+      },
+      "completed_budget": {
+        "assay_end": 3584,
+        "closure_controls": 12,
+        "combinations": 48,
+        "dual_combinations": 36,
+        "extended": 8,
+        "extension_end": 3072,
+        "paired_assay_candidates": 4
+      },
+      "facade": "resident_4e35778304b2",
+      "history_common_probe": {
+        "all_four_nonextinct": true,
+        "body_updates": 2048,
+        "candidate": "dk2026101619-r4-v5",
+        "continuation_steps": 512,
+        "end_lifetime": 4096,
+        "endpoint_D": 1.6874074966066814,
+        "endpoint_percent_ancestor": 3.3972251463923424,
+        "histories": [
+          "life3072曾probe",
+          "life3072曾sham"
+        ],
+        "job": "8dd4b8d8-e454-4598-a40d-638bb866ae5f",
+        "mean_D_including_t0": -0.03293952153869309,
+        "mean_percent_ancestor": -0.06631650689380802,
+        "message_id": "msg_716d1174b571b89352c41dcbe36864fc",
+        "new_branches": 4,
+        "new_genotypes": 0,
+        "new_probe": ".45×8",
+        "owner": "resident_ce2a5ab005bc",
+        "primary_readout": "两历史各自probe−sham质量响应再作历史间差，保存原始量及共同祖先life3072质量归一化。",
+        "scope": "确定性历史造成的身体状态依赖；活动降低、环态与质量响应分别描述，不称保护/学习或独立重复。",
+        "source_job": "4abde81f-62f4-46b0-9672-b1f8108276bd",
+        "source_lifetime": 3584,
+        "status": "completed",
+        "trapezoidal_mean_D": -0.03465171542510331
+      },
+      "inspection": "主理人读取三个作业result、有限选择表和analysis，查看真实512末态拼图及非Orbium生命期图；未重跑。",
+      "jobs": [
+        "e5675e43-73f7-42af-b913-392217941cc8",
+        "025c6b49-fee7-4f7e-a280-b4f4132614c6",
+        "4abde81f-62f4-46b0-9672-b1f8108276bd"
+      ],
+      "message_id": "msg_8653c83d81b7c5cf6e5aa5daa7f5b7c0",
+      "next_question": "以r4-v5作为新的非Orbium身体基底，区分自发停留—移动过程与环境改变其时机、身体后果；先复用既有全生命期/同末态sham，不自动加大扫描。",
+      "next_status": "history_probe_and_saved_timing_analysis_completed",
+      "owner": "resident_ce2a5ab005bc",
+      "projection_manifest": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/4abde81f-62f4-46b0-9672-b1f8108276bd/projection_manifest.json",
+      "question": "加入第二空间核及独立增长响应，能否打开持续不同形态/运动而非饱和纹理？",
+      "results": {
+        "delayed_extinction": {
+          "candidate": "dk2026101619-r2-v4",
+          "lifetime_step": 2385
+        },
+        "extended_dual_nonzero": 5,
+        "multiple_body_effect": "r2-v5探测后仅留一个主要结构，末质量29.847对sham60.974，不称形态保持恢复。",
+        "notable_behavior": "非Orbium三团块起点形成局域环状停留与移动/变形阶段；512短窗低活动不代表整段静态。sham也重新移动，未证明周期或吸引子。",
+        "notable_candidate": "dk2026101619-r4-v5",
+        "screen_dual_nonzero": 6,
+        "screen_extinct": 33,
+        "screen_nonzero": 15
+      },
+      "scope": "固定dt=.1，两个空间卷积势各自增长后加权裁剪，生命期只有body动态字段；48含12关闭对照，非48物种。不同规则末态身体不同，不能从探测差异推断核数单因果或学习。",
+      "source_message_id": "msg_e84867a2b980a533af9c93d34a55f787",
+      "status": "first_batch_completed",
+      "work_item": "多样形态候选与环境选择"
+    },
+    "stage_report": {
+      "address": "article_0565c33e0c03/file/progress.json",
+      "figure": "article_0565c33e0c03/file/figures/energy_path_v037/energy_path.png",
+      "figure_kind": "GUI scientific figure: conditional reserve bound and actual retained-path energy budget",
+      "title": "均化后为何再度贫能；身体更替后何种状态仍会传递",
+      "updated_at": "2026-10-17T03:49:26.957Z"
+    },
+    "status": "running",
+    "summary": "v10新学习方法持续实验：共同环境已用固定生长分配解除旧生理比例障碍，有限长程参照成立；定向反馈采样与局部载荷比较正接入。尚未证明中心方法创新或持续适应。整篇工作稿及GUI新图继续，冗余清理已完成。",
+    "writing_influence_validation": {
+      "body_bitwise_equal": true,
+      "mean_memory_max_error": 2.1094237467877974e-15,
+      "returncode": 0,
+      "seconds": 8.431209230970126
+    }
+  },
+  "expected_value": {
+    "artifact_corrections": {
+      "formation_donor_loaders": {
+        "changed": "两条ce2记录由load_checkpoint改为load_snapshot(required_fields=('body',))，明确StateSnapshot字段访问。",
+        "path": "${share_root}/Projects/元胞自动机研究/src/analysis/runs/formation_donors_20261016_v1/catalog.json",
+        "verification": "加载原两文件，身体逐位相同、步号4096，源SHA保持，无模拟重跑。"
+      }
+    },
+    "artifacts": {
+      "adjoint_related_work": "information_ba5464dd54ec",
+      "body_baseline": "${share_root}/Projects/元胞自动机研究/src/body_memory/runs/20261016_body_response_v1",
+      "body_limits_paper_figure": "article_0565c33e0c03/file/extensions/body_limits.png",
+      "body_phase_v2": "${share_root}/Projects/元胞自动机研究/src/body_memory/runs/20261016_body_response_v2",
+      "body_v2_paper_figure": "article_0565c33e0c03/file/lenia_pilot/body_v2.png",
+      "budgeted_morphogenesis_pi": "workspace/budgeted_morphogenesis_synthesis_20261016.json",
+      "cooperative_formation_animation": "article_0565c33e0c03/file/extensions/cooperative_formation.gif",
+      "counterflow_summary": "article_0565c33e0c03/file/extensions/counterflow_summary.json",
+      "environment_calibration": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/runs/signed_memory_20261016_001",
+      "environment_contingency": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/runs/experience_contingency_20261016_v4",
+      "environment_state_branch_figure": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/fe2335cd-d69c-4fbc-9ebd-93c6a42d359f/state_branch_endpoints.png",
+      "environment_state_branch_projection": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/fe2335cd-d69c-4fbc-9ebd-93c6a42d359f/projection_manifest.json",
+      "environment_state_branch_report": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/fe2335cd-d69c-4fbc-9ebd-93c6a42d359f/result.json",
+      "extensions_synthesis": "article_0565c33e0c03/file/extensions/summary.json",
+      "fast_slow_representatives": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261016/fast_slow/representatives.json",
+      "fast_slow_summary": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261016/fast_slow/summary.json",
+      "figure_legends": "article_0565c33e0c03/file/figure_legends.pdf",
+      "formation_donor_catalog": "${share_root}/Projects/元胞自动机研究/src/analysis/runs/formation_donors_20261016_v1/catalog.json",
+      "formation_report": "information_307d59b12f6f",
+      "geometry_holdout_pi_analysis": "${share_root}/Agents/lineage_75e3399f4877/residents/resident_afa3d4d6cf11/workspace/material_geometry_holdout_interpretation_20261016.json",
+      "inventory_policy_summary": "article_0565c33e0c03/file/extensions/inventory_policy_summary.json",
+      "kernel_migration": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/268be5d2-5271-4bb5-b95b-4bad9e1a7fac/migration_comparison.json",
+      "learned_rule_rearrangement_report": "information_32b47995bdda",
+      "lenia_overview_figure": "article_0565c33e0c03/file/lenia_pilot/overview.png",
+      "life0_formation_report": "information_32b47995bdda/file/information_32b47995bdda/initial0_20261016/progress.json",
+      "local_energy_transfer_pi": "workspace/material_continuous_transfer_synthesis_20261016.json",
+      "local_environment": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/LOCAL_ADAPTATION.md",
+      "local_learning": "${share_root}/Projects/元胞自动机研究/src/local_learning/README.md",
+      "local_learning_paper_figure": "article_0565c33e0c03/file/extensions/local_experience.png",
+      "maintenance_analysis": "article_0565c33e0c03/file/synthesize_maintenance.py",
+      "maintenance_endpoints": "article_0565c33e0c03/file/extensions/maintenance_endpoints.csv",
+      "maintenance_summary": "article_0565c33e0c03/file/extensions/maintenance_summary.json",
+      "maintenance_timeseries": "article_0565c33e0c03/file/extensions/maintenance_timeseries.csv",
+      "manuscript": "article_0565c33e0c03",
+      "manuscript_pdf": "article_0565c33e0c03/file/manuscript.pdf",
+      "matched_histories": "${share_root}/Projects/元胞自动机研究/src/analysis/runs/orbium_matched_history_20261016_v1",
+      "material_carriage_animation": "article_0565c33e0c03/file/extensions/material_carriage_7341.gif",
+      "material_transport_contrasts": "article_0565c33e0c03/file/extensions/material_transport_contrasts.csv",
+      "material_transport_endpoints": "article_0565c33e0c03/file/extensions/material_transport_endpoints.csv",
+      "material_transport_summary": "article_0565c33e0c03/file/extensions/material_transport_summary.json",
+      "material_transport_synthesis": "article_0565c33e0c03/file/synthesize_material_transport.py",
+      "memory_influence": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/8fb3c383-7074-4fd4-979d-e496c62f9825",
+      "memory_influence_figure": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/8fb3c383-7074-4fd4-979d-e496c62f9825/memory_influence.png",
+      "morphology_contact_sheet": "${share_root}/Projects/元胞自动机研究/src/analysis/runs/morphology_review_20261016_v1/contact_01.png",
+      "morphology_contact_sheet_2": "${share_root}/Projects/元胞自动机研究/src/analysis/runs/morphology_review_20261016_v1/contact_02.png",
+      "morphology_environment": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/41a0e2a0-44ab-450a-800e-d71176365daa/candidate_environment.png",
+      "morphology_first_batch": "${share_root}/Projects/元胞自动机研究/src/morphology_evolution/first_batch_summary.json",
+      "morphology_pool": "${share_root}/Projects/元胞自动机研究/src/morphology_evolution/pool.json",
+      "morphology_review": "${share_root}/Projects/元胞自动机研究/src/analysis/runs/morphology_review_20261016_v1/review_notes.json",
+      "morphology_source_manifest": "${share_root}/Projects/元胞自动机研究/src/analysis/runs/morphology_review_20261016_v1/sources.json",
+      "outer_checkpoint_audit": "${share_root}/Projects/元胞自动机研究/src/analysis/runs/outer_checkpoint_audit_20261016_v1/audit.json",
+      "outer_checkpoint_figure": "${share_root}/Projects/元胞自动机研究/src/analysis/runs/outer_checkpoint_audit_20261016_v1/checkpoint_outcomes.png",
+      "outer_rule_candidates": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/12d8620a-dcaf-43dc-a20f-1802c06be7f2/result.json",
+      "outer_rule_summary": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261016/outer_search/summary.json",
+      "paired_replay": "${share_root}/Projects/元胞自动机研究/src/body_memory/runs/paired_replay_20261016_v1/index.json",
+      "paper_cooperative_animation": "article_0565c33e0c03/file/extensions/cooperative_formation.gif",
+      "paper_copy_influence_fields": "article_0565c33e0c03/file/extensions/copy_influence_fields.png",
+      "paper_copy_sensitivity_figure": "article_0565c33e0c03/file/extensions/copy_sensitivity.png",
+      "paper_copy_sensitivity_summary": "article_0565c33e0c03/file/extensions/copy_sensitivity_summary.json",
+      "paper_depletion_figure": "article_0565c33e0c03/file/extensions/depletion_branches.png",
+      "paper_depletion_summary": "article_0565c33e0c03/file/extensions/depletion_summary.json",
+      "paper_editorial_synthesis": "article_0565c33e0c03/file/extensions/editorial_synthesis_v031.json",
+      "paper_figure": "article_0565c33e0c03/file/figures/energy_path_v037/energy_path.png",
+      "paper_joint_policy_inventory_insert": "${share_root}/Agents/lineage_75e3399f4877/residents/resident_afa3d4d6cf11/workspace/paper_joint_policy_inventory_insert_20261016.tex",
+      "paper_maintenance_data": "article_0565c33e0c03/file/extensions/maintenance_timeseries.csv",
+      "paper_maintenance_summary": "article_0565c33e0c03/file/extensions/maintenance_summary.json",
+      "paper_material_action_animation": "article_0565c33e0c03/file/extensions/material_action.gif",
+      "paper_material_action_frames": "article_0565c33e0c03/file/extensions/material_action_frames.png",
+      "paper_material_energy_figure": "article_0565c33e0c03/file/extensions/material_energy.png",
+      "paper_material_energy_summary": "article_0565c33e0c03/file/extensions/material_energy_summary.json",
+      "paper_material_geometry_figure": "article_0565c33e0c03/file/extensions/material_geometry.png",
+      "paper_material_geometry_summary": "article_0565c33e0c03/file/extensions/material_geometry_summary.json",
+      "paper_mechanism_summary": "article_0565c33e0c03/file/mechanism/summary.json",
+      "paper_moving_crescent": "article_0565c33e0c03/file/extensions/moving_crescent.gif",
+      "paper_multiscale_report": "article_0565c33e0c03/file/extensions/multiscale_report.json",
+      "paper_multiscale_states": "article_0565c33e0c03/file/extensions/multiscale_states.png",
+      "paper_repaired_challenge_figure": "article_0565c33e0c03/file/extensions/repaired_challenge.png",
+      "paper_repaired_challenge_summary": "article_0565c33e0c03/file/extensions/repaired_challenge_summary.json",
+      "paper_rotation_figure": "article_0565c33e0c03/file/extensions/rotation_comparison.png",
+      "paper_rotation_summary": "article_0565c33e0c03/file/extensions/rotation_summary.json",
+      "paper_shifted_state_rule_cross": "article_0565c33e0c03/file/extensions/shifted_state_rule_cross_summary.json",
+      "paper_supplementary": "article_0565c33e0c03/file/supplementary.pdf",
+      "paper_withdrawal_summary": "article_0565c33e0c03/file/extensions/withdrawal_summary.json",
+      "payment_signal_pi_analysis": "${share_root}/Agents/lineage_75e3399f4877/residents/resident_afa3d4d6cf11/workspace/payment_signal_saved_operator_20261016.json",
+      "polarity_phase_accounting": "${share_root}/Agents/lineage_75e3399f4877/residents/resident_afa3d4d6cf11/workspace/polarity_phase_accounting_20261016.json",
+      "precursor_paper_summary": "article_0565c33e0c03/file/extensions/precursor_summary.json",
+      "precursor_state": "${share_root}/Projects/元胞自动机研究/src/body_memory/PRECURSOR_STATE.md",
+      "rearrangement_clipping_audit": "${share_root}/Projects/元胞自动机研究/src/analysis/runs/rearrangement_clipping_20261016_v1/audit.json",
+      "related_work": "information_9ca76e1066db",
+      "review_synthesis": "article_0565c33e0c03/file/review/summary.json",
+      "stage_report": "article_0565c33e0c03/file/progress.json",
+      "structure_cost_decomposition": "article_0565c33e0c03/file/extensions/structure_cost_decomposition.json",
+      "structure_retest_analysis": "article_0565c33e0c03/file/synthesize_structure_retest.py",
+      "structure_retest_endpoints": "article_0565c33e0c03/file/extensions/structure_retest_endpoints.csv",
+      "structure_retest_summary": "article_0565c33e0c03/file/extensions/structure_retest_summary.json",
+      "supplementary_pdf": "article_0565c33e0c03/file/supplementary.pdf",
+      "supplementary_source": "article_0565c33e0c03/file/supplementary.tex",
+      "triplet_growth_diagnostic": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/ee53c47a-8b66-42f3-b2fc-d05e15a42c47",
+      "triplet_mechanism": "${share_root}/Projects/元胞自动机研究/src/body_memory/TRIPLET_MECHANISM.md",
+      "triplet_order": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/7e33eef4-ead8-4b23-ba0a-427334d4d041",
+      "triplet_replay": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/18805a39-2f75-4ec1-a8f9-91c514ddd33e/index.json",
+      "writing_influence": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/ead5c7f4-7677-4e39-ab17-7ac6c1b1f1b0",
+      "writing_influence_figure": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/ead5c7f4-7677-4e39-ab17-7ac6c1b1f1b0/writing_influence.png"
+    },
+    "compute_policy": "CPU2槽×2线程；Thor受控GPU训练1槽已加载生产runner，实际通过暂停/继续/停止、单槽/幂等/断线保护；已退出GPU任务无科学checkpoint恢复则拒绝重投。提交前仍读started/desired，不占他项GPU。",
+    "continuation": {
+      "event_source": "event_source_e021e281f383",
+      "event_type": "resident.work_finished",
+      "family": "family_4ed85bf56e5b",
+      "policy": "PI先查started/desired，paused/stopped不启动科研；每次合并检查三者未处理实质结果，research.continuation_seen去重；无新证据不互发确认，不监听PI自身。总启动事件未改。",
+      "route_wire": "wire_c8d63412787a",
+      "status": "listening",
+      "watch_wires": [
+        "wire_0364587c0bf6",
+        "wire_5f660dc08b13",
+        "wire_3e11e2d940fd"
+      ],
+      "watched_residents": [
+        "resident_d3ccfa2d95b7",
+        "resident_ce2a5ab005bc",
+        "resident_33af539c4a17"
+      ]
+    },
+    "coupled_morphology_search": {
+      "control": "提交前读started/desired，CPU统一队列；首批不自动扩扫，实际片段逐批交投影。",
+      "dt": 0.05,
+      "extended_job": "42f6f6c7-4ddb-4488-bc1d-13211891f8f4",
+      "facade": "resident_5fe1227e36c0",
+      "findings": "新局域双峰形成移动弯月；多结构动态与迟发消亡保留。多窗/末窗选择不同尚无方法优势。r2规则仍有paired-Orbium来源；本批无dt收敛证据。",
+      "handoff": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261016/multiscale_slow/candidate_exchange_v1.json",
+      "max_combinations": 24,
+      "max_extended": 6,
+      "max_short_model_time": 51.2,
+      "max_total_extended_model_time": 204.8,
+      "message_id": "msg_924647068ba50cfff4cfbdcaa6814407",
+      "next": "首代代表父+c01+c04保留；父体P对照及两状态规则互换均完成。本组无待跑身体，不补未平移交叉/q0/新代/预留场。",
+      "owner": "resident_d3ccfa2d95b7",
+      "question": "多空间尺度增长与慢负反馈能否从不同局域初态产生持续且不同的动态身体？",
+      "scope": "可据失败选择明确不同的规则表示；含反馈关闭对照、非Orbium实际初始基因组及新局域初态，生命期规则固定。多时间窗动态描述保留多样性；同批数据比较终点与多窗选择，不重复训练，不称加机制本身是新方法。",
+      "screen_job": "c2b1cd8d-ec7b-4738-8890-d07f88341c90",
+      "status": "completed",
+      "summary": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261016/multiscale_slow/summary.json",
+      "work_item": "身体生成规则与适应机制的外层搜索"
+    },
+    "current_focus": "发展能从局部经历学得有用行为并在变化环境持续适应的方法；下一轮共用独立资源/部分观察任务与身体载荷接口。",
+    "environment_evolution_current": {
+      "completed_batch": "resource_timing_goal_mismatch_20261019",
+      "compute_slot": "Both unique serial jobs complete; no ce2 pending body job.",
+      "continuation": {
+        "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_geometry_uptake_20261019/analysis/handoff.json",
+        "native": 1024,
+        "runner_worker_seconds": 4.615472,
+        "sha256": "7ce13a64262b9e9e70458a96640232675859c6bee70079a224d807c754dd6ff8",
+        "task": "resource_geometry_uptake_20261019"
+      },
+      "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/resource_timing_goal_mismatch_20261019/analysis/handoff.json",
+      "finding": "History16 U worsens4/4 in lagged supply; soft motor savings preserve higher E. Independent same-gross width4 gives soft U+6.21/+6.25 and E+6.11/+6.16 with reduced tissue loss; compact mixed and late-window counterexamples retained. External ecology intervention, not learning.",
+      "native": 4096,
+      "next": "Spatial resource/body uptake mismatch; develop lawful experienced uptake-guided behavior with fixed current and simple immediate feedback controls, separate learning content from environment help. No lag scan or fit resurrection.",
+      "objective_met": false,
+      "owner": "resident_ce2a5ab005bc",
+      "runner_worker_seconds": 27.265008,
+      "sha256": "6e1bc7eb8a1fd8abc76e52566c597543eabcded5c2bf436be5a613d4a3a5ffca",
+      "status": "active_research"
+    },
+    "execution_followup": {
+      "archive": "${share_root}/Agents/lineage_75e3399f4877/residents/resident_afa3d4d6cf11/workspace/polarity_research_progress.json",
+      "note": "旧相遇/初态/快慢/双核与控制故障已完成，详见归档；当前科研续接见research_renewal和research.continuation_seen，事件连线保持。",
+      "status": "historical_batches_closed"
+    },
+    "fast_slow_branch": {
+      "branch_end": 2048,
+      "conclusion": "b02快慢漂移在已测步长下定性一致；q重排改变暂态并与有限窗漂移反向一致，动态类型相近；newlocal剧烈形变步长敏感。",
+      "conditions": 28,
+      "continuation_job": "b883f316-75ab-4bdc-9fd6-834b4a7cf335",
+      "extended": 6,
+      "followup_job": "08411027-f409-4b87-8f6c-663bf507ada7",
+      "followup_max_continuations": 10,
+      "followup_message_id": "msg_2a9f37b686ed428170580d937600b813",
+      "followup_state": "completed",
+      "followup_summary": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261016/feedback_time/summary.json",
+      "new_short_trajectories": 25,
+      "reused_baselines": 3,
+      "scope": "q为固定环境占据痕迹；2条同A/m空间重排，dt=.05/Tq3.2，复用原基线；不称学习或渐近稳定。",
+      "screen_job": "16b3b143-0a79-419c-acfc-fb74ff6ee7dc",
+      "slow_location": "environment_fixed_grid",
+      "spatial_q_followup_message_id": "msg_6563ebe373a3fa7af6e7458d140e775b",
+      "spatial_q_followup_state": "completed",
+      "spatial_q_job": "3ba81e30-dbdf-4199-a009-fa5425d0575d",
+      "spatial_q_report": "information_bd6f1c162e2e",
+      "state_key": "research.fast_slow_rule_branch",
+      "status": "feedback_time_and_spatial_q_completed"
+    },
+    "findings": [
+      "原始固定规则Orbium的历史响应差异多受相位影响，可靠预警尚无稳定信息收益；这与增强局部学习模型的结果分开。",
+      "指定局部复制/读出规则下，前后部接收等量真实经历却留下不同长期预测；后部反转信息难以改写前部留下的旧预测，同身体记忆擦除和交换能改变即时成本。",
+      "环境独立复测中，较强组织记忆保留相对较弱保留，在慢变环境平均受益、较快变化环境平均受损；各8条环境序列中7条保留原方向。这里是指定成本，尚非存活或繁殖优势。",
+      "有限时记忆读出权重与逐次输入伴随已完成：前部反转可以改写旧预测，后部当下更新后仍难以保留；去掉后续学习覆盖，后部终末总输入灵敏度仍约3e-12。伴随代数和前部中性贡献集中已有近邻，科学重点转到真实经历的空间保留限制。",
+      "三脉冲损伤支线：逐步总质量代价匹配后危险时序仍4/4消亡；全体24相位省略第三脉冲有12例恢复、12例自然消亡，因此第三脉冲分别改变命运或加速已有失稳。",
+      "损伤支线出现单步额外刺激反而保护的非单调现象；此前等质量重分布与单步净移除应分别记量，不能简化成越少刺激越安全。",
+      "外加成本目标下的小种群跨代选择已有独立环境收益；高切换环境末代群体仍劣于纯不学习，尚无自然繁殖或稳定身体优势。",
+      "既有Orbium闭环对照已观察到旧记忆在反转后造成消亡；保守防御下限可使其活到反馈修正，但常数中性防御也存活，累计即时收益随关系持续时间改变方向。该结果不代替新形态与生成规则搜索。",
+      "单环核与初态搜索的17条活动记录中，.45×8更新后紧凑单体仅1/6活动：较小较慢g2-0161保留，较快g1-0063消亡；多体g1-0060由2变6组分且质量扩张，不称原个体恢复。dt随基因组变化，因此跨候选结果不证明形态单因果或匹配物理剂量下的普遍速度—抗扰权衡。",
+      "首批8分支可微外层优化实际更新规则/初态及αβ，7项通过448步门槛；多数非Orbium候选为饱和场。b5检查点32在64步仍有质量137.93、101步归零，而检查点16通过有限窗口后近静态。训练分数记录在Adam更新前，须与下一条日志对齐；参数更新与窗口通过均不等同经验适应收益。",
+      "固定规则初态组装产生多叶/弧状暂态，但三体与迎面分别134/83步消失；并行/前后/交叉的3个后继至2048仍近Orbium。V1随机规则代表与V2长窗续训多数趋于饱和斑点，单纯延长训练未在该批产生持续新体型。",
+      "两套学习核的6条同直方图重排中，b04集中与打乱到重排后384步活动大异，续至2048均近静态。末态两者各193格在A=1且仍有正增长，占质量99.94%/99.24%；内部格仅1/3，支持裁剪固定斑点而非增长处处为零。仅保存状态单步诊断，不证明扰动稳定性、相同吸引子或去裁剪后的动态。",
+      "0082/0161在各自固定规则下迎面54/89更新消亡而隔离供体活动。0082并行512步双体尚在，至2048只留活动单体；0161并行512步与隔离叠加最大差3.14e-10。本批未得到稳定新组合；来源标签不等同最终形态类型。",
+      "0060固定基因组：未扰双体与先扰饱和图案在life4608至6656继续保持不同类型，末256活动56.06与.333。life6656同强度再探测，双体变9组分且质量扩张，已有图案仍同类、质量均值相对sham仅+.697；无消亡但后者仅弱残余活动，不能据此声称经验收益。",
+      "快慢耦合在已测分支中改变动态类型：b02/b07到2048仍有L1=5.09/3.38，lag32经整数配准只余4.27%/14.37%，主要为图案漂移。newlocal g2/t32 L1=54.90、饱和质量0、配准剩85.97%，无耦合则L1=.00128、饱和99.41%。这是有限选中轨迹，q为环境占据痕迹；未检验步长细化或反馈因果，未称经验适应。",
+      "付费生成已有环、成对移动及解析双峰单弯月；后者后三窗A约27.6，每窗出生约244。q移位差跨段变号，状态作用不等于经历收益。",
+      "首代10f94857：c04 F/body-time .360032对父.370574，末A27.831对28.019、晚均更低且波动更大；c01末A24.776。c04请求少48.217、P拒绝多32.062但容量拒绝少34.801，出生少45.478是账本，非省料原因分解。",
+      "P布局/规则互换：88e2父体平移后A−.552501仍存续，592 c04在860消亡。4d7两非对角复用完整平移态：父态两规则末A27.467/26.003，c04态父/原规则680/860消亡。当前四参数非存亡差异充分解释，但作用仍在；c04换父先增A至576的29.005，672无出生请求，无饥饿欠维护。非状态决定所有规则结局、非P×规则完整交互或历史学习。"
+    ],
+    "formation_branch": {
+      "donor_encounter_report": "information_307d59b12f6f",
+      "donor_encounter_report_version": 3,
+      "donor_pool_handoff": "${share_root}/Projects/元胞自动机研究/src/morphology_evolution/handoffs/donor_encounters_v1.json",
+      "donor_short_job": "de3a28eb-50c0-4ea1-8135-4e4f30099cca",
+      "followup_message_id": "msg_6563ebe373a3fa7af6e7458d140e775b",
+      "life0_initial_mass": 72.02819553348581,
+      "life0_report": "information_32b47995bdda",
+      "life0_report_version": 2,
+      "life0_scope": "3条512步已完成；仅单团/双团续至2048，尾64 L1为2.94483e-8/9.45424e-4，均近静止饱和。原始life0参考未延长。",
+      "life64_trained_mass": 181.73500799708424,
+      "new_candidates_from_encounter_index": 0,
+      "new_extended_rollouts": 2,
+      "new_short_rollouts": 6,
+      "next": "life0/life64、相遇及同身体q空间重排均完成。不追加q种子或旧供体扫描；d3下一24组合形态扩张独立进行，33待真实有区别供体再选形成问题。",
+      "next_status": "await_fast_slow_feedback_and_dt_results",
+      "original_orbium_batch": {
+        "continued_to": 2048,
+        "exploratory_configurations": 10,
+        "extinct_by512": 7,
+        "orbium_like_successors": 3
+      },
+      "phase": "formation_and_spatial_q_completed",
+      "report": "information_32b47995bdda",
+      "reused_references": 2,
+      "state_key": "research.formation_branch"
+    },
+    "memory_influence_validation": {
+      "adjoint_duality_max_error": 1.2212453270876722e-15,
+      "forward_prediction_max_error": 2.220446049250313e-15,
+      "scope": "指定继承算子、四相位共同身体、未来轨迹已知；不是独立生物复制或在线策略。",
+      "seconds": 1.0514759700163268
+    },
+    "method_renewal_latest_pi": {
+      "archive": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/shared_history_birth_cohort_0e9c6f138d67fc56.json",
+      "core_scientific_goal_achieved": false,
+      "current": "pi_current_scientific_direction",
+      "path": [
+        "method_renewal_latest_pi"
+      ],
+      "sha256": "9cf1e9bf5a015f1d9d3a1bc65ab6c834fe1e2849631dc4ce9cbfc986e841b18c",
+      "status": "historical_closed"
+    },
+    "morphology_search": {
+      "classes": {
+        "compact_single_bodies": 6,
+        "distributed_patterns": 10,
+        "multiple_smooth_bodies": 1
+      },
+      "compact_single_pulse_active": {
+        ".3": 3,
+        ".45": 1
+      },
+      "control_active": 17,
+      "extended_trajectories": 18,
+      "new_species_count": null,
+      "observed_steps": 4096,
+      "phase": "first_batch_environment_assayed",
+      "pool_index_records": 26,
+      "pool_index_scope": "责任成员回报：17环境活动记录及9优化入选检查点；非26物种，不改变先前17条4096步活动记录的范围。",
+      "projection_owner": "resident_4b26ea4a30af",
+      "pulse_active": {
+        ".3": 14,
+        ".45": 12
+      },
+      "retained_candidates": 17,
+      "screened": 168,
+      "state_key": "research.morphology_search"
+    },
+    "morphology_state_branch": {
+      "candidate": "m2026101607-g1-0060",
+      "facade": "resident_4e35778304b2",
+      "free_lifetime_range": [
+        4608,
+        6656
+      ],
+      "free_tail256_activity": {
+        "first_pulse": 0.33280050607894124,
+        "unperturbed": 56.05952841095001
+      },
+      "interpretation": "同基因组有限观察期的状态分支持续；两身体不同，响应差不证明学习或抗扰提高。第二次双体向9组分转变不等于原6组分图案精确复现。",
+      "job_id": "fe2335cd-d69c-4fbc-9ebd-93c6a42d359f",
+      "max_new_continuations": 6,
+      "message_id": "msg_3493f5495f03a43b0584af51643a879b",
+      "new_continuations": 6,
+      "owner": "resident_ce2a5ab005bc",
+      "probe_lifetime_range": [
+        6656,
+        7168
+      ],
+      "probe_minus_sham_tail256_mass": {
+        "first_pulse": 0.6971903251694584,
+        "unperturbed": 582.3663207993194
+      },
+      "question": "同规则的受扰形态分支是否持续以及共同再探测后的去向",
+      "state_key": "research.environment_state_branches",
+      "status": "completed"
+    },
+    "next_questions": [
+      "局部经验随身体运动、生死和有限通信后是否仍优于最近配对/EMA？",
+      "当失败不能揭示另一端资源时，探测、保留与重新学习能否形成可泛化能力？",
+      "相近摄取下仍失能的身体，学习带来的收益能否覆盖真实行动和维持代价？"
+    ],
+    "outer_rule_search": {
+      "all_saved_checkpoint_nodes": 64,
+      "branches": 8,
+      "independent_initial_branches": 8,
+      "job_id": "12d8620a-dcaf-43dc-a20f-1802c06be7f2",
+      "long_replay_steps": 2112,
+      "new_species_count": null,
+      "next_state_key": "research.fast_slow_rule_branch",
+      "observed_steps": 448,
+      "phase": "two_batches_and_long_replay_completed",
+      "selected_short_window_checkpoints": 9,
+      "state_key": "research.outer_search_review"
+    },
+    "overall_objective_met": false,
+    "paper": {
+      "article_id": "article_0565c33e0c03",
+      "canonical_pdf": "${share_root}/Articles/article_0565c33e0c03/manuscript.pdf",
+      "cleanup_bytes": 2389548,
+      "default_pdf_sha256": "8aae7b3a36e3e4780ab5f03b13be69693b7ad218e6a13031cef48f58702f5434",
+      "default_pdf_url": "/api/articles/article_0565c33e0c03/pdf",
+      "dependency_migration": {
+        "author_deleted_bytes": 0,
+        "author_deleted_files": 0,
+        "bytes_moved": 320831764,
+        "files_moved": 3966,
+        "manifest": "maintenance/dependency_migration/manifest.json",
+        "status": "complete_readonly_default_pass"
+      },
+      "figure_sources": "${share_root}/Articles/article_0565c33e0c03/work/longform_v047/data/main_figure_register.json",
+      "findings": "同父写/冻反转4/4对2/4；无反馈末均2/4但为相反父态。四write材料加权关联总量守恒，不能由行为失效断言遗忘。单跳/时间协调均2/4，中央pooled4/4仅作非局部参照；fast-delta强基准保留，整体研究未完成。",
+      "freeze_manifest": "${share_root}/Articles/article_0565c33e0c03/work/longform_v047/data/default_preview_freeze_v0472.json",
+      "local_pdf_sha256": "a3c544628375c2e3cd8f5100d84aa660538398eca00774c93338a588f30adf25",
+      "main_cited_references": 52,
+      "main_figure_pages": {
+        "1": 5,
+        "2": 8,
+        "3": 14,
+        "4": 15,
+        "5": 18,
+        "6": 20,
+        "7": 23
+      },
+      "main_figures": 7,
+      "main_pages_before_references": 34,
+      "main_tables": 2,
+      "manuscript_root": "${share_root}/Articles/article_0565c33e0c03",
+      "publication_record": "${share_root}/Articles/article_0565c33e0c03/work/longform_v047/data/publication_record.json",
+      "reader_update": "${share_root}/Articles/article_0565c33e0c03/work/longform_v047/data/reader_update.json",
+      "review": "${share_root}/Articles/article_0565c33e0c03/work/longform_v047/data/visual_review.json",
+      "scope": "保原阴性与局部门；行为收益、存续和物能代价分别报告；无新算法优势或课题完成主张。",
+      "status": "v0472已发布；行动协调及条件性写入保持已入主文，保父态相反效应和关联总量/行为区别",
+      "supplementary_figures": 6,
+      "supplementary_tables": 22,
+      "title": "Experience-dependent behaviour and material persistence in cellular bodies",
+      "total_pages": 113,
+      "updated_at": "2026-10-19T03:33:16.630235+00:00",
+      "version": "0.47.2"
+    },
+    "pi_current_scientific_direction": {
+      "entry": "knowledge_base/research/experience_learning/lifetime_parallel_continuation_20261019.json",
+      "objective_met": false,
+      "question": "摄取与投入；续研",
+      "status": "running"
+    },
+    "projection_formation": {
+      "fast_slow_followup_note": "已送msg_a9b23fcdf64832d145ad8d12f6984e6c：newlocal保留暂态及消亡/步长敏感，b02显示同模型时间对照；未获此次宿主发布回执。",
+      "fast_slow_handoff": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261016/fast_slow/representatives.json",
+      "fast_slow_scope": "3个真实有限动态代表已由来源交投影；不把局域初态描述为已稳定局域生物。",
+      "life0_entry": "source_owner_reports_entry_replaced",
+      "life0_host_acceptance": "await_projection_receipt",
+      "sourceRef": "information_32b47995bdda/file/information_32b47995bdda/initial0_20261016/progress.json"
+    },
+    "projection_increment": {
+      "frames_per_clip": 113,
+      "grid": [
+        32,
+        32
+      ],
+      "lifetime_steps": "0..448，每4步采样；64步边界精确相同后去重",
+      "outer_optimization_clips": 8,
+      "scope": "八段外层优化生命片段正在接入，保留32/64同尺与真实检查点链。十二项环境扩展包已备，未覆盖已验收的六条默认墙。",
+      "source": "${share_root}/Agents/lineage_75e3399f4877/residents/resident_112dd56b5808/workspace/morphology-outer-optimization/",
+      "status": "integration_in_progress_not_confirmed_published"
+    },
+    "projection_wall": {
+      "contract": "${share_root}/Projects/元胞自动机研究/src/projection/MORPHOLOGY_CONTRACT.md",
+      "default_candidates": 6,
+      "evidence": "科研投影门面2026-10-15T19:33:25Z回报",
+      "formation_reports": "相遇/长暂态两份成果已加入共享报告并由TAU查看",
+      "latest_reported_release": {
+        "acceptance": "成员回报构建和本地检查完成，正式TAU页面观看尚待回执。",
+        "artifact": "c995abed",
+        "commit": "ee19cc6",
+        "revision": 13,
+        "scope": "12项代际候选+8段外层优化记录，数量不等物种；来源/有限窗口保留。",
+        "segments": 20
+      },
+      "revision": 11,
+      "sources": "${share_root}/Projects/元胞自动机研究/src/projection/scripts/morphology-sources.json",
+      "status": "host_viewing_acceptance_completed"
+    },
+    "r4v5_dwell_analysis": {
+      "audit": "${share_root}/Projects/元胞自动机研究/src/analysis/runs/r4v5_dwell_20261016_v1/audit.json",
+      "closed_hole_density01_first_passing_frames": {
+        "only_latest": 3968,
+        "two_pulses": 3696
+      },
+      "earlier_by_updates": [
+        311,
+        306,
+        297
+      ],
+      "figure": "${share_root}/Projects/元胞自动机研究/src/analysis/runs/r4v5_dwell_20261016_v1/dwell_timing.png",
+      "limits": "末尾连续低活动段仅观察到4096，右删失；孔出现先于活动降低，不作稳定吸引子/永久停止或全部D由时机解释。单基因组四路，不是统计重复。",
+      "low_activity_tail_start_only_latest": [
+        4095,
+        4061,
+        4026
+      ],
+      "low_activity_tail_start_two_pulses": [
+        3784,
+        3755,
+        3729
+      ],
+      "method": "32步尾均Σ|ΔA|/前步质量，描述阈值.001/.003/.01；闭合孔≥4格，密度阈值.05/.1/.2均保留，存帧间隔16。",
+      "owner": "resident_afa3d4d6cf11",
+      "script": "${share_root}/Projects/元胞自动机研究/src/analysis/r4v5_dwell_audit.py",
+      "simulation_updates": 0,
+      "source_job": "8dd4b8d8-e454-4598-a40d-638bb866ae5f",
+      "status": "completed",
+      "validation": "存帧质量与原逐步质量完全相同，同历史两克隆初态逐位相等，整数居中后支持不触边；轴向集中度均>.942。"
+    },
+    "research_renewal": {
+      "compute": "小网格、先短探索后按科学价值延长；CPU统一队列、GPU仅受控单槽可用时用；不设无意义固定小批门槛，避免无目标大扫参。",
+      "connection_transplant_timing": {
+        "historical_index_entry": "connection_transplant_timing"
+      },
+      "cooperative_structure": {
+        "historical_index_entry": "cooperative_structure"
+      },
+      "counterflow_projection_status": {
+        "historical_index_entry": "counterflow_projection_status"
+      },
+      "counterflow_readout": {
+        "historical_index_entry": "counterflow_readout"
+      },
+      "depletion_feedback": {
+        "historical_index_entry": "depletion_feedback"
+      },
+      "depletion_result_followthrough": {
+        "historical_index_entry": "depletion_result_followthrough"
+      },
+      "fixed_sensory_baseline_status": {
+        "historical_index_entry": "fixed_sensory_baseline_status"
+      },
+      "foraging_baseline": {
+        "historical_index_entry": "foraging_baseline"
+      },
+      "historical_findings": {
+        "entries": 30,
+        "path": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/historical_research_findings_index_20261018.json",
+        "scope": "仅迁出旧进展叙述；全部源、独立预算、授权、运行状态保持。",
+        "sha256": "aff76d332c302405225d8f24b43905b2248ad7429539097a3d9dc3f587a3563a"
+      },
+      "history_structure_72ef": {
+        "historical_index_entry": "history_structure_72ef"
+      },
+      "latest_processed_result": {
+        "historical_index_entry": "latest_processed_result"
+      },
+      "literature_positioning": {
+        "historical_index_entry": "literature_positioning"
+      },
+      "maintenance_incidence_and_policy": {
+        "historical_index_entry": "maintenance_incidence_and_policy"
+      },
+      "maintenance_refeed": {
+        "historical_index_entry": "maintenance_refeed"
+      },
+      "material_contact_gap_and_information": {
+        "historical_index_entry": "material_contact_gap_and_information"
+      },
+      "material_context_acquisition": {
+        "historical_index_entry": "material_context_acquisition"
+      },
+      "material_development_official_report": {
+        "historical_index_entry": "material_development_official_report"
+      },
+      "material_donor_budget": {
+        "historical_index_entry": "material_donor_budget"
+      },
+      "material_holdout_coordination": {
+        "historical_index_entry": "material_holdout_coordination"
+      },
+      "material_mixing_consumed": {
+        "historical_index_entry": "material_mixing_consumed"
+      },
+      "material_mobile_holdout": {
+        "historical_index_entry": "material_mobile_holdout"
+      },
+      "material_writing_decay": {
+        "historical_index_entry": "material_writing_decay"
+      },
+      "method_hypothesis": {
+        "historical_index_entry": "method_hypothesis"
+      },
+      "nearest_prior": {
+        "historical_index_entry": "nearest_prior"
+      },
+      "next_representation_experiment": {
+        "historical_index_entry": "next_representation_experiment"
+      },
+      "objective_status": "not_achieved",
+      "open_exploration_20261017": {
+        "analysis": "${share_root}/Projects/元胞自动机研究/src/research/results/method_renewal_paired_world_review_20261018/handoff.json",
+        "cleanup": "依赖迁3966件；工程2129冗余payload净释放334888960B磁盘块；投影9index与PI23回执另列，无回滚备份；受影响入口通过。",
+        "finding": "局部共享有条件小收益但异质/延迟受损；共同任务历史有用，复杂记忆未胜强基线。PI发现旧密度模型固定增长/维持比值排除无饥饿长期质量平衡，需与学习失败分开。",
+        "next": "继续独立资源部分观察任务与真实局部摄取/平移生死载荷；全文围绕实际中心方法重写。",
+        "objective_met": false,
+        "phase": "v10中心学习方法探索与全文重构",
+        "program": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/method_renewal_20261018.json",
+        "published": "论文v045/30页7主图；投影96；新方法稿在work/method_renewal未替换公开稿。",
+        "working_manuscript": "21页/7既有GUI主图/50引用，全章重写内部稿；默认v045保持。"
+      },
+      "paper_comparisons": {
+        "historical_index_entry": "paper_comparisons"
+      },
+      "paper_iteration_cycle": {
+        "historical_index_entry": "paper_iteration_cycle"
+      },
+      "paper_v020_review": {
+        "historical_index_entry": "paper_v020_review"
+      },
+      "primary_source": {
+        "historical_index_entry": "primary_source"
+      },
+      "reporting": "实质结果主动激活PI并继续有依据的下一步，不仅info归档；论文投影沿发现更新。",
+      "status": "active",
+      "stock_cue_cross_consumed": {
+        "historical_index_entry": "stock_cue_cross_consumed"
+      },
+      "tasks": {
+        "historical_index_entry": "tasks"
+      }
+    },
+    "software_validation": "研究主理人匹配历史脚本已迁入共享NumpyLenia与统一运行队列；单起始相位的既存轨迹迁移对照通过，最大绝对差7.02e-9。",
+    "spatial_rule_search": {
+      "analysis": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/4abde81f-62f4-46b0-9672-b1f8108276bd/analysis.json",
+      "budget": {
+        "extended_updates": [
+          2048,
+          4096
+        ],
+        "max_environment_candidates": 4,
+        "max_extended": 8,
+        "max_new_rule_initial_pairs": 48,
+        "short_updates": 512
+      },
+      "completed_budget": {
+        "assay_end": 3584,
+        "closure_controls": 12,
+        "combinations": 48,
+        "dual_combinations": 36,
+        "extended": 8,
+        "extension_end": 3072,
+        "paired_assay_candidates": 4
+      },
+      "facade": "resident_4e35778304b2",
+      "history_common_probe": {
+        "all_four_nonextinct": true,
+        "body_updates": 2048,
+        "candidate": "dk2026101619-r4-v5",
+        "continuation_steps": 512,
+        "end_lifetime": 4096,
+        "endpoint_D": 1.6874074966066814,
+        "endpoint_percent_ancestor": 3.3972251463923424,
+        "histories": [
+          "life3072曾probe",
+          "life3072曾sham"
+        ],
+        "job": "8dd4b8d8-e454-4598-a40d-638bb866ae5f",
+        "mean_D_including_t0": -0.03293952153869309,
+        "mean_percent_ancestor": -0.06631650689380802,
+        "message_id": "msg_716d1174b571b89352c41dcbe36864fc",
+        "new_branches": 4,
+        "new_genotypes": 0,
+        "new_probe": ".45×8",
+        "owner": "resident_ce2a5ab005bc",
+        "primary_readout": "两历史各自probe−sham质量响应再作历史间差，保存原始量及共同祖先life3072质量归一化。",
+        "scope": "确定性历史造成的身体状态依赖；活动降低、环态与质量响应分别描述，不称保护/学习或独立重复。",
+        "source_job": "4abde81f-62f4-46b0-9672-b1f8108276bd",
+        "source_lifetime": 3584,
+        "status": "completed",
+        "trapezoidal_mean_D": -0.03465171542510331
+      },
+      "inspection": "主理人读取三个作业result、有限选择表和analysis，查看真实512末态拼图及非Orbium生命期图；未重跑。",
+      "jobs": [
+        "e5675e43-73f7-42af-b913-392217941cc8",
+        "025c6b49-fee7-4f7e-a280-b4f4132614c6",
+        "4abde81f-62f4-46b0-9672-b1f8108276bd"
+      ],
+      "message_id": "msg_8653c83d81b7c5cf6e5aa5daa7f5b7c0",
+      "next_question": "以r4-v5作为新的非Orbium身体基底，区分自发停留—移动过程与环境改变其时机、身体后果；先复用既有全生命期/同末态sham，不自动加大扫描。",
+      "next_status": "history_probe_and_saved_timing_analysis_completed",
+      "owner": "resident_ce2a5ab005bc",
+      "projection_manifest": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/4abde81f-62f4-46b0-9672-b1f8108276bd/projection_manifest.json",
+      "question": "加入第二空间核及独立增长响应，能否打开持续不同形态/运动而非饱和纹理？",
+      "results": {
+        "delayed_extinction": {
+          "candidate": "dk2026101619-r2-v4",
+          "lifetime_step": 2385
+        },
+        "extended_dual_nonzero": 5,
+        "multiple_body_effect": "r2-v5探测后仅留一个主要结构，末质量29.847对sham60.974，不称形态保持恢复。",
+        "notable_behavior": "非Orbium三团块起点形成局域环状停留与移动/变形阶段；512短窗低活动不代表整段静态。sham也重新移动，未证明周期或吸引子。",
+        "notable_candidate": "dk2026101619-r4-v5",
+        "screen_dual_nonzero": 6,
+        "screen_extinct": 33,
+        "screen_nonzero": 15
+      },
+      "scope": "固定dt=.1，两个空间卷积势各自增长后加权裁剪，生命期只有body动态字段；48含12关闭对照，非48物种。不同规则末态身体不同，不能从探测差异推断核数单因果或学习。",
+      "source_message_id": "msg_e84867a2b980a533af9c93d34a55f787",
+      "status": "first_batch_completed",
+      "work_item": "多样形态候选与环境选择"
+    },
+    "stage_report": {
+      "address": "article_0565c33e0c03/file/progress.json",
+      "figure": "article_0565c33e0c03/file/figures/energy_path_v037/energy_path.png",
+      "figure_kind": "GUI scientific figure: conditional reserve bound and actual retained-path energy budget",
+      "title": "均化后为何再度贫能；身体更替后何种状态仍会传递",
+      "updated_at": "2026-10-17T03:49:26.957Z"
+    },
+    "status": "running",
+    "summary": "v10新学习方法持续实验：共同环境已用固定生长分配解除旧生理比例障碍，有限长程参照成立；定向反馈采样与局部载荷比较正接入。尚未证明中心方法创新或持续适应。整篇工作稿及GUI新图继续，冗余清理已完成。",
+    "writing_influence_validation": {
+      "body_bitwise_equal": true,
+      "mean_memory_max_error": 2.1094237467877974e-15,
+      "returncode": 0,
+      "seconds": 8.431209230970126
+    }
+  }
+}

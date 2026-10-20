@@ -1,0 +1,31 @@
+{
+  "key": "research.progress",
+  "path": [
+    "method_renewal_latest_pi"
+  ],
+  "value": {
+    "consumed_info_count": 11,
+    "continuation": "具体承担者接续；日常共享状态；不恢复定时/通用结束续接，不轮询催办。",
+    "core_scientific_goal_achieved": false,
+    "next_branch": {
+      "budget": "原200000/600剩余额显式分配，旧223不动",
+      "decision": "knowledge_base/research/experience_learning/noisy_evidence_preparation_20261018.json",
+      "host_steps_cap": 80544,
+      "key": "research.noisy_evidence_preparation_20261018",
+      "owner": "resident_d3ccfa2d95b7",
+      "status": "executor_active_confirmed",
+      "worker_seconds_cap": 557.01801
+    },
+    "paper_observed": "内部37页/3真实GUI主图/7补图/52引用，默认v045不变，作者已整合提前准备阴性。",
+    "pi_information_result": {
+      "entry": "src/research/results/noisy_evidence_headroom_20261018/handoff.json",
+      "finding": "已知模型/六完整配对事件穷举：.7/.3且h=.04时累计Bayes预测准确率.83190845、最近有效配对.79887157；.8/.2且h=.08两者.84450895相等。局部单端信息须另用匹配基准，不推身体收益。",
+      "host_steps": 0,
+      "sha256": "f62e20117b45cd5676a4cd51e6c7e86238c4697f570353e918183f64f2ba56e8"
+    },
+    "prior_result": "提前准备U_phi训练与留出完成，119456共同host步/42.981990 worker秒；learned对last摄取stable/changed各0/4正、八恢复窗滞后相同。原候选关闭，真实付费准备接口保留，核心目标未达成。",
+    "projection_next": "实际提前准备/成熟/摄取及强last对照已一次enqueue交投影，未预填新分支结果或发布完成。",
+    "status": "prior_results_consumed_next_executor_active"
+  },
+  "purpose": "闭合历史索引迁出共享容量；原科学源/用量/权限和运行控制不改。"
+}

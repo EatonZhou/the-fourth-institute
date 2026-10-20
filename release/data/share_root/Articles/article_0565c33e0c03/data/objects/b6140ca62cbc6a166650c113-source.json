@@ -1,0 +1,111 @@
+{
+  "figure": "v0.48 main Fig7",
+  "software": "LibreOffice Impress 24.2.7.2",
+  "sources": {
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/predictive_tissue_maintenance_20261019/final_handoff.json": {
+      "sha256": "fad231bf27578e5720f88a29717009d0c1a42542894a75441aae62fb7a41b14a",
+      "bytes": 36899
+    },
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/predictive_tissue_maintenance_20261019/analysis.json": {
+      "sha256": "c6ac72a798fd3fa9f9b38bd5f7b91c5c8db81b43f60c469f2533f30d621aa44a",
+      "bytes": 87643
+    },
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/predictive_tissue_maintenance_20261019/REPORT.txt": {
+      "sha256": "8c2f0e54f1d18287a8b4d90509a1872020920f62a5c5f6c266828f12784b8f42",
+      "bytes": 7017
+    },
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/predictive_tissue_maintenance_20261019/discussion_insert.tex": {
+      "sha256": "145747aa0ba9a9b88a8a6e3a450446388217329dcf042cff142e2f30cc141507",
+      "bytes": 1158
+    },
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/predictive_tissue_maintenance_20261019/execution.json": {
+      "sha256": "642b25878045ead6dc3ff39c603b3bc01c2704c10cabb177ae60a4459d5b85c8",
+      "bytes": 6828
+    },
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/predictive_tissue_maintenance_20261019/plan.json": {
+      "sha256": "8c81f9c6b8ff375fbe06ce0f62042896b2d57a272e863cb7d04ae4f7d9936088",
+      "bytes": 18968
+    },
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/predictive_equal_purchase_20261019/analysis.json": {
+      "sha256": "1a29a5ccee018d019b31300e80150c471ac23c15b4c2d5809643a2fe12ef96e2",
+      "bytes": 32497
+    },
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/predictive_equal_purchase_20261019/execution.json": {
+      "sha256": "64368db31149169e4ffedd8154692c797534bb6d1be0d6a45f5e0d21c57641d3",
+      "bytes": 2211
+    },
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/predictive_equal_purchase_20261019/plan.json": {
+      "sha256": "b6029f5942349ed2077c98413511b40f3e07fcbfca095298d70d1af9e7794b94",
+      "bytes": 12161
+    },
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/predictive_strong_physiology_20261019/final_handoff.json": {
+      "sha256": "fa00d49673e97f020a0359ce3caca369d70a750faef5b7cc4ec448db4234f880",
+      "bytes": 17480
+    },
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/predictive_strong_physiology_20261019/analysis.json": {
+      "sha256": "cf73ab0ddfafb3a3fe21d89f2dccc10bf8e9d950aca8a29fd73fb3d9bb25526b",
+      "bytes": 80803
+    },
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/predictive_strong_physiology_20261019/REPORT.txt": {
+      "sha256": "dd3fdd55ecf6797608f4c9129e072080ede88e00ecdf10b19851258d71565cc8",
+      "bytes": 11171
+    },
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/predictive_strong_physiology_20261019/discussion_insert.tex": {
+      "sha256": "758ffddde87b2c5f6cf1c9f0a1fea1974ac5fce79fe7a6d8e90cac6568de317f",
+      "bytes": 1417
+    },
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/predictive_strong_physiology_20261019/execution.json": {
+      "sha256": "7b11110bfc499990130392bb9ef876be9e6ce68224876cfdabdedb6dd699fc22",
+      "bytes": 4101
+    },
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/predictive_strong_physiology_20261019/plan.json": {
+      "sha256": "92fcabcf87950a60964e018441337bc90a2b9f5635c933fe42201a6398d8c340",
+      "bytes": 14691
+    },
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/predictive_contact_timescale_20261019/analysis.json": {
+      "sha256": "87a9022665387b4125931a66ef48e2b916127940e28cfc06dd277a820508b4ea",
+      "bytes": 16500
+    },
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/predictive_contact_timescale_20261019/execution.json": {
+      "sha256": "f33ae484b0e8452a48871b6f13edb251212773f7937a9b154b94a79aed10b131",
+      "bytes": 2881
+    },
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/predictive_contact_timescale_20261019/plan.json": {
+      "sha256": "b26b8967c7e5f6620f48ab0f6c0a492e29e54a2110c03d1b3a12f1911cba6ca6",
+      "bytes": 15734
+    }
+  },
+  "panel_A": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/predictive_equal_purchase_20261019/analysis.json",
+    "selector": "comparisons.g0/g1.equal_purchase.keep/pooled/swapped.injury",
+    "steps": "129–224; 96 new steps; prediction writes off",
+    "parent_state": 128
+  },
+  "panel_B": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/predictive_strong_physiology_20261019/analysis.json",
+    "selector": "branches.g0/g1_keep/freeze/fixed0/fixed1/instant/uniform.changed.injury",
+    "steps": "225–320; changed after boundary224",
+    "full_source_table": "all 12 arms × stable/changed/whole"
+  },
+  "panel_C": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/predictive_contact_timescale_20261019/analysis.json",
+    "selector": "branches for all 2 parents ×2 forms ×2 readouts; (instant-keep)/instant×100",
+    "steps": "96 new steps from actual192 states; learned relation stable; prediction writes off"
+  },
+  "missing_data": {
+    "earlier_related_g1_risk_expression_tail": 128,
+    "imputed": false
+  },
+  "scientific_limits": [
+    "two parent sources, correlated forks",
+    "observable incident mechanical strain teaching label",
+    "externally supplied density-regulated material CA, central budget",
+    "equal synthesis and synthesis price, not all costs",
+    "simple controls carry unused predictor capacity fees",
+    "registered cohort deaths distinct from cumulative births and retained newborn",
+    "stable timing assay not reversal success; total timing intervention not identified single mediator",
+    "standard conditional delta, no new predictor or general net dominance",
+    "no successor-mechanism outcome represented"
+  ],
+  "new_physical_steps": 0
+}

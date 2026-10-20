@@ -1,0 +1,72 @@
+{
+  "observed_raw_peak": 139087277,
+  "cap": 134217728,
+  "peak_excess": 4869549,
+  "lossless_only": true,
+  "current_raw_bytes": 131488475,
+  "native_replays": 0,
+  "analysis_io_wall": 0.26342003990430385,
+  "analysis_io_cpu": 0.26307578600000003,
+  "files": [
+    {
+      "original": "environment_evolution/results/energetic_cue_regenerative_learning_20261019/raw/i0_g1_frozen/scalars.jsonl",
+      "gzip": "environment_evolution/results/energetic_cue_regenerative_learning_20261019/raw/i0_g1_frozen/scalars.jsonl.gz",
+      "uncompressed_sha256": "5a4bacc9311ae2ff9b38270ce4f911241dffd606dea1538452144e1b877896c4"
+    },
+    {
+      "original": "environment_evolution/results/energetic_cue_regenerative_learning_20261019/raw/i1_g0_frozen/scalars.jsonl",
+      "gzip": "environment_evolution/results/energetic_cue_regenerative_learning_20261019/raw/i1_g0_frozen/scalars.jsonl.gz",
+      "uncompressed_sha256": "f95407475815b1162cffd9f8e714e0d38402ce44f4699d4101555fd60f8ce070"
+    },
+    {
+      "original": "environment_evolution/results/energetic_cue_regenerative_learning_20261019/raw/i1_g0_fast/scalars.jsonl",
+      "gzip": "environment_evolution/results/energetic_cue_regenerative_learning_20261019/raw/i1_g0_fast/scalars.jsonl.gz",
+      "uncompressed_sha256": "5b41fd9123e1fe9a2bc47599bdc052e5928761fef9272610242e621b1dda5163"
+    },
+    {
+      "original": "environment_evolution/results/energetic_cue_regenerative_learning_20261019/raw/i0_g1_fast_freeze_reversal/scalars.jsonl",
+      "gzip": "environment_evolution/results/energetic_cue_regenerative_learning_20261019/raw/i0_g1_fast_freeze_reversal/scalars.jsonl.gz",
+      "uncompressed_sha256": "881ecf417578f6ab2e8a1185b54859c977166d2aaee360060cc5f44d18d239a3"
+    },
+    {
+      "original": "environment_evolution/results/energetic_cue_regenerative_learning_20261019/raw/i0_g0_frozen/scalars.jsonl",
+      "gzip": "environment_evolution/results/energetic_cue_regenerative_learning_20261019/raw/i0_g0_frozen/scalars.jsonl.gz",
+      "uncompressed_sha256": "edb751c67560a11299056151e4d9b02000a0465c51081879e61d35e0eeeedde9"
+    },
+    {
+      "original": "environment_evolution/results/energetic_cue_regenerative_learning_20261019/raw/i1_g1_fast/scalars.jsonl",
+      "gzip": "environment_evolution/results/energetic_cue_regenerative_learning_20261019/raw/i1_g1_fast/scalars.jsonl.gz",
+      "uncompressed_sha256": "ce79e132f6b91fd7fe7ae599feac1182783e30182076130858f3cad8520befbd"
+    },
+    {
+      "original": "environment_evolution/results/energetic_cue_regenerative_learning_20261019/raw/i1_g1_frozen/scalars.jsonl",
+      "gzip": "environment_evolution/results/energetic_cue_regenerative_learning_20261019/raw/i1_g1_frozen/scalars.jsonl.gz",
+      "uncompressed_sha256": "d7d23372d3f0d49b5f7fbac0282514338c05945d255bd2df98cbfd3ce3f1790b"
+    },
+    {
+      "original": "environment_evolution/results/energetic_cue_regenerative_learning_20261019/raw/i0_g1_fast/scalars.jsonl",
+      "gzip": "environment_evolution/results/energetic_cue_regenerative_learning_20261019/raw/i0_g1_fast/scalars.jsonl.gz",
+      "uncompressed_sha256": "7632907c2c5197d512b51eacd8421c481b759d4c809dbd5515664cd5b8c18353"
+    },
+    {
+      "original": "environment_evolution/results/energetic_cue_regenerative_learning_20261019/raw/i0_g0_fast_freeze_reversal/scalars.jsonl",
+      "gzip": "environment_evolution/results/energetic_cue_regenerative_learning_20261019/raw/i0_g0_fast_freeze_reversal/scalars.jsonl.gz",
+      "uncompressed_sha256": "3e5a15c10308080f410b02234ba7e18e087e8501d300dbb0d7499716d7d9a4ed"
+    },
+    {
+      "original": "environment_evolution/results/energetic_cue_regenerative_learning_20261019/raw/i1_g0_fast_freeze_reversal/scalars.jsonl",
+      "gzip": "environment_evolution/results/energetic_cue_regenerative_learning_20261019/raw/i1_g0_fast_freeze_reversal/scalars.jsonl.gz",
+      "uncompressed_sha256": "0370bd81689fd0c6ad67749814e671dcc7d02c4895befb715e8008e1d50caba7"
+    },
+    {
+      "original": "environment_evolution/results/energetic_cue_regenerative_learning_20261019/raw/i0_g0_fast/scalars.jsonl",
+      "gzip": "environment_evolution/results/energetic_cue_regenerative_learning_20261019/raw/i0_g0_fast/scalars.jsonl.gz",
+      "uncompressed_sha256": "bb5fac859d1458de9cda33febb18aaa498e09cc1e843a963080b526a2ab3a12c"
+    },
+    {
+      "original": "environment_evolution/results/energetic_cue_regenerative_learning_20261019/raw/i1_g1_fast_freeze_reversal/scalars.jsonl",
+      "gzip": "environment_evolution/results/energetic_cue_regenerative_learning_20261019/raw/i1_g1_fast_freeze_reversal/scalars.jsonl.gz",
+      "uncompressed_sha256": "b221cc7fe6f4c297961e31cdfda61ed29558e38b5e176c1c7c0a71fe51db14e0"
+    }
+  ]
+}

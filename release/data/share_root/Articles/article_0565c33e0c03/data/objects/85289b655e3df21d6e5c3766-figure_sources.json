@@ -1,0 +1,47 @@
+[
+  {
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/active_observation_commitment_20261018/81634410-4dfc-4968-b804-3324df0987dc/202610189101_informative_never-cycles.json",
+    "sha256": "a89fffea1a1b531e2879bdd948d6d777c4a7a78221c662851f1e03937d1b6095"
+  },
+  {
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/active_observation_commitment_20261018/81634410-4dfc-4968-b804-3324df0987dc/202610189101_informative_always-cycles.json",
+    "sha256": "e48141bda13b7610deeebfbea11498eb6e4a27059467c4d2cc22e21cc847c8cf"
+  },
+  {
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/active_observation_commitment_20261018/81634410-4dfc-4968-b804-3324df0987dc/202610189101_informative_scheduled-cycles.json",
+    "sha256": "935d92e43581f5d2c323fa80f5d0daed010f3153cef065aa6b884e0803a876b6"
+  },
+  {
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/active_observation_commitment_20261018/81634410-4dfc-4968-b804-3324df0987dc/202610189101_informative_optional-cycles.json",
+    "sha256": "a3e801ac9ee4edcf0ad72ab7ae987321ac7f644c157399b0459c7c80b9b0484a"
+  },
+  {
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/active_observation_commitment_20261018/81634410-4dfc-4968-b804-3324df0987dc/202610189101_informative_uniform-cycles.json",
+    "sha256": "eae3a3f30207abe08b0382cea520c952d0e958f3b87202a5d6607738c0db9894"
+  },
+  {
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/active_observation_commitment_20261018/81634410-4dfc-4968-b804-3324df0987dc/202610189102_informative_never-cycles.json",
+    "sha256": "9ce16a5fcb6f5b04871fe55f5bd5e19c0a77028b9cad5782b96e958c7055295f"
+  },
+  {
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/active_observation_commitment_20261018/81634410-4dfc-4968-b804-3324df0987dc/202610189102_informative_always-cycles.json",
+    "sha256": "7f8fcfec40bed795fd07f238f6b0b3573f903ed8eb3dde7858c88484b830b761"
+  },
+  {
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/active_observation_commitment_20261018/81634410-4dfc-4968-b804-3324df0987dc/202610189102_informative_scheduled-cycles.json",
+    "sha256": "caa321800d3342318b8274856e21685189e89c1df9d90ce8d7c9be5347700a2f"
+  },
+  {
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/active_observation_commitment_20261018/81634410-4dfc-4968-b804-3324df0987dc/202610189102_informative_optional-cycles.json",
+    "sha256": "3737a3f56f008c66ef8afa3b0c7ad30aa8c0b01dc7d2448538682dfb6cbe57dc"
+  },
+  {
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/active_observation_commitment_20261018/81634410-4dfc-4968-b804-3324df0987dc/202610189102_informative_uniform-cycles.json",
+    "sha256": "0fe28030163ab69af0693d817a361b3c367ca57bf7d09ae772c9eaf3c510d126"
+  },
+  {
+    "path": "/data/dataset/lenia-research/lineage_75e3399f4877/active_observation_commitment_20261018/81634410-4dfc-4968-b804-3324df0987dc/202610189101_informative_optional.npz",
+    "sha256": "65b0cfbde45e26cc1da198af3d0fc0ca45fe14e76941d056058d71b99bb195d2",
+    "selection": "first seed optional cycles9,10,11; actual phases2/4/12, no interpolation"
+  }
+]

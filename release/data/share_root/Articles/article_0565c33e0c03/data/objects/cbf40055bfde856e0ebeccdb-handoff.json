@@ -1,0 +1,58 @@
+{
+  "schema": "material-action-response-handoff-v1",
+  "status": "completed_native_opportunity",
+  "objective_met": false,
+  "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/material_action_response/core.py",
+  "source_sha256": "15691ada9fd805c076f7c5770ba955dbf6cc454ea3af129b1ba03fe958467b5b",
+  "api": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/material_action_response_20261018/API.txt",
+  "report": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/material_action_response_20261018/REPORT.txt",
+  "plan": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/material_action_response_20261018/plan_v2.json",
+  "plan_sha256": "5121290d96085d33cf3ef76eeb40c610782d90879fa9e1ff70cdab17c35f4132",
+  "summary": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/material_action_response_20261018/summary.json",
+  "manifest": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/material_action_response_20261018/manifest.json",
+  "manifest_sha256": "4a6af478ebdd11a546a31e2f381d961a75951f993b48fd5e90cab33f7a17e621",
+  "raw_manifest": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/material_action_response_20261018/raw_manifest.json",
+  "raw_manifest_sha256": "3882fda902c9874ba399a269744e8dfd64bb2f07b591193c9664e18bd30a226e",
+  "actual_body_steps": 2051,
+  "worker_seconds": 109.358436,
+  "jobs": [
+    {
+      "job_id": "412202f2-441d-4f09-9129-da3e579bf00c",
+      "status": "failed",
+      "returncode": 1,
+      "worker_seconds": 2.747884
+    },
+    {
+      "job_id": "0eb661f2-b286-43c6-b27e-ee8f3f2da135",
+      "status": "completed",
+      "returncode": 0,
+      "worker_seconds": 106.610552
+    }
+  ],
+  "raw_bytes": 229447635,
+  "d3_remaining_steps": 9216,
+  "d3_remaining_worker_seconds": 420,
+  "ce2_unused_steps": 1021,
+  "ce2_unused_worker_seconds": 70.641564,
+  "old_budget_used": 0,
+  "source_provenance": [
+    {
+      "name": "genome_0ac80448a534dc953505",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_generation_screen_20261018/780163bf-a09a-488b-a297-5e0f4261d7b5/genome_0ac80448a534dc953505--formation/transactions/000128.npz",
+      "sha256": "670dc066addc49b41e0574aa0a03f89cacd1c9797df80027d7e8bd2ef4030af8",
+      "M": 981.5779761248489,
+      "E": 444.4763946626209
+    },
+    {
+      "name": "genome_6bd5bfd2f629f9414376",
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/experience_diverse_generation_screen_20261018/780163bf-a09a-488b-a297-5e0f4261d7b5/genome_6bd5bfd2f629f9414376--formation/transactions/000128.npz",
+      "sha256": "1df02c60d6bda5dfeaaad9ee213ee089fc0fa8ababaedb2cf1d2446ee51a5fe5",
+      "M": 484.49521966831077,
+      "E": 247.80043873632522
+    }
+  ],
+  "figures": [
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/material_action_response_20261018/actual_bodies.png",
+    "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/material_action_response_20261018/actual_dynamics.png"
+  ]
+}

@@ -1,0 +1,1944 @@
+{
+  "inputs": {
+    "/share/Projects/元胞自动机研究/src/research/results/physical_experience_state_20261019/handoff.json": {
+      "bytes": 3117,
+      "sha256": "b1119cd365f82b0614fc7169d2edd4b13314864583232be5ee14c990819a05ef"
+    },
+    "/share/Projects/元胞自动机研究/src/research/results/physical_experience_state_20261019/seed_stage_metrics.csv": {
+      "bytes": 10315,
+      "sha256": "9aefae463d3a524c0fc8b3e0cacd180054c8758ebaac4da9d31f5f43a356b396"
+    },
+    "/share/Projects/元胞自动机研究/src/research/results/physical_experience_state_20261019/causal_summary.json": {
+      "bytes": 1462,
+      "sha256": "63c1dbbb2fdd5b20834d1cd7136cf64846f1d8e0a6bf79e686776e3e1a49fa00"
+    },
+    "/share/Projects/元胞自动机研究/src/research/results/physical_experience_state_20261019/costs.json": {
+      "bytes": 2109,
+      "sha256": "1a6c6125b6b435f98ee563af49b06cf07af495bdf05284c3a709410a989604d6"
+    },
+    "/share/Projects/元胞自动机研究/src/research/results/physical_experience_state_20261019/usage.json": {
+      "bytes": 1618,
+      "sha256": "7d61ca5aff2e7b77f601c0400ddbe787957fc818b1a6bff8a5ae75ab12b6587d"
+    },
+    "/share/Projects/元胞自动机研究/src/research/results/physical_experience_comparison_20261019/summary.json": {
+      "bytes": 9822,
+      "sha256": "5321629c38f0c34e9958d1e26743bc3e9dd4824c4527136297fdf84c544cd2bc"
+    },
+    "/share/Projects/元胞自动机研究/src/research/results/physical_experience_comparison_20261019/outcomes.json": {
+      "bytes": 4683,
+      "sha256": "db0d5f561b5e81edfaa8ded7bdc9ce7d49d3d7e81c27ad65ac042d82ffb7ae97"
+    },
+    "/share/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199841_plastic_delta/ledger.json": {
+      "bytes": 261360,
+      "sha256": "20147c0e13166de75bd0416ae283ab0379cfde03682fdd408608826e7796bb2a"
+    },
+    "/share/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199841_plastic_last/ledger.json": {
+      "bytes": 265112,
+      "sha256": "ac9affc0fd65738e8c3e955e160f4eaf54b1aa9d51154b0ac5f0596a538e402a"
+    },
+    "/share/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199841_fixed_readout/ledger.json": {
+      "bytes": 264705,
+      "sha256": "368a478b2ccabc56e53ddae80ae8e077495d17746ce3aa97970dbe27246aad55"
+    },
+    "/share/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199841_instant_feedback/ledger.json": {
+      "bytes": 265322,
+      "sha256": "65d4b8295f914dd177e24ef84422221514ce9e01a1d127b3ac44004f012c4515"
+    },
+    "/share/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199841_passive_hysteresis/ledger.json": {
+      "bytes": 267355,
+      "sha256": "bc2317263c52e7d4a3b6d399daaa6c8e54cdd67e8f758fae133ea80a46984c3e"
+    },
+    "/share/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199842_plastic_delta/ledger.json": {
+      "bytes": 264004,
+      "sha256": "40bd74ab5b75730a15ab975c2853d579df2aee7c824df3400bf93ee89794b892"
+    },
+    "/share/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199842_plastic_last/ledger.json": {
+      "bytes": 262016,
+      "sha256": "989a7cbfccab23523d992d2a0e727e08dcfcca90ff7b3f2af19fc761243f0a8a"
+    },
+    "/share/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199842_fixed_readout/ledger.json": {
+      "bytes": 266340,
+      "sha256": "9fb7cf0a3968281377a8598a949dfe76a5c976a4f0570bfdf923ce36937a5fb8"
+    },
+    "/share/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199842_instant_feedback/ledger.json": {
+      "bytes": 265459,
+      "sha256": "b63a78bf66a9cfe634170cc36003ed345f455f269bd95bc7fd3582ef2cc1f037"
+    },
+    "/share/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199842_passive_hysteresis/ledger.json": {
+      "bytes": 262934,
+      "sha256": "d5a91a15079974ecdb249fd400322ccf6aaa6dcf1bc230093a571fddc91d98b1"
+    },
+    "/share/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199843_plastic_delta/ledger.json": {
+      "bytes": 268186,
+      "sha256": "9b3d14c9450ac47d49dc663c5eed54669dace07eb1f131df0181833f6f6eaf02"
+    },
+    "/share/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199843_plastic_last/ledger.json": {
+      "bytes": 273539,
+      "sha256": "260bcd53ef641683ff1626db0ae0eea2400e9305125f6a3618ce2f92f7bbf1fd"
+    },
+    "/share/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199843_fixed_readout/ledger.json": {
+      "bytes": 266932,
+      "sha256": "b874c7304a467a0e6cda0eaf508aa45010335c546fd9f66b1791b71ebfaffd9c"
+    },
+    "/share/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199843_instant_feedback/ledger.json": {
+      "bytes": 269682,
+      "sha256": "2036b395ed430f65c0adc7f41b260ac7292227990eb455efa87dbf1168e458db"
+    },
+    "/share/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199843_passive_hysteresis/ledger.json": {
+      "bytes": 272625,
+      "sha256": "8d9e5ccaf2ddecf915aea4d7396620819c6fdfd9116ebef10a94731955353f5d"
+    }
+  },
+  "stages": [
+    {
+      "seed": "202610199841",
+      "arm": "plastic_delta",
+      "stage": "acquire",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.8613732473818673",
+      "eligible_per_registered_mass": "0.8818660493016596",
+      "conditional_accuracy": "0.976762001512565",
+      "completed_mass_time": "1015.9096887955118"
+    },
+    {
+      "seed": "202610199841",
+      "arm": "plastic_delta",
+      "stage": "acquire",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.8462797038639329",
+      "eligible_per_registered_mass": "0.8475742935394383",
+      "conditional_accuracy": "0.9984725944552906",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199841",
+      "arm": "plastic_delta",
+      "stage": "reverse",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.8045958500719442",
+      "eligible_per_registered_mass": "0.8313086676915461",
+      "conditional_accuracy": "0.9678665474597054",
+      "completed_mass_time": "957.6675851806611"
+    },
+    {
+      "seed": "202610199841",
+      "arm": "plastic_delta",
+      "stage": "reverse",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.8252958901364021",
+      "eligible_per_registered_mass": "0.8272961844922682",
+      "conditional_accuracy": "0.9975821303260408",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199841",
+      "arm": "plastic_delta",
+      "stage": "return",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.7871430053590406",
+      "eligible_per_registered_mass": "0.8134915795315485",
+      "conditional_accuracy": "0.9676105139432656",
+      "completed_mass_time": "937.1422996203439"
+    },
+    {
+      "seed": "202610199841",
+      "arm": "plastic_delta",
+      "stage": "return",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.805110250090424",
+      "eligible_per_registered_mass": "0.8081289292466259",
+      "conditional_accuracy": "0.99626460698664",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199841",
+      "arm": "plastic_last",
+      "stage": "acquire",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.860300444328611",
+      "eligible_per_registered_mass": "0.8806437597149892",
+      "conditional_accuracy": "0.9768994952136354",
+      "completed_mass_time": "1014.5016111916675"
+    },
+    {
+      "seed": "202610199841",
+      "arm": "plastic_last",
+      "stage": "acquire",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.844548137961393",
+      "eligible_per_registered_mass": "0.8457994631369655",
+      "conditional_accuracy": "0.9985205415348322",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199841",
+      "arm": "plastic_last",
+      "stage": "reverse",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.8151793624272368",
+      "eligible_per_registered_mass": "0.8347192892840509",
+      "conditional_accuracy": "0.9765910203493994",
+      "completed_mass_time": "961.5966212552266"
+    },
+    {
+      "seed": "202610199841",
+      "arm": "plastic_last",
+      "stage": "reverse",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.8237381704175126",
+      "eligible_per_registered_mass": "0.8256065789123089",
+      "conditional_accuracy": "0.9977369263490392",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199841",
+      "arm": "plastic_last",
+      "stage": "return",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.7961151107368997",
+      "eligible_per_registered_mass": "0.8149938629065026",
+      "conditional_accuracy": "0.9768357124772991",
+      "completed_mass_time": "938.872930068291"
+    },
+    {
+      "seed": "202610199841",
+      "arm": "plastic_last",
+      "stage": "return",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.8028108502969747",
+      "eligible_per_registered_mass": "0.8056538072886239",
+      "conditional_accuracy": "0.9964712424047036",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199841",
+      "arm": "fixed_readout",
+      "stage": "acquire",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.8613732473818673",
+      "eligible_per_registered_mass": "0.8818660493016595",
+      "conditional_accuracy": "0.9767620015125651",
+      "completed_mass_time": "1015.9096887955117"
+    },
+    {
+      "seed": "202610199841",
+      "arm": "fixed_readout",
+      "stage": "acquire",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.8462797038639328",
+      "eligible_per_registered_mass": "0.8475742935394383",
+      "conditional_accuracy": "0.9984725944552905",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199841",
+      "arm": "fixed_readout",
+      "stage": "reverse",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.804595850071944",
+      "eligible_per_registered_mass": "0.831308667691546",
+      "conditional_accuracy": "0.9678665474597054",
+      "completed_mass_time": "957.6675851806609"
+    },
+    {
+      "seed": "202610199841",
+      "arm": "fixed_readout",
+      "stage": "reverse",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.8252958901364019",
+      "eligible_per_registered_mass": "0.8272961844922678",
+      "conditional_accuracy": "0.9975821303260408",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199841",
+      "arm": "fixed_readout",
+      "stage": "return",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.7871430053590402",
+      "eligible_per_registered_mass": "0.8134915795315482",
+      "conditional_accuracy": "0.9676105139432656",
+      "completed_mass_time": "937.1422996203435"
+    },
+    {
+      "seed": "202610199841",
+      "arm": "fixed_readout",
+      "stage": "return",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.8051102500904236",
+      "eligible_per_registered_mass": "0.8081289292466255",
+      "conditional_accuracy": "0.99626460698664",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199841",
+      "arm": "instant_feedback",
+      "stage": "acquire",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.7773051169513917",
+      "eligible_per_registered_mass": "0.8900245661496599",
+      "conditional_accuracy": "0.8733524292639423",
+      "completed_mass_time": "1025.3083002044082"
+    },
+    {
+      "seed": "202610199841",
+      "arm": "instant_feedback",
+      "stage": "acquire",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.001492046942282961",
+      "eligible_per_registered_mass": "0.8783719159149328",
+      "conditional_accuracy": "0.0016986505547923966",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199841",
+      "arm": "instant_feedback",
+      "stage": "reverse",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.8617448005236262",
+      "eligible_per_registered_mass": "0.8641309017007487",
+      "conditional_accuracy": "0.9972387271738271",
+      "completed_mass_time": "995.4787987592625"
+    },
+    {
+      "seed": "202610199841",
+      "arm": "instant_feedback",
+      "stage": "reverse",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.8503569318743814",
+      "eligible_per_registered_mass": "0.8528151479454662",
+      "conditional_accuracy": "0.9971175276646916",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199841",
+      "arm": "instant_feedback",
+      "stage": "return",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.7456707728022327",
+      "eligible_per_registered_mass": "0.8542692901462833",
+      "conditional_accuracy": "0.8728755456895162",
+      "completed_mass_time": "984.1182222485184"
+    },
+    {
+      "seed": "202610199841",
+      "arm": "instant_feedback",
+      "stage": "return",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.0033530458574509664",
+      "eligible_per_registered_mass": "0.8574299094240242",
+      "conditional_accuracy": "0.003910577203568003",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199841",
+      "arm": "passive_hysteresis",
+      "stage": "acquire",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.0017370112521391994",
+      "eligible_per_registered_mass": "0.8754178632113176",
+      "conditional_accuracy": "0.00198420814234619",
+      "completed_mass_time": "1008.4813784194379"
+    },
+    {
+      "seed": "202610199841",
+      "arm": "passive_hysteresis",
+      "stage": "acquire",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.001263551398039642",
+      "eligible_per_registered_mass": "0.8400178585246169",
+      "conditional_accuracy": "0.0015041958753816344",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199841",
+      "arm": "passive_hysteresis",
+      "stage": "reverse",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.812137711661692",
+      "eligible_per_registered_mass": "0.814130263123614",
+      "conditional_accuracy": "0.9975525397443438",
+      "completed_mass_time": "937.8780631184034"
+    },
+    {
+      "seed": "202610199841",
+      "arm": "passive_hysteresis",
+      "stage": "reverse",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.7845262788407575",
+      "eligible_per_registered_mass": "0.7858388722714248",
+      "conditional_accuracy": "0.9983296913947852",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199841",
+      "arm": "passive_hysteresis",
+      "stage": "return",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.0015727535182619142",
+      "eligible_per_registered_mass": "0.762591713437127",
+      "conditional_accuracy": "0.0020623795020972024",
+      "completed_mass_time": "878.5056538795702"
+    },
+    {
+      "seed": "202610199841",
+      "arm": "passive_hysteresis",
+      "stage": "return",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.0014604406600254886",
+      "eligible_per_registered_mass": "0.7401718277491911",
+      "conditional_accuracy": "0.0019731103039500745",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199842",
+      "arm": "plastic_delta",
+      "stage": "acquire",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.8759697484735389",
+      "eligible_per_registered_mass": "0.8773411752937421",
+      "conditional_accuracy": "0.9984368375053821",
+      "completed_mass_time": "1010.6970339383909"
+    },
+    {
+      "seed": "202610199842",
+      "arm": "plastic_delta",
+      "stage": "acquire",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.84370665955378",
+      "eligible_per_registered_mass": "0.8452062925939116",
+      "conditional_accuracy": "0.9982257195038985",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199842",
+      "arm": "plastic_delta",
+      "stage": "reverse",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.8045825623282354",
+      "eligible_per_registered_mass": "0.8302785377350996",
+      "conditional_accuracy": "0.9690513794600065",
+      "completed_mass_time": "956.4808754708348"
+    },
+    {
+      "seed": "202610199842",
+      "arm": "plastic_delta",
+      "stage": "reverse",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.8266582568595954",
+      "eligible_per_registered_mass": "0.8288755121719368",
+      "conditional_accuracy": "0.9973249839333154",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199842",
+      "arm": "plastic_delta",
+      "stage": "return",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.7935721905878738",
+      "eligible_per_registered_mass": "0.8194838216382272",
+      "conditional_accuracy": "0.9683805459410368",
+      "completed_mass_time": "944.0453625272378"
+    },
+    {
+      "seed": "202610199842",
+      "arm": "plastic_delta",
+      "stage": "return",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.818084441578779",
+      "eligible_per_registered_mass": "0.8205129137638666",
+      "conditional_accuracy": "0.9970402998607936",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199842",
+      "arm": "plastic_last",
+      "stage": "acquire",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.8752319928705914",
+      "eligible_per_registered_mass": "0.8765918330859239",
+      "conditional_accuracy": "0.9984487190457326",
+      "completed_mass_time": "1009.8337917149844"
+    },
+    {
+      "seed": "202610199842",
+      "arm": "plastic_last",
+      "stage": "acquire",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.8427857818307064",
+      "eligible_per_registered_mass": "0.844282116703528",
+      "conditional_accuracy": "0.998227683799979",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199842",
+      "arm": "plastic_last",
+      "stage": "reverse",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.8169177487190651",
+      "eligible_per_registered_mass": "0.835304954607979",
+      "conditional_accuracy": "0.9779874334666872",
+      "completed_mass_time": "962.2713077083919"
+    },
+    {
+      "seed": "202610199842",
+      "arm": "plastic_last",
+      "stage": "reverse",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.8259949460167718",
+      "eligible_per_registered_mass": "0.8282116345271531",
+      "conditional_accuracy": "0.9973235240632102",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199842",
+      "arm": "plastic_last",
+      "stage": "return",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.8044403323873139",
+      "eligible_per_registered_mass": "0.823795881290128",
+      "conditional_accuracy": "0.9765044359380605",
+      "completed_mass_time": "949.0128552462276"
+    },
+    {
+      "seed": "202610199842",
+      "arm": "plastic_last",
+      "stage": "return",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.8162256270562095",
+      "eligible_per_registered_mass": "0.8185831403921497",
+      "conditional_accuracy": "0.9971200074621488",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199842",
+      "arm": "fixed_readout",
+      "stage": "acquire",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.8759697484735389",
+      "eligible_per_registered_mass": "0.8773411752937421",
+      "conditional_accuracy": "0.9984368375053821",
+      "completed_mass_time": "1010.6970339383909"
+    },
+    {
+      "seed": "202610199842",
+      "arm": "fixed_readout",
+      "stage": "acquire",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.84370665955378",
+      "eligible_per_registered_mass": "0.8452062925939116",
+      "conditional_accuracy": "0.9982257195038985",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199842",
+      "arm": "fixed_readout",
+      "stage": "reverse",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.8045825623282356",
+      "eligible_per_registered_mass": "0.8302785377350997",
+      "conditional_accuracy": "0.9690513794600065",
+      "completed_mass_time": "956.4808754708349"
+    },
+    {
+      "seed": "202610199842",
+      "arm": "fixed_readout",
+      "stage": "reverse",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.8266582568595955",
+      "eligible_per_registered_mass": "0.8288755121719369",
+      "conditional_accuracy": "0.9973249839333154",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199842",
+      "arm": "fixed_readout",
+      "stage": "return",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.793572190587874",
+      "eligible_per_registered_mass": "0.8194838216382275",
+      "conditional_accuracy": "0.9683805459410367",
+      "completed_mass_time": "944.0453625272381"
+    },
+    {
+      "seed": "202610199842",
+      "arm": "fixed_readout",
+      "stage": "return",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.8180844415787792",
+      "eligible_per_registered_mass": "0.8205129137638668",
+      "conditional_accuracy": "0.9970402998607936",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199842",
+      "arm": "instant_feedback",
+      "stage": "acquire",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.8843913244809687",
+      "eligible_per_registered_mass": "0.8857455007076616",
+      "conditional_accuracy": "0.998471145237982",
+      "completed_mass_time": "1020.3788168152262"
+    },
+    {
+      "seed": "202610199842",
+      "arm": "instant_feedback",
+      "stage": "acquire",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.8696241356069901",
+      "eligible_per_registered_mass": "0.8714035471342308",
+      "conditional_accuracy": "0.997957993706713",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199842",
+      "arm": "instant_feedback",
+      "stage": "reverse",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.7601661604928232",
+      "eligible_per_registered_mass": "0.8704290300909704",
+      "conditional_accuracy": "0.8733235384088426",
+      "completed_mass_time": "1002.7342426647979"
+    },
+    {
+      "seed": "202610199842",
+      "arm": "instant_feedback",
+      "stage": "reverse",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.002618409308850693",
+      "eligible_per_registered_mass": "0.8686299685399502",
+      "conditional_accuracy": "0.0030144128152196797",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199842",
+      "arm": "instant_feedback",
+      "stage": "return",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.8613401787906954",
+      "eligible_per_registered_mass": "0.8636681048810793",
+      "conditional_accuracy": "0.9973046056960683",
+      "completed_mass_time": "994.9456568230033"
+    },
+    {
+      "seed": "202610199842",
+      "arm": "instant_feedback",
+      "stage": "return",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.8570028404588701",
+      "eligible_per_registered_mass": "0.8593824322179334",
+      "conditional_accuracy": "0.9972310444455771",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199842",
+      "arm": "passive_hysteresis",
+      "stage": "acquire",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.8763970961564693",
+      "eligible_per_registered_mass": "0.8778297571124437",
+      "conditional_accuracy": "0.998367951252089",
+      "completed_mass_time": "1011.2598801935352"
+    },
+    {
+      "seed": "202610199842",
+      "arm": "passive_hysteresis",
+      "stage": "acquire",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.8444989192834864",
+      "eligible_per_registered_mass": "0.8460968810101779",
+      "conditional_accuracy": "0.998111372630539",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199842",
+      "arm": "passive_hysteresis",
+      "stage": "reverse",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.0016047113497789575",
+      "eligible_per_registered_mass": "0.8190021499720688",
+      "conditional_accuracy": "0.0019593493739102938",
+      "completed_mass_time": "943.4904767678232"
+    },
+    {
+      "seed": "202610199842",
+      "arm": "passive_hysteresis",
+      "stage": "reverse",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.0015632579677244496",
+      "eligible_per_registered_mass": "0.7931716850619409",
+      "conditional_accuracy": "0.001970894822855875",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199842",
+      "arm": "passive_hysteresis",
+      "stage": "return",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.772487076270439",
+      "eligible_per_registered_mass": "0.7737753496005955",
+      "conditional_accuracy": "0.998335080936836",
+      "completed_mass_time": "891.389202739886"
+    },
+    {
+      "seed": "202610199842",
+      "arm": "passive_hysteresis",
+      "stage": "return",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.7536949502994325",
+      "eligible_per_registered_mass": "0.7548380599519758",
+      "conditional_accuracy": "0.998485622661083",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199843",
+      "arm": "plastic_delta",
+      "stage": "acquire",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.7667011536940692",
+      "eligible_per_registered_mass": "0.7845232599987185",
+      "conditional_accuracy": "0.9772828834868728",
+      "completed_mass_time": "903.7707955185238"
+    },
+    {
+      "seed": "202610199843",
+      "arm": "plastic_delta",
+      "stage": "acquire",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.7439209696839589",
+      "eligible_per_registered_mass": "0.7445889812853864",
+      "conditional_accuracy": "0.9991028451693251",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199843",
+      "arm": "plastic_delta",
+      "stage": "reverse",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.6991359845400447",
+      "eligible_per_registered_mass": "0.7195185559573907",
+      "conditional_accuracy": "0.9716719308368287",
+      "completed_mass_time": "828.8853764629141"
+    },
+    {
+      "seed": "202610199843",
+      "arm": "plastic_delta",
+      "stage": "reverse",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.7376452674634795",
+      "eligible_per_registered_mass": "0.7386008554015708",
+      "conditional_accuracy": "0.998706218749812",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199843",
+      "arm": "plastic_delta",
+      "stage": "return",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.7097084896309096",
+      "eligible_per_registered_mass": "0.7309604294460295",
+      "conditional_accuracy": "0.9709260050763269",
+      "completed_mass_time": "842.0664147218259"
+    },
+    {
+      "seed": "202610199843",
+      "arm": "plastic_delta",
+      "stage": "return",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.7415704184289064",
+      "eligible_per_registered_mass": "0.7428927012166632",
+      "conditional_accuracy": "0.9982200891385913",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199843",
+      "arm": "plastic_last",
+      "stage": "acquire",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.7650807942655319",
+      "eligible_per_registered_mass": "0.7827046563313554",
+      "conditional_accuracy": "0.977483381600885",
+      "completed_mass_time": "901.6757640937215"
+    },
+    {
+      "seed": "202610199843",
+      "arm": "plastic_last",
+      "stage": "acquire",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.7422298521333545",
+      "eligible_per_registered_mass": "0.7429151396962319",
+      "conditional_accuracy": "0.9990775695281191",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199843",
+      "arm": "plastic_last",
+      "stage": "reverse",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.7095680724116358",
+      "eligible_per_registered_mass": "0.7256636336737492",
+      "conditional_accuracy": "0.9778195288902272",
+      "completed_mass_time": "835.964505992159"
+    },
+    {
+      "seed": "202610199843",
+      "arm": "plastic_last",
+      "stage": "reverse",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.7315581703626467",
+      "eligible_per_registered_mass": "0.7324987115416454",
+      "conditional_accuracy": "0.9987159824799975",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199843",
+      "arm": "plastic_last",
+      "stage": "return",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.7222557813726956",
+      "eligible_per_registered_mass": "0.738619024665916",
+      "conditional_accuracy": "0.9778461659573126",
+      "completed_mass_time": "850.8891164151353"
+    },
+    {
+      "seed": "202610199843",
+      "arm": "plastic_last",
+      "stage": "return",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.7309417683052705",
+      "eligible_per_registered_mass": "0.732239987363486",
+      "conditional_accuracy": "0.9982270579582933",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199843",
+      "arm": "fixed_readout",
+      "stage": "acquire",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.7667011536940692",
+      "eligible_per_registered_mass": "0.7845232599987185",
+      "conditional_accuracy": "0.9772828834868728",
+      "completed_mass_time": "903.7707955185238"
+    },
+    {
+      "seed": "202610199843",
+      "arm": "fixed_readout",
+      "stage": "acquire",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.7439209696839589",
+      "eligible_per_registered_mass": "0.7445889812853864",
+      "conditional_accuracy": "0.9991028451693251",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199843",
+      "arm": "fixed_readout",
+      "stage": "reverse",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.6991359845400446",
+      "eligible_per_registered_mass": "0.7195185559573907",
+      "conditional_accuracy": "0.9716719308368286",
+      "completed_mass_time": "828.8853764629141"
+    },
+    {
+      "seed": "202610199843",
+      "arm": "fixed_readout",
+      "stage": "reverse",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.7376452674634795",
+      "eligible_per_registered_mass": "0.7386008554015707",
+      "conditional_accuracy": "0.9987062187498122",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199843",
+      "arm": "fixed_readout",
+      "stage": "return",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.7097084896309096",
+      "eligible_per_registered_mass": "0.7309604294460295",
+      "conditional_accuracy": "0.9709260050763268",
+      "completed_mass_time": "842.0664147218259"
+    },
+    {
+      "seed": "202610199843",
+      "arm": "fixed_readout",
+      "stage": "return",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.7415704184289064",
+      "eligible_per_registered_mass": "0.7428927012166632",
+      "conditional_accuracy": "0.9982200891385913",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199843",
+      "arm": "instant_feedback",
+      "stage": "acquire",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.6921271655853655",
+      "eligible_per_registered_mass": "0.7924266135548359",
+      "conditional_accuracy": "0.8734274616048975",
+      "completed_mass_time": "912.875458815171"
+    },
+    {
+      "seed": "202610199843",
+      "arm": "instant_feedback",
+      "stage": "acquire",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.0007027225718811422",
+      "eligible_per_registered_mass": "0.7803937715528694",
+      "conditional_accuracy": "0.0009004717842414697",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199843",
+      "arm": "instant_feedback",
+      "stage": "reverse",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.7770353882146512",
+      "eligible_per_registered_mass": "0.777800593289719",
+      "conditional_accuracy": "0.9990161937626825",
+      "completed_mass_time": "896.0262834697562"
+    },
+    {
+      "seed": "202610199843",
+      "arm": "instant_feedback",
+      "stage": "reverse",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.7817517837769689",
+      "eligible_per_registered_mass": "0.782708171661426",
+      "conditional_accuracy": "0.9987781041273311",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199843",
+      "arm": "instant_feedback",
+      "stage": "return",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.6988967567032013",
+      "eligible_per_registered_mass": "0.800177318518148",
+      "conditional_accuracy": "0.8734273523242215",
+      "completed_mass_time": "921.8042709329064"
+    },
+    {
+      "seed": "202610199843",
+      "arm": "instant_feedback",
+      "stage": "return",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.0015737475891637622",
+      "eligible_per_registered_mass": "0.8120436276173241",
+      "conditional_accuracy": "0.0019380086680581543",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199843",
+      "arm": "passive_hysteresis",
+      "stage": "acquire",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.00048144826131044116",
+      "eligible_per_registered_mass": "0.7636201205962194",
+      "conditional_accuracy": "0.0006304813719870764",
+      "completed_mass_time": "879.6903789268448"
+    },
+    {
+      "seed": "202610199843",
+      "arm": "passive_hysteresis",
+      "stage": "acquire",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.0007865144499642518",
+      "eligible_per_registered_mass": "0.7203484302463288",
+      "conditional_accuracy": "0.001091852799200655",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199843",
+      "arm": "passive_hysteresis",
+      "stage": "reverse",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.7035123194099377",
+      "eligible_per_registered_mass": "0.7043898275232102",
+      "conditional_accuracy": "0.9987542294352008",
+      "completed_mass_time": "811.4570813067381"
+    },
+    {
+      "seed": "202610199843",
+      "arm": "passive_hysteresis",
+      "stage": "reverse",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.6903506097866566",
+      "eligible_per_registered_mass": "0.6912465699293545",
+      "conditional_accuracy": "0.9987038486964361",
+      "completed_mass_time": "0.0"
+    },
+    {
+      "seed": "202610199843",
+      "arm": "passive_hysteresis",
+      "stage": "return",
+      "feedback": "True",
+      "scheduled": "6",
+      "score_per_registered_mass": "0.0010492056915297702",
+      "eligible_per_registered_mass": "0.6784280687846297",
+      "conditional_accuracy": "0.0015465245908963794",
+      "completed_mass_time": "781.5491352398934"
+    },
+    {
+      "seed": "202610199843",
+      "arm": "passive_hysteresis",
+      "stage": "return",
+      "feedback": "False",
+      "scheduled": "2",
+      "score_per_registered_mass": "0.0010150943749559973",
+      "eligible_per_registered_mass": "0.6613222088671703",
+      "conditional_accuracy": "0.0015349467496257696",
+      "completed_mass_time": "0.0"
+    }
+  ],
+  "path_costs": [
+    {
+      "seed": 202610199841,
+      "arm": "plastic_delta",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199841_plastic_delta",
+      "native": 361,
+      "failed": false,
+      "M": 23.999999999999996,
+      "E": 69.4419419174773,
+      "trials": 24,
+      "costs": {
+        "movement": 0.9501938217860323,
+        "basal": 10.3968,
+        "sensor": 0.7769516392809842,
+        "detect": 0.7755440254901955,
+        "upkeep": 0.43320000000000003,
+        "reconfiguration": 0.19037144110267823,
+        "gain": 11.303940569761624,
+        "loss": 0.33893772462444444,
+        "basal_unpaid": 6.199689429570773e-17,
+        "reconfiguration_unpaid": 0.0
+      }
+    },
+    {
+      "seed": 202610199841,
+      "arm": "plastic_last",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199841_plastic_last",
+      "native": 361,
+      "failed": false,
+      "M": 24.000000000000004,
+      "E": 69.59852363030946,
+      "trials": 24,
+      "costs": {
+        "movement": 0.9496696922615712,
+        "basal": 10.396800000000002,
+        "sensor": 0.7752232583246385,
+        "detect": 0.7737957734019056,
+        "upkeep": 0.43320000000000003,
+        "reconfiguration": 0.1911217552548332,
+        "gain": 11.38910937980658,
+        "loss": 0.2707752702541604,
+        "basal_unpaid": 6.462180948778425e-17,
+        "reconfiguration_unpaid": 0.0
+      }
+    },
+    {
+      "seed": 202610199841,
+      "arm": "fixed_readout",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199841_fixed_readout",
+      "native": 361,
+      "failed": false,
+      "M": 23.999999999999986,
+      "E": 69.44194191747731,
+      "trials": 24,
+      "costs": {
+        "movement": 0.9501938217860321,
+        "basal": 10.396799999999999,
+        "sensor": 0.776951639280984,
+        "detect": 0.7755440254901953,
+        "upkeep": 0.4331999999999999,
+        "reconfiguration": 0.1903714411026782,
+        "gain": 11.30394056976162,
+        "loss": 0.3389377246244444,
+        "basal_unpaid": 6.11213467783775e-17,
+        "reconfiguration_unpaid": 0.0
+      }
+    },
+    {
+      "seed": 202610199841,
+      "arm": "instant_feedback",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199841_instant_feedback",
+      "native": 361,
+      "failed": false,
+      "M": 24.0,
+      "E": 67.17772492421297,
+      "trials": 24,
+      "costs": {
+        "movement": 0.9475437117836149,
+        "basal": 10.396799999999999,
+        "sensor": 0.8011664111295144,
+        "detect": 0.8000145556237459,
+        "upkeep": 0.4332,
+        "reconfiguration": 1.4015149939965323,
+        "gain": 10.988792940797572,
+        "loss": 1.030828344051186,
+        "basal_unpaid": 6.236506333906714e-17,
+        "reconfiguration_unpaid": 0.0
+      }
+    },
+    {
+      "seed": 202610199841,
+      "arm": "passive_hysteresis",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199841_passive_hysteresis",
+      "native": 361,
+      "failed": false,
+      "M": 23.999999999999993,
+      "E": 54.93093141099572,
+      "trials": 24,
+      "costs": {
+        "movement": 0.9282553183845216,
+        "basal": 10.396799999999999,
+        "sensor": 0.7503483164223663,
+        "detect": 0.7488022564125907,
+        "upkeep": 0.4331999999999999,
+        "reconfiguration": 0.027366258913321388,
+        "gain": 3.7575819713990852,
+        "loss": 7.541878410270561,
+        "basal_unpaid": 6.054203641984513e-17,
+        "reconfiguration_unpaid": 0.0
+      }
+    },
+    {
+      "seed": 202610199842,
+      "arm": "plastic_delta",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199842_plastic_delta",
+      "native": 360,
+      "failed": false,
+      "M": 24.000000000000007,
+      "E": 69.72116783709419,
+      "trials": 24,
+      "costs": {
+        "movement": 0.9203056111626939,
+        "basal": 10.368000000000002,
+        "sensor": 0.779033839101106,
+        "detect": 0.7776787190742916,
+        "upkeep": 0.43200000000000005,
+        "reconfiguration": 0.15845231062887144,
+        "gain": 11.400765702403499,
+        "loss": 0.24412738534235542,
+        "basal_unpaid": 5.770297471373144e-17,
+        "reconfiguration_unpaid": 0.0
+      }
+    },
+    {
+      "seed": 202610199842,
+      "arm": "plastic_last",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199842_plastic_last",
+      "native": 360,
+      "failed": false,
+      "M": 24.000000000000004,
+      "E": 69.88898139982878,
+      "trials": 24,
+      "costs": {
+        "movement": 0.9209500092679437,
+        "basal": 10.368,
+        "sensor": 0.7781681716603154,
+        "detect": 0.7767987530652892,
+        "upkeep": 0.432,
+        "reconfiguration": 0.15920396927102567,
+        "gain": 11.50428706088588,
+        "loss": 0.18018475779253557,
+        "basal_unpaid": 5.871770694965229e-17,
+        "reconfiguration_unpaid": 0.0
+      }
+    },
+    {
+      "seed": 202610199842,
+      "arm": "fixed_readout",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199842_fixed_readout",
+      "native": 360,
+      "failed": false,
+      "M": 24.000000000000014,
+      "E": 69.72116783709419,
+      "trials": 24,
+      "costs": {
+        "movement": 0.9203056111626942,
+        "basal": 10.368000000000004,
+        "sensor": 0.7790338391011061,
+        "detect": 0.7776787190742918,
+        "upkeep": 0.4320000000000001,
+        "reconfiguration": 0.15845231062887147,
+        "gain": 11.4007657024035,
+        "loss": 0.24412738534235548,
+        "basal_unpaid": 6.097619126333032e-17,
+        "reconfiguration_unpaid": 0.0
+      }
+    },
+    {
+      "seed": 202610199842,
+      "arm": "instant_feedback",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199842_instant_feedback",
+      "native": 360,
+      "failed": false,
+      "M": 24.000000000000007,
+      "E": 68.64644155912387,
+      "trials": 24,
+      "costs": {
+        "movement": 0.9220880541586925,
+        "basal": 10.368,
+        "sensor": 0.8047212795753327,
+        "detect": 0.8035907874059618,
+        "upkeep": 0.43200000000000005,
+        "reconfiguration": 1.045276323777539,
+        "gain": 11.547176434626756,
+        "loss": 0.525058430585353,
+        "basal_unpaid": 5.608377859082624e-17,
+        "reconfiguration_unpaid": 0.0
+      }
+    },
+    {
+      "seed": 202610199842,
+      "arm": "passive_hysteresis",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199842_passive_hysteresis",
+      "native": 360,
+      "failed": false,
+      "M": 23.999999999999996,
+      "E": 62.582804285470615,
+      "trials": 24,
+      "costs": {
+        "movement": 0.9043044981573749,
+        "basal": 10.368,
+        "sensor": 0.756851478721395,
+        "detect": 0.7553565110533917,
+        "upkeep": 0.43199999999999994,
+        "reconfiguration": 0.02703054067820376,
+        "gain": 7.605452776442975,
+        "loss": 3.779105462362002,
+        "basal_unpaid": 5.853005298853306e-17,
+        "reconfiguration_unpaid": 0.0
+      }
+    },
+    {
+      "seed": 202610199843,
+      "arm": "plastic_delta",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199843_plastic_delta",
+      "native": 368,
+      "failed": false,
+      "M": 24.0,
+      "E": 68.26973796610247,
+      "trials": 24,
+      "costs": {
+        "movement": 0.8717123993493278,
+        "basal": 10.598400000000002,
+        "sensor": 0.6963622876503438,
+        "detect": 0.6945068744027093,
+        "upkeep": 0.44160000000000005,
+        "reconfiguration": 0.17861863208610115,
+        "gain": 10.024914253202029,
+        "loss": 0.27397609361102787,
+        "basal_unpaid": 7.053374211759465e-17,
+        "reconfiguration_unpaid": 0.0
+      }
+    },
+    {
+      "seed": 202610199843,
+      "arm": "plastic_last",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199843_plastic_last",
+      "native": 368,
+      "failed": false,
+      "M": 24.000000000000014,
+      "E": 68.42084976400923,
+      "trials": 24,
+      "costs": {
+        "movement": 0.8716621331880728,
+        "basal": 10.598400000000005,
+        "sensor": 0.6912109239580321,
+        "detect": 0.6893091837403551,
+        "upkeep": 0.44160000000000016,
+        "reconfiguration": 0.1795236855277784,
+        "gain": 10.12333661821377,
+        "loss": 0.2307809277902933,
+        "basal_unpaid": 7.064344673953934e-17,
+        "reconfiguration_unpaid": 0.0
+      }
+    },
+    {
+      "seed": 202610199843,
+      "arm": "fixed_readout",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199843_fixed_readout",
+      "native": 368,
+      "failed": false,
+      "M": 24.0,
+      "E": 68.2697379661025,
+      "trials": 24,
+      "costs": {
+        "movement": 0.8717123993493278,
+        "basal": 10.5984,
+        "sensor": 0.6963622876503438,
+        "detect": 0.6945068744027093,
+        "upkeep": 0.44160000000000005,
+        "reconfiguration": 0.17861863208610115,
+        "gain": 10.024914253202027,
+        "loss": 0.27397609361102787,
+        "basal_unpaid": 7.177122292553776e-17,
+        "reconfiguration_unpaid": 0.0
+      }
+    },
+    {
+      "seed": 202610199843,
+      "arm": "instant_feedback",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199843_instant_feedback",
+      "native": 368,
+      "failed": false,
+      "M": 23.999999999999996,
+      "E": 66.38986642707309,
+      "trials": 24,
+      "costs": {
+        "movement": 0.8720130887927986,
+        "basal": 10.5984,
+        "sensor": 0.7319998581876794,
+        "detect": 0.7303937010230873,
+        "upkeep": 0.4416,
+        "reconfiguration": 1.293737477649625,
+        "gain": 9.990417302798829,
+        "loss": 0.9324067500725055,
+        "basal_unpaid": 6.671043888011942e-17,
+        "reconfiguration_unpaid": 0.0
+      }
+    },
+    {
+      "seed": 202610199843,
+      "arm": "passive_hysteresis",
+      "path": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c/raw/202610199843_passive_hysteresis",
+      "native": 368,
+      "failed": false,
+      "M": 24.000000000000007,
+      "E": 55.385879233576915,
+      "trials": 24,
+      "costs": {
+        "movement": 0.8399179277720753,
+        "basal": 10.598400000000002,
+        "sensor": 0.6596190608365021,
+        "detect": 0.6576912950843107,
+        "upkeep": 0.44160000000000005,
+        "reconfiguration": 0.023782143347657148,
+        "gain": 3.248838021255681,
+        "loss": 6.641948360638224,
+        "basal_unpaid": 6.806510760621384e-17,
+        "reconfiguration_unpaid": 0.0
+      }
+    }
+  ],
+  "source_arm_mean_costs": [
+    {
+      "arm": "plastic_delta",
+      "mean_final_E": 69.14428257355799,
+      "min_M": 23.999999999999993,
+      "movement": 0.914070610766018,
+      "basal": 10.454400000000001,
+      "sensor": 0.7507825886774779,
+      "detect": 0.7492432063223987,
+      "upkeep": 0.43560000000000004,
+      "reconfiguration": 0.17581412793921694,
+      "gain": 10.909873508455718,
+      "loss": 0.28568040119260923,
+      "basal_unpaid": 6.341120370901128e-17
+    },
+    {
+      "arm": "plastic_last",
+      "mean_final_E": 69.30278493138249,
+      "min_M": 23.999999999999993,
+      "movement": 0.9140939449058626,
+      "basal": 10.454400000000001,
+      "sensor": 0.748200784647662,
+      "detect": 0.7466345700691833,
+      "upkeep": 0.43560000000000004,
+      "reconfiguration": 0.17661647001787908,
+      "gain": 11.005577686302077,
+      "loss": 0.22724698527899642,
+      "basal_unpaid": 6.466098772565862e-17
+    },
+    {
+      "arm": "fixed_readout",
+      "mean_final_E": 69.144282573558,
+      "min_M": 23.999999999999986,
+      "movement": 0.9140706107660179,
+      "basal": 10.454400000000001,
+      "sensor": 0.7507825886774779,
+      "detect": 0.7492432063223987,
+      "upkeep": 0.4356,
+      "reconfiguration": 0.17581412793921694,
+      "gain": 10.909873508455716,
+      "loss": 0.28568040119260923,
+      "basal_unpaid": 6.46229203224152e-17
+    },
+    {
+      "arm": "instant_feedback",
+      "mean_final_E": 67.40467763680331,
+      "min_M": 23.999999999999993,
+      "movement": 0.9138816182450354,
+      "basal": 10.454400000000001,
+      "sensor": 0.7792958496308421,
+      "detect": 0.7779996813509317,
+      "upkeep": 0.4356,
+      "reconfiguration": 1.2468429318078988,
+      "gain": 10.842128892741052,
+      "loss": 0.8294311749030149,
+      "basal_unpaid": 6.171976027000426e-17
+    },
+    {
+      "arm": "passive_hysteresis",
+      "mean_final_E": 57.63320497668108,
+      "min_M": 23.999999999999986,
+      "movement": 0.8908259147713239,
+      "basal": 10.4544,
+      "sensor": 0.7222729519934211,
+      "detect": 0.7206166875167644,
+      "upkeep": 0.4356,
+      "reconfiguration": 0.0260596476463941,
+      "gain": 4.870624256365914,
+      "loss": 5.987644077756929,
+      "basal_unpaid": 6.237906567153068e-17
+    }
+  ],
+  "causal": {
+    "flip_compliance": {
+      "score": [
+        0.000896414230002079,
+        0.0015184204366379018,
+        0.0020416374293402415,
+        0.0027612365429619235,
+        0.0005325453294072796,
+        0.0009065504180039927
+      ],
+      "conditional_accuracy": [
+        0.0010546067689977845,
+        0.0018383311974835529,
+        0.0023953188035465674,
+        0.00330873026043145,
+        0.0007058477325253401,
+        0.001215111638285804
+      ]
+    },
+    "zero_compliance": {
+      "score": [
+        0.3247861634844815,
+        0.3733853986572388,
+        0.3504148300677448,
+        0.3562501648700552,
+        0.23119076643202127,
+        0.27183571781956223
+      ],
+      "conditional_accuracy": [
+        0.46537397057192015,
+        0.5370092994852984,
+        0.48522587123037275,
+        0.4931042622824169,
+        0.46762000921731295,
+        0.5248265312034237
+      ]
+    },
+    "zero_and_mirror_shape": {
+      "score": [
+        0.37311742378606644,
+        0.3219198763447278,
+        0.37175365031276025,
+        0.36621401181560315,
+        0.26320802291615225,
+        0.24611774233849182
+      ],
+      "conditional_accuracy": [
+        0.5346260294280798,
+        0.4629907005147017,
+        0.5147741287696275,
+        0.5068957377175832,
+        0.532379990782687,
+        0.4751734687965763
+      ]
+    },
+    "factual": [
+      0.847690938475206,
+      0.825454484215455,
+      0.8488596140152088,
+      0.8289071751338084,
+      0.7492977386711083,
+      0.7388098764561898
+    ],
+    "sham_max_error": 0.0,
+    "zero_shape_better_than_mirror": 2
+  },
+  "summary": {
+    "rows": [
+      {
+        "arm": "plastic_delta",
+        "stage": "acquire",
+        "feedback": true,
+        "histories": 3,
+        "mean_score": 0.8346813831831584,
+        "mean_coverage": 0.8479101615313734,
+        "mean_conditional_accuracy": 0.9841605741682734
+      },
+      {
+        "arm": "plastic_delta",
+        "stage": "acquire",
+        "feedback": false,
+        "histories": 3,
+        "mean_score": 0.811302444367224,
+        "mean_coverage": 0.8124565224729121,
+        "mean_conditional_accuracy": 0.9986003863761713
+      },
+      {
+        "arm": "plastic_delta",
+        "stage": "reverse",
+        "feedback": true,
+        "histories": 3,
+        "mean_score": 0.7694381323134082,
+        "mean_coverage": 0.7937019204613455,
+        "mean_conditional_accuracy": 0.9695299525855136
+      },
+      {
+        "arm": "plastic_delta",
+        "stage": "reverse",
+        "feedback": false,
+        "histories": 3,
+        "mean_score": 0.796533138153159,
+        "mean_coverage": 0.7982575173552586,
+        "mean_conditional_accuracy": 0.997871111003056
+      },
+      {
+        "arm": "plastic_delta",
+        "stage": "return",
+        "feedback": true,
+        "histories": 3,
+        "mean_score": 0.7634745618592746,
+        "mean_coverage": 0.7879786102052684,
+        "mean_conditional_accuracy": 0.9689723549868764
+      },
+      {
+        "arm": "plastic_delta",
+        "stage": "return",
+        "feedback": false,
+        "histories": 3,
+        "mean_score": 0.7882550366993698,
+        "mean_coverage": 0.7905115147423852,
+        "mean_conditional_accuracy": 0.9971749986620083
+      },
+      {
+        "arm": "plastic_last",
+        "stage": "acquire",
+        "feedback": true,
+        "histories": 3,
+        "mean_score": 0.833537743821578,
+        "mean_coverage": 0.8466467497107563,
+        "mean_conditional_accuracy": 0.9842771986200843
+      },
+      {
+        "arm": "plastic_last",
+        "stage": "acquire",
+        "feedback": false,
+        "histories": 3,
+        "mean_score": 0.8098545906418181,
+        "mean_coverage": 0.8109989065122418,
+        "mean_conditional_accuracy": 0.9986085982876434
+      },
+      {
+        "arm": "plastic_last",
+        "stage": "reverse",
+        "feedback": true,
+        "histories": 3,
+        "mean_score": 0.7805550611859792,
+        "mean_coverage": 0.7985626258552596,
+        "mean_conditional_accuracy": 0.9774659942354379
+      },
+      {
+        "arm": "plastic_last",
+        "stage": "reverse",
+        "feedback": false,
+        "histories": 3,
+        "mean_score": 0.7937637622656437,
+        "mean_coverage": 0.7954389749937024,
+        "mean_conditional_accuracy": 0.997925477630749
+      },
+      {
+        "arm": "plastic_last",
+        "stage": "return",
+        "feedback": true,
+        "histories": 3,
+        "mean_score": 0.7742704081656364,
+        "mean_coverage": 0.7924695896208488,
+        "mean_conditional_accuracy": 0.9770621047908907
+      },
+      {
+        "arm": "plastic_last",
+        "stage": "return",
+        "feedback": false,
+        "histories": 3,
+        "mean_score": 0.7833260818861515,
+        "mean_coverage": 0.7854923116814199,
+        "mean_conditional_accuracy": 0.9972727692750486
+      },
+      {
+        "arm": "fixed_readout",
+        "stage": "acquire",
+        "feedback": true,
+        "histories": 3,
+        "mean_score": 0.8346813831831584,
+        "mean_coverage": 0.8479101615313733,
+        "mean_conditional_accuracy": 0.9841605741682734
+      },
+      {
+        "arm": "fixed_readout",
+        "stage": "acquire",
+        "feedback": false,
+        "histories": 3,
+        "mean_score": 0.8113024443672239,
+        "mean_coverage": 0.8124565224729121,
+        "mean_conditional_accuracy": 0.9986003863761713
+      },
+      {
+        "arm": "fixed_readout",
+        "stage": "reverse",
+        "feedback": true,
+        "histories": 3,
+        "mean_score": 0.769438132313408,
+        "mean_coverage": 0.7937019204613455,
+        "mean_conditional_accuracy": 0.9695299525855136
+      },
+      {
+        "arm": "fixed_readout",
+        "stage": "reverse",
+        "feedback": false,
+        "histories": 3,
+        "mean_score": 0.796533138153159,
+        "mean_coverage": 0.7982575173552585,
+        "mean_conditional_accuracy": 0.9978711110030561
+      },
+      {
+        "arm": "fixed_readout",
+        "stage": "return",
+        "feedback": true,
+        "histories": 3,
+        "mean_score": 0.7634745618592746,
+        "mean_coverage": 0.7879786102052684,
+        "mean_conditional_accuracy": 0.9689723549868764
+      },
+      {
+        "arm": "fixed_readout",
+        "stage": "return",
+        "feedback": false,
+        "histories": 3,
+        "mean_score": 0.7882550366993697,
+        "mean_coverage": 0.7905115147423851,
+        "mean_conditional_accuracy": 0.9971749986620083
+      },
+      {
+        "arm": "instant_feedback",
+        "stage": "acquire",
+        "feedback": true,
+        "histories": 3,
+        "mean_score": 0.7846078690059087,
+        "mean_coverage": 0.8560655601373858,
+        "mean_conditional_accuracy": 0.9150836787022739
+      },
+      {
+        "arm": "instant_feedback",
+        "stage": "acquire",
+        "feedback": false,
+        "histories": 3,
+        "mean_score": 0.29060630170705143,
+        "mean_coverage": 0.8433897448673443,
+        "mean_conditional_accuracy": 0.3335190386819156
+      },
+      {
+        "arm": "instant_feedback",
+        "stage": "reverse",
+        "feedback": true,
+        "histories": 3,
+        "mean_score": 0.7996487830770335,
+        "mean_coverage": 0.8374535083604794,
+        "mean_conditional_accuracy": 0.9565261531151174
+      },
+      {
+        "arm": "instant_feedback",
+        "stage": "reverse",
+        "feedback": false,
+        "histories": 3,
+        "mean_score": 0.5449090416534004,
+        "mean_coverage": 0.8347177627156142,
+        "mean_conditional_accuracy": 0.6663033482024142
+      },
+      {
+        "arm": "instant_feedback",
+        "stage": "return",
+        "feedback": true,
+        "histories": 3,
+        "mean_score": 0.7686359027653764,
+        "mean_coverage": 0.8393715711818368,
+        "mean_conditional_accuracy": 0.9145358345699354
+      },
+      {
+        "arm": "instant_feedback",
+        "stage": "return",
+        "feedback": false,
+        "histories": 3,
+        "mean_score": 0.28730987796849494,
+        "mean_coverage": 0.8429519897530939,
+        "mean_conditional_accuracy": 0.33435987677240103
+      },
+      {
+        "arm": "passive_hysteresis",
+        "stage": "acquire",
+        "feedback": true,
+        "histories": 3,
+        "mean_score": 0.292871851889973,
+        "mean_coverage": 0.8389559136399937,
+        "mean_conditional_accuracy": 0.3336608802554741
+      },
+      {
+        "arm": "passive_hysteresis",
+        "stage": "acquire",
+        "feedback": false,
+        "histories": 3,
+        "mean_score": 0.2821829950438301,
+        "mean_coverage": 0.8021543899270411,
+        "mean_conditional_accuracy": 0.33356914043504043
+      },
+      {
+        "arm": "passive_hysteresis",
+        "stage": "reverse",
+        "feedback": true,
+        "histories": 3,
+        "mean_score": 0.5057515808071362,
+        "mean_coverage": 0.7791740802062977,
+        "mean_conditional_accuracy": 0.6660887061844849
+      },
+      {
+        "arm": "passive_hysteresis",
+        "stage": "reverse",
+        "feedback": false,
+        "histories": 3,
+        "mean_score": 0.4921467155317129,
+        "mean_coverage": 0.7567523757542401,
+        "mean_conditional_accuracy": 0.6663348116380258
+      },
+      {
+        "arm": "passive_hysteresis",
+        "stage": "return",
+        "feedback": true,
+        "histories": 3,
+        "mean_score": 0.25836967849341025,
+        "mean_coverage": 0.7382650439407841,
+        "mean_conditional_accuracy": 0.3339813283432765
+      },
+      {
+        "arm": "passive_hysteresis",
+        "stage": "return",
+        "feedback": false,
+        "histories": 3,
+        "mean_score": 0.25205682844480465,
+        "mean_coverage": 0.718777365522779,
+        "mean_conditional_accuracy": 0.33399789323821955
+      }
+    ],
+    "readout_equivalence": [
+      {
+        "seed": 202610199841,
+        "per_step_max_errors": {
+          "M": 1.4210854715202004e-14,
+          "E": 2.842170943040401e-14,
+          "movement": 1.235990476633475e-17,
+          "basal": 1.734723475976807e-17,
+          "gain": 5.551115123125783e-17,
+          "loss": 2.7755575615628914e-17,
+          "completed_mass": 1.4210854715202004e-14,
+          "score_mass": 1.4210854715202004e-14,
+          "c_mean": 4.440892098500626e-16,
+          "x": 3.552713678800501e-15,
+          "y": 3.552713678800501e-15
+        },
+        "final_field_errors": {
+          "body": 6.661338147750939e-16,
+          "energy": 1.1102230246251565e-15,
+          "active_parameter": 2.1649348980190553e-15
+        }
+      },
+      {
+        "seed": 202610199842,
+        "per_step_max_errors": {
+          "M": 1.4210854715202004e-14,
+          "E": 2.842170943040401e-14,
+          "movement": 1.2793585635328952e-17,
+          "basal": 1.3877787807814457e-17,
+          "gain": 4.163336342344337e-17,
+          "loss": 2.7755575615628914e-17,
+          "completed_mass": 1.0658141036401503e-14,
+          "score_mass": 1.4210854715202004e-14,
+          "c_mean": 3.3306690738754696e-16,
+          "x": 3.552713678800501e-15,
+          "y": 3.552713678800501e-15
+        },
+        "final_field_errors": {
+          "body": 3.3306690738754696e-16,
+          "energy": 1.5543122344752192e-15,
+          "active_parameter": 1.2212453270876722e-15
+        }
+      },
+      {
+        "seed": 202610199843,
+        "per_step_max_errors": {
+          "M": 7.105427357601002e-15,
+          "E": 4.263256414560601e-14,
+          "movement": 1.1275702593849246e-17,
+          "basal": 6.938893903907228e-18,
+          "gain": 2.7755575615628914e-17,
+          "loss": 1.3877787807814457e-17,
+          "completed_mass": 7.105427357601002e-15,
+          "score_mass": 7.105427357601002e-15,
+          "c_mean": 3.3306690738754696e-16,
+          "x": 3.552713678800501e-15,
+          "y": 3.552713678800501e-15
+        },
+        "final_field_errors": {
+          "body": 2.220446049250313e-16,
+          "energy": 1.9984014443252818e-15,
+          "active_parameter": 3.2101057922950815e-15
+        }
+      }
+    ],
+    "native": 5445,
+    "failed": 0,
+    "max_energy_residual": 3.828838288089109e-14
+  },
+  "usage": {
+    "native": 5965,
+    "runner_worker_seconds": 8.514272,
+    "jobs": [
+      {
+        "job": "c56106bd-4b45-4095-a0d1-38907b321671",
+        "status": "failed",
+        "returncode": 1,
+        "native": 0,
+        "runner_slot_seconds": 0.283686,
+        "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/c56106bd-4b45-4095-a0d1-38907b321671"
+      },
+      {
+        "job": "9dc7df4e-900c-442e-bc3d-ac8ce3af8afa",
+        "status": "failed",
+        "returncode": 1,
+        "native": 0,
+        "runner_slot_seconds": 0.310222,
+        "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/9dc7df4e-900c-442e-bc3d-ac8ce3af8afa"
+      },
+      {
+        "job": "35f4c51b-c2b7-4d4d-964d-5224b097c803",
+        "status": "completed",
+        "returncode": 0,
+        "native": 368,
+        "runner_slot_seconds": 0.8154,
+        "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/35f4c51b-c2b7-4d4d-964d-5224b097c803"
+      },
+      {
+        "job": "30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c",
+        "status": "completed",
+        "returncode": 0,
+        "native": 5445,
+        "runner_slot_seconds": 6.276672,
+        "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/30d6d1f6-7ac9-49b1-9967-1fc5bbb4f09c"
+      },
+      {
+        "job": "296b6e82-917a-4b8c-8086-6c0db235d33e",
+        "status": "completed",
+        "returncode": 0,
+        "native": 152,
+        "runner_slot_seconds": 0.828292,
+        "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/296b6e82-917a-4b8c-8086-6c0db235d33e"
+      }
+    ],
+    "note": "Runner occupied elapsed seconds, not CPU-time or2x thread count. Two zero-native engineering failures included."
+  },
+  "new_model_steps": 0
+}

@@ -1,0 +1,57 @@
+{
+  "unique_steps": 1792,
+  "stages": 28,
+  "full_paths": 16,
+  "replayed": 0,
+  "inputs": [
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/plan.json",
+      "sha256": "f2b2ae1bc697b6be227264f4956d956731690b9acf0ec05495c23e4b044a72d4"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/outcomes.json",
+      "sha256": "d29068021298498fa465fc95e413ecc24d1bd7cdbf594e9d8d55a083034bcdc8"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/per_step.csv",
+      "sha256": "f414a8094396e3850b89ada21c8f76236f6c75782f0d86e945c73f1dbc3fab59"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/fixed_windows.csv",
+      "sha256": "c0ae7a1d00f6ad7ae028a6a913a8eac8b41204b4b0b85942b41fb6fdd2c5c42a"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/fixed_segments.csv",
+      "sha256": "d26a657f340e2e0eb3d8f3e1b03fb49eb147aef9279a2a649405d6c015507565"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/frame_coverage.csv",
+      "sha256": "5a3feba0c40bfe8fd90ab076c2601accd4acdf589767ef8b0c957e09efc0bab1"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/absolute_negative_intervals.json",
+      "sha256": "c42bfedff37b1243ba789e8386a31455ecbb4d30a08164d0fc7cad6024935b2f"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/pulses.json",
+      "sha256": "11211cd427a4850c1d711e09c9f2d3ce01f5c0cd763f20e23e211a56b7b52b4e"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/source_packets.csv",
+      "sha256": "cc8d5c5e6c17179712980e47274fa589c55dd0af15b1bca6b405e7707cad4f5d"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/full_cycle.json",
+      "sha256": "aaacb5f88937c6e3c5c517a51fe0408a77302a5ab03676d925b716aca0082be2"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/acquisition_future_cycle.json",
+      "sha256": "85443aa5ea18ba95f8e26a75fe918ad89cd9e5488f9b3721e08e6cf110006ea0"
+    },
+    {
+      "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/experience_adaptation_outer_search_native_20261018/projection.json",
+      "sha256": "207310861c2a0b5419a411b804c0d2b374e8cc291041d1d6fe170af027a68a0d"
+    }
+  ],
+  "raw_packet_count": 1792
+}

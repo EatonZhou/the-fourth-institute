@@ -1,0 +1,35 @@
+{
+  "task": "active_observation_commitment_20261018",
+  "status": "completed_candidate_closed",
+  "published": false,
+  "objective_met": false,
+  "job": "7fb4625f-3e22-4549-ab77-bb9bfca395d8",
+  "plan": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/active_observation_commitment/plan.json",
+    "sha256": "13a09c7ec6ee4596de1223303ff44997e00a89164c71429a8e34301d5ceba6e8"
+  },
+  "manifest": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/active_observation_commitment/manifest.json",
+    "sha256": "02250d3e88e9996716f5040e7ff8abc050d8363cac649095557981a31fcea3c1",
+    "files": 34
+  },
+  "report": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/active_observation_commitment/REPORT.txt",
+  "key_results": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/active_observation_commitment/key_results.json",
+  "source_refs": "${share_root}/Projects/元胞自动机研究/src/local_learning/results_20261018/active_observation_commitment/source_refs.json",
+  "usage": {
+    "job": "7fb4625f-3e22-4549-ab77-bb9bfca395d8",
+    "d3_host_steps": 113664,
+    "d3_worker_seconds": 119.929076,
+    "ce2_host_steps": 12561,
+    "ce2_worker_seconds": 18.029714,
+    "joint_host_steps": 126225,
+    "joint_worker_seconds": 137.95879,
+    "d3_unused_steps": 1024,
+    "old_budget_used": 0
+  },
+  "scientific_decision": "Close search candidate: actual outer training retained its hand-designed initial policy; no extra value over fixed simple action rules.",
+  "source_host_result": {
+    "path": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/active_observation_commitment_20261018/result.json",
+    "sha256": "0f4a505dd7450b1315c9f3cc3ec0593940a6f67a9c1c628f09225e4cae058d27"
+  }
+}

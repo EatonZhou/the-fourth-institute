@@ -1,0 +1,13 @@
+{
+  "status": "completed",
+  "job_id": "ecae3539-8cad-43fb-a2c8-e7993a5d83b3",
+  "attempted": 75776,
+  "committed": 75776,
+  "failed": 0,
+  "paths": 22,
+  "max_material_energy_residual": 4.092726157978177e-11,
+  "elapsed_seconds": 13.126238940982148,
+  "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/renewable_allocation_ecology_20261018/ecae3539-8cad-43fb-a2c8-e7993a5d83b3",
+  "preserved_original_host": true,
+  "old_budgets_unchanged": true
+}

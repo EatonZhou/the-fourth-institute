@@ -1,0 +1,23 @@
+{
+  "status": "passed",
+  "new_packets": 576,
+  "old_unique_steps_read_only": 384,
+  "old_steps_replayed": 0,
+  "stages": 6,
+  "full_paths": 6,
+  "display_new_entries": 78,
+  "display_old_entries": 51,
+  "effects": 6,
+  "native_forward_calls": 0,
+  "body_cap": 576,
+  "attempted": 576,
+  "remaining": 0,
+  "max_balance_error": 9.094947017729282e-13,
+  "max_M_path_error": 2.469136006766348e-13,
+  "max_E_path_error": 2.0650148258027912e-13,
+  "complete_parent_boundaries_exact": true,
+  "full_ready_recovery_exact": true,
+  "topology": "rho>.01 planar 8-neighbor components/4-neighbor holes; no periodic stitching",
+  "resource_locality": "P/F_on_body uses current rho>.01; P/F_at_q_sites uses actual positive_request>0 and post-transport pre-actor inventories",
+  "interpretation": "within-body T11-T00 total capability-and-fee intervention; no experienced/adaptation"
+}

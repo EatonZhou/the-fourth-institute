@@ -1,0 +1,19 @@
+{
+  "task": "third_response_generation_search_20261019",
+  "status": "completed",
+  "job": "b9f8bccb-57c5-4366-9788-7fdc1e301114",
+  "attempted": 4100,
+  "committed": 4100,
+  "settled": 4100,
+  "science_native": 4096,
+  "boundary_native": 4,
+  "wall_seconds": 98.25681235699449,
+  "failure": null,
+  "actual_paths": 26,
+  "alias_roles": 0,
+  "raw": "/data/dataset/lenia-research/lineage_75e3399f4877/third_response_generation_search_20261019/b9f8bccb-57c5-4366-9788-7fdc1e301114",
+  "raw_bytes": 142318200,
+  "objective_met": false,
+  "old_prefix_replayed": 0,
+  "old_budget_used": 0
+}

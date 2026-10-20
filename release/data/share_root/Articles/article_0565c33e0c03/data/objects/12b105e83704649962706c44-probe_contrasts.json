@@ -1,0 +1,154 @@
+[
+  {
+    "context": "compact_p512",
+    "angle": "plus",
+    "arm": "last",
+    "keep_minus_reset": {
+      "M": 0.0,
+      "E": 0.0,
+      "body_time": 0.0,
+      "U": 0.0,
+      "motor": 0.0,
+      "basal": 0.0,
+      "death": 0.0,
+      "lost_E": 0.0,
+      "distance": 0.0,
+      "blind_error": 0.0
+    },
+    "keep_distance": 1.4259580276882793,
+    "reset_distance": 1.4259580276882793
+  },
+  {
+    "context": "compact_p512",
+    "angle": "plus",
+    "arm": "fit",
+    "keep_minus_reset": {
+      "M": 0.0,
+      "E": 0.0,
+      "body_time": 0.0,
+      "U": 0.0,
+      "motor": 0.0,
+      "basal": 0.0,
+      "death": 0.0,
+      "lost_E": 0.0,
+      "distance": 0.0,
+      "blind_error": 0.0
+    },
+    "keep_distance": 1.4259580276882793,
+    "reset_distance": 1.4259580276882793
+  },
+  {
+    "context": "compact_p512",
+    "angle": "minus",
+    "arm": "last",
+    "keep_minus_reset": {
+      "M": 0.0,
+      "E": 0.0,
+      "body_time": 0.0,
+      "U": 0.0,
+      "motor": 0.0,
+      "basal": 0.0,
+      "death": 0.0,
+      "lost_E": 0.0,
+      "distance": 0.0,
+      "blind_error": 0.0
+    },
+    "keep_distance": 1.3795000549038023,
+    "reset_distance": 1.3795000549038023
+  },
+  {
+    "context": "compact_p512",
+    "angle": "minus",
+    "arm": "fit",
+    "keep_minus_reset": {
+      "M": 0.0,
+      "E": 0.0,
+      "body_time": 0.0,
+      "U": 0.0,
+      "motor": 0.0,
+      "basal": 0.0,
+      "death": 0.0,
+      "lost_E": 0.0,
+      "distance": 0.0,
+      "blind_error": 0.0
+    },
+    "keep_distance": 1.3795000549038023,
+    "reset_distance": 1.3795000549038023
+  },
+  {
+    "context": "soft_p512",
+    "angle": "plus",
+    "arm": "last",
+    "keep_minus_reset": {
+      "M": 0.0,
+      "E": 0.0,
+      "body_time": 0.0,
+      "U": 0.0,
+      "motor": 0.0,
+      "basal": 0.0,
+      "death": 0.0,
+      "lost_E": 0.0,
+      "distance": 0.0,
+      "blind_error": 0.0
+    },
+    "keep_distance": 1.3746248926803823,
+    "reset_distance": 1.3746248926803823
+  },
+  {
+    "context": "soft_p512",
+    "angle": "plus",
+    "arm": "fit",
+    "keep_minus_reset": {
+      "M": 0.0,
+      "E": 0.0,
+      "body_time": 0.0,
+      "U": 0.0,
+      "motor": 0.0,
+      "basal": 0.0,
+      "death": 0.0,
+      "lost_E": 0.0,
+      "distance": 0.0,
+      "blind_error": 0.0
+    },
+    "keep_distance": 1.3746248926803823,
+    "reset_distance": 1.3746248926803823
+  },
+  {
+    "context": "soft_p512",
+    "angle": "minus",
+    "arm": "last",
+    "keep_minus_reset": {
+      "M": 0.0,
+      "E": 0.0,
+      "body_time": 0.0,
+      "U": 0.0,
+      "motor": 0.0,
+      "basal": 0.0,
+      "death": 0.0,
+      "lost_E": 0.0,
+      "distance": 0.0,
+      "blind_error": 0.0
+    },
+    "keep_distance": 1.3312378058526968,
+    "reset_distance": 1.3312378058526968
+  },
+  {
+    "context": "soft_p512",
+    "angle": "minus",
+    "arm": "fit",
+    "keep_minus_reset": {
+      "M": 0.0,
+      "E": 0.0,
+      "body_time": 0.0,
+      "U": 0.0,
+      "motor": 0.0,
+      "basal": 0.0,
+      "death": 0.0,
+      "lost_E": 0.0,
+      "distance": 0.0,
+      "blind_error": 0.0
+    },
+    "keep_distance": 1.3312378058526968,
+    "reset_distance": 1.3312378058526968
+  }
+]

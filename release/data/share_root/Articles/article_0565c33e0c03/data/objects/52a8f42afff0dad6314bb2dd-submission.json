@@ -1,0 +1,27 @@
+{
+  "control_before_submit": {
+    "desired_state": "running",
+    "started": true,
+    "control_checked_at": "2026-10-18T17:44:52.792267+00:00",
+    "supervisor_pid": 2028055
+  },
+  "job": {
+    "id": "c62b044b-ee58-42e0-aee3-999b3a7e3055",
+    "name": "ce2 maintenance aware cargo 8 serial paths",
+    "command": [
+      "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+      "-m",
+      "environment_evolution.maintenance_aware_cargo.run"
+    ],
+    "cwd": "${share_root}/Projects/元胞自动机研究/src",
+    "resource": "cpu",
+    "request_key": "ce2-maintenance-aware-cargo-20261019-v1",
+    "status": "running",
+    "created_at": "2026-10-18T17:44:53.289586+00:00",
+    "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/c62b044b-ee58-42e0-aee3-999b3a7e3055",
+    "pid": 2029685,
+    "manual_pause": false,
+    "create_time": 1792345492.82,
+    "started_at": "2026-10-18T17:44:53.430575+00:00"
+  }
+}

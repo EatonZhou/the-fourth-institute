@@ -1,0 +1,1613 @@
+{
+  "task": "joint_behavior_actual_renewal_20261019",
+  "execution": {
+    "job_id": "f2820274-9c4a-46c3-a7d2-cc74c5f7c7c2",
+    "committed": 3955,
+    "unknown": 0,
+    "status": "complete",
+    "trajectories": {
+      "fragile_g0_joint": {
+        "status": "survival_failed",
+        "t": 479,
+        "M": 21.110122675151544,
+        "E": 12.259491661324944,
+        "opportunity": {
+          "passed": true,
+          "checks": {
+            "survival": true,
+            "real_motion": true,
+            "both_contacts": true,
+            "actual_births": true,
+            "feedback": true,
+            "writes": true
+          }
+        },
+        "eligibility": false
+      },
+      "fragile_g0_frozen_prior": {
+        "status": "survival_failed",
+        "t": 505,
+        "M": 20.712037280775203,
+        "E": 11.17172315608884,
+        "opportunity": {
+          "passed": true,
+          "checks": {
+            "survival": true,
+            "real_motion": true,
+            "both_contacts": true,
+            "actual_births": true,
+            "feedback": true,
+            "writes": true
+          }
+        },
+        "eligibility": null
+      },
+      "fragile_g1_joint": {
+        "status": "survival_failed",
+        "t": 445,
+        "M": 19.578037176046,
+        "E": 10.50179364271786,
+        "opportunity": {
+          "passed": true,
+          "checks": {
+            "survival": true,
+            "real_motion": true,
+            "both_contacts": true,
+            "actual_births": true,
+            "feedback": true,
+            "writes": true
+          }
+        },
+        "eligibility": false
+      },
+      "fragile_g1_frozen_prior": {
+        "status": "survival_failed",
+        "t": 478,
+        "M": 18.328723315430558,
+        "E": 9.777981150402663,
+        "opportunity": {
+          "passed": true,
+          "checks": {
+            "survival": true,
+            "real_motion": true,
+            "both_contacts": true,
+            "actual_births": true,
+            "feedback": true,
+            "writes": true
+          }
+        },
+        "eligibility": null
+      },
+      "multi_g0_joint": {
+        "status": "complete",
+        "t": 512,
+        "M": 816.1402167666486,
+        "E": 256.4745564157098,
+        "opportunity": {
+          "passed": true,
+          "checks": {
+            "survival": true,
+            "real_motion": true,
+            "both_contacts": true,
+            "actual_births": true,
+            "feedback": true,
+            "writes": true
+          }
+        },
+        "eligibility": null
+      },
+      "multi_g0_frozen_prior": {
+        "status": "complete",
+        "t": 512,
+        "M": 808.0964172848295,
+        "E": 292.6414708622338,
+        "opportunity": {
+          "passed": true,
+          "checks": {
+            "survival": true,
+            "real_motion": true,
+            "both_contacts": true,
+            "actual_births": true,
+            "feedback": true,
+            "writes": true
+          }
+        },
+        "eligibility": null
+      },
+      "multi_g1_joint": {
+        "status": "complete",
+        "t": 512,
+        "M": 795.176814442525,
+        "E": 249.34336675183826,
+        "opportunity": {
+          "passed": true,
+          "checks": {
+            "survival": true,
+            "real_motion": true,
+            "both_contacts": true,
+            "actual_births": true,
+            "feedback": true,
+            "writes": true
+          }
+        },
+        "eligibility": null
+      },
+      "multi_g1_frozen_prior": {
+        "status": "complete",
+        "t": 512,
+        "M": 806.9862830831613,
+        "E": 302.02986538756875,
+        "opportunity": {
+          "passed": true,
+          "checks": {
+            "survival": true,
+            "real_motion": true,
+            "both_contacts": true,
+            "actual_births": true,
+            "feedback": true,
+            "writes": true
+          }
+        },
+        "eligibility": null
+      }
+    },
+    "native_replay": 0,
+    "native": 3955,
+    "science_wall": 66.81210793601349,
+    "raw_bytes": 49139455
+  },
+  "worker_seconds": 134.299296,
+  "runner_status": "completed",
+  "plan_sha256": "a7f808cb660d4eed37c082c0e84b76b4eb35b35c4eb25433f7218deaf3db14a8",
+  "summaries": {
+    "fragile_g0_joint": {
+      "status": "survival_failed",
+      "t": 479,
+      "M": 21.110122675151544,
+      "E": 12.259491661324944,
+      "opportunity": {
+        "passed": true,
+        "checks": {
+          "survival": true,
+          "real_motion": true,
+          "both_contacts": true,
+          "actual_births": true,
+          "feedback": true,
+          "writes": true
+        }
+      },
+      "eligibility": false,
+      "windows": {
+        "opportunity": {
+          "n": 64,
+          "mean_safe_mass": 23.72656365607982,
+          "mean_bad_mass": 17.549038193351855,
+          "mean_preference": 0.5758213867636645,
+          "safe_mass_over_initial_mass": 0.5265239461067428,
+          "min_largest_component": 0.9972850664072253,
+          "passed": false,
+          "U": 24.047189196380018,
+          "motor_paid": 5.251912995052788,
+          "bodytime": 139.54808205102557
+        },
+        "acquisition_last64": {
+          "n": 64,
+          "mean_safe_mass": 10.935337968923019,
+          "mean_bad_mass": 8.326644932570154,
+          "mean_preference": 0.5648207580745193,
+          "safe_mass_over_initial_mass": 0.24266966691288452,
+          "min_largest_component": 0.9978181003412966,
+          "passed": false,
+          "U": 25.223477950677466,
+          "motor_paid": 5.96202007713846,
+          "bodytime": 142.26964163369254
+        },
+        "retention_last64": {
+          "n": 64,
+          "mean_safe_mass": 0.9062382641815139,
+          "mean_bad_mass": 1.276155761839606,
+          "mean_preference": 0.37961692937342784,
+          "safe_mass_over_initial_mass": 0.020110630173261795,
+          "min_largest_component": 0.9973075661935074,
+          "passed": false,
+          "U": 22.425759109566734,
+          "motor_paid": 5.60886776211609,
+          "bodytime": 139.97463998772005
+        },
+        "reversal_last64": {
+          "n": 31,
+          "mean_safe_mass": 0.0,
+          "mean_bad_mass": 0.0,
+          "mean_preference": 0.0,
+          "safe_mass_over_initial_mass": 0.0,
+          "min_largest_component": 0.9962728571032561,
+          "passed": false,
+          "U": 10.635347426489547,
+          "motor_paid": 1.2480123044202347,
+          "bodytime": 60.69570835855325
+        }
+      },
+      "n_receipts": 479,
+      "M0": 45.062648776984034,
+      "post128_fraction": 1.0,
+      "post_acquisition_fraction": 0.9999999901151213,
+      "full_life": false,
+      "sums": {
+        "births": 287.621269118512,
+        "rule_death": 297.52272552713845,
+        "actor_resource_consumed": 180.15789197224925,
+        "actor_mass_injury": 14.051069693206081,
+        "actor_mass_starvation": 0.0,
+        "actor_movement_paid": 38.91755328691303,
+        "actor_movement_unpaid": 0.0,
+        "actor_movement_denied_source": 0.0,
+        "actor_basal_paid": 12.552442106104053,
+        "actor_basal_unpaid": 1.031579766254016e-15,
+        "copy_paid": 1.1495074293772127,
+        "copy_denied": 0.0009776470968352168,
+        "holding_paid": 2.0920736843506758,
+        "holding_denied": 0.0,
+        "P_pump_fee": 4.040586992381203,
+        "F_pump_fee": 3.8334864440973826,
+        "bank_written_mass": 10671.959932375692,
+        "observed_old_mass": 19245.913687220786,
+        "bank_update_l1": 65794308.761410244,
+        "transport_distance": 7.910410268382677,
+        "bodytime": 1044.839215870246
+      },
+      "material_error_max": 9.094947017729282e-13,
+      "energy_error_max": 9.094947017729282e-13,
+      "actions": {
+        "0": 256,
+        "1": 32,
+        "2": 0,
+        "3": 96,
+        "4": 95
+      },
+      "final_centroid": [
+        19.517580596714165,
+        48.02235388808699
+      ],
+      "min_largest_component": 0.9950376830792186
+    },
+    "fragile_g0_frozen_prior": {
+      "status": "survival_failed",
+      "t": 505,
+      "M": 20.712037280775203,
+      "E": 11.17172315608884,
+      "opportunity": {
+        "passed": true,
+        "checks": {
+          "survival": true,
+          "real_motion": true,
+          "both_contacts": true,
+          "actual_births": true,
+          "feedback": true,
+          "writes": true
+        }
+      },
+      "eligibility": null,
+      "windows": {
+        "opportunity": {
+          "n": 64,
+          "mean_safe_mass": 22.88276338275093,
+          "mean_bad_mass": 18.850907073467674,
+          "mean_preference": 0.5486201567318707,
+          "safe_mass_over_initial_mass": 0.5077988978410521,
+          "min_largest_component": 0.9972850664072253,
+          "passed": false,
+          "U": 22.918111566073737,
+          "motor_paid": 4.890719125915619,
+          "bodytime": 139.4593201789627
+        },
+        "acquisition_last64": {
+          "n": 64,
+          "mean_safe_mass": 12.253675292778544,
+          "mean_bad_mass": 6.768363699443793,
+          "mean_preference": 0.6419908360839647,
+          "safe_mass_over_initial_mass": 0.2719253223089977,
+          "min_largest_component": 0.9978697508567976,
+          "passed": true,
+          "U": 25.070223149960302,
+          "motor_paid": 5.620756239238376,
+          "bodytime": 138.30418260432336
+        },
+        "retention_last64": {
+          "n": 64,
+          "mean_safe_mass": 1.2982357267584996,
+          "mean_bad_mass": 1.823022619704664,
+          "mean_preference": 0.421421391894523,
+          "safe_mass_over_initial_mass": 0.028809574270334055,
+          "min_largest_component": 0.9970455930114036,
+          "passed": false,
+          "U": 23.110769601643185,
+          "motor_paid": 5.7027188762380225,
+          "bodytime": 141.76451147416344
+        },
+        "reversal_last64": {
+          "n": 57,
+          "mean_safe_mass": 0.0,
+          "mean_bad_mass": 0.0,
+          "mean_preference": 0.0,
+          "safe_mass_over_initial_mass": 0.0,
+          "min_largest_component": 0.9957181207566568,
+          "passed": false,
+          "U": 19.212116229556607,
+          "motor_paid": 4.802203104141415,
+          "bodytime": 115.29227471717367
+        }
+      },
+      "n_receipts": 505,
+      "M0": 45.062648776984034,
+      "post128_fraction": 1.0,
+      "post_acquisition_fraction": 0.9999999998745939,
+      "full_life": false,
+      "sums": {
+        "births": 297.43117283828815,
+        "rule_death": 306.2375263115674,
+        "actor_resource_consumed": 186.1697603523004,
+        "actor_mass_injury": 15.544258022929588,
+        "actor_mass_starvation": 0.0,
+        "actor_movement_paid": 42.44282152750124,
+        "actor_movement_unpaid": 0.0,
+        "actor_movement_denied_source": 0.0,
+        "actor_basal_paid": 13.129616950133656,
+        "actor_basal_unpaid": 1.1034268215209755e-15,
+        "copy_paid": 1.1888299731640126,
+        "copy_denied": 0.0008947181891399952,
+        "holding_paid": 2.1882694916889425,
+        "holding_denied": 0.0,
+        "P_pump_fee": 4.27813570389355,
+        "F_pump_fee": 4.015425475222378,
+        "bank_written_mass": 0.0,
+        "observed_old_mass": 20096.151127927915,
+        "bank_update_l1": 0.0,
+        "transport_distance": 9.391644404257962,
+        "bodytime": 1092.9172152696608
+      },
+      "material_error_max": 9.094947017729282e-13,
+      "energy_error_max": 9.094947017729282e-13,
+      "actions": {
+        "0": 409,
+        "1": 32,
+        "2": 0,
+        "3": 16,
+        "4": 48
+      },
+      "final_centroid": [
+        19.745771595097747,
+        48.0136729810391
+      ],
+      "min_largest_component": 0.9957181207566568
+    },
+    "fragile_g1_joint": {
+      "status": "survival_failed",
+      "t": 445,
+      "M": 19.578037176046,
+      "E": 10.50179364271786,
+      "opportunity": {
+        "passed": true,
+        "checks": {
+          "survival": true,
+          "real_motion": true,
+          "both_contacts": true,
+          "actual_births": true,
+          "feedback": true,
+          "writes": true
+        }
+      },
+      "eligibility": false,
+      "windows": {
+        "opportunity": {
+          "n": 64,
+          "mean_safe_mass": 23.689699321144737,
+          "mean_bad_mass": 17.661059384173186,
+          "mean_preference": 0.5737823092090156,
+          "safe_mass_over_initial_mass": 0.525705877574697,
+          "min_largest_component": 0.9972866132506749,
+          "passed": false,
+          "U": 24.062392719317245,
+          "motor_paid": 5.259566221348428,
+          "bodytime": 139.6527749110797
+        },
+        "acquisition_last64": {
+          "n": 64,
+          "mean_safe_mass": 11.284041850610366,
+          "mean_bad_mass": 8.48006147087496,
+          "mean_preference": 0.5664001420010476,
+          "safe_mass_over_initial_mass": 0.2504078689749313,
+          "min_largest_component": 0.997772359921954,
+          "passed": false,
+          "U": 25.180834780729935,
+          "motor_paid": 5.117811060596944,
+          "bodytime": 141.2494916510816
+        },
+        "retention_last64": {
+          "n": 64,
+          "mean_safe_mass": 0.06840110211115887,
+          "mean_bad_mass": 0.04014331255561357,
+          "mean_preference": 0.19020648779785487,
+          "safe_mass_over_initial_mass": 0.0015179112628216178,
+          "min_largest_component": 0.9961137380697805,
+          "passed": false,
+          "U": 25.24609387648536,
+          "motor_paid": 6.244848763135383,
+          "bodytime": 140.48161090192679
+        },
+        "reversal_last64": {
+          "n": 0,
+          "passed": false
+        }
+      },
+      "n_receipts": 445,
+      "M0": 45.062648776984034,
+      "post128_fraction": 0.999999999998409,
+      "post_acquisition_fraction": 0.9999591949263715,
+      "full_life": false,
+      "sums": {
+        "births": 275.0385766007173,
+        "rule_death": 285.85452407512724,
+        "actor_resource_consumed": 173.7658356348949,
+        "actor_mass_injury": 14.6686641265281,
+        "actor_mass_starvation": 0.0,
+        "actor_movement_paid": 39.7141484199396,
+        "actor_movement_unpaid": 0.0,
+        "actor_movement_denied_source": 0.0,
+        "actor_basal_paid": 11.67831392349786,
+        "actor_basal_unpaid": 1.0093527529607196e-15,
+        "copy_paid": 1.0993305939261153,
+        "copy_denied": 0.0008237124767538615,
+        "holding_paid": 1.94638565391631,
+        "holding_denied": 0.0,
+        "P_pump_fee": 3.96956907701814,
+        "F_pump_fee": 3.69672206328846,
+        "bank_written_mass": 12932.481275785225,
+        "observed_old_mass": 18368.164081495084,
+        "bank_update_l1": 193486144.95844162,
+        "transport_distance": 8.207603280757677,
+        "bodytime": 971.9185963781081
+      },
+      "material_error_max": 9.094947017729282e-13,
+      "energy_error_max": 9.094947017729282e-13,
+      "actions": {
+        "0": 96,
+        "1": 64,
+        "2": 112,
+        "3": 125,
+        "4": 48
+      },
+      "final_centroid": [
+        18.671473564991157,
+        46.62777119682748
+      ],
+      "min_largest_component": 0.994342630795013
+    },
+    "fragile_g1_frozen_prior": {
+      "status": "survival_failed",
+      "t": 478,
+      "M": 18.328723315430558,
+      "E": 9.777981150402663,
+      "opportunity": {
+        "passed": true,
+        "checks": {
+          "survival": true,
+          "real_motion": true,
+          "both_contacts": true,
+          "actual_births": true,
+          "feedback": true,
+          "writes": true
+        }
+      },
+      "eligibility": null,
+      "windows": {
+        "opportunity": {
+          "n": 64,
+          "mean_safe_mass": 22.845981386232296,
+          "mean_bad_mass": 18.92219260825606,
+          "mean_preference": 0.5472598180692607,
+          "safe_mass_over_initial_mass": 0.5069826565077771,
+          "min_largest_component": 0.9976015560944648,
+          "passed": false,
+          "U": 22.93340730664781,
+          "motor_paid": 4.895650855998423,
+          "bodytime": 139.5250580203706
+        },
+        "acquisition_last64": {
+          "n": 64,
+          "mean_safe_mass": 14.512925046255381,
+          "mean_bad_mass": 10.184185019065852,
+          "mean_preference": 0.5899095549070732,
+          "safe_mass_over_initial_mass": 0.3220610736417236,
+          "min_largest_component": 0.9976043163461105,
+          "passed": false,
+          "U": 24.052656076827613,
+          "motor_paid": 4.747751726503512,
+          "bodytime": 138.43944154564028
+        },
+        "retention_last64": {
+          "n": 64,
+          "mean_safe_mass": 1.0494197875990867,
+          "mean_bad_mass": 0.7105139514273721,
+          "mean_preference": 0.6336833076572584,
+          "safe_mass_over_initial_mass": 0.023288018260814773,
+          "min_largest_component": 0.9964374042890294,
+          "passed": false,
+          "U": 23.91851042294286,
+          "motor_paid": 5.771846864282638,
+          "bodytime": 138.90735850937435
+        },
+        "reversal_last64": {
+          "n": 30,
+          "mean_safe_mass": 0.0,
+          "mean_bad_mass": 0.0,
+          "mean_preference": 0.0,
+          "safe_mass_over_initial_mass": 0.0,
+          "min_largest_component": 0.9967073691280116,
+          "passed": false,
+          "U": 10.454781978983394,
+          "motor_paid": 2.6065947783478234,
+          "bodytime": 57.1886513948111
+        }
+      },
+      "n_receipts": 478,
+      "M0": 45.062648776984034,
+      "post128_fraction": 1.0,
+      "post_acquisition_fraction": 0.9999996044734625,
+      "full_life": false,
+      "sums": {
+        "births": 282.5600415206403,
+        "rule_death": 291.72557744792294,
+        "actor_resource_consumed": 179.09210193580117,
+        "actor_mass_injury": 17.56838953427084,
+        "actor_mass_starvation": 0.0,
+        "actor_movement_paid": 40.6244185813077,
+        "actor_movement_unpaid": 0.0,
+        "actor_movement_denied_source": 0.0,
+        "actor_basal_paid": 12.428605091543705,
+        "actor_basal_unpaid": 1.0498900454182314e-15,
+        "copy_paid": 1.1293023666761164,
+        "copy_denied": 0.0009377994064449282,
+        "holding_paid": 2.071434181923951,
+        "holding_denied": 0.0,
+        "P_pump_fee": 4.249513327493314,
+        "F_pump_fee": 3.997516374300054,
+        "bank_written_mass": 0.0,
+        "observed_old_mass": 19248.643139046166,
+        "bank_update_l1": 0.0,
+        "transport_distance": 8.854707266804198,
+        "bodytime": 1034.3803946888977
+      },
+      "material_error_max": 9.094947017729282e-13,
+      "energy_error_max": 9.094947017729282e-13,
+      "actions": {
+        "0": 304,
+        "1": 32,
+        "2": 0,
+        "3": 94,
+        "4": 48
+      },
+      "final_centroid": [
+        19.596966731776863,
+        47.0585751182776
+      ],
+      "min_largest_component": 0.9915409541473772
+    },
+    "multi_g0_joint": {
+      "status": "complete",
+      "t": 512,
+      "M": 816.1402167666486,
+      "E": 256.4745564157098,
+      "opportunity": {
+        "passed": true,
+        "checks": {
+          "survival": true,
+          "real_motion": true,
+          "both_contacts": true,
+          "actual_births": true,
+          "feedback": true,
+          "writes": true
+        }
+      },
+      "eligibility": null,
+      "windows": {
+        "opportunity": {
+          "n": 64,
+          "mean_safe_mass": 17.812371640701876,
+          "mean_bad_mass": 14.845646384629672,
+          "mean_preference": 0.5466495435844383,
+          "safe_mass_over_initial_mass": 0.052305771163377694,
+          "min_largest_component": 0.9914849736754638,
+          "passed": false,
+          "U": 253.77381063833917,
+          "motor_paid": 48.49204341554064,
+          "bodytime": 1281.321619873693
+        },
+        "acquisition_last64": {
+          "n": 64,
+          "mean_safe_mass": 26.71746448597751,
+          "mean_bad_mass": 8.095198690174918,
+          "mean_preference": 0.766960954978349,
+          "safe_mass_over_initial_mass": 0.07845544723959869,
+          "min_largest_component": 0.32308541816860603,
+          "passed": false,
+          "U": 455.64851631399347,
+          "motor_paid": 98.92399689377544,
+          "bodytime": 2506.2613032835225
+        },
+        "retention_last64": {
+          "n": 64,
+          "mean_safe_mass": 32.71290527770954,
+          "mean_bad_mass": 4.710474848048457,
+          "mean_preference": 0.874023479992017,
+          "safe_mass_over_initial_mass": 0.0960609722309669,
+          "min_largest_component": 0.2887796935195408,
+          "passed": false,
+          "U": 215.37440844652357,
+          "motor_paid": 108.81417768936858,
+          "bodytime": 2770.973002464062
+        },
+        "reversal_last64": {
+          "n": 64,
+          "mean_safe_mass": 25.880330395128347,
+          "mean_bad_mass": 15.050640849012627,
+          "mean_preference": 0.6316534191641636,
+          "safe_mass_over_initial_mass": 0.07599721511463202,
+          "min_largest_component": 0.20169806466732756,
+          "passed": false,
+          "U": 79.87079229574537,
+          "motor_paid": 95.23313880584915,
+          "bodytime": 2645.4623768350766
+        }
+      },
+      "n_receipts": 512,
+      "M0": 340.5431416939581,
+      "post128_fraction": 0.9924819789728333,
+      "post_acquisition_fraction": 0.6517285222566875,
+      "full_life": false,
+      "sums": {
+        "births": 2441.4130942539186,
+        "rule_death": 1881.6633940010772,
+        "actor_resource_consumed": 1927.6694376856103,
+        "actor_mass_injury": 40.65345470014399,
+        "actor_mass_starvation": 43.499170480007216,
+        "actor_movement_paid": 727.7288988935713,
+        "actor_movement_unpaid": 0.0,
+        "actor_movement_denied_source": 6.683149039887046,
+        "actor_basal_paid": 230.3358324814902,
+        "actor_basal_unpaid": 1.5693090285802918,
+        "copy_paid": 9.76016309248263,
+        "copy_denied": 0.0054892845330463385,
+        "holding_paid": 38.352280420998916,
+        "holding_denied": 0.2985764973461635,
+        "P_pump_fee": 38.22966265793069,
+        "F_pump_fee": 30.634199475296207,
+        "bank_written_mass": 102711.55656945216,
+        "observed_old_mass": 222358.35710581267,
+        "bank_update_l1": 1184144742.8639793,
+        "transport_distance": 9.94936955264841,
+        "bodytime": 19349.208312926174
+      },
+      "material_error_max": 9.094947017729282e-13,
+      "energy_error_max": 1.8189894035458565e-12,
+      "actions": {
+        "0": 48,
+        "1": 16,
+        "2": 32,
+        "3": 400,
+        "4": 16
+      },
+      "final_centroid": [
+        46.7862955825752,
+        43.66186288116364
+      ],
+      "min_largest_component": 0.19674352853636626
+    },
+    "multi_g0_frozen_prior": {
+      "status": "complete",
+      "t": 512,
+      "M": 808.0964172848295,
+      "E": 292.6414708622338,
+      "opportunity": {
+        "passed": true,
+        "checks": {
+          "survival": true,
+          "real_motion": true,
+          "both_contacts": true,
+          "actual_births": true,
+          "feedback": true,
+          "writes": true
+        }
+      },
+      "eligibility": null,
+      "windows": {
+        "opportunity": {
+          "n": 64,
+          "mean_safe_mass": 17.019121987366244,
+          "mean_bad_mass": 15.726755496317889,
+          "mean_preference": 0.5200770905002511,
+          "safe_mass_over_initial_mass": 0.04997640505314043,
+          "min_largest_component": 0.9898812591779028,
+          "passed": false,
+          "U": 254.2392338912225,
+          "motor_paid": 49.05690547077269,
+          "bodytime": 1282.7319218895032
+        },
+        "acquisition_last64": {
+          "n": 64,
+          "mean_safe_mass": 20.275028838058397,
+          "mean_bad_mass": 16.975108899253275,
+          "mean_preference": 0.5443960120987335,
+          "safe_mass_over_initial_mass": 0.05953732833145503,
+          "min_largest_component": 0.3284594205772259,
+          "passed": false,
+          "U": 470.38249961580783,
+          "motor_paid": 103.84275863075054,
+          "bodytime": 2499.027436040902
+        },
+        "retention_last64": {
+          "n": 64,
+          "mean_safe_mass": 16.331773135113615,
+          "mean_bad_mass": 25.15900776935885,
+          "mean_preference": 0.3939829180599199,
+          "safe_mass_over_initial_mass": 0.04795801511043431,
+          "min_largest_component": 0.22713219576439725,
+          "passed": false,
+          "U": 287.7014449198126,
+          "motor_paid": 109.13721097863305,
+          "bodytime": 2799.6610026330086
+        },
+        "reversal_last64": {
+          "n": 64,
+          "mean_safe_mass": 38.110446856571755,
+          "mean_bad_mass": 1.9427569426977231,
+          "mean_preference": 0.9514992553523282,
+          "safe_mass_over_initial_mass": 0.11191077484925872,
+          "min_largest_component": 0.1557021239408966,
+          "passed": true,
+          "U": 50.428617910255184,
+          "motor_paid": 95.14269716065597,
+          "bodytime": 2637.9145032263386
+        }
+      },
+      "n_receipts": 512,
+      "M0": 340.5431416939581,
+      "post128_fraction": 0.9933529256516812,
+      "post_acquisition_fraction": 0.6944443226022988,
+      "full_life": false,
+      "sums": {
+        "births": 2518.161758525144,
+        "rule_death": 1995.192548147806,
+        "actor_resource_consumed": 2108.4478306909673,
+        "actor_mass_injury": 23.45218770231577,
+        "actor_mass_starvation": 31.963747084150622,
+        "actor_movement_paid": 743.7674638163159,
+        "actor_movement_unpaid": 0.0,
+        "actor_movement_denied_source": 6.1782764319112795,
+        "actor_basal_paid": 231.57718760643257,
+        "actor_basal_unpaid": 1.4615263746833251,
+        "copy_paid": 10.067395521204507,
+        "copy_denied": 0.005251512896069185,
+        "holding_paid": 38.58945306349744,
+        "holding_denied": 0.2503326000218761,
+        "P_pump_fee": 41.9367601738831,
+        "F_pump_fee": 33.00240866879493,
+        "bank_written_mass": 0.0,
+        "observed_old_mass": 236509.05331091036,
+        "bank_update_l1": 0.0,
+        "transport_distance": 9.972215618156984,
+        "bodytime": 19443.2704955392
+      },
+      "material_error_max": 9.094947017729282e-13,
+      "energy_error_max": 9.094947017729282e-13,
+      "actions": {
+        "0": 240,
+        "1": 16,
+        "2": 240,
+        "3": 0,
+        "4": 16
+      },
+      "final_centroid": [
+        48.01755975374886,
+        50.69584892403312
+      ],
+      "min_largest_component": 0.1557021239408966
+    },
+    "multi_g1_joint": {
+      "status": "complete",
+      "t": 512,
+      "M": 795.176814442525,
+      "E": 249.34336675183826,
+      "opportunity": {
+        "passed": true,
+        "checks": {
+          "survival": true,
+          "real_motion": true,
+          "both_contacts": true,
+          "actual_births": true,
+          "feedback": true,
+          "writes": true
+        }
+      },
+      "eligibility": null,
+      "windows": {
+        "opportunity": {
+          "n": 64,
+          "mean_safe_mass": 17.812371640701894,
+          "mean_bad_mass": 14.845646384629653,
+          "mean_preference": 0.546649543584439,
+          "safe_mass_over_initial_mass": 0.05230577116337774,
+          "min_largest_component": 0.9914849736754637,
+          "passed": false,
+          "U": 253.77381052942783,
+          "motor_paid": 48.49204341554064,
+          "bodytime": 1281.321619873693
+        },
+        "acquisition_last64": {
+          "n": 64,
+          "mean_safe_mass": 27.79398733566832,
+          "mean_bad_mass": 6.729150264848997,
+          "mean_preference": 0.8047300166679757,
+          "safe_mass_over_initial_mass": 0.0816166409853775,
+          "min_largest_component": 0.3500275010682181,
+          "passed": false,
+          "U": 449.0221812028235,
+          "motor_paid": 98.09122091775704,
+          "bodytime": 2499.465111271693
+        },
+        "retention_last64": {
+          "n": 64,
+          "mean_safe_mass": 33.69304018561533,
+          "mean_bad_mass": 5.010676041538276,
+          "mean_preference": 0.8712366828598123,
+          "safe_mass_over_initial_mass": 0.09893912418267066,
+          "min_largest_component": 0.2061577406206539,
+          "passed": false,
+          "U": 237.01546175803955,
+          "motor_paid": 110.53179620253705,
+          "bodytime": 2819.3591654173433
+        },
+        "reversal_last64": {
+          "n": 64,
+          "mean_safe_mass": 25.416872725836235,
+          "mean_bad_mass": 13.863468692651118,
+          "mean_preference": 0.6455710905400772,
+          "safe_mass_over_initial_mass": 0.0746362783857737,
+          "min_largest_component": 0.21295508659518309,
+          "passed": false,
+          "U": 66.39439913100357,
+          "motor_paid": 91.1079658695889,
+          "bodytime": 2609.7390044882554
+        }
+      },
+      "n_receipts": 512,
+      "M0": 340.5431416939581,
+      "post128_fraction": 0.9908800047856642,
+      "post_acquisition_fraction": 0.661276640719245,
+      "full_life": false,
+      "sums": {
+        "births": 2437.482429856641,
+        "rule_death": 1886.8316145040774,
+        "actor_resource_consumed": 1921.1760773459255,
+        "actor_mass_injury": 38.66773667125923,
+        "actor_mass_starvation": 57.34940593273755,
+        "actor_movement_paid": 725.4790331861333,
+        "actor_movement_unpaid": 0.0,
+        "actor_movement_denied_source": 9.412375529754936,
+        "actor_basal_paid": 230.6511688659922,
+        "actor_basal_unpaid": 2.2790647808986204,
+        "copy_paid": 9.743573751331597,
+        "copy_denied": 0.0063559680949672,
+        "holding_paid": 38.41016951112957,
+        "holding_denied": 0.4115360966855645,
+        "P_pump_fee": 38.27494452329048,
+        "F_pump_fee": 30.048182320364756,
+        "bank_written_mass": 94736.38956108685,
+        "observed_old_mass": 221155.18108481067,
+        "bank_update_l1": 1137778782.9340224,
+        "transport_distance": 9.920225227565457,
+        "bodytime": 19433.584487544995
+      },
+      "material_error_max": 9.094947017729282e-13,
+      "energy_error_max": 9.094947017729282e-13,
+      "actions": {
+        "0": 32,
+        "1": 16,
+        "2": 432,
+        "3": 16,
+        "4": 16
+      },
+      "final_centroid": [
+        47.02585864090792,
+        51.082750020051385
+      ],
+      "min_largest_component": 0.2061577406206539
+    },
+    "multi_g1_frozen_prior": {
+      "status": "complete",
+      "t": 512,
+      "M": 806.9862830831613,
+      "E": 302.02986538756875,
+      "opportunity": {
+        "passed": true,
+        "checks": {
+          "survival": true,
+          "real_motion": true,
+          "both_contacts": true,
+          "actual_births": true,
+          "feedback": true,
+          "writes": true
+        }
+      },
+      "eligibility": null,
+      "windows": {
+        "opportunity": {
+          "n": 64,
+          "mean_safe_mass": 17.019121987366265,
+          "mean_bad_mass": 15.726755496317864,
+          "mean_preference": 0.5200770905002516,
+          "safe_mass_over_initial_mass": 0.049976405053140494,
+          "min_largest_component": 0.9898812591779029,
+          "passed": false,
+          "U": 254.2392338912225,
+          "motor_paid": 49.05690547077269,
+          "bodytime": 1282.7319218895032
+        },
+        "acquisition_last64": {
+          "n": 64,
+          "mean_safe_mass": 21.061158325777733,
+          "mean_bad_mass": 16.045841606993477,
+          "mean_preference": 0.5676298647375055,
+          "safe_mass_over_initial_mass": 0.06184578617855454,
+          "min_largest_component": 0.2695871357347127,
+          "passed": false,
+          "U": 470.1295400576996,
+          "motor_paid": 103.2960568144224,
+          "bodytime": 2499.0574241394356
+        },
+        "retention_last64": {
+          "n": 64,
+          "mean_safe_mass": 25.579545222513254,
+          "mean_bad_mass": 14.417679682017393,
+          "mean_preference": 0.6388949866954176,
+          "safe_mass_over_initial_mass": 0.07511396381460905,
+          "min_largest_component": 0.22749952556477104,
+          "passed": false,
+          "U": 276.8849895735804,
+          "motor_paid": 108.70765552273981,
+          "bodytime": 2795.0476608126046
+        },
+        "reversal_last64": {
+          "n": 64,
+          "mean_safe_mass": 8.611170161900825,
+          "mean_bad_mass": 26.080054632472724,
+          "mean_preference": 0.24788913501799958,
+          "safe_mass_over_initial_mass": 0.025286576376392207,
+          "min_largest_component": 0.20888965664101872,
+          "passed": false,
+          "U": 57.327084637037366,
+          "motor_paid": 94.26659170706928,
+          "bodytime": 2639.0649488552754
+        }
+      },
+      "n_receipts": 512,
+      "M0": 340.5431416939581,
+      "post128_fraction": 0.9950350681642743,
+      "post_acquisition_fraction": 0.7011614184011505,
+      "full_life": false,
+      "sums": {
+        "births": 2524.5436693147203,
+        "rule_death": 1975.519839567907,
+        "actor_resource_consumed": 2101.0541614558533,
+        "actor_mass_injury": 49.01516152762224,
+        "actor_mass_starvation": 33.56552682998809,
+        "actor_movement_paid": 740.1536013900765,
+        "actor_movement_unpaid": 0.0,
+        "actor_movement_denied_source": 6.184723145999056,
+        "actor_basal_paid": 231.34241871372686,
+        "actor_basal_unpaid": 1.5188270628343425,
+        "copy_paid": 10.093037215353592,
+        "copy_denied": 0.005137461905290768,
+        "holding_paid": 38.55109296160703,
+        "holding_denied": 0.25911466781983045,
+        "P_pump_fee": 41.73004751706076,
+        "F_pump_fee": 33.15023139545586,
+        "bank_written_mass": 0.0,
+        "observed_old_mass": 239084.8321696547,
+        "bank_update_l1": 0.0,
+        "transport_distance": 9.966767860397418,
+        "bodytime": 19428.425971782894
+      },
+      "material_error_max": 9.094947017729282e-13,
+      "energy_error_max": 9.094947017729282e-13,
+      "actions": {
+        "0": 224,
+        "1": 16,
+        "2": 240,
+        "3": 16,
+        "4": 16
+      },
+      "final_centroid": [
+        48.049447654375406,
+        50.340380348619675
+      ],
+      "min_largest_component": 0.20888965664101872
+    }
+  },
+  "contrasts": {
+    "fragile_g0_joint_minus_frozen": {
+      "common_clock": 479,
+      "M": -20.69488680856786,
+      "E": -8.544527889423524,
+      "same_end_clock": false,
+      "windows": {
+        "acquisition_last64": {
+          "paired_n": 64,
+          "complete": true,
+          "safe_contact": -1.318337323855524,
+          "safe_fraction": -0.07717007800944548,
+          "actor_resource_consumed": 0.002394606261205688,
+          "actor_movement_paid": 0.005332247467188807,
+          "bodytime": 0.061960297333893695
+        },
+        "retention_last64": {
+          "paired_n": 64,
+          "complete": true,
+          "safe_contact": -0.3919974625769856,
+          "safe_fraction": -0.04180446252109519,
+          "actor_resource_consumed": -0.010703288938694516,
+          "actor_movement_paid": -0.0014664236581551947,
+          "bodytime": -0.027966741975677903
+        },
+        "reversal_last64": {
+          "paired_n": 31,
+          "complete": false,
+          "safe_contact": 0.0,
+          "safe_fraction": 0.0,
+          "actor_resource_consumed": -0.016668363556776374,
+          "actor_movement_paid": -0.0479451644699045,
+          "bodytime": -0.19573844875656907
+        }
+      }
+    },
+    "fragile_g1_joint_minus_frozen": {
+      "common_clock": 445,
+      "M": -25.64054949489042,
+      "E": -10.785374896069936,
+      "same_end_clock": false,
+      "windows": {
+        "acquisition_last64": {
+          "paired_n": 64,
+          "complete": true,
+          "safe_contact": -3.2288831956450164,
+          "safe_fraction": -0.023509412906025484,
+          "actor_resource_consumed": 0.017627792248473724,
+          "actor_movement_paid": 0.0057821770952098785,
+          "bodytime": 0.04390703289752038
+        },
+        "retention_last64": {
+          "paired_n": 64,
+          "complete": true,
+          "safe_contact": -0.9810186854879278,
+          "safe_fraction": -0.44347681985940357,
+          "actor_resource_consumed": 0.02074349146160158,
+          "actor_movement_paid": 0.007390654669574136,
+          "bodytime": 0.02459769363363172
+        },
+        "reversal_last64": {
+          "paired_n": 0,
+          "complete": false,
+          "safe_contact": null,
+          "safe_fraction": null,
+          "actor_resource_consumed": null,
+          "actor_movement_paid": null,
+          "bodytime": null
+        }
+      }
+    },
+    "multi_g0_joint_minus_frozen": {
+      "common_clock": 512,
+      "M": 8.043799481819065,
+      "E": -36.166914446524004,
+      "same_end_clock": true,
+      "windows": {
+        "acquisition_last64": {
+          "paired_n": 64,
+          "complete": true,
+          "safe_contact": 6.442435647919109,
+          "safe_fraction": 0.22256494287961565,
+          "actor_resource_consumed": -0.23021848909084947,
+          "actor_movement_paid": -0.07685565214023604,
+          "bodytime": 0.11302917566594528
+        },
+        "retention_last64": {
+          "paired_n": 64,
+          "complete": true,
+          "safe_contact": 16.381132142595927,
+          "safe_fraction": 0.4800405619320971,
+          "actor_resource_consumed": -1.1301099448951413,
+          "actor_movement_paid": -0.005047395144757317,
+          "bodytime": -0.44825000263979087
+        },
+        "reversal_last64": {
+          "paired_n": 64,
+          "complete": true,
+          "safe_contact": -12.230116461443403,
+          "safe_fraction": -0.31984583618816453,
+          "actor_resource_consumed": 0.4600339747732842,
+          "actor_movement_paid": 0.001413150706143576,
+          "bodytime": 0.11793552513653349
+        }
+      }
+    },
+    "multi_g1_joint_minus_frozen": {
+      "common_clock": 512,
+      "M": -11.809468640636283,
+      "E": -52.68649863573049,
+      "same_end_clock": true,
+      "windows": {
+        "acquisition_last64": {
+          "paired_n": 64,
+          "complete": true,
+          "safe_contact": 6.73282900989059,
+          "safe_fraction": 0.2371001519304703,
+          "actor_resource_consumed": -0.329802482107439,
+          "actor_movement_paid": -0.08132556088539632,
+          "bodytime": 0.006370111441519999
+        },
+        "retention_last64": {
+          "paired_n": 64,
+          "complete": true,
+          "safe_contact": 8.113494963102085,
+          "safe_fraction": 0.2323416961643948,
+          "actor_resource_consumed": -0.6229613721178258,
+          "actor_movement_paid": 0.028502198121831777,
+          "bodytime": 0.3798672594490409
+        },
+        "reversal_last64": {
+          "paired_n": 64,
+          "complete": true,
+          "safe_contact": 16.805702563935412,
+          "safe_fraction": 0.3976819555220776,
+          "actor_resource_consumed": 0.141676788968222,
+          "actor_movement_paid": -0.049353528710630874,
+          "bodytime": -0.45821788073469194
+        }
+      }
+    }
+  },
+  "kinematics": {
+    "fragile_g0_joint": {
+      "centroid_change_yx": [
+        -23.20893212729587,
+        0.017320401908008876
+      ],
+      "sum_actual_material_transport_yx": [
+        4.588531098516611,
+        -1.960206449187539
+      ],
+      "residual_after_transport_yx": [
+        -27.797463225812482,
+        1.977526851095548
+      ],
+      "max_saved_edge_mass": 0.0,
+      "interpretation": "kinematic residual includes spatial birth/death, injury and mass renormalization; not a causal estimate of morphogenesis alone",
+      "per_action": {
+        "0": {
+          "n": 256,
+          "sum_transport_yx": [
+            5.268629101155971,
+            0.01661710859128431
+          ]
+        },
+        "1": {
+          "n": 32,
+          "sum_transport_yx": [
+            -0.6435034464838902,
+            0.00100718750376922
+          ]
+        },
+        "2": {
+          "n": 0,
+          "sum_transport_yx": [
+            0,
+            0
+          ]
+        },
+        "3": {
+          "n": 96,
+          "sum_transport_yx": [
+            -0.0219633315077357,
+            -1.978003733417797
+          ]
+        },
+        "4": {
+          "n": 95,
+          "sum_transport_yx": [
+            -0.014631224647735511,
+            0.00017298813520442644
+          ]
+        }
+      }
+    },
+    "fragile_g0_frozen_prior": {
+      "centroid_change_yx": [
+        -22.98074112891229,
+        0.008639494860119612
+      ],
+      "sum_actual_material_transport_yx": [
+        7.7516617987467535,
+        -0.33033971309325444
+      ],
+      "residual_after_transport_yx": [
+        -30.73240292765904,
+        0.33897920795337405
+      ],
+      "max_saved_edge_mass": 0.0,
+      "interpretation": "kinematic residual includes spatial birth/death, injury and mass renormalization; not a causal estimate of morphogenesis alone",
+      "per_action": {
+        "0": {
+          "n": 409,
+          "sum_transport_yx": [
+            8.408143242182842,
+            0.0005866015958089485
+          ]
+        },
+        "1": {
+          "n": 32,
+          "sum_transport_yx": [
+            -0.6430196768784835,
+            -0.002291145194628146
+          ]
+        },
+        "2": {
+          "n": 0,
+          "sum_transport_yx": [
+            0,
+            0
+          ]
+        },
+        "3": {
+          "n": 16,
+          "sum_transport_yx": [
+            -0.004154764048402645,
+            -0.3287133075370708
+          ]
+        },
+        "4": {
+          "n": 48,
+          "sum_transport_yx": [
+            -0.009307002509202252,
+            7.813804263555722e-05
+          ]
+        }
+      }
+    },
+    "fragile_g1_joint": {
+      "centroid_change_yx": [
+        -24.05503915901888,
+        -1.3772622893514992
+      ],
+      "sum_actual_material_transport_yx": [
+        0.6429779659089015,
+        -0.30765628840848874
+      ],
+      "residual_after_transport_yx": [
+        -24.69801712492778,
+        -1.0696060009430104
+      ],
+      "max_saved_edge_mass": 0.0,
+      "interpretation": "kinematic residual includes spatial birth/death, injury and mass renormalization; not a causal estimate of morphogenesis alone",
+      "per_action": {
+        "0": {
+          "n": 96,
+          "sum_transport_yx": [
+            1.9949026563361456,
+            -0.00953273579554669
+          ]
+        },
+        "1": {
+          "n": 64,
+          "sum_transport_yx": [
+            -1.2971005218257312,
+            -0.007357889199362268
+          ]
+        },
+        "2": {
+          "n": 112,
+          "sum_transport_yx": [
+            -0.025781172149652986,
+            2.308407273501172
+          ]
+        },
+        "3": {
+          "n": 125,
+          "sum_transport_yx": [
+            -0.021889612788779968,
+            -2.5967693652117525
+          ]
+        },
+        "4": {
+          "n": 48,
+          "sum_transport_yx": [
+            -0.007153383663079832,
+            -0.002403571702998878
+          ]
+        }
+      }
+    },
+    "fragile_g1_frozen_prior": {
+      "centroid_change_yx": [
+        -23.129545992233172,
+        -0.9464583679013785
+      ],
+      "sum_actual_material_transport_yx": [
+        5.5947412440142985,
+        -1.9525818608360057
+      ],
+      "residual_after_transport_yx": [
+        -28.72428723624747,
+        1.0061234929346272
+      ],
+      "max_saved_edge_mass": 0.0,
+      "interpretation": "kinematic residual includes spatial birth/death, injury and mass renormalization; not a causal estimate of morphogenesis alone",
+      "per_action": {
+        "0": {
+          "n": 304,
+          "sum_transport_yx": [
+            6.261351750575171,
+            -0.006909989187183373
+          ]
+        },
+        "1": {
+          "n": 32,
+          "sum_transport_yx": [
+            -0.642402157141079,
+            -0.005639915772336636
+          ]
+        },
+        "2": {
+          "n": 0,
+          "sum_transport_yx": [
+            0,
+            0
+          ]
+        },
+        "3": {
+          "n": 94,
+          "sum_transport_yx": [
+            -0.01654851644528466,
+            -1.939880560566302
+          ]
+        },
+        "4": {
+          "n": 48,
+          "sum_transport_yx": [
+            -0.007659832974508817,
+            -0.0001513953101836652
+          ]
+        }
+      }
+    },
+    "multi_g0_joint": {
+      "centroid_change_yx": [
+        -1.2137044174248004,
+        -4.338137118836357
+      ],
+      "sum_actual_material_transport_yx": [
+        0.6750476580739053,
+        -7.390854768445747
+      ],
+      "residual_after_transport_yx": [
+        -1.8887520754987057,
+        3.0527176496093897
+      ],
+      "max_saved_edge_mass": 0.0,
+      "interpretation": "kinematic residual includes spatial birth/death, injury and mass renormalization; not a causal estimate of morphogenesis alone",
+      "per_action": {
+        "0": {
+          "n": 48,
+          "sum_transport_yx": [
+            0.9890265696620228,
+            -0.000409794362751602
+          ]
+        },
+        "1": {
+          "n": 16,
+          "sum_transport_yx": [
+            -0.312807120458459,
+            0.004103701231328085
+          ]
+        },
+        "2": {
+          "n": 32,
+          "sum_transport_yx": [
+            0.0003742332646437804,
+            0.6261516861046303
+          ]
+        },
+        "3": {
+          "n": 400,
+          "sum_transport_yx": [
+            -0.0013824419715160901,
+            -8.020996182800479
+          ]
+        },
+        "4": {
+          "n": 16,
+          "sum_transport_yx": [
+            -0.00016358242278629638,
+            0.0002958213815255126
+          ]
+        }
+      }
+    },
+    "multi_g0_frozen_prior": {
+      "centroid_change_yx": [
+        0.01755975374886276,
+        2.695848924033122
+      ],
+      "sum_actual_material_transport_yx": [
+        4.630795325828008,
+        4.711085966952217
+      ],
+      "residual_after_transport_yx": [
+        -4.613235572079145,
+        -2.015237042919095
+      ],
+      "max_saved_edge_mass": 0.0,
+      "interpretation": "kinematic residual includes spatial birth/death, injury and mass renormalization; not a causal estimate of morphogenesis alone",
+      "per_action": {
+        "0": {
+          "n": 240,
+          "sum_transport_yx": [
+            4.943850997847812,
+            -0.0005955130974486187
+          ]
+        },
+        "1": {
+          "n": 16,
+          "sum_transport_yx": [
+            -0.31495812019283365,
+            -0.0014090726934591657
+          ]
+        },
+        "2": {
+          "n": 240,
+          "sum_transport_yx": [
+            0.0016623633172824905,
+            4.713141505062023
+          ]
+        },
+        "3": {
+          "n": 0,
+          "sum_transport_yx": [
+            0,
+            0
+          ]
+        },
+        "4": {
+          "n": 16,
+          "sum_transport_yx": [
+            0.00024008485574725206,
+            -5.095231889779732e-05
+          ]
+        }
+      }
+    },
+    "multi_g1_joint": {
+      "centroid_change_yx": [
+        -0.97414135909208,
+        3.0827500200513853
+      ],
+      "sum_actual_material_transport_yx": [
+        0.32633046571646623,
+        8.28478251938167
+      ],
+      "residual_after_transport_yx": [
+        -1.3004718248085463,
+        -5.202032499330285
+      ],
+      "max_saved_edge_mass": 0.0,
+      "interpretation": "kinematic residual includes spatial birth/death, injury and mass renormalization; not a causal estimate of morphogenesis alone",
+      "per_action": {
+        "0": {
+          "n": 32,
+          "sum_transport_yx": [
+            0.6607508833081215,
+            8.206780888267761e-05
+          ]
+        },
+        "1": {
+          "n": 16,
+          "sum_transport_yx": [
+            -0.3305803019524427,
+            0.0008099942460264911
+          ]
+        },
+        "2": {
+          "n": 432,
+          "sum_transport_yx": [
+            -0.0037244404446811407,
+            8.606388791046692
+          ]
+        },
+        "3": {
+          "n": 16,
+          "sum_transport_yx": [
+            -0.0001361140792786344,
+            -0.3193164194497682
+          ]
+        },
+        "4": {
+          "n": 16,
+          "sum_transport_yx": [
+            2.043888474723886e-05,
+            -0.00318191427016379
+          ]
+        }
+      }
+    },
+    "multi_g1_frozen_prior": {
+      "centroid_change_yx": [
+        0.0494476543754061,
+        2.340380348619675
+      ],
+      "sum_actual_material_transport_yx": [
+        4.276460296169367,
+        4.386865712760311
+      ],
+      "residual_after_transport_yx": [
+        -4.227012641793961,
+        -2.0464853641406355
+      ],
+      "max_saved_edge_mass": 0.0,
+      "interpretation": "kinematic residual includes spatial birth/death, injury and mass renormalization; not a causal estimate of morphogenesis alone",
+      "per_action": {
+        "0": {
+          "n": 224,
+          "sum_transport_yx": [
+            4.611600200928871,
+            -0.0007905465858898017
+          ]
+        },
+        "1": {
+          "n": 16,
+          "sum_transport_yx": [
+            -0.329833483851204,
+            -0.0004157948203836178
+          ]
+        },
+        "2": {
+          "n": 240,
+          "sum_transport_yx": [
+            -0.00571050976583073,
+            4.706630404332354
+          ]
+        },
+        "3": {
+          "n": 16,
+          "sum_transport_yx": [
+            -0.0001539174966091651,
+            -0.3173583543137544
+          ]
+        },
+        "4": {
+          "n": 16,
+          "sum_transport_yx": [
+            0.000558006354140293,
+            -0.0011999958520156682
+          ]
+        }
+      }
+    }
+  },
+  "claim_limits": [
+    "standard joint and central preset exploration, no new algorithm",
+    "explicit joint prior .2, not inherited ce two-theta acquisition",
+    "two physical parents/meanings are related conditions",
+    "observed actual uptake/injury, finite unchanged stocks; no target coordinate or stage to policy",
+    "64-step opportunity is not behavioral acquisition; absolute contact, mass floor and connectivity required",
+    "no-teaching retention still senses and metabolizes; newborn pending/registers zero; shared mixed local state later",
+    "central computation/registration storage unpriced; fourbank copy/upkeep priced explicitly"
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "id": "bef98c8c-bf7a-4cf4-a423-bebbb354e783",
+  "name": "d3 state conditioned local motor 6400",
+  "command": [
+    "${share_root}/Projects/元胞自动机研究/src/.venv/bin/python",
+    "-m",
+    "local_learning.state_conditioned_local_motor.run",
+    "run"
+  ],
+  "cwd": "${share_root}/Projects/元胞自动机研究/src",
+  "resource": "cpu",
+  "request_key": "d3-state-conditioned-local-motor-20261019-v1",
+  "status": "running",
+  "created_at": "2026-10-19T10:01:30.706099+00:00",
+  "run_dir": "${share_root}/Projects/元胞自动机研究/src/runs/jobs/bef98c8c-bf7a-4cf4-a423-bebbb354e783",
+  "pid": 2921925,
+  "manual_pause": false,
+  "create_time": 1792404090.23,
+  "started_at": "2026-10-19T10:01:30.845290+00:00"
+}

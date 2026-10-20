@@ -1,0 +1,66 @@
+[
+  {
+    "seed": 202610195601,
+    "shape": "compact",
+    "full_initial_sha": "3a10c3a0637476ef94bfd06e874b9d74723512d73438060b25542a429181eb8d",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/deletion_layout_life0_formation_20261019/985493ed-7d71-4b49-9edb-42390c6cf545/life0_202610195601_compact.bin",
+    "source_sha": "099a7ad8f4f18a3561ccfacc31a6cdf0d072f781836b82709fbd69ff8b25ffb9",
+    "exact": true
+  },
+  {
+    "seed": 202610195601,
+    "shape": "ring",
+    "full_initial_sha": "caf98659f0d35063bbc629585d827e8e9623e3ba5b6b6cdd7cce01f69cf9de68",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/deletion_layout_life0_formation_20261019/985493ed-7d71-4b49-9edb-42390c6cf545/life0_202610195601_ring.bin",
+    "source_sha": "f32e8e4c39ba428330cbad421db10e0ab35e596476e71e6c73455e6715bf16b4",
+    "exact": true
+  },
+  {
+    "seed": 202610195601,
+    "shape": "double_lobe",
+    "full_initial_sha": "15b003c311b7c367650f6e4e6e26e8c8eece9f36f3c66960344f3f68b45c5fdb",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/deletion_layout_life0_formation_20261019/985493ed-7d71-4b49-9edb-42390c6cf545/life0_202610195601_double_lobe.bin",
+    "source_sha": "704c277cc53838b164e66c5fc49b6c8ccf838343384a1bcdb703aa55798264e0",
+    "exact": true
+  },
+  {
+    "seed": 202610195601,
+    "shape": "separate_seeds",
+    "full_initial_sha": "2a6ce228f8e6d0761c409c84c4f8b799faa259e84a5c7125f846dd53a0dd84bc",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/deletion_layout_life0_formation_20261019/985493ed-7d71-4b49-9edb-42390c6cf545/life0_202610195601_separate_seeds.bin",
+    "source_sha": "aaca0e52b76fa4b72d4679043198df354d42900e2821788b77564165b6d35f5b",
+    "exact": true
+  },
+  {
+    "seed": 202610195602,
+    "shape": "compact",
+    "full_initial_sha": "f310eb8e5186a93cf3babbeb2111bcf44bbebb4f38611f02d1cfa6d1add552fe",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/deletion_layout_life0_formation_20261019/985493ed-7d71-4b49-9edb-42390c6cf545/life0_202610195602_compact.bin",
+    "source_sha": "97b037a290e9b2c4bad181b21c7b8d8dd7e5576318c726dbfe5652d41f49e89d",
+    "exact": true
+  },
+  {
+    "seed": 202610195602,
+    "shape": "ring",
+    "full_initial_sha": "540bf15c2dc3a08bdff758d036fe291638673b0c5210f28e439dacf694b8a15e",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/deletion_layout_life0_formation_20261019/985493ed-7d71-4b49-9edb-42390c6cf545/life0_202610195602_ring.bin",
+    "source_sha": "ed4f6e279856b97a6b81ed3879923f275a5c52fef0e6e07f78981619b1684be4",
+    "exact": true
+  },
+  {
+    "seed": 202610195602,
+    "shape": "double_lobe",
+    "full_initial_sha": "a9884df431c95845c8084d5d358d91886891e79ff741b9a2374d9dd05960620a",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/deletion_layout_life0_formation_20261019/985493ed-7d71-4b49-9edb-42390c6cf545/life0_202610195602_double_lobe.bin",
+    "source_sha": "4c68372b5ac5251477d2f84e741e071ab5db3dba4c27810c75dd84ae84d0268b",
+    "exact": true
+  },
+  {
+    "seed": 202610195602,
+    "shape": "separate_seeds",
+    "full_initial_sha": "b6881db5d11492321bf3bd9ddbc6fd5ad67ce5e767fba2d28a732f05f67f4db6",
+    "source": "/data/dataset/lenia-research/lineage_75e3399f4877/deletion_layout_life0_formation_20261019/985493ed-7d71-4b49-9edb-42390c6cf545/life0_202610195602_separate_seeds.bin",
+    "source_sha": "0334b88c0fbff2e7f72ba6c4cf8b3d46deba6a0502d57491b2e4b917855c3ddb",
+    "exact": true
+  }
+]

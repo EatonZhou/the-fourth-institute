@@ -1,0 +1,9 @@
+{
+  "status": "stopped_before_first_check_packet",
+  "reason": "prepare.py omitted import of existing name helper; NameError at first ready packet filename",
+  "native_body_steps": 0,
+  "energy_steps": 0,
+  "check_packets_written": 0,
+  "plan_written": false,
+  "resolution": "Import existing helper; allow empty check directory only; continue unfinished source-boundary checks without old suites."
+}

@@ -1,0 +1,134 @@
+{
+  "counts": {
+    "restoration": {
+      "C_advantage_tol": 4,
+      "C_advantage_zero": 4,
+      "useful_renewal_tol": 2,
+      "useful_renewal_zero": 2,
+      "total": 4,
+      "positive_specificity": 2
+    },
+    "withdrawal": {
+      "C_advantage_tol": 4,
+      "C_advantage_zero": 4,
+      "useful_renewal_tol": 0,
+      "useful_renewal_zero": 0,
+      "total": 4,
+      "positive_specificity": 0
+    },
+    "maintenance_by_history_future": {
+      "both__both": 4,
+      "both__birth_gain_only": 0,
+      "birth_gain_only__both": 4,
+      "birth_gain_only__birth_gain_only": 0
+    },
+    "same_zero_tolerance_classification": true
+  },
+  "max_observer_residual": 4.547473508864641e-13,
+  "pairs": [
+    {
+      "parent_id": "202610195601_ring_both",
+      "delta_C_retention": 0.02960370548983604,
+      "delta_C_live": 0.3298637084565428,
+      "delta_O_retention": 0.12316585497621091,
+      "specificity_C_minus_O": -0.09356214948637487,
+      "delta_C_bodytime": 0.5864688586957953,
+      "delta_N_live": -0.05484126657149346,
+      "delta_M": 10.785333910169314,
+      "delta_E": 12.367774536425912,
+      "delta_bodytime": 25.28141931767442,
+      "useful_renewal_tol": false
+    },
+    {
+      "parent_id": "202610195601_ring_birth_gain_only",
+      "delta_C_retention": 0.027809093812009245,
+      "delta_C_live": 0.31374571062593226,
+      "delta_O_retention": 0.04087606880931205,
+      "specificity_C_minus_O": -0.013066974997302805,
+      "delta_C_bodytime": 0.6275919303569708,
+      "delta_N_live": -0.21478293539147586,
+      "delta_M": 3.210952854544871,
+      "delta_E": 7.0872812738248285,
+      "delta_bodytime": 5.728679157130387,
+      "useful_renewal_tol": false
+    },
+    {
+      "parent_id": "202610195601_separate_seeds_both",
+      "delta_C_retention": 0.027893162311662056,
+      "delta_C_live": 0.3414191326747087,
+      "delta_O_retention": 0.1326835610518623,
+      "specificity_C_minus_O": -0.10479039874020024,
+      "delta_C_bodytime": 0.5472718119065902,
+      "delta_N_live": -0.8419968657983041,
+      "delta_M": 8.38253036147188,
+      "delta_E": 17.19774504382893,
+      "delta_bodytime": 18.06803252157721,
+      "useful_renewal_tol": false
+    },
+    {
+      "parent_id": "202610195601_separate_seeds_birth_gain_only",
+      "delta_C_retention": 0.3007215591246444,
+      "delta_C_live": 3.2180972099493186,
+      "delta_O_retention": 0.2016733101501682,
+      "specificity_C_minus_O": 0.09904824897447617,
+      "delta_C_bodytime": 5.840558155412943,
+      "delta_N_live": 2.0446349402152215,
+      "delta_M": 15.43141569807539,
+      "delta_E": 33.893270837185554,
+      "delta_bodytime": 27.660249804575358,
+      "useful_renewal_tol": true
+    },
+    {
+      "parent_id": "202610195602_ring_both",
+      "delta_C_retention": 0.0878896439778446,
+      "delta_C_live": 1.0063213846055419,
+      "delta_O_retention": 0.1994318781287986,
+      "specificity_C_minus_O": -0.11154223415095399,
+      "delta_C_bodytime": 1.5817936793213505,
+      "delta_N_live": -0.02374022136434739,
+      "delta_M": 17.72600887221931,
+      "delta_E": 26.68758180910362,
+      "delta_bodytime": 36.45467595027782,
+      "useful_renewal_tol": false
+    },
+    {
+      "parent_id": "202610195602_ring_birth_gain_only",
+      "delta_C_retention": 0.04773144538991125,
+      "delta_C_live": 0.5485708858713512,
+      "delta_O_retention": 0.05145583363826722,
+      "specificity_C_minus_O": -0.00372438824835597,
+      "delta_C_bodytime": 1.000740991898816,
+      "delta_N_live": -0.1393664151523044,
+      "delta_M": 4.120931319479922,
+      "delta_E": 8.908621834233287,
+      "delta_bodytime": 7.704629035014307,
+      "useful_renewal_tol": false
+    },
+    {
+      "parent_id": "202610195602_separate_seeds_both",
+      "delta_C_retention": 0.026307941298998383,
+      "delta_C_live": 0.3161889231417625,
+      "delta_O_retention": 0.13255384376143453,
+      "specificity_C_minus_O": -0.10624590246243615,
+      "delta_C_bodytime": 0.27268573242589156,
+      "delta_N_live": -1.4591908791849946,
+      "delta_M": 8.044596396803456,
+      "delta_E": 16.85751899095726,
+      "delta_bodytime": 16.529192356475107,
+      "useful_renewal_tol": false
+    },
+    {
+      "parent_id": "202610195602_separate_seeds_birth_gain_only",
+      "delta_C_retention": 0.259157187639542,
+      "delta_C_live": 2.8672308438473184,
+      "delta_O_retention": 0.19509104235923191,
+      "specificity_C_minus_O": 0.06406614528031007,
+      "delta_C_bodytime": 5.362079306234072,
+      "delta_N_live": 1.5870279211075964,
+      "delta_M": 15.257198587592697,
+      "delta_E": 32.21443339082472,
+      "delta_bodytime": 28.38685226287376,
+      "useful_renewal_tol": true
+    }
+  ]
+}

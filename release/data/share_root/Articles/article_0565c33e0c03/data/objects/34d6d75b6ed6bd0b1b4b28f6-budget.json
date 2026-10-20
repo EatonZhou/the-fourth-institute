@@ -1,0 +1,16 @@
+{
+  "native": 1540,
+  "worker_seconds": 79.087806,
+  "science": 1536,
+  "boundaries": 4,
+  "authorized_reference_replay": 512,
+  "old_acquisition": 0,
+  "unused_native": 4,
+  "unused_worker_seconds": 520.912194,
+  "prior_attempt_native": 388,
+  "second_attempt_native": 1152,
+  "failed_attempt_count": 1,
+  "physics_failures": 0,
+  "one_job_id": "0b471f2a-d4d9-4469-94e5-6ab4d5a1540a",
+  "raw_bytes": 47476794
+}

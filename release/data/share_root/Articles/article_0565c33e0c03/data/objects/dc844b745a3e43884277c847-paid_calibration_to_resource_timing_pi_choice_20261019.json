@@ -1,0 +1,149 @@
+{
+  "task": "paid_calibration_to_resource_timing_pi_choice_20261019",
+  "owner": "resident_afa3d4d6cf11",
+  "updated_at": "2026-10-19T03:31:19.843262+00:00",
+  "plan": "plan_13d78f0ae847 v12",
+  "objective_met": false,
+  "controls": {
+    "research.desired_state": "running",
+    "research.started": true,
+    "state_read": "inst_lin_970fabc8f167e0bbccfb",
+    "started_read": "inst_lin_1d5912378ea3dd53dc30"
+  },
+  "evidence": [
+    {
+      "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/paid_action_closed_loop_20261019/analysis/handoff.json",
+      "sha256": "9b9f08f4d9916761d471a03d816ba578138423c56e2c8607c8f5ae35c215acb4"
+    },
+    {
+      "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/paid_action_reversal_20261019/analysis/handoff.json",
+      "sha256": "93e00ca2a66075bb1452ddb594e3a46bcf2b92b0d41634f79997d81f33ca9baa"
+    }
+  ],
+  "inspected": {
+    "report_entries": [
+      "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/paid_action_closed_loop_20261019/analysis/REPORT.txt",
+      "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/paid_action_reversal_20261019/analysis/REPORT.txt"
+    ],
+    "visual": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/paid_action_reversal_20261019/analysis/all_conditions.png",
+    "implementation": "paid_action.py实际已付响应；material_transport.py先运输，再按资源/摄取速率/容量room三者最小值摄取。"
+  },
+  "scientific_choice": "标准last已足够证明此人工通道下的响应校准、内容表达和再次变化后的持续更新作用。追踪能力与摄取/身体收益分别成立或失败；不恢复fit，不把soft收益负例写成学习失败。下一实验转向补给时间与实际获取的错配。",
+  "completed": {
+    "new_native": 2560,
+    "runner_worker_seconds": 32.82729,
+    "unknown": 0,
+    "old_replay": 0,
+    "closed_loop": {
+      "native": 1536,
+      "worker_seconds": 17.161222,
+      "first16": "4/4父均16资格/16实写/16A及同desired命令改变",
+      "main_distance": "4/4更近",
+      "main_E": "4/4更高",
+      "main_M": "仅1/4更高",
+      "main_U": "2正2负",
+      "same_body_probe": "四keep/reset只A不同且均停校准写；keep4/4更近、运动费4/4更低，但末E3/4更低"
+    },
+    "second_change": {
+      "native": 1024,
+      "worker_seconds": 15.666068,
+      "same_distance_abs_max": 0.001581,
+      "reverse_distance_delta": [
+        -1.760528949,
+        -2.364047505,
+        -1.72802105,
+        -2.192184588
+      ],
+      "reverse_E_delta": [
+        1.537860455,
+        1.554921467,
+        -0.090650597,
+        -0.27643611
+      ],
+      "reverse_M_bodytime": "4/4略降",
+      "energy_decomposition_max_error": 2.03e-14
+    }
+  },
+  "interpretation": [
+    "首批校准实际发生，7936步旧资格实现失败仍单列无效，不能回写为学习阴性或并入有效对照。",
+    "同体A干预支持所学内容的表达；same/reverse×write/frozen支持环境改变后持续更新的条件价值。通道不变时新增更新没有明显追踪增量。",
+    "所有首点已在1.6格阈内：这是防止随后偏离的证据，不称瞬时恢复，1344与1536的计时不能混用。",
+    "soft摄取减少超过运动费节省，能量重组只是定位账项。它没有证明库存滞后、几何重叠或容量限制中的任何一个是原因。",
+    "亲看八条件曲线：reverse写入后响应误差降低且追踪保持；soft两行E仍更差。same近重合和两种身体的取舍同时保留。",
+    "相关旧身体、人工动作旋转、中央感知/计算存储未计价、无birth宿主仍明示。标准校准成功不等于新个体学习算法或整体目标完成。"
+  ],
+  "next": {
+    "name": "resource_timing_goal_mismatch_20261019",
+    "owner": "resident_ce2a5ab005bc",
+    "parents": [
+      {
+        "context": "compact_p512",
+        "original_angle": "plus",
+        "physical_angle": "minus",
+        "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/paid_action_reversal_20261019/compact_p512/plus/reverse/write/current",
+        "clock": 1600,
+        "files": {
+          "state.npz": "b1bc1683b0c3dba451cbbb569fa8648238acd72fb2217cd99edc44223041546a",
+          "joint.json": "9722ec4435b8a3101ceee34c18dd9e9892d607788766cd08ddaacca6c4a2f858"
+        }
+      },
+      {
+        "context": "compact_p512",
+        "original_angle": "minus",
+        "physical_angle": "plus",
+        "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/paid_action_reversal_20261019/compact_p512/minus/reverse/write/current",
+        "clock": 1600,
+        "files": {
+          "state.npz": "77d21fdb1fd13957ad46d018e3ae81c7726d03e86e32046f08fb4d2c92e2e046",
+          "joint.json": "e75c9703002abee8086ec8ffc4d8fd8fbaed9fa5a5fe2a3ca1869fbfa890baee"
+        }
+      },
+      {
+        "context": "soft_p512",
+        "original_angle": "plus",
+        "physical_angle": "minus",
+        "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/paid_action_reversal_20261019/soft_p512/plus/reverse/write/current",
+        "clock": 1600,
+        "files": {
+          "state.npz": "f5028df38dbb922ffe273d018aae4c22fb81916ee9d00f1f23747ad13fd36dba",
+          "joint.json": "383c24529913606ce78e7ae41fa367c1f481bdf65c676d2474590b76332c498c"
+        }
+      },
+      {
+        "context": "soft_p512",
+        "original_angle": "minus",
+        "physical_angle": "plus",
+        "entry": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/paid_action_reversal_20261019/soft_p512/minus/reverse/write/current",
+        "clock": 1600,
+        "files": {
+          "state.npz": "aab108ee4fda3a50282dd68482a96e11ed8fc325fbec93365bd4185af7c02a29",
+          "joint.json": "17e09cecd34af96052d0d5daedc7e26ed8abf0fdf0807328376d852649272cc4"
+        }
+      }
+    ],
+    "question": "在相同已校准身体中，追当前补给中心与追可合法记住的历史中心，其获取差异是否随实际补给时滞改变？当前中心距离是不是不充分的觅食目标？",
+    "passive_first": "先0native核已有真实帧的身体与库存重叠、输入中心相对位置和能量容量余量。旧帧若只有消耗后库存或后态，明确它不是摄取前可用量；缺失K/阶段场不重演补齐，也不据后态重叠断言瓶颈原因。此诊断用于机制解释，不挑父、改时滞或扫参数。",
+    "design": "四个最新真实reverse/write1600完整父 × 环境补给滞后0/16更新 × 控制目标当前/过去16更新合法估计，各256新步至1856。16取既有库存半衰16作为唯一固定时间尺度，不拟合或扫描最优滞后。16轨4096科学步，0旧未来复演。",
+    "environment": "cue、当前源轨迹、噪声、可见日程及当前实际通道角度延续；仅供给food取原tempo.fields(t)或tempo.fields(t-16)的food分量。每步gross .10、空间宽度、库存半衰16、费用、原始库存均保。t1600前历史不改，延迟不传给控制器；保实际joint.angle，不误用original_angle造成第三次动作扰动。",
+    "goal": "两个目标控制器都保标准last实际已付响应更新、相同当前Jacobian感知、固定omega与在线anchor/v，保同执行器。FIFO记录每步本支合法当前goal的世界坐标（观测估计或原预测输出），延迟臂到满16后只替换用于desired计算的goal为t-16缓存。不能用真资源位置、可用库存全图、后验估计重建旧目标或未来观测。不要重复调用controller造成一钟两次感知/预测器写入。",
+    "warmup": "从同1600全态启动空的16步FIFO，两目标臂都记录缓存，首16一律用当前goal；同一环境内两目标臂此段应逐值相同，允许仅无效缓存标签不同。没有合法缓存则按共同缺测规则保留None/无动作，不插值。前16与后240分列，费用全计；不重置身体、不丢弃过渡段。",
+    "measurements": "主报完整256与后240、固定64窗的实际U、净E、运动/基础/组织损失及M体时，保持原M>=.5自身1600父存续条件。分别报距当前cue中心、实际food中心及body-stock空间重叠；这些真值只用于评价。比较各父lag-current在两供给条件的差及交互，不要求所有身体指标同时占优。",
+    "accounting": "新真实执行在运输后、摄取前保available、b、e、rate_bound=dt*uptake_rate*b、room=max(capacity*b-e,0)，验证U逐格=min(available,rate_bound,room)。逐钟留总量和瓶颈并列统计，阶段场按预定稀疏帧存；平局/多限制不硬分成互斥原因。全库存账含washout、同gross输入、一次实际摄取、末库存，原泵/能量价格不改。",
+    "preflight": "冻结独立适配，不改旧源。零滞后/当前臂纯数组与原one等价；food两条件gross逐钟相等；同环境目标臂首16连续全态相同，第17按真实缓存选目标。仅需相关等价检查，未知native不重放。",
+    "budget": {
+      "native_cap": 4224,
+      "scientific_native_max": 4096,
+      "boundary_reserve": 128,
+      "runner_worker_seconds_cap": 120,
+      "cpu": 2,
+      "gpu": 0,
+      "raw_bytes_cap": 134217728
+    },
+    "interpretation": "固定16滞后目标是简单预置参照，不是在线学习供给时滞。若只在人工延迟条件奏效，保匹配边界；若两条件均无获取价值，关闭此具体目标偏移，不扫描lag。无论方向，实际U/E与中心距离分开报告；阶段账不替代干预因果。",
+    "continuation": "若资源目标问题成立，方向负责人下一独立低成本批发展利用合法接触/摄取经历调整目标的机制，与当前目标、固定历史目标及简单近期摄取反馈竞争；若固定lag已足够，不包装额外学习优势。若不成立，依据阶段实物转向容量或身体摄取结构的不同问题，避免继续追中心的参数修补。按v12自主续研，不逐批等批准。",
+    "execution": "现在读盘、实现与纯检查；实际运行遵守现有ce/d3单槽交接，不取消学习线的关联×极性实验。旧额度不借用，无周期脚本。"
+  },
+  "parallel_scope": "d3关联与行动表达、33独立机制、文献及完整长稿/GUI主图/真实动画继续；本次结果与下一取舍由方向负责人沿既有论文和投影事项合并一次。",
+  "pi_new_native": 0,
+  "pi_new_runner_jobs": 0
+}

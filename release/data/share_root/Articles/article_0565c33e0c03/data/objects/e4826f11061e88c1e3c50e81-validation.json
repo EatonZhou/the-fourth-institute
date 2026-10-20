@@ -1,0 +1,63 @@
+{
+  "native_text_shapes": 38,
+  "native_charts": 3,
+  "raster_pictures": 0,
+  "native_charts_source_values": [
+    [
+      [
+        4.535091,
+        5.435165,
+        6.691374
+      ],
+      [
+        6.742099,
+        7.106792,
+        7.713895
+      ]
+    ],
+    [
+      [
+        8.153712,
+        8.976884,
+        9.458094,
+        6.263001,
+        7.583854,
+        7.789276
+      ],
+      [
+        5.209087,
+        5.803189,
+        4.44658,
+        5.865739,
+        4.969237,
+        5.199491
+      ]
+    ],
+    [
+      [
+        5.421836,
+        8.688542
+      ],
+      [
+        6.50949,
+        5.982799
+      ]
+    ]
+  ],
+  "all_22_GUI_entered_chart_values_match_source_to_6_decimals": true,
+  "png_pixels": [
+    3779,
+    3543
+  ],
+  "page_cm": [
+    32,
+    30
+  ],
+  "effective_png_dpi": [
+    299.95812500000005,
+    299.974
+  ],
+  "dpi_metadata": null,
+  "pdf_info": "Creator:         Impress\nProducer:        LibreOffice 24.2\nCreationDate:    Mon Oct 19 21:01:01 2026 HKT\nCustom Metadata: no\nMetadata Stream: no\nTagged:          yes\nUserProperties:  no\nSuspects:        no\nForm:            none\nJavaScript:      no\nPages:           1\nEncrypted:       no\nPage size:       907.087 x 850.394 pts\nPage rot:        0\nFile size:       53011 bytes\nOptimized:       no\nPDF version:     1.7\n",
+  "pdf_fonts": "name                                 type              encoding         emb sub uni object ID\n------------------------------------ ----------------- ---------------- --- --- --- ---------\nBAAAAA+LiberationSerif               TrueType          WinAnsi          yes yes yes    141  0\nCAAAAA+LiberationSans                TrueType          WinAnsi          yes yes yes    146  0\nDAAAAA+LiberationSans-Bold           TrueType          WinAnsi          yes yes yes    151  0\n"
+}

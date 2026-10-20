@@ -1,0 +1,27 @@
+33 feedback-acquisition on ce2 shared AllocationEcologyV2
+
+Entry: research.feedback_acquisition.run
+Frozen plan: native/plan.json SHA bdf01f56fa51e1691069cd5d942baac1d8d9e0c8270850f56623734343ffd93b
+Completed unique job: 77dc63dd-23e2-4637-bb2e-d9e35a164a21
+Do not resubmit this completed request key or replay its paths.
+
+FeedbackPolicy(name,policy_seed): external held-cue state, not body-carried memory.
+register_cue(cue,paid:bool): after real phase0 fee receipt.
+choose(read_paid:bool): phase6, before current arrival; returns pending choice, predictions, probe provenance.
+complete(observed:bool,label:int,write_paid:bool): phase31; completed selected-port sensor label 0/1 or censored -1 only.
+checkpoint(): own full state/RNG; saved together with body and private tape identity, no arbitrary resume implementation.
+
+Host uses AllocationEcologyV2.observe_public then step. Current cue is only visible atphase0.
+Host-only arrivals are passed into the environment atphase22. complete_observation receives only the already chosen port's bit.
+Controller is never passed world ID, hidden state/probabilities, environment seed, switching times, unchosen bit or future tape.
+Evaluation private_state/expected_probability fields are added to saved rows after the completed decision/event; not controller inputs.
+
+Dynamics/price/transport ownership stays ce2; 33 did not duplicate the environment or synthesize K.
+Actual integer shift/keep/local uptake/survivor/born receipts supplied by d3/ce2 are stored.
+New source dependency copies and original hashes are in sources/ and plan.json.
+
+Read-only analysis:
+python -m research.feedback_acquisition.analyze <native-directory>
+python <native-directory>/summarize.py
+These consume saved outputs, do not import or call the environment/controller or generate tapes.
+Original design/pure checks and handoff remain in the parent directory, not overwritten as native results.

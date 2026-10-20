@@ -1,0 +1,384 @@
+{
+  "job": "25d2a1e5-91bf-41f6-a27d-1e5e0c8b3266",
+  "counts": {
+    "attempted": 52224,
+    "committed": 52224,
+    "body_failed": 0,
+    "independent_energy": 0
+  },
+  "scope": "birth allocation proof-of-utility pilot; dependent branches, two development seeds, not Lenia or learned homeostasis",
+  "hand_specified_update": true,
+  "outer_training": false,
+  "adaptive_comparisons": [
+    {
+      "scenario": "same",
+      "arm": "adaptive",
+      "control": "open",
+      "n": 4,
+      "mean": {
+        "M_end": -0.0013712477094225406,
+        "E_end": 0.02358507440206825,
+        "body_time": -15.6347690149355,
+        "uptake": 1.6179059630423716,
+        "movement_paid": -0.004525735151388766,
+        "memory_paid": -0.0008794225534744515,
+        "basal_paid": -0.03439649183283322,
+        "basal_unpaid": 0.0,
+        "born": -0.0044982015124035435,
+        "rejected_material": 0.1986469170774965
+      },
+      "positive": {
+        "M_end": 0,
+        "E_end": 2,
+        "body_time": 0,
+        "uptake": 4,
+        "movement_paid": 1,
+        "memory_paid": 0,
+        "basal_paid": 0,
+        "basal_unpaid": 0,
+        "born": 0,
+        "rejected_material": 4
+      }
+    },
+    {
+      "scenario": "same",
+      "arm": "adaptive",
+      "control": "instant",
+      "n": 4,
+      "mean": {
+        "M_end": 0.8758256193779648,
+        "E_end": 1.385108483084359,
+        "body_time": 303.4053620255372,
+        "uptake": -0.2911089826739719,
+        "movement_paid": 0.12745436321198422,
+        "memory_paid": 0.017103168438713623,
+        "basal_paid": 0.6674917964561917,
+        "basal_unpaid": 0.0,
+        "born": 0.9365066917830742,
+        "rejected_material": -0.9714397697039452
+      },
+      "positive": {
+        "M_end": 4,
+        "E_end": 4,
+        "body_time": 4,
+        "uptake": 1,
+        "movement_paid": 4,
+        "memory_paid": 4,
+        "basal_paid": 4,
+        "basal_unpaid": 0,
+        "born": 4,
+        "rejected_material": 0
+      }
+    },
+    {
+      "scenario": "same",
+      "arm": "adaptive",
+      "control": "ema",
+      "n": 4,
+      "mean": {
+        "M_end": 9.781121556784456e-05,
+        "E_end": -0.0008657210357085887,
+        "body_time": -10.052868057992328,
+        "uptake": 0.7056012145554895,
+        "movement_paid": -0.0035171834889395903,
+        "memory_paid": -0.0005654321225831982,
+        "basal_paid": -0.022116309727604033,
+        "basal_unpaid": 0.0,
+        "born": -0.0019127623960332185,
+        "rejected_material": 0.08658490814270237
+      },
+      "positive": {
+        "M_end": 4,
+        "E_end": 2,
+        "body_time": 0,
+        "uptake": 1,
+        "movement_paid": 0,
+        "memory_paid": 0,
+        "basal_paid": 0,
+        "basal_unpaid": 0,
+        "born": 0,
+        "rejected_material": 1
+      }
+    },
+    {
+      "scenario": "same",
+      "arm": "adaptive",
+      "control": "last",
+      "n": 4,
+      "mean": {
+        "M_end": -0.00015251966517482174,
+        "E_end": -0.0016455046028802656,
+        "body_time": 33.300535588987714,
+        "uptake": 0.8044110067855819,
+        "movement_paid": 0.011030814208160766,
+        "memory_paid": 0.001873430090638284,
+        "basal_paid": 0.07326117829578749,
+        "basal_unpaid": 0.0,
+        "born": 0.006507587452622365,
+        "rejected_material": 0.09002173336166619
+      },
+      "positive": {
+        "M_end": 0,
+        "E_end": 0,
+        "body_time": 4,
+        "uptake": 4,
+        "movement_paid": 4,
+        "memory_paid": 4,
+        "basal_paid": 4,
+        "basal_unpaid": 0,
+        "born": 4,
+        "rejected_material": 4
+      }
+    },
+    {
+      "scenario": "same",
+      "arm": "adaptive",
+      "control": "freeze",
+      "n": 4,
+      "mean": {
+        "M_end": 0.0017232463368355155,
+        "E_end": 0.008373473005774734,
+        "body_time": -14.425249975225597,
+        "uptake": 1.1681260720013782,
+        "movement_paid": -0.002899607304091667,
+        "memory_paid": -0.0008113053705368911,
+        "basal_paid": -0.03173554994549299,
+        "basal_unpaid": 0.0,
+        "born": -0.0011618036582067282,
+        "rejected_material": 0.1413369322983773
+      },
+      "positive": {
+        "M_end": 4,
+        "E_end": 3,
+        "body_time": 0,
+        "uptake": 2,
+        "movement_paid": 1,
+        "memory_paid": 0,
+        "basal_paid": 0,
+        "basal_unpaid": 0,
+        "born": 1,
+        "rejected_material": 2
+      }
+    },
+    {
+      "scenario": "same",
+      "arm": "adaptive",
+      "control": "global_buffer",
+      "n": 4,
+      "mean": {
+        "M_end": 0.0008990988233614772,
+        "E_end": 0.0049102149388842165,
+        "body_time": -6.579186876550921,
+        "uptake": 0.865434754850881,
+        "movement_paid": -0.0010338039084301087,
+        "memory_paid": -0.00036984306087170515,
+        "basal_paid": -0.014474211128412406,
+        "basal_unpaid": 0.0,
+        "born": -0.0004167385519440181,
+        "rejected_material": 0.10426890913405562
+      },
+      "positive": {
+        "M_end": 3,
+        "E_end": 2,
+        "body_time": 0,
+        "uptake": 4,
+        "movement_paid": 3,
+        "memory_paid": 0,
+        "basal_paid": 0,
+        "basal_unpaid": 0,
+        "born": 1,
+        "rejected_material": 4
+      }
+    },
+    {
+      "scenario": "port_swap",
+      "arm": "adaptive",
+      "control": "open",
+      "n": 4,
+      "mean": {
+        "M_end": -0.0004518205438870382,
+        "E_end": -0.0036269291192700948,
+        "body_time": -11.040800422883876,
+        "uptake": 0.624950190661739,
+        "movement_paid": -0.0058333119048230575,
+        "memory_paid": -0.0006209565739019596,
+        "basal_paid": -0.024289760930338744,
+        "basal_unpaid": 0.0,
+        "born": -0.0026599806284620664,
+        "rejected_material": 0.07765400350787077
+      },
+      "positive": {
+        "M_end": 0,
+        "E_end": 0,
+        "body_time": 0,
+        "uptake": 4,
+        "movement_paid": 0,
+        "memory_paid": 0,
+        "basal_paid": 0,
+        "basal_unpaid": 0,
+        "born": 0,
+        "rejected_material": 4
+      }
+    },
+    {
+      "scenario": "port_swap",
+      "arm": "adaptive",
+      "control": "instant",
+      "n": 4,
+      "mean": {
+        "M_end": 0.6819366538706664,
+        "E_end": 1.0888305389601713,
+        "body_time": 295.5050530815879,
+        "uptake": -1.3491299415759066,
+        "movement_paid": 0.11334465669869864,
+        "memory_paid": 0.01664959055785331,
+        "basal_paid": 0.6501111167794864,
+        "basal_unpaid": 0.0,
+        "born": 0.7410376644869788,
+        "rejected_material": -0.9029332574760818
+      },
+      "positive": {
+        "M_end": 4,
+        "E_end": 4,
+        "body_time": 4,
+        "uptake": 1,
+        "movement_paid": 4,
+        "memory_paid": 4,
+        "basal_paid": 4,
+        "basal_unpaid": 0,
+        "born": 4,
+        "rejected_material": 0
+      }
+    },
+    {
+      "scenario": "port_swap",
+      "arm": "adaptive",
+      "control": "ema",
+      "n": 4,
+      "mean": {
+        "M_end": -4.950242612800082e-05,
+        "E_end": 0.0013599356544284902,
+        "body_time": -10.145060993756488,
+        "uptake": -0.5633093528543398,
+        "movement_paid": -0.005701112996738589,
+        "memory_paid": -0.0005706160786436709,
+        "basal_paid": -0.022319134186263412,
+        "basal_unpaid": 0.0,
+        "born": -0.002078514624876293,
+        "rejected_material": -0.06551860771764972
+      },
+      "positive": {
+        "M_end": 3,
+        "E_end": 3,
+        "body_time": 0,
+        "uptake": 0,
+        "movement_paid": 0,
+        "memory_paid": 0,
+        "basal_paid": 0,
+        "basal_unpaid": 0,
+        "born": 1,
+        "rejected_material": 0
+      }
+    },
+    {
+      "scenario": "port_swap",
+      "arm": "adaptive",
+      "control": "last",
+      "n": 4,
+      "mean": {
+        "M_end": 0.00010714342229523055,
+        "E_end": 0.0019457776992428677,
+        "body_time": 28.91538938630083,
+        "uptake": 0.5228346686245047,
+        "movement_paid": 0.016205296386000878,
+        "memory_paid": 0.00162659988910277,
+        "basal_paid": 0.06361385664988894,
+        "basal_unpaid": 0.0,
+        "born": 0.005890221299562293,
+        "rejected_material": 0.056849938935378264
+      },
+      "positive": {
+        "M_end": 3,
+        "E_end": 3,
+        "body_time": 4,
+        "uptake": 3,
+        "movement_paid": 4,
+        "memory_paid": 4,
+        "basal_paid": 4,
+        "basal_unpaid": 0,
+        "born": 4,
+        "rejected_material": 3
+      }
+    },
+    {
+      "scenario": "port_swap",
+      "arm": "adaptive",
+      "control": "freeze",
+      "n": 4,
+      "mean": {
+        "M_end": 0.00022898784815073014,
+        "E_end": 0.0012397747044214924,
+        "body_time": -10.905826892620098,
+        "uptake": -0.07156722207024302,
+        "movement_paid": -0.005928568366733611,
+        "memory_paid": -0.0006133302249343442,
+        "basal_paid": -0.023992819163771273,
+        "basal_unpaid": 0.0,
+        "born": -0.0019521775303719124,
+        "rejected_material": -0.006635889118062233
+      },
+      "positive": {
+        "M_end": 4,
+        "E_end": 3,
+        "body_time": 1,
+        "uptake": 0,
+        "movement_paid": 1,
+        "memory_paid": 1,
+        "basal_paid": 1,
+        "basal_unpaid": 0,
+        "born": 2,
+        "rejected_material": 1
+      }
+    },
+    {
+      "scenario": "port_swap",
+      "arm": "adaptive",
+      "control": "global_buffer",
+      "n": 4,
+      "mean": {
+        "M_end": 4.3650606732725805e-05,
+        "E_end": -0.0011182813097532218,
+        "body_time": -7.202095295228446,
+        "uptake": 0.5587147944960655,
+        "movement_paid": -0.0039043020267088835,
+        "memory_paid": -0.00040504132841520657,
+        "basal_paid": -0.015844609649500185,
+        "basal_unpaid": 0.0,
+        "born": -0.0013967684523129575,
+        "rejected_material": 0.06844254379183234
+      },
+      "positive": {
+        "M_end": 2,
+        "E_end": 1,
+        "body_time": 2,
+        "uptake": 4,
+        "movement_paid": 1,
+        "memory_paid": 2,
+        "basal_paid": 2,
+        "basal_unpaid": 0,
+        "born": 1,
+        "rejected_material": 4
+      }
+    }
+  ],
+  "alive": 64,
+  "futures": 64,
+  "censored_cycles": 0,
+  "interpretation_constraints": [
+    "fixed M20, common energy and single translation actuator remain host assumptions",
+    "four dependent seed-morph contexts, not independent replication across branches",
+    "same prescribed fee tariff does not imply identical paid totals or computational cost",
+    "global buffer has equal float capacity but different temporal aggregation inductive bias",
+    "no claim of new learning method, Lenia, learned equilibrium or trained update rule"
+  ]
+}

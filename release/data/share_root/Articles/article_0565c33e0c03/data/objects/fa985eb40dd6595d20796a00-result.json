@@ -1,0 +1,29 @@
+{
+  "task": "rule_geometry_resource_support_20261018",
+  "status": "completed",
+  "job_id": "0890c987-0738-4e86-ba35-6a9e8aa20de2",
+  "attempted": 3584,
+  "committed": 3584,
+  "failed_calls": 0,
+  "counts": {
+    "stage_A": 3584,
+    "stage_B": 0,
+    "boundary": 0
+  },
+  "referenced_old_steps": 512,
+  "outcomes": 32,
+  "extensions": 0,
+  "selected": [],
+  "failure": null,
+  "last_label": {
+    "id": "g1_f3_c0--separate_seeds--supported",
+    "stage": "A",
+    "preclock": 127
+  },
+  "raw_directory": "/data/dataset/lenia-research/lineage_75e3399f4877/rule_geometry_resource_support_20261018/0890c987-0738-4e86-ba35-6a9e8aa20de2",
+  "raw_bytes": 636393946,
+  "script_seconds": 86.90026902605314,
+  "plan_sha256": "5b9f81981f6a9128364d23969fc15f1e08eb7e1a23350a9faea9af87ecea040d",
+  "old_budget_used": 0,
+  "replayed_steps": 0
+}

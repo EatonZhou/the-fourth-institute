@@ -1,0 +1,10 @@
+{
+  "task": "birth_cohort_exposure_readout_20261019",
+  "status": "completed",
+  "native": 0,
+  "readout": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/birth_cohort_exposure_readout_20261019/readout.json",
+  "sha256": "f310b80bd0d6f4ff5e98c1bc82282943c2c951421f7841f66d1432a2292a7387",
+  "interpretation": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/birth_cohort_exposure_readout_20261019/interpretation.json",
+  "csv": "${share_root}/Projects/元胞自动机研究/knowledge_base/research/experience_learning/birth_cohort_exposure_readout_20261019/exposures.csv",
+  "source_sha256": "13a95fa6d0498936a5328dd5f59ab873f20e66092d5c6575c3f344d59f50b206"
+}

@@ -1,0 +1,134 @@
+.portalDetailOverlay.imageLightbox {
+  --portal-image-lightbox-padding: clamp(10px, 3vw, 34px);
+  --portal-image-lightbox-block-size: 84vh;
+  --portal-image-lightbox-inline-size: min(
+    calc(100vw - var(--portal-image-lightbox-padding) - var(--portal-image-lightbox-padding)),
+    1400px
+  );
+  place-items: center;
+  padding: var(--portal-image-lightbox-padding);
+  background: rgba(0, 0, 0, 0.66);
+}
+.imageLightbox:not(.editable) .imageLightboxToolbar { display: none; }
+.portalDetailSurface.imageLightboxContent {
+  gap: 10px;
+  justify-items: center;
+  min-width: 0;
+  width: var(--portal-image-lightbox-inline-size);
+  max-width: var(--portal-image-lightbox-inline-size);
+  max-height: calc(100vh - var(--portal-image-lightbox-padding) - var(--portal-image-lightbox-padding));
+}
+.imageLightboxToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  background: rgba(8, 13, 19, 0.88);
+  color: #f8fafc;
+  box-shadow: 0 12px 42px rgba(0, 0, 0, 0.28);
+}
+.imageLightboxToolbar .portalButton {
+  --portal-button-bg: rgba(255, 255, 255, 0.08);
+  --portal-button-border: rgba(255, 255, 255, 0.22);
+  --portal-button-color: #f8fafc;
+}
+.imageLightboxToolbar .portalButton:hover:not(:disabled) {
+  --portal-button-border: rgba(255, 255, 255, 0.42);
+  --portal-button-bg: rgba(255, 255, 255, 0.14);
+}
+.imageLightboxToolbar .portalButton.is-primary {
+  --portal-button-bg: #8ec7ff;
+  --portal-button-border: #8ec7ff;
+  --portal-button-color: #071019;
+}
+.imageLightboxToolbar .portalButton.is-primary:hover:not(:disabled),
+.imageLightboxToolbar .portalButton.is-active,
+.imageLightboxToolbar .portalButton.is-active:hover:not(:disabled) {
+  --portal-button-bg: #8ec7ff;
+  --portal-button-border: #8ec7ff;
+  --portal-button-color: #071019;
+}
+.imageLightboxToolbar [data-image-draw-mode="rect"] {
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1;
+}
+.imageDrawSwatches {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.imageDrawSwatch {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.32);
+  border-radius: 50%;
+  padding: 0;
+  cursor: pointer;
+  background: var(--swatch-color);
+}
+.imageDrawSwatch.active {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px rgba(142, 199, 255, 0.78);
+}
+.imageDrawColor {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 6px;
+  background: transparent;
+}
+.imageDrawSize {
+  width: 86px;
+}
+.imageLightboxImageWrap {
+  position: relative;
+  display: inline-block;
+  line-height: 0;
+  min-width: 0;
+  max-width: var(--portal-image-lightbox-inline-size);
+  max-height: var(--portal-image-lightbox-block-size);
+}
+.imageLightbox img {
+  display: block;
+  max-width: var(--portal-image-lightbox-inline-size);
+  max-height: var(--portal-image-lightbox-block-size);
+  border-radius: 8px;
+  background: var(--panel, #fff);
+  box-shadow: 0 18px 80px rgba(0, 0, 0, 0.42);
+  object-fit: contain;
+}
+.imageLightboxStatus {
+  display: grid;
+  min-width: min(360px, var(--portal-image-lightbox-inline-size));
+  min-height: 120px;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--panel, #fff);
+  color: var(--muted, #64748b);
+  font-weight: 700;
+  line-height: 1.4;
+}
+.imageLightboxStatus[hidden] { display: none; }
+.imageLightboxStatus.is-error { color: var(--danger, #b42318); }
+.imageLightboxCanvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  pointer-events: none;
+  touch-action: none;
+}
+.imageLightbox.drawing .imageLightboxCanvas {
+  pointer-events: auto;
+  cursor: crosshair;
+}

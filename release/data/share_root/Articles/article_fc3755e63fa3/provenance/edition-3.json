@@ -1,0 +1,24 @@
+{
+  "article_id": "article_fc3755e63fa3",
+  "edition": 3,
+  "date": "2026-09-13",
+  "title": "思维论",
+  "subtitle": "诊断组织的有限数学：共同错误、可辨别性与通信",
+  "previous_edition_archive": "editions/思维论-第二版通信完整版.zip",
+  "previous_edition_archive_sha256": "7e05f1ce2773e2f1c810dec32fcc9c3b678f43b83274f81080bd78c54b171c4e",
+  "central_question": "固定允许的观察操作、共同失效因素与成本后，组织何时能持续提高诊断可靠性，何时受到整个策略类别的下界限制",
+  "model_scope": "有限已知受控实验；隐藏静态情境；任务相对冲突；有界调用预算；主定理另要求正核与统一似然比",
+  "key_chain": [
+    "不可辨别类与精确Bayes误差下限",
+    "任务相对Hellinger覆盖规划",
+    "任意自适应策略的KL账本",
+    "固定d和M下的操作性界",
+    "相同覆盖率下的规模反例",
+    "二元校准的表示构造",
+    "通信保真与随时停止",
+    "模型误差与计算费用"
+  ],
+  "originality_scope": "经典工具明确归属；有限模型推导与连接不自动标注为首创；未作领域穷尽性优先权声明",
+  "validation": "validation/theory-check.json",
+  "preservation": "沿用Article身份；不修改种子thinking；保留无版本日期页脚的封面形式；旧稿完整归档"
+}

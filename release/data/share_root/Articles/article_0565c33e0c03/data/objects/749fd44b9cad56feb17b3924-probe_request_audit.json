@@ -1,0 +1,795 @@
+{
+  "status": "completed_read_only",
+  "source_job": "9260107c-4e4f-4914-9b3a-4281c260a90e",
+  "paths": 12,
+  "source_plan_sha256": "4b422dc4e8a90f7bfbddb4faf14d71e0ed7f996eb877bb1ffc90cfe58f72c4eb",
+  "source_cycles_sha256": "e554fd697e644ecd3c580263e4e11155e8ae0a04ecff97ab20f6ba93701956d2",
+  "script_sha256": "961d6886ad918bcb50a94527feb2f1aa4f3eb78f66e538a07b8d40affa3894a4",
+  "cutoff_cycle": 32,
+  "reversal_cycle": 24,
+  "summary": {
+    "reversal_paths": 4,
+    "reversal_requests_after_change": [
+      3,
+      3,
+      4,
+      3
+    ],
+    "reversal_pending_at_cutoff": 2,
+    "all_paths_pending_at_cutoff": 4,
+    "all_frozen_requests": 0,
+    "all_frozen_learning_updates": 0
+  },
+  "interpretation": [
+    "The previous trial measures limited post-change learning followed by a frozen test; it is not a lifetime online adaptation test.",
+    "A pending request at the cutoff is disabled by the preregistered explore/learn gate; this is neither a transport failure nor a reason to rewrite historical outputs.",
+    "Forced probe flags identify policy requests, not guaranteed executed travel or extra information; paid movement and actual completed intake remain separate.",
+    "Counts alone do not identify the value of targeted probing against matched general exploration; no missing counterfactual is reconstructed.",
+    "These 12 dependent-seed/shape exploratory trajectories are not a new holdout, and no body, energy, policy or environment step was executed."
+  ],
+  "source_receipts": [
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_probe_20261018/9260107c-4e4f-4914-9b3a-4281c260a90e/independent--1701--compact--surprise_probe--controller.json",
+      "sha256": "19309896fd7f441dd9ddb3047f56f84619adf49586d95f97edc0008f3219b710"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_probe_20261018/9260107c-4e4f-4914-9b3a-4281c260a90e/independent--1701--ring--surprise_probe--controller.json",
+      "sha256": "9fb9ea7ab48e99efeeb1322475bbc2695681dd597bea7337639a78b32b12c223"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_probe_20261018/9260107c-4e4f-4914-9b3a-4281c260a90e/independent--1702--compact--surprise_probe--controller.json",
+      "sha256": "71595640c4bf7e08d6235e6380db7a3f7fd02cd02834c6d1b83222e258ae4ea9"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_probe_20261018/9260107c-4e4f-4914-9b3a-4281c260a90e/independent--1702--ring--surprise_probe--controller.json",
+      "sha256": "be9c36eeafdcc9efc12ce3e2c71f96efb8b604ca244c71842c4a9c162fb91ef4"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_probe_20261018/9260107c-4e4f-4914-9b3a-4281c260a90e/predictive--1701--compact--surprise_probe--controller.json",
+      "sha256": "9ff54120fd12a36e0e047b3cd2d1d6d7dc3507e5641c5d2638853e28c503a6c0"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_probe_20261018/9260107c-4e4f-4914-9b3a-4281c260a90e/predictive--1701--ring--surprise_probe--controller.json",
+      "sha256": "c0edaccdad9dda11c387093817e0f253a3d8f8a2852befb11fe7fa0da70a4dde"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_probe_20261018/9260107c-4e4f-4914-9b3a-4281c260a90e/predictive--1702--compact--surprise_probe--controller.json",
+      "sha256": "c585872143b866980c175a302f5aa40adc19c0e2e95d37f195a6b4eda50dd2df"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_probe_20261018/9260107c-4e4f-4914-9b3a-4281c260a90e/predictive--1702--ring--surprise_probe--controller.json",
+      "sha256": "dc627432b35c61b1b1bb63f232ff1fa7040148a16dd06c9b79ca2693fd09190d"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_probe_20261018/9260107c-4e4f-4914-9b3a-4281c260a90e/reversal--1701--compact--surprise_probe--controller.json",
+      "sha256": "cce55bc38a321254e367e12755fd25c3a02c75573438d58620e2601365a26a31"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_probe_20261018/9260107c-4e4f-4914-9b3a-4281c260a90e/reversal--1701--ring--surprise_probe--controller.json",
+      "sha256": "862675cd0ab727ca1698d01b3b461701eb2f6f63b7b27b64d1a2374b5e4a71ec"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_probe_20261018/9260107c-4e4f-4914-9b3a-4281c260a90e/reversal--1702--compact--surprise_probe--controller.json",
+      "sha256": "fd1231e565c0f0b596020594c3f91bbd3015606342531b46805f6136e285f6e5"
+    },
+    {
+      "path": "/data/dataset/lenia-research/lineage_75e3399f4877/method_renewal_event_probe_20261018/9260107c-4e4f-4914-9b3a-4281c260a90e/reversal--1702--ring--surprise_probe--controller.json",
+      "sha256": "c87ec7a60ec915a409f6afd72de52a11821fb1a275b66c7333cc45c120f20d10"
+    }
+  ],
+  "rows": [
+    {
+      "id": "independent--1701--compact--surprise_probe",
+      "world": "independent",
+      "probe_request_cycles": [
+        4,
+        6,
+        8,
+        10,
+        15,
+        28,
+        30
+      ],
+      "trigger_cycles": [
+        3,
+        5,
+        7,
+        9,
+        14,
+        27,
+        29
+      ],
+      "post_change_training_requests": [
+        28,
+        30
+      ],
+      "pending_after_last_training_event": false,
+      "pending_at_end": false,
+      "frozen_probe_requests": 0,
+      "frozen_learning_updates": 0,
+      "frozen_observed_negative_residuals": 12,
+      "frozen_capture_mean": 0.3755504233798053,
+      "frozen_M_end": 32.4426923298086,
+      "frozen_E_end": 8.419727070266005,
+      "post_change_probe_and_trigger_records": [
+        {
+          "cycle": 27,
+          "request": false,
+          "triggered": true,
+          "observed": true,
+          "residual": -0.6056955662959946,
+          "uptake": 0.0003911332060967554,
+          "movement_paid": 0.8343118961193262,
+          "memory_paid": 0.053641169102883066
+        },
+        {
+          "cycle": 28,
+          "request": true,
+          "triggered": false,
+          "observed": true,
+          "residual": -0.034479327753735974,
+          "uptake": 0.0008725319616477001,
+          "movement_paid": 0.8289915721616474,
+          "memory_paid": 0.053299058611854126
+        },
+        {
+          "cycle": 29,
+          "request": false,
+          "triggered": true,
+          "observed": true,
+          "residual": -0.6719638371143155,
+          "uptake": 0.0005192074730254227,
+          "movement_paid": 0.8237043028959272,
+          "memory_paid": 0.05295915267393348
+        },
+        {
+          "cycle": 30,
+          "request": true,
+          "triggered": false,
+          "observed": true,
+          "residual": 1.0138405236167964,
+          "uptake": 6.845544596092796,
+          "movement_paid": 0.8313677049908669,
+          "memory_paid": 0.05331813182137068
+        }
+      ]
+    },
+    {
+      "id": "independent--1701--ring--surprise_probe",
+      "world": "independent",
+      "probe_request_cycles": [
+        15,
+        19,
+        30
+      ],
+      "trigger_cycles": [
+        14,
+        18,
+        29
+      ],
+      "post_change_training_requests": [
+        30
+      ],
+      "pending_after_last_training_event": false,
+      "pending_at_end": false,
+      "frozen_probe_requests": 0,
+      "frozen_learning_updates": 0,
+      "frozen_observed_negative_residuals": 9,
+      "frozen_capture_mean": 0.22426445383732668,
+      "frozen_M_end": 0.0,
+      "frozen_E_end": 0.0,
+      "post_change_probe_and_trigger_records": [
+        {
+          "cycle": 29,
+          "request": false,
+          "triggered": true,
+          "observed": true,
+          "residual": -0.5013417671758621,
+          "uptake": 0.00018887328198177896,
+          "movement_paid": 0.7109167150615174,
+          "memory_paid": 0.04571198289210737
+        },
+        {
+          "cycle": 30,
+          "request": true,
+          "triggered": false,
+          "observed": true,
+          "residual": 0.6586589728427393,
+          "uptake": 6.033715732080428,
+          "movement_paid": 0.7179263276771156,
+          "memory_paid": 0.04603318818559588
+        }
+      ]
+    },
+    {
+      "id": "independent--1702--compact--surprise_probe",
+      "world": "independent",
+      "probe_request_cycles": [
+        7,
+        11,
+        12,
+        20,
+        21,
+        26,
+        27
+      ],
+      "trigger_cycles": [
+        6,
+        10,
+        11,
+        19,
+        20,
+        25,
+        26,
+        31
+      ],
+      "post_change_training_requests": [
+        26,
+        27
+      ],
+      "pending_after_last_training_event": true,
+      "pending_at_end": true,
+      "frozen_probe_requests": 0,
+      "frozen_learning_updates": 0,
+      "frozen_observed_negative_residuals": 9,
+      "frozen_capture_mean": 0.49808854841849065,
+      "frozen_M_end": 30.299748144192264,
+      "frozen_E_end": 3.4638264826154272,
+      "post_change_probe_and_trigger_records": [
+        {
+          "cycle": 25,
+          "request": false,
+          "triggered": true,
+          "observed": true,
+          "residual": -0.6592109909123886,
+          "uptake": 0.0008312310046163689,
+          "movement_paid": 0.7267179197406214,
+          "memory_paid": 0.04672335945942789
+        },
+        {
+          "cycle": 26,
+          "request": true,
+          "triggered": true,
+          "observed": true,
+          "residual": -0.6127111336553238,
+          "uptake": 0.0011818429411458353,
+          "movement_paid": 0.7220850428442647,
+          "memory_paid": 0.04642546231988601
+        },
+        {
+          "cycle": 27,
+          "request": true,
+          "triggered": false,
+          "observed": true,
+          "residual": 0.14723597957646148,
+          "uptake": 0.0017152051054143461,
+          "movement_paid": 0.7174830984407726,
+          "memory_paid": 0.04612956069951095
+        },
+        {
+          "cycle": 31,
+          "request": false,
+          "triggered": true,
+          "observed": true,
+          "residual": -0.6743124269309384,
+          "uptake": 0.0018946433475256453,
+          "movement_paid": 0.7452837659058487,
+          "memory_paid": 0.04791705655929985
+        }
+      ]
+    },
+    {
+      "id": "independent--1702--ring--surprise_probe",
+      "world": "independent",
+      "probe_request_cycles": [
+        20,
+        26
+      ],
+      "trigger_cycles": [
+        19,
+        25,
+        31
+      ],
+      "post_change_training_requests": [
+        26
+      ],
+      "pending_after_last_training_event": true,
+      "pending_at_end": true,
+      "frozen_probe_requests": 0,
+      "frozen_learning_updates": 0,
+      "frozen_observed_negative_residuals": 5,
+      "frozen_capture_mean": 0.21151399319728523,
+      "frozen_M_end": 0.0,
+      "frozen_E_end": 0.0,
+      "post_change_probe_and_trigger_records": [
+        {
+          "cycle": 25,
+          "request": false,
+          "triggered": true,
+          "observed": true,
+          "residual": -0.5088427586865526,
+          "uptake": 0.0002741848606764908,
+          "movement_paid": 0.6428857444675171,
+          "memory_paid": 0.041337573062758017
+        },
+        {
+          "cycle": 26,
+          "request": true,
+          "triggered": false,
+          "observed": true,
+          "residual": 0.7789196978451636,
+          "uptake": 5.455395463501304,
+          "movement_paid": 0.6491867280962413,
+          "memory_paid": 0.04162678676396978
+        },
+        {
+          "cycle": 31,
+          "request": false,
+          "triggered": true,
+          "observed": true,
+          "residual": -0.5377635280499337,
+          "uptake": 0.00044653553094624614,
+          "movement_paid": 0.6920817586508516,
+          "memory_paid": 0.044500565856141344
+        }
+      ]
+    },
+    {
+      "id": "predictive--1701--compact--surprise_probe",
+      "world": "predictive",
+      "probe_request_cycles": [],
+      "trigger_cycles": [],
+      "post_change_training_requests": [],
+      "pending_after_last_training_event": false,
+      "pending_at_end": false,
+      "frozen_probe_requests": 0,
+      "frozen_learning_updates": 0,
+      "frozen_observed_negative_residuals": 3,
+      "frozen_capture_mean": 0.999925287705165,
+      "frozen_M_end": 47.73612745891489,
+      "frozen_E_end": 57.71247405109005,
+      "post_change_probe_and_trigger_records": []
+    },
+    {
+      "id": "predictive--1701--ring--surprise_probe",
+      "world": "predictive",
+      "probe_request_cycles": [],
+      "trigger_cycles": [],
+      "post_change_training_requests": [],
+      "pending_after_last_training_event": false,
+      "pending_at_end": false,
+      "frozen_probe_requests": 0,
+      "frozen_learning_updates": 0,
+      "frozen_observed_negative_residuals": 1,
+      "frozen_capture_mean": 0.9940119846580033,
+      "frozen_M_end": 43.78891346841307,
+      "frozen_E_end": 57.46537803326697,
+      "post_change_probe_and_trigger_records": []
+    },
+    {
+      "id": "predictive--1702--compact--surprise_probe",
+      "world": "predictive",
+      "probe_request_cycles": [],
+      "trigger_cycles": [],
+      "post_change_training_requests": [],
+      "pending_after_last_training_event": false,
+      "pending_at_end": false,
+      "frozen_probe_requests": 0,
+      "frozen_learning_updates": 0,
+      "frozen_observed_negative_residuals": 5,
+      "frozen_capture_mean": 0.9999860006370561,
+      "frozen_M_end": 47.15174280255567,
+      "frozen_E_end": 62.43790937710233,
+      "post_change_probe_and_trigger_records": []
+    },
+    {
+      "id": "predictive--1702--ring--surprise_probe",
+      "world": "predictive",
+      "probe_request_cycles": [],
+      "trigger_cycles": [],
+      "post_change_training_requests": [],
+      "pending_after_last_training_event": false,
+      "pending_at_end": false,
+      "frozen_probe_requests": 0,
+      "frozen_learning_updates": 0,
+      "frozen_observed_negative_residuals": 0,
+      "frozen_capture_mean": 0.9939686394293096,
+      "frozen_M_end": 43.409172850911276,
+      "frozen_E_end": 58.60247503078565,
+      "post_change_probe_and_trigger_records": []
+    },
+    {
+      "id": "reversal--1701--compact--surprise_probe",
+      "world": "reversal",
+      "probe_request_cycles": [
+        25,
+        27,
+        29
+      ],
+      "trigger_cycles": [
+        24,
+        26,
+        28,
+        31
+      ],
+      "post_change_training_requests": [
+        25,
+        27,
+        29
+      ],
+      "pending_after_last_training_event": true,
+      "pending_at_end": true,
+      "frozen_probe_requests": 0,
+      "frozen_learning_updates": 0,
+      "frozen_observed_negative_residuals": 10,
+      "frozen_capture_mean": 0.06267935963517003,
+      "frozen_M_end": 0.0,
+      "frozen_E_end": 0.0,
+      "post_change_probe_and_trigger_records": [
+        {
+          "cycle": 24,
+          "request": false,
+          "triggered": true,
+          "observed": true,
+          "residual": -0.9535854247270432,
+          "uptake": 0.00035757649006500737,
+          "movement_paid": 0.9455286889618636,
+          "memory_paid": 0.06079185093864215
+        },
+        {
+          "cycle": 25,
+          "request": true,
+          "triggered": false,
+          "observed": true,
+          "residual": 0.9376103796821595,
+          "uptake": 6.9996158139404985,
+          "movement_paid": 0.9515059566285462,
+          "memory_paid": 0.06111687855829733
+        },
+        {
+          "cycle": 26,
+          "request": false,
+          "triggered": true,
+          "observed": true,
+          "residual": -0.6013938276017384,
+          "uptake": 0.00046676460901173237,
+          "movement_paid": 0.9568756679322225,
+          "memory_paid": 0.06152140851590393
+        },
+        {
+          "cycle": 27,
+          "request": true,
+          "triggered": false,
+          "observed": true,
+          "residual": 0.8194776833971151,
+          "uptake": 6.964929898943234,
+          "movement_paid": 0.9638385587048288,
+          "memory_paid": 0.06183818187820566
+        },
+        {
+          "cycle": 28,
+          "request": false,
+          "triggered": true,
+          "observed": true,
+          "residual": -0.5674547918625049,
+          "uptake": 0.0006409432228332614,
+          "movement_paid": 0.9679629055939828,
+          "memory_paid": 0.062234269111174245
+        },
+        {
+          "cycle": 29,
+          "request": true,
+          "triggered": false,
+          "observed": true,
+          "residual": 0.3502470030184375,
+          "uptake": 6.999791516279718,
+          "movement_paid": 0.9738247320048524,
+          "memory_paid": 0.0625501478701425
+        },
+        {
+          "cycle": 31,
+          "request": false,
+          "triggered": true,
+          "observed": true,
+          "residual": -1.221105887845379,
+          "uptake": 0.0007758780541073835,
+          "movement_paid": 0.9727815428222193,
+          "memory_paid": 0.06254409718880392
+        }
+      ]
+    },
+    {
+      "id": "reversal--1701--ring--surprise_probe",
+      "world": "reversal",
+      "probe_request_cycles": [
+        25,
+        28,
+        30
+      ],
+      "trigger_cycles": [
+        24,
+        27,
+        29
+      ],
+      "post_change_training_requests": [
+        25,
+        28,
+        30
+      ],
+      "pending_after_last_training_event": false,
+      "pending_at_end": false,
+      "frozen_probe_requests": 0,
+      "frozen_learning_updates": 0,
+      "frozen_observed_negative_residuals": 7,
+      "frozen_capture_mean": 0.5494466833938408,
+      "frozen_M_end": 35.239570343400516,
+      "frozen_E_end": 17.924818777606443,
+      "post_change_probe_and_trigger_records": [
+        {
+          "cycle": 24,
+          "request": false,
+          "triggered": true,
+          "observed": true,
+          "residual": -0.7380704403339923,
+          "uptake": 0.00012545229979793403,
+          "movement_paid": 0.8268957387900334,
+          "memory_paid": 0.0531686927360712
+        },
+        {
+          "cycle": 25,
+          "request": true,
+          "triggered": false,
+          "observed": true,
+          "residual": 0.8592172621152001,
+          "uptake": 6.456182193294509,
+          "movement_paid": 0.8326989988806015,
+          "memory_paid": 0.053486061509233705
+        },
+        {
+          "cycle": 27,
+          "request": false,
+          "triggered": true,
+          "observed": true,
+          "residual": -0.990104817670095,
+          "uptake": 0.00017741014324485724,
+          "movement_paid": 0.832586510476781,
+          "memory_paid": 0.053534773378706386
+        },
+        {
+          "cycle": 28,
+          "request": true,
+          "triggered": false,
+          "observed": true,
+          "residual": 1.1589372510930158,
+          "uptake": 6.667057995304188,
+          "movement_paid": 0.8397888526842447,
+          "memory_paid": 0.053871623501187016
+        },
+        {
+          "cycle": 29,
+          "request": false,
+          "triggered": true,
+          "observed": true,
+          "residual": -0.6290400958519159,
+          "uptake": 0.00024254017784885903,
+          "movement_paid": 0.8442590880226714,
+          "memory_paid": 0.05428520555397964
+        },
+        {
+          "cycle": 30,
+          "request": true,
+          "triggered": false,
+          "observed": true,
+          "residual": 0.5626190879511239,
+          "uptake": 6.641445729393558,
+          "movement_paid": 0.8503132150376833,
+          "memory_paid": 0.054614633142896316
+        }
+      ]
+    },
+    {
+      "id": "reversal--1702--compact--surprise_probe",
+      "world": "reversal",
+      "probe_request_cycles": [
+        25,
+        27,
+        29,
+        31
+      ],
+      "trigger_cycles": [
+        24,
+        26,
+        28,
+        30,
+        31
+      ],
+      "post_change_training_requests": [
+        25,
+        27,
+        29,
+        31
+      ],
+      "pending_after_last_training_event": true,
+      "pending_at_end": true,
+      "frozen_probe_requests": 0,
+      "frozen_learning_updates": 0,
+      "frozen_observed_negative_residuals": 12,
+      "frozen_capture_mean": 0.06279209171635608,
+      "frozen_M_end": 0.0,
+      "frozen_E_end": 0.0,
+      "post_change_probe_and_trigger_records": [
+        {
+          "cycle": 24,
+          "request": false,
+          "triggered": true,
+          "observed": true,
+          "residual": -0.9826775055976275,
+          "uptake": 0.00036924020340906304,
+          "movement_paid": 0.9263967294061207,
+          "memory_paid": 0.059561745608436904
+        },
+        {
+          "cycle": 25,
+          "request": true,
+          "triggered": false,
+          "observed": true,
+          "residual": 0.8028316644827883,
+          "uptake": 6.996958049903929,
+          "movement_paid": 0.9326615733401711,
+          "memory_paid": 0.05989434614266612
+        },
+        {
+          "cycle": 26,
+          "request": false,
+          "triggered": true,
+          "observed": true,
+          "residual": -0.8928997720830083,
+          "uptake": 0.0004213490788481467,
+          "movement_paid": 0.9379780535075803,
+          "memory_paid": 0.06030637655676446
+        },
+        {
+          "cycle": 27,
+          "request": true,
+          "triggered": false,
+          "observed": true,
+          "residual": 0.5036361549048799,
+          "uptake": 6.99811532326183,
+          "movement_paid": 0.9441615102536948,
+          "memory_paid": 0.060634353165601645
+        },
+        {
+          "cycle": 28,
+          "request": false,
+          "triggered": true,
+          "observed": true,
+          "residual": -0.6716046701220657,
+          "uptake": 0.0005724752239781674,
+          "movement_paid": 0.9494163240052317,
+          "memory_paid": 0.06104180451392107
+        },
+        {
+          "cycle": 29,
+          "request": true,
+          "triggered": false,
+          "observed": true,
+          "residual": 0.30612085205530437,
+          "uptake": 6.999065069299414,
+          "movement_paid": 0.9555191736730351,
+          "memory_paid": 0.06136520674706385
+        },
+        {
+          "cycle": 30,
+          "request": false,
+          "triggered": true,
+          "observed": true,
+          "residual": -0.7381989039467005,
+          "uptake": 0.00048392477006365244,
+          "movement_paid": 0.9607121983898411,
+          "memory_paid": 0.06176809262806651
+        },
+        {
+          "cycle": 31,
+          "request": true,
+          "triggered": true,
+          "observed": true,
+          "residual": -1.0007404484299838,
+          "uptake": 0.000808299443854942,
+          "movement_paid": 0.9545848500861557,
+          "memory_paid": 0.061374132358664284
+        }
+      ]
+    },
+    {
+      "id": "reversal--1702--ring--surprise_probe",
+      "world": "reversal",
+      "probe_request_cycles": [
+        25,
+        27,
+        30
+      ],
+      "trigger_cycles": [
+        24,
+        26,
+        29
+      ],
+      "post_change_training_requests": [
+        25,
+        27,
+        30
+      ],
+      "pending_after_last_training_event": false,
+      "pending_at_end": false,
+      "frozen_probe_requests": 0,
+      "frozen_learning_updates": 0,
+      "frozen_observed_negative_residuals": 5,
+      "frozen_capture_mean": 0.7981548283438975,
+      "frozen_M_end": 38.0674712715537,
+      "frozen_E_end": 36.268140663399045,
+      "post_change_probe_and_trigger_records": [
+        {
+          "cycle": 24,
+          "request": false,
+          "triggered": true,
+          "observed": true,
+          "residual": -0.7563448473986638,
+          "uptake": 0.00014046891428214547,
+          "movement_paid": 0.814680689748455,
+          "memory_paid": 0.05238330431412034
+        },
+        {
+          "cycle": 25,
+          "request": true,
+          "triggered": false,
+          "observed": true,
+          "residual": 0.7789148591637667,
+          "uptake": 6.33155532811687,
+          "movement_paid": 0.8205191837556428,
+          "memory_paid": 0.052692704500054394
+        },
+        {
+          "cycle": 26,
+          "request": false,
+          "triggered": true,
+          "observed": true,
+          "residual": -0.6859316888018088,
+          "uptake": 0.00021760263503389833,
+          "movement_paid": 0.8254602984287153,
+          "memory_paid": 0.05307635118837736
+        },
+        {
+          "cycle": 27,
+          "request": true,
+          "triggered": false,
+          "observed": true,
+          "residual": 0.5345820430730202,
+          "uptake": 6.449216869029563,
+          "movement_paid": 0.831431735143252,
+          "memory_paid": 0.0533935336837348
+        },
+        {
+          "cycle": 29,
+          "request": false,
+          "triggered": true,
+          "observed": true,
+          "residual": -0.7874864199626579,
+          "uptake": 0.00035430493646364106,
+          "movement_paid": 0.8311565717856866,
+          "memory_paid": 0.05344276033539674
+        },
+        {
+          "cycle": 30,
+          "request": true,
+          "triggered": false,
+          "observed": true,
+          "residual": 0.8705703798501034,
+          "uptake": 6.701528354177462,
+          "movement_paid": 0.8382544491674596,
+          "memory_paid": 0.05378373566896301
+        }
+      ]
+    }
+  ],
+  "new_body_steps": 0,
+  "new_policy_steps": 0
+}

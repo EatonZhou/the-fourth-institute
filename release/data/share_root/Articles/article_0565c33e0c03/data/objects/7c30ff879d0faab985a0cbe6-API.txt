@@ -1,0 +1,21 @@
+新共用入口（未来fresh run）
+from environment_evolution.renewable_allocation_ecology.interface import AllocationEcologyV2
+from environment_evolution.renewable_allocation_ecology.core import CONFIG, complete_observation, make_tape
+env = AllocationEcologyV2('compact', CONFIG)
+
+observe_public(phase, cue) -> phase, cue(仅phase0), mass, energy, x含subcell, y_variance
+step(action, phase, *, arrivals=None, memory_fee=0.) -> row, receipt
+action为[-1,1]直接执行器；phase0..5禁止移动，6起可移动。资源phase22才在动作决定后由host传入arrivals两bit；不将tape/state/probability交普通策略。持续外输入，两个端口给定隐态及cue后条件独立。
+
+receipt含真实执行的shift整数、keep、uptake[32,32]、survivor[32,32]、实际born、proposed_born、rejected_material和质量重建误差。实际局部记忆反馈用receipt.uptake；动作聚合仍可用d3已有合法载体加权读出，不能给每格总摄取。原host一次forward；无额外物理或能量前向。新生未自动继承局部状态，沿d3原settle定义处理。
+
+row包含完整原支付、欠付、M/E、资源输入、实际摄取、热/sink、死亡、实际出生/拒绝前体、账残差；v2 x为最终纳入增长后的质心，x_before_growth_allocation为原host标量。内部的共用能量是全身钱包；未实现局部E/真实Lenia K。
+
+complete_observation(row, phase, chosen, *, arrival, event_id) -> observed,label,event_id,selected_port,completed,covered,sensor_payment_complete,uptake
+仅host在phase22结束后传所选端的已实现arrival，不传未选端。valid要求付清本步memory_fee、M>1e-6、最终质心距选端中心9/23不超过2.5。label=-1表示未知，不补0；label0只在该定义下的完整已付端口事件无到达。此传感器是明确简化的质心覆盖，不是逐格覆盖证书。arrival和实际uptake分别分析。opaque event_id可用world/seed/cycle的内部映射，但不要把seed/world隐态透露给策略以识别任务。
+
+中央参考策略位于 renewable_independent_ports.residence.ResidencePolicy：action_residence(public_obs,'dwell',private_probability仅特权参考)→action,fee；feedback(valid且合法cue且末步已付写费,label)。本批读取.00005M/步，phase0另.0001M，22另.001M，31另.0001M，价格同旧独立端任务；算术/矩阵存储未完整物理定价。cue-lastpair只作为经验启发式，失败不能给未选端写正例。
+
+状态：checkpoint返回独立schema、完整body rho/resource/E/subcell/累计账/配置、tissue_death/rejected_material；策略另存。restore只能同schema；没有未知inflight自动恢复。实际v1同态32分叉已跑，v2访问器修正只完成实现、未执行新原生。已有v1源和数据继续按原SHA引用。
+
+CFG沿32域、初M20/E24、资源.12物质/E、能量利用.7、维持.0022M、周转.0002、动作费.002M|v|和容量1.6M。饱和分配到20是当前固定全局生理，不是学习动作；若研究增长分配策略，需另版本和可比账，勿在运行中改本源。

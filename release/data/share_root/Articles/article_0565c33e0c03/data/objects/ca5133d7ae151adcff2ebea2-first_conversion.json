@@ -1,0 +1,158 @@
+[
+  {
+    "seed": 202610195401,
+    "shape": "compact",
+    "arms": [
+      {
+        "arm": "original_prestate_greedy_reference",
+        "original_D": 0.1575732276387471,
+        "actual_D": 0.1575732276387471,
+        "out": 0.0,
+        "maximum_request_change": 0.0,
+        "conversion_M": 65.2772049914201,
+        "conversion_E": 95.7552031024748,
+        "conversion_born": 0.1672546917880431,
+        "conversion_dead_energy": 63.03240899016873
+      },
+      {
+        "arm": "matched_mass",
+        "original_D": 0.1575732276387471,
+        "actual_D": 0.15757322763874707,
+        "out": 0.15757322763874704,
+        "maximum_request_change": 0.006514011111780949,
+        "conversion_M": 65.2772049914201,
+        "conversion_E": 95.75531173062024,
+        "conversion_born": 0.1672546917880431,
+        "conversion_dead_energy": 63.03230036202329
+      },
+      {
+        "arm": "matched_uniform",
+        "original_D": 0.1575732276387471,
+        "actual_D": 0.15757322763874707,
+        "out": 0.15757322763874704,
+        "maximum_request_change": 0.006397637180700784,
+        "conversion_M": 65.27720499142012,
+        "conversion_E": 95.75585715336874,
+        "conversion_born": 0.1672546917880431,
+        "conversion_dead_energy": 63.0317549392748
+      }
+    ]
+  },
+  {
+    "seed": 202610195401,
+    "shape": "double_lobe",
+    "arms": [
+      {
+        "arm": "original_prestate_greedy_reference",
+        "original_D": 0.21125377768973497,
+        "actual_D": 0.21125377768973497,
+        "out": 0.0,
+        "maximum_request_change": 0.0,
+        "conversion_M": 60.07326740839189,
+        "conversion_E": 84.29871067816245,
+        "conversion_born": 0.1868399826267208,
+        "conversion_dead_energy": 66.72765776427204
+      },
+      {
+        "arm": "matched_mass",
+        "original_D": 0.21125377768973497,
+        "actual_D": 0.21125377768973494,
+        "out": 0.19690933872835992,
+        "maximum_request_change": 0.011530643633022208,
+        "conversion_M": 60.0732674083919,
+        "conversion_E": 84.30251371311297,
+        "conversion_born": 0.1868399826267208,
+        "conversion_dead_energy": 66.72385472932153
+      },
+      {
+        "arm": "matched_uniform",
+        "original_D": 0.21125377768973497,
+        "actual_D": 0.21125377768973497,
+        "out": 0.19690933872835992,
+        "maximum_request_change": 0.011530643633022208,
+        "conversion_M": 60.07326740839189,
+        "conversion_E": 84.30120928810616,
+        "conversion_born": 0.1868399826267208,
+        "conversion_dead_energy": 66.72515915432834
+      }
+    ]
+  },
+  {
+    "seed": 202610195402,
+    "shape": "compact",
+    "arms": [
+      {
+        "arm": "original_prestate_greedy_reference",
+        "original_D": 0.17134530582516588,
+        "actual_D": 0.17134530582516588,
+        "out": 0.0,
+        "maximum_request_change": 0.0,
+        "conversion_M": 66.0346870458942,
+        "conversion_E": 92.0531558076741,
+        "conversion_born": 0.1483151284883572,
+        "conversion_dead_energy": 63.522186088766254
+      },
+      {
+        "arm": "matched_mass",
+        "original_D": 0.17134530582516588,
+        "actual_D": 0.17134530582516588,
+        "out": 0.16818296738001925,
+        "maximum_request_change": 0.0070103549604524605,
+        "conversion_M": 66.0346870458942,
+        "conversion_E": 92.04919918010455,
+        "conversion_born": 0.1483151284883572,
+        "conversion_dead_energy": 63.5261427163358
+      },
+      {
+        "arm": "matched_uniform",
+        "original_D": 0.17134530582516588,
+        "actual_D": 0.17134530582516588,
+        "out": 0.16818296738001925,
+        "maximum_request_change": 0.006517093435662875,
+        "conversion_M": 66.0346870458942,
+        "conversion_E": 92.0505937009941,
+        "conversion_born": 0.1483151284883572,
+        "conversion_dead_energy": 63.524748195446264
+      }
+    ]
+  },
+  {
+    "seed": 202610195402,
+    "shape": "double_lobe",
+    "arms": [
+      {
+        "arm": "original_prestate_greedy_reference",
+        "original_D": 0.1922837301666362,
+        "actual_D": 0.1922837301666362,
+        "out": 0.0,
+        "maximum_request_change": 0.0,
+        "conversion_M": 60.60418928114096,
+        "conversion_E": 80.80463258294857,
+        "conversion_born": 0.20552091856354476,
+        "conversion_dead_energy": 66.12217328598993
+      },
+      {
+        "arm": "matched_mass",
+        "original_D": 0.1922837301666362,
+        "actual_D": 0.1922837301666362,
+        "out": 0.1922837298542971,
+        "maximum_request_change": 0.01146550178579722,
+        "conversion_M": 60.60418928114095,
+        "conversion_E": 80.80242052444243,
+        "conversion_born": 0.20552091856354476,
+        "conversion_dead_energy": 66.12438534449606
+      },
+      {
+        "arm": "matched_uniform",
+        "original_D": 0.1922837301666362,
+        "actual_D": 0.1922837301666362,
+        "out": 0.1922837298542971,
+        "maximum_request_change": 0.008430862128632272,
+        "conversion_M": 60.60418928114096,
+        "conversion_E": 80.80181481799751,
+        "conversion_born": 0.20552091856354476,
+        "conversion_dead_energy": 66.12499105094099
+      }
+    ]
+  }
+]

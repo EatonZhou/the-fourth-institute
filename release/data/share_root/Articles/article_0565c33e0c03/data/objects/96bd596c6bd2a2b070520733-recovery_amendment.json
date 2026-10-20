@@ -1,0 +1,81 @@
+{
+  "job_id": "6b11a236-26eb-46a7-9c6d-5a3f216199cc",
+  "failed_finished_at": "2026-10-18T19:22:49.151913+00:00",
+  "prior_runner_seconds": 1.262195,
+  "attempted": 1,
+  "returned": 1,
+  "settled": 1,
+  "recovery_bindings": {
+    "/share/Projects/元胞自动机研究/src/environment_evolution/recycled_cargo_local_routing/run.py": "464d1a09e052c2ac4c7a52a4e65d9762a1da3bcbf3649486bce2e3aee6aef093",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/recycled_cargo_local_routing_20261019/6b11a236-26eb-46a7-9c6d-5a3f216199cc/b2--P_on_demand/current.bin": "912e17a1ab2c9ae4720af53a213af823e055088ad85a25de24fdac540c2c6b9f",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/paths.json": "db2ef0c78054587c500aab7bf9cfd8e33fad444cd23fa9d0c8deb8f6d948f5fd",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/frames.json": "ef3587c64a435f243d4f5afce94967cddbf7091006b0f4d6ac8289b28833bed1",
+    "/share/Projects/元胞自动机研究/src/environment_evolution/results/recycled_cargo_local_routing_20261019/checks.json": "e001b6fb72728f0ff7c6917b0710de843c6a5b0cfd9db978c5a0ca6ffdc5934b",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/recycled_cargo_local_routing_20261019/6b11a236-26eb-46a7-9c6d-5a3f216199cc/b2--P_on_demand/steps.csv": "6088d82492742f7ad9f91ba1ed04e03ec1dca2706ca422d0368e1c1fc631afbb",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/recycled_cargo_local_routing_20261019/6b11a236-26eb-46a7-9c6d-5a3f216199cc/b2--P_on_demand/receipt385.npz": "a4b6e3ba587d31fa04475b26f365a52649d31995903c8da2dbd6945d1c275d1e",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/recycled_cargo_local_routing_20261019/6b11a236-26eb-46a7-9c6d-5a3f216199cc/b2--P_on_demand/fields385.npz": "89dddb107cf683b440a16ce0e86f9ca60e8cd7e92f4aa8e35c296e4887131e38",
+    "/share/Projects/元胞自动机研究/src/runs/jobs/6b11a236-26eb-46a7-9c6d-5a3f216199cc/native_done.bin": "d5c85debd316367e6c1d5b90d0af0eefc42209e18e34ca7c0c9c86c66eb7efa0",
+    "/data/dataset/lenia-research/lineage_75e3399f4877/recycled_cargo_local_routing_20261019/6b11a236-26eb-46a7-9c6d-5a3f216199cc/failure_current.bin": "912e17a1ab2c9ae4720af53a213af823e055088ad85a25de24fdac540c2c6b9f"
+  },
+  "source_overrides": {
+    "/share/Projects/元胞自动机研究/src/environment_evolution/recycled_cargo_local_routing/run.py": "464d1a09e052c2ac4c7a52a4e65d9762a1da3bcbf3649486bce2e3aee6aef093"
+  },
+  "first_fingerprints": {
+    "b2_P_on": {
+      "born": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "9fcb1274bff399b03aacb7313b661b45dfe3d8f7fd69d997399d218570bc10a2"
+      },
+      "survivor": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "f471f2879d2773a4176fc4e35b61639c5a599c0a6e0f1d8acdf264da8595cf0b"
+      },
+      "route_precursor_before": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "84a04c6427f4e24cf2d84795bceb21f36e298cef674e5d7e482e602f9e3568df"
+      },
+      "route_energy_before": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "1b30740eee00046a13566af919af8a365d6d52be1b68760a8e985464b244486e"
+      },
+      "route_demand_sent": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "bb6749876f10d8fe84129c5988ef47598cda9367f9898e77bb955bb3721db8d4"
+      },
+      "route_uniform_sent": {
+        "dtype": "<f8",
+        "shape": [
+          96,
+          96
+        ],
+        "sha256": "bb6749876f10d8fe84129c5988ef47598cda9367f9898e77bb955bb3721db8d4"
+      }
+    }
+  },
+  "native_replayed": 0,
+  "receipt_reconstruction": "Pure deterministic settlement of saved native_done copy exactly matched actual completed joint385 fingerprint; actual385 retained. No native call.",
+  "failure": "Missing diagnostic import only. Original run.py archived in frozen source; no physics/formula changes.",
+  "remaining_science": 2047,
+  "cap_total_native": 2052,
+  "cap_total_worker_seconds": 600
+}

@@ -1,0 +1,37 @@
+{
+  "schema": "experience-adaptation-genome.v1",
+  "id": "genome_a6a821dffd4f4046c97a",
+  "family": "compact_ring_core_outer--bridged_longbody",
+  "source": "${share_root}/Projects/元胞自动机研究/src/environment_evolution/results/regenerative_morphology_transport_search_20261018/inputs/compact_ring_core_outer--bridged_longbody.npz",
+  "source_sha256": "eb468b8e2c146e7383b379c0c51fac7cf84edcac524e43726276e8880ce854c8",
+  "genes": [
+    0.0061693980595295544,
+    -0.030720098746589607,
+    -0.026860904192228197,
+    0.020861582564049345,
+    -0.02411770992629326,
+    -0.04129980622373058,
+    0.022667466928075565,
+    0.01993113898083276,
+    -0.014543247866993942,
+    -0.03903999518880559,
+    0.05468291566045089
+  ],
+  "parent_id": "genome_d02e7f60565f83066e5d",
+  "generation": 1,
+  "mutation_seed": 202610180102,
+  "named_genes": {
+    "log_mu1": 0.0061693980595295544,
+    "log_mu2": -0.030720098746589607,
+    "log_sigma1": -0.026860904192228197,
+    "log_sigma2": 0.020861582564049345,
+    "weight_shift": -0.02411770992629326,
+    "kernel_radial1": -0.04129980622373058,
+    "kernel_radial2": 0.022667466928075565,
+    "kernel_crossmix": 0.01993113898083276,
+    "log_stretch_y": -0.014543247866993942,
+    "log_stretch_x": -0.03903999518880559,
+    "neck_density": 0.05468291566045089
+  },
+  "lifetime_rule": "fixed; only outer generations mutate"
+}
