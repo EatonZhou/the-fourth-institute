@@ -1,10 +1,8 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import {fileURLToPath} from 'node:url';
 import {createHash} from 'node:crypto';
-const repo=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-const seed=path.join(repo,'instance/example_instance/seed');
+const seed=path.resolve(process.argv[2]);
 const projection=path.join(seed,'data/share_root/Codes/repo_bd47ffeac5c8/projection');
 // Simulate the LAN HTTP environment in which WebCrypto is unavailable.
 const descriptor=Object.getOwnPropertyDescriptor(globalThis,'crypto');
