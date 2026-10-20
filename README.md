@@ -30,6 +30,14 @@ TFI Portal provides a common set of collaboration operations through HATG ISA, t
 
 Our goal is to make research more continuous, broaden exploration, and make the process easier to inspect. Experimental methods, the reliability of results, and the value of a particular study still require domain expertise and supporting evidence.
 
+**One Person Managing an Agent Team**
+
+![One Person Managing an Agent Team](docs/images/one-person-agent-team-en.png "One Person Managing an Agent Team")
+
+**Human-AI Collaboration Workspace**
+
+![Human-AI Collaboration Workspace](docs/images/human-ai-collaboration-en.png "Human-AI Collaboration Workspace")
+
 ## 2. Installation and Usage
 
 **Currently supported: Linux with Python 3.12 and venv support.**

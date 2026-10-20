@@ -30,6 +30,14 @@ TFI Portal 通过 HATG ISA（Human-Agent Trajectory Graph 指令集）提供共�
 
 我们希望借此提高研究的连续性、探索范围和可检查性。具体课题的实验方法、结果可靠性与研究价值，仍需要结合领域知识和实际证据判断。
 
+**一个人管理一个Agent 团队**
+
+![一个人管理一个Agent 团队](docs/images/one-person-agent-team-zh.png "一个人管理一个Agent 团队")
+
+**Human-AI协作台**
+
+![Human-AI协作台](docs/images/human-ai-collaboration-zh.png "Human-AI协作台")
+
 ## 2. 安装与使用
 
 **当前支持 Linux，需要 Python 3.12 及 venv 支持。**
