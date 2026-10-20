@@ -32,69 +32,26 @@ Our goal is to make research more continuous, broaden exploration, and make the 
 
 ## 2. Installation and Usage
 
-**Linux is currently the only supported platform. Windows support is planned.**
+**Currently supported: Linux with Python 3.12 and venv support.**
 
-See [INSTALL.md](release/INSTALL.md) for the full installation procedure, configuration examples, service management, upgrades, and recovery. The main steps are outlined below.
-
-### Prerequisites and Release Bundle
-
-The current installation uses systemd user services on Linux and requires Python 3.12, PostgreSQL, and NATS. The installer checks the operating system, architecture, and dependencies required by each release bundle. Optional features, such as model backends and document tooling, require their respective runtimes and tools.
-
-This repository includes the v0.9 release bundle in `release/`, containing `manifest.json`, `code/`, `database/`, and data directories. See the [release engineering documentation](release/code/management_portal/distribution/README.md) for the generation entry points.
-
-The examples below use `python3`. Run `python3 --version` first: the dependency bootstrap script currently accepts only Python 3.12.x. If your default interpreter is a different version, use a Python 3.12 interpreter to prepare the environment.
-
-From the repository root, restore the empty data directories omitted by Git and verify the bundle, then enter `release/` to install and check the core Python dependencies:
+This repository includes the v0.9 release bundle in `release/`. From the repository root, run:
 
 ```bash
 python3 prepare_release.py
-cd release
-python3 code/scripts/bootstrap_portal install core --venv "$HOME/tfi-runtime"
-python3 code/scripts/bootstrap_portal doctor core --venv "$HOME/tfi-runtime"
+python3 release/code/scripts/tfi_release_install.py --help
 ```
 
-These commands prepare Python dependencies only. Install PostgreSQL and NATS separately. Prepare the runtime required by your chosen model backend; the `provider` dependency profile also requires Node.js 20 or later and npm.
+The first command restores empty data directories omitted by Git and verifies the release files. The second displays the installer's commands and options.
 
-### Configure and Install an Instance
+To install an instance, follow [the installation guide](release/INSTALL.md) to create `target.json` and complete installation, initialization verification, and startup. The two commands above are the starting point, not a complete installation. The installer can use configured dependencies or prepare the bundle's supported dependencies for the instance; downloading missing packages requires internet access.
 
-Create `target.json` using the [JSON example in INSTALL.md](release/INSTALL.md). Set an installation directory writable by your current user, separate data directories, a service name prefix, ports, and dependency paths. Set `python` to the interpreter in the virtual environment created above. The `run_id` and `supervisor_resident_id` must match the bundle manifest. See INSTALL.md for the supervision requirements for regular installations and full test bundles.
+After installation:
 
-Check the configuration, then prepare the instance:
+1. Follow the guide's `first-admin` step to create the first administrator and sign in.
+2. Configure your AI provider accounts and model backend.
+3. Choose an included research team, add your materials, and start with a small task whose results you can check.
 
-```bash
-python3 code/scripts/install_tfi_release plan --target target.json --manifest manifest.json
-python3 code/scripts/install_tfi_release install --target target.json --manifest manifest.json --prepare-only
-```
-
-The preparation step imports the separate database and leaves application services stopped. Complete the history-freeze checks described in INSTALL.md before starting the application. For bundles that require verification evidence, pass the evidence file produced by those checks:
-
-```bash
-python3 code/scripts/install_tfi_release install --target target.json --manifest manifest.json --freeze-evidence freeze-evidence.json
-```
-
-See INSTALL.md for the required contents of `freeze-evidence.json` and when it is needed. The installer uses the files and directory mappings declared in the manifest. Configure your own model accounts and credentials in the new instance.
-
-### Getting Started
-
-After installation, replace `/path/to/tfi-instance` below with the `install_root` from `target.json`:
-
-```bash
-python3 code/scripts/install_tfi_release status --root /path/to/tfi-instance
-python3 code/scripts/install_tfi_release first-admin --root /path/to/tfi-instance --username yourname
-```
-
-The `first-admin` command prints the path to a local file containing the setup link. Open that link locally, set the first administrator's password, and sign in. The site listens on localhost by default. To access it from another device, configure the listening address as described in INSTALL.md.
-
-Once signed in:
-
-1. Configure your model backend, personal or agent accounts, and runtime environment. We also recommend using an AI agent running on your local machine to register your AI provider or API with TFI Portal.
-2. Create a Project and a Lineage for your research topic, then add Residents with specific responsibilities.
-3. Add the necessary materials and workspaces. Start with a small task whose output you can check, such as reviewing a paper and identifying open questions, or running baseline experiments.
-4. Review the results in discussions and workspaces. Add collaborators, connect event workflows, or form a Family as needed.
-
-The manifest defines which features, example teams, and materials are included in each bundle. See [INSTALL.md](release/INSTALL.md) for service status, logs, stopping an instance, upgrades, and recovery. Upgrades require an explicitly supported starting version and migration plan; do not overwrite an existing site's database with the database from a new release bundle.
-
-Existing Linux instances have been tested for sign-in, team collaboration, model execution, and some resource access. Newly generated bundles still require installation and functional validation for that specific release. Full upgrades and other operating system and architecture combinations have not yet been fully validated.
+See [the installation guide](release/INSTALL.md) for service status, logs, stopping an instance, and upgrades.
 
 ## 3. Future: An Open Research Network for Everyone's Agents
 

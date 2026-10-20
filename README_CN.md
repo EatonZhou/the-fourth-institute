@@ -1,6 +1,6 @@
 # 第四大学 · The Fourth Institute
 
-[English](README_EN.md) | **简体中文**
+[English](README.md) | **简体中文**
 
 **让人类与 AI Agent 在同一个研究环境中，持续探索、交流与积累知识。**
 
@@ -32,69 +32,26 @@ TFI Portal 通过 HATG ISA（Human-Agent Trajectory Graph 指令集）提供共�
 
 ## 2. 安装与使用
 
-**目前仅支持 Linux。Windows 版本计划后续上线。**
+**当前支持 Linux，需要 Python 3.12 及 venv 支持。**
 
-完整安装步骤、目标配置样例、服务管理及升级恢复说明见 [INSTALL.md](release/INSTALL.md)。以下是开始使用的主要路径。
-
-### 准备环境与发行工程
-
-当前安装路径使用 Linux 的 systemd 用户服务，需要 Python 3.12、PostgreSQL 和 NATS。安装器会检查具体发行工程的系统、架构及依赖要求；使用模型后端、文章工具等可选功能时，还需准备相应运行时和工具。
-
-本仓库的 `release/` 已包含生成完成的 v0.9 发行工程，其中有 `manifest.json`、`code/`、`database/` 和数据目录；相关开发入口见 [发行工程说明](release/code/management_portal/distribution/README.md)。
-
-下面统一使用 `python3`。可先运行 `python3 --version` 检查版本：当前依赖准备脚本仅接受 Python 3.12.x；若系统默认版本不同，请使用对应的 Python 3.12 解释器执行环境准备。
-
-在仓库根目录先恢复 Git 不保存的空数据目录并校验发行文件，再进入 `release/` 准备并检查基础 Python 环境：
+本仓库的 `release/` 已包含 v0.9 发行工程。在仓库根目录执行：
 
 ```bash
 python3 prepare_release.py
-cd release
-python3 code/scripts/bootstrap_portal install core --venv "$HOME/tfi-runtime"
-python3 code/scripts/bootstrap_portal doctor core --venv "$HOME/tfi-runtime"
+python3 release/code/scripts/tfi_release_install.py --help
 ```
 
-上述命令仅准备 Python 依赖，PostgreSQL 和 NATS 需另外安装。模型后端按所选后端准备；需要 `provider` 依赖配置时，还需 Node.js 20 或以上版本及 npm。
+第一条命令恢复 Git 不保存的空数据目录，并校验发行文件；第二条查看安装器的命令和参数。
 
-### 配置并安装独立实例
+接下来按[安装说明](release/INSTALL.md)创建 `target.json`，完成安装、初始化核查和启动。上面两条命令是开始入口，不代表已经完成安装。安装器可使用配置的现有依赖，或为实例准备发行包支持的依赖；下载缺失的软件包需要联网。
 
-按 [INSTALL 中的 JSON 样例](release/INSTALL.md) 创建 `target.json`，填写当前用户可写的安装目录、独立数据目录、服务名前缀、端口及依赖路径。`python` 应指向上一步虚拟环境中的 Python；`run_id` 和 `supervisor_resident_id` 应与工程清单一致。普通安装与完整测试工程对监督身份的要求见 INSTALL。
+安装完成后：
 
-先检查配置，再准备独立实例：
+1. 按安装说明中的 `first-admin` 步骤创建首位管理员并登录。
+2. 配置自己的 AI Provider 账号和模型 Backend。
+3. 选择附带的研究团队，加入资料，从一个可检查结果的小任务开始。
 
-```bash
-python3 code/scripts/install_tfi_release plan --target target.json --manifest manifest.json
-python3 code/scripts/install_tfi_release install --target target.json --manifest manifest.json --prepare-only
-```
-
-准备阶段导入独立数据库，应用服务保持停止。按 INSTALL 完成历史冻结核查后，再启动应用服务；需要核查证据的工程使用本次核查产生的文件：
-
-```bash
-python3 code/scripts/install_tfi_release install --target target.json --manifest manifest.json --freeze-evidence freeze-evidence.json
-```
-
-`freeze-evidence.json` 的内容及适用条件以 INSTALL 为准。安装器使用工程清单中的文件和目录映射，模型账号与凭据由部署者在新实例中配置。
-
-### 第一次使用
-
-安装完成后，将下面命令中的 `/path/to/tfi-instance` 换成 `target.json` 中的 `install_root`：
-
-```bash
-python3 code/scripts/install_tfi_release status --root /path/to/tfi-instance
-python3 code/scripts/install_tfi_release first-admin --root /path/to/tfi-instance --username yourname
-```
-
-`first-admin` 会输出初始化链接的本地文件位置。在本机打开该文件中的链接，设置首位管理员的密码，然后登录。站点默认仅监听本机；需要从其他设备访问时，按 INSTALL 配置监听地址。
-
-登录后的基本使用顺序是：
-
-1. 配置自己的模型后端、个人或agent账号及运行环境。我们也建议借助本机上的 AI Agent，将自己的 AI Provider 或 API 注册到 TFI Portal 中。
-2. 围绕研究课题创建 Project 和 Lineage，并加入承担具体职责的 Resident。
-3. 添加所需资料与工作区，从一个可检查结果的小任务开始，例如阅读论文并整理问题，或运行一组基线实验。
-4. 在讨论和工作区中检查结果，再按需要增加协作者、连接事件流程或组成 Family。
-
-具体发行工程包含的功能、示例团队和资料以其清单为准。服务状态及日志、停止实例、升级和恢复操作统一见 [INSTALL.md](release/INSTALL.md)。升级需要工程声明兼容的起点与迁移，不能直接用新发行数据库覆盖已有站点。
-
-当前 Linux 独立实例已有登录、团队协作、模型执行和部分资源访问的验证记录；重新生成的发行工程仍需对应版本的安装与功能验收。完整升级流程及其他系统、架构组合尚未完成验证。
+服务状态、日志、停止实例和升级操作见[安装说明](release/INSTALL.md)。
 
 ## 3. Future: 共建人人都能带着自己的 Agent 参与的科研网络
 
