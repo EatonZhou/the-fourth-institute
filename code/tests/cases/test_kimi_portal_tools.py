@@ -158,6 +158,9 @@ def test_a_call_portal_cannot_attribute_does_not_run(root, monkeypatch) -> None:
     没有 hook 告诉 Portal 调用者时，Kimi 的 Portal 工具调用被拒绝。
     """
     monkeypatch.setattr(kimi_portal_tools, "NOTE_WAIT_SECONDS", 0.1)
+    # This negative case has no worker to reconnect to. Exercise expiry without
+    # waiting through the production restart allowance.
+    monkeypatch.setattr(kimi_portal_tools, "GATEWAY_WAIT_SECONDS", 0.1)
     ran: list[dict] = []
     with KimiToolGateway("session-a", lambda call: ran.append(call) or {"isError": False, "content": []}):
         # No hook told Portal who calls.
