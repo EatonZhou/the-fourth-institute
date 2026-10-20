@@ -145,7 +145,7 @@ SLOW_REFRESH_SECONDS = 5.0
 # A change is looked for from this long before the previous check started, so
 # a file written just as that check began is not missed.
 SOURCE_CHANGE_MARGIN_SECONDS = 2.0
-SOURCE_CHANGE_TIMEOUT_SECONDS = 300.0
+SOURCE_CHANGE_TIMEOUT_SECONDS = 900.0
 _SOURCE_CHANGE_FINDER = Path(__file__).with_name("resource_source_changes.py")
 
 
@@ -1437,7 +1437,7 @@ class AdapterLayer:
         })
         detector.add_directories(directories)
 
-    def stop(self, *, timeout: float = 60.0) -> None:
+    def stop(self, *, timeout: float = 180.0) -> None:
         with self._condition:
             self._stop_event.set()
             self._pending.clear()
@@ -2138,7 +2138,7 @@ class AdapterLayer:
                         self._running.discard(name)
                         self._condition.notify_all()
 
-    def wait(self, adapters: Iterable[str] = (), timeout: float = 30.0) -> bool:
+    def wait(self, adapters: Iterable[str] = (), timeout: float = 90.0) -> bool:
         names = set(adapters) or set(self.adapters)
         deadline = time.monotonic() + max(0.0, float(timeout))
         with self._condition:

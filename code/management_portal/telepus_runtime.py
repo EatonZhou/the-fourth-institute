@@ -28,7 +28,7 @@ class TelepusRuntime:
             result = self.run(
                 ["systemctl", "--user", "show", *UNITS, "-p", "Id", "-p", "LoadState",
                  "-p", "ActiveState", "-p", "UnitFileState", "--no-pager"],
-                capture_output=True, text=True, timeout=15, check=False,
+                capture_output=True, text=True, timeout=45, check=False,
             )
         except (OSError, subprocess.TimeoutExpired) as exc:
             return {"available": False, "enabled": False, "running": False,
@@ -69,7 +69,7 @@ class TelepusRuntime:
             return before
         command = ["systemctl", "--user", "enable" if enabled else "disable", "--now", *units]
         try:
-            result = self.run(command, capture_output=True, text=True, timeout=45, check=False)
+            result = self.run(command, capture_output=True, text=True, timeout=135, check=False)
         except (OSError, subprocess.TimeoutExpired) as exc:
             raise OperationError(str(exc), code="telepus.service_control_failed", http_status=503) from exc
         if result.returncode:

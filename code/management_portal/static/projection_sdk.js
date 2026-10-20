@@ -79,7 +79,7 @@
     // unique within that channel, including on sandboxed HTTP documents.
     const requestId = String(++requestSequence);
     return new Promise((resolve, reject) => {
-      const entry = { resolve, reject, remainingMs: 90000, awaitingConfirmation: false };
+      const entry = { resolve, reject, remainingMs: 270000, awaitingConfirmation: false };
       pending.set(requestId, entry);
       armTimeout(requestId, entry);
       host.postMessage({ type: "portal-projection-request", channel, requestId, method, payload }, "*");

@@ -22,7 +22,7 @@ from . import runtime
 
 MAX_LOG = 10 * 1024 * 1024
 MAX_JSON = 65536
-RESTART_GRACE_SECONDS = 120
+RESTART_GRACE_SECONDS = 360
 
 
 def atomic_json(path: Path, value: dict):
@@ -51,7 +51,7 @@ class Relay(socketserver.ThreadingMixIn, socketserver.BaseServer):
 
 class RelayHandler(socketserver.StreamRequestHandler):
     def handle(self):
-        self.request.settimeout(120)
+        self.request.settimeout(360)
         try:
             data = self.rfile.readline(1024 * 1024 + 1)
             if len(data) > 1024 * 1024:
@@ -75,7 +75,7 @@ def http_forward(config):
         deadline = time.monotonic() + RESTART_GRACE_SECONDS
         while True:
             try:
-                response = urllib.request.urlopen(request, timeout=120)
+                response = urllib.request.urlopen(request, timeout=360)
             except urllib.error.HTTPError as error:
                 response = error
             except urllib.error.URLError as error:
@@ -215,10 +215,10 @@ def _run(config: dict, run_dir: Path, *, socket_path: Path, forward=None):
                 # Descendants may outlive a successfully exited leader and keep
                 # stdout/stderr open. A terminal result requires the whole owned
                 # tree to be gone, on success as well as timeout/cancellation.
-                process_runtime.terminate_process_tree(process, timeout=5, force=True)
-                result['exit_code'] = process.wait(timeout=5)
+                process_runtime.terminate_process_tree(process, timeout=15, force=True)
+                result['exit_code'] = process.wait(timeout=15)
             for drain in drains:
-                drain.join(timeout=5)
+                drain.join(timeout=15)
                 if drain.is_alive():
                     raise TimeoutError('ScriptRun output pipe did not close after process tree cleanup')
             atomic_json(receipt, {**identity, 'state': 'stopped'})

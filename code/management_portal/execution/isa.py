@@ -224,7 +224,7 @@ def complete_chat(inv: Invocation) -> dict[str, Any]:
         raise invalid(f"{api_id} 没有默认模型，请提供 model")
     response = registry.request(
         api_id, "chat/completions", payload,
-        timeout_seconds=float(item.get("timeout_s") or 120),
+        timeout_seconds=float(item.get("timeout_s") or 360),
     )
     choices = response.get("choices") if isinstance(response.get("choices"), list) else []
     message = choices[0].get("message") if choices and isinstance(choices[0], dict) else None

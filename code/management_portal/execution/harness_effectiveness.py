@@ -344,7 +344,7 @@ class HarnessEffectivenessStore:
         }
 
 
-    def flush(self, timeout: float = 5.0) -> None:
+    def flush(self, timeout: float = 15.0) -> None:
         barrier = threading.Event()
         with self._lifecycle_lock:
             self._ensure_open()
@@ -361,7 +361,7 @@ class HarnessEffectivenessStore:
                 "pending_writes": self._queue.qsize(),
             }
 
-    def close(self, timeout: float = 5.0) -> None:
+    def close(self, timeout: float = 15.0) -> None:
         stopped = threading.Event()
         with self._lifecycle_lock:
             if self._closed:

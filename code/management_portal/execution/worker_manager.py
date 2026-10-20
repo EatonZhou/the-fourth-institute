@@ -92,7 +92,7 @@ class ExecutionWorkerManager:
         self.child_health_root = self.health_path.parent / "execution-workers"
         self.ready_timeout = max(
             2.0,
-            float(os.getenv("PORTAL_EXECUTION_WORKER_READY_TIMEOUT", "30")),
+            float(os.getenv("PORTAL_EXECUTION_WORKER_READY_TIMEOUT", "90")),
         )
         self.retry_initial = max(
             1.0,
@@ -147,9 +147,9 @@ class ExecutionWorkerManager:
             float(
                 os.getenv(
                     "PORTAL_EXECUTION_WORKER_DRAIN_TIMEOUT_SECONDS",
-                    "60",
+                    "180",
                 )
-                or 60
+                or 180
             ),
         )
         self.kill_grace = max(
@@ -157,9 +157,9 @@ class ExecutionWorkerManager:
             float(
                 os.getenv(
                     "PORTAL_EXECUTION_WORKER_KILL_GRACE_SECONDS",
-                    "10",
+                    "30",
                 )
-                or 10
+                or 30
             ),
         )
         self._reload = threading.Event()

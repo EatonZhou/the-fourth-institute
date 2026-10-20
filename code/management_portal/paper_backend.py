@@ -74,10 +74,10 @@ def _env_int(name: str, default: int, *, minimum: int = 0) -> int:
         return max(minimum, int(default))
 
 
-EXP_STALE_SECONDS = 15 * 60
+EXP_STALE_SECONDS = 45 * 60
 # Legacy or unconfirmed jobs cannot be resumed from a canonical input receipt.
-COLLECTOR_STALE_SECONDS = 6 * 60 * 60
-FIGURE_DRAFT_STALE_SECONDS = _env_int("PAPER_FIGURE_DRAFT_STALE_SECONDS", 30 * 60, minimum=1)
+COLLECTOR_STALE_SECONDS = 18 * 60 * 60
+FIGURE_DRAFT_STALE_SECONDS = _env_int("PAPER_FIGURE_DRAFT_STALE_SECONDS", 90 * 60, minimum=1)
 LOCK = threading.RLock()
 _DEEP_READ_TASK_LOCK = threading.RLock()
 _ACTIVE_DEEP_READ_TASKS: set[str] = set()
@@ -581,7 +581,7 @@ class PaperStore:
             for attempt in range(attempts):
                 try:
                     req = urllib.request.Request(text, headers={"User-Agent": "TFIPortalPaperStore/0.1"})
-                    with urllib.request.urlopen(req, timeout=90) as response:
+                    with urllib.request.urlopen(req, timeout=270) as response:
                         data = response.read()
                     if data:
                         tmp.write_bytes(data)
@@ -1832,7 +1832,7 @@ def list_library(params: dict | None = None, *, actor: str = "") -> dict:
     }
 
 
-def _http_get_text(url: str, *, timeout: int = 30) -> str:
+def _http_get_text(url: str, *, timeout: int = 90) -> str:
     req = urllib.request.Request(str(url or ""), headers={"User-Agent": "TFIPortalPaper/0.1"})
     with urllib.request.urlopen(req, timeout=timeout) as response:
         return response.read().decode("utf-8", errors="replace")
@@ -1948,7 +1948,7 @@ def _ccf_catalog(force: bool = False, *, allow_network: bool = True) -> list[dic
             return _merge_curated_venues([item for item in venues if isinstance(item, dict)])
     if not allow_network:
         return _merge_curated_venues(_load_ccf_catalog_cache())
-    html = _http_get_text(CCF_CATALOG_URL, timeout=45)
+    html = _http_get_text(CCF_CATALOG_URL, timeout=135)
     venues = _parse_ccf_catalog_html(html)
     CCF_CATALOG_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
     _write_json(CCF_CATALOG_CACHE_PATH, {
@@ -2196,7 +2196,7 @@ def _fetch_openalex_ccf_candidate(paper: dict) -> dict | None:
         urls.append("https://api.openalex.org/works?" + urlencode({"search": title, "per-page": "5"}))
     for url in urls:
         try:
-            payload = json.loads(_http_get_text(url, timeout=16))
+            payload = json.loads(_http_get_text(url, timeout=48))
         except Exception:
             continue
         results = payload.get("results") if isinstance(payload, dict) else []
@@ -2236,7 +2236,7 @@ def _fetch_semantic_scholar_ccf_candidate(paper: dict) -> dict | None:
         "fields": "title,abstract,authors,year,venue,url,externalIds",
     })
     try:
-        payload = json.loads(_http_get_text(url, timeout=16))
+        payload = json.loads(_http_get_text(url, timeout=48))
     except Exception:
         return None
     results = payload.get("data") if isinstance(payload, dict) else []
@@ -3196,7 +3196,7 @@ def _pdf_document_properties(pdf_path: Path) -> dict[str, str]:
             check=False,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            timeout=30,
+            timeout=90,
         )
     except Exception as exc:
         logging.getLogger(__name__).warning("pdfinfo metadata unavailable: %s", exc)
@@ -3408,7 +3408,7 @@ def _crossref_registration_metadata(doi: str) -> dict:
         headers={"User-Agent": "TFIPortal/1.0"},
     )
     try:
-        with urllib.request.urlopen(request, timeout=30) as response:
+        with urllib.request.urlopen(request, timeout=90) as response:
             payload = json.loads(response.read(2_000_000))
     except Exception:
         return {}
@@ -4763,7 +4763,7 @@ def _local_pdf_for_paper(paper: dict) -> Path:
         path = cache_dir / name
         if not path.is_file() or path.stat().st_size < 20_000:
             req = urllib.request.Request(pdf_path, headers={"User-Agent": "TFIPortalPaperDeepRead/0.1"})
-            with urllib.request.urlopen(req, timeout=90) as response:
+            with urllib.request.urlopen(req, timeout=270) as response:
                 data = response.read()
             if not data.startswith(b"%PDF"):
                 raise RuntimeError("remote PDF did not return PDF bytes")
@@ -4794,7 +4794,7 @@ def _extract_pdf_text_file(pdf_path: Path, *, cache_path: Path | None = None) ->
         check=False,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        timeout=120,
+        timeout=360,
     )
     if proc.returncode != 0:
         stderr = proc.stderr.decode("utf-8", errors="replace")[:400]
@@ -4820,7 +4820,7 @@ def _extract_pdf_text_raw(pdf_path: Path, *, paper_id: str) -> str:
         check=False,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        timeout=120,
+        timeout=360,
     )
     if proc.returncode != 0:
         stderr = proc.stderr.decode("utf-8", errors="replace")[:400]
@@ -5174,7 +5174,7 @@ def wait_review(
     job_id: str,
     *,
     actor: str,
-    timeout_seconds: float = 1800,
+    timeout_seconds: float = 5400,
 ) -> dict:
     deadline = time.monotonic() + max(1.0, float(timeout_seconds))
     while time.monotonic() < deadline:
@@ -6208,7 +6208,7 @@ def _extract_figure_caption_blocks(pdf_path: Path) -> list[dict[str, Any]]:
         encoding="utf-8",
         errors="replace",
         text=True,
-        timeout=120,
+        timeout=360,
     )
     if result.returncode != 0:
         raise RuntimeError((result.stderr or result.stdout or "pdftotext bbox failed").strip()[:500])
@@ -6342,7 +6342,7 @@ def _render_pdf_page_png(pdf_path: Path, page: int, output_prefix: Path, dpi: in
         text=True,
         encoding="utf-8",
         errors="replace",
-        timeout=90,
+        timeout=270,
     )
     if result.returncode != 0:
         raise RuntimeError((result.stderr or result.stdout or "pdftoppm failed").strip()[:500])
@@ -6360,7 +6360,7 @@ def _pdfimages_pages(pdf_path: Path) -> list[int]:
         text=True,
         encoding="utf-8",
         errors="replace",
-        timeout=90,
+        timeout=270,
     )
     if result.returncode != 0:
         raise RuntimeError((result.stderr or result.stdout or "pdfimages list failed").strip()[:500])
@@ -6399,7 +6399,7 @@ def _extract_embedded_pdf_images(
         text=True,
         encoding="utf-8",
         errors="replace",
-        timeout=120,
+        timeout=360,
     )
     if result.returncode != 0:
         raise RuntimeError((result.stderr or result.stdout or "pdfimages failed").strip()[:500])
@@ -9192,7 +9192,7 @@ def _fetch_arxiv_metadata(*, id_list: str = "", search_title: str = "") -> dict:
     url = f"https://export.arxiv.org/api/query?{urlencode(params)}"
     request = urllib.request.Request(url, headers={"User-Agent": "TFIPortal/1.0"})
     try:
-        with urllib.request.urlopen(request, timeout=30) as response:
+        with urllib.request.urlopen(request, timeout=90) as response:
             body = response.read(1_500_000)
     except (urllib.error.URLError, TimeoutError, OSError):
         return {}

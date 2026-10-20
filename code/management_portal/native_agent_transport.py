@@ -49,7 +49,7 @@ class NativeAgentClient:
         """
         request_id = secrets.token_hex(16)
         try:
-            with connect_local(self.socket_path, timeout=5) as sock:
+            with connect_local(self.socket_path, timeout=15) as sock:
                 sock.settimeout(DETACH_POLL_SECONDS if detach_requested else response_timeout)
                 def send(message):
                     sock.sendall(json.dumps(message, ensure_ascii=False).encode() + b"\n")

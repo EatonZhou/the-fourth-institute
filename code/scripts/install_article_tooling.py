@@ -71,7 +71,7 @@ def _extract_binary(archive, destination, name):
 
 def _version(binary):
     return run_native_capture([str(binary), '--version'],
-                              check=True, timeout=20).stdout.strip()
+                              check=True, timeout=60).stdout.strip()
 
 
 def install():
@@ -99,7 +99,7 @@ def install():
             directory = Path(temporary)
             archive = directory / 'archive'
             checksum, size = hashlib.sha256(), 0
-            with urllib.request.urlopen(url, timeout=60) as response, archive.open('wb') as stream:
+            with urllib.request.urlopen(url, timeout=180) as response, archive.open('wb') as stream:
                 while chunk := response.read(1024 * 1024):
                     size += len(chunk)
                     if size > 64 * 1024 * 1024:
@@ -114,11 +114,11 @@ def install():
                 raise ValueError('TexLab binary version mismatch')
             os.replace(candidate, target)
     if not synctex:
-        run_process([tlmgr, 'install', 'synctex'], check=True, timeout=600)
+        run_process([tlmgr, 'install', 'synctex'], check=True, timeout=1800)
         synctex = shutil.which('synctex', path=str(Path(tlmgr).parent)) or shutil.which('synctex')
         if not synctex:
             raise RuntimeError('SyncTeX is not executable after tlmgr installation')
-    run_process([synctex, 'help'], check=True, timeout=20, capture_output=True)
+    run_process([synctex, 'help'], check=True, timeout=60, capture_output=True)
     smoke_compile()
     return target
 

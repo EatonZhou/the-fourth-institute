@@ -57,7 +57,7 @@ def command(action, *, name=None, current=""):
     if current:
         args += ["--current", current]
     result = subprocess.run(args, env=supervisor_environment(), capture_output=True,
-                            text=True, timeout=45)
+                            text=True, timeout=135)
     try:
         value = json.loads(result.stdout)
     except ValueError:
@@ -144,13 +144,13 @@ def job_alive(record):
     if sys.platform.startswith("linux"):
         check = subprocess.run(
             ["systemctl", "--user", "show", record["unit"], "-p", "ActiveState", "--value"],
-            capture_output=True, text=True, timeout=5)
+            capture_output=True, text=True, timeout=15)
         if check.returncode:
             raise RuntimeError("Cannot query instance control job")
         return check.stdout.strip() in {"active", "activating", "deactivating"}
     if sys.platform == "darwin":
         check = subprocess.run(["launchctl", "list", record["unit"]],
-                               capture_output=True, text=True, timeout=5)
+                               capture_output=True, text=True, timeout=15)
         return check.returncode == 0 and '"PID"' in check.stdout
     try:
         os.kill(int(record.get("pid", 0)), 0) if record.get("pid") else None
@@ -229,7 +229,7 @@ def launch(root, record):
                         f"--property=WorkingDirectory={CODE}",
                         f"--property=StandardOutput=append:{log}",
                         f"--property=StandardError=append:{log}", *args],
-                       env=env, check=True, capture_output=True, timeout=15)
+                       env=env, check=True, capture_output=True, timeout=45)
     elif sys.platform == "win32":
         with log.open("ab") as output:
             child = subprocess.Popen(args, env=env, stdin=subprocess.DEVNULL,
@@ -241,7 +241,7 @@ def launch(root, record):
     elif sys.platform == "darwin":
         subprocess.run(["launchctl", "submit", "-l", record["unit"],
                         "-o", str(log), "-e", str(log), "--", *args],
-                       env=env, check=True, capture_output=True, timeout=15)
+                       env=env, check=True, capture_output=True, timeout=45)
     else:
         raise ValueError("Instance control is not supported on this platform")
 

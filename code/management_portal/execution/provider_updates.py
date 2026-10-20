@@ -57,7 +57,7 @@ def codex_cli_version(output: str) -> str:
 
 # ``run_command``, ``npm_version``, ``pypi_version`` and ``linked_version``
 # serve the ``ProviderRuntime`` of every Provider, wherever it is declared.
-def run_command(*command: str, timeout: int = 600, env: dict[str, str] | None = None) -> str:
+def run_command(*command: str, timeout: int = 1800, env: dict[str, str] | None = None) -> str:
     result = run_process(command, check=True, text=True, capture_output=True, timeout=timeout, env=env)
     return result.stdout.strip()
 
@@ -68,12 +68,12 @@ def _service_control():
     def run(*command, check=True):
         if command[:2] == ("systemctl", "--user"):
             return run_unit_command(*command, check=check)
-        return run_process(command, check=check, text=True, capture_output=True, timeout=60)
+        return run_process(command, check=check, text=True, capture_output=True, timeout=180)
     return ServiceControl(runner=run)
 
 
 def npm_version(package: str, tag: str) -> str:
-    value = run_command("npm", "view", package, f"dist-tags.{tag}", "--json", timeout=45)
+    value = run_command("npm", "view", package, f"dist-tags.{tag}", "--json", timeout=135)
     version = json.loads(value)
     if not isinstance(version, str):
         raise ValueError(f"Invalid npm version for {package}: {version!r}")
@@ -82,7 +82,7 @@ def npm_version(package: str, tag: str) -> str:
 
 
 def pypi_version(package: str) -> str:
-    with urlopen(f"https://pypi.org/pypi/{package}/json", timeout=30) as response:
+    with urlopen(f"https://pypi.org/pypi/{package}/json", timeout=90) as response:
         version = json.load(response)["info"]["version"]
     Version(version)
     return version
@@ -154,7 +154,7 @@ class CodexRuntime(ProviderRuntime):
     def installed(self) -> tuple[str, ...]:
         if sys.platform == "win32":
             return (linked_version(self.link(), "codex-cli-"),)
-        return (codex_cli_version(run_command(str(self.link()), "--version", timeout=15)),)
+        return (codex_cli_version(run_command(str(self.link()), "--version", timeout=45)),)
 
     def stage(self, versions: tuple[str, ...]) -> Path:
         (version,) = versions
@@ -163,9 +163,9 @@ class CodexRuntime(ProviderRuntime):
         marker = root / ".portal-validated"
         if not marker.is_file() or not binary.is_file():
             run_command("npm", "install", "--global", "--prefix", str(root), "--omit=dev", f"@openai/codex@{version}")
-        if Version(codex_cli_version(run_command(str(binary), "--version", timeout=20))) != Version(version):
+        if Version(codex_cli_version(run_command(str(binary), "--version", timeout=60))) != Version(version):
             raise RuntimeError("Codex staged version mismatch")
-        run_command(str(binary), "app-server", "--help", timeout=20)
+        run_command(str(binary), "app-server", "--help", timeout=60)
         marker.write_text(version + "\n")
         return root
 
@@ -219,10 +219,10 @@ class ClaudeRuntime(ProviderRuntime):
         if not binary.is_file():
             run_command(sys.executable, "-m", "venv", str(root))
         if not marker.is_file() or marker.read_text() != validated:
-            run_command(str(binary), "-m", "pip", "install", *requirements, timeout=1200)
+            run_command(str(binary), "-m", "pip", "install", *requirements, timeout=3600)
         run_command(str(binary), "-c", "import claude_agent_sdk as s,sys; assert s.__version__ == sys.argv[1]", version)
         bundled = run_command(str(binary), "-c", "from pathlib import Path; import claude_agent_sdk as s; print(Path(s.__file__).parent/'_bundled'/'claude')")
-        run_command(bundled, "--version", timeout=20)
+        run_command(bundled, "--version", timeout=60)
         marker.write_text(validated)
         return root
 
@@ -259,9 +259,9 @@ class KimiRuntime(ProviderRuntime):
         marker = root / ".portal-validated"
         if not marker.is_file() or not binary.is_file():
             run_command("npm", "install", "--global", "--prefix", str(root), "--omit=dev", f"@moonshot-ai/kimi-code@{version}")
-        if run_command(str(binary), "--version", timeout=20) != version:
+        if run_command(str(binary), "--version", timeout=60) != version:
             raise RuntimeError("Kimi staged version mismatch")
-        help_text = run_command(str(binary), "web", "--help", timeout=20)
+        help_text = run_command(str(binary), "web", "--help", timeout=60)
         if "--no-open" not in help_text:
             raise RuntimeError("Kimi web server contract changed")
         marker.write_text(version + "\n")
@@ -298,7 +298,7 @@ class DshRuntime(ProviderRuntime):
         # bootstrap pin belongs to the older locked runtime, which may be active.
         package["dependencies"]["@deepseek-ai/cordis"] = json.loads(run_command(
             "npm", "view", f"@deepseek-ai/dsh-llm@{llm}",
-            "peerDependencies.@deepseek-ai/cordis", "--json", timeout=45,
+            "peerDependencies.@deepseek-ai/cordis", "--json", timeout=135,
         ))
         (root / "package.json").write_text(json.dumps(package, indent=2) + "\n")
         for module in (*source.glob("*.mjs"), *source.glob("*.cjs")):
@@ -315,9 +315,9 @@ class DshRuntime(ProviderRuntime):
         )
         expected_marker = hashlib.sha256(json.dumps(package, sort_keys=True).encode("utf-8")).hexdigest()
         if not marker.is_file() or marker.read_text(encoding="utf-8").strip() != expected_marker:
-            run_command("npm", "install", "--prefix", str(root), "--omit=dev", "--no-audit", "--no-fund", timeout=1200)
-        run_command("node", "--check", str(root / "bridge.mjs"), timeout=20)
-        run_command("node", "--input-type=module", "-e", "const m=await import(process.argv[1]); if(typeof m.apply !== 'function') process.exit(1)", (root / "bridge.mjs").as_uri(), timeout=30)
+            run_command("npm", "install", "--prefix", str(root), "--omit=dev", "--no-audit", "--no-fund", timeout=3600)
+        run_command("node", "--check", str(root / "bridge.mjs"), timeout=60)
+        run_command("node", "--input-type=module", "-e", "const m=await import(process.argv[1]); if(typeof m.apply !== 'function') process.exit(1)", (root / "bridge.mjs").as_uri(), timeout=90)
         marker.write_text(expected_marker + "\n")
         return root
 
@@ -453,7 +453,7 @@ def _activate(provider: str, runtime: ProviderRuntime, root: Path) -> bool:
     try:
         for service in services:
             controller.restart(service)
-            deadline = time.monotonic() + 15
+            deadline = time.monotonic() + 45
             while controller.status(service)["active"] != "active":
                 if time.monotonic() >= deadline:
                     raise TimeoutError(f"Provider service did not become active: {service}")

@@ -108,14 +108,14 @@ def run_command_service(name, command, *, cwd, log, environment=None):
                         result["code"] = child.returncode or 1
                         break
                 report(3, wait_hint=30000)
-                terminate_process_tree(child, timeout=30, tree_id=name)
+                terminate_process_tree(child, timeout=90, tree_id=name)
         except Exception as exc:
             result["code"] = 1
             with log.with_suffix(".error.log").open("a", encoding="utf-8") as output:
                 output.write(f"{type(exc).__name__}: {exc}\n")
             if child is not None:
                 try:
-                    terminate_process_tree(child, timeout=5, force=True, tree_id=name)
+                    terminate_process_tree(child, timeout=15, force=True, tree_id=name)
                 except Exception:
                     pass
         finally:

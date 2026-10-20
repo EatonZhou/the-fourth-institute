@@ -119,7 +119,7 @@ def knowledge_index(
         service.refresh(
             adapters=refresh_adapters,
             wait=bool(wait_seconds),
-            timeout=wait_seconds or 60,
+            timeout=wait_seconds or 180,
         )
     payload = _query_all(
         service,

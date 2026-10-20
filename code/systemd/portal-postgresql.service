@@ -10,7 +10,7 @@ Environment=LD_LIBRARY_PATH=@PORTAL_POSTGRES_LIB@
 ExecStart=@PORTAL_POSTGRES_BIN@/postgres -D @PORTAL_POSTGRES_DATA@ -c listen_addresses= -c port=@PORTAL_POSTGRES_PORT@ -c unix_socket_directories=@PORTAL_POSTGRES_SOCKET@ -c unix_socket_permissions=0700 -c max_connections=200 -c shared_buffers=2GB -c effective_cache_size=12GB -c work_mem=16MB -c maintenance_work_mem=1GB -c wal_compression=on -c checkpoint_completion_target=0.9 -c max_wal_size=8GB -c random_page_cost=1.1 -c jit=off -c log_min_duration_statement=1000 -c log_lock_waits=on -c deadlock_timeout=1s
 ExecReload=/bin/kill -HUP $MAINPID
 KillSignal=SIGINT
-TimeoutStopSec=180
+TimeoutStopSec=540
 Restart=on-failure
 RestartSec=2
 LimitNOFILE=1048576

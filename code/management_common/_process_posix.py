@@ -46,7 +46,7 @@ def process_alive(pid):
         except PermissionError:
             return True
     result = subprocess.run(["ps", "-p", str(pid), "-o", "stat="], capture_output=True,
-                            text=True, timeout=5)
+                            text=True, timeout=15)
     if result.returncode not in (0, 1):
         result.check_returncode()
     return bool(result.stdout.strip() and not result.stdout.strip().startswith("Z"))
@@ -71,7 +71,7 @@ def _group_alive(pgid):
                 return True
         return False
     result = subprocess.run(["ps", "-axo", "pgid=,stat="], capture_output=True, text=True,
-                            check=True, timeout=5)
+                            check=True, timeout=15)
     return any(int(parts[0]) == pgid and not parts[1].startswith("Z")
                for line in result.stdout.splitlines() if len(parts := line.split()) >= 2)
 
@@ -83,7 +83,7 @@ def process_tree_alive(process, *, tree_id=None):
     return _group_alive(pid)
 
 
-def terminate_process_tree(process, timeout=5, force=False, *, tree_id=None):
+def terminate_process_tree(process, timeout=15, force=False, *, tree_id=None):
     if process is None:
         return
     managed = not isinstance(process, int)

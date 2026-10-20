@@ -96,8 +96,8 @@
         await window.PortalAPI.get("/api/resource-index/refresh", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ wait: true, timeout: 60 }),
-          timeoutMs: 65_000,
+          body: JSON.stringify({ wait: true, timeout: 180 }),
+          timeoutMs: 195_000,
           signal: controller.signal,
         });
       }

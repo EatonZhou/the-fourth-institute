@@ -544,10 +544,10 @@ def effective_ssh_access(
 def test_ssh_connection(
     device_id: str,
     *,
-    timeout_seconds: int = 5,
+    timeout_seconds: int = 15,
 ) -> dict[str, Any]:
-    if type(timeout_seconds) is not int or not 1 <= timeout_seconds <= 15:
-        raise ValueError("SSH timeout_seconds must be an integer from 1 to 15")
+    if type(timeout_seconds) is not int or not 1 <= timeout_seconds <= 45:
+        raise ValueError("SSH timeout_seconds must be an integer from 1 to 45")
     ssh = effective_ssh_access(
         device_id,
     )
@@ -602,7 +602,7 @@ def test_ssh_connection(
             check=False,
             capture_output=True,
             text=True,
-            timeout=timeout + 2,
+            timeout=timeout + 6,
             **run_options,
         )
         reachable = completed.returncode == 0

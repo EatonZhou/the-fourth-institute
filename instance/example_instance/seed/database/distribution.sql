@@ -1991,7 +1991,7 @@ CREATE TABLE workspace.workspaces (
     deleted_at timestamp with time zone,
     deleted_by text,
     summary text DEFAULT ''::text NOT NULL,
-    CONSTRAINT workspaces_path_check CHECK ((("left"(path, 1) = '/'::text) AND (path <> '/'::text))),
+    CONSTRAINT workspaces_absolute_path_check CHECK (replace(path, chr(92), '/') ~ '^(/[^/].*|[A-Za-z]:/.+|//[^/]+/[^/]+/.+)$'),
     CONSTRAINT workspaces_workspace_id_check CHECK ((workspace_id ~ '^workspace_[0-9a-f]{12}$'::text))
 );
 

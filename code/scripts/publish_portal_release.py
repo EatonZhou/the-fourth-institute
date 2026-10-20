@@ -131,13 +131,13 @@ def push_remotes(root: Path, commit: str) -> dict:
         **os.environ,
         'GIT_TERMINAL_PROMPT': '0',
         'GIT_SSH_COMMAND': os.environ.get('GIT_SSH_COMMAND')
-        or 'ssh -o BatchMode=yes -o ConnectTimeout=20',
+        or 'ssh -o BatchMode=yes -o ConnectTimeout=60',
     }
     for remote in remotes:
         try:
             completed = subprocess.run(
                 ['git', 'push', remote, f'{commit}:refs/heads/{branch}'],
-                cwd=root, env=env, capture_output=True, text=True, timeout=300, check=False,
+                cwd=root, env=env, capture_output=True, text=True, timeout=900, check=False,
             )
             ok = completed.returncode == 0
             detail = '' if ok else (completed.stderr or completed.stdout).strip()[-600:]

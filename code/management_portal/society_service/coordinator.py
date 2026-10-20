@@ -142,7 +142,7 @@ class LineageCoordinator:
         )
         self._thread.start()
 
-    def stop(self, timeout: float = 10.0) -> None:
+    def stop(self, timeout: float = 30.0) -> None:
         deadline = time.monotonic() + max(0.0, float(timeout))
         self._stop.set()
         self._wake.set()

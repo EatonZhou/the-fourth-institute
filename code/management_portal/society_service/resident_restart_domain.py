@@ -62,7 +62,7 @@ def _session_restart_source(record: dict[str, Any], binding: Mapping[str, Any]) 
 
 
 # How long a new RestartSession waits for the unfinished restart it replaces to be cancelled.
-SESSION_RESTART_SUPERSEDE_SECONDS = 60.0
+SESSION_RESTART_SUPERSEDE_SECONDS = 180.0
 
 
 class _SessionRestartSuperseded(Exception):

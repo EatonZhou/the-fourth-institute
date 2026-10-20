@@ -52,7 +52,7 @@ def install(destination: Path | None = None) -> Path:
             else:
                 url = f"https://huggingface.co/{REPOSITORY}/resolve/{REVISION}/{name}"
                 print(f"Downloading {name} from {REPOSITORY}@{REVISION}", flush=True)
-                with urllib.request.urlopen(url, timeout=90) as source, temporary.open("wb") as output:
+                with urllib.request.urlopen(url, timeout=270) as source, temporary.open("wb") as output:
                     shutil.copyfileobj(source, output, length=1024 * 1024)
             if not valid_file(temporary, name):
                 raise RuntimeError(f"Model file verification failed: {name}")

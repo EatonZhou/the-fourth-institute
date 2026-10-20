@@ -114,7 +114,7 @@ print(json.dumps({'status':'passed','object_types':{k:sorted(v) for k,v in vocab
     env = {**os.environ, 'PYTHONDONTWRITEBYTECODE': '1', 'PYTHONPATH': str(code),
            'PORTAL_RESOURCE_TYPES_DIR': str(code / 'config/resource-types')}
     completed = subprocess.run([sys.executable, '-c', program], cwd=code, env=env,
-                               capture_output=True, text=True, timeout=60)
+                               capture_output=True, text=True, timeout=180)
     if completed.returncode:
         raise ValueError('Copied permission scheme compilation failed: ' + completed.stderr[-6000:])
     return json.loads(completed.stdout)

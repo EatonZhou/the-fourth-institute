@@ -103,7 +103,7 @@ def normalize_backend_options(value: object, backend: str) -> dict[str, Any]:
     if len(json.dumps(parameters, ensure_ascii=False, allow_nan=False).encode()) > 2 * 1024 * 1024:
         raise ValueError("backend_options.parameters is too large")
     return {"parameters": parameters,
-            "timeout_seconds": _number(options.get("timeout_seconds", 120), 1, 86400, "timeout_seconds"),
+            "timeout_seconds": _number(options.get("timeout_seconds", 360), 1, 259200, "timeout_seconds"),
             "max_retries": _number(options.get("max_retries", 0), 0, 10, "max_retries", integer=True)}
 
 
@@ -153,7 +153,7 @@ def validate_api_settings(route: str, current: Mapping[str, Any], updates: Mappi
             raise ValueError("Model API model does not declare parameters: " + ", ".join(sorted(unsupported)))
     if "reasoning_effort" in parameters and parameters["reasoning_effort"] not in capabilities["reasoning_efforts_by_model"].get(model, []):
         raise ValueError("Model API model does not declare this reasoning_effort")
-    if options.get("timeout_seconds", 120) > capabilities["timeout_max"]:
+    if options.get("timeout_seconds", 360) > capabilities["timeout_max"]:
         raise ValueError(f"Protocol timeout_seconds must be at most {capabilities['timeout_max']}")
     return result
 

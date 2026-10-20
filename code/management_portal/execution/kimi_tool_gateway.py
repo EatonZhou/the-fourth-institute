@@ -64,7 +64,7 @@ class KimiToolGateway:
     """Serve one turn's Portal tools to the calls of its Kimi session."""
 
     # A retiring Worker answers the calls it has taken before it leaves.
-    DRAIN_SECONDS = 330.0
+    DRAIN_SECONDS = 990.0
 
     def __init__(self, session_id: str, dispatch: ToolDispatch | None) -> None:
         self.dispatch = dispatch

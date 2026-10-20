@@ -2972,7 +2972,7 @@ def _run_resident_session_operation(
         resident_id=_resident_id(record),
 
         persist_messages=False,
-        timeout_seconds=CODEX_COMPACT_TIMEOUT_SECONDS + 30,
+        timeout_seconds=CODEX_COMPACT_TIMEOUT_SECONDS + 90,
     )
     result = (
         snapshot.get("result")

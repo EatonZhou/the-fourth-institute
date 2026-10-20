@@ -20,10 +20,10 @@ Environment=PORTAL_SOCIETY_SERVICE_SOCKET=@PORTAL_INSTANCES_ROOT@/release/societ
 Environment=PORTAL_SERVICE_NAME=management-portal-release.service
 Environment=PORTAL_RESTART_NOTICE_PATH=@PORTAL_INSTANCES_ROOT@/release/restart_notice.json
 WorkingDirectory=@PORTAL_RELEASE_ROOT@
-ExecStart=@PORTAL_GROUP_COMMAND@@PORTAL_INSTANCES_ROOT@/release/runtime-venv/bin/python -m uvicorn management_portal.asgi:app --host 127.0.0.1 --port 18085 --workers 1 --no-access-log --timeout-graceful-shutdown 15
+ExecStart=@PORTAL_GROUP_COMMAND@@PORTAL_INSTANCES_ROOT@/release/runtime-venv/bin/python -m uvicorn management_portal.asgi:app --host 127.0.0.1 --port 18085 --workers 1 --no-access-log --timeout-graceful-shutdown 45
 Restart=on-failure
 RestartSec=2
-TimeoutStopSec=15
+TimeoutStopSec=45
 
 [Install]
 WantedBy=default.target

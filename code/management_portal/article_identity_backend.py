@@ -1643,7 +1643,7 @@ def latex_environment() -> dict[str, Any]:
                     stderr=subprocess.STDOUT,
                     text=True,
                     errors="replace",
-                    timeout=4,
+                    timeout=12,
                     check=False,
                 )
                 first_line = next(
@@ -1668,7 +1668,7 @@ def latex_environment() -> dict[str, Any]:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.DEVNULL,
                 text=True,
-                timeout=4,
+                timeout=12,
                 check=False,
             ).stdout.strip()
         except (OSError, subprocess.SubprocessError):
@@ -1718,7 +1718,7 @@ def _kpsewhich_file(name: str) -> str:
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
             text=True,
-            timeout=4,
+            timeout=12,
             check=False,
         ).stdout.strip()
     except (OSError, subprocess.SubprocessError):
@@ -1736,7 +1736,7 @@ def _fontconfig_family(name: str) -> str:
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
             text=True,
-            timeout=4,
+            timeout=12,
             check=False,
         ).stdout.strip()
     except (OSError, subprocess.SubprocessError):
@@ -2325,7 +2325,7 @@ def _finish_article_build(article_id: str) -> None:
 
 def _terminate_article_process(process: subprocess.Popen[str]) -> None:
     # The owned group/Job may still contain descendants after its leader exits.
-    process_runtime.terminate_process_tree(process, timeout=3)
+    process_runtime.terminate_process_tree(process, timeout=9)
 
 
 def _run_article_build_command(
@@ -2422,7 +2422,7 @@ def compile_article_pdf(
     article_id: str,
     *,
     build_root: str | Path | None = None,
-    timeout_seconds: int = 120,
+    timeout_seconds: int = 360,
     from_scratch: bool = False,
 ) -> dict[str, Any]:
     """Compile the registered canonical TeX manuscript into a cached PDF."""
@@ -2804,7 +2804,7 @@ def article_source_to_pdf(
         stderr=subprocess.STDOUT,
         text=True,
         errors="replace",
-        timeout=8,
+        timeout=24,
         check=False,
     )
     records = _synctex_records(completed.stdout, start_key="Page")
@@ -2866,7 +2866,7 @@ def article_pdf_to_source(
         stderr=subprocess.STDOUT,
         text=True,
         errors="replace",
-        timeout=8,
+        timeout=24,
         check=False,
     )
     records = _synctex_records(completed.stdout, start_key="Input")

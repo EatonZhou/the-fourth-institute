@@ -69,7 +69,7 @@ class ResourceIndexRuntime:
         self,
         adapters: Iterable[str],
         *,
-        timeout: float = 30.0,
+        timeout: float = 90.0,
     ) -> None:
         missing = [
             name
@@ -125,7 +125,7 @@ class ResourceIndexRuntime:
         adapters: Iterable[str] = (),
         path: str = "",
         wait: bool = False,
-        timeout: float = 60.0,
+        timeout: float = 180.0,
     ) -> dict[str, Any]:
         names = [_text(value) for value in adapters if _text(value)]
         targets = (
@@ -160,7 +160,7 @@ class ResourceIndexRuntime:
         self,
         adapters: Iterable[str] = (),
         *,
-        timeout: float = 30.0,
+        timeout: float = 90.0,
     ) -> bool:
         return self.adapter_layer.wait(adapters, timeout=timeout)
 

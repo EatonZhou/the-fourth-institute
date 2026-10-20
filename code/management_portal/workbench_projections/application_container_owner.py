@@ -33,7 +33,7 @@ def _read(path: Path) -> dict:
 
 
 def run(project: Path, command: list[str], *, config: dict, input=None, mounts=(),
-        writable_cache=None, network=False, readonly_project=False, timeout=120, limit=67108864):
+        writable_cache=None, network=False, readonly_project=False, timeout=360, limit=67108864):
     control = Path(tempfile.mkdtemp(prefix='portal-build-owner-'))
     ensure_private_directory(control)
     name = 'portal-app-build-' + uuid.uuid4().hex
@@ -56,7 +56,7 @@ def run(project: Path, command: list[str], *, config: dict, input=None, mounts=(
             stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
             tree_id=name + '-owner', kill_on_owner_exit=False,
         )
-        process.wait(timeout=timeout + 150)
+        process.wait(timeout=timeout + 450)
         receipt = _read(control / 'result.json')
         if receipt.get('cleanup_complete') is not True:
             raise ProjectionError('projection.application_cleanup', f'构建容器清理未确认，恢复计划：{control}')
@@ -71,7 +71,7 @@ def run(project: Path, command: list[str], *, config: dict, input=None, mounts=(
         if process is not None:
             process.stdin.close()  # Cancellation/parent exit gives the owner EOF.
             try:
-                process.wait(timeout=90)
+                process.wait(timeout=270)
             except subprocess.TimeoutExpired:
                 process_runtime.terminate_process_tree(process, force=True)
             if (control / 'result.json').is_file():
@@ -142,7 +142,7 @@ def recover(control: Path) -> None:
         env.update(PATH=os.defpath, HOME=private, USERPROFILE=private, DOCKER_CONFIG=private)
         prefix = [config['docker_executable'], '--host', config['docker_endpoint'], '--config', private]
         def cli(args):
-            return build._docker_cli([*prefix, *args], env=env, timeout=15, limit=1048576)
+            return build._docker_cli([*prefix, *args], env=env, timeout=45, limit=1048576)
         build._remove_owned_container(cli, plan['name'], plan['token'], receipt.get('create_observed', False))
     receipt['cleanup_complete'] = True
     _write(control / 'result.json', receipt)

@@ -73,7 +73,7 @@
   // Overview must also fit a large graph in a narrow dock. Auto layout keeps
   // cards readable; Fit all may zoom out further to show the complete graph.
   const FIT_ALL_VIEW = Object.freeze({ duration: 280, maxScale: 1 });
-  const DEFAULT_TEMPLATE_TIMEOUT_MS = 120_000;
+  const DEFAULT_TEMPLATE_TIMEOUT_MS = 360_000;
 
 
   const stateFactory = window.PortalHatgPanelState;

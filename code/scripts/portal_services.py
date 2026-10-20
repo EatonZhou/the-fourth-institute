@@ -65,7 +65,7 @@ def _execution_health(instance: str) -> dict[str, Any]:
     try:
         from management_portal.execution.service import ExecutionService
         from management_portal.execution.transport import ExecutionServiceClient
-        client = ExecutionServiceClient(f'{instance_root()}/{instance}/execution-service.sock', timeout=1)
+        client = ExecutionServiceClient(f'{instance_root()}/{instance}/execution-service.sock', timeout=3)
         return ExecutionService(client=client).health()
     except Exception as exc:
         return {'ok': False, 'error': str(exc)}
@@ -73,7 +73,7 @@ def _execution_health(instance: str) -> dict[str, Any]:
 def _resource_service_health(instance: str) -> dict[str, Any]:
     try:
         from management_portal.resources.transport import ResourceServiceClient
-        client = ResourceServiceClient(f'{instance_root()}/{instance}/resource-service.sock', timeout=1)
+        client = ResourceServiceClient(f'{instance_root()}/{instance}/resource-service.sock', timeout=3)
         payload = client.status()
         return {'ok': bool(payload.get('schema')), **payload}
     except Exception as exc:
@@ -82,7 +82,7 @@ def _resource_service_health(instance: str) -> dict[str, Any]:
 def _society_service_health(instance: str) -> dict[str, Any]:
     try:
         from management_portal.society_service.transport import SocietyServiceClient
-        client = SocietyServiceClient(f'{instance_root()}/{instance}/society-service.sock', timeout=1)
+        client = SocietyServiceClient(f'{instance_root()}/{instance}/society-service.sock', timeout=3)
         payload = client.health()
         return dict(payload)
     except Exception as exc:
@@ -120,7 +120,7 @@ def _operation_lock_path(instance: str) -> Path:
 def _web_health(instance: str) -> dict[str, Any]:
     url = f'http://127.0.0.1:{_config(instance)['port']}/api/health'
     try:
-        with urllib.request.urlopen(url, timeout=2) as response:
+        with urllib.request.urlopen(url, timeout=6) as response:
             payload = json.loads(response.read().decode('utf-8'))
         if not isinstance(payload, dict):
             raise ValueError('health response is not an object')
@@ -132,7 +132,7 @@ def _user_router_health() -> dict[str, Any]:
     url = USER_ROUTER_HEALTH_URL
     try:
         url = f'http://127.0.0.1:{router_port()}/__portal_router/health'
-        with urllib.request.urlopen(url, timeout=2) as response:
+        with urllib.request.urlopen(url, timeout=6) as response:
             payload = json.loads(response.read().decode('utf-8'))
         if not isinstance(payload, dict):
             raise ValueError('health response is not an object')
@@ -159,9 +159,9 @@ def _database_schema_status(instance: str) -> dict[str, Any]:
             import psycopg
         except ImportError:
             runtime_python = INSTANCE_ROOT / 'dev' / 'runtime-venv' / ('Scripts/python.exe' if sys.platform == 'win32' else 'bin/python')
-            probe = subprocess.run([str(runtime_python), '-c', 'import json,sys,psycopg; c=psycopg.connect(sys.stdin.read(),connect_timeout=2,autocommit=True); r=c.execute("SELECT current_database(), current_setting(\'server_version_num\')::integer").fetchone(); s=[x[0] for x in c.execute("SELECT schema_name FROM information_schema.schemata WHERE schema_name NOT LIKE \'pg_%\' AND schema_name <> \'information_schema\' ORDER BY schema_name")]; c.close(); print(json.dumps({\'ok\':True,\'backend\':\'postgresql\',\'database\':r[0],\'server_version\':r[1],\'schemas\':s}))'], input=_postgres_database_url(), text=True, capture_output=True, timeout=5, check=True)
+            probe = subprocess.run([str(runtime_python), '-c', 'import json,sys,psycopg; c=psycopg.connect(sys.stdin.read(),connect_timeout=2,autocommit=True); r=c.execute("SELECT current_database(), current_setting(\'server_version_num\')::integer").fetchone(); s=[x[0] for x in c.execute("SELECT schema_name FROM information_schema.schemata WHERE schema_name NOT LIKE \'pg_%\' AND schema_name <> \'information_schema\' ORDER BY schema_name")]; c.close(); print(json.dumps({\'ok\':True,\'backend\':\'postgresql\',\'database\':r[0],\'server_version\':r[1],\'schemas\':s}))'], input=_postgres_database_url(), text=True, capture_output=True, timeout=15, check=True)
             return json.loads(probe.stdout)
-        with psycopg.connect(_postgres_database_url(), connect_timeout=2, autocommit=True) as connection:
+        with psycopg.connect(_postgres_database_url(), connect_timeout=6, autocommit=True) as connection:
             row = connection.execute("SELECT current_database(), current_setting('server_version_num')::integer").fetchone()
             schemas = [str(item[0]) for item in connection.execute("SELECT schema_name FROM information_schema.schemata WHERE schema_name NOT LIKE 'pg_%' AND schema_name <> 'information_schema' ORDER BY schema_name").fetchall()]
         return {'ok': True, 'backend': 'postgresql', 'database': str(row[0]), 'server_version': int(row[1]), 'schemas': schemas}
@@ -242,7 +242,7 @@ def _assert_instance(instance: str, payload: dict[str, Any], *, components: tupl
     if 'web' in selected and str(payload['web'].get('instance') or '') != instance:
         raise RuntimeError(f'{instance} web reported instance={payload['web'].get('instance')!r}')
 
-def _wait_healthy(instance: str, *, pids_before_restart: dict[str, int] | None=None, verify_components: tuple[str, ...] | list[str] | set[str] | None=None, worker_id_before_restart: str='', timeout_seconds: float=90) -> dict[str, Any]:
+def _wait_healthy(instance: str, *, pids_before_restart: dict[str, int] | None=None, verify_components: tuple[str, ...] | list[str] | set[str] | None=None, worker_id_before_restart: str='', timeout_seconds: float=270) -> dict[str, Any]:
     deadline = time.monotonic() + timeout_seconds
     latest: dict[str, Any] = {}
     last_error = 'services did not report healthy'
@@ -268,7 +268,7 @@ def _wait_healthy(instance: str, *, pids_before_restart: dict[str, int] | None=N
         time.sleep(0.5)
     raise RuntimeError(f'{instance} failed post-start verification ({last_error}): {latest}')
 
-def _wait_resource_service_healthy(instance: str, *, timeout_seconds: float=30) -> None:
+def _wait_resource_service_healthy(instance: str, *, timeout_seconds: float=90) -> None:
     deadline = time.monotonic() + timeout_seconds
     latest: dict[str, Any] = {}
     while time.monotonic() < deadline:
@@ -368,7 +368,7 @@ def restart(instance: str, *, notice_seconds: int, components: tuple[str, ...] |
                 if controller.platform == 'linux':
                     controller.reload(service)
                 else:
-                    _require_idle(instance, drain=True, timeout_seconds=90)
+                    _require_idle(instance, drain=True, timeout_seconds=270)
                     controller.restart(service)
             elif action == 'start':
                 controller.start(service)
@@ -389,7 +389,7 @@ def restart(instance: str, *, notice_seconds: int, components: tuple[str, ...] |
                 if controller.platform == 'linux':
                     controller.signal_main(worker_unit, 'SIGUSR1')
                 else:
-                    _require_idle(instance, drain=True, timeout_seconds=90)
+                    _require_idle(instance, drain=True, timeout_seconds=270)
                     controller.restart(worker_unit)
             else:
                 action = 'reload' if worker_state['active'] == 'active' else 'start'
@@ -397,7 +397,7 @@ def restart(instance: str, *, notice_seconds: int, components: tuple[str, ...] |
                     if controller.platform == 'linux':
                         controller.reload(worker_unit)
                     else:
-                        _require_idle(instance, drain=True, timeout_seconds=90)
+                        _require_idle(instance, drain=True, timeout_seconds=270)
                         controller.restart(worker_unit)
                 else:
                     controller.start(worker_unit)

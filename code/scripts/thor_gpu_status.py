@@ -336,7 +336,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--ssh-config", default=DEFAULT_SSH_CONFIG)
     parser.add_argument("--host", default=DEFAULT_SSH_HOST)
     parser.add_argument("--pretty", action="store_true", help="Pretty-print JSON output.")
-    parser.add_argument("--timeout", type=float, default=15.0)
+    parser.add_argument("--timeout", type=float, default=45.0)
     return parser.parse_args()
 
 

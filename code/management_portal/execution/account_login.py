@@ -218,7 +218,7 @@ def login_command(provider, *, status=False):
 
 def provider_logged_in(provider, account_id):
     result = run_process(login_command(provider, status=True), env=login_environment(provider, account_id),
-                            stdin=subprocess.DEVNULL, capture_output=True, timeout=20)
+                            stdin=subprocess.DEVNULL, capture_output=True, timeout=60)
     if result.returncode:
         return False
     if provider == "codex":
@@ -268,7 +268,7 @@ def _session_paths(account_id):
 
 def _terminate(process):
     if process is not None:
-        terminate_process_tree(process, timeout=3)
+        terminate_process_tree(process, timeout=9)
 
 
 class LoginManager:
@@ -345,7 +345,7 @@ class LoginManager:
                         except TimeoutError:
                             continue
                         with connection:
-                            connection.settimeout(2)
+                            connection.settimeout(6)
                             submitted = b""
                             while b"\n" not in submitted and len(submitted) <= 4096:
                                 chunk = connection.recv(4097 - len(submitted))
@@ -408,7 +408,7 @@ class LoginManager:
             raise invalid("授权码格式无效")
         _, socket_path = _session_paths(registration["account_id"])
         try:
-            with connect_local(socket_path, timeout=3) as connection:
+            with connect_local(socket_path, timeout=9) as connection:
                 connection.sendall(code.strip().encode() + b"\n")
                 if connection.recv(16) != b"ok":
                     raise OSError("Login not accepting input")
@@ -429,7 +429,7 @@ def delete_login_data(account_id):
     manager = LoginManager()
     manager.cancel(account_id)
     lock_path, socket_path = _session_paths(account_id)
-    deadline = time.monotonic() + 5
+    deadline = time.monotonic() + 15
     with lock_path.open("a+") as lock:
         while True:
             try:

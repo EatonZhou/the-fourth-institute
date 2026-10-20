@@ -527,7 +527,7 @@ export function apply(ctx, config) {
               await load(p);
               let result;
               try {
-                result = await ctx.compaction.compactNow(handle.agent, AbortSignal.timeout(570_000));
+                result = await ctx.compaction.compactNow(handle.agent, AbortSignal.timeout(1_710_000));
               } catch (error) {
                 if (error?.name !== 'ManualCompactionError') throw error;
                 if (error.code === 'busy') return {compacted: false, reason: 'busy'};

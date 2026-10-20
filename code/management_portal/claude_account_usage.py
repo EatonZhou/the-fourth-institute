@@ -29,7 +29,7 @@ WINDOWS = {
 MAX_AGE_SECONDS = 300
 # The CLI's /usage alone takes 7-12 s and 12-20 s end to end on a loaded host;
 # the read runs in the background, so the bound only catches a hung process.
-NATIVE_USAGE_TIMEOUT_SECONDS = 60
+NATIVE_USAGE_TIMEOUT_SECONDS = 180
 
 
 def _number(value: Any) -> float | None:

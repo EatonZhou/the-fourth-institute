@@ -46,7 +46,7 @@ class EffectRecoveryWorker:
             self.drain_once()
             self._stop.wait(self.poll_seconds)
 
-    def stop(self, timeout: float = 5.0) -> None:
+    def stop(self, timeout: float = 15.0) -> None:
         self._stop.set()
         if self._thread is not None:
             self._thread.join(timeout)

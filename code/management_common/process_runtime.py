@@ -41,7 +41,7 @@ def spawn_process(*args, tree_id=None, kill_on_owner_exit=True, **kwargs):
                                    kill_on_owner_exit=kill_on_owner_exit, **kwargs)
 
 
-def terminate_process_tree(process, timeout=5, force=False, *, tree_id=None):
+def terminate_process_tree(process, timeout=15, force=False, *, tree_id=None):
     if timeout < 0:
         raise ValueError("timeout must be nonnegative")
     return _backend().terminate_process_tree(process, timeout=timeout, force=force, tree_id=tree_id)
@@ -110,7 +110,7 @@ def run_process(*args, input=None, capture_output=False, timeout=None, check=Fal
             expired = error
         finally:
             terminate_process_tree(process, force=True)
-        reader.join(5)
+        reader.join(15)
         if reader.is_alive():
             raise TimeoutError("Process output did not close after tree termination")
         if errors:

@@ -79,7 +79,7 @@ def _issue_token(caller, run_id, private, timeout):
     auth.get_agent_token_store().put(run_id, {
         'token_hash': auth.hash_token(token), 'token_lookup': auth.token_lookup(token), 'enabled': True,
         'managed_by': 'portal_script_run', 'caller_id': caller, 'required_scope': 'instructions',
-        'expires_at': time.time() + timeout + 30 if timeout is not None else None, 'lease_path': str(private),
+        'expires_at': time.time() + timeout + 90 if timeout is not None else None, 'lease_path': str(private),
     })
     return token
 
@@ -127,14 +127,14 @@ def launch(record, config):
         )
     # The transient unit is owned by the user manager, outside Portal's cgroup.
     command = ['systemd-run', '--user', '--collect', '--quiet', '--unit=' + record['unit'],
-               '--property=KillMode=control-group', '--property=TimeoutStopSec=5',
+               '--property=KillMode=control-group', '--property=TimeoutStopSec=15',
                '--working-directory=' + str(runtime.REPOSITORY),
                *(f'--setenv={key}={value}' for key, value in path_environment.items()),
                sys.executable, '-m',
                'management_portal.society_service.script_runs.runner', str(private)]
     if config.get('timeout_seconds') is not None:
         command.insert(5, '--property=RuntimeMaxSec=' + str(config['timeout_seconds'] + 10))
-    result = process_runtime.run_process(command, capture_output=True, text=True, timeout=15)
+    result = process_runtime.run_process(command, capture_output=True, text=True, timeout=45)
     if result.returncode:
         revoke(record)
         raise RuntimeError('脚本单元启动失败：' + result.stderr[-2000:])
@@ -265,7 +265,7 @@ def read_output(arguments, caller):
 
 def _mac_runner_matches(pid: int, identifier: str) -> bool:
     result = process_runtime.run_process(['ps', '-ww', '-p', str(pid), '-o', 'command='],
-                                         capture_output=True, text=True, timeout=5)
+                                         capture_output=True, text=True, timeout=15)
     return result.returncode == 0 and (
         'management_portal.society_service.script_runs.runner' in result.stdout
         and identifier + '.json' in result.stdout
@@ -345,15 +345,15 @@ def _stop_run(record, result_file):
     unit = record['unit'] or 'portal-script-' + record['script_run_id']
     if sys.platform == 'linux':
         stopped = process_runtime.run_process(
-            ['systemctl', '--user', 'stop', unit], capture_output=True, text=True, timeout=15)
+            ['systemctl', '--user', 'stop', unit], capture_output=True, text=True, timeout=45)
         if stopped.returncode and not result_file.is_file():
             raise RuntimeError('脚本单元停止失败：' + stopped.stderr[-2000:])
     elif sys.platform == 'win32':
         # The background-job owner names the detached Job with record.unit.
         # A second named Job owns the payload. Parent exit alone proves neither
         # tree empty; reopening both identities survives Society restarts.
-        process_runtime.terminate_process_tree(pid, timeout=5, tree_id=unit)
-        process_runtime.terminate_process_tree(pid, timeout=5, force=True,
+        process_runtime.terminate_process_tree(pid, timeout=15, tree_id=unit)
+        process_runtime.terminate_process_tree(pid, timeout=15, force=True,
                                                tree_id=_payload_tree(record['script_run_id']))
         if not result_file.is_file() and running_state(record) != 'stopped':
             raise RuntimeError('ScriptRun stopped without confirmed payload cleanup')
@@ -362,7 +362,7 @@ def _stop_run(record, result_file):
             if result_file.is_file():
                 return True
             raise RuntimeError('ScriptRun runner identity could not be verified')
-        process_runtime.terminate_process_tree(pid, timeout=5)
+        process_runtime.terminate_process_tree(pid, timeout=15)
         # The payload has its own POSIX session. Only the runner's result,
         # written after verified payload cleanup, proves it is safe to finish.
         if not result_file.is_file():

@@ -21,7 +21,7 @@ def runtime_catalog(client: Any, account_id: str) -> dict[str, Any]:
         models = []
         cursor = None
         for _ in range(20):
-            result = client.request("model/list", {"limit": 100, "cursor": cursor}, timeout=10)
+            result = client.request("model/list", {"limit": 100, "cursor": cursor}, timeout=30)
             models.extend(model for model in result.get("data", []) if not model.get("hidden"))
             next_cursor = result.get("nextCursor")
             if not next_cursor:

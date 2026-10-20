@@ -31,7 +31,7 @@ class ResidentResourceProjectionWorker:
         *,
         poll_seconds: float = 0.2,
         batch_size: int = 50,
-        lease_seconds: float = 30.0,
+        lease_seconds: float = 90.0,
     ) -> None:
         self._state_store = state_store
         self._resource_client = resource_client
@@ -55,7 +55,7 @@ class ResidentResourceProjectionWorker:
         )
         self._thread.start()
 
-    def stop(self, timeout: float = 5.0) -> None:
+    def stop(self, timeout: float = 15.0) -> None:
         self._stop_event.set()
         thread = self._thread
         if thread is not None:
@@ -124,7 +124,7 @@ class ResidentResourceProjectionWorker:
             self._record_error(exc)
         return 0
 
-    def confirm(self, resident_id: str, *, timeout_seconds: float = 5.0) -> dict[str, Any]:
+    def confirm(self, resident_id: str, *, timeout_seconds: float = 15.0) -> dict[str, Any]:
         """Confirm the existing identity's current outbox without recreating it."""
         from . import invariant_locks
 
@@ -173,7 +173,7 @@ class ResidentResourceProjectionWorker:
         self,
         resident_id: str,
         *,
-        timeout_seconds: float = 5.0,
+        timeout_seconds: float = 15.0,
     ) -> None:
         """Confirm publication of one committed Resident deletion."""
         from . import invariant_locks

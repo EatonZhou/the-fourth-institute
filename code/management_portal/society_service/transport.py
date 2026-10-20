@@ -37,7 +37,7 @@ class SocietyServiceClient:
         self,
         socket_path: Path | str | None = None,
         *,
-        timeout: float = 120.0,
+        timeout: float = 360.0,
     ) -> None:
         self.socket_path = Path(socket_path or society_service_socket())
         self.timeout = max(0.1, float(timeout))
@@ -184,7 +184,7 @@ class SocietyServiceClient:
             },
         )
 
-    def health(self, *, timeout: float = 5) -> dict[str, Any]:
+    def health(self, *, timeout: float = 15) -> dict[str, Any]:
         result = self._request("health", timeout=timeout, restart_wait=0)
         return dict(result or {})
 
@@ -192,4 +192,4 @@ class SocietyServiceClient:
         from .runtime.contracts import ResidentWakeRequest
 
         request = ResidentWakeRequest(resident_id=resident_id)
-        self._request("runtime.resident.wake", request.to_payload(), timeout=1.0, restart_wait=0)
+        self._request("runtime.resident.wake", request.to_payload(), timeout=3.0, restart_wait=0)

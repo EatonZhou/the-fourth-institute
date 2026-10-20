@@ -26,7 +26,7 @@ class Upstream:
     location_restricted: bool = False
 
 
-PROBE_TIMEOUT_SECONDS = 10.0
+PROBE_TIMEOUT_SECONDS = 30.0
 UPSTREAMS = {
     "anthropic": Upstream("https://api.anthropic.com/v1/models", location_restricted=True),
     "openai": Upstream("https://chatgpt.com/backend-api/models"),
@@ -83,7 +83,7 @@ def egress_state(upstream: str, timeout: float = PROBE_TIMEOUT_SECONDS) -> str:
     return _state(upstream, _answer(upstream, timeout))
 
 
-def provider_network_state(provider: str, route: str = "", timeout: float = 2.0) -> str:
+def provider_network_state(provider: str, route: str = "", timeout: float = 6.0) -> str:
     """Whether a turn on this route can get through now: the service also has to work (no 5xx, no 429).
 
     A service Portal has no probe for is ``allowed``: waiting on it would never end.

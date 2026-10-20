@@ -1666,7 +1666,7 @@
       run: () => runResourceAction(
         deviceId,
         "ssh.test",
-        { timeout_seconds: 5 },
+        { timeout_seconds: 15 },
       ),
       onSuccess: result => {
         if (resultNode) {

@@ -134,7 +134,7 @@ class KimiCodeClient:
         payload: dict[str, Any] | None = None,
         *,
         query: dict[str, Any] | None = None,
-        timeout: float = 10.0,
+        timeout: float = 30.0,
     ) -> Any:
         url = f"{self.base_url}/{path.lstrip('/')}"
         if query:
@@ -223,17 +223,17 @@ class KimiCodeClient:
     def session_tools(self, session_id: str) -> list[dict[str, Any]]:
         """The tools registered for a live session: ``name``, ``source``, ``active``."""
 
-        data = self._request("GET", "tools", query={"session_id": session_id}, timeout=5.0)
+        data = self._request("GET", "tools", query={"session_id": session_id}, timeout=15.0)
         tools = data.get("tools") if isinstance(data, dict) else None
         return [tool for tool in tools if isinstance(tool, dict)] if isinstance(tools, list) else []
 
 
     def get_snapshot(self, session_id: str) -> dict[str, Any]:
-        data = self._request("GET", f"sessions/{quote(session_id, safe='')}/snapshot", timeout=10.0)
+        data = self._request("GET", f"sessions/{quote(session_id, safe='')}/snapshot", timeout=30.0)
         return data if isinstance(data, dict) else {}
 
     def get_status(self, session_id: str) -> dict[str, Any]:
-        data = self._request("GET", f"sessions/{quote(session_id, safe='')}/status", timeout=5.0)
+        data = self._request("GET", f"sessions/{quote(session_id, safe='')}/status", timeout=15.0)
         return data if isinstance(data, dict) else {}
 
     def resolve_approval(
@@ -271,7 +271,7 @@ class KimiCodeClient:
                 "GET",
                 f"sessions/{quote(session_id, safe='')}/messages",
                 query={"page_size": 100, "before_id": before_id or None},
-                timeout=10.0,
+                timeout=30.0,
             )
             page = data if isinstance(data, dict) else {}
             batch = [item for item in page.get("items") or [] if isinstance(item, dict)]
@@ -403,7 +403,7 @@ class KimiCodeClient:
         if not tool_use_id:
             return {"stopped": False, "reason": "unknown_subagent"}
         session = quote(session_id or session_key, safe="")
-        data = self._request("GET", f"sessions/{session}/tasks", timeout=5.0)
+        data = self._request("GET", f"sessions/{session}/tasks", timeout=15.0)
         items = data.get("items") if isinstance(data, dict) else None
         runs = [task for task in items or [] if isinstance(task, dict) and task.get("kind") == "subagent"
                 and str(task.get("parent_tool_call_id") or "") == tool_use_id]

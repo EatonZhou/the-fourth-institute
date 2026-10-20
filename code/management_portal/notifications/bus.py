@@ -87,7 +87,7 @@ class NotificationHub:
         after_sequence: int,
         *,
         predicate: Callable[[Notification], bool] | None = None,
-        timeout: float = 15.0,
+        timeout: float = 45.0,
     ) -> tuple[list[Notification], int]:
         cursor = max(0, int(after_sequence))
         deadline = time.monotonic() + max(0.0, float(timeout))
@@ -137,7 +137,7 @@ class NatsNotificationPublisher:
             )
             self._thread.start()
 
-    def close(self, timeout: float = 2.0) -> None:
+    def close(self, timeout: float = 6.0) -> None:
         self._stop.set()
         thread = self._thread
         if thread is not None:
@@ -191,7 +191,7 @@ class NatsNotificationPublisher:
                     client = await connect_notifications(
                         servers=[nats_url()],
                         name=nats_client_name(self.component),
-                        connect_timeout=1,
+                        connect_timeout=3,
                         allow_reconnect=True,
                         max_reconnect_attempts=-1,
                         reconnect_time_wait=1,
@@ -212,7 +212,7 @@ class NatsNotificationPublisher:
                 continue
             try:
                 await client.publish(subject, body)
-                await client.flush(timeout=1)
+                await client.flush(timeout=3)
                 with self._lock:
                     self._published += 1
                     self._last_error = ""
@@ -276,7 +276,7 @@ class NatsNotificationListener:
                 "cursor": self.hub.sequence,
             }
 
-    def close(self, timeout: float = 2.0) -> None:
+    def close(self, timeout: float = 6.0) -> None:
         self._stop.set()
         thread = self._thread
         if thread is not None:
@@ -298,7 +298,7 @@ class NatsNotificationListener:
                 client = await connect_notifications(
                     servers=[nats_url()],
                     name=nats_client_name(self.component),
-                    connect_timeout=1,
+                    connect_timeout=3,
                     allow_reconnect=True,
                     max_reconnect_attempts=-1,
                     reconnect_time_wait=1,

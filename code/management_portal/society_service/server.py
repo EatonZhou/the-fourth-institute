@@ -231,7 +231,7 @@ class LineageReadProcessPool:
             for process in processes:
                 if process.is_alive():
                     process.terminate()
-            deadline = time.monotonic() + 1.0
+            deadline = time.monotonic() + 3.0
             for process in processes:
                 process.join(max(0.0, deadline - time.monotonic()))
             for process in processes:
@@ -565,7 +565,7 @@ class SocietyServiceServer(LocalServiceSocketMixin, DrainingStreamServer):
             ).dispatch_message_arrival(lineage_id, resident_id, message_id),
             wake_for_due_sources=runs_lineage_timers(),
             timer_lease=lambda: get_lineage_data_store().hold_lineage_timer_lease(
-                _TIMER_LEASE_HOLDER, ttl_seconds=90,
+                _TIMER_LEASE_HOLDER, ttl_seconds=270,
             ),
             sync_templates=_sync_template_structure if syncs_template_structure() else None,
             # The instance that syncs published templates also migrates stored

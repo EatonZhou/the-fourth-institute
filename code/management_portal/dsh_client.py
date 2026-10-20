@@ -75,7 +75,7 @@ def credential_paths() -> tuple[Path, ...]:
 DEFAULT_COMPACTION_RATIO = 0.8
 # An on-demand compaction writes one summary with the session's model; Portal
 # waits 10 minutes for an explicit compaction.
-COMPACT_TIMEOUT_SECONDS = 590.0
+COMPACT_TIMEOUT_SECONDS = 1770.0
 
 
 def _digest(value):
@@ -133,7 +133,7 @@ class DshClient:
         root.mkdir(exist_ok=True, mode=0o700)
         with (root / "launch.lock").open("a+") as lock, lock_stream(lock):
             try:
-                transport._request("health", response_timeout=1)
+                transport._request("health", response_timeout=3)
                 return transport
             except NativeAgentUnavailable:
                 pass
@@ -161,7 +161,7 @@ class DshClient:
             for name in ("cordis-plugin-timer", "dsh-llm", "dsh-session", "dsh-session-projection", "dsh-tools", "dsh-agent"):
                 plugin(name)
             plugin("dsh-system-prompt", {"includeHarnessIdentity": False, "includeRuntimeContext": False})
-            plugin("dsh-llm-deepseek-api-key", {"apiKeyEnv": "DEEPSEEK_API_KEY", "streamIdleTimeoutMs": 120000})
+            plugin("dsh-llm-deepseek-api-key", {"apiKeyEnv": "DEEPSEEK_API_KEY", "streamIdleTimeoutMs": 360000})
             plugin("dsh-session-persistence-jsonl", {"root": str(root / "sessions"), "compression": "none"})
             # Without a compaction backend a DSH session only grows until the
             # model refuses it.  The ratio is fixed when the process starts.
@@ -178,8 +178,8 @@ class DshClient:
             plugin("dsh-sandbox-policy", {"mode": "danger-full-access", "workspaceRoot": params["cwd"]})
             plugin("dsh-subprocess-local")
             plugin("dsh-terminal")
-            plugin("dsh-terminal-bash", {"timeoutMs": 300000})
-            plugin("dsh-tool-bash-persistent", {"timeoutMs": 300000})
+            plugin("dsh-terminal-bash", {"timeoutMs": 900000})
+            plugin("dsh-tool-bash-persistent", {"timeoutMs": 900000})
             plugin("dsh-fs-local")
             plugin("dsh-tool-fs")
             # The tools the other Providers' models have besides the shell and
@@ -189,7 +189,7 @@ class DshClient:
             plugin("dsh-web", {"searchProvider": "deepseek-official", "fetchProvider": "http"})
             plugin("dsh-web-search-deepseek", {"apiKeyEnv": "DEEPSEEK_API_KEY"})
             plugin("dsh-web-fetch-http")
-            plugin("dsh-tool-web", {"fetch": True, "searchTimeoutMs": 60000})
+            plugin("dsh-tool-web", {"fetch": True, "searchTimeoutMs": 180000})
             if subagents:
                 plugin("dsh-subagent")
                 plugin("dsh-subagent-spawn-in-process", {"providerName": "spawn"})
@@ -211,18 +211,18 @@ class DshClient:
                 process = spawn_process([sys.executable, "-I", str(host), "node", str(launcher), "--profile", "portal-resident"],
                     cwd=params["cwd"], env=env, stdin=subprocess.DEVNULL, stdout=log, stderr=log, kill_on_owner_exit=False)
             try:
-                deadline = time.monotonic() + 25
+                deadline = time.monotonic() + 75
                 while time.monotonic() < deadline:
                     if process.poll() is not None:
                         raise NativeAgentUnavailable(f"DSH startup failed; inspect {log_path}")
                     try:
-                        transport._request("health", response_timeout=1)
+                        transport._request("health", response_timeout=3)
                         return transport
                     except NativeAgentUnavailable:
                         time.sleep(.1)
                 raise NativeAgentUnavailable(f"DSH startup timed out; inspect {log_path}")
             except BaseException:
-                terminate_process_tree(process, timeout=10)
+                terminate_process_tree(process, timeout=30)
                 raise
 
     def run_turn(self, *, event_callback=None, tool_callback=None, detach_requested=None, **params):
@@ -282,7 +282,7 @@ class DshClient:
         try:
             return self._transport(session_id)._request("turn/steer", {
                 "session_id": session_id, "turn_id": turn_id, "text": text, "control_id": control_id,
-            }, response_timeout=10)
+            }, response_timeout=30)
         except NativeAgentUnavailable:
             return {"steered": False, "reason": "dsh_unavailable"}
 
@@ -293,7 +293,7 @@ class DshClient:
             return {"stopped": False, "reason": "unknown_subagent"}
         try:
             return self._transport(session_id)._request("subagent/stop", {
-                "session_id": session_id, "tool_use_id": tool_use_id}, response_timeout=10)
+                "session_id": session_id, "tool_use_id": tool_use_id}, response_timeout=30)
         except NativeAgentUnavailable:
             return {"stopped": False, "reason": "dsh_unavailable"}
         except NativeAgentError as error:
@@ -306,7 +306,7 @@ class DshClient:
         if not session_id:
             return {"interrupted": False}
         try:
-            return self._transport(session_id)._request("turn/interrupt", {"session_id": session_id, "turn_id": turn_id}, response_timeout=5)
+            return self._transport(session_id)._request("turn/interrupt", {"session_id": session_id, "turn_id": turn_id}, response_timeout=15)
         except NativeAgentUnavailable:
             return {"interrupted": False}
 
@@ -321,12 +321,12 @@ class DshClient:
         with (STATE / session_id / "launch.lock").open("a+") as lock, lock_stream(lock):
             transport = self._transport(session_id)
             try:
-                result = transport._request("session/close", {"session_id": session_id}, response_timeout=10)
-                deadline = time.monotonic() + 10
+                result = transport._request("session/close", {"session_id": session_id}, response_timeout=30)
+                deadline = time.monotonic() + 30
                 while time.monotonic() < deadline:
                     time.sleep(0.05)
                     try:
-                        transport._request("health", response_timeout=1)
+                        transport._request("health", response_timeout=3)
                     except NativeAgentUnavailable:
                         return result
                 raise RuntimeError("DSH native release has not completed")

@@ -1073,7 +1073,7 @@ def run_shared_search_turn(
     job: Mapping[str, Any],
     surface: str,
     prompt: str,
-    timeout_seconds: float = 120.0,
+    timeout_seconds: float = 360.0,
     cancellation_requested: Callable[[], bool] | None = None,
     on_assigned: Callable[[dict[str, Any]], None] | None = None,
 ) -> dict[str, Any]:
@@ -1096,7 +1096,7 @@ def run_resident_completion(
     title: str = "Embedded Model",
     parameters: Mapping[str, Any] | None = None,
     messages: Sequence[Mapping[str, Any]] | None = None,
-    timeout_seconds: float = 120,
+    timeout_seconds: float = 360,
     max_retries: int = 0,
     metadata: Mapping[str, Any] | None = None,
     cancellation_requested: Callable[[], bool] | None = None,

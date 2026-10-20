@@ -65,10 +65,10 @@
   const clientId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
   let streamSequence = 0;
   const streamIdentities = new WeakMap();
-  const staleStreamMs = 30_000;
+  const staleStreamMs = 90_000;
   const watchdogIntervalMs = 5_000;
-  const interestLeaseMs = 45_000;
-  const handoverTimeoutMs = 10_000;
+  const interestLeaseMs = 135_000;
+  const handoverTimeoutMs = 30_000;
   const supportsBroadcastChannel = typeof BroadcastChannel === "function";
   const sharedLeadership = !!(supportsBroadcastChannel && navigator.locks?.request);
   let channel = null;

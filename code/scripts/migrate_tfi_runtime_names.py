@@ -355,8 +355,8 @@ def migrate(connection, *, names, backup_dir=None, seed_root=None, apply=False):
     report = {"plans": [], "execution_rows": [], "seed_files": [], "backup": str(backup.root) if backup else None}
     seed_changes = []
     with connection.transaction():
-        connection.execute("SET LOCAL lock_timeout='1s'")
-        connection.execute("SET LOCAL statement_timeout='120s'")
+        connection.execute("SET LOCAL lock_timeout='3s'")
+        connection.execute("SET LOCAL statement_timeout='360s'")
         if not apply:
             connection.execute("SET TRANSACTION READ ONLY")
         plans = connection.execute("SELECT * FROM service_invocations.service_invocations" + (" FOR UPDATE" if apply else "")).fetchall()
@@ -425,7 +425,7 @@ def migrate(connection, *, names, backup_dir=None, seed_root=None, apply=False):
         backup.json("database-result-seed-intent.json", report)
     for node_id, config, path, before, after, item in seed_changes:
         with connection.transaction():
-            connection.execute("SET LOCAL lock_timeout='1s'")
+            connection.execute("SET LOCAL lock_timeout='3s'")
             current = connection.execute("SELECT c.config_json FROM lineage.lineage_nodes n JOIN lineage.lineage_components c USING(node_id) WHERE n.node_id=%s AND n.deleted_at IS NULL FOR UPDATE OF n,c", (node_id,)).fetchone()
             current_config = current["config_json"] if current else None
             if isinstance(current_config, str):

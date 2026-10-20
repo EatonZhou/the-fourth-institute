@@ -304,8 +304,8 @@ class PostgresDatabase:
         psycopg, row_factory, _pool = _postgres_modules()
         connection.row_factory = row_factory
         connection.execute("SET timezone = 'UTC'")
-        connection.execute("SET lock_timeout = '10s'")
-        connection.execute("SET statement_timeout = '120s'")
+        connection.execute("SET lock_timeout = '30s'")
+        connection.execute("SET statement_timeout = '360s'")
         connection.execute("SET jit = off")
         connection.execute(
             psycopg.sql.SQL("SET search_path TO {}").format(
@@ -374,6 +374,8 @@ class PostgresDatabase:
                         min_size=self._min_size,
                         max_size=self._max_size,
                         max_idle=self._max_idle,
+                        timeout=90.0,
+                        reconnect_timeout=900.0,
                         kwargs={
                             "row_factory": row_factory,
                             "application_name": self._application_name,
@@ -383,7 +385,7 @@ class PostgresDatabase:
                         name=f"portal-{self.schema}-{process_id}",
                     )
                     try:
-                        pool.wait(timeout=15.0)
+                        pool.wait(timeout=45.0)
                     except BaseException:
                         # A failed acquisition must not leave an unregistered
                         # pool's workers and connections alive.
@@ -494,7 +496,7 @@ class PostgresDatabase:
 
     def write(self, operation: Callable[[PostgresConnection], T]) -> T:
         psycopg, _dict_row, _pool = _postgres_modules()
-        deadline = time.monotonic() + 10.0
+        deadline = time.monotonic() + 30.0
         delay = 0.005
         while True:
             try:
@@ -517,8 +519,8 @@ class PostgresDatabase:
     @contextmanager
     def advisory_lock(self, key: int, *, blocking: bool = True, shared: bool = False) -> Iterator[bool]:
         psycopg, _row_factory, _pool = _postgres_modules()
-        with psycopg.connect(self.dsn, autocommit=True, connect_timeout=10) as connection:
-            connection.execute("SET lock_timeout = '30s'")
+        with psycopg.connect(self.dsn, autocommit=True, connect_timeout=30) as connection:
+            connection.execute("SET lock_timeout = '90s'")
             suffix = '_shared' if shared else ''
             if blocking:
                 connection.execute(f"SELECT pg_advisory_lock{suffix}(%s)", (key,))

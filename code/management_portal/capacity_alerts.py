@@ -33,7 +33,7 @@ def workflow_operations(script_path, recipients):
 
     arguments = json.dumps({"recipients": recipients, "policy": DEFAULT_POLICY}, ensure_ascii=False, separators=(",", ":"))
     script = (f"run=$(RunScript {literal_argument('path', str(script_path))} runtime=python "
-              f"timeout_seconds:=180 exclusive_key=runtime-capacity-alerts arguments:={arguments})\n"
+              f"timeout_seconds:=540 exclusive_key=runtime-capacity-alerts arguments:={arguments})\n"
               'output script_run_id="${run.script_run_id}" status="${run.status}"')
     components = [
         ("timer", "event_source", "容量检查（每 5 分钟）", {

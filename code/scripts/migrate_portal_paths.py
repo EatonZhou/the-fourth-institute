@@ -200,7 +200,7 @@ def _copy_and_verify(source: Path, destination: Path) -> None:
 def _service(instance: str, action: str, *, force: bool = False) -> None:
     arguments = [sys.executable, str(ROOT / "scripts" / "portal_services.py"), action, instance]
     if action == "stop":
-        arguments.extend(["--force"] if force else ["--drain", "--drain-timeout", "120"])
+        arguments.extend(["--force"] if force else ["--drain", "--drain-timeout", "360"])
     subprocess.run(arguments, cwd=ROOT, check=True)
 
 

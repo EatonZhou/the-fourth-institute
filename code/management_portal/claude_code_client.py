@@ -10,9 +10,9 @@ from typing import Any, Callable
 
 DEFAULT_SOCKET_PATH = (portal_path("staging_root") / "portal_locks" / "claude-code-daemon.sock")
 # A compaction writes its summary with the session's model: 2-5 minutes on a
-# long history in the 2026-10-03 measurements.  Portal waits 10 minutes for an
+# long history in the 2026-10-03 measurements.  Portal waits 30 minutes for an
 # explicit compaction (RESIDENT_AGENT_CODEX_COMPACT_TIMEOUT_SECONDS).
-COMPACT_TIMEOUT_SECONDS = 590.0
+COMPACT_TIMEOUT_SECONDS = 1770.0
 
 
 class ClaudeCodeError(RuntimeError):
@@ -45,11 +45,11 @@ class ClaudeCodeClient(NativeAgentClient):
         self.socket_path = Path(socket_path)
 
     def health(self) -> dict[str, Any]:
-        return self._request("health", response_timeout=3.0)
+        return self._request("health", response_timeout=9.0)
 
 
     def account_usage(self, provider_profile: str, *, force_refresh: bool = False) -> dict[str, Any]:
-        return self._request("account/usage", {"provider_profile": provider_profile, "force_refresh": force_refresh}, response_timeout=3.0)
+        return self._request("account/usage", {"provider_profile": provider_profile, "force_refresh": force_refresh}, response_timeout=9.0)
 
     def run_turn(
         self,
@@ -139,7 +139,7 @@ class ClaudeCodeClient(NativeAgentClient):
         return self._request("turn/steer", {
             "session_key": session_key, "session_id": session_id, "turn_id": turn_id,
             "text": text, "control_id": control_id,
-        }, response_timeout=15.0)
+        }, response_timeout=45.0)
 
     def compact_session(
         self,
@@ -192,25 +192,25 @@ class ClaudeCodeClient(NativeAgentClient):
 
         return self._request("subagent/stop", {
             "session_key": session_key, "session_id": session_id, "tool_use_id": tool_use_id,
-        }, response_timeout=10.0)
+        }, response_timeout=30.0)
 
     def interrupt(self, session_key: str, session_id: str = "", *, turn_id: str = "") -> dict[str, Any]:
         return self._request("turn/interrupt", {
             "session_key": session_key, "session_id": session_id, "turn_id": turn_id,
-        }, response_timeout=10.0)
+        }, response_timeout=30.0)
 
     def session_status(self, session_key: str, session_id: str = "") -> dict[str, Any]:
         return self._request(
             "session/status",
             {"session_key": session_key, "session_id": session_id},
-            response_timeout=3.0,
+            response_timeout=9.0,
         )
 
     def close_session(self, session_key: str, session_id: str = "") -> dict[str, Any]:
         return self._request(
             "session/close",
             {"session_key": session_key, "session_id": session_id},
-            response_timeout=10.0,
+            response_timeout=30.0,
         )
 
     def fork_session(

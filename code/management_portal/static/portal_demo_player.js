@@ -5,7 +5,7 @@
 
   const BRIDGE_SCOPE = window.PortalCompatibility.identifier("demo_frame_scope");
   const DEFAULT_STEP_DELAY = 1050;
-  const BRIDGE_TIMEOUT = 12_000;
+  const BRIDGE_TIMEOUT = 36_000;
   const MAX_READ_BYTES = 8 * 1024 * 1024;
   const element = ref => global.PortalUIPrimitives.elementOf(ref);
 

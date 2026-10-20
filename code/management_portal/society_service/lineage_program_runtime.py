@@ -28,7 +28,7 @@ MAX_EVENT_FIRE_CURSORS = 256
 MAX_WATCHED_RESIDENTS = 200
 MAX_PENDING_EVENTS_PER_WIRE = 100
 TERMINAL_INVOCATION_STATUSES = frozenset({"completed", "failed", "cancelled"})
-PENDING_EVENT_DISPATCH_LEASE_SECONDS = 120
+PENDING_EVENT_DISPATCH_LEASE_SECONDS = 360
 # Every stored runtime object is normalized when it is written: ProgramWork
 # normalizes each object it loads and flushes. Reads return the stored objects
 # as they are once lineage_meta records that this rule wrote all of them.

@@ -136,7 +136,7 @@ class TexLabSession:
                         "initializationOptions": {},
                         "trace": "off",
                     },
-                    timeout=12,
+                    timeout=36,
                     start=False,
                 )
                 self.notify("initialized", {}, start=False)
@@ -162,7 +162,7 @@ class TexLabSession:
         method: str,
         params: dict[str, Any] | None = None,
         *,
-        timeout: float = 8,
+        timeout: float = 24,
         start: bool = True,
     ) -> Any:
         if start:
@@ -366,7 +366,7 @@ class TexLabSession:
             return
         try:
             # A dead leader can still have build tools holding its pipes open.
-            process_runtime.terminate_process_tree(process, timeout=1.5, force=True)
+            process_runtime.terminate_process_tree(process, timeout=4.5, force=True)
         except BaseException:
             self.process = process  # Retain ownership so cleanup can be retried.
             raise
@@ -378,7 +378,7 @@ class TexLabSession:
         with self._start_lock:
             if self.alive and self._initialized:
                 try:
-                    self.request("shutdown", {}, timeout=1.5, start=False)
+                    self.request("shutdown", {}, timeout=4.5, start=False)
                     self.notify("exit", {}, start=False)
                 except (OSError, RuntimeError, TimeoutError):
                     pass

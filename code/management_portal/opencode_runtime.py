@@ -18,7 +18,7 @@ def agent_models(binary: Path, service: str, env: dict[str, str] | None = None, 
     As ``opencode models <service> --verbose`` lists them.
     """
 
-    text = updates.run_command(str(binary), "models", service, "--verbose", timeout=120, env=env)
+    text = updates.run_command(str(binary), "models", service, "--verbose", timeout=360, env=env)
     decoder, position, models = json.JSONDecoder(), 0, []
     while (start := text.find("{", position)) >= 0:
         row, position = decoder.raw_decode(text, start)
@@ -49,15 +49,15 @@ class OpenCodeRuntime(ProviderRuntime):
         marker = root / ".portal-validated"
         if not marker.is_file():
             updates.run_command("npm", "install", "--global", "--prefix", str(root), "--omit=dev", "--no-audit",
-                                "--no-fund", f"{self.PACKAGE}@{version}", timeout=1200)
+                                "--no-fund", f"{self.PACKAGE}@{version}", timeout=3600)
         # OpenCode runs in the directories Portal's sessions give it, never the host user's.
         with tempfile.TemporaryDirectory(prefix="opencode-stage-") as scratch:
             env = {**os.environ, "XDG_CONFIG_HOME": str(root / "config"), "XDG_DATA_HOME": scratch,
                    "XDG_STATE_HOME": scratch, "OPENCODE_DISABLE_AUTOUPDATE": "1"}
-            if updates.run_command(str(binary), "--version", timeout=20, env=env) != version:
+            if updates.run_command(str(binary), "--version", timeout=60, env=env) != version:
                 raise RuntimeError("OpenCode staged version mismatch")
             # OpenCode prints its help on stderr.
-            served = run_process([str(binary), "serve", "--help"], text=True, capture_output=True, timeout=20,
+            served = run_process([str(binary), "serve", "--help"], text=True, capture_output=True, timeout=60,
                                  check=True, env=env)
             if "--port" not in served.stdout + served.stderr:
                 raise RuntimeError("OpenCode server contract changed")

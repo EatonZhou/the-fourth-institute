@@ -26,7 +26,7 @@ from .contracts import (
 from .control_messages import report_harness_control
 
 POLL_SECONDS = 0.25
-STOP_WAIT_SECONDS = 20.0
+STOP_WAIT_SECONDS = 60.0
 
 # deliver(turn_id, input_items, control_id) -> (taken, error)
 Deliver = Callable[[str, list[dict[str, Any]], str], tuple[bool, str]]

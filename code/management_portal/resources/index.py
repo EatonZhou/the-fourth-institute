@@ -49,7 +49,7 @@ class ResourceIndex(Protocol):
         self,
         adapters: Iterable[str] = (),
         *,
-        timeout: float = 30.0,
+        timeout: float = 90.0,
     ) -> bool: ...
 
     def status(self) -> dict[str, Any]: ...

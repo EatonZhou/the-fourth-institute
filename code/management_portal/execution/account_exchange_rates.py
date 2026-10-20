@@ -29,7 +29,7 @@ def collect(currencies, previous=None, *, now=None):
     if now < previous.get('retry_after', 0):
         return previous
     try:
-        with urllib.request.urlopen(SOURCE, timeout=6) as response:
+        with urllib.request.urlopen(SOURCE, timeout=18) as response:
             root = ET.fromstring(response.read(128 * 1024))
         date = next(e.attrib['time'] for e in root.iter() if 'time' in e.attrib)
         if not _valid_date(date, now):

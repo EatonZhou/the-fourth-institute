@@ -18,11 +18,20 @@ from management_common.database_time import decode_times
 from .errors import ResourceVersionConflict
 
 
+# Accept native Windows separators as well as the forward slashes used by
+# installation exports. A drive or UNC share root is not a workspace.
+ABSOLUTE_PATH_CHECK = "replace(path, chr(92), '/') ~ '^(/[^/].*|[A-Za-z]:/.+|//[^/]+/[^/]+/.+)$'"
+
+
 def canonical_path(value: object) -> str:
     raw = str(value or "").strip()
     if not raw or not Path(raw).expanduser().is_absolute():
         raise ValueError("Workspace path must be absolute")
-    return str(Path(raw).expanduser().resolve(strict=False))
+    resolved = Path(raw).expanduser().resolve(strict=False)
+    if resolved.parent == resolved:
+        raise ValueError("Workspace cannot use the filesystem root")
+    # Match paths materialized from release SQL and the '/' prefix queries.
+    return resolved.as_posix()
 
 
 def now() -> str:
@@ -40,7 +49,7 @@ class WorkspaceStore:
                            (self.table + ":init",))
         connection.execute(f"""CREATE TABLE IF NOT EXISTS {self.table} (
             workspace_id TEXT PRIMARY KEY CHECK (workspace_id ~ '^workspace_[0-9a-f]{{12}}$'),
-            path TEXT NOT NULL CHECK (left(path,1) = '/' AND path <> '/'),
+            path TEXT NOT NULL CONSTRAINT workspaces_absolute_path_check CHECK ({ABSOLUTE_PATH_CHECK}),
             title TEXT NOT NULL,
             summary TEXT NOT NULL DEFAULT '',
             created_at TIMESTAMPTZ NOT NULL,
@@ -48,6 +57,16 @@ class WorkspaceStore:
             deleted_at TIMESTAMPTZ,
             deleted_by TEXT
         )""")
+        constraints = {row[0] for row in connection.execute(
+            "SELECT conname FROM pg_constraint WHERE conrelid=%s::regclass "
+            "AND conname IN ('workspaces_path_check','workspaces_absolute_path_check')",
+            (self.table,),
+        ).fetchall()}
+        if "workspaces_absolute_path_check" not in constraints:
+            connection.execute(f"ALTER TABLE {self.table} ADD CONSTRAINT "
+                               f"workspaces_absolute_path_check CHECK ({ABSOLUTE_PATH_CHECK})")
+        if "workspaces_path_check" in constraints:
+            connection.execute(f"ALTER TABLE {self.table} DROP CONSTRAINT workspaces_path_check")
         # Avoid an ACCESS EXCLUSIVE ALTER lock on every service startup.
         if connection.execute(
             "SELECT 1 FROM pg_attribute WHERE attrelid=%s::regclass AND attname=%s AND NOT attisdropped",
@@ -80,8 +99,6 @@ class WorkspaceStore:
     def ensure(self, workspace_id: str, path: str, *, title="", connection=None, move=False):
         get_resource_type_registry().validate(workspace_id, "workspace")
         path = canonical_path(path)
-        if path == "/":
-            raise ValueError("Workspace cannot use the filesystem root")
         def write(conn):
             # The partial path index arbitrates concurrent registration, while
             # the row lock prevents a stale save from reviving a deletion.
@@ -152,8 +169,6 @@ class WorkspaceStore:
 
     def for_path(self, path: str, *, new_id, preferred_id="") -> str:
         path = canonical_path(path)
-        if path == "/":
-            raise ValueError("Workspace cannot use the filesystem root")
         def write(conn):
             conn.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s,0))", (self.table + path,))
             row = conn.execute(f"SELECT workspace_id FROM {self.table} WHERE path=%s AND deleted_at IS NULL",

@@ -183,7 +183,7 @@ class CodexAccounts:
 
     def usage(self, account):
         from management_portal.codex_app_server_client import client_for_socket
-        payload = client_for_socket(self.registry.get(account.route_id).socket_path).request("account/usage/read", {}, timeout=5.0)
+        payload = client_for_socket(self.registry.get(account.route_id).socket_path).request("account/usage/read", {}, timeout=15.0)
         buckets = payload.get("dailyUsageBuckets")
         if not isinstance(buckets, list):
             raise ValueError("Account usage response is missing daily buckets")
@@ -202,7 +202,7 @@ class CodexAccounts:
         from .codex_quota import credits, quota_sample
         route = self.registry.get(account.route_id)
         client = client_for_socket(route.socket_path)
-        payload = client.request("account/rateLimits/read", {}, timeout=5.0)
+        payload = client.request("account/rateLimits/read", {}, timeout=15.0)
         sample = quota_sample(payload, observed_at=time.time())
         return {"status": "ok", "quota": sample, "credits": credits(payload),
                 "rate_limits": [{"id": window["window"],

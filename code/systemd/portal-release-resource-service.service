@@ -23,7 +23,7 @@ Environment=PORTAL_RESOURCE_DATABASE_SCHEMA=resource_release
 ExecStart=@PORTAL_GROUP_COMMAND@@PORTAL_INSTANCES_ROOT@/dev/runtime-venv/bin/python @PORTAL_SOURCE_ROOT@/scripts/run_portal_shared_component.py resource-service
 Restart=always
 RestartSec=2
-TimeoutStopSec=30
+TimeoutStopSec=90
 
 [Install]
 WantedBy=portal-release-execution.target

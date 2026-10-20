@@ -21,7 +21,7 @@ def set_output(fields):
 
 def isa(name, **arguments):
     payload = json.dumps({'instruction': name, 'arguments': arguments}).encode() + b'\n'
-    with connect_local(os.environ['PORTAL_ISA_SOCKET'], timeout=120) as client:
+    with connect_local(os.environ['PORTAL_ISA_SOCKET'], timeout=360) as client:
         client.sendall(payload)
         with client.makefile('rb') as stream:
             result = json.loads(stream.readline(8 * 1024 * 1024))

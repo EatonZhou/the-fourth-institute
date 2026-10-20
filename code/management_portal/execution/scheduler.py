@@ -80,7 +80,7 @@ TOKEN_USAGE_SCHEMA = "tfi.execution-token-usage.v1"
 # A terminal result nobody acknowledged within a week has no caller left waiting for it.
 UNACKNOWLEDGED_TERMINAL_RETENTION_SECONDS = 7 * 24 * 60 * 60
 RESIDENT_ID_RE = re.compile(r"^resident_[0-9a-f]{12}$")
-DEFAULT_WORKER_HEARTBEAT_TIMEOUT_SECONDS = 60.0
+DEFAULT_WORKER_HEARTBEAT_TIMEOUT_SECONDS = 180.0
 SHARED_SCHEDULER_POLL_SECONDS = 5.0
 SCHEDULER_CHANGE_CHANNEL = compatibility_value("execution_scheduler_change_channel", "tfi_execution_scheduler_changed")
 # pg_trigger.tgtype of a FOR EACH ROW AFTER INSERT OR UPDATE OR DELETE trigger.
@@ -268,7 +268,7 @@ class Scheduler:
         *,
         max_concurrency: int = 8,
         capacity_limits: dict[str, int] | None = None,
-        default_lease_seconds: int = 90,
+        default_lease_seconds: int = 270,
         worker_heartbeat_timeout_seconds: float = (
             DEFAULT_WORKER_HEARTBEAT_TIMEOUT_SECONDS
         ),
@@ -986,7 +986,7 @@ class Scheduler:
                 self._listener_ready.set()
                 while True:
                     for notification in connection.notifies(
-                        timeout=1.0,
+                        timeout=3.0,
                         stop_after=1,
                     ):
                         schema, separator, payload = str(notification.payload or "").partition(":")
@@ -4040,7 +4040,7 @@ class SchedulerClient:
 
     def claim(
         self,
-        lease_seconds: int = 90,
+        lease_seconds: int = 270,
         *,
         wait_seconds: float = 15.0,
     ) -> dict[str, Any]:
@@ -4052,7 +4052,7 @@ class SchedulerClient:
                 "lease_seconds": lease_seconds,
                 "timeout_seconds": max(0.1, float(wait_seconds)),
             },
-            timeout=max(2.0, float(wait_seconds) + 2.0),
+            timeout=max(6.0, float(wait_seconds) + 6.0),
         )
         return result if isinstance(result, dict) else {}
 
@@ -4071,7 +4071,7 @@ class SchedulerClient:
         self,
         execution_id: str,
         claim_token: str,
-        lease_seconds: int = 90,
+        lease_seconds: int = 270,
     ) -> dict[str, Any]:
         result = self.service.request(
             "scheduler.heartbeat",
@@ -4100,7 +4100,7 @@ class SchedulerClient:
                 "claim_token": claim_token,
                 "timeout_seconds": max(0.1, float(timeout_seconds)),
             },
-            timeout=max(2.0, float(timeout_seconds) + 2.0),
+            timeout=max(6.0, float(timeout_seconds) + 6.0),
         )
         return result if isinstance(result, dict) else {}
 

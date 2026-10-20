@@ -231,7 +231,7 @@
       const xhr = new XMLHttpRequest();
       xhr.open("PUT", String(created.upload_url || ""), true);
       xhr.withCredentials = true;
-      xhr.timeout = Number(options.timeoutMs || 120_000);
+      xhr.timeout = Number(options.timeoutMs || 360_000);
       xhr.setRequestHeader("Content-Type", "application/octet-stream");
       xhr.upload.onprogress = event => {
         if (!event.lengthComputable || !event.total || typeof options.onProgress !== "function") return;

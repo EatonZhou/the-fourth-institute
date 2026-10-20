@@ -28,7 +28,7 @@ Restart=on-failure
 RestartSec=10
 LogRateLimitIntervalSec=1min
 LogRateLimitBurst=100
-TimeoutStopSec=90
+TimeoutStopSec=270
 
 [Install]
 WantedBy=portal-release-execution.target

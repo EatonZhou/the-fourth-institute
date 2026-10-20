@@ -206,7 +206,7 @@ def cached_snapshot(actor: str) -> dict[str, Any]:
             owns_refresh = True
 
     if not owns_refresh:
-        return refresh.result(timeout=30.0)
+        return refresh.result(timeout=90.0)
 
     try:
         result = snapshot(actor_id)

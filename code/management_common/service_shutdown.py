@@ -16,7 +16,7 @@ from typing import Callable, Iterator
 from management_common import cpu_profile
 
 
-SHUTDOWN_SECONDS = 10.0
+SHUTDOWN_SECONDS = 30.0
 SLOW_SHUTDOWN_SECONDS = 3.0
 _request_stop: ContextVar[threading.Event | None] = ContextVar("request_stop", default=None)
 
@@ -88,7 +88,7 @@ class DrainingStreamServer(socketserver.ThreadingTCPServer):
                 pass
 
 
-def stop_workers(callbacks: dict[str, Callable[[], None]], *, timeout: float = 8.0):
+def stop_workers(callbacks: dict[str, Callable[[], None]], *, timeout: float = 24.0):
     """Signal all owners at once, then share one grace period for their joins."""
     deadline = time.monotonic() + timeout
     threads = []

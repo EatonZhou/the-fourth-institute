@@ -23,8 +23,8 @@ from .contracts import InstructionCall, InstructionContext, InstructionError, In
 
 
 METHOD = "instruction.execute"
-DEFAULT_TIMEOUT_SECONDS = 900.0
-STREAM_IDLE_TIMEOUT_SECONDS = 120.0
+DEFAULT_TIMEOUT_SECONDS = 2700.0
+STREAM_IDLE_TIMEOUT_SECONDS = 360.0
 
 
 class StreamCancellation:

@@ -169,7 +169,7 @@ def main():
         parser.error("--apply requires the dry-run --expected-plan")
     plan = json.loads(args.plan.read_text())
     with psycopg.connect(os.environ["PORTAL_DATABASE_URL"],
-                         options="-c lock_timeout=5000 -c statement_timeout=120000") as connection:
+                         options="-c lock_timeout=15000 -c statement_timeout=360000") as connection:
         if connection.info.dbname != plan["database"] or connection.info.user != plan["db_user"]:
             raise ValueError("Database binding differs from the reviewed plan")
         result = migrate(connection, agent_schema=plan["agent_schema"], lineage_schema=plan["lineage_schema"],

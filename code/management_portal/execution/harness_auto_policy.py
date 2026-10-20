@@ -456,7 +456,7 @@ class HarnessAutoPolicyStateStore:
             self._writer_event.set()
         return True
 
-    def flush(self, timeout: float = 2.0) -> bool:
+    def flush(self, timeout: float = 6.0) -> bool:
         deadline = time.monotonic() + max(0.0, float(timeout))
         self._writer_event.set()
         while time.monotonic() < deadline:

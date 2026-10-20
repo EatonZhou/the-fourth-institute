@@ -48,7 +48,7 @@ from .store import ProjectionError
 SOURCE_LIMIT = 32 * 1024 * 1024
 APPLICATION_LIMIT = 64 * 1024 * 1024
 FILE_LIMIT = 4096
-BUILD_TIMEOUT = 120
+BUILD_TIMEOUT = 360
 REVIEWED_LICENSES = frozenset({
     "MIT", "ISC", "BSD-2-Clause", "BSD-3-Clause", "Apache-2.0", "0BSD",
     "CC0-1.0", "Unlicense", "BlueOak-1.0.0", "Python-2.0",
@@ -177,7 +177,7 @@ def _docker_cli(argv: list[str], *, env: dict[str, str], timeout: float, limit: 
         finally:
             for reader in readers:
                 if reader.ident is not None:
-                    reader.join(timeout=5)
+                    reader.join(timeout=15)
             if not any(reader.is_alive() for reader in readers):
                 for stream in (process.stdin, process.stdout, process.stderr):
                     if stream is not None:
@@ -285,7 +285,7 @@ def _container_command_owned(project: Path, command: list[str], *, input: bytes 
                        "npm_config_update_notifier": "false"}
         create += [image_id, "-i", *(f"{key}={value}" for key, value in sandbox_env.items()),
                    # Daemon workloads retain their deadline if the client dies.
-                   "/usr/bin/timeout", "--signal=TERM", "--kill-after=5s", f"{timeout}s",
+                   "/usr/bin/timeout", "--signal=TERM", "--kill-after=15s", f"{timeout}s",
                    "/usr/bin/prlimit", f"--fsize={limit}", "--core=0", "--nofile=256", "--", *command]
         create_observed = False
         receipt["cleanup_complete"] = False
@@ -318,7 +318,7 @@ def _container_command_owned(project: Path, command: list[str], *, input: bytes 
                 raise ProjectionError("projection.application_cleanup", f"构建容器清理未确认：{name}") from error
 
 
-def _command(argv: list[str], *, cwd: Path, timeout: float = 30, limit: int = SOURCE_LIMIT * 2, input: bytes | None = None) -> bytes:
+def _command(argv: list[str], *, cwd: Path, timeout: float = 90, limit: int = SOURCE_LIMIT * 2, input: bytes | None = None) -> bytes:
     """Bound output and time; never inherit credentials or shell configuration."""
     if sys.platform != "linux":
         if argv[0] != "/usr/bin/git":

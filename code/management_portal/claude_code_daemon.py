@@ -157,12 +157,12 @@ async def _prompt_message(content: Any, session_id: str, message_uuid: str):
 
 # How long the CLI may take to start on steering it queued behind a finished
 # answer before that answer stands as the turn's.
-STEER_START_SECONDS = 120.0
+STEER_START_SECONDS = 360.0
 # A turn waits on the subagents its model left running in the background:
 # the CLI takes each run's notification in a turn of its own, which is still
 # this one.  Once no run goes on, the CLI starts on the last notifications
 # within moments; a run stopped without one leaves the turn after this long.
-BACKGROUND_SETTLE_SECONDS = 15.0
+BACKGROUND_SETTLE_SECONDS = 45.0
 
 
 async def _turn_messages(client: ClaudeSDKClient, state: dict[str, Any], first_within: float = 0.0,
@@ -310,7 +310,7 @@ async def _report_context_usage(handle: SessionHandle, turn_id: str, emit) -> No
     if not callable(read_usage):
         return
     try:
-        usage = await asyncio.wait_for(read_usage(), timeout=2.0)
+        usage = await asyncio.wait_for(read_usage(), timeout=6.0)
         tokens = int(usage.get("totalTokens") or 0)
         window = int(usage.get("maxTokens") or 0)
     except Exception:
@@ -556,7 +556,7 @@ def _wants_earlier_compaction(handle: SessionHandle, params: dict[str, Any]) -> 
 # Portal tool call of the turn waits for the next Worker.  A Worker handover
 # leaves the turn running here; the next Worker attaches within seconds.
 DETACHED_EVENT_LIMIT = 5000
-DETACHED_TOOL_WAIT_SECONDS = 180.0
+DETACHED_TOOL_WAIT_SECONDS = 540.0
 
 
 class WorkerConnectionLost(ConnectionError):
@@ -807,7 +807,7 @@ class ClaudeCodeDaemon:
                         self._session_ids.pop(handle.session_id, None)
             if previous:
                 try:
-                    await asyncio.wait_for(previous.client.disconnect(), timeout=10)
+                    await asyncio.wait_for(previous.client.disconnect(), timeout=30)
                 except Exception:
                     pass
             if previous is not None and previous.auto_compact_window:
@@ -1494,7 +1494,7 @@ class ClaudeCodeDaemon:
                 if handle.session_id:
                     self._session_ids.pop(handle.session_id, None)
             try:
-                await asyncio.wait_for(handle.client.disconnect(), timeout=10)
+                await asyncio.wait_for(handle.client.disconnect(), timeout=30)
             except Exception:
                 pass
             async with self._sessions_lock:
@@ -1610,7 +1610,7 @@ class ClaudeCodeDaemon:
             env=env,
         )
         try:
-            stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=30)
+            stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=90)
         except TimeoutError:
             process.kill()
             await process.wait()
@@ -1713,7 +1713,7 @@ class ClaudeCodeDaemon:
                         self._session_ids.pop(handle.session_id, None)
             for handle in victims:
                 try:
-                    await asyncio.wait_for(handle.client.disconnect(), timeout=10)
+                    await asyncio.wait_for(handle.client.disconnect(), timeout=30)
                 except Exception:
                     pass
             if victims:
@@ -1730,7 +1730,7 @@ class ClaudeCodeDaemon:
             self._session_setup_locks.clear()
         for handle in handles:
             try:
-                await asyncio.wait_for(handle.client.disconnect(), timeout=10)
+                await asyncio.wait_for(handle.client.disconnect(), timeout=30)
             except Exception:
                 pass
 

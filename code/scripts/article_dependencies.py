@@ -52,7 +52,7 @@ def inventory():
         if binary:
             try:
                 result = run_native_capture([binary, 'help' if tool == 'synctex' else '--version'],
-                                            env=env, timeout=30)
+                                            env=env, timeout=90)
                 detail = (result.stdout or result.stderr).splitlines()[0] if (result.stdout or result.stderr) else binary
                 good = result.returncode == 0
             except (OSError, subprocess.TimeoutExpired) as error:
@@ -62,7 +62,7 @@ def inventory():
         checks.append({'name': 'article: ' + tool, 'ok': good, 'detail': detail})
     kpsewhich = shutil.which('kpsewhich', path=env['PATH'])
     for filename in TEX_FILES:
-        result = run_native_capture([kpsewhich, filename], env=env, timeout=30) if kpsewhich else None
+        result = run_native_capture([kpsewhich, filename], env=env, timeout=90) if kpsewhich else None
         checks.append({'name': 'article: ' + filename, 'ok': bool(result and result.returncode == 0 and result.stdout.strip()),
                        'detail': result.stdout.strip() if result else 'missing kpsewhich'})
     return checks
@@ -85,7 +85,7 @@ def prepare_tex(home):
             directory = Path(temporary)
             archive = directory / 'download'
             checksum, size = hashlib.sha256(), 0
-            with urllib.request.urlopen(url, timeout=60) as response, archive.open('wb') as output:
+            with urllib.request.urlopen(url, timeout=180) as response, archive.open('wb') as output:
                 while chunk := response.read(1024 * 1024):
                     size += len(chunk)
                     if size > 256 * 1024 * 1024:
@@ -111,17 +111,17 @@ def prepare_tex(home):
         raise RuntimeError('Private TinyTeX is incomplete; no native tlmgr')
     # Generate only formats supported by Article. tlmgr's aggregate actions
     # also build unrelated Japanese formats, which fail in Unicode paths.
-    run_process([tlmgr, '--no-execute-actions', 'update', '--self', '--all'], env=env, check=True, timeout=1800)
-    run_process([tlmgr, '--no-execute-actions', 'install', *PACKAGES], env=env, check=True, timeout=1800)
-    run_process(['mktexlsr'], env=env, check=True, timeout=180)
+    run_process([tlmgr, '--no-execute-actions', 'update', '--self', '--all'], env=env, check=True, timeout=5400)
+    run_process([tlmgr, '--no-execute-actions', 'install', *PACKAGES], env=env, check=True, timeout=5400)
+    run_process(['mktexlsr'], env=env, check=True, timeout=540)
     # The distribution's map catalog also lists optional fonts not installed
     # by this profile. Synchronize only this private tree before building maps.
-    run_process(['updmap-sys', '--syncwithtrees'], input='y\n', text=True, env=env, check=True, timeout=180)
+    run_process(['updmap-sys', '--syncwithtrees'], input='y\n', text=True, env=env, check=True, timeout=540)
     for command in (['updmap-sys'],
                     *(['fmtutil-sys', '--byfmt', name] for name in ('pdflatex', 'xelatex', 'lualatex'))):
-        run_process(command, env=env, check=True, timeout=180)
+        run_process(command, env=env, check=True, timeout=540)
     installed = run_native_capture([tlmgr, 'info', '--only-installed', '--data', 'name,localrev'],
-                                   env=env, check=True, timeout=90)
+                                   env=env, check=True, timeout=270)
     (destination / 'tfi-dependencies.json').write_text(json.dumps({
         'distribution': url, 'sha256': expected, 'packages': installed.stdout.splitlines()}, indent=2))
     return env
@@ -136,6 +136,6 @@ def smoke_compile():
             '\\begin{document}TFI Portal 中文 $x^2$\\FloatBarrier\\end{document}\n', encoding='utf-8')
         run_native_capture(['latexmk', '-xelatex', '-interaction=nonstopmode', '-halt-on-error',
                             '-no-shell-escape', 'main.tex'], cwd=path, env=env, check=True,
-                           timeout=120)
+                           timeout=360)
         if not (path / 'main.pdf').is_file():
             raise RuntimeError('Article smoke compile produced no PDF')

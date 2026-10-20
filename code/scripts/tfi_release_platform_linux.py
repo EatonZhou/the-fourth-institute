@@ -43,7 +43,7 @@ def unit_text(target, component, components):
     return (f"[Unit]\nDescription=TFI isolated {component} ({target['run_id']})\nAfter={after}\n"
             f"[Service]\nType=simple\nUMask=0077\nWorkingDirectory={working_directory}\n"
             f"ExecStart={exec_start}\nRestart=on-failure\nRestartSec=3\nKillMode=control-group\n"
-            f"{stop_signal}TimeoutStopSec=90\n[Install]\nWantedBy=default.target\n")
+            f"{stop_signal}TimeoutStopSec=270\n[Install]\nWantedBy=default.target\n")
 
 
 def register_services(directory, units):

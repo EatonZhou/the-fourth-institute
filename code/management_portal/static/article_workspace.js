@@ -3636,7 +3636,7 @@
     try {
       const result = await request(`/api/articles/${encodeURIComponent(articleId)}/compile`, {
         method: "POST",
-        timeoutMs: 180000,
+        timeoutMs: 540000,
         body: JSON.stringify({ from_scratch: Boolean(fromScratch) }),
       });
       if (articleId !== state.selectedId) return;

@@ -14,7 +14,7 @@ from .declarations import P, R, ResourceActionDeclaration as A
 
 ACTIONS = (
     A("device", "ssh.test", "测试到设备的 SSH 连接。", (
-        P("timeout_seconds", "integer", "超时秒数，默认 5", minimum=1, maximum=15),
+        P("timeout_seconds", "integer", "超时秒数，默认 15", minimum=1, maximum=45),
     ), (R("ok", "boolean"), P("error")), mutates=False),
     A("device", "ssh.credential.save", "保存设备的 SSH 密码凭据（不回显内容）。", (
         R("password", description="SSH 密码"),

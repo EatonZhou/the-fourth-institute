@@ -3,7 +3,7 @@
 
   if (window.PortalAPI) return;
 
-  const DEFAULT_TIMEOUT_MS = 120_000;
+  const DEFAULT_TIMEOUT_MS = 360_000;
 
   async function parseJson(response) {
     const text = await response.text();

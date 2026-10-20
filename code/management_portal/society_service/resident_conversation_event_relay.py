@@ -103,7 +103,7 @@ class ResidentConversationEventRelay:
             )
             self._live_thread.start()
 
-    def stop(self, timeout: float = 2.0) -> None:
+    def stop(self, timeout: float = 6.0) -> None:
         self._stop.set()
         for thread in (self._thread, self._live_thread):
             if thread is not None:
