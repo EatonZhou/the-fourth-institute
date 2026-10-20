@@ -173,6 +173,7 @@
 - [Portal Web 重启通知与服务恢复编排](/r/decision_37f98f8fcb4b)
 - [Portal Resource Backup 监控、触发与恢复边界](/r/decision_b06ae321a668)
 - [Portal Test Case、Catalog 与运行证据协议](/r/decision_8273271b67b1)
+- [共享代码实例的回归与 TAU 验收](docs/testing.md)
 - [Portal Test Workbench 的测试浏览、运行与审查界面](/r/decision_f2a6a5dd4646)
 - [Portal TAU Campaign 与模块 Resident 自动验证机制](/r/decision_c953eab654cd)
 - [Portal 定向验证与发布证据](/r/decision_6febe7bb57f9)

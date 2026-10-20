@@ -1,0 +1,5 @@
+{
+  "schema": "tfi.portal-live-cases.v1",
+  "description": "自动发现测试实现所对应的、经人工审阅的 Live 定义。真实页面能力由页面适配器拥有。",
+  "implementations": {}
+}

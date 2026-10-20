@@ -102,6 +102,8 @@ def dispatch(resources, operation, arguments, actor, *, check_workbench):
             status, failure = resource_error_http_response(error)
             if status not in {403, 404}:
                 raise
+            failure = {"code": failure["code"], "details": {},
+                       "error": "资源不可访问" if status == 403 else "资源不存在"}
             return {**UNAVAILABLE, "error": failure, "status": status}
     if operation == "read":
         address = str(arguments["address"])

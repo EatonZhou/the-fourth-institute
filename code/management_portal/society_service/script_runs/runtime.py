@@ -24,8 +24,7 @@ def command(config: dict, run_dir: Path, *, socket_path: Path | None = None) -> 
                PORTAL_SCRIPT_OUTPUT=str(run_dir / 'io/output.json'),
                PORTAL_SCRIPT_ARTIFACTS=str(run_dir / 'io/artifacts'),
                PORTAL_ISA_SOCKET=str(socket_path or run_dir / 'isa.sock'))
-    for key, paths in {'PATH': [CLIENTS / 'bin'], 'PYTHONPATH': [CLIENTS, REPOSITORY],
-                       'NODE_PATH': [CLIENTS / 'node_modules']}.items():
+    for key, paths in {'PATH': [CLIENTS / 'bin'], 'PYTHONPATH': [CLIENTS, REPOSITORY]}.items():
         env[key] = os.pathsep.join([*(str(p) for p in paths), *([env[key]] if env.get(key) else [])])
     python = str(PYTHON if PYTHON.is_file() else Path(sys.executable))
     env['PORTAL_PYTHON'] = Path(python).as_posix()
@@ -37,5 +36,6 @@ def command(config: dict, run_dir: Path, *, socket_path: Path | None = None) -> 
         raise FileNotFoundError(f"Interpreter unavailable: {config['runtime']}")
     args = [interpreter]
     if config['runtime'] == 'javascript':
+        env['NODE_PATH'] = os.pathsep.join(filter(None, [str(CLIENTS), env.get('NODE_PATH', '')]))
         args += ['--no-warnings', '--experimental-loader', str(CLIENTS / 'loader.mjs')]
     return [*args, config['path'], *config.get('argv', [])], env

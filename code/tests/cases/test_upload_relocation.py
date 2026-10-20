@@ -1,8 +1,8 @@
 """Uploads stay readable and writable after moving an instance's upload store.
 
-:module: resources.uploads
+:module: resource.service
 :profiles: local.fixture
-:risk: temporary-files-only
+:risk: no-external-side-effects
 """
 import json
 import os

@@ -1,0 +1,80 @@
+"""TAU evidence processing through the production controller and document probe.
+
+:module: operations.test-workbench
+:aspects: ui, behavior
+:design: decision_c953eab654cd
+"""
+from pathlib import Path
+import subprocess
+
+
+def _run_contract(name):
+    script = Path(__file__).with_name("javascript") / "tau_observation_state.cjs"
+    result = subprocess.run(
+        ["node", str(script), name], capture_output=True, text=True, timeout=30,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert result.stdout.strip() == f"contract passed: {name}"
+
+
+def test_unique_stream_receipt_matches_its_document_request():
+    """事件流关闭回执仅关联唯一的同文档请求
+
+    验证独立事件流标识关联准确的网络请求；同一标识对应多次请求时保留未知，且不保存凭据或其他查询参数。
+
+    test_ec10e2e7d36e: expanded reused identity false.
+
+    :design-point:
+    """
+    _run_contract("stream_unique")
+
+
+def test_reused_stream_identity_preserves_ambiguous_receipt():
+    """事件流关闭回执仅关联唯一的同文档请求
+
+    验证独立事件流标识关联准确的网络请求；同一标识对应多次请求时保留未知，且不保存凭据或其他查询参数。
+
+    test_ec10e2e7d36e: expanded reused identity true.
+
+    :design-point:
+    """
+    _run_contract("stream_reused")
+
+
+def test_unique_cancellation_receipt_matches_its_http_attempt():
+    """指令取消回执通过独立 HTTP 尝试标识关联
+
+    并发同地址指令使用各自请求标识关联关闭回执；重复标识保留歧义，原始失败记录和敏感数据隔离保持不变。
+
+    test_e5ebb964a0f5: expanded reused identity false.
+
+    :design-point:
+    """
+    _run_contract("cancellation_unique")
+
+
+def test_reused_cancellation_identity_preserves_ambiguous_receipt():
+    """指令取消回执通过独立 HTTP 尝试标识关联
+
+    并发同地址指令使用各自请求标识关联关闭回执；重复标识保留歧义，原始失败记录和敏感数据隔离保持不变。
+
+    test_e5ebb964a0f5: expanded reused identity true.
+
+    :design-point:
+    """
+    _run_contract("cancellation_reused")
+
+
+def test_capture_end_preserves_pending_request_and_unavailable_timing():
+    """TAU 采集结束保留未完成请求与不可用计时
+
+    验证缺少终态的请求保留为 pending，未暴露的浏览器时序不伪造为成功、取消或后端执行时间。
+
+    test_017da3617e27: pending does not invent a terminal result.
+
+    :module: operations.test-framework
+    :importance: P1
+    :aspects: ui, behavior, architecture-conformance
+    :design-point:
+    """
+    _run_contract("pending_capture")

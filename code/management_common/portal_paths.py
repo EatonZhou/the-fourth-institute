@@ -49,7 +49,7 @@ CONFIG_PATH = resolve_directory(os.environ.get(
 
 def read_config() -> dict[str, str]:
     source = CONFIG_PATH
-    if "PORTAL_PATHS_CONFIG" not in os.environ:
+    if not source.exists() and "PORTAL_PATHS_CONFIG" not in os.environ:
         configured = compatibility_value('paths_config')
         if configured is not None:
             source = resolve_directory(configured)

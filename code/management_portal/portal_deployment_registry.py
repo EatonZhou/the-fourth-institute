@@ -45,6 +45,8 @@ class PortalDeployment:
         parsed = urlsplit(origin)
         if (
             parsed.scheme != "http"
+            or parsed.username is not None
+            or parsed.password is not None
             or not parsed.hostname
             or parsed.path not in {"", "/"}
             or parsed.query

@@ -366,11 +366,19 @@ class PytestGroup:
             key: os.environ[key]
             for key in ("PATH", "HOME", "LANG", "LC_ALL", "USER", "LOGNAME", "TZ",
                         "SystemRoot", "WINDIR", "COMSPEC", "PATHEXT", "TEMP", "TMP",
-                        "USERPROFILE", "LOCALAPPDATA")
+                        "USERPROFILE", "LOCALAPPDATA", "PLAYWRIGHT_BROWSERS_PATH")
             if os.environ.get(key)
         }
         environment.setdefault("HOME", str(Path.home()))
         environment.setdefault("PATH", os.defpath)
+        # Reuse installed executables, never the deployed database or its DSN.
+        # The fixture creates a separate cluster and socket for every session.
+        from management_common.postgres_configuration import postgres_settings
+
+        postgres = postgres_settings()
+        if (Path(postgres["bin"]) / "initdb").is_file():
+            environment["PORTAL_TEST_POSTGRES_BIN"] = postgres["bin"]
+            environment["PORTAL_TEST_POSTGRES_LIB"] = postgres["lib"]
         if self.lane == "live":
             for key in ("XDG_RUNTIME_DIR", "DBUS_SESSION_BUS_ADDRESS"):
                 if os.environ.get(key):

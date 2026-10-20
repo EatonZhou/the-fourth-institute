@@ -1,0 +1,285 @@
+{
+  "schema": "tfi.portal-design-live-cases.v1",
+  "cases": [
+    {
+      "id": "test_9401c86489b4",
+      "key": "design-live.shell.navigation-contract",
+      "title": "主导航保留规范入口与当前模块",
+      "description": "读取生产导航定义，核对真实导航入口地址、唯一性、多宿主顺序及活动模块；错误地址必须失败。",
+      "importance": "P1",
+      "module": "workbench.shell",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_e486671af066"
+      ],
+      "design_point_ref": "decision_e486671af066#7384f49eb34002f4",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "主导航保留规范入口与当前模块",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-shell",
+        "adapter_version": 1,
+        "estimated_seconds": 12,
+        "direct_steps": [
+          {
+            "capability": "shell.navigation-contract",
+            "caption": "读取生产导航定义，核对真实导航入口地址、唯一性、多宿主顺序及活动模块；错误地址必须失败。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_2fa3c6b6e3e8",
+      "key": "design-live.shell.secondary-reachability",
+      "title": "小屏二级导航入口可滚动到达",
+      "description": "打开生产 Resource 二级浮层，逐项滚动并通过视口相对边界和命中测试验证入口可达，不约束固定像素。",
+      "importance": "P1",
+      "module": "workbench.shell",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_e486671af066"
+      ],
+      "design_point_ref": "decision_e486671af066#8034e10abf4d5355",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "小屏二级导航入口可滚动到达",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-shell",
+        "adapter_version": 1,
+        "estimated_seconds": 12,
+        "direct_steps": [
+          {
+            "capability": "shell.secondary-reachability",
+            "caption": "打开生产 Resource 二级浮层，逐项滚动并通过视口相对边界和命中测试验证入口可达，不约束固定像素。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_cc7739496e54",
+      "key": "design-live.shell.secondary-escape",
+      "title": "Escape 关闭二级菜单并恢复键盘焦点",
+      "description": "将焦点移入真实二级菜单，分发 Escape，验证菜单消失、aria-expanded 关闭且焦点回到触发入口；再次打开并验证外部点击也能关闭。",
+      "importance": "P1",
+      "module": "workbench.shell",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_e486671af066"
+      ],
+      "design_point_ref": "decision_e486671af066#9e1f46628c272ba9",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "Escape 关闭二级菜单并恢复键盘焦点",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-shell",
+        "adapter_version": 1,
+        "estimated_seconds": 12,
+        "direct_steps": [
+          {
+            "capability": "shell.secondary-escape",
+            "caption": "将焦点移入真实二级菜单，分发 Escape，验证菜单消失、aria-expanded 关闭且焦点回到触发入口；再次打开并验证外部点击也能关闭。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_cf79de8cb109",
+      "key": "design-live.shell.search-results",
+      "title": "全局搜索只显示资源并提供可定位地址",
+      "description": "在全局资源搜索中查询 Portal，核对结果只包含可发现资源、具有稳定资源地址且支持指针选择；页面命令不进入结果。",
+      "importance": "P1",
+      "module": "workbench.shell",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_a144bf700017"
+      ],
+      "design_point_ref": "decision_a144bf700017#23cc8f3762f125ea",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "全局搜索只显示资源并提供可定位地址",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-shell",
+        "adapter_version": 1,
+        "estimated_seconds": 12,
+        "direct_steps": [
+          {
+            "capability": "shell.search-results",
+            "caption": "在全局资源搜索中查询 Portal，核对结果只包含可发现资源、具有稳定资源地址且支持指针选择；页面命令不进入结果。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_353802af0f6d",
+      "key": "design-live.shell.page-state-restore",
+      "title": "页面重建前恢复筛选与视图偏好",
+      "description": "生产 PageState 在隔离临时事务中写入筛选和视图，销毁后重建实例，先读取状态再挂载输入框；验证不同用户互不覆盖并恢复本地状态，不刷新整页或写持久存储。",
+      "importance": "P1",
+      "module": "workbench.user-state",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_9f6135cbbb22"
+      ],
+      "design_point_ref": "decision_9f6135cbbb22#e230de208768aab2",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "页面重建前恢复筛选与视图偏好",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-shell",
+        "adapter_version": 1,
+        "estimated_seconds": 12,
+        "direct_steps": [
+          {
+            "capability": "shell.page-state-restore",
+            "caption": "生产 PageState 在隔离临时事务中写入筛选和视图，销毁后重建实例，先读取状态再挂载输入框；验证不同用户互不覆盖并恢复本地状态，不刷新整页或写持久存储。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_6f46d48c88cc",
+      "key": "design-live.shell.refresh-followup",
+      "title": "刷新合并重复请求且不遗漏读取中的新变化",
+      "description": "只读隔离快照驱动生产 RefreshCoordinator，验证重复点击合并为一个在途读取、期间失效通知触发一次后续读取、最终显示新版数据和完成反馈；取消销毁协调器。",
+      "importance": "P1",
+      "module": "workbench.user-state",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_6e230393221c"
+      ],
+      "design_point_ref": "decision_6e230393221c#18db23273a9f3256",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "刷新合并重复请求且不遗漏读取中的新变化",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-shell",
+        "adapter_version": 1,
+        "estimated_seconds": 12,
+        "direct_steps": [
+          {
+            "capability": "shell.refresh-followup",
+            "caption": "只读隔离快照驱动生产 RefreshCoordinator，验证重复点击合并为一个在途读取、期间失效通知触发一次后续读取、最终显示新版数据和完成反馈；取消销毁协调器。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_021701b57001",
+      "key": "design-live.shell.inbox-closed",
+      "title": "Inbox 将 closed 接收状态与工作状态和未读分开",
+      "description": "打开真实 Inbox 并只读核对索引与卡片；closed 具有明确标记和辅助阅读语义，不覆盖工作状态、不移除未读或禁用历史入口。当前用户需至少一个 closed 样本；没有样本明确失败，禁止修改 Resident 或已读状态。",
+      "importance": "P1",
+      "module": "workbench.notifications",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_15f7df737ed5"
+      ],
+      "design_point_ref": "decision_15f7df737ed5#c1a287803a50c06b",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "Inbox 将 closed 接收状态与工作状态和未读分开",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-shell",
+        "adapter_version": 1,
+        "estimated_seconds": 12,
+        "direct_steps": [
+          {
+            "capability": "shell.inbox-closed",
+            "caption": "打开真实 Inbox 并只读核对索引与卡片；closed 具有明确标记和辅助阅读语义，不覆盖工作状态、不移除未读或禁用历史入口。当前用户需至少一个 closed 样本；没有样本明确失败，禁止修改 Resident 或已读状态。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_e92136c2fe21",
+      "key": "design-live.shell.draft-batch-ownership",
+      "title": "身份切换时待写草稿批次保持正确归属",
+      "description": "在生产 PageState 的隔离命名空间中通过输入、视图选择和本地身份切换建立连续补丁；验证旧批次先写给原身份、字段合并且最后输入获胜、新身份和另一页面不被污染，取消不回滚播放器事务或覆盖并发用户草稿。仅切换样例身份，不操作实际账号或正在使用的事务。",
+      "importance": "P1",
+      "module": "workbench.user-state",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_9f6135cbbb22"
+      ],
+      "design_point_ref": "decision_9f6135cbbb22#aa1726354f9e54f5",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "身份切换时待写草稿批次保持正确归属",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-shell",
+        "adapter_version": 1,
+        "estimated_seconds": 10,
+        "direct_steps": [
+          {
+            "capability": "shell.draft-batch-ownership",
+            "caption": "在生产 PageState 的隔离命名空间中通过输入、视图选择和本地身份切换建立连续补丁；验证旧批次先写给原身份、字段合并且最后输入获胜、新身份和另一页面不被污染，取消不回滚播放器事务或覆盖并发用户草稿。仅切换样例身份，不操作实际账号或正在使用的事务。"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -16,10 +16,10 @@ from management_portal.test_framework.dev_target import VerifiedDevTarget, resol
 
 
 from management_common.site_compatibility import compatibility_value
-from management_portal.test_framework.paths import user_state_root
+from management_portal.test_framework.paths import state_root
 from management_portal.test_framework.compatibility import test_actor
 
-DEFAULT_STORAGE_STATE = Path(compatibility_value("test_framework.storage_state", str(user_state_root() / "test-framework" / "test-actor-storage-state.json"))).expanduser()
+DEFAULT_STORAGE_STATE = Path(compatibility_value("test_framework.storage_state", str(state_root() / "test-actor-storage-state.json"))).expanduser()
 RESULT_MARKER = "PORTAL_TAU_RESULT:"
 TAU_PLAYWRIGHT = ROOT / "management_portal" / "test_framework" / "tau_runtime" / "node_modules" / "playwright"
 
@@ -66,7 +66,7 @@ class TauConfig:
     provider: str = "codex"
     model: str = ""
     enabled: bool = True
-    deployment_registry: Path = DEFAULT_DEPLOYMENT_REGISTRY_PATH
+    deployment_registry: Path | None = None
 
     @classmethod
     def from_environment(cls) -> "TauConfig":
@@ -122,7 +122,7 @@ def build_prompt(
     assignment: dict[str, Any] | None = None,
 ) -> str:
     runner_prompt = (ROOT / "management_portal/test_framework/config/tau_runner_prompt.md").read_text(encoding="utf-8").strip().replace("<test-actor>", test_actor())
-    task_prompt = str(planned["implementation"].get("task_prompt") or "").strip()
+    task_prompt = str(planned["implementation"].get("task_prompt") or "").strip().replace("<test-actor>", test_actor())
     from management_portal.test_framework.tau_cleanup import team_marker
 
     marker = team_marker(run_id, str(planned["module"]))
@@ -193,8 +193,8 @@ def build_prompt(
 运行环境：
 - 本次独立运行：{run_id}
 - 本模块临时资源标记：{marker}
-- Portal 实例：{target.instance_id}（由部署注册表在运行时解析）
-- 当前 DEV 入口：{target.origin}
+- Portal 实例：{target.instance_id}（由本次显式测试目标配置解析并核验）
+- 当前受测实例入口：{target.origin}
 - 初始 build：由 TAU preflight 核对，已写入证据目录的 run-context.json
 - Test 页面能力指纹：{target.page_fingerprint}
 - 已验证会话身份：{target.actor}
@@ -276,7 +276,7 @@ Resident 与独立 Lineage 通过统一入口调用各自删除流程；Lineage 
 fixtures、helpers 与可执行脚本无论是否列入 evidence 都会删除；截图、日志和报告保存在这些目录之外。
 用例结束后，没有列入最终 evidence 的其他文件会被删除；需要保留的业务证据仍要列入 evidence。
 
-DEV 可能因正常部署短暂重启。记录重启前后的 build 和时间；相同 DEV、相同认证身份的
+受测实例可能因正常部署短暂重启。记录重启前后的 build 和时间；相同实例、相同认证身份的
 正常 build 更新本身不构成功能失败。等待页面恢复并重新验证身份后，从已经确认的进度继续。
 导航、展开和只读查询可以重新执行；创建 Run、Resident、触发 Event 或发送消息等写操作
 如未收到明确回执，应先通过正式状态或页面核验是否已成功，不能盲目重发。保留中断与原始

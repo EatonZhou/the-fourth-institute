@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -78,9 +79,33 @@ class VerifiedDevTarget:
         }
 
 
+def test_target_file() -> Path:
+    from management_portal.test_framework.paths import state_root
+    return Path(os.environ.get("PORTAL_TEST_TARGET_FILE") or state_root() / "target.json").expanduser()
+
+
+def resolve_test_target(target_file: Path | None = None) -> PortalDeployment:
+    """An explicitly selected local instance, independent of worktree names."""
+    path = Path(target_file) if target_file is not None else test_target_file()
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(payload, dict) or payload.get("schema") != "tfi.portal-test-target.v1":
+            raise ValueError("expected tfi.portal-test-target.v1")
+        deployment = PortalDeployment.from_payload(payload.get("deployment"))
+        if not deployment.build_id:
+            raise ValueError("target requires the expected running build_id")
+        return deployment
+    except (OSError, ValueError, TypeError) as exc:
+        raise DevTargetError("TAU 尚未配置有效的实例测试目标。", details={"target_file": str(path)}) from exc
+
+
 def resolve_unique_dev(
-    registry_path: Path = DEFAULT_DEPLOYMENT_REGISTRY_PATH,
+    registry_path: Path | None = None,
 ) -> PortalDeployment:
+    # Explicit legacy registries remain readable for callers managing old deployments.
+    # A shared-code installation never discovers an old dev site implicitly.
+    if registry_path is None:
+        return resolve_test_target()
     matches = [
         item
         for item in load_portal_deployments(Path(registry_path))
@@ -107,9 +132,9 @@ def _json_payload(raw: bytes, label: str) -> dict:
     try:
         payload = json.loads(raw.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-        raise DevTargetError(f"当前唯一 DEV 返回的 {label} 响应无效。") from exc
+        raise DevTargetError(f"所选测试实例 返回的 {label} 响应无效。") from exc
     if not isinstance(payload, dict):
-        raise DevTargetError(f"当前唯一 DEV 返回的 {label} 响应无效。")
+        raise DevTargetError(f"所选测试实例 返回的 {label} 响应无效。")
     return payload
 
 
@@ -132,31 +157,31 @@ def _cookie_header(storage_state: Path, deployment: PortalDeployment) -> str:
         if name and value and (domain == hostname or hostname.endswith(f".{domain}")):
             values.append(f"{name}={value}")
     if not values:
-        raise DevTargetError("test-actor 浏览器存储状态不适用于当前唯一 DEV。")
+        raise DevTargetError("test-actor 浏览器存储状态不适用于所选测试实例。")
     return "; ".join(values)
 
 
 class DevTargetVerifier:
-    """Resolve the one canonical DEV and fail closed before a TAU task starts."""
+    """Verify the selected instance, running build and actor before dispatch."""
 
     def __init__(
         self,
         *,
-        registry_path: Path = DEFAULT_DEPLOYMENT_REGISTRY_PATH,
+        registry_path: Path | None = None,
         source_root: Path = ROOT,
         http_get: HttpGet = _http_get,
-        build_id: Callable[[Path], str] = lambda _root: (
-            read_component_build_ids().get("web") or read_build_id()
-        ),
+        build_id: Callable[[Path], str] | None = None,
     ) -> None:
-        self.registry_path = Path(registry_path)
+        self.registry_path = Path(registry_path) if registry_path is not None else None
         self.source_root = Path(source_root)
         self.http_get = http_get
         self.build_id = build_id
 
     def verify(self, storage_state: Path) -> VerifiedDevTarget:
         deployment = resolve_unique_dev(self.registry_path)
-        expected_build = self.build_id(self.source_root)
+        expected_build = (self.build_id(self.source_root) if self.build_id else deployment.build_id
+                          or (read_component_build_ids().get("web") or read_build_id()
+                              if self.registry_path is not None else ""))
         observed: dict[str, str] = {
             "instance": deployment.instance_id,
             "expected_build_id": expected_build,
@@ -171,23 +196,23 @@ class DevTargetVerifier:
             raise
         except Exception as exc:
             raise _transport_error(
-                "AI 真实使用开始前，当前唯一 DEV 的健康检查失败。", "health", exc, observed
+                "AI 真实使用开始前，所选测试实例 的健康检查失败。", "health", exc, observed
             ) from exc
         actual_instance = str(health.get("instance") or "")
         actual_build = str(health.get("build_id") or "")
         observed.update({"actual_instance": actual_instance, "actual_build_id": actual_build})
         if actual_instance != deployment.instance_id:
             raise DevTargetError(
-                "当前唯一 DEV 的实例身份与部署注册表不一致。",
+                "所选测试实例 的实例身份与部署注册表不一致。",
                 details=observed,
             )
         if not actual_build or not expected_build:
             raise DevTargetError(
-                "当前唯一 DEV 没有运行已激活的 DEV generation 构建。", details=observed
+                "所选测试实例 没有运行已激活的 实例构建。", details=observed
             )
         if actual_build != expected_build:
             raise DevBuildMismatch(
-                "当前唯一 DEV 没有运行已激活的 DEV generation 构建。", details=observed
+                "所选测试实例 没有运行已激活的 实例构建。", details=observed
             )
 
         cookie = _cookie_header(Path(storage_state), deployment)
@@ -199,7 +224,7 @@ class DevTargetVerifier:
             native_views = self.http_get(f"{deployment.origin}/development/native-views?view=test", authenticated)
         except Exception as exc:
             raise _transport_error(
-                "无法使用 test-actor 加载当前唯一 DEV 的测试页面。", "page", exc, observed
+                "无法使用 test-actor 加载所选测试实例 的测试页面。", "page", exc, observed
             ) from exc
         html = str(_json_payload(native_views, "test components").get("html") or "")
         match = re.search(r'data-test-workbench-version=["\']([^"\']+)["\']', html)
@@ -207,7 +232,7 @@ class DevTargetVerifier:
         observed["page_fingerprint"] = fingerprint
         if fingerprint != EXPECTED_PAGE_FINGERPRINT:
             raise DevTargetError(
-                "当前唯一 DEV 的测试页面没有提供要求的组件指纹。",
+                "所选测试实例 的测试页面没有提供要求的组件指纹。",
                 details=observed,
             )
 
@@ -220,13 +245,13 @@ class DevTargetVerifier:
             raise
         except Exception as exc:
             raise _transport_error(
-                "当前唯一 DEV 无法验证 test-actor 会话。", "identity", exc, observed
+                "所选测试实例 无法验证 test-actor 会话。", "identity", exc, observed
             ) from exc
         actor = str(identity.get("username") or "")
         observed["actor"] = actor
         if actor != test_actor():
             raise DevTargetError(
-                "当前唯一 DEV 的会话用户不是 test-actor。", details=observed
+                "所选测试实例 的会话用户不是 test-actor。", details=observed
             )
         identity_instance = str(identity.get("portal_instance") or deployment.instance_id)
         identity_build = str(identity.get("build_id") or actual_build)

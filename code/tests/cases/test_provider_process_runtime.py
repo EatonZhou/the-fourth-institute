@@ -1,0 +1,34 @@
+"""Provider service activation uses the OS capability without changing rollback."""
+from types import SimpleNamespace
+
+import pytest
+
+from management_portal.execution import account_login, provider_updates as updates
+
+
+@pytest.mark.parametrize("platform,executable", [("linux", "systemctl"), ("darwin", "launchctl"), ("win32", "sc.exe")])
+def test_provider_control_uses_platform_service_owner(monkeypatch, platform, executable):
+    from scripts import portal_service_control
+    calls = []
+    def run(command, **kwargs):
+        calls.append((command, kwargs))
+        output = "LoadState=loaded\nActiveState=active\nSubState=running\nMainPID=42\n"
+        if platform == "darwin":
+            output = "state = running\npid = 42"
+        elif platform == "win32":
+            output = "STATE : 4 RUNNING\nPID : 42"
+        return SimpleNamespace(returncode=0, stdout=output)
+    monkeypatch.setattr(portal_service_control.sys, "platform", platform)
+    monkeypatch.setattr(updates, "run_process", run)
+    result = updates._service_control().status("example.service")
+    assert result["active"] == "active" and result["pid"] == 42
+    assert calls[0][0][0] == executable
+    assert calls[0][1]["timeout"] == 60
+
+
+def test_login_stops_tree_even_if_leader_already_exited(monkeypatch):
+    calls = []
+    process = SimpleNamespace(poll=lambda: 0)
+    monkeypatch.setattr(account_login, "terminate_process_tree", lambda child, **kwargs: calls.append(child))
+    account_login._terminate(process)
+    assert calls == [process]

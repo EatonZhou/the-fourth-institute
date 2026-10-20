@@ -270,7 +270,14 @@ def generate(*, source_root, destination, snapshot, resolved, database_sql, sour
     try:
         code = destination / "code"
         for path in source_files(source_root):
-            if path.parts[0] in {"tests", ".wall"} and str(path) not in resolved.get("code_extras", []):
+            # Test is a shipped capability: its catalog, fixtures and TAU tasks
+            # are source inputs, not instance history. Omitting them produced
+            # a working Test page with an almost empty catalog after install.
+            test_source = ("test_framework" in resolved.get("features", [])
+                           and (path.parts[:2] == ("tests", "cases")
+                                or str(path) == "tests/__init__.py"))
+            if (path.parts[0] in {"tests", ".wall"} and not test_source
+                    and str(path) not in resolved.get("code_extras", [])):
                 continue
             if str(path) in {"SPEC.md", "IMPROVE.md", "config/site.json", "config/portal_instances.json", "release-manifest.json"}:
                 continue

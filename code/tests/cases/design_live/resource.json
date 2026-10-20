@@ -1,0 +1,425 @@
+{
+  "schema": "tfi.portal-design-live-cases.v1",
+  "cases": [
+    {
+      "id": "test_71db98734b46",
+      "key": "design-live.resource.catalog.filters",
+      "title": "目录筛选与 Reload 保留查询上下文",
+      "description": "目录请求携带类型、搜索词、Project、属性和分页参数；重新加载后条件不丢失。",
+      "importance": "P1",
+      "module": "resource.index-search",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_2f67ed28db67"
+      ],
+      "design_point_ref": "decision_2f67ed28db67#c6b24fe03945bb18",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "目录筛选与 Reload 保留查询上下文",
+        "target": "/resource/skill",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-resource",
+        "adapter_version": 1,
+        "estimated_seconds": 12,
+        "direct_steps": [
+          {
+            "capability": "resource.catalog.filters",
+            "caption": "目录请求携带类型、搜索词、Project、属性和分页参数；重新加载后条件不丢失。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_0e07af504dc3",
+      "key": "design-live.resource.catalog.category",
+      "title": "资源类型按路径、查询参数和默认值解析",
+      "description": "实际改变受管 URL，验证 Skill 路径优先于冲突参数；参数和默认入口下页面类型、查询 scope 与返回资源类型一致。",
+      "importance": "P1",
+      "module": "resource.index-search",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_2f67ed28db67"
+      ],
+      "design_point_ref": "decision_2f67ed28db67#674c7e7c26f5912d",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "资源类型按路径、查询参数和默认值解析",
+        "target": "/resource/skill",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-resource",
+        "adapter_version": 1,
+        "estimated_seconds": 12,
+        "direct_steps": [
+          {
+            "capability": "resource.catalog.category",
+            "caption": "实际改变受管 URL，验证 Skill 路径优先于冲突参数；参数和默认入口下页面类型、查询 scope 与返回资源类型一致。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_fd89314ef810",
+      "key": "design-live.resource.references.canonical",
+      "title": "统一资源地址严格匹配 canonical 形状",
+      "description": "生产引用组件识别小写完整根 ID 与嵌套地址，拒绝大写、位数错误和非十六进制标识。",
+      "importance": "P1",
+      "module": "resource.identity",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_a4e5f03c8b9b"
+      ],
+      "design_point_ref": "decision_a4e5f03c8b9b#be3f4673b4cfb8b1",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "统一资源地址严格匹配 canonical 形状",
+        "target": "/resource/skill",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-resource",
+        "adapter_version": 1,
+        "estimated_seconds": 12,
+        "direct_steps": [
+          {
+            "capability": "resource.references.canonical",
+            "caption": "生产引用组件识别小写完整根 ID 与嵌套地址，拒绝大写、位数错误和非十六进制标识。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_397e0c698866",
+      "key": "design-live.resource.references.locators",
+      "title": "文件定位符与正文引用互不混淆",
+      "description": "相同 Resource ID 出现在普通正文时生成引用；出现在绝对路径、HTTP URL 和 file: 定位符中时保留原文本。",
+      "importance": "P1",
+      "module": "resource.identity",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_a4e5f03c8b9b"
+      ],
+      "design_point_ref": "decision_a4e5f03c8b9b#f8cbe358d0818aca",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "文件定位符与正文引用互不混淆",
+        "target": "/resource/skill",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-resource",
+        "adapter_version": 1,
+        "estimated_seconds": 12,
+        "direct_steps": [
+          {
+            "capability": "resource.references.locators",
+            "caption": "相同 Resource ID 出现在普通正文时生成引用；出现在绝对路径、HTTP URL 和 file: 定位符中时保留原文本。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_ad43fc3d5985",
+      "key": "design-live.resource.detail.latest",
+      "title": "详情读请求竞态与失败隔离",
+      "description": "生产详情宿主丢弃先发后到的响应，并把当前失败限制在详情容器，背景集合不受影响。",
+      "importance": "P1",
+      "module": "resource.service",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_864d4fe41934"
+      ],
+      "design_point_ref": "decision_864d4fe41934#e5b444964c002bb2",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "详情读请求竞态与失败隔离",
+        "target": "/resource/skill",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-resource",
+        "adapter_version": 1,
+        "estimated_seconds": 12,
+        "direct_steps": [
+          {
+            "capability": "resource.detail.latest",
+            "caption": "生产详情宿主丢弃先发后到的响应，并把当前失败限制在详情容器，背景集合不受影响。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_ac770fd3d041",
+      "key": "design-live.resource.detail.dirty-guard",
+      "title": "详情未保存修改统一保护",
+      "description": "临时本地草稿拒绝切换、Escape、背景关闭和工具栏关闭；资源、内容与地址均保持不变。",
+      "importance": "P1",
+      "module": "resource.service",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_864d4fe41934"
+      ],
+      "design_point_ref": "decision_864d4fe41934#d5830c61d6ba53fb",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "详情未保存修改统一保护",
+        "target": "/resource/skill",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-resource",
+        "adapter_version": 1,
+        "estimated_seconds": 12,
+        "direct_steps": [
+          {
+            "capability": "resource.detail.dirty-guard",
+            "caption": "临时本地草稿拒绝切换、Escape、背景关闭和工具栏关闭；资源、内容与地址均保持不变。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_22df362b19b7",
+      "key": "design-live.resource.preview.renderers",
+      "title": "Preview 加载、格式呈现与不支持反馈",
+      "description": "生产 Document Session 暴露 loading；JSON 使用代码 renderer；未知二进制格式显示不支持及可用下载入口。",
+      "importance": "P1",
+      "module": "resource.service",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_61e50306cc79"
+      ],
+      "design_point_ref": "decision_61e50306cc79#708c161ad638944d",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "Preview 加载、格式呈现与不支持反馈",
+        "target": "/resource/skill",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-resource",
+        "adapter_version": 1,
+        "estimated_seconds": 12,
+        "direct_steps": [
+          {
+            "capability": "resource.preview.renderers",
+            "caption": "生产 Document Session 暴露 loading；JSON 使用代码 renderer；未知二进制格式显示不支持及可用下载入口。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_d89b39cd3cd3",
+      "key": "design-live.resource.files.preview-host",
+      "title": "文件链接由当前 Preview 容器接管",
+      "description": "点击带行号文件链接后，仅提交一次完整定位符，在当前 Preview 呈现代码与行号，不替换 Portal 页面。",
+      "importance": "P1",
+      "module": "resource.service",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_61e50306cc79"
+      ],
+      "design_point_ref": "decision_61e50306cc79#4546b4ebc4b4f3d1",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "文件链接由当前 Preview 容器接管",
+        "target": "/resource/skill",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-resource",
+        "adapter_version": 1,
+        "estimated_seconds": 12,
+        "direct_steps": [
+          {
+            "capability": "resource.files.preview-host",
+            "caption": "点击带行号文件链接后，仅提交一次完整定位符，在当前 Preview 呈现代码与行号，不替换 Portal 页面。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_c054bb3db368",
+      "key": "design-live.resource.preview.typed-routing",
+      "title": "Preview 安全区分类型化资源与不可信定位符",
+      "description": "实际打开只读 Preview；类型化地址和规范同源 URL 保留资源身份，文件、外站、带账号的 URL 与名称不被提升为 Resource。",
+      "importance": "P1",
+      "module": "resource.identity",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_e5f66e2f6a5e"
+      ],
+      "design_point_ref": "decision_e5f66e2f6a5e#3a7b4830d30ed7ad",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "Preview 安全区分类型化资源与不可信定位符",
+        "target": "/resource/skill",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-resource",
+        "adapter_version": 1,
+        "estimated_seconds": 8,
+        "direct_steps": [
+          {
+            "capability": "resource.preview.typed-routing",
+            "caption": "实际打开只读 Preview；类型化地址和规范同源 URL 保留资源身份，文件、外站、带账号的 URL 与名称不被提升为 Resource。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_ed50378f3c4e",
+      "key": "design-live.resource.detail.frame-readiness",
+      "title": "详情未就绪的失败反馈与安全重试",
+      "description": "隔离生产 FrameHost/Guest 的未就绪显示可关闭超时；重试拒绝旧握手，呈现 Guest 拒绝和不存在原因；有效握手可打开并关闭。",
+      "importance": "P1",
+      "module": "resource.service",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_864d4fe41934"
+      ],
+      "design_point_ref": "decision_864d4fe41934#0bfd3f9f302f16e6",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "详情未就绪的失败反馈与安全重试",
+        "target": "/resource/skill",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-resource",
+        "adapter_version": 1,
+        "estimated_seconds": 8,
+        "direct_steps": [
+          {
+            "capability": "resource.detail.frame-readiness",
+            "caption": "隔离生产 FrameHost/Guest 的未就绪显示可关闭超时；重试拒绝旧握手，呈现 Guest 拒绝和不存在原因；有效握手可打开并关闭。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_99fb1caf2f2e",
+      "key": "design-live.resource.detail.external-history",
+      "title": "外部详情关闭保留集合与历史",
+      "description": "从外部深链打开根资源与嵌套资源；关闭仅清理本宿主参数，不回退集合历史或破坏其他状态，重复关闭安全。",
+      "importance": "P1",
+      "module": "resource.service",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_864d4fe41934"
+      ],
+      "design_point_ref": "decision_864d4fe41934#f94f2fdebeaef29b",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "外部详情关闭保留集合与历史",
+        "target": "/resource/skill",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-resource",
+        "adapter_version": 1,
+        "estimated_seconds": 8,
+        "direct_steps": [
+          {
+            "capability": "resource.detail.external-history",
+            "caption": "从外部深链打开根资源与嵌套资源；关闭仅清理本宿主参数，不回退集合历史或破坏其他状态，重复关闭安全。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_e3b80f2a1f07",
+      "key": "design-live.resource.preview.cancel-updates",
+      "title": "Preview 手势取消与销毁不回写旧文档",
+      "description": "生产帧合并器只提交最后位置；cancel/dispose 丢弃旧更新，flush 只提交一次，更新异常反馈调用者，Abort 清理且保留并发输入。",
+      "importance": "P1",
+      "module": "resource.service",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_61e50306cc79"
+      ],
+      "design_point_ref": "decision_61e50306cc79#ca47d300a72567f0",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "Preview 手势取消与销毁不回写旧文档",
+        "target": "/resource/skill",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-resource",
+        "adapter_version": 1,
+        "estimated_seconds": 8,
+        "direct_steps": [
+          {
+            "capability": "resource.preview.cancel-updates",
+            "caption": "生产帧合并器只提交最后位置；cancel/dispose 丢弃旧更新，flush 只提交一次，更新异常反馈调用者，Abort 清理且保留并发输入。"
+          }
+        ]
+      }
+    }
+  ]
+}

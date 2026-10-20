@@ -1,7 +1,7 @@
 /.runtime/
 /.venv/
 **/__pycache__/
-**/node_modules/
+**/node_modules
 **/.pytest_cache/
 *.py[cod]
 .env
