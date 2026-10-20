@@ -4882,7 +4882,7 @@
     "database": {
       "path": "database/distribution.sql",
       "format": "postgresql-sql",
-      "sha256": "fed55839eb7e04dbe947b7269c58b1128bb08e6721239c9d5f0281818e0915c0"
+      "sha256": "fba7bd3971a9b254780f261e61a96da9b833bd6d7f72adbd50ffb93bec3cf0e8"
     },
     "files": {
       "share_root": "data/share_root",
@@ -31229,8 +31229,8 @@
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20261020__decision__共享代码与实例状态隔离__decision_d88306d0bd17.md",
-      "sha256": "226064b249fe48f5bc2cedd6120b831557c2171ff9bc26cc50707151a26f7e4d",
-      "size": 15887
+      "sha256": "5e5a1b3c61bda4dcd6dcc56714e1952385e169a080fc33a7c5c9dbd8a1b00203",
+      "size": 16572
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/idea/20260910__idea__从工作台行为反向整理_Lineage，让界面与_Agent_协作共同演化__idea_4bafb08b38d5.md",
@@ -31834,8 +31834,8 @@
     },
     {
       "path": "database/distribution.sql",
-      "sha256": "fed55839eb7e04dbe947b7269c58b1128bb08e6721239c9d5f0281818e0915c0",
-      "size": 3121734
+      "sha256": "fba7bd3971a9b254780f261e61a96da9b833bd6d7f72adbd50ffb93bec3cf0e8",
+      "size": 3121761
     }
   ]
 }
