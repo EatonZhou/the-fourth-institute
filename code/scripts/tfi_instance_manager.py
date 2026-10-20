@@ -97,6 +97,18 @@ def access_urls(target):
     addresses = {bind}
     if address.is_unspecified:
         addresses = set()
+        if sys.platform.startswith("linux"):
+            # Hostname and default-route discovery miss secondary LAN/VPN
+            # interfaces. Read the OS interface list, never the request Host.
+            try:
+                interfaces = subprocess.run(
+                    ["ip", "-j", "address", "show", "up"], check=True,
+                    capture_output=True, text=True, timeout=15)
+                for interface in json.loads(interfaces.stdout):
+                    addresses.update(info["local"] for info in interface.get("addr_info", [])
+                                     if info.get("family") in {"inet", "inet6"} and info.get("local"))
+            except (OSError, subprocess.SubprocessError, ValueError, TypeError):
+                pass  # Keep portable hostname/route discovery if ip is absent.
         for family in (socket.AF_INET, socket.AF_INET6):
             try:
                 addresses.update(item[4][0] for item in socket.getaddrinfo(

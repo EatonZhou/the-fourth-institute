@@ -5,6 +5,8 @@ owners. A check is an ordinary durable Execution, never a second model client.
 """
 from __future__ import annotations
 
+import time
+
 from management_portal.hatg.contracts import InstructionError, invalid, not_found
 from . import account_registrations as registrations, provider_updates
 from .accounts import default_execution_accounts
@@ -64,6 +66,21 @@ def prepare(inv):
     return {"preparation": provider_updates.prepare_runtime(provider)}
 
 
+def _started_codex_catalog(row, *, timeout=30.0):
+    """Wait for the socket after service start, without retrying model execution."""
+    from management_portal.codex_app_server_client import CodexAppServerUnavailable
+
+    deadline = time.monotonic() + timeout
+    while True:
+        try:
+            return catalog(row)
+        except CodexAppServerUnavailable:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise
+            time.sleep(min(0.1, remaining))
+
+
 def check(inv):
     row = account(inv.argument("account_id"))
     if not row["enabled"]:
@@ -75,7 +92,12 @@ def check(inv):
         # Registration may precede runtime preparation. Starting an already
         # running instance is idempotent and preserves its existing login.
         account_hosting.start_codex_instance(row["account_id"])
-    model = inv.argument("model") or catalog(row).get("default_model", "")
+        # systemd Type=simple confirms the process, not its listening socket.
+        # Validate only after the newly started app-server answers its catalog.
+        info = _started_codex_catalog(row)
+    else:
+        info = None
+    model = inv.argument("model") or (info if info is not None else catalog(row)).get("default_model", "")
     if not model:
         raise invalid("请选择模型")
     if row["provider"] == "provider_api":

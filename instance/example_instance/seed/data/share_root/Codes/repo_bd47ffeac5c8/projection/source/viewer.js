@@ -1,3 +1,4 @@
+import {sha256} from './sha256.js';
 import {mountMorphologyWall,mountLearningAlgorithm} from './original-wall.js';
 const $=id=>document.getElementById(id),cache=new Map();
 async function json(path){
@@ -21,7 +22,7 @@ const groups=[['overview','精选概览','featured'],['all','全选','all'],...n
 async function loadClip(id){
  if(!cache.has(id))cache.set(id,(async()=>{
   const entry=entries.find(e=>e.id===id),record=await json(entry.offlineClip),payload=await json(record.framesFile),frames=Uint8Array.from(atob(payload.data),c=>c.charCodeAt(0));
-  const hash=[...new Uint8Array(await crypto.subtle.digest('SHA-256',frames))].map(x=>x.toString(16).padStart(2,'0')).join('');
+  const hash=await sha256(frames);
   if(hash!==record.sha256||frames.length!==record.width*record.height*record.steps.length)throw Error('回放校验失败：'+id);
   return {...record,frames};
  })().catch(error=>{cache.delete(id);throw error;}));

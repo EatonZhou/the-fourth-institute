@@ -1,3 +1,117 @@
+// source/sha256.js
+var K = new Uint32Array([
+  1116352408,
+  1899447441,
+  3049323471,
+  3921009573,
+  961987163,
+  1508970993,
+  2453635748,
+  2870763221,
+  3624381080,
+  310598401,
+  607225278,
+  1426881987,
+  1925078388,
+  2162078206,
+  2614888103,
+  3248222580,
+  3835390401,
+  4022224774,
+  264347078,
+  604807628,
+  770255983,
+  1249150122,
+  1555081692,
+  1996064986,
+  2554220882,
+  2821834349,
+  2952996808,
+  3210313671,
+  3336571891,
+  3584528711,
+  113926993,
+  338241895,
+  666307205,
+  773529912,
+  1294757372,
+  1396182291,
+  1695183700,
+  1986661051,
+  2177026350,
+  2456956037,
+  2730485921,
+  2820302411,
+  3259730800,
+  3345764771,
+  3516065817,
+  3600352804,
+  4094571909,
+  275423344,
+  430227734,
+  506948616,
+  659060556,
+  883997877,
+  958139571,
+  1322822218,
+  1537002063,
+  1747873779,
+  1955562222,
+  2024104815,
+  2227730452,
+  2361852424,
+  2428436474,
+  2756734187,
+  3204031479,
+  3329325298
+]);
+var rotate = (value, bits) => value >>> bits | value << 32 - bits;
+async function sha256(content) {
+  const bytes = content instanceof Uint8Array ? content : new Uint8Array(content);
+  if (globalThis.crypto?.subtle) {
+    const result = await crypto.subtle.digest("SHA-256", bytes);
+    return [...new Uint8Array(result)].map((b) => b.toString(16).padStart(2, "0")).join("");
+  }
+  const padded = new Uint8Array(Math.ceil((bytes.length + 9) / 64) * 64);
+  padded.set(bytes);
+  padded[bytes.length] = 128;
+  const view = new DataView(padded.buffer);
+  view.setUint32(padded.length - 8, Math.floor(bytes.length / 536870912));
+  view.setUint32(padded.length - 4, bytes.length * 8);
+  const hash = new Uint32Array([
+    1779033703,
+    3144134277,
+    1013904242,
+    2773480762,
+    1359893119,
+    2600822924,
+    528734635,
+    1541459225
+  ]);
+  const words = new Uint32Array(64);
+  for (let offset = 0; offset < padded.length; offset += 64) {
+    for (let i = 0; i < 16; i++) words[i] = view.getUint32(offset + i * 4);
+    for (let i = 16; i < 64; i++) {
+      const x = words[i - 15], y = words[i - 2];
+      const s0 = rotate(x, 7) ^ rotate(x, 18) ^ x >>> 3;
+      const s1 = rotate(y, 17) ^ rotate(y, 19) ^ y >>> 10;
+      words[i] = words[i - 16] + s0 + words[i - 7] + s1;
+    }
+    let [a, b, c, d, e, f, g, h] = hash;
+    for (let i = 0; i < 64; i++) {
+      const s1 = rotate(e, 6) ^ rotate(e, 11) ^ rotate(e, 25);
+      const t1 = h + s1 + (e & f ^ ~e & g) + K[i] + words[i] >>> 0;
+      const s0 = rotate(a, 2) ^ rotate(a, 13) ^ rotate(a, 22);
+      const t22 = s0 + (a & b ^ a & c ^ b & c) >>> 0;
+      [h, g, f, e, d, c, b, a] = [g, f, e, d + t1 >>> 0, c, b, a, t1 + t22 >>> 0];
+    }
+    [a, b, c, d, e, f, g, h].forEach((word, i) => {
+      hash[i] += word;
+    });
+  }
+  return [...hash].map((word) => word.toString(16).padStart(8, "0")).join("");
+}
+
 // source/original-wall.js
 var tt = Object.freeze({ mode: "smooth", gamma: 0.75 });
 var P8 = 1024;
@@ -61,8 +175,8 @@ function f1(L, { frame: E, width: R, height: H, extent: C = Math.max(R, H), view
       for (let a0 = 0; a0 < h; a0++) {
         let V = W + (a0 + 0.5) * s / h - Z;
         Y[a0] = V >= 0 && V < N ? 1 : 0;
-        let Q = V + q - (n.mode === "smooth" ? 0.5 : 0), J = Math.floor(Q), B = Q - J, G = B * B, t0 = G * B, K = n.mode === "smooth" ? [(1 - B) ** 3 / 6, (3 * t0 - 6 * G + 4) / 6, (-3 * t0 + 3 * G + 3 * B + 1) / 6, t0 / 6] : [0, 1, 0, 0];
-        for (let s0 = 0; s0 < 4; s0++) $2[s0][a0] = M8(J + s0 - 1, N), r0[s0][a0] = K[s0];
+        let Q = V + q - (n.mode === "smooth" ? 0.5 : 0), J = Math.floor(Q), B = Q - J, G = B * B, t0 = G * B, K2 = n.mode === "smooth" ? [(1 - B) ** 3 / 6, (3 * t0 - 6 * G + 4) / 6, (-3 * t0 + 3 * G + 3 * B + 1) / 6, t0 / 6] : [0, 1, 0, 0];
+        for (let s0 = 0; s0 < 4; s0++) $2[s0][a0] = M8(J + s0 - 1, N), r0[s0][a0] = K2[s0];
       }
       return { indices: $2, weights: r0, inside: Y, start: Y.indexOf(1), end: Y.lastIndexOf(1) + 1 };
     };
@@ -84,8 +198,8 @@ function f1(L, { frame: E, width: R, height: H, extent: C = Math.max(R, H), view
     i.fill(D, Y + p.start, Y + p.end);
     let B = Math.min(y[U], y[F], y[I], y[N]), G = Math.max(w[U], w[F], w[I], w[N]);
     for (let t0 = B; t0 < G; t0++) {
-      let K = (c[Z + t0] * a0 + c[q + t0] * V + c[$2 + t0] * Q + c[r0 + t0] * J) * M + P;
-      i[Y + t0] = z[K > 0 ? K < 1 ? Math.round(K * et) : et : 0];
+      let K2 = (c[Z + t0] * a0 + c[q + t0] * V + c[$2 + t0] * Q + c[r0 + t0] * J) * M + P;
+      i[Y + t0] = z[K2 > 0 ? K2 < 1 ? Math.round(K2 * et) : et : 0];
     }
   }
   return r.putImageData(A.image, 0, 0), { ...v, scale: h / C, painted: true };
@@ -251,8 +365,8 @@ async function Y6(L, { sdk: E, signal: R, onObserve: H, onLearn: C, display: s, 
   a0.append(o("span", "", "\u5BC6\u5EA6 0"), V, Q, J);
   let B = o("p", "morphology-status", "\u6B63\u5728\u8BFB\u53D6\u771F\u5B9E\u5F62\u6001\u8BB0\u5F55\u2026");
   B.setAttribute("role", "status");
-  let G = o("div", "morphology-grid"), t0 = o("div", "morphology-browse"), K = o("select");
-  K.setAttribute("aria-label", "\u63A2\u7D22\u5206\u652F"), K.addEventListener("change", () => v0(K.value));
+  let G = o("div", "morphology-grid"), t0 = o("div", "morphology-browse"), K2 = o("select");
+  K2.setAttribute("aria-label", "\u63A2\u7D22\u5206\u652F"), K2.addEventListener("change", () => v0(K2.value));
   let s0 = l("\u4E0A\u4E00\u7EC4", () => {
     c--, G0(), se();
   }), e0 = l("\u4E0B\u4E00\u7EC4", () => {
@@ -264,7 +378,7 @@ async function Y6(L, { sdk: E, signal: R, onObserve: H, onLearn: C, display: s, 
     for (let X0 of S0) X0.hold = 0, X0.loops = 0;
     M0?.clock && S0.length && Object.assign(M0.clock, { step: S0[0].step, hold: 0, loops: 0 }), r = true, $2.textContent = "\u5168\u90E8\u6682\u505C", d = 0, Z0();
   });
-  t0.append(K, s0, n0, e0, i0);
+  t0.append(K2, s0, n0, e0, i0);
   let c0 = o("section", "morphology-environment");
   c0.hidden = true;
   let d0, o0, f0, h0 = o("section", "morphology-detail");
@@ -449,7 +563,7 @@ async function Y6(L, { sdk: E, signal: R, onObserve: H, onLearn: C, display: s, 
         q0.card.querySelector(".morphology-caption h3").textContent = le.title, q0.card.querySelector(".morphology-highlight").textContent = le.discovery;
       }
     }
-    K.value = P, s0.disabled = c === 0, e0.disabled = c === X0 - 1, s0.hidden = e0.hidden = X0 === 1, s0.textContent = M0.kind === "offspring" ? "\u7236\u4F53\u4E0E\u4EE3\u8868\u5B50\u4EE3" : "\u4E0A\u4E00\u7EC4", e0.textContent = M0.kind === "offspring" ? "\u5176\u4F59\u5B50\u4EE3 c02 / c03" : "\u4E0B\u4E00\u7EC4", n0.textContent = `${c + 1} / ${X0} \xB7 ${M0.entries.length} \u6BB5`, G.style.setProperty("--wall-rows", Math.ceil(ee.size / (M0.columns || 3))), W0(M0), re(M0), $0(), Z0();
+    K2.value = P, s0.disabled = c === 0, e0.disabled = c === X0 - 1, s0.hidden = e0.hidden = X0 === 1, s0.textContent = M0.kind === "offspring" ? "\u7236\u4F53\u4E0E\u4EE3\u8868\u5B50\u4EE3" : "\u4E0A\u4E00\u7EC4", e0.textContent = M0.kind === "offspring" ? "\u5176\u4F59\u5B50\u4EE3 c02 / c03" : "\u4E0B\u4E00\u7EC4", n0.textContent = `${c + 1} / ${X0} \xB7 ${M0.entries.length} \u6BB5`, G.style.setProperty("--wall-rows", Math.ceil(ee.size / (M0.columns || 3))), W0(M0), re(M0), $0(), Z0();
   }
   function re(M0) {
     if (M0.contextReady === false) {
@@ -798,7 +912,7 @@ async function Y6(L, { sdk: E, signal: R, onObserve: H, onLearn: C, display: s, 
     }
     for (let q0 of M) {
       let le = o("option", "", `${q0.title} \xB7 ${q0.entries.length}`);
-      le.value = q0.id, K.append(le);
+      le.value = q0.id, K2.append(le);
     }
     let S0 = o("nav", "morphology-stories");
     S0.setAttribute("aria-label", "\u89C2\u770B\u7EBF\u7D22"), M.some((q0) => q0.id === Wt) && S0.append(l("\u751F\u6210\u4E5F\u8981\u4ED8\u8D39", () => v0(Wt))), M.some((q0) => q0.id === e2) && S0.append(l("\u9996\u4EE3\uFF1A\u8F6C\u5411\u4E0E\u4EE3\u4EF7", () => v0(e2)));
@@ -1003,16 +1117,16 @@ function p8(L, { signal: E, onObserve: R } = {}) {
     }
     e && (f = Math.min(62e3, f + Math.min(100, n0 - e) * n)), e = n0, f >= 62e3 && (b = false), a0(), G();
   }
-  function K() {
+  function K2() {
     T = false, e = 0, C.cancelAnimationFrame(t), t = 0;
   }
   function s0() {
     T = true, e = 0, a0(), G();
   }
   function e0() {
-    a || (K(), a = true, r0.disconnect(), E?.removeEventListener("abort", e0), h.remove());
+    a || (K2(), a = true, r0.disconnect(), E?.removeEventListener("abort", e0), h.remove());
   }
-  return E?.addEventListener("abort", e0, { once: true }), a0(), E?.aborted && e0(), { show: s0, hide: K, destroy: e0, getScene: () => ({ mode: "learning-algorithm", method: "f91-held-intent", chapter: o, explanation_seconds: f / 1e3, representation: l ? "sampling-illustration" : "recorded-endpoints-mechanism-animation", display_only: true }) };
+  return E?.addEventListener("abort", e0, { once: true }), a0(), E?.aborted && e0(), { show: s0, hide: K2, destroy: e0, getScene: () => ({ mode: "learning-algorithm", method: "f91-held-intent", chapter: o, explanation_seconds: f / 1e3, representation: l ? "sampling-illustration" : "recorded-endpoints-mechanism-animation", display_only: true }) };
 }
 
 // source/viewer.js
@@ -1041,7 +1155,7 @@ async function start() {
   async function loadClip(id) {
     if (!cache.has(id)) cache.set(id, (async () => {
       const entry = entries.find((e) => e.id === id), record = await json(entry.offlineClip), payload = await json(record.framesFile), frames = Uint8Array.from(atob(payload.data), (c) => c.charCodeAt(0));
-      const hash = [...new Uint8Array(await crypto.subtle.digest("SHA-256", frames))].map((x) => x.toString(16).padStart(2, "0")).join("");
+      const hash = await sha256(frames);
       if (hash !== record.sha256 || frames.length !== record.width * record.height * record.steps.length) throw Error("\u56DE\u653E\u6821\u9A8C\u5931\u8D25\uFF1A" + id);
       return { ...record, frames };
     })().catch((error) => {
