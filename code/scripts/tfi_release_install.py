@@ -890,6 +890,8 @@ def lifecycle(command, root):
                 controller.start(unit_name(target, component))
             save_stage(state, "start", "started")
             return {"status": "started", "installation_root": str(root)}
+        from scripts.tfi_release_provider_services import owned_services, stop_services, remove_template
+        providers = owned_services(target, unit_directory())
         names = [unit_name(target, c) for c in reversed(COMPONENTS)]
         for name in names:
             if controller.status(name)["load"] != "not-found":
@@ -897,11 +899,13 @@ def lifecycle(command, root):
         states = [controller.status(name) for name in names]
         if any(s["active"] not in {"inactive", "failed"} or s["pid"] for s in states):
             raise RuntimeError("Services did not stop; cleanup refused")
+        stop_services(providers, controller)
         if command == "stop":
             save_stage(state, "stop", "stopped")
             return {"status": "stopped", "services": states, "installation_root": str(root)}
         # Recheck ownership after stopping and immediately before unlinking units.
         check_available(target, existing=True)
+        remove_template(target, unit_directory())
         platform_adapter().remove_services(unit_directory(), names)
     # Windows refuses deletion while .install.lock is still open.
     if target.get("shared_code_root") and (root / "seed").is_dir():
