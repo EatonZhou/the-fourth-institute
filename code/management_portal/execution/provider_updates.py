@@ -174,7 +174,12 @@ class CodexRuntime(ProviderRuntime):
             return RUNTIMES / "codex-cli-current"
         configured = _PROVIDER_DEPLOYMENT.get("codex_binary")
         if configured:
-            return resolve_directory(configured)
+            if not isinstance(configured, str) or any(c in configured for c in "\0\n\r"):
+                raise ValueError("Codex binary must be a path")
+            path = Path(configured).expanduser()
+            # Activation replaces this link. Resolve only its parent so an
+            # instance can reuse an installed binary without updating that copy.
+            return resolve_directory(str(path.parent)) / path.name
         existing = shutil.which("codex")
         if existing:
             return Path(existing)

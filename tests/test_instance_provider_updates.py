@@ -3,7 +3,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import PropertyMock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "code"))
 from scripts import portal_service_units as units
@@ -63,6 +63,28 @@ class InstanceProviderUpdateTests(unittest.TestCase):
                     self.assertTrue(updates._activate(provider, runtime, new))
                 self.assertIn(["systemctl", "--user", "restart", name], self.commands)
                 self.assertEqual(link.resolve(), new)
+
+    def test_codex_activation_replaces_private_link_without_changing_shared_binary(self):
+        shared = self.root / "shared-install/bin/codex"
+        shared.parent.mkdir(parents=True)
+        shared.write_text("original shared executable\n")
+        staged = self.root / "new-runtime"
+        binary = staged / "bin/codex"
+        binary.parent.mkdir(parents=True)
+        binary.write_text("new executable\n")
+        link = self.context["root"] / "home/.local/bin/codex"
+        link.parent.mkdir(parents=True)
+        link.symlink_to(shared)
+        with patch.dict(updates._PROVIDER_DEPLOYMENT, {"codex_binary": str(link)}), \
+                patch.object(updates, "_active_executions", return_value=0), \
+                patch.object(updates.CodexRuntime, "services", new_callable=PropertyMock,
+                             return_value=()):
+            runtime = updates.CodexRuntime()
+            self.assertEqual(runtime.link(), link)
+            self.assertTrue(updates._activate("codex", runtime, staged))
+        self.assertTrue(link.is_symlink())
+        self.assertEqual(link.resolve(), binary)
+        self.assertEqual(shared.read_text(), "original shared executable\n")
 
     def test_stopped_or_absent_daemon_is_not_started_by_update(self):
         self.assertEqual(updates.KimiRuntime().services, ())
