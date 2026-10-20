@@ -70,7 +70,7 @@ def _safe_absolute_path(raw: str) -> Path:
         STAGING_ROOT.resolve(strict=False),
     ]
     if not any(resolved == root or root in resolved.parents for root in allowed):
-        raise ValueError("workspace_root 只能位于 /share/Agents、/share/Projects、/share/Codes 或 /srv/agent-staging")
+        raise ValueError("workspace_root 只能位于当前实例的目录：" + "、".join(map(str, allowed)))
     return resolved
 
 

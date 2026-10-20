@@ -4,6 +4,7 @@ from __future__ import annotations
 from . import resident_lineage, watchboard_lineage
 from .resident_access import ensure_resident_visible_to_actor
 from management_common.actor_identity import canonical_actor_id
+from management_common.portal_paths import path as portal_path
 from pathlib import Path
 from typing import Any
 import hashlib
@@ -109,7 +110,7 @@ def _watchboard_readme_text(record: dict[str, Any]) -> str:
         f"# {resident_id} Watchboard",
         "",
         "本目录保存该 Resident 的 Watchboard 展示定义、配置、状态和可运行脚本。",
-        "修改前读取 `/share/Skills/create-resident-watchboard/SKILL.md`。",
+        f"修改前读取 `{portal_path('share_root') / 'Skills/create-resident-watchboard/SKILL.md'}`。",
         "",
         "- `watchboard.yaml` 定义通用展示信息。",
         "- `agent.yaml` 声明配置、状态、命令和运行方式。",
