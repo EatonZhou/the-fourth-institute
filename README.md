@@ -37,7 +37,7 @@ Our goal is to make research more continuous, broaden exploration, and make the 
 This repository includes the v0.9 release bundle in `release/`. From the repository root, run:
 
 ```bash
-python3 prepare_release.py
+python3 prepare_install.py
 python3 release/code/scripts/tfi_release_install.py --help
 ```
 

@@ -37,7 +37,7 @@ TFI Portal 通过 HATG ISA（Human-Agent Trajectory Graph 指令集）提供共�
 本仓库的 `release/` 已包含 v0.9 发行工程。在仓库根目录执行：
 
 ```bash
-python3 prepare_release.py
+python3 prepare_install.py
 python3 release/code/scripts/tfi_release_install.py --help
 ```
 
