@@ -260,12 +260,16 @@ def _validate_recovery_infos(
     infos = entry.get("infos") or []
     if not isinstance(infos, list) or any(not isinstance(info, dict) for info in infos):
         raise MailboxConflict("恢复检查点的 info 引用不完整")
-    if not infos:
-        return []
     resident_id = resident_lineage.resident_id(record)
     root_id = str(entry.get("message_id") or "")
     execution_id = str(entry.get("execution_id") or "")
     repository = resident_conversation_stream.get_repository()
+    if not execution_id:
+        # Accepted inputs may not have reached reservation. An existing round
+        # cannot use a lost checkpoint reference to bypass its info-set check.
+        if not infos and latest(repository.agent_data, resident_id, root_id) is None:
+            return []
+        raise MailboxConflict("恢复检查点缺少原 Execution 附带身份")
     execution = repository.agent_data.execution(execution_id) or {}
     inputs = {value["message_id"]: value for value in execution.get("inputs") or []}
     ids = [str(info.get("message_id") or "") for info in infos]

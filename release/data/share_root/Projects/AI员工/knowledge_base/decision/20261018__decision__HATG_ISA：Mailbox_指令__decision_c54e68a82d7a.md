@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-10-18'
 version:
-  number: 10
+  number: 11
   created_at: '2026-10-18'
   created_by:
     user: ''
     agent: resident_7765faecc45a
-  updated_at: '2026-10-19T19:59:40Z'
+  updated_at: '2026-10-20T00:58:58Z'
   updated_by:
-    user: tfi-exported-user
-    agent: resident_865c3c24f251
+    user: ''
+    agent: resident_6199a7a36480
 importance: 5
 ai_generated: false
 links:
@@ -49,7 +49,7 @@ Mailbox 指令读取和整理两种收件：User 的 Mailbox 列出这位用户�
 | `ReorderMailbox` | 是 | 调整 Resident 等待消息的顺序，包括移到队首 | 对 `resident_id` 有 @contributor |
 | `MergeMailboxItems` | 是 | 把若干条等待消息合并为一条 Mailbox 群体消息 | 对 `resident_id` 有 @contributor |
 | `SplitMailboxItem` | 是 | 把尚未执行的群体消息拆回原来的消息 | 对 `resident_id` 有 @contributor |
-| `RequeueMessage` | 是 | 把停止或失败的一轮放回队列 | 对 `resident_id` 有 @contributor |
+| `RequeueMessage` | 是 | 放回停止或失败的一轮，或恢复接收记录完整但丢失执行位置的排队输入 | 对 `resident_id` 有 @contributor |
 | `InjectMailboxItem` | 是 | 把一条等待消息立即交给当前正在进行的工作 | 对 `resident_id` 有 @contributor |
 | `ListMailboxTodos` | 否 | 读取一位 User 的待办及未完成数 | 对 `user_id` 有 @admin |
 | `CreateMailboxTodo` | 是 | 创建 1–100 字个人待办；Resident 可指定接收 User | 免检 |
@@ -150,12 +150,15 @@ Mailbox 指令读取和整理两种收件：User 的 Mailbox 列出这位用户�
 
 ### `RequeueMessage`
 
-**把停止或失败的一轮放回队列（decision_15f7df737ed5 的“放回队列”）。**
+**把停止或失败的一轮放回队列；也可凭完整接收记录恢复丢失执行位置的排队输入（decision_15f7df737ed5 的“放回队列”）。**
 
 - 参数：`resident_id`、`message_id`（这一轮的请求或群体消息）。
 - 结果：`message_ids`（放回的消息：请求在前，随它送达的 info 按原顺序在后）、调整后的队列 `items` 与 `revision`。
-- 放回的是原来的消息本身：请求以原消息 ID、发送者、时间和正文回到队首，Resident 空闲时直接成为下一项工作；它的输入状态回到 `queued`，群体连同成员一起回到 `queued`。随它送达的 info 回到等待列表的最前面，仍是原发送者，随下一条请求送达。那一轮的停止或失败提示留在对话中。没有任何工作在处理的消息（例如早期版本队列丢下的请求）不能放回，用 `CancelInput` 结束（错误代码 `lost_input`），需要重做时重新发送。
-- 只接受最近 10 轮中以 `cancelled` 或 `failed` 结束的一轮：已经完成、仍在进行、已经在等待的消息，不在最近 10 轮中的消息，以及群体中的单个成员，都按冲突拒绝。那一轮的图片附件已被清理、原图也不在时按冲突拒绝。重试按幂等键返回第一次的结果。
+- 放回的是原来的消息本身：请求以原消息 ID、发送者、时间和正文回到队首，Resident 空闲时直接成为下一项工作；它的输入状态回到 `queued`，群体连同成员一起回到 `queued`。随它送达的 info 回到等待列表的最前面，仍是原发送者，随下一条请求送达。那一轮的停止或失败提示留在对话中。排队输入没有执行位置时，仅在下述完整接收记录条件满足后恢复；缺少原记录时拒绝，不从提示词、发件副本或调用方正文重建消息。
+- 同一请求已经占有目标 Resident 的顶层活动或等待位置时，调用保持该位置并返回成功，不新增队列项，也不重开随行 info；群体成员或其他附属位置不能作为顶层请求恢复。尚无执行位置的普通轮次重试，只接受最近 10 轮中有完整检查点并以 `cancelled` 或 `failed` 结束的一轮，包括首次预留后、尚未提交执行就停止的轮次；已完成、无检查点、窗口外及其他仍在运行的输入按冲突拒绝。图片附件的暂存副本和原图均不可取得时拒绝。重试按幂等键返回第一次的结果。
+- 恢复已接收但丢失执行位置的输入，是另一种明确受控的情况：输入必须仍为 `queued`，没有活动或等待中的执行位置，且同一 Resident 的持久接收项及准备记录或本地检查点能证明原请求、群体成员和随行 info 的完整原文与身份。参数仍只有 `resident_id`、`message_id`，默认权限不变。记录缺失、冲突、跨 Resident、群体成员另属其他工作、输入已完成或取消时拒绝，失败不留下部分恢复。
+- 恢复沿原输入 owner 加锁及事务提交：保留消息 ID、作者、时间、附件、引用、origin 和群体顺序，恢复必要的原消息并建立唯一队列位置，接单和额度门控照常生效。info 仍是 info，不单独激活。相同有效待执行位置再次恢复保持不变；原停止和错误历史不删除。
+- 随行 info 必须有同一 Resident 的完整原消息及原轮次附带关系。正常随原失败或停止轮次消费的 info 可随原请求恢复；info 被独立撤回、原文缺失、身份或归属冲突时，整项恢复拒绝且不留下部分写入。
 - User 与 Resident 调用均属于显式恢复，不受后台自动恢复次数限制，也不消耗或重置后台计数；无需人类 owner 再次操作。后台扫描与后台发起的 Session 迁移恢复仍受自动恢复上限约束。调用者身份不能代替操作来源分类。
 
 ### `InjectMailboxItem`

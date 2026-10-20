@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-10-13'
 version:
-  number: 49
+  number: 50
   created_at: '2026-10-12T17:40:00Z'
   created_by:
     user: tfi-exported-user
     agent: resident_0b07d8e39e01
-  updated_at: '2026-10-19T19:59:40Z'
+  updated_at: '2026-10-20T00:59:11Z'
   updated_by:
-    user: tfi-exported-user
-    agent: resident_865c3c24f251
+    user: ''
+    agent: resident_6199a7a36480
 importance: 9
 metaness: 2
 ai_generated: false
@@ -168,19 +168,21 @@ Mailbox 的历史分组查询从消息 ID 索引定位源 Segment，再沿 `mess
 ### 放回队列的实现
 
 - **显式恢复与后台自动恢复按操作来源区分。** User 或 Resident 调用 `RequeueMessage` 都属于显式恢复，按相同的整理权限执行，不受后台自动恢复次数限制，也不消耗或重置该计数。调用者是 Resident、通过工具调用，或操作由另一位主体委托，都不意味着自动恢复。后台扫描与后台发起的 Session 迁移恢复共享每条输入最多两次的持久计数；达到上限只停止后台重试，有权限的主体仍可显式恢复。显式请求的 Session 迁移完成后恢复原输入，保留显式语义。权限、输入状态、最近轮次窗口和幂等约束照常检查。
-- **一轮开始时留下记录。** 一条请求或一个群体被交给执行服务时，它的消息 ID、Job、开始时间和随行 info（消息 ID、发送者、到达时间）追加到 轮次收据，永久保存；原来的队列项（去掉执行和 Job 加上的字段）是放回用的当前状态，存在 Mailbox 最近轮次状态 中，只留最近 10 轮，记录下一轮时已经完成的轮次不再保留队列项。每次放回也追加一条记录（放回者、时间、放回前的状态和错误）。`/compact`、Fork 的准备、项目创建和授权调用的隔离输入不是一轮。
+- **首次预留时保留原输入。** 输入 owner 在首次预留的同一事务中保存原接收项和检查点，早于提示构造与材料化；随后追加随行 info 时只补其附带关系，不替换原接收项。一条请求或一个群体被交给执行服务时，它的消息 ID、Job、开始时间和随行 info（消息 ID、发送者、到达时间）追加到 轮次收据，永久保存；原来的队列项（去掉执行和 Job 加上的字段）是放回用的当前状态，存在 Mailbox 最近轮次状态 中，只留最近 10 轮，记录下一轮时已经完成的轮次不再保留队列项。每次放回也追加一条记录（放回者、时间、放回前的状态和错误）。`/compact`、Fork 的准备、项目创建和授权调用的隔离输入不是一轮。
 - **放回时恢复原来的消息。** `RequeueMessage` 取出这一轮的原队列项，换一个新的 Job ID 放到队首；Resident 空闲时它直接成为下一项工作，接单关闭时照常等待。请求（群体连同成员）和随行 info 的输入状态从终态改回 `queued`，回复与错误清空，这是唯一能改变终态的写入；info 回到等待列表的最前面，不再显示在原请求里，随下一条请求送达。群体成员回到 Mailbox 的 `group` 行。图片附件的暂存副本在最近 10 轮的重新排队窗口内保留。输入已经终结且离开窗口后，由轮次记录与结束提交触发清理；同一状态锁内核对窗口和输入状态，群体成员一并保留。窗口内的随行 info 也保留；状态未知或尚未终结的输入不清理。放回后这一轮离开最近记录，最近轮次记录 记下放回者、时间和原来的终态。
+- **随行 info 也逐项校验。** 正常随原停止或失败轮次消费的 info 保留随原请求恢复的语义；原消息和原轮次附带关系必须完整、同属目标 Resident。独立撤回、缺原文或身份/归属冲突导致整项恢复拒绝，不能跳过该 info 后宣称恢复成功。
 - **对话中的记录不变。** 停止提示（“…已停止当前运行”）和失败说明留在原处；同一条消息再次被停止时得到新的停止提示（提示的消息 ID 由消息 ID 和 Job ID 共同决定）。消息在对话中仍只有一条，它的状态随新的一轮变为排队、运行和结束，新的回复接在对话末尾。
 - **来源不变。** 放回的请求保留原发送者，执行时与其他输入一样只按 Resident 自己的权限判定；整理者只需要 RequeueMessage 要求的等级，与合并相同。
-- **不能放回的轮次。** 没有记录的历史轮次、交给执行服务之前就被停止的轮次、同步执行的命令，以及超出最近 10 轮的轮次没有可用的记录，按冲突拒绝；需要重做时重新发送。
+- **检查点和执行位置限定恢复范围。** 首次预留后已有完整检查点的停止或失败轮次，即使尚未提交执行，也可在最近 10 轮窗口内恢复；没有可用检查点的历史轮次、预留前已撤回的请求、同步执行命令及窗口外轮次按冲突拒绝。同一顶层请求已经处于活动或等待位置时，重复调用保持现状并返回成功；群体成员和附属 info 不能借此独立恢复。
 
 ### 第一轮结束后推进队列，以及没有任何工作在处理的输入
 
 - **第一轮和其他轮一样推进队列。** 每轮确认执行结束后，从队列显式构造下一轮的输入，再由执行层补充新的执行事实；不继承上一轮的失败通知、回执或事件游标。队列为空才清空当前轮次。
 - **没有任何工作在处理的输入永远不会结束。** 这类输入的回执停在 `queued` 或 `running`，但没有任何一处持有它：它不在当前轮次和队列里，不是 Resident 正在处理的消息，Mailbox 中只剩 `pending` 行或没有行，也从未有过 Execution。早期版本在 Resident 第一轮结束时清掉 Job、不推进队列，期间排队的请求就这样留在 Mailbox 的 `pending` 行里（队列丢下的请求）；中断的执行也可能留下停在 `running` 的回执。
 - **`CancelInput` 结束这类输入。** 普通撤回和停止都找不到它时，`CancelInput` 在 Resident 的状态锁内逐项确认上述条件，然后把它记为 `cancelled`（错误码 `lost_input`，说明“没有任何工作在处理这条消息，它不会再送达，已撤回”），`pending` 行随之移出 Mailbox。任何一处仍持有它时，照常按排队或执行中的消息撤回或停止。已有 Execution 的输入不记为 `lost_input`：运行结束后，结果在状态锁释放后才写进输入状态，这期间它已离开当前轮次，它的终态由这次运行的结果决定。撤回权限与普通排队消息相同。
-- **不放回队列，也不按时长自动结束。** `RequeueMessage` 只接受最近几轮中停止或失败的请求；没有任何工作在处理的输入需要重做时重新发送。系统不按等待时长自动结束输入：接单关闭或等待额度时，排队的输入可以合法地长时间不动。
-- **Mailbox 栏和 `GetMailbox` 不列出这类输入**，只能按消息 ID 调用 `CancelInput`。查找方法：在 输入状态记录 中找状态为 `queued` 或 `running` 的输入，再排除在队列、当前轮次中或有过 Execution 的那些；Mailbox 群体成员的状态跟随群体，按 `GetInputState` 读到的状态判断。
+- **完整接收记录可用于显式恢复。** 输入仍为 `queued`、没有活动或等待执行位置，且同一 Resident 的持久接收项与准备记录或本地检查点能精确证明原请求、群体成员和随行 info 时，有权限的主体可通过 `RequeueMessage` 恢复唯一队列位置。保留原 ID、作者、时间、正文、引用、origin 和成员顺序；info 仍随请求送达。缺失前像、冲突、跨 Resident、成员另有归属、已完成或取消时拒绝；不能从提示词或发件副本猜造原接收消息。校验、原消息恢复、状态和队列发布由输入 owner 在锁与事务内完成；失败不留下部分恢复，再次恢复已有有效位置保持不变。
+- **不按等待时长自动结束或重建。** 缺少完整接收记录的输入仍不能放回；`CancelInput` 保留原撤回职责。接单关闭或等待额度时，排队输入可以合法地长时间不动；恢复仍受正常执行门控约束。
+- **没有可列出的等待项时，Mailbox 栏和 `GetMailbox` 不展示这类输入**。可按消息 ID 核验恢复条件后调用 `RequeueMessage`，或通过 `CancelInput` 撤回。查找方法：在 输入状态记录 中找状态为 `queued` 或 `running` 的输入，再排除在队列、当前轮次中或有过 Execution 的那些；Mailbox 群体成员的状态跟随群体，按 `GetInputState` 读到的状态判断。
 
 ### Resident 删除时关闭 Mailbox
 
@@ -455,7 +457,7 @@ Resident Mailbox 和 User Mailbox 的修改都使用 HATG ISA 指令（decision_
 | `MergeMailboxItems` | `resident_id`、`message_ids`（选中的顶层项 ID） | `group_message_id`、按处理顺序的 `member_message_ids`、调整后的队列 `items` 与 `revision` |
 | `SplitMailboxItem` | `resident_id`、`message_id`（群体消息 ID） | `group_message_id`、`member_message_ids`、`items`、`revision` |
 | `ReorderMailbox` | `resident_id`，加上 `message_id` 与 `before_message_id`/`after_message_id` 之一，或完整排列 `order` | `items`、`revision`、`reordered`（顺序是否有变化） |
-| `RequeueMessage` | `resident_id`、`message_id`（最近几轮中停止或失败的一轮的请求或群体消息） | 放回的 `message_ids`（请求在前，随行 info 按原顺序）、`items`、`revision` |
+| `RequeueMessage` | `resident_id`、`message_id`（最近几轮中停止或失败的一轮，或接收记录完整但丢失执行位置的 `queued` 请求/群体） | 放回的 `message_ids`（请求在前，随行 info 按原顺序）、`items`、`revision` |
 
 Mailbox 栏用只读指令 `GetMailbox`（传 `resident_id`）读取三部分内容。撤回用 `CancelInput`（`resident_id`、`message_id`）：正在运行的一轮被停止；等待中的请求、群体和 info 移出 Mailbox 并记为 `cancelled`，info 撤回后以 `cancelled`（`info_withdrawn`）结束，没有任何工作在处理的输入以 `cancelled`（`lost_input`）结束；已结束的消息保留原结果，不报错，结果带 `already_terminal: true` 和它的 `input_state`。对 Family 门面消息，它作用于 Router 转给成员的那条消息；尚未转出时从门面的 Mailbox 撤回。字段与失败情况见 decision_2a3ff353165c。
 

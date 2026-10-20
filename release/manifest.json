@@ -4879,7 +4879,7 @@
   "unresolved": [],
   "code": {
     "path": "code",
-    "sha256": "1cde929f3bc023f404b61a22f3c2c393cd2f087925d8a74d6b7ac0e6232aa41f"
+    "sha256": "11a3d6b96fb0aa7bc53447e8c78c505926c34e06238740d2d3251f17092f7987"
   },
   "database": {
     "path": "database/distribution.sql",
@@ -8771,8 +8771,8 @@
     },
     {
       "path": "code/management_portal/society_service/resident_input_recovery.py",
-      "sha256": "c0e23622659bcdbd0e99e19939bcbe88ad5456b9f8547ea4c090aff8f72701b4",
-      "size": 31669
+      "sha256": "ac60905094c9a25a62ac0ee426ed2cfae104ca1b9c7550a9dd15b10b304915ec",
+      "size": 32004
     },
     {
       "path": "code/management_portal/society_service/resident_input_scope.py",
@@ -35451,8 +35451,8 @@
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20260903__decision__Resident_输入、执行与_Conversation_运行架构__decision_edc470e09f5a.md",
-      "sha256": "5130d0a7c352602f717215fbd915e52ddff150144ab34831e15d40a7ab891e23",
-      "size": 37000
+      "sha256": "59c4ab95a5c6688c74754d88f30aa71a4ef729a279d1ad57816f8ef38a1548b5",
+      "size": 37847
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20260903__decision__ResourceService_模块与运行架构__decision_cf27d39e39cd.md",
@@ -35686,8 +35686,8 @@
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20261013__decision__Mailbox：Resident_和_User_的收件__decision_15f7df737ed5.md",
-      "sha256": "960b5e33efc1bb01d4266fb12397e37424a8e601a42c62312acde128822f711b",
-      "size": 79191
+      "sha256": "9c9270039190592c68e336c445f8a1b714ff03dffcabe74f9ba121b7cf70f235",
+      "size": 80698
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20261013__decision__Portal_新用户指引与统一入口__decision_3286d4167180.md",
@@ -35736,8 +35736,8 @@
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20261018__decision__HATG_ISA：Mailbox_指令__decision_c54e68a82d7a.md",
-      "sha256": "f98217f5e792c8202129fc525d9db800e3cb3b3777b870bdaedba29cd6ef8c31",
-      "size": 21207
+      "sha256": "6302c6ce14f3c856be37a3e50d5e5455f463b087f2d054842e2254606f97e9b8",
+      "size": 22720
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20261018__decision__HATG_ISA：Pulse_指令__decision_cc96fce57ab6.md",
@@ -42430,5 +42430,43 @@
       "verification": "not_run",
       "reason": "安装器按本次目标参数探测实际可执行文件"
     }
-  ]
+  ],
+  "maintenance": {
+    "kind": "in-place-maintenance",
+    "applied_at": "2026-10-20T01:05:35.623331+00:00",
+    "base_manifest_sha256": "55e4ca61c238147127917e47ee68f91ade981ce33f9b143b54641cb26ab4f591",
+    "source_release_commit": "1d35d2eddc15d06436989a4b6181e708fa451351",
+    "summary": "Validate empty recovery checkpoints against the original Execution info set and align the three current Design documents.",
+    "changed_files": [
+      {
+        "resource_id": "decision_c54e68a82d7a",
+        "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20261018__decision__HATG_ISA：Mailbox_指令__decision_c54e68a82d7a.md",
+        "source_sha256": "3b8c77658c7df1416fbbefc8383c2d5b8e6c95b8b6866952e7d2fd8e059ddb34",
+        "before_sha256": "f98217f5e792c8202129fc525d9db800e3cb3b3777b870bdaedba29cd6ef8c31",
+        "after_sha256": "6302c6ce14f3c856be37a3e50d5e5455f463b087f2d054842e2254606f97e9b8"
+      },
+      {
+        "resource_id": "decision_edc470e09f5a",
+        "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20260903__decision__Resident_输入、执行与_Conversation_运行架构__decision_edc470e09f5a.md",
+        "source_sha256": "8e56549f059f73248ad0116cce584d848cde9388aaa0ec3f868772abcfc04f4c",
+        "before_sha256": "5130d0a7c352602f717215fbd915e52ddff150144ab34831e15d40a7ab891e23",
+        "after_sha256": "59c4ab95a5c6688c74754d88f30aa71a4ef729a279d1ad57816f8ef38a1548b5"
+      },
+      {
+        "resource_id": "decision_15f7df737ed5",
+        "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20261013__decision__Mailbox：Resident_和_User_的收件__decision_15f7df737ed5.md",
+        "source_sha256": "18adeaf28f162280420412b040956fcd650fc2c5155da37595df19b0dd290356",
+        "before_sha256": "960b5e33efc1bb01d4266fb12397e37424a8e601a42c62312acde128822f711b",
+        "after_sha256": "9c9270039190592c68e336c445f8a1b714ff03dffcabe74f9ba121b7cf70f235"
+      },
+      {
+        "path": "code/management_portal/society_service/resident_input_recovery.py",
+        "source_sha256": "ac60905094c9a25a62ac0ee426ed2cfae104ca1b9c7550a9dd15b10b304915ec",
+        "before_sha256": "c0e23622659bcdbd0e99e19939bcbe88ad5456b9f8547ea4c090aff8f72701b4",
+        "after_sha256": "ac60905094c9a25a62ac0ee426ed2cfae104ca1b9c7550a9dd15b10b304915ec"
+      }
+    ],
+    "selection_unchanged": true,
+    "database_unchanged": true
+  }
 }
