@@ -2,6 +2,8 @@ Unicode true
 !include "MUI2.nsh"
 !include "x64.nsh"
 !include "WinVer.nsh"
+!define MUI_ICON "${PAYLOAD}/branding/tfi.ico"
+!define MUI_UNICON "${PAYLOAD}/branding/tfi.ico"
 
 Name "The Fourth Institute"
 OutFile "${OUTPUT}"
@@ -16,14 +18,12 @@ VIAddVersionKey /LANG=1033 "FileDescription" "Windows x64 preview installer"
 VIAddVersionKey /LANG=1033 "FileVersion" "0.9.0-preview"
 VIAddVersionKey /LANG=1033 "LegalCopyright" "The Fourth Institute contributors"
 !define MUI_ABORTWARNING
-!define MUI_WELCOMEPAGE_TEXT "Install the shared Portal platform and desktop instance manager.$\r$\n$\r$\nPython is included. Initializing an instance downloads PostgreSQL, Node.js and selected feature dependencies.$\r$\n$\r$\nWindows 11 x64 preview: native acceptance testing is pending. Instance data is retained when uninstalling."
+!define MUI_WELCOMEPAGE_TEXT "Your own research space for people and AI.$\r$\n$\r$\nAfter setup, Portal automatically prepares the included example and opens in your browser. First use downloads the required environment; keep your Internet connection available.$\r$\n$\r$\nWindows 11 x64 preview. Your data is retained when uninstalling."
 !insertmacro MUI_PAGE_WELCOME
 !define MUI_DIRECTORYPAGE_TEXT_TOP "Choose a new or empty folder. Existing files and instances will not be overwritten."
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
-!define MUI_FINISHPAGE_RUN
-!define MUI_FINISHPAGE_RUN_TEXT "Open The Fourth Institute"
-!define MUI_FINISHPAGE_RUN_FUNCTION Launch
+!define MUI_FINISHPAGE_TEXT "Portal will now prepare your research space and open your browser. First use needs an Internet connection and can take several minutes."
 !insertmacro MUI_PAGE_FINISH
 !insertmacro MUI_UNPAGE_CONFIRM
 !insertmacro MUI_UNPAGE_INSTFILES
@@ -64,16 +64,17 @@ Section "Platform"
   File /r "${PAYLOAD}/*"
   WriteUninstaller "$INSTDIR\Uninstall.exe"
   CreateDirectory "$SMPROGRAMS\The Fourth Institute"
-  CreateShortcut "$SMPROGRAMS\The Fourth Institute\Portal.lnk" "$INSTDIR\dependencies\python\pythonw.exe" '"$INSTDIR\code\scripts\tfi_windows_launcher.py"'
-  CreateShortcut "$DESKTOP\The Fourth Institute.lnk" "$INSTDIR\dependencies\python\pythonw.exe" '"$INSTDIR\code\scripts\tfi_windows_launcher.py"'
+  CreateShortcut "$SMPROGRAMS\The Fourth Institute\Portal.lnk" "$INSTDIR\dependencies\python\pythonw.exe" '"$INSTDIR\code\scripts\tfi_windows_launcher.py"' "$INSTDIR\branding\tfi.ico" 0
+  CreateShortcut "$DESKTOP\The Fourth Institute.lnk" "$INSTDIR\dependencies\python\pythonw.exe" '"$INSTDIR\code\scripts\tfi_windows_launcher.py"' "$INSTDIR\branding\tfi.ico" 0
   CreateShortcut "$SMPROGRAMS\The Fourth Institute\Uninstall.lnk" "$INSTDIR\Uninstall.exe"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TheFourthInstitute" "DisplayName" "The Fourth Institute (Windows preview)"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TheFourthInstitute" "UninstallString" '"$INSTDIR\Uninstall.exe"'
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TheFourthInstitute" "DisplayVersion" "0.9 Windows preview"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TheFourthInstitute" "InstallLocation" "$INSTDIR"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TheFourthInstitute" "DisplayIcon" "$INSTDIR\branding\tfi.ico"
 SectionEnd
 
-Function Launch
+Function .onInstSuccess
   Exec '"$INSTDIR\dependencies\python\pythonw.exe" "$INSTDIR\code\scripts\tfi_windows_launcher.py"'
 FunctionEnd
 
@@ -83,13 +84,14 @@ Section "Uninstall"
   nsExec::ExecToLog '"$INSTDIR\dependencies\python\python.exe" "$INSTDIR\code\scripts\tfi_windows_launcher.py" --uninstall-platform'
   Pop $0
   StrCmp $0 "0" stopped
-    MessageBox MB_ICONSTOP "Could not prepare uninstall. Nothing was deleted. Close the instance manager before uninstalling. If this persists, stop instances in the launcher, close it, and retry."
+    MessageBox MB_ICONSTOP "Could not prepare uninstall. Nothing was deleted. Wait for Portal startup to finish, close its progress window, and retry. See .build\windows\launcher-error.log if this persists."
     Abort
   stopped:
   ; Deliberately keep instance/, dependency caches and .build/ for recovery.
   RMDir /r "$INSTDIR\code"
   RMDir /r "$INSTDIR\dependencies\python"
   RMDir /r "$INSTDIR\packaging"
+  RMDir /r "$INSTDIR\branding"
   Delete "$INSTDIR\prepare_install.py"
   Delete "$INSTDIR\example-seed.zip"
   Delete "$INSTDIR\windows-package.json"

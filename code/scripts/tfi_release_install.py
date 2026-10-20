@@ -936,7 +936,7 @@ def lifecycle(command, root):
     return {"status": "cleaned", "installation_root": str(root), "removed_services": names}
 
 
-def first_admin(root, username):
+def first_admin(root, username, *, if_needed=False):
     if not username:
         raise ValueError("first-admin requires --username")
     state = owned_state(root)
@@ -944,8 +944,11 @@ def first_admin(root, username):
     root = Path(target["install_root"])
     with installation_lock(root):
         output = run_checked([runtime_python(target), str(code_root(target) / "scripts/portal_setup.py"), "first-admin",
-                              "--username", username, "--url", f"http://127.0.0.1:{target['ports']['web']}"],
+                              "--username", username, "--url", f"http://127.0.0.1:{target['ports']['web']}",
+                              *(["--if-needed"] if if_needed else [])],
                              target=target, cwd=code_root(target))
+        if if_needed and output.strip() == '{"status":"already_configured"}':
+            return {"status": "already_configured"}
         path = Path(target["data_roots"]["secrets_dir"]) / "first-admin-link.txt"
         # The existing setup owner generates the secret. Keep it out of stdout,
         # installation evidence, conversation context and service journals.
@@ -965,6 +968,7 @@ def main(argv=None):
     parser.add_argument("--root", type=Path)
     parser.add_argument("--component", choices=COMPONENTS)
     parser.add_argument("--username")
+    parser.add_argument("--if-needed", action="store_true", help="Create the first administrator invitation only before any account exists")
     parser.add_argument("--prepare-only", action="store_true", help="Import the independent DB but leave application services stopped for Resident inspection")
     parser.add_argument("--freeze-evidence", type=Path, help="Resident verification JSON bound to this prepared run, supervisor and manifest")
     parser.add_argument("--defer-data-verification", action="store_true", help="Explicitly defer data-root inventory/hash checks; code, SQL and isolation checks remain required")
@@ -999,7 +1003,7 @@ def main(argv=None):
             result = install(args.manifest, read_json(args.target), prepare_only=args.prepare_only, freeze_evidence=args.freeze_evidence,
                              defer_data_verification=args.defer_data_verification, skip_file_verification=args.skip_file_verification)
         elif args.command == "first-admin":
-            result = first_admin(args.root, args.username)
+            result = first_admin(args.root, args.username, if_needed=args.if_needed)
         elif args.command in {"upgrade", "recover"}:
             target = owned_state(args.root)['target']
             python = runtime_python(target)

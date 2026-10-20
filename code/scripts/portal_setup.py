@@ -31,6 +31,11 @@ def first_admin(args):
     from management_portal.user_enrollment import UserEnrollment
 
     enrollment = UserEnrollment(get_portal_access_store(), PortalCredentialStore())
+    if args.if_needed and enrollment.has_accounts():
+        # Desktop startup must not replace credentials or issue invitations for
+        # an already configured instance.
+        print('{"status":"already_configured"}')
+        return
     secret = secrets.token_urlsafe(32)
     invitation = enrollment.create_invitation(
         "portal-setup", args.username, hashlib.sha256(secret.encode()).hexdigest(),
@@ -51,6 +56,7 @@ def main():
     admin.add_argument("--username", required=True)
     admin.add_argument("--display-name", default="")
     admin.add_argument("--url", required=True, help="Address people use to open this Portal, e.g. https://portal.example")
+    admin.add_argument("--if-needed", action="store_true", help="Leave existing accounts unchanged")
     args = parser.parse_args()
     args.url = args.url.rstrip("/")
     if args.env_file:

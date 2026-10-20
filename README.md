@@ -40,9 +40,10 @@ Our goal is to make research more continuous, broaden exploration, and make the 
 
 ## 2. Installation and Usage
 
-**Windows preview:** use `TheFourthInstitute-Setup-x64.exe` for a graphical install
-and instance launcher. Python is included; initializing an instance requires
-internet access. See the [Windows instructions and verification limits](packaging/windows/README.md).
+**Windows preview:** double-click `TheFourthInstitute-Setup-x64.exe`. Setup automatically
+prepares the included example and opens Portal in your browser. Python is included;
+first use requires internet access. Later, double-click the desktop icon to open Portal.
+See the [Windows instructions and verification limits](packaging/windows/README.md).
 
 **Currently supported: Linux with Python 3.12 and venv support.**
 

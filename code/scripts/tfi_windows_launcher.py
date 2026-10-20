@@ -12,6 +12,8 @@ import socket
 import subprocess
 import sys
 import threading
+import time
+from urllib.request import urlopen
 import webbrowser
 import zipfile
 
@@ -204,193 +206,229 @@ def launcher_lock(platform):
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a+b") as stream:
         if not try_lock_descriptor(stream.fileno()):
-            raise RuntimeError("实例管理窗口已经打开。请先关闭它，再重新打开或卸载平台。")
+            raise RuntimeError("Portal 启动窗口已经打开，请等待准备完成。卸载前请先关闭启动窗口。")
         try:
             yield
         finally:
             unlock_descriptor(stream.fileno())
 
 
-class Launcher:
-    def __init__(self, root):
-        import tkinter as tk
-        from tkinter import ttk, scrolledtext
-        self.root = root
-        self.events = queue.Queue()
-        self.busy = False
-        root.title("The Fourth Institute — 实例管理")
-        root.geometry("820x580")
-        self.name = tk.StringVar(value="example_instance")
-        self.username = tk.StringVar(value="admin")
-        self.lan = tk.BooleanVar(value=False)
-        self.status = tk.StringVar(value="安装平台后，在这里创建或启动实例。首次初始化需要联网，可能耗时较长。")
-        frame = ttk.Frame(root, padding=16)
-        frame.pack(fill="both", expand=True)
-        ttk.Label(frame, text="The Fourth Institute", font=("", 20, "bold")).pack(anchor="w")
-        ttk.Label(frame, text="共享平台 · 独立实例 / Shared platform · Separate instances").pack(anchor="w", pady=(0, 14))
-        row = ttk.Frame(frame)
-        row.pack(fill="x")
-        ttk.Label(row, text="实例 / Instance").pack(side="left")
-        self.picker = ttk.Combobox(row, textvariable=self.name, values=instances(PLATFORM), width=32)
-        self.picker.pack(side="left", padx=8)
-        ttk.Checkbutton(row, text="新实例允许局域网访问", variable=self.lan).pack(side="left")
-        actions = ttk.Frame(frame)
-        actions.pack(fill="x", pady=12)
-        self.buttons = []
-        for title, action in (("创建 / 继续初始化", self.install), ("启动", lambda: self.lifecycle("start")),
-                              ("停止", lambda: self.lifecycle("stop")), ("状态", lambda: self.lifecycle("status")),
-                              ("打开 Portal", self.open_portal), ("打开日志", self.open_logs)):
-            button = ttk.Button(actions, text=title, command=lambda f=action: self.run(f))
-            button.pack(side="left", padx=(0, 6))
-            self.buttons.append(button)
-        row = ttk.Frame(frame)
-        row.pack(fill="x")
-        ttk.Label(row, text="首次管理员名称").pack(side="left")
-        ttk.Entry(row, textvariable=self.username, width=20).pack(side="left", padx=8)
-        button = ttk.Button(row, text="注册首个管理员", command=lambda: self.run(self.first_admin))
-        button.pack(side="left")
-        self.buttons.append(button)
-        ttk.Label(frame, textvariable=self.status, wraplength=780).pack(anchor="w", pady=12)
-        self.log = scrolledtext.ScrolledText(frame, height=18, state="disabled")
-        self.log.pack(fill="both", expand=True)
-        ttk.Label(frame, text="配置 AI 账号请在 Portal 页面完成。关闭此窗口不会停止已启动的实例。").pack(anchor="w", pady=8)
-        root.protocol("WM_DELETE_WINDOW", self.close)
-        root.after(100, self.poll)
+class DefaultStartup:
+    """One desktop action: prepare the default instance, then return its URL."""
+    def __init__(self, platform, progress=lambda message: None):
+        self.platform = Path(platform)
+        self.root = self.platform / "instance/example_instance"
+        self.progress = progress
+        self.log_path = self.platform / ".build/windows/logs/example_instance.log"
 
-    def close(self):
-        from tkinter import messagebox
-        if self.busy:
-            messagebox.showinfo("任务进行中", "请等待当前操作完成；不要在数据库初始化期间关闭程序。")
-        else:
-            self.root.destroy()
-
-    def run(self, action):
-        if self.busy:
-            return
-        try:
-            self.selected = instance_name(self.name.get().strip())
-            self.selected_username = self.username.get().strip()
-            self.selected_lan = self.lan.get()
-        except ValueError as exc:
-            from tkinter import messagebox
-            messagebox.showerror("输入有误", str(exc))
-            return
-        self.busy = True
-        for button in self.buttons:
-            button.configure(state="disabled")
-        self.status.set("正在处理。初始化会自动下载依赖；详细进度见日志。")
-        def work():
-            try:
-                action()
-            except Exception as exc:
-                self.events.put(("error", str(exc)))
-            finally:
-                self.events.put(("done", ""))
-        threading.Thread(target=work, daemon=False).start()
-
-    def poll(self):
-        from tkinter import messagebox
-        try:
-            while True:
-                kind, text = self.events.get_nowait()
-                if kind == "done":
-                    self.busy = False
-                    self.picker.configure(values=instances(PLATFORM))
-                    for button in self.buttons:
-                        button.configure(state="normal")
-                    self.status.set("操作已结束。若发生错误，查看下方提示和实例日志后重试。")
-                elif kind == "error":
-                    messagebox.showerror("操作未完成", text)
-                    self.append(text + "\n")
-                else:
-                    self.append(text)
-        except queue.Empty:
-            pass
-        self.root.after(100, self.poll)
-
-    def append(self, text):
-        self.log.configure(state="normal")
-        self.log.insert("end", text)
-        self.log.see("end")
-        self.log.configure(state="disabled")
+    def state(self):
+        path = self.root / "installation.json"
+        if not path.is_file():
+            raise RuntimeError("默认实例尚未完成初始化，请重试准备过程。")
+        return json.loads(path.read_text(encoding="utf-8"))
 
     def execute(self, argv):
-        directory = PLATFORM / ".build/windows/logs"
-        directory.mkdir(parents=True, exist_ok=True)
-        log = directory / (self.selected + ".log")
+        self.log_path.parent.mkdir(parents=True, exist_ok=True)
         env = os.environ.copy()
         env.update(PYTHONUTF8="1", PYTHONDONTWRITEBYTECODE="1", PYTHONUNBUFFERED="1")
-        # Source-instance environment must never select the desktop instance.
         for key in list(env):
             if key.startswith("PORTAL_") or key.startswith("TFI_WINDOWS_SERVICE_"):
                 env.pop(key)
-        self.events.put(("log", "日志：" + str(log) + "\n"))
-        with log.open("a", encoding="utf-8") as stream:
-            process = subprocess.Popen(argv, cwd=PLATFORM, env=env, stdin=subprocess.DEVNULL,
+        output = []
+        with self.log_path.open("a", encoding="utf-8") as stream:
+            process = subprocess.Popen(argv, cwd=self.platform, env=env, stdin=subprocess.DEVNULL,
                                        stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                        text=True, encoding="utf-8", errors="replace",
-                                       creationflags=subprocess.CREATE_NO_WINDOW)
+                                       creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
             for line in process.stdout:
                 stream.write(line)
                 stream.flush()
-                self.events.put(("log", line))
+                output.append(line)
+                # Diagnostic output is on disk; keep a bounded tail in memory.
+                if len(output) > 200:
+                    del output[:100]
             if process.wait():
-                raise RuntimeError(f"操作失败，请查看：{log}\n依赖安装日志位于实例 runtime/dependency-install.log。")
+                detail = "".join(output).strip()[-800:]
+                raise RuntimeError(f"准备未完成。\n{detail}\n\n可打开日志查看原因，处理后点击重试。")
+        return "".join(output)
 
-    def root_path(self):
-        root = PLATFORM / "instance" / self.selected
-        if root.is_symlink():
-            raise ValueError("实例目录不能是符号链接")
-        return root
-
-    def install(self):
-        bundle = PLATFORM / ".build/example_instance-windows/engineering/manifest.json"
-        target_path = PLATFORM / ".build/windows/targets" / (self.selected + ".json")
-        state_path = self.root_path() / "installation.json"
+    def initialize(self):
+        bundle = self.platform / ".build/example_instance-windows/engineering/manifest.json"
+        target_path = self.platform / ".build/windows/targets/example_instance.json"
         if not target_path.exists():
-            if state_path.exists():
-                raise ValueError("实例已有安装记录，请使用启动或状态按钮。")
+            if (self.root / "installation.json").exists():
+                raise ValueError("已有未完成的初始化记录，但缺少原安装参数。请查看日志，勿覆盖实例资料。")
             if not bundle.is_file():
-                if (PLATFORM / "example-seed.zip").is_file():
-                    unpack_seed(PLATFORM)
-                self.execute([str(PLATFORM / "dependencies/python/python.exe"),
-                              str(PLATFORM / "prepare_install.py"), "--platform", "windows"])
+                self.progress("正在准备示例资料")
+                if (self.platform / "example-seed.zip").is_file():
+                    unpack_seed(self.platform)
+                self.execute([str(self.platform / "dependencies/python/python.exe"),
+                              str(self.platform / "prepare_install.py"), "--platform", "windows"])
             manifest = json.loads(bundle.read_text(encoding="utf-8"))
             ports = []
-            for name in instances(PLATFORM):
-                state = json.loads((PLATFORM / "instance" / name / "installation.json").read_text(encoding="utf-8"))
+            for name in instances(self.platform):
+                state = json.loads((self.platform / "instance" / name / "installation.json").read_text(encoding="utf-8"))
                 ports.extend(state["target"]["ports"].values())
-            target = make_target(PLATFORM, self.selected, manifest, lan=self.selected_lan,
-                                 ports=choose_ports(ports))
+            target = make_target(self.platform, "example_instance", manifest, ports=choose_ports(ports))
             target_path.parent.mkdir(parents=True, exist_ok=True)
             target_path.write_text(json.dumps(target, ensure_ascii=False, indent=2), encoding="utf-8")
-        self.execute(command(PLATFORM, "install", "--manifest", bundle, "--target", target_path))
-        self.open_portal()
+        self.progress("正在安装环境并初始化 Portal\n首次使用需要联网，可能需要几分钟")
+        self.execute(command(self.platform, "install", "--manifest", bundle, "--target", target_path))
 
-    def lifecycle(self, action):
-        self.execute(command(PLATFORM, action, "--root", self.root_path()))
-        if action == "start":
-            self.open_portal()
+    def wait_ready(self, state, timeout=180):
+        target = state["target"]
+        url = f"http://127.0.0.1:{target['ports']['web']}"
+        expected = target.get("runtime_instance", target["service_prefix"])
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            try:
+                with urlopen(url + "/api/health", timeout=3) as response:
+                    result = json.loads(response.read())
+                if (result.get("ok") is True and result.get("instance") == expected
+                        and result.get("execution_layer", {}).get("ok") is True
+                        and result.get("society_service", {}).get("ok") is True):
+                    return url
+            except (OSError, ValueError):
+                pass
+            time.sleep(1)
+        raise RuntimeError("Portal 服务未能就绪，请打开日志查看启动原因。")
 
-    def open_portal(self):
-        state = json.loads((self.root_path() / "installation.json").read_text(encoding="utf-8"))
-        webbrowser.open(f"http://127.0.0.1:{state['target']['ports']['web']}/")
-
-    def open_logs(self):
-        directory = self.root_path() / "runtime"
-        if not directory.exists():
-            directory = PLATFORM / ".build/windows/logs"
-        directory.mkdir(parents=True, exist_ok=True)
-        os.startfile(directory)
-
-    def first_admin(self):
-        if not self.selected_username:
-            raise ValueError("请输入管理员名称")
-        self.execute(command(PLATFORM, "first-admin", "--root", self.root_path(), "--username", self.selected_username))
-        state = json.loads((self.root_path() / "installation.json").read_text(encoding="utf-8"))
+    def run(self):
+        from scripts.tfi_release_install import start_blocker
+        if self.root.is_symlink():
+            raise ValueError("实例目录不能是符号链接")
+        if not (self.root / "installation.json").is_file() or start_blocker(self.state()):
+            self.initialize()
+        state = self.state()
+        if start_blocker(state):
+            raise RuntimeError("初始化没有完成，尚不能启动 Portal。请查看日志后重试。")
+        self.progress("正在启动 Portal")
+        self.execute(command(self.platform, "start", "--root", self.root))
+        url = self.wait_ready(state)
+        self.progress("正在打开你的研究空间")
+        # This idempotent setup command uses the instance's own account service.
+        # Invitation secrets stay in its private file, never in log output.
+        result = json.loads(self.execute(command(self.platform, "first-admin", "--root", self.root,
+                                                "--username", "admin", "--if-needed")))
+        if result.get("status") == "already_configured":
+            return url + "/"
+        if result.get("status") != "setup_link_created":
+            raise RuntimeError("未能准备首次注册页面，请查看日志。")
         path = Path(state["target"]["data_roots"]["secrets_dir"]) / "first-admin-link.txt"
-        # Keep the invitation token out of logs and command lines.
-        webbrowser.open(invitation_url(path.read_text(encoding="utf-8")))
+        return invitation_url(path.read_text(encoding="utf-8"))
+
+
+def brand_window(root):
+    icon = PLATFORM / "branding/tfi.ico"
+    if icon.is_file():
+        root.iconbitmap(str(icon))
+
+
+class Launcher:
+    """Transient progress only; the application UI lives in the browser."""
+    def __init__(self, root):
+        import tkinter as tk
+        from tkinter import ttk
+        self.root = root
+        self.events = queue.Queue()
+        self.busy = False
+        self.ready_url = None
+        self.flow = DefaultStartup(PLATFORM, lambda text: self.events.put(("progress", text)))
+        brand_window(root)
+        root.title("The Fourth Institute")
+        root.minsize(540, 365)
+        root.resizable(False, False)
+        root.configure(bg="#f5f8f7")
+        style = ttk.Style(root)
+        style.theme_use("clam")
+        style.configure("TFI.Horizontal.TProgressbar", troughcolor="#dce8e4", background="#08616a",
+                        bordercolor="#dce8e4", lightcolor="#08616a", darkcolor="#08616a")
+        frame = tk.Frame(root, bg="#f5f8f7", padx=32, pady=24)
+        frame.pack(fill="both", expand=True)
+        mark = PLATFORM / "branding/mark.png"
+        if mark.is_file():
+            self.mark = tk.PhotoImage(file=str(mark))
+            tk.Label(frame, image=self.mark, bg="#f5f8f7").pack()
+        tk.Label(frame, text="The Fourth Institute", font=("Segoe UI", 21, "bold"),
+                 fg="#083f48", bg="#f5f8f7").pack(pady=(8, 4))
+        tk.Label(frame, text="与 AI 一起探索、协作、创造知识", font=("Microsoft YaHei UI", 10),
+                 fg="#637573", bg="#f5f8f7").pack()
+        self.status = tk.StringVar(value="正在准备你的研究空间")
+        tk.Label(frame, textvariable=self.status, wraplength=470, justify="center",
+                 font=("Microsoft YaHei UI", 10), fg="#284b4a", bg="#f5f8f7").pack(pady=(18, 12))
+        self.progress = ttk.Progressbar(frame, style="TFI.Horizontal.TProgressbar", mode="indeterminate")
+        self.progress.pack(fill="x")
+        self.failure = tk.Frame(frame, bg="#f5f8f7")
+        ttk.Button(self.failure, text="重试", command=self.begin).pack(side="left", padx=5)
+        ttk.Button(self.failure, text="查看日志", command=self.open_log).pack(side="left", padx=5)
+        root.protocol("WM_DELETE_WINDOW", self.close)
+        root.after(100, self.poll)
+        root.after(200, self.begin)
+
+    def begin(self):
+        if self.busy:
+            return
+        self.busy = True
+        self.failure.pack_forget()
+        self.status.set("正在准备你的研究空间")
+        self.progress.start()
+        def work():
+            try:
+                url = self.ready_url or self.flow.run()
+                self.events.put(("ready", url))
+            except Exception as exc:
+                try:
+                    self.flow.log_path.parent.mkdir(parents=True, exist_ok=True)
+                    with self.flow.log_path.open("a", encoding="utf-8") as stream:
+                        stream.write("\n启动未完成：" + str(exc) + "\n")
+                except OSError:
+                    pass
+                self.events.put(("error", str(exc)))
+        threading.Thread(target=work, daemon=False).start()
+
+    def open_log(self):
+        self.flow.log_path.parent.mkdir(parents=True, exist_ok=True)
+        self.flow.log_path.touch(exist_ok=True)
+        os.startfile(self.flow.log_path)
+
+    def close(self):
+        if self.busy:
+            from tkinter import messagebox
+            messagebox.showinfo("正在准备", "首次准备仍在进行，请等待完成。", parent=self.root)
+        else:
+            self.root.destroy()
+
+    def fail(self, text):
+        self.busy = False
+        self.progress.stop()
+        # Let Tk size the window from its contents, including Windows font/DPI
+        # scaling. A long error must not push recovery buttons out of view.
+        detail = text if len(text) <= 220 else text[:220] + "…\n完整原因请查看日志。"
+        self.status.set(detail)
+        self.failure.pack(pady=16)
+
+    def poll(self):
+        try:
+            while True:
+                kind, text = self.events.get_nowait()
+                if kind == "progress":
+                    self.status.set(text)
+                elif kind == "error":
+                    self.fail(text)
+                elif kind == "ready":
+                    self.busy = False
+                    self.ready_url = text
+                    try:
+                        if not webbrowser.open(text):
+                            self.fail("未能打开默认浏览器。请设置默认浏览器后重试。")
+                        else:
+                            self.root.destroy()
+                            return
+                    except OSError:
+                        self.fail("未能打开默认浏览器。请设置默认浏览器后重试。")
+        except queue.Empty:
+            pass
+        self.root.after(100, self.poll)
 
 
 def main():
@@ -429,11 +467,12 @@ def launch_desktop():
     import tkinter as tk
     from tkinter import messagebox
     root = tk.Tk()
+    brand_window(root)
     if not long_paths_enabled():
         root.withdraw()
         if not messagebox.askyesno("启用 Windows 长路径",
                                   "示例资源包含长文件路径，需要启用 Windows 长路径支持。\n"
-                                  "是否允许系统显示管理员确认窗口？成功后会自动打开实例管理窗口。\n"
+                                  "是否允许系统显示管理员确认窗口？成功后会自动继续准备 Portal。\n"
                                   "这不会修改系统 PATH 或安装系统服务。", parent=root):
             messagebox.showinfo("尚未初始化", "已取消。Portal 尚未启动；稍后可重新打开桌面启动器。", parent=root)
             root.destroy()
@@ -447,11 +486,12 @@ def launch_desktop():
 def wait_for_long_path_setup(root):
     """Keep visible feedback while the Windows authorization/helper completes."""
     from tkinter import ttk, messagebox
+    brand_window(root)
     root.title("The Fourth Institute — 正在准备")
     root.geometry("490x150")
     ttk.Label(root, padding=16, wraplength=450,
               text="正在等待 Windows 管理员授权并启用长路径。\n"
-                   "成功后会自动重新打开实例管理窗口；当前尚未启动 Portal。").pack()
+                   "成功后自动继续准备 Portal，完成后打开浏览器。").pack()
     progress = ttk.Progressbar(root, mode="indeterminate")
     progress.pack(fill="x", padx=16)
     progress.start()

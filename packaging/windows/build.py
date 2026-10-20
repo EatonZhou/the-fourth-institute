@@ -46,6 +46,7 @@ def stage(repo, destination, archive, *, source_commit=None, source_dirty=None):
     guide = destination / "packaging/windows/README.md"
     guide.parent.mkdir(parents=True)
     shutil.copyfile(repo / "packaging/windows/README.md", guide)
+    shutil.copytree(repo / "packaging/windows/branding", destination / "branding")
     with zipfile.ZipFile(destination / "example-seed.zip", "w", compression=zipfile.ZIP_DEFLATED) as zipped:
         for row in inventory(seed):
             zipped.write(seed / row["path"], row["path"])
