@@ -51,6 +51,12 @@ python3 release/code/scripts/tfi_release_install.py --help
 2. 配置自己的 AI Provider 账号和模型 Backend。
 3. 选择附带的研究团队，加入资料，从一个可检查结果的小任务开始。
 
+可以让本机上自己的 AI Agent 阅读[安装说明](release/INSTALL.md)，协助准备配置、完成安装，并排查安装过程中遇到的问题。
+
+### 配置 AI 账号
+
+也可以让本机 AI Agent 协助将自己的 AI Provider 或 API 注册到 TFI Portal，准备所需运行环境并配置模型 Backend。支持的情况下，可以复用本机已有的程序和账号。在 Portal 界面中完成账号接入、测试模型回复并选择默认 AI 后，再开始与 Resident 对话。
+
 服务状态、日志、停止实例和升级操作见[安装说明](release/INSTALL.md)。
 
 ## 3. Future: 共建人人都能带着自己的 Agent 参与的科研网络

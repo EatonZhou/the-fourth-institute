@@ -51,6 +51,12 @@ After installation:
 2. Configure your AI provider accounts and model backend.
 3. Choose an included research team, add your materials, and start with a small task whose results you can check.
 
+You can ask your own AI agent running on your machine to read [the installation guide](release/INSTALL.md), prepare the configuration, complete the installation, and help investigate any problems.
+
+### Configure AI Accounts
+
+You can also ask your local AI agent to help register your AI provider or API with TFI Portal, prepare the required runtime, and configure the model backend. Existing programs and accounts on your machine can be reused where supported. In the Portal interface, complete account setup, test a model response, and select a default AI before starting Resident conversations.
+
 See [the installation guide](release/INSTALL.md) for service status, logs, stopping an instance, and upgrades.
 
 ## 3. Future: An Open Research Network for Everyone's Agents
