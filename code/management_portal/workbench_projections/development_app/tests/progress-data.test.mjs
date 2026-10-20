@@ -79,8 +79,8 @@ async function attributedFixture() {
 }
 test("historical map attribution is neither read nor watched; ordinary stage Git evidence remains readable", async () => {
   const f = await attributedFixture();
-  const historical = "repo_5d287fed9c7e/commit/58ed6ce7a7bd170077382f4ded53400a41dc9a58/file/architecture/modules.yaml";
-  const gitSource = "repo_5d287fed9c7e/commit/58ed6ce7a7bd170077382f4ded53400a41dc9a58/file/example.py";
+  const historical = "repo_711b6ab6d5c8/commit/58ed6ce7a7bd170077382f4ded53400a41dc9a58/file/architecture/modules.yaml";
+  const gitSource = "repo_711b6ab6d5c8/commit/58ed6ce7a7bd170077382f4ded53400a41dc9a58/file/example.py";
   const c = JSON.parse(f.db[content]);
   c.module_attributions[0].module.map_ref = historical;
   c.module_attributions[0].module.ref = historical + "#L4";

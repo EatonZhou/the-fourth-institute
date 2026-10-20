@@ -51,7 +51,11 @@ def application_definition(commit: str, *, example: bool = False):
     regions = (("example", "D3 与 Worker 平台示例", "activity"),) if example else REGIONS
     sidebar = [{"id": key, "title": title, "icon": icon, "pattern": key, "source": f"package:{key}"}
                for key, title, icon in regions]
-    application = {"repo_id": config["repo_id"], "directory": "management_portal/workbench_projections/development_app",
+    prefix = str(config.get("code_directory") or "").strip("/")
+    if prefix and (prefix.startswith(".") or ".." in prefix.split("/")):
+        raise ValueError("development_projection.code_directory must be a repository-relative directory")
+    directory = "/".join(filter(None, (prefix, "management_portal/workbench_projections/development_app")))
+    application = {"repo_id": config["repo_id"], "directory": directory,
                    "commit": commit, "entries": {key: f"{key}.html" for key, _, _ in regions}}
     validate_application(application)
     value = {**_application_shell(sidebar, config, example=example), "application": application, "panels": {}}

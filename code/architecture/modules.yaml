@@ -2,7 +2,7 @@
 # model_version=2：Design 由系统、一个模块或协议唯一拥有；系统只拥有总览 Design，related_designs 只表示协议依据。
 schema: "tfi.portal-architecture.v1"
 model_version: 2
-repository: "repo_5d287fed9c7e"
+repository: "repo_711b6ab6d5c8"
 system:
   id: "portal"
   title: "TFI Portal"

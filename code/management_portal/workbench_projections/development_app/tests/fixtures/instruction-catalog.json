@@ -2,7 +2,7 @@
   "schema": "tfi.hatg-instruction-workbench.v1",
   "provenance": {
     "commit": "f25572ad4949a008259d0d5fc5b02f942d0bdfea",
-    "catalog_ref": "repo_5d287fed9c7e/commit/f25572ad4949a008259d0d5fc5b02f942d0bdfea/file/management_portal/hatg/catalog/__init__.py",
+    "catalog_ref": "repo_711b6ab6d5c8/commit/f25572ad4949a008259d0d5fc5b02f942d0bdfea/file/management_portal/hatg/catalog/__init__.py",
     "observed_at": "2026-10-18"
   },
   "catalog": {

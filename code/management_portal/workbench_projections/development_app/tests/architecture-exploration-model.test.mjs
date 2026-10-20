@@ -511,7 +511,7 @@ function localExternalFixture() {
   const model = fixture(), root = object('model-services', null, 'external');
   const children = ['chat-completion', 'typed-decisions', 'native-inference'].map(name => object(`model-services.${name}`, root.id, 'concept'));
   root.child_ids = children.map(child => child.id);
-  root.identity = { resource_ref: 'repo_5d287fed9c7e/file/architecture/modules.yaml', focus_owner_id: root.id, focus_kind: null, local_only: true };
+  root.identity = { resource_ref: 'repo_711b6ab6d5c8/file/code/architecture/modules.yaml', focus_owner_id: root.id, focus_kind: null, local_only: true };
   for (const child of children) child.identity = { ...root.identity };
   const localMechanism = mechanism(root.id, 'external-contract-example');
   root.mechanism_ids = [localMechanism.id]; children[0].mechanism_ids = [localMechanism.id];

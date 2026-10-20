@@ -83,7 +83,7 @@
         "web.e.d-web"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "interface",
         "focus_kind": "module:interface",
         "local_only": false
@@ -117,7 +117,7 @@
         "web.e.d-router"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "router",
         "focus_kind": "module:router",
         "local_only": false
@@ -172,7 +172,7 @@
         "web.e.d-web"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "web",
         "focus_kind": "module:web",
         "local_only": false
@@ -219,7 +219,7 @@
         "resources.evidence.transport"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "resources",
         "focus_kind": "module:resources",
         "local_only": false
@@ -275,7 +275,7 @@
         "ev.lineage.design-service"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "lineage",
         "focus_kind": "module:lineage",
         "local_only": false
@@ -312,7 +312,7 @@
         "ex.provider"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "execution",
         "focus_kind": "module:execution",
         "local_only": false
@@ -347,7 +347,7 @@
         "ex.provider"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "worker",
         "focus_kind": "module:worker",
         "local_only": false
@@ -374,7 +374,7 @@
       "mechanism_ids": [],
       "evidence_ids": [],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "providers",
         "focus_kind": "module:providers",
         "local_only": false
@@ -408,7 +408,7 @@
         "infra.evidence.map-notifications"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "notifications",
         "focus_kind": "module:notifications",
         "local_only": false
@@ -444,7 +444,7 @@
         "resources.evidence.design-db"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "postgres",
         "focus_kind": "module:postgres",
         "local_only": false
@@ -488,7 +488,7 @@
         "resources.evidence.update"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "storage",
         "focus_kind": "module:storage",
         "local_only": false
@@ -520,7 +520,7 @@
         "infra.evidence.map-delivery"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "delivery",
         "focus_kind": "module:delivery",
         "local_only": false
@@ -553,7 +553,7 @@
         "infra.evidence.map-engineering"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "engineering",
         "focus_kind": "module:engineering",
         "local_only": false
@@ -573,7 +573,7 @@
       "mechanism_ids": [],
       "evidence_ids": [],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "model-services",
         "focus_kind": "module:model-services",
         "local_only": false
@@ -616,7 +616,7 @@
         "web.e.isa-catalog"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "kernel.isa",
         "focus_kind": "module:kernel.isa",
         "local_only": false
@@ -663,7 +663,7 @@
         "reconciled.decision_8dc6b3d03ca7"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "resources.access",
         "focus_kind": "module:resources.access",
         "local_only": false
@@ -701,7 +701,7 @@
         "resources.evidence.registry"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "resources.types",
         "focus_kind": "module:resources.types",
         "local_only": false
@@ -744,7 +744,7 @@
         "ev.lineage.application-target"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "lineage.definition",
         "focus_kind": "module:lineage.definition",
         "local_only": false
@@ -788,7 +788,7 @@
         "ev.lineage.completion-ack"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "lineage.conversation",
         "focus_kind": "module:lineage.conversation",
         "local_only": false
@@ -830,7 +830,7 @@
         "ev.lineage.script-admission"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "lineage.automation",
         "focus_kind": "module:lineage.automation",
         "local_only": false
@@ -865,7 +865,7 @@
         "ex.provider"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "execution.scheduling",
         "focus_kind": "module:execution.scheduling",
         "local_only": false
@@ -899,7 +899,7 @@
         "ex.provider"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "execution.providers",
         "focus_kind": "module:execution.providers",
         "local_only": false
@@ -937,7 +937,7 @@
         "web.e.d-session"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "web.identity",
         "focus_kind": "module:web.identity",
         "local_only": false
@@ -971,7 +971,7 @@
         "web.e.pulse"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "web.community",
         "focus_kind": "module:web.community",
         "local_only": false
@@ -1009,7 +1009,7 @@
         "web.e.d-paper"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "web.workflows",
         "focus_kind": "module:web.workflows",
         "local_only": false
@@ -1044,7 +1044,7 @@
         "web.e.d-client"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "interface.shell",
         "focus_kind": "module:interface.shell",
         "local_only": false
@@ -1079,7 +1079,7 @@
         "web.e.d-workbench"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "interface.workbenches",
         "focus_kind": "module:interface.workbenches",
         "local_only": false
@@ -1117,7 +1117,7 @@
         "web.e.d-conversation"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "interface.conversation",
         "focus_kind": "module:interface.conversation",
         "local_only": false
@@ -1150,7 +1150,7 @@
         "web.e.d-document"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "interface.content",
         "focus_kind": "module:interface.content",
         "local_only": false
@@ -1184,7 +1184,7 @@
         "web.e.d-home"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "interface.home",
         "focus_kind": "module:interface.home",
         "local_only": false
@@ -1221,7 +1221,7 @@
         "infra.evidence.map-delivery.services"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "delivery.services",
         "focus_kind": "module:delivery.services",
         "local_only": false
@@ -1257,7 +1257,7 @@
         "web.e.d-backup"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "delivery.backup",
         "focus_kind": "module:delivery.backup",
         "local_only": false
@@ -1298,7 +1298,7 @@
         "infra.evidence.map-engineering.validation"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "engineering.validation",
         "focus_kind": "module:engineering.validation",
         "local_only": false
@@ -1344,7 +1344,7 @@
         "resources.evidence.subject"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "resources.permissions",
         "focus_kind": "module:resources.permissions",
         "local_only": false
@@ -1383,7 +1383,7 @@
         "ev.lineage.design-family"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "lineage.family",
         "focus_kind": "module:lineage.family",
         "local_only": false
@@ -1415,7 +1415,7 @@
         "ex.provider"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "execution.agent-data",
         "focus_kind": "module:execution.agent-data",
         "local_only": false
@@ -1446,7 +1446,7 @@
         "ex.provider"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "worker.harness",
         "focus_kind": "module:worker.harness",
         "local_only": false
@@ -1466,7 +1466,7 @@
       "mechanism_ids": [],
       "evidence_ids": [],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "providers.relay",
         "focus_kind": "module:providers.relay",
         "local_only": false
@@ -1507,7 +1507,7 @@
         "web.e.d-projection"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "web.projections",
         "focus_kind": "module:web.projections",
         "local_only": false
@@ -1549,7 +1549,7 @@
         "infra.evidence.map-notifications.clients"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "notifications.clients",
         "focus_kind": "module:notifications.clients",
         "local_only": false
@@ -1592,7 +1592,7 @@
         "resources.evidence.workspace-write"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "storage.workspace",
         "focus_kind": "module:storage.workspace",
         "local_only": false
@@ -1631,7 +1631,7 @@
         "resources.evidence.script-files"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "storage.artifacts",
         "focus_kind": "module:storage.artifacts",
         "local_only": false
@@ -1746,7 +1746,7 @@
         ]
       },
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "http-interface",
         "focus_kind": "protocol:http-interface",
         "local_only": false
@@ -1885,7 +1885,7 @@
       },
       "catalog_id": "hatg",
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "hatg-isa",
         "focus_kind": "protocol:hatg-isa",
         "local_only": false
@@ -1914,7 +1914,7 @@
         "infra.evidence.map-signed-rpc"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "signed-rpc",
         "focus_kind": "protocol:signed-rpc",
         "local_only": false
@@ -2048,7 +2048,7 @@
         "resources.evidence.transport"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "resource-access",
         "focus_kind": "protocol:resource-access",
         "local_only": false
@@ -2231,7 +2231,7 @@
         "resources.evidence.policy"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "resource-authorization",
         "focus_kind": "protocol:resource-authorization",
         "local_only": false
@@ -2369,7 +2369,7 @@
         "ev.lineage.design-identity"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "operation-identity",
         "focus_kind": "protocol:operation-identity",
         "local_only": false
@@ -2504,7 +2504,7 @@
         "ev.lineage.design-rpc"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "society-service",
         "focus_kind": "protocol:society-service",
         "local_only": false
@@ -2624,7 +2624,7 @@
         "ex.provider"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "resident-execution",
         "focus_kind": "protocol:resident-execution",
         "local_only": false
@@ -2744,7 +2744,7 @@
         "ex.provider"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "worker-lease",
         "focus_kind": "protocol:worker-lease",
         "local_only": false
@@ -2850,7 +2850,7 @@
         "ex.provider"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "provider-capabilities",
         "focus_kind": "protocol:provider-capabilities",
         "local_only": false
@@ -2982,7 +2982,7 @@
         "native.e.handover"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "provider-native",
         "focus_kind": "protocol:provider-native",
         "local_only": false
@@ -3097,7 +3097,7 @@
       "mechanism_ids": [],
       "evidence_ids": [],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "model-api",
         "focus_kind": "protocol:model-api",
         "local_only": false
@@ -3243,7 +3243,7 @@
         ]
       },
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "projection-family",
         "focus_kind": "protocol:projection-family",
         "local_only": false
@@ -3274,7 +3274,7 @@
         "ev.lineage.design-effect"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "lineage-events-effects",
         "focus_kind": "protocol:lineage-events-effects",
         "local_only": false
@@ -3439,7 +3439,7 @@
         "resources.evidence.design-outbox"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "database-schema",
         "focus_kind": "protocol:database-schema",
         "local_only": false
@@ -3596,7 +3596,7 @@
         "resources.evidence.lock"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "file-storage",
         "focus_kind": "protocol:file-storage",
         "local_only": false
@@ -3747,7 +3747,7 @@
         "infra.evidence.map-change-refresh"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "change-refresh",
         "focus_kind": "protocol:change-refresh",
         "local_only": false
@@ -3897,7 +3897,7 @@
         "infra.evidence.map-deployment-control"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "deployment-control",
         "focus_kind": "protocol:deployment-control",
         "local_only": false
@@ -4059,7 +4059,7 @@
         "infra.evidence.map-release-events"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "release-events",
         "focus_kind": "protocol:release-events",
         "local_only": false
@@ -4177,7 +4177,7 @@
         "infra.evidence.map-application-target"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "application-target",
         "focus_kind": "protocol:application-target",
         "local_only": false
@@ -4317,7 +4317,7 @@
         "ex.overview"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "execution",
         "focus_kind": "module:execution",
         "local_only": true
@@ -4349,7 +4349,7 @@
         "ex.overview"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "execution",
         "focus_kind": "module:execution",
         "local_only": true
@@ -4378,7 +4378,7 @@
         "ex.overview"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "execution",
         "focus_kind": "module:execution",
         "local_only": true
@@ -4409,7 +4409,7 @@
         "ex.overview"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "worker",
         "focus_kind": "module:worker",
         "local_only": true
@@ -4448,7 +4448,7 @@
         "ex.start"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "worker",
         "focus_kind": "module:worker",
         "local_only": true
@@ -4490,7 +4490,7 @@
         "ex.overview"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "worker",
         "focus_kind": "module:worker",
         "local_only": true
@@ -4523,7 +4523,7 @@
         "ex.provider"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "worker",
         "focus_kind": "module:worker",
         "local_only": true
@@ -4559,7 +4559,7 @@
         "ex.overview"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "execution.providers",
         "focus_kind": "module:execution.providers",
         "local_only": true
@@ -4589,7 +4589,7 @@
         "ex.overview"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "execution.agent-data",
         "focus_kind": "module:execution.agent-data",
         "local_only": true
@@ -4623,7 +4623,7 @@
         "ev.lineage.rpc-pools"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "lineage",
         "focus_kind": "module:lineage",
         "local_only": true
@@ -4656,7 +4656,7 @@
         "ev.lineage.definition-merge"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "lineage.definition",
         "focus_kind": "module:lineage.definition",
         "local_only": true
@@ -4687,7 +4687,7 @@
         "ev.lineage.typed-graph"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "lineage.definition",
         "focus_kind": "module:lineage.definition",
         "local_only": true
@@ -4719,7 +4719,7 @@
         "ev.lineage.design-composition"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "lineage.definition",
         "focus_kind": "module:lineage.definition",
         "local_only": true
@@ -4747,7 +4747,7 @@
         "ev.lineage.application-target"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "lineage.definition",
         "focus_kind": "module:lineage.definition",
         "local_only": true
@@ -4785,7 +4785,7 @@
         "ev.lineage.cancel-intent"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "lineage.conversation",
         "focus_kind": "module:lineage.conversation",
         "local_only": true
@@ -4820,7 +4820,7 @@
         "ev.lineage.execution-submit"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "lineage.conversation",
         "focus_kind": "module:lineage.conversation",
         "local_only": true
@@ -4853,7 +4853,7 @@
         "ev.lineage.completion-ack"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "lineage.conversation",
         "focus_kind": "module:lineage.conversation",
         "local_only": true
@@ -4889,7 +4889,7 @@
         "ev.lineage.operator-barriers"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "lineage.automation",
         "focus_kind": "module:lineage.automation",
         "local_only": true
@@ -4926,7 +4926,7 @@
         "ev.lineage.design-packet"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "lineage.automation",
         "focus_kind": "module:lineage.automation",
         "local_only": true
@@ -4967,7 +4967,7 @@
         "ev.lineage.design-effect"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "lineage.automation",
         "focus_kind": "module:lineage.automation",
         "local_only": true
@@ -5000,7 +5000,7 @@
         "ev.lineage.script-output"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "lineage.automation",
         "focus_kind": "module:lineage.automation",
         "local_only": true
@@ -5033,7 +5033,7 @@
         "ev.lineage.family-selection-validation"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "lineage.family",
         "focus_kind": "module:lineage.family",
         "local_only": true
@@ -5069,7 +5069,7 @@
         "ev.lineage.family-complete-relay"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "lineage.family",
         "focus_kind": "module:lineage.family",
         "local_only": true
@@ -5100,7 +5100,7 @@
         "ev.lineage.design-family"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "lineage.family",
         "focus_kind": "module:lineage.family",
         "local_only": true
@@ -5131,7 +5131,7 @@
         "ev.lineage.family-recovery"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "lineage.family",
         "focus_kind": "module:lineage.family",
         "local_only": true
@@ -5166,7 +5166,7 @@
         "infra.evidence.d-notify"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "notifications",
         "focus_kind": "module:notifications",
         "local_only": true
@@ -5202,7 +5202,7 @@
         "infra.evidence.d-notify"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "notifications.clients",
         "focus_kind": "module:notifications.clients",
         "local_only": true
@@ -5236,7 +5236,7 @@
         "infra.evidence.d-notify"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "notifications.clients",
         "focus_kind": "module:notifications.clients",
         "local_only": true
@@ -5271,7 +5271,7 @@
         "infra.evidence.local"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "notifications.clients",
         "focus_kind": "module:notifications.clients",
         "local_only": true
@@ -5306,7 +5306,7 @@
         "infra.evidence.sse"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "notifications.clients",
         "focus_kind": "module:notifications.clients",
         "local_only": true
@@ -5340,7 +5340,7 @@
         "infra.evidence.d-watch"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "notifications.clients",
         "focus_kind": "module:notifications.clients",
         "local_only": true
@@ -5373,7 +5373,7 @@
         "infra.evidence.reloader"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "delivery.services",
         "focus_kind": "module:delivery.services",
         "local_only": true
@@ -5405,7 +5405,7 @@
         "infra.evidence.generation"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "delivery.services",
         "focus_kind": "module:delivery.services",
         "local_only": true
@@ -5446,7 +5446,7 @@
         "infra.evidence.service-health"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "delivery.services",
         "focus_kind": "module:delivery.services",
         "local_only": true
@@ -5481,7 +5481,7 @@
         "infra.evidence.d-release"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "delivery.services",
         "focus_kind": "module:delivery.services",
         "local_only": true
@@ -5515,7 +5515,7 @@
         "infra.evidence.d-release-events"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "delivery.services",
         "focus_kind": "module:delivery.services",
         "local_only": true
@@ -5548,7 +5548,7 @@
         "infra.evidence.audit-run"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "engineering",
         "focus_kind": "module:engineering",
         "local_only": true
@@ -5580,7 +5580,7 @@
         "infra.evidence.catalog-project"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "engineering.validation",
         "focus_kind": "module:engineering.validation",
         "local_only": true
@@ -5613,7 +5613,7 @@
         "infra.evidence.validation-entry"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "engineering.validation",
         "focus_kind": "module:engineering.validation",
         "local_only": true
@@ -5651,7 +5651,7 @@
         "infra.evidence.d-test"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "engineering.validation",
         "focus_kind": "module:engineering.validation",
         "local_only": true
@@ -5683,7 +5683,7 @@
         "infra.evidence.runs"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "engineering.validation",
         "focus_kind": "module:engineering.validation",
         "local_only": true
@@ -5718,7 +5718,7 @@
         "infra.evidence.d-tau"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "engineering.validation",
         "focus_kind": "module:engineering.validation",
         "local_only": true
@@ -5751,7 +5751,7 @@
         "resources.evidence.read"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "resources.access",
         "focus_kind": "module:resources.access",
         "local_only": true
@@ -5789,7 +5789,7 @@
         "reconciled.decision_8dc6b3d03ca7"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "resources.access",
         "focus_kind": "module:resources.access",
         "local_only": true
@@ -5822,7 +5822,7 @@
         "resources.evidence.registration"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "resources.access",
         "focus_kind": "module:resources.access",
         "local_only": true
@@ -5854,7 +5854,7 @@
         "resources.evidence.registry"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "resources.types",
         "focus_kind": "module:resources.types",
         "local_only": true
@@ -5890,7 +5890,7 @@
         "resources.evidence.workspace-read"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "resources.types",
         "focus_kind": "module:resources.types",
         "local_only": true
@@ -5923,7 +5923,7 @@
         "resources.evidence.update"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "resources.types",
         "focus_kind": "module:resources.types",
         "local_only": true
@@ -5955,7 +5955,7 @@
         "resources.evidence.subject"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "resources.permissions",
         "focus_kind": "module:resources.permissions",
         "local_only": true
@@ -5988,7 +5988,7 @@
         "resources.evidence.kernel"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "resources.permissions",
         "focus_kind": "module:resources.permissions",
         "local_only": true
@@ -6021,7 +6021,7 @@
         "resources.evidence.policy"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "resources.permissions",
         "focus_kind": "module:resources.permissions",
         "local_only": true
@@ -6057,7 +6057,7 @@
         "resources.evidence.resource-lock"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "storage.workspace",
         "focus_kind": "module:storage.workspace",
         "local_only": true
@@ -6094,7 +6094,7 @@
         "reconciled.decision_0e043d5f81be"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "storage.workspace",
         "focus_kind": "module:storage.workspace",
         "local_only": true
@@ -6129,7 +6129,7 @@
         "resources.evidence.workspace-write"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "storage.workspace",
         "focus_kind": "module:storage.workspace",
         "local_only": true
@@ -6162,7 +6162,7 @@
         "resources.evidence.effect-artifact"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "storage.artifacts",
         "focus_kind": "module:storage.artifacts",
         "local_only": true
@@ -6196,7 +6196,7 @@
         "resources.evidence.harness-scope"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "storage.artifacts",
         "focus_kind": "module:storage.artifacts",
         "local_only": true
@@ -6228,7 +6228,7 @@
         "resources.evidence.application-artifact"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "storage.artifacts",
         "focus_kind": "module:storage.artifacts",
         "local_only": true
@@ -6261,7 +6261,7 @@
         "web.e.api-result"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "interface.shell",
         "focus_kind": "module:interface.shell",
         "local_only": true
@@ -6294,7 +6294,7 @@
         "web.e.client-watch"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "interface.shell",
         "focus_kind": "module:interface.shell",
         "local_only": true
@@ -6325,7 +6325,7 @@
         "web.e.refresh-hidden"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "interface.shell",
         "focus_kind": "module:interface.shell",
         "local_only": true
@@ -6356,7 +6356,7 @@
         "web.e.d-package"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "interface.workbenches",
         "focus_kind": "module:interface.workbenches",
         "local_only": true
@@ -6387,7 +6387,7 @@
         "web.e.d-workbench"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "interface.workbenches",
         "focus_kind": "module:interface.workbenches",
         "local_only": true
@@ -6427,7 +6427,7 @@
         "web.e.projection-feedback"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "interface.workbenches",
         "focus_kind": "module:interface.workbenches",
         "local_only": true
@@ -6459,7 +6459,7 @@
         "web.e.projection-sdk"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "interface.workbenches",
         "focus_kind": "module:interface.workbenches",
         "local_only": true
@@ -6494,7 +6494,7 @@
         "web.e.resident-repair"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "interface.conversation",
         "focus_kind": "module:interface.conversation",
         "local_only": true
@@ -6526,7 +6526,7 @@
         "web.e.document-owner"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "interface.content",
         "focus_kind": "module:interface.content",
         "local_only": true
@@ -6557,7 +6557,7 @@
         "web.e.document-save"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "interface.content",
         "focus_kind": "module:interface.content",
         "local_only": true
@@ -6588,7 +6588,7 @@
         "web.e.home-destroy"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "interface.home",
         "focus_kind": "module:interface.home",
         "local_only": true
@@ -6618,7 +6618,7 @@
         "web.e.home-visible"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "interface.home",
         "focus_kind": "module:interface.home",
         "local_only": true
@@ -6648,7 +6648,7 @@
         "web.e.router-select"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "router",
         "focus_kind": "module:router",
         "local_only": true
@@ -6683,7 +6683,7 @@
         "web.e.router-forward"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "router",
         "focus_kind": "module:router",
         "local_only": true
@@ -6718,7 +6718,7 @@
         "web.e.web-stream"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "web",
         "focus_kind": "module:web",
         "local_only": true
@@ -6754,7 +6754,7 @@
         "web.e.isa-describe"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "kernel.isa",
         "focus_kind": "module:kernel.isa",
         "local_only": true
@@ -6792,7 +6792,7 @@
         "web.e.isa-route"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "kernel.isa",
         "focus_kind": "module:kernel.isa",
         "local_only": true
@@ -6829,7 +6829,7 @@
         "web.e.isa-replay"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "kernel.isa",
         "focus_kind": "module:kernel.isa",
         "local_only": true
@@ -6859,7 +6859,7 @@
         "web.e.session"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "web.identity",
         "focus_kind": "module:web.identity",
         "local_only": true
@@ -6889,7 +6889,7 @@
         "web.e.login"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "web.identity",
         "focus_kind": "module:web.identity",
         "local_only": true
@@ -6919,7 +6919,7 @@
         "web.e.chatroom-post"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "web.community",
         "focus_kind": "module:web.community",
         "local_only": true
@@ -6950,7 +6950,7 @@
         "web.e.discussion-lock"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "web.community",
         "focus_kind": "module:web.community",
         "local_only": true
@@ -6978,7 +6978,7 @@
         "web.e.pulse"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "web.community",
         "focus_kind": "module:web.community",
         "local_only": true
@@ -7010,7 +7010,7 @@
         "web.e.d-business"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "web.workflows",
         "focus_kind": "module:web.workflows",
         "local_only": true
@@ -7042,7 +7042,7 @@
         "web.e.d-paper"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "web.workflows",
         "focus_kind": "module:web.workflows",
         "local_only": true
@@ -7072,7 +7072,7 @@
         "web.e.d-wall"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "web.workflows",
         "focus_kind": "module:web.workflows",
         "local_only": true
@@ -7100,7 +7100,7 @@
         "web.e.archive-client"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "web.workflows",
         "focus_kind": "module:web.workflows",
         "local_only": true
@@ -7135,7 +7135,7 @@
         "web.e.d-projection"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "web.projections",
         "focus_kind": "module:web.projections",
         "local_only": true
@@ -7169,7 +7169,7 @@
         "web.e.d-focus"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "web.projections",
         "focus_kind": "module:web.projections",
         "local_only": true
@@ -7198,7 +7198,7 @@
         "web.e.d-save"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "web.projections",
         "focus_kind": "module:web.projections",
         "local_only": true
@@ -7227,7 +7227,7 @@
         "web.e.d-association"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "web.projections",
         "focus_kind": "module:web.projections",
         "local_only": true
@@ -7261,7 +7261,7 @@
         "web.e.backup-effect"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "delivery.backup",
         "focus_kind": "module:delivery.backup",
         "local_only": true
@@ -7290,7 +7290,7 @@
         "web.e.d-backup"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "delivery.backup",
         "focus_kind": "module:delivery.backup",
         "local_only": true
@@ -7327,7 +7327,7 @@
         "native.e.contract"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "execution.providers",
         "focus_kind": "module:execution.providers",
         "local_only": true
@@ -7364,7 +7364,7 @@
         "native.e.control"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "execution.providers",
         "focus_kind": "module:execution.providers",
         "local_only": true
@@ -7398,7 +7398,7 @@
         "native.e.control-design"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "providers",
         "focus_kind": "module:providers",
         "local_only": true
@@ -7410,7 +7410,7 @@
       "id": "infra.evidence.hub",
       "kind": "code",
       "claim": "有界游标日志在锁内递增，订阅回调在锁外通知；旧游标需要快照。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/notifications/bus.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/notifications/bus.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "231099e9c6a6a43a6c938d18205f5cabd9d8c74dc9301b26b73c321bdcb3b978",
       "start_line": 26,
@@ -7427,7 +7427,7 @@
       "id": "infra.evidence.publisher",
       "kind": "code",
       "claim": "本地队列、字节上限、后台连接、flush 与失败重入队。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/notifications/bus.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/notifications/bus.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "231099e9c6a6a43a6c938d18205f5cabd9d8c74dc9301b26b73c321bdcb3b978",
       "start_line": 107,
@@ -7444,7 +7444,7 @@
       "id": "infra.evidence.listener",
       "kind": "code",
       "claim": "订阅 portal.>，向本地 Hub 转交提示；每次连接发布 snapshot-required。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/notifications/bus.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/notifications/bus.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "231099e9c6a6a43a6c938d18205f5cabd9d8c74dc9301b26b73c321bdcb3b978",
       "start_line": 250,
@@ -7461,7 +7461,7 @@
       "id": "infra.evidence.fanout",
       "kind": "code",
       "claim": "订阅队列溢出清空并放入一次快照哨兵。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/notifications/async_fanout.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/notifications/async_fanout.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "78aa7513f987cdc448ec0f9b0cf98715f633afd7a13df4664f84c92ab60af6f6",
       "start_line": 43,
@@ -7478,7 +7478,7 @@
       "id": "infra.evidence.fanout-pending",
       "kind": "code",
       "claim": "一个 Hub 回调跨线程投递到一个 asyncio 分发器；pending 溢出要求各订阅重取快照。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/notifications/async_fanout.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/notifications/async_fanout.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "78aa7513f987cdc448ec0f9b0cf98715f633afd7a13df4664f84c92ab60af6f6",
       "start_line": 141,
@@ -7495,7 +7495,7 @@
       "id": "infra.evidence.watch",
       "kind": "code",
       "claim": "inotify 建立目录监听、处理新目录与溢出、只回调变更提示。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/notifications/file_watch.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/notifications/file_watch.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "0aaa6e9e369a3ca253a0d281496e7a2ef3d771a557cc061e9a13021a69518795",
       "start_line": 164,
@@ -7512,7 +7512,7 @@
       "id": "infra.evidence.sse",
       "kind": "code",
       "claim": "过滤域/Resident，按 actor 构造有效载荷；超时、drain、队列溢出转快照提示。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/asgi.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/asgi.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "02c162fbbabd60c12c7829126151d3615eb20f3fd2db430de7ac97192291ddf7",
       "start_line": 222,
@@ -7529,7 +7529,7 @@
       "id": "infra.evidence.rpc-sign",
       "kind": "code",
       "claim": "签名绑定 schema、method、params digest、actor、时间戳、nonce；时窗 30 秒。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_common/rpc_auth.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_common/rpc_auth.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "b0643dda563bfbf9e50e051a27d64b3d88e1e378d91b8c0f85295abcc3b46531",
       "start_line": 96,
@@ -7546,7 +7546,7 @@
       "id": "infra.evidence.rpc-nonce",
       "kind": "code",
       "claim": "调用方按目标 socket 取签名材料；服务端本进程 nonce 缓存防重放。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_common/rpc_auth.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_common/rpc_auth.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "b0643dda563bfbf9e50e051a27d64b3d88e1e378d91b8c0f85295abcc3b46531",
       "start_line": 193,
@@ -7563,7 +7563,7 @@
       "id": "infra.evidence.rpc-client",
       "kind": "code",
       "claim": "换代只在连接前等待；已发调用读回缺失或不匹配时返回提交状态 unknown。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/hatg/socket_rpc.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/hatg/socket_rpc.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "356b5d152aef48065fc1e02dc31f412cead9b1d53e1e8c9cf9322fba73e5f733",
       "start_line": 107,
@@ -7580,7 +7580,7 @@
       "id": "infra.evidence.rpc-server",
       "kind": "code",
       "claim": "先验证签名与 subject actor，再进入授权上下文和业务 dispatch。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/society_service/server.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/society_service/server.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "d62d0847e3ca805f6f219e099feb1f06eb06cf9777022dff7f237e8899919130",
       "start_line": 429,
@@ -7597,7 +7597,7 @@
       "id": "infra.evidence.release",
       "kind": "code",
       "claim": "切换锁覆盖 Release 流程；本地健康检查与远端 push 结果分别记录。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/scripts/publish_portal_release.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/scripts/publish_portal_release.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "1b31541883a88f7996b3f0f02c0f2ca2f692b151482601fb91710d9db095e387",
       "start_line": 139,
@@ -7614,7 +7614,7 @@
       "id": "infra.evidence.service-lock",
       "kind": "code",
       "claim": "服务动作按实例串行。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/scripts/portal_services.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/scripts/portal_services.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "30dffb485a0629e73072eefff299f38613fb8719d0d2cf18ecd3fe48d29382f0",
       "start_line": 192,
@@ -7631,7 +7631,7 @@
       "id": "infra.evidence.service-restart",
       "kind": "code",
       "claim": "选定组件换代、Web 倒计时、Resource/Lineage 顺序、Execution reload、显式 Worker 重启与健康门。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/scripts/portal_services.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/scripts/portal_services.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "30dffb485a0629e73072eefff299f38613fb8719d0d2cf18ecd3fe48d29382f0",
       "start_line": 638,
@@ -7648,7 +7648,7 @@
       "id": "infra.evidence.service-health",
       "kind": "code",
       "claim": "健康检查确认组件版本/PID，显式 Worker 换代还校验新 worker_id。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/scripts/portal_services.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/scripts/portal_services.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "30dffb485a0629e73072eefff299f38613fb8719d0d2cf18ecd3fe48d29382f0",
       "start_line": 499,
@@ -7665,7 +7665,7 @@
       "id": "infra.evidence.request",
       "kind": "code",
       "claim": "受锁保护的请求 union、revision 增长；相同 id+revision 才能删除已处理请求。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/scripts/portal_dev_restart_requests.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/scripts/portal_dev_restart_requests.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "9c322a7fc5425dba9940d04de6f0d402151e6a0c751ef942e531630be6c9da51",
       "start_line": 24,
@@ -7682,7 +7682,7 @@
       "id": "infra.evidence.reloader",
       "kind": "code",
       "claim": "reloader 合并自动/手动组件，成功才确认；失败 token 保留且不紧循环重试。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/scripts/portal_dev_source_reloader.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/scripts/portal_dev_source_reloader.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "10ddb65f0d59cf3eaf903bae887272c8dff08ffa3da41cc11da8f0d62f031d1a",
       "start_line": 475,
@@ -7699,7 +7699,7 @@
       "id": "infra.evidence.generation",
       "kind": "code",
       "claim": "路径和文件 bytes 计算内容 build ID；仅更新选定组件的版本标记。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/scripts/portal_dev_generation.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/scripts/portal_dev_generation.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "60a4f3b8836eb156a2b64113676142d61ac83c0b0625fbc5a89408daa2c1aef5",
       "start_line": 116,
@@ -7716,7 +7716,7 @@
       "id": "infra.evidence.release-facts",
       "kind": "code",
       "claim": "只接收完成且活动 commit 一致的发布；持久 seq 游标和 publication_key 幂等。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_common/portal_release_events.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_common/portal_release_events.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "894e98e58144f3452c608f8508feadbcec5ae7958890dc07a053ce3c4a7c1eb8",
       "start_line": 15,
@@ -7733,7 +7733,7 @@
       "id": "infra.evidence.release-consumer",
       "kind": "code",
       "claim": "首次绑定以最新事实建立基线；已有游标读取 after，可选 coalesce_latest。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/society_service/lineage_release_events.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/society_service/lineage_release_events.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "0b36ef93f20cef251006797835d73a1d883dfc30a4eaa5640625c2e4a7af2e60",
       "start_line": 14,
@@ -7750,7 +7750,7 @@
       "id": "infra.evidence.audit",
       "kind": "code",
       "claim": "模块归属与来源检查；当前父级检查只容许两层，深层正式地图需要适配。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/scripts/check_portal_architecture.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/scripts/check_portal_architecture.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "226209f1e5c3399ecba5433da9e8f4a83a8669058c24e399de101d1af2f1f6e9",
       "start_line": 187,
@@ -7767,7 +7767,7 @@
       "id": "infra.evidence.audit-run",
       "kind": "code",
       "claim": "固定 git 输入与独立 Design 观察；报告区分 has_deviations 与 audit_failed。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/scripts/check_portal_architecture.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/scripts/check_portal_architecture.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "226209f1e5c3399ecba5433da9e8f4a83a8669058c24e399de101d1af2f1f6e9",
       "start_line": 381,
@@ -7784,7 +7784,7 @@
       "id": "infra.evidence.catalog",
       "kind": "code",
       "claim": "计划保存精确 source digest；声明式 TAU case 可按单 case 语义摘要验证。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/tests/framework/catalog.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/tests/framework/catalog.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "9f5ee36b872ae0b22b68eb8fa0a59e5e3bfe6d6de0cd3fcb8169735e1ce867ec",
       "start_line": 114,
@@ -7801,7 +7801,7 @@
       "id": "infra.evidence.catalog-project",
       "kind": "code",
       "claim": "目录和编辑合并，重复身份/入口与不可用源生成诊断并排除。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/tests/framework/catalog.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/tests/framework/catalog.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "9f5ee36b872ae0b22b68eb8fa0a59e5e3bfe6d6de0cd3fcb8169735e1ce867ec",
       "start_line": 256,
@@ -7818,7 +7818,7 @@
       "id": "infra.evidence.plan",
       "kind": "code",
       "claim": "展开 runner/profile/实现与模块分组；冻结来源并计算 plan_id；混跑和 TAU fail-fast 无效。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/tests/framework/planner.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/tests/framework/planner.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "978ca70b757046e4f673b5929a8f57e12466900be2d0eac5a60959c4347af085",
       "start_line": 50,
@@ -7835,7 +7835,7 @@
       "id": "infra.evidence.validation-entry",
       "kind": "code",
       "claim": "服务端启动时重新构造计划，不信任客户端预览对象。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/tests/framework/service.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/tests/framework/service.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "595b3a55b6ffb3b76b09a0f555c2e434d85f1a7e26bd5588597914e6ad74feb1",
       "start_line": 145,
@@ -7852,7 +7852,7 @@
       "id": "infra.evidence.runs",
       "kind": "code",
       "claim": "TAU 准入锁覆盖 Run 创建；启动失败持久标记；已落盘运行恢复不重复新建准入，取消只允许创建者。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/tests/framework/records.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/tests/framework/records.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "14e2d0019aad386c2ca4fa45436c5de80c7e886e5cc92bcd1bc4e35b471605fa",
       "start_line": 520,
@@ -7869,7 +7869,7 @@
       "id": "infra.evidence.executor",
       "kind": "code",
       "claim": "run_id 对应稳定 systemd user unit，浏览器请求退出后执行继续；TAU 与本地时限不同。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/tests/framework/executor.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/tests/framework/executor.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "22f13b8d8886ded61e4bd79b80d2bbf2cad321249f53af4fb107f967b4c515b0",
       "start_line": 45,
@@ -7886,7 +7886,7 @@
       "id": "infra.evidence.campaign",
       "kind": "code",
       "claim": "模块槽串行、源变化阻止新调用、取消和清理决定后续启动。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/tests/framework/tau_campaign.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/tests/framework/tau_campaign.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "7e48bb2b2c935e376d01846ccd41441c7e8de702e5c427b72b23319d4e697ae0",
       "start_line": 174,
@@ -7903,7 +7903,7 @@
       "id": "infra.evidence.campaign-resume",
       "kind": "code",
       "claim": "持久 active_invocation 三个身份完整时恢复同一调用；未确认时才新建并重新校验源。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/tests/framework/tau_campaign.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/tests/framework/tau_campaign.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "7e48bb2b2c935e376d01846ccd41441c7e8de702e5c427b72b23319d4e697ae0",
       "start_line": 289,
@@ -7920,7 +7920,7 @@
       "id": "infra.evidence.target-binding",
       "kind": "code",
       "claim": "封闭业务键映射真实配置表；校验目标可用性，无自动创建替代目标。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/application_targets.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/application_targets.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "9e18f1f4315630de4dc7e2e64c9d024c691c0c3ae74798d4126af7a75e80ceda",
       "start_line": 30,
@@ -7937,7 +7937,7 @@
       "id": "infra.evidence.target-admin",
       "kind": "code",
       "claim": "仅 portal_admin 配置读写；显示 target_available 和 admission_state。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/society_service/application_target_configuration.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/society_service/application_target_configuration.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "d23a6e153867c966485981e2c2f6f9695034e272f1dba33734ef79362972889b",
       "start_line": 32,
@@ -7954,7 +7954,7 @@
       "id": "infra.evidence.target-cas",
       "kind": "code",
       "claim": "advisory lock 与行锁串行 CAS；已配置 TAU 换绑必须前后均暂停。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/society_service/application_target_configuration.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/society_service/application_target_configuration.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "d23a6e153867c966485981e2c2f6f9695034e272f1dba33734ef79362972889b",
       "start_line": 73,
@@ -7971,7 +7971,7 @@
       "id": "infra.evidence.target-admission",
       "kind": "code",
       "claim": "TAU FOR SHARE 锁与 Run 落盘同作用域；暂停/未配置拒绝新建。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/society_service/application_target_configuration.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/society_service/application_target_configuration.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "d23a6e153867c966485981e2c2f6f9695034e272f1dba33734ef79362972889b",
       "start_line": 122,

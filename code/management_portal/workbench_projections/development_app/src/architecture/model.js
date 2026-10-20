@@ -1,9 +1,9 @@
 import { schemaMatches } from '../shared/format-tags.js';
 import { matchesCurrentModuleMap } from '../shared/current-module-map.js';
 // Architecture relations are evidence associations, never inferred call order.
-export const REPOSITORY = 'repo_5d287fed9c7e';
-export const MAP_REF = `${REPOSITORY}/file/architecture/modules.yaml`;
-export const EVOLUTION_REF = `${REPOSITORY}/file/architecture/evolution.yaml`;
+export const REPOSITORY = 'repo_711b6ab6d5c8';
+export const MAP_REF = `${REPOSITORY}/file/code/architecture/modules.yaml`;
+export const EVOLUTION_REF = `${REPOSITORY}/file/code/architecture/evolution.yaml`;
 export const MANIFEST_REF = 'workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/architecture-evidence/manifest.json';
 export const unique = values => [...new Set(values)];
 export const key = (type, id) => `${type}:${id}`;
@@ -202,7 +202,7 @@ export function graphForView(data, view) {
   }
   if (view.level >= 2) {
     for (const f of view.files || []) {
-      const fileNode = { id: key('file', f.path), type: 'file', label: f.path.split('/').pop(), subtitle: f.path, ref: data.mode === 'current' ? `${REPOSITORY}/file/${f.path}` : f.content_address, source: data.indexRef, data: f };
+      const fileNode = { id: key('file', f.path), type: 'file', label: f.path.split('/').pop(), subtitle: f.path, ref: data.mode === 'current' ? `${REPOSITORY}/file/code/${f.path}` : f.content_address, source: data.indexRef, data: f };
       if (!f.module_matches.length) nodes.push(fileNode);
       for (const match of f.module_matches) if (detailModules.some(m => m.id === match.module_id)) addDetail(fileNode, match.module_id, '代码匹配');
     }

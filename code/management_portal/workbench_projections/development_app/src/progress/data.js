@@ -3,7 +3,7 @@ import { schemaMatches } from "../shared/format-tags.js";
 import { contentDigest } from "../shared/content-digest.js";
 export const REFERENCES = Object.freeze({
   index: "workspace_f9ff5e8a76df/file/reports/stage-index.json",
-  modules: "repo_5d287fed9c7e/file/architecture/modules.yaml",
+  modules: "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
 });
 const array = (x) => (Array.isArray(x) ? x : []);
 export async function digest(text) {

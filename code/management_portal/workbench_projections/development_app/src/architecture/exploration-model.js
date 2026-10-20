@@ -15,7 +15,7 @@ const list = value => Array.isArray(value) ? value : [];
 const has = (value, key) => Object.hasOwn(value, key);
 const LOCAL_EXTERNAL_ROOT = 'model-services';
 const LOCAL_EXTERNAL_CONCEPTS = new Set(['model-services.chat-completion', 'model-services.typed-decisions', 'model-services.native-inference']);
-const MAP_SOURCE = 'repo_5d287fed9c7e/file/architecture/modules.yaml';
+const MAP_SOURCE = 'repo_711b6ab6d5c8/file/code/architecture/modules.yaml';
 const matchesType = (value, type) => type === 'integer' ? Number.isInteger(value)
   : type === 'number' ? typeof value === 'number' && Number.isFinite(value)
     : type === 'object' ? record(value) : type === 'array' ? Array.isArray(value) : typeof value === type;

@@ -19,7 +19,7 @@ try {
  await page.addScriptTag({content:built.outputFiles.find(f=>f.path.endsWith('.js')).text});
  await page.evaluate(async()=>{
   window.reads=[];window.title='当前模块';
-  const repo='repo_5d287fed9c7e',mapRef=repo+'/file/architecture/modules.yaml',evolution=repo+'/file/architecture/evolution.yaml';
+  const repo='repo_711b6ab6d5c8',mapRef=repo+'/file/architecture/modules.yaml',evolution=repo+'/file/architecture/evolution.yaml';
   const resources={resolve:async()=>({readable:true}),read:async(ref,format)=>{
    window.reads.push(ref);
    let data;

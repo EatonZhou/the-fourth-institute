@@ -87,7 +87,7 @@ export function representativeFor(data, category) {
 }
 export function sourceForLesson(name) {
   const source = lessons[name]?.source;
-  return source ? `repo_5d287fed9c7e/file/${source}` : '';
+  return source ? `repo_711b6ab6d5c8/file/code/${source}` : '';
 }
 
 // Only a local teaching view. No result is presented as an actual ISA receipt.

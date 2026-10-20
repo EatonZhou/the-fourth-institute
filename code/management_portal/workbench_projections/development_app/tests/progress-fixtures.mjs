@@ -4,7 +4,7 @@ export const stage = "workspace_f9ff5e8a76df/file/reports/stage-index.json";
 export const content = "workspace_f9ff5e8a76df/file/reports/stage-content.json";
 export const schema =
   "workspace_f9ff5e8a76df/file/reports/stage-report-schema.json";
-export const map = "repo_5d287fed9c7e/file/architecture/modules.yaml";
+export const map = "repo_711b6ab6d5c8/file/code/architecture/modules.yaml";
 export const report = "workspace_f9ff5e8a76df/file/reports/stages/test.json";
 export const sha = async (text) =>
   Array.from(

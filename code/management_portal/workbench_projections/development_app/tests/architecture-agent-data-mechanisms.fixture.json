@@ -2322,7 +2322,7 @@
         "ex.provider"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "execution.scheduling",
         "focus_kind": "module:execution.scheduling",
         "local_only": false
@@ -2356,7 +2356,7 @@
         "es.ev.segment"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "execution.agent-data",
         "focus_kind": "module:execution.agent-data",
         "local_only": true
@@ -2392,7 +2392,7 @@
         "es.ev.fork"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "execution.agent-data",
         "focus_kind": "module:execution.agent-data",
         "local_only": true
@@ -2429,7 +2429,7 @@
         "es.ev.design-data"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "execution.agent-data",
         "focus_kind": "module:execution.agent-data",
         "local_only": true
@@ -2464,7 +2464,7 @@
         "es.ev.chat-read"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "execution.agent-data",
         "focus_kind": "module:execution.agent-data",
         "local_only": true
@@ -2496,7 +2496,7 @@
         "es.ev.transform"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "execution.agent-data",
         "focus_kind": "module:execution.agent-data",
         "local_only": true
@@ -2532,7 +2532,7 @@
         "es.ev.accept"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "execution.agent-data",
         "focus_kind": "module:execution.agent-data",
         "local_only": true
@@ -2567,7 +2567,7 @@
         "es.ev.project-complete"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "execution.agent-data",
         "focus_kind": "module:execution.agent-data",
         "local_only": true
@@ -2579,7 +2579,7 @@
       "id": "es.ev.payload",
       "kind": "code",
       "claim": "Payload 依原始字节 SHA-256 复用物理正文。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_store.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_store.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85",
       "start_line": 673,
@@ -2596,7 +2596,7 @@
       "id": "es.ev.segment",
       "kind": "code",
       "claim": "Segment 身份及内容四元组不可变；相同身份冲突抛 SegmentIdentityConflict。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_store.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_store.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85",
       "start_line": 709,
@@ -2613,7 +2613,7 @@
       "id": "es.ev.append",
       "kind": "code",
       "claim": "锁住目标 Sequence 后按位置追加已存在 Segment；重复选择不重复添加。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_store.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_store.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85",
       "start_line": 1124,
@@ -2630,7 +2630,7 @@
       "id": "es.ev.transform",
       "kind": "code",
       "claim": "事务检查当前成员，建立转换边并替换当前引用；不删除来源内容。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_store.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_store.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85",
       "start_line": 1190,
@@ -2647,7 +2647,7 @@
       "id": "es.ev.fork",
       "kind": "code",
       "claim": "Fork 冻结所选有序 ID，拒绝重复/未知 ID 或不同内容的非空目标。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_store.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_store.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85",
       "start_line": 1257,
@@ -2664,7 +2664,7 @@
       "id": "es.ev.context",
       "kind": "code",
       "claim": "按 trace 与明确截止位置读取有效窗口，到压缩/重置停止；非法截止点拒绝。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_store.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_store.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85",
       "start_line": 1350,
@@ -2681,7 +2681,7 @@
       "id": "es.ev.chat",
       "kind": "code",
       "claim": "Chat 是查询局部投影，消息事实/通知和最终回复折叠不改变模型 trace。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/conversation_projection.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/conversation_projection.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "410ac457067054040727124eeb9a93a3d47221990bd9239a1c6fc1872f817016",
       "start_line": 14,
@@ -2698,7 +2698,7 @@
       "id": "es.ev.message",
       "kind": "code",
       "claim": "从唯一正文和附件顺序恢复通信消息；改写后长度不符使用当前正文。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/message_projection.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/message_projection.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "0b20e1cbe1818018c281b1767357c502a101ecf0f907e1088e59f793d0cb3c3d",
       "start_line": 70,
@@ -2715,7 +2715,7 @@
       "id": "es.ev.chat-read",
       "kind": "code",
       "claim": "按 Agent trace 读取聊天；没有 trace 返回空，不扫描全库构造对话。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_store.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_store.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85",
       "start_line": 3142,
@@ -2732,7 +2732,7 @@
       "id": "es.ev.execution",
       "kind": "code",
       "claim": "同一 execution_id 保留 agent/actor/provider 身份，开始重放不能改 provenance。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_store.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_store.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85",
       "start_line": 1994,
@@ -2749,7 +2749,7 @@
       "id": "es.ev.accept",
       "kind": "code",
       "claim": "输入接受需非空 Provider turn；相同 turn 重放幂等，非 running 新 turn 拒绝。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_store.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_store.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85",
       "start_line": 2318,
@@ -2766,7 +2766,7 @@
       "id": "es.ev.receipt",
       "kind": "code",
       "claim": "首次会话接受回执存 agent_operations，不是内容 Segment。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_store.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_store.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85",
       "start_line": 2151,
@@ -2783,7 +2783,7 @@
       "id": "es.ev.terminal",
       "kind": "code",
       "claim": "终态相同重放可接受、冲突终态拒绝；内容收尾仅记录用量和 turn。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_store.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_store.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "3efbcb70fe764b21a9c8af0de432e6ae68c12b3c3c7d78f0962216deb4451f85",
       "start_line": 2354,
@@ -2800,7 +2800,7 @@
       "id": "es.ev.project-begin",
       "kind": "code",
       "claim": "开始输入投影与恢复有效输入；准备投影失败的实现路径还会 finish_execution(failed)。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_projection.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_projection.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "a509c7736ec33b32f061d1bbdfc0dfb0ce324383f9929f7d90db13f15c807365",
       "start_line": 382,
@@ -2817,7 +2817,7 @@
       "id": "es.ev.project-input",
       "kind": "code",
       "claim": "Harness 实际输入替换当前引用；Fork 只能替换唯一新输入片段，保留继承边界。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_projection.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_projection.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "a509c7736ec33b32f061d1bbdfc0dfb0ce324383f9929f7d90db13f15c807365",
       "start_line": 471,
@@ -2834,7 +2834,7 @@
       "id": "es.ev.project-bind",
       "kind": "code",
       "claim": "建立执行到原生会话的关联；执行内身份改变拒绝，提前缓存的压缩按序补写。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_projection.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_projection.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "a509c7736ec33b32f061d1bbdfc0dfb0ce324383f9929f7d90db13f15c807365",
       "start_line": 576,
@@ -2851,7 +2851,7 @@
       "id": "es.ev.project-accept",
       "kind": "code",
       "claim": "provider_input_bound 先关联 Provider Session 再写输入接受回执。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_projection.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_projection.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "a509c7736ec33b32f061d1bbdfc0dfb0ce324383f9929f7d90db13f15c807365",
       "start_line": 669,
@@ -2868,7 +2868,7 @@
       "id": "es.ev.project-events",
       "kind": "code",
       "claim": "运行卡片、子 agent 更新等有自己的记录路径，不能据卡片推断模型完成。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_projection.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_projection.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "a509c7736ec33b32f061d1bbdfc0dfb0ce324383f9929f7d90db13f15c807365",
       "start_line": 934,
@@ -2885,7 +2885,7 @@
       "id": "es.ev.project-model",
       "kind": "code",
       "claim": "已完成 agentMessage/assistant response_item 进入内容投影；流式文字不覆盖此路径。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_projection.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_projection.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "a509c7736ec33b32f061d1bbdfc0dfb0ce324383f9929f7d90db13f15c807365",
       "start_line": 1021,
@@ -2902,7 +2902,7 @@
       "id": "es.ev.model-identity",
       "kind": "code",
       "claim": "模型输出 ID 由执行/turn/item/phase 确定；Resident 主回复交有序 Conversation 消费者加入 trace。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_projection.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_projection.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "a509c7736ec33b32f061d1bbdfc0dfb0ce324383f9929f7d90db13f15c807365",
       "start_line": 1123,
@@ -2919,7 +2919,7 @@
       "id": "es.ev.project-complete",
       "kind": "code",
       "claim": "缺会话身份或缺 compact 正文拒绝；无已捕获 final 时有 response 回填分支；discard 仅清理内存。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_projection.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/agent_data_projection.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "a509c7736ec33b32f061d1bbdfc0dfb0ce324383f9929f7d90db13f15c807365",
       "start_line": 1321,

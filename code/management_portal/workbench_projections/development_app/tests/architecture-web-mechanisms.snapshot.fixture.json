@@ -1212,7 +1212,7 @@
         "projection.e.events-recover"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "interface.conversation",
         "focus_kind": "module:interface.conversation",
         "local_only": false
@@ -1250,7 +1250,7 @@
         "web.e.d-conversation"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "interface.conversation",
         "focus_kind": "module:interface.conversation",
         "local_only": true
@@ -1262,7 +1262,7 @@
       "id": "web.e.resident-state",
       "kind": "code",
       "claim": "状态游标拒绝倒退，与对话事件游标分别维护。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/static/resident_protocol.js",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/static/resident_protocol.js",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "8f00e5728e60880686fd7a6d0f78229226114f9600ae02f3bfcea22131265ed4",
       "start_line": 529,
@@ -1296,7 +1296,7 @@
       "id": "projection.e.snapshot-accept",
       "kind": "code",
       "claim": "快照actor/request/Resident身份检查、安装、待处理事件连续性与再次恢复",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/static/resident_protocol.js",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/static/resident_protocol.js",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "path": "management_portal/static/resident_protocol.js",
       "sha256": "8f00e5728e60880686fd7a6d0f78229226114f9600ae02f3bfcea22131265ed4",
@@ -1314,7 +1314,7 @@
       "id": "projection.e.events-recover",
       "kind": "code",
       "claim": "事件补读完整性检查；缺口/省略/高水位空读重新请求快照",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/static/resident_protocol.js",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/static/resident_protocol.js",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "path": "management_portal/static/resident_protocol.js",
       "sha256": "8f00e5728e60880686fd7a6d0f78229226114f9600ae02f3bfcea22131265ed4",

@@ -3,8 +3,8 @@ import { schemaMatches } from '../shared/format-tags.js';
 import { matchesCurrentModuleMap } from '../shared/current-module-map.js';
 
 export const REFS = Object.freeze({
-  evolution: 'repo_5d287fed9c7e/file/architecture/evolution.yaml',
-  modules: 'repo_5d287fed9c7e/file/architecture/modules.yaml',
+  evolution: 'repo_711b6ab6d5c8/file/code/architecture/evolution.yaml',
+  modules: 'repo_711b6ab6d5c8/file/code/architecture/modules.yaml',
 });
 const headingGroups = [
   ['问题', '场景', '用户任务与当前依据', '当前工作流与问题边界', '现有能力与缺口', '为什么值得单独改善', '当前流程与具体风险', '当前基础与用户需要', '当前行为及后果', '已有基础与需要补齐的解释', '现状及用户判断困难', '当前依据与影响', '当前起点与证据限制', '当前起点与需要改变的体验', '现有行为与问题依据', '当前入口已经解决了什么', '当前能力与典型场景', '当前基础与缺口', '当前能力与使用场景', '当前基础与价值', '当前已有能力', '当前记录方式与用户任务', '现有基础与新的审阅单位'],

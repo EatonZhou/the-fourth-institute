@@ -1,6 +1,6 @@
 {
   "schema": "tfi.projection-release-dependencies.v1",
-  "code_repository": "repo_5d287fed9c7e",
+  "code_repository": "repo_711b6ab6d5c8",
   "files": [
     {
       "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/architecture-evidence/current/IMPROVE.md",
@@ -14,18 +14,18 @@
     },
     {
       "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/architecture-evidence/current/architecture/evolution.yaml",
-      "sha256": "75725c9fe1415c317c04d840ebee33ecb6a971114023d489ccbcefc9ac58a627",
-      "size": 33935
+      "sha256": "9c00ce4efe6b9fa7ce2fa49d4325efdbf2dbefec97f041ce1374688093b326f2",
+      "size": 33940
     },
     {
       "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/architecture-evidence/current/architecture/modules.yaml",
-      "sha256": "ee8c2a1e97773fe43693d083e8b88d7f7bdf3adefe4399ff60807264339dd2e7",
+      "sha256": "b2d912123c6a0bb7e3c543df6eb7b26d902de2b46220229ad9597e6ed509b566",
       "size": 111522
     },
     {
       "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/architecture-evidence/current/file-index.json",
-      "sha256": "79b840a37fa22ed997768e04ae34d643ab3937bfc953ef448599d407d0c740be",
-      "size": 2160309
+      "sha256": "6b5bc7f2b9025cf83d938d06f0d0d15b641036c194e7c1dc241a58aa48a086aa",
+      "size": 2176354
     },
     {
       "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/architecture-evidence/current/protocols.json",
@@ -34,7 +34,7 @@
     },
     {
       "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/architecture-evidence/manifest.json",
-      "sha256": "6264ac78f52112151ac3fed78c2b146c937b029d27b4c0ca02fd08792aedc138",
+      "sha256": "38db763901af2854ae1646bb4686f7f71d0b10453b738239f96d7eea5a4bdcda",
       "size": 3406
     },
     {
@@ -44,37 +44,37 @@
     },
     {
       "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/deep-architecture/current/catalog-manifest.json",
-      "sha256": "2dea30fda0d9eb477a97baa6f66c824cc87b716b2daced34a3c5a960fd1ef425",
-      "size": 7413
+      "sha256": "ea7ec429d104f34154278cf2442960edbd684b0d82056af6d21744b3002b7d1a",
+      "size": 7633
     },
     {
       "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/deep-architecture/current/catalog.json",
-      "sha256": "2b977035a9e2e63dfd6b2d9e418efbe5998c5412a100dda661e97bdd2d3065b4",
-      "size": 522200
+      "sha256": "b391d062582672cbc460c73d58da5ef04c738ac3a2648c62a68f187ed2b78988",
+      "size": 523395
     },
     {
       "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/deep-architecture/current/exploration-manifest.json",
-      "sha256": "11c95c95558c2ec20cc00e331359781f6659850c35b40474051303bb77c05ddd",
-      "size": 54266
+      "sha256": "a9bb9e9735b6c0d18a42ebbe54754eeb4808521f4243721aef5218c9712f4b03",
+      "size": 56681
     },
     {
       "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/deep-architecture/current/exploration-model.json",
-      "sha256": "f6fe25b561761eb4dc27327c6653aeec3da51f7f220ac780b45a6f5173eff515",
-      "size": 5832858
+      "sha256": "70864a63bbe0dade54997129c0da224b1b5fb85c9f516ce9b4a685eb6defadae",
+      "size": 5836193
     },
     {
       "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/deep-architecture/current/lesson-manifest.json",
-      "sha256": "de177ad9bcdac8688f0a9acb69d96e10e2a24f44853dcf029cb488584ddae46d",
-      "size": 5552
+      "sha256": "a5a156e346c53f0986bb2922706a1ff04fdc83a1b14048311e17d71ac90e15ce",
+      "size": 5792
     },
     {
       "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/deep-architecture/current/lesson-sources.json",
-      "sha256": "dda9d3876be4425666304064a4335c59371833d7a9fdf078bb5167bdb86ee637",
-      "size": 78137
+      "sha256": "cbe2cc29966ae48b82ba460adce6f4fb8e5f871fb417feb484288568e199aca4",
+      "size": 78827
     },
     {
       "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/deep-architecture/objects/isa-catalog-attachment-664e88043ae96e8717abac64faebf7bd4be75f25912ad3085954384fb4ae15fb.json",
-      "sha256": "678c19c9814ee901bc384312476a4a7d0f3563bcabd6b3429cd256df41a5c542",
+      "sha256": "5c42858775a4bc069e7ad948166e3fb02f3df163b0592505462d635fa080fed0",
       "size": 615
     }
   ],

@@ -3545,7 +3545,7 @@
         "ex.provider"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "execution",
         "focus_kind": "module:execution",
         "local_only": false
@@ -3599,7 +3599,7 @@
         "ex.provider"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "execution.scheduling",
         "focus_kind": "module:execution.scheduling",
         "local_only": false
@@ -3663,7 +3663,7 @@
         "ex.provider"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "execution.providers",
         "focus_kind": "module:execution.providers",
         "local_only": false
@@ -3723,7 +3723,7 @@
         "ex.provider"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "worker.harness",
         "focus_kind": "module:worker.harness",
         "local_only": false
@@ -3757,7 +3757,7 @@
         "ex.provider"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "resident-execution",
         "focus_kind": "protocol:resident-execution",
         "local_only": false
@@ -4015,7 +4015,7 @@
         "control.ev.ack"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "execution",
         "focus_kind": "module:execution",
         "local_only": true
@@ -4053,7 +4053,7 @@
         "control.ev.dispatch"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "execution",
         "focus_kind": "module:execution",
         "local_only": true
@@ -4090,7 +4090,7 @@
         "control.ev.account"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "execution",
         "focus_kind": "module:execution",
         "local_only": true
@@ -4141,7 +4141,7 @@
         "control.ev.worker-finish"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "worker",
         "focus_kind": "module:worker",
         "local_only": true
@@ -4199,7 +4199,7 @@
         "runtime.integration.finalization"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "worker",
         "focus_kind": "module:worker",
         "local_only": true
@@ -4241,7 +4241,7 @@
         "control.ev.agent-service"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "worker",
         "focus_kind": "module:worker",
         "local_only": true
@@ -4292,7 +4292,7 @@
         "es.ev.design-injection"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "execution.providers",
         "focus_kind": "module:execution.providers",
         "local_only": true
@@ -4344,7 +4344,7 @@
         "es.ev.model-identity"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "execution.agent-data",
         "focus_kind": "module:execution.agent-data",
         "local_only": true
@@ -4385,7 +4385,7 @@
         "control.ev.finish"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "execution.scheduling",
         "focus_kind": "module:execution.scheduling",
         "local_only": true
@@ -4420,7 +4420,7 @@
         "control.ev.design-quota"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "execution.scheduling",
         "focus_kind": "module:execution.scheduling",
         "local_only": true
@@ -4454,7 +4454,7 @@
         "control.ev.agent-service"
       ],
       "identity": {
-        "resource_ref": "repo_5d287fed9c7e/file/architecture/modules.yaml",
+        "resource_ref": "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
         "focus_owner_id": "worker",
         "focus_kind": "module:worker",
         "local_only": true
@@ -4466,7 +4466,7 @@
       "id": "control.ev.submit",
       "kind": "code",
       "claim": "Facade只对同一execution_id的幂等提交重试；250ms等待。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/service.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/service.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "c3a08209db632da47a0ffd808e8cac12c056a3c55724e8fb6b460abd3c5852e7",
       "start_line": 199,
@@ -4483,7 +4483,7 @@
       "id": "control.ev.dedup",
       "kind": "code",
       "claim": "首次原始请求摘要在准备之前计算；同ID同摘要复用，冲突拒绝。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/scheduler.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/scheduler.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "48ecd9885d360e9c7beb4fd6756c3060748a9fd2c54bba78eab2a1e8806a3ea7",
       "start_line": 1477,
@@ -4500,7 +4500,7 @@
       "id": "control.ev.prepare",
       "kind": "code",
       "claim": "技术准备先解析账号，再查持久会话，再按已绑定会话固定路由。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/service.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/service.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "c3a08209db632da47a0ffd808e8cac12c056a3c55724e8fb6b460abd3c5852e7",
       "start_line": 90,
@@ -4517,7 +4517,7 @@
       "id": "control.ev.account",
       "kind": "code",
       "claim": "账号目录把provider/route/options/bound委托给已登记账号适配器。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/accounts.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/accounts.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "f9bb8916a085544b1da517cca4ff479464a17d75063178c845ac6bd93972b008",
       "start_line": 81,
@@ -4534,7 +4534,7 @@
       "id": "control.ev.rpc",
       "kind": "code",
       "claim": "RPC解析对象、认证封套、检查actor匹配后进入dispatch。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/service.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/service.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "c3a08209db632da47a0ffd808e8cac12c056a3c55724e8fb6b460abd3c5852e7",
       "start_line": 596,
@@ -4551,7 +4551,7 @@
       "id": "control.ev.dispatch",
       "kind": "code",
       "claim": "ExecutionService分派目录/提交；submit把preparation交给Scheduler。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/service.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/service.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "c3a08209db632da47a0ffd808e8cac12c056a3c55724e8fb6b460abd3c5852e7",
       "start_line": 872,
@@ -4568,7 +4568,7 @@
       "id": "control.ev.worker-finish",
       "kind": "code",
       "claim": "释放/finish之前等待输入回执；claim_lost不伪造终态。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/worker.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/worker.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "14ed38d469ab45e1ccc5f624912eec379d1f96998946defb42af7632a764759f",
       "start_line": 378,
@@ -4585,7 +4585,7 @@
       "id": "control.ev.runtime-slot",
       "kind": "code",
       "claim": "同一Runtime内同execution互斥；等待期取消/交接提前退出，finally释放。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/runtime.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/runtime.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "b1484ec7694088c6fb531bb631b14d6f63d9c7d50b2b7d9a22fd3e3fab4400cf",
       "start_line": 151,
@@ -4602,7 +4602,7 @@
       "id": "control.ev.runtime-recover",
       "kind": "code",
       "claim": "provider_completed恢复点重建BackendResult，跳过service.execute。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/runtime.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/runtime.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "b1484ec7694088c6fb531bb631b14d6f63d9c7d50b2b7d9a22fd3e3fab4400cf",
       "start_line": 509,
@@ -4619,7 +4619,7 @@
       "id": "control.ev.runtime-checkpoint",
       "kind": "code",
       "claim": "完成恢复点在最终投影之前保存；交接可安全延期。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/runtime.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/runtime.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "b1484ec7694088c6fb531bb631b14d6f63d9c7d50b2b7d9a22fd3e3fab4400cf",
       "start_line": 646,
@@ -4636,7 +4636,7 @@
       "id": "control.ev.runtime-final",
       "kind": "code",
       "claim": "内容投影先于取消检查与binding完成；异常可能绑定已开始会话。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/runtime.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/runtime.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "b1484ec7694088c6fb531bb631b14d6f63d9c7d50b2b7d9a22fd3e3fab4400cf",
       "start_line": 669,
@@ -4653,7 +4653,7 @@
       "id": "control.ev.agent-service",
       "kind": "code",
       "claim": "AgentSessionService选择Provider并准备Harness；按should_run走Harness或直接执行，interrupt走Provider。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/backends.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/backends.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "b56a7bb3e9e7cef5f816ce17f54298f3217efb639b09178eab7093be651ce124",
       "start_line": 3958,
@@ -4670,7 +4670,7 @@
       "id": "control.ev.wait",
       "kind": "code",
       "claim": "观察超时抛ExecutionWaitTimeout，携带快照/游标；显式取消另发控制。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/service.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/service.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "c3a08209db632da47a0ffd808e8cac12c056a3c55724e8fb6b460abd3c5852e7",
       "start_line": 400,
@@ -4687,7 +4687,7 @@
       "id": "control.ev.ack",
       "kind": "code",
       "claim": "所有者终态确认清request/checkpoint，保留result，重复确认不重跑。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/scheduler.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/scheduler.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "48ecd9885d360e9c7beb4fd6756c3060748a9fd2c54bba78eab2a1e8806a3ea7",
       "start_line": 3475,
@@ -4755,7 +4755,7 @@
       "id": "control.ev.chat-service",
       "kind": "code",
       "claim": "ChatCompletionService构造messages、选择协议Adapter、验证参数/模型并返回结构化结果；interrupt不提供原生停止。",
-      "address": "repo_5d287fed9c7e/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/backends.py",
+      "address": "repo_711b6ab6d5c8/commit/a0dac83394748582158ee9c63a8b23c715872a1e/file/management_portal/execution/backends.py",
       "version": "a0dac83394748582158ee9c63a8b23c715872a1e",
       "sha256": "b56a7bb3e9e7cef5f816ce17f54298f3217efb639b09178eab7093be651ce124",
       "start_line": 3815,

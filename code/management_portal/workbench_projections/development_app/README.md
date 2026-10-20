@@ -6,7 +6,7 @@
 
 发行声明的 `stage_progress` 指定同一 Workspace 下的 `index`、`content`、`schema` 精确地址及 `new_report_directory`。打包只冻结 schema 的实际摘要和大小，生成空索引、空补充表及支持空态的发行格式契约；空态不伪造生成时间、覆盖起点或最新报告引用，产生首份报告后按原契约填写。发行契约的空态扩展可重复应用，发行版再次开发和打包时不会叠加格式包装。该 Workspace 的源输出整树在复制阶段排除，生成文件复用其实际安装绑定；当前架构的 15 项文件声明保持独立。
 
-三个区域的架构地图均只读 `repo_5d287fed9c7e/file/architecture/modules.yaml`。演化绑定使用当前 `ref/schema/model_version`，以实际存在的模块 ID 联动；正文与结构须来自同一字节版本，但旧 revision 不作为模块身份门控。失配、删除模块和 `needs_review` 均禁止错误联动，旧 `commit/snapshot_ref` 不触发读取。阶段进展的可选模块归属仅接受当前地图及其精确摘要/锚点，旧架构归属不读取、不订阅，保留原成果身份与普通 Git 证据。
+三个区域的架构地图均只读 `repo_711b6ab6d5c8/file/code/architecture/modules.yaml`。演化绑定使用当前 `ref/schema/model_version`，以实际存在的模块 ID 联动；正文与结构须来自同一字节版本，但旧 revision 不作为模块身份门控。失配、删除模块和 `needs_review` 均禁止错误联动，旧 `commit/snapshot_ref` 不触发读取。阶段进展的可选模块归属仅接受当前地图及其精确摘要/锚点，旧架构归属不读取、不订阅，保留原成果身份与普通 Git 证据。
 
 Plan 依赖的结构化入口为当前 `architecture/evolution.yaml`：架构关联读取 `plans[].id`，未来演化正文读取 `directions[status=proposed].plans[]` 与 `plans[].id` 的交集。发行需要保留这些明确声明的知识对象；Plan 正文、方向叙事与 Markdown 中的任意文本不作为递归依赖入口。现有15项架构文件闭包、阶段 `json_roots` 与这些知识资源分别由各自的显式声明负责。
 
@@ -158,7 +158,7 @@ Lineage 共用画布底层通过 `await sdk.loadLibrary('portal-graph')` 加载�
 
 ```json
 {
-  "repo_id": "repo_5d287fed9c7e",
+  "repo_id": "repo_711b6ab6d5c8",
   "directory": "management_portal/workbench_projections/development_app",
   "commit": "完整的40位Git提交哈希",
   "entries": {"architecture": "architecture.html", "progress": "progress.html", "evolution": "evolution.html", "packaging": "packaging.html"}
