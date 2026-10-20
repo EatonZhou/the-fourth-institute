@@ -17,6 +17,28 @@ from scripts import tfi_instance_manager as manager
 
 
 class InstanceManagementTests(unittest.TestCase):
+    def test_secondary_lan_address_is_listed(self):
+        """安装与实例回归：secondary lan address is listed。"""
+        interfaces = '[{"addr_info":[{"family":"inet","local":"10.138.30.36"},' \
+                     '{"family":"inet","local":"127.0.0.1"},' \
+                     '{"family":"inet6","local":"fe80::1"}]}]'
+        with patch.object(manager.sys, "platform", "linux"), \
+                patch.object(manager.subprocess, "run", return_value=Mock(stdout=interfaces)), \
+                patch.object(manager.socket, "getaddrinfo", return_value=[]), \
+                patch.object(manager.socket, "socket", side_effect=OSError):
+            self.assertEqual(manager.access_urls({"bind": "0.0.0.0", "ports": {"web": 28199}}),
+                             ["http://10.138.30.36:28199/"])
+
+    def test_missing_interface_command_preserves_hostname_discovery(self):
+        """安装与实例回归：missing interface command preserves hostname discovery。"""
+        with patch.object(manager.sys, "platform", "linux"), \
+                patch.object(manager.subprocess, "run", side_effect=FileNotFoundError), \
+                patch.object(manager.socket, "getaddrinfo", return_value=[
+                    (None, None, None, None, ("192.168.1.4", 0))]), \
+                patch.object(manager.socket, "socket", side_effect=OSError):
+            self.assertEqual(manager.access_urls({"bind": "0.0.0.0", "ports": {"web": 28199}}),
+                             ["http://192.168.1.4:28199/"])
+
     def setUp(self):
         directory = tempfile.TemporaryDirectory()
         self.addCleanup(directory.cleanup)
