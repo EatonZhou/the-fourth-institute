@@ -1,5 +1,5 @@
 {
-  "schema": "dirtybase.hatg-instruction-result.v2",
+  "schema": "<legacy-site>.hatg-instruction-result.v2",
   "instruction_id": "inst_lin_b9dae9e8a5d16e6692f6",
   "instruction": "SearchMessages",
   "status": "committed",
@@ -21,7 +21,7 @@
           "created_at": "2026-10-18T18:15:49Z",
           "activated_at": "2026-10-18T18:15:49Z",
           "origin": {
-            "schema": "dirtybase.message-origin.v1",
+            "schema": "<legacy-site>.message-origin.v1",
             "sender": {
               "kind": "resident",
               "id": "resident_afa3d4d6cf11"
@@ -42,5 +42,10 @@
       }
     ],
     "next_page_token": ""
+  },
+  "_distribution_copy": {
+    "kind": "redacted_historical_evidence",
+    "original_sha256": "14dadd697381e39011747c61356c3500faed67fc43f6943bd37f8382134413c4",
+    "note": "源站的旧命名空间已脱敏；此文件是历史回执的展示副本，不是可重放的运行回执。原始回执保留在源站。"
   }
 }

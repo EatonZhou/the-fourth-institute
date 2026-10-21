@@ -1,5 +1,5 @@
 {
-  "schema": "dirtybase.hatg-instruction-result.v2",
+  "schema": "<legacy-site>.hatg-instruction-result.v2",
   "instruction_id": "inst_lin_0a3983aeb5f86db654c0",
   "instruction": "GetSharedState",
   "status": "committed",
@@ -1267,5 +1267,10 @@
       "status": "completed_candidate_closed",
       "worker_seconds_cap": 300
     }
+  },
+  "_distribution_copy": {
+    "kind": "redacted_historical_evidence",
+    "original_sha256": "308a27834ef1216885bf3cfdb868458a69455fbfef4ff4196bc2a93d9157d1bd",
+    "note": "源站的旧命名空间已脱敏；此文件是历史回执的展示副本，不是可重放的运行回执。原始回执保留在源站。"
   }
 }

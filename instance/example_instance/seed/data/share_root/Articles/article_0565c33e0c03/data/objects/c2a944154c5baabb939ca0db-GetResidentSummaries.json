@@ -1,5 +1,5 @@
 {
-  "schema": "dirtybase.hatg-instruction-result.v2",
+  "schema": "<legacy-site>.hatg-instruction-result.v2",
   "instruction_id": "inst_lin_26d493f7eba3c7887d60",
   "instruction": "GetResidentSummaries",
   "status": "committed",
@@ -55,5 +55,10 @@
       }
     ],
     "unavailable_resident_ids": []
+  },
+  "_distribution_copy": {
+    "kind": "redacted_historical_evidence",
+    "original_sha256": "49c7b478660c04b88d9301884be07cabe387145218b47cc7674a7f309be72999",
+    "note": "源站的旧命名空间已脱敏；此文件是历史回执的展示副本，不是可重放的运行回执。原始回执保留在源站。"
   }
 }

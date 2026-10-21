@@ -1,5 +1,5 @@
 {
-  "schema": "dirtybase.hatg-instruction-result.v2",
+  "schema": "<legacy-site>.hatg-instruction-result.v2",
   "instruction_id": "inst_lin_16deedad7e12c5d48d93",
   "instruction": "UpdateSharedState",
   "status": "committed",
@@ -1689,5 +1689,10 @@
     "matched": true,
     "state_revision": 16787,
     "updated_at": "2026-10-18T18:34:19Z"
+  },
+  "_distribution_copy": {
+    "kind": "redacted_historical_evidence",
+    "original_sha256": "a9e81ad7b1495e111df94a1f742ff80de1871fb699c49552194b0575f89aa00c",
+    "note": "源站的旧命名空间已脱敏；此文件是历史回执的展示副本，不是可重放的运行回执。原始回执保留在源站。"
   }
 }

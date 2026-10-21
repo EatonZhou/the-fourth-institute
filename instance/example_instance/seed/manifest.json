@@ -3867,7 +3867,7 @@
               },
               {
                 "size": 2837,
-                "sha256": "9e9acea0cc92c7fddcc4d3190a43b2f067f55129e3290e386d3640eb0ab38e84",
+                "sha256": "5322ffd61f95825b13983e5d0a31d23947f2280382a5c1ea93f6bdbd4eb1c4da",
                 "address": "workspace_04ad72d24263/file/architecture/manifest.json"
               },
               {
@@ -3887,27 +3887,27 @@
               },
               {
                 "size": 54169,
-                "sha256": "90becc73c3992561c291cf45c328a8828e666762c95a991d9c308dc768286590",
+                "sha256": "3d725561884f569ee5c19c9e709cf5143b2c63c31d216e56dd9f9ab02af103bb",
                 "address": "workspace_04ad72d24263/file/architecture/explore/exploration-manifest.json"
               },
               {
-                "size": 5837271,
-                "sha256": "0bef355c0f563ea12735f45569e16b84d158dd6fd869318ffe83dcb22193821d",
+                "size": 5851008,
+                "sha256": "4b7dd60e0eb10460b829a24b02b4c48ef3de2837bb55932f8f3b62b871e3deda",
                 "address": "workspace_04ad72d24263/file/architecture/explore/exploration-model.json"
               },
               {
                 "size": 5458,
-                "sha256": "176a9c7424ebf007ccdf578191eea4f26f910036231f3d4a696ddf8ae1e6d83a",
+                "sha256": "8ca0973127378e6f02a8cbbae7e880784e5f58f3ca49774dc41ebed2c86fb46f",
                 "address": "workspace_04ad72d24263/file/architecture/explore/lesson-manifest.json"
               },
               {
-                "size": 78146,
-                "sha256": "a36ee8064c4e9e0da1ad90b02bf515febbb706f8dcaeb811b9851a501e90efc5",
+                "size": 78444,
+                "sha256": "8a0049f5f505c05cbfe080dcedd9e6163aa50bbeba8b8aaf52e7c01bf97e954f",
                 "address": "workspace_04ad72d24263/file/architecture/explore/lesson-sources.json"
               },
               {
                 "size": 521,
-                "sha256": "1fbb849d3c0f4d61a8c6fc2cd7fbeb30e46b8c507613b2b47594893b2dfbd5b1",
+                "sha256": "a62f29ad73da35f88bfd632054ef2fea384e2dd6ef66c3952ed6632329767e43",
                 "address": "workspace_04ad72d24263/file/architecture/catalog/isa.json"
               }
             ],
@@ -8336,7 +8336,7 @@
             },
             {
               "size": 2837,
-              "sha256": "9e9acea0cc92c7fddcc4d3190a43b2f067f55129e3290e386d3640eb0ab38e84",
+              "sha256": "5322ffd61f95825b13983e5d0a31d23947f2280382a5c1ea93f6bdbd4eb1c4da",
               "address": "workspace_04ad72d24263/file/architecture/manifest.json"
             },
             {
@@ -8356,27 +8356,27 @@
             },
             {
               "size": 54169,
-              "sha256": "90becc73c3992561c291cf45c328a8828e666762c95a991d9c308dc768286590",
+              "sha256": "3d725561884f569ee5c19c9e709cf5143b2c63c31d216e56dd9f9ab02af103bb",
               "address": "workspace_04ad72d24263/file/architecture/explore/exploration-manifest.json"
             },
             {
-              "size": 5837271,
-              "sha256": "0bef355c0f563ea12735f45569e16b84d158dd6fd869318ffe83dcb22193821d",
+              "size": 5851008,
+              "sha256": "4b7dd60e0eb10460b829a24b02b4c48ef3de2837bb55932f8f3b62b871e3deda",
               "address": "workspace_04ad72d24263/file/architecture/explore/exploration-model.json"
             },
             {
               "size": 5458,
-              "sha256": "176a9c7424ebf007ccdf578191eea4f26f910036231f3d4a696ddf8ae1e6d83a",
+              "sha256": "8ca0973127378e6f02a8cbbae7e880784e5f58f3ca49774dc41ebed2c86fb46f",
               "address": "workspace_04ad72d24263/file/architecture/explore/lesson-manifest.json"
             },
             {
-              "size": 78146,
-              "sha256": "a36ee8064c4e9e0da1ad90b02bf515febbb706f8dcaeb811b9851a501e90efc5",
+              "size": 78444,
+              "sha256": "8a0049f5f505c05cbfe080dcedd9e6163aa50bbeba8b8aaf52e7c01bf97e954f",
               "address": "workspace_04ad72d24263/file/architecture/explore/lesson-sources.json"
             },
             {
               "size": 521,
-              "sha256": "1fbb849d3c0f4d61a8c6fc2cd7fbeb30e46b8c507613b2b47594893b2dfbd5b1",
+              "sha256": "a62f29ad73da35f88bfd632054ef2fea384e2dd6ef66c3952ed6632329767e43",
               "address": "workspace_04ad72d24263/file/architecture/catalog/isa.json"
             }
           ],
@@ -13054,7 +13054,7 @@
     },
     {
       "path": "data/share_root/Agents/lineage_8794980b1bb7/residents/resident_2546a3558662/workspace/architecture/catalog/isa.json",
-      "sha256": "1fbb849d3c0f4d61a8c6fc2cd7fbeb30e46b8c507613b2b47594893b2dfbd5b1",
+      "sha256": "a62f29ad73da35f88bfd632054ef2fea384e2dd6ef66c3952ed6632329767e43",
       "size": 521
     },
     {
@@ -13074,27 +13074,27 @@
     },
     {
       "path": "data/share_root/Agents/lineage_8794980b1bb7/residents/resident_2546a3558662/workspace/architecture/explore/exploration-manifest.json",
-      "sha256": "90becc73c3992561c291cf45c328a8828e666762c95a991d9c308dc768286590",
+      "sha256": "3d725561884f569ee5c19c9e709cf5143b2c63c31d216e56dd9f9ab02af103bb",
       "size": 54169
     },
     {
       "path": "data/share_root/Agents/lineage_8794980b1bb7/residents/resident_2546a3558662/workspace/architecture/explore/exploration-model.json",
-      "sha256": "0bef355c0f563ea12735f45569e16b84d158dd6fd869318ffe83dcb22193821d",
-      "size": 5837271
+      "sha256": "4b7dd60e0eb10460b829a24b02b4c48ef3de2837bb55932f8f3b62b871e3deda",
+      "size": 5851008
     },
     {
       "path": "data/share_root/Agents/lineage_8794980b1bb7/residents/resident_2546a3558662/workspace/architecture/explore/lesson-manifest.json",
-      "sha256": "176a9c7424ebf007ccdf578191eea4f26f910036231f3d4a696ddf8ae1e6d83a",
+      "sha256": "8ca0973127378e6f02a8cbbae7e880784e5f58f3ca49774dc41ebed2c86fb46f",
       "size": 5458
     },
     {
       "path": "data/share_root/Agents/lineage_8794980b1bb7/residents/resident_2546a3558662/workspace/architecture/explore/lesson-sources.json",
-      "sha256": "a36ee8064c4e9e0da1ad90b02bf515febbb706f8dcaeb811b9851a501e90efc5",
-      "size": 78146
+      "sha256": "8a0049f5f505c05cbfe080dcedd9e6163aa50bbeba8b8aaf52e7c01bf97e954f",
+      "size": 78444
     },
     {
       "path": "data/share_root/Agents/lineage_8794980b1bb7/residents/resident_2546a3558662/workspace/architecture/manifest.json",
-      "sha256": "9e9acea0cc92c7fddcc4d3190a43b2f067f55129e3290e386d3640eb0ab38e84",
+      "sha256": "5322ffd61f95825b13983e5d0a31d23947f2280382a5c1ea93f6bdbd4eb1c4da",
       "size": 2837
     },
     {
@@ -15384,8 +15384,8 @@
     },
     {
       "path": "data/share_root/Articles/article_0565c33e0c03/data/objects/02c61af5be720d043c963698-shared_before.json",
-      "sha256": "39386d111e73bdc326edf6174a4d8938d391404442ada0bbd3552a141418f07b",
-      "size": 61898
+      "sha256": "c4a04ff9145a9f64200f66e3aa94b0786f4adf79ad81bd4a5908a6d3c280fbef",
+      "size": 62224
     },
     {
       "path": "data/share_root/Articles/article_0565c33e0c03/data/objects/02f4a9179f768af1b05bff63-REPORT.txt",
@@ -16304,8 +16304,8 @@
     },
     {
       "path": "data/share_root/Articles/article_0565c33e0c03/data/objects/14b0b55f61efd9afdb818383-shared_before.json",
-      "sha256": "e1f3441b5fcf90eeb0ae2008534bfde306e05b7058878179d68916f12f4dbdd5",
-      "size": 78840
+      "sha256": "013919f33381778fb873714e7fa08358012f79012f01fc91904f702e723bf0fd",
+      "size": 79166
     },
     {
       "path": "data/share_root/Articles/article_0565c33e0c03/data/objects/14c45ca4edbe65b1475c4eb3-admission_diagnostic_manifest.json",
@@ -17744,8 +17744,8 @@
     },
     {
       "path": "data/share_root/Articles/article_0565c33e0c03/data/objects/33dd5bc888937ef846de70ad-progress_before_v0473.json",
-      "sha256": "cddc3559c72ac59550698536699bd36a509d40f8d2e7864e62ba522aa8fa22ae",
-      "size": 94440
+      "sha256": "cd303e84e48cfad3f8b8911cdc355059022a2d6c54140a5f2c3f045149d819e2",
+      "size": 94766
     },
     {
       "path": "data/share_root/Articles/article_0565c33e0c03/data/objects/33ecd35d4a550704601c2a87-readout_identification_addendum.json",
@@ -19979,8 +19979,8 @@
     },
     {
       "path": "data/share_root/Articles/article_0565c33e0c03/data/objects/5e939d8b5ace936705b7bd61-shared_before.json",
-      "sha256": "e564ec42e8216b99b2c0328d3bed74e0ce10a91c956489b43786535e6106d7f8",
-      "size": 79438
+      "sha256": "55a7a4c2c669ff27e566b5e16287632d564d08922c4bae8f5869044c9f858529",
+      "size": 79764
     },
     {
       "path": "data/share_root/Articles/article_0565c33e0c03/data/objects/5eb40ba30a010648cbb58552-sparse_checks.json",
@@ -21659,8 +21659,8 @@
     },
     {
       "path": "data/share_root/Articles/article_0565c33e0c03/data/objects/7e8a7bc7eca5ff7f6bb8a486-shared_schema.json",
-      "sha256": "8ad0aa16eea0acfb20846b7d19e3823a49af62abe48639b9883c41c47b439a7e",
-      "size": 2184
+      "sha256": "386cbc0aaf4e226ebfbf57a4667c8d4231fc5c8dc6a4be789bd982f804e8e4d0",
+      "size": 2510
     },
     {
       "path": "data/share_root/Articles/article_0565c33e0c03/data/objects/7e9b3b96c31bb024b713e460-ledger.json",
@@ -21739,8 +21739,8 @@
     },
     {
       "path": "data/share_root/Articles/article_0565c33e0c03/data/objects/7feffcbd282fff9e214442ae-summary_update.json",
-      "sha256": "10bf5ec25545cb2a778fd8f1b0724713e18846678cae28aced3cb67e254bda6a",
-      "size": 2766
+      "sha256": "c050e481ca83ba635f79d1135b15f2dbd76029f8a4ced8dae9d0ef085c35b83e",
+      "size": 3092
     },
     {
       "path": "data/share_root/Articles/article_0565c33e0c03/data/objects/7ff9de5226da82a9e914116c-manifest.json",
@@ -22059,8 +22059,8 @@
     },
     {
       "path": "data/share_root/Articles/article_0565c33e0c03/data/objects/8711e2663795950d86837fe0-shared_current.json",
-      "sha256": "308a27834ef1216885bf3cfdb868458a69455fbfef4ff4196bc2a93d9157d1bd",
-      "size": 78564
+      "sha256": "dd824684a403f9c730b7f42085a89e5efd3177d3b2f1d47720ef6e4c8362b293",
+      "size": 78890
     },
     {
       "path": "data/share_root/Articles/article_0565c33e0c03/data/objects/872b49a516fbd782be0cf8bf-phase_comparisons.csv",
@@ -22914,8 +22914,8 @@
     },
     {
       "path": "data/share_root/Articles/article_0565c33e0c03/data/objects/99f1d72558cc27dfb3fb710b-shared_before.json",
-      "sha256": "5524f55c0db0c9af0d0b85b0afdf9ede531c3b0ade43d5ab864790d3fe72b750",
-      "size": 70402
+      "sha256": "9fd7d0ac2107445e6f8874f9761b073a75bd3b796e2c6a60c0810de59d1dc8c6",
+      "size": 70728
     },
     {
       "path": "data/share_root/Articles/article_0565c33e0c03/data/objects/99f6f2784e98ef81d4e359d5-cc_C_cut.png",
@@ -23344,8 +23344,8 @@
     },
     {
       "path": "data/share_root/Articles/article_0565c33e0c03/data/objects/a3dec83d18440906a265d54c-progress_before_v0472.json",
-      "sha256": "2be352c58aaa3014caa7cf5bd7c6913dca87478e1a665b76858fcac86f48779a",
-      "size": 94444
+      "sha256": "9ee69f280431ad3e5732dfec979881569630556c095766a9c196a255e71fbb15",
+      "size": 94770
     },
     {
       "path": "data/share_root/Articles/article_0565c33e0c03/data/objects/a410fb2c1a34f94976d36411-ledger.json",
@@ -23674,8 +23674,8 @@
     },
     {
       "path": "data/share_root/Articles/article_0565c33e0c03/data/objects/ac1ea925e27528527a6f2f56-SearchMessages.json",
-      "sha256": "14dadd697381e39011747c61356c3500faed67fc43f6943bd37f8382134413c4",
-      "size": 2907
+      "sha256": "c3f9a8b92ff5fe263436027573c2961f11ae1e28c97b8f6ff8697a150dfab4f7",
+      "size": 3237
     },
     {
       "path": "data/share_root/Articles/article_0565c33e0c03/data/objects/ac2932b66f974d982ce82127-checks.json",
@@ -23899,8 +23899,8 @@
     },
     {
       "path": "data/share_root/Articles/article_0565c33e0c03/data/objects/b137232c43f553f2f058581f-shared_before.json",
-      "sha256": "720d9271122c88808dc73b576e0b43fee81a49edc5225c1afeca4ef9f17485de",
-      "size": 76784
+      "sha256": "fe607270dc144e242f5032d9b0b2e2f99ce2cb865831361e3aefecc953c391ee",
+      "size": 77110
     },
     {
       "path": "data/share_root/Articles/article_0565c33e0c03/data/objects/b14e21d91ddaf52e107641cf-source_refs.json",
@@ -24499,8 +24499,8 @@
     },
     {
       "path": "data/share_root/Articles/article_0565c33e0c03/data/objects/bc37b343bfc4db91c5e74c80-GetSharedState.json",
-      "sha256": "2d543537e30885a0eb963e9cc3dd5fce831cf862c2b539d2aa202f11196841b2",
-      "size": 63790
+      "sha256": "c752db3945f603898da8e84999f4b5c3e20213d842f201f2d34168d5f1faade6",
+      "size": 64116
     },
     {
       "path": "data/share_root/Articles/article_0565c33e0c03/data/objects/bc4e5c0f14d7eef5743009c1-analysis.json",
@@ -24524,8 +24524,8 @@
     },
     {
       "path": "data/share_root/Articles/article_0565c33e0c03/data/objects/bcafdbf8f2ae4f42177fb8a5-shared_current.json",
-      "sha256": "0fa43796c0b4b381bebcc43dd3c1d0a7b57065b587aff0cf91d84576ff7a4a41",
-      "size": 78840
+      "sha256": "169ff3270370d2014ab353271ddb422b7fcfab81c143df51cdf73a251b53aaf9",
+      "size": 79166
     },
     {
       "path": "data/share_root/Articles/article_0565c33e0c03/data/objects/bcd8502a5a1248a783c504f3-c1_homogenize_gain_steps.csv",
@@ -24684,8 +24684,8 @@
     },
     {
       "path": "data/share_root/Articles/article_0565c33e0c03/data/objects/c0bf725fdfc155c13dec1b5a-summary_before.json",
-      "sha256": "82f657c9be5090853a627eb0fa2b967b6e2f00e788608682dea42c49010cdae7",
-      "size": 4126
+      "sha256": "e97c071d24dc5760f5efd884e3d2e8ef6d47a74423733b7871f0146969c865c6",
+      "size": 4452
     },
     {
       "path": "data/share_root/Articles/article_0565c33e0c03/data/objects/c0ca7e00c7fcd64685b8016c-resource_conditioned_growth_rule_20261019.json",
@@ -24759,8 +24759,8 @@
     },
     {
       "path": "data/share_root/Articles/article_0565c33e0c03/data/objects/c2a944154c5baabb939ca0db-GetResidentSummaries.json",
-      "sha256": "49c7b478660c04b88d9301884be07cabe387145218b47cc7674a7f309be72999",
-      "size": 4730
+      "sha256": "83c70a93df85ec569adc9b56dc038a634f35b424f5b949f2bf11084dbbe3f47e",
+      "size": 5056
     },
     {
       "path": "data/share_root/Articles/article_0565c33e0c03/data/objects/c2c07ac79e5bb656d461c6fd-outcomes.json",
@@ -25254,8 +25254,8 @@
     },
     {
       "path": "data/share_root/Articles/article_0565c33e0c03/data/objects/cc518f7b2fe08263469058e3-progress_before_v0471.json",
-      "sha256": "e7d3dcb09d342bdfcd3aaf28b0ae400c4bc55e654f129360cd12a1dad3369097",
-      "size": 93304
+      "sha256": "a91d3f4bcb14a884d8fa4be4450e80ca372a599f214af02fd7bf298f8ca0be2e",
+      "size": 93630
     },
     {
       "path": "data/share_root/Articles/article_0565c33e0c03/data/objects/cc83b7f3e981378bad5e0ca8-young_turnover_source_rows_v0475.json",
@@ -26144,8 +26144,8 @@
     },
     {
       "path": "data/share_root/Articles/article_0565c33e0c03/data/objects/dff56bfe87ff399df9d23497-shared_update.json",
-      "sha256": "a9e81ad7b1495e111df94a1f742ff80de1871fb699c49552194b0575f89aa00c",
-      "size": 97972
+      "sha256": "286b6666a4998244c7ef05e89faa93c427f051b39900aa33e26b8aeac9dbbd7b",
+      "size": 98298
     },
     {
       "path": "data/share_root/Articles/article_0565c33e0c03/data/objects/e008bb190ad6d745297be66a-result.json",
@@ -26464,8 +26464,8 @@
     },
     {
       "path": "data/share_root/Articles/article_0565c33e0c03/data/objects/e58d4dc29d7e4cbe0efdb810-shared_current.json",
-      "sha256": "c75d62b02b12210b28c7ec70b1373b94402ac328931240b98b7af4f0861cd11d",
-      "size": 66790
+      "sha256": "faf381c6c6f5f76dd2704d8505e14008fe3877e597c245059593674b73107bb4",
+      "size": 67116
     },
     {
       "path": "data/share_root/Articles/article_0565c33e0c03/data/objects/e59f15ad2e407bbeb79c8e47-random_realizations_only.input.json",
@@ -29506,11 +29506,6 @@
       "path": "data/share_root/Articles/article_fc3755e63fa3/build/main.toc",
       "sha256": "5aff1f5fddf4069112ffb0a0da624aba1e098dc35f493e45b3b1b03c8dee6be9",
       "size": 7115
-    },
-    {
-      "path": "data/share_root/Articles/article_fc3755e63fa3/build/main.xdv",
-      "sha256": "bf798bc970e250afa222ed83968cc4aa99930560f6eb35bc4bb9770b624fdf8a",
-      "size": 500784
     },
     {
       "path": "data/share_root/Articles/article_fc3755e63fa3/chapters/01-model.tex",

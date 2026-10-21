@@ -1,5 +1,5 @@
 {
-  "schema": "dirtybase.hatg-instruction-result.v2",
+  "schema": "<legacy-site>.hatg-instruction-result.v2",
   "instruction_id": "inst_lin_08216f412772b1f0034b",
   "instruction": "UpdateResidentWorkSummary",
   "status": "committed",
@@ -41,5 +41,10 @@
       ]
     },
     "missing_message_ids": []
+  },
+  "_distribution_copy": {
+    "kind": "redacted_historical_evidence",
+    "original_sha256": "10bf5ec25545cb2a778fd8f1b0724713e18846678cae28aced3cb67e254bda6a",
+    "note": "源站的旧命名空间已脱敏；此文件是历史回执的展示副本，不是可重放的运行回执。原始回执保留在源站。"
   }
 }
