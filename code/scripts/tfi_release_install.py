@@ -645,21 +645,33 @@ def copy_materialized_file(src, dst, replacements=None):
     return dst
 
 
-def copy_engineering(manifest, bundle, target):
+def copy_engineering(manifest, bundle, target, *, skip_file_verification=False):
+    from scripts.tfi_install_progress import FileProgress
     root = Path(target["install_root"])
     replacements = directory_replacements(manifest, target)
     source_code = engineering_path(bundle, manifest["code"]["path"])
+    prefixes = list(manifest['files'].values())
+    if not target.get('shared_code_root'):
+        prefixes.append(manifest['code']['path'])
+    sizes = {row['path']: row['size'] for row in manifest['inventory'] if any(
+        row['path'].startswith(prefix + '/') for prefix in prefixes)}
+    meter = FileProgress('正在复制实例文件', len(sizes), sum(sizes.values()))
+    def copy_file(src, dst, mapping=None):
+        result = copy_materialized_file(src, dst, mapping)
+        meter.advance(sizes.get(Path(src).relative_to(bundle).as_posix(), 0))
+        return result
     if target.get("shared_code_root"):
-        from scripts.tfi_instance_layout import source_inventory
-        if source_inventory(source_code) != source_inventory(code_root(target)):
-            raise ValueError("Shared code differs from the verified engineering bundle")
+        if not skip_file_verification:
+            from scripts.tfi_instance_layout import source_inventory
+            if source_inventory(source_code) != source_inventory(code_root(target)):
+                raise ValueError("Shared code differs from the verified engineering bundle")
     else:
         shutil.copytree(source_code, code_root(target), dirs_exist_ok=True,
-                        ignore=reject_unsafe_entries, copy_function=copy_materialized_file)
+                        ignore=reject_unsafe_entries, copy_function=copy_file)
     for key, source in manifest["files"].items():
         destination = Path(target["data_roots"][key])
         def copy_and_map(src, dst):
-            return copy_materialized_file(src, dst, replacements)
+            return copy_file(src, dst, replacements)
         shutil.copytree(engineering_path(bundle, source), destination, dirs_exist_ok=True,
                         ignore=reject_unsafe_entries, copy_function=copy_and_map)
     sql_text = engineering_path(bundle, manifest["database"]["path"]).read_text(encoding="utf-8")
@@ -814,7 +826,7 @@ def install(manifest_path, raw_target, *, prepare_only=False, freeze_evidence=No
             phase = 'prepare'
             if "prepare" not in state["completed"]:
                 prepare_configuration(target)
-                copy_engineering(manifest, bundle, target)
+                copy_engineering(manifest, bundle, target, skip_file_verification=skip_file_verification)
                 state["completed"].append("prepare")
                 save_stage(state, phase, "installing")
             phase = "dependencies"

@@ -172,6 +172,68 @@ def selected_seed(platform, included):
     return platform / ('example-seed.zip' if included else 'base-seed.zip')
 
 
+def selected_engineering(platform, included):
+    return platform / ('example-engineering.zip' if included else 'base-engineering.zip')
+
+
+def unpack_engineering(platform, *, included=True, progress=None):
+    """Extract a build-verified candidate once, without scanning or hashing it."""
+    from scripts.tfi_install_progress import FileProgress
+    import shutil
+    import stat
+    archive = selected_engineering(platform, included)
+    parent = platform / '.build/w'
+    destination, temporary = parent / 'engineering', parent / 'engineering.pending'
+    if any(p.is_symlink() for p in (platform, platform / '.build', parent, destination, temporary)):
+        raise ValueError('Redirected engineering destination')
+    with zipfile.ZipFile(archive) as zipped:
+        marker = zipped.read('manifest.json')
+        manifest = json.loads(marker)
+        if manifest.get('schema') != 'tfi.release-engineering.v1' or manifest.get('include_examples') is not included:
+            raise ValueError('Unexpected packaged engineering selection')
+        completed = destination / 'manifest.json'
+        if completed.is_symlink():
+            raise ValueError('Redirected engineering marker')
+        if completed.is_file() and completed.read_bytes() == marker:
+            if progress:
+                progress('复用已解压的安装文件')
+            return destination / 'manifest.json'
+        entries = zipped.infolist()
+        for entry in entries:
+            relative = Path(entry.filename)
+            if (relative.is_absolute() or '..' in relative.parts or '\\' in entry.filename
+                    or ':' in entry.filename or stat.S_ISLNK(entry.external_attr >> 16)):
+                raise ValueError('Invalid engineering archive entry')
+        # A changed selection or interrupted extraction starts with a clean
+        # candidate; a base install cannot inherit files from the Lenia choice.
+        if temporary.exists():
+            shutil.rmtree(temporary)
+        temporary.mkdir(parents=True)
+        files = [entry for entry in entries if not entry.is_dir()]
+        meter = FileProgress('正在解压案例与平台文件' if included else '正在解压基础平台文件',
+                             len(files), sum(entry.file_size for entry in files), progress)
+        for entry in sorted(entries, key=lambda item: item.filename == 'manifest.json'):
+            target = temporary / entry.filename
+            if target.is_symlink() or any(p.is_symlink() for p in target.parents):
+                raise ValueError('Redirected engineering destination')
+            if entry.is_dir():
+                target.mkdir(parents=True, exist_ok=True)
+            else:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                with zipped.open(entry) as source, target.open('wb') as output:
+                    shutil.copyfileobj(source, output)
+                meter.advance(entry.file_size)
+        # Empty data roots are not entries in the file inventory.
+        for relative in manifest['files'].values():
+            if Path(relative).parts[:1] != ('data',) or '..' in Path(relative).parts or '\\' in relative or ':' in relative:
+                raise ValueError('Invalid engineering data root')
+            (temporary / relative).mkdir(parents=True, exist_ok=True)
+        if destination.exists():
+            shutil.rmtree(destination)
+        temporary.rename(destination)
+    return destination / 'manifest.json'
+
+
 def seed_destination_paths(platform, spec):
     for entry in spec['inventory']:
         relative = entry['path']
@@ -189,14 +251,21 @@ def required_long_path(platform):
     """Check the selected data and transient copies, in Windows UTF-16 units."""
     if (platform / 'instance/example_instance/installation.json').exists():
         return None  # Already prepared; a service retry extracts no new seed.
-    archive = selected_seed(platform, include_examples(platform))
+    prepared = selected_engineering(platform, include_examples(platform))
+    archive = prepared if prepared.is_file() else selected_seed(platform, include_examples(platform))
     candidates = []
     if archive.is_file():
         with zipfile.ZipFile(archive) as zipped:
             spec = json.loads(zipped.read('manifest.json'))
-            candidates.extend(seed_destination_paths(platform, spec))
-    candidates.extend(platform / '.build/w/engineering.pending/code' / p.relative_to(platform / 'code')
-                      for p in (platform / 'code').rglob('*') if p.is_file())
+            if archive == prepared:
+                candidates.extend(platform / '.build/w/engineering.pending' / row['path'] for row in spec['inventory'])
+                candidates.extend(p for p in seed_destination_paths(platform, {'inventory': spec['inventory'], 'engineering': spec})
+                                  if p.is_relative_to(platform / 'instance/example_instance/data'))
+            else:
+                candidates.extend(seed_destination_paths(platform, spec))
+    if archive != prepared:
+        candidates.extend(platform / '.build/w/engineering.pending/code' / p.relative_to(platform / 'code')
+                          for p in (platform / 'code').rglob('*') if p.is_file())
     def units(path):
         return len(str(path).encode('utf-16-le')) // 2
     return next((str(p) for p in sorted(candidates, key=units, reverse=True)
@@ -324,15 +393,18 @@ class DefaultStartup:
         if state_exists and not bundle.exists():
             bundle = self.platform / '.build/example_instance-windows/engineering/manifest.json'
         if not state_exists:
-            # Before installation has begun, this is only a generated cache.
-            # Rebuild it on retry so an invalid earlier manifest is not reused.
+            # New packages reuse a complete prepared candidate. Legacy packages
+            # still assemble their seed locally before installation begins.
             included = include_examples(self.platform)
-            self.progress("正在准备 Lenia 预置案例" if included else "正在准备基础平台（不含 Lenia 案例）")
-            if selected_seed(self.platform, included).is_file():
-                unpack_seed(self.platform, included=included)
-            self.execute([str(self.platform / "dependencies/python/python.exe"),
-                          str(self.platform / "prepare_install.py"), "--platform", "windows",
-                          *([] if included else ["--without-examples"])])
+            if selected_engineering(self.platform, included).is_file():
+                bundle = unpack_engineering(self.platform, included=included, progress=self.progress)
+            else:
+                self.progress("正在准备 Lenia 预置案例" if included else "正在准备基础平台（不含 Lenia 案例）")
+                if selected_seed(self.platform, included).is_file():
+                    unpack_seed(self.platform, included=included)
+                self.execute([str(self.platform / "dependencies/python/python.exe"),
+                              str(self.platform / "prepare_install.py"), "--platform", "windows",
+                              *([] if included else ["--without-examples"])])
         if not target_path.exists():
             if state_exists:
                 raise ValueError("已有未完成的初始化记录，但缺少原安装参数。请查看日志，勿覆盖实例资料。")
@@ -345,7 +417,8 @@ class DefaultStartup:
             target_path.parent.mkdir(parents=True, exist_ok=True)
             target_path.write_text(json.dumps(target, ensure_ascii=False, indent=2), encoding="utf-8")
         self.progress("正在安装环境并初始化 Portal\n首次使用需要联网，可能需要几分钟")
-        self.execute(command(self.platform, "install", "--manifest", bundle, "--target", target_path))
+        self.execute(command(self.platform, "install", "--manifest", bundle, "--target", target_path,
+                             '--skip-file-verification'))
 
     def wait_ready(self, state, timeout=120):
         from scripts.tfi_release_install import wait_for_ready, health_failure

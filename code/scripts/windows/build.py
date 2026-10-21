@@ -56,6 +56,15 @@ def bundle_seed(seed, archive, *, include_examples):
         zipped.writestr('manifest.json', json.dumps(specification, ensure_ascii=False, indent=2) + '\n')
 
 
+def bundle_engineering(engineering, archive):
+    """Ship the already verified candidate, avoiding on-device assembly."""
+    manifest = json.loads((engineering / 'manifest.json').read_text(encoding='utf-8'))
+    with zipfile.ZipFile(archive, 'w', compression=zipfile.ZIP_DEFLATED) as zipped:
+        for row in manifest['inventory']:
+            zipped.write(engineering / row['path'], row['path'])
+        zipped.write(engineering / 'manifest.json', 'manifest.json')
+
+
 def verify_prepared_payload(platform, *, target_platform="windows"):
     """Exercise packaged code and seed through the real prepare/validate path."""
     with tempfile.TemporaryDirectory(prefix="verify-" + target_platform + "-", dir=platform.parent) as temporary:
@@ -73,6 +82,9 @@ def verify_prepared_payload(platform, *, target_platform="windows"):
                 zipped.extractall(seed)
             subprocess.run([sys.executable, str(root / "prepare_install.py"), "--platform", target_platform, *options],
                            cwd=root, env=env, check=True)
+            if target_platform == 'windows':
+                bundle_engineering(root / '.build/w/engineering',
+                                   platform / ('base-engineering.zip' if options else 'example-engineering.zip'))
 
 
 def bundle_native_dependencies(repo, destination, native_cache, *, target="windows/x86_64"):
@@ -110,6 +122,8 @@ def stage(repo, destination, archive, *, source_commit=None, source_dirty=None, 
     for included, name in ((True, 'example-seed.zip'), (False, 'base-seed.zip')):
         bundle_seed(seed, destination / name, include_examples=included)
     verify_prepared_payload(destination)
+    for name in ('example-seed.zip', 'base-seed.zip'):
+        (destination / name).unlink()
     with tarfile.open(archive) as bundle:
         for entry in bundle.getmembers():
             if not (entry.isfile() or entry.isdir()) or not entry.name.startswith("python/"):
@@ -131,8 +145,9 @@ def stage(repo, destination, archive, *, source_commit=None, source_dirty=None, 
             ["git", "status", "--porcelain", "--", "code", "prepare_install.py", "code/scripts/windows"], cwd=repo)),
         "source_tree_sha256": hashlib.sha256(json.dumps(source_inventory(repo / "code"), sort_keys=True).encode()).hexdigest(),
         "python": json.loads((repo / "code/scripts/windows/runtime.json").read_text(encoding="utf-8")),
-        "seed_sha256": digest(destination / "example-seed.zip"),
-        "base_seed_sha256": digest(destination / "base-seed.zip"),
+        "engineering_sha256": digest(destination / "example-engineering.zip"),
+        "base_engineering_sha256": digest(destination / "base-engineering.zip"),
+        "engineering_prepared_at_build": True,
         "initialization_requires_network": True,
         "bundled_native_dependencies": bundled,
         "native_preparation_requires_network": False,
