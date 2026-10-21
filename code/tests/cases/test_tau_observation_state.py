@@ -78,3 +78,12 @@ def test_capture_end_preserves_pending_request_and_unavailable_timing():
     :design-point:
     """
     _run_contract("pending_capture")
+
+
+def test_actual_stream_ready_precedes_handover_close():
+    """实际事件流 ready 与交接关闭回执保持同文档身份关联。
+
+    HTTP open 不算 ready；旧流迟到消息不产生新回执；重连标识有歧义时不猜测请求。
+    :design-point:
+    """
+    _run_contract("stream_ready")

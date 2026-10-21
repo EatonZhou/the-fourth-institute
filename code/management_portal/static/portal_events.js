@@ -145,7 +145,8 @@
     } catch {
       // Keep the address as given.
     }
-    const receipt = { url: address, stream_id: streamIdentities.get(stream), reason, at: new Date().toISOString() };
+    const receipt = { url: address, stream_id: streamIdentities.get(stream), reason, at: new Date().toISOString(),
+      successor_stream_id: reason === "handover_complete" ? streamIdentities.get(nextSource) : null };
     closedStreams.push(receipt);
     if (closedStreams.length > 200) closedStreams.splice(0, closedStreams.length - 200);
     // Deliver before pagehide disposes this document and its diagnostic buffer.
@@ -333,6 +334,14 @@
       publishEvent("portal:events-open", {});
     });
     created.addEventListener("portal-ready", event => {
+      if (created !== source && created !== nextSource) return;
+      // This receipt records an actual application-ready event, before a
+      // handover closes its predecessor. It never includes the event payload.
+      window.dispatchEvent(new CustomEvent("portal:connection-ready", { detail: {
+        url: transportUrl.pathname, stream_id: streamId,
+        predecessor_stream_id: created === nextSource ? streamIdentities.get(source) : null,
+        at: new Date().toISOString(),
+      } }));
       if (created === nextSource) {
         completeHandover();
         return;

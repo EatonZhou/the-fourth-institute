@@ -154,6 +154,73 @@ async function receiptIdentity(kind, reused, observe) {
   }, observe);
 }
 
+async function streamReady(observe) {
+  await capture('stream_ready', async ({ context, observer, main, request, rows, output }) => {
+    const win = main.window;
+    delete win.PortalEvents;
+    Object.defineProperty(win.document, 'hidden', { get: () => false });
+    const timers = new Map(), streams = [];
+    let timerId = 0;
+    win.setTimeout = (callback, delay) => { timers.set(++timerId, { callback, delay }); return timerId; };
+    win.clearTimeout = id => timers.delete(id);
+    win.setInterval = () => ++timerId;
+    win.clearInterval = () => {};
+    win.EventSource = class extends win.EventTarget {
+      constructor(url) {
+        super(); this.url = url; this.closed = false;
+        this.request = request(main.frame, { url, resourceType: 'eventsource' });
+        streams.push(this); context.emit('request', this.request);
+      }
+      close() { this.closed = true; }
+    };
+    const source = fs.readFileSync(path.join(__dirname, '../../../management_portal/static/portal_events.js'), 'utf8');
+    win.eval(source);
+    const readyRows = () => rows().filter(row => row.kind === 'portal_stream_ready');
+    const emitReady = stream => stream.dispatchEvent(new win.MessageEvent('portal-ready', {
+      data: '{"private":"event-body-secret"}',
+    }));
+    assert.equal(streams.length, 1);
+    context.emit('response', { request: () => streams[0].request, status: () => 200 });
+    streams[0].dispatchEvent(new win.Event('open'));
+    assert.equal(readyRows().length, 0, 'HTTP/open cannot substitute for application ready');
+    emitReady(streams[0]);
+    assert.equal(readyRows()[0].request_id, observer.requestId(streams[0].request));
+    assert.equal(readyRows()[0].predecessor_stream_id, null);
+    win.PortalEvents.watchResident('resident-test');
+    const refresh = [...timers].find(([, timer]) => timer.delay === 150);
+    assert.ok(refresh); timers.delete(refresh[0]); refresh[1].callback();
+    assert.equal(streams.length, 2);
+    assert.equal(streams[0].closed, false, 'old stream stays live until successor ready');
+    emitReady(streams[1]);
+    const successor = readyRows()[1];
+    const closed = rows().find(row => row.kind === 'portal_connection_closed');
+    assert.equal(successor.request_id, observer.requestId(streams[1].request));
+    assert.equal(successor.predecessor_stream_id, readyRows()[0].stream_id);
+    assert.equal(closed.stream_id, successor.predecessor_stream_id);
+    assert.equal(closed.successor_stream_id, successor.stream_id);
+    assert.equal(closed.reason, 'handover_complete');
+    assert.equal(closed.request_id, observer.requestId(streams[0].request));
+    assert.equal(successor.document_id, closed.document_id);
+    assert.equal(successor.frame_id, closed.frame_id);
+    assert.ok(successor.ready_at_ms <= closed.closed_at_ms);
+    assert.equal(streams[0].closed, true);
+    emitReady(streams[0]);
+    assert.equal(readyRows().length, 2, 'late ready from retired stream is ignored');
+    // A native reconnect can reuse a label. Preserve the actual ready event,
+    // but never guess which HTTP attempt supplied it.
+    context.emit('request', request(main.frame, { url: streams[1].url, resourceType: 'eventsource' }));
+    emitReady(streams[1]);
+    assert.equal(readyRows()[2].request_id, null);
+    assert.equal(readyRows()[2].request_association, 'unavailable_no_unique_transport_identity');
+    win.PortalEvents.close();
+    await observer.flush();
+    const finalClose = rows().filter(row => row.kind === 'portal_connection_closed').at(-1);
+    assert.equal(finalClose.reason, 'page_closed');
+    assert.equal(finalClose.successor_stream_id, null, 'terminal close has no invented successor');
+    excludes(output(), ['event-body-secret']);
+  }, observe);
+}
+
 async function pendingCapture(observe) {
   await capture('pending_capture', async ({ context, page, observer, main, request, rows, output }) => {
     const pendingRequest = request(main.frame, {
@@ -194,6 +261,7 @@ async function pendingCapture(observe) {
 const contracts = {
   stream_unique: observe => receiptIdentity('stream', false, observe),
   stream_reused: observe => receiptIdentity('stream', true, observe),
+  stream_ready: streamReady,
   cancellation_unique: observe => receiptIdentity('cancellation', false, observe),
   cancellation_reused: observe => receiptIdentity('cancellation', true, observe),
   pending_capture: pendingCapture,

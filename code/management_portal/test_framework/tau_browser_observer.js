@@ -219,7 +219,7 @@ async function observeBrowser(context, { evidenceDir }) {
         state.document.confirmed = true;
       }
       write({ kind: data.kind, ...location(state), browser_observed_at_ms: Number.isFinite(data.at) ? data.at : null, time_origin_ms: Number.isFinite(data.time_origin) ? data.time_origin : null });
-    } else if (['beforeunload', 'pagehide', 'portal_connections', 'resource_timing', 'resource_timing_buffer_full', 'observer_unavailable'].includes(data.kind)) {
+    } else if (['beforeunload', 'pagehide', 'portal_connections', 'portal_stream_ready', 'resource_timing', 'resource_timing_buffer_full', 'observer_unavailable'].includes(data.kind)) {
       const doc = tokens.get(data.token);
       const associated = { ...location(state), document_id: doc?.id || null, document_confirmed: !!doc };
       if (data.kind === 'resource_timing') {
@@ -236,12 +236,24 @@ async function observeBrowser(context, { evidenceDir }) {
             time_origin_ms: Number.isFinite(entry.time_origin_ms) ? entry.time_origin_ms : null,
             values, unavailable, request_id: null, request_association: 'unavailable_resource_timing_has_no_transport_id', server_execution_time: null });
         }
+      } else if (data.kind === 'portal_stream_ready') {
+        const streamId = /^[a-z0-9-]{1,96}$/.test(data.stream_id || '') ? data.stream_id : null;
+        const predecessor = /^[a-z0-9-]{1,96}$/.test(data.predecessor_stream_id || '') ? data.predecessor_stream_id : null;
+        const path = safePath(data.path);
+        const candidates = (transportRequests.get(path === '/api/events' && streamId ? `stream:${streamId}` : null) || [])
+          .filter(request => request.document === doc && request.frame === state);
+        const match = doc && candidates.length === 1 ? candidates[0] : null;
+        write({ kind: 'portal_stream_ready', ...associated, path, stream_id: streamId, predecessor_stream_id: predecessor,
+          ready_at_ms: Number.isFinite(data.ready_at_ms) ? data.ready_at_ms : null,
+          request_id: match?.id || null,
+          request_association: match ? 'portal_stream_identity' : 'unavailable_no_unique_transport_identity' });
       } else if (data.kind === 'portal_connections') {
         for (const entry of data.entries || []) {
           const reason = /^(subscription_unchanged|subscription_changed|handover_complete|next_stream_closed|closed|stream_error|stale_stream|handover_timeout|next_stream_error|restart|leadership_released|page_closed|retry|caller_aborted|stream_batch_read|backlog_read|watch_closed|AbortError)$/.test(entry.reason || '') ? entry.reason : 'unknown';
           const streamId = /^[a-z0-9-]{1,96}$/.test(entry.stream_id || '') ? entry.stream_id : null;
           const transportId = /^[a-z0-9-]{1,96}$/.test(entry.transport_id || '') ? entry.transport_id : null;
-          const safe = { path: safePath(entry.path), stream_id: streamId, transport_id: transportId, reason, closed_at_ms: Number.isFinite(entry.closed_at_ms) ? entry.closed_at_ms : null };
+          const successor = /^[a-z0-9-]{1,96}$/.test(entry.successor_stream_id || '') ? entry.successor_stream_id : null;
+          const safe = { path: safePath(entry.path), stream_id: streamId, transport_id: transportId, successor_stream_id: successor, reason, closed_at_ms: Number.isFinite(entry.closed_at_ms) ? entry.closed_at_ms : null };
           const key = `${doc?.id}:${JSON.stringify(safe)}`;
           if (state.connections?.has(key)) continue;
           (state.connections ||= new Set()).add(key);
@@ -286,6 +298,7 @@ async function observeBrowser(context, { evidenceDir }) {
     const connections = items => emit({ kind: 'portal_connections', entries: items.map(item => ({
       path: sanitize(item.url), reason: connectionReasons.has(item.reason) ? item.reason : 'unknown',
       stream_id: /^[a-z0-9-]{1,96}$/.test(item.stream_id || '') ? item.stream_id : null,
+      successor_stream_id: /^[a-z0-9-]{1,96}$/.test(item.successor_stream_id || '') ? item.successor_stream_id : null,
       transport_id: /^[a-z0-9-]{1,96}$/.test(item.transport_id || '') ? item.transport_id : null,
       closed_at_ms: Number.isFinite(Date.parse(item.at)) ? Date.parse(item.at) : null,
     })) });
@@ -293,6 +306,15 @@ async function observeBrowser(context, { evidenceDir }) {
     // the actual close receipt synchronously when the owner emits it instead.
     window.addEventListener('portal:connection-closed', event => {
       if (event.detail && typeof event.detail === 'object') connections([event.detail]);
+    });
+    window.addEventListener('portal:connection-ready', event => {
+      const item = event.detail;
+      if (!item || typeof item !== 'object') return;
+      emit({ kind: 'portal_stream_ready', path: sanitize(item.url),
+        stream_id: /^[a-z0-9-]{1,96}$/.test(item.stream_id || '') ? item.stream_id : null,
+        predecessor_stream_id: /^[a-z0-9-]{1,96}$/.test(item.predecessor_stream_id || '') ? item.predecessor_stream_id : null,
+        ready_at_ms: Number.isFinite(Date.parse(item.at)) ? Date.parse(item.at) : null,
+      });
     });
     const flush = () => {
       const remaining = observer?.takeRecords() || []; if (remaining.length) entries(remaining);

@@ -130,15 +130,23 @@ function previewFixture() {
     focusInitialPreviewLine: noop, rememberPreviousResource: noop,
     renderDocument: async doc => {ctx.documentValue = doc; rendered.push(doc); return doc;},
   });
-  vm.runInContext(declarations('portal_workspace_surface.js', ['createDocumentTabsController', 'createOwnedTabsController', 'clearPreview', 'openResource']), ctx);
+  vm.runInContext(declarations('portal_workspace_surface.js', ['createDocumentSession', 'createDocumentTabsController', 'createOwnedTabsController', 'clearPreview', 'openResource']), ctx);
   let dirty = false;
+  const errors = [];
   const tabs = ctx.createOwnedTabsController({
-    createSession: () => ({snapshot: () => ({}), guardDiscard: async () => !dirty, destroy: noop,
-      open: request => ctx.openResource(request)}),
+    createSession: document => {
+      const session = ctx.createDocumentSession({onPresent: payload => {
+        if (tabs.isActive(document.key)) void ctx.openResource({path: document.path, document: payload});
+      }});
+      return {...session, guardDiscard: async () => !dirty,
+        open: request => session.open({...request, load: request.load || (async () => request.document)})};
+    },
+    onActivate: (document, snapshot) => {if (snapshot.payload) void ctx.openResource({path: document.path, document: snapshot.payload});},
+    onError: error => errors.push(error.message),
     serializeDocument: doc => ({path: doc.path}),
     onChange: snapshot => {if (!snapshot.documents.length) emptySnapshots.push({...ctx.binding});},
   });
-  return {ctx, tabs, rendered, emptySnapshots, setDirty: value => {dirty = value;}};
+  return {ctx, tabs, rendered, emptySnapshots, errors, setDirty: value => {dirty = value;}};
 }
 
 test('last Preview tab clears its persistent binding before observers run; cancelled closes keep it', async () => {
@@ -170,4 +178,44 @@ test('a late Preview read cannot revive a closed document, and a new open still 
   await f.tabs.open({key: 'B', path: '/B', document: {path: '/B'}});
   assert.equal(f.ctx.binding.path, '/B');
   assert.equal(f.rendered.length, 1);
+});
+
+test('unreadable replacement keeps the prior session, document and persisted locator', async () => {
+  const f = previewFixture();
+  await f.tabs.open({key: 'B', path: '/B', document: {path: '/B', content: 'kept'}});
+  const previous = f.tabs.active();
+  const pendingRead = deferred();
+  const pending = f.tabs.open({key: 'A', path: '/A', load: () => pendingRead.promise,
+    onLoading: () => {throw Error('pending request must not replace visible document');},
+    onError: () => {throw Error('failed request must not replace visible document');}});
+  await Promise.resolve();
+  assert.equal(f.tabs.active(), previous);
+  assert.equal(f.tabs.persistenceSnapshot().documents[0].value.path, '/B');
+  pendingRead.reject(Error('404 unreadable'));
+  const result = await pending;
+  assert.match(result.error.message, /404/);
+  assert.equal(f.tabs.active(), previous);
+  assert.equal(f.ctx.binding.path, '/B');
+  assert.equal(f.ctx.documentValue.content, 'kept');
+  assert.equal(f.tabs.snapshot().documents.length, 1);
+  assert.deepEqual(f.errors, ['404 unreadable']);
+});
+
+test('replacement cancellation and racing reads never discard current edits or restore stale tabs', async () => {
+  const f = previewFixture();
+  await f.tabs.open({key: 'B', path: '/B', document: {path: '/B', content: 'kept'}});
+  f.setDirty(true);
+  const cancelled = await f.tabs.open({key: 'A', path: '/A', load: () => {throw Error('cancelled read');}});
+  assert.equal(cancelled.accepted, false);
+  assert.equal(f.ctx.binding.path, '/B');
+  f.setDirty(false);
+  const read = deferred();
+  const pending = f.tabs.open({key: 'A', path: '/A', load: () => read.promise});
+  await Promise.resolve();
+  await f.tabs.open({key: 'C', path: '/C', document: {path: '/C'}});
+  read.resolve({path: '/A'});
+  assert.equal((await pending).stale, true);
+  assert.equal(f.tabs.active().key, 'C');
+  assert.equal(f.ctx.binding.path, '/C');
+  assert.deepEqual(Array.from(f.tabs.snapshot().tabs), ['C']);
 });

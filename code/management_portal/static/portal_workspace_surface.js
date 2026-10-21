@@ -1369,6 +1369,8 @@
 
   function createDocumentTabsController(options = {}) {
     const documents = new Map();
+    const pendingSessions = new Set();
+    let navigationSequence = 0;
     let tabs = [];
     let activeKey = "";
     let restoreSequence = 0;
@@ -1469,6 +1471,7 @@
     const activate = (key, meta = {}) => {
       const documentState = documents.get(String(key || ""));
       if (!documentState) return false;
+      navigationSequence += 1;
       activeKey = documentState.key;
       notify(meta.reason || "activate", { ...meta, document: documentState });
       options.onActivate?.(
@@ -1480,6 +1483,7 @@
       return true;
     };
     const open = async (request = {}) => {
+      const navigation = ++navigationSequence;
       const restoring = request.__portalPreviewRestoreToken === restoreToken;
       if (!restoring) restoreSequence += 1;
       const key = String(request.key || "").trim();
@@ -1504,15 +1508,13 @@
       const previous = active();
       const inheritedPin = previous?.pinned === true;
       const newTab = request.mode === "new-tab";
-      if (newTab && previous) previous.pinned = true;
+      const replacing = previous && !previous.pinned && !restoring && !newTab;
       let insertIndex = tabs.length;
-      if (previous && !previous.pinned && !restoring && !newTab) {
+      if (replacing) {
         const discardApproved = await previous.session?.guardDiscard?.(request);
         if (discardApproved === false) return { accepted: false, stale: false };
+        if (navigation !== navigationSequence) return { accepted: false, stale: true };
         insertIndex = Math.max(0, tabs.indexOf(previous.key));
-        previous.session?.destroy?.();
-        documents.delete(previous.key);
-        tabs = tabs.filter(item => item !== previous.key);
       }
 
       const created = options.createDocument?.(request, {
@@ -1536,11 +1538,46 @@
           : created.pinned === true,
         session: null,
       };
+      documentState.session = options.createSession?.(documentState, request)
+        || createDocumentSession(options.sessionOptions || {});
+      if (previous) {
+        // Read into a detached session. Persistence and the visible document
+        // retain the old identity until the new resource is actually readable.
+        const before = previous.session?.snapshot?.() || {};
+        pendingSessions.add(documentState.session);
+        let result;
+        try {
+          result = await documentState.session.open({ ...request,
+            onLoading: undefined, onPresent: undefined, onEmpty: undefined, onError: undefined,
+          });
+        } catch (error) {
+          result = { accepted: true, stale: false, error };
+        } finally {
+          pendingSessions.delete(documentState.session);
+        }
+        const after = previous.session?.snapshot?.() || {};
+        const superseded = navigation !== navigationSequence || active() !== previous
+          || ['draft', 'editing', 'dirty', 'saving'].some(field => before[field] !== after[field]);
+        if (superseded || result?.error || result?.stale || result?.accepted === false || result?.payload == null) {
+          documentState.session.destroy?.();
+          if (!superseded && result?.error && !result.stale) reportError(result.error);
+          return { ...result, stale: superseded || result?.stale === true };
+        }
+        if (replacing) {
+          previous.session?.destroy?.();
+          documents.delete(previous.key);
+          tabs = tabs.filter(item => item !== previous.key);
+        }
+        if (newTab) previous.pinned = true;
+        documents.set(key, documentState);
+        tabs.splice(insertIndex, 0, key);
+        activate(key, { reason: "open-complete", request, result });
+        request.onPresent?.(result.payload, documentState.session.snapshot?.(), { request });
+        return result;
+      }
       documents.set(key, documentState);
       tabs.splice(insertIndex, 0, key);
       activeKey = key;
-      documentState.session = options.createSession?.(documentState, request)
-        || createDocumentSession(options.sessionOptions || {});
       notify("open-create", { document: documentState, request });
       options.onActivate?.(
         documentState,
@@ -1558,6 +1595,7 @@
       if (!documentState) return false;
       const discardApproved = await documentState.session?.guardDiscard?.(meta);
       if (discardApproved === false) return false;
+      navigationSequence += 1;
       const index = tabs.indexOf(documentState.key);
       const wasActive = documentState.key === activeKey;
       documentState.session?.destroy?.();
@@ -1650,6 +1688,9 @@
       return snapshot();
     };
     const destroy = () => {
+      navigationSequence += 1;
+      for (const session of pendingSessions) session.destroy?.();
+      pendingSessions.clear();
       restoreSequence += 1;
       orderedDocuments().forEach(documentState => documentState.session?.destroy?.());
       documents.clear();
