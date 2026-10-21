@@ -1575,6 +1575,14 @@ class LineageDataStore:
                 raise ValueError('Resident registration_state must be one of ' + ', '.join(resident_storage.REGISTRATION_STATES))
             if record['registration_state'] == 'resource_pending' and prior is not None and prior['registration_state'] == 'ready':
                 record['registration_state'] = 'ready'
+            if prior is None:
+                # Registering a Resident publishes Lineage membership. Check
+                # the caller's version in this transaction, before publishing
+                # the child, rather than at the later Fork-edge commit. A
+                # stale Fork must not leave a child which the same stale
+                # precondition then prevents its compensation from deleting.
+                from .lineage_definition_versions import check_definition_version
+                check_definition_version(connection, str(record['lineage_id']))
             resource_client.ensure_workspaces(record, connection=connection)
             graph_storage.upsert(connection, 'lineage_nodes', {'node_id': resident_id}, {'lineage_id': record['lineage_id'], 'node_type': 'resident'})
             for table, fields in resident_storage.DOMAIN_TABLES.items():

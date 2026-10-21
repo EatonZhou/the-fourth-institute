@@ -5238,9 +5238,9 @@ button.messageQuote:focus-visible {
 .familyStatusPanel:not([hidden]) { display: flex; }
 .familyStatusPanel.is-inline { width: 100%; box-shadow: none; }
 .familyStatusBody { padding: 6px; min-height: 0; max-height: 400px; overflow: auto; overscroll-behavior: contain; }
-.familyStatusPanel table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 12px; }
+.familyStatusPanel table { width: 100%; min-width: 440px; border-collapse: collapse; table-layout: fixed; font-size: 12px; }
 .familyStatusPanel th, .familyStatusPanel td { text-align: left; padding: 4px 6px; border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent); vertical-align: middle; }
-.familyStatusPanel th { position: sticky; top: -6px; z-index: 1; color: var(--muted); font-size: 11px; font-weight: 500; white-space: nowrap; background: var(--panel-2); padding-block: 7px; }
+.familyStatusPanel th { position: sticky; top: -6px; z-index: 1; color: var(--muted); font-size: 11px; font-weight: 500; white-space: normal; overflow-wrap: anywhere; line-height: 1.35; background: var(--panel-2); padding-block: 7px; }
 .familyStatusPanel th:first-child { border-radius: 5px 0 0 5px; }
 .familyStatusPanel th:nth-child(2) { width: 68px; }
 .familyStatusPanel th:nth-child(3) { width: 140px; }

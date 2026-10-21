@@ -30,6 +30,32 @@ def command(argv, **kwargs):
     return result
 
 
+def verify_app(app):
+    command(["codesign", "--verify", "--deep", "--strict", "--verbose=2", app])
+
+
+def seal_app(app):
+    # The linker may sign the executable before Info.plist exists. Seal the
+    # complete bundle after assembly; a linker signature is not an app signature.
+    # Ad-hoc signing checks integrity, but provides no Developer ID or notarization.
+    command(["codesign", "--force", "--sign", "-", "--timestamp=none", app])
+    verify_app(app)
+
+
+def verify_dmg_app(dmg):
+    # Check the distributed bytes, not only the source directory used by hdiutil.
+    with tempfile.TemporaryDirectory(prefix="tfi-dmg-") as tmp:
+        mount = Path(tmp) / "mounted"
+        command(["hdiutil", "attach", "-readonly", "-nobrowse", "-mountpoint", mount, dmg])
+        try:
+            app = mount / "The Fourth Institute.app"
+            verify_app(app)
+            command([app / "Contents/MacOS/TheFourthInstitute", "--help"], timeout=60)
+            verify_app(app)
+        finally:
+            command(["hdiutil", "detach", mount])
+
+
 def smoke(executable, destination, included):
     """Exercise the shipped native entry, including stop/unregister and restart."""
     argv = [executable, "--platform", destination, "--headless"]
@@ -175,7 +201,8 @@ with tempfile.TemporaryDirectory() as tmp:
         "engineering_sha256": digest(payload / "example-engineering.zip"),
         "base_engineering_sha256": digest(payload / "base-engineering.zip"),
         "engineering_prepared_at_build": True,
-        "initialization_requires_network": False, "signed": False,
+        "initialization_requires_network": False,
+        "signed": True, "signing_identity": "ad-hoc", "notarized": False,
         "prepared_engineering_validation": "passed",
     }
     (payload / "macos-package.json").write_text(json.dumps(receipt, indent=2) + "\n")
@@ -192,9 +219,10 @@ with tempfile.TemporaryDirectory() as tmp:
         "LSMinimumSystemVersion": "15.0", "NSHighResolutionCapable": True,
     }
     (contents / "Info.plist").write_bytes(plistlib.dumps(info))
+    seal_app(contents.parent)
     command([executables / "TheFourthInstitute", "--help"])
     # Drive a real Tk loop through a failed copy and retry before real installs.
-    command([python, repo / "code/tests/cases/test_macos_desktop.py", "MacDesktopGUI"],
+    command([python, repo / "code/tests/cases/test_macos_desktop.py", "MacDesktopGUI", "MacAppSignature"],
             cwd=payload / "code", env={**env, "PYTHONPATH": str(payload / "code")}, timeout=60)
     # Use the actual app executable, with spaces in its path. Keep destination
     # paths short enough for Darwin's Unix socket limit.
@@ -203,12 +231,16 @@ with tempfile.TemporaryDirectory() as tmp:
             destination = (Path(tmp) / ("full" if included else "base")).resolve()
             smoke(executables / "TheFourthInstitute", destination, included)
     receipt["native_installation_smoke"] = "passed: native entry, base/full, login, repeat start, unregister/restart, GUI copy/retry"
+    verify_app(contents.parent)
+    receipt["app_signature_verification"] = "passed"
     (image_root / "Applications").symlink_to("/Applications", target_is_directory=True)
     shutil.copyfile(repo / "code/scripts/macos/README.md", image_root / "README.md")
     dmg = output / ("TheFourthInstitute-macOS-" + ("arm64" if arch == "aarch64" else "x64") + ".dmg")
     command(["hdiutil", "create", "-ov", "-format", "UDZO", "-volname", "The Fourth Institute",
              "-srcfolder", image_root, dmg])
     command(["hdiutil", "verify", dmg])
+    verify_dmg_app(dmg)
+    receipt["dmg_app_signature_verification"] = "passed"
     receipt.update(dmg_sha256=digest(dmg), dmg_bytes=dmg.stat().st_size)
     (output / (dmg.name + ".sha256")).write_text(receipt["dmg_sha256"] + "  " + dmg.name + "\n")
     (output / (dmg.stem + ".json")).write_text(json.dumps(receipt, indent=2) + "\n")

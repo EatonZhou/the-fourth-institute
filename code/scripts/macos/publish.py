@@ -20,8 +20,12 @@ def validate(directory, commit):
                 or record["target"] != "macos/" + arch
                 or record["prepared_engineering_validation"] != "passed"
                 or not record.get("native_installation_smoke", "").startswith("passed:")
+                or record.get("app_signature_verification") != "passed"
+                or record.get("dmg_app_signature_verification") != "passed"
+                or record.get("signed") is not True
+                or record.get("signing_identity") != "ad-hoc"
                 or record["dmg_bytes"] != dmg.stat().st_size or record["dmg_sha256"] != actual):
-            raise ValueError("DMG does not match its verified source and native smoke results")
+            raise ValueError("DMG does not match its verified source, signature and native smoke results")
         checksum = dmg.with_name(dmg.name + ".sha256")
         if checksum.read_text().strip() != actual + "  " + dmg.name:
             raise ValueError("Checksum file does not match DMG")

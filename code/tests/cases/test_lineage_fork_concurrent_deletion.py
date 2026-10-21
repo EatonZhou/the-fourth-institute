@@ -3,9 +3,11 @@
 :module: spec.design-governance
 """
 from concurrent.futures import ThreadPoolExecutor
+from types import SimpleNamespace
 
 import pytest
 from management_portal.society_service import lineage_domain as graphs
+from management_portal.society_service import lineage_definition_versions as versions
 from tests.cases.test_principal_hierarchy import family
 from tests.cases.test_resident_folder_creation_contract import (
     future_creation_store, _new_session_payload, _append_conversation_turn, CANONICAL_RESIDENT_TARGETS,
@@ -54,3 +56,45 @@ def test_fork_attaches_against_committed_membership(future_creation_store, monke
         assert ids == {root["resident_id"], source["resident_id"], made[0]}
         assert any(e["source"] == source["resident_id"] and e["target"] == made[0]
                    for e in current["edges"])
+
+
+def test_versioned_fork_does_not_conflict_with_its_own_child(future_creation_store, monkeypatch):
+    """Fork 的首次成员提交检查版本，随后挂接不把自身提交误判成并发修改"""
+    root = family("Versioned Fork")
+    lineage_id = root["lineage_id"]
+    source = graphs.create_lineage_resident(lineage_id, _new_session_payload("Source"), "sample_admin")["resident"]
+    _append_conversation_turn(source["resident_id"], 0)
+    monkeypatch.setattr(graphs, "_resident_targets", CANONICAL_RESIDENT_TARGETS)
+    revision = graphs.get_lineage(lineage_id, "sample_admin")["revision"]
+    invocation = SimpleNamespace(arguments={"lineage_id": lineage_id}, expected_version=revision,
+                                 expected_version_for=lambda _: revision)
+    result = versions.guard_definition_handler("ForkResident", lambda _: graphs.fork_lineage_resident(
+        lineage_id, {"source": source["resident_id"], "fork_mode": "full", "child_title": "Child"},
+        "sample_admin",
+    ))(invocation)
+    child = result["created_resident"]["id"]
+    current = graphs.get_lineage(lineage_id, "sample_admin")
+    assert any(e["source"] == source["resident_id"] and e["target"] == child for e in current["edges"])
+
+
+def test_stale_fork_precondition_leaves_no_child(future_creation_store, monkeypatch):
+    """过期版本的 Fork 不得遗留已注册的子 Resident 或改变已提交的图"""
+    from management_portal.hatg.contracts import InstructionError
+    root = family("Stale Fork")
+    lineage_id = root["lineage_id"]
+    source = graphs.create_lineage_resident(lineage_id, _new_session_payload("Source"), "sample_admin")["resident"]
+    _append_conversation_turn(source["resident_id"], 0)
+    monkeypatch.setattr(graphs, "_resident_targets", CANONICAL_RESIDENT_TARGETS)
+    revision = graphs.get_lineage(lineage_id, "sample_admin")["revision"]
+    graphs.update_lineage_metadata(lineage_id, {"description": "concurrent edit"}, "sample_admin")
+    invocation = SimpleNamespace(arguments={"lineage_id": lineage_id}, expected_version=revision,
+                                 expected_version_for=lambda _: revision)
+    with pytest.raises(InstructionError) as error:
+        versions.guard_definition_handler("ForkResident", lambda _: graphs.fork_lineage_resident(
+            lineage_id, {"source": source["resident_id"], "fork_mode": "full", "child_title": "Rejected"},
+            "sample_admin",
+        ))(invocation)
+    assert error.value.code == "instruction.conflict"
+    current = graphs.get_lineage(lineage_id, "sample_admin")
+    assert current["description"] == "concurrent edit"
+    assert {node["id"] for node in current["nodes"]} == {root["resident_id"], source["resident_id"]}

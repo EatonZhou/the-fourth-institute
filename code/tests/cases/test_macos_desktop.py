@@ -116,6 +116,8 @@ class MacDesktop(unittest.TestCase):
                 dmg.with_suffix(".json").write_text(json.dumps({
                     "source_commit": "commit", "source_dirty": False, "target": "macos/" + arch,
                     "prepared_engineering_validation": "passed", "native_installation_smoke": "passed: fixture",
+                    "signed": True, "signing_identity": "ad-hoc",
+                    "app_signature_verification": "passed", "dmg_app_signature_verification": "passed",
                     "dmg_bytes": dmg.stat().st_size, "dmg_sha256": sha,
                 }))
             assets = validate(directory, "commit")
@@ -129,6 +131,16 @@ class MacDesktop(unittest.TestCase):
             self.assertEqual(Path(commands[1][1]).name, "tfi_preview_retention.py")
             self.assertEqual(commands[1][2:], ["--platform", "macos"])
             self.assertTrue(all(call.kwargs["check"] for call in run.call_args_list))
+            receipt = dmg.with_suffix(".json")
+            record = json.loads(receipt.read_text())
+            for field in ("app_signature_verification", "dmg_app_signature_verification", "signed", "signing_identity"):
+                invalid = dict(record)
+                invalid.pop(field)
+                receipt.write_text(json.dumps(invalid))
+                with self.subTest(field=field), patch.object(publisher.subprocess, "run") as run, self.assertRaises(ValueError):
+                    publisher.publish(directory, "commit")
+                run.assert_not_called()
+            receipt.write_text(json.dumps(record))
             dmg.write_bytes(b"tampered")
             with self.assertRaises(ValueError):
                 validate(directory, "commit")
@@ -234,6 +246,36 @@ class MacDesktop(unittest.TestCase):
             with patch.object(providers.sys, "platform", "darwin"), self.assertRaisesRegex(ValueError, "another instance"):
                 providers.remove_template(target, registry)
             self.assertEqual(adapter.unit_path(registry, name).read_text(), content)
+
+
+@unittest.skipUnless(sys.platform == "darwin", "Requires native codesign")
+class MacAppSignature(unittest.TestCase):
+    def test_complete_bundle_signature_rejects_changed_resource_and_metadata(self):
+        import plistlib
+        import subprocess
+        from scripts.macos import build
+        with tempfile.TemporaryDirectory() as tmp:
+            app = Path(tmp) / "Fixture.app"
+            contents = app / "Contents"
+            executable = contents / "MacOS/fixture"
+            executable.parent.mkdir(parents=True)
+            source = Path(tmp) / "fixture.c"
+            source.write_text("int main(void) { return 0; }\n")
+            subprocess.run(["cc", str(source), "-o", str(executable)], check=True)
+            info = contents / "Info.plist"
+            info.write_bytes(plistlib.dumps({"CFBundleIdentifier": "org.thefourthinstitute.fixture",
+                                             "CFBundleExecutable": "fixture", "CFBundlePackageType": "APPL"}))
+            resource = contents / "Resources/fixture.txt"
+            resource.parent.mkdir()
+            resource.write_text("original")
+            build.seal_app(app)
+            for path in (resource, info):
+                original = path.read_bytes()
+                path.write_bytes(original + b"changed")
+                with self.assertRaises(RuntimeError):
+                    build.verify_app(app)
+                path.write_bytes(original)
+                build.verify_app(app)
 
 
 @unittest.skipUnless(sys.platform == "darwin", "Validated in the native macOS build")
