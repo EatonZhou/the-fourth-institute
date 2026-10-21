@@ -1765,7 +1765,12 @@ class Scheduler:
             if row is None:
                 raise KeyError(execution_id)
             request = _object(row['request_json'])
-            if (request.get('session') or {}).get('binding_id') != binding_id:
+            session = request.get('session') or {}
+            # Stateless turns have no session to hand off. They remain on
+            # their original route until completion, just like claimed work.
+            if session.get('mode') != 'persistent' or not session.get('binding_id'):
+                return {"withdrawn": False, "execution_id": execution_id}
+            if session['binding_id'] != binding_id:
                 raise ValueError("execution binding changed")
             if (row['status'] != 'queued' or row['attempts'] or row['owner_worker_id']
                     or row['cancel_requested'] or _object(row['checkpoint_json'])
