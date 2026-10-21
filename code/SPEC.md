@@ -139,7 +139,7 @@
 - [Portal Overlay、表单与 Toolbar 通用交互](/r/decision_b3022c27d22f)
 - [Portal 全局资源搜索](/r/decision_a144bf700017)
 - [Portal UI Association 的服务端存储与并发](/r/decision_bd179998ba08)
-- [Portal Workbench 模块与运行架构](/r/decision_4348ed990621)（工作台目录、内置入口和直接读取均遵循工作台资源的读取权限；内置身份不豁免项目拒绝。）
+- [Portal Workbench 模块与运行架构](/r/decision_4348ed990621)（工作台目录、内置入口和直接读取均遵循工作台资源的读取权限；内置身份不豁免项目拒绝。所属项目可经 UpdateResource 的 project_ids 修改，须有目标项目管理权限，沿用修订与显式发布流程。）
 - [Portal 中英文界面与语言偏好](/r/decision_27253e25f016)
 - [Portal Workbench 与 Panel Package 组合协议](/r/decision_538e155e1102)
 - [Lineage 个性化前端投影：公共绑定、身份创建、生成提交恢复、有界资源读取与双向演化](/r/decision_f67ae5e70793)

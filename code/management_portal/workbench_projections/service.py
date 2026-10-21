@@ -155,6 +155,18 @@ class ProjectionService:
                     "projection.update_fields",
                     "未知工作台更新字段：" + "、".join(sorted(unknown)),
                 )
+            if "project_ids" in payload:
+                from management_portal import permission_system
+                from management_portal.resources.providers.common import explicit_project_ids
+
+                projects = explicit_project_ids(payload["project_ids"], "Workbench")
+                destination_actor = authority or actor
+                allowed = permission_system.permitted_ids(destination_actor, "UpdateProject", "project_id", projects)
+                if set(projects) - allowed:
+                    raise PermissionError("无权管理目标项目")
+                for project in projects:
+                    isa(destination_actor, "GetProject", {"project_id": project})
+                payload = {**payload, "project_ids": projects}
             prepared = self.store.updated_manifest(current, payload)
             if "bindings" in payload:
                 self.check_binding_changes(current["bindings"], prepared["bindings"], actor)

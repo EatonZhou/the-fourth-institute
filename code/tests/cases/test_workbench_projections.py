@@ -348,6 +348,30 @@ def test_delete_page_does_not_touch_lineage(store, monkeypatch):
         store.get(APP, "alice")
 
 
+def test_workbench_project_move_requires_destination_access_and_publication(store, permissions, monkeypatch):
+    """迁移项目需管理目标项目，保留页面和绑定，且仍按修订显式发布。"""
+    place_workbenches(permissions)
+    permissions.place(Fact("project", "Research", creator="bob"))
+    runtime = service.ProjectionService(store)
+    monkeypatch.setattr(service, "isa", lambda actor, name, args: {"project": {"resource_id": args["project_id"]}})
+    monkeypatch.setattr(runtime, "check_bindings", lambda *args: {})
+    original = store.publish(APP, "alice", 1)
+    command = {"expected_revision": 1, "project_ids": ["Research"]}
+    with pytest.raises(PermissionError):
+        runtime.apply_update(APP, command, "alice")
+    assert store.get(APP, "alice")["revision"] == 1
+    permissions.grant("alice", "Research", "@admin")
+    updated = runtime.apply_update(APP, command, "alice")
+    assert updated["project_ids"] == ["Research"]
+    assert updated["bindings"] == original["bindings"]
+    assert updated["html"] == original["html"]
+    assert store.get(APP, "alice", published=True)["project_ids"] == []
+    with pytest.raises(ProjectionError, match="刷新"):
+        runtime.apply_update(APP, command, "alice")
+    runtime.apply_update(APP, {"expected_revision": 2, "published_revision": 2}, "alice")
+    assert store.get(APP, "alice", published=True)["project_ids"] == ["Research"]
+
+
 def test_workbench_updates_reject_unknown_fields(store):
     """工作台更新含未知字段（包括已删除的 owner_ids）时被拒绝，页面定义不变
 

@@ -37,7 +37,7 @@ def builtins() -> dict[str, dict]:
 # Directory stars live with the other personal favorites (presentation_store).
 FAVORITE_SURFACE = "workbench"
 DEFINITION_FIELDS = frozenset({
-    "title", "description", "html", "bindings", "navigation", "manifest", "panels", "application",
+    "title", "description", "html", "bindings", "navigation", "manifest", "panels", "application", "project_ids",
 })
 
 
