@@ -18,11 +18,13 @@ class PairedRuntimeTest(unittest.TestCase):
         config = {"dev_code": "/dev/code", "release_code": "/release/code",
                   "web_ports": {"dev": 19001, "release": 19002}}
         command, result = adapt_component({}, "web", ["python", "--port", "19000"], env, config)
-        self.assertEqual(command[-1], "19002")
+        self.assertEqual(command[command.index("--port") + 1], "19002")
+        self.assertEqual(command[command.index("--timeout-graceful-shutdown") + 1], "15")
         self.assertEqual(result["PYTHONPATH"], "/release/code")
         self.assertEqual(result["PORTAL_SHARED_SOURCE_ROOT"], "/dev/code")
         self.assertTrue(all(result[k] == v for k, v in env.items()))
-        _, worker = adapt_component({}, "worker", ["python"], env, config)
+        worker_command, worker = adapt_component({}, "worker", ["python"], env, config)
+        self.assertNotIn("--timeout-graceful-shutdown", worker_command)
         self.assertEqual(worker["PYTHONPATH"], "/dev/code")
         self.assertEqual(worker["PORTAL_EXECUTION_WORKER_SOURCE_ROOT"], "/dev/code")
         self.assertEqual(worker["PORTAL_INSTANCE"], "release")
