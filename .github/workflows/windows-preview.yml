@@ -25,7 +25,16 @@ jobs:
         with:
           python-version: '3.12'
       - name: Verify Windows process record concurrency
-        run: python -m unittest discover -s code/tests/cases -p test_windows_process_records.py -v
+        run: |
+          @'
+          import unittest
+          suite = unittest.defaultTestLoader.discover('code/tests/cases', pattern='test_windows_process_records.py')
+          result = unittest.TextTestRunner(verbosity=2).run(suite)
+          for test, detail in result.errors + result.failures:
+              detail = detail.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+              print(f'::error title={test.id()}::{detail}', flush=True)
+          raise SystemExit(not result.wasSuccessful())
+          '@ | python -
 
   package:
     needs: process-records
