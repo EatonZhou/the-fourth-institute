@@ -48,4 +48,6 @@ python3 code/scripts/macos/build.py
 数据库导入、launchd 启停、登录页就绪、重复启动与注销后重启检查，再生成与校验 DMG。
 初始化检查经过应用的实际可执行入口；Tk 界面测试覆盖复制过程中的响应与失败重试。
 两种架构都通过后 GitHub Actions 才发布预览版；产物附带 SHA-256 与构建回执。
+仓库只保留最新完整发布的 macOS 预览版，同版 Apple Silicon 和 Intel 安装包均保留。
+新版完整上传并校验后，自动删除更旧的预览 Release、附件及标签；失败或上传未完成时保留当前可用版。
 这些检查不替代用户设备上的 Gatekeeper、Finder 拖拽和所有业务功能验收。

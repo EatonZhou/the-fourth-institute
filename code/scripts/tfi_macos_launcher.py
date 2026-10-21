@@ -197,9 +197,9 @@ def main():
         root.title("The Fourth Institute · macOS 试用版")
         frame = ttk.Frame(root, padding=30)
         frame.pack(fill="both", expand=True)
-        ttk.Label(frame, text="The Fourth Institute", font=("Helvetica", 24, "bold")).pack(pady=10)
-        ttk.Label(frame, text="本地运行环境已内置。AI 账号和可选工具可在进入后配置。",
-                  wraplength=450).pack(pady=10)
+        ttk.Label(frame, text="欢迎安装 The Fourth Institute", font=("Helvetica", 24, "bold")).pack(pady=10)
+        ttk.Label(frame, text="与 AI 一起探索、协作、创造知识。", wraplength=450).pack(pady=10)
+        ttk.Label(frame, text="macOS 15+ 试用版，基础安装无需联网。", wraplength=450).pack(pady=10)
         included = tk.BooleanVar(value=not args.without_examples)
         choice = ttk.Checkbutton(frame, text="安装 Lenia 预置案例", variable=included)
         choice.pack(pady=15)

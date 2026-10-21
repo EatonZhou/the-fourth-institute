@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import re
 import subprocess
+import sys
 
 
 def validate(directory, commit):
@@ -28,15 +29,23 @@ def validate(directory, commit):
     return assets
 
 
+def publish(directory, commit):
+    release = json.loads(Path(__file__).with_name("release.json").read_text())
+    if not re.fullmatch(r"macos-preview-\d{8}\.\d+", release["tag"]):
+        raise ValueError("Invalid macOS release tag")
+    assets = validate(directory, commit)
+    subprocess.run(["gh", "release", "create", release["tag"], "--target", commit,
+                    "--prerelease", "--latest=false", "--title", release["title"],
+                    "--notes-file", str(Path(__file__).with_name("README.md")), *assets], check=True)
+    # The shared cleaner independently verifies uploaded assets before deleting
+    # older releases. A failed or partial upload must never reach this step.
+    subprocess.run([sys.executable, str(Path(__file__).resolve().parents[1] / "tfi_preview_retention.py"),
+                    "--platform", "macos"], check=True)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--directory", type=Path, required=True)
     parser.add_argument("--commit", required=True)
     args = parser.parse_args()
-    release = json.loads(Path(__file__).with_name("release.json").read_text())
-    if not re.fullmatch(r"macos-preview-\d{8}\.\d+", release["tag"]):
-        raise ValueError("Invalid macOS release tag")
-    assets = validate(args.directory, args.commit)
-    subprocess.run(["gh", "release", "create", release["tag"], "--target", args.commit,
-                    "--prerelease", "--latest=false", "--title", release["title"],
-                    "--notes-file", str(Path(__file__).with_name("README.md")), *assets], check=True)
+    publish(args.directory, args.commit)

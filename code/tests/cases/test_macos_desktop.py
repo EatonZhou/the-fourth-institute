@@ -105,6 +105,7 @@ class MacDesktop(unittest.TestCase):
 
     def test_publish_requires_both_architectures_and_actual_digest(self):
         import hashlib
+        from scripts.macos import publish as publisher
         with tempfile.TemporaryDirectory() as tmp:
             directory = Path(tmp)
             for suffix, arch in (("arm64", "aarch64"), ("x64", "x86_64")):
@@ -117,10 +118,34 @@ class MacDesktop(unittest.TestCase):
                     "prepared_engineering_validation": "passed", "native_installation_smoke": "passed: fixture",
                     "dmg_bytes": dmg.stat().st_size, "dmg_sha256": sha,
                 }))
-            self.assertEqual(len(validate(directory, "commit")), 6)
+            assets = validate(directory, "commit")
+            self.assertEqual(len(assets), 6)
+            with patch.object(publisher.subprocess, "run") as run:
+                publisher.publish(directory, "commit")
+            commands = [call.args[0] for call in run.call_args_list]
+            self.assertEqual(len(commands), 2)
+            self.assertEqual(commands[0][:3], ["gh", "release", "create"])
+            self.assertEqual(commands[0][-6:], assets)
+            self.assertEqual(Path(commands[1][1]).name, "tfi_preview_retention.py")
+            self.assertEqual(commands[1][2:], ["--platform", "macos"])
+            self.assertTrue(all(call.kwargs["check"] for call in run.call_args_list))
             dmg.write_bytes(b"tampered")
             with self.assertRaises(ValueError):
                 validate(directory, "commit")
+            with patch.object(publisher.subprocess, "run") as run, self.assertRaises(ValueError):
+                publisher.publish(directory, "commit")
+            run.assert_not_called()
+
+    def test_failed_macos_upload_does_not_start_retention(self):
+        import subprocess
+        from scripts.macos import publish as publisher
+        failure = subprocess.CalledProcessError(1, ["gh", "release", "create"])
+        with patch.object(publisher, "validate", return_value=["arm64.dmg", "x64.dmg"]), \
+                patch.object(publisher.subprocess, "run", side_effect=failure) as run, \
+                self.assertRaises(subprocess.CalledProcessError):
+            publisher.publish(Path("unused"), "commit")
+        self.assertEqual(run.call_count, 1)
+        self.assertEqual(run.call_args.args[0][:3], ["gh", "release", "create"])
 
 
     def test_interrupted_settings_write_can_retry_without_partial_json(self):

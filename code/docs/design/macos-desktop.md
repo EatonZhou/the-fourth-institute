@@ -4,6 +4,8 @@ macOS 桌面发行沿用共享安装器的实例隔离、数据库迁移、可�
 两种架构分别构建，DMG 内提供应用包与 Applications 快捷入口。应用包携带固定摘要的
 Python、PostgreSQL、NATS、Node.js，以及构建时安装并验证的核心 Python 包。
 准备基础平台不依赖用户的全局 Python，也不安装 TeX 等可选工具。
+欢迎页使用“欢迎安装 The Fourth Institute”标题，正文仅保留产品说明及 macOS 15+
+试用版、基础安装无需联网的信息，提供 Lenia 选项与进入按钮。
 
 只读应用包首次复制到用户的 `~/Library/TFI` 后运行；代码和依赖共享，实例数据放在
 `instance/desktop`。较短目录用于满足 macOS Unix Socket 的长度限制。后台服务使用
@@ -38,5 +40,8 @@ Codex 账号启动项按实例目录摘要定位，并核验完整命令、账�
 应用可执行入口，并用 Tk 事件循环验证复制时界面响应、失败后的重试与浏览器交接；
 浏览器交接使用测试替身，不启动外部浏览器。安装和清理同时失败时保留两处异常。
 两种架构均通过后统一发布
-GitHub prerelease，校验源提交、原生验证记录和文件摘要。签名、公证和用户设备上的完整
+GitHub prerelease，校验源提交、原生验证记录和文件摘要。成功上传后调用共享
+`tfi_preview_retention.py --platform macos`，由它核验完整新版后清理旧 preview Release、
+附件及对应标签。仅保留最新成功的一版，arm64/x64 同版一并保留；构建失败或上传未完成
+不删除当前可用版。签名、公证和用户设备上的完整
 Finder 交互验收仍独立于这些构建检查。
