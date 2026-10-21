@@ -203,11 +203,11 @@ def required_long_path(platform):
                  if units(p) >= 260 or units(p.parent) >= 248), None)
 
 
-def unpack_seed(platform, *, included=True):
+def unpack_seed(platform, *, included=True, receipt_name="windows-package.json"):
     """Only extract the public seed; never overwrite an initialized instance."""
     import hashlib
     archive = selected_seed(platform, included)
-    receipt = json.loads((platform / "windows-package.json").read_text(encoding="utf-8"))
+    receipt = json.loads((platform / receipt_name).read_text(encoding="utf-8"))
     with archive.open("rb") as stream:
         if hashlib.file_digest(stream, "sha256").hexdigest() != receipt["seed_sha256" if included else "base_seed_sha256"]:
             raise ValueError("示例资料压缩包校验失败，请重新下载安装包。")
@@ -249,10 +249,10 @@ def invitation_url(text):
 
 
 @contextmanager
-def launcher_lock(platform):
+def launcher_lock(platform, *, system="windows"):
     """One desktop owner; uninstall must wait until that owner closes."""
     from management_common.file_lock import try_lock_descriptor, unlock_descriptor
-    path = platform / ".build/windows/launcher.lock"
+    path = platform / ".build" / system / "launcher.lock"
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a+b") as stream:
         if not try_lock_descriptor(stream.fileno()):
@@ -270,6 +270,9 @@ class DefaultStartup:
         self.root = self.platform / "instance/example_instance"
         self.progress = progress
         self.log_path = self.platform / ".build/windows/logs/example_instance.log"
+
+    def command(self, *arguments):
+        return command(self.platform, *arguments)
 
     def state(self):
         path = self.root / "installation.json"
@@ -367,12 +370,12 @@ class DefaultStartup:
             url = f"http://127.0.0.1:{state['target']['ports']['web']}"
         else:
             self.progress("正在启动 Portal")
-            self.execute(command(self.platform, "start", "--root", self.root))
+            self.execute(self.command("start", "--root", self.root))
             url = self.wait_ready(state)
         self.progress("正在打开你的研究空间")
         # This idempotent setup command uses the instance's own account service.
         # Invitation secrets stay in its private file, never in log output.
-        result = json.loads(self.execute(command(self.platform, "first-admin", "--root", self.root,
+        result = json.loads(self.execute(self.command("first-admin", "--root", self.root,
                                                 "--username", "admin", "--if-needed")))
         if result.get("status") == "already_configured":
             return url + "/"
@@ -390,15 +393,17 @@ def brand_window(root):
 
 class Launcher:
     """Transient progress only; the application UI lives in the browser."""
-    def __init__(self, root):
+    def __init__(self, root, *, flow=None):
         import tkinter as tk
         from tkinter import ttk
         self.root = root
         self.events = queue.Queue()
         self.busy = False
         self.ready_url = None
-        self.flow = DefaultStartup(PLATFORM, lambda text: self.events.put(("progress", text)))
-        brand_window(root)
+        self.flow = flow or DefaultStartup(PLATFORM)
+        self.flow.progress = lambda text: self.events.put(("progress", text))
+        if os.name == "nt":
+            brand_window(root)
         root.title("The Fourth Institute")
         root.minsize(540, 365)
         root.resizable(False, False)
@@ -409,7 +414,7 @@ class Launcher:
                         bordercolor="#dce8e4", lightcolor="#08616a", darkcolor="#08616a")
         frame = tk.Frame(root, bg="#f5f8f7", padx=32, pady=24)
         frame.pack(fill="both", expand=True)
-        mark = PLATFORM / "branding/mark.png"
+        mark = self.flow.platform / "branding/mark.png"
         if mark.is_file():
             self.mark = tk.PhotoImage(file=str(mark))
             tk.Label(frame, image=self.mark, bg="#f5f8f7").pack()
@@ -453,7 +458,10 @@ class Launcher:
     def open_log(self):
         self.flow.log_path.parent.mkdir(parents=True, exist_ok=True)
         self.flow.log_path.touch(exist_ok=True)
-        os.startfile(self.flow.log_path)
+        if sys.platform == "darwin":
+            subprocess.Popen(["/usr/bin/open", str(self.flow.log_path)])
+        else:
+            os.startfile(self.flow.log_path)
 
     def close(self):
         if self.busy:
