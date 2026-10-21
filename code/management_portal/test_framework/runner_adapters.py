@@ -364,14 +364,26 @@ class TauAdapter(RunnerAdapter):
 
         persist_submission = on_submitted
 
-        def handle_assigned(handle: dict[str, str]) -> None:
+        def handle_assigned(handle: dict[str, str], *, before_submit: bool = False) -> None:
+            from management_common.resource_lifecycle import LifecycleStore
+
+            if before_submit:
+                # Resident handoff runs this callback before TriggerEvent or
+                # DeliverMessage. A local ownership rejection cannot have
+                # accepted an input and must not become an unknown receipt.
+                try:
+                    LifecycleStore().bind(lifecycle_id, handle['resident_id'])
+                except Exception as exc:
+                    rejected = {**handle, 'submission_state': 'not_submitted',
+                                'submission_reason': str(exc)}
+                    save_checkpoint(rejected, safe=True)
+                    raise CaseNotSent(str(exc)) from exc
             prepared.update(handle)
             save_checkpoint(prepared)
             if persist_submission is not None:
                 persist_submission({**prepared, "target_preflight": asdict(target)})
-            from management_common.resource_lifecycle import LifecycleStore
-
-            LifecycleStore().bind(lifecycle_id, handle['resident_id'])
+            if not before_submit:
+                LifecycleStore().bind(lifecycle_id, handle['resident_id'])
 
         def handle_submitted(handle: dict[str, str]) -> None:
             submitted.update(handle)
@@ -502,7 +514,7 @@ class TauAdapter(RunnerAdapter):
                 metadata={"test_run_id": run_id, "test_case_id": planned["case_id"], "test_module_id": planned["module"], "runner": self.id},
                 **({"resident_runtime": planned["resident_runtime"]} if planned.get("resident_runtime") else {}),
                 cancellation_requested=should_cancel,
-                on_assigned=handle_assigned,
+                on_assigned=lambda handle: handle_assigned(handle, before_submit=True),
                 on_submitted=handle_submitted,
             )
 

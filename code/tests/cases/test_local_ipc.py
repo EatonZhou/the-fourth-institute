@@ -7,13 +7,75 @@ import shutil
 import subprocess
 import sys
 import time
+import os
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
 from management_common.local_ipc import LocalListener, connect_local, start_local_server
 
 NODE_HELPER = Path(__file__).resolve().parents[2] / 'management_common/local_ipc.cjs'
+
+
+def test_tcp_directory_creation_with_windows_acl_policy(tmp_path, monkeypatch):
+    """Model inherited Windows grants at the filesystem boundary, with real TCP."""
+    from management_common import local_ipc as ipc, file_permissions as private
+    endpoint = tmp_path / 'ipc' / 'resource.json'
+    sid = 'S-1-5-21-1-2-3-1001'
+    owner_only = [(0, 0, 0x1F01FF, sid)]
+    inherited = owner_only + [(0, 16, 1, 'S-1-5-32-545')]
+    acls = {}
+    mkdir = Path.mkdir
+    ensure = private.ensure_private_directory
+    publish = ipc._publish
+
+    def inheriting_mkdir(path, *args, **kwargs):
+        existed = path.exists()
+        result = mkdir(path, *args, **kwargs)
+        if not existed:
+            acls[path] = inherited
+        return result
+
+    def secure_directory(path):
+        if path in acls:
+            private._validate_windows_acl(sid, sid, acls[path])
+        ensure(path)
+        acls[path] = owner_only
+
+    def checked_publish(path, record):
+        private._validate_windows_acl(sid, sid, acls.get(path.parent, inherited))
+        publish(path, record)
+
+    monkeypatch.setattr(Path, 'mkdir', inheriting_mkdir)
+    monkeypatch.setattr(ipc, 'ensure_private_directory', secure_directory, raising=False)
+    monkeypatch.setattr(ipc, '_publish', checked_publish)
+    with LocalListener(endpoint, transport='tcp') as listener:
+        assert listener.socket.getsockname()[1] > 0
+        assert json.loads(endpoint.read_text())['host'] == '127.0.0.1'
+    assert not endpoint.exists()
+    with LocalListener(endpoint, transport='tcp'):
+        assert endpoint.exists()
+
+
+def test_windows_default_uses_new_private_cache_without_touching_legacy(tmp_path, monkeypatch):
+    from management_common import local_ipc as ipc
+    legacy = tmp_path / 'TFI/Portal/ipc'
+    legacy.mkdir(parents=True)
+    marker = legacy / 'old.json'
+    marker.write_text('legacy permissions and contents must remain unchanged')
+    monkeypatch.setattr(ipc, 'os', SimpleNamespace(**{**vars(os), 'name': 'nt',
+                                                   'environ': {'LOCALAPPDATA': str(tmp_path)}}))
+    monkeypatch.setattr(ipc, 'compatibility_value', lambda key, default: default)
+    logical = tmp_path / 'resource-service.sock'
+    endpoint = ipc.rendezvous_path(logical)
+    assert endpoint.parent == tmp_path / 'TFI/Portal/ipc-v2'
+    assert ipc.rendezvous_path(logical) == endpoint
+    assert ipc.rendezvous_path(tmp_path / 'execution-service.sock') != endpoint
+    with LocalListener(logical, transport='tcp'):
+        assert endpoint.exists()
+        assert marker.read_text() == 'legacy permissions and contents must remain unchanged'
+    assert list(legacy.iterdir()) == [marker]
 
 
 @pytest.mark.skipif(sys.platform == 'win32', reason='POSIX generation ownership')
