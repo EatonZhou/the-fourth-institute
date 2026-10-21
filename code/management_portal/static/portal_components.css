@@ -5009,6 +5009,17 @@ button.portalFileLink {
   max-width: 100%;
   flex-wrap: wrap;
 }
+.familyRequestStatus [data-portal-message-action="family-recovery-choose"] {
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  justify-content: flex-start;
+  padding: 6px 10px;
+  line-height: 1.45;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
 .messageItem.familyRequestStatus[data-family-request-state="routing"],
 .messageItem.familyRequestStatus[data-family-request-state="delivering"],
 .messageItem.familyRequestStatus[data-family-request-state="queued"] {

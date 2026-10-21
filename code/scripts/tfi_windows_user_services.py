@@ -7,13 +7,102 @@ from __future__ import annotations
 
 import argparse
 import ctypes
+from contextlib import contextmanager
+from functools import lru_cache
 import json
 import os
 from pathlib import Path
 import re
 import subprocess
 import sys
+import tempfile
 import time
+
+
+def _record_operation(path, operation):
+    """Allow brief sharing/delete-pending windows, never assume access denied = absent."""
+    deadline = time.monotonic() + 2
+    while True:
+        try:
+            return operation()
+        except PermissionError as exc:
+            if not exc.filename:
+                exc.filename = str(path)
+            if (getattr(exc, "winerror", None) not in (5, 32, 33)
+                    or time.monotonic() >= deadline):
+                raise
+            time.sleep(0.05)
+
+
+@lru_cache(maxsize=1)
+def _record_api():
+    from ctypes import wintypes as w
+    api = ctypes.WinDLL("kernel32", use_last_error=True)
+    api.CreateFileW.argtypes = [w.LPCWSTR, w.DWORD, w.DWORD, ctypes.c_void_p,
+                               w.DWORD, w.DWORD, w.HANDLE]
+    api.CreateFileW.restype = w.HANDLE
+    api.CloseHandle.argtypes = [w.HANDLE]
+    api.GetFileInformationByHandleEx.argtypes = [w.HANDLE, ctypes.c_int, ctypes.c_void_p, w.DWORD]
+    api.GetFileInformationByHandleEx.restype = w.BOOL
+    return api
+
+
+@contextmanager
+def _open_record(path):
+    if os.name != "nt":
+        with path.open(encoding="utf-8") as stream:
+            yield stream
+        return
+    import msvcrt
+    from ctypes import wintypes as w
+    api = _record_api()
+    # A process record is an atomic snapshot: readers must allow rename/delete.
+    # Private-file and pinned-resource handles intentionally have other policies.
+    handle = api.CreateFileW(str(path), 0x80000000, 7, None, 3, 0x00200000, None)
+    if handle == ctypes.c_void_p(-1).value:
+        raise ctypes.WinError(ctypes.get_last_error())
+    try:
+        attributes = (w.DWORD * 2)()
+        if not api.GetFileInformationByHandleEx(handle, 9, ctypes.byref(attributes), ctypes.sizeof(attributes)):
+            raise ctypes.WinError(ctypes.get_last_error())
+        if attributes[0] & (0x400 | 0x10):
+            raise ValueError("Service record must be a regular, non-reparse file")
+        fd = msvcrt.open_osfhandle(handle, os.O_RDONLY | os.O_BINARY)
+    except BaseException:
+        api.CloseHandle(handle)
+        raise
+    with os.fdopen(fd, "r", encoding="utf-8") as stream:
+        yield stream
+
+
+def read_record(path):
+    def read():
+        with _open_record(path) as stream:
+            return stream.read()
+    return _record_operation(path, read)
+
+
+def write_record(path, text):
+    # Publish only closed, complete files. Never truncate a live process identity.
+    with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=path.parent,
+                                     prefix=path.name + ".", suffix=".tmp", delete=False) as stream:
+        temporary = Path(stream.name)
+        try:
+            stream.write(text)
+            stream.flush()
+            os.fsync(stream.fileno())
+        except BaseException:
+            stream.close()
+            temporary.unlink(missing_ok=True)
+            raise
+    try:
+        _record_operation(path, lambda: temporary.replace(path))
+    finally:
+        remove_record(temporary)
+
+
+def remove_record(path):
+    _record_operation(path, lambda: path.unlink(missing_ok=True))
 
 
 def validate_definition(value, name):
@@ -115,7 +204,7 @@ class WindowsServiceControl:
             return self.scm().status(name)
         record = {}
         try:
-            record = json.loads(state_path(value).read_text(encoding="utf-8"))
+            record = json.loads(read_record(state_path(value)))
         except FileNotFoundError:
             pass
         active = bool(record.get("pid") and record.get("created") is not None
@@ -142,8 +231,11 @@ class WindowsServiceControl:
                 raise RuntimeError("Wait for the component to stop: " + name)
             from management_common.file_lock import lock_stream
             with state_path(value).with_suffix(".start.lock").open("a+b") as lock, lock_stream(lock):
-                if self.status(name)["active"] == "active":
+                status = self.status(name)
+                if status["active"] == "active":
                     continue
+                if status["pid"]:
+                    raise RuntimeError("Wait for the component to stop: " + name)
                 log = Path(value["root"]) / "runtime" / (value["component"] + ".log")
                 with log.open("ab") as output:
                     process = subprocess.Popen(
@@ -171,8 +263,11 @@ class WindowsServiceControl:
             path = state_path(value)
             if not self.status(name)["pid"]:
                 continue
-            record = json.loads(path.read_text(encoding="utf-8"))
-            path.with_suffix(".stop").write_text(str(record["created"]), encoding="utf-8")
+            try:
+                record = json.loads(read_record(path))
+            except FileNotFoundError:
+                continue  # Supervisor finished between status and stop request.
+            write_record(path.with_suffix(".stop"), str(record["created"]))
             deadline = time.monotonic() + 300
             while self.status(name)["pid"] and time.monotonic() < deadline:
                 time.sleep(0.2)
@@ -197,11 +292,15 @@ def supervise(path):
     record_path = state_path(value)
     created = process_stamp(os.getpid())
     try:
-        api.write_json(record_path, {"pid": os.getpid(), "created": created,
-                                    "child_pid": process.pid, "child_created": process_stamp(process.pid)})
+        write_record(record_path, json.dumps({"pid": os.getpid(), "created": created,
+                                             "child_pid": process.pid, "child_created": process_stamp(process.pid)}))
         stop = record_path.with_suffix(".stop")
         while process.poll() is None:
-            if stop.exists() and stop.read_text(encoding="utf-8") == str(created):
+            try:
+                requested = read_record(stop) == str(created)
+            except FileNotFoundError:
+                requested = False
+            if requested:
                 if value["component"] == "postgres":
                     subprocess.run([str(Path(target["pg_bin"]) / "pg_ctl.exe"), "stop", "-D",
                                     str(database_root(target)), "-m", "fast", "-w", "-t", "60"],
@@ -210,8 +309,8 @@ def supervise(path):
             time.sleep(0.2)
     finally:
         terminate_process_tree(process, timeout=30)
-        record_path.unlink(missing_ok=True)
-        record_path.with_suffix(".stop").unlink(missing_ok=True)
+        remove_record(record_path)
+        remove_record(record_path.with_suffix(".stop"))
 
 
 if __name__ == "__main__":
