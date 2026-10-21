@@ -127,3 +127,38 @@ def test_failed_stop_preserves_legacy_definition(definition):
     with pytest.raises(TimeoutError):
         units._register_native_codex(platform, directory, name, content, SimpleNamespace(stop=fail_stop))
     assert platform.unit_path(directory, name).read_text() == before
+
+
+def test_managed_binary_link_survives_version_switch(definition):
+    platform, directory, name, content, _ = definition
+    job = plistlib.loads(content.encode())
+    binary = Path(job["ProgramArguments"][job["ProgramArguments"].index("--binary") + 1])
+    version_one, version_two = binary.with_name("codex-v1"), binary.with_name("codex-v2")
+    binary.rename(version_one)
+    binary.symlink_to(version_one)
+    generated = units._native_codex_service("one")[3]
+    assert generated == content  # The symlink itself remains in the plist.
+    old = plistlib.loads(generated.encode())
+    old["ProgramArguments"][old["ProgramArguments"].index("--binary") + 1] = str(version_one)
+    platform.register_services(directory, {name: plistlib.dumps(old, sort_keys=True).decode()})
+    stopped = []
+    controller = SimpleNamespace(stop=stopped.append)
+    units._register_native_codex(platform, directory, name, generated, controller)
+    assert stopped == [name]
+    version_two.write_bytes(version_one.read_bytes())
+    version_two.chmod(0o755)
+    binary.unlink()
+    binary.symlink_to(version_two)
+    updated = units._native_codex_service("one")[3]
+    assert updated == generated
+    units._register_native_codex(platform, directory, name, updated, controller)
+    assert stopped == [name]  # Repeated checks do not restart an active account.
+    # A different executable must never be accepted as a legacy entry.
+    old["ProgramArguments"][old["ProgramArguments"].index("--binary") + 1] = str(version_one)
+    path = platform.unit_path(directory, name)
+    before = plistlib.dumps(old, sort_keys=True)
+    path.write_bytes(before)
+    with pytest.raises(ValueError, match="another launchd job"):
+        units._register_native_codex(platform, directory, name, updated, controller)
+    assert path.read_bytes() == before
+    assert stopped == [name]

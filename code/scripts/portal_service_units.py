@@ -439,7 +439,15 @@ def _native_codex_service(account_id: str):
     providers = deployment.get("providers", {}) if isinstance(deployment, dict) else {}
     configured = providers.get("codex_binary") if isinstance(providers, dict) else None
     from management_portal.execution.provider_updates import CodexRuntime
-    binary = str(resolve_directory(configured)) if configured else shutil.which("codex") or str(CodexRuntime().link())
+    # Keep the managed entry point, not its current versioned symlink target.
+    # Runtime updates switch this link without replacing account launchd jobs.
+    if configured:
+        if not isinstance(configured, str) or any(c in configured for c in "\0\n\r"):
+            raise ValueError("Codex binary must be a path")
+        entry = Path(configured).expanduser()
+        binary = str(resolve_directory(str(entry.parent)) / entry.name)
+    else:
+        binary = shutil.which("codex") or str(CodexRuntime().link())
     if sys.platform == "win32":
         # Keep the SCM definition stable across Provider version switches.
         from management_portal.execution.provider_updates import CodexRuntime
@@ -478,7 +486,7 @@ def _native_codex_service(account_id: str):
 
 
 def _register_native_codex(adapter, directory, name, content, controller):
-    """Repair only the exact pre-environment macOS definition owned by us.
+    """Repair only owned macOS definitions with matching commands and paths.
 
     Existing jobs with a different command, account or logs remain foreign.
     The caller holds the account lock; stop before atomically changing a job so
@@ -488,9 +496,25 @@ def _register_native_codex(adapter, directory, name, content, controller):
         path = adapter.unit_path(directory, name)
         if path.is_file() and not path.is_symlink():
             previous = path.read_text(encoding="utf-8")
-            legacy = plistlib.loads(content.encode("utf-8"))
+            expected = plistlib.loads(content.encode("utf-8"))
+            old = plistlib.loads(previous.encode("utf-8"))
+            # Earlier versions dereferenced the configured executable link.
+            # Only normalize that argument when it is the very same file.
+            normalized = dict(old)
+            args = list(normalized.get("ProgramArguments", []))
+            expected_args = expected["ProgramArguments"]
+            binary_index = expected_args.index("--binary") + 1
+            if (len(args) == len(expected_args) and all(isinstance(arg, str) for arg in args)
+                    and args[binary_index] != expected_args[binary_index]):
+                try:
+                    if Path(args[binary_index]).samefile(expected_args[binary_index]):
+                        args[binary_index] = expected_args[binary_index]
+                        normalized["ProgramArguments"] = args
+                except OSError:
+                    pass
+            legacy = dict(expected)
             legacy.pop("EnvironmentVariables", None)
-            if previous != content and previous == plistlib.dumps(legacy, sort_keys=True).decode("utf-8"):
+            if previous != content and normalized in (legacy, expected):
                 controller.stop(name)
                 with tempfile.NamedTemporaryFile(dir=directory, prefix=".codex-", delete=False) as stream:
                     temporary = Path(stream.name)

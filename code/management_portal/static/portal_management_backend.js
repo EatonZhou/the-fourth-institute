@@ -118,7 +118,7 @@ export function openLogin(accountId, {onChanged = () => {}} = {}) {
       const url = new URL(session.verification_url);
       if (["https:", "http:"].includes(url.protocol)) { link.href = url.href; link.hidden = false; }
     } catch (_) { /* No authorization URL yet. */ }
-    terminal = ["succeeded", "failed", "expired"].includes(session.state);
+    terminal = ["succeeded", "failed", "expired", "cancelled"].includes(session.state);
     if (terminal) clearInterval(progressTimer);
     cancel.disabled = terminal;
     authorization.hidden = terminal || !session.requires_code_input;
@@ -128,7 +128,7 @@ export function openLogin(accountId, {onChanged = () => {}} = {}) {
   };
   const poll = async () => {
     try { render(await call("GetProviderAccountLogin", {account_id: accountId}, {signal: abort.signal})); }
-    catch (error) { if (!closed && !terminal) { status.textContent = errorText(error); timer = setTimeout(poll, 4000); } }
+    catch (error) { if (!closed && !terminal) { pending = false; status.setAttribute("aria-busy", "false"); status.textContent = errorText(error); timer = setTimeout(poll, 4000); } }
   };
   void call("OpenProviderAccountLogin", {account_id: accountId}, {signal: abort.signal}).then(render).catch(error => {
     pending = false; clearInterval(progressTimer); status.setAttribute("aria-busy", "false");
@@ -214,6 +214,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
   const saveButton = form => form.append(node("button", t("保存"), {type: "submit", class: "portalButton is-primary"}));
   function setupEditor(accountId) {
     let timer, progressTimer, closed = false, checking = false, working = false, setup = null;
+    let progressMessage = "", startedAt = 0;
     const {view, form} = newEditor("接入并启用 AI", () => { closed = true; clearTimeout(timer); clearInterval(progressTimer); });
     form.append(node("p", accountId));
     const status = node("p", "", {role: "status", "data-backend-setup-status": ""});
@@ -238,6 +239,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       checking = true; model.disabled = true; useDefault.disabled = true; setButtons();
       try {
         const receipt = await execute("CheckProviderAccount", {account_id: accountId, model: model.value.trim()});
+        if (closed) return;
         await pollCheck(receipt.execution_id);
       } catch (error) { checking = false; model.disabled = false; useDefault.disabled = false; throw error; }
     }, "正在启动本地后台并检查连接，请稍候…"), true);
@@ -253,14 +255,19 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     async function perform(work, message = "正在检查运行环境与登录状态…") {
       if (closed || working) return;
       working = true; setButtons();
-      const startedAt = Date.now();
+      startedAt = Date.now(); progressMessage = message;
+      clearTimeout(timer); clearInterval(progressTimer);
       status.setAttribute("aria-busy", "true");
       status.textContent = t(message);
-      progressTimer = setInterval(() => { if (!closed) status.textContent = t(message) + " " +
+      progressTimer = setInterval(() => { if (!closed) status.textContent = t(progressMessage) + " " +
         t("已等待 {p0} 秒", {p0: Math.floor((Date.now() - startedAt) / 1000)}); }, 1000);
       try { await work(); }
       catch (error) { if (!closed) status.textContent = errorText(error); }
-      finally { clearInterval(progressTimer); working = false; if (!closed) { status.setAttribute("aria-busy", "false"); setButtons(); } }
+      finally { working = false; if (!checking) stopProgress(); if (!closed) setButtons(); }
+    }
+    function stopProgress() {
+      clearInterval(progressTimer);
+      if (!closed) status.setAttribute("aria-busy", "false");
     }
     async function reload() {
       const result = await execute("GetProviderAccountSetup", {account_id: accountId});
@@ -277,22 +284,28 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       setButtons();
     }
     async function pollCheck(executionId) {
+      if (closed) return;
       try {
         const result = await execute("GetProviderAccountCheck", {account_id: accountId, execution_id: executionId});
         if (closed) return;
         status.textContent = t(result.check.message);
         if (!["completed", "failed", "cancelled"].includes(result.check.status)) {
+          progressMessage = result.check.message;
           timer = setTimeout(() => void pollCheck(executionId), 2000); return;
         }
         if (result.check.passed && useDefault.checked) {
+          progressMessage = "测试通过，正在设为默认 AI…";
+          status.textContent = t(progressMessage);
           const currentDefault = state.roles.find(role => role.role === "default");
           await execute("UpdateBackendRole", {backend_role: "default", account_id: accountId,
             model: result.check.model, verification_execution_id: executionId}, {expectedVersion: currentDefault?.version || 0});
           if (!closed) status.textContent = t("测试通过，已设为默认 AI；新对话和未配置的 Resident 将使用此账号。");
           await refresh("roles");
         }
+        stopProgress();
         checking = false; model.disabled = false; useDefault.disabled = false; setButtons();
       } catch (error) {
+        stopProgress();
         if (!closed) { checking = false; model.disabled = false; useDefault.disabled = false; status.textContent = errorText(error); setButtons(); }
       }
     }

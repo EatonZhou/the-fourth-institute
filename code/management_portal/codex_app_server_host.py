@@ -49,14 +49,33 @@ def _read_endpoint(path):
     return data
 
 
+def unix_socket_path(path, *, platform=None):
+    """Keep macOS AF_UNIX addresses below sun_path's byte limit.
+
+    Long logical endpoints retain instance/account isolation through a digest.
+    The host creates the hashed leaf privately before the CLI binds to it.
+    Do not use TMPDIR: launchd and interactive clients can have different ones.
+    """
+    path = Path(path)
+    if _platform(platform) == "darwin" and len(os.fsencode(path)) >= 104:
+        identity = hashlib.sha256(os.fsencode(path.absolute())).hexdigest()[:32]
+        # macOS /tmp is a system symlink to /private/tmp. Resolve that trusted
+        # root only; the private leaf must still reject symlinks/foreign owners.
+        return Path("/tmp").resolve() / f"tfi-codex-{os.getuid()}-{identity}" / "rpc.sock"
+    return path
+
+
 def connect_transport(path, *, timeout=15.0, platform=None):
     """Return an authenticated WebSocket, closing the socket on every failure."""
     windows = _platform(platform) == "win32"
     record = _read_endpoint(path) if windows else None
+    address = None if windows else unix_socket_path(path, platform=platform)
+    if not windows and address != Path(path):
+        ensure_private_directory(address.parent)
     connection = socket.socket(socket.AF_INET if windows else socket.AF_UNIX, socket.SOCK_STREAM)
     try:
         connection.settimeout(timeout)
-        connection.connect(("127.0.0.1", record["port"]) if record else str(path))
+        connection.connect(("127.0.0.1", record["port"]) if record else str(address))
         transport = WebSocketTransport(connection, bearer_token=record["token"] if record else None)
         connection.settimeout(None)
         return transport
@@ -68,6 +87,8 @@ def connect_transport(path, *, timeout=15.0, platform=None):
 def run_host(path, binary, account_home, stop_event, *, platform=None, startup_timeout=90.0):
     windows = _platform(platform) == "win32"
     path, binary, account_home = Path(path), Path(binary), Path(account_home)
+    if not windows:
+        path = unix_socket_path(path, platform=platform)
     if not binary.is_absolute() or not binary.is_file():
         raise ValueError("Codex executable must be an existing absolute path")
     ensure_private_directory(account_home)
