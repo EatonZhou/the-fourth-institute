@@ -277,6 +277,13 @@ def component_command(target, component):
     root = Path(target["install_root"])
     runtime = root / "runtime"
     env = clean_environment(target, postgres=component == "postgres")
+    # Application HOME belongs to the instance, but native jobs are owned by
+    # the OS user manager. Preserve only its transport coordinates so RunScript
+    # can reach systemd without inheriting unrelated operator credentials.
+    if platform_adapter().__name__.endswith("_linux"):
+        for key in ("XDG_RUNTIME_DIR", "DBUS_SESSION_BUS_ADDRESS"):
+            if os.environ.get(key):
+                env[key] = os.environ[key]
     python = runtime_python(target)
     if component == "postgres":
         windows = platform_adapter().__name__.endswith("_windows")
@@ -823,6 +830,7 @@ def install(manifest_path, raw_target, *, prepare_only=False, freeze_evidence=No
             phase = "start"
             controller = service_controller()
             for component in COMPONENTS[1:]:
+                print('@TFI_PROGRESS ' + json.dumps({'message': '正在启动 ' + component}, ensure_ascii=False), flush=True)
                 controller.start(unit_name(target, component))
             save_stage(state, phase, "checking")
             phase = "health"
@@ -831,10 +839,16 @@ def install(manifest_path, raw_target, *, prepare_only=False, freeze_evidence=No
                 result = observed_status(state)
                 if result["status"] == "installed" or time.monotonic() >= deadline:
                     break
+                if target.get('windows_service_mode') == 'user' and any(
+                        service['active'] == 'inactive' and not service.get('pid')
+                        for service in result['services']):
+                    # User-mode supervisors do not auto-restart a crashed child.
+                    # Waiting six minutes cannot recover this process.
+                    break
                 time.sleep(2)
             state["result"] = result
             if result["status"] != "installed":
-                raise RuntimeError("Instance did not become healthy; inspect installation.json and its own service journals")
+                raise RuntimeError(health_failure(state, result))
             result["external_requirements"] = manifest.get("external_requirements", [])
             result["feature_initialization"] = state.get("feature_initialization", {}).get("result", {"status": "legacy_not_declared"})
             save_stage(state, phase, "installed")
@@ -859,6 +873,28 @@ def install(manifest_path, raw_target, *, prepare_only=False, freeze_evidence=No
             raise
 
 
+def health_failure(state, result):
+    """Save the pre-rollback observations and point at instance-owned logs."""
+    root = Path(state['target']['install_root'])
+    failures = [service['service'] + ': ' + service['active'] for service in result['services']
+                if service['active'] != 'active']
+    for check in result['checks']:
+        if check['ok']:
+            continue
+        detail = check.get('error', '')
+        payload = check.get('payload', {})
+        if isinstance(payload, dict):
+            reasons = [name for name in ('execution_layer', 'society_service')
+                       if isinstance(payload.get(name), dict) and payload[name].get('ok') is not True]
+            if reasons:
+                detail = '未就绪: ' + ', '.join(reasons)
+        failures.append((check.get('component') or check.get('route', 'health')) + ': ' + (detail or '未就绪'))
+    report = root / 'runtime/startup-diagnostics.json'
+    write_json(report, {'status': 'failed', 'observed': result,
+                       'component_logs': {c: str(root / 'runtime' / (c + '.log')) for c in COMPONENTS}})
+    return '服务启动检查失败：' + '; '.join(failures) + f'。诊断记录：{report}；组件日志：{root / "runtime"}'
+
+
 def observed_status(state):
     target = state["target"]
     expected_instance = target.get("runtime_instance", target["service_prefix"])
@@ -869,7 +905,12 @@ def observed_status(state):
     checks = []
     for route in ("/api/health", "/login"):
         try:
-            with urlopen(url + route, timeout=15) as response:
+            from urllib.error import HTTPError
+            try:
+                response = urlopen(url + route, timeout=15)
+            except HTTPError as exc:
+                response = exc
+            with response:
                 body = response.read()
                 ok = response.status == 200
             if route == "/api/health":

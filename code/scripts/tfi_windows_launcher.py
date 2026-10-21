@@ -281,11 +281,16 @@ class DefaultStartup:
         if not state_exists:
             # Before installation has begun, this is only a generated cache.
             # Rebuild it on retry so an invalid earlier manifest is not reused.
-            self.progress("正在准备示例资料")
+            import configparser
+            options = configparser.ConfigParser()
+            options.read(self.platform / "installation-options.ini", encoding="utf-8-sig")
+            include_examples = options.getboolean("installation", "include_examples", fallback=True)
+            self.progress("正在准备 Lenia 预置案例" if include_examples else "正在准备基础平台（不含 Lenia 案例）")
             if (self.platform / "example-seed.zip").is_file():
                 unpack_seed(self.platform)
             self.execute([str(self.platform / "dependencies/python/python.exe"),
-                          str(self.platform / "prepare_install.py"), "--platform", "windows"])
+                          str(self.platform / "prepare_install.py"), "--platform", "windows",
+                          *([] if include_examples else ["--without-examples"])])
         if not target_path.exists():
             if state_exists:
                 raise ValueError("已有未完成的初始化记录，但缺少原安装参数。请查看日志，勿覆盖实例资料。")

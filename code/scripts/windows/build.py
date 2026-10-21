@@ -45,8 +45,9 @@ def verify_prepared_payload(platform):
             zipped.extractall(root / "instance/example_instance/seed")
         env = os.environ.copy()
         env.update(PYTHONUTF8="1", PYTHONDONTWRITEBYTECODE="1")
-        subprocess.run([sys.executable, str(root / "prepare_install.py"), "--platform", "windows"],
-                       cwd=root, env=env, check=True)
+        for options in ([], ['--without-examples']):
+            subprocess.run([sys.executable, str(root / "prepare_install.py"), "--platform", "windows", *options],
+                           cwd=root, env=env, check=True)
 
 
 def bundle_native_dependencies(repo, destination, native_cache):

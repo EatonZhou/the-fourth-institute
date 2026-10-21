@@ -25,7 +25,7 @@ def inventory(root):
     return sorted(rows, key=lambda row: row["path"])
 
 
-def prepare(repo, *, target_platforms=None):
+def prepare(repo, *, target_platforms=None, include_examples=True):
     seed = repo / 'instance/example_instance/seed'
     specification = json.loads((seed / 'manifest.json').read_text(encoding='utf-8'))
     if specification['schema'] != 'tfi.instance-seed.v1':
@@ -44,6 +44,9 @@ def prepare(repo, *, target_platforms=None):
     for name in ('accounts_root', 'secrets_dir'):
         if any((seed / manifest['files'][name]).iterdir()):
             raise ValueError('Example seed must not contain live accounts or secrets')
+    from scripts.tfi_seed_selection import plan
+    manifest, selected_sql, excluded = plan(seed, manifest, include_examples=include_examples)
+    manifest['include_examples'] = include_examples
     suffix = '-' + '-'.join(target_platforms) if target_platforms else ''
     build = repo / ('.build/example_instance' + suffix)
     if build.is_symlink() or (repo / '.build').is_symlink():
@@ -56,8 +59,15 @@ def prepare(repo, *, target_platforms=None):
     temporary.mkdir()
     shutil.copytree(repo / 'code', temporary / 'code',
                     ignore=shutil.ignore_patterns(*GENERATED_CODE_DIRECTORIES, '*.pyc', '*.pyo'))
+    def ignore_cases(directory, names):
+        base = Path(directory).relative_to(seed)
+        return [name for name in names if any(
+            (base / name).as_posix() == path or (base / name).as_posix().startswith(path + '/')
+            for path in excluded)]
     for name in ('data', 'database'):
-        shutil.copytree(seed / name, temporary / name)
+        shutil.copytree(seed / name, temporary / name, ignore=ignore_cases)
+    if selected_sql is not None:
+        (temporary / manifest['database']['path']).write_text(selected_sql, encoding='utf-8', newline='\n')
     shutil.copyfile(repo / 'INSTALL.md', temporary / 'INSTALL.md')
     rows = inventory(temporary)
     code_rows = [{**row, 'path': row['path'][5:]} for row in rows if row['path'].startswith('code/')]
@@ -84,8 +94,10 @@ def prepare(repo, *, target_platforms=None):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--platform', choices=('linux', 'windows', 'macos'), action='append')
+    parser.add_argument('--without-examples', action='store_true', help='Exclude the optional Lenia project and its owned resources')
     args = parser.parse_args()
-    bundle = prepare(Path(__file__).resolve().parent, target_platforms=args.platform)
+    bundle = prepare(Path(__file__).resolve().parent, target_platforms=args.platform,
+                     include_examples=not args.without_examples)
     print(f'Example seed verified; installation bundle: {bundle}')
     print('Read INSTALL.md. Instance data is never imported by this command.')
 

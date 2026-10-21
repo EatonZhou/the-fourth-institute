@@ -6,7 +6,9 @@
 ## 使用
 
 1. 双击 `TheFourthInstitute-Setup-x64.exe`，选择新的、当前用户可写的空目录。
-2. 安装完成后自动准备默认示例 `example_instance`。进度窗口显示当前阶段，
+   在“预置案例”页选择是否安装 Lenia，默认勾选。取消勾选后，基础平台仍会安装，
+   Lenia 项目及其团队、工作区、资料、代码和投影不会进入安装后的实例。
+2. 安装完成后自动准备默认实例 `example_instance`。进度窗口显示当前阶段，
    不需要选择实例或点击创建。Python、PostgreSQL、NATS 和 Node.js 已随安装包提供。
    首次联网只准备核心 Python 包；耗时取决于网络和磁盘，窗口显示当前准备阶段。
    可选浏览器、测试、模型及排版工具不随首次安装准备，缺失不阻止 Portal 启动。
@@ -42,10 +44,16 @@ Portal 安装器和通用 bootstrap 不自动安装 TeX。Article 的资料与�
 - `.build/windows/logs/<名称>.log`：初始化和生命周期命令输出。
 - `instance/<名称>/runtime/dependency-install.log`：依赖下载与安装日志。
 - `instance/<名称>/runtime/<组件>.log`：Windows 用户态组件日志。
+- `instance/<名称>/runtime/startup-diagnostics.json`：健康检查失败时、停止服务前的检查结果与组件日志位置。
 - `dependencies/native/archives/`：安装包提供的原生依赖归档和按摘要命名的下载缓存。
 
 失败时进度窗口显示原因，并提供 **重试** 与 **查看日志**。已经导入完成的数据库不会
 重复导入；中断在导入或功能初始化内部的情况会拒绝自动覆盖，需诊断后处理。
+案例选择保存在安装目录的 `installation-options.ini`，首次准备时读取；已有安装记录
+的重试沿用原工程，不改变案例选择。命令行准备支持 `prepare_install.py --without-examples`。
+案例筛选只读取公开种子，在生成工程内同时筛选 SQL、文件及关联清单，不修改源种子。
+健康检查保留 HTTP 503 的组件诊断，并在错误窗口列出未就绪组件。Windows 用户态
+组件进程已退出时立即报告，不再等待完整的六分钟超时。数据库和实例文件保留供诊断。
 示例资料采用临时文件写入，完整清单最后落盘；解压中断后可重新准备。
 初始化由正式安装器完成完整性校验，并在应用启动前只读检查旧任务冻结状态。
 验收用 Resident 监督工程仍使用其显式核验流程。
@@ -103,6 +111,7 @@ python3 code/scripts/windows/build.py
 生成平台声明只影响 Windows 派生工程，公开 seed 原文件保持不变。
 编译安装包前，从实际待打包的代码和 seed 压缩包运行 `prepare_install.py --platform windows`，
 由正式安装器校验生成工程的入口、数据库摘要及全部文件清单；失败时停止构建。
+带案例和不带案例两种准备流程都必须通过此校验。
 
 安装向导使用 [NSIS](https://nsis.sourceforge.io/Docs/)；内置 Python 使用
 [python-build-standalone](https://github.com/astral-sh/python-build-standalone)。
