@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-20'
 version:
-  number: 54
-  created_at: '2026-09-20'
+  number: 56
+  created_at: "2026-09-20"
   created_by:
-    user: ''
-    agent: resident_8be5b285cc4b
-  updated_at: '2026-10-19T19:49:31Z'
+    user: ""
+    agent: "resident_8be5b285cc4b"
+  updated_at: "2026-10-21T17:50:02Z"
   updated_by:
-    user: tfi-exported-user
-    agent: resident_865c3c24f251
+    user: ""
+    agent: "resident_977d1a613d44"
 importance: 8
 ai_generated: false
 links:
@@ -23,6 +23,7 @@ links:
   - ${code_root}/management_portal/static/portal_avatar_editor.js
   - ${code_root}/management_portal/static/portal_resident_menu.css
   - ${code_root}/management_portal/avatar_store.py
+  - ${code_root}/management_portal/avatar_database.py
   - ${code_root}/management_portal/static/settings.js
   - ${code_root}/management_portal/static/portal_management.js
   - ${code_root}/management_portal/static/portal_nav.js
@@ -138,18 +139,10 @@ User、Resident、Project 和 Lineage 都可以有头像。头像有两种：42 
 
 ### 存储
 
-- **头像记录按对象保存为 JSON 文件，上传的图片以 PNG 保存在同一目录。** 保存新头像后，同一对象的旧图片随之删除。
-
-  | 对象 | 目录（环境变量） | 文件名 | 格式 |
-  | --- | --- | --- | --- |
-  | User | `~/.tfi/portal/user_avatars`（`PORTAL_USER_AVATAR_ROOT`） | 用户名的 SHA-256 | `tfi.user-avatar.v1` |
-  | Resident | `~/.tfi/portal/resident_avatars`（`PORTAL_RESIDENT_AVATAR_ROOT`） | `resident_id` | `tfi.resident-avatar.v1` |
-  | Project、Lineage | `~/.tfi/portal/scope_avatars`（`PORTAL_SCOPE_AVATAR_ROOT`） | `project:<Project ID>` 或 `lineage:<lineage_id>` 的 SHA-256 | `tfi.scope-avatar.v1` |
-
-  表中的 `~` 由服务进程的 `Path.home()` 确定，显式环境变量优先；未配置时使用表中的规范目录。站点若仍使用 `~/.dirtybase/portal/<kind>_avatars` 等实际目录，应由对应的 `PORTAL_*_AVATAR_ROOT` 显式指定，不根据目录是否存在自动回退。新写入使用表中 `tfi` 标签，读取仅接受与规范完整名称及版本精确相同的格式，不因读取改写记录。
-
-- **写入在文件锁内完成，并用原子替换写入。** Resident 的首次抽取也在文件锁内完成，多个进程同时显示同一 Resident 只抽取一次。各服务进程按文件的修改时间和大小缓存读取结果，任一进程修改头像后，其他进程下次读取就拿到新值。
-- **头像随对象一起维护。** DeleteProject 和 DeleteLineage 删除对应头像；RenameProject 把 Project 头像移到新 ID 下。
+- **头像记录和 PNG 字节属于当前实例的 PostgreSQL。** User、Resident、Project 和 Lineage 使用同一头像存储 owner，按对象类型与对象 ID 定位；上传图片以内容 SHA-256 标识版本。保存、删除、重命名和 Resident 首次抽取通过数据库事务协调，不依赖各服务进程的文件缓存。
+- **文件目录只用于导入历史头像。** 数据库尚无该对象记录时，可从显式配置的 `PORTAL_USER_AVATAR_ROOT`、`PORTAL_RESIDENT_AVATAR_ROOT` 或 `PORTAL_SCOPE_AVATAR_ROOT` 读取历史记录及图片；未配置时的导入源是服务进程 `Path.home()/.tfi/portal/<kind>_avatars`。读取只接受对应的 `tfi.user-avatar.v1`、`tfi.resident-avatar.v1`、`tfi.scope-avatar.v1`，校验图片哈希后写入数据库。新头像不写回这些文件目录，也不自动寻找其他旧目录。
+- **独立安装使用实例自己的运行目录。** 安装器为应用服务设置 `HOME=<实例目录>/home`；Windows 同时设置 `USERPROFILE` 为该目录、`APPDATA` 与 `LOCALAPPDATA` 为其下的应用数据目录。文档中的 `~` 指服务环境中的主目录，不代表安装操作者的 Windows 用户目录。独立发行不继承源站的头像导入路径；只有运维显式配置的迁移源才可位于实例之外。
+- **删除记录保留墓碑。** 已删除或重命名对象的历史文件不能使旧头像重新出现。DeleteProject、DeleteLineage 和 RenameProject 随对象操作维护数据库中的头像记录。
 
 ### 读取头像
 

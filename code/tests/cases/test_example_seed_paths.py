@@ -20,6 +20,34 @@ from prepare_install import inventory
 
 
 class ExamplePaths(unittest.TestCase):
+    def test_builtin_maintenance_scripts_use_exported_code(self):
+        """Fresh installs resolve built-in scripts inside their own code tree."""
+        from scripts.tfi_seed_selection import inserts
+        from scripts.tfi_release_install import map_directories
+        from pathlib import PureWindowsPath
+
+        names = {'update_paper_ccf_cache.py', 'resource_backup_lineage.py',
+                 'portal_capacity_alerts.py'}
+        sql = (self.seed / self.manifest['engineering']['database']['path']).read_text(encoding='utf-8')
+        found = set()
+        for _, _, table, row in inserts(sql):
+            if table != ('lineage', 'lineage_components'):
+                continue
+            script = row.get('config_json', {}).get('script', '')
+            for name in names:
+                if name not in script:
+                    continue
+                found.add(name)
+                expected = '${code_root}/scripts/' + name
+                self.assertIn(expected, script, row['node_id'])
+                self.assertTrue((REPO / 'code/scripts' / name).is_file())
+                for root in ('/isolated/portal/code', 'D:/独立实例/code'):
+                    mapped = map_directories(script, {'${code_root}': root})
+                    self.assertIn(root + '/scripts/' + name, mapped)
+                    self.assertNotIn('${code_root}', mapped)
+                self.assertTrue(PureWindowsPath('D:/独立实例/code/scripts/' + name).is_absolute())
+        self.assertEqual(found, names)
+
     @classmethod
     def setUpClass(cls):
         cls.seed = Path(os.environ.get("TFI_EXAMPLE_SEED", REPO / "instance/example_instance/seed"))

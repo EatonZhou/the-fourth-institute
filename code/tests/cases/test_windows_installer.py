@@ -377,10 +377,21 @@ class WindowsInstallerTests(unittest.TestCase):
             target.update(pg_bin=str(base / "postgres/bin"))
             registry = Path(tmp) / "operator-local/TFI/services"
             with patch.object(installer, "platform_adapter", return_value=windows), \
-                    patch.dict(os.environ, {"LOCALAPPDATA": str(registry.parents[1])}, clear=True):
+                    patch.dict(os.environ, {"LOCALAPPDATA": str(registry.parents[1]),
+                                            "HOME": str(base / 'operator'),
+                                            "USERPROFILE": str(base / 'operator'),
+                                            "PORTAL_USER_AVATAR_ROOT": str(base / 'foreign-avatars')}, clear=True):
                 env = installer.clean_environment(target)
                 self.assertEqual(env["TFI_WINDOWS_SERVICE_DIRECTORY"], str(registry))
                 self.assertEqual(env["PYTHONUTF8"], "1")
+                self.assertEqual(env["HOME"], str(Path(target["install_root"]) / 'home'))
+                self.assertEqual(env["USERPROFILE"], env["HOME"])
+                self.assertNotIn("PORTAL_USER_AVATAR_ROOT", env)
+                # ntpath is the Windows expanduser implementation, even on a
+                # POSIX test host. It must use the service's instance profile.
+                import ntpath
+                with patch.dict(os.environ, env, clear=True):
+                    self.assertEqual(ntpath.expanduser('~'), env['USERPROFILE'])
                 self.assertTrue(Path(env["LOCALAPPDATA"]).is_relative_to(Path(target["install_root"])))
                 self.assertTrue(Path(env["APPDATA"]).is_relative_to(Path(target["install_root"])))
                 # Repeated boundaries must keep the original registry, rather

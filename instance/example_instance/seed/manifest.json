@@ -4882,7 +4882,7 @@
     "database": {
       "path": "database/distribution.sql",
       "format": "postgresql-sql",
-      "sha256": "fba7bd3971a9b254780f261e61a96da9b833bd6d7f72adbd50ffb93bec3cf0e8"
+      "sha256": "d6d24225d080da8a314baa2d092e07646036e5755460e4c7cb34e955f8b78f96"
     },
     "files": {
       "share_root": "data/share_root",
@@ -31014,8 +31014,8 @@
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20260920__decision__Principal_个人卡片、Package、头像与实例配置__decision_5bc3fdfc7eec.md",
-      "sha256": "e230b49b4ab6567494f19c4858737339b7ab70efb488202c1cab3d2c8ee452a5",
-      "size": 26451
+      "sha256": "ace8309bf4b7d5d0cc12ad2994c28844d56bb2f6f7c3c9afe87958cdfc5da401",
+      "size": 26452
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20260922__decision__Principal_五层组织、Project_主图与导航__decision_3e07c6d35cac.md",
@@ -31834,8 +31834,8 @@
     },
     {
       "path": "database/distribution.sql",
-      "sha256": "fba7bd3971a9b254780f261e61a96da9b833bd6d7f72adbd50ffb93bec3cf0e8",
-      "size": 3121761
+      "sha256": "d6d24225d080da8a314baa2d092e07646036e5755460e4c7cb34e955f8b78f96",
+      "size": 3121377
     }
   ]
 }
