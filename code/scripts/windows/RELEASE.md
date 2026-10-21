@@ -4,6 +4,9 @@ Windows 版目前仍是试用版，完整 Windows 真机流程尚待进一步验
 下载 `TheFourthInstitute-Setup-x64.exe`，安装到新的空目录。
 安装开始时可以选择是否包含 Lenia 预置案例。
 
+安装欢迎页精简为两段短文案，并随界面语言显示中文或英文。
+案例选择和卸载选项在对应页面说明。
+
 本版将案例工程的准备和完整性校验提前到打包时完成。首次安装直接解压所选工程，
 省去 seed 中间副本和工程组装；取消安装阶段的全量文件 SHA 校验及共享代码比对。
 解压与复制显示已处理文件数、百分比和大小。路径边界与解压器自带损坏检测保留。
@@ -23,6 +26,9 @@ is pending. Use a new, empty installation directory and choose whether to includ
 the Lenia example. Python and native services are bundled; first use still requires
 internet access for core Python packages. Optional tools are not installed automatically.
 This unsigned installer does not provide an in-place upgrade of an existing instance.
+
+The welcome page now uses two short paragraphs in the interface language.
+Example selection and uninstall options are explained on their own pages.
 
 Case engineering bundles are now assembled and verified during packaging. Installation
 extracts the selected bundle directly, without the seed intermediate copy, local assembly,

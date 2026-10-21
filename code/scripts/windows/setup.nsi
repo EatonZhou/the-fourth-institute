@@ -27,7 +27,8 @@ VIAddVersionKey /LANG=1033 "FileDescription" "Windows x64 preview installer"
 VIAddVersionKey /LANG=1033 "FileVersion" "0.9.0-preview"
 VIAddVersionKey /LANG=1033 "LegalCopyright" "The Fourth Institute contributors"
 !define MUI_ABORTWARNING
-!define MUI_WELCOMEPAGE_TEXT "Your own research space for people and AI.$\r$\n$\r$\nChoose whether to include the Lenia example. After setup, Portal prepares your space and opens in your browser. First use downloads the required environment; keep your Internet connection available.$\r$\n$\r$\nWindows 11 x64 preview. Uninstall keeps instance data unless you explicitly choose to remove it."
+!define MUI_WELCOMEPAGE_TITLE "$(WelcomeTitle)"
+!define MUI_WELCOMEPAGE_TEXT "$(WelcomeText)"
 !insertmacro MUI_PAGE_WELCOME
 !define MUI_DIRECTORYPAGE_TEXT_TOP "Choose a new or empty folder. Existing files and instances will not be overwritten."
 !insertmacro MUI_PAGE_DIRECTORY
@@ -40,6 +41,11 @@ UninstPage custom un.InstanceOptions un.InstanceOptionsLeave
 !insertmacro MUI_UNPAGE_INSTFILES
 !insertmacro MUI_LANGUAGE "English"
 !insertmacro MUI_LANGUAGE "SimpChinese"
+
+LangString WelcomeTitle ${LANG_ENGLISH} "Welcome to The Fourth Institute"
+LangString WelcomeTitle ${LANG_SIMPCHINESE} "欢迎安装 The Fourth Institute"
+LangString WelcomeText ${LANG_ENGLISH} "Explore, collaborate, and create knowledge with AI.$\r$\n$\r$\nWindows 11 x64 preview. First launch requires an internet connection."
+LangString WelcomeText ${LANG_SIMPCHINESE} "与 AI 一起探索、协作、创造知识。$\r$\n$\r$\nWindows 11 x64 试用版，首次启动需联网。"
 
 Function un.onInit
   StrCpy $RemoveInstances ${BST_UNCHECKED}
