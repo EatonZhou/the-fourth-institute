@@ -3,7 +3,14 @@ from pathlib import Path
 import importlib.abc
 import importlib.machinery
 import json
+import os
 import sys
+
+SHARED_PATHS = (
+    'management_common', 'management_portal/execution',
+    'management_portal/resources', 'management_portal/society_service',
+    'management_portal/hatg',
+)
 
 _INSTALLATION_ROOT = Path(__file__).resolve().parents[1]
 if str(_INSTALLATION_ROOT) not in sys.path:
@@ -27,12 +34,13 @@ class SharedSourceFinder(importlib.abc.MetaPathFinder):
 
 
 def activate_shared_imports(worktree: Path) -> Path | None:
+    configured = os.environ.get('PORTAL_SHARED_SOURCE_ROOT', '').strip()
     manifest = worktree / 'release-manifest.json'
-    if not manifest.is_file():
+    if not configured and not manifest.is_file():
         return None
-    config = json.loads(manifest.read_text(encoding='utf-8'))
-    root = Path(config['shared_source'])
-    paths = tuple(config['shared_paths'])
+    config = json.loads(manifest.read_text(encoding='utf-8')) if not configured else {}
+    root = Path(configured or config['shared_source'])
+    paths = SHARED_PATHS if configured else tuple(config['shared_paths'])
     for finder in sys.meta_path:
         if isinstance(finder, SharedSourceFinder):
             return root
@@ -52,11 +60,6 @@ SHARED_ROOT = _MANIFEST_SHARED_ROOT or resolve_directory(
     read_site_config().get('deployment', {}).get('source_root', str(_INSTALLATION_ROOT)))
 # These packages own shared persisted facts and their RPC contracts. Both Web
 # clients see the same contracts; both service pools execute from SHARED_ROOT.
-SHARED_PATHS = (
-    'management_common', 'management_portal/execution',
-    'management_portal/resources', 'management_portal/society_service',
-    'management_portal/hatg',
-)
 COMPONENTS = {
     'web': {'unit': None, 'build_key': 'web', 'module': 'management_portal.asgi'},
     'resource': {'unit': 'resource-service', 'build_key': 'resource_service', 'module': 'management_portal.resources.server'},

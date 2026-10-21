@@ -585,6 +585,10 @@ def restart_portal(inv: Invocation) -> dict[str, Any]:
 
     instance = inv.argument("instance")
     components = [str(item) for item in inv.argument("components") or []]
+    from scripts import tfi_development_runtime as paired
+    root = paired.configured_root()
+    if root:
+        return paired.request_restart(root, instance, components)["request"]
     # portal_services is a shell wrapper; run the Python entry point with this interpreter.
     command = [sys.executable, str(REPO_ROOT / "scripts" / "portal_services.py")]
     command += ["request-restart", "dev"] if instance == "dev" else ["restart", "release"]
@@ -620,7 +624,8 @@ def restart_portal(inv: Invocation) -> dict[str, Any]:
 
 
 def publish_release(inv: Invocation) -> dict[str, Any]:
-    if _instance() != "dev":
+    from scripts.tfi_development_runtime import configured_root
+    if _instance() != "dev" and not configured_root():
         raise InstructionError("instruction.forbidden", "PublishRelease 只能在 Dev 实例执行")
     sys.path.insert(0, str(REPO_ROOT)) if str(REPO_ROOT) not in sys.path else None
     from scripts.publish_portal_release import PublishOptions, publish

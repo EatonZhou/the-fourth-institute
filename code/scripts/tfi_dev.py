@@ -5,9 +5,13 @@ from __future__ import annotations
 import argparse
 from contextlib import contextmanager
 import json
+import shlex
 from pathlib import Path
 import subprocess
 import sys
+
+if str(Path(__file__).resolve().parents[1]) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 
 def run(root, *args):
@@ -24,11 +28,6 @@ def configuration(root):
     if not path.exists():
         raise ValueError("Run tfi_dev.py init from the main checkout first")
     return json.loads(path.read_text())
-
-
-def clean(root):
-    if git(root, "status", "--porcelain"):
-        raise ValueError(f"Uncommitted changes must be completed by their owners: {root}")
 
 
 def branch(root, expected):
@@ -64,8 +63,27 @@ def init(root, dev=None):
     if configured.stdout.strip() or hook.exists():
         raise ValueError("Existing Git hooks must be integrated explicitly")
     git(root, "worktree", "add", "-b", "dev", str(dev), "HEAD")
+    install_push_hook(root)
+    git(root, "config", "push.default", "simple")
+    git(root, "config", "remote.origin.push", "refs/heads/main:refs/heads/main")
+    config = {"schema": "tfi.local-development.v1", "main": str(root), "dev": str(dev),
+              "remote": "origin", "code_directory": "code"}
+    path.write_text(json.dumps(config, indent=2) + "\n")
+    return config
+
+
+def install_push_hook(root):
+    common = Path(git(root, "rev-parse", "--path-format=absolute", "--git-common-dir"))
+    hook = common / "hooks/pre-push"
+    configured = subprocess.run(["git", "config", "--get", "core.hooksPath"], cwd=root,
+                                capture_output=True, text=True)
+    if configured.stdout.strip() or (hook.exists() and "# Local policy: only the main branch" not in hook.read_text()):
+        raise ValueError("Existing Git hooks must be integrated explicitly")
     hook.parent.mkdir(exist_ok=True)
-    hook.write_text("""#!/bin/sh
+    hook.write_text("#!/bin/sh\n# Local policy: only the main branch may be sent to a remote.\n"
+                    + 'if [ "$(git rev-parse --show-toplevel)" != ' + shlex.quote(str(Path(root).resolve())) + ' ]; then\n'
+                    + '  echo "TFI: push from the Release worktree only." >&2\n  exit 1\nfi\n'
+                    + """
 # Local policy: only the main branch may be sent to a remote.
 while read local_ref local_sha remote_ref remote_sha; do
   if [ "$local_ref" != refs/heads/main ] || [ "$remote_ref" != refs/heads/main ]; then
@@ -75,12 +93,6 @@ while read local_ref local_sha remote_ref remote_sha; do
 done
 """)
     hook.chmod(0o755)
-    git(root, "config", "push.default", "simple")
-    git(root, "config", "remote.origin.push", "refs/heads/main:refs/heads/main")
-    config = {"schema": "tfi.local-development.v1", "main": str(root), "dev": str(dev),
-              "remote": "origin", "code_directory": "code"}
-    path.write_text(json.dumps(config, indent=2) + "\n")
-    return config
 
 
 def sync(root):
@@ -89,41 +101,47 @@ def sync(root):
     with lock(main):
         branch(main, "main")
         branch(dev, "dev")
-        clean(main)
-        clean(dev)
-        git(dev, "merge", "--no-edit", "main")
+        # Release only advances along Dev's history. No merge-back or second
+        # development history is created, and concurrent working edits stay put.
+        git(dev, "merge-base", "--is-ancestor", "main", "dev")
     return cfg
 
 
-def publish(root, message, check, push=False):
-    """Publish a clean, tested Dev tree; keep its intermediate commits local."""
+def publish(root, message, check=None, push=True, *, paths=(), all_files=False, activate=True):
+    """Commit selected live Dev paths and fast-forward the Release worktree."""
     cfg = configuration(root)
     main, dev = Path(cfg["main"]), Path(cfg["dev"])
-    if not message.strip() or not check:
-        raise ValueError("A message and an explicit verification command are required")
+    if not message.strip():
+        raise ValueError("A publication message is required")
     with lock(main):
         branch(main, "main")
         branch(dev, "dev")
-        clean(main)
-        clean(dev)
-        base, source = git(main, "rev-parse", "HEAD"), git(dev, "rev-parse", "HEAD")
-        git(dev, "merge-base", "--is-ancestor", base, source)
-        if not git(main, "diff", "--name-only", base, source):
-            raise ValueError("No changes to publish")
-        subprocess.run(check, cwd=dev, check=True)
-        clean(main)
-        clean(dev)
-        if git(main, "rev-parse", "HEAD") != base or git(dev, "rev-parse", "HEAD") != source:
-            raise ValueError("The checked source changed during verification")
-        git(main, "merge", "--squash", source)
-        git(main, "commit", "-m", message)
-        commit = git(main, "rev-parse", "HEAD")
-        # Main is the next baseline. Dev's private intermediate commits remain local.
-        git(dev, "merge", "--no-edit", "main")
+        base = git(main, "rev-parse", "HEAD")
+        git(dev, "merge-base", "--is-ancestor", base, "HEAD")
+        if check:
+            subprocess.run(check, cwd=dev, check=True)
+        if paths or all_files:
+            from scripts.portal_dev_commit import commit as commit_paths
+            source = commit_paths(dev, tuple(paths), message, all_files=all_files)
+        else:
+            # A caller that already committed its changes can publish that head.
+            source = git(dev, "rev-parse", "HEAD")
+        changed = git(dev, "diff", "--name-only", base, source).splitlines()
+        # Git refuses only actual checkout collisions; unrelated uncommitted
+        # files in either worktree are not a publication gate.
+        git(main, "merge", "--ff-only", source)
+        commit = source
         if push:
             git(main, "push", cfg["remote"], "main:main")
-        return {"commit": commit, "source": source, "pushed": push,
-                "activation_required": True}
+        result = {"ok": True, "status": "published", "commit": commit, "source": source, "pushed": push,
+                  "paths": changed, "push": {"ok": push, "remote": cfg["remote"]},
+                  "changed_paths": changed, "activation_required": bool(changed)}
+    if activate and cfg.get("runtime_root"):
+        from scripts.tfi_development_runtime import request_activation
+        result["activation"] = request_activation(Path(cfg["runtime_root"]), changed, commit)
+        result["health"] = {"status": "pending", "receipt": result["activation"]["receipt"]}
+        result["activation_required"] = True
+    return result
 
 
 def main(argv=None):
@@ -136,9 +154,13 @@ def main(argv=None):
     sub.add_parser("sync")
     p = sub.add_parser("publish")
     p.add_argument("--message", required=True)
-    p.add_argument("--push", action="store_true")
-    p.add_argument("--check", nargs=argparse.REMAINDER, required=True,
-                   help="Verification command run in Dev before publication; must be last")
+    p.add_argument("--push", action="store_true", default=True)
+    p.add_argument("--no-push", action="store_false", dest="push")
+    p.add_argument("--path", action="append", default=[])
+    p.add_argument("--all", action="store_true", dest="all_files")
+    p.add_argument("--no-activate", action="store_true")
+    p.add_argument("--check", nargs=argparse.REMAINDER,
+                   help="Optional relevant verification command; must be last")
     a = parser.parse_args(argv)
     try:
         if a.action == "init":
@@ -146,7 +168,8 @@ def main(argv=None):
         elif a.action == "sync":
             result = sync(a.repo)
         elif a.action == "publish":
-            result = publish(a.repo, a.message, a.check, a.push)
+            result = publish(a.repo, a.message, a.check, a.push, paths=a.path,
+                             all_files=a.all_files, activate=not a.no_activate)
         else:
             result = configuration(a.repo)
             result["worktrees"] = git(a.repo, "worktree", "list", "--porcelain")

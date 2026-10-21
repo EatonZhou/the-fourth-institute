@@ -6,17 +6,16 @@
 
 先确认当前部署形态。下述双检出、分支与发布命令只适用于已配置 Dev/Release 的 Portal 开发站。独立发行实例可以只有当前导出代码、没有 Git；按该实例实际工程规则维护，不为套用本文创建 Git 历史、远端或开发机目录。
 
-使用 `${code_root}` 作为开发 cwd。改变行为前检查当前实现、本地注册信息和相关目录，包括 `management_portal/`、`knowledge_board_lan/`、PostgreSQL 中的资源注册表（`resource_registry`）与 Resident registry。不要根据通用 web app 模式推断 Portal 行为。
+先通过当前代码仓库的 `git rev-parse --path-format=absolute --git-common-dir` 找到
+`tfi-development.json`。其中 `dev` 是所有开发者共用的 Dev worktree，`main` 是
+Release worktree；不要根据 `${code_root}` 或当前进程所在目录猜测开发位置。两个
+目录同时存在，各自绑定一个分支；本站分支名为 `dev` 和 `main`（Release），只从
+Release 推送远端 `main`。不为功能、修复或审计创建额外分支或工作树。
 
-Portal 仓库只保留两个检出目录：Dev（`${code_root}`）和 Release 使用的代码目录。Release 的代码目录由发布流程维护，不要手动创建、切换或删除。所有开发直接在 Dev 中进行，不要为功能、修复、审计或回归对比建立长期存在的 git worktree。
-
-分支同样只有两个：Dev 使用 `main`，Release 使用发布流程维护的一个分支。修改直接提交到 Dev 的 `main`；不要创建功能、修复、hotfix、审计或 review 分支，也不要向远端推送其他分支。
-
-确实需要临时检出时（例如在改动前的提交上复现问题、对比新旧行为），按以下规则处理：
-
-- 用 `git worktree add --detach` 创建，不为它新建分支；放在自己的 Resident Workspace 或 `${staging_root}` 下。
-- 需要保留的改动先提交到 Dev，再删除这个检出。
-- 用完立即运行 `git worktree remove` 删除，并在本次任务结束前用 `git worktree list` 确认它已经不在列表中。不要把临时检出留给后续任务或其他 Resident。
+**开发 Portal 前必须读取当前 SPEC 索引中的《Portal 共享运行基础与 Dev 到 Release
+的发布流程》（当前 Design 为 `decision_08bb2d9141f9`）。** 两个入口共用本站数据、
+账号、Session、队列和后台；Dev/Release 切换是访问两个 Web 服务，不是在一个目录
+切分支，也不新建测试数据库来代替 Dev。独立测试夹具仍应隔离业务数据。
 
 开始开发前从 Portal `SPEC.md` 找到任务相关的当前 Design，并读取对应的 `decision` 条目。`SPEC.md` 到当前 `decision` 条目的索引关系是 Portal 唯一的当前设计来源；模块说明、专题 Markdown 和其他文档目录不承担设计事实。
 
@@ -63,10 +62,38 @@ Playwright 浏览器测试负载高，会拖慢共享主机上所有人的页面
 
 - `./portal-context-injection.md`
 
-完成 Portal 代码修改并通过定向验证后，运行 `./scripts/portal_services request-restart dev` 提交持久部署请求；浏览器重启倒计时固定为 5 秒。协调器按受影响组件激活；共同服务直接使用共同源码，同时更新两个服务池。ExecutionWorker 沿用平滑换代，不设置 Dev/Release 环境或版本准入。Source Reloader 每小时兜底检查。
+## 快速发布与共享运行
 
-已配置 Dev/Release 的开发站按当前规范索引中的部署流程运行；独立发行实例遵循自身部署规则。每完成一个功能或修复并通过定向验证，就将本次功能涉及的非共享部分及其必要依赖小批量发布到 Release，作为本次开发任务的交付步骤；不要停留在 Dev 生效，也不要等待其他功能或整轮开发结束再集中发布。用户已授权开发任务且未明确要求暂缓发布或仅修改 Dev 时，直接完成发布，无需再次请求确认。共享部分沿用上述共同源码和组件激活流程。
+每完成一项功能或修复并通过相关必要验证，直接发布到 Release，作为开发任务的
+交付步骤；用户已授权开发且未要求仅改 Dev 或暂缓发布时，不再申请发布确认。
+不等待工作区干净、其他 Agent 完成、全量测试、整轮 TAU 或人工版本号。
 
-非共享部分通过 `./scripts/publish_portal_release --message '<说明>' --path '<路径>'` 小批量同步，路径可重复，完整同步显式使用 `--all`。不要求工作区或选中文件干净、全量测试、其他功能完成或人工版本号。功能发布默认暂存指定路径及必要依赖，全量发布执行 `git add -A`，然后在 Dev 的 `main` 上创建普通 Git commit；无变化时复用 `main` 最新的提交。发布工具随后把该 commit 推送到全部已配置远端，不强制推送；发布结果中的 `push` 记录各远端是否成功，失败时如实报告并处理后补推，不用 `--force` 覆盖远端历史。发布工具随后让 Release 唯一的分支 `release` 快进到该 commit，Release 唯一的代码目录检出这个分支；`release` 只接收 Dev 的提交，出现 Dev 没有的提交时快进失败、发布报错。允许同文件、已暂存及祖先提交中的其他改动一起发布，不增加纯净 diff 门槛。工作区中其他人或 Resident 尚未完成的改动随本次发布一起进入 Release 是正常情况：发布前不联系、询问或等待改动所属方确认完成状态，不为排除这些改动而缩小发布范围、拆分或重建提交、临时还原文件或推迟发布；这些改动在 Release 中引起的问题，由所属方在 Dev 中继续修正后再发布。暂存后的并行编辑继续保留，发布后工作区再次变脏不构成失败。共同源码、数据库、Session 与 Worker 保持共享；具备用户授权时也可直接同步两边，WALL 不是必经入口。发布后核对命令标准输出中的结果与 push、实际健康、目标功能在 Release 中的内容以及 release 分支的 commit，再向用户报告发布 commit；调用方中断后从独立 systemd 单元日志查看结果，发布工具不写发布报告或索引；发布失败时继续处理问题，并如实说明尚未生效的部分。Release 只有一份代码，没有回退命令；要撤销一次发布，在 Dev 中修正或 `git revert` 后再发布。发布不另打标签或写额外引用。
+在 Dev 仓库根执行：
 
-不要输出或提交 TFI Portal secrets、Codex/OpenClaw auth、SSH private keys 或 environment 中的 secret values。
+```bash
+python3 code/scripts/tfi_dev.py publish --message '<说明>' --path code/<相关路径>
+```
+
+`--path` 可重复，包含必要依赖；完整同步显式用 `--all`。已提交的修改可以不带
+路径直接发布当前 Dev HEAD。`--check <命令>` 可运行相关验证；已有有效证据时
+复用，不为发布重复运行。工具在 Dev 正常提交指定文件的当前内容，让 Release
+worktree 快进到该提交，从 Release 推送远端，然后通过独立控制任务激活受影响组件。
+返回 activation.queued 时读取 activation.receipt，只有回执 ok=true 才能报告激活成功；
+排队回执不是健康验收，Web 自身重启不会终止该控制任务。
+
+允许选中文件中其他 Agent 未完成的改动、已有暂存内容和祖先提交一起发布；这是
+短周期开发的明确取舍。不要联系或等待其作者，不拆分/重建纯净个人提交，不临时
+还原文件。暂存后产生的新修改继续留在 Dev，发布后工作区变脏不算失败。未涉及
+且未暂存的其他文件保持原样。失败时保留修改与证据，在 Dev 修正后继续发布。
+
+共享源码只有一个运行来源（Dev），共享服务读同一套持久状态；更新共享部分直接
+按责任组件加载，不另建 Dev/Release 消费者。Release Web 的非共享代码取自 Release
+worktree；两个入口都使用相同的共享协议。共享部分同样经 Release 提交位置向远端
+push，不另推 Dev 分支。普通发布不重启数据库、NATS 或六个 Provider 账号服务；
+Worker 用已有换代协议交接在途执行，不重放输入。
+
+发布后核对返回的 commit、push、激活结果及必要的真实健康。Git 已推送不等于
+运行版本已加载，定向验证通过不等于全量 TAU 已通过；分别如实报告。
+
+不要输出或提交 TFI Portal secrets、Codex/OpenClaw auth、SSH private keys 或
+environment 中的 secret values。

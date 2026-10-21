@@ -313,6 +313,12 @@ def component_command(target, component):
         if component in {"resource", "society"}:
             env[f"PORTAL_{component.upper()}_SERVICE_MODE"] = "local"
             env[f"PORTAL_{component.upper()}_SERVICE_PROCESS"] = "1"
+    # An optional development pair adds a second Web, not a second instance or
+    # database. Its shared components continue to use these same owned services.
+    development = root / "config/development.json"
+    if development.is_file() and component not in {"postgres", "nats"}:
+        from scripts.tfi_development_runtime import adapt_component
+        command, env = adapt_component(target, component, command, env, read_json(development))
     return command, env
 
 
@@ -1147,7 +1153,7 @@ def main(argv=None):
             if args.component not in {"postgres", "nats"} and state.get("migration", {}).get("business_execution_allowed") is False:
                 raise ValueError("Migration has not completed its cutover checks")
             command, env = component_command(state["target"], args.component)
-            os.chdir(code_root(state["target"]))
+            os.chdir(env.get("PORTAL_COMPONENT_SOURCE_ROOT", str(code_root(state["target"]))))
             os.execve(command[0], command, env)
         elif args.command == "plan":
             manifest = read_json(args.manifest) if args.manifest else {}

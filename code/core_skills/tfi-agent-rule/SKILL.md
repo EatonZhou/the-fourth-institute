@@ -21,7 +21,7 @@ metadata:
 
 角色文件补充身份、上下文、工作目录和写入边界。个人 AMA 与资源讨论通过 Resident 承接，页面或资源名称不产生新的系统角色。角色未列出时报告调用配置错误，不自行选择相近角色。非 Portal 场景直接触发本 Skill 时，只使用本文件。
 
-任务修改 `${code_root}` 时，无论当前 agent 的主要角色是什么，都必须额外读取 `./portal-development.md`。任务新增或修改 Portal 的模型调用、Resident 入口、prompt、session 或 Execution request 时，还必须读取 `./portal-context-injection.md`。已注入或已读且未变化的正文不重复读取。
+任务修改 `${code_root}` 时，无论当前 agent 的主要角色是什么，都必须额外读取 `./portal-development.md`。 开发 Portal 前，还必须读取当前 `SPEC.md` 索引中的《Portal 共享运行基础与 Dev 到 Release 的发布流程》（当前 `decision_08bb2d9141f9`）；该规范明确双 worktree、共享运行和按文件快速发布，不以工作区干净或全量测试为门槛。任务新增或修改 Portal 的模型调用、Resident 入口、prompt、session 或 Execution request 时，还必须读取 `./portal-context-injection.md`。已注入或已读且未变化的正文不重复读取。
 
 任务涉及 Portal 的执行账号登记、Backend 角色、Codex 账号、`CODEX_HOME`、账号路由、登录身份或故障切换时，还必须读取 `./portal-codex-accounts.md`；通过 HATG ISA 查询和修改当前站点登记。
 

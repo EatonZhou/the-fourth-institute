@@ -150,7 +150,10 @@ def push_remotes(root: Path, commit: str) -> dict:
 
 def publish(options: PublishOptions) -> dict:
     if ROOT.name == "code" and (ROOT.parent / ".git").exists():
-        raise ValueError("共享仓库请使用 code/scripts/tfi_dev.py publish；旧 Dev/Release 发布器不适用于实例布局")
+        from scripts.tfi_dev import publish as publish_worktrees
+        expanded = options.paths if options.all_files else expand_release_unit_paths(options.paths)
+        return publish_worktrees(ROOT.parent, options.message, paths=tuple('code/' + p for p in expanded),
+                                 all_files=options.all_files)
     if not options.message.strip():
         raise ValueError('A short description of the change is required')
     if options.origin not in ('direct', 'wall'):

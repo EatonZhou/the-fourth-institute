@@ -169,7 +169,7 @@
 - [Portal 共享文件状态的锁、原子替换与不变量作用域](/r/decision_0e043d5f81be)
 - [Portal ASGI、同步 HTTP Handler 与长连接边界](/r/decision_ecf0f2b2de28)
 - [Portal 运行状态与 Component Lifecycle 投影](/r/decision_99bb5dc0f96b)
-- [Portal 共享运行基础与 Dev 到 Release 的发布流程](/r/decision_08bb2d9141f9)
+- [Portal 共享运行基础与 Dev 到 Release 的快速发布流程](/r/decision_08bb2d9141f9)
 - [Portal 运行维护：安装、检查、发布与恢复](/r/decision_ab9880dc4c9d)
 - [Portal Dev 与 Release 实例、用户路由与服务控制面](/r/decision_850e6248d680)
 - [Portal Web 重启通知与服务恢复编排](/r/decision_37f98f8fcb4b)

@@ -23,6 +23,35 @@ def invocation(arguments: dict, name: str = "") -> SimpleNamespace:
     return SimpleNamespace(argument=arguments.get, caller="sample_admin", name=name)
 
 
+@pytest.fixture(autouse=True)
+def no_operator_deployment(monkeypatch):
+    from scripts import tfi_development_runtime as paired
+    monkeypatch.setattr(paired, "configured_root", lambda: None)
+
+
+def test_paired_restart_queues_the_selected_web_without_legacy_services(monkeypatch, tmp_path):
+    from scripts import tfi_development_runtime as paired
+    monkeypatch.setattr(paired, "configured_root", lambda: tmp_path)
+    requests = []
+    monkeypatch.setattr(paired, "request_restart", lambda root, instance, components:
+                        requests.append((root, instance, components)) or
+                        {"request": {"request_id": "paired-job", "components": components}})
+    assert web_isa.restart_portal(invocation({"instance": "release", "components": ["web"]}))["request_id"] == "paired-job"
+    assert requests == [(tmp_path, "release", ["web"])]
+
+
+def test_paired_publish_from_release_preserves_pending_activation_receipt(monkeypatch, tmp_path):
+    from scripts import tfi_development_runtime as paired, publish_portal_release as publisher
+    monkeypatch.setattr(paired, "configured_root", lambda: tmp_path)
+    monkeypatch.setattr(web_isa, "_instance", lambda: "release")
+    health = {"status": "pending", "receipt": str(tmp_path / "result.json")}
+    monkeypatch.setattr(publisher, "publish", lambda options:
+                        {"ok": True, "commit": "abc", "paths": list(options.paths), "health": health})
+    result = web_isa.publish_release(invocation({"message": "fix", "paths": ["SPEC.md"]}))
+    assert result["health"] == health
+    assert result["paths"] == ["SPEC.md"]
+
+
 def test_clear_unread_updates_read_boundary_without_listing_inbox(monkeypatch):
     """清除未读只按未读的阅读状态行更新已读位置，不扫描整个收件箱"""
     from management_portal import conversation_read_state

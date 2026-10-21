@@ -183,9 +183,13 @@ def _execution_worker_health(instance: str) -> dict[str, Any]:
     return {'path': str(path), **payload}
 
 def instance_status(instance: str, *, include_schema: bool=False) -> dict[str, Any]:
-    return {'ok': False, 'supported': False, 'reason': 'Standalone TFI instances use install_tfi_release status/cleanup; source Dev/Release service management is unavailable'}
+    return status(instance, include_schema=include_schema)
 
 def status(instance: str='all', *, include_schema: bool=False) -> dict[str, Any]:
+    from scripts import tfi_development_runtime as paired
+    root = paired.configured_root()
+    if root:
+        return paired.status(root, instance)
     return {'ok': False, 'supported': False, 'reason': 'Standalone TFI instances use install_tfi_release status/cleanup; source Dev/Release service management is unavailable'}
 
 def _prepare_units(instance: str) -> None:
@@ -314,6 +318,12 @@ def stop(instance: str, *, drain: bool, drain_timeout: float, force: bool) -> di
     return {'ok': all((item['active'] == 'inactive' for item in states)), 'instance': instance, 'services': states}
 
 def restart(instance: str, *, notice_seconds: int, components: tuple[str, ...] | list[str] | None=None, release_commit: str='', force_worker_restart: bool=False, units_prepared: bool=False) -> dict[str, Any]:
+    from scripts import tfi_development_runtime as paired
+    root = paired.configured_root()
+    if root:
+        if release_commit:
+            raise ValueError('Publish the commit with tfi_dev before restarting')
+        return paired.restart(root, instance, components)
     raise RuntimeError('Standalone TFI: use install_tfi_release status/cleanup; source Dev/Release control is unsupported')
     if int(notice_seconds) != DEFAULT_RESTART_NOTICE_SECONDS:
         raise ValueError('Portal restart countdown is fixed at 5 seconds')
@@ -425,6 +435,10 @@ def restart(instance: str, *, notice_seconds: int, components: tuple[str, ...] |
     return result
 
 def request_restart(instance: str, *, components: tuple[str, ...] | list[str] | None=None) -> dict[str, Any]:
+    from scripts import tfi_development_runtime as paired
+    root = paired.configured_root()
+    if root:
+        return paired.request_restart(root, instance, components)
     raise RuntimeError('Standalone TFI: use install_tfi_release status/cleanup; source Dev/Release control is unsupported')
     if instance != 'dev':
         raise ValueError('deferred restart requests are only available for Portal Dev')

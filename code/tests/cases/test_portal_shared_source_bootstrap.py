@@ -39,6 +39,7 @@ def installation(tmp_path):
     environment = dict(os.environ, PORTAL_SITE_CONFIG=str(tmp_path / 'absent-site.json'),
                        PORTAL_PATHS_CONFIG=str(tmp_path / 'absent-paths.json'))
     environment.pop('PYTHONPATH', None)
+    environment.pop('PORTAL_SHARED_SOURCE_ROOT', None)
     return release, shared, environment
 
 
@@ -89,3 +90,19 @@ print(json.dumps([site.__file__, str(layout.SHARED_ROOT)]))
 ''')
     assert result.returncode == 0, result.stderr
     assert json.loads(result.stdout) == [str(release / 'management_common/site_config.py'), str(release)]
+
+
+def test_installed_pair_uses_explicit_shared_source_without_release_manifest(installation):
+    release, shared, environment = installation
+    (release / 'release-manifest.json').unlink()
+    environment['PORTAL_SHARED_SOURCE_ROOT'] = str(shared)
+    result = probe(installation, '''
+import management_portal
+from management_portal.execution import service
+from management_portal import web_only
+from scripts import portal_source_layout as layout
+import json
+print(json.dumps([service.owner, web_only.owner, str(layout.SHARED_ROOT)]))
+''')
+    assert result.returncode == 0, result.stderr
+    assert json.loads(result.stdout) == ['shared', 'release', str(shared)]
