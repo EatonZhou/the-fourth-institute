@@ -59,7 +59,12 @@ class LocalServiceSocketMixin:
 
     def get_request(self):
         listener = getattr(self, "_local_listener", None)
-        return listener.accept() if listener else super().get_request()
+        connection, address = listener.accept() if listener else super().get_request()
+        # Darwin can inherit O_NONBLOCK from the listening socket. Handlers
+        # read complete request lines; an empty buffer must not become EOF.
+        # Keep the listener nonblocking for generation handover and shutdown.
+        connection.setblocking(True)
+        return connection, address
 
     def server_close(self):
         try:

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import socket
+import os
 import socketserver
 import threading
 
@@ -11,6 +12,28 @@ from management_common.service_endpoint import LocalServiceSocketMixin, ServiceE
 from management_common.service_socket import connect_service
 from management_common.service_shutdown import DrainingStreamServer
 from management_common.rpc_auth import load_rpc_signing_key, rpc_signing_key_file
+
+
+def test_accepted_connection_clears_inherited_nonblocking_mode():
+    connection, client = socket.socketpair()
+    connection.setblocking(False)
+    class Acceptor:
+        def get_request(self):
+            return connection, "fixture"
+    class Server(LocalServiceSocketMixin, Acceptor):
+        pass
+    try:
+        accepted, address = Server().get_request()
+        assert accepted is connection and address == "fixture"
+        assert accepted.getblocking()
+        if os.name == "posix":
+            assert os.get_blocking(accepted.fileno())
+        client.sendall(b"complete request\n")
+        with accepted.makefile("rb") as stream:
+            assert stream.readline() == b"complete request\n"
+    finally:
+        connection.close()
+        client.close()
 
 
 def test_windows_endpoints_are_loopback_and_separate_by_instance_and_owner(tmp_path):
