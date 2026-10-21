@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-02'
 version:
-  number: 29
-  created_at: '2026-09-02'
+  number: 30
+  created_at: "2026-09-02"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-19T08:21:12Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-10-21T14:38:12Z"
   updated_by:
-    user: ''
-    agent: resident_7c2eadd4b668
+    user: ""
+    agent: "resident_977d1a613d44"
 importance: 7
 metaness: 2
 ai_generated: false
@@ -27,6 +27,7 @@ links:
   - ${code_root}/management_portal/static/portal_chat_workspace.js
   - ${code_root}/management_portal/static/portal_demo_player.js
   - ${code_root}/management_portal/static/portal_live_tour.js
+  - ${code_root}/management_portal/static/portal_state.js
   - ${code_root}/management_portal/test_framework/page/test_workbench_core.js
   - ${code_root}/management_portal/test_framework/page/test_catalog_panel.js
   - ${code_root}/management_portal/test_framework/page/test_case_panel.js
@@ -165,7 +166,7 @@ Runner 原始输出用 `textContent` 写入独立区域，保留开头换行、C
 - **真实页面模式在本地真实页面上逐步演示。** `mode=direct` 且声明只读的条目，在登记的真实页面执行具名适配器步骤，显示“真实页面 · 只读保护”、步骤计数、说明，以及重播、下一步、暂停/继续和返回 Test 控件；退出时恢复原来的工作台。自动步骤中的写入和跨源读取被拦截，用户自己操作页面会暂停演示；这层保护不阻止页面自身的后台初始化。
 - **沙盒模式在隔离的框架中回放。** `mode=sandbox` 的条目在覆盖工作台的演示层中播放：顶部显示安全标签、步骤计数和关闭入口，中间的 iframe 设置 `sandbox=allow-scripts` 与 `referrerpolicy=no-referrer`，底部提供说明、进度以及重新开始、下一步、播放/暂停。沙盒宿主只代理登记路由的 GET/HEAD 请求，校验允许和必需的查询参数并拒绝重复参数；消息同时校验来源窗口、条目、会话和协议范围；沙盒使用不透明源、内存存储和禁止连接与表单的内容安全策略，fetch 写入、XHR、表单、弹窗和 Beacon 都被阻止。生成沙盒页面时，动态资源路由脚本使用 Portal 统一的路由发布函数，并内联在依赖它的组件之前。
 - **跨页面演示以持久会话记录为准。** 演示在多个页面之间推进时，目标页和返回页都以保存的演示会话为当前进度，不用进程内的旧会话覆盖；回到 Test 后，Test 按自己的版本约定恢复原来的状态。
-- **演示代码只在演示时加载。** 页面和生产组件（导航、全局搜索、各资源页）不带演示控制器和适配器。从 Test 发起演示时，演示播放器载入控制器 `portal_live_tour.js`；演示会话存在时，任一页面在自己的脚本执行完后由 `portal_state.js` 载入控制器继续演示。控制器按演示定义中的适配器名载入对应的页面适配器（`portal_design_live_*.js`）；Test 自己的适配器 `test-lab` 随 Test 视图载入。适配器通过组件的公开接口操作页面，例如导航的二级菜单与账号菜单（`PortalNav.secondaryNav`、`PortalNav.userMenu`）和全局搜索的打开状态（`PortalCommandPalette.isOpen`、`close`）。
+- **演示代码只在演示时加载。** 页面和生产组件（导航、全局搜索、各资源页）不带演示控制器和适配器。从 Test 发起演示时，演示播放器载入控制器 `portal_live_tour.js`；演示会话存在时，任一页面在自己的脚本执行完后由 `portal_state.js` 载入控制器继续演示。控制器按演示定义中的适配器名载入对应的页面适配器（文件名以 portal_design_live_ 开头的 JavaScript 适配器）；Test 自己的适配器 `test-lab` 随 Test 视图载入。适配器通过组件的公开接口操作页面，例如导航的二级菜单与账号菜单（`PortalNav.secondaryNav`、`PortalNav.userMenu`）和全局搜索的打开状态（`PortalCommandPalette.isOpen`、`close`）。
 - **WALL 与 Test 按开发投影的视图区分演示宿主。** `/development?view=wall` 与 `/development?view=test` 分别挂载对应视图，演示只能从 Test 视图发起；旧地址 `/wall?view=…` 重定向到开发投影，演示定义中的旧地址与新地址按同一宿主核对。演示启动、续播和返回都核对视图。筛选及条目选择属于同一视图的页面状态，退出同页演示保留尚未保存的编辑。WALL 的隔离演示可以在 Test 视图运行：它把开发投影页以 `view=wall` 载入隔离框架，使用内存数据和存储，不要求隐藏的墙面先完成初始化。
 - **本地确认通过普通按钮完成。** 对话框丢弃临时输入等本地确认在只读演示中正常工作；确认操作本身不提交表单，实际网络写入和表单提交仍由只读保护拦截。
 
