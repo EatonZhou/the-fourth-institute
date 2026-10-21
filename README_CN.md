@@ -8,45 +8,12 @@
 
 ## Install · 安装
 
-### Windows 11 x64 · 试用版
-
-**Windows 版目前仍为试用版，安装、启动及部分功能仍在完善和验证中。**
-
-[下载 Windows 安装包](https://github.com/EatonZhou/the-fourth-institute/releases/download/windows-preview-20261021.4/TheFourthInstitute-Setup-x64.exe) · [版本说明与 SHA-256 校验文件](https://github.com/EatonZhou/the-fourth-institute/releases/tag/windows-preview-20261021.4)
-
-下载后双击 `TheFourthInstitute-Setup-x64.exe`，选择新的空安装目录。安装开始时可选择是否包含 Lenia 预置案例；随后自动启动 Portal 并打开浏览器。Python、PostgreSQL、NATS 和 Node.js 已包含；首次联网准备核心 Python 包。TeX 等可选工具不自动安装，缺失时只影响相应功能。以后通过桌面图标打开 Portal。
-
-安装包尚未签名，暂不支持覆盖已有实例升级。详见 [Windows 操作说明与验证范围](code/scripts/windows/README.md)。
-
-### macOS 15+ · 试用版
-
-提供 Apple Silicon（arm64）与 Intel（x64）安装包，原生构建验证通过后发布到
-[macOS Preview Releases](https://github.com/EatonZhou/the-fourth-institute/releases?q=macos-preview&expanded=true)。
-打开 DMG，将应用拖入 Applications；首次启动选择是否安装 Lenia 案例。
-Python、核心 Python 包和数据库等运行环境已内置，准备基础平台无需联网。
-此版本尚未签名、公证，暂不支持覆盖升级。详见 [macOS 安装与停止服务说明](code/scripts/macos/README.md)。
-
-### Linux
-
-需要 Python 3.12 及 venv 支持。克隆仓库并准备安装工程：
-
-```bash
-git clone https://github.com/EatonZhou/the-fourth-institute.git
-cd the-fourth-institute
-python3 prepare_install.py
-```
-
-`prepare_install.py` 校验附带的示例初始数据，并组装 `.build/example_instance/engineering/` 安装工程，保留运行实例的数据不变。
-
-按[安装说明](INSTALL.md)为实例创建 `target.json`，然后安装：
-
-```bash
-python3 code/scripts/tfi_release_install.py install --target target.json --manifest .build/example_instance/engineering/manifest.json
-```
-
-安装器可复用已配置的依赖，或为实例准备支持的依赖；下载缺失的软件包需要联网。初始化、启动、服务状态、日志和升级操作均见安装说明。
-
-也可以让本机上的 AI Agent 阅读[安装说明](INSTALL.md)，协助准备配置并完成安装。
+| 系统 | 下载 |
+| --- | --- |
+| Windows 11 x64 · 试用版 | [安装包（.exe）](https://github.com/EatonZhou/the-fourth-institute/releases/download/windows-preview-20261021.4/TheFourthInstitute-Setup-x64.exe) |
+| macOS 15+ · Apple Silicon（arm64）· 试用版 | [安装包（.dmg）](https://github.com/EatonZhou/the-fourth-institute/releases/download/macos-preview-20261021.9/TheFourthInstitute-macOS-arm64.dmg) |
+| macOS 15+ · Intel（x64）· 试用版 | [安装包（.dmg）](https://github.com/EatonZhou/the-fourth-institute/releases/download/macos-preview-20261021.9/TheFourthInstitute-macOS-x64.dmg) |
+| Linux | [源码安装说明](INSTALL.md) |
 
 ## Quick Start · 快速开始
 
@@ -117,7 +84,7 @@ Windows 启动器首次运行时会打开管理员注册页。通过命令行安
 
 ## 实际规模、Token 消耗与磁盘空间
 
-在我们的实际使用中，**一个人可以组织数百个 Agent，共同持续工作数天**。一次高负载运行中，单人组织的团队在一小时内记录的 Token 用量超过 **2B（20 亿）**。这些数字来自我们的使用经历，实际规模与消耗会随模型、上下文长度、并发和任务而变化。
+在实际使用中，一个人可以组织数上百个 Agent，共同持续工作数天。从我们的经验来看，一次高负载运行，单人组织的团队在一小时内记录的 Token 用量可以超过 2B（20 亿）。
 
 长期运行也会产生大量磁盘占用。会话记录、工具输出、实验数据和中间产物不断积累，可能很快耗尽电脑的可用空间。建议从小团队开始，观察 Token 用量与剩余磁盘空间，再按可用资源扩大规模。存储管理、减少重复数据与运行成本控制，都是后续需要继续优化的方向。
 
