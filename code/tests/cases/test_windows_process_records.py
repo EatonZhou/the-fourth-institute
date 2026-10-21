@@ -87,7 +87,7 @@ class RecordRetries(unittest.TestCase):
 
 @unittest.skipUnless(os.name == "nt", "requires real Windows file sharing")
 class NativeRecordSharing(unittest.TestCase):
-    def test_reader_allows_atomic_replacement_and_unlink(self):
+    def test_writer_waits_for_short_reader_and_reader_allows_unlink(self):
         with tempfile.TemporaryDirectory(prefix="TFI 中文 ") as tmp:
             path = Path(tmp) / "nats.process.json"
             services.write_record(path, "old")
@@ -95,8 +95,14 @@ class NativeRecordSharing(unittest.TestCase):
             with path.open(encoding="utf-8"), self.assertRaises(PermissionError):
                 path.unlink()
             with services._open_record(path) as reader:
-                services.write_record(path, "new")
                 self.assertEqual(reader.read(), "old")
+                release = threading.Timer(0.15, reader.close)
+                release.start()
+                try:
+                    services.write_record(path, "new")
+                finally:
+                    release.join()
+            self.assertEqual(services.read_record(path), "new")
             with services._open_record(path) as reader:
                 services.remove_record(path)
                 self.assertEqual(reader.read(), "new")
@@ -114,6 +120,15 @@ class NativeRecordSharing(unittest.TestCase):
                 self.assertEqual(services.read_record(path), "complete")
             finally:
                 release.join()
+
+    def test_persistent_reader_prevents_replace_without_losing_old_record(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "nats.process.json"
+            services.write_record(path, "old identity")
+            with path.open(encoding="utf-8"), self.assertRaises(PermissionError):
+                services.write_record(path, "replacement identity")
+            self.assertEqual(services.read_record(path), "old identity")
+            self.assertEqual(list(Path(tmp).iterdir()), [path])
 
     def test_concurrent_process_publication_polling_and_cleanup(self):
         with tempfile.TemporaryDirectory(prefix="TFI 中文 ") as tmp:

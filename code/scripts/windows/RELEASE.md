@@ -5,7 +5,7 @@ Windows 版目前仍是试用版，完整 Windows 真机流程尚待进一步验
 安装开始时可以选择是否包含 Lenia 预置案例。
 
 修复启动时读取 `nats.process.json` 等进程记录的 Windows 文件共享冲突：
-读取允许记录被原子替换，短暂占用进行有界重试，持续拒绝访问仍明确失败。
+读取允许共享删除，覆盖写入等待短暂读取完成；短暂占用进行有界重试，持续拒绝访问仍明确失败。
 发布前新增 Windows 原生并发读写、替换和删除回归。
 
 安装欢迎页精简为两段短文案，并随界面语言显示中文或英文。
@@ -31,8 +31,8 @@ the Lenia example. Python and native services are bundled; first use still requi
 internet access for core Python packages. Optional tools are not installed automatically.
 This unsigned installer does not provide an in-place upgrade of an existing instance.
 
-Process-record readers now allow atomic replacement on Windows. Brief sharing conflicts
-are retried with a deadline; persistent access denial never counts as an absent service.
+Process-record readers allow shared deletion on Windows; atomic replacement retries
+while brief reads finish. Persistent access denial never counts as an absent service.
 Native Windows concurrent read/write, replacement and removal checks gate publication.
 
 The welcome page now uses two short paragraphs in the interface language.
