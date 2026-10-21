@@ -175,7 +175,7 @@ def target_plan(target, *, protected_roots=None, allow_missing_native=False):
     return normalized
 
 
-def clean_environment(target):
+def clean_environment(target, *, postgres=False):
     root = Path(target["install_root"])
     runtime = root / "runtime"
     paths = target["data_roots"]
@@ -190,7 +190,8 @@ def clean_environment(target):
             timers_enabled = timers_enabled or initialization.get("result", {}).get("lineage_timer_required") is True
     windows = platform_adapter().__name__.endswith("_windows")
     env = {"PATH": (os.environ.get("SystemRoot", r"C:\Windows") + r"\System32;" +
-                     os.environ.get("SystemRoot", r"C:\Windows") + ";" + str(Path(target["pg_bin"])))
+                     os.environ.get("SystemRoot", r"C:\Windows") +
+                     (";" + str(Path(target["pg_bin"])) if postgres else ""))
                     if windows else "/usr/local/bin:/usr/bin:/bin", "LANG": "C.UTF-8",
            "HOME": str(root / "home"), "XDG_CONFIG_HOME": str(root / "home/.config"),
            "XDG_CACHE_HOME": str(root / "home/.cache"), "TMPDIR": str(runtime),
@@ -226,7 +227,7 @@ def clean_environment(target):
                     "TFI_WINDOWS_SERVICE_DIRECTORY": str(unit_directory())})
     for component in ("resource", "execution", "society"):
         env[f"PORTAL_{component.upper()}_SERVICE_SOCKET"] = str(runtime / "s" / f"{component}-service.sock")
-    if target.get("pg_lib"):
+    if postgres and target.get("pg_lib"):
         if windows:
             env["PATH"] = target["pg_lib"] + ";" + env["PATH"]
         else:
@@ -248,6 +249,21 @@ def runtime_python(target):
     return resolve(target)
 
 
+def command_environment(target, command):
+    """Keep bundled PostgreSQL libraries private to its native executables.
+
+    Portal and its system tools (Poppler, Node, TeX) must use their own native
+    dependencies. A PostgreSQL libstdc++ can be older than the host's libraries.
+    """
+    executable = Path(command[0])
+    tools = {native_tool(name) for name in (
+        "postgres", "initdb", "pg_ctl", "pg_isready", "psql", "createdb",
+        "dropdb", "pg_dump", "pg_dumpall", "pg_restore",
+    )}
+    postgres = executable.name in tools and executable.parent == Path(target["pg_bin"])
+    return clean_environment(target, postgres=postgres)
+
+
 def prepare_dependencies(state, manifest):
     from scripts.tfi_release_dependencies import prepare
     return prepare(sys.modules[__name__], state, manifest)
@@ -260,7 +276,7 @@ def native_tool(name):
 def component_command(target, component):
     root = Path(target["install_root"])
     runtime = root / "runtime"
-    env = clean_environment(target)
+    env = clean_environment(target, postgres=component == "postgres")
     python = runtime_python(target)
     if component == "postgres":
         windows = platform_adapter().__name__.endswith("_windows")
@@ -331,7 +347,7 @@ def owned_state(root, *, allow_missing_native=False):
 
 
 def run_native(command, *, target, cwd=None, timeout=90, merge_output=False):
-    return run_native_capture(command, env=clean_environment(target), cwd=cwd,
+    return run_native_capture(command, env=command_environment(target, command), cwd=cwd,
                               timeout=timeout, merge_output=merge_output)
 
 
@@ -340,7 +356,7 @@ def run_checked(command, *, target, cwd=None, timeout=1800, native_output=False)
         if native_output:
             result = run_native(command, target=target, cwd=cwd, timeout=timeout, merge_output=True)
         else:
-            result = run_utf8_capture(command, env=clean_environment(target), cwd=cwd, timeout=timeout)
+            result = run_utf8_capture(command, env=command_environment(target, command), cwd=cwd, timeout=timeout)
     except subprocess.TimeoutExpired as exc:
         raise TimeoutError(f"{Path(command[0]).name} exceeded {timeout}s; its process tree was stopped") from exc
     if result.returncode:
@@ -362,7 +378,7 @@ def wait_database(target):
     for _ in range(60):
         command = database_command(target, "pg_isready", "-d", "postgres")
         try:
-            result = run_process(command, env=clean_environment(target),
+            result = run_process(command, env=command_environment(target, command),
                                  capture_output=True, timeout=9)
         except subprocess.TimeoutExpired:
             continue

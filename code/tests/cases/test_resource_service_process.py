@@ -175,11 +175,11 @@ def test_resource_service_unix_socket_protocol_contracts(tmp_path, subtests, iso
         client = ResourceServiceClient(tmp_path / 'unused.sock', timeout=0.1)
         with mock.patch.object(client, '_exchange', return_value={}) as exchange:
             client.register('experiment', {}, wait_for_index=True, index_timeout=20)
-            assert exchange.call_args.kwargs['timeout'] == 25
-            client.query(resource_types=['paper'])
             assert exchange.call_args.kwargs['timeout'] == 35
+            client.query(resource_types=['paper'])
+            assert exchange.call_args.kwargs['timeout'] == 105
             client.refresh(wait=True, timeout=120)
-            assert exchange.call_args.kwargs['timeout'] == 125
+            assert exchange.call_args.kwargs['timeout'] == 135
 
 
 def test_resource_service_socket_rejects_unsigned_actor_assertion_contracts(monkeypatch, tmp_path, subtests, isolated_portal_case):

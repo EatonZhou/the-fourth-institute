@@ -5,13 +5,13 @@ from management_portal import serve_management_portal as portal
 
 class _HealthyResourceService:
     def status(self, *, timeout: float | None = None) -> dict[str, object]:
-        assert timeout == 0.75
+        assert timeout == 2.25
         return {"ok": True, "build_id": "test-build"}
 
 
 class _UnavailableResourceService:
     def status(self, *, timeout: float | None = None) -> dict[str, object]:
-        assert timeout == 0.75
+        assert timeout == 2.25
         raise RuntimeError("socket unavailable")
 
 

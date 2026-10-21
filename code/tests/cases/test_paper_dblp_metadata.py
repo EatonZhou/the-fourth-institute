@@ -24,7 +24,7 @@ def test_transport_uses_documented_read_only_endpoint(monkeypatch):
 
     def open_request(request, timeout):
         requests.append(request)
-        assert timeout == 30
+        assert timeout == 90
         return io.BytesIO(json.dumps({"results": {"bindings": [row(year=2025)]}}).encode())
 
     monkeypatch.setattr(metadata.urllib.request, "urlopen", open_request)

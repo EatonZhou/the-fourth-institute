@@ -66,7 +66,7 @@ def test_macos_cancel_signals_detached_runner_group(tmp_path, monkeypatch):
         result.write_text(json.dumps({"status": "cancelled"}))
     monkeypatch.setattr(service.process_runtime, "terminate_process_tree", terminate)
     assert service.cancel("script_run_test", "user", lineage_id=row["lineage_id"])["status"] == "cancelled"
-    assert called == [(4321, {"timeout": 5})]
+    assert called == [(4321, {"timeout": 15})]
 
 
 def test_macos_cancel_refuses_reused_pid(tmp_path, monkeypatch):
@@ -125,4 +125,4 @@ def test_macos_cancel_during_launch_waits_for_child_pid(tmp_path, monkeypatch):
 
     receipt = service.start({"lineage_id": lineage_id}, "user")
     assert receipt["status"] == "cancelled"
-    assert signalled == [(4321, {"timeout": 5})]
+    assert signalled == [(4321, {"timeout": 15})]

@@ -13,7 +13,7 @@ from management_portal import agent_status_backend as monitor
 from management_portal import ai_socket_relay as relay
 from management_portal.execution import worker_manager
 from tests.cases.model_api_test_support import register_relay_resources
-from tests.cases.test_execution_worker_manager import _worker
+from tests.cases.test_execution_worker_manager import _worker, process_boundaries
 from tests.cases.test_wall08_gap_helper05 import claude_owner
 from tests.cases.test_wall08_round4_session_gaps import active_request, isolated_rpc
 

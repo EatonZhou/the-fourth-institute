@@ -30,6 +30,11 @@ python3 code/scripts/tfi_dev.py publish --message "Describe the verified fix" \
 **不会自动重启服务**：代码提交后应按改动选择实例及应用组件，等待活动任务
 安全交接后激活并检查健康。数据库和六个账号服务不属于普通代码发布重启范围。
 
+安装器生成的应用环境不携带 PostgreSQL 的私有动态库目录。该目录只用于
+PostgreSQL 服务及其原生命令，Portal、Node、PDF 和 TeX 工具使用各自依赖，
+避免宿主工具误载数据库附带的旧版 C++ 库。修改这一环境边界后，激活受影响的
+应用服务并验证实际 PDF 提取；无需为此重启数据库或 Provider 账号服务。
+
 运行 Dev UI 或执行服务时，必须另建测试实例并绑定 dev 的 `code/`，
 使用独立数据库、资源副本、端口和消费者。不能让两套执行服务同时消费
 dirtybase_instance 的正式任务。单元测试和静态检查不需要启动 Dev 服务。

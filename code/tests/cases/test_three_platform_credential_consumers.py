@@ -88,6 +88,8 @@ def test_cli_private_reader_owns_identity_check(tmp_path, monkeypatch, capsys):
 
 
 def test_cli_failed_replace_keeps_original_private_token(tmp_path, monkeypatch):
+    tmp_path = tmp_path / 'credential-write'
+    tmp_path.mkdir()
     path = tmp_path / 'cli.json'
     path.write_text(json.dumps({'url':'https://portal.example', 'token':'dbu_fixture', 'status':'active'})); path.chmod(0o600)
     before = path.read_bytes()
@@ -110,6 +112,8 @@ def test_cli_rejects_hardlink_before_sending_token(tmp_path, monkeypatch):
 
 
 def test_network_security_failure_precedes_payload_and_replace(tmp_path, monkeypatch):
+    tmp_path = tmp_path / 'network-write'
+    tmp_path.mkdir()
     target = tmp_path / 'network.env'; target.write_bytes(b'original')
     def reject(path, mode):
         assert path.read_bytes() == b''

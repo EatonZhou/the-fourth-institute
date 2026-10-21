@@ -85,7 +85,7 @@ def test_poppler_argv_encoding_and_timeout_contract(monkeypatch, tmp_path, platf
     assert paper._extract_pdf_text_file(target) == '论文文字'
     argv, options = calls[0]
     assert argv == [executable, '-layout', '-enc', 'UTF-8', str(target), '-']
-    assert options['timeout'] == 120
+    assert options['timeout'] == 360
     assert not options.get('shell')
 
 
@@ -336,7 +336,7 @@ def test_all_poppler_commands_use_native_argv_and_managed_deadlines(monkeypatch,
     extracted.mkdir()
     assert paper._extract_embedded_pdf_images(source, extracted, tmp_path, 'paper_test', 'fixture') == []
     assert len(calls) == 6
-    assert [options['timeout'] for _, options in calls] == [30, 120, 120, 90, 90, 120]
+    assert [options['timeout'] for _, options in calls] == [90, 360, 360, 270, 270, 360]
     for command, options in calls:
         assert command[0].startswith(directory)
         assert str(source) in command

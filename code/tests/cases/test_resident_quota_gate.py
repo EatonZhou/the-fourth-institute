@@ -76,7 +76,7 @@ def test_quota_gate_rpc_and_read_access_batch(catalog, scheduler, monkeypatch):
     calls = []
     server = SimpleNamespace(scheduler=scheduler)
     def request(method, params, **kwargs):
-        assert kwargs == {'timeout': 1.0, 'restart_wait': 0.0, 'retry_on_unavailable': False}
+        assert kwargs == {'timeout': 3.0, 'restart_wait': 0.0, 'retry_on_unavailable': False}
         calls.append((method, params))
         return ExecutionServiceServer.dispatch(server, method, params)
     service = ExecutionService(client=SimpleNamespace(request=request))

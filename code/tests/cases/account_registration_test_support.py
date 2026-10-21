@@ -16,7 +16,10 @@ def register_codex(monkeypatch, root, *, names=("zero", "one"), default="one", l
     from management_common import portal_paths
     values = {**portal_paths.path_values(),
         "accounts_root": str(Path(root) / "accounts"), "instances_root": str(Path(root) / "instances")}
-    config = Path(root) / "fixture-paths.json"
+    # Installation configuration is outside the directory under test, just as
+    # it is in an installed instance. Atomic-write tests can then inspect that
+    # directory for leaked temporary files without seeing our fixture itself.
+    config = Path(root).with_name(Path(root).name + "-fixture-paths.json")
     config.parent.mkdir(parents=True, exist_ok=True)
     config.write_text(json.dumps(values))
     monkeypatch.setenv("PORTAL_PATHS_CONFIG", str(config))

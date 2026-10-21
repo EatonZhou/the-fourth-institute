@@ -134,12 +134,16 @@ def test_setting_the_compaction_point_is_the_features_action() -> None:
     assert outcome["status"] == "applied"
 
 
-def test_a_hand_planned_turn_keeps_its_component_reports(isolated_portal_case) -> None:
+def test_a_hand_planned_turn_keeps_its_component_reports(isolated_portal_case, monkeypatch) -> None:
     """手工计划的轮次保留组件报告
 
     使用手工 Harness 计划的轮次同样记录每个组件的执行报告。
     """
     with isolated_portal_case():
+        # A process-wide shared writer may belong to an earlier disposable
+        # database (and its recording policy); this case owns its own writer.
+        owned_store = HarnessEffectivenessStore()
+        monkeypatch.setattr(HarnessEffectivenessStore, 'shared', classmethod(lambda cls: owned_store))
         controller = AdaptiveHarnessController()
         store: HarnessEffectivenessStore = controller.effectiveness_store
         service = AgentSessionService(

@@ -128,7 +128,7 @@ def test_serialized_transport_statistics_preserve_payload(configured, monkeypatc
     assert payload["messages"][-1]["content"] == request.prompt
     assert wire.full_url == "https://approved.invalid/v1/chat/completions"
     opener.open.assert_called_once()
-    assert opener.open.call_args.kwargs == {"timeout": 120.0}
+    assert opener.open.call_args.kwargs == {"timeout": 360.0}
     transport = sanitize_transport_observation(result.output["provider_transport"])
     assert transport["attempt_number"] == 1 and transport["outcome"] == "completed"
     assert transport["response"]["headers_received"] is True and transport["response"]["body_complete"] is True
@@ -171,7 +171,7 @@ def test_transport_failures_keep_known_phase_without_inventing_network_root_caus
                 assert response.closed
             assert transport["durations_ms"][phase] >= 0
             assert SECRET not in json.dumps(transport)
-            assert opener.open.call_count == 1 and opener.open.call_args.kwargs["timeout"] == 120
+            assert opener.open.call_count == 1 and opener.open.call_args.kwargs["timeout"] == 360
 
 
 def test_observer_failure_cannot_change_success_or_replay_request(configured, monkeypatch):

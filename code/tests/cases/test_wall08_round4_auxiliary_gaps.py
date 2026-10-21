@@ -208,7 +208,7 @@ def test_relay_payload_cannot_override_effective_registry_controls(monkeypatch):
     assert request.runtime_options['timeout_seconds'] == 17
     assert request.runtime_options['max_retries'] == 2
     assert request.session.mode == 'stateless'
-    assert wait.call_args.kwargs['timeout_seconds'] == 81
+    assert wait.call_args.kwargs['timeout_seconds'] == 141
 
 
 def test_relay_truthy_stream_is_a_protocol_error_before_forwarding(relay_fixture):

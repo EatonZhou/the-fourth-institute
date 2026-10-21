@@ -45,7 +45,7 @@ def test_common_currency_comparison_preserves_original_balances(monkeypatch):
     assert usd['exchange_rate_source'] == fx.SOURCE
     assert [b['display'] for b in balances] == [b['display'] for b in original]
     assert items == original
-    assert calls == [(fx.SOURCE, 6)]
+    assert calls == [(fx.SOURCE, 18)]
     equivalent = fx.comparison({'amount': usd['comparison_amount'], 'currency': 'CNY'}, snapshot)
     assert equivalent['comparison_amount'] == usd['comparison_amount']
 

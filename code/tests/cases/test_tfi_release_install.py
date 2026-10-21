@@ -236,6 +236,32 @@ runpy.run_module('scripts.tfi_release_install', run_name='__main__')
             self.assertEqual(env[installer.ENV_KEYS[key]], path)
         self.assertNotEqual(env["PORTAL_LINEAGE_TIMER_INSTANCE"], env["PORTAL_INSTANCE"])
 
+    def test_postgres_libraries_do_not_leak_into_application_or_system_tools(self):
+        target = installer.target_plan(self.target)
+        target['pg_lib'] = str(self.base / 'postgres-private-libraries')
+        for platform in ('linux', 'macos', 'windows'):
+            with self.subTest(platform=platform), patch.object(installer, 'platform_adapter') as adapter:
+                adapter.return_value.__name__ = 'test_' + platform
+                library_key = 'DYLD_LIBRARY_PATH' if platform == 'macos' else 'LD_LIBRARY_PATH'
+                for component in ('web', 'resource', 'society', 'execution', 'worker', 'nats'):
+                    _, environment = installer.component_command(target, component)
+                    self.assertNotIn(library_key, environment)
+                    self.assertNotIn(target['pg_lib'], environment['PATH'])
+                _, environment = installer.component_command(target, 'postgres')
+                if platform == 'windows':
+                    self.assertIn(target['pg_lib'], environment['PATH'])
+                else:
+                    self.assertEqual(environment[library_key], target['pg_lib'])
+                for tool in ('initdb', 'pg_isready', 'pg_dump', 'psql'):
+                    command = [str(Path(target['pg_bin']) / installer.native_tool(tool))]
+                    native = installer.command_environment(target, command)
+                    self.assertEqual(native.get(library_key), environment.get(library_key))
+                    self.assertEqual(native['PATH'], environment['PATH'])
+                for command in ([target['python'], '--version'], ['/usr/bin/pdftotext', '-v']):
+                    environment = installer.command_environment(target, command)
+                    self.assertNotIn(library_key, environment)
+                    self.assertNotIn(target['pg_lib'], environment['PATH'])
+
     def test_source_root_and_nested_data_roots_are_rejected(self):
         self.target["install_root"] = str(installer.SOURCE_ROOT)
         with self.assertRaisesRegex(ValueError, "overlaps"):

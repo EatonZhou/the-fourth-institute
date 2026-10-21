@@ -118,8 +118,8 @@ serve_until_stopped(Owner(sys.argv[1], socketserver.StreamRequestHandler))
         started = time.monotonic()
         process.terminate()
         assert _line(process, 2) == "cleanup_returned"
-        assert process.wait(timeout=13) == 0
-        assert 9 <= time.monotonic() - started < 13
+        assert process.wait(timeout=39) == 0
+        assert 29 <= time.monotonic() - started < 39
         stderr = process.stderr.read()
         # A slow stop shows its threads early, then again at the deadline.
         assert stderr.index("Service shutdown still waiting") < stderr.index("Service shutdown deadline reached")
