@@ -207,7 +207,7 @@ def test_linux_handover_preserves_listener_protocol_and_failure_cleanup(monkeypa
         with pytest.raises(RuntimeError, match='before readiness'):
             owner.replace()
         assert not server.preserve_socket and owner.relay is None
-        cleanup.assert_called_once_with(successor, timeout=5)
+        cleanup.assert_called_once_with(successor, timeout=15)
         server.timing_proxy.cancel_handover.assert_called_once()
         parent.close.assert_called_once()
         notify.assert_not_called()

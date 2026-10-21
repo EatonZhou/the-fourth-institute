@@ -42,7 +42,7 @@ def test_installer_commands_have_finite_timeout_and_owned_tree(monkeypatch, tmp_
     from scripts import tfi_release_install as installer
 
     calls = []
-    monkeypatch.setattr(installer, "clean_environment", lambda target: {})
+    monkeypatch.setattr(installer, "clean_environment", lambda target, **kwargs: {})
 
     def fake_run(command, **kwargs):
         calls.append(kwargs)

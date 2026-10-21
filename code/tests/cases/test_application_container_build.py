@@ -83,7 +83,7 @@ class DockerContracts(unittest.TestCase):
                 self.assertIn(IMAGE, create)
                 self.assertIn('/usr/bin/prlimit', create)
                 self.assertIn('/usr/bin/timeout', create)
-                self.assertIn('--kill-after=5s', create)
+                self.assertIn('--kill-after=15s', create)
                 self.assertIn(str(build.BUILD_TIMEOUT) + 's', create)
                 self.assertNotIn('/usr/bin/bwrap', create)
                 self.assertEqual(create.count('--mount'), 1)

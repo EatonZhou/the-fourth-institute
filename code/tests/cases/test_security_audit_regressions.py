@@ -93,13 +93,13 @@ def test_agent_registry_persists_through_postgres_authority():
 
 
 def test_device_ssh_timeout_rejects_invalid_input_before_resolution(monkeypatch, subtests, isolated_portal_case):
-    """设备 SSH 测试的超时参数不是 1 到 15 的整数时，在解析访问方式前就被拒绝"""
-    for timeout in [0, -1, 16, True, None, 1.5, '5']:
+    """设备 SSH 测试的超时参数不是 1 到 45 的整数时，在解析访问方式前就被拒绝"""
+    for timeout in [0, -1, 46, True, None, 1.5, '5']:
         with subtests.test(timeout=timeout), isolated_portal_case() as case_path:
             with monkeypatch.context() as monkeypatch:
                 resolved = []
                 monkeypatch.setattr(device_identity_backend, 'effective_ssh_access', lambda *args, **kwargs: resolved.append(args))
-                with pytest.raises(ValueError, match='integer from 1 to 15'):
+                with pytest.raises(ValueError, match='integer from 1 to 45'):
                     device_identity_backend.test_ssh_connection('device_aaaaaaaaaaaa', timeout_seconds=timeout)
                 assert resolved == []
 

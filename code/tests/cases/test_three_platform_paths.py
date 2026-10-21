@@ -27,6 +27,7 @@ def isolated_paths(tmp_path, monkeypatch):
     monkeypatch.setattr(portal_paths, "compatibility_value", lambda key, default=None: str(legacy) if key == 'paths_config' else default)
     for key in (*portal_paths.ENV_KEYS.values(), "PORTAL_PATHS_CONFIG", "PORTAL_SHARE_ROOT"):
         monkeypatch.delenv(key, raising=False)
+    monkeypatch.setenv("PORTAL_PATHS_CONFIG", str(portal_paths.CONFIG_PATH))
     return {key: "portal_data/" + key for key in portal_paths.KEYS}
 
 
@@ -127,7 +128,8 @@ def test_configuration_filename_is_expanded_and_anchored_at_import(tmp_path, mon
     assert isolated.CONFIG_PATH == isolated.PORTAL_ROOT / "settings" / "local.json"
 
 
-def test_legacy_read_is_not_a_migration_and_new_config_wins(isolated_paths):
+def test_declared_site_config_wins_until_explicit_override(isolated_paths, monkeypatch):
+    monkeypatch.delenv("PORTAL_PATHS_CONFIG")
     legacy = Path(portal_paths.compatibility_value('paths_config'))
     legacy.parent.mkdir()
     legacy.write_text(json.dumps(isolated_paths), encoding="utf-8")
@@ -136,6 +138,8 @@ def test_legacy_read_is_not_a_migration_and_new_config_wins(isolated_paths):
     assert not portal_paths.CONFIG_PATH.exists()
     newer = {key: "new/" + key for key in portal_paths.KEYS}
     portal_paths.write_config(newer)
+    assert portal_paths.read_config() == isolated_paths
+    monkeypatch.setenv("PORTAL_PATHS_CONFIG", str(portal_paths.CONFIG_PATH))
     assert portal_paths.read_config() == newer
     assert legacy.read_bytes() == before
 

@@ -16,6 +16,23 @@ from scripts import tfi_release_install as installer
 
 
 class InstallationIsolationTests(unittest.TestCase):
+    def test_linux_components_preserve_user_manager_transport_only(self):
+        from scripts import tfi_release_platform_linux
+
+        target = installer.target_plan(self.target)
+        operator = {"XDG_RUNTIME_DIR": "/run/user/1000",
+                    "DBUS_SESSION_BUS_ADDRESS": "unix:path=/run/user/1000/bus",
+                    "HOME": "/operator-home", "UNRELATED_SECRET": "not-inherited"}
+        with patch.dict(os.environ, operator, clear=True), \
+             patch.object(installer, "platform_adapter", return_value=tfi_release_platform_linux):
+            for component in installer.COMPONENTS:
+                with self.subTest(component=component):
+                    _, environment = installer.component_command(target, component)
+                    for key in ("XDG_RUNTIME_DIR", "DBUS_SESSION_BUS_ADDRESS"):
+                        self.assertEqual(environment[key], operator[key])
+                    self.assertEqual(environment["HOME"], str(Path(target["install_root"]) / "home"))
+                    self.assertNotIn("UNRELATED_SECRET", environment)
+
     def test_maintenance_reexec_preserves_operator_service_context_only(self):
         target = installer.target_plan(self.target)
         operator = {"HOME": str(self.base / "operator"),

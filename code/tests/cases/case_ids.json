@@ -5154,7 +5154,7 @@
     "tests/cases/test_wall.py::test_wall_receipt_cutover_preserves_business_results_and_exact_event_links": "test_c0d6d6105708",
     "tests/cases/test_wall.py::test_wall_recent_completed_are_personal_sorted_by_completion_and_bounded": "test_a0d46c734e24",
     "tests/cases/test_wall.py::test_wall_reject_retires_whole_plan_and_keeps_other_plans": "test_9a8bfd9a9685",
-    "tests/cases/test_wall.py::test_wall_release_does_not_dispatch_a_second_worker": "test_5dcc25c2bcd1",
+    "tests/cases/test_wall.py::test_wall_instance_dispatches_its_own_jobs": "test_5dcc25c2bcd1",
     "tests/cases/test_wall.py::test_wall_repairs_and_reruns_failed_cases_without_repeating_passed_work": "test_a744f130112b",
     "tests/cases/test_wall.py::test_wall_restart_resumes_existing_message": "test_82ea204a80c6",
     "tests/cases/test_wall.py::test_wall_reuses_the_dev_result_written_by_the_resident": "test_e82edf572880",

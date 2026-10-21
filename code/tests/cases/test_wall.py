@@ -304,11 +304,14 @@ def test_wall_mutually_linked_indexes_are_not_executable_points(tmp_path, subtes
             assert len(points) == 8
 
 
-def test_wall_release_does_not_dispatch_a_second_worker(monkeypatch):
-    """WALL 在 Release 实例中不重复派发工作线程"""
-    monkeypatch.setenv("PORTAL_INSTANCE", "release")
-    monkeypatch.setattr(wall.business_tasks, "start", lambda *_: pytest.fail("duplicate Release worker"))
+@pytest.mark.parametrize("instance", ["dev", "release", "standalone"])
+def test_wall_instance_dispatches_its_own_jobs(monkeypatch, instance):
+    """独立实例按稳定业务键派发自己的 WALL 工作，不依赖旧站标签。"""
+    monkeypatch.setenv("PORTAL_INSTANCE", instance)
+    calls = []
+    monkeypatch.setattr(wall.business_tasks, "start", lambda *args: calls.append(args))
     wall._start_job("wall-existing")
+    assert calls == [("wall-job:wall-existing", wall._run_job, "wall-existing")]
 
 
 @pytest.mark.parametrize("kind", ["design", "improvement"])
