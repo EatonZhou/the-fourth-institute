@@ -51,6 +51,26 @@ def identities(result):
     return {row['id'] for row in result['lineages']}
 
 
+def test_minimal_release_freezes_system_project_principal_without_optional_flows():
+    from management_portal.distribution.features import SYSTEM
+    source = Source()
+    principal = 'lineage_555555555555'
+    source.data['lineage', 'lineages'].extend([
+        {'lineage_id': SYSTEM, 'project_id': 'System project', 'deleted_at': None},
+        {'lineage_id': principal, 'project_id': 'System project', 'lineage_membership': 'shared'},
+    ])
+    source.data['lineage', 'project_lineage_entries'] = [
+        {'project_id': 'System project', 'lineage_id': principal},
+    ]
+    snapshot = selected()
+    result = dependencies.resolve(snapshot, source)
+    assert result['valid']
+    assert identities(result) == {SYSTEM, principal}
+    assert result['project_principals'] == [{'project_id': 'System project', 'lineage_id': principal}]
+    assert result['features'] == []
+    assert snapshot['system_lineage']['selected'] == []
+
+
 def test_type_only_uses_registered_owners_and_published_binding():
     snapshot = selected('decision', 'paper')
     before = deepcopy(snapshot)

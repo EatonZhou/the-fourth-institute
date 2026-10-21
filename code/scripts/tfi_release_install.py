@@ -272,7 +272,16 @@ def command_environment(target, command):
         "dropdb", "pg_dump", "pg_dumpall", "pg_restore",
     )}
     postgres = executable.name in tools and executable.parent == Path(target["pg_bin"])
-    return clean_environment(target, postgres=postgres)
+    environment = clean_environment(target, postgres=postgres)
+    # The frozen-history verifier checks the owned OS services before reading
+    # the imported database. Its instance HOME stays isolated, but on Linux it
+    # must reach the same user manager as the parent installer.
+    if (platform_adapter().__name__.endswith('_linux') and len(command) > 1
+            and Path(command[1]) == code_root(target) / 'scripts/tfi_release_initialization.py'):
+        for key in ('XDG_RUNTIME_DIR', 'DBUS_SESSION_BUS_ADDRESS'):
+            if os.environ.get(key):
+                environment[key] = os.environ[key]
+    return environment
 
 
 def prepare_dependencies(state, manifest):

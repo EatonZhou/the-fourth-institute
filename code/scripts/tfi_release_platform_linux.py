@@ -1,6 +1,7 @@
 """Linux installation assets; shared orchestration owns the instance topology."""
 from pathlib import Path
 import json
+import shlex
 import subprocess
 
 from scripts.tfi_instance_layout import code_root, installer_path
@@ -22,7 +23,17 @@ def unit_name(target, component):
 
 
 def unit_directory():
-    return Path.home() / ".config/systemd/user"
+    # Residents and installed applications intentionally have an isolated HOME.
+    # The existing user manager has its own search path; registering beneath
+    # the caller's HOME can succeed on disk while every service remains unknown.
+    result = subprocess.run(
+        ['systemctl', '--user', 'show', '--property=UnitPath', '--value'],
+        check=True, capture_output=True, text=True, timeout=15)
+    candidates = [Path(value) for value in shlex.split(result.stdout)
+                  if Path(value).is_absolute() and Path(value).parts[-2:] == ('systemd', 'user')]
+    if not candidates:
+        raise RuntimeError('User service manager did not report its unit directory')
+    return candidates[0]
 
 
 def unit_path(directory, name):

@@ -16,6 +16,23 @@ from scripts import tfi_release_install as installer
 
 
 class InstallationIsolationTests(unittest.TestCase):
+    def test_initialization_helper_keeps_service_transport_but_not_source_home(self):
+        from scripts import tfi_release_platform_linux
+        target = installer.target_plan(self.target)
+        helper = Path(target['install_root']) / 'code/scripts/tfi_release_initialization.py'
+        transport = {'XDG_RUNTIME_DIR': '/run/user/1000',
+                     'DBUS_SESSION_BUS_ADDRESS': 'unix:path=/run/user/1000/bus'}
+        with patch.dict(os.environ, {**transport, 'UNRELATED_SECRET': 'private'}, clear=True), \
+                patch.object(installer, 'platform_adapter', return_value=tfi_release_platform_linux):
+            environment = installer.command_environment(target, [target['python'], str(helper), '--verify-frozen'])
+            for key, value in transport.items():
+                self.assertEqual(environment[key], value)
+            self.assertEqual(environment['HOME'], str(Path(target['install_root']) / 'home'))
+            self.assertNotIn('UNRELATED_SECRET', environment)
+            unrelated = installer.command_environment(target, [target['python'], '-c', 'pass'])
+            for key in transport:
+                self.assertNotIn(key, unrelated)
+
     def test_internal_script_callbacks_use_the_selected_instance_port(self):
         target = installer.target_plan(self.target)
         with patch.dict(os.environ, {"PORTAL_URL": "http://old-site:18086"}):

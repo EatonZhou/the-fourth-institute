@@ -190,6 +190,14 @@ def resolve(snapshot, source, *, additional_ids=()):
         for identity, record in source.read_index(resource_ids=dependency_ids).items():
             for project in record.get('attributes', {}).get('project_ids', []):
                 include(projects, project, identity)
+    # The exporter always preserves the installed Portal System graph, even
+    # when no optional flows are selected. Freeze its Project ownership and
+    # principal entry together with the other dependencies, before selection
+    # verifies that the source bindings have not changed.
+    from .features import SYSTEM
+    system_definitions = source.rows('lineage', 'lineages', predicates={'lineage_id': {SYSTEM}})
+    if any(row['lineage_id'] == SYSTEM and not row.get('deleted_at') for row in system_definitions):
+        include(lineages, SYSTEM, 'portal_core')
     definitions = source.rows('lineage', 'lineages', predicates={'lineage_id': set(lineages)}) if lineages else []
     found = {row['lineage_id'] for row in definitions if not row.get('deleted_at')}
     for missing in sorted(set(lineages) - found):
