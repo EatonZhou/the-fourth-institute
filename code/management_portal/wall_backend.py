@@ -214,9 +214,9 @@ def _scan(record: dict[str, Any], actor: str) -> None:
         previous_importance = _CACHE.get(cache_key, {}).get("importance_document", {})
     try:
         root = Path(record["root"])
-        sources = index_sources(root)
-        points: list[dict[str, Any]] = []
         errors = []
+        sources = index_sources(root, errors=errors)
+        points: list[dict[str, Any]] = []
         warnings = []
         documents = {}
         def read(source):
@@ -406,7 +406,7 @@ def _point(key: str, block_id: str, actor: str) -> tuple[dict[str, Any], dict[st
     address, sep, _ = block_id.rpartition("#")
     if not sep:
         raise ValueError("Block 地址无效")
-    source = next((s for s in index_sources(Path(record["root"])) if s.address == address), None)
+    source = next((s for s in index_sources(Path(record["root"]), errors=[]) if s.address == address), None)
     if not source:
         raise KeyError("该来源已不在工程索引中")
     text = read_source(Path(record["root"]), address, actor)
@@ -475,7 +475,7 @@ def resolve_design_point(point_ref: str, actor: str) -> dict[str, Any]:
         except PermissionError:
             continue
         try:
-            sources = index_sources(Path(record["root"]))
+            sources = index_sources(Path(record["root"]), errors=[])
         except (FileNotFoundError, NotADirectoryError):
             # A removed registered workspace must not block other projects.
             continue
@@ -594,7 +594,7 @@ def create(payload: dict[str, Any], actor: str) -> dict[str, Any]:
             raise ValueError("请输入可识别的标题和正文")
         atomic_replace_text(path, updated)
         _ensure_local_index(Path(record["root"]), address, kind)
-        indexed = next(source for source in index_sources(Path(record["root"])) if source.address == address)
+        indexed = next(source for source in index_sources(Path(record["root"]), errors=[]) if source.address == address)
         point.update(domain=indexed.domain, module_path=list(indexed.module_path))
     if degree is not None and kind != "improvement":
         invalidate(key)
@@ -1308,7 +1308,7 @@ def web_lifespan():
 def source_document(key: str, address: str, actor: str) -> dict[str, Any]:
     record = project(key, actor)
     root = Path(record["root"])
-    source = next((item for item in index_sources(root) if item.address == address), None)
+    source = next((item for item in index_sources(root, errors=[]) if item.address == address), None)
     if source is None:
         raise KeyError("该来源已不在工程索引中")
     return {"source_id": address, "title": source.title, "content": read_source(root, address, actor)}

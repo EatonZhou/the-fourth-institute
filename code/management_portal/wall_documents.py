@@ -184,23 +184,55 @@ def index_file(root: Path, filename: str) -> Path:
     return inside(root, str(matches[0].relative_to(root))) if matches else canonical
 
 
-def index_sources(root: Path, *, spec_only: bool = False) -> list[Source]:
+class _InvalidIndexReferences(Exception):
+    def __init__(self, sources, issues):
+        super().__init__('Index contains invalid references')
+        self.sources = sources
+        self.issues = issues
+
+
+def index_sources(root: Path, *, spec_only: bool = False,
+                  errors: list[dict[str, str]] | None = None) -> list[Source]:
+    """Return indexed sources; callers requesting diagnostics may keep valid ones.
+
+    Release generation remains strict by default: a broken reference must not
+    silently disappear from an exported specification.
+    """
     root = root.resolve()
     names = {"spec.md"} if spec_only else {"spec.md", "improve.md"}
     indexes = [index_file(root, name.upper().replace(".MD", ".md")) for name in sorted(names)]
     if not spec_only:
         indexes.extend(root / name for name in (".wall/WALL.md", ".wall/directions.md", ".wall/inconsistencies.md", ".wall/dev.md", ".wall/design.md"))
     versions = tuple((str(path), _file_version(path) if path.exists() else None) for path in sorted(indexes))
-    return [source for source in _indexed_sources(root, versions, spec_only)
-            if source.kind != "improvement" or RESOURCE_ID.fullmatch(source.address)
-            or source.address == ".wall/dev.md"
-            or is_improvement_candidate(source.address, inside(root, source.address))]
+    issues = ()
+    try:
+        sources = _indexed_sources(root, versions, spec_only)
+    except _InvalidIndexReferences as exc:
+        sources, issues = exc.sources, exc.issues
+    for error_type, filename, href, message in issues:
+        detail = f'{filename} → {href}: {message}'
+        if errors is None:
+            raise error_type(detail)
+        errors.append({'source_id': filename, 'reference': href, 'error': detail})
+    selected = []
+    for source in sources:
+        try:
+            if (source.kind != "improvement" or RESOURCE_ID.fullmatch(source.address)
+                    or source.address == ".wall/dev.md"
+                    or is_improvement_candidate(source.address, inside(root, source.address))):
+                selected.append(source)
+        except (PermissionError, ValueError) as exc:
+            if errors is None:
+                raise
+            errors.append({'source_id': source.address, 'error': str(exc)})
+    return selected
 
 
 @lru_cache(maxsize=32)
 def _indexed_sources(root: Path, versions: tuple, spec_only: bool = False) -> tuple[Source, ...]:
     """Read table/list links while keeping the index's domain and ordering."""
     sources: dict[str, Source] = {}
+    issues = []
     spec_paths: dict[str, tuple[str, ...]] = {}
     indexes = []
     wall_sources = {".wall/directions.md": "direction", ".wall/inconsistencies.md": "inconsistency",
@@ -230,7 +262,11 @@ def _indexed_sources(root: Path, versions: tuple, spec_only: bool = False) -> tu
                     href = str(child.attrGet("href") or "").split("#", 1)[0]
                     if not href.lower().endswith(".md") or "://" in href:
                         continue
-                    target = inside(root, str((index.parent / href).relative_to(root)))
+                    try:
+                        target = inside(root, str((index.parent / href).relative_to(root)))
+                    except (PermissionError, ValueError) as exc:
+                        issues.append((type(exc), filename, href, str(exc)))
+                        continue
                     if target in index_paths:
                         continue
                     address = str(target.relative_to(root))
@@ -263,6 +299,10 @@ def _indexed_sources(root: Path, versions: tuple, spec_only: bool = False) -> tu
         if path.is_file():
             address = str(path.relative_to(root))
             sources.setdefault(address, Source(address, path.stem, "WALL", kind))
+    if issues:
+        # lru_cache does not cache exceptions. A bad symlink may be repaired
+        # without changing the index file, so retry incomplete scans next time.
+        raise _InvalidIndexReferences(tuple(sources.values()), tuple(issues))
     return tuple(sources.values())
 
 
