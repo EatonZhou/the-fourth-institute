@@ -11,8 +11,8 @@
 | 系统 | 下载 |
 | --- | --- |
 | Windows 11 x64 · 试用版 | [安装包（.exe）](https://github.com/EatonZhou/the-fourth-institute/releases/download/windows-preview-20261021.4/TheFourthInstitute-Setup-x64.exe) |
-| macOS 15+ · Apple Silicon（arm64）· 试用版 | [安装包（.dmg）](https://github.com/EatonZhou/the-fourth-institute/releases/download/macos-preview-20261021.9/TheFourthInstitute-macOS-arm64.dmg) |
-| macOS 15+ · Intel（x64）· 试用版 | [安装包（.dmg）](https://github.com/EatonZhou/the-fourth-institute/releases/download/macos-preview-20261021.9/TheFourthInstitute-macOS-x64.dmg) |
+| macOS 15+ · Apple Silicon（arm64）· 试用版 | [安装包（.dmg）](https://github.com/EatonZhou/the-fourth-institute/releases/download/macos-preview-20261021.10/TheFourthInstitute-macOS-arm64.dmg) |
+| macOS 15+ · Intel（x64）· 试用版 | [安装包（.dmg）](https://github.com/EatonZhou/the-fourth-institute/releases/download/macos-preview-20261021.10/TheFourthInstitute-macOS-x64.dmg) |
 | Linux | [源码安装说明](INSTALL.md) |
 
 ## Quick Start · 快速开始
