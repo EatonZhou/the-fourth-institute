@@ -34,6 +34,22 @@ def executor_runtime_issue() -> str:
     return ""
 
 
+def browser_runtime_config() -> dict[str, str]:
+    """Carry the executor's browser location across Resident environments."""
+    browsers = os.environ.get("PLAYWRIGHT_BROWSERS_PATH")
+    if not browsers:
+        if sys.platform == "win32":
+            cache = Path(os.environ.get("LOCALAPPDATA") or Path.home() / "AppData/Local")
+        elif sys.platform == "darwin":
+            cache = Path.home() / "Library/Caches"
+        else:
+            cache = Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache")
+        browsers = str(cache / "ms-playwright")
+    if browsers != "0" and not Path(browsers).is_absolute():
+        browsers = str((Path(os.environ.get("INIT_CWD") or os.getcwd()) / browsers).absolute())
+    return {"python_executable": sys.executable, "browsers_path": browsers}
+
+
 def browser_runtime_issue() -> str:
     """Check the optional TAU browser, independently of the removed UI test suite."""
     node = shutil.which("node")

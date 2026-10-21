@@ -114,7 +114,7 @@ function instructionFailure(error) {
 const repoPython = path.join(__dirname, "..", "..", ".venv", process.platform === "win32" ? "Scripts/python.exe" : "bin/python");
 const defaultPython = fs.existsSync(repoPython) ? repoPython : (process.platform === "win32" ? "python" : "python3");
 
-async function openPortal({ evidenceDir, storageState, origin, pythonExecutable = defaultPython, viewport = { width: 1440, height: 900 },
+async function openPortal({ evidenceDir, storageState, origin, pythonExecutable, viewport = { width: 1440, height: 900 },
   headless = true, expectedActor = EXPECTED_ACTOR } = {}) {
   if (!evidenceDir || !fs.statSync(evidenceDir).isDirectory()) throw new Error("evidenceDir must be an existing directory");
   if (!storageState || !fs.statSync(storageState).isFile()) throw new Error("storageState must be the test-actor storage state file");
@@ -126,7 +126,11 @@ async function openPortal({ evidenceDir, storageState, origin, pythonExecutable 
   if (fs.existsSync(runContextPath) && !lifecycleId) {
     throw new Error('TAU run-context.json is missing resource_lifecycle_id; resume the case through the framework');
   }
-  const { browser, host, reused } = await hostedBrowser(evidence, headless, pythonExecutable);
+  const frameworkPython = runContext.browser_runtime?.python_executable;
+  if (frameworkPython != null && (typeof frameworkPython !== 'string' || !path.isAbsolute(frameworkPython))) {
+    throw new Error('TAU browser_runtime.python_executable must be an absolute path');
+  }
+  const { browser, host, reused } = await hostedBrowser(evidence, headless, pythonExecutable ?? frameworkPython ?? defaultPython);
   let context;
   try {
     context = await browser.newContext({ storageState, baseURL: origin, viewport,

@@ -1814,6 +1814,8 @@ def test_agent_use_adapter_invokes_resident_and_preserves_reviewable_result(
     storage.write_text("{}", encoding="utf-8")
     storage.chmod(0o600)
     config = _tau_config(storage)
+    browsers = tmp_path / 'framework-browser-cache'
+    monkeypatch.setenv('PLAYWRIGHT_BROWSERS_PATH', str(browsers))
     captured = {}
     from management_portal.test_framework import tau_fixture_paths
     scratch_base = tmp_path / 'scratch'
@@ -1863,7 +1865,7 @@ def test_agent_use_adapter_invokes_resident_and_preserves_reviewable_result(
         cancelled=lambda: False,
     )
 
-    assert outcome.status == "passed"
+    assert outcome.status == "passed", outcome.details
     assert outcome.details["summary"] == "真实页面可用"
     assert outcome.details["conversation"]["resident_id"] == "resident-test"
     assert "PORTAL_TAU_RESULT" in "".join(output)
@@ -1879,6 +1881,8 @@ def test_agent_use_adapter_invokes_resident_and_preserves_reviewable_result(
     context = json.loads((run_dir / "run-context.json").read_text(encoding="utf-8"))
     assert context["run_id"] == "testrun_0000000000000004"
     assert context["case_id"] == "test_000000000009"
+    assert context["browser_runtime"]["browsers_path"] == str(browsers)
+    assert Path(context["browser_runtime"]["python_executable"]).is_absolute()
     assert context["evidence_dir"] == str(run_dir.resolve())
     assert context["build_id"]
     assert "此前 Run 的文件不能作为本轮证据" in captured["prompt"]

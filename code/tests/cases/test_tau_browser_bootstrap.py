@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
+import sys
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -100,6 +102,32 @@ def test_the_bootstrap_opens_the_portal_test_identity_and_records_its_lifecycle(
     closed = json.loads((tmp_path / "evidence/tau-browser-close.json").read_text())
     assert launch["ok"] is True and launch["build_id"] == "dev-fixture"
     assert closed["ok"] is True and not Path(launch["profile_root"]).exists()
+
+
+def test_framework_browser_runtime_survives_a_helpers_different_home(tmp_path, portal, monkeypatch):
+    """TAU 子进程使用框架登记的 Python 和浏览器目录，不依赖 Resident 的 HOME。"""
+    if sys.platform == "win32":
+        cache = Path(os.environ["LOCALAPPDATA"]) / "ms-playwright"
+    elif sys.platform == "darwin":
+        cache = Path.home() / "Library/Caches/ms-playwright"
+    else:
+        cache = Path(os.environ.get("XDG_CACHE_HOME", str(Path.home() / ".cache"))) / "ms-playwright"
+    browsers = os.environ.get("PLAYWRIGHT_BROWSERS_PATH", str(cache))
+    evidence = tmp_path / "evidence"
+    evidence.mkdir()
+    context = {"resource_lifecycle_id": "e" * 64, "browser_runtime": {
+        "python_executable": sys.executable, "browsers_path": browsers}}
+    (evidence / "run-context.json").write_text(json.dumps(context))
+    monkeypatch.setenv("HOME", str(tmp_path / "another-home"))
+    monkeypatch.setenv("PLAYWRIGHT_BROWSERS_PATH", str(tmp_path / "absent-browser-cache"))
+
+    result = _open(tmp_path, portal, "test-actor")
+
+    assert result.returncode == 0, result.stderr
+    launch = json.loads((evidence / "tau-browser-launch.json").read_text())
+    assert launch["ok"] and launch["actor"] == "test-actor"
+    assert not (tmp_path / "absent-browser-cache").exists()
+    assert json.loads((evidence / "run-context.json").read_text())["browser_runtime"] == context["browser_runtime"]
 
 
 def test_the_bootstrap_refuses_a_browser_with_another_identity(tmp_path, portal):

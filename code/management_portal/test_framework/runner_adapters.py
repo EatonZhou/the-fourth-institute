@@ -12,7 +12,7 @@ from management_common import process_runtime
 from management_portal.society_service import SocietyServiceUnavailable
 from management_portal.resources.errors import ResourceServiceUnavailable
 
-from management_portal.test_framework.tau import CaseNotSent, TauConfig, ResidentInvoker, build_prompt, parse_result
+from management_portal.test_framework.tau import CaseNotSent, TauConfig, ResidentInvoker, browser_runtime_config, build_prompt, parse_result
 from management_portal.test_framework.catalog import ROOT
 from management_portal.test_framework.dev_target import DevBuildMismatch, DevTargetError, DevTargetVerifier, VerifiedDevTarget
 from management_portal.test_framework.runner_ids import TAU_RUNNER_ID
@@ -452,6 +452,7 @@ class TauAdapter(RunnerAdapter):
                 "resource_lifecycle_id": lifecycle_id,
                 "evidence_dir": str(run_dir.resolve()),
                 "build_id": target.actual_build_id,
+                "browser_runtime": browser_runtime_config(),
                 "recorded_by": "framework",
                 "recorded_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             }
