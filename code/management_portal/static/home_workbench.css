@@ -82,6 +82,21 @@
   gap: 8px;
 }
 
+.agent-status-limit-list > .agent-status-empty {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 24px 12px 32px;
+  text-align: center;
+}
+
+.agent-status-empty > p {
+  margin: 0;
+}
+
 /* Add to the panel's 14px inset so ranking values clear the 42px launcher plus 8px. */
 .homeWorkbenchContentPanel[data-home-component="usage-attribution"] .agent-status-rows {
   padding-right: 36px;

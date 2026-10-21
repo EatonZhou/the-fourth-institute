@@ -1032,7 +1032,7 @@ function accountEmptyState(data) {
   }
   const message = data?.accounts_error || data?.accounts_refresh_error
     ? window.PortalI18n.t("Limit data unavailable.") : window.PortalI18n.t("尚未添加 AI 账号。");
-  return window.PortalI18n.html`<div class="agent-status-muted"><p>${esc(message)}</p>
+  return window.PortalI18n.html`<div class="agent-status-empty agent-status-muted"><p>${esc(message)}</p>
     ${canRegisterAccount ? window.PortalI18n.html`<button class="portalButton is-primary" type="button" data-account-register ${accountRegistrationPending ? "disabled" : ""}>新增 AI 账号</button>` : ""}</div>`;
 }
 
