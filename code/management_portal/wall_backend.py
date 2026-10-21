@@ -992,11 +992,35 @@ def _finish_locked(record: dict[str, Any], job: dict[str, Any], result: dict[str
     invalidate(record["id"])
 
 
+def _save_job_submission(job_id: str, handle: dict) -> dict:
+    """Persist acceptance separately from the prepared request identity."""
+    state = handle.get('submission_state') or ('submitted' if handle.get('message_id') else 'pending')
+    if state == 'submitted' and handle.get('message_id'):
+        return _patch_job(job_id, **{**handle, 'status': 'running', 'submission_state': state,
+                                    'submission_reason': '', 'summary': '', 'error': ''})
+    reason = str(handle.get('submission_reason') or '原提交尚无确认回执；继续核对原请求，不重新投递')
+    return _patch_job(job_id, **{**handle, 'message_id': None,
+        'submission_state': 'not_submitted' if state == 'not_submitted' else 'pending',
+        'status': 'failed' if state == 'not_submitted' else 'preparing',
+        'error': reason if state == 'not_submitted' else '',
+        'summary': '任务未受理' if state == 'not_submitted' else '提交待确认：' + reason})
+
+
 def _run_job(job_id: str) -> None:
     try:
         job = _read_state()["jobs"][job_id]
         record = project(job["project"], job["actor"], write=True)
+        if not job.get('message_id') and job.get('request_id'):
+            # Preparation was durably recorded before the original submission.
+            # After a lost receipt/restart, only observe that request; never send
+            # a second input because the first input ID is not yet known.
+            handle = resident_handoff.resolve_invocation_submission(actor=job['actor'], handle=job)
+            job = _save_job_submission(job_id, handle)
+            if not job.get('message_id'):
+                return
         if job.get("cancel_requested"):
+            if job.get('resident_id') and job.get('message_id'):
+                resident_handoff.cancel_resident_invocation(job['resident_id'], job['actor'], job['message_id'])
             _patch_job(job_id, status="cancelled")
             return
         if not job.get("message_id"):
@@ -1039,7 +1063,9 @@ def _run_job(job_id: str) -> None:
                 metadata={"surface": "wall", "block_id": job["block"]},
                 on_assigned=assigned,
             )
-            job = _patch_job(job_id, status="running", **handle)
+            job = _save_job_submission(job_id, handle)
+            if not job.get('message_id'):
+                return
         response = resident_handoff.resume_and_wait(
             actor=job["actor"], resident_id=job["resident_id"], message_id=job["message_id"],
             lineage_id=job.get("lineage_id", ""),
