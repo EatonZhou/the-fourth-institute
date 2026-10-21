@@ -372,7 +372,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
   }
   function apiEditor(api = null) {
     const {view, form} = newEditor(api ? "编辑模型 API" : "新增模型 API");
-    form.append(node("p", t(api ? "修改连接信息。API Key 留空时保留当前密钥。" : "准备好服务商提供的 API Key、Base URL 和模型名称。新增接口使用 OpenAI 兼容的 Chat Completions 协议。"), {class: "backendHint"}));
+    form.append(node("p", t(api ? "修改连接信息。API Key 留空时保留当前密钥。" : "复制服务商给你的三项信息即可。连接名称和账号关联会自动完成。"), {class: "backendHint"}));
     const url = field(form, "接口基础地址（Base URL）", "base_url", api?.base_url || "", {type: "url", required: true, placeholder: "https://api.example.com/v1"});
     hint(url, "复制服务商提供的 API 基础地址，不是官网或聊天网页；不要附加 /chat/completions。");
     const secret = field(form, "API Key（密钥）", "secret", "", {type: "password", autocomplete: "new-password"});
@@ -454,12 +454,13 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
   const renderers = {
     providers: () => table("providers", ["Provider", "账号种类", "已安装版本", "可用版本", "待切换"], state.providers.map(p => ({cells: [p.title || p.provider,
       p.kinds.map(k => t(kinds[k] || k)).join(" / "), p.runtime?.installed_version || "—", p.runtime?.available_version || "—", t(p.runtime?.pending_switch ? "是" : "否")]}))),
-    accounts: () => table("accounts", ["执行账号", "Provider", "账号种类", "路线", "状态", "登录状态", "初始并发上限", "版本", "操作"], state.accounts.map(a => {
-      const identity = node("div", a.account_id);
-      for (const path of [a.home_path, a.socket_path].filter(Boolean)) identity.append(node("small", path));
+    accounts: () => table("accounts", ["名称", "接入方式", "状态", "操作"], state.accounts.map(a => {
+      const api = state.apis.find(api => api.api_id === a.config?.api_id);
+      const identity = node("div", api?.default_model || a.account_id, {title: a.account_id});
+      if (api?.base_url) identity.append(node("small", api.base_url));
       const readonly = !canWrite || a.kind === "service" || !Number.isInteger(a.registration_version);
-      return {id: a.account_id, cells: [identity, a.provider, t(kinds[a.kind] || a.kind || "—"), a.route_id || a.backend_route_id || "—", t(a.enabled === false ? "已停用" : "已启用"),
-        t(loginStates[a.login_state] || a.login_state || "—"), a.initial_max_concurrency ?? a.max_concurrency, a.registration_version,
+      return {id: a.account_id, cells: [identity, a.kind === "api_profile" ? "API Key" : t(kinds[a.kind] || a.kind || "—"),
+        [t(a.enabled === false ? "已停用" : "已启用"), a.kind === "subscription_login" ? t(loginStates[a.login_state] || a.login_state || "—") : ""].filter(Boolean).join(" · "),
         actions(button("接入与测试", () => setupEditor(a.account_id), !canWrite), ...(a.kind === "subscription_login" ? [button(a.login_state === "login_expired" ? "重新登录" : "登录", () => { login = openLogin(a.account_id, {onChanged: () => void refresh("accounts")}); }, !canWrite)] : []),
           button(a.enabled === false ? "启用" : "停用", () => void run(async () => { await execute("UpdateProviderAccountRegistration", {account_id: a.account_id, changes: {enabled: a.enabled === false}}, {expectedVersion: a.registration_version}); await refresh("accounts"); }), readonly),
           button("编辑初始并发", () => concurrencyEditor(a), readonly),
@@ -492,10 +493,11 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       } : account) : result[key] || [];
       if (key === "providers") providersReady = true;
       renderers[key]();
+      if (key === "apis") renderers.accounts();
     } catch (error) { if (!destroyed) sections[key].output.replaceChildren(node("p", errorText(error), {role: "alert"})); }
     finally { if (!destroyed) syncAccountButton(); }
   }
-  sections.accounts.actions.append(addAccount);
+  management.prepend(addAccount);
   const checkUpdates = button("检查更新", async () => {
     checkUpdates.disabled = true;
     try { await refresh("providers", {refresh: true}); }

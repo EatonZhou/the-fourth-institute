@@ -1,0 +1,54 @@
+{
+  "复制服务商给你的三项信息即可。连接名称和账号关联会自动完成。": {
+    "zh-CN": "复制服务商给你的三项信息即可。连接名称和账号关联会自动完成。",
+    "en": "Copy the three values from your provider. Portal generates the connection name and links the account automatically."
+  },
+  "Portal 服务器无法保存密钥。请管理员检查密钥存储目录的写入权限和磁盘空间，再重新提交；这不表示 API Key 无效。": {
+    "zh-CN": "Portal 服务器无法保存密钥。请管理员检查密钥存储目录的写入权限和磁盘空间，再重新提交；这不表示 API Key 无效。",
+    "en": "Portal could not save the key. Ask an administrator to check secret storage permissions and free disk space, then submit it again. This does not mean the API Key is invalid."
+  },
+  "连接名称已存在。请在高级设置中换一个名称，或编辑已有连接；这不表示 API Key 无效。": {
+    "zh-CN": "连接名称已存在。请在高级设置中换一个名称，或编辑已有连接；这不表示 API Key 无效。",
+    "en": "This connection name already exists. Choose another name in advanced settings or edit the existing connection. This does not mean the API Key is invalid."
+  },
+  "当前登录身份没有添加或修改 AI 连接的权限。请重新登录或联系管理员。": {
+    "zh-CN": "当前登录身份没有添加或修改 AI 连接的权限。请重新登录或联系管理员。",
+    "en": "Your current login cannot add or change AI connections. Sign in again or contact an administrator."
+  },
+  "连接信息不符合要求。请检查接口地址、模型名称和高级设置后重试。": {
+    "zh-CN": "连接信息不符合要求。请检查接口地址、模型名称和高级设置后重试。",
+    "en": "The connection details are invalid. Check the base URL, model name and advanced settings, then try again."
+  },
+  "未能确认保存结果。请检查网络与 Portal 服务，刷新连接列表确认是否已保存，再重试。": {
+    "zh-CN": "未能确认保存结果。请检查网络与 Portal 服务，刷新连接列表确认是否已保存，再重试。",
+    "en": "Could not confirm whether the connection was saved. Check the network and Portal service, then refresh the connection list before retrying."
+  },
+  "AI 连接保存失败。请检查 Portal 服务日志中的失败原因，再重新提交 API Key；密钥尚未经过模型服务验证。": {
+    "zh-CN": "AI 连接保存失败。请检查 Portal 服务日志中的失败原因，再重新提交 API Key；密钥尚未经过模型服务验证。",
+    "en": "Could not save the AI connection. Check the Portal service logs before submitting the API Key again. The model service has not validated the key yet."
+  },
+  "使用 API Key": {
+    "zh-CN": "使用 API Key",
+    "en": "Use an API Key"
+  },
+  "只需服务商提供的接口地址、API Key 和模型名称。Portal 自动建立连接，随后测试并启用 AI。": {
+    "zh-CN": "只需服务商提供的接口地址、API Key 和模型名称。Portal 自动建立连接，随后测试并启用 AI。",
+    "en": "Enter the base URL, API Key and model name from your provider. Portal creates the connection so you can test it and start using AI."
+  },
+  "已接入的 AI": {
+    "zh-CN": "已接入的 AI",
+    "en": "Your AI connections"
+  },
+  "连接名称（可选）": {
+    "zh-CN": "连接名称（可选）",
+    "en": "Connection name (optional)"
+  },
+  "留空自动生成，无需从服务商获取": {
+    "zh-CN": "留空自动生成，无需从服务商获取",
+    "en": "Leave blank to generate automatically"
+  },
+  "仅用于在 Portal 中区分连接，留空即可。自定义时以小写字母开头，只用小写字母、数字、下划线或短横线，最多 128 字符。": {
+    "zh-CN": "仅用于在 Portal 中区分连接，留空即可。自定义时以小写字母开头，只用小写字母、数字、下划线或短横线，最多 128 字符。",
+    "en": "Only used to identify this connection in Portal. You can leave it blank. Custom names start with a lowercase letter and contain lowercase letters, numbers, underscores or hyphens, up to 128 characters."
+  }
+}

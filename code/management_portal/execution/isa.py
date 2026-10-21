@@ -120,6 +120,8 @@ def create_model_api(inv: Invocation) -> dict[str, Any]:
     item = {"id": api_id, "kind": "openai_compatible_chat", "enabled": True, **_stored_fields(values)}
     try:
         created = model_api_store.create_api(item, inv.caller, secret=inv.argument("secret"))
+    except InstructionError:
+        raise
     except ValueError as exc:
         raise invalid(str(exc)) from exc
     if not created:
@@ -133,6 +135,8 @@ def update_model_api(inv: Invocation) -> dict[str, Any]:
         changes = dict(inv.argument("changes") or {})
         secret = changes.pop("secret", inv.argument("secret"))
         updated = model_api_store.update_api(api_id, _stored_fields(changes), inv.caller, secret=secret)
+    except InstructionError:
+        raise
     except ValueError as exc:
         raise invalid(str(exc)) from exc
     if updated is None:

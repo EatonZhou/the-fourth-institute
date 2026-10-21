@@ -117,6 +117,19 @@ def api_version(api_id):
     return None if row is None else int(row[0])
 
 
+def _write_api_secret(api_id, secret):
+    from .execution.account_hosting import write_secret_file
+    from .hatg.contracts import InstructionError
+
+    try:
+        return str(write_secret_file(api_id, secret))
+    except OSError:
+        raise InstructionError(
+            "instruction.failed", "Portal 无法保存 API 密钥，请检查服务器密钥目录的写入权限和磁盘空间。",
+            details={"reason": "model_api.secret_write_failed"}, retryable=True,
+        ) from None
+
+
 def create_api(entry, actor, *, secret=None):
     values = _values(entry)
     with database().transaction("apis") as c:
@@ -130,8 +143,7 @@ def create_api(entry, actor, *, secret=None):
         if "routes" in entry:
             _bind_routes(c, entry, entry["routes"])
         if secret is not None:
-            from .execution.account_hosting import write_secret_file
-            path = str(write_secret_file(entry["id"], secret))
+            path = _write_api_secret(entry["id"], secret)
             c.execute("UPDATE apis SET api_key_file=%s WHERE api_id=%s", (path, entry["id"]))
             entry["api_key_file"] = path
         return True
@@ -153,8 +165,7 @@ def update_api(api_id, changes, actor, *, secret=None):
             bindings = [dict(r) for r in c.execute("SELECT backend,route_id FROM routes WHERE api_id=%s", (api_id,))]
         _bind_routes(c, stored, bindings)
         if secret is not None:
-            from .execution.account_hosting import write_secret_file
-            path = str(write_secret_file(api_id, secret))
+            path = _write_api_secret(api_id, secret)
             c.execute("UPDATE apis SET api_key_file=%s WHERE api_id=%s", (path, api_id))
             stored["api_key_file"] = path
         return stored, version
