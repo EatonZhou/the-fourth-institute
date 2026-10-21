@@ -21,7 +21,7 @@ import sys
 # The Node helper invokes this exact file with an explicit Python interpreter.
 if not __package__:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from management_common.file_permissions import atomic_write_private_bytes, read_private_bytes
+from management_common.file_permissions import atomic_write_private_bytes, ensure_private_directory, read_private_bytes
 from management_common.site_compatibility import compatibility_value
 
 _SCHEMA = "portal.local-ipc.v1"
@@ -34,7 +34,9 @@ def rendezvous_path(path: str | Path) -> Path:
         return logical
     # Avoid port collisions between installations and Windows' short AF_UNIX
     # path limit. This directory's ACL is established before any secret exists.
-    default = Path(os.environ.get("LOCALAPPDATA") or Path.home() / "AppData/Local") / "TFI/Portal/ipc"
+    # Older listeners created ipc/ with inherited ACLs. Leave that cache alone;
+    # all Python and Node endpoints switch together to a privately created leaf.
+    default = Path(os.environ.get("LOCALAPPDATA") or Path.home() / "AppData/Local") / "TFI/Portal/ipc-v2"
     root = Path(compatibility_value('local_ipc_root', str(default))).expanduser()
     identity = os.path.normcase(str(logical.absolute())).encode("utf-8")
     return root / (hashlib.sha256(identity).hexdigest() + ".json")
@@ -121,7 +123,12 @@ class LocalListener:
         self._identity = None
         self.socket = socket.socket(socket.AF_INET if self.tcp else socket.AF_UNIX, socket.SOCK_STREAM)
         try:
-            self.path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+            if self.tcp:
+                # mkdir(mode=0o700) is not the private DACL contract on Windows.
+                # Establish it at creation, before publishing any IPC secret.
+                ensure_private_directory(self.path.parent)
+            else:
+                self.path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
             if self.path.exists() or self.path.is_symlink():
                 if not replace:
                     raise FileExistsError(str(self.path))
