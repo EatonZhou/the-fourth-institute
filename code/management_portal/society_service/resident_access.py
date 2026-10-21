@@ -29,6 +29,10 @@ def can_manage_resident(record: dict[str, Any], actor: str, *, operation: str = 
 
         return private_reaches(actor, record.get("personal_owner_id"), "GetResident", "resident_id",
                                record.get("resident_id"))
+    if operation == "read":
+        from management_portal import permission_system
+
+        return permission_system.allows(actor, "GetResident", {"resident_id": record.get("resident_id")})
     return True
 
 

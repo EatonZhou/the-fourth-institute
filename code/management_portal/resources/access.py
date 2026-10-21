@@ -31,16 +31,22 @@ def require_identity(actor, *, descriptors=None):
 
 
 class ResourceAccessPolicy:
-    """Every authenticated User or Resident reads resources.
+    """Resource discovery and direct reads ask the active permission scheme.
 
-    No store supplies resource authorization: the permission system decides
-    it (decision_b820faf42218), the facade authenticates
-    actors and domain resolvers enforce their own business rules.
+    Lists use the same ResolveResource requirement as an exact identity read,
+    in a batch before pagination. Domain resolvers retain their business rules.
     """
 
+    def readable_ids(self, identifiers, *, actor: str = "") -> set[str]:
+        from management_portal import permission_system
+
+        if not is_user_or_resident(actor):
+            return set()
+        return permission_system.permitted_ids(actor, "ResolveResource", "address", identifiers)
+
     def can_read(self, value: Mapping[str, Any], *, actor: str = "") -> bool:
-        # ``value`` is the record callers ask about; no read rule depends on it.
-        return is_user_or_resident(actor)
+        identifier = str(value.get("resource_id") or value.get("root_id") or "")
+        return bool(identifier) and identifier in self.readable_ids([identifier], actor=actor)
 
     def authorize_read(self, value: Mapping[str, Any], *, actor: str = "") -> None:
         if not self.can_read(value, actor=actor):

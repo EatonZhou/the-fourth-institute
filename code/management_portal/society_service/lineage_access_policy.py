@@ -23,6 +23,10 @@ def actor_can_manage_lineage(
         return False
     if is_personal_lineage(lineage):
         return private_reaches(actor, lineage.get("created_by"), "GetLineage", "lineage_id", lineage.get("lineage_id"))
+    if operation == "read":
+        from management_portal import permission_system
+
+        return permission_system.allows(str(actor), "GetLineage", {"lineage_id": lineage.get("lineage_id")})
     return True
 
 

@@ -598,8 +598,8 @@ def test_query_applies_dynamic_filters_after_descriptor_projection() -> None:
     ]
 
 
-def test_query_reuses_one_access_policy_for_all_candidates(monkeypatch) -> None:
-    """一次查询的所有候选复用同一读取策略实例"""
+def test_query_batches_candidate_permissions_before_pagination(monkeypatch) -> None:
+    """一次查询批量检查所有候选的读取权限，再排序分页"""
     records = [
         _record(f"skill_{index:012x}", "skill", title=f"Skill {index}")
         for index in range(3)
@@ -611,9 +611,9 @@ def test_query_reuses_one_access_policy_for_all_candidates(monkeypatch) -> None:
         def __init__(self):
             constructed.append(self)
 
-        def can_read(self, record, *, actor=""):
-            checked.append(record["resource_id"])
-            return True
+        def readable_ids(self, identifiers, *, actor=""):
+            checked.extend(identifiers)
+            return set(identifiers)
 
     monkeypatch.setattr(resource_query, "ResourceAccessPolicy", CountingPolicy)
 

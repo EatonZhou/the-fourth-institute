@@ -210,13 +210,18 @@ def query_records(
     candidates = list(records)
     exact_resource_id = _exact_resource_id(candidates, query)
     access_policy = access_policy or ResourceAccessPolicy()
+    readable = access_policy.readable_ids(
+        [str(record.get("resource_id") or "") for record in candidates], actor=query.actor,
+    )
     ranked: list[tuple[float, Mapping[str, Any]]] = []
     for record in candidates:
+        if record.get("resource_id") not in readable:
+            continue
         if not _matches_query(
             record,
             query,
             exact_resource_id=exact_resource_id,
-            include_access=True,
+            include_access=False,
             include_search=not exact_address,
             portal_access=portal_access,
             access_policy=access_policy,

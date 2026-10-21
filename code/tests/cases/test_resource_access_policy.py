@@ -24,8 +24,8 @@ def test_actor_checks_need_an_active_user_or_a_resident():
 
 
 @pytest.mark.parametrize("actor", ["bob", RESIDENT_ID])
-def test_users_and_residents_read_without_a_resource_level_check(actor):
-    """用户与 Resident 读取资源时资源层不另做权限预查"""
+def test_users_and_residents_read_when_permission_system_is_off(actor):
+    """权限系统关闭时已登录用户与 Resident 可读取普通资源"""
     assert ResourceAccessPolicy().can_read({"resource_id": INFORMATION_ID, "attributes": {}}, actor=actor)
 
 

@@ -36,7 +36,7 @@
 - [HATG ISA：运行环境指令](/r/decision_4527448ad07f)
 - [HATG ISA：指令集自描述指令](/r/decision_aa4fdbac8364)
 - [Portal 身份认证与领域授权架构](/r/decision_3fe3cca8fd95)
-- [Portal 权限系统：PAR 引擎架构与开关](/r/decision_b820faf42218)
+- [Portal 权限系统：PAR 引擎架构与开关](/r/decision_b820faf42218)（资源列表、搜索联想和项目导航按各对象的读取权限过滤；项目拒绝覆盖其资源、Lineage 与 Resident，直接读取遵循同一判定。）
 - [Portal 权限默认方案：P、A、R 三棵树与表规则](/r/decision_600ae27b0538)
 - [Portal 根身份、消息署名与异步执行归属](/r/decision_ae422b92c6f3)
 - [Portal 用户身份与领域业务关系](/r/decision_34158fdd4078)

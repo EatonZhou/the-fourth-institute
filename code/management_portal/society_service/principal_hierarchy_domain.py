@@ -125,11 +125,18 @@ def _finish_personal_ama(graph: dict[str, Any], owner_id: str) -> None:
 
 
 def navigation(actor: str) -> dict[str, Any]:
+    from management_portal import permission_system
     from . import lineage_domain as graphs, resource_client
 
     if not is_user_or_resident(actor):
         return {"schema": contract.SCHEMA, "projects": [], "user_residents": [], "levels": list(contract.LEVELS)}
     definitions = graphs._lineage_catalog_store().listing_records()
+    owners = {row["lineage_id"]: row.get("created_by", "") for row in definitions
+              if row.get("lineage_membership") == "personal"}
+    readable = permission_system.permitted_ids(
+        actor, "GetLineage", "lineage_id", [row["lineage_id"] for row in definitions], owners=owners,
+    )
+    definitions = [row for row in definitions if row["lineage_id"] in readable]
     projects = []
     for project in resource_client._query_all("project", actor=actor):
         identifier = project["resource_id"]
