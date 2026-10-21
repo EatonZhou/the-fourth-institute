@@ -322,7 +322,7 @@
     const byId = new Map(ITEMS.map(item => [item.id, item]));
     return normalizedItemOrder(currentItemOrder)
       .map(id => byId.get(id))
-      .filter(Boolean);
+      .filter(item => item && (!item.builtin || item.workbenchId));
   }
 
   function linkAttrs(item, activeId) {
@@ -1357,8 +1357,11 @@
   async function hydrateWorkbenches() {
     try {
       const result = await window.PortalAPI.get("/api/workbenches");
-      for (const item of ITEMS.filter(item => item.builtin)) {
-        item.workbenchId = (result.workbenches || []).find(app => app.builtin === item.id)?.workbench_id || "";
+      for (const item of ITEMS) {
+        const builtin = Object.entries(result.builtins || {}).find(([name, definition]) => name === item.id || definition.path === item.href)?.[0];
+        if (!builtin && !item.builtin) continue;
+        item.builtin = true;
+        item.workbenchId = (result.workbenches || []).find(app => app.builtin === (builtin || item.id))?.workbench_id || "";
       }
       const apps = (result.workbenches || []).filter(app => !app.builtin && app.published_revision && app.navigation !== "hidden");
       for (let index = ITEMS.length - 1; index >= 0; index--) if (ITEMS[index].projection) ITEMS.splice(index, 1);

@@ -18,6 +18,26 @@ function owner(file, names, dependencies) {
   vm.runInContext(functions.join('\n'), context);
   return context;
 }
+
+test('Workbench navigation follows the readable catalog, including built-in feature links', async () => {
+  const ITEMS = [{id: 'resource', href: '/resource/knowledge'},
+    {id: 'development', href: '/development', builtin: true}, {id: 'wall', href: '/wall'}];
+  let workbenches = [];
+  const nav = owner('portal_nav.js', ['hydrateWorkbenches', 'orderedItems', 'normalizedItemOrder'], {
+    ITEMS, currentItemOrder: ['wall', 'development', 'resource'], secondaryNavs: new Map(),
+    document: {querySelectorAll: () => []}, render: () => {},
+    window: {PortalI18n: {t: value => value}, PortalAPI: {get: async () => ({workbenches,
+      builtins: {development: {path: '/development'}, wall: {path: '/wall'}}})}},
+  });
+  await nav.hydrateWorkbenches();
+  assert.deepEqual(Array.from(nav.orderedItems(), item => item.id), ['resource']);
+  workbenches = [{workbench_id: 'workbench_111111111111', builtin: 'wall', published_revision: 1}];
+  await nav.hydrateWorkbenches();
+  assert.deepEqual(Array.from(nav.orderedItems(), item => item.id), ['wall', 'resource']);
+  workbenches = [];
+  await nav.hydrateWorkbenches();
+  assert.deepEqual(Array.from(nav.orderedItems(), item => item.id), ['resource']);
+});
 const noop = () => {};
 function deferred() {
   let resolve, reject;

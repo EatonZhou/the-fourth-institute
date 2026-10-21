@@ -242,7 +242,8 @@ class Store:
 
     def list(self, actor: str) -> list[dict]:
         """The directory: the built-in entries, workbenches of Projects the actor
-        may read and those the actor may change. Drafts are listed only to
+        may read and those the actor may change, subject to each Workbench's
+        own read permission, including built-in entries. Drafts are listed only to
         those who may change them; nobody else can use an unpublished page."""
         if not is_user_or_resident(actor):
             return []
@@ -397,12 +398,13 @@ class Store:
 
     @staticmethod
     def authorized(app: dict, actor: str, operation: str) -> bool:
-        # Any User or Resident may open a workbench; the permission system
-        # decides who may change, publish and delete it.
         if not is_user_or_resident(actor):
             return False
         if operation == "read":
-            return True
+            from management_portal import permission_system
+
+            identifier = app["workbench_id"]
+            return identifier in permission_system.permitted_ids(actor, "ResolveResource", "address", [identifier])
         return app["workbench_id"] in _changeable(actor, [app["workbench_id"]])
 
     def job(self, job_id: str, actor: str, data: dict | None = None) -> dict:

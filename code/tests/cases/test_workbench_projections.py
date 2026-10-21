@@ -187,6 +187,30 @@ def test_shared_access_keeps_user_state_separate(store, permissions):
     assert store.delete(APP, "alice")["deleted"] == APP
 
 
+def test_project_deny_hides_native_workbench_and_blocks_direct_routes(store, permissions, monkeypatch):
+    """项目拒绝覆盖内置工作台目录、页面、历史版本与用户状态入口"""
+    from management_portal.workbench_projections import http
+
+    place_workbenches(permissions)
+    store.publish(APP, "alice", 1)
+    with store.connect() as connection:
+        connection.execute("INSERT INTO native_entrypoints (name, app_id) VALUES ('development', %s)", (APP,))
+    runtime = service.ProjectionService(store)
+    monkeypatch.setattr(http, "get_service", lambda: runtime)
+    assert [app["workbench_id"] for app in store.list("bob")] == [APP]
+    permissions.deny("bob", "WorkbenchProject", "@admin")
+    assert http.get("/api/workbenches", {}, "bob")["workbenches"] == []
+    for read in (
+        lambda: http.get("/api/workbenches/native", {"name": ["development"]}, "bob"),
+        lambda: http.get("/api/workbenches/detail", {"id": [APP], "published": ["true"]}, "bob"),
+        lambda: http.get("/api/workbenches/state", {"id": [APP]}, "bob"),
+        lambda: store.get_revision(APP, "bob", 1),
+    ):
+        with pytest.raises(PermissionError, match="无权访问"):
+            read()
+    assert store.builtin("development", "alice")["workbench_id"] == APP
+
+
 def test_only_who_the_permission_system_lets_change_a_workbench(store, permissions, monkeypatch):
     """工作台只允许权限系统给到 contributor 的人修改、发布、删除
 
