@@ -360,6 +360,10 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     hint(provider, "仅用于标记接口来源，不是登录账号；填写服务商名称即可。");
     const path = field(options, "服务器上的密钥文件路径（可选）", "secret_file", api?.secret_file || "");
     hint(path, "仅在密钥已由管理员放在 Portal 服务器上时填写绝对路径；不是你电脑上的文件。已填写 API Key 时无需填写。");
+    const declaredModels = api?.models?.length ? JSON.stringify(api.models, null, 2) : "";
+    const models = field(options, "模型列表（可选，JSON 数组）", "models", declaredModels, {tag: "textarea", rows: "4",
+      placeholder: '[{"id": "example-model", "reasoning_efforts": ["low", "medium", "high"]}]'});
+    hint(models, "声明这个接口提供的模型。每项的 id 是模型名称，reasoning_efforts 是该模型接受的推理强度；声明后，直连这个接口的 Resident 可在对话设置中选择。列表需包含上面的模型名称；留空则不声明。");
     const enabled = field(options, "启用此接口", "enabled", "", {type: "checkbox"}); enabled.checked = api?.enabled !== false;
     const canCreateAccount = !api && canRegister && state.providers.some(p => p.provider === "provider_api" && p.kinds.includes("api_profile"));
     const account = canCreateAccount ? field(options, "AI 账号名称（可选）", "account_id", "", {pattern: "[a-z][a-z0-9_\\-]{0,127}", placeholder: t("留空使用连接名称")}) : null;
@@ -368,7 +372,18 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     let createdId = "";
     saveButton(form); form.addEventListener("submit", event => {
       event.preventDefault(); if (busy) return;
+      const modelsChanged = models.value.trim() !== declaredModels;
+      let catalog = api?.models || [];
+      if (modelsChanged) {
+        try { catalog = models.value.trim() ? JSON.parse(models.value) : []; if (!Array.isArray(catalog)) throw new Error(); }
+        catch (_) { form.querySelector('[role="alert"]').textContent = t("模型列表必须是 JSON 数组。"); return; }
+      }
+      if ((modelsChanged || model.value.trim() !== (api?.default_model || "")) && catalog.length
+          && !catalog.some(item => item?.id === model.value.trim() && item.enabled !== false)) {
+        form.querySelector('[role="alert"]').textContent = t("模型列表需要包含上面填写的模型名称。"); return;
+      }
       const changes = {provider: provider.value.trim(), base_url: url.value.trim(), default_model: model.value.trim(), enabled: enabled.checked};
+      if (modelsChanged) changes.models = catalog;
       if (path.value.trim()) changes.secret_file = path.value.trim();
       if (secret.value) changes.secret = secret.value; secret.value = "";
       void run(async () => {
@@ -384,7 +399,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
           try {
             await execute("RegisterProviderAccount", {account_id: accountId, provider: "provider_api", kind: "api_profile", config: {api_id: createdId}, max_concurrency: 1});
           } catch (_) {
-            for (const input of [id, provider, url, model, path, secret, enabled]) input.disabled = true;
+            for (const input of [id, provider, url, model, path, models, secret, enabled]) input.disabled = true;
             const message = t("API 已保存，但 AI 账号尚未添加。可修改账号名称后重试保存，不会重复创建 API；也可取消勾选，仅保留接口。");
             form.querySelector('[role="alert"]').textContent = message; notice.textContent = message;
             await refresh("apis"); return false;

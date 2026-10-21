@@ -45,7 +45,7 @@ Resident 本身不含模型。它每次工作都要通过一个**执行账号**�
 打开“Portal 管理”→“AI Backend”，依次配置 Provider、执行账号、模型 API 和 Backend 角色。页面和 HATG ISA 使用同一份站点登记：
 
 - **订阅账号**：用 `RegisterProviderAccount` 登记 Codex 或 Claude 的 `subscription_login` 账号，再在账号行打开登录会话。对应指令为 `OpenProviderAccountLogin`、`GetProviderAccountLogin`、`CancelProviderAccountLogin`；Claude 要求授权码时，用 `UpdateProviderAccountLogin` 提交到现有等待会话。账号目录由站点 `PORTAL_ACCOUNTS_ROOT` 与账号身份派生；Codex 每个账号使用独立的 `CODEX_HOME` 和 `portal-codex-app-server@<account_id>.service` 模板实例。
-- **模型 API**：先用 `CreateModelApi` 登记接口地址、默认模型及认证方式，再登记引用已有 `config.api_id` 的 `api_profile` 执行账号。一次性 `secret` 经受控写入保存到密钥文件；`UpdateModelApi` 可通过 `changes.secret` 更换。不要把密钥放入账号 config、对话、日志或文档。
+- **模型 API**：先用 `CreateModelApi` 登记接口地址、默认模型及认证方式，再登记引用已有 `config.api_id` 的 `api_profile` 执行账号。一次性 `secret` 经受控写入保存到密钥文件；`UpdateModelApi` 可通过 `changes.secret` 更换。不要把密钥放入账号 config、对话、日志或文档。接口提供多个模型或支持推理强度时，在“高级设置”的模型列表（`models`）中声明，如 `[{"id": "example-model", "reasoning_efforts": ["low", "medium", "high"]}]`；直连该接口的 Resident 即可在对话设置中选择模型和推理强度。
 - **Backend 角色**：用 `UpdateBackendRole` 设置账号、模型和推理强度。新建 Resident 可选角色，省略时使用 `default`；显式 provider、account_id 和 settings 优先。角色更改不会改写已有 Resident 或 Provider 会话绑定。
 
 Provider 区的“检查更新”调用 `ListProviders(refresh=true)`，只查询已安装和可用版本并保存观察；安装和激活由运行时更新器负责。

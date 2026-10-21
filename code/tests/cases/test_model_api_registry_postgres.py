@@ -111,6 +111,37 @@ def test_model_api_update_checks_the_stored_version():
     assert AIProviderRegistry().get("deepseek_test")["default_model"] == "chat"
 
 
+def test_model_api_models_declare_reasoning_efforts():
+    """模型接口可以登记模型目录，声明每个模型接受的推理强度
+
+    CreateModelApi 与 UpdateModelApi 接受 models：每项须是含唯一、非空且无首尾空白 id 的对象，reasoning_efforts 须是非空字符串数组，否则返回 instruction.invalid_arguments 且不写入；声明了推理强度的模型在直连协议设置中提供 reasoning_effort 参数，未声明的模型不提供。
+    """
+    from management_portal.execution.model_api_protocols import protocol_settings
+    from management_portal.hatg.catalog import declaration
+
+    models = [{"id": "kimi", "reasoning_efforts": ["low", "high"]}, {"id": "kimi-mini"}]
+    declaration("CreateModelApi").validate_arguments({**MOONSHOT, "models": models})
+    created = _call(execution_isa.create_model_api, **MOONSHOT, models=models)
+    assert created["api"]["models"] == models
+    settings = protocol_settings(AIProviderRegistry().get("moonshot_test"))
+    assert settings["reasoning_efforts_by_model"] == {"kimi": ["low", "high"], "kimi-mini": []}
+    assert "reasoning_effort" in settings["parameters_by_model"]["kimi"]
+    assert "reasoning_effort" not in settings["parameters_by_model"]["kimi-mini"]
+
+    for rejected in ("kimi", ["kimi"], [{"reasoning_efforts": ["low"]}], [{"id": " kimi"}],
+                     [{"id": "kimi"}, {"id": "kimi"}], [{"id": "kimi", "reasoning_efforts": "high"}],
+                     [{"id": "kimi", "reasoning_efforts": [""]}]):
+        assert _failure(execution_isa.update_model_api, api_id="moonshot_test",
+                        changes={"models": rejected}) == "instruction.invalid_arguments"
+        assert _failure(execution_isa.create_model_api, **{**DEEPSEEK, "models": rejected}) == \
+            "instruction.invalid_arguments"
+    assert [api["api_id"] for api in _call(execution_isa.list_model_apis)["apis"]] == ["moonshot_test"]
+    assert AIProviderRegistry().get("moonshot_test")["models"] == models
+
+    updated = _call(execution_isa.update_model_api, api_id="moonshot_test", changes={"models": []})
+    assert updated["version"] == 2 and updated["api"]["models"] == []
+
+
 def test_relay_admits_the_resources_stored_in_postgres():
     """AI 中转只放行 PostgreSQL 中登记且启用的资源
 
