@@ -170,7 +170,7 @@
             <label class="portalField"><span>Username</span><input data-access-create-username required pattern="[A-Za-z0-9_.@+\\-]{1,80}" autocomplete="off" /></label>
             <label class="portalField"><span>Display name</span><input data-access-create-display-name autocomplete="off" /></label>
             <label class="portalField"><span>Recovery email</span><input data-access-create-email type="email" autocomplete="email" /></label>
-            <label class="portalField accessFieldWide"><span>Initial password</span><input data-access-create-password type="password" required minlength="12" maxlength="256" autocomplete="new-password" aria-label="Initial password" aria-describedby="access-create-password-requirements" /><small id="access-create-password-requirements">${window.PortalI18n.t(window.PortalIdentity.passwordRequirements)}</small></label>
+            <label class="portalField accessFieldWide"><span>Initial password</span><input data-access-create-password type="password" required maxlength="256" autocomplete="new-password" aria-label="Initial password" aria-describedby="access-create-password-requirements" /><small id="access-create-password-requirements">${window.PortalI18n.t(window.PortalIdentity.passwordRequirements)}</small></label>
           </div>
           <section class="managementCreationPermissions" aria-label="权限">
             <h3>权限</h3>
@@ -184,7 +184,7 @@
         <form data-access-reset-password-form method="dialog">
           <header><h2>Reset password</h2><button class="portalButton is-icon" data-access-close-reset-password type="button" aria-label="Close">×</button></header>
           <p class="accessDialogMessage" data-access-reset-password-user></p>
-          <label class="portalField"><span>New password</span><input data-access-reset-password-input type="password" required minlength="12" maxlength="256" autocomplete="new-password" aria-label="New password" aria-describedby="access-reset-password-requirements" /><small id="access-reset-password-requirements">${window.PortalI18n.t(window.PortalIdentity.passwordRequirements)}</small></label>
+          <label class="portalField"><span>New password</span><input data-access-reset-password-input type="password" required maxlength="256" autocomplete="new-password" aria-label="New password" aria-describedby="access-reset-password-requirements" /><small id="access-reset-password-requirements">${window.PortalI18n.t(window.PortalIdentity.passwordRequirements)}</small></label>
           <footer><button class="portalButton" data-access-cancel-reset-password type="button">Cancel</button><button class="portalButton is-primary" type="submit">Reset password</button></footer>
         </form>
       </dialog>
@@ -387,7 +387,7 @@
     const me = options.me || await window.PortalIdentity.load();
     const allows = me.access?.allows || {};
     const portalAdmin = me.access?.user_category === "portal_admin";
-    if (!portalAdmin && !["CreateUser", "GetExecutionSettings", "UpdateExecutionSettings", "ListResourceTypes", "ListProviders"].some(name => allows[name] === true)) {
+    if (!portalAdmin && !["CreateUser", "GetExecutionSettings", "UpdateExecutionSettings", "ListResourceTypes", "ListProviders", "RegisterProviderAccount"].some(name => allows[name] === true)) {
       throw new Error("Portal Management needs permission for CreateUser or GetExecutionSettings.");
     }
     root.innerHTML = panelMarkup();
@@ -451,7 +451,7 @@
     layout.append(tabs, stage); root.prepend(layout);
     tabs.querySelector('[data-management-tab="users"]').hidden = allows.CreateUser !== true;
     tabs.querySelector('[data-management-tab="resource-types"]').hidden = allows.ListResourceTypes !== true && !permissionsOff;
-    tabs.querySelector('[data-management-tab="backend"]').hidden = allows.ListProviders !== true && allows.ListProviderAccounts !== true && allows.UpdateProviderAccount !== true && !permissionsOff;
+    tabs.querySelector('[data-management-tab="backend"]').hidden = allows.ListProviders !== true && allows.ListProviderAccounts !== true && allows.UpdateProviderAccount !== true && allows.RegisterProviderAccount !== true && !permissionsOff;
     tabs.querySelector('[data-management-tab="paths"]').hidden = me.access?.user_category !== "portal_admin";
     tabs.querySelector('[data-management-tab="network"]').hidden = !portalAdmin;
     tabs.querySelector('[data-management-tab="instances"]').hidden = !portalAdmin;
@@ -1042,7 +1042,7 @@
         if (entry && view !== "users") entry.invalidation = {principalId, reason};
       }
     };
-    const openSection = async ({view = "users", principalId, accountId} = {}) => {
+    const openSection = async ({view = "users", principalId, accountId, createAccount = false} = {}) => {
       if (!entries.has(view)) throw new Error("Unknown Portal Management view.");
       if (["network", "instances"].includes(view) && !portalAdmin) return false;
       if (permissionsOff && permissionViews.has(view)) { view = "users"; principalId = undefined; }
@@ -1073,7 +1073,10 @@
       const instance = await ensureEntry(view, targetPrincipal);
       if (!instance || destroyed || version !== navigationVersion) return false;
       if (view === "schemes" && alreadyMounted) await instance.refreshSystem?.();
-      if (view === "backend") instance.focusAccount?.(accountId);
+      if (view === "backend") {
+        instance.focusAccount?.(accountId);
+        if (createAccount) instance.openAccountEditor?.();
+      }
       if (principalView && targetPrincipal !== (instance.getPrincipalId?.() ?? entry.target)) {
         if (entry.syncing || instance.isBusy?.() || !instance.setPrincipalId) return false;
         entry.syncing = true;
@@ -1398,8 +1401,8 @@
     if (allows.CreateUser === true) await loadAccess(options.principalId || me.username || "");
     currentPrincipalId = state.selectedUsername;
     showView();
-    const initialView = allows.CreateUser === true ? "users" : allows.ListResourceTypes === true ? "resource-types" : allows.ListProviders === true ? "backend" : (allows.GetExecutionSettings === true || allows.UpdateExecutionSettings === true) ? "execution" : "network";
-    await openSection({view: options.view || initialView, principalId: options.principalId, accountId: options.accountId});
+    const initialView = allows.CreateUser === true ? "users" : allows.ListResourceTypes === true ? "resource-types" : (allows.ListProviders === true || allows.RegisterProviderAccount === true) ? "backend" : (allows.GetExecutionSettings === true || allows.UpdateExecutionSettings === true) ? "execution" : "network";
+    await openSection({view: options.view || initialView, principalId: options.principalId, accountId: options.accountId, createAccount: options.createAccount});
     return { username: String(me.username || ""), openSection, invalidate, isBusy, hasUnsavedChanges,
       destroy() {
         destroyed = true; disposePermission();

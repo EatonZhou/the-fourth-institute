@@ -119,8 +119,11 @@ def test_project_catalog_names_each_project_only_by_its_id_contracts(tmp_path, s
         assert encoded.startswith('pbkdf2:sha256:')
         assert 'Initial-Pass9!' not in json.dumps(store.state.read({}))
         assert store.state.kind == 'credentials'
-        with pytest.raises(ValueError, match='at least 12'):
-            store.set_password('engineer', 'short')
+        store.set_password('engineer', 'Ab1!')
+        assert store.verify('engineer', 'Ab1!')
+        assert not store.verify('engineer', 'Initial-Pass9!')
+        with pytest.raises(ValueError, match='required'):
+            store.set_password('engineer', '')
         with pytest.raises(ValueError, match='at least three'):
             store.set_password('engineer', 'lowercase-only-password')
         with pytest.raises(ValueError, match='no more than 256'):

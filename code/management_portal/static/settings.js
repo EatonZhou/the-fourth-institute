@@ -84,11 +84,11 @@
             </label>
             <label class="portalField">
               <span>New password</span>
-              <input data-settings-new-password type="password" required minlength="12" maxlength="256" autocomplete="new-password" aria-label="New password" aria-describedby="settings-password-requirements" />
+              <input data-settings-new-password type="password" required maxlength="256" autocomplete="new-password" aria-label="New password" aria-describedby="settings-password-requirements" />
             </label>
             <label class="portalField">
               <span>Confirm new password</span>
-              <input data-settings-confirm-password type="password" required minlength="12" maxlength="256" autocomplete="new-password" />
+              <input data-settings-confirm-password type="password" required maxlength="256" autocomplete="new-password" />
             </label>
           </div>
           <label class="portalField settingsPasswordVerification" data-settings-password-verification hidden>

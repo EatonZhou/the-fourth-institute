@@ -13,8 +13,6 @@ import subprocess
 import sys
 import tempfile
 import threading
-import time
-from urllib.request import urlopen
 import webbrowser
 import zipfile
 
@@ -346,36 +344,31 @@ class DefaultStartup:
         self.progress("正在安装环境并初始化 Portal\n首次使用需要联网，可能需要几分钟")
         self.execute(command(self.platform, "install", "--manifest", bundle, "--target", target_path))
 
-    def wait_ready(self, state, timeout=540):
-        target = state["target"]
-        url = f"http://127.0.0.1:{target['ports']['web']}"
-        expected = target.get("runtime_instance", target["service_prefix"])
-        deadline = time.monotonic() + timeout
-        while time.monotonic() < deadline:
-            try:
-                with urlopen(url + "/api/health", timeout=9) as response:
-                    result = json.loads(response.read())
-                if (result.get("ok") is True and result.get("instance") == expected
-                        and result.get("execution_layer", {}).get("ok") is True
-                        and result.get("society_service", {}).get("ok") is True):
-                    return url
-            except (OSError, ValueError):
-                pass
-            time.sleep(1)
-        raise RuntimeError("Portal 服务未能就绪，请打开日志查看启动原因。")
+    def wait_ready(self, state, timeout=120):
+        from scripts.tfi_release_install import wait_for_ready, health_failure
+        result = wait_for_ready(state, timeout=timeout, progress=self.progress)
+        if result['status'] != 'installed':
+            raise RuntimeError(health_failure(state, result))
+        return result['url']
 
     def run(self):
         from scripts.tfi_release_install import start_blocker
         if self.root.is_symlink():
             raise ValueError("实例目录不能是符号链接")
-        if not (self.root / "installation.json").is_file() or start_blocker(self.state()):
+        initialized = not (self.root / "installation.json").is_file() or bool(start_blocker(self.state()))
+        if initialized:
             self.initialize()
         state = self.state()
         if start_blocker(state):
             raise RuntimeError("初始化没有完成，尚不能启动 Portal。请查看日志后重试。")
-        self.progress("正在启动 Portal")
-        self.execute(command(self.platform, "start", "--root", self.root))
-        url = self.wait_ready(state)
+        if initialized:
+            # install already started and checked every component in this run.
+            # Never reuse a persisted health result from an earlier launch.
+            url = f"http://127.0.0.1:{state['target']['ports']['web']}"
+        else:
+            self.progress("正在启动 Portal")
+            self.execute(command(self.platform, "start", "--root", self.root))
+            url = self.wait_ready(state)
         self.progress("正在打开你的研究空间")
         # This idempotent setup command uses the instance's own account service.
         # Invitation secrets stay in its private file, never in log output.

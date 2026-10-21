@@ -45,3 +45,33 @@ def test_portal_identity_bootstrap_precedes_shared_identity_module_contracts(sub
         ):
             source = (static_root / filename).read_text(encoding="utf-8")
             assert "event.persisted" in source
+
+
+def test_browser_password_policy_accepts_short_passwords_and_preserves_other_rules():
+    import json
+    import shutil
+    import subprocess
+    import pytest
+    from management_portal.portal_access_control import PortalCredentialStore
+
+    node = shutil.which('node')
+    if not node:
+        pytest.skip('Node is needed to execute the browser password validator')
+    module = Path(__file__).resolve().parents[2] / 'management_portal/static/portal_identity.js'
+    values = ['Ab1!', 'Äb1', '', 'lowercase', 'Ab1!' * 65]
+    script = '''const fs = require('fs'); const vm = require('vm');
+const window = {PortalCompatibility: {identifier: x => x},
+  __PORTAL_IDENTITY_BOOTSTRAP__: {}, addEventListener() {}};
+vm.runInNewContext(fs.readFileSync(process.argv[1], 'utf8'), {window});
+console.log(JSON.stringify(JSON.parse(process.argv[2]).map(
+  value => !window.PortalIdentity.passwordStrengthError(value))));'''
+    result = subprocess.run([node, '-e', script, str(module), json.dumps(values)],
+                            check=True, text=True, capture_output=True)
+    accepted = json.loads(result.stdout)
+    assert accepted == [True, True, False, False, False]
+    for password, allowed in zip(values, accepted):
+        if allowed:
+            PortalCredentialStore.validate_password(password)
+        else:
+            with pytest.raises(ValueError):
+                PortalCredentialStore.validate_password(password)

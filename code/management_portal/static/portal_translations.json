@@ -699,14 +699,6 @@
     "en": "1 parent device",
     "zh-CN": "1 个父设备"
   },
-  "12+ characters and at least three of uppercase, lowercase, numbers, and symbols.": {
-    "en": "12+ characters and at least three of uppercase, lowercase, numbers, and symbols.",
-    "zh-CN": "12+ 个字符，且至少包含大写字母、小写字母、数字和符号中的三种。"
-  },
-  "12–256 个字符": {
-    "en": "12–256 characters",
-    "zh-CN": "12–256 个字符"
-  },
   "1x (default)": {
     "en": "1x (default)",
     "zh-CN": "1x（默认）"
@@ -14974,10 +14966,6 @@
   "parentChangePreview": {
     "en": "parentChangePreview",
     "zh-CN": "parentChangePreview"
-  },
-  "password must contain at least 12 characters": {
-    "en": "password must contain at least 12 characters",
-    "zh-CN": "密码必须至少包含 12 个字符"
   },
   "password must contain no more than 256 characters": {
     "en": "password must contain no more than 256 characters",
@@ -33315,10 +33303,6 @@
     "zh-CN": "自定义颜色",
     "en": "Custom color"
   },
-  "至少 12 个字符": {
-    "en": "At least 12 characters",
-    "zh-CN": "至少 12 个字符"
-  },
   "至少选择一个 Article 文件。": {
     "en": "Select at least one Article file.",
     "zh-CN": "至少选择一个 Article 文件。"
@@ -40206,5 +40190,33 @@
   "Finish installation before starting this instance": {
     "zh-CN": "安装尚未完成，暂不能启动。",
     "en": "Finish installation before starting this instance"
+  },
+  "Enter a password.": {
+    "en": "Enter a password.",
+    "zh-CN": "请输入密码。"
+  },
+  "password is required": {
+    "en": "A password is required.",
+    "zh-CN": "请输入密码。"
+  },
+  "非空，最多 256 个字符；至少包含三种字符类型": {
+    "en": "Nonempty, at most 256 characters; at least three character types",
+    "zh-CN": "非空，最多 256 个字符；至少包含三种字符类型"
+  },
+  "尚未添加 AI 账号。": {
+    "zh-CN": "尚未添加 AI 账号。",
+    "en": "No AI accounts have been added yet."
+  },
+  "新增 AI 账号": {
+    "zh-CN": "新增 AI 账号",
+    "en": "Add AI account"
+  },
+  "你没有新增 AI 账号的权限。": {
+    "zh-CN": "你没有新增 AI 账号的权限。",
+    "en": "You do not have permission to add AI accounts."
+  },
+  "Provider 列表不可用，请刷新后重试。": {
+    "zh-CN": "Provider 列表不可用，请刷新后重试。",
+    "en": "Providers could not be loaded. Refresh and try again."
   }
 }

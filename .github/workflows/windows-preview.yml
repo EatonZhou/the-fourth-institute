@@ -1,0 +1,43 @@
+name: Windows preview installer
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/windows-preview.yml
+      - code/scripts/windows/release.json
+
+permissions:
+  contents: write
+
+concurrency:
+  group: windows-preview-release
+  cancel-in-progress: false
+
+jobs:
+  package:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y nsis p7zip-full
+          python -m pip install -r code/requirements.txt
+      - name: Build and verify installer
+        run: |
+          python code/scripts/windows/build.py
+          7z t .build/windows/TheFourthInstitute-Setup-x64.exe
+          cd .build/windows
+          sha256sum --check TheFourthInstitute-Setup-x64.exe.sha256
+      - name: Publish Windows trial release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: python code/scripts/windows/publish.py --commit "$GITHUB_SHA"

@@ -23,7 +23,7 @@ from scripts import tfi_release_install as installer
 class DesktopStartup(unittest.TestCase):
     def setup_flow(self, platform):
         flow = launcher.DefaultStartup(platform)
-        bundle = platform / ".build/example_instance-windows/engineering/manifest.json"
+        bundle = platform / ".build/w/engineering/manifest.json"
         bundle.parent.mkdir(parents=True)
         bundle.write_text(json.dumps({"run_id": "fixture"}))
         return flow
@@ -57,14 +57,16 @@ class DesktopStartup(unittest.TestCase):
                     return '{"status":"setup_link_created"}'
                 return "{}"
             with patch.object(flow, "execute", side_effect=execute), \
-                    patch.object(flow, "wait_ready", return_value="http://127.0.0.1:28199"):
+                    patch.object(flow, "wait_ready", return_value="http://127.0.0.1:28199") as ready:
                 self.assertEqual(flow.run(), "http://127.0.0.1:28199/join#invite=test-token")
-                self.assertEqual(actions, ["prepare", "install", "start", "first-admin"])
+                self.assertEqual(actions, ["prepare", "install", "first-admin"])
+                ready.assert_not_called()
                 before = (flow.root / "installation.json").read_bytes()
                 accounts_exist = True
                 actions.clear()
                 self.assertEqual(flow.run(), "http://127.0.0.1:28199/")
                 self.assertEqual(actions, ["start", "first-admin"])
+                ready.assert_called_once()
                 self.assertEqual(before, (flow.root / "installation.json").read_bytes())
 
     def test_failed_install_never_attempts_start_or_opens_missing_state(self):
@@ -115,24 +117,19 @@ class DesktopStartup(unittest.TestCase):
                     self.installed(flow)
                 return '{"status":"already_configured"}'
             with patch.object(flow, "execute", side_effect=execute), \
-                    patch.object(flow, "wait_ready", return_value="http://127.0.0.1:28199"):
+                    patch.object(flow, "wait_ready", return_value="http://127.0.0.1:28199") as ready:
                 flow.run()
-            self.assertEqual(actions, ["install", "start", "first-admin"])
+            self.assertEqual(actions, ["install", "first-admin"])
+            ready.assert_not_called()
 
     def test_other_instances_health_cannot_open_browser(self):
-        """安装与实例回归：other instances health cannot open browser。"""
         flow = launcher.DefaultStartup(Path("/unused"))
-        response = Mock()
-        response.__enter__ = Mock(return_value=response)
-        response.__exit__ = Mock(return_value=False)
-        response.read.return_value = json.dumps({"ok": True, "instance": "other",
-            "execution_layer": {"ok": True}, "society_service": {"ok": True}}).encode()
-        state = {"target": {"ports": {"web": 28199}, "service_prefix": "expected"}}
-        with patch.object(launcher, "urlopen", return_value=response), \
-                patch.object(launcher.time, "monotonic", side_effect=[0, 0, 2]), \
-                patch.object(launcher.time, "sleep"):
-            with self.assertRaisesRegex(RuntimeError, "未能就绪"):
-                flow.wait_ready(state, timeout=1)
+        failed = {"status": "unhealthy"}
+        with patch.object(installer, "wait_for_ready", return_value=failed) as wait, \
+                patch.object(installer, "health_failure", return_value="/login: HTTP 500; web.log"):
+            with self.assertRaisesRegex(RuntimeError, "/login: HTTP 500; web.log"):
+                flow.wait_ready({"target": {}}, timeout=12)
+        wait.assert_called_once_with({"target": {}}, timeout=12, progress=flow.progress)
 
     def test_existing_account_does_not_create_or_replace_an_invitation(self):
         """安装与实例回归：existing account does not create or replace an invitation。"""
@@ -164,6 +161,55 @@ class DesktopStartup(unittest.TestCase):
             self.assertEqual(result["status"], "already_configured")
             self.assertIn("--if-needed", run.call_args.args[0])
             self.assertEqual(invitation.read_text(), "prior private material")
+
+class ReadinessWait(unittest.TestCase):
+    state = {'target': {'service_prefix': 'expected', 'windows_service_mode': 'user'}}
+
+    def snapshot(self, *, code=200, instance='expected', active=True):
+        return {'status': 'installed' if code == 200 and instance == 'expected' and active else 'unhealthy',
+                'url': 'http://127.0.0.1:28199',
+                'services': [{'service': 'web', 'active': 'active' if active else 'inactive',
+                              'pid': 123 if active else None}],
+                'checks': [{'route': '/api/health', 'ok': instance == 'expected',
+                            'payload': {'instance': instance}},
+                           {'route': '/login', 'ok': code == 200, 'http_status': code}]}
+
+    def run_wait(self, snapshots, timeout=120):
+        clock = [0.0]
+        def sleep(seconds):
+            clock[0] += seconds
+        progress = []
+        with patch.object(installer, 'observed_status', side_effect=snapshots) as observed, \
+                patch.object(installer.time, 'monotonic', side_effect=lambda: clock[0]), \
+                patch.object(installer.time, 'sleep', side_effect=sleep):
+            result = installer.wait_for_ready(self.state, timeout=timeout, progress=progress.append)
+        self.assertTrue(all(0 < call.kwargs['request_timeout'] <= 3 for call in observed.call_args_list))
+        return result, observed.call_count, clock[0], progress
+
+    def test_ready_services_return_without_sleep(self):
+        result, calls, elapsed, _ = self.run_wait([self.snapshot()])
+        self.assertEqual((result['status'], calls, elapsed), ('installed', 1, 0))
+
+    def test_persistent_login_error_stops_after_three_observations(self):
+        result, calls, elapsed, progress = self.run_wait([self.snapshot(code=500)] * 3)
+        self.assertEqual((result['status'], calls, elapsed), ('unhealthy', 3, 2))
+        self.assertTrue(any('/login' in message for message in progress))
+
+    def test_temporary_errors_and_service_unavailable_can_recover(self):
+        for codes in ([500, 200], [500, 503, 500, 200], [503] * 5 + [200]):
+            with self.subTest(codes=codes):
+                result, calls, _, _ = self.run_wait([self.snapshot(code=c) for c in codes])
+                self.assertEqual(result['status'], 'installed')
+                self.assertEqual(calls, len(codes))
+
+    def test_exited_services_and_other_instances_fail_immediately(self):
+        for snapshot in (self.snapshot(active=False), self.snapshot(instance='other')):
+            result, calls, elapsed, _ = self.run_wait([snapshot])
+            self.assertEqual((result['status'], calls, elapsed), ('unhealthy', 1, 0))
+
+    def test_retry_deadline_remains_bounded(self):
+        result, calls, elapsed, _ = self.run_wait([self.snapshot(code=503)] * 121)
+        self.assertEqual((result['status'], calls, elapsed), ('unhealthy', 121, 120))
 
 
 if __name__ == "__main__":

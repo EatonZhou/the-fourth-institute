@@ -427,7 +427,6 @@ def list_users() -> list[dict]:
 class PortalCredentialStore:
     """Atomic access to the existing Portal password authority."""
 
-    MIN_PASSWORD_LENGTH = 12
     MAX_PASSWORD_LENGTH = 256
 
     def __init__(self) -> None:
@@ -444,8 +443,8 @@ class PortalCredentialStore:
     @staticmethod
     def validate_password(password: str) -> None:
         value = str(password or "")
-        if len(value) < PortalCredentialStore.MIN_PASSWORD_LENGTH:
-            raise ValueError("password must contain at least 12 characters")
+        if not value:
+            raise ValueError("password is required")
         if len(value) > PortalCredentialStore.MAX_PASSWORD_LENGTH:
             raise ValueError("password must contain no more than 256 characters")
         character_classes = sum((

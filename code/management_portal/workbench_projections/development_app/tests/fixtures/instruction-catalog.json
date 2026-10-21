@@ -3137,7 +3137,7 @@
             "name": "initial_password",
             "type": "string",
             "required": true,
-            "description": "12–256 个字符",
+            "description": "非空，最多 256 个字符；至少包含三种字符类型",
             "max_length": 256
           },
           {
@@ -3228,7 +3228,7 @@
             "name": "new_password",
             "type": "string",
             "required": true,
-            "description": "12–256 个字符",
+            "description": "非空，最多 256 个字符；至少包含三种字符类型",
             "max_length": 256
           }
         ],

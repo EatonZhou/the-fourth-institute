@@ -810,9 +810,9 @@
     return window.PortalPrincipalBackpack.mount({ container, principalId, mode: "management", managementView: view });
   }
 
-  async function openPermissionManagement({ principalId, view = "entries", accountId } = {}) {
+  async function openPermissionManagement({ principalId, view = "entries", accountId, createAccount = false } = {}) {
     backpackOpenSequence += 1;
-    return openAccountPanel("management", document.querySelector("[data-portal-user-menu]"), { principalId, view, accountId });
+    return openAccountPanel("management", document.querySelector("[data-portal-user-menu]"), { principalId, view, accountId, createAccount });
   }
 
   async function removeFamily(options = {}) {
@@ -1105,7 +1105,7 @@
     const buildId = String(data.build_id || "").trim();
     // The management page holds accounts and execution settings; show it to whoever may use either.
     const allows = data.access?.allows || {};
-    const canManage = ["CreateUser", "GetExecutionSettings", "UpdateExecutionSettings", "ListResourceTypes", "ListProviders"].some(name => allows[name] === true);
+    const canManage = ["CreateUser", "GetExecutionSettings", "UpdateExecutionSettings", "ListResourceTypes", "ListProviders", "RegisterProviderAccount"].some(name => allows[name] === true);
     if (data.preferences) currentUserPreferences = normalizeUserPreferences(data.preferences);
     menu.dataset.portalInstance = instance;
     renderPortalDeploymentButtons(menu, route, instance);

@@ -69,12 +69,11 @@
           <label class="joinChoice"><input type="radio" name="audience" value="agent" /><strong><!--portal-i18n:"一个 agent"-->一个 agent</strong><small><!--portal-i18n:"用个人访问令牌调用 Portal API"-->用个人访问令牌调用 Portal API</small></label>
         </fieldset>
         <div class="joinStep" data-step="human" hidden>
-          <label class="portalField"><span><!--portal-i18n:"密码"-->密码</span><input name="password" type="password" minlength="12" maxlength="256" autocomplete="new-password" /></label>
+          <label class="portalField"><span><!--portal-i18n:"密码"-->密码</span><input name="password" type="password" maxlength="256" autocomplete="new-password" /></label>
           <ul class="joinRules" data-password-rules>
-            <li data-rule="length"><!--portal-i18n:"至少 12 个字符"-->至少 12 个字符</li>
             <li data-rule="classes"><!--portal-i18n:"包含大写字母、小写字母、数字、符号中的至少三种"-->包含大写字母、小写字母、数字、符号中的至少三种</li>
           </ul>
-          <label class="portalField"><span><!--portal-i18n:"确认密码"-->确认密码</span><input name="confirm" type="password" minlength="12" maxlength="256" autocomplete="new-password" /></label>
+          <label class="portalField"><span><!--portal-i18n:"确认密码"-->确认密码</span><input name="confirm" type="password" maxlength="256" autocomplete="new-password" /></label>
           <button class="portalButton is-primary joinSubmit" type="submit" data-human-submit><!--portal-i18n:"创建账号"-->创建账号</button>
         </div>
         <div class="joinStep" data-step="agent" hidden>
@@ -169,10 +168,9 @@
 
     function checkRules() {
       const value = form.elements.password.value;
-      const classes = [/[A-Z]/, /[a-z]/, /[0-9]/, /[^A-Za-z0-9]/].filter(pattern => pattern.test(value)).length;
-      $('[data-rule="length"]').classList.toggle("is-met", value.length >= 12);
+      const classes = [/\p{Lu}/u, /\p{Ll}/u, /\p{N}/u, /[^\p{L}\p{N}]/u].filter(pattern => pattern.test(value)).length;
       $('[data-rule="classes"]').classList.toggle("is-met", classes >= 3);
-      return value.length >= 12 && classes >= 3;
+      return value.length > 0 && value.length <= 256 && classes >= 3;
     }
 
     let previewTimer = 0;

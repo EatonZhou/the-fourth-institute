@@ -42,3 +42,9 @@ def test_home_shell_reads_only_the_current_user() -> None:
     assert "/api/config" not in controller
     assert "data-summary-label" not in controller
     assert "context.currentUserReady.catch(() => {}).then(" in function_body("connectPulse")
+
+
+def test_empty_accounts_offer_existing_registration_dialog() -> None:
+    """首次接入入口遵守权限，复用账号表单并继续接入流程。"""
+    script = Path(__file__).with_name("javascript") / "home_account_registration.cjs"
+    subprocess.run(["node", "--experimental-vm-modules", str(script)], cwd=ROOT, check=True)

@@ -109,6 +109,19 @@ Windows TCP 通信目录使用私有目录接口创建，不能用 `mkdir(mode=0
 TAU 执行器当前依赖 Linux；浏览器工具安装成功不代表 Windows TAU 可执行。
 各 AI Provider、Article 编译、Device 与实际 Resident 对话仍需逐项验证。
 
+## 发布与启动检查
+
+Windows 当前仍为试用版。安装包、SHA-256 和构建收据发布在本仓库的
+[GitHub Releases](https://github.com/EatonZhou/the-fourth-institute/releases)，中英文 README 提供对应版本入口。
+修改 `release.json` 的版本号并发布到 main 后，Windows preview installer 工作流从该提交
+构建、校验两种案例工程和 EXE，再上传为 prerelease。安装包不写入 Git 文件历史。
+
+首次安装复用安装器刚完成的就绪检查，直接准备注册入口，不再重复启动服务。
+后续桌面启动和安装器使用同一个就绪检查：等待上限约 120 秒，HTTP 单次最长 3 秒，
+用户模式服务退出立即反馈；相同 HTTP 应用错误连续出现三次时提前终止，
+503 等暂时不可用响应仍允许恢复。保留实例身份、后台服务、登录页和 worker 检查。
+密码不再要求至少 12 个字符；仍须非空、不超过 256 个字符，并满足原有字符类型要求。
+
 ## 构建
 
 公开示例已缩短架构资料的重复层级及动画文件名，并保持资源 ID、条目名称和内容

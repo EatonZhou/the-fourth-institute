@@ -115,8 +115,8 @@ def test_password_reset_request_is_non_enumerating_and_confirm_revokes_sessions(
             "/api/auth/password-reset/confirm",
             {
                 "token": "valid-reset-token-that-is-long-enough",
-                "new_password": "Replacement-Pass8!",
-                "new_password_confirmation": "Replacement-Pass8!",
+                "new_password": "Ab1!",
+                "new_password_confirmation": "Ab1!",
             },
         )
 
@@ -126,7 +126,7 @@ def test_password_reset_request_is_non_enumerating_and_confirm_revokes_sessions(
     assert resets.requests[1]["username"] == ""
     assert status == 200
     assert result["message"].startswith("密码已重置")
-    assert portal._verify_credentials("engineer", "Replacement-Pass8!") is True
+    assert portal._verify_credentials("engineer", "Ab1!") is True
     assert access.session_version("engineer") == 1
     assert resets.invalidated == ["engineer"]
     assert resets.notifications == ["engineer@example.com"]
@@ -149,8 +149,8 @@ def test_password_reset_cannot_open_login_for_an_unfinished_account(tmp_path, mo
         known = _post(server, "/api/auth/password-reset/request", {"email": "engineer@example.com"})
         unknown = _post(server, "/api/auth/password-reset/request", {"email": "missing@example.com"})
         status, _ = _post(server, "/api/auth/password-reset/confirm", {
-            "token": "valid-reset-token-that-is-long-enough", "new_password": "Replacement-Pass8!",
-            "new_password_confirmation": "Replacement-Pass8!",
+            "token": "valid-reset-token-that-is-long-enough", "new_password": "Ab1!",
+            "new_password_confirmation": "Ab1!",
         })
     assert known == unknown and known[0] == 202
     assert all(not request["username"] for request in resets.requests)
