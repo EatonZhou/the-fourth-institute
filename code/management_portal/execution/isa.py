@@ -86,7 +86,26 @@ def _stored_fields(values: dict[str, Any]) -> dict[str, Any]:
     secret = stored.get("api_key_file")
     if secret is not None and not Path(str(secret)).is_absolute():
         raise invalid("secret_file 必须是绝对路径")
+    if "models" in stored:
+        _validate_models(stored["models"])
     return stored
+
+
+def _validate_models(models: Any) -> None:
+    # Only the shape that readers index by is checked; other per-model
+    # metadata (aliases, support_efforts, supported_parameters…) passes through.
+    if not isinstance(models, list) or not all(
+        isinstance(model, dict) and isinstance(model.get("id"), str)
+        and model["id"] and model["id"] == model["id"].strip() for model in models
+    ):
+        raise invalid("models 必须是数组，每项是含 id 的对象；id 非空且不含首尾空白")
+    ids = [model["id"] for model in models]
+    if len(set(ids)) != len(ids):
+        raise invalid("models 中的模型 id 不能重复")
+    for model in models:
+        efforts = model.get("reasoning_efforts", [])
+        if not isinstance(efforts, list) or not all(isinstance(value, str) and value.strip() for value in efforts):
+            raise invalid(f"模型 {model['id']} 的 reasoning_efforts 必须是字符串数组")
 
 
 def list_model_apis(inv: Invocation) -> dict[str, Any]:

@@ -1,4 +1,20 @@
 {
+  "模型列表（可选，JSON 数组）": {
+    "zh-CN": "模型列表（可选，JSON 数组）",
+    "en": "Models (optional, JSON array)"
+  },
+  "声明这个接口提供的模型。每项的 id 是模型名称，reasoning_efforts 是该模型接受的推理强度；声明后，直连这个接口的 Resident 可在对话设置中选择。列表需包含上面的模型名称；留空则不声明。": {
+    "zh-CN": "声明这个接口提供的模型。每项的 id 是模型名称，reasoning_efforts 是该模型接受的推理强度；声明后，直连这个接口的 Resident 可在对话设置中选择。列表需包含上面的模型名称；留空则不声明。",
+    "en": "Declare the models this API offers. Each item's id is the model name, and reasoning_efforts lists the reasoning efforts that model accepts; once declared, Residents calling this API directly can choose them in their conversation settings. The list must include the model name above; leave it empty to declare none."
+  },
+  "模型列表必须是 JSON 数组。": {
+    "zh-CN": "模型列表必须是 JSON 数组。",
+    "en": "The model list must be a JSON array."
+  },
+  "模型列表需要包含上面填写的模型名称。": {
+    "zh-CN": "模型列表需要包含上面填写的模型名称。",
+    "en": "The model list must include the model name entered above."
+  },
   "服务账号": {
     "zh-CN": "服务账号",
     "en": "Service account"
