@@ -5029,7 +5029,7 @@
     const draw = () => {
       const block = functionBlockInstanceById(blockId);
       if (!block) { root.textContent = window.PortalI18n.t("这个 Function Block 已不在 Lineage 中。"); return; }
-      setLabel(pane === "objects" ? "内部对象" : pane === "issues" ? "问题" : block.title || window.PortalI18n.t("Function Block"));
+      setLabel(pane === "objects" ? window.PortalI18n.t("内部对象") : pane === "issues" ? window.PortalI18n.t("问题") : block.title || window.PortalI18n.t("Function Block"));
       const roles = familyRoles(block);
       const readonly = state.programMutationInFlight;
       const failures = functionBlockInstanceFailures(block);
