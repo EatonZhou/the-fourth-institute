@@ -1,7 +1,5 @@
 # SPEC.md
 
-当前发行版不提供 Project Board／Project Page 页面或 `/projects/` 路由；项目资源、项目归属与知识筛选仍保留。旧页面设计仅作历史参考，不属于以下现行设计索引。
-
 - [Dev / Release 双工作树与快速发布](docs/design/local-development.md)
 - [macOS 桌面安装与数据归属](docs/design/macos-desktop.md)
 
@@ -36,7 +34,7 @@
 - [HATG ISA：运行环境指令](/r/decision_4527448ad07f)
 - [HATG ISA：指令集自描述指令](/r/decision_aa4fdbac8364)
 - [Portal 身份认证与领域授权架构](/r/decision_3fe3cca8fd95)
-- [Portal 权限系统：PAR 引擎架构与开关](/r/decision_b820faf42218)（资源列表、搜索联想和项目导航按各对象的读取权限过滤；项目拒绝覆盖其资源、Lineage 与 Resident，直接读取遵循同一判定。）
+- [Portal 权限系统：PAR 引擎架构与开关](/r/decision_b820faf42218)
 - [Portal 权限默认方案：P、A、R 三棵树与表规则](/r/decision_600ae27b0538)
 - [Portal 根身份、消息署名与异步执行归属](/r/decision_ae422b92c6f3)
 - [Portal 用户身份与领域业务关系](/r/decision_34158fdd4078)
@@ -139,7 +137,7 @@
 - [Portal Overlay、表单与 Toolbar 通用交互](/r/decision_b3022c27d22f)
 - [Portal 全局资源搜索](/r/decision_a144bf700017)
 - [Portal UI Association 的服务端存储与并发](/r/decision_bd179998ba08)
-- [Portal Workbench 模块与运行架构](/r/decision_4348ed990621)（工作台目录、内置入口和直接读取均遵循工作台资源的读取权限；内置身份不豁免项目拒绝。所属项目可经 UpdateResource 的 project_ids 修改，须有目标项目管理权限，沿用修订与显式发布流程。）
+- [Portal Workbench 模块与运行架构](/r/decision_4348ed990621)
 - [Portal 中英文界面与语言偏好](/r/decision_27253e25f016)
 - [Portal Workbench 与 Panel Package 组合协议](/r/decision_538e155e1102)
 - [Lineage 个性化前端投影：公共绑定、身份创建、生成提交恢复、有界资源读取与双向演化](/r/decision_f67ae5e70793)

@@ -217,12 +217,13 @@ class ResidentWatchboardTest(unittest.TestCase):
 
         def allows(actor, instruction, arguments=None):
             asked.append((instruction, dict(arguments or {})))
-            return instruction == "TriggerEvent"
+            return instruction in {"GetResident", "TriggerEvent"}
 
         with mock.patch.object(lineage_access_policy, "path_resource", return_value=owned), \
                 mock.patch.object(permission_system, "allows", side_effect=allows):
             board = backend.get_resident_watchboard(self.record["resident_id"], "CASE-A")["watchboard"]
         self.assertEqual(board["permissions"], {"can_run": True, "can_edit_config": False})
+        self.assertIn(("GetResident", {"resident_id": self.record["resident_id"]}), asked)
         self.assertTrue(board["configs"] and not any(config["editable"] for config in board["configs"]))
         self.assertIn(("UpdateWorkspaceFile", {"address": board["configs"][0]["address"]}), asked)
         self.assertIn("TriggerEvent", {name for name, _ in asked})

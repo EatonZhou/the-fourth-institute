@@ -659,10 +659,11 @@ def test_tau_adapter_preserves_live_speed_when_sending_existing_resident(configu
     })
     adapter = runner_adapters.TauAdapter(tau.TauConfig(tmp_path / "storage.json"), invoke, lambda _storage: target, assignments=configured.assignments)
     result = adapter.execute(
-        run_id="testrun_0123456789abcdef", planned={"module": "workbench.panels", "case_id": "test_0123456789ab"},
+        run_id="testrun_0123456789abcdef", planned={"module": "workbench.panels", "case_id": "test_0123456789ab",
+                                                  "implementation": {"task_prompt": "检查速度配置。"}},
         run_dir=tmp_path, actor="resident_aaaaaaaaaaaa", emit=mock.Mock(), cancelled=lambda: False,
     )
-    assert result.status == "passed"
+    assert result.status == "passed", result.details
     invoke.assert_called_once()
     assert "service_tier" not in invoke.call_args.kwargs["runtime_options"]
     from management_portal.society_service.resident_runtime_payload import runtime_settings_updates_from_payload

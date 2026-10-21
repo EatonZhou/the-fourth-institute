@@ -91,13 +91,16 @@ def test_startup_repair_supports_both_previews_and_preserves_state(installed, mo
         target.write_bytes(payload.read_bytes())
         (platform / 'windows-package.json').write_text(json.dumps({'source_commit': startup.VERSIONS[1]}))
     updates = []
-    for relative, _, new_hash in startup.UPDATES:
+    for relative, _, _ in startup.UPDATES:
         original = ('original ' + relative).encode()
         destination = platform / 'code' / relative
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_bytes(original)
-        (bundle / Path(relative).name).write_bytes((source / relative).read_bytes())
-        updates.append((relative, hashlib.sha256(original).hexdigest(), new_hash))
+        content = (source / relative).read_bytes()
+        (bundle / Path(relative).name).write_bytes(content)
+        # The real repair pins a historical bundle; this fixture supplies current
+        # code and must declare that payload's digest without changing the pins.
+        updates.append((relative, hashlib.sha256(original).hexdigest(), hashlib.sha256(content).hexdigest()))
     monkeypatch.setattr(startup, 'UPDATES', updates)
     state = (root / 'installation.json').read_bytes()
     assert startup.repair_install(platform, bundle) == 'repaired'

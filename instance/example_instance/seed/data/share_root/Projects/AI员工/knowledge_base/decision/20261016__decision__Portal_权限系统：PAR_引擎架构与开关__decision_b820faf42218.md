@@ -4,44 +4,45 @@ type: decision
 project: AI员工
 created_at: '2026-10-16'
 version:
-  number: 69
-  created_at: '2026-10-16T09:28:31Z'
+  number: 70
+  created_at: "2026-10-16T09:28:31Z"
   created_by:
-    user: tfi-exported-user
-    agent: resident_0d928ae486ba
-  updated_at: '2026-10-19T19:43:58Z'
+    user: "weihao"
+    agent: "resident_0d928ae486ba"
+  updated_at: "2026-10-21T14:14:56Z"
   updated_by:
-    user: tfi-exported-user
-    agent: resident_865c3c24f251
+    user: ""
+    agent: "resident_977d1a613d44"
 importance: 9
 metaness: 3
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/permission_system/__init__.py
-  - ${code_root}/management_portal/permission_system/inline.py
-  - ${code_root}/management_portal/permission_system/categories.py
-  - ${code_root}/management_portal/permission_system/par.py
-  - ${code_root}/management_portal/permission_system/engine/__init__.py
-  - ${code_root}/management_portal/permission_system/engine/model.py
-  - ${code_root}/management_portal/permission_system/engine/decision.py
-  - ${code_root}/management_portal/permission_system/engine/store.py
-  - ${code_root}/management_portal/permission_system/scheme/compiler.py
-  - ${code_root}/management_portal/permission_system/scheme/vocabulary.py
-  - ${code_root}/management_portal/permission_system/scheme/repository.py
-  - ${code_root}/management_portal/permission_system/scheme/builtin/default.json
-  - ${code_root}/management_portal/permission_system/facts.py
-  - ${code_root}/management_portal/permission_system/requests.py
-  - ${code_root}/management_portal/permission_system/temporary.py
-  - ${code_root}/management_portal/permission_system/management.py
-  - ${code_root}/management_portal/permission_system/schemes.py
-  - ${code_root}/management_portal/permission_system/authdiff.py
-  - ${code_root}/management_portal/hatg/catalog/permission.py
-  - ${code_root}/management_portal/society_service/isa/system_workflows.py
-  - ${code_root}/tests/cases/test_permission_engine.py
-  - ${code_root}/tests/cases/test_permission_system_switch.py
-  - ${code_root}/tests/cases/test_permission_schemes.py
+  - /home/dirty-base/dirtybase-portal/management_portal/permission_system/__init__.py
+  - /home/dirty-base/dirtybase-portal/management_portal/permission_system/inline.py
+  - /home/dirty-base/dirtybase-portal/management_portal/permission_system/categories.py
+  - /home/dirty-base/dirtybase-portal/management_portal/permission_system/par.py
+  - /home/dirty-base/dirtybase-portal/management_portal/permission_system/engine/__init__.py
+  - /home/dirty-base/dirtybase-portal/management_portal/permission_system/engine/model.py
+  - /home/dirty-base/dirtybase-portal/management_portal/permission_system/engine/decision.py
+  - /home/dirty-base/dirtybase-portal/management_portal/permission_system/engine/store.py
+  - /home/dirty-base/dirtybase-portal/management_portal/permission_system/scheme/compiler.py
+  - /home/dirty-base/dirtybase-portal/management_portal/permission_system/scheme/vocabulary.py
+  - /home/dirty-base/dirtybase-portal/management_portal/permission_system/scheme/repository.py
+  - /home/dirty-base/dirtybase-portal/management_portal/permission_system/scheme/builtin/default.json
+  - /home/dirty-base/dirtybase-portal/management_portal/permission_system/facts.py
+  - /home/dirty-base/dirtybase-portal/management_portal/permission_system/requests.py
+  - /home/dirty-base/dirtybase-portal/management_portal/permission_system/temporary.py
+  - /home/dirty-base/dirtybase-portal/management_portal/permission_system/management.py
+  - /home/dirty-base/dirtybase-portal/management_portal/permission_system/schemes.py
+  - /home/dirty-base/dirtybase-portal/management_portal/permission_system/authdiff.py
+  - /home/dirty-base/dirtybase-portal/management_portal/hatg/catalog/permission.py
+  - /home/dirty-base/dirtybase-portal/management_portal/society_service/isa/system_workflows.py
+  - /home/dirty-base/dirtybase-portal/tests/cases/test_permission_engine.py
+  - /home/dirty-base/dirtybase-portal/tests/cases/test_permission_system_switch.py
+  - /home/dirty-base/dirtybase-portal/tests/cases/test_permission_schemes.py
   related:
+  - thinking_3cbdd375ebf8
   - decision_600ae27b0538
   - decision_22227d0ad075
   - decision_ea13b85216d0
@@ -50,8 +51,13 @@ links:
   - decision_4527448ad07f
   - decision_bd5217d08c09
   - decision_44cf587c1721
-  supersedes: []
-  derived_from: []
+  supersedes:
+  - decision_67b7e8951599
+  - decision_707d2910d389
+  - decision_0fbbd0448003
+  - plan_ce8d3c73ac2d
+  derived_from:
+  - thinking_3cbdd375ebf8
 ---
 
 # Portal 权限系统：PAR 引擎架构与开关
@@ -102,7 +108,7 @@ Portal 业务层（ISA 内核、领域服务、页面入口、ResourceService）
 
 - 一次调用能否执行：`authorize_instruction`、`authorize_reads`、`readable_ids`。
 - `permitted(actor, 指令, 参数, 资源列表)`：只判定该指令声明在这个参数上的判定槽，逐个资源给出能否通过；`permitted_ids` 返回能通过的资源集合。例如列表中每个 Lineage 的按钮问 UpdateLineage、DeleteLineage 等指令的 `lineage_id`；Workspace 文件按它所属的 Workspace 判定，读问 ReadResource、写问 UpdateWorkspaceFile 的 `address`（第 5.5 节）；Workbench 目录按 GetProject 过滤可读 Project。指令的固定槽（例如对“Portal 运维”的 `@admin`）先判定，不通过时所有资源都不通过；没有判定槽在这个参数上时按固定槽的结果给出。
-- `allows(actor, 指令, 参数)`：按完整调用判定，供页面开关和设置项使用；`allows_each` 对同一组参数一次给出多条指令的结果。**页面上的一个按钮只问它自己那条指令**（TFI portal 2026-10-18）：对象的列表或详情结果带 `allows: {指令名: bool}`，按钮按点击时实际调用的指令显示或停用，不用一个 `can_manage` 代表多个按钮，也不借用另一条指令的结果。当前带 `allows` 的结果：GetPermissionSystem（方案的四条写指令按启用方案判定；表项的三条写指令按每行的 r 判定，这里恒为 true，按钮看 ListPermissionEntries 的 `allows`）、Lineage 列表（UpdateLineage、DeleteLineage、CreateResident、UpdateResident、CreateWorkspaceHandoff）、Resident 会话投影（DeliverMessage、UpdateResidentSettings、OpenIntake（打开与关闭接单共用）、RestartSession、CancelInput、UpdateResident、DeleteResident，以及在本 Lineage 中分支的 ForkResident；输入框能否发送也取 DeliverMessage）、定时与自动触发监控的每一行（UpdateComponent、PauseComponent（暂停与恢复共用）、TriggerEvent、CancelScriptRun、UpdateResidentSettings、CancelInput）、Workbench（UpdateResource）、给出 `r` 的 ListPermissionEntries（在这个 r 上的 CreatePermissionEntry、DeletePermissionEntry，供项目与 Lineage 菜单的授予和删除按钮）、Workspace 文件预览（保存按钮的 UpdateWorkspaceFile）。页面已改读 `allows`，`can_manage` 已从全部结果中删除；会话投影、Resident 文件夹和 Workspace 文件预览中的 `permissions`（`can_edit_resident_file`、`can_create_fork`、`can_edit_task_folder`）也已删除：预览保存只看 `allows.UpdateWorkspaceFile`，且文件必须有 Workspace 地址；消息菜单的分支入口要求后端支持分支（`backend_capabilities.portal_fork`）且 `allows.ForkResident` 为 true。`/api/me` 的 `access.allows` 报告 CreateUser、GetExecutionSettings、UpdateExecutionSettings（只问权限系统开关，即参数 `permission_system_enabled`）、ActivatePermissionScheme、UpdateProviderAccount、OpenTerminal、ListResourceTypes、UpdateResourceType、ListProviders、ListProviderAccounts（另有调用者自己的 `user_category`），管理页入口、执行设置、账号调度表单和 Society 页面的终端组件据此显示；对 Portal 管理员，UpdateExecutionSettings 与 ActivatePermissionScheme 两项永远为 true（Portal 管理员保底）；管理页用户表单（包括 User 分类）按该行的 `allows.UpdateUser` 判断，为 false 时只读，管理员名单相关字段仍须结合 `user_category` 限制，见本节保底规则；执行设置在服务端同样按 Get/UpdateExecutionSettings 判定；修改账号状态问 DeleteUser；把运行身份设为其他 User 问对该 User 的 UpdateUser；每个打开 Terminal 的入口问 OpenTerminal。
+- `allows(actor, 指令, 参数)`：按完整调用判定，供页面开关和设置项使用；`allows_each` 对同一组参数一次给出多条指令的结果。**页面上的一个按钮只问它自己那条指令**（weihao 2026-10-18）：对象的列表或详情结果带 `allows: {指令名: bool}`，按钮按点击时实际调用的指令显示或停用，不用一个 `can_manage` 代表多个按钮，也不借用另一条指令的结果。当前带 `allows` 的结果：GetPermissionSystem（方案的四条写指令按启用方案判定；表项的三条写指令按每行的 r 判定，这里恒为 true，按钮看 ListPermissionEntries 的 `allows`）、Lineage 列表（UpdateLineage、DeleteLineage、CreateResident、UpdateResident、CreateWorkspaceHandoff）、Resident 会话投影（DeliverMessage、UpdateResidentSettings、OpenIntake（打开与关闭接单共用）、RestartSession、CancelInput、UpdateResident、DeleteResident，以及在本 Lineage 中分支的 ForkResident；输入框能否发送也取 DeliverMessage）、定时与自动触发监控的每一行（UpdateComponent、PauseComponent（暂停与恢复共用）、TriggerEvent、CancelScriptRun、UpdateResidentSettings、CancelInput）、Workbench（UpdateResource）、给出 `r` 的 ListPermissionEntries（在这个 r 上的 CreatePermissionEntry、DeletePermissionEntry，供项目与 Lineage 菜单的授予和删除按钮）、Workspace 文件预览（保存按钮的 UpdateWorkspaceFile）。页面已改读 `allows`，`can_manage` 已从全部结果中删除；会话投影、Resident 文件夹和 Workspace 文件预览中的 `permissions`（`can_edit_resident_file`、`can_create_fork`、`can_edit_task_folder`）也已删除：预览保存只看 `allows.UpdateWorkspaceFile`，且文件必须有 Workspace 地址；消息菜单的分支入口要求后端支持分支（`backend_capabilities.portal_fork`）且 `allows.ForkResident` 为 true。`/api/me` 的 `access.allows` 报告 CreateUser、GetExecutionSettings、UpdateExecutionSettings（只问权限系统开关，即参数 `permission_system_enabled`）、ActivatePermissionScheme、UpdateProviderAccount、OpenTerminal、ListResourceTypes、UpdateResourceType、ListProviders、ListProviderAccounts（另有调用者自己的 `user_category`），管理页入口、执行设置、账号调度表单和 Society 页面的终端组件据此显示；对 Portal 管理员，UpdateExecutionSettings 与 ActivatePermissionScheme 两项永远为 true（Portal 管理员保底）；管理页用户表单（包括 User 分类）按该行的 `allows.UpdateUser` 判断，为 false 时只读，管理员名单相关字段仍须结合 `user_category` 限制，见本节保底规则；执行设置在服务端同样按 Get/UpdateExecutionSettings 判定；修改账号状态问 DeleteUser；把运行身份设为其他 User 问对该 User 的 UpdateUser；每个打开 Terminal 的入口问 OpenTerminal。
 - `users_permitted(指令, 参数, 资源)`：启用方案实例中让这条指令在该资源上通过的、未停用且不过期的表项所点名的活跃 User，Lineage 自动失败通知按 UpdateLineage 取收件人；表项写在 User 分类节点上时，该分类的每个 User 都算在内，写在更上层节点（全部 User、全部主体）上的不点名任何人。关闭时没有权限系统可问，返回 None；失败通知模块此时把通知发给 Lineage 的创建 User，这是通知模块自己的回退。
 - `user_categories()`、`user_category(用户名)`、`set_user_category(...)`：User 分类这项事实，保存在账号记录的 `category` 字段，开关开或关都可读写（UpdateUser 的 `changes.category`，第 3.3 节）。设为或取消 Portal 管理员只有 Portal 管理员能做（下文“Portal 管理员保底”）；一般用户与实习用户之间的调整关闭时已登录主体都能做，开启时按方案判定。用户列表和 `/api/me` 读取它。
 
@@ -110,27 +116,27 @@ Portal 业务层（ISA 内核、领域服务、页面入口、ResourceService）
 
 能通过 UpdateExecutionSettings 的主体在“执行设置”的“权限”分组切换开关，对应该指令的 `permission_system_enabled`，保存在 `execution_runtime.service_settings`。每个进程最多 3 秒后读到新值，读取失败时沿用上次的值，从未读到时按开启处理。
 
-**Portal 管理员保底**（TFI portal 2026-10-19，da10d535）。权限方案可以把任何主体挡在外面，包括写方案的人自己。开关因此可以直接打开：不做打开前的调用回放、不做推算，也不做打开后的观察机制（第 5.10 节仍是预留），保底是一条独立于方案的 Portal 管理员规则。它和“关闭时个人 AMA 归所有者”是方案之外仅有的两条判定；前者开关开或关、启用哪套方案都一样，由端口在方案之前判定，方案无法收回：
+**Portal 管理员保底**（weihao 2026-10-19，da10d535）。权限方案可以把任何主体挡在外面，包括写方案的人自己。开关因此可以直接打开：不做打开前的调用回放、不做推算，也不做打开后的观察机制（第 5.10 节仍是预留），保底是一条独立于方案的 Portal 管理员规则。它和“关闭时个人 AMA 归所有者”是方案之外仅有的两条判定；前者开关开或关、启用哪套方案都一样，由端口在方案之前判定，方案无法收回：
 
-- Portal 管理员永远可以开关权限系统（UpdateExecutionSettings 只改 `permission_system_enabled`），永远可以读取方案列表（ListPermissionSchemes）和启用方案（ActivatePermissionScheme）。这是一条放行：管理员做这三件事时入口检查、`allows`、编辑器按钮、CheckPermission 和设置处理代码都不问引擎（CheckPermission 返回 `portal_admin: true`、`requests` 为空）。读取方案列表在保底内（9c94 按 TFI portal“无论方案怎么设置，管理员永远能切换方案”定，2026-10-19）：执行设置的方案下拉框靠它列出可选方案，读不到时启用的保底在页面上不成立；它只读，没有风险。只加这一条读指令，读取单个方案（GetPermissionScheme）等其余权限指令仍按方案判定。需要所有人都不受限时，出口仍是关闭开关。同一次调用里还有其他设置项时，整次调用按方案判定。非管理员照常按方案判定，开关关闭时照常放行。
+- Portal 管理员永远可以开关权限系统（UpdateExecutionSettings 只改 `permission_system_enabled`），永远可以读取方案列表（ListPermissionSchemes）和启用方案（ActivatePermissionScheme）。这是一条放行：管理员做这三件事时入口检查、`allows`、编辑器按钮、CheckPermission 和设置处理代码都不问引擎（CheckPermission 返回 `portal_admin: true`、`requests` 为空）。读取方案列表在保底内（9c94 按 weihao“无论方案怎么设置，管理员永远能切换方案”定，2026-10-19）：执行设置的方案下拉框靠它列出可选方案，读不到时启用的保底在页面上不成立；它只读，没有风险。只加这一条读指令，读取单个方案（GetPermissionScheme）等其余权限指令仍按方案判定。需要所有人都不受限时，出口仍是关闭开关。同一次调用里还有其他设置项时，整次调用按方案判定。非管理员照常按方案判定，开关关闭时照常放行。
 - 管理员名单只有 Portal 管理员能改：把其他 User 设为或取消 Portal 管理员，停用、启用或删除管理员账号（删除或停用管理员等同于取消其管理员身份）；不能对自己做。开关关闭时同样只有管理员能改，这推翻了 10-18“关闭时谁都能改分类、本人能改自己的分类”中涉及管理员的部分。管理员做这类只改名单的调用（UpdateUser 的 `changes` 只含 `category`、`status`，或删除管理员）时也不问方案；非管理员一律以 `instruction.forbidden` 拒绝。一般用户与实习用户之间的调整不在名单之内，按方案判定，关闭时放行。管理员不能取消自己，但两位管理员可能同时互相停用；所以名单变更的检查和写入在同一个账号事务里进行，持有 identity 锁（`administrators.list_change`），并发的变更依次判定，后一个看到前一个的写入。取消管理员的写入完成后，如果已经没有启用中的 Portal 管理员，整次回滚。删除管理员时先在这个事务里停用账号，其余删除步骤（包括调用 SocietyService）在事务之后进行。管理员只能是 User，Resident 没有分类，永远不是管理员。
 - 新部署时第一个创建的账号在同一事务中成为 Portal 管理员，不论它来自设置链接、普通邀请还是 CreateUser；已删除账号留下的记录也算账号。首个管理员设置链接只在 Portal 还没有任何账号时可用，自己不授予任何东西，管理员身份来自这条规则。
 - 名单仍保存在账号记录的 `category = portal_admin`，方案的 `@portal_admins` 节点照旧从它收人；保底只决定谁能设、清 `portal_admin`，以及上面两条无条件放行。
-- 已知边界：保底只管管理员名单、开关和启用方案。开关关闭时，管理员账号的密码、访问令牌和找回邮箱与其他账号一样，任何已登录主体都能修改（ResetUserPassword、CreateUserAccessToken、UpdateUser 改 `recovery_email`、RevokeUserSessions）。TFI portal 2026-10-19 确认不收紧，这些账号凭据和找回方式不并入保底。
+- 已知边界：保底只管管理员名单、开关和启用方案。开关关闭时，管理员账号的密码、访问令牌和找回邮箱与其他账号一样，任何已登录主体都能修改（ResetUserPassword、CreateUserAccessToken、UpdateUser 改 `recovery_email`、RevokeUserSessions）。weihao 2026-10-19 确认不收紧，这些账号凭据和找回方式不并入保底。
 
 规则集中在 `permission_system/administrators.py`，不加载引擎。GetInstructionSchema 的 `permission.portal_admin` 对 UpdateExecutionSettings、ListPermissionSchemes、ActivatePermissionScheme、UpdateUser、DeleteUser 写出这条保底，开关关闭时也写。
 
-**关闭就是没有权限系统**（TFI portal 2026-10-18）。端口不导入引擎，只检查已登录（有效的 User、Resident 或 Portal 自身）、目标不是别人的个人 AMA，以及上面的管理员名单规则。其余一律放行，包括 OpenTerminal；指令声明中没有按 User 分类的例外，GetInstructionSchema 的 `permission` 报告不需要权限（Portal 管理员保底照样写出）。一般用户与实习用户之间的分类调整同样放行（TFI portal 2026-10-18），开启时由方案对 UpdateUser 的要求判定。`allows` 对已登录主体都为真；`permitted` 收到资源的登记所有者（`owners`）时，只有所有者、代表所有者的 Resident 和 Portal 自身通过（`acts_for`），其他资源对已登录主体都通过；`private_reaches(actor, 所有者)` 与 `hidden_private(actor, 记录)` 给领域代码回答同一条规则。个人 AMA 在关闭时仍归所有者，因为它装的是一个人的私人对话、文件和凭据：关闭开关是管理员为了修复方案或排障而做的操作，不应顺带把每个人的私人空间公开给所有已登录主体。开启时这条规则由方案的树表达（第 5.5 节），端口不再拦截，`owners` 参数不起作用；`private_reaches(actor, 所有者, 读指令, 参数, 资源)` 改为问这条读指令（Lineage 问 GetLineage，Resident 问 GetResident），所以列表、目录和监控按同一读判定隐去调用者读不到的个人 AMA，Portal 管理员的列表中也没有别人的 AMA。这类过滤调用 `readable_ids`，被过滤掉的对象不写“permission refused”日志。
+**关闭就是没有权限系统**（weihao 2026-10-18）。端口不导入引擎，只检查已登录（有效的 User、Resident 或 Portal 自身）、目标不是别人的个人 AMA，以及上面的管理员名单规则。其余一律放行，包括 OpenTerminal；指令声明中没有按 User 分类的例外，GetInstructionSchema 的 `permission` 报告不需要权限（Portal 管理员保底照样写出）。一般用户与实习用户之间的分类调整同样放行（weihao 2026-10-18），开启时由方案对 UpdateUser 的要求判定。`allows` 对已登录主体都为真；`permitted` 收到资源的登记所有者（`owners`）时，只有所有者、代表所有者的 Resident 和 Portal 自身通过（`acts_for`），其他资源对已登录主体都通过；`private_reaches(actor, 所有者)` 与 `hidden_private(actor, 记录)` 给领域代码回答同一条规则。个人 AMA 在关闭时仍归所有者，因为它装的是一个人的私人对话、文件和凭据：关闭开关是管理员为了修复方案或排障而做的操作，不应顺带把每个人的私人空间公开给所有已登录主体。开启时这条规则由方案的树表达（第 5.5 节），端口不再拦截，`owners` 参数不起作用；`private_reaches(actor, 所有者, 读指令, 参数, 资源)` 改为问这条读指令（Lineage 问 GetLineage，Resident 问 GetResident），所以列表、目录和监控按同一读判定隐去调用者读不到的个人 AMA，Portal 管理员的列表中也没有别人的 AMA。这类过滤调用 `readable_ids`，被过滤掉的对象不写“permission refused”日志。
 
 关闭期间方案和实例照常可以查看和编辑，只是不在当前系统中生效。全部权限指令（第 3.7 节）在两种模式下由同一份代码处理，区别只在调用者校验：开启时按指令的判定槽与启用方案的分类判定，关闭时任何已登录主体都可以调用，不检查调用者在实例上的权限。方案的创建、修改、删除和启用与开启时相同，编译错误和版本冲突的返回也相同；ActivatePermissionScheme 只记录开启时使用哪套方案，并报告开启时补齐将新增、移动、删除多少节点和表项；GetPermissionSystem 返回 `enabled: false`、`mode: open` 和这套方案，方案列表与读取也把它标为启用。表项写入启用方案（或指定方案）保存的实例，开启时随实例生效；GetPermissionNode、SearchPermissionNodes、ListPermissionEntries 读取的也是这份实例。关闭期间对象变化不维护实例（只记录创建者），所以实例中缺少关闭期间新建的对象，开启时补齐。理由是关闭期间任何已登录主体都能修改并启用方案，方案能改变全部规则，单独收紧表项不增加保护；开启开关的人可以用 ListPermissionEntries 和 ActivatePermissionScheme 的 dry_run 查看将生效的实例。临时凭证照常签发、续期和撤销，写入这份实例，开启后生效；有效权限、试判定和临时凭证列表按这份实例作答。
 
 开启前，在开关仍关闭时由 ResourceService 把启用方案的实例补齐到全部现有对象（RPC `permission.prepare`），然后写入开关；方案从未生成实例、或实例由另一版规则生成时，改为按现有对象生成。
 
-开关保持开启（TFI portal 2026-10-19，2575e9af 走查时打开）。WALL 与 Test 归在 AI员工 Project 下，开启后其他 Project 的 Resident 对它们只有 viewer：不为此加实例中的编辑，也不把这些 Resident 加入 AI员工；需要写入时，由有权限的主体签发临时凭证（第 3.6 节）。
+开关保持开启（weihao 2026-10-19，2575e9af 走查时打开）。WALL 与 Test 归在 AI员工 Project 下，开启后其他 Project 的 Resident 对它们只有 viewer：不为此加实例中的编辑，也不把这些 Resident 加入 AI员工；需要写入时，由有权限的主体签发临时凭证（第 3.6 节）。
 
 ### 3.2 请求适配层
 
-一条 ISA 指令按它声明的判定槽拆成一组请求（TFI portal 2026-10-19）。判定槽写在指令声明的 `decides` 中（decision_898b8911a2ff“声明格式”），随代码发布：参数槽按参数所指的对象判定，可带类型限定、`optional`、`via`（按已保存记录的字段判定）或 `place`（按新对象将要落下的位置判定）；固定槽不指向对象。每个判定槽是一个 A 元素：指令只有一个槽时，元素就是指令名；有多个槽时，元素是 `指令:参数` 或 `指令:固定槽名`。方案只给 A 元素分类：把它放在一个 A 树分类节点下，固定槽另指定一个 R 树分类节点（例如默认方案中 CreateUser 在“管理”下、对“共享”判定）。参数槽所指的每个资源（地址取根 ID，列表取每一项）是一个 r，资源类型不符或必填参数缺失时返回 `instruction.invalid_arguments`。拥有服务可以在判定前补上调用者能省略、由服务推导的参数（`OwnerBinding.authorization_arguments`），记录的调用和处理代码仍用调用者给出的参数：目前只有 RunScript，按运行所属的 Lineage 判定，这个 Lineage 与处理代码使用的由同一个函数确定（decision_8b510cbd9c58）。方案没有分类的 A 元素放在 A 树的默认节点下，没有分类的固定槽按 R 树的默认节点判定，参数槽仍按声明拆出对象：默认方案为“未归类”和“共享”，只有管理员表项覆盖，新增指令忘记分类时只有管理员能用。所有人都能调用的指令必须显式放在免检节点下（默认方案写成 `{"a": "@free", "r": "@portal"}`）。编译后的方案对有未归类元素的指令，`describe` 带 `unmapped: true`；GetPermissionScheme 与方案指令的 `dry_run` 列出未归类的 A 元素。一组请求在一次引擎调用中判定，全部允许才放行；读指令被拒时报告 `instruction.not_found`，写指令报告 `instruction.forbidden`，details 带目标、动作、要求挂靠的 A 节点（`a`）和原因（`no_permit` 或 `denied`）。CancelInput 要求对目标 Resident 有 `@contributor`，输入的发起人不另外放行。
+一条 ISA 指令按它声明的判定槽拆成一组请求（weihao 2026-10-19）。判定槽写在指令声明的 `decides` 中（decision_898b8911a2ff“声明格式”），随代码发布：参数槽按参数所指的对象判定，可带类型限定、`optional`、`via`（按已保存记录的字段判定）或 `place`（按新对象将要落下的位置判定）；固定槽不指向对象。每个判定槽是一个 A 元素：指令只有一个槽时，元素就是指令名；有多个槽时，元素是 `指令:参数` 或 `指令:固定槽名`。方案只给 A 元素分类：把它放在一个 A 树分类节点下，固定槽另指定一个 R 树分类节点（例如默认方案中 CreateUser 在“管理”下、对“共享”判定）。参数槽所指的每个资源（地址取根 ID，列表取每一项）是一个 r，资源类型不符或必填参数缺失时返回 `instruction.invalid_arguments`。拥有服务可以在判定前补上调用者能省略、由服务推导的参数（`OwnerBinding.authorization_arguments`），记录的调用和处理代码仍用调用者给出的参数：目前只有 RunScript，按运行所属的 Lineage 判定，这个 Lineage 与处理代码使用的由同一个函数确定（decision_8b510cbd9c58）。方案没有分类的 A 元素放在 A 树的默认节点下，没有分类的固定槽按 R 树的默认节点判定，参数槽仍按声明拆出对象：默认方案为“未归类”和“共享”，只有管理员表项覆盖，新增指令忘记分类时只有管理员能用。所有人都能调用的指令必须显式放在免检节点下（默认方案写成 `{"a": "@free", "r": "@portal"}`）。编译后的方案对有未归类元素的指令，`describe` 带 `unmapped: true`；GetPermissionScheme 与方案指令的 `dry_run` 列出未归类的 A 元素。一组请求在一次引擎调用中判定，全部允许才放行；读指令被拒时报告 `instruction.not_found`，写指令报告 `instruction.forbidden`，details 带目标、动作、要求挂靠的 A 节点（`a`）和原因（`no_permit` 或 `denied`）。CancelInput 要求对目标 Resident 有 `@contributor`，输入的发起人不另外放行。
 
 ### 3.3 事实适配层
 
@@ -158,11 +164,11 @@ Portal 业务层（ISA 内核、领域服务、页面入口、ResourceService）
 
 ### 3.5 规则编译器与方案仓库
 
-方案规则是一份 JSON 数据（新写入 `tfi.permission-scheme.v2`，读取仅接受该精确格式），顶层只有 `schema`、`scheme_id`、`title`、`description`、`trees`、`entries`、`instructions`：三棵树的声明节点、表规则、A 元素的分类。树上的节点分两类：**分类节点**是固定集合，例如“共享”“管理（admin）”；**规则节点**带 `each`，表示“每个某类对象”，并写一条放置规则（第 5.9 节）：`under` 写放在哪类关系对象之下（例如 R 树中“每个 Project”下的“每个 Lineage”写 `under: project`），`otherwise` 写没有这个关系时放到本树哪个分类节点。挂在规则节点下的规则节点，`under` 必须是父节点的对象类型，`otherwise` 省略时为树的兜底节点（`default_parent`）；挂在分类节点下的规则节点没有关系时就放在这个分类节点下，不写 `otherwise`。方案没有覆盖的对象类型放在兜底节点下。P 树的分类节点可以带 `user_category`（`portal_admin`、`member` 或 `intern`），表示该分类的 User 放在这个节点下，每个分类最多一个节点。表规则分两种（第 5.8 节）：**节点规则** `{p, a, r}` 三者都是分类节点，生成实例中的一行固定表项；**关系规则** `{relation, a, r}` 的 `r` 是 R 树的规则节点，事实适配层对其中每个对象按关系找到主体，各写一行。可用的对象类型、放置关系（`placements`）、关系（`relations`）、资源类型和 User 分类由 `scheme/vocabulary.py` 给出（GetPermissionScheme 的 `vocabulary` 另附全部 ISA 指令及参数，每条带 `elements`：它声明的判定槽，每项是一个 A 元素）。`instructions` 写 `{"<A 元素>": {"a": <A 树分类节点>, "r": <R 树分类节点，只用于固定槽>}}`，编译后该元素挂在 `a` 下，覆盖该节点的表项就打开这个元素；方案不能写 `argument`、`types`、`optional`、`via`、`place`，判定对象由声明给出（TFI portal 2026-10-19）。参数槽的参数是已保存记录的 ID 时，声明写 `via="<记录>.<字段>"`、不写类型：入口按 ID 读出记录，用记录在该字段里保存的对象作为判定对象；记录不存在时整次调用返回 `instruction.not_found`，记录在该字段里没有对象时这个槽不产生请求。可用的记录字段由 `vocabulary.RECORDS` 给出（编辑器读 `vocabulary.records`），目前有 `permission_entry.r`（表项已保存的 r）和 `instruction_execution.lineage`（回执所属的 Lineage，调用者作用域的回执没有）。创建对象的指令按新对象将要落下的位置判定时，声明写 `place={<关系对象类型>: (参数路径…)}`，槽的参数是新对象的类型参数，不写 `via` 和类型：入口取每种关系对象第一个给出的 ID，按放置规则算出新对象在 R 树中的父节点（关系对象，没有时为 `otherwise`，类型没有放置规则时为兜底节点），和事实适配层登记后放置它的计算相同（`CompiledScheme.placement`）；`@public` 这类分类节点不是对象，按没有关系对象处理。`place` 的键由 `vocabulary.place_related` 给出（目前默认方案只用于 RegisterResource，decision_600ae27b0538）。编译器不认识任何节点名；例如默认方案把发消息的几条指令放在“协作（contributor）”下的“给 Resident 发消息”节点，一条表项就能只打开这一组指令。
+方案规则是一份 JSON 数据（新写入 `tfi.permission-scheme.v2`，读取仅接受该精确格式），顶层只有 `schema`、`scheme_id`、`title`、`description`、`trees`、`entries`、`instructions`：三棵树的声明节点、表规则、A 元素的分类。树上的节点分两类：**分类节点**是固定集合，例如“共享”“管理（admin）”；**规则节点**带 `each`，表示“每个某类对象”，并写一条放置规则（第 5.9 节）：`under` 写放在哪类关系对象之下（例如 R 树中“每个 Project”下的“每个 Lineage”写 `under: project`），`otherwise` 写没有这个关系时放到本树哪个分类节点。挂在规则节点下的规则节点，`under` 必须是父节点的对象类型，`otherwise` 省略时为树的兜底节点（`default_parent`）；挂在分类节点下的规则节点没有关系时就放在这个分类节点下，不写 `otherwise`。方案没有覆盖的对象类型放在兜底节点下。P 树的分类节点可以带 `user_category`（`portal_admin`、`member` 或 `intern`），表示该分类的 User 放在这个节点下，每个分类最多一个节点。表规则分两种（第 5.8 节）：**节点规则** `{p, a, r}` 三者都是分类节点，生成实例中的一行固定表项；**关系规则** `{relation, a, r}` 的 `r` 是 R 树的规则节点，事实适配层对其中每个对象按关系找到主体，各写一行。可用的对象类型、放置关系（`placements`）、关系（`relations`）、资源类型和 User 分类由 `scheme/vocabulary.py` 给出（GetPermissionScheme 的 `vocabulary` 另附全部 ISA 指令及参数，每条带 `elements`：它声明的判定槽，每项是一个 A 元素）。`instructions` 写 `{"<A 元素>": {"a": <A 树分类节点>, "r": <R 树分类节点，只用于固定槽>}}`，编译后该元素挂在 `a` 下，覆盖该节点的表项就打开这个元素；方案不能写 `argument`、`types`、`optional`、`via`、`place`，判定对象由声明给出（weihao 2026-10-19）。参数槽的参数是已保存记录的 ID 时，声明写 `via="<记录>.<字段>"`、不写类型：入口按 ID 读出记录，用记录在该字段里保存的对象作为判定对象；记录不存在时整次调用返回 `instruction.not_found`，记录在该字段里没有对象时这个槽不产生请求。可用的记录字段由 `vocabulary.RECORDS` 给出（编辑器读 `vocabulary.records`），目前有 `permission_entry.r`（表项已保存的 r）和 `instruction_execution.lineage`（回执所属的 Lineage，调用者作用域的回执没有）。创建对象的指令按新对象将要落下的位置判定时，声明写 `place={<关系对象类型>: (参数路径…)}`，槽的参数是新对象的类型参数，不写 `via` 和类型：入口取每种关系对象第一个给出的 ID，按放置规则算出新对象在 R 树中的父节点（关系对象，没有时为 `otherwise`，类型没有放置规则时为兜底节点），和事实适配层登记后放置它的计算相同（`CompiledScheme.placement`）；`@public` 这类分类节点不是对象，按没有关系对象处理。`place` 的键由 `vocabulary.place_related` 给出（目前默认方案只用于 RegisterResource，decision_600ae27b0538）。编译器不认识任何节点名；例如默认方案把发消息的几条指令放在“协作（contributor）”下的“给 Resident 发消息”节点，一条表项就能只打开这一组指令。
 
 编译器检查结构：三棵树各有一个根、父节点都已声明、没有环；分类节点不挂在规则节点下；`user_category` 只写在 P 树分类节点上，取值有效且不重复；每类对象在一棵树里按同一关系只有一个规则节点，并且确实有它声明的放置关系；`otherwise` 是本树分类节点；节点规则只引用分类节点，关系规则的关系取自固定种类并只用于它适用的对象（“所属”还要求方案在 P 树放置这类对象）；一条表项不能同时有 `p` 和 `relation`；`instructions` 中的每个 A 元素都由某条指令声明，`a` 是 A 树分类节点，`r` 只写在固定槽上且是 R 树分类节点。判定槽本身的结构（参数已声明、via 与类型互斥、place 的参数路径已声明）在指令声明构造时检查，登记情况由声明规则测试核对。错误逐条返回，每条带规则中的 JSON 路径。这项检查只针对新建和修改的规则：读取已有方案（内置或已保存）时，分类中本 Portal 没有声明的 A 元素被跳过并在日志中告警一次，规则对其余元素照常生效，读出的规则也不含这些元素，所以复制或修改后保存时它们随之去掉。打包时摘掉一个功能，它的指令随之消失，方案不因此无法编译（decision_15aab18c0ab3）。编译器不检查表规则之间的含义，例如 deny 覆盖范围内的 permit 照常编译。
 
-方案仓库：内置方案的规则以文件随代码发布，永不原地修改；自定义方案的规则保存在 `permission.schemes`，带版本号，修改按版本比较后写入。启用的方案记录在 `permission.active_scheme`，开关开或关含义相同；启用的方案不能删除，删除自定义方案时连同它的实例一起删除。内置方案的规则只读，方案本身可以直接使用：可以启用，它的实例照常增删表项、停用行、签发临时凭证；要改规则，先用 CreatePermissionScheme 复制（连同实例）为自定义方案（第 5.11 节）。线上启用的是默认方案。内置方案只有**默认方案**：Portal 的分级权限规则，见 decision_600ae27b0538。需要所有人都能做所有事时，由管理员关闭开关（TFI portal 2026-10-19，此前的内置“全开方案”已删除）。
+方案仓库：内置方案的规则以文件随代码发布，永不原地修改；自定义方案的规则保存在 `permission.schemes`，带版本号，修改按版本比较后写入。启用的方案记录在 `permission.active_scheme`，开关开或关含义相同；启用的方案不能删除，删除自定义方案时连同它的实例一起删除。内置方案的规则只读，方案本身可以直接使用：可以启用，它的实例照常增删表项、停用行、签发临时凭证；要改规则，先用 CreatePermissionScheme 复制（连同实例）为自定义方案（第 5.11 节）。线上启用的是默认方案。内置方案只有**默认方案**：Portal 的分级权限规则，见 decision_600ae27b0538。需要所有人都能做所有事时，由管理员关闭开关（weihao 2026-10-19，此前的内置“全开方案”已删除）。
 
 管理页“权限方案”分栏的编辑器见 decision_ea13b85216d0；“执行设置”的“权限”分组可以直接选择启用的方案。
 
@@ -180,7 +186,7 @@ User 与 Resident 卡片的 Package 读取 GetEffectivePermissions，以奖章�
 
 **方案表达的授权由 PAR 引擎判定。** 引擎拿到权限树和权限表后作答；业务代码和指令处理器不另写与方案竞争的授权。权限端口保留第 3.1 节明定的管理员保底与关闭时个人 AMA 边界，本节的领域规则也继续有效。A 树、R 树上的节点名（如“免检”“共享”）对代码没有语义，只是集合节点：一条指令落在“免检”下，所有人都能调用，完全因为表里有 (P 根, 免检, R 根) permit。
 
-**划分标准**（TFI portal 2026-10-18）：
+**划分标准**（weihao 2026-10-18）：
 
 - 规则只关心**调用者在这个对象上是不是那个固定角色**（作者、领取人、自己的信箱、门面、steward），属于 Portal 的领域功能，写在领域代码中，不经过权限系统。就像聊天软件里只能撤回自己的消息。
 - 规则在回答**谁可以操作别人的对象**，就是权限，必须由方案的树和表表达，经引擎判定。
@@ -202,7 +208,7 @@ User 与 Resident 卡片的 Package 读取 GetEffectivePermissions，以奖章�
 
 临时凭证还须执行自身定义的检查（第 5.6 节）：签发者此刻必须在该资源上持有所交出的 A 节点。这是临时凭证的定义（“把自己有的权限临时交给别人”），不属于另加的规则。
 
-消息中的资源引用不做权限检查：发送方可以引用任何地址，收件方读取时按自己的权限判定（TFI portal 2026-10-18）。
+消息中的资源引用不做权限检查：发送方可以引用任何地址，收件方读取时按自己的权限判定（weihao 2026-10-18）。
 
 开关关闭时，除第 3.1 节的管理员保底外，权限端口保留“个人 AMA 归所有者”：领域代码的 `can_manage_resident`、`actor_can_manage_lineage`、`authorized_resident_ids` 等经端口的 `private_reaches` 回答它；开启时个人 AMA 由方案的树表达，这些函数对个人 AMA 改问对应的读指令（GetLineage、GetResident），对其他对象只检查身份。
 
@@ -214,18 +220,18 @@ User 与 Resident 卡片的 Package 读取 GetEffectivePermissions，以奖章�
 - 护栏：路径、根目录与符号链接约束，对象状态与版本，至少保留一位启用中的 Portal 管理员，首位管理员设置链接只在还没有任何账号时可用。
 - 个人 AMA 在开关关闭时归所有者，以及 Portal 管理员保底（第 3.1 节）：方案之外仅有的两条判定。
 
-审计找到的只按身份放行、没有询问引擎的入口，都归入已有指令判定（TFI portal 2026-10-18）：
+审计找到的只按身份放行、没有询问引擎的入口，都归入已有指令判定（weihao 2026-10-18）：
 
 - 账号接单汇总只统计调用者 GetResident 通过的 Resident；“全部打开”“全部关闭”把其中的 Resident 列表交给 OpenIntake（`open: true` 或 `false`）逐个判定，按 `account_id` 批量的写法已删除。
 - 资源备份与校验的按钮询问资源备份 Lineage 上的 TriggerEvent，取消询问 CancelScriptRun；后端触发 Event 时由 TriggerEvent 自身判定，不再单独检查身份。
 - WALL 项目登记与注销询问所在 Project 的 UpdateProject。
 - 按 `job_id` 读取论文评审状态已改为按论文判定。
 - Watchboard 的运行按钮询问所在 Lineage 的 TriggerEvent，每个配置的编辑询问该文件地址的 UpdateWorkspaceFile，看板管理询问 ApplyLineageChanges。Telepus 看板上维护自己的联系人是固定角色规则（登录的 User 只改本人），BindTelepusContactForUser 与 UnbindTelepusContactForUser 仍只给管理员。
-- `/api/admin/access-control` 读取全部用户与访问审计，不另设判定（TFI portal 2026-10-18）：开关关闭时所有登录主体拥有全部权限，没有管理员之分；除 Portal 管理员保底（第 3.1 节）外，代码不按 Portal 管理员之类的分类放行，一切按权限系统处理。用户列表逐行带 `allows.UpdateUser`。
+- `/api/admin/access-control` 读取全部用户与访问审计，不另设判定（weihao 2026-10-18）：开关关闭时所有登录主体拥有全部权限，没有管理员之分；除 Portal 管理员保底（第 3.1 节）外，代码不按 Portal 管理员之类的分类放行，一切按权限系统处理。用户列表逐行带 `allows.UpdateUser`。
 
 ## 5. 权限方案：规则、实例与生命周期
 
-TFI portal 2026-10-18 定稿。5.1 至 5.3、5.5 与 5.6 已实现，第 3 节按实现描述；5.4 的编辑界面由 decision_ea13b85216d0 跟进。5.7 至 5.9 已实现（2026-10-18），各节末尾写明实现状态；5.10 的调用回放检查仍为预留，不因已有分析辅助函数而视为实现；5.7 中没有可共享事务的资源按 TFI portal 2026-10-18 的决定写入后同步，由启动和定时补齐修复遗漏（已实现，2026-10-18）。5.11 已实现：复制品的来源记录与合并（2026-10-18），内置方案直接启用与跟随发布的写回（2026-10-19）。
+weihao 2026-10-18 定稿。5.1 至 5.3、5.5 与 5.6 已实现，第 3 节按实现描述；5.4 的编辑界面由 decision_ea13b85216d0 跟进。5.7 至 5.9 已实现（2026-10-18），各节末尾写明实现状态；5.10 的调用回放检查仍为预留，不因已有分析辅助函数而视为实现；5.7 中没有可共享事务的资源按 weihao 2026-10-18 的决定写入后同步，由启动和定时补齐修复遗漏（已实现，2026-10-18）。5.11 已实现：复制品的来源记录与合并（2026-10-18），内置方案直接启用与跟随发布的写回（2026-10-19）。
 
 ### 5.1 组成
 
@@ -238,7 +244,7 @@ TFI portal 2026-10-18 定稿。5.1 至 5.3、5.5 与 5.6 已实现，第 3 节�
 
 - 表项只有 (P 节点, A 节点, R 节点, permit/deny) 和停用标记；临时凭证另带签发者和过期时间。表项不记录来源，不区分它是规则产生的还是人写入的。
 - 人可以直接编辑实例的表：新增、删除、修改表项，停用或启用一行。编辑的结果就是表的样子，代码不再按规则校正它，也不推导其他表项。
-- 实例相对规则生成结果增加、删除和停用的行，统称**实例中的编辑**（TFI portal 2026-10-19）。表里不标记它们；只有拿实例和规则对现有对象生成的结果比较，才知道哪些行是编辑。规则变化后的写回（第 5.11 节）就是这样找出编辑的。
+- 实例相对规则生成结果增加、删除和停用的行，统称**实例中的编辑**（weihao 2026-10-19）。表里不标记它们；只有拿实例和规则对现有对象生成的结果比较，才知道哪些行是编辑。规则变化后的写回（第 5.11 节）就是这样找出编辑的。
 - 关系规则（创建者、steward 等）对每个对象写一行，不判断它是否已被其他表项覆盖。代码中没有“哪条表项被哪条更一般的表项覆盖”的记录。
 - 写入表项时不做语义检查。permit 落在 deny 之内时，按 deny 优先照常判定，这条 permit 不起作用；编辑器可以给出不阻止保存的提示。
 - 不做防锁死检查。编辑权交给了人，表的样子由人负责；退路是执行设置里的权限系统开关（第 3.1 节），关闭后再修复方案。
@@ -268,11 +274,11 @@ TFI portal 2026-10-18 定稿。5.1 至 5.3、5.5 与 5.6 已实现，第 3 节�
 ### 5.5 去掉引擎之外的授权逻辑
 
 - **权限指令**：删除“permit 不超过授予者自己的权限”“permit 不落在 deny 之内”、RevokePermission 处理器中的二次判定，以及防锁死检查。写表项、编辑方案只按指令的判定槽与方案的分类判定。
-- **个人 AMA**：方案规则写明“个人 Lineage 在 R 树中挂在所有者的个人空间下，在 P 树中挂在所有者 User 下”，其中的 Resident 随 Lineage 放置。个人空间只有所有者本人的 admin 表项覆盖，管理员表项写在“共享”上，覆盖不到这里；AMA 中的 Resident 因此与所有者权限相同。删除权限端口中的 `acts_for` 拦截、`lineage_access_policy.py` 中的 AMA 判断和事实层对 AMA 的强制放置；搜索与解析中隐藏 AMA 的效果由可读过滤得到。开关关闭时没有方案可以表达这条规则，端口保留“个人 AMA 归所有者”（TFI portal 2026-10-18，第 3.1 节）。
-- **Workspace**：按绝对路径访问时，先按已登记 Workspace 的路径做最长前缀匹配，得到所属的 Workspace 资源 ID，再由引擎按这个 Workspace 判定；不属于任何已登记 Workspace 的路径按 R 树默认节点判定。删除独立的路径授权。按绝对路径只做读取（链接文件预览）；写入只有 UpdateWorkspaceFile 一条路，它只接受 `<workspace_id>/file/<相对路径>`，预览结果里的 `file_address` 给出这个地址（TFI portal 2026-10-18）。
+- **个人 AMA**：方案规则写明“个人 Lineage 在 R 树中挂在所有者的个人空间下，在 P 树中挂在所有者 User 下”，其中的 Resident 随 Lineage 放置。个人空间只有所有者本人的 admin 表项覆盖，管理员表项写在“共享”上，覆盖不到这里；AMA 中的 Resident 因此与所有者权限相同。删除权限端口中的 `acts_for` 拦截、`lineage_access_policy.py` 中的 AMA 判断和事实层对 AMA 的强制放置；搜索与解析中隐藏 AMA 的效果由可读过滤得到。开关关闭时没有方案可以表达这条规则，端口保留“个人 AMA 归所有者”（weihao 2026-10-18，第 3.1 节）。
+- **Workspace**：按绝对路径访问时，先按已登记 Workspace 的路径做最长前缀匹配，得到所属的 Workspace 资源 ID，再由引擎按这个 Workspace 判定；不属于任何已登记 Workspace 的路径按 R 树默认节点判定。删除独立的路径授权。按绝对路径只做读取（链接文件预览）；写入只有 UpdateWorkspaceFile 一条路，它只接受 `<workspace_id>/file/<相对路径>`，预览结果里的 `file_address` 给出这个地址（weihao 2026-10-18）。
 - **免检指令**：处理器中凡属“操作别人的对象”的检查改为指令声明的要求（第 4 节列出的几类）；属于领域角色的检查保留在领域代码中。
 
-### 5.6 判定缓存与临时凭证（TFI portal 2026-10-18）
+### 5.6 判定缓存与临时凭证（weihao 2026-10-18）
 
 **判定缓存只用一个版本号。**
 
@@ -296,7 +302,7 @@ TFI portal 2026-10-18 定稿。5.1 至 5.3、5.5 与 5.6 已实现，第 3 节�
 - 两种方式都有 7 天的兜底上限：随任务的凭证在消息长时间未处理完时，最迟 7 天后失效；续期后的总时长也不超过从签发起 7 天。
 - 随任务的凭证可能在事情真正做完前失效，例如 B 把后续工作安排到以后的轮次。这时 B 被拒绝，再向 A 申请或请 A 按时长签发；提前失效不会多给出权限。
 
-### 5.7 事实的归属与写入时机（TFI portal 2026-10-18）
+### 5.7 事实的归属与写入时机（weihao 2026-10-18）
 
 方案规则生成表项时要读对象的事实，例如“Project 创建者对该 Project 有 admin”要知道创建者，“按 User 分类放置 User”要知道分类。
 
@@ -306,16 +312,16 @@ TFI portal 2026-10-18 定稿。5.1 至 5.3、5.5 与 5.6 已实现，第 3 节�
 - User 分类是账号的属性，和用户名、状态保存在账号记录中；删除权限 schema 中的 `user_categories` 表。UpdateUser 的 `changes.category` 改写账号记录。
 - steward、聊天室成员等关系同样从对象记录读取。权限系统中只保留方案、实例（树和表），以及补齐所需的对象快照（`scheme_objects`）。
 
-**对象和它在树上的位置同一事务提交；没有可共享事务的对象写入后同步，并定时补齐（TFI portal 2026-10-18）。**
+**对象和它在树上的位置同一事务提交；没有可共享事务的对象写入后同步，并定时补齐（weihao 2026-10-18）。**
 
 - 保存在 PostgreSQL 中的对象，创建、移动、删除都在改动对象的同一事务中同步实例：Lineage、Resident、Family、Project、聊天室、帖子、User 账号。这些对象不存在“已存在但不在树上”的窗口。
 - 经文件或各自存储写入的资源（知识条目、论文、skill、repo、article、experiment、Workbench、device）没有可与实例共享的事务，写入成功后紧接着同步实例。同步可以重复执行，结果不变。
 - 提交后的同步可能因为进程中断或出错而没有执行。补齐（`complete`）在服务启动时和定时运行，把缺位置、位置过时或已删除的对象按规则修正，修正不了的对象记入日志。这样一次同步失败，最迟在下一次补齐时修复，不会长期放错位置。
 - 启用方案、开启开关和修改规则时一次性收集全部事实（约 4.5 秒）的做法不变，这些操作很少发生。
 
-实现状态（2026-10-18）：Project 登记记录已有 `created_by`/`created_for`，`permission.creators` 中的 3 个 Project 创建者迁入登记记录后删除该表；Project、聊天室、帖子已在各自记录的事务中同步实例（第 3.3 节）。经文件或各自存储写入的资源（知识条目、论文、skill、repo、article、experiment、Workbench、device）没有可共享的事务，按 TFI portal 的决定保持写入后同步；提交后的同步是幂等的，重复执行不改变实例。ResourceService 启动后和每小时对启用方案补齐一次，保留全部表项（包括手工行），绝不重新生成；修正不了的情况（补齐出错，或将移出的对象超过 100 个）记入 ResourceService 日志，整次不写入。补齐先在锁外算出目标位置，只在写入时锁住实例表。User 分类迁入账号记录分两次发布：账号表的读写先改为按列名读取，所有进程换上新代码后再加列、迁移并删除 `permission.user_categories`，避免加列打断旧进程中 `SELECT *` 的预备语句。两次发布均已完成：分类现在是 `portal_identity.user_accounts.category`，改分类与 P 树中的移动、创建账号与放置、删除账号与移出都在账号表的同一事务中提交；`permission.user_categories` 已删除。
+实现状态（2026-10-18）：Project 登记记录已有 `created_by`/`created_for`，`permission.creators` 中的 3 个 Project 创建者迁入登记记录后删除该表；Project、聊天室、帖子已在各自记录的事务中同步实例（第 3.3 节）。经文件或各自存储写入的资源（知识条目、论文、skill、repo、article、experiment、Workbench、device）没有可共享的事务，按 weihao 的决定保持写入后同步；提交后的同步是幂等的，重复执行不改变实例。ResourceService 启动后和每小时对启用方案补齐一次，保留全部表项（包括手工行），绝不重新生成；修正不了的情况（补齐出错，或将移出的对象超过 100 个）记入 ResourceService 日志，整次不写入。补齐先在锁外算出目标位置，只在写入时锁住实例表。User 分类迁入账号记录分两次发布：账号表的读写先改为按列名读取，所有进程换上新代码后再加列、迁移并删除 `permission.user_categories`，避免加列打断旧进程中 `SELECT *` 的预备语句。两次发布均已完成：分类现在是 `portal_identity.user_accounts.category`，改分类与 P 树中的移动、创建账号与放置、删除账号与移出都在账号表的同一事务中提交；`permission.user_categories` 已删除。
 
-### 5.8 关系规则（TFI portal 2026-10-18）
+### 5.8 关系规则（weihao 2026-10-18）
 
 表规则有两种：节点规则直接写一行 (P 节点, A 节点, R 节点, 效果)；**关系规则**写成 (关系, A 节点, R 上的对象类别, 效果)，对类别中的每个对象，按关系找到对应的主体，写一行 (主体, A 节点, 该对象, 效果)。例如 (创建者, admin, 每个 Project) 给每个 Project 的创建者写一行 admin；(所属 Project, admin, 每个 Project) 给每个 Project 中 Resident 所在的 P 节点写一行 admin。
 
@@ -327,7 +333,7 @@ TFI portal 2026-10-18 定稿。5.1 至 5.3、5.5 与 5.6 已实现，第 3 节�
 
 实现状态（2026-10-18）：规则文档升为 `dirtybase.permission-scheme.v2`，关系规则写成 `{"relation", "a", "r"}`，关系取值为 `self`、`owner`、`belongs`、`creator`、`steward`、`members`（`scheme/vocabulary.py` 的 `RELATIONS`）。用新旧代码对线上全部事实各生成一次默认方案实例，节点与表项完全相同。
 
-### 5.9 对象的放置与兜底节点（TFI portal 2026-10-18）
+### 5.9 对象的放置与兜底节点（weihao 2026-10-18）
 
 **每种对象的放置规则写成“放在它的某个关系对象之下；没有这个关系时，放到某个节点”，两部分都写在方案里。**
 
@@ -339,7 +345,7 @@ TFI portal 2026-10-18 定稿。5.1 至 5.3、5.5 与 5.6 已实现，第 3 节�
 
 实现状态（2026-10-18）：规则节点写 `under`（关系对象类型）和 `otherwise`（没有关系时的分类节点），`unowned`、`via`、模式链上溯和临时放置已删除，个人 AMA 由 `under: user`/`under: personal_space` 放置。线上全部对象的位置与改动前一致，没有对象移动。
 
-### 5.10 预留：调用回放检查（TFI portal 2026-10-18，暂不实现）
+### 5.10 预留：调用回放检查（weihao 2026-10-18，暂不实现）
 
 将来可以在开启开关或修改方案之前，取最近一段时间实际执行过的指令调用（调用者、指令、参数，来自指令执行记录），不执行，逐条用启用方案的实例试判定，列出开启后会被拒绝的调用，按调用者和指令分组，供人判断是方案漏了表项还是本该拒绝。
 
@@ -350,21 +356,21 @@ TFI portal 2026-10-18 定稿。5.1 至 5.3、5.5 与 5.6 已实现，第 3 节�
 
 实现状态（2026-10-18）：CheckPermission 一直按启用方案的实例判定，与开关无关，返回 `allowed`、每个请求的 `reason` 和命中的 `permit`/`deny` 表项；开关关闭时的这一行为已有测试固定。
 
-### 5.11 内置方案规则只读、可直接启用（TFI portal 2026-10-18，2026-10-19 修订）
+### 5.11 内置方案规则只读、可直接启用（weihao 2026-10-18，2026-10-19 修订）
 
-- 内置方案（默认方案）的规则只读，跟随代码发布；要改规则，先复制为自定义方案。方案本身可以直接使用（TFI portal 2026-10-19）：可以启用；它的实例和自定义方案的实例一样，可以增加、删除、停用表项，可以签发、续期、撤销临时凭证，谁能做这些都按指令分类判定。
+- 内置方案（默认方案）的规则只读，跟随代码发布；要改规则，先复制为自定义方案。方案本身可以直接使用（weihao 2026-10-19）：可以启用；它的实例和自定义方案的实例一样，可以增加、删除、停用表项，可以签发、续期、撤销临时凭证，谁能做这些都按指令分类判定。
 - 发布改变内置规则时，内置方案的实例按新规则重新生成，同时写回实例中的编辑，和复制品的合并用同一套写回（见下文“实例”）：增加的行、停用的行带原 ID 写回，人删掉、新规则仍给出的行保持删除，临时凭证保留。写不回的表项和保持删除的行记为这套内置方案最近一次的写回记录，编辑器可以查看。为了知道哪些行是编辑，实例保存生成它的规则全文，作为下次发布的比较基准。其他方案的实例不受影响。
-- 内置规则更新后，改动自动带进从它复制出的方案（TFI portal 2026-10-18）。发布后 ResourceService 启动时，对来源是内置方案、来源规则已经变化的每套复制品做三方合并：比较复制或上次合并时的来源规则、现在的来源规则和复制品的规则，按项（树节点、各树的 root 与 default_parent、表规则、A 元素的分类、说明）处理：
+- 内置规则更新后，改动自动带进从它复制出的方案（weihao 2026-10-18）。发布后 ResourceService 启动时，对来源是内置方案、来源规则已经变化的每套复制品做三方合并：比较复制或上次合并时的来源规则、现在的来源规则和复制品的规则，按项（树节点、各树的 root 与 default_parent、表规则、A 元素的分类、说明）处理：
   - 复制品没有改过的项，换成来源的新版本，包括新增和删除；
   - 复制品自己改过、来源也改了的项，保留复制品的版本，记为冲突写进日志，并在编辑器中提示；
   - 合并后更新来源记录。
-- 合并不丢人的编辑。只有指令分类或说明变化时，实例不变。树或表规则变化时按新规则重新生成实例，然后把实例中的编辑写回：增加和停用的行，P、A、R 节点在新实例中都还存在的照原样保留，找不到节点的不写回，逐条记进日志（thinking_3cbdd375ebf8 §14.8）。规则生成、但被人删掉的行，合并后新规则仍然给出时也保持删除（TFI portal 2026-10-19），这些行记进最近一次合并的记录，编辑器据此显示哪些行因为人删了才没加回。
-- 合并就是合并，结果不因谁触发而不同（TFI portal 2026-10-19）：发布后的自动合并和编辑器里带 `source_digest` 保存的手动合并走同一套写回，手动合并的 dry_run 报告将写不回的表项和保持删除的行。人在编辑器里直接改规则保存（不带 `source_digest`）仍按第 5.3 节重新生成实例，此前的编辑不保留。
-实现状态（2026-10-19，c6eb4deb）：ActivatePermissionScheme 可以启用内置方案；UpdatePermissionScheme 仍拒绝修改内置方案的规则（“内置方案不可修改；请复制为新方案”）；表项指令和临时凭证指令对内置方案与自定义方案相同。实例生成时把规则全文存进 `permission.scheme_instances.rules`（JSONB）；这一列上线前生成的内置方案实例，ResourceService 启动时在规则未变的前提下补存。启动时对规则有变化的内置方案调用 `PARPermissions.follow_release`：有基准时按基准规则补齐，再走 `Instance.regenerate_keeping_edits`，结果连同授权差记进 `permission.scheme_merges`（`source_scheme_id` 是方案自己，`merged_by` 为 `portal`），由 GetPermissionScheme 的顶层 `last_merge` 返回；没有基准时整套重新生成。发布只改了指令分类（树和表项不变，基准与当前规则仍有差别）时，实例不动，只把基准推进到当前规则；有元素换了分类节点时，同样记一条 `last_merge`（`merged_by` 为 `portal`，`conflicts`、`unrestored`、`deleted_again` 为空，`auth_diff` 是移动元素的授权差），只改说明的发布不记录（9ca737a3，TFI portal 2026-10-19）。复制品合并这类发布时实例同样不动，`last_merge.auth_diff` 同样报告移动元素的得失。`last_merge.regenerated` 标明实例是否重新生成，实例不动的记录为 false，编辑器据此不再写“实例已按新规则重新生成”（ccce47f4，`permission.scheme_merges.regenerated`，此前的记录为 true）。启动跟随之前（ResourceService 预热中，或同库的另一个 ResourceService 刚启动）或跟随失败之后，启用内置方案或开启开关同样写回：`schemes.prepare` 在自己的事务中调用同一个 `schemes.follow_release`，dry_run 在回滚的事务里写回并报告 `restored_entries`、`unrestored`、`deleted_again`（b623122e，7a4a 审查 c6eb4deb 时复现了原先整套重新生成丢掉实例中编辑的问题）。prepare 读实例时还没拿跟随锁；如果拿到锁时另一个进程已经跟随完，实例已在新规则上，启用改为补齐，报告 `regenerate: false`（6479785c，7a4a 审查 b623122e 时复现了原先的 TypeError）；启动时每套内置方案各自跟随，一套失败只记日志，不影响其他。对象同步每次读取当前启用的方案，关闭时切换方案后其他进程不再写入旧方案的实例；停用的方案缺少的新对象，在启用（开关开启时）或开启开关时由补齐带上。复制品在 `permission.scheme_sources` 记录来源方案以及复制或上次合并时的来源规则全文和摘要，编辑器据此提示来源已更新并做三方对比；合并通过带 `source_digest` 的 UpdatePermissionScheme 保存（接口见 decision_22227d0ad075“来源记录”）。发布删除某条指令后，已保存的自定义方案仍可能给它的 A 元素分类：加载已保存的方案时跳过这类分类（没有人能调用已删除的指令，判定不变），保存规则时仍严格编译并报告它的路径，所以启用中的方案不会因发布整份失效（de8cd826）；复制品合并来源后这类分类随之清掉。
+- 合并不丢人的编辑。只有指令分类或说明变化时，实例不变。树或表规则变化时按新规则重新生成实例，然后把实例中的编辑写回：增加和停用的行，P、A、R 节点在新实例中都还存在的照原样保留，找不到节点的不写回，逐条记进日志（thinking_3cbdd375ebf8 §14.8）。规则生成、但被人删掉的行，合并后新规则仍然给出时也保持删除（weihao 2026-10-19），这些行记进最近一次合并的记录，编辑器据此显示哪些行因为人删了才没加回。
+- 合并就是合并，结果不因谁触发而不同（weihao 2026-10-19）：发布后的自动合并和编辑器里带 `source_digest` 保存的手动合并走同一套写回，手动合并的 dry_run 报告将写不回的表项和保持删除的行。人在编辑器里直接改规则保存（不带 `source_digest`）仍按第 5.3 节重新生成实例，此前的编辑不保留。
+实现状态（2026-10-19，c6eb4deb）：ActivatePermissionScheme 可以启用内置方案；UpdatePermissionScheme 仍拒绝修改内置方案的规则（“内置方案不可修改；请复制为新方案”）；表项指令和临时凭证指令对内置方案与自定义方案相同。实例生成时把规则全文存进 `permission.scheme_instances.rules`（JSONB）；这一列上线前生成的内置方案实例，ResourceService 启动时在规则未变的前提下补存。启动时对规则有变化的内置方案调用 `PARPermissions.follow_release`：有基准时按基准规则补齐，再走 `Instance.regenerate_keeping_edits`，结果连同授权差记进 `permission.scheme_merges`（`source_scheme_id` 是方案自己，`merged_by` 为 `portal`），由 GetPermissionScheme 的顶层 `last_merge` 返回；没有基准时整套重新生成。发布只改了指令分类（树和表项不变，基准与当前规则仍有差别）时，实例不动，只把基准推进到当前规则；有元素换了分类节点时，同样记一条 `last_merge`（`merged_by` 为 `portal`，`conflicts`、`unrestored`、`deleted_again` 为空，`auth_diff` 是移动元素的授权差），只改说明的发布不记录（9ca737a3，ET 2026-10-19）。复制品合并这类发布时实例同样不动，`last_merge.auth_diff` 同样报告移动元素的得失。`last_merge.regenerated` 标明实例是否重新生成，实例不动的记录为 false，编辑器据此不再写“实例已按新规则重新生成”（ccce47f4，`permission.scheme_merges.regenerated`，此前的记录为 true）。启动跟随之前（ResourceService 预热中，或同库的另一个 ResourceService 刚启动）或跟随失败之后，启用内置方案或开启开关同样写回：`schemes.prepare` 在自己的事务中调用同一个 `schemes.follow_release`，dry_run 在回滚的事务里写回并报告 `restored_entries`、`unrestored`、`deleted_again`（b623122e，7a4a 审查 c6eb4deb 时复现了原先整套重新生成丢掉实例中编辑的问题）。prepare 读实例时还没拿跟随锁；如果拿到锁时另一个进程已经跟随完，实例已在新规则上，启用改为补齐，报告 `regenerate: false`（6479785c，7a4a 审查 b623122e 时复现了原先的 TypeError）；启动时每套内置方案各自跟随，一套失败只记日志，不影响其他。对象同步每次读取当前启用的方案，关闭时切换方案后其他进程不再写入旧方案的实例；停用的方案缺少的新对象，在启用（开关开启时）或开启开关时由补齐带上。复制品在 `permission.scheme_sources` 记录来源方案以及复制或上次合并时的来源规则全文和摘要，编辑器据此提示来源已更新并做三方对比；合并通过带 `source_digest` 的 UpdatePermissionScheme 保存（接口见 decision_22227d0ad075“来源记录”）。发布删除某条指令后，已保存的自定义方案仍可能给它的 A 元素分类：加载已保存的方案时跳过这类分类（没有人能调用已删除的指令，判定不变），保存规则时仍严格编译并报告它的路径，所以启用中的方案不会因发布整份失效（de8cd826）；复制品合并来源后这类分类随之清掉。
 
 判定槽移进指令声明（2026-10-19，b3dd4c7f）：方案的 `instructions` 从“指令到判定槽数组”改为“A 元素到分类”。一次性迁移把已保存的自定义方案、复制品的来源规则（连同摘要）和实例基准（`scheme_instances.rules`）转为新格式；线上只有默认方案的基准，转换后与新的 default.json 相同，没有与声明不同的槽结构。迁移前后的编译器与请求适配层在每条指令的每种合法参数组合上逐项比较，请求相同；迁移脚本和比较测试在切换后删除（f6f4e0ad）。
 
-线上切换（2026-10-19）：此前启用的是默认方案的复制品 `TFI portal`，规则与默认方案逐项相同。默认方案的实例补齐到与 `TFI portal` 相同的对象；`TFI portal` 实例中的编辑是增加的两行（AI员工 对 @operations 的 @admin、hk 对 AI员工 的 @contributor），没有停用的行、人删的行和临时凭证，两行带原 ID 搬入默认方案的实例。搬完后两份实例的节点、对象关系和表项完全相同，双向授权差都为中性；随后启用默认方案（启用时对现有对象的补齐为 0 变化），删除 `TFI portal`。
+线上切换（2026-10-19）：此前启用的是默认方案的复制品 `dirtybase`，规则与默认方案逐项相同。默认方案的实例补齐到与 `dirtybase` 相同的对象；`dirtybase` 实例中的编辑是增加的两行（AI员工 对 @operations 的 @admin、hk 对 AI员工 的 @contributor），没有停用的行、人删的行和临时凭证，两行带原 ID 搬入默认方案的实例。搬完后两份实例的节点、对象关系和表项完全相同，双向授权差都为中性；随后启用默认方案（启用时对现有对象的补齐为 0 变化），删除 `dirtybase`。
 
 自动合并的实现（0afce3ff，2026-10-18）：
 
@@ -382,7 +388,7 @@ TFI portal 2026-10-18 定稿。5.1 至 5.3、5.5 与 5.6 已实现，第 3 节�
 - **日志与编辑器。** ResourceService 的日志对每套复制品写一行合并结果，每个冲突一行（was、now、own），每条没写回的表项一行（带缺失的树）。最近一次合并（自动或手动）的结果保存在 `permission.scheme_merges`，由 GetPermissionScheme 的 `source.last_merge` 返回：`merged_by`（自动合并为 `portal`，手动合并为保存者）；`conflicts` 每项 key、was、now、own；`unrestored` 是没写回的表项，每项带 `missing`；`deleted_again` 是新规则仍给出、因为人删过而保持删除的行（effect、p、a、r）。来源记录推进后编辑器不再显示“来源已更新”，冲突要从 `last_merge` 读取。内置方案跟随发布的写回记录形状相同，由 GetPermissionScheme 的顶层 `last_merge` 返回（`source_scheme_id` 是方案自己，`conflicts` 为空）。
 - **手动合并（69f53dba，2026-10-19）。** 带 `source_digest` 的 UpdatePermissionScheme 树或表规则变化时，在同一事务中走上面的同一套写回（`Instance.regenerate_keeping_edits`）。dry_run 在回滚的事务中实际跑一遍，报告 `unrestored`、`deleted_again`，`diff.lost_edits` 只列写不回的表项（`kind: unrestored`，带 `missing`）。保存后同样记为 `last_merge`，`conflicts` 为空（冲突由编辑器在保存前让人决定）。不带 `source_digest` 的规则修改仍整套重新生成。
 
-### 5.12 授权差报告（TFI portal 2026-10-19）
+### 5.12 授权差报告（weihao 2026-10-19）
 
 动态性（thinking_3cbdd375ebf8 §14）的工程部分目前只做授权差报告：一次操作要重新生成或替换实例时，报告哪些主体在哪些资源上得到或失去了哪些动作，供人判断这次变化能否接受。报告不拦截任何操作。以下三项暂不做：分级审批（按变化类别要求不同的批准）、节点跨版本身份（新旧实例里同一个节点的对应关系），以及不生成实例、直接从规则推出授权差。意图变化（§14.5 第 2 层：一项授权从跟随具体元素变成跟随类别，或反过来）也不报告。
 
@@ -406,3 +412,7 @@ TFI portal 2026-10-18 定稿。5.1 至 5.3、5.5 与 5.6 已实现，第 3 节�
 实现状态（2026-10-19，8cd80811；移动元素的组 4bea1966）：实现在 `permission_system/authdiff.py`，结果字段见 decision_22227d0ad075“授权差”。实例不变的修改和合并经 `authdiff.kept` 读取现有实例比较；没有移动元素时直接报中性。线上实例上同时移动 4 个元素的比较约 0.2 秒。内置方案跟随只改指令分类的发布时，实例不写回，`last_merge.auth_diff` 只有移动元素的组（9ca737a3，见 5.11）。`permission.scheme_merges` 新增 `auth_diff` 列（JSONB，可空）；报告上线前的合并，该列为 null。
 
 权限存储启动时只创建缺失的表，不修改已有的表（避免在线上表上加 DDL 锁），所以后加的列只写在建表语句里：`scheme_instances.rules`（c6eb4deb）、`scheme_merges.auth_diff`（8cd80811），以及更早的 `scheme_merges.deleted_again`、`merged_by`。新建的库直接带这些列；线上库已手动补列（2026-10-19）。其他已有的库需要先补列，否则启动跟随和合并会报 `UndefinedColumn`。已安装站点的升级步骤随开源部署一起设计。
+
+## 资源发现与直接读取
+
+资源列表、搜索联想和项目导航按各对象的读取权限过滤；项目拒绝覆盖其资源、Lineage 与 Resident，直接读取遵循同一判定。

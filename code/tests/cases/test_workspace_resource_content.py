@@ -477,9 +477,14 @@ def test_update_workspace_file_needs_contributor_on_the_workspace(workspace, mon
     workspace.grants[("bob", RESIDENT)] = "@admin"
     for held in (None, "@viewer"):
         workspace.grants[("bob", WORKSPACE)] = held
-        with pytest.raises(InstructionError) as denied:
-            write()
-        assert denied.value.code == "instruction.forbidden"
+        if held is None:
+            # A caller without read access must not learn that the Workspace exists.
+            with pytest.raises(KeyError, match=WORKSPACE):
+                write()
+        else:
+            with pytest.raises(InstructionError) as denied:
+                write()
+            assert denied.value.code == "instruction.forbidden"
         assert workspace.file.read_text(encoding="utf-8") == "# Verified report\n"
     workspace.grants[("bob", WORKSPACE)] = "@contributor"
     write()

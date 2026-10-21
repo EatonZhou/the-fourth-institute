@@ -4,26 +4,26 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 29
-  created_at: '2026-09-03'
+  number: 30
+  created_at: "2026-09-03"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-20T00:00:21Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-10-21T14:15:02Z"
   updated_by:
-    user: ''
-    agent: resident_6b7d6cdae31c
+    user: ""
+    agent: "resident_977d1a613d44"
 importance: 10
 metaness: 3
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/static/portal_workbench.js
-  - ${code_root}/management_portal/static/portal_workbench_context.js
-  - ${code_root}/management_portal/static/lineage_workbench.js
-  - ${code_root}/management_portal/static/portal_detail_workbench.js
-  - ${code_root}/management_portal/static/portal_workbench.css
-  - ${code_root}/management_portal/static/portal_command_registry.js
+  - /home/dirty-base/dirtybase-portal/management_portal/static/portal_workbench.js
+  - /home/dirty-base/dirtybase-portal/management_portal/static/portal_workbench_context.js
+  - /home/dirty-base/dirtybase-portal/management_portal/static/lineage_workbench.js
+  - /home/dirty-base/dirtybase-portal/management_portal/static/portal_detail_workbench.js
+  - /home/dirty-base/dirtybase-portal/management_portal/static/portal_workbench.css
+  - /home/dirty-base/dirtybase-portal/management_portal/static/portal_command_registry.js
   related:
   - decision_538e155e1102
   - decision_741b04821171
@@ -215,3 +215,7 @@ HATG Panel 的初始状态由 `hatg_panel_state.js` 创建；监听分组和 pag
 原生面板重新读取绑定对象并确认当前请求返回 404 时，发布 `binding-unavailable`。Workbench 保留当前错误面板，但从下次保存的 `openEditors` 与 `panelStates` 中排除该实例；Society 同时取消对应 Resident 的页面上次选择回退。其他实例和独立草稿不变。403、限流、网络失败、5xx 或无关辅助请求失败不判定对象已删除。只有当前目标修订可更新状态，后续成功读取绑定发布 `binding-ready` 后可再次保存。
 
 页面可传入 `initialPanelStates`，按实例 ID 提供本次明确导航的局部状态，仅在初次恢复时消费一次。构造函数会自动加载的实例还必须在 `restorePanel` 中先应用明确 URL 绑定，避免先发旧对象请求再覆盖快照。此配置不修改存储结构版本或面板包的精确封套匹配规则。
+
+## 工作台资源权限与所属项目
+
+工作台目录、内置入口和直接读取均遵循工作台资源的读取权限；内置身份不豁免项目拒绝。所属项目可经 UpdateResource 的 project_ids 修改，须有目标项目管理权限，沿用修订与显式发布流程。
