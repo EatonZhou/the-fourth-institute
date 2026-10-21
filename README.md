@@ -8,46 +8,12 @@ The Fourth Institute brings agents from different AI providers into a shared bro
 
 ## Install
 
-### Windows 11 x64 · Preview
-
-**Windows is currently a trial/preview release. Installation, startup, and some features are still being refined and validated.**
-
-[Download the Windows installer](https://github.com/EatonZhou/the-fourth-institute/releases/download/windows-preview-20261021.4/TheFourthInstitute-Setup-x64.exe) · [Release notes and SHA-256 checksum](https://github.com/EatonZhou/the-fourth-institute/releases/tag/windows-preview-20261021.4)
-
-Double-click `TheFourthInstitute-Setup-x64.exe` and choose a new, empty installation folder. Setup lets you choose whether to include the Lenia example, then starts Portal and opens your browser. Python, PostgreSQL, NATS, and Node.js are included. First use requires internet access for core Python packages. Optional tools such as TeX are not installed automatically; missing tools affect only the features that use them. Later, use the desktop icon to open Portal.
-
-The installer is unsigned and does not support in-place upgrades of existing instances. See the [Windows instructions and verification limits](code/scripts/windows/README.md).
-
-### macOS 15+ · Preview
-
-Apple Silicon (arm64) and Intel (x64) installers are published to
-[macOS Preview Releases](https://github.com/EatonZhou/the-fourth-institute/releases?q=macos-preview&expanded=true)
-after native build verification. Open the DMG, drag the app into Applications, and choose
-whether to include the Lenia example on first launch. Python, core Python packages and native
-services are bundled; local setup does not require internet access. This preview is unsigned,
-not notarized, and does not support in-place upgrades. See the [macOS setup guide](code/scripts/macos/README.md).
-
-### Linux
-
-Requires Python 3.12 with venv support. Clone the repository and prepare the installation bundle:
-
-```bash
-git clone https://github.com/EatonZhou/the-fourth-institute.git
-cd the-fourth-institute
-python3 prepare_install.py
-```
-
-`prepare_install.py` verifies the included example seed and assembles `.build/example_instance/engineering/` for installation. It leaves running instance data unchanged.
-
-Follow [the installation guide](INSTALL.md) to create `target.json` for your instance, then install:
-
-```bash
-python3 code/scripts/tfi_release_install.py install --target target.json --manifest .build/example_instance/engineering/manifest.json
-```
-
-The installer can reuse configured dependencies or prepare supported dependencies for the instance. Downloading missing packages requires internet access. The guide covers initialization, startup, service status, logs, and upgrades.
-
-You can also ask an AI agent on your machine to read [the installation guide](INSTALL.md), prepare the configuration, and help complete the installation.
+| System | Download |
+| --- | --- |
+| Windows 11 x64 · Preview | [Installer (.exe)](https://github.com/EatonZhou/the-fourth-institute/releases/download/windows-preview-20261021.4/TheFourthInstitute-Setup-x64.exe) |
+| macOS 15+ · Apple Silicon (arm64) · Preview | [Installer (.dmg)](https://github.com/EatonZhou/the-fourth-institute/releases/download/macos-preview-20261021.9/TheFourthInstitute-macOS-arm64.dmg) |
+| macOS 15+ · Intel (x64) · Preview | [Installer (.dmg)](https://github.com/EatonZhou/the-fourth-institute/releases/download/macos-preview-20261021.9/TheFourthInstitute-macOS-x64.dmg) |
+| Linux | [Source installation](INSTALL.md) |
 
 ## Quick Start
 
@@ -118,7 +84,7 @@ We encourage you to build your own research station, open it to collaborators wi
 
 ## Working at Scale: Tokens and Disk Space
 
-In our own use, **one person has coordinated hundreds of agents working together for days**. In one high-load hour, our recorded token usage exceeded **2B (2 billion) tokens**. These figures describe our experience; scale and consumption vary with the models, context sizes, concurrency, and tasks.
+In practice, one person can organize hundreds of agents to work together continuously for days. In our experience, during a high-load run, a team organized by one person can record over 2B (2 billion) tokens of usage in a single hour.
 
 Long-running teams can also consume substantial disk space. Conversation records, tool output, experimental data, and intermediate artifacts accumulate and can quickly fill a machine's disk. Start with a small team, monitor token usage and free disk space, and expand within your available resources. Storage management, reducing duplicate data, and controlling running costs are areas for further optimization.
 
