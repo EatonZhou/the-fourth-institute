@@ -6,6 +6,7 @@ import platform
 import shutil
 import stat
 import subprocess
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
@@ -212,6 +213,7 @@ def build_prompt(
 - 测试工程、条目来源与样例文件目录：{run_dir / 'fixtures'}
 - 辅助脚本目录：{run_dir / 'helpers'}
 - 仓库根目录：{ROOT}
+- 框架 Python 解释器：{sys.executable}（本次执行器实际运行环境；单元回归仍使用 tests/cases 的隔离数据库）
 {account_instruction}
 
 {fixture_instruction}
