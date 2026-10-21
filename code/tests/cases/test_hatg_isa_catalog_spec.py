@@ -11,6 +11,7 @@ same categories, with the same state-changing and streaming flags.
 from __future__ import annotations
 
 import re
+import os
 from pathlib import Path
 
 import pytest
@@ -19,7 +20,10 @@ from management_portal.hatg.catalog import categories, instruction_catalog
 from management_portal.hatg.declarations import OWNER_MARKS
 
 
-DECISIONS = Path("/share/Projects/AI员工/knowledge_base/decision")
+DECISIONS = Path(os.environ.get(
+    "TFI_SPEC_DECISIONS",
+    str(Path(__file__).resolve().parents[3] / "instance/example_instance/seed/data/share_root/Projects/AI员工/knowledge_base/decision"),
+))
 CATEGORY_DECISIONS = {
     "resource": "ad3e21094f14",
     "user": "6eac174d85bf",

@@ -43,13 +43,15 @@ async function main() {
     window: {PortalI18n: {t: value => value, html: tag}},
     agentStatusData: {}, diskStatusData: {}, gpuStatusData: {}, scheduledTriggeredStatusData: {},
     activeAgentStatus: {}, agentStatusSummaryLoaded: true, agentStatusRunboardHtml: '',
+    canRegisterAccount: false, accountRegistrationPending: false,
+    esc: value => {const node = dom.window.document.createElement('span'); node.textContent = value; return node.innerHTML;},
     executionAccounts: () => [], agentStatusRunboard: () => '', focusedResidentIcon: () => null,
     gpuResourceHtml: () => '', diskResourceHtml: () => '', gpuDetailsHtml: () => '', diskDetailsHtml: () => '',
     renderScheduledTriggeredStatus() {}, restoreResidentIconFocus() {}, syncAccountDetailsButtons() {},
     refreshAccountQuotaWindows() {},
   });
   const source = fs.readFileSync(path.join(input.static, 'static/home.js'), 'utf8');
-  const wanted = new Set(['ensureAgentStatusComponentHosts', 'renderAgentStatus']);
+  const wanted = new Set(['ensureAgentStatusComponentHosts', 'accountEmptyState', 'renderAgentStatus']);
   for (const node of babelParse(source, 'home.js').program.body) {
     if (node.type === 'FunctionDeclaration' && wanted.delete(node.id.name)) {
       vm.runInContext(source.slice(node.start, node.end), context);

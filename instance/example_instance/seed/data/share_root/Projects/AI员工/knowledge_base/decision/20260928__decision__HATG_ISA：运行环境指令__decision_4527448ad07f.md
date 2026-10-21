@@ -4,30 +4,30 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 48
-  created_at: '2026-09-28T10:45:00Z'
+  number: 49
+  created_at: "2026-09-28T10:45:00Z"
   created_by:
-    user: tfi-exported-user
-    agent: resident_2a1fc6cd272d
-  updated_at: '2026-10-19T22:28:48Z'
+    user: "weihao"
+    agent: "resident_2a1fc6cd272d"
+  updated_at: "2026-10-21T13:48:27Z"
   updated_by:
-    user: ''
-    agent: resident_977d1a613d44
+    user: ""
+    agent: "resident_977d1a613d44"
 importance: 8
 metaness: 2
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/runtime_capacity.py
-  - ${code_root}/management_portal/web_isa.py
-  - ${code_root}/management_portal/hatg/catalog/environment.py
-  - ${code_root}/tests/cases/test_isa_g7_audit.py
-  - ${code_root}/scripts/publish_portal_release.py
-  - ${code_root}/tests/cases/test_portal_web_isa_environment.py
-  - ${code_root}/scripts/portal_services
-  - ${code_root}/scripts/publish_portal_release
-  - ${code_root}/management_portal/agent_status_backend.py
-  - ${code_root}/management_portal/execution/backends.py
+  - /home/dirty-base/dirtybase-portal/management_portal/runtime_capacity.py
+  - /home/dirty-base/dirtybase-portal/management_portal/web_isa.py
+  - /home/dirty-base/dirtybase-portal/management_portal/hatg/catalog/environment.py
+  - /home/dirty-base/dirtybase-portal/tests/cases/test_isa_g7_audit.py
+  - /home/dirty-base/dirtybase-portal/scripts/publish_portal_release.py
+  - /home/dirty-base/dirtybase-portal/tests/cases/test_portal_web_isa_environment.py
+  - /home/dirty-base/dirtybase-portal/scripts/portal_services
+  - /home/dirty-base/dirtybase-portal/scripts/publish_portal_release
+  - /home/dirty-base/dirtybase-portal/management_portal/agent_status_backend.py
+  - /home/dirty-base/dirtybase-portal/management_portal/execution/backends.py
   related:
   - decision_8ac0b5a6c0e5
   - decision_fc26f883773d
@@ -136,7 +136,7 @@ Portal 服务指令由 Portal Web 执行。Dev 与 Release 两个实例各有自
 结果为 `capacity`，新输出 schema 是 `tfi.runtime-capacity.v1`；读取方只接受该精确格式，`observed_at` 是本次开始采样的 UTC 时间。三个来源顺序采集，各自返回 `status=ok|unavailable`；某源异常只返回安全错误码，成功来源继续保留。这是当前观察，不是跨服务事务快照。
 
 - `database`：`connections` 为 PostgreSQL 实例全部 client backend 连接数，含当前观察连接；`max_connections` 为总槽数，`reserved_connections` 包括普通保留与超级用户保留槽，`usable_connections` 是两者相减。`used_percent` 为连接数除以普通可用槽数，可超过 100%，不截断。查询使用短只读连接，退出或异常都释放连接及其数据库句柄。
-- `disks.filesystems`：仅观察本机 `/`、`${share_root}`、`/data` 中存在的路径，按文件系统设备号去重，返回 `key`、代表路径 `path`、`total_bytes`、`free_bytes` 与 `used_percent`。使用率按总容量减可用容量计算，包含预留空间，不扫描文件、不连接远程服务器。
+- `disks.filesystems`：仅观察本机 `/`、`/share`、`/data` 中存在的路径，按文件系统设备号去重，返回 `key`、代表路径 `path`、`total_bytes`、`free_bytes` 与 `used_percent`。使用率按总容量减可用容量计算，包含预留空间，不扫描文件、不连接远程服务器。
 - `execution_queue`：复用 ExecutionService 的健康读取；`queued_count` 来自 scheduler 的 queued 状态计数，包含配额、派发间隔与绑定等待；`active_count` 使用该服务的活动数量，`max_concurrency` 使用全部 capacity 分区限制之和 `total_capacity`。单个默认分区上限不能代表总并发，排队数也不能代表可立即派发数量。
 
 预警阈值、持续时间、去重和恢复由 Portal System 的运行容量流程负责，见 decision_5ff0cb51ed84。
@@ -265,7 +265,7 @@ Portal 服务指令由 Portal Web 执行。Dev 与 Release 两个实例各有自
 
 **登记一个新的模型接口。**
 
-- 参数：`api_id`、`base_url`、`default_model`、`secret_file`（密钥文件路径）、`secret`（可选，一次性密钥：Portal 原子写入站点密钥目录下的 `<api_id>.key` 并把路径记为 `secret_file`，不回显）、`provider`（可选，Provider 标识）、`routes`（可选，每项明确给出 `backend` 和 `route_id`）、`default_parameters`（可选，协议允许的默认生成参数）、`timeout_seconds`（可选）、`retries`（可选）、`headers`（可选，不含密钥）、`enabled`（可选，默认 `true`）。
+- 参数：`api_id`、`base_url`、`default_model`、`secret_file`（密钥文件路径）、`secret`（可选，一次性密钥：Portal 原子写入站点密钥目录下的 `<api_id>.key` 并把路径记为 `secret_file`，不回显）、`provider`（可选，Provider 标识）、`routes`（可选，每项明确给出 `backend` 和 `route_id`）、`models`（可选，模型目录；每项含唯一 `id`，可声明 `reasoning_efforts` 与 `enabled`）、`default_parameters`（可选，协议允许的默认生成参数）、`timeout_seconds`（可选）、`retries`（可选）、`headers`（可选，不含密钥）、`enabled`（可选，默认 `true`）。
 - 结果：登记后的接口信息。
 
 执行后端通过 `routes` 的明确绑定找到模型接口；没有绑定时报告配置缺失，不按登记顺序或启用顺序选择。接口登记与后端路线分别存储，路线通过 `api_id` 关联接口；同一后端路线只能绑定一个接口。
@@ -310,7 +310,7 @@ Portal 服务指令由 Portal Web 执行。Dev 与 Release 两个实例各有自
 | `GetDeviceStatus` | `kind`、`device_id`、`refresh` |
 | `OpenTerminal` | `device_id`、`cwd`、`cols`、`rows` |
 | `ListModelApis` | 无 |
-| `CreateModelApi` | `api_id`、`base_url`、`default_model`、`secret_file`、`secret`、`provider`、`routes`、`default_parameters`、`timeout_seconds`、`retries`、`headers`、`enabled` |
+| `CreateModelApi` | `api_id`、`base_url`、`default_model`、`secret_file`、`secret`、`provider`、`routes`、`models`、`default_parameters`、`timeout_seconds`、`retries`、`headers`、`enabled` |
 | `UpdateModelApi` | `api_id`、`changes`、`secret` |
 | `DeleteModelApi` | `api_id` |
 | `CompleteChat` | `api_id`、`model`、`messages`、`options`、`response_schema` |

@@ -22,8 +22,9 @@ def configured_root():
     site = os.getenv("PORTAL_SITE_CONFIG")
     if site:
         root = Path(site).resolve().parent.parent
-        if (root / "config/development.json").is_file():
-            return root
+        # An explicit site owns its runtime, including the absence of a pair.
+        # Falling back to the source checkout could control a different site.
+        return root if (root / "config/development.json").is_file() else None
     from scripts.tfi_dev import configuration
     try:
         value = configuration(Path(__file__).resolve().parents[2]).get("runtime_root")

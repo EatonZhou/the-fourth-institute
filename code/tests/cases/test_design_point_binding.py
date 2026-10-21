@@ -156,7 +156,7 @@ def test_design_live_directory_build_claims_implementations_without_duplicate_au
 def wall_points(monkeypatch, tmp_path):
     monkeypatch.setattr(wall, "_read_state", lambda: {"projects": {"portal": {}}})
     monkeypatch.setattr(wall, "project", lambda key, actor: {"root": str(tmp_path)})
-    monkeypatch.setattr(wall, "index_sources", lambda root: [SOURCE])
+    monkeypatch.setattr(wall, "index_sources", lambda root, *, errors=None: [SOURCE])
 
     def read_point(key, ref, actor):
         point = next((point for point in POINTS if point["id"] == ref), None)
@@ -204,7 +204,7 @@ def test_missing_registered_workspace_does_not_block_other_bindings(wall_points,
     missing = tmp_path / "removed-test-workspace"
     monkeypatch.setattr(wall, "_read_state", lambda: {"projects": {"removed": {}, "portal": {}}})
     monkeypatch.setattr(wall, "project", lambda key, actor: {"root": str(missing if key == "removed" else tmp_path)})
-    monkeypatch.setattr(wall, "index_sources", lambda root: index_sources(root) if root == missing else [SOURCE])
+    monkeypatch.setattr(wall, "index_sources", lambda root, *, errors=None: index_sources(root, errors=errors) if root == missing else [SOURCE])
     assert wall.resolve_design_point(POINTS[0]["id"], "fixture-user")["status"] == "valid"
     monkeypatch.setattr(wall, "_read_state", lambda: {"projects": {"removed": {}}})
     assert wall.resolve_design_point(POINTS[0]["id"], "fixture-user")["status"] == "unavailable"
@@ -216,7 +216,7 @@ def test_wall_binding_does_not_read_inaccessible_project_sources(wall_points, mo
         raise PermissionError("private project")
 
     monkeypatch.setattr(wall, "project", denied)
-    monkeypatch.setattr(wall, "index_sources", lambda root: pytest.fail("inaccessible project was read"))
+    monkeypatch.setattr(wall, "index_sources", lambda root, *, errors=None: pytest.fail("inaccessible project was read"))
     assert wall.resolve_design_point(POINTS[0]["id"], "fixture-user")["status"] == "unavailable"
     with pytest.raises(PermissionError):
         wall.resolve_design_point(POINTS[0]["id"], "")

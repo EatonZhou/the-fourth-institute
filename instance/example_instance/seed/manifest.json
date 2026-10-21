@@ -28153,6 +28153,11 @@
       "size": 14028
     },
     {
+      "path": "data/share_root/Articles/article_0565c33e0c03/work/longform_v047/figures/temporal_credit.tex",
+      "sha256": "0fdebb4b08fccb70271e6acf6cdd53074e0ef30eeff9e031009308e98e3a7142",
+      "size": 1560
+    },
+    {
       "path": "data/share_root/Articles/article_0565c33e0c03/work/longform_v047/figures/temporal_credit/temporal_credit.pdf",
       "sha256": "7058ad66158be01dd36e9106437b63457a07f2f95a4c2a7d8d4fc067fde7771e",
       "size": 41266
@@ -28166,11 +28171,6 @@
       "path": "data/share_root/Articles/article_0565c33e0c03/work/longform_v047/figures/temporal_credit/temporal_credit.pptx",
       "sha256": "acde863a4f6ba3bcfbb8b3e8e14ff215a7aef49fc696daba8b1a888defeb1749",
       "size": 12453
-    },
-    {
-      "path": "data/share_root/Articles/article_0565c33e0c03/work/longform_v047/figures/temporal_credit.tex",
-      "sha256": "0fdebb4b08fccb70271e6acf6cdd53074e0ef30eeff9e031009308e98e3a7142",
-      "size": 1560
     },
     {
       "path": "data/share_root/Articles/article_0565c33e0c03/work/longform_v047/figures/young_turnover.tex",
@@ -28323,6 +28323,11 @@
       "size": 1633
     },
     {
+      "path": "data/share_root/Articles/article_0565c33e0c03/work/method_renewal/figures/birth_placement.tex",
+      "sha256": "205c9e582628d1b1ac962561fef857e71a28d05e6aca10445ea313c72fc01747",
+      "size": 1653
+    },
+    {
       "path": "data/share_root/Articles/article_0565c33e0c03/work/method_renewal/figures/birth_placement/birth_placement.pdf",
       "sha256": "90b272ee90802cf0e7d25ba50f560dcdbd07d2a294bdbf1e0e0e2f551d17c587",
       "size": 117709
@@ -28338,9 +28343,9 @@
       "size": 19950
     },
     {
-      "path": "data/share_root/Articles/article_0565c33e0c03/work/method_renewal/figures/birth_placement.tex",
-      "sha256": "205c9e582628d1b1ac962561fef857e71a28d05e6aca10445ea313c72fc01747",
-      "size": 1653
+      "path": "data/share_root/Articles/article_0565c33e0c03/work/method_renewal/figures/carried_evidence.tex",
+      "sha256": "7f73f289597af567b042f537cd0f38ede800f34c75273615c48d0af8896a70f3",
+      "size": 1589
     },
     {
       "path": "data/share_root/Articles/article_0565c33e0c03/work/method_renewal/figures/carried_evidence/carried_evidence.pdf",
@@ -28358,11 +28363,6 @@
       "size": 20980
     },
     {
-      "path": "data/share_root/Articles/article_0565c33e0c03/work/method_renewal/figures/carried_evidence.tex",
-      "sha256": "7f73f289597af567b042f537cd0f38ede800f34c75273615c48d0af8896a70f3",
-      "size": 1589
-    },
-    {
       "path": "data/share_root/Articles/article_0565c33e0c03/work/method_renewal/figures/formation.tex",
       "sha256": "e74b994a1a0b5b9248e04aca2c61b7a8bdafee0295975451800528270118ab98",
       "size": 985
@@ -28371,6 +28371,11 @@
       "path": "data/share_root/Articles/article_0565c33e0c03/work/method_renewal/figures/inheritance_recovery.tex",
       "sha256": "272f091602d98dfa39f5784f55adc6c045bbd5f9ffb47ac71bd6895ce254bba6",
       "size": 1281
+    },
+    {
+      "path": "data/share_root/Articles/article_0565c33e0c03/work/method_renewal/figures/local_evidence.tex",
+      "sha256": "ac772bb84dab6d3805e54b886dcc3b6212195ffcb37a57b6ec597d560ad459dd",
+      "size": 1589
     },
     {
       "path": "data/share_root/Articles/article_0565c33e0c03/work/method_renewal/figures/local_evidence/local_evidence.pdf",
@@ -28386,11 +28391,6 @@
       "path": "data/share_root/Articles/article_0565c33e0c03/work/method_renewal/figures/local_evidence/local_evidence.pptx",
       "sha256": "8f9a73d02ea19080a3532815bbca27d6a616f574e7c2dab20085aa40af06ee75",
       "size": 15042
-    },
-    {
-      "path": "data/share_root/Articles/article_0565c33e0c03/work/method_renewal/figures/local_evidence.tex",
-      "sha256": "ac772bb84dab6d3805e54b886dcc3b6212195ffcb37a57b6ec597d560ad459dd",
-      "size": 1589
     },
     {
       "path": "data/share_root/Articles/article_0565c33e0c03/work/method_renewal/figures/protection.tex",
@@ -28893,6 +28893,11 @@
       "size": 3953
     },
     {
+      "path": "data/share_root/Articles/article_c30f093138b5/figures-editable.pptx",
+      "sha256": "e6c7ba41a8d1b85d4b9c231e51c35197f1158760e1969dbcea0f790e7254f202",
+      "size": 70676
+    },
+    {
       "path": "data/share_root/Articles/article_c30f093138b5/figures/01-overview.pdf",
       "sha256": "5d59d6d3778d1b4a03fd940c006052ce3b7dbbcd29cab912b9cb3b7d0d177cc5",
       "size": 144326
@@ -29136,11 +29141,6 @@
       "path": "data/share_root/Articles/article_c30f093138b5/figures/manifest.json",
       "sha256": "4a95938e14703231c71cddb35514fa224fa0929edf5ad9bfc96a86738391baa5",
       "size": 1651
-    },
-    {
-      "path": "data/share_root/Articles/article_c30f093138b5/figures-editable.pptx",
-      "sha256": "e6c7ba41a8d1b85d4b9c231e51c35197f1158760e1969dbcea0f790e7254f202",
-      "size": 70676
     },
     {
       "path": "data/share_root/Articles/article_c30f093138b5/main.tex",
@@ -30404,8 +30404,8 @@
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20260714__decision__Portal_Dev_与_Release_实例、用户路由与服务控制面__decision_850e6248d680.md",
-      "sha256": "66fa97033ae097f1fefc7dbc218652904b170cadcb98e87bdcd96782b2bc331a",
-      "size": 32137
+      "sha256": "b84d398997e781b40f1121bd90d2af887c486fffede2c3d04065421b0c5da809",
+      "size": 32452
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20260717__decision__Portal接入Kimi_Code作为第三种Agent后端__decision_6b9e42f1c8a7.md",
@@ -30754,8 +30754,8 @@
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20260903__decision__Portal_Prompt_Context_的物化与注入边界__decision_ef1d6c925955.md",
-      "sha256": "8ab131c666d3dc5c055cd491e13e75fa041bc29f65f4d493e753161ae2d866c1",
-      "size": 18801
+      "sha256": "e21e8e50d036f0907a4a899ec41d7d55a0f4356b04d46f9bef7920caf8f2fa7d",
+      "size": 19974
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20260903__decision__Portal_Pulse_与个人动态发布__decision_865ac8ebef25.md",
@@ -31024,8 +31024,8 @@
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20260924__decision__Portal_共享运行基础与_Dev_到_Release_的发布流程__decision_08bb2d9141f9.md",
-      "sha256": "ea26e56f626f64e6749562cec1f774e1aa5705a56626f4547e005caf8ec384f6",
-      "size": 23831
+      "sha256": "5c11af03c9628ead13929207f97dddc2a0006910a7797b06ed22ad91dccf965b",
+      "size": 8135
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20260928__decision__HATG_ISA：Function_Block_可复用模块与指令__decision_5b5653c3eaa5.md",
@@ -31094,8 +31094,8 @@
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20260928__decision__HATG_ISA：运行环境指令__decision_4527448ad07f.md",
-      "sha256": "a232a5f6e347a7e67f1c252679ece6c480e5a57549f32e69bd9b1bb637bc7554",
-      "size": 32388
+      "sha256": "6799df34b96aa9c93da326e8e2c8cf088cfc4fb73c8544f8ef162f5d6fad02c7",
+      "size": 32704
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20260930__decision__DeepSeek_Harness_Provider_的会话接入__decision_276105b5d67b.md",
@@ -31304,8 +31304,8 @@
     },
     {
       "path": "data/share_root/Skills/tfi-agent-rule/SKILL.md",
-      "sha256": "7a88796ba3c1ec29d50f8bb36734cd2caa9b2fb05576ba04738ec5776cf53da3",
-      "size": 13064
+      "sha256": "2341333e64a345b447dabb35b6214671451eb8c346db3c98cf5f3a3c1ca2a0c5",
+      "size": 14210
     },
     {
       "path": "data/share_root/Skills/tfi-agent-rule/portal-codex-accounts.md",
@@ -31314,23 +31314,23 @@
     },
     {
       "path": "data/share_root/Skills/tfi-agent-rule/portal-context-injection.md",
-      "sha256": "3f5d5c5cfb61563f27dddc330c5f8975632c1fade993c66ecd7cefd16061a8d4",
-      "size": 5350
+      "sha256": "cb5b98fab2798bbeb035a5a78ff6fba72122b7ab0b34a2894bb24f7594854177",
+      "size": 6451
     },
     {
       "path": "data/share_root/Skills/tfi-agent-rule/portal-development.md",
-      "sha256": "7a100077fc061afecfae2a6e36097549045216f92702c71fb7251450b3c98c60",
-      "size": 11356
+      "sha256": "7e4baf9ea68ecbfbc9e7d012d2174b3efaca53f04135222773bea219d5119e15",
+      "size": 9976
     },
     {
       "path": "data/share_root/Skills/tfi-agent-rule/portal-resident-folder.md",
-      "sha256": "19179a755f05796a4f0bd8ce1456aa157675821de2c40bc2f82783ebafb66121",
-      "size": 2666
+      "sha256": "74af18ac2a0c40de2c7623baee9ffe91dc157ae29d503f096339d6843bd2666c",
+      "size": 2925
     },
     {
       "path": "data/share_root/Skills/tfi-agent-rule/portal-resident.md",
-      "sha256": "55eebb5bf3337bb9fc3ef3fdbd7ad9479cd920d0718aec1a57d97abba650be3d",
-      "size": 6009
+      "sha256": "ce5a2f67b9ebc60c11b1434db3e95668ae9c79e0e28c073a57756f4e404cd471",
+      "size": 6507
     },
     {
       "path": "data/share_root/Skills/tfi-unified-id/SKILL.md",

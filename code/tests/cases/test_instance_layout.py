@@ -155,7 +155,8 @@ class SharedInstanceTests(unittest.TestCase):
             (bundle / "code").mkdir(parents=True)
             (bundle / "code/application.py").write_text("old content")
             with self.assertRaisesRegex(ValueError, "differs"):
-                installer.copy_engineering({"code": {"path": "code"}, "directory_mappings": []},
+                installer.copy_engineering({"code": {"path": "code"}, "directory_mappings": [],
+                                            "files": {}, "inventory": []},
                                            bundle, target)
             self.assertEqual((shared / "application.py").read_text(), "new content")
             self.assertFalse((base / "instance/code").exists())

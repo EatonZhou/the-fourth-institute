@@ -42,7 +42,7 @@ def _health(*, active: int = 0, queued: int = 0) -> dict[str, object]:
     }
 
 
-def test_queue_counts_use_scheduler_partitions_contracts(subtests, isolated_portal_case):
+def test_queue_counts_use_scheduler_partitions_contracts(monkeypatch, subtests, isolated_portal_case):
     """队列计数取调度分区的活动和排队数，重启通知时长固定为 5 秒"""
     with subtests.test(contract='test_queue_counts_use_scheduler_partitions'), isolated_portal_case() as case_path:
         assert portal_services._queue_counts(_health(active=2, queued=3)) == {'active': 2, 'queued': 3}
@@ -53,7 +53,9 @@ def test_queue_counts_use_scheduler_partitions_contracts(subtests, isolated_port
         with pytest.raises(SystemExit):
             portal_services._parser().parse_args(['restart', 'dev', '--notice', '10'])
     with subtests.test(contract='test_restart_api_rejects_other_notice_durations'), isolated_portal_case() as case_path:
-        with pytest.raises(RuntimeError, match='Standalone TFI'):
+        from scripts import tfi_development_runtime as paired
+        monkeypatch.setattr(paired, 'configured_root', lambda: pytest.fail('invalid request reached runtime discovery'))
+        with pytest.raises(ValueError, match='fixed at 5 seconds'):
             portal_services.restart('dev', notice_seconds=10)
 
 

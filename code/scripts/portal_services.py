@@ -318,6 +318,8 @@ def stop(instance: str, *, drain: bool, drain_timeout: float, force: bool) -> di
     return {'ok': all((item['active'] == 'inactive' for item in states)), 'instance': instance, 'services': states}
 
 def restart(instance: str, *, notice_seconds: int, components: tuple[str, ...] | list[str] | None=None, release_commit: str='', force_worker_restart: bool=False, units_prepared: bool=False) -> dict[str, Any]:
+    if int(notice_seconds) != DEFAULT_RESTART_NOTICE_SECONDS:
+        raise ValueError('Portal restart countdown is fixed at 5 seconds')
     from scripts import tfi_development_runtime as paired
     root = paired.configured_root()
     if root:
@@ -325,114 +327,6 @@ def restart(instance: str, *, notice_seconds: int, components: tuple[str, ...] |
             raise ValueError('Publish the commit with tfi_dev before restarting')
         return paired.restart(root, instance, components)
     raise RuntimeError('Standalone TFI: use install_tfi_release status/cleanup; source Dev/Release control is unsupported')
-    if int(notice_seconds) != DEFAULT_RESTART_NOTICE_SECONDS:
-        raise ValueError('Portal restart countdown is fixed at 5 seconds')
-    config = _config(instance)
-    controller = _controller()
-    requested = tuple(dict.fromkeys(components or DEFAULT_RESTART_COMPONENTS))
-    unknown = sorted(set(requested) - set(COMPONENT_BUILD_KEYS))
-    if unknown:
-        raise ValueError(f'unknown Portal restart components: {unknown}')
-    selected = tuple((component for component in (*DEFAULT_RESTART_COMPONENTS, 'execution-worker') if component in requested))
-    if release_commit and (instance != 'release' or 'web' not in selected):
-        raise ValueError('Only a Release Web restart can advance the release branch')
-    require_available(instance)
-    source_before_restart = None
-    if instance == 'dev':
-        from scripts import portal_dev_source_reloader as reloader
-        source_before_restart = reloader.component_source_states(reloader.source_state())
-        from scripts.portal_source_layout import SHARED_COMPONENTS
-        if set(selected) & set(SHARED_COMPONENTS) and portal_release.is_deployed():
-            require_available('release')
-    if not units_prepared:
-        _prepare_units(instance)
-    if instance == 'dev':
-        portal_dev_generation.activate(components=[COMPONENT_BUILD_KEYS[item] for item in selected])
-    controller.start(config['target'], USER_ROUTER_SERVICE)
-    pids_before_restart = _capture_pids(instance, selected)
-    lifecycle_operations = {component: f'{component}-restart-{uuid.uuid4().hex}' for component in selected if component in COMPONENT_LIFECYCLE}
-    try:
-        if 'web' in selected:
-            _restart_web_with_notice(instance, notice_seconds, release_commit=release_commit)
-        lineage_paused_for_resource = 'resource' in selected and 'lineage' in selected
-        announced_components: set[str] = set()
-        if lineage_paused_for_resource:
-            lineage = COMPONENT_LIFECYCLE['lineage']
-            publish_component_state(instance, 'lineage', 'restarting', message=lineage['restarting'], operation_id=lifecycle_operations['lineage'])
-            announced_components.add('lineage')
-            controller.stop(config['component_units']['lineage'])
-        for component in selected:
-            if component in {'web', 'execution-worker'}:
-                continue
-            lifecycle = COMPONENT_LIFECYCLE.get(component)
-            if lifecycle and component not in announced_components:
-                publish_component_state(instance, component, 'restarting', message=lifecycle['restarting'], operation_id=lifecycle_operations[component])
-            if component == 'lineage' and 'resource' not in selected:
-                _wait_resource_service_healthy(instance)
-            action = 'start' if component == 'lineage' and lineage_paused_for_resource else 'restart'
-            if component == 'execution-service':
-                state = _unit_state(config['component_units'][component])
-                action = 'reload' if state['active'] == 'active' else 'start'
-            service = config['component_units'][component]
-            if action == 'reload':
-                if controller.platform == 'linux':
-                    controller.reload(service)
-                else:
-                    _require_idle(instance, drain=True, timeout_seconds=270)
-                    controller.restart(service)
-            elif action == 'start':
-                controller.start(service)
-            else:
-                controller.restart(service)
-            if component == 'resource':
-                _wait_resource_service_healthy(instance)
-        worker_id_before_restart = ''
-        if 'execution-worker' in selected:
-            worker_unit = config['component_units']['execution-worker']
-            worker_state = _unit_state(worker_unit)
-            if force_worker_restart and worker_state['active'] == 'active':
-                health = _execution_worker_health(instance)
-                current = health.get('current') or {}
-                worker_id_before_restart = str(current.get('worker_id') or '')
-                if health.get('explicit_restart_supported') is not True or health.get('manager_pid') != worker_state.get('pid') or (not worker_id_before_restart):
-                    raise RuntimeError('ExecutionWorkerManager must be deployed and report explicit restart support with a current Worker before an explicit restart')
-                if controller.platform == 'linux':
-                    controller.signal_main(worker_unit, 'SIGUSR1')
-                else:
-                    _require_idle(instance, drain=True, timeout_seconds=270)
-                    controller.restart(worker_unit)
-            else:
-                action = 'reload' if worker_state['active'] == 'active' else 'start'
-                if action == 'reload':
-                    if controller.platform == 'linux':
-                        controller.reload(worker_unit)
-                    else:
-                        _require_idle(instance, drain=True, timeout_seconds=270)
-                        controller.restart(worker_unit)
-                else:
-                    controller.start(worker_unit)
-        result = _wait_healthy(instance, pids_before_restart=pids_before_restart, verify_components=[COMPONENT_BUILD_KEYS[item] for item in selected], **{'worker_id_before_restart': worker_id_before_restart} if worker_id_before_restart else {})
-        if worker_id_before_restart:
-            health = result['execution_worker']
-            current = health['current']
-            result['worker_restart'] = {'previous_worker_id': worker_id_before_restart, 'worker_id': current['worker_id'], 'build_id': current['build_id'], 'manager_pid': health['manager_pid']}
-    except Exception:
-        for component, operation_id in lifecycle_operations.items():
-            lifecycle = COMPONENT_LIFECYCLE[component]
-            publish_component_state(instance, component, 'unavailable', message=lifecycle['unavailable'], operation_id=operation_id)
-        raise
-    for component, operation_id in lifecycle_operations.items():
-        lifecycle = COMPONENT_LIFECYCLE[component]
-        publish_component_state(instance, component, 'ready', message=lifecycle['ready'], operation_id=operation_id)
-    if instance == 'dev':
-        from scripts.portal_source_layout import SHARED_COMPONENTS
-        common = tuple((c for c in selected if c in SHARED_COMPONENTS))
-        if common and portal_release.is_deployed():
-            with operation_lock(_operation_lock_path('release')):
-                restart('release', notice_seconds=notice_seconds, components=common, units_prepared=True)
-        accepted = reloader.read_deployed_source_states(source_before_restart)
-        reloader.accept_components(accepted, source_before_restart, set(selected))
-    return result
 
 def request_restart(instance: str, *, components: tuple[str, ...] | list[str] | None=None) -> dict[str, Any]:
     from scripts import tfi_development_runtime as paired
@@ -440,19 +334,6 @@ def request_restart(instance: str, *, components: tuple[str, ...] | list[str] | 
     if root:
         return paired.request_restart(root, instance, components)
     raise RuntimeError('Standalone TFI: use install_tfi_release status/cleanup; source Dev/Release control is unsupported')
-    if instance != 'dev':
-        raise ValueError('deferred restart requests are only available for Portal Dev')
-    require_available(instance)
-    selected = tuple(dict.fromkeys(components or ()))
-    unknown = sorted(set(selected) - set(COMPONENT_BUILD_KEYS))
-    if unknown:
-        raise ValueError(f'unknown Portal restart components: {unknown}')
-    request = portal_dev_restart_requests.submit_restart_request(selected)
-    controller = _controller()
-    controller.start('portal-dev-source-reloader.service')
-    if controller.platform == 'linux':
-        controller.signal_main('portal-dev-source-reloader.service', 'SIGUSR1')
-    return {'ok': True, 'queued': True, 'instance': 'dev', 'request': request}
 
 def _add_safety_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument('--drain', action=argparse.BooleanOptionalAction, default=True, help='Wait for active and queued work to reach zero (default: enabled).')

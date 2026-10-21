@@ -6,10 +6,25 @@
 :risk: no-external-side-effects
 """
 import unittest
+import tempfile
+from pathlib import Path
+from unittest.mock import patch
 from scripts.tfi_development_runtime import adapt_component, affected, restart_components
+from scripts import tfi_development_runtime as paired
 
 
 class PairedRuntimeTest(unittest.TestCase):
+    def test_explicit_site_without_pair_never_uses_checkout_runtime(self):
+        with tempfile.TemporaryDirectory() as directory:
+            site = Path(directory) / "config/site.json"
+            site.parent.mkdir()
+            site.write_text('{}')
+            with patch.dict('os.environ', {'PORTAL_SITE_CONFIG': str(site)}), \
+                    patch('scripts.tfi_dev.configuration', side_effect=AssertionError('another instance discovered')):
+                self.assertIsNone(paired.configured_root())
+                (site.parent / 'development.json').write_text('{}')
+                self.assertEqual(paired.configured_root(), Path(directory))
+
     def test_web_changes_code_and_port_without_changing_shared_state(self):
         env = {"PORTAL_DATABASE_URL": "same-database", "PORTAL_INSTANCE": "release",
                "PORTAL_RESOURCE_SERVICE_SOCKET": "same-resource.sock",
