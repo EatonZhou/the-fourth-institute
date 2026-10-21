@@ -70,7 +70,7 @@ def control(*args):
                           check=True, capture_output=True, text=True, timeout=300).stdout.strip()
 
 
-def configure(root, repo, dev_port, release_port):
+def configure(root, repo, dev_port, release_port, gateway_unit=None):
     """Prepare a pair inside an existing instance; never install a second DB."""
     from scripts.tfi_dev import configuration, git, install_push_hook
     from scripts.tfi_release_install import runtime_python
@@ -85,6 +85,14 @@ def configure(root, repo, dev_port, release_port):
               "release_code": str(Path(cfg["main"]) / "code"),
               "web_ports": {"dev": dev_port, "release": release_port},
               "router_port": target["ports"]["web"]}
+    previous = root / "config/development.json"
+    if gateway_unit or previous.is_file():
+        gateway_unit = gateway_unit or read(previous).get("gateway_unit")
+    if gateway_unit:
+        gateway_file = Path(control("show", gateway_unit, "--property=FragmentPath", "--value"))
+        if not gateway_file.is_file() or gateway_file.name != gateway_unit:
+            raise ValueError("The HTTPS gateway must be an existing user service")
+        config["gateway_unit"] = gateway_unit
     for source in (config["dev_code"], config["release_code"]):
         if not (Path(source) / "management_portal/asgi.py").is_file():
             raise ValueError("Portal source is missing: " + source)
@@ -116,6 +124,20 @@ def configure(root, repo, dev_port, release_port):
         if path.exists() and "Description=TFI paired " not in path.read_text():
             raise ValueError("An unrelated service already owns " + str(path))
         path.write_text(content)
+    if gateway_unit:
+        drop_in = unit_root / (gateway_unit + ".d")
+        drop_in.mkdir(exist_ok=True)
+        path = drop_in / "tfi-development.conf"
+        content = ("# TFI paired runtime\n[Service]\n"
+                   + "Environment=" + json.dumps("PORTAL_DEPLOYMENT_REGISTRY_PATH=" + str(registry)) + "\n"
+                   + "Environment=" + json.dumps("PORTAL_SHARED_SOURCE_ROOT=" + config["dev_code"]) + "\n")
+        if path.exists() and not path.read_text().startswith("# TFI paired runtime"):
+            raise ValueError("An unrelated gateway override already exists")
+        path.write_text(content)
+    site_path = root / "config/site.json"
+    site = read(site_path)
+    site.setdefault("deployment", {}).update(source_root=config["dev_code"], release_root=config["release_code"])
+    write(site_path, site)
     control("daemon-reload")
     return config
 
@@ -284,6 +306,8 @@ def activate(root, paths, commit, *, initial=False):
             control("kill", "--kill-whom=main", "--signal=HUP", unit)
         else:
             control("restart", unit)
+        if component == "router" and config.get("gateway_unit"):
+            control("restart", config["gateway_unit"])
         completed.append(component)
         print(json.dumps({"activated": component}), flush=True)
     control("enable", prefix + "-dev-web.service", prefix + "-router.service")
@@ -304,9 +328,10 @@ def main():
     parser.add_argument("--instance", choices=("dev", "release"), default="dev")
     parser.add_argument("--component", action="append")
     parser.add_argument("--request", type=Path)
+    parser.add_argument("--gateway-unit", help="Existing HTTPS upstream router to use the same Dev/Release registry")
     args = parser.parse_args()
     if args.action == "configure":
-        value = configure(args.root, args.repo, args.dev_port, args.release_port)
+        value = configure(args.root, args.repo, args.dev_port, args.release_port, args.gateway_unit)
     elif args.action == "activate":
         cfg = read(args.root / "config/development.json")
         commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=cfg["release_code"], text=True).strip()

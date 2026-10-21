@@ -19,5 +19,8 @@ python3 code/scripts/tfi_development_runtime.py configure --root /实际实例�
 python3 code/scripts/tfi_development_runtime.py activate --root /实际实例目录
 ```
 
+若 HTTPS 前还有现成的 Portal 用户路由服务，配置时加 `--gateway-unit <服务名>`，
+让它读取同一份双入口登记，避免菜单仍显示旧的单实例标签。
+
 配置后的发布会排队激活受影响组件（读取返回的 `activation.receipt` 确认结果），Worker 使用平滑换代；无需重建实例，也不
 重启数据库和 Provider 账号服务。`--no-activate` 仅用于明确要求延迟激活的准备阶段。
