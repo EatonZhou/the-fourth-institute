@@ -1,0 +1,30 @@
+# Windows 11 x64 · 试用版 / Preview
+
+Windows 版目前仍是试用版，完整 Windows 真机流程尚待进一步验证。
+下载 `TheFourthInstitute-Setup-x64.exe`，安装到新的空目录。
+安装开始时可以选择是否包含 Lenia 预置案例。
+
+没有 AI 账号时，AI Activity & Accounts 页提供“新增 AI 账号”入口，直接打开现有账号登记对话框。
+
+本次更新取消密码至少 12 个字符的限制，保留字符类型要求；首次安装完成后直接打开
+注册或登录入口，不再重复启动和检查服务。启动检查的等待上限调整为约 2 分钟；
+服务退出或同一 HTTP 应用错误连续出现时更早显示具体原因。
+
+Python、PostgreSQL、NATS 和 Node.js 已内置，首次准备核心 Python 包仍需联网。
+TeX、浏览器自动化和测试工具按需自行安装。安装包尚未签名，尚不支持覆盖旧版升级。
+已有实例请先备份，不能把重新运行 Setup 当作数据迁移。
+
+Windows remains a preview/trial release. Full validation on physical Windows machines
+is pending. Use a new, empty installation directory and choose whether to include
+the Lenia example. Python and native services are bundled; first use still requires
+internet access for core Python packages. Optional tools are not installed automatically.
+This unsigned installer does not provide an in-place upgrade of an existing instance.
+
+When no AI accounts are configured, AI Activity & Accounts now offers an Add AI account
+button that opens the existing account registration dialog.
+
+This update removes the 12-character password minimum, retains character-type rules,
+and avoids repeating service startup and readiness checks after initial installation.
+Readiness retries are bounded to about two minutes, with earlier diagnostics for exited
+services and repeated HTTP application errors. The SHA-256 file and `receipt.json`
+identify the installer and the exact source commit used to build it.

@@ -23,7 +23,7 @@
     : 0;
 
   function passwordStrengthError(password) {
-    if (password.length < 12) return "Use at least 12 characters.";
+    if (!password.length) return "Enter a password.";
     if (password.length > 256) return "Use no more than 256 characters.";
     const characterClasses = [/\p{Ll}/u, /\p{Lu}/u, /\p{N}/u, /[^\p{L}\p{N}]/u]
       .filter(pattern => pattern.test(password)).length;
@@ -254,7 +254,7 @@
   window.PortalIdentity = Object.freeze({
     permissionSystemOff,
     passwordStrengthError,
-    passwordRequirements: "12+ characters and at least three of uppercase, lowercase, numbers, and symbols.",
+    passwordRequirements: "Include at least three of: uppercase letters, lowercase letters, numbers, and symbols.",
     clear,
     eventName: CHANGE_EVENT,
     load,

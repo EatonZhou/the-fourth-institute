@@ -89,7 +89,8 @@ def test_failed_creation_is_atomic_and_invitation_remains_pending(enrollment, mo
     assert "sample_editor" not in enrollment.credentials.load()
     assert enrollment.list_invitations()[0]["status"] == "pending"
     monkeypatch.setattr(enrollment, "create_token", original)
-    assert enrollment.accept_invitation(secret, password="A-secure-password-123")["user"]["username"] == "sample_editor"
+    assert enrollment.accept_invitation(secret, password="Ab1!")["user"]["username"] == "sample_editor"
+    assert enrollment.credentials.verify("sample_editor", "Ab1!")
 
 
 def test_concurrent_redemption_has_one_winner(enrollment):

@@ -4,6 +4,8 @@ const ACTIVE_AGENT_STATUS_RETRY_BASE_MS = 1000;
 const ACTIVE_AGENT_STATUS_RETRY_MAX_MS = 30000;
 let portalUsername = "anonymous";
 let canSetScheduler = false;
+let canRegisterAccount = false;
+let accountRegistrationPending = false;
 const AGENT_STATUS_CACHE_HITS_KEY = window.PortalCompatibility.identifier("usage_cached_input");
 const AGENT_STATUS_GROUPING_KEY = window.PortalCompatibility.identifier("usage_grouping");
 // Usage grouping -> its payload fields, broadest first.
@@ -1024,7 +1026,34 @@ function accountSchedulerSettings(account) {
 let accountDetails = null;
 const accountSchedulerPending = new Set();
 
+function accountEmptyState(data) {
+  if (data?.status === "loading" || data?.refreshing === true) {
+    return window.PortalI18n.html`<div class="agent-status-muted">Loading limits…</div>`;
+  }
+  const message = data?.accounts_error || data?.accounts_refresh_error
+    ? window.PortalI18n.t("Limit data unavailable.") : window.PortalI18n.t("尚未添加 AI 账号。");
+  return window.PortalI18n.html`<div class="agent-status-muted"><p>${esc(message)}</p>
+    ${canRegisterAccount ? window.PortalI18n.html`<button class="portalButton is-primary" type="button" data-account-register ${accountRegistrationPending ? "disabled" : ""}>新增 AI 账号</button>` : ""}</div>`;
+}
+
+async function openAccountRegistration(button) {
+  if (!canRegisterAccount || accountRegistrationPending) return;
+  accountRegistrationPending = true;
+  button.disabled = true;
+  try {
+    await window.PortalNav.openPermissionManagement({view: "backend", createAccount: true});
+  } catch (error) { window.PortalUI.toast(error.message, "error"); }
+  finally {
+    accountRegistrationPending = false;
+    document.querySelectorAll("[data-account-register]").forEach(el => { el.disabled = !canRegisterAccount; });
+  }
+}
+
 function syncAccountDetailsButtons() {
+  for (const button of document.querySelectorAll("[data-account-register]:not([data-backend-bound])")) {
+    button.dataset.backendBound = "true";
+    button.addEventListener("click", () => void openAccountRegistration(button));
+  }
   for (const link of document.querySelectorAll("[data-account-manage]:not([data-backend-bound])")) {
     link.dataset.backendBound = "true";
     link.addEventListener("click", event => {
@@ -2007,11 +2036,7 @@ function renderAgentStatus(data) {
 
         ${accounts.length
           ? accounts.map(accountLimitRow).join("")
-          : window.PortalI18n.html`<div class="agent-status-muted">${
-              data?.status === "loading" || data?.refreshing === true
-                ? window.PortalI18n.t("Loading limits…")
-                : window.PortalI18n.t("Limit data unavailable.")
-            }</div>`}
+          : accountEmptyState(data)}
       </div>
       ${refreshNote}
       ${data?.accounts_refresh_error || data?.accounts_error ? window.PortalI18n.html`<div class="agent-status-error" role="alert" data-account-refresh-error>Agent status unavailable: ${esc(data.accounts_refresh_error || data.accounts_error)}</div>` : ""}
@@ -2528,6 +2553,7 @@ function connectHomeShell({ context }) {
     .then(({ username, data }) => {
       portalUsername = username || "anonymous";
       canSetScheduler = data?.access?.allows?.UpdateProviderAccount === true;
+      canRegisterAccount = data?.access?.permission_system === "open" || data?.access?.allows?.RegisterProviderAccount === true;
       return { username: portalUsername, data };
     });
 }

@@ -1,9 +1,11 @@
 from types import SimpleNamespace
+import pytest
 
 from management_portal.http_portal_session import PortalSessionHttp
 
 
-def test_backend_viewer_identity_exposes_read_flags_without_management_write(monkeypatch):
+@pytest.mark.parametrize("register", [False, True])
+def test_backend_viewer_identity_exposes_read_flags_without_management_write(monkeypatch, register):
     """AI Backend 共享查看者可以发现管理入口，且不获得运维写权限。
 
     :module: execution.providers
@@ -12,7 +14,10 @@ def test_backend_viewer_identity_exposes_read_flags_without_management_write(mon
     """
     from management_portal import permission_system
 
-    monkeypatch.setattr(permission_system, "allows", lambda actor, instruction, arguments=None: instruction in {"ListProviders", "ListProviderAccounts"})
+    permitted = {"ListProviders", "ListProviderAccounts"}
+    if register:
+        permitted.add("RegisterProviderAccount")
+    monkeypatch.setattr(permission_system, "allows", lambda actor, instruction, arguments=None: instruction in permitted)
     monkeypatch.setattr(permission_system, "user_category", lambda actor: "member")
     monkeypatch.setattr(permission_system, "mode", lambda: "par")
     http = PortalSessionHttp(
@@ -26,3 +31,4 @@ def test_backend_viewer_identity_exposes_read_flags_without_management_write(mon
     assert flags["ListProviderAccounts"] is True
     assert flags["UpdateProviderAccount"] is False
     assert flags["CreateUser"] is False
+    assert flags["RegisterProviderAccount"] is register

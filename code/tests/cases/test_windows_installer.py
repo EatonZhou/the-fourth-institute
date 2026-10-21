@@ -616,3 +616,35 @@ class WindowsInstallerTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class WindowsPreviewPublishing(unittest.TestCase):
+    def test_only_matching_verified_installer_is_sent_to_github(self):
+        """发布只上传与固定提交和收据一致的安装包，错误版本或损坏文件不得上传。"""
+        from scripts.windows import publish
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            build = root / '.build/windows'
+            build.mkdir(parents=True)
+            exe = build / 'TheFourthInstitute-Setup-x64.exe'
+            exe.write_bytes(b'test installer')
+            receipt = {'source_commit': 'a' * 40, 'source_dirty': False,
+                       'prepared_engineering_validation': 'passed',
+                       'exe_bytes': exe.stat().st_size,
+                       'exe_sha256': hashlib.sha256(exe.read_bytes()).hexdigest()}
+            (build / 'receipt.json').write_text(json.dumps(receipt))
+            with patch.object(publish, 'REPO', root), \
+                    patch.object(sys, 'argv', ['publish.py', '--commit', 'a' * 40]), \
+                    patch.object(publish.subprocess, 'run') as upload:
+                publish.main()
+                self.assertIn('--prerelease', upload.call_args.args[0])
+                self.assertIn(str(exe), upload.call_args.args[0])
+                self.assertIn(str(build / 'receipt.json'), upload.call_args.args[0])
+                upload.reset_mock()
+                for field, value in [('source_commit', 'b' * 40), ('source_dirty', True),
+                                     ('prepared_engineering_validation', 'not_run'),
+                                     ('exe_sha256', '0' * 64), ('exe_bytes', 0)]:
+                    (build / 'receipt.json').write_text(json.dumps({**receipt, field: value}))
+                    with self.subTest(field=field), self.assertRaises(ValueError):
+                        publish.main()
+                    upload.assert_not_called()

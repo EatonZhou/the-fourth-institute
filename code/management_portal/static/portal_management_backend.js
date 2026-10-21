@@ -113,12 +113,13 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
   let destroyed = false, busy = false, editor = null, login = null;
   const abort = new AbortController();
   const canWrite = me.access?.permission_system === "open" || me.access?.allows?.UpdateProviderAccount === true;
+  const canRegister = me.access?.permission_system === "open" || me.access?.allows?.RegisterProviderAccount === true;
   const execute = (name, args = {}, options = {}) => call(name, args, {...options, signal: abort.signal});
   const state = {providers: [], accounts: [], apis: [], roles: []};
   let providersReady = false;
   const addAccount = button("新增执行账号", accountEditor, true);
   function syncAccountButton() {
-    addAccount.disabled = !canWrite || busy || !providersReady || !state.providers.length;
+    addAccount.disabled = !canRegister || busy || !providersReady || !state.providers.length;
   }
   const notice = node("p", "", {role: "status", "data-backend-notice": ""}); root.append(notice);
   const sections = {};
@@ -248,6 +249,9 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     return view;
   }
   function accountEditor() {
+    if (destroyed || busy || editor) return;
+    if (!canRegister) throw new Error(t("你没有新增 AI 账号的权限。"));
+    if (!providersReady || !state.providers.length) throw new Error(t("Provider 列表不可用，请刷新后重试。"));
     const {view, form} = newEditor("新增执行账号");
     const id = field(form, "账号 ID", "account_id", "", {required: true, pattern: "[A-Za-z0-9_.-]+", autocomplete: "off"});
     const provider = select(form, "Provider", "provider", state.providers.map(p => [p.provider, p.title || p.provider]));
@@ -401,6 +405,6 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     if (row) { row.scrollIntoView({block: "center"}); row.focus({preventScroll: true}); }
   }
   focusAccount(accountId);
-  return {focusAccount, isBusy: () => busy, hasUnsavedChanges: () => Boolean(editor),
+  return {focusAccount, openAccountEditor: accountEditor, isBusy: () => busy, hasUnsavedChanges: () => Boolean(editor),
     destroy() { destroyed = true; abort.abort(); editor?.close(); login?.close(); root.replaceChildren(); }};
 }

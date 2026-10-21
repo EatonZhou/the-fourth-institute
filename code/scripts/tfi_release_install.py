@@ -840,29 +840,8 @@ def install(manifest_path, raw_target, *, prepare_only=False, freeze_evidence=No
                 controller.start(unit_name(target, component))
             save_stage(state, phase, "checking")
             phase = "health"
-            started = time.monotonic()
-            deadline = started + 360
-            last_progress = None
-            next_progress = started
-            print('@TFI_PROGRESS ' + json.dumps({'message': '正在检查 Portal 就绪状态'}, ensure_ascii=False), flush=True)
-            while True:
-                result = observed_status(state)
-                if result["status"] == "installed" or time.monotonic() >= deadline:
-                    break
-                pending = '; '.join(health_failures(result))
-                now = time.monotonic()
-                if pending != last_progress or now >= next_progress:
-                    print('@TFI_PROGRESS ' + json.dumps({'message':
-                        f'正在检查 Portal 就绪状态（已等待 {int(now - started)} 秒）：' + pending},
-                        ensure_ascii=False), flush=True)
-                    last_progress, next_progress = pending, now + 15
-                if target.get('windows_service_mode') == 'user' and any(
-                        service['active'] == 'inactive' and not service.get('pid')
-                        for service in result['services']):
-                    # User-mode supervisors do not auto-restart a crashed child.
-                    # Waiting six minutes cannot recover this process.
-                    break
-                time.sleep(2)
+            result = wait_for_ready(state, progress=lambda message: print(
+                '@TFI_PROGRESS ' + json.dumps({'message': message}, ensure_ascii=False), flush=True))
             state["result"] = result
             if result["status"] != "installed":
                 raise RuntimeError(health_failure(state, result))
@@ -937,7 +916,49 @@ def health_failure(state, result):
     return '服务启动检查失败：' + '; '.join(failures) + f'。诊断记录：{report}；组件日志：{root / "runtime"}' + detail
 
 
-def observed_status(state):
+def wait_for_ready(state, *, timeout=120, progress=None):
+    """One bounded readiness pass shared by installation and desktop startup."""
+    progress = progress or (lambda message: None)
+    started = time.monotonic()
+    deadline = started + timeout
+    last_progress = None
+    next_progress = started
+    last_errors, repeats = None, 0
+    progress('正在检查 Portal 就绪状态')
+    while True:
+        remaining = max(0.1, deadline - time.monotonic())
+        result = observed_status(state, request_timeout=min(3, remaining / 2))
+        now = time.monotonic()
+        if result['status'] == 'installed' or now >= deadline:
+            return result
+        # A user-mode supervisor does not restart an exited child.
+        if state['target'].get('windows_service_mode') == 'user' and any(
+                service['active'] in {'inactive', 'failed'} and not service.get('pid')
+                for service in result['services']):
+            return result
+        expected = state['target'].get('runtime_instance', state['target']['service_prefix'])
+        if any(isinstance(check.get('payload'), dict)
+               and check['payload'].get('instance') not in (None, expected)
+               for check in result['checks']):
+            return result
+        # Briefly retry application errors, but don't spend minutes on a broken
+        # login route. Overload/gateway responses can still recover at startup.
+        errors = tuple((check.get('route'), check.get('http_status'))
+                       for check in result['checks'] if not check['ok']
+                       and check.get('http_status', 0) >= 400
+                       and check.get('http_status') not in {408, 429, 502, 503, 504})
+        repeats = repeats + 1 if errors and errors == last_errors else int(bool(errors))
+        last_errors = errors
+        if repeats >= 3:
+            return result
+        pending = '; '.join(health_failures(result))
+        if pending != last_progress or now >= next_progress:
+            progress(f'正在检查 Portal 就绪状态（已等待 {int(now - started)} 秒）：' + pending)
+            last_progress, next_progress = pending, now + 10
+        time.sleep(min(1, max(0, deadline - now)))
+
+
+def observed_status(state, *, request_timeout=3):
     target = state["target"]
     expected_instance = target.get("runtime_instance", target["service_prefix"])
     root = Path(target["install_root"])
@@ -950,7 +971,7 @@ def observed_status(state):
         try:
             from urllib.error import HTTPError
             try:
-                response = urlopen(url + route, timeout=15)
+                response = urlopen(url + route, timeout=request_timeout)
             except HTTPError as exc:
                 response = exc
             with response:

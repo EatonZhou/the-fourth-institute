@@ -56,7 +56,7 @@ DECLARATIONS = (
        target="user_id"),
     _d("CreateUser", FIXED, "创建一个新的用户账号，并设置初始密码。", (
         _user_id("新账号的用户名"),
-        R("initial_password", description="12–256 个字符", max_length=256),
+        R("initial_password", description="非空，最多 256 个字符；至少包含三种字符类型", max_length=256),
         P("display_name", description="显示名称；省略时用用户名"), P("recovery_email", description="新账号的恢复邮箱；省略时为空"),
     ), (USER, R("personal_ama", "object",
                 "新账号的 Ask Me Anything：lineage_id、resident_id；创建失败时只有 error，下次成功登录时内部重试")),
@@ -70,7 +70,7 @@ DECLARATIONS = (
           "status（active 或 disabled）、category（" + "、".join(USER_CATEGORIES) + "）"),
     ), (USER, P("category_changed", "boolean", "本次是否改变了分类")), mutates=True, target="user_id"),
     _d("ResetUserPassword", FIXED, "管理员重置他人的密码并撤销其会话；本人修改密码须在 Settings 验证当前密码。", (
-        _user_id(), R("new_password", description="12–256 个字符", max_length=256),
+        _user_id(), R("new_password", description="非空，最多 256 个字符；至少包含三种字符类型", max_length=256),
     ), (USER,), mutates=True, target="user_id"),
     _d("RevokeUserSessions", FIXED, "撤销指定用户的全部浏览器会话。", (
         _user_id(),

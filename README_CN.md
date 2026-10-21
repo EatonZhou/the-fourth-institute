@@ -8,11 +8,15 @@
 
 ## Install · 安装
 
-### Windows 11 x64 · 预览版
+### Windows 11 x64 · 试用版
 
-双击 `TheFourthInstitute-Setup-x64.exe`。安装器会自动准备默认示例、启动 Portal 并打开浏览器。Python、PostgreSQL、NATS 和 Node.js 已包含；首次联网仅准备核心 Python 包，窗口显示当前阶段。TeX 等可选工具不自动安装，缺失时只影响使用这些工具的功能。以后通过桌面图标打开 Portal。
+**Windows 版目前仍为试用版，安装、启动及部分功能仍在完善和验证中。**
 
-详见 [Windows 操作说明与验证范围](code/scripts/windows/README.md)。
+[下载 Windows 安装包](https://github.com/EatonZhou/the-fourth-institute/releases/download/windows-preview-20261021.1/TheFourthInstitute-Setup-x64.exe) · [版本说明与 SHA-256 校验文件](https://github.com/EatonZhou/the-fourth-institute/releases/tag/windows-preview-20261021.1)
+
+下载后双击 `TheFourthInstitute-Setup-x64.exe`，选择新的空安装目录。安装开始时可选择是否包含 Lenia 预置案例；随后自动启动 Portal 并打开浏览器。Python、PostgreSQL、NATS 和 Node.js 已包含；首次联网准备核心 Python 包。TeX 等可选工具不自动安装，缺失时只影响相应功能。以后通过桌面图标打开 Portal。
+
+安装包尚未签名，暂不支持覆盖已有实例升级。详见 [Windows 操作说明与验证范围](code/scripts/windows/README.md)。
 
 ### Linux
 
