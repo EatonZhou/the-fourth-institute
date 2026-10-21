@@ -19,6 +19,7 @@ sys.path.insert(0, str(REPO / "code"))
 from prepare_install import digest, inventory
 from scripts.tfi_instance_layout import GENERATED_CODE_DIRECTORIES, source_inventory
 from scripts.tfi_release_native_dependencies import artifact_name, download, unpack, package_root
+from scripts.tfi_seed_selection import plan
 
 
 def public_seed(repo):
@@ -34,6 +35,27 @@ def public_seed(repo):
     return seed
 
 
+def bundle_seed(seed, archive, *, include_examples):
+    """Filter before packaging: the desktop never extracts unselected files."""
+    specification = json.loads((seed / 'manifest.json').read_text(encoding='utf-8'))
+    manifest, sql, excluded = plan(seed, specification['engineering'], include_examples=include_examples)
+    manifest['include_examples'] = include_examples
+    rows = [row for row in specification['inventory'] if not any(
+        row['path'] == p or row['path'].startswith(p + '/') for p in excluded)]
+    if sql is not None:
+        sql = sql.encode('utf-8')
+        rows = [{**row, 'size': len(sql), 'sha256': hashlib.sha256(sql).hexdigest()}
+                if row['path'] == manifest['database']['path'] else row for row in rows]
+    specification.update(engineering=manifest, inventory=rows)
+    with zipfile.ZipFile(archive, 'w', compression=zipfile.ZIP_DEFLATED) as zipped:
+        for row in rows:
+            if sql is not None and row['path'] == manifest['database']['path']:
+                zipped.writestr(row['path'], sql)
+            else:
+                zipped.write(seed / row['path'], row['path'])
+        zipped.writestr('manifest.json', json.dumps(specification, ensure_ascii=False, indent=2) + '\n')
+
+
 def verify_prepared_payload(platform):
     """Exercise packaged code and seed through the real prepare/validate path."""
     with tempfile.TemporaryDirectory(prefix="verify-windows-", dir=platform.parent) as temporary:
@@ -41,11 +63,14 @@ def verify_prepared_payload(platform):
         shutil.copytree(platform / "code", root / "code")
         for name in ("prepare_install.py", "INSTALL.md"):
             shutil.copyfile(platform / name, root / name)
-        with zipfile.ZipFile(platform / "example-seed.zip") as zipped:
-            zipped.extractall(root / "instance/example_instance/seed")
         env = os.environ.copy()
         env.update(PYTHONUTF8="1", PYTHONDONTWRITEBYTECODE="1")
         for options in ([], ['--without-examples']):
+            seed = root / 'instance/example_instance/seed'
+            if seed.exists():
+                shutil.rmtree(seed)
+            with zipfile.ZipFile(platform / ('base-seed.zip' if options else 'example-seed.zip')) as zipped:
+                zipped.extractall(seed)
             subprocess.run([sys.executable, str(root / "prepare_install.py"), "--platform", "windows", *options],
                            cwd=root, env=env, check=True)
 
@@ -82,9 +107,8 @@ def stage(repo, destination, archive, *, source_commit=None, source_dirty=None, 
         shutil.copyfile(repo / name, destination / name)
     shutil.copyfile(repo / "code/scripts/windows/README.md", destination / "WINDOWS.md")
     shutil.copytree(repo / "code/scripts/windows/branding", destination / "branding")
-    with zipfile.ZipFile(destination / "example-seed.zip", "w", compression=zipfile.ZIP_DEFLATED) as zipped:
-        for row in inventory(seed):
-            zipped.write(seed / row["path"], row["path"])
+    for included, name in ((True, 'example-seed.zip'), (False, 'base-seed.zip')):
+        bundle_seed(seed, destination / name, include_examples=included)
     verify_prepared_payload(destination)
     with tarfile.open(archive) as bundle:
         for entry in bundle.getmembers():
@@ -108,6 +132,7 @@ def stage(repo, destination, archive, *, source_commit=None, source_dirty=None, 
         "source_tree_sha256": hashlib.sha256(json.dumps(source_inventory(repo / "code"), sort_keys=True).encode()).hexdigest(),
         "python": json.loads((repo / "code/scripts/windows/runtime.json").read_text(encoding="utf-8")),
         "seed_sha256": digest(destination / "example-seed.zip"),
+        "base_seed_sha256": digest(destination / "base-seed.zip"),
         "initialization_requires_network": True,
         "bundled_native_dependencies": bundled,
         "native_preparation_requires_network": False,

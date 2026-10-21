@@ -6,14 +6,16 @@
 :risk: no-external-side-effects
 """
 import io
+import hashlib
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 import socket
 import subprocess
 import sys
 import tempfile
 import unittest
+import zipfile
 from unittest.mock import Mock, patch
 from urllib.error import HTTPError
 
@@ -23,9 +25,49 @@ from prepare_install import prepare
 from scripts import tfi_seed_selection as selection
 from scripts import tfi_release_install as installer
 from scripts import tfi_windows_launcher as launcher
+from scripts.windows.build import bundle_seed
 
 
 class SeedSelection(unittest.TestCase):
+    def test_base_archive_excludes_cases_before_extraction_and_fits_user_path(self):
+        """真实基础包不含案例文件，用户路径下的准备及最终路径不触发长路径。"""
+        seed = REPO / 'instance/example_instance/seed'
+        original = json.loads((seed / 'manifest.json').read_text())
+        _, _, excluded = selection.plan(seed, original['engineering'], include_examples=False)
+        with tempfile.TemporaryDirectory(dir='/tmp' if os.name != 'nt' else None) as temporary:
+            root = Path(temporary)
+            if os.name != 'nt':
+                # Match the user's installation prefix while using real files.
+                root /= 'p' * max(1, 53 - len(str(root)) - 1)
+                root.mkdir()
+            archive = root / 'base-seed.zip'
+            bundle_seed(seed, archive, include_examples=False)
+            (root / 'windows-package.json').write_text(json.dumps({
+                'base_seed_sha256': hashlib.sha256(archive.read_bytes()).hexdigest()}))
+            (root / 'installation-options.ini').write_text('[installation]\ninclude_examples=false\n')
+            with zipfile.ZipFile(archive) as zipped:
+                spec = json.loads(zipped.read('manifest.json'))
+                self.assertFalse(any(name == p or name.startswith(p + '/')
+                                     for name in zipped.namelist() for p in excluded))
+                for row in spec['inventory']:
+                    contents = zipped.read(row['path'])
+                    self.assertEqual(len(contents), row['size'])
+                    self.assertEqual(hashlib.sha256(contents).hexdigest(), row['sha256'])
+            target = PureWindowsPath(r'C:\Users\weihaozhang\AppData\Local\TheFourthInstitute')
+            for path in launcher.seed_destination_paths(target, spec):
+                self.assertLess(len(str(path).encode('utf-16-le')) // 2, 260, str(path))
+                self.assertLess(len(str(path.parent).encode('utf-16-le')) // 2, 248, str(path))
+            launcher.unpack_seed(root, included=False)
+            extracted = root / 'instance/example_instance/seed'
+            self.assertFalse(any((extracted / p).exists() for p in excluded))
+            if os.name != 'nt':
+                self.assertIsNone(launcher.required_long_path(root))
+            deep = root / ('long-directory-' * 4)
+            deep.mkdir()
+            (deep / 'installation-options.ini').write_text('[installation]\ninclude_examples=false\n')
+            with patch.object(launcher, 'selected_seed', return_value=archive):
+                self.assertIsNotNone(launcher.required_long_path(deep))
+
     def test_literal_parser_preserves_quotes_newlines_and_backslashes(self):
         """种子解析区分 SQL 转义和 JSON 转义，忽略正文中的语句。"""
         text = '''INSERT INTO "s"."t" ("a","b","c") VALUES ('it''s \\path',E'line\\nnext', '{"v":"x"}'::jsonb);
@@ -58,7 +100,7 @@ INSERT INTO "s"."t" ("a") VALUES ('body\nINSERT INTO "x"."y" ("z") VALUES (1);')
             with self.subTest(included=included), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)
                 (root / 'installation-options.ini').write_text('[installation]\ninclude_examples=' + str(included).lower())
-                bundle = root / '.build/example_instance-windows/engineering/manifest.json'
+                bundle = root / '.build/w/engineering/manifest.json'
                 bundle.parent.mkdir(parents=True)
                 bundle.write_text(json.dumps({'run_id': 'fixture'}))
                 flow = launcher.DefaultStartup(root)
@@ -85,15 +127,19 @@ INSERT INTO "s"."t" ("a") VALUES ('body\nINSERT INTO "x"."y" ("z") VALUES (1);')
             http = HTTPError('http://localhost/api/health', 503, 'Unavailable', {}, io.BytesIO(json.dumps(payload).encode()))
             controller = Mock()
             controller.status.return_value = {'service': 'tfi-fixture-worker', 'active': 'inactive'}
+            (root / 'runtime/worker.log').write_text('earlier output\nTraceback (most recent call last):\nRuntimeError: fixture startup failure\n')
             with patch.object(installer, 'service_controller', return_value=controller), \
                     patch.object(installer, 'urlopen', side_effect=[http, OSError('not ready')]):
                 result = installer.observed_status(state)
             self.assertEqual(result['checks'][0]['payload'], payload)
-            error = installer.health_failure(state, result)
+            with patch.object(installer, 'unit_name', side_effect=lambda target, component: 'tfi-fixture-' + component):
+                error = installer.health_failure(state, result)
             self.assertIn('execution_layer', error)
             self.assertIn('tfi-fixture-worker: inactive', error)
+            self.assertIn('RuntimeError: fixture startup failure', error)
             saved = json.loads((root / 'runtime/startup-diagnostics.json').read_text())
             self.assertEqual(saved['observed'], result)
+            self.assertIn('fixture startup failure', saved['component_log_tails']['worker'])
 
 
 @unittest.skipUnless(os.getenv('TFI_TEST_POSTGRES_ROOT'), 'Requires an explicit disposable PostgreSQL binary directory')

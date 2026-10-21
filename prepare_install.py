@@ -48,7 +48,8 @@ def prepare(repo, *, target_platforms=None, include_examples=True):
     manifest, selected_sql, excluded = plan(seed, manifest, include_examples=include_examples)
     manifest['include_examples'] = include_examples
     suffix = '-' + '-'.join(target_platforms) if target_platforms else ''
-    build = repo / ('.build/example_instance' + suffix)
+    # Keep transient copies below MAX_PATH for the base Windows installation.
+    build = repo / ('.build/w' if target_platforms == ['windows'] else '.build/example_instance' + suffix)
     if build.is_symlink() or (repo / '.build').is_symlink():
         raise ValueError('Build directory cannot be a symlink')
     build.mkdir(parents=True, exist_ok=True)

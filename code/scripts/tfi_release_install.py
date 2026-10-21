@@ -895,9 +895,25 @@ def health_failure(state, result):
                 detail = '未就绪: ' + ', '.join(reasons)
         failures.append((check.get('component') or check.get('route', 'health')) + ': ' + (detail or '未就绪'))
     report = root / 'runtime/startup-diagnostics.json'
+    excerpts = {}
+    for component in COMPONENTS:
+        name = unit_name(state['target'], component)
+        if not any(s['service'] == name and s['active'] != 'active' for s in result['services']):
+            continue
+        log = root / 'runtime' / (component + '.log')
+        try:
+            with log.open('rb') as stream:
+                stream.seek(0, 2)
+                stream.seek(max(0, stream.tell() - 8192))
+                tail = stream.read().decode('utf-8', errors='replace')
+            excerpts[component] = '\n'.join(tail.splitlines()[-30:])
+        except OSError as exc:
+            excerpts[component] = f'无法读取组件日志: {exc}'
     write_json(report, {'status': 'failed', 'observed': result,
+                       'component_log_tails': excerpts,
                        'component_logs': {c: str(root / 'runtime' / (c + '.log')) for c in COMPONENTS}})
-    return '服务启动检查失败：' + '; '.join(failures) + f'。诊断记录：{report}；组件日志：{root / "runtime"}'
+    detail = ''.join(f'\n\n{c}.log（末尾）：\n{tail}' for c, tail in excerpts.items())
+    return '服务启动检查失败：' + '; '.join(failures) + f'。诊断记录：{report}；组件日志：{root / "runtime"}' + detail
 
 
 def observed_status(state):

@@ -157,7 +157,12 @@ FunctionEnd
 Section "Platform"
   SetShellVarContext current
   SetOutPath "$INSTDIR"
-  File /r "${PAYLOAD}/*"
+  File /r /x example-seed.zip /x base-seed.zip "${PAYLOAD}/*"
+  ${If} $IncludeExamples == ${BST_CHECKED}
+    File "${PAYLOAD}/example-seed.zip"
+  ${Else}
+    File "${PAYLOAD}/base-seed.zip"
+  ${EndIf}
   FileOpen $0 "$INSTDIR\installation-options.ini" w
   ${If} $IncludeExamples == ${BST_CHECKED}
     FileWrite $0 "[installation]$\r$\ninclude_examples=true$\r$\n"
@@ -210,6 +215,7 @@ Section "Uninstall"
   RMDir /r "$INSTDIR\branding"
   Delete "$INSTDIR\prepare_install.py"
   Delete "$INSTDIR\example-seed.zip"
+  Delete "$INSTDIR\base-seed.zip"
   Delete "$INSTDIR\windows-package.json"
   Delete "$INSTDIR\installation-options.ini"
   Delete "$INSTDIR\WINDOWS.md"
