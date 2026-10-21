@@ -231,6 +231,11 @@ def clean_environment(target, *, postgres=False):
                     # Maintenance helpers retain the operator's service registry
                     # even though application caches belong to the instance.
                     "TFI_WINDOWS_SERVICE_DIRECTORY": str(unit_directory())})
+    elif platform_adapter().__name__.endswith("_macos"):
+        # launchd belongs to the logged-in OS user even when an application's
+        # HOME is isolated under its instance. Keep ownership-marker lookup
+        # consistent in setup helpers, lifecycle commands and service children.
+        env["TFI_MACOS_SERVICE_DIRECTORY"] = str(unit_directory())
     for component in ("resource", "execution", "society"):
         env[f"PORTAL_{component.upper()}_SERVICE_SOCKET"] = str(runtime / "s" / f"{component}-service.sock")
     if postgres and target.get("pg_lib"):

@@ -6,6 +6,7 @@
 :risk: no-external-side-effects
 """
 import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
@@ -17,6 +18,25 @@ from scripts.macos.publish import validate
 
 
 class MacDesktop(unittest.TestCase):
+    def test_launch_agents_stay_with_os_user_when_application_home_is_isolated(self):
+        from scripts import tfi_release_platform_macos as adapter
+        from scripts.portal_service_control import ServiceControl
+        with tempfile.TemporaryDirectory() as tmp:
+            platform = Path(tmp).resolve()
+            registry = platform / "operator/Library/LaunchAgents"
+            registry.mkdir(parents=True)
+            target = launcher.make_target(platform, "desktop", {"run_id": "test"})
+            target.update(pg_bin=str(platform / "pg/bin"))
+            with patch.dict(os.environ, {"HOME": str(platform / "instance/home"),
+                                        "TFI_MACOS_SERVICE_DIRECTORY": str(registry)}), \
+                    patch.object(installer, "platform_adapter", return_value=adapter):
+                self.assertEqual(adapter.unit_directory(), registry)
+                self.assertEqual(adapter.service_controller().agent_root, registry)
+                self.assertEqual(ServiceControl(platform="macos").agent_root, registry)
+                env = installer.clean_environment(target)
+                self.assertEqual(env["TFI_MACOS_SERVICE_DIRECTORY"], str(registry))
+                self.assertEqual(env["HOME"], str(Path(target["install_root"]) / "home"))
+
     def test_payload_copy_is_relocatable_and_refuses_other_versions(self):
         with tempfile.TemporaryDirectory() as tmp:
             bundle, installed = Path(tmp) / "app", Path(tmp) / "用户 Library"

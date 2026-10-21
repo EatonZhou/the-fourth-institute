@@ -8,6 +8,9 @@ Python、PostgreSQL、NATS、Node.js，以及构建时安装并验证的核心 P
 只读应用包首次复制到用户的 `~/Library/TFI` 后运行；代码和依赖共享，实例数据放在
 `instance/desktop`。较短目录用于满足 macOS Unix Socket 的长度限制。后台服务使用
 launchd 用户任务，首次初始化的数据库采用 UTF-8 编码及可用的 C locale。
+应用的 HOME 隔离到实例后，通过 `TFI_MACOS_SERVICE_DIRECTORY` 保留操作系统用户的
+LaunchAgents 目录；服务管理器和所有权检查共同使用该目录，不能回退到实例 HOME。
+核心依赖清单检查禁用 pip 自身的在线版本查询。
 实例监听 loopback，首次管理员邀请保存在实例私有目录并交给浏览器，不进入安装日志。
 
 Lenia 选择在解压前保存。取消选择仅提取已筛选的基础 seed，数据库与资料使用同一选择；

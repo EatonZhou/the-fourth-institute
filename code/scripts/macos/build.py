@@ -141,7 +141,8 @@ def build(repo, output):
         "CFBundleIdentifier": "org.thefourthinstitute.desktop",
         "CFBundleName": "The Fourth Institute", "CFBundleDisplayName": "The Fourth Institute",
         "CFBundleExecutable": "TheFourthInstitute", "CFBundlePackageType": "APPL",
-        "CFBundleShortVersionString": "0.1.0", "CFBundleVersion": "20261021.1",
+        "CFBundleShortVersionString": "0.1.0",
+        "CFBundleVersion": json.loads((repo / "code/scripts/macos/release.json").read_text())["tag"].removeprefix("macos-preview-"),
         "LSMinimumSystemVersion": "15.0", "NSHighResolutionCapable": True,
     }
     (contents / "Info.plist").write_bytes(plistlib.dumps(info))
