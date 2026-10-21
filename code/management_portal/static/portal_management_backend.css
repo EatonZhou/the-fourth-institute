@@ -11,7 +11,7 @@
 .backendManagement small { display:block; color:var(--muted); font-size:10px; margin-top:4px; }
 .backendManagement tr:focus { outline:2px solid var(--accent); outline-offset:-2px; background:var(--panel-2); }
 .backendActions { display:flex; flex-wrap:wrap; gap:6px; }
-.backendDialog { width:min(560px, calc(100vw - 32px)); max-height:85vh; overflow:auto; color:var(--text); background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:20px; }
+.backendDialog { box-sizing:border-box; width:min(560px, calc(100vw - 32px)); max-height:85vh; overflow:auto; color:var(--text); background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:20px; }
 .backendDialog header { display:flex; align-items:center; justify-content:space-between; gap:12px; }
 .backendDialog h2 { font-size:16px; }
 .backendDialog code { display:block; font-size:22px; user-select:all; margin:12px 0; }
@@ -20,3 +20,15 @@
 .backendForm { display:grid; gap:12px; }
 .backendForm [role=alert] { color:var(--danger, #b3261e); }
 .backendForm [role=alert]:empty { display:none; }
+.backendIntroduction h2, .backendChoice h3 { margin:0; }
+.backendIntroduction p, .backendHint { color:var(--muted); font-size:13px; line-height:1.5; }
+.backendChoices { display:grid; grid-template-columns:repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap:12px; }
+.backendChoice { display:flex; flex-direction:column; align-items:flex-start; padding:16px; border:1px solid var(--border); border-radius:8px; background:var(--panel); }
+.backendChoice p { flex:1; }
+.backendAdvanced { border-top:1px solid var(--border); padding-top:10px; }
+.backendAdvanced summary { cursor:pointer; color:var(--muted); }
+.backendAdvanced > .backendForm { margin-top:12px; }
+.backendForm .backendHint { display:block; margin:4px 0 0; font-weight:normal; }
+.backendForm > .portalField:has(input[type=checkbox]) { display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
+.backendForm > .portalField:has(input[type=checkbox]) > input { width:18px; height:18px; order:-1; }
+.backendForm > .portalField:has(input[type=checkbox]) > small { flex-basis:100%; }
