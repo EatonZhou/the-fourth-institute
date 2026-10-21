@@ -3237,6 +3237,10 @@
           },
           onActiveChange: searchId => {
             state.activeSemanticSearchId = String(searchId || "");
+            if (searchId) {
+              state.query = "";
+              el.q.value = "";
+            }
             saveKnowledgeUiState();
             if (semanticSearchReady) loadIndex().catch(alertError);
           },
@@ -5414,12 +5418,16 @@
           && detailDocumentSession
           && !await detailDocumentSession.guardDiscard()
         ) return false;
+        const graphItem = (state.detailGraph?.payload?.nodes || []).find(node => String(node?.kb_id || "") === String(fileId)) || null;
+        const item = byId(fileId) || graphItem || { kb_id: fileId };
+        if ((item.resource_type || item.type) === "search") {
+          window.location.assign(`/r/${encodeURIComponent(fileId)}`);
+          return true;
+        }
         if (
           options.updateHistory !== false
           && !detailResourceGuest?.embedded()
         ) detailHistory.open(fileId);
-        const graphItem = (state.detailGraph?.payload?.nodes || []).find(node => String(node?.kb_id || "") === String(fileId)) || null;
-        const item = byId(fileId) || graphItem || { kb_id: fileId };
         state.selected = item;
         state.detailFileId = fileId;
         state.detailSelectedFileId = fileId;
@@ -7712,6 +7720,7 @@
         const requestedSearchId = requestedSemanticSearchId();
         if (requestedSearchId) {
           state.activeSemanticSearchId = requestedSearchId;
+          state.query = "";
           state.knowledgeMap.open = false;
         }
         const requestedFilter = requestedKnowledgeMatrixFilter();

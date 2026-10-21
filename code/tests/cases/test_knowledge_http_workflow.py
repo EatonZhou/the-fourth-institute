@@ -16,6 +16,18 @@ from knowledge_board_lan import knowledge_backend
 from management_portal import serve_management_portal
 
 
+def test_knowledge_projection_preserves_search_resource_type():
+    from management_portal.resource_views import _knowledge_item
+    item = _knowledge_item({
+        "resource_id": "search_8176d8f8cf7a",
+        "resource_type": "search",
+        "title": "测试页面设计",
+        "attributes": {"project_ids": []},
+    })
+    assert item["kb_id"] == "search_8176d8f8cf7a"
+    assert item["resource_type"] == "search"
+
+
 class _QuietHandler(serve_management_portal.Handler):
     def log_message(self, _format: str, *_args: object) -> None:
         return
