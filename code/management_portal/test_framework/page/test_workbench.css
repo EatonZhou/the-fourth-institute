@@ -27,6 +27,7 @@
 .testPanelBody { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 12px var(--test-panel-pad) 20px; font-size: var(--test-font-body); line-height: 1.45; }
 .testPanelBody p { margin-block: 6px; }
 .testPanelActions, .testBadges { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.testPlanRunNotice { flex: 1 1 100%; min-width: 0; margin: 0; color: var(--muted, #68707a); white-space: normal; overflow-wrap: anywhere; }
 .testCatalogMetrics { display: grid; grid-template-columns: repeat(4, minmax(72px, 1fr)); gap: 6px; margin-bottom: 10px; }
 .testMetric, .testCard { padding: 8px 9px; border: 1px solid var(--border, #dfe3e8); border-radius: 8px; background: var(--panel-2, #fafbfc); }
 .testMetric strong { display: block; font-size: 17px; line-height: 1.15; }
