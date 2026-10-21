@@ -148,6 +148,31 @@ def test_turn_prompt_names_the_real_sender(resident_record, monkeypatch, tmp_pat
     assert '"owner_ids"' not in prompt
 
 
+@pytest.mark.parametrize("reference,embedded,internal", [
+    ("family-route/resident_2a1fc6cd272d/message/msg_0123456789abcdef0123456789abcdef", False, True),
+    ("family-route/resident_2a1fc6cd272d/message/msg_0123456789abcdef0123456789abcdef", True, True),
+    ("family-route/resident_111111111111/message/msg_0123456789abcdef0123456789abcdef", False, False),
+    ("family-route/resident_2a1fc6cd272d", False, False),
+])
+def test_family_router_prompt_keeps_control_packets_off_the_facade_inbox(
+    resident_record, monkeypatch, reference, embedded, internal,
+):
+    """The routing duty's packet continues its Effect, rather than becoming a new facade request."""
+    from management_portal.society_service import resident_record_domain
+
+    monkeypatch.setattr(resident_backend, "record_session_id", lambda _: "existing-session")
+    monkeypatch.setattr(resident_record_domain, "_attached_references_text", lambda _: '<resource address="r"/>')
+    job = {"actor": "resident_2a1fc6cd272d", "message": "为原请求选择承接成员，输出 route packet。",
+           "context_refs": {"resources": ["r"]}}
+    if embedded:
+        job["input_message"] = {"business_ref": reference}
+    else:
+        job["business_ref"] = reference
+    prompt = resident_registration_domain._build_resident_prompt(resident_record, job)
+    assert ("只输出 route packet" in prompt) is internal
+    assert ("要让它收到，用 DeliverMessage 发给它" in prompt) is not internal
+
+
 def test_a_model_api_resident_is_told_it_has_no_tools(resident_record) -> None:
     """Model API Resident 的运行身份写明没有工具
 

@@ -231,6 +231,18 @@ def _sender_line(job: dict[str, Any]) -> str:
         return f"当前消息由 Portal 投递；{keep}"
     kind = actor_principal(actor).kind
     if kind == "resident":
+        # Routing packets are consumed by the Family Effect. Sending one back
+        # as a message creates a second facade input and can repeat the work.
+        from .family_facade import parse_relay_mark
+        reference = str(job.get("business_ref") or (job.get("input_message") or {}).get("business_ref") or "")
+        source = parse_relay_mark(reference.removeprefix("family-route/")) if reference.startswith("family-route/") else None
+        if source and source[0] == actor:
+            return (
+                f"当前消息由 Family 门面 {actor} 投递，属于内部路由任务；"
+                "本轮只输出 route packet，系统会读取它并继续处理原请求。"
+                "不要用 DeliverMessage 把 packet 发回门面，也不要执行业务；"
+                f"{keep}"
+            )
         # Replies stay in this Conversation (decision_c524c775e0be); say so, or the sender never hears back.
         return (
             f"当前消息由 Resident {actor} 发送；"
