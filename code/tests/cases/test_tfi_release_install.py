@@ -16,6 +16,14 @@ from scripts import tfi_release_install as installer
 
 
 class InstallationIsolationTests(unittest.TestCase):
+    def test_internal_script_callbacks_use_the_selected_instance_port(self):
+        target = installer.target_plan(self.target)
+        with patch.dict(os.environ, {"PORTAL_URL": "http://old-site:18086"}):
+            for port in (28399, 28499):
+                target["ports"]["web"] = port
+                _, environment = installer.component_command(target, "society")
+                self.assertEqual(environment["PORTAL_URL"], f"http://127.0.0.1:{port}")
+
     def test_published_generation_identifies_every_application_component(self):
         target = installer.target_plan(self.target)
         generation = Path(target["install_root"]) / "config/generation.env"

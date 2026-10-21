@@ -199,6 +199,7 @@ def clean_environment(target, *, postgres=False):
            "PORTAL_PATHS_CONFIG": str(root / "config/paths.json"),
            "PORTAL_SITE_CONFIG": str(root / "config/site.json"),
            "PORTAL_NETWORK_CONFIG": str(root / "config/network.env"),
+           "PORTAL_URL": f"http://127.0.0.1:{target['ports']['web']}",
            "PORTAL_POSTGRES_ENV_FILE": str(root / "config/postgres.env"),
            "PORTAL_DATABASE_URL": (f"postgresql://{database_user}@127.0.0.1:{target['ports']['postgres']}/{target['database_name']}"
                                    if windows else f"postgresql://{database_user}@/" + target["database_name"] + "?host=" + quote(str(runtime / "s"), safe="") + "&port=" + str(target["ports"]["postgres"])),

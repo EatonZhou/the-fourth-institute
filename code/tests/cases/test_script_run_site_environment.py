@@ -72,6 +72,17 @@ def test_detached_launch_carries_only_site_path_configuration(platform, launch_c
     assert not {'PORTAL_DATABASE_URL', 'PORTAL_AGENT_TOKEN', 'OPENAI_API_KEY'} & environment.keys()
 
 
+def test_detached_relay_uses_the_explicit_instance_callback_origin(launch_case, monkeypatch):
+    record, config, _, _ = launch_case
+    monkeypatch.setenv('PORTAL_URL', 'http://127.0.0.1:28399')
+    monkeypatch.setattr(service.sys, 'platform', 'linux')
+    monkeypatch.setattr(service.process_runtime, 'run_process',
+                        lambda command, **kwargs: subprocess.CompletedProcess(command, 0, '', ''))
+    service.launch(record, config)
+    private = json.loads((runtime.PRIVATE_ROOT / (record['script_run_id'] + '.json')).read_text())
+    assert private['portal_url'] == 'http://127.0.0.1:28399'
+
+
 @pytest.mark.skipif(sys.platform != 'linux', reason='isolated Linux runner')
 def test_runner_and_payload_read_the_launching_site(launch_case, monkeypatch, tmp_path):
     record, config, names, paths = launch_case
