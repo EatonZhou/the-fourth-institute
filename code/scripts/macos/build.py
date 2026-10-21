@@ -55,7 +55,10 @@ def smoke(payload, destination, included):
                      "worker.error.log", "web.error.log", "dependency-install.log"):
             path = runtime / name
             if path.is_file():
-                print(name + "\n" + path.read_text(errors="replace")[-6000:], flush=True)
+                detail = name + "\n" + path.read_text(errors="replace")[-6000:]
+                print(detail, flush=True)
+                annotation = detail.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+                print("::error title=macOS runtime diagnostic::" + annotation, flush=True)
         raise
     finally:
         if destination.exists():
