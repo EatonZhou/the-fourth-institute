@@ -1160,20 +1160,21 @@
     window.PortalIcons?.enhance?.($("articleGitPanel"));
   }
 
+  const unregisteringArticles = new Set();
   let articleGitHistoryRequested = false;
   const articleGitRefresh = window.PortalRefreshCoordinator.create({
     key: () => state.selectedId,
     interval: ARTICLE_GIT_REFRESH_MS,
     initialDelay: ARTICLE_GIT_REFRESH_MS,
-    shouldRefresh: () => !!state.selectedId,
-    fetch: async ({ key }) => {
+    shouldRefresh: () => !!state.selectedId && !unregisteringArticles.has(state.selectedId),
+    fetch: async ({ key, signal }) => {
       const id = encodeURIComponent(key);
       const includeHistory = articleGitHistoryRequested || state.sideView === "git";
       articleGitHistoryRequested = false;
       let historyError = null;
       const [status, history] = await Promise.all([
-        request(`/api/articles/${id}/git`),
-        includeHistory ? request(`/api/articles/${id}/git/history?limit=12`).catch(error => {
+        request(`/api/articles/${id}/git`, { signal }),
+        includeHistory ? request(`/api/articles/${id}/git/history?limit=12`, { signal }).catch(error => {
           historyError = error;
           return null;
         }) : Promise.resolve(null),
@@ -1191,7 +1192,7 @@
   });
 
   async function loadArticleGit({ includeHistory = false, silent = false } = {}) {
-    if (!state.selectedId) return;
+    if (!state.selectedId || unregisteringArticles.has(state.selectedId)) return;
     articleGitHistoryRequested ||= includeHistory;
     articleGitRefresh.start();
     try {
@@ -1202,7 +1203,7 @@
   }
 
   function scheduleArticleGitRefresh(delay = ARTICLE_GIT_REFRESH_MS) {
-    if (!state.selectedId) return;
+    if (!state.selectedId || unregisteringArticles.has(state.selectedId)) return;
     articleGitRefresh.start();
     articleGitRefresh.invalidate({ delay });
   }
@@ -4200,25 +4201,34 @@
 
   async function unregisterCurrentArticle() {
     const article = selectedArticle();
-    if (!article) return;
+    if (!article || unregisteringArticles.has(article.id)) return;
     if (!await window.PortalUI.confirm({
       title: window.PortalI18n.t("解除 Article 注册？"),
       message: window.PortalI18n.text`解除「${article.title || article.id}」的 Article 注册？\n原始目录和文件不会被删除。`,
       confirmLabel: window.PortalI18n.t("解除注册"),
       tone: "danger",
     })) return;
+    if (unregisteringArticles.has(article.id)) return;
+    unregisteringArticles.add(article.id);
+    if (state.selectedId === article.id) articleGitRefresh.stop();
     try {
       await window.PortalInstructionClient.execute("UnregisterResource", { resource_id: article.id }, {
         idempotencyKey: `article-unregister:${article.id}:${globalThis.PortalUIPrimitives.randomUUID()}`,
       });
       detailResourceGuest.deleted({ resourceId: article.id, kind: "unregistered" });
-      state.selectedId = "";
-      persistArticleSelection("");
-      updateUrl("");
-      await loadArticles({ preserve: false });
+      const stillSelected = state.selectedId === article.id;
+      if (stillSelected) {
+        state.selectedId = "";
+        persistArticleSelection("");
+        updateUrl("");
+      }
+      await loadArticles({ preserve: !stillSelected, reloadSelected: stillSelected });
       showToast(window.PortalI18n.t("Article 注册已解除；原始目录和文件保持不变。"), "success");
     } catch (error) {
       showToast(error.message || error, "error");
+    } finally {
+      unregisteringArticles.delete(article.id);
+      if (state.selectedId === article.id) scheduleArticleGitRefresh(0);
     }
   }
 

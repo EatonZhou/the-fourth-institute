@@ -224,6 +224,113 @@ test('Article compile results and controls belong to the initiating Article', as
   assert.equal(button.disabled, false);
 });
 
+function articleUnregisterFixture({confirm = true} = {}) {
+  const state = {selectedId: 'A', sideView: 'git', gitHistory: [], gitStatus: null};
+  const removal = deferred(), reads = [], writes = [], selections = [], catalogLoads = [];
+  const timers = new Map();
+  let nextTimer = 0;
+  const context = owner('article_workspace.js', ['unregisterCurrentArticle'], {
+    state, AbortController, ARTICLE_GIT_REFRESH_MS: 5000,
+    PortalUIPrimitives: {randomUUID: () => 'fixture'},
+    document: {hidden: false, addEventListener: noop, removeEventListener: noop},
+    setTimeout: callback => {const id = ++nextTimer; timers.set(id, callback); return id;},
+    clearTimeout: id => timers.delete(id),
+    window: {addEventListener: noop, removeEventListener: noop, PortalI18n: i18n,
+      PortalUI: {confirm: async () => confirm}, PortalUIPrimitives: {randomUUID: () => 'fixture'},
+      PortalInstructionClient: {execute: (instruction, args) => {writes.push({instruction, args}); return removal.promise;}}},
+    selectedArticle: () => ({id: state.selectedId}), renderArticleGit: noop, showToast: noop,
+    detailResourceGuest: {deleted: noop}, persistArticleSelection: id => selections.push(id), updateUrl: noop,
+    loadArticles: async options => catalogLoads.push(options),
+    request: (url, {signal}) => {
+      const gate = deferred(), read = {url, signal, gate};
+      reads.push(read);
+      signal.addEventListener('abort', () => gate.reject(Object.assign(new Error('aborted'), {name: 'AbortError'})), {once: true});
+      return gate.promise;
+    },
+  });
+  const staticRoot = path.resolve(__dirname, '../../../management_portal/static');
+  vm.runInContext(fs.readFileSync(path.join(staticRoot, 'portal_refresh_coordinator.js'), 'utf8'), context);
+  const source = fs.readFileSync(path.join(staticRoot, 'article_workspace.js'), 'utf8');
+  vm.runInContext(source.slice(source.indexOf('  const unregisteringArticles ='),
+    source.indexOf('  async function updateArticleGitStage(')) + '\nglobalThis.refreshOwner = articleGitRefresh;', context);
+  return {context, state, removal, reads, writes, selections, catalogLoads};
+}
+const flushTasks = () => new Promise(resolve => setImmediate(resolve));
+
+test('Article unregister aborts pending Git reads and suppresses refresh until its receipt', async () => {
+  const f = articleUnregisterFixture();
+  const loading = f.context.loadArticleGit({includeHistory: true});
+  await flushTasks();
+  assert.equal(f.reads.length, 2);
+  const removing = f.context.unregisterCurrentArticle();
+  await flushTasks();
+  await loading;
+  assert.ok(f.reads.every(read => read.signal.aborted));
+  f.context.scheduleArticleGitRefresh(0);
+  await f.context.loadArticleGit();
+  await f.context.unregisterCurrentArticle();
+  assert.equal(f.reads.length, 2);
+  assert.equal(f.writes.length, 1);
+  f.removal.resolve({});
+  await removing;
+  assert.equal(f.state.selectedId, '');
+  assert.deepEqual(f.selections, ['']);
+  assert.equal(f.catalogLoads[0].preserve, false);
+  f.context.scheduleArticleGitRefresh(0);
+  await f.context.loadArticleGit();
+  assert.equal(f.reads.length, 2);
+  f.context.refreshOwner.destroy();
+});
+
+test('Article unregister failure restores the selected Article Git refresh', async () => {
+  const f = articleUnregisterFixture();
+  const removing = f.context.unregisterCurrentArticle();
+  await flushTasks();
+  f.removal.reject(new Error('permission denied'));
+  await removing;
+  const retry = f.context.loadArticleGit();
+  await flushTasks();
+  assert.equal(f.state.selectedId, 'A');
+  assert.deepEqual(f.selections, []);
+  assert.equal(f.reads.length, 2);
+  f.reads.forEach(read => read.gate.resolve({commits: []}));
+  await retry;
+  assert.equal(f.state.gitStatus.commits.length, 0);
+  f.context.refreshOwner.destroy();
+});
+
+test('Article unregister receipt cannot clear another Article selected during the request', async () => {
+  const f = articleUnregisterFixture();
+  const removing = f.context.unregisterCurrentArticle();
+  await flushTasks();
+  f.state.selectedId = 'B';
+  const loading = f.context.loadArticleGit();
+  await flushTasks();
+  assert.ok(f.reads.every(read => read.url.startsWith('/api/articles/B/')));
+  f.reads.forEach(read => read.gate.resolve({commits: []}));
+  await loading;
+  f.removal.resolve({});
+  await removing;
+  assert.equal(f.state.selectedId, 'B');
+  assert.deepEqual(f.selections, []);
+  assert.equal(f.catalogLoads[0].preserve, true);
+  assert.equal(f.catalogLoads[0].reloadSelected, false);
+  f.context.refreshOwner.destroy();
+});
+
+test('Cancelling Article unregister leaves existing Git reads running', async () => {
+  const f = articleUnregisterFixture({confirm: false});
+  const loading = f.context.loadArticleGit();
+  await flushTasks();
+  await f.context.unregisterCurrentArticle();
+  assert.equal(f.writes.length, 0);
+  assert.ok(f.reads.every(read => !read.signal.aborted));
+  f.reads.forEach(read => read.gate.resolve({commits: []}));
+  await loading;
+  assert.equal(f.state.selectedId, 'A');
+  f.context.refreshOwner.destroy();
+});
+
 test('Repo pagination carries current filters through every page and bulk commit', async () => {
   const reads = [], executions = [];
   const context = owner('repo_workspace.js', ['queryAllRepoRecords', 'startAllRepoAutomation'], {
