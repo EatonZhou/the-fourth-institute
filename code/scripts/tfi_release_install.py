@@ -215,6 +215,11 @@ def clean_environment(target, *, postgres=False):
            "PORTAL_BUILD_ID": target["run_id"], "PORTAL_LINEAGE_READ_WORKERS": "2",
            "PORTAL_POSTGRES_DOMAIN_POOL_SIZE": "2"}
     env.update({ENV_KEYS[key]: value for key, value in paths.items()})
+    generation = root / "config/generation.env"
+    if generation.is_file():
+        for line in generation.read_text(encoding="utf-8").splitlines():
+            if line.startswith("PORTAL_BUILD_ID=") and line.partition("=")[2].strip():
+                env["PORTAL_BUILD_ID"] = line.partition("=")[2].strip()
     if windows:
         env.update({"SystemRoot": os.environ.get("SystemRoot", r"C:\Windows"),
                     "WINDIR": os.environ.get("WINDIR", r"C:\Windows"),

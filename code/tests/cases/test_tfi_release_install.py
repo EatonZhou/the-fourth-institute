@@ -16,6 +16,17 @@ from scripts import tfi_release_install as installer
 
 
 class InstallationIsolationTests(unittest.TestCase):
+    def test_published_generation_identifies_every_application_component(self):
+        target = installer.target_plan(self.target)
+        generation = Path(target["install_root"]) / "config/generation.env"
+        generation.parent.mkdir(parents=True)
+        self.assertEqual(installer.clean_environment(target)["PORTAL_BUILD_ID"], target["run_id"])
+        generation.write_text("PORTAL_BUILD_ID=published-commit\nUNRELATED_SECRET=ignored\n", encoding="utf-8")
+        for component in installer.COMPONENTS:
+            _, environment = installer.component_command(target, component)
+            self.assertEqual(environment["PORTAL_BUILD_ID"], "published-commit")
+            self.assertNotIn("UNRELATED_SECRET", environment)
+
     def test_linux_components_preserve_user_manager_transport_only(self):
         from scripts import tfi_release_platform_linux
 

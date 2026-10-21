@@ -40,6 +40,11 @@ Linux 应用保留用户服务管理器的 `XDG_RUNTIME_DIR` 和
 实例。WALL 在每个独立实例内处理该实例的任务，周期工作由本站的调度开关控制，
 不再以旧的 `dev` / `release` 名称禁用派发或取消收尾。
 
+激活时将正式提交标识写入实例的 `config/generation.env`；应用启动和 Worker
+使用同一 `PORTAL_BUILD_ID`，用于核对 TAU 的实际运行版本。安装器改变启动环境时，
+Worker Manager 的重新加载会先交接、排空旧任务，再由服务管理器重启自身，
+避免新 Worker 继续继承旧进程的环境。
+
 运行 Dev UI 或执行服务时，必须另建测试实例并绑定 dev 的 `code/`，
 使用独立数据库、资源副本、端口和消费者。不能让两套执行服务同时消费
 dirtybase_instance 的正式任务。单元测试和静态检查不需要启动 Dev 服务。

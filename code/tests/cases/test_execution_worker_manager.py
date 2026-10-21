@@ -162,6 +162,18 @@ def test_worker_rollout_waits_for_new_worker_before_draining_old_contracts(monke
             manager._reload_worker()
             assert manager._stopping.is_set() and manager._restart_requested
             assert rollouts == []
+
+            source = tmp_path / 'source'
+            installer = source / 'scripts/tfi_release_install.py'
+            installer.parent.mkdir(parents=True)
+            installer.write_text('old startup environment', encoding='utf-8')
+            monkeypatch.setenv('PORTAL_EXECUTION_WORKER_SOURCE_ROOT', str(source))
+            manager = ExecutionWorkerManager()
+            installer.write_text('corrected startup environment', encoding='utf-8')
+            monkeypatch.setattr(manager, '_roll_out', lambda: rollouts.append('rollout'))
+            manager._reload_worker()
+            assert manager._stopping.is_set() and manager._restart_requested
+            assert rollouts == []
     with subtests.test(contract='test_worker_reload_keeps_manager_for_child_only_rollout'), isolated_portal_case() as case_path:
         with monkeypatch.context() as monkeypatch:
             tmp_path = case_path

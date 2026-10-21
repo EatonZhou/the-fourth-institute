@@ -62,10 +62,12 @@ class ExecutionWorkerManager:
             self.manager_source_path
         )
         # The manager keeps an RPC client in memory across child rollouts.
-        # Client/authentication updates therefore require its own graceful restart.
+        # Client/authentication and startup environment updates therefore require
+        # its own graceful restart, so new children do not inherit stale settings.
         self.rpc_source_paths = (
             self.source_root / "management_portal/execution/transport.py",
             self.source_root / "management_common/rpc_auth.py",
+            self.source_root / "scripts/tfi_release_install.py",
         )
         self.loaded_rpc_source_digests = {
             path: self._source_digest(path) for path in self.rpc_source_paths
