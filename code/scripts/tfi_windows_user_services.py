@@ -56,7 +56,8 @@ def _open_record(path):
     import msvcrt
     from ctypes import wintypes as w
     api = _record_api()
-    # A process record is an atomic snapshot: readers must allow rename/delete.
+    # Permit deletion while reading snapshots. Windows MoveFileEx may still
+    # require readers to close before replacement; the writer retries briefly.
     # Private-file and pinned-resource handles intentionally have other policies.
     handle = api.CreateFileW(str(path), 0x80000000, 7, None, 3, 0x00200000, None)
     if handle == ctypes.c_void_p(-1).value:
