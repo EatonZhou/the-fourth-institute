@@ -34,6 +34,10 @@ class PairedRuntimeTest(unittest.TestCase):
         self.assertEqual(affected(["code/management_portal/static/portal_nav.js"]), ["web", "dev-web"])
         self.assertEqual(affected(["code/management_portal/society_service/server.py"]),
                          ["society", "web", "dev-web"])
+        for module in ("agent_prompt_context", "agent_skill_context", "prompt_injection"):
+            with self.subTest(prompt_module=module):
+                self.assertEqual(affected([f"code/management_portal/{module}.py"]),
+                                 ["society", "web", "dev-web"])
         all_components = affected(["code/management_common/protocol.py"])
         self.assertIn("worker", all_components)
         self.assertNotIn("postgres", all_components)

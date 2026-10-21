@@ -180,7 +180,13 @@ def affected(paths):
             components.update(("execution", "worker", "web", "dev-web"))
         elif path.startswith("management_portal/resources/"):
             components.update(("resource", "web", "dev-web"))
-        elif path.startswith("management_portal/society_service/"):
+        elif path.startswith("management_portal/society_service/") or path in (
+            "management_portal/agent_prompt_context.py",
+            "management_portal/agent_skill_context.py",
+            "management_portal/prompt_injection.py",
+        ):
+            # Society builds Resident instructions and caches these imported
+            # modules; restarting only the Web leaves old prompt logic in use.
             components.update(("society", "web", "dev-web"))
         elif path.startswith(("management_portal/", "knowledge_board_lan/")):
             components.update(("web", "dev-web"))
