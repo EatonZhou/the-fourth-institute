@@ -454,9 +454,10 @@ def initialize_database(state):
     pg_data = database_root(target)
     if not (pg_data / "PG_VERSION").exists():
         windows = platform_adapter().__name__.endswith("_windows")
+        locale = "C" if platform_adapter().__name__.endswith("_macos") else "C.UTF-8"
         run_checked([str(Path(target["pg_bin"]) / native_tool("initdb")), "-D", str(pg_data),
                      "-L", target["pg_share"], "--username=" + target.get("database_user", "tfi"), "--encoding=UTF8",
-                     *([] if windows else ["--locale=C.UTF-8"]),
+                     *([] if windows else ["--locale=" + locale]),
                      "--auth-local=trust", "--auth-host=trust" if windows else "--auth-host=reject"],
                     target=target, native_output=True)
     service_controller().start(unit_name(target, "postgres"))

@@ -76,6 +76,8 @@ def _prepare(api, state, manifest):
     inventory = doctor(python)
     source = 'verified-existing-installation'
     if inventory is None:
+        if target.get('offline_dependencies'):
+            raise RuntimeError('Bundled Python dependencies failed verification; reinstall the macOS application package')
         report('正在准备 Portal 核心 Python 依赖；可选浏览器、排版与测试工具不参与首次安装')
         environment.parent.mkdir(parents=True, exist_ok=True)
         # Never pip-install into the operator's supplied/shared interpreter.

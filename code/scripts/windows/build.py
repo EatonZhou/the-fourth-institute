@@ -56,9 +56,9 @@ def bundle_seed(seed, archive, *, include_examples):
         zipped.writestr('manifest.json', json.dumps(specification, ensure_ascii=False, indent=2) + '\n')
 
 
-def verify_prepared_payload(platform):
+def verify_prepared_payload(platform, *, target_platform="windows"):
     """Exercise packaged code and seed through the real prepare/validate path."""
-    with tempfile.TemporaryDirectory(prefix="verify-windows-", dir=platform.parent) as temporary:
+    with tempfile.TemporaryDirectory(prefix="verify-" + target_platform + "-", dir=platform.parent) as temporary:
         root = Path(temporary)
         shutil.copytree(platform / "code", root / "code")
         for name in ("prepare_install.py", "INSTALL.md"):
@@ -71,18 +71,18 @@ def verify_prepared_payload(platform):
                 shutil.rmtree(seed)
             with zipfile.ZipFile(platform / ('base-seed.zip' if options else 'example-seed.zip')) as zipped:
                 zipped.extractall(seed)
-            subprocess.run([sys.executable, str(root / "prepare_install.py"), "--platform", "windows", *options],
+            subprocess.run([sys.executable, str(root / "prepare_install.py"), "--platform", target_platform, *options],
                            cwd=root, env=env, check=True)
 
 
-def bundle_native_dependencies(repo, destination, native_cache):
+def bundle_native_dependencies(repo, destination, native_cache, *, target="windows/x86_64"):
     """Ship the same pinned archives consumed by the normal installer."""
     bundled = []
     packages = json.loads((repo / "code/config/release-native-dependencies.json").read_text(encoding="utf-8"))
     archives = destination / "dependencies/native/archives"
     archives.mkdir(parents=True)
-    for name, package in sorted(packages["packages"]["windows/x86_64"].items()):
-        entry = dict(package, name=name, platform="windows/x86_64")
+    for name, package in sorted(packages["packages"][target].items()):
+        entry = dict(package, name=name, platform=target)
         filename = artifact_name(entry)
         cached = download(entry, native_cache / filename)
         with tempfile.TemporaryDirectory(prefix="verify-native-", dir=native_cache) as tmp:

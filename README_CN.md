@@ -18,6 +18,14 @@
 
 安装包尚未签名，暂不支持覆盖已有实例升级。详见 [Windows 操作说明与验证范围](code/scripts/windows/README.md)。
 
+### macOS 15+ · 试用版
+
+提供 Apple Silicon（arm64）与 Intel（x64）安装包，原生构建验证通过后发布到
+[macOS Preview Releases](https://github.com/EatonZhou/the-fourth-institute/releases?q=macos-preview&expanded=true)。
+打开 DMG，将应用拖入 Applications；首次启动选择是否安装 Lenia 案例。
+Python、核心 Python 包和数据库等运行环境已内置，准备基础平台无需联网。
+此版本尚未签名、公证，暂不支持覆盖升级。详见 [macOS 安装与停止服务说明](code/scripts/macos/README.md)。
+
 ### Linux
 
 需要 Python 3.12 及 venv 支持。克隆仓库并准备安装工程：

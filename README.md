@@ -18,6 +18,15 @@ Double-click `TheFourthInstitute-Setup-x64.exe` and choose a new, empty installa
 
 The installer is unsigned and does not support in-place upgrades of existing instances. See the [Windows instructions and verification limits](code/scripts/windows/README.md).
 
+### macOS 15+ · Preview
+
+Apple Silicon (arm64) and Intel (x64) installers are published to
+[macOS Preview Releases](https://github.com/EatonZhou/the-fourth-institute/releases?q=macos-preview&expanded=true)
+after native build verification. Open the DMG, drag the app into Applications, and choose
+whether to include the Lenia example on first launch. Python, core Python packages and native
+services are bundled; local setup does not require internet access. This preview is unsigned,
+not notarized, and does not support in-place upgrades. See the [macOS setup guide](code/scripts/macos/README.md).
+
 ### Linux
 
 Requires Python 3.12 with venv support. Clone the repository and prepare the installation bundle:
