@@ -87,6 +87,28 @@ def test_windows_scm_contract_and_instance_group():
     assert control.health(members[0])["ok"] is False
 
 
+def test_macos_stop_waits_for_launchd_process_exit(tmp_path, monkeypatch):
+    from scripts import portal_service_control as module
+    states = iter(["state = running\n pid = 44\n", "state = exiting\n pid = 44\n", ""])
+    sleeps = []
+    monkeypatch.setattr(module.time, "sleep", sleeps.append)
+    def run(*args, check=True):
+        if args[1] == "print":
+            output = next(states)
+            return subprocess.CompletedProcess(args, 0 if output else 113, output, "")
+        assert args[1] == "bootout"
+        return subprocess.CompletedProcess(args, 0, "", "")
+    ServiceControl(platform="darwin", runner=run, agent_root=tmp_path, uid=501).stop("fixture.service")
+    assert sleeps == [0.2]
+
+
+def test_service_stop_timeout_never_claims_a_live_pid_has_exited(monkeypatch):
+    control = ServiceControl(platform="darwin", uid=501)
+    monkeypatch.setattr(control, "status", lambda _: {"active": "inactive", "pid": 44})
+    with pytest.raises(TimeoutError, match="macos service did not stop"):
+        control._wait_stopped("fixture.service", timeout=0)
+
+
 def test_portal_services_exposes_health_for_each_instance():
     args = portal_services._parser().parse_args(["health", "--instance", "release"])
     assert args.command == "health"

@@ -166,6 +166,8 @@ class ServiceControl:
                 target = self._launch_target(service)
                 if not self.run("launchctl", "print", target, check=False).returncode:
                     self.run("launchctl", "bootout", target)
+                    # bootout may return while the process is still exiting.
+                    self._wait_stopped(service)
             else:
                 state = self.status(service)
                 if state["load"] != "not-found" and state["sub"] not in {"stopped", "dead"}:
@@ -174,9 +176,14 @@ class ServiceControl:
 
     def _wait_stopped(self, service: str, timeout: float = 90) -> None:
         deadline = time.monotonic() + timeout
-        while self.status(service)["sub"] not in {"stopped", "dead"}:
+        while True:
+            state = self.status(service)
+            stopped = (state["sub"] in {"stopped", "dead"} if self.platform == "windows"
+                       else state["active"] in {"inactive", "failed"} and not state["pid"])
+            if stopped:
+                return
             if time.monotonic() >= deadline:
-                raise TimeoutError(f"Windows service did not stop: {service}")
+                raise TimeoutError(f"{self.platform} service did not stop: {service}")
             time.sleep(0.2)
 
     def restart(self, service: str) -> None:
