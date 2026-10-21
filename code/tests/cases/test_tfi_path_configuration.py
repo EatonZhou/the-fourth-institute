@@ -30,23 +30,24 @@ def configured_paths(paths, tmp_path):
     return values
 
 def test_legacy_read_and_new_write_leave_original_bytes_and_mtime(paths, tmp_path, monkeypatch):
-    """当前规范配置写入后立即生效，旧兼容文件保持原字节。"""
+    """实例声明优先于默认配置，显式覆盖才切换；原文件保持原字节。"""
     original = configured_paths(paths, tmp_path)
     before = (paths.site_paths.read_bytes(), paths.site_paths.stat().st_mtime_ns)
     assert paths.path_values() == original
     assert not paths.CONFIG_PATH.exists()
     replacement = {key: str(tmp_path / 'chosen' / key) for key in paths.KEYS}
     paths.write_config(replacement)
-    assert paths.read_config() == replacement
+    assert paths.read_config() == original
     monkeypatch.setenv('PORTAL_PATHS_CONFIG', str(paths.CONFIG_PATH))
     assert paths.read_config() == replacement
     assert (paths.site_paths.read_bytes(), paths.site_paths.stat().st_mtime_ns) == before
 
-def test_invalid_new_configuration_does_not_fall_back(paths, tmp_path):
+def test_invalid_new_configuration_does_not_fall_back(paths, tmp_path, monkeypatch):
     """当前规范配置损坏时拒绝读取，不退回旧兼容文件。"""
     valid = configured_paths(paths, tmp_path)
     paths.CONFIG_PATH.parent.mkdir(parents=True)
     paths.CONFIG_PATH.write_text('{}')
+    monkeypatch.setenv('PORTAL_PATHS_CONFIG', str(paths.CONFIG_PATH))
     with pytest.raises(ValueError, match='Invalid'):
         paths.read_config()
 
