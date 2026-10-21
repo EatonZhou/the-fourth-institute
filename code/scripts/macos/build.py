@@ -21,7 +21,13 @@ from scripts.windows.build import public_seed, bundle_seed, bundle_native_depend
 
 
 def command(argv, **kwargs):
-    return subprocess.run(list(map(str, argv)), check=True, **kwargs)
+    result = subprocess.run(list(map(str, argv)), stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT, text=True, errors="replace", **kwargs)
+    if result.stdout:
+        print(result.stdout, flush=True)
+    if result.returncode:
+        raise RuntimeError(f"{Path(argv[0]).name} exited {result.returncode}:\n{result.stdout[-6000:]}")
+    return result
 
 
 def smoke(payload, destination, included):
@@ -56,7 +62,7 @@ def smoke(payload, destination, included):
             # Logs have instance-local paths but never contain invitation tokens.
             try:
                 command([python, launcher, "--platform", destination, "--unregister"], timeout=120)
-            except subprocess.CalledProcessError:
+            except RuntimeError:
                 raise RuntimeError("Native smoke cleanup failed; no release will be produced")
 
 
@@ -152,4 +158,9 @@ def build(repo, output):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=REPO / ".build/macos")
-    build(REPO, parser.parse_args().output)
+    try:
+        build(REPO, parser.parse_args().output)
+    except Exception as exc:
+        message = str(exc)[-12000:].replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+        print("::error title=macOS native build failed::" + message, flush=True)
+        raise
