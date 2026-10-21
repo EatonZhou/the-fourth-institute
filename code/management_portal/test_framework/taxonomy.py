@@ -90,7 +90,7 @@ MODULE_GROUPS = (
         node("workbench.notifications", "Home 与通知", "decision_00546e28e1e0", "decision_865ac8ebef25", "decision_5d2bf4a72f09", "decision_605810a1292b", "decision_152d5c046a23", "decision_e30897dd3dc3", "decision_4dea0db1f45a", "decision_fc26f883773d", "decision_481dc4e6292c", "decision_ed57c4ad1001"),
         node("workbench.preview", "文件、Preview、Resource Detail 与 Workspace", "decision_61e50306cc79", "decision_dca903d71575", "decision_e5f66e2f6a5e", "decision_864d4fe41934", "decision_2f67ed28db67", "decision_769a35d6b5c7", "decision_f22e45dfd382"),
         node("workbench.user-state", "页面状态、关联与恢复", "decision_6e230393221c", "decision_9f6135cbbb22", "decision_bd179998ba08", "decision_f25266e5a0e7"),
-        node("workbench.shell", "Portal Shell、导航、搜索与 Project 页面", "decision_27253e25f016", "decision_e486671af066", "decision_a144bf700017", "decision_46c37026e8ea"),
+        node("workbench.shell", "Portal Shell、导航与搜索", "decision_27253e25f016", "decision_e486671af066", "decision_a144bf700017"),
     )),
     ModuleGroup("platform", "10. 数据、事件与服务通信", (
         node("platform.events", "NATS、事件通知与服务通信", "decision_abaedeefca6f", "decision_f55bac7fc199"),

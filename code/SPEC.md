@@ -1,9 +1,11 @@
 # SPEC.md
 
+当前发行版不提供 Project Board／Project Page 页面或 `/projects/` 路由；项目资源、项目归属与知识筛选仍保留。旧页面设计仅作历史参考，不属于以下现行设计索引。
+
 - [本地 Dev worktree 与 main 发布](docs/design/local-development.md)
 - [macOS 桌面安装与数据归属](docs/design/macos-desktop.md)
 
-- [共享代码与实例状态隔离](/r/decision_d88306d0bd17) · [仓库副本](../instance/example_instance/seed/data/share_root/Projects/AI员工/knowledge_base/decision/20261020__decision__共享代码与实例状态隔离__decision_d88306d0bd17.md)
+- [共享代码与实例状态隔离](/r/decision_d88306d0bd17)
 
 - [Portal设计规范Spec.md索引](/r/decision_ef80c6d3b5ee)
 - [Portal 改进 Plan 的编写与 IMPROVE.md 索引规范](/r/decision_9c258743f91e)
@@ -157,7 +159,6 @@
 - [Portal Resource Catalog 的统一分类导航、资源发现与详情入口](/r/decision_2f67ed28db67)
 - [Portal Workspace Surface 与 Document Session](/r/decision_769a35d6b5c7)
 - [Portal Terminal 的会话、输入与输出生命周期](/r/decision_f22e45dfd382)
-- [Project Board 页面与 Project Page 投影](/r/decision_46c37026e8ea)
 - [Portal 前端恢复、HTTP 缓存与 Web 重启衔接](/r/decision_f25266e5a0e7)
 - [Portal Web 应用与请求处理架构](/r/decision_0820081083f5)
 - [Portal Core NATS 变化通知与浏览器实时刷新](/r/decision_abaedeefca6f)
