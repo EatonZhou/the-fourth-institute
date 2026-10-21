@@ -46,6 +46,10 @@ Resident 本身不含模型。它每次工作都要通过一个**执行账号**�
 
 - **订阅账号**：用 `RegisterProviderAccount` 登记 Codex 或 Claude 的 `subscription_login` 账号，再在账号行打开登录会话。对应指令为 `OpenProviderAccountLogin`、`GetProviderAccountLogin`、`CancelProviderAccountLogin`；Claude 要求授权码时，用 `UpdateProviderAccountLogin` 提交到现有等待会话。账号目录由站点 `PORTAL_ACCOUNTS_ROOT` 与账号身份派生；Codex 每个账号使用独立的 `CODEX_HOME` 和 `portal-codex-app-server@<account_id>.service` 模板实例。
 - **模型 API**：先用 `CreateModelApi` 登记接口地址、默认模型及认证方式，再登记引用已有 `config.api_id` 的 `api_profile` 执行账号。一次性 `secret` 经受控写入保存到密钥文件；`UpdateModelApi` 可通过 `changes.secret` 更换。不要把密钥放入账号 config、对话、日志或文档。接口提供多个模型或支持推理强度时，在“高级设置”的模型列表（`models`）中声明，如 `[{"id": "example-model", "reasoning_efforts": ["low", "medium", "high"]}]`；直连该接口的 Resident 即可在对话设置中选择模型和推理强度。
+- **用 API Key 运行 Agent Harness**：模型 API 默认只提供 Chat Completions。接口也支持其他协议时，在“高级设置”中声明（`protocols`）：`openai_responses`（`/responses`，Codex 使用）、`anthropic_messages`（Claude Code 使用，可指定地址和认证方式 Bearer 或 `x-api-key`）。之后可以把这个接口登记为 Codex、Claude Code 或 OpenCode（使用 Chat Completions）的 `api_profile` 账号，Resident 就能用这个 API Key 执行命令、编辑文件和使用工具；新增模型 API 时也可以在“运行方式”中直接选择。登记时 Portal 检查接口是否声明了该 Harness 需要的协议；仍有账号使用的协议不能撤下，接口也不能删除。
+  - Codex：密钥由 `codex login --with-api-key` 写入账号目录的 `auth.json`，`config.toml` 中由 Portal 维护的部分把整个 app-server 指向该接口，并关闭联网搜索、连接器、插件和遥测；模型及推理强度来自模型列表，`context_window` 用于自动压缩。修改接口地址或密钥会重写配置并重启该账号的 app-server，账号有会话或执行时拒绝修改。
+  - Claude Code：后台、标题和子代理请求都使用所选模型。
+  - 并不是所有“OpenAI 兼容”接口都实现了 `/responses` 或 Anthropic Messages；以“接入并启用 AI”的测试结果为准。局域网内的接口如果需要绕过站点代理，请在网络设置中加入 `NO_PROXY`。
 - **Backend 角色**：用 `UpdateBackendRole` 设置账号、模型和推理强度。新建 Resident 可选角色，省略时使用 `default`；显式 provider、account_id 和 settings 优先。角色更改不会改写已有 Resident 或 Provider 会话绑定。
 
 Provider 区的“检查更新”调用 `ListProviders(refresh=true)`，只查询已安装和可用版本并保存观察；安装和激活由运行时更新器负责。

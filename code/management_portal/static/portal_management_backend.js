@@ -296,9 +296,15 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       } else if (kind.value === "subscription_login" && provider.value === "claude") {
         field(options, "模型目录（JSON 数组）", "models", "[]", {tag: "textarea", rows: "3"});
       } else if (kind.value === "api_profile") {
-        const api = select(extra, "模型 API", "api_id", [["", t("选择已登记的模型 API")], ...state.apis.map(api => [api.api_id, api.api_id])]);
+        const backend = state.providers.find(p => p.provider === provider.value) || {};
+        const compatible = state.apis.filter(item => !backend.api_protocol || (item.harness_protocols || []).includes(backend.api_protocol));
+        const api = select(extra, "模型 API", "api_id", [["", t("选择已登记的模型 API")], ...compatible.map(api => [api.api_id, api.api_id])]);
         api.required = true;
         hint(api, "选择已保存的接口。还没有接口？关闭此窗口，使用页面顶部的“新增模型 API”。");
+        if (backend.api_protocol && backend.api_protocol !== "openai_chat") {
+          extra.append(node("small", t("只列出声明了 {p0} 协议的接口；可在模型 API 的高级设置中勾选。", {p0: backend.api_protocol}), {class: "backendHint"}));
+        }
+        if (provider.value === "codex") field(options, "默认路线", "is_default", "", {type: "checkbox"});
         field(options, "路线（可选）", "route_id");
         const secret = field(options, "更换 API Key（可选）", "secret", "", {type: "password", autocomplete: "new-password"});
         hint(secret, "留空沿用已保存的密钥。填写后替换所选接口的 API Key，提交后不回显。");
@@ -324,7 +330,10 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
         try { config.models = JSON.parse(value("models")); if (!Array.isArray(config.models)) throw new Error(); }
         catch (_) { form.querySelector('[role="alert"]').textContent = t("模型目录必须是 JSON 数组。"); return; }
       }
-      if (kind.value === "api_profile") config.api_id = value("api_id");
+      if (kind.value === "api_profile") {
+        config.api_id = value("api_id");
+        if (provider.value === "codex") config.is_default = form.elements.is_default.checked;
+      }
       const args = {account_id: id.value.trim(), provider: provider.value, kind: kind.value, config, max_concurrency: Number(value("max_concurrency"))};
       if (value("route_id")) args.route_id = value("route_id").trim();
       const secret = form.elements.namedItem("secret");
@@ -364,11 +373,42 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     const models = field(options, "模型列表（可选，JSON 数组）", "models", declaredModels, {tag: "textarea", rows: "4",
       placeholder: '[{"id": "example-model", "reasoning_efforts": ["low", "medium", "high"]}]'});
     hint(models, "声明这个接口提供的模型。每项的 id 是模型名称，reasoning_efforts 是该模型接受的推理强度；声明后，直连这个接口的 Resident 可在对话设置中选择。列表需包含上面的模型名称；留空则不声明。");
+    // Agent harnesses speak their own protocol to the API; Chat Completions follows the kind.
+    const offered = new Set(api?.harness_protocols || ["openai_chat"]);
+    const anthropicOptions = api?.protocols?.anthropic_messages || {};
+    const responses = field(options, "也支持 OpenAI Responses（/responses，Codex 使用）", "protocol_openai_responses", "", {type: "checkbox"});
+    responses.checked = offered.has("openai_responses");
+    const anthropic = field(options, "也支持 Anthropic Messages（Claude Code 使用）", "protocol_anthropic_messages", "", {type: "checkbox"});
+    anthropic.checked = offered.has("anthropic_messages");
+    hint(anthropic, "只勾选接口确实提供的协议；Chat Completions 总是可用。接入测试会实际调用一次。");
+    const anthropicUrl = field(options, "Anthropic 接口地址（可选）", "anthropic_base_url", anthropicOptions.base_url || "",
+      {type: "url", placeholder: t("留空使用去掉 /v1 的接口基础地址")});
+    const anthropicAuth = select(options, "Anthropic 认证方式", "anthropic_auth",
+      [["bearer", "Authorization: Bearer"], ["x-api-key", "x-api-key"]], anthropicOptions.auth || "bearer");
+    const protocolState = () => JSON.stringify([responses.checked, anthropic.checked, anthropicUrl.value.trim(), anthropicAuth.value]);
+    const declaredProtocols = protocolState();
+    const showAnthropic = () => { anthropicUrl.parentElement.hidden = anthropicAuth.parentElement.hidden = !anthropic.checked; };
+    showAnthropic();
     const enabled = field(options, "启用此接口", "enabled", "", {type: "checkbox"}); enabled.checked = api?.enabled !== false;
     const canCreateAccount = !api && canRegister && state.providers.some(p => p.provider === "provider_api" && p.kinds.includes("api_profile"));
     const account = canCreateAccount ? field(options, "AI 账号名称（可选）", "account_id", "", {pattern: "[a-z][a-z0-9_\\-]{0,127}", placeholder: t("留空使用连接名称")}) : null;
     const register = canCreateAccount ? field(form, "同时添加为 AI 账号，继续接入与测试", "register_account", "", {type: "checkbox"}) : null;
     if (register) { register.checked = true; hint(register, "用于 Resident 对话。保存后选择模型并测试，可设为默认 AI；直连模型 API 不提供工具执行。测试会发起模型调用，可能产生费用。"); }
+    const harness = register ? select(form, "运行方式", "harness", []) : null;
+    if (harness) hint(harness, "Codex、Claude Code、OpenCode 能执行命令、编辑文件和使用工具，需要接口支持对应协议（在高级设置中勾选）；直连只对话。");
+    const renderHarnesses = () => {
+      if (!harness) return;
+      const protocols = new Set(["openai_chat", ...(responses.checked ? ["openai_responses"] : []),
+        ...(anthropic.checked ? ["anthropic_messages"] : [])]);
+      const previous = harness.value;
+      harness.replaceChildren(node("option", t("直连模型（只对话，不执行工具）"), {value: "provider_api"}),
+        ...state.providers.filter(p => p.api_protocol && p.kinds.includes("api_profile") && protocols.has(p.api_protocol))
+          .map(p => node("option", p.title || p.provider, {value: p.provider})));
+      harness.value = [...harness.options].some(option => option.value === previous) ? previous : "provider_api";
+    };
+    renderHarnesses();
+    responses.addEventListener("change", renderHarnesses);
+    anthropic.addEventListener("change", () => { showAnthropic(); renderHarnesses(); });
     let createdId = "";
     saveButton(form); form.addEventListener("submit", event => {
       event.preventDefault(); if (busy) return;
@@ -384,6 +424,12 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       }
       const changes = {provider: provider.value.trim(), base_url: url.value.trim(), default_model: model.value.trim(), enabled: enabled.checked};
       if (modelsChanged) changes.models = catalog;
+      if (protocolState() !== declaredProtocols) {
+        changes.protocols = {};
+        if (responses.checked) changes.protocols.openai_responses = {};
+        if (anthropic.checked) changes.protocols.anthropic_messages = {auth: anthropicAuth.value,
+          ...(anthropicUrl.value.trim() ? {base_url: anthropicUrl.value.trim()} : {})};
+      }
       if (path.value.trim()) changes.secret_file = path.value.trim();
       if (secret.value) changes.secret = secret.value; secret.value = "";
       void run(async () => {
@@ -395,11 +441,13 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
         }
         finally { delete changes.secret; }
         if (register?.checked) {
-          const accountId = account.value.trim() || createdId;
+          const backend = harness?.value || "provider_api";
+          // Direct calls are scheduled under the API's own name; a harness account takes another.
+          const accountId = account.value.trim() || (backend === "provider_api" ? createdId : `${createdId}-${backend}`);
           try {
-            await execute("RegisterProviderAccount", {account_id: accountId, provider: "provider_api", kind: "api_profile", config: {api_id: createdId}, max_concurrency: 1});
+            await execute("RegisterProviderAccount", {account_id: accountId, provider: backend, kind: "api_profile", config: {api_id: createdId}, max_concurrency: 1});
           } catch (_) {
-            for (const input of [id, provider, url, model, path, models, secret, enabled]) input.disabled = true;
+            for (const input of [id, provider, url, model, path, models, responses, anthropic, anthropicUrl, anthropicAuth, secret, enabled]) input.disabled = true;
             const message = t("API 已保存，但 AI 账号尚未添加。可修改账号名称后重试保存，不会重复创建 API；也可取消勾选，仅保留接口。");
             form.querySelector('[role="alert"]').textContent = message; notice.textContent = message;
             await refresh("apis"); return false;
