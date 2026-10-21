@@ -142,9 +142,6 @@ features:
   - id: "telepus"
     title: "Telepus"
     modules: ["web.community"]
-  - id: "robolab"
-    title: "RoboLab"
-    modules: ["interface.shell"]
 modules:
   - id: "interface"
     title: "浏览器前端"
@@ -848,7 +845,6 @@ modules:
       - "management_portal/static/portal_instruction_client.js"
       - "management_portal/static/portal_nav.js"
       - "management_portal/static/portal_site.js"
-      - "management_portal/robolab_link.py"
       - "management_portal/static/portal_*state*.js"
       - "management_portal/static/portal_components*"
       - "management_portal/static/portal_design_system.css"
