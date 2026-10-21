@@ -3570,27 +3570,11 @@
         const exactResidentId = String(residentId || "").trim();
         if (!exactResidentId || pendingResidentDeletions.has(exactResidentId)) return null;
         pendingResidentDeletions.add(exactResidentId);
-        const previousTarget = currentChatTarget();
-        const previousLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-        const panelTarget = agentChatPanel?.target?.() || {};
-        const targetWasActive = String(previousTarget?.id || "") === exactResidentId;
-        const panelHadTarget = String(panelTarget.resident_id || "") === exactResidentId;
-        const suspendedTarget = targetWasActive
-          ? previousTarget
-          : (panelHadTarget
-            ? residentChatTarget(panelTarget.resident_id, panelTarget.lineage_id, panelTarget)
-            : null);
+        let deletion = null;
         try {
           state.agentMenuId = "";
           state.residentMemberMenuId = "";
           agentFloatingMenuOverlay?.close?.();
-          if (targetWasActive) {
-            commitChatTarget(null);
-            beginChatWorkspaceNavigation();
-          }
-          if (panelHadTarget) await Promise.resolve(agentChatPanel?.closeSurface?.());
-          clearDeletedResidentLocation(new Set([exactResidentId]));
-
           const result = await residentService.remove({
             lineage_id: String(lineageId || "").trim(),
             resident_id: exactResidentId,
@@ -3598,6 +3582,7 @@
           const deletedIds = new Set([exactResidentId]);
           const deletedResidentId = String(result?.resident_id || "").trim();
           if (deletedResidentId) deletedIds.add(deletedResidentId);
+          deletion = { result, deletedIds };
           await retireDeletedResidentSurfaces([...deletedIds]);
 
           state.residents = state.residents.filter(item => (
@@ -3609,16 +3594,16 @@
           }
           clearDeletedResidentLocation(deletedIds);
 
-          if (targetWasActive || deletedIds.has(selectedResidentId())) {
+          if (deletedIds.has(selectedResidentId())) {
             // Only a caller-named Resident (a derived Resident's parent) takes
             // over the Chat. Otherwise the Chat says the Resident was deleted
             // instead of opening the Lineage's Leader or another Resident.
             const nextTarget = fallbackTarget && !deletedIds.has(String(fallbackTarget.id || ""))
               ? fallbackTarget
               : null;
-            commitChatTarget(nextTarget);
-            beginChatWorkspaceNavigation();
             if (nextTarget) {
+              commitChatTarget(nextTarget);
+              beginChatWorkspaceNavigation();
               writeLastSelection(nextTarget);
               syncChatTargetLocation(nextTarget);
             } else {
@@ -3636,29 +3621,16 @@
           syncSelectedResidentSurface();
           await refreshResidentSidebarIfDue(true);
           await syncLineageHatgPanel();
-          if (activeChatTargetId()) {
+          if (activeChatTargetId() && !unavailableResidentBindings.has(selectedResidentId())) {
             await Promise.allSettled([loadDetail(true), loadFolder()]);
           }
-          return { result, deletedIds };
+          return deletion;
         } catch (err) {
-          history.replaceState(history.state || {}, "", previousLocation);
-          if (suspendedTarget) {
-            commitChatTarget(suspendedTarget);
-            beginChatWorkspaceNavigation();
-            writeLastSelection(suspendedTarget);
-            syncSelectedResidentSurface();
-            await agentChatPanel?.setResident?.({
-              resident_id: suspendedTarget.id,
-              lineage_id: suspendedTarget.lineage_id,
-              title: suspendedTarget.title,
-              backend: suspendedTarget.backend,
-            }, { load: true, force: true }).catch(() => {});
-          }
           window.PortalUI.toast(
-            window.PortalUI.errorMessage(window.PortalI18n.t("删除 Resident"), err),
+            window.PortalUI.errorMessage(window.PortalI18n.t(deletion ? "刷新删除结果" : "删除 Resident"), err),
             "error",
           );
-          return null;
+          return deletion;
         } finally {
           pendingResidentDeletions.delete(exactResidentId);
         }
@@ -4014,20 +3986,27 @@
       async function retireDeletedResidentSurfaces(residentIds) {
         const deleted = new Set(residentIds.map(id => String(id || "").trim()).filter(Boolean));
         if (!deleted.size) return;
+        for (const id of deleted) unavailableResidentBindings.add(id);
         if (deleted.has(selectedResidentId())) {
-          commitChatTarget(null);
+          const resident = currentResident();
+          const target = currentChatTarget();
+          if (target && !target.title) {
+            commitChatTarget({ ...target, title: resident?.title || resident?.name || target.id });
+          }
           beginChatWorkspaceNavigation();
           state.chatNavigationError = window.PortalI18n.t("该 Resident 已删除。");
           state.detail = null;
           state.folder = null;
           state.status = null;
           state.selectedFile = "";
+          state.folderRequestSequence += 1;
           writeLineageUiState({ lastChatTarget: null });
           resetChatRenderState();
         }
-        for (const runtime of lineageWorkbench?.getPanelsByType?.("chat") || []) {
+        const panels = new Set([agentChatPanel, ...(lineageWorkbench?.getPanelsByType?.("chat") || [])]);
+        for (const runtime of panels) {
           if (deleted.has(String(runtime?.target?.()?.resident_id || ""))) {
-            await runtime.closeSurface?.();
+            runtime.rejectUnavailableTarget?.({ status: 404 });
           }
         }
         for (const document of previewTabsController?.snapshot?.()?.documents || []) {
@@ -4045,7 +4024,8 @@
           ? residentIds
           : new Set(residentIds || []);
         const target = new URL(window.location.href);
-        if (deletedResidents.has(String(target.searchParams.get("resident") || "").trim())) {
+        const residentId = String(target.searchParams.get("resident") || "").trim();
+        if (deletedResidents.has(residentId) && residentId !== selectedResidentId()) {
           target.searchParams.delete("resident");
           target.searchParams.delete("open_chat");
           target.searchParams.delete("program_item");
@@ -5886,6 +5866,7 @@
         const resident = currentResident();
         const residentId = selectedResidentId();
         if (!resident || !residentId || !agentChatPanel) return;
+        if (unavailableResidentBindings.has(residentId)) return;
         if (state.lineageDeleteSaving === activeLineageId()) return;
         const selection = currentChatTarget();
         try {
@@ -5991,7 +5972,7 @@
       async function loadFolder() {
         if (currentResident()) {
           const residentId = selectedResidentId();
-          if (!residentId) return;
+          if (!residentId || unavailableResidentBindings.has(residentId)) return;
           if (
             state.lineageDeleteSaving
             && lineageIdForResident(currentResident()) === state.lineageDeleteSaving

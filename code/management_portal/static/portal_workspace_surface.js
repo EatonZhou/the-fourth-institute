@@ -490,6 +490,15 @@
       const restoreIndex = tabControllers.size;
       const tabs = createDocumentTabsController({
         ...(config || {}),
+        onChange: (snapshot, reason, meta) => {
+          // Closing the last owned document also retires its navigation
+          // binding, before persistence observers take their next snapshot.
+          if (!snapshot.documents.length
+            && [...tabControllers].every(controller => !controller.snapshot().documents.length)) {
+            clearPreview();
+          }
+          config?.onChange?.(snapshot, reason, meta);
+        },
         createDocument: request => {
           const documentState = createDocument?.(request) || {};
           if (documentState.session) ownDocumentSession(documentState.session);
@@ -696,6 +705,7 @@
     const clearPreview = (config = {}) => {
       requestRevision += 1;
       binding = {};
+      pendingBindingRestore = null;
       documentValue = null;
       surface.setDocumentStatistics(null);
       if (config.preserveHistory !== true) navigationHistory = [];

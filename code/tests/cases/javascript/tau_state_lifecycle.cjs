@@ -1,0 +1,173 @@
+const {test} = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs'), path = require('node:path'), vm = require('node:vm');
+const {babelParse} = require('./babel_parse.cjs');
+const noop = () => {};
+const i18n = {t: s => s, text: (parts, ...values) => parts.reduce((s, p, i) => s + p + (values[i] ?? ''), '')};
+function declarations(file, names) {
+  const source = fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static', file), 'utf8');
+  const found = {};
+  function visit(node) {
+    if (!node || typeof node !== 'object') return;
+    const name = node.type === 'ClassMethod' ? node.key?.name : node.id?.name;
+    if (names.includes(name)) {
+      const fragment = source.slice(node.start, node.end);
+      found[name] = node.type === 'VariableDeclarator' ? `const ${fragment};`
+        : node.type === 'ClassMethod' ? `const ${name} = ({${fragment}}).${name};` : fragment;
+    }
+    for (const child of Object.values(node)) {
+      if (Array.isArray(child)) child.forEach(visit);
+      else if (child && typeof child === 'object') visit(child);
+    }
+  }
+  visit(babelParse(source, file));
+  return names.map(name => {assert.ok(found[name], `${file}: ${name}`); return found[name];}).join('\n')
+    + '\n' + names.map(name => `this.${name} = ${name};`).join('\n');
+}
+function deferred() {let resolve, reject; const promise = new Promise((a, b) => {resolve = a; reject = b;}); return {promise, resolve, reject};}
+
+function deletionFixture() {
+  const target = {id: 'resident_deleted', kind: 'resident', key: 'resident:resident_deleted', lineage_id: 'lineage_one', title: 'Known title'};
+  const state = {chatTarget: target, residents: [{resident_id: target.id, title: target.title}], folderRequestSequence: 0};
+  const removal = deferred(), calls = [], notices = [];
+  const location = new URL(`https://portal.test/lineage?resident=${target.id}`);
+  const shared = vm.createContext({window: {PortalI18n: i18n}, residentSessionScope: t => t.resident_id,
+    RESIDENT_CHAT_WORKSPACE_SCHEMA: 'portal.chat_workspace.v3', newMessageIdentity: () => 'notice'});
+  vm.runInContext(declarations('portal_chat_workspace.js', ['rejectUnavailableTarget', 'showError']), shared);
+  function panel(id) {
+    const identity = {resident_id: id, title: 'Known title'};
+    return {target: () => identity, workspace: {target: () => identity}, options: {}, questions: {reset: noop},
+      targetRevision: 0, protocol: {destroy: () => calls.push(['detach', id])},
+      rejectUnavailableTarget: shared.rejectUnavailableTarget, showError: shared.showError,
+      showState(contract) {this.contract = contract;}, currentDetail: () => null,
+      closeSurface: () => {throw Error('must not erase identity');}};
+  }
+  const primary = panel(target.id), secondary = panel(target.id), other = panel('resident_other');
+  const ctx = vm.createContext({window: {location, PortalI18n: i18n,
+      PortalUI: {toast: (...args) => notices.push(args), errorMessage: (label, err) => `${label}: ${err.message}`},
+      PortalConversationStore: {discardResident: id => calls.push(['discard', id])}},
+    URL, history: {state: {}, replaceState: (_a, _b, url) => {location.href = new URL(url, location).href;}},
+    state, pendingResidentDeletions: new Set(), unavailableResidentBindings: new Set(),
+    agentFloatingMenuOverlay: null, agentChatPanel: primary,
+    lineageWorkbench: {getPanelsByType: () => [primary, secondary, other]}, previewTabsController: null,
+    residentService: {remove: () => {calls.push(['remove']); return removal.promise;}, folder: () => {throw Error('deleted folder read');}},
+    currentChatTarget: () => state.chatTarget, selectedResidentId: () => state.chatTarget?.id || '',
+    currentResident: () => state.residents.find(r => r.resident_id === state.chatTarget?.id),
+    commitChatTarget: t => {state.chatTarget = t;}, beginChatWorkspaceNavigation: noop,
+    writeLineageUiState: noop, resetChatRenderState: noop, dismissRecentAgentSession: noop, recentAgentSessionKey: x => x.resident_id,
+    renderAgentList: noop, renderFavoriteList: noop, syncSelectedResidentSurface: noop,
+    refreshResidentSidebarIfDue: async () => {}, syncLineageHatgPanel: async () => {},
+    activeChatTargetId: () => state.chatTarget?.key, activeLineageId: () => 'lineage_one',
+    writeLastSelection: noop, syncChatTargetLocation: noop, stopPreviewRefresh: noop,
+  });
+  vm.runInContext(declarations('lineage_workbench.js', ['deleteResidentFromWorkbench', 'retireDeletedResidentSurfaces',
+    'clearDeletedResidentLocation', 'loadDetail', 'loadFolder']), ctx);
+  return {ctx, target, state, removal, calls, notices, primary, secondary, other, location};
+}
+
+test('successful deletion keeps every matching Chat identity with a disabled composer', async () => {
+  const f = deletionFixture();
+  const pending = f.ctx.deleteResidentFromWorkbench({residentId: f.target.id});
+  assert.equal(f.state.chatTarget, f.target, 'pending mutation keeps identity');
+  f.removal.resolve({resident_id: f.target.id});
+  assert.ok(await pending);
+  assert.equal(f.state.chatTarget.id, f.target.id);
+  assert.equal(f.location.searchParams.get('resident'), f.target.id);
+  assert.equal(f.state.residents.length, 0);
+  for (const panel of [f.primary, f.secondary]) {
+    assert.equal(panel.target().resident_id, f.target.id);
+    assert.equal(panel.contract.title, 'Known title');
+    assert.equal(panel.contract.subtitle, 'Resident 不可用');
+    assert.equal(panel.contract.composer.can_send, false);
+    assert.equal(panel.contract.composer.can_edit, false);
+    assert.equal(panel.protocol, null);
+  }
+  assert.equal(f.other.contract, undefined);
+  await f.ctx.loadDetail(true);
+  await f.ctx.loadFolder();
+  assert.equal(f.notices.length, 0);
+});
+
+test('failed deletion and navigation while deletion is pending preserve the current selection', async () => {
+  for (const fail of [true, false]) {
+    const f = deletionFixture();
+    const pending = f.ctx.deleteResidentFromWorkbench({residentId: f.target.id});
+    const next = {id: 'resident_other', key: 'resident:resident_other'};
+    f.state.chatTarget = next;
+    f.ctx.loadDetail = async () => {};
+    f.ctx.loadFolder = async () => {};
+    if (fail) f.removal.reject(Error('permission denied')); else f.removal.resolve({resident_id: f.target.id});
+    const result = await pending;
+    assert.equal(Boolean(result), !fail);
+    assert.equal(f.state.chatTarget, next);
+    assert.equal(f.primary.contract !== undefined, !fail);
+  }
+});
+
+test('explicit parent fallback works and a post-delete refresh failure never rebinds the deleted Resident', async () => {
+  for (const refreshFails of [true, false]) {
+    const f = deletionFixture();
+    const parent = {id: 'resident_parent', key: 'resident:resident_parent'};
+    f.ctx.loadDetail = async () => {};
+    f.ctx.loadFolder = async () => {};
+    if (refreshFails) f.ctx.refreshResidentSidebarIfDue = async () => {throw Error('sidebar unavailable');};
+    const pending = f.ctx.deleteResidentFromWorkbench({residentId: f.target.id, fallbackTarget: parent});
+    f.removal.resolve({resident_id: f.target.id});
+    assert.ok(await pending);
+    assert.equal(f.state.chatTarget, parent);
+    if (refreshFails) assert.match(f.notices[0][0], /刷新删除结果/);
+  }
+});
+
+function previewFixture() {
+  const emptySnapshots = [], rendered = [];
+  const ctx = vm.createContext({window: {PortalI18n: i18n, PortalPreview: {dispose: noop}}, console,
+    options: {}, tabControllers: new Set(), restoredTabSnapshots: [], ownDocumentSession: x => x,
+    resolveRoot: () => null, previewRoot: {textContent: ''}, requestRevision: 0, binding: {},
+    documentValue: null, navigationHistory: [], pendingBindingRestore: {path: 'old'}, previewRender: null,
+    surface: {setDocumentStatistics: noop, setDownload: noop, setPath: noop, setState: noop},
+    updateDocumentHeader: noop, updateBackAction: noop, hasPreviewTarget: x => Boolean(x?.path),
+    focusInitialPreviewLine: noop, rememberPreviousResource: noop,
+    renderDocument: async doc => {ctx.documentValue = doc; rendered.push(doc); return doc;},
+  });
+  vm.runInContext(declarations('portal_workspace_surface.js', ['createDocumentTabsController', 'createOwnedTabsController', 'clearPreview', 'openResource']), ctx);
+  let dirty = false;
+  const tabs = ctx.createOwnedTabsController({
+    createSession: () => ({snapshot: () => ({}), guardDiscard: async () => !dirty, destroy: noop,
+      open: request => ctx.openResource(request)}),
+    serializeDocument: doc => ({path: doc.path}),
+    onChange: snapshot => {if (!snapshot.documents.length) emptySnapshots.push({...ctx.binding});},
+  });
+  return {ctx, tabs, rendered, emptySnapshots, setDirty: value => {dirty = value;}};
+}
+
+test('last Preview tab clears its persistent binding before observers run; cancelled closes keep it', async () => {
+  const f = previewFixture();
+  await f.tabs.open({key: 'A', path: '/A', document: {path: '/A'}});
+  await f.tabs.open({key: 'B', path: '/B', document: {path: '/B'}, mode: 'new-tab'});
+  await f.tabs.close('A');
+  assert.equal(f.ctx.binding.path, '/B');
+  f.setDirty(true);
+  assert.equal(await f.tabs.close('B'), false);
+  assert.equal(f.ctx.binding.path, '/B');
+  f.setDirty(false);
+  await f.tabs.close('B');
+  assert.equal(Object.keys(f.ctx.binding).length, 0);
+  assert.equal(f.ctx.documentValue, null);
+  assert.equal(f.ctx.pendingBindingRestore, null);
+  assert.equal(f.tabs.persistenceSnapshot().documents.length, 0);
+  assert.deepEqual(f.emptySnapshots, [{}]);
+});
+
+test('a late Preview read cannot revive a closed document, and a new open still works', async () => {
+  const f = previewFixture(), read = deferred();
+  const pending = f.tabs.open({key: 'A', path: '/A', load: () => read.promise});
+  await f.tabs.close('A');
+  read.resolve({path: '/A'});
+  await pending;
+  assert.equal(f.rendered.length, 0);
+  assert.equal(Object.keys(f.ctx.binding).length, 0);
+  await f.tabs.open({key: 'B', path: '/B', document: {path: '/B'}});
+  assert.equal(f.ctx.binding.path, '/B');
+  assert.equal(f.rendered.length, 1);
+});
