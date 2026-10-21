@@ -73,7 +73,7 @@ def control(*args):
 def configure(root, repo, dev_port, release_port):
     """Prepare a pair inside an existing instance; never install a second DB."""
     from scripts.tfi_dev import configuration, git, install_push_hook
-    from scripts.tfi_release_install import runtime_python, unit_directory
+    from scripts.tfi_release_install import runtime_python
     if sys.platform != "linux":
         raise ValueError("The paired runtime installer currently supports Linux user services")
     cfg = configuration(repo)
@@ -98,6 +98,13 @@ def configure(root, repo, dev_port, release_port):
     common = Path(git(repo, "rev-parse", "--path-format=absolute", "--git-common-dir"))
     write(common / "tfi-development.json", cfg)
     script = Path(config["release_code"]) / "scripts/tfi_development_runtime.py"
+    # Agent commands inherit the application's private HOME. Register units
+    # beside the installed Web's real user-manager unit, not in that HOME.
+    installed_web_unit = Path(control("show", target["service_prefix"] + "-web.service",
+                                      "--property=FragmentPath", "--value"))
+    if not installed_web_unit.is_file():
+        raise ValueError("The installed Web has no user service unit")
+    unit_root = installed_web_unit.parent
     for name, mode in (("dev-web", "web"), ("router", "router")):
         command = [runtime_python(target), str(script), mode, "--root", str(root)]
         content = (f"[Unit]\nDescription=TFI paired {name}\n"
@@ -105,7 +112,7 @@ def configure(root, repo, dev_port, release_port):
                    f"ExecStart={' '.join(json.dumps(v) for v in command)}\n"
                    "Restart=on-failure\nRestartSec=3\nTimeoutStopSec=90\n"
                    "[Install]\nWantedBy=default.target\n")
-        path = unit_directory() / (target["service_prefix"] + "-" + name + ".service")
+        path = unit_root / (target["service_prefix"] + "-" + name + ".service")
         if path.exists() and "Description=TFI paired " not in path.read_text():
             raise ValueError("An unrelated service already owns " + str(path))
         path.write_text(content)
