@@ -1766,11 +1766,23 @@ class Scheduler:
                 raise KeyError(execution_id)
             request = _object(row['request_json'])
             session = request.get('session') or {}
-            # Stateless turns have no session to hand off. They remain on
-            # their original route until completion, just like claimed work.
-            if session.get('mode') != 'persistent' or not session.get('binding_id'):
+            if session.get('mode') == 'stateless' and not session.get('binding_id'):
+                # Timer/isolated Resident inputs deliberately have no session.
+                # Their immutable request still names the Resident and input;
+                # use that ownership for the same never-claimed input handoff.
+                resident_id = request.get('agent_id') or ''
+                metadata = request.get('metadata') or {}
+                input_id = (request.get('runtime_options') or {}).get('client_user_message_id')
+                if (not resident_id.startswith('resident_')
+                        or metadata.get('business_type') != 'resident'
+                        or metadata.get('resident_id') != resident_id or not input_id):
+                    return {"withdrawn": False, "execution_id": execution_id}
+                expected_binding = 'resident:' + resident_id
+            elif session.get('mode') == 'persistent' and session.get('binding_id'):
+                expected_binding = session['binding_id']
+            else:
                 return {"withdrawn": False, "execution_id": execution_id}
-            if session['binding_id'] != binding_id:
+            if expected_binding != binding_id:
                 raise ValueError("execution binding changed")
             if (row['status'] != 'queued' or row['attempts'] or row['owner_worker_id']
                     or row['cancel_requested'] or _object(row['checkpoint_json'])
