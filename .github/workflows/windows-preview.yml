@@ -19,6 +19,8 @@ jobs:
   process-records:
     runs-on: windows-2025
     timeout-minutes: 10
+    env:
+      PYTHONUTF8: '1'
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
@@ -26,15 +28,16 @@ jobs:
           python-version: '3.12'
       - name: Verify Windows process record concurrency
         run: |
-          @'
-          import unittest
-          suite = unittest.defaultTestLoader.discover('code/tests/cases', pattern='test_windows_process_records.py')
-          result = unittest.TextTestRunner(verbosity=2).run(suite)
-          for test, detail in result.errors + result.failures:
-              detail = detail.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
-              print(f'::error title={test.id()}::{detail}', flush=True)
-          raise SystemExit(not result.wasSuccessful())
-          '@ | python -
+          $ErrorActionPreference = 'Continue'
+          python -X utf8 -m unittest discover -s code/tests/cases -p test_windows_process_records.py -v *> native-tests.log
+          $result = $LASTEXITCODE
+          $detail = Get-Content native-tests.log -Raw -Encoding utf8
+          Write-Output $detail
+          if ($result -ne 0) {
+            $detail = $detail.Replace('%', '%25').Replace("`r", '%0D').Replace("`n", '%0A')
+            Write-Output "::error title=Windows process records::$detail"
+          }
+          exit $result
 
   package:
     needs: process-records
