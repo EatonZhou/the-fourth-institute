@@ -25,15 +25,15 @@ links:
   supersedes: []
   derived_from: []
 version:
-  number: 25
-  created_at: '2026-10-06T10:53:38Z'
+  number: 26
+  created_at: "2026-10-06T10:53:38Z"
   created_by:
-    user: tfi-exported-user
-    agent: resident_57f585eb8ae9
-  updated_at: '2026-10-19T10:40:15Z'
+    user: "ET"
+    agent: "resident_57f585eb8ae9"
+  updated_at: "2026-10-21T18:10:54Z"
   updated_by:
-    user: ''
-    agent: resident_60ae6d0cdf74
+    user: ""
+    agent: "resident_977d1a613d44"
 metaness: 2
 ---
 # Harness 策略单元格与按日常使用的演化
@@ -109,17 +109,17 @@ AgentHarness 的自动策略（decision_5c62deb8253a）按信号选插件，再�
 
 ### 日常评估的执行与证据
 
-RunScript 在主机上以 dirty-base 用户执行 Release 树内的 `scripts/harness_lineage.py`，算法从当前 Release 树加载，数据库地址从主机配置读取。自动每日评估始终关闭 `auto_promote`；演化源码与 main 不一致或无法确认版本时，只评估已有挑战者，不提出新挑战者。
+RunScript 在主机上以服务所属操作系统账号执行 Release 树内的 `scripts/harness_lineage.py`，算法从当前 Release 树加载，数据库地址从主机配置读取。自动每日评估始终关闭 `auto_promote`；演化源码与 main 不一致或无法确认版本时，只评估已有挑战者，不提出新挑战者。
 
 收集和每日评估各有独立的 RunScript 排他键，防止同类工作重叠。两个脚本还共享维护文件锁，按取得锁的顺序执行；收集进行中到达的每日评估会等待，不会被当成重复收集丢弃。Effect 的幂等回执和 RunScript 的运行记录共同防止同一激活重复启动。
 
 运行状态、退出码、输出和失败证据由 ScriptRun 保存，使用 `ListScriptRuns`、`GetScriptRun` 和 `ReadScriptRunOutput` 查询；这些查询都传入 `lineage_id=lineage_048353291724`，详情与日志查询另传 `script_run_id`。Effect 完成表示脚本已启动，`script.finished` 的成功事件表示工作实际完成。脚本由独立 systemd 单元运行；进程丢失或运行失败时保留终态，不自动重放可能已部分生效的每日评估。失败日志记录异常类型及文件、行号、函数，不输出可能含凭据的原始异常消息。
 
-日报位于 `${share_root}/Agents/lineage_048353291724/scripts/harness-evolution/state/latest-report.md`，状态摘要为同目录 `status.json`。评审 Resident 同时核对每日 ScriptRun 的终态、日报生成日期和单元格事件。报告保留最近成功写出的内容，文件存在不能单独证明当天任务完成。
+日报位于 `/share/Agents/lineage_048353291724/scripts/harness-evolution/state/latest-report.md`，状态摘要为同目录 `status.json`。评审 Resident 同时核对每日 ScriptRun 的终态、日报生成日期和单元格事件。报告保留最近成功写出的内容，文件存在不能单独证明当天任务完成。
 
 **参与比较的 turn**：
 
-- 只计用户和 Resident 发起的 turn，不计测试流量（`actor_ref=TFI portal`）。
+- 只计用户和 Resident 发起的 turn，不计测试流量（`actor_ref=portal-test`）。
 - 只计真正的 turn（信号 `operation=turn`）。会话的创建、分叉、释放和压缩不参与自动策略及其状态更新。
 - 只计已经结束的执行。服务重启会给仍在运行的执行留下一条失败的尝试记录；这条记录要等执行结束才有意义。
 - 与策略无关的失败不计入任何一组，包括取消、额度、凭据、限流、Provider 过载、Worker 丢失等。
@@ -206,7 +206,7 @@ RunScript 在主机上以 dirty-base 用户执行 Release 树内的 `scripts/har
 - **Resident 判断并保存结果。** Resident 读取请求、最终回答与同一会话的下一条输入，判断 pass、fail 或跳过。评价结果是否满足请求，不评价风格；用户紧接着纠正、重复或抱怨计为 fail，2 秒内排队消息及其他 Resident 的汇报不作为反应。判断写入同批次 `results.json`，随后用 TriggerEvent 提交批次 ID。
 - **写回脚本校验整批结果后保存标签。** ScriptRun 先确认结果的批次、execution_id、唯一性、pass/fail、理由与分数合法，才调用 `record_review`。理由为 1–512 字符，分数可省略或为 0–1。标签来源保持 `resident_review`，只写 `harness_quality_labels`；观察查询通过视图立即得到新标签。异步账本写入失败时脚本失败，不记成功回执。遗漏的样本视为跳过。
 - **同批次重试复用同一份结果。** 写回使用批次锁及内容摘要；完成后生成 `recorded.json`。原样重试返回已有回执，结果变化则拒绝覆盖。部分写入后失败时可重试原结果，质量账本按 execution_id 更新，不重复增加标签。
-- **成功写回后再汇报。** 写回的 `script.finished` 成功事件把已记录、已跳过的数量交给评审 Resident。它检查维护脚本状态及日报，有建议采用、回滚、拒绝、无结论、新挑战者、运行失败或每周一周报时，用 DeliverMessage 向 TFI portal 汇报，并附确认、撤下、冻结命令。脚本失败事件进入同一 Resident 的诊断分支，保留 ScriptRun ID；每日评估的重试需先核对已生效的策略。
+- **成功写回后再汇报。** 写回的 `script.finished` 成功事件把已记录、已跳过的数量交给评审 Resident。它检查维护脚本状态及日报，有建议采用、回滚、拒绝、无结论、新挑战者、运行失败或每周一周报时，用 DeliverMessage 向 ET 汇报，并附确认、撤下、冻结命令。脚本失败事件进入同一 Resident 的诊断分支，保留 ScriptRun ID；每日评估的重试需先核对已生效的策略。
 
 评审 Resident 负责质量判断和报告，文件与脚本承接数据读取和标签写回。Resident 不修改策略单元格或代码。调用 RunScript 及调整 Lineage 定义的权限由权限系统按评审 Resident 自己的权限判定（decision_b820faf42218）。
 

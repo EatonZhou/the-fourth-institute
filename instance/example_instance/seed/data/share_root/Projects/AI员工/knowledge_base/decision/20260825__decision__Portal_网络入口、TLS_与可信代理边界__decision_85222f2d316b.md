@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-08-25'
 version:
-  number: 13
-  created_at: '2026-08-25'
+  number: 14
+  created_at: "2026-08-25"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-19T19:42:46Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-10-21T18:09:47Z"
   updated_by:
-    user: tfi-exported-user
-    agent: resident_865c3c24f251
+    user: ""
+    agent: "resident_977d1a613d44"
 importance: 9
 metaness: 2
 ai_generated: false
@@ -23,7 +23,7 @@ links:
   - ${code_root}/scripts/portal_instance_storage.py
   - ${code_root}/tests/cases/test_portal_network_settings.py
   - ${code_root}/scripts/portal_user.py
-  - ${user_home}/.config/systemd/user/portal-user-router.service
+  - ${code_root}/scripts/portal_service_units.py
   - ${code_root}/management_portal/portal_password_reset.py
   - ${code_root}/management_portal/portal_deployment_registry.py
   - ${code_root}/management_portal/portal_deployment_router.py
@@ -66,13 +66,13 @@ Portal 可以从 TFI Portal 主机所在的局域网访问，也可以经受控�
   → 域名与 HTTPS
   → VPS 边界网关上的 Nginx（TLS 终止）
   → WireGuard 私有隧道
-  → TFI Portal 主机 Nginx（WireGuard 地址 ${lan_host}:18087）
+  → TFI Portal 主机 Nginx（WireGuard 地址 10.77.0.2:18087）
   → 本机 Portal Router（127.0.0.1:18084）
   → 选中的 Portal 实例（Dev 或 Release）
   → Portal 登录认证与授权
 ```
 
-局域网 HTTPS 先连接主机 Nginx 的 443 端口（${lan_host}、${lan_host}、${lan_host}），再到 Router；局域网 HTTP 可直连 Router 18084。无论从哪个入口进入，Portal 都执行同样的登录会话、Resident Bearer 令牌、权限系统和领域业务边界检查。
+局域网 HTTPS 先连接主机 Nginx 的 443 端口（192.168.115.204、10.138.30.36、172.16.0.95），再到 Router；局域网 HTTP 可直连 Router 18084。无论从哪个入口进入，Portal 都执行同样的登录会话、Resident Bearer 令牌、权限系统和领域业务边界检查。
 
 ## 设计点
 
@@ -97,7 +97,7 @@ Router 按下面的顺序为每个请求选择实例：
 
 1. **账号安全相关的请求总是交给 Dev。** 包括 `/api/auth/passkeys/`、`/api/auth/password-reset/`、`/api/account/` 下的接口，以及 `/forgot-password`、`/reset-password` 和账号设置页面的脚本与样式。这样同一次安全操作不会跨越两个版本不同的实例。
 2. **已登录的用户使用自己保存的实例偏好。** 偏好必须属于当前用户、指向当前登记的实例；否则忽略。
-3. **没有有效偏好时使用默认实例。** 显式配置的名单 `PORTAL_ROUTER_DEV_USERS`（发行副本默认为空）中的用户默认使用 Dev，其他用户默认使用 Release；默认实例不可用时依次改用 Release、Dev。
+3. **没有有效偏好时使用默认实例。** 显式 `PORTAL_ROUTER_DEV_USERS` 或站点配置 `router_dev_users` 名单（未配置时为空）中的用户默认使用 Dev，其他用户默认使用 Release；默认实例不可用时依次改用 Release、Dev。
 4. **未登录时，`/login` 与 `/login/verify` 交给 Dev，其他请求交给 Release。**
 
 - **用户可以读取和修改自己的实例偏好。** 接口 `/__portal_router/preference`：`GET` 返回默认实例、当前偏好、实际生效的实例和可选实例列表；`POST` 提交 `{"instance": "<实例 ID>"}`，只接受当前登记的实例。未登录返回 401，请求体超过 4096 字节返回 413，不支持的方法返回 405。
@@ -160,7 +160,7 @@ Router 从实例登记文件（默认 `portal_paths.path("instances_root") / "de
 
 ## 站点网络设置
 
-Portal 管理中的网络设置由部署层的 `management_common.portal_network` 唯一读写。配置文件按显式 `PORTAL_NETWORK_CONFIG`、站点 `deployment.network_config`、当前服务账号的 `~/.config/tfi/portal-network.env` 顺序定位；默认新目录文件不存在而旧 `~/.config/dirtybase/portal-network.env` 存在时读取旧文件，不搬移历史配置。指定路径必须为绝对路径，Dev、Release、Router 与进程启动器使用同一个站点文件。文件权限为 0600，可能包含代理认证信息，不进入源码、诊断响应或普通日志。
+Portal 管理中的网络设置由部署层的 `management_common.portal_network` 唯一读写。配置文件按显式 `PORTAL_NETWORK_CONFIG`、站点 `deployment.network_config`、当前服务账号的 `~/.config/tfi/portal-network.env` 顺序定位；不探测旧产品目录，也不隐式读取另一实例的配置。需要沿用既有部署文件时，由部署者显式指定路径。指定路径必须为绝对路径，Dev、Release、Router 与进程启动器使用同一个站点文件。文件权限为 0600，可能包含代理认证信息，不进入源码、诊断响应或普通日志。
 
 访问设置由 `access.mode`（`local` 或 `remote`）和 `access.port`（1024–65535 的整数）组成；默认端口为 18084。尚无显式模式时保留原 `--bind`/`--allow-network` 启动与旧网段兼容；已有旧网段不会被启动参数覆盖，读取以 `legacy_restriction` 标记它。显式保存访问设置后使用新模式与端口，并移除旧网段键；只读不转换历史限制。保存不重启 Router，不改写代理组；端口变化会在提交前检查本机可绑定性。配置缺失按本机范围处理；非法配置被拒绝，不能静默扩大访问范围。
 

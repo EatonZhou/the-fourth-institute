@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 45
-  created_at: '2026-09-03'
+  number: 46
+  created_at: "2026-09-03"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-19T19:59:40Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-10-21T18:03:46Z"
   updated_by:
-    user: tfi-exported-user
-    agent: resident_865c3c24f251
+    user: ""
+    agent: "resident_977d1a613d44"
 importance: 9
 metaness: 2
 ai_generated: false
@@ -200,9 +200,9 @@ Adapter 还要遵守三条由通用部分读取的约定：
 
 ### OpenCode 的接入方式
 
-OpenCode 以本地 HTTP 服务（`opencode serve`）提供会话、事件流（SSE）和中断接口。`opencode_bridge.py` 是每个 Provider 会话一个的桥接进程：它启动并独占一个 `opencode serve`，在 Portal 的原生 agent socket 协议（`tfi.native-agent.v1`）上提供一轮对话、运行中输入、中断、压缩、用量读取和释放，并把 OpenCode 的事件翻译成通用的工具与子 agent 事件。Portal 工具通过桥接进程内的 MCP 服务提供给 OpenCode（OpenCode 给它们加上 `portal_` 前缀，桥接进程上报时去掉）。OpenCode 自己的权限询问一律允许，向用户提问一律拒绝，权限由 Portal 的执行请求决定。OpenCode 使用运行时自己的配置目录（`XDG_CONFIG_HOME` 指向运行时下的 `config`），数据和状态目录放在会话目录中，主机用户自己的 OpenCode 规则、agent 和插件不会进入 Portal 会话；会话目录（`${staging_root}/shared/opencode`）对测试框架的隔离组遮蔽。
+OpenCode 以本地 HTTP 服务（`opencode serve`）提供会话、事件流（SSE）和中断接口。`opencode_bridge.py` 是每个 Provider 会话一个的桥接进程：它启动并独占一个 `opencode serve`，在 Portal 的原生 agent socket 协议（`tfi.native-agent.v1`）上提供一轮对话、运行中输入、中断、压缩、用量读取和释放，并把 OpenCode 的事件翻译成通用的工具与子 agent 事件。Portal 工具通过桥接进程内的 MCP 服务提供给 OpenCode（OpenCode 给它们加上 `portal_` 前缀，桥接进程上报时去掉）。OpenCode 自己的权限询问一律允许，向用户提问一律拒绝，权限由 Portal 的执行请求决定。OpenCode 使用运行时自己的配置目录（`XDG_CONFIG_HOME` 指向运行时下的 `config`），数据和状态目录放在会话目录中，主机用户自己的 OpenCode 规则、agent 和插件不会进入 Portal 会话；会话目录（`/srv/agent-staging/shared/opencode`）对测试框架的隔离组遮蔽。
 
-OpenCode 的 `system` 字段只作用于它所在的那条消息，所以声明为每轮都交付 Portal 系统指令；运行中追加的输入也带上这一轮的模型、系统指令和子 agent 开关，因为 OpenCode 从最新的一条用户消息读取它们。运行时由 `OpenCodeRuntime` 安装到 `~/.local/share/dirtybase-portal/opencode-<版本>`，安装时把当时免费的模型写入 `models.json`；路由目录只提供这些模型。免费模型不需要账号；免费路由也没有计费账号（目录的 `provider_profile` 为空，执行账号没有 `billing_account_id`），所以 Home 账号面板不为它显示余额，调度也不对它启用额度保护。OpenCode Zen 说明免费期间可能使用请求数据改进模型，并且免费模型的上游会限流（HTTP 429 “Endpoint is unavailable”），失败后由通用的错误续跑重试一次。
+OpenCode 的 `system` 字段只作用于它所在的那条消息，所以声明为每轮都交付 Portal 系统指令；运行中追加的输入也带上这一轮的模型、系统指令和子 agent 开关，因为 OpenCode 从最新的一条用户消息读取它们。运行时由 `OpenCodeRuntime` 安装到 Provider 运行时根下的 `opencode-<版本>`（站点 `deployment.providers.runtime_root`，默认实例 `${staging_root}/provider-runtimes/`），安装时把当时免费的模型写入 `models.json`；路由目录只提供这些模型。免费模型不需要账号；免费路由也没有计费账号（目录的 `provider_profile` 为空，执行账号没有 `billing_account_id`），所以 Home 账号面板不为它显示余额，调度也不对它启用额度保护。OpenCode Zen 说明免费期间可能使用请求数据改进模型，并且免费模型的上游会限流（HTTP 429 “Endpoint is unavailable”），失败后由通用的错误续跑重试一次。
 
 OpenCode 也能连接其他模型服务；Portal 只接 OpenRouter（`opencode_provider_catalog.SERVICES`）。每个服务一条路由，路由名就是服务名：OpenRouter 的路由是 `openrouter`，执行账号是 `opencode_openrouter`。路由使用 LLM API Registry 中这个服务第一个启用的条目（目前是 `openrouter_primary`）：密钥和登记的模型来自这个条目，用量计入这个条目的余额（账号的 `billing_account_id`）。2026-10-12 之前每个启用条目各成一条路由、以条目 ID 命名，账号名 `opencode_openrouter_primary` 太长；改名时已有 Resident 的路由、Provider 会话和按小时用量一并迁移到新名称。安装运行时会用一个占位密钥让 `opencode models openrouter --verbose` 列出全部模型，只保留能调用工具的模型写入 `models.json` 的 `openrouter` 项；路由目录把条目登记的默认模型和启用模型排在前面，默认模型沿用条目的 `default_model`，其余按名称排序。路由的上游服务是 `openrouter`，出口按这个上游判断。密钥从这个条目的 `api_key_file` 读取，随桥接进程的环境变量 `PORTAL_OPENCODE_API_KEY` 传入；桥接进程把它从 OpenCode 的环境中去掉，在 `opencode serve` 启动后、任何其他请求之前调用 `PUT /auth/openrouter` 交给 OpenCode（OpenCode 只在第一次请求时加载已配置凭证的服务）。OpenCode 把它写进会话目录下的 `data/opencode/auth.json`（权限 0600）；`launch.json` 和 OpenCode 的进程环境都不含密钥，Resident 在 bash 中看不到它。OpenRouter 按 token 计费，Portal 的用量记录只记 token 数。
 

@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-30'
 version:
-  number: 16
-  created_at: '2026-09-30T12:40:00Z'
+  number: 17
+  created_at: "2026-09-30T12:40:00Z"
   created_by:
-    user: tfi-exported-user
-    agent: resident_f46ff0e5d912
-  updated_at: '2026-10-19T19:43:58Z'
+    user: "weihao"
+    agent: "resident_f46ff0e5d912"
+  updated_at: "2026-10-21T18:01:46Z"
   updated_by:
-    user: tfi-exported-user
-    agent: resident_865c3c24f251
+    user: ""
+    agent: "resident_977d1a613d44"
 importance: 6
 metaness: 2
 ai_generated: false
@@ -57,7 +57,7 @@ DeepSeek Harness（简称 DSH）是 DeepSeek 发布的本地 Agent 运行时。�
 - **会话进程**：服务一个 DSH 会话的 Node.js 进程。每个会话最多一个进程，第一次需要时启动，空闲一段时间后自行退出，下次需要时再从磁盘上的会话记录恢复。
 - **Portal 桥接插件**：Portal 仓库中的 `management_portal/dsh_runtime/bridge.mjs`，以插件 `portal-control` 的身份加载进会话进程。它在 Unix socket 上接收 Portal 的请求，调用 DSH 的公开服务运行对话，并把事件和工具调用转回 Portal。协议名为 `tfi.native-agent.v1`，每条消息是一行 JSON。
 - **稳定 turn ID**：Portal 为每一轮对话分配、重试时保持不变的 ID。DSH 用它识别重复请求，保证同一轮只执行一次。
-- **运行时目录**：已安装的 DSH npm 包和桥接插件所在目录，默认通过链接 `~/.local/share/dirtybase-portal/dsh-runtime-current` 访问，可用环境变量 `PORTAL_DSH_RUNTIME_ROOT` 改为其他目录。
+- **运行时目录**：已安装的 DSH npm 包和桥接插件所在目录，默认通过 Provider 运行时根下的 `dsh-runtime-current` 链接访问（站点 `deployment.providers.runtime_root`，默认实例 `${staging_root}/provider-runtimes/`），可用环境变量 `PORTAL_DSH_RUNTIME_ROOT` 改为其他目录。
 
 ## 能力与设置
 
@@ -92,7 +92,7 @@ Unix socket  <PORTAL_DSH_SOCKETS>/<会话 ID 的摘要>.sock
 ```
 
 - **会话 ID 由第一轮的 turn ID 决定。** 新会话的 ID 是 `dsh-` 加上第一轮 turn ID 的 SHA-256 摘要前 32 位。第一轮在 Portal 记下会话 ID 之前被打断时，重试同一轮会得到同一个会话 ID，因此可以接回原来的会话。
-- **每个会话有独立的状态目录和 socket。** 状态目录是 `<PORTAL_DSH_STATE>/<会话 ID>/`（默认根目录 `${staging_root}/shared/dsh`），其中保存 DSH 的会话记录（`sessions/` 下的 JSONL 文件）、生成的配置、运行日志 `runtime.log` 和启动锁 `launch.lock`。socket 位于 `<PORTAL_DSH_SOCKETS>/<会话 ID 的 SHA-256 前 32 位>.sock`（默认根目录 `${staging_root}/portal_locks/dsh`）。目录权限为 0700，socket 和日志文件为 0600。
+- **每个会话有独立的状态目录和 socket。** 状态目录是 `<PORTAL_DSH_STATE>/<会话 ID>/`（默认根目录 `/srv/agent-staging/shared/dsh`），其中保存 DSH 的会话记录（`sessions/` 下的 JSONL 文件）、生成的配置、运行日志 `runtime.log` 和启动锁 `launch.lock`。socket 位于 `<PORTAL_DSH_SOCKETS>/<会话 ID 的 SHA-256 前 32 位>.sock`（默认根目录 `/srv/agent-staging/portal_locks/dsh`）。目录权限为 0700，socket 和日志文件为 0600。
 - **同一会话的启动和释放串行进行。** DshClient 在会话的 `launch.lock` 上加独占文件锁，先用 1 秒超时探测 `health`；进程已经在运行就直接使用。否则生成配置并启动进程，最多等 25 秒到 `health` 响应。进程提前退出或等待超时，这一轮以“Provider 不可用”失败，错误说明指向该会话的 `runtime.log`。
 - **一个会话固定在一个工作目录、一条路线和一个 Resident 身份上。** 会话进程启动时记下这三项；之后的请求中任何一项不同，桥接插件拒绝这一轮。换工作目录或路线要通过 `RestartSession` 迁移会话。
 - **启动时确定的设置改变后，下一轮启动新进程。** 自动压缩阈值和是否提供子 Agent 工具只在进程启动时读取；DshClient 把它们记在状态目录的 `launch.json`（`threshold_ratio`、`subagents`）。下一轮开始前，DshBackend 比较本轮要求的值：要求的阈值比启动时更低，或“允许开启 sub agent”与启动时不同（包括没有记录的旧进程），就先释放会话，这一轮由新进程从磁盘记录恢复。模型或推理强度与会话日志最后记下的请求头不同时同样如此。

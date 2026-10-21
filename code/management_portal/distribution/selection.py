@@ -415,7 +415,10 @@ def resolve(snapshot, source, *, resolution=None):
         files.append({'source': str(artifact), 'target': 'data/staging_root/shared/projection_applications/' + build['artifact_hash'], 'immutable_artifact': True})
     for key in source.tables:
         if key[1] in {"lineage_meta", "agent_store_meta", "registry_meta"}:
-            rows[key] = source.rows(*key)
+            # Import needs the storage schema version, not a source process's
+            # timer lease or its completed runtime-normalization marker. The
+            # new instance initializes and acquires its own runtime state.
+            rows[key] = source.rows(*key, predicates={"key": {"schema"}})
     rows = {key: values for key, values in rows.items() if key in source.tables}
     features = set(feature_resolution['included_features'])
     for identity, state in feature_resolution['states'].items():

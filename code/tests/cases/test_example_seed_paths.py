@@ -20,6 +20,17 @@ from prepare_install import inventory
 
 
 class ExamplePaths(unittest.TestCase):
+    def test_seed_metadata_initializes_only_storage_schema(self):
+        """Installed instances acquire their own leases and normalize their state."""
+        from scripts.tfi_seed_selection import inserts
+        sql = (self.seed / self.manifest['engineering']['database']['path']).read_text(encoding='utf-8')
+        metadata = {}
+        for _, _, table, row in inserts(sql):
+            if table[1] in {'lineage_meta', 'agent_store_meta', 'registry_meta'}:
+                metadata.setdefault(table[1], []).append(row['key'])
+        self.assertEqual(metadata, {name: ['schema'] for name in
+                         ('lineage_meta', 'agent_store_meta', 'registry_meta')})
+
     def test_builtin_maintenance_scripts_use_exported_code(self):
         """Fresh installs resolve built-in scripts inside their own code tree."""
         from scripts.tfi_seed_selection import inserts
@@ -87,6 +98,18 @@ class ExamplePaths(unittest.TestCase):
             walk(json.loads(path.read_text(encoding="utf-8")))
         walk(self.manifest["engineering"])
         self.assertGreaterEqual(len(checked), 14)
+
+    def test_architecture_model_loads_in_current_consumer(self):
+        """An inventoried model must also satisfy the installed UI contract."""
+        model = next(self.seed.glob('data/share_root/Agents/**/architecture/explore/exploration-model.json'))
+        consumer = REPO / 'code/management_portal/workbench_projections/development_app/src/architecture/exploration-model.js'
+        program = """
+import fs from 'node:fs';
+const {validateExplorationModel} = await import(process.argv[2]);
+const result = validateExplorationModel(JSON.parse(fs.readFileSync(process.argv[1], 'utf8')));
+if (!result.valid) { console.error(JSON.stringify(result.errors)); process.exit(1); }
+"""
+        subprocess.run(['node', '--input-type=module', '-e', program, str(model), consumer.as_uri()], check=True)
 
     def test_published_artifacts_through_real_reader(self):
         """安装与实例回归：published artifacts through real reader。"""

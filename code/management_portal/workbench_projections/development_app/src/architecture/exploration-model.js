@@ -1,6 +1,6 @@
 import { schemaMatches } from '../shared/format-tags.js';
 /**
- * Pure consumer of the v1 architecture exploration format (TFI and legacy tags).
+ * Pure consumer of the canonical TFI v1 architecture exploration format.
  * Validation checks the declared structure, not source authenticity, permissions,
  * JSON Schema case evaluation or domain invariants. Those belong to the loader
  * and the mechanism's own interpreter. Projection never invents an interaction.
@@ -15,7 +15,6 @@ const list = value => Array.isArray(value) ? value : [];
 const has = (value, key) => Object.hasOwn(value, key);
 const LOCAL_EXTERNAL_ROOT = 'model-services';
 const LOCAL_EXTERNAL_CONCEPTS = new Set(['model-services.chat-completion', 'model-services.typed-decisions', 'model-services.native-inference']);
-const MAP_SOURCE = 'repo_711b6ab6d5c8/file/code/architecture/modules.yaml';
 const matchesType = (value, type) => type === 'integer' ? Number.isInteger(value)
   : type === 'number' ? typeof value === 'number' && Number.isFinite(value)
     : type === 'object' ? record(value) : type === 'array' ? Array.isArray(value) : typeof value === type;
@@ -24,8 +23,12 @@ const matchesType = (value, type) => type === 'integer' ? Number.isInteger(value
 // reference supplies evidence, never a fabricated module or broadcast identity.
 function localExternalIdentity(object, objects) {
   const owner = objects.get(LOCAL_EXTERNAL_ROOT);
+  // Export relocates the code repository and may register its code directory
+  // directly. Validate the map address shape, not a source site's resource ID.
+  const mapSource = owner?.identity?.resource_ref;
+  if (!/^repo_[0-9a-f]{12}\/file\/(?:code\/)?architecture\/modules\.yaml$/.test(mapSource || '')) return false;
   const identityMatches = value => value?.focus_owner_id === LOCAL_EXTERNAL_ROOT
-    && value.focus_kind === null && value.local_only === true && value.resource_ref === MAP_SOURCE;
+    && value.focus_kind === null && value.local_only === true && value.resource_ref === mapSource;
   if (!owner || owner.kind !== 'external' || owner.parent_id !== null || !identityMatches(owner.identity)
     || !identityMatches(object.identity)) return false;
   if (object.id === LOCAL_EXTERNAL_ROOT) return object.kind === 'external';

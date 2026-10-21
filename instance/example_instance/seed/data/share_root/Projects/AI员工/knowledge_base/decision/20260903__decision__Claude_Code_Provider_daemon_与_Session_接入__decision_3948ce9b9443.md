@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 28
-  created_at: '2026-09-03'
+  number: 29
+  created_at: "2026-09-03"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-19T19:42:46Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-10-21T18:02:46Z"
   updated_by:
-    user: tfi-exported-user
-    agent: resident_865c3c24f251
+    user: ""
+    agent: "resident_977d1a613d44"
 importance: 8
 metaness: 2
 ai_generated: false
@@ -95,7 +95,7 @@ Claude Code 的账号路线都登记在 LLM API Registry（decision_6c2f91a7d84e
 
 ## 守护进程协议
 
-守护进程监听 `${staging_root}/portal_locks/claude-code-daemon.sock`，socket 权限为 `0600`，服务以 `UMask=0077` 运行。客户端每次请求建立一个连接，发送一行 JSON（`id`、`method`、`params`），然后逐行读取回复。回复行的 `type` 有：`event`（进展事件）、`tool_call`（请求 Worker 执行一个 Portal 工具，Worker 回一行 `tool_result`）、`error` 和 `result`（最终结果）。客户端只处理 `id` 与本次请求相同的行。
+守护进程监听 `/srv/agent-staging/portal_locks/claude-code-daemon.sock`，socket 权限为 `0600`，服务以 `UMask=0077` 运行。客户端每次请求建立一个连接，发送一行 JSON（`id`、`method`、`params`），然后逐行读取回复。回复行的 `type` 有：`event`（进展事件）、`tool_call`（请求 Worker 执行一个 Portal 工具，Worker 回一行 `tool_result`）、`error` 和 `result`（最终结果）。客户端只处理 `id` 与本次请求相同的行。
 
 | 方法 | 作用 | 客户端等待上限 |
 | --- | --- | --- |
@@ -203,7 +203,7 @@ Claude Code 在上下文过长时会在自己的进程内压缩会话：transcri
 
 ## 部署与升级
 
-`scripts/install_claude_code_backend` 把守护进程代码安装到 `~/.local/lib/dirtybase-claude/claude-app-server-<版本>` 的不可变副本，并更新当前链接与服务配置。修改 Dev 源码后，需要安装新的 app-server 版本并在没有运行中轮次时重启服务。守护进程用 `claude-agent-sdk-current` 虚拟环境中的 Python 运行（`python -m management_portal.claude_code_daemon`），SDK 版本的安装、切换与回退见 decision_e587fe1c472e。切换只在没有进行中的 Claude 执行、且守护进程报告没有运行中的轮次时进行；切换后核对 `health` 中的版本、能力和实际账号状态。执行完成后的检查点与 PostgreSQL 提交遵循统一的执行恢复规则，守护进程不维护第二份 Portal 历史。
+`scripts/install_claude_code_backend` 把守护进程代码安装到 Provider 运行时根下的 `claude-app-server-<版本>`（根目录由 `deployment.providers.runtime_root` 指定，默认实例 `${staging_root}/provider-runtimes/`；显式 Claude 安装参数可覆盖） 的不可变副本，并更新当前链接与服务配置。修改 Dev 源码后，需要安装新的 app-server 版本并在没有运行中轮次时重启服务。守护进程用 `claude-agent-sdk-current` 虚拟环境中的 Python 运行（`python -m management_portal.claude_code_daemon`），SDK 版本的安装、切换与回退见 decision_e587fe1c472e。切换只在没有进行中的 Claude 执行、且守护进程报告没有运行中的轮次时进行；切换后核对 `health` 中的版本、能力和实际账号状态。执行完成后的检查点与 PostgreSQL 提交遵循统一的执行恢复规则，守护进程不维护第二份 Portal 历史。
 
 Model API 表结构或随包复制的 `model_api_store`、`ai_provider_registry`、数据库访问模块发生变化时，也必须递增 app-server 版本并重新安装不可变副本。Portal Web 和 ExecutionWorker 发布不会替换已安装的 Claude 包。切换前同时核对调度器没有运行中的 Claude Execution、daemon 的 `active=0`；切换后须确认 `provider_ready=true`、`provider_error` 为空及 app-server 版本，不能只以 systemd active 判断完成。
 

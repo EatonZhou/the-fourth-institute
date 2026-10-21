@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 30
-  created_at: '2026-09-01'
+  number: 31
+  created_at: "2026-09-01"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-19T08:43:36Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-10-21T18:06:47Z"
   updated_by:
-    user: ''
-    agent: resident_2e9ea0072551
+    user: ""
+    agent: "resident_977d1a613d44"
 importance: 9
 metaness: 3
 ai_generated: false
@@ -83,7 +83,7 @@ Portal 中有一类工作不需要人在对话里逐次发起：知识库巡检�
 - **每次投递都是 Resident 的一轮模型工作。** 事件源经 Invoke 连线投递的任务，一律由目标 Resident 的模型完成。任务说明写的是这次要完成的工作；Portal 不提供跳过模型、直接替 Resident 运行一条命令的执行方式，连线也没有选择执行方式的字段。
 - **其他确定性步骤在 Resident 的工作中完成。** 一项 AI 工作中的抓取、整理、校验这类不需要模型判断的步骤，由 Resident 在这一轮里自己调用工具完成，受它的工具权限和运行沙箱约束；判断和产出由 Resident 自己负责，不交给一个预先写好的流程脚本。
 - **工作内容写在 Resident 自己的职责说明里。** 一项定时或自动触发的工作的目标、步骤、质量标准、产物位置和收尾记录写在 Resident Workspace 的 `duties/<工作名>.md`；确定性的小步骤做成同一 Workspace `tools/` 下的脚本。连线任务只说明这次要做什么并指向职责说明，手动入口需要参数时从触发附带的说明中读取。每次运行在 Workspace 的 `runs.md` 追加一行记录。
-- **整项无需模型判断的定时维护由 Lineage 调用 RunScript。** `time.reached` 事件源连接调用 `RunScript` 的 Effect，脚本以 dirty-base 用户在主机上执行，ISA 调用保留 Lineage 的运行主体身份，结束后产生 `script.finished`。日志保留、知识库确定性整理、Paper CCF 缓存刷新与 Resource Backup 使用这个流程。业务脚本可放在 `<Lineage Folder>/scripts/<工作名>/`，随 Portal 发布的适配入口放在 Release 仓库的 `scripts/`；执行器仍负责其业务锁、秘密引用和产物（decision_8b510cbd9c58）。
+- **整项无需模型判断的定时维护由 Lineage 调用 RunScript。** `time.reached` 事件源连接调用 `RunScript` 的 Effect，脚本以服务所属操作系统账号在主机上执行，ISA 调用保留 Lineage 的运行主体身份，结束后产生 `script.finished`。日志保留、知识库确定性整理、Paper CCF 缓存刷新与 Resource Backup 使用这个流程。业务脚本可放在 `<Lineage Folder>/scripts/<工作名>/`，随 Portal 发布的适配入口放在 Release 仓库的 `scripts/`；执行器仍负责其业务锁、秘密引用和产物（decision_8b510cbd9c58）。
 - **定时或文件触发的运行失败时通知持有该 Lineage admin 权限的活动 User。** 系统在通知时通过权限端口找出本人名下有表项覆盖该 Lineage 的 admin 的活动 User：表项可以写在该 Lineage 或它在 R 树上的祖先节点上，因此包含管理员；Lineage 创建者按创建者规则对它有 admin（decision_b820faf42218）。接收人查询只用于确定通知投递对象，运行的认证身份保持原值。
 - **自动触发的 Resident、Effect 和 RunScript 失败都会告诉 Lineage 的人类管理员。** 系统从 Trigger Path 的起始事件或当前记录识别 `time.reached`、`file.changed`，同一路径中的后续步骤同样适用。Resident 产生的新事件另建 Trigger Path，通过起始原因关联来源 Execution。Lineage 中有监听这次失败、并把事件交出去的失败处理者时，由它检查原因后再告诉管理员；没有时，平台以 Lineage Leader 的名义把失败写成一条消息，出现在管理员 Mailbox 的“对话”栏，不启动 Leader 的工作；没有 Resident 的 Lineage 和看不到 Leader 对话的管理员收到通知（decision_15f7df737ed5）。Resident 输入失败按连线和 UTC 日期去重，标题为“自动触发的任务失败：<Resident ID>”；Effect 失败或超时按 Effect 和 UTC 日期去重，包含 RunScript 参数错误导致脚本尚未启动的失败；已经启动的脚本以 failed、timed_out 或 lost 结束时另按启动它的 Effect 和 UTC 日期去重。系统保存失败终态，并用稳定的消息或通知 ID 去重；没有活动人类接收者时保留失败记录。手动触发沿原有运行观察流程处理。
 - **执行身份始终是这个 Resident。** 它调用模型、写入资源或投递消息时都以自己的 `resident_*` 身份署名；身份缺失或失效时这一步失败，系统不改用其他身份重试（decision_ae422b92c6f3）。
@@ -110,11 +110,11 @@ Codex 额度快照与周报告没有生产消费者，System 中不保留该自�
 
 Portal System 中的“运行容量预警”Function Block 用每五分钟一次的定时 Event 和一个“立即检查运行容量”手动 Event 调用同一个 RunScript Effect。脚本通过正式只读指令 `GetRuntimeCapacity` 观察数据库、主机磁盘和执行队列，不调用模型。来源与字段口径见 decision_4527448ad07f。
 
-- **监测按来源独立判断。** PostgreSQL 使用全部客户端连接数与普通连接槽的比例；磁盘覆盖本机 `/`、`${share_root}`、`/data` 的现存文件系统，同一设备只计算一次；执行队列使用 ExecutionService 的排队总量，该总量包括配额、派发间隔和会话绑定等待。队列通知明确称为持续积压，不据总量判定数据库或并发容量不足。
+- **监测按来源独立判断。** PostgreSQL 使用全部客户端连接数与普通连接槽的比例；磁盘覆盖本机 `/`、`/share`、`/data` 的现存文件系统，同一设备只计算一次；执行队列使用 ExecutionService 的排队总量，该总量包括配额、派发间隔和会话绑定等待。队列通知明确称为持续积压，不据总量判定数据库或并发容量不足。
 - **首次超限与恢复各通知一次，升为紧急级别时补发一次。** 默认数据库使用率 80% 预警、90% 紧急、降至 70% 及以下恢复；磁盘使用率 85% 预警、95% 紧急、降至 80% 及以下恢复。预警和恢复均需相邻有效观察持续至少五分钟；数据库与磁盘的紧急阈值即时通知。执行队列达到 20 项预警、50 项紧急，超限需持续至少十五分钟；降至 5 项及以下持续五分钟后恢复。
 - **观察中断不能被当作健康恢复。** 来源读取失败时保留其既有容量告警并中断待确认计时，连续五分钟不可读取产生该来源的采集异常通知；恢复读取持续五分钟后解除采集异常。两次有效观察相隔超过十五分钟时重新计时，重复或倒序快照不累加时长。
 - **告警状态与待发通知在 Lineage 共享状态中持久保存。** 单元 `runtime_capacity_alerts` 保存最新快照、阈值、各指标当前级别与候选状态、通知序号和待发列表。先以比较并交换写入状态与待发通知，再调用 `CreateNotification`，最后确认已发送。通知使用稳定 ID；请求结果丢失或进程重启后重发同一 ID，Mailbox 中仍只有一条。并行读写冲突重新读取，不覆盖较新的观察。
-- **接收人和阈值由 Effect 的 RunScript arguments 明确配置。** 初始接收人为 TFI portal，阈值采用上述默认值；调整配置不创建第二套功能开关。定时 Event 控制自动检查，手动 Event 保留即时检查入口；Effect 关闭后两种入口均不再运行。RunScript 使用同一独占键避免同时启动，运行记录包含实际采样与通知结果。
+- **接收人和阈值由 Effect 的 RunScript arguments 明确配置。** 初始接收人为 weihao，阈值采用上述默认值；调整配置不创建第二套功能开关。定时 Event 控制自动检查，手动 Event 保留即时检查入口；Effect 关闭后两种入口均不再运行。RunScript 使用同一独占键避免同时启动，运行记录包含实际采样与通知结果。
 - **失败保留可恢复的事实。** 某个容量源不可读不阻断其他来源；共享状态或通知调用失败使脚本失败，沿既有脚本失败处理流程通知管理员，下一轮从待发列表继续。既有告警不因临时缺失指标、通知失败或暂停流程而宣告恢复。
 
 ## 一次定时工作怎样完成

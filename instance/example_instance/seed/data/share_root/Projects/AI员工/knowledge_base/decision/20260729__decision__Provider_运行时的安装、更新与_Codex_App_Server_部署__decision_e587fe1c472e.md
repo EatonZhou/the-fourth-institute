@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-07-29'
 version:
-  number: 14
-  created_at: '2026-07-29'
+  number: 15
+  created_at: "2026-07-29"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-19T22:29:50Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-10-21T18:10:48Z"
   updated_by:
-    user: ''
-    agent: resident_977d1a613d44
+    user: ""
+    agent: "resident_977d1a613d44"
 importance: 9
 metaness: 2
 ai_generated: false
@@ -34,9 +34,11 @@ links:
   - decision_6b9e42f1c8a7
   - decision_3948ce9b9443
   - decision_3dd52c0692c1
+  - information_de50748841c9
   - decision_3e8c2a7f91d4
   supersedes: []
-  derived_from: []
+  derived_from:
+  - information_de50748841c9
 ---
 # Provider 运行时的安装、依赖更新与 Codex App Server 部署
 
@@ -47,16 +49,16 @@ Codex 会话协议见 decision_3e8c2a7f91d4，Codex 账号选择见 decision_3dd
 ## 基本概念
 
 - **运行时（runtime）**：Provider 实际运行的程序包，例如 npm 包 `@openai/codex` 提供的 `codex` 命令。
-- **版本目录**：每个版本单独安装的目录，位于 `${user_home}/.local/share/dirtybase-portal/` 下，名称带版本号，例如 `codex-cli-0.159.2`。安装新版本只新增目录，不改动正在使用的版本。
+- **版本目录**：每个版本单独安装的目录，位于站点 `deployment.providers.runtime_root` 下，未配置时使用实例 `${staging_root}/provider-runtimes/`，名称带版本号，例如 `codex-cli-0.159.2`。安装新版本只新增目录，不改动正在使用的版本。
 - **当前链接**：指向正在使用的版本目录的符号链接。服务只通过当前链接启动运行时，所以切换版本就是改变链接指向并重启服务。
 - **验证标记**：版本目录中的 `.portal-validated` 文件，表示这个目录已经装好并通过了启动检查。
-- **systemd 用户服务**：以主机账号 `dirty-base` 身份运行的后台服务。Portal 的 Provider 进程都以这种方式运行，异常退出后由 systemd 自动拉起。
+- **systemd 用户服务**：Linux 上以部署服务的操作系统账号运行的后台服务，异常退出后由 systemd 自动拉起；Windows 使用安装器的服务控制器，不依赖 systemd 或固定主机用户名。
 
 ## 各 Provider 的运行时
 
 | Provider | 来源 | 版本目录 | 当前链接 | 使用它的服务 |
 | --- | --- | --- | --- | --- |
-| Codex | npm 包 `@openai/codex` 的 `latest` 版本 | `codex-cli-<版本>` | `${user_home}/.local/bin/codex` 指向 `<版本目录>/bin/codex` | 已登记且正在运行的 `portal-codex-app-server@<account_id>.service` 实例 |
+| Codex | npm 包 `@openai/codex` 的 `latest` 版本 | `codex-cli-<版本>` | 站点 `providers.codex_binary` 或已解析的 Codex 可执行入口；Windows 使用运行时根中的 `codex-cli-current`，安装布局由平台适配器决定 | 已登记且正在运行的 `portal-codex-app-server@<account_id>.service` 实例 |
 | Claude Code | PyPI 包 `claude-agent-sdk`，安装在独立的 Python 虚拟环境中 | `claude-agent-sdk-<版本>` | `claude-agent-sdk-current` | `portal-claude-code.service` |
 | Kimi Code | npm 包 `@moonshot-ai/kimi-code` 的 `latest` 版本 | `kimi-code-<版本>` | `kimi-code-current` | `portal-kimi-code.service` |
 | DSH | npm 包 `@deepseek-ai/dsh` 与 `@deepseek-ai/dsh-llm` 的 `next` 版本，加上 Portal 仓库中的桥接脚本 `management_portal/dsh_runtime/bridge.mjs` | `dsh-runtime-<dsh 版本>-<dsh-llm 版本>` | `dsh-runtime-current` | 没有常驻服务；每个 DSH 会话按需启动自己的进程 |
@@ -79,8 +81,8 @@ Codex 会话协议见 decision_3e8c2a7f91d4，Codex 账号选择见 decision_3dd
 - **切换只在这个 Provider 没有进行中的执行时发生。** ExecutionService 中还有该 Provider 的排队、已领取或运行中的执行，或者 Claude Code 守护进程报告有运行中的轮次时，新版本进入“待切换”状态，当前版本继续服务。
 - **切换范围由 Provider 的运行时更新器给出。** 检查程序把当前链接原子地换成新版本目录，依次重启更新器返回的服务，并确认它们处于运行状态。Codex 更新器从账号登记查询模板实例，只选择当前 `active` 的实例：已停用登记但仍在服务的进程也更新，原本停止的实例保持停止。账号之间隔离身份与会话，共用运行时版本；验证更新生效时核对被更新实例实际运行的二进制和版本。静态安装器单独渲染共享模板，不把运行中的实例名当作仓库 unit 文件。
 - **切换失败时退回原版本。** 任一服务重启失败，检查程序把当前链接改回原来的目录并再次重启这些服务，然后报告错误；安装失败时当前版本保持不变。
-- **待切换的版本会在空闲后自动启用。** 出现待切换版本时，检查程序启动临时的 systemd 用户服务 `portal-provider-pending-activation`，每 30 秒尝试切换一次，最多等待 24 小时。该服务通过 `EnvironmentFile` 加载 Portal 的 PostgreSQL 环境文件，默认路径为 `${user_home}/.config/dirtybase/portal-postgres.env`，可由 `PORTAL_POSTGRES_ENV_FILE` 指定。数据库连接用于检查 Provider 的活动 Execution；连接不可用时报告错误并保留待切换状态。连接凭据不写入启动命令参数。
-- **同一时间只运行一次检查。** 检查程序持有文件锁 `~/.local/state/dirtybase-portal/provider-updates.lock`；另一次检查正在运行时，新的调用立即返回 `busy`。待切换的版本和最近一次检查时间保存在同目录的 `provider-updates.json`。
+- **待切换的版本会在空闲后自动启用。** 出现待切换版本时，检查程序启动临时的 systemd 用户服务 `portal-provider-pending-activation`，每 30 秒尝试切换一次，最多等待 24 小时。该服务通过 `EnvironmentFile` 加载 Portal 的 PostgreSQL 环境文件，默认路径为 `~/.config/tfi/portal-postgres.env`，可由 `PORTAL_POSTGRES_ENV_FILE` 指定。数据库连接用于检查 Provider 的活动 Execution；连接不可用时报告错误并保留待切换状态。连接凭据不写入启动命令参数。
+- **同一时间只运行一次检查。** 检查程序持有文件锁 `provider-updates.lock`，位于站点 `deployment.providers.state_root`（未配置时为实例 `${staging_root}/provider-update-state/`）；另一次检查正在运行时，新的调用立即返回 `busy`。待切换的版本和最近一次检查时间保存在同目录的 `provider-updates.json`。
 
 更新检查由 `scripts/update_provider_runtimes.py` 执行一次（加 `--activate-pending` 时只尝试启用待切换的版本）。它输出 JSON 结果，列出每个 Provider 的已安装版本与可用版本、本次启用的 Provider、仍在等待的 Provider 和错误；有错误或检查正忙时以非零状态退出。
 

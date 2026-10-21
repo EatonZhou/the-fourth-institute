@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-10-16'
 version:
-  number: 70
+  number: 71
   created_at: "2026-10-16T09:28:31Z"
   created_by:
     user: "weihao"
     agent: "resident_0d928ae486ba"
-  updated_at: "2026-10-21T14:14:56Z"
+  updated_at: "2026-10-21T18:10:36Z"
   updated_by:
     user: ""
     agent: "resident_977d1a613d44"
@@ -18,29 +18,29 @@ metaness: 3
 ai_generated: false
 links:
   source:
-  - /home/dirty-base/dirtybase-portal/management_portal/permission_system/__init__.py
-  - /home/dirty-base/dirtybase-portal/management_portal/permission_system/inline.py
-  - /home/dirty-base/dirtybase-portal/management_portal/permission_system/categories.py
-  - /home/dirty-base/dirtybase-portal/management_portal/permission_system/par.py
-  - /home/dirty-base/dirtybase-portal/management_portal/permission_system/engine/__init__.py
-  - /home/dirty-base/dirtybase-portal/management_portal/permission_system/engine/model.py
-  - /home/dirty-base/dirtybase-portal/management_portal/permission_system/engine/decision.py
-  - /home/dirty-base/dirtybase-portal/management_portal/permission_system/engine/store.py
-  - /home/dirty-base/dirtybase-portal/management_portal/permission_system/scheme/compiler.py
-  - /home/dirty-base/dirtybase-portal/management_portal/permission_system/scheme/vocabulary.py
-  - /home/dirty-base/dirtybase-portal/management_portal/permission_system/scheme/repository.py
-  - /home/dirty-base/dirtybase-portal/management_portal/permission_system/scheme/builtin/default.json
-  - /home/dirty-base/dirtybase-portal/management_portal/permission_system/facts.py
-  - /home/dirty-base/dirtybase-portal/management_portal/permission_system/requests.py
-  - /home/dirty-base/dirtybase-portal/management_portal/permission_system/temporary.py
-  - /home/dirty-base/dirtybase-portal/management_portal/permission_system/management.py
-  - /home/dirty-base/dirtybase-portal/management_portal/permission_system/schemes.py
-  - /home/dirty-base/dirtybase-portal/management_portal/permission_system/authdiff.py
-  - /home/dirty-base/dirtybase-portal/management_portal/hatg/catalog/permission.py
-  - /home/dirty-base/dirtybase-portal/management_portal/society_service/isa/system_workflows.py
-  - /home/dirty-base/dirtybase-portal/tests/cases/test_permission_engine.py
-  - /home/dirty-base/dirtybase-portal/tests/cases/test_permission_system_switch.py
-  - /home/dirty-base/dirtybase-portal/tests/cases/test_permission_schemes.py
+  - ${code_root}/management_portal/permission_system/__init__.py
+  - ${code_root}/management_portal/permission_system/inline.py
+  - ${code_root}/management_portal/permission_system/categories.py
+  - ${code_root}/management_portal/permission_system/par.py
+  - ${code_root}/management_portal/permission_system/engine/__init__.py
+  - ${code_root}/management_portal/permission_system/engine/model.py
+  - ${code_root}/management_portal/permission_system/engine/decision.py
+  - ${code_root}/management_portal/permission_system/engine/store.py
+  - ${code_root}/management_portal/permission_system/scheme/compiler.py
+  - ${code_root}/management_portal/permission_system/scheme/vocabulary.py
+  - ${code_root}/management_portal/permission_system/scheme/repository.py
+  - ${code_root}/management_portal/permission_system/scheme/builtin/default.json
+  - ${code_root}/management_portal/permission_system/facts.py
+  - ${code_root}/management_portal/permission_system/requests.py
+  - ${code_root}/management_portal/permission_system/temporary.py
+  - ${code_root}/management_portal/permission_system/management.py
+  - ${code_root}/management_portal/permission_system/schemes.py
+  - ${code_root}/management_portal/permission_system/authdiff.py
+  - ${code_root}/management_portal/hatg/catalog/permission.py
+  - ${code_root}/management_portal/society_service/isa/system_workflows.py
+  - ${code_root}/tests/cases/test_permission_engine.py
+  - ${code_root}/tests/cases/test_permission_system_switch.py
+  - ${code_root}/tests/cases/test_permission_schemes.py
   related:
   - thinking_3cbdd375ebf8
   - decision_600ae27b0538
@@ -331,7 +331,7 @@ weihao 2026-10-18 定稿。5.1 至 5.3、5.5 与 5.6 已实现，第 3 节按实
 - 规则只是生成器：判定只看实例中的表项，表项仍是节点三元组（thinking_3cbdd375ebf8 第 14 章 Gen(Π, F)）。
 - steward 作为 Family 管家的职能（第 4 节）留在代码；“steward 对所在 Lineage 有 admin”是一条可以删改的关系规则，两者互不依赖。
 
-实现状态（2026-10-18）：规则文档升为 `dirtybase.permission-scheme.v2`，关系规则写成 `{"relation", "a", "r"}`，关系取值为 `self`、`owner`、`belongs`、`creator`、`steward`、`members`（`scheme/vocabulary.py` 的 `RELATIONS`）。用新旧代码对线上全部事实各生成一次默认方案实例，节点与表项完全相同。
+规则文档使用 `tfi.permission-scheme.v2`，关系规则写成 `{"relation", "a", "r"}`，关系取值由 `scheme/vocabulary.py` 的 `RELATIONS` 定义。
 
 ### 5.9 对象的放置与兜底节点（weihao 2026-10-18）
 
@@ -370,7 +370,6 @@ weihao 2026-10-18 定稿。5.1 至 5.3、5.5 与 5.6 已实现，第 3 节按实
 
 判定槽移进指令声明（2026-10-19，b3dd4c7f）：方案的 `instructions` 从“指令到判定槽数组”改为“A 元素到分类”。一次性迁移把已保存的自定义方案、复制品的来源规则（连同摘要）和实例基准（`scheme_instances.rules`）转为新格式；线上只有默认方案的基准，转换后与新的 default.json 相同，没有与声明不同的槽结构。迁移前后的编译器与请求适配层在每条指令的每种合法参数组合上逐项比较，请求相同；迁移脚本和比较测试在切换后删除（f6f4e0ad）。
 
-线上切换（2026-10-19）：此前启用的是默认方案的复制品 `dirtybase`，规则与默认方案逐项相同。默认方案的实例补齐到与 `dirtybase` 相同的对象；`dirtybase` 实例中的编辑是增加的两行（AI员工 对 @operations 的 @admin、hk 对 AI员工 的 @contributor），没有停用的行、人删的行和临时凭证，两行带原 ID 搬入默认方案的实例。搬完后两份实例的节点、对象关系和表项完全相同，双向授权差都为中性；随后启用默认方案（启用时对现有对象的补齐为 0 变化），删除 `dirtybase`。
 
 自动合并的实现（0afce3ff，2026-10-18）：
 

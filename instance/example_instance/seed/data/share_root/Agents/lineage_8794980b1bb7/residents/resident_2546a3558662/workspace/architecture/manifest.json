@@ -54,13 +54,13 @@
     "status": "available",
     "manifest": {
       "address": "workspace_04ad72d24263/file/architecture/explore/exploration-manifest.json",
-      "sha256": "1f976ef9b124d3fb3b77d8b2a0d40b48f4736f3f83a58d7172f69833cd42cbab",
-      "size": 54172
+      "sha256": "90becc73c3992561c291cf45c328a8828e666762c95a991d9c308dc768286590",
+      "size": 54169
     }
   },
   "catalog_attachment": {
     "address": "workspace_04ad72d24263/file/architecture/catalog/isa.json",
-    "sha256": "835467c6bea12d0cf3a83d2eb4a75251de7a92cda4f2e8c4794bc8addd392e2d",
+    "sha256": "1fbb849d3c0f4d61a8c6fc2cd7fbeb30e46b8c507613b2b47594893b2dfbd5b1",
     "size": 521
   },
   "component_relations": {
@@ -70,7 +70,7 @@
     "hatg": {
       "lesson_sources": {
         "address": "workspace_04ad72d24263/file/architecture/explore/lesson-manifest.json",
-        "sha256": "ea00e583af1c1a4693e960839eb72812f5fc3ff77052008ce24ea3634a387a3b",
+        "sha256": "176a9c7424ebf007ccdf578191eea4f26f910036231f3d4a696ddf8ae1e6d83a",
         "size": 5458
       }
     }

@@ -43,6 +43,25 @@ class ExportSource(Source):
         return {('lineage', 'conversation_events'): [{'resident_id': RESIDENT}] if RESIDENT in residents else []}
 
 
+def test_export_keeps_schema_but_never_source_runtime_metadata():
+    source = ExportSource()
+    for key in (('lineage', 'lineage_meta'), ('agent', 'agent_store_meta'),
+                ('resource_registry', 'registry_meta')):
+        source.tables[key] = SimpleNamespace(columns={})
+        source.data[key] = [
+            {'key': 'schema', 'value': 'current-storage-version'},
+            {'key': 'lineage_timer_lease', 'value': '{"holder":"source-host:123"}'},
+            {'key': 'runtime_normalization', 'value': '42'},
+            {'key': 'future_runtime_marker', 'value': 'source-only'},
+        ]
+    before = deepcopy(source.data)
+    result = resolve(selected('decision'), source)
+    for key in source.data:
+        if key[1].endswith('_meta'):
+            assert result['tables'][key] == [{'key': 'schema', 'value': 'current-storage-version'}]
+    assert source.data == before
+
+
 def test_preferences_activate_only_with_dependency_and_explicit_options_win():
     snapshot = selected('decision')
     prefs = {KNOWLEDGE: {'history': True, 'workspace': {'own_outputs': True, 'extra_bindings': 'all'}}}

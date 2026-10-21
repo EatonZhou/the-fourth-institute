@@ -58,7 +58,7 @@ class SharedInstanceTests(unittest.TestCase):
     def target(self, root):
         return dict(install_root=str(root), shared_code_root=str(REPO / "code"),
                     service_prefix="tfi-layout-test", database_name="original_database",
-                    database_user="dirtybase", runtime_instance="release", run_id="layout-test",
+                    database_user="existing_site_user", runtime_instance="release", run_id="layout-test",
                     python=sys.executable, pg_bin="/usr/bin", nats_server="/usr/bin/true",
                     bind="0.0.0.0", ports=dict(web=28399, postgres=56799, nats=14599),
                     data_roots={k: str(root / "data" / n) for k, n in zip(
@@ -78,7 +78,7 @@ class SharedInstanceTests(unittest.TestCase):
                 self.assertEqual(env["TMPDIR"], str(Path(target["install_root"]) / "runtime"))
                 self.assertEqual(env["XDG_CACHE_HOME"], str(Path(target["install_root"]) / "home/.cache"))
                 self.assertEqual(env["PORTAL_EXECUTION_WORKER_SOURCE_ROOT"], str(REPO / "code"))
-                self.assertTrue(env["PORTAL_DATABASE_URL"].startswith("postgresql://dirtybase@/"))
+                self.assertTrue(env["PORTAL_DATABASE_URL"].startswith("postgresql://existing_site_user@/"))
                 self.assertIn(str(installer_path(target)), installer.unit_text(target, "web"))
                 self.assertNotIn("/runtime/installer.py", installer.unit_text(target, "web"))
                 command, _ = installer.component_command(target, "postgres")

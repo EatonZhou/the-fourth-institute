@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 30
+  number: 31
   created_at: "2026-09-03"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-10-21T14:15:02Z"
+  updated_at: "2026-10-21T18:04:46Z"
   updated_by:
     user: ""
     agent: "resident_977d1a613d44"
@@ -18,12 +18,12 @@ metaness: 3
 ai_generated: false
 links:
   source:
-  - /home/dirty-base/dirtybase-portal/management_portal/static/portal_workbench.js
-  - /home/dirty-base/dirtybase-portal/management_portal/static/portal_workbench_context.js
-  - /home/dirty-base/dirtybase-portal/management_portal/static/lineage_workbench.js
-  - /home/dirty-base/dirtybase-portal/management_portal/static/portal_detail_workbench.js
-  - /home/dirty-base/dirtybase-portal/management_portal/static/portal_workbench.css
-  - /home/dirty-base/dirtybase-portal/management_portal/static/portal_command_registry.js
+  - ${code_root}/management_portal/static/portal_workbench.js
+  - ${code_root}/management_portal/static/portal_workbench_context.js
+  - ${code_root}/management_portal/static/lineage_workbench.js
+  - ${code_root}/management_portal/static/portal_detail_workbench.js
+  - ${code_root}/management_portal/static/portal_workbench.css
+  - ${code_root}/management_portal/static/portal_command_registry.js
   related:
   - decision_538e155e1102
   - decision_741b04821171

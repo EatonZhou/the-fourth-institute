@@ -538,6 +538,18 @@ test('local external contract preserves the declared root and concept identity w
   assert.deepEqual(childScope.mechanisms[0], model.mechanisms.at(-1));
 });
 
+test('local external map identity survives repository relocation without weakening child identity', () => {
+  for (const ref of ['repo_123456789abc/file/architecture/modules.yaml',
+                    'repo_abcdef123456/file/code/architecture/modules.yaml']) {
+    const model = localExternalFixture();
+    for (const value of model.objects.filter(value => value.id.startsWith('model-services')))
+      value.identity.resource_ref = ref;
+    assert.deepEqual(validateExplorationModel(model), { valid: true, errors: [] });
+    find(model, 'model-services.chat-completion').identity.resource_ref = 'repo_000000000000/file/architecture/modules.yaml';
+    invalid(model, 'local_external_identity');
+  }
+});
+
 test('local external contract follows composition ancestry across concept levels', () => {
   const model = localExternalFixture(), root = find(model, 'model-services');
   const parent = find(model, 'model-services.chat-completion'), child = find(model, 'model-services.native-inference');

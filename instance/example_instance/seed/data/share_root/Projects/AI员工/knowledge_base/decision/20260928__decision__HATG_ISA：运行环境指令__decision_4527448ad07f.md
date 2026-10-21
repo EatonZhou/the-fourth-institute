@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 49
+  number: 50
   created_at: "2026-09-28T10:45:00Z"
   created_by:
     user: "weihao"
     agent: "resident_2a1fc6cd272d"
-  updated_at: "2026-10-21T13:48:27Z"
+  updated_at: "2026-10-21T18:05:46Z"
   updated_by:
     user: ""
     agent: "resident_977d1a613d44"
@@ -18,16 +18,16 @@ metaness: 2
 ai_generated: false
 links:
   source:
-  - /home/dirty-base/dirtybase-portal/management_portal/runtime_capacity.py
-  - /home/dirty-base/dirtybase-portal/management_portal/web_isa.py
-  - /home/dirty-base/dirtybase-portal/management_portal/hatg/catalog/environment.py
-  - /home/dirty-base/dirtybase-portal/tests/cases/test_isa_g7_audit.py
-  - /home/dirty-base/dirtybase-portal/scripts/publish_portal_release.py
-  - /home/dirty-base/dirtybase-portal/tests/cases/test_portal_web_isa_environment.py
-  - /home/dirty-base/dirtybase-portal/scripts/portal_services
-  - /home/dirty-base/dirtybase-portal/scripts/publish_portal_release
-  - /home/dirty-base/dirtybase-portal/management_portal/agent_status_backend.py
-  - /home/dirty-base/dirtybase-portal/management_portal/execution/backends.py
+  - ${code_root}/management_portal/runtime_capacity.py
+  - ${code_root}/management_portal/web_isa.py
+  - ${code_root}/management_portal/hatg/catalog/environment.py
+  - ${code_root}/tests/cases/test_isa_g7_audit.py
+  - ${code_root}/scripts/publish_portal_release.py
+  - ${code_root}/tests/cases/test_portal_web_isa_environment.py
+  - ${code_root}/scripts/portal_services
+  - ${code_root}/scripts/publish_portal_release
+  - ${code_root}/management_portal/agent_status_backend.py
+  - ${code_root}/management_portal/execution/backends.py
   related:
   - decision_8ac0b5a6c0e5
   - decision_fc26f883773d

@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 24
-  created_at: '2026-09-03'
+  number: 25
+  created_at: "2026-09-03"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-19T19:43:45Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-10-21T18:10:26Z"
   updated_by:
-    user: tfi-exported-user
-    agent: resident_865c3c24f251
+    user: ""
+    agent: "resident_977d1a613d44"
 importance: 9
 metaness: 2
 ai_generated: true
@@ -135,12 +135,12 @@ Portal Web 因此在后台服务重启期间让页面请求等待，不再立即
 ResourceService、SocietyService、ExecutionService 与 Portal Web 的 socket 请求都必须带签名，包括健康检查、Worker 控制、领域调用、指令流与恢复确认。客户端对实际连接的目标 socket 选择密钥；跨实例重试也使用目标实例的密钥。
 
 - 客户端把入口确认的调用者放进签名块 `auth`。签名内容包括格式名（新请求使用 `tfi.resource-rpc-auth.v1`，仅接受该精确格式；验证签名使用请求携带的原标签，不改写签名原像）、方法名、调用者、签发时间、nonce 和完整参数的 SHA-256 摘要；没有人或 Resident 调用者的内部控制请求使用空调用者。
-- 服务启动时从 socket 旁的 `resource-rpc-signing.key` 读取密钥，缺失时生成权限为 `0600` 的随机密钥。`PORTAL_RESOURCE_RPC_SIGNING_KEY_FILE` 可指定密钥路径。密钥至少 32 字节。Unix 上要求密钥文件权限不允许同组或其他用户读写；Windows 默认把密钥放在当前用户的 `LocalAppData/DirtyBase/Portal/rpc-keys` 中，按实例逻辑路径隔离，通过 `management_common/file_permissions.py` 在文件创建时设置并在读取时验证当前用户 NTFS ACL、文件所有者与非重解析点路径。Windows 的 `stat` 权限位不能表示 ACL，不能用 Unix 的 `0600` 检查代替 ACL 验证；自定义密钥路径也执行相同检查，不能仅信任部署约定。
+- 服务启动时从 socket 旁的 `resource-rpc-signing.key` 读取密钥，缺失时生成权限为 `0600` 的随机密钥。`PORTAL_RESOURCE_RPC_SIGNING_KEY_FILE` 可指定密钥路径。密钥至少 32 字节。Unix 上要求密钥文件权限不允许同组或其他用户读写；Windows 默认把密钥放在当前用户的 `LocalAppData/TFI/Portal/rpc-keys` 中，按实例逻辑路径隔离。安装器将 `LOCALAPPDATA` 设置到实例 `home/AppData/Local`，不会使用宿主交互用户的旧产品目录；独立启动者须显式提供对应实例环境。通过 `management_common/file_permissions.py` 在文件创建时设置并在读取时验证当前用户 NTFS ACL、文件所有者与非重解析点路径。Windows 的 `stat` 权限位不能表示 ACL，不能用 Unix 的 `0600` 检查代替 ACL 验证；自定义密钥路径也执行相同检查，不能仅信任部署约定。
 - 服务端先验证签名，随后才分派请求。签发时间与当前时间相差不超过 30 秒；nonce 非空、不超过 128 字符，且服务端近期未见过；参数摘要与签名必须匹配。过期、篡改和重放请求均在领域执行前拒绝。
 - `instruction.execute` 的签名调用者必须与 `context.caller` 一致；`_authorization` 中的主体也必须属于同一调用者。Lineage 领域请求遵守同样的主体绑定规则。ResourceService 带调用者的方法从签名取得 actor，拒绝参数再声明 actor；ExecutionService 保留的 actor 参数必须与签名一致。
 - 签名只确认受信内部进程传递的身份和参数。业务权限由权限系统判断，Worker 领取令牌和租约继续用于调度一致性。签名不会让调用者自动取得管理权限。
 
-RunScript 通过每次运行独立的 `isa.sock` 调用桥接端点，只提交指令与参数。桥接进程携带该运行的认证信息进入 Portal，Portal 再签名转交拥有服务。代理不接受脚本自报调用身份；RunScript 作为 dirty-base 主机进程运行，可直接访问该用户拥有的内部服务 socket 与签名密钥。主机上能读取同一密钥的进程属于同一信任边界；HMAC 不提供同一操作系统账号内的进程隔离。
+RunScript 通过每次运行独立的 `isa.sock` 调用桥接端点，只提交指令与参数。桥接进程携带该运行的认证信息进入 Portal，Portal 再签名转交拥有服务。代理不接受脚本自报调用身份；RunScript 作为服务所属操作系统账号的主机进程运行，可直接访问该用户拥有的内部服务 socket 与签名密钥。主机上能读取同一密钥的进程属于同一信任边界；HMAC 不提供同一操作系统账号内的进程隔离。
 
 ResourceService 测试可直接注入领域实现并在没有密钥时调用无身份语义的测试方法；`authorization.*`、执行关联和 `instruction.execute` 始终要求签名身份。部署的服务不开放未签名通道。
 

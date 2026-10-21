@@ -4,12 +4,12 @@
   "catalog_id": "hatg",
   "catalog_manifest": {
     "address": "workspace_04ad72d24263/file/architecture/explore/catalog-manifest.json",
-    "sha256": "7d84e6e50b8350776077d4a9e983ed86378508875a9a79c3beebf71db5894aa8",
+    "sha256": "af7a3032dc57364a2a9bd8df7868ba71015dc995951134afb7344cdf3df158c2",
     "size": 7366
   },
   "lesson_sources": {
     "address": "workspace_04ad72d24263/file/architecture/explore/lesson-manifest.json",
-    "sha256": "ea00e583af1c1a4693e960839eb72812f5fc3ff77052008ce24ea3634a387a3b",
+    "sha256": "176a9c7424ebf007ccdf578191eea4f26f910036231f3d4a696ddf8ae1e6d83a",
     "size": 5458
   }
 }

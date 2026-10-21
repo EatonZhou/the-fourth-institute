@@ -3,14 +3,14 @@
   "revision": 1,
   "model": {
     "address": "workspace_04ad72d24263/file/architecture/explore/exploration-model.json",
-    "sha256": "b32e60bcea977e60b9e95179bc563a05f9985576c699b4c7672fb1d7437d59ff",
-    "size": 5832811
+    "sha256": "0bef355c0f563ea12735f45569e16b84d158dd6fd869318ffe83dcb22193821d",
+    "size": 5837271
   },
   "catalogs": {
     "hatg": {
       "manifest": {
         "address": "workspace_04ad72d24263/file/architecture/explore/catalog-manifest.json",
-        "sha256": "7d84e6e50b8350776077d4a9e983ed86378508875a9a79c3beebf71db5894aa8",
+        "sha256": "af7a3032dc57364a2a9bd8df7868ba71015dc995951134afb7344cdf3df158c2",
         "size": 7366
       }
     }
@@ -1331,7 +1331,7 @@
       "address": "repo_5d287fed9c7e/file/management_portal/ai_socket_relay.py"
     },
     {
-      "address": "repo_5d287fed9c7e/file/systemd/dirtybase-ai-socket-relay.service"
+      "address": "repo_5d287fed9c7e/file/systemd/portal-ai-socket-relay.service"
     },
     {
       "address": "repo_5d287fed9c7e/file/management_portal/claude_provider_catalog.py"

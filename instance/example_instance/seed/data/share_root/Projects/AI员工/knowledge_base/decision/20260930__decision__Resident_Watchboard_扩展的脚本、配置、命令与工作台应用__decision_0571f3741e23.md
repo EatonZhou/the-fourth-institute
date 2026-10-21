@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-30'
 version:
-  number: 22
-  created_at: '2026-09-30T13:04:00Z'
+  number: 23
+  created_at: "2026-09-30T13:04:00Z"
   created_by:
-    user: tfi-exported-user
-    agent: resident_83172d354aa9
-  updated_at: '2026-10-19T08:43:49Z'
+    user: "weihao"
+    agent: "resident_83172d354aa9"
+  updated_at: "2026-10-21T17:59:45Z"
   updated_by:
-    user: ''
-    agent: resident_2e9ea0072551
+    user: ""
+    agent: "resident_977d1a613d44"
 importance: 6
 metaness: 2
 ai_generated: false
@@ -29,7 +29,7 @@ links:
   - ${code_root}/management_portal/static/watchboard_applications/registry.js
   - ${code_root}/tests/cases/test_resident_watchboard.py
   - ${code_root}/tests/cases/test_watchboard_applications.py
-  - ${share_root}/Skills/create-resident-watchboard/SKILL.md
+  - /share/Skills/create-resident-watchboard/SKILL.md
   related:
   - decision_898b8911a2ff
   - decision_ce44377c3257
@@ -108,7 +108,7 @@ Watchboard（监控板）是可以安装在 Resident 上的扩展面板。有些
 ### 运行命令
 
 - **运行按钮触发已经安装的命令组件。** 有必填参数时，面板先收集 JSON 参数对象，再触发对应事件源。尚未安装的清单命令没有运行入口。
-- **脚本作为 RunScript 主机进程运行。** Effect 保存入口、命令映射、参数声明、可选时限和互斥键。脚本以 dirty-base 用户访问主机文件、凭证、服务与网络；Portal 不向运行环境额外注入服务凭据。
+- **脚本作为 RunScript 主机进程运行。** Effect 保存入口、命令映射、参数声明、可选时限和互斥键。脚本以服务所属操作系统账号访问主机文件、凭证、服务与网络；Portal 不向运行环境额外注入服务凭据。
 - **状态、日志和取消属于同一次脚本运行。** 面板显示等待、运行及终态，使用“输出”按游标读取 stdout/stderr，使用“取消”停止仍在运行的脚本。脚本退出状态和日志由 RunScript 保存，不再由面板维护另一份运行记录。
 - **同一面板的命令共享互斥键。** 并行触发交给 RunScript 处理，不在浏览器或 Watchboard 服务中再启动互斥线程。需要周期执行时，用户在 Lineage 中增加时间事件源，脚本每次执行有界的一轮工作。
 

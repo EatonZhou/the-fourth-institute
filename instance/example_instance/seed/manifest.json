@@ -3867,7 +3867,7 @@
               },
               {
                 "size": 2837,
-                "sha256": "5fcfd6c021ebbb4e2f3c1fc248a7c776860785e09e5a27bcc792ed93f6a895ae",
+                "sha256": "9e9acea0cc92c7fddcc4d3190a43b2f067f55129e3290e386d3640eb0ab38e84",
                 "address": "workspace_04ad72d24263/file/architecture/manifest.json"
               },
               {
@@ -3877,37 +3877,37 @@
               },
               {
                 "size": 7366,
-                "sha256": "7d84e6e50b8350776077d4a9e983ed86378508875a9a79c3beebf71db5894aa8",
+                "sha256": "af7a3032dc57364a2a9bd8df7868ba71015dc995951134afb7344cdf3df158c2",
                 "address": "workspace_04ad72d24263/file/architecture/explore/catalog-manifest.json"
               },
               {
-                "size": 522200,
-                "sha256": "2b977035a9e2e63dfd6b2d9e418efbe5998c5412a100dda661e97bdd2d3065b4",
+                "size": 522182,
+                "sha256": "1181d873c2d32a57eca153266be4484832d9c26b69921df657f6955cc04c000e",
                 "address": "workspace_04ad72d24263/file/architecture/explore/catalog.json"
               },
               {
-                "size": 54172,
-                "sha256": "1f976ef9b124d3fb3b77d8b2a0d40b48f4736f3f83a58d7172f69833cd42cbab",
+                "size": 54169,
+                "sha256": "90becc73c3992561c291cf45c328a8828e666762c95a991d9c308dc768286590",
                 "address": "workspace_04ad72d24263/file/architecture/explore/exploration-manifest.json"
               },
               {
-                "size": 5832811,
-                "sha256": "b32e60bcea977e60b9e95179bc563a05f9985576c699b4c7672fb1d7437d59ff",
+                "size": 5837271,
+                "sha256": "0bef355c0f563ea12735f45569e16b84d158dd6fd869318ffe83dcb22193821d",
                 "address": "workspace_04ad72d24263/file/architecture/explore/exploration-model.json"
               },
               {
                 "size": 5458,
-                "sha256": "ea00e583af1c1a4693e960839eb72812f5fc3ff77052008ce24ea3634a387a3b",
+                "sha256": "176a9c7424ebf007ccdf578191eea4f26f910036231f3d4a696ddf8ae1e6d83a",
                 "address": "workspace_04ad72d24263/file/architecture/explore/lesson-manifest.json"
               },
               {
-                "size": 78043,
-                "sha256": "ddaa99c6ec41a71e3cf724d1d1a4e4e6d4a923e5fb3fa86e8321af75d3e03a81",
+                "size": 78146,
+                "sha256": "a36ee8064c4e9e0da1ad90b02bf515febbb706f8dcaeb811b9851a501e90efc5",
                 "address": "workspace_04ad72d24263/file/architecture/explore/lesson-sources.json"
               },
               {
                 "size": 521,
-                "sha256": "835467c6bea12d0cf3a83d2eb4a75251de7a92cda4f2e8c4794bc8addd392e2d",
+                "sha256": "1fbb849d3c0f4d61a8c6fc2cd7fbeb30e46b8c507613b2b47594893b2dfbd5b1",
                 "address": "workspace_04ad72d24263/file/architecture/catalog/isa.json"
               }
             ],
@@ -4882,7 +4882,7 @@
     "database": {
       "path": "database/distribution.sql",
       "format": "postgresql-sql",
-      "sha256": "d6d24225d080da8a314baa2d092e07646036e5755460e4c7cb34e955f8b78f96"
+      "sha256": "7ecc36d8dc0a29989ace93774a84b2e787d5a0d90aeccf7669b4d259e6fa7cf8"
     },
     "files": {
       "share_root": "data/share_root",
@@ -8336,7 +8336,7 @@
             },
             {
               "size": 2837,
-              "sha256": "5fcfd6c021ebbb4e2f3c1fc248a7c776860785e09e5a27bcc792ed93f6a895ae",
+              "sha256": "9e9acea0cc92c7fddcc4d3190a43b2f067f55129e3290e386d3640eb0ab38e84",
               "address": "workspace_04ad72d24263/file/architecture/manifest.json"
             },
             {
@@ -8346,37 +8346,37 @@
             },
             {
               "size": 7366,
-              "sha256": "7d84e6e50b8350776077d4a9e983ed86378508875a9a79c3beebf71db5894aa8",
+              "sha256": "af7a3032dc57364a2a9bd8df7868ba71015dc995951134afb7344cdf3df158c2",
               "address": "workspace_04ad72d24263/file/architecture/explore/catalog-manifest.json"
             },
             {
-              "size": 522200,
-              "sha256": "2b977035a9e2e63dfd6b2d9e418efbe5998c5412a100dda661e97bdd2d3065b4",
+              "size": 522182,
+              "sha256": "1181d873c2d32a57eca153266be4484832d9c26b69921df657f6955cc04c000e",
               "address": "workspace_04ad72d24263/file/architecture/explore/catalog.json"
             },
             {
-              "size": 54172,
-              "sha256": "1f976ef9b124d3fb3b77d8b2a0d40b48f4736f3f83a58d7172f69833cd42cbab",
+              "size": 54169,
+              "sha256": "90becc73c3992561c291cf45c328a8828e666762c95a991d9c308dc768286590",
               "address": "workspace_04ad72d24263/file/architecture/explore/exploration-manifest.json"
             },
             {
-              "size": 5832811,
-              "sha256": "b32e60bcea977e60b9e95179bc563a05f9985576c699b4c7672fb1d7437d59ff",
+              "size": 5837271,
+              "sha256": "0bef355c0f563ea12735f45569e16b84d158dd6fd869318ffe83dcb22193821d",
               "address": "workspace_04ad72d24263/file/architecture/explore/exploration-model.json"
             },
             {
               "size": 5458,
-              "sha256": "ea00e583af1c1a4693e960839eb72812f5fc3ff77052008ce24ea3634a387a3b",
+              "sha256": "176a9c7424ebf007ccdf578191eea4f26f910036231f3d4a696ddf8ae1e6d83a",
               "address": "workspace_04ad72d24263/file/architecture/explore/lesson-manifest.json"
             },
             {
-              "size": 78043,
-              "sha256": "ddaa99c6ec41a71e3cf724d1d1a4e4e6d4a923e5fb3fa86e8321af75d3e03a81",
+              "size": 78146,
+              "sha256": "a36ee8064c4e9e0da1ad90b02bf515febbb706f8dcaeb811b9851a501e90efc5",
               "address": "workspace_04ad72d24263/file/architecture/explore/lesson-sources.json"
             },
             {
               "size": 521,
-              "sha256": "835467c6bea12d0cf3a83d2eb4a75251de7a92cda4f2e8c4794bc8addd392e2d",
+              "sha256": "1fbb849d3c0f4d61a8c6fc2cd7fbeb30e46b8c507613b2b47594893b2dfbd5b1",
               "address": "workspace_04ad72d24263/file/architecture/catalog/isa.json"
             }
           ],
@@ -13054,7 +13054,7 @@
     },
     {
       "path": "data/share_root/Agents/lineage_8794980b1bb7/residents/resident_2546a3558662/workspace/architecture/catalog/isa.json",
-      "sha256": "835467c6bea12d0cf3a83d2eb4a75251de7a92cda4f2e8c4794bc8addd392e2d",
+      "sha256": "1fbb849d3c0f4d61a8c6fc2cd7fbeb30e46b8c507613b2b47594893b2dfbd5b1",
       "size": 521
     },
     {
@@ -13064,37 +13064,37 @@
     },
     {
       "path": "data/share_root/Agents/lineage_8794980b1bb7/residents/resident_2546a3558662/workspace/architecture/explore/catalog-manifest.json",
-      "sha256": "7d84e6e50b8350776077d4a9e983ed86378508875a9a79c3beebf71db5894aa8",
+      "sha256": "af7a3032dc57364a2a9bd8df7868ba71015dc995951134afb7344cdf3df158c2",
       "size": 7366
     },
     {
       "path": "data/share_root/Agents/lineage_8794980b1bb7/residents/resident_2546a3558662/workspace/architecture/explore/catalog.json",
-      "sha256": "2b977035a9e2e63dfd6b2d9e418efbe5998c5412a100dda661e97bdd2d3065b4",
-      "size": 522200
+      "sha256": "1181d873c2d32a57eca153266be4484832d9c26b69921df657f6955cc04c000e",
+      "size": 522182
     },
     {
       "path": "data/share_root/Agents/lineage_8794980b1bb7/residents/resident_2546a3558662/workspace/architecture/explore/exploration-manifest.json",
-      "sha256": "1f976ef9b124d3fb3b77d8b2a0d40b48f4736f3f83a58d7172f69833cd42cbab",
-      "size": 54172
+      "sha256": "90becc73c3992561c291cf45c328a8828e666762c95a991d9c308dc768286590",
+      "size": 54169
     },
     {
       "path": "data/share_root/Agents/lineage_8794980b1bb7/residents/resident_2546a3558662/workspace/architecture/explore/exploration-model.json",
-      "sha256": "b32e60bcea977e60b9e95179bc563a05f9985576c699b4c7672fb1d7437d59ff",
-      "size": 5832811
+      "sha256": "0bef355c0f563ea12735f45569e16b84d158dd6fd869318ffe83dcb22193821d",
+      "size": 5837271
     },
     {
       "path": "data/share_root/Agents/lineage_8794980b1bb7/residents/resident_2546a3558662/workspace/architecture/explore/lesson-manifest.json",
-      "sha256": "ea00e583af1c1a4693e960839eb72812f5fc3ff77052008ce24ea3634a387a3b",
+      "sha256": "176a9c7424ebf007ccdf578191eea4f26f910036231f3d4a696ddf8ae1e6d83a",
       "size": 5458
     },
     {
       "path": "data/share_root/Agents/lineage_8794980b1bb7/residents/resident_2546a3558662/workspace/architecture/explore/lesson-sources.json",
-      "sha256": "ddaa99c6ec41a71e3cf724d1d1a4e4e6d4a923e5fb3fa86e8321af75d3e03a81",
-      "size": 78043
+      "sha256": "a36ee8064c4e9e0da1ad90b02bf515febbb706f8dcaeb811b9851a501e90efc5",
+      "size": 78146
     },
     {
       "path": "data/share_root/Agents/lineage_8794980b1bb7/residents/resident_2546a3558662/workspace/architecture/manifest.json",
-      "sha256": "5fcfd6c021ebbb4e2f3c1fc248a7c776860785e09e5a27bcc792ed93f6a895ae",
+      "sha256": "9e9acea0cc92c7fddcc4d3190a43b2f067f55129e3290e386d3640eb0ab38e84",
       "size": 2837
     },
     {
@@ -30454,8 +30454,8 @@
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20260729__decision__Provider_运行时的安装、更新与_Codex_App_Server_部署__decision_e587fe1c472e.md",
-      "sha256": "07fdf26d81828204c4e73f95494bca6bb4e431178fdf4f3fd923b7eca19a4be2",
-      "size": 15151
+      "sha256": "07696cfd9816511df883ca4cec858145712676774d7a54360aa7bd5ecdbbf53b",
+      "size": 15480
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20260731__decision__HATG_Instruction_Set作为Lineage统一指令层__decision_898b8911a2ff.md",
@@ -30514,8 +30514,8 @@
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20260825__decision__Portal_网络入口、TLS_与可信代理边界__decision_85222f2d316b.md",
-      "sha256": "87e3d14e6a4acb38717abe94e3db9e8717957c56170303fcc6460fcbfc26f6fb",
-      "size": 15763
+      "sha256": "7de22b232fdf361e7202725513a01f8abc7bd4235ba765640e1e6d7169e9b879",
+      "size": 15767
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20260827__decision__Resident消息与状态协议__decision_c524c775e0be.md",
@@ -30604,8 +30604,8 @@
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20260901__decision__定时与自动触发工作的_Resident_运行模型__decision_5ff0cb51ed84.md",
-      "sha256": "d975759ad61d2b7394649fbe86201259ae96c44e622c91893b1bfba1b9d3c8ca",
-      "size": 22382
+      "sha256": "0f9652eedf839ba246f91288e2731ae7cae5e1d26a2363cfaff266bbfdc9f0f0",
+      "size": 22385
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20260901__decision__统一资源ID地址与解析协议__decision_4a9ba5dfada6.md",
@@ -30619,8 +30619,8 @@
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20260902__decision__Portal_Test_Case、Catalog_与运行证据协议__decision_8273271b67b1.md",
-      "sha256": "ab1066771deb50118352d3a60b5bc320442405419947bedb203daa58fe39ea4d",
-      "size": 34368
+      "sha256": "5d611e5081b90ff58c8b32a41f61e75924594c57b3875c7629273f95fa33ebfe",
+      "size": 34400
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20260902__decision__Portal_Test_Workbench_的测试浏览、运行与审查界面__decision_f2a6a5dd4646.md",
@@ -30629,8 +30629,8 @@
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20260903__decision__Claude_Code_Provider_daemon_与_Session_接入__decision_3948ce9b9443.md",
-      "sha256": "790d20cb6ebddb9eb9673e0df6af2e71dc2ee1db46a6902dc63cb50b4fdb8da9",
-      "size": 25434
+      "sha256": "eb19f639a1efb9f574ea48b82e3e06a262f2c0757a5cf91121db279f29902b86",
+      "size": 25573
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20260903__decision__Codex_账号路由、会话归属与故障切换__decision_3dd52c0692c1.md",
@@ -30809,8 +30809,8 @@
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20260903__decision__Portal_Workbench_模块与运行架构__decision_4348ed990621.md",
-      "sha256": "a6784e674bd6798c107ff4fd7024a11d8f363c7977093f6ec8398c2fabf48936",
-      "size": 26966
+      "sha256": "c03a631c044eb5f340850c00f56f8b4b9cd3f06b8714fcb5e20706343d757a75",
+      "size": 26840
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20260903__decision__Portal_Workspace_Surface_与_Document_Session__decision_769a35d6b5c7.md",
@@ -30839,8 +30839,8 @@
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20260903__decision__Portal_内部_Unix-socket_RPC、服务身份与错误语义__decision_96a887d83e8a.md",
-      "sha256": "2abb51edc27b9fc6adc6bede27cee5cb16fd568dc8fd1eb48fefa7ee960ea6ae",
-      "size": 25514
+      "sha256": "af009b1295366f23d9dfeb256fbba3bd1e809a73a66fe45c37cc4ffb0db8c59d",
+      "size": 25685
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20260903__decision__Portal_前端恢复与_Web_重启衔接__decision_f25266e5a0e7.md",
@@ -30899,8 +30899,8 @@
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20260903__decision__Provider_Adapter_的统一执行、事件与中断契约__decision_425e428410e0.md",
-      "sha256": "09b3dea89750a0a8b349069925ca21ebf5a2d5cffb2fa745cd3a2754dc47650f",
-      "size": 42129
+      "sha256": "c3d57ca08ee16934bb037cc3ef534626c4e8a059205cf74de4b052e9cab17d8b",
+      "size": 42215
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20260903__decision__Repo_与_Article_的自动资源注册__decision_36f46b395d8e.md",
@@ -31094,13 +31094,13 @@
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20260928__decision__HATG_ISA：运行环境指令__decision_4527448ad07f.md",
-      "sha256": "6799df34b96aa9c93da326e8e2c8cf088cfc4fb73c8544f8ef162f5d6fad02c7",
-      "size": 32704
+      "sha256": "933af099db13b1d9606b0c382ba4358e0b4423aae239d597a6da4810f0fd2987",
+      "size": 32494
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20260930__decision__DeepSeek_Harness_Provider_的会话接入__decision_276105b5d67b.md",
-      "sha256": "2e57494acd1cb050ee94bdaa27280a1066b7e38d372bc29f20d889c31dfadf0f",
-      "size": 27372
+      "sha256": "bc70f8ef8bedb79724d9838d19bc3e410bb6bd74f2f20ac9ef36067f2e851a56",
+      "size": 27454
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20260930__decision__ExecutionService_执行账号：目录、额度保护与调度设置__decision_d40f59f5508f.md",
@@ -31109,7 +31109,7 @@
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20260930__decision__Resident_Watchboard_扩展的脚本、配置、命令与工作台应用__decision_0571f3741e23.md",
-      "sha256": "a5e573a5445fe09d09be2debac0b027b9d5e77d62600afc62d665dd5604cc10e",
+      "sha256": "dfb0353a35dc792bb56f67623f4d77e71279b76968ccc17a630f6756fe95a28f",
       "size": 17211
     },
     {
@@ -31134,13 +31134,13 @@
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20261006__decision__Harness_策略单元格与按日常使用的演化__decision_fd760e898f9a.md",
-      "sha256": "25095e773a5dc14b0ea81146aa1d6f6f4607bbe59e8676dd7e0794ee7d6df6e0",
-      "size": 25585
+      "sha256": "271a58c9aeee6cd1c24ef9e33bbb2743130779d99a7abb7a3aab282b08955e21",
+      "size": 25574
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20261007__decision__HATG_ISA：脚本运行（RunScript）__decision_8b510cbd9c58.md",
-      "sha256": "f9b15343f3362508daff0940ebf5d6fd951a84046a456e935ab20ea87938c012",
-      "size": 19736
+      "sha256": "79bfc5d609158c25654a4f451f6217f6f8b84739d24527469244a0b93e786257",
+      "size": 19770
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20261011__decision__Portal_中英文界面与语言偏好__decision_27253e25f016.md",
@@ -31179,13 +31179,13 @@
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20261016__decision__Portal_权限系统：PAR_引擎架构与开关__decision_b820faf42218.md",
-      "sha256": "daf856cd80e4be5055a69a352edb3dfa6019c5e6d90b24781bcb4286467e2912",
-      "size": 80536
+      "sha256": "2c500a5cf40763ecc3ae2e8cae9b0ad5bc8b6c76ceb20a57c572d2c8e95aeecb",
+      "size": 79240
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20261016__decision__Portal_权限默认方案：P、A、R_三棵树与表规则__decision_600ae27b0538.md",
-      "sha256": "085b55a93aed16696eae66dc7cf4cdfb6686a1e75bd7e49eb427bbe132bb2407",
-      "size": 30737
+      "sha256": "001566e5340ec77f43685ba7007c6cdf898e29dbe89b8af9cb0fd88fcac66daf",
+      "size": 30892
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20261017__decision__Portal_管理页：权限方案编辑器__decision_ea13b85216d0.md",
@@ -31214,8 +31214,8 @@
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20261018__decision__The_Fourth_Institute_开源发行：命名、发行单元、首次部署与发布工作台__decision_15aab18c0ab3.md",
-      "sha256": "950ee56a8162c2d37b1ac9d7443b94cca60aa3db3b3a49c9cd65a1dedb854cce",
-      "size": 47516
+      "sha256": "13bb7ee2b8bbb905b74eb434accafe51f5ef142e3ec54a3ec7b27c2b44e3191a",
+      "size": 48235
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20261018__decision__资源类型注册：声明文件、提供者绑定与管理页__decision_355ed742bca5.md",
@@ -31229,8 +31229,8 @@
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20261020__decision__共享代码与实例状态隔离__decision_d88306d0bd17.md",
-      "sha256": "5e5a1b3c61bda4dcd6dcc56714e1952385e169a080fc33a7c5c9dbd8a1b00203",
-      "size": 16572
+      "sha256": "39e0ae637c2fa9517b3e9666ee0f01e7abe8bc6d24121b610dd532cb57640e83",
+      "size": 11155
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/idea/20260910__idea__从工作台行为反向整理_Lineage，让界面与_Agent_协作共同演化__idea_4bafb08b38d5.md",
@@ -31834,8 +31834,8 @@
     },
     {
       "path": "database/distribution.sql",
-      "sha256": "d6d24225d080da8a314baa2d092e07646036e5755460e4c7cb34e955f8b78f96",
-      "size": 3121377
+      "sha256": "7ecc36d8dc0a29989ace93774a84b2e787d5a0d90aeccf7669b4d259e6fa7cf8",
+      "size": 3121156
     }
   ]
 }

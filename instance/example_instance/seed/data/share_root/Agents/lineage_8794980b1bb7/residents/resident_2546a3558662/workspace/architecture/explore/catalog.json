@@ -2043,7 +2043,7 @@
       "category_title": "脚本运行",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "以 dirty-base 用户在主机上异步运行 Python、JavaScript 或 Bash 脚本。",
+      "description": "以服务所属操作系统账号在主机上异步运行 Python、JavaScript 或 Bash 脚本。",
       "mutates": true,
       "streaming": false
     },
@@ -4246,7 +4246,7 @@
           "name": "rules",
           "type": "object",
           "required": false,
-          "description": "方案规则文档（dirtybase.permission-scheme.v1）：scheme_id、title、description、trees、entries（每条只含 id、effect、p、a、r、title）、instructions（指令到要求数组；每个要求用 a 指定 A 树分类节点）；与 source_scheme_id 二选一"
+          "description": "方案规则文档（tfi.permission-scheme.v2）：scheme_id、title、description、trees、entries（每条只含 id、effect、p、a、r、title）、instructions（指令到要求数组；每个要求用 a 指定 A 树分类节点）；与 source_scheme_id 二选一"
         },
         {
           "name": "title",
@@ -7490,7 +7490,7 @@
           "name": "rules",
           "type": "object",
           "required": true,
-          "description": "方案规则文档（dirtybase.permission-scheme.v1）：scheme_id、title、description、trees、entries（每条只含 id、effect、p、a、r、title）、instructions（指令到要求数组；每个要求用 a 指定 A 树分类节点）"
+          "description": "方案规则文档（tfi.permission-scheme.v2）：scheme_id、title、description、trees、entries（每条只含 id、effect、p、a、r、title）、instructions（指令到要求数组；每个要求用 a 指定 A 树分类节点）"
         },
         {
           "name": "builtin",
@@ -8074,7 +8074,7 @@
           "name": "capacity",
           "type": "object",
           "required": true,
-          "description": "dirtybase.runtime-capacity.v1；各来源独立返回 ok 或 unavailable"
+          "description": "tfi.runtime-capacity.v1；各来源独立返回 ok 或 unavailable"
         }
       ],
       "target": ""
@@ -12327,7 +12327,7 @@
       "category_title": "脚本运行",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "以 dirty-base 用户在主机上异步运行 Python、JavaScript 或 Bash 脚本。",
+      "description": "以服务所属操作系统账号在主机上异步运行 Python、JavaScript 或 Bash 脚本。",
       "mutates": true,
       "streaming": false,
       "parameters": [
@@ -13957,7 +13957,7 @@
           "name": "rules",
           "type": "object",
           "required": true,
-          "description": "方案规则文档（dirtybase.permission-scheme.v1）：scheme_id、title、description、trees、entries（每条只含 id、effect、p、a、r、title）、instructions（指令到要求数组；每个要求用 a 指定 A 树分类节点）"
+          "description": "方案规则文档（tfi.permission-scheme.v2）：scheme_id、title、description、trees、entries（每条只含 id、effect、p、a、r、title）、instructions（指令到要求数组；每个要求用 a 指定 A 树分类节点）"
         },
         {
           "name": "expected_version",
@@ -14142,7 +14142,7 @@
                 "session_start_and_after_compaction",
                 "every_turn"
               ],
-              "description": "Portal 核心规则：dirtybase-agent-rule 与 Resident 角色规则、提问卡片规范、子 agent 许可"
+              "description": "Portal 核心规则：tfi-agent-rule 与 Resident 角色规则、提问卡片规范、子 agent 许可"
             },
             "resident_md": {
               "type": "string",
@@ -16355,8 +16355,8 @@
     "knowledge_snapshot": "Design版本为独立当前观察，不属于代码提交"
   },
   "execution_contract": {
-    "call_schema": "dirtybase.hatg-instruction.v2",
-    "result_schema": "dirtybase.hatg-instruction-result.v2",
+    "call_schema": "tfi.hatg-instruction.v2",
+    "result_schema": "tfi.hatg-instruction-result.v2",
     "identity": "入口认证当前调用者，业务参数不得代报身份。",
     "target": "schema.target引用参数；动态归属见argument_owners与one_of。",
     "routing": "默认owner与argument_owners决定拥有服务；目录自身不声明跨进程边。",

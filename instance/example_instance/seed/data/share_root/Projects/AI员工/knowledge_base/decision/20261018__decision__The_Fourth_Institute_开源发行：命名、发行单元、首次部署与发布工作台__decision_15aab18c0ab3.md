@@ -1,40 +1,41 @@
 ---
 kb_id: decision_15aab18c0ab3
 type: decision
-project: AI员工
+project: "AI员工"
 created_at: 2026-10-18
 importance: 8
 ai_generated: false
 links:
   source:
-  - https://github.com/EatonZhou/the-fourth-institute
+    - https://github.com/EatonZhou/the-fourth-institute
   related:
-  - decision_08bb2d9141f9
-  - decision_850e6248d680
-  - decision_3286d4167180
-  - decision_e587fe1c472e
-  - decision_4a9ba5dfada6
-  - decision_d40f59f5508f
-  - decision_6c2f91a7d84e
-  - decision_4dea0db1f45a
-  - decision_8b2fa224616b
-  - decision_8273271b67b1
-  - decision_f2a6a5dd4646
-  - decision_b820faf42218
-  - decision_13e1a748cf04
-  - decision_78134209e5c9
+    - decision_08bb2d9141f9
+    - decision_850e6248d680
+    - decision_3286d4167180
+    - decision_e587fe1c472e
+    - decision_4a9ba5dfada6
+    - decision_d40f59f5508f
+    - decision_6c2f91a7d84e
+    - decision_4dea0db1f45a
+    - decision_8b2fa224616b
+    - decision_8273271b67b1
+    - decision_f2a6a5dd4646
+    - decision_b820faf42218
+    - decision_13e1a748cf04
+    - decision_78134209e5c9
   supersedes: []
   derived_from: []
+
 version:
-  number: 62
-  created_at: '2026-10-18T12:51:08Z'
+  number: 63
+  created_at: "2026-10-18T12:51:08Z"
   created_by:
-    user: tfi-exported-user
-    agent: resident_667111522609
-  updated_at: '2026-10-20T00:13:38Z'
+    user: "ET"
+    agent: "resident_667111522609"
+  updated_at: "2026-10-21T18:00:46Z"
   updated_by:
-    user: ''
-    agent: resident_40987d147438
+    user: ""
+    agent: "resident_977d1a613d44"
 metaness: 3
 ---
 
@@ -323,3 +324,9 @@ SPEC.md、IMPROVE.md 分别作为独立区域选择是否带出，不再使用�
 `config/site.json` 的 `deployment.installation_id` 由首次安装生成并持久保存；安装重试沿用已有值，升级沿用原站点配置，不使用发布 run、build ID、站点名或版本号隔离草稿。站点配置领域对该身份生成 SHA256 `storage_namespace` 供浏览器使用，不暴露原始配置或秘密。存量安装与源码站点未配置此字段时，使用其稳定 `deployment.source_root`（未配置则源码根）的规范绝对路径派生同类摘要；Release 构建目录不参与。新安装生成独立身份，即使未来复用原目录也不自动接管旧浏览器数据。
 
 `PortalState.storage` 对 localStorage/sessionStorage 统一加安装命名空间，现有用户、页面、版本逻辑键不变。未知安装归属的历史裸键留存但不自动恢复，不清空草稿；同一安装身份的正常布局与未发送草稿保持可恢复。命名空间只用于本地状态隔离，不替代认证、资源权限或服务器对象存在性检查。Workbench 绑定 404 与明确 URL 优先规则见 `decision_4348ed990621`、`decision_79de71d9890d`。
+
+## 安装种子的运行隔离
+
+发行数据库只携带 `lineage_meta`、`agent_store_meta`、`registry_meta` 的 `schema` 版本。源实例的定时租约、运行持有者、已完成的运行归一化标记以及其他运行元数据不得成为新安装的初始状态；新实例由对应拥有者自行初始化和获取租约。导出不能修改源实例状态。
+
+当前规范、默认业务提示和可执行脚本必须指向发行代码与目标实例目录；不得要求读取源站主机用户名或旧产品的隐式用户目录。需要保留的历史证据和不可变构建产物保持原字节及哈希，其历史文字不作为新安装的默认路径或兼容承诺。
