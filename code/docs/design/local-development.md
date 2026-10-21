@@ -30,6 +30,21 @@ python3 code/scripts/tfi_dev.py publish --message "Describe the verified fix" \
 **不会自动重启服务**：代码提交后应按改动选择实例及应用组件，等待活动任务
 安全交接后激活并检查健康。数据库和六个账号服务不属于普通代码发布重启范围。
 
+安装器生成的应用环境不携带 PostgreSQL 的私有动态库目录。该目录只用于
+PostgreSQL 服务及其原生命令，Portal、Node、PDF 和 TeX 工具使用各自依赖，
+避免宿主工具误载数据库附带的旧版 C++ 库。修改这一环境边界后，激活受影响的
+应用服务并验证实际 PDF 提取；无需为此重启数据库或 Provider 账号服务。
+
+Linux 应用保留用户服务管理器的 `XDG_RUNTIME_DIR` 和
+`DBUS_SESSION_BUS_ADDRESS`，使 RunScript 能启动独立任务；HOME 和配置仍归属
+实例。WALL 在每个独立实例内处理该实例的任务，周期工作由本站的调度开关控制，
+不再以旧的 `dev` / `release` 名称禁用派发或取消收尾。
+
+激活时将正式提交标识写入实例的 `config/generation.env`；应用启动和 Worker
+使用同一 `PORTAL_BUILD_ID`，用于核对 TAU 的实际运行版本。安装器改变启动环境时，
+Worker Manager 的重新加载会先交接、排空旧任务，再由服务管理器重启自身，
+避免新 Worker 继续继承旧进程的环境。
+
 运行 Dev UI 或执行服务时，必须另建测试实例并绑定 dev 的 `code/`，
 使用独立数据库、资源副本、端口和消费者。不能让两套执行服务同时消费
 dirtybase_instance 的正式任务。单元测试和静态检查不需要启动 Dev 服务。

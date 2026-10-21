@@ -163,13 +163,55 @@ def enable_long_paths_elevated():
         ole.CoUninitialize()
 
 
-def unpack_seed(platform):
+def include_examples(platform):
+    import configparser
+    options = configparser.ConfigParser()
+    options.read(platform / 'installation-options.ini', encoding='utf-8-sig')
+    return options.getboolean('installation', 'include_examples', fallback=True)
+
+
+def selected_seed(platform, included):
+    return platform / ('example-seed.zip' if included else 'base-seed.zip')
+
+
+def seed_destination_paths(platform, spec):
+    for entry in spec['inventory']:
+        relative = entry['path']
+        for prefix in ('instance/example_instance/seed', '.build/w/engineering.pending'):
+            yield platform / prefix / relative
+        for key, folder in spec['engineering']['files'].items():
+            if relative.startswith(folder + '/'):
+                installed = {'share_root': 'share', 'staging_root': 'staging',
+                             'instances_root': 'instances', 'accounts_root': 'accounts',
+                             'secrets_dir': 'secrets'}[key]
+                yield platform / 'instance/example_instance/data' / installed / relative[len(folder) + 1:]
+
+
+def required_long_path(platform):
+    """Check the selected data and transient copies, in Windows UTF-16 units."""
+    if (platform / 'instance/example_instance/installation.json').exists():
+        return None  # Already prepared; a service retry extracts no new seed.
+    archive = selected_seed(platform, include_examples(platform))
+    candidates = []
+    if archive.is_file():
+        with zipfile.ZipFile(archive) as zipped:
+            spec = json.loads(zipped.read('manifest.json'))
+            candidates.extend(seed_destination_paths(platform, spec))
+    candidates.extend(platform / '.build/w/engineering.pending/code' / p.relative_to(platform / 'code')
+                      for p in (platform / 'code').rglob('*') if p.is_file())
+    def units(path):
+        return len(str(path).encode('utf-16-le')) // 2
+    return next((str(p) for p in sorted(candidates, key=units, reverse=True)
+                 if units(p) >= 260 or units(p.parent) >= 248), None)
+
+
+def unpack_seed(platform, *, included=True):
     """Only extract the public seed; never overwrite an initialized instance."""
     import hashlib
-    archive = platform / "example-seed.zip"
+    archive = selected_seed(platform, included)
     receipt = json.loads((platform / "windows-package.json").read_text(encoding="utf-8"))
     with archive.open("rb") as stream:
-        if hashlib.file_digest(stream, "sha256").hexdigest() != receipt["seed_sha256"]:
+        if hashlib.file_digest(stream, "sha256").hexdigest() != receipt["seed_sha256" if included else "base_seed_sha256"]:
             raise ValueError("示例资料压缩包校验失败，请重新下载安装包。")
     destination = platform / "instance/example_instance/seed"
     marker = destination / "manifest.json"
@@ -275,17 +317,21 @@ class DefaultStartup:
         return "".join(output)
 
     def initialize(self):
-        bundle = self.platform / ".build/example_instance-windows/engineering/manifest.json"
+        bundle = self.platform / ".build/w/engineering/manifest.json"
         target_path = self.platform / ".build/windows/targets/example_instance.json"
         state_exists = (self.root / "installation.json").exists()
+        if state_exists and not bundle.exists():
+            bundle = self.platform / '.build/example_instance-windows/engineering/manifest.json'
         if not state_exists:
             # Before installation has begun, this is only a generated cache.
             # Rebuild it on retry so an invalid earlier manifest is not reused.
-            self.progress("正在准备示例资料")
-            if (self.platform / "example-seed.zip").is_file():
-                unpack_seed(self.platform)
+            included = include_examples(self.platform)
+            self.progress("正在准备 Lenia 预置案例" if included else "正在准备基础平台（不含 Lenia 案例）")
+            if selected_seed(self.platform, included).is_file():
+                unpack_seed(self.platform, included=included)
             self.execute([str(self.platform / "dependencies/python/python.exe"),
-                          str(self.platform / "prepare_install.py"), "--platform", "windows"])
+                          str(self.platform / "prepare_install.py"), "--platform", "windows",
+                          *([] if included else ["--without-examples"])])
         if not target_path.exists():
             if state_exists:
                 raise ValueError("已有未完成的初始化记录，但缺少原安装参数。请查看日志，勿覆盖实例资料。")
@@ -500,10 +546,12 @@ def launch_desktop():
     from tkinter import messagebox
     root = tk.Tk()
     brand_window(root)
-    if not long_paths_enabled():
+    long_path = required_long_path(PLATFORM) if not long_paths_enabled() else None
+    if long_path:
         root.withdraw()
         if not messagebox.askyesno("启用 Windows 长路径",
-                                  "示例资源包含长文件路径，需要启用 Windows 长路径支持。\n"
+                                  "所选安装内容在当前目录下超过 Windows 默认路径长度。\n"
+                                  "可以取消并选择更短的安装目录，或启用 Windows 长路径支持。\n"
                                   "是否允许系统显示管理员确认窗口？成功后会自动继续准备 Portal。\n"
                                   "这不会修改系统 PATH 或安装系统服务。", parent=root):
             messagebox.showinfo("尚未初始化", "已取消。Portal 尚未启动；稍后可重新打开桌面启动器。", parent=root)

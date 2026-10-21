@@ -1,0 +1,390 @@
+{
+  "schema": "tfi.portal-design-live-cases.v1",
+  "cases": [
+    {
+      "id": "test_2c6aa659b2ea",
+      "key": "design-live.ui.overlay.escape-top",
+      "title": "Escape 逐层关闭，键盘事件不穿透",
+      "description": "打开两个生产 Dialog，分别发送 Escape，验证一次只关顶层且最终释放 Overlay 栈。",
+      "importance": "P1",
+      "module": "workbench.components",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_b3022c27d22f"
+      ],
+      "design_point_ref": "decision_b3022c27d22f#d55079eacc68a7e4",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "Escape 逐层关闭，键盘事件不穿透",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-ui",
+        "adapter_version": 1,
+        "estimated_seconds": 8,
+        "direct_steps": [
+          {
+            "capability": "ui.overlay.escape-top",
+            "caption": "打开两个生产 Dialog，分别发送 Escape，验证一次只关顶层且最终释放 Overlay 栈。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_b3dc59f66491",
+      "key": "design-live.ui.overlay.backdrop-gesture",
+      "title": "背景手势保护内容操作",
+      "description": "在生产 Dialog 验证跨内容拖拽、右键、取消、移动不会误关闭；只有完整背景主键点击关闭。",
+      "importance": "P1",
+      "module": "workbench.components",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_b3022c27d22f"
+      ],
+      "design_point_ref": "decision_b3022c27d22f#a7e5893dc576439c",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "背景手势保护内容操作",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-ui",
+        "adapter_version": 1,
+        "estimated_seconds": 8,
+        "direct_steps": [
+          {
+            "capability": "ui.overlay.backdrop-gesture",
+            "caption": "在生产 Dialog 验证跨内容拖拽、右键、取消、移动不会误关闭；只有完整背景主键点击关闭。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_090d8dbcb8ba",
+      "key": "design-live.ui.popover.focus-return",
+      "title": "Popover 关闭按输入方式恢复焦点",
+      "description": "验证 Escape 恢复触发器、外部点击不抢焦点，同时同步展开语义并恢复 portal 菜单 DOM 位置。",
+      "importance": "P1",
+      "module": "workbench.components",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_b3022c27d22f"
+      ],
+      "design_point_ref": "decision_b3022c27d22f#05397d4a338f46f8",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "Popover 关闭按输入方式恢复焦点",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-ui",
+        "adapter_version": 1,
+        "estimated_seconds": 8,
+        "direct_steps": [
+          {
+            "capability": "ui.popover.focus-return",
+            "caption": "验证 Escape 恢复触发器、外部点击不抢焦点，同时同步展开语义并恢复 portal 菜单 DOM 位置。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_18d1710ce396",
+      "key": "design-live.ui.dialog.keyboard-trap",
+      "title": "Dialog 键盘焦点循环与空控件保护",
+      "description": "验证生产 Dialog 打开后的焦点、正反 Tab 边界循环，以及无可聚焦控件时的焦点隔离。",
+      "importance": "P1",
+      "module": "workbench.components",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_b3022c27d22f"
+      ],
+      "design_point_ref": "decision_b3022c27d22f#f2d55160338070f7",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "Dialog 键盘焦点循环与空控件保护",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-ui",
+        "adapter_version": 1,
+        "estimated_seconds": 8,
+        "direct_steps": [
+          {
+            "capability": "ui.dialog.keyboard-trap",
+            "caption": "验证生产 Dialog 打开后的焦点、正反 Tab 边界循环，以及无可聚焦控件时的焦点隔离。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_e150475edceb",
+      "key": "design-live.ui.dialog.dirty-confirmation",
+      "title": "脏表单关闭去重确认并保留取消草稿",
+      "description": "多次关闭生产 Dialog 共用一次生产 Confirmation，取消保留本地草稿，批准完成原关闭动作。",
+      "importance": "P1",
+      "module": "workbench.components",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_b3022c27d22f"
+      ],
+      "design_point_ref": "decision_b3022c27d22f#5f5ead943f06879a",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "脏表单关闭去重确认并保留取消草稿",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-ui",
+        "adapter_version": 1,
+        "estimated_seconds": 12,
+        "direct_steps": [
+          {
+            "capability": "ui.dialog.dirty-confirmation",
+            "caption": "多次关闭生产 Dialog 共用一次生产 Confirmation，取消保留本地草稿，批准完成原关闭动作。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_d4ac0fc449b2",
+      "key": "design-live.ui.async.state-contract",
+      "title": "异步状态、密度与未知值安全降级",
+      "description": "通过生产异步状态 API 验证状态密度组合、status/alert 语义、未知值降级和一次本地重试后的状态变化。",
+      "importance": "P1",
+      "module": "workbench.components",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_741b04821171"
+      ],
+      "design_point_ref": "decision_741b04821171#1adf7fea0a2a4e38",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "异步状态、密度与未知值安全降级",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-ui",
+        "adapter_version": 1,
+        "estimated_seconds": 8,
+        "direct_steps": [
+          {
+            "capability": "ui.async.state-contract",
+            "caption": "通过生产异步状态 API 验证状态密度组合、status/alert 语义、未知值降级和一次本地重试后的状态变化。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_e8b050458031",
+      "key": "design-live.ui.resource-header.text-safety",
+      "title": "Resource Header 文本转义与身份保留",
+      "description": "把含标签的业务标题交给生产 Resource Header，验证无可执行节点；更新标题保持唯一 Header 与原 TestCase 身份。",
+      "importance": "P1",
+      "module": "workbench.components",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_741b04821171"
+      ],
+      "design_point_ref": "decision_741b04821171#830cb2c821d0ce29",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "Resource Header 文本转义与身份保留",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-ui",
+        "adapter_version": 1,
+        "estimated_seconds": 8,
+        "direct_steps": [
+          {
+            "capability": "ui.resource-header.text-safety",
+            "caption": "把含标签的业务标题交给生产 Resource Header，验证无可执行节点；更新标题保持唯一 Header 与原 TestCase 身份。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_03ec969f1736",
+      "key": "design-live.ui.action.inflight-dedup",
+      "title": "同 key 本地动作执行去重与忙碌恢复",
+      "description": "调用生产 runMutation 管理纯内存 Promise，验证同 key 共用一次执行与结果、按钮忙碌恢复、完成后可再次执行；无网络写入。",
+      "importance": "P1",
+      "module": "workbench.components",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_b3022c27d22f"
+      ],
+      "design_point_ref": "decision_b3022c27d22f#1368f4978ef30fe4",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "同 key 本地动作执行去重与忙碌恢复",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-ui",
+        "adapter_version": 1,
+        "estimated_seconds": 8,
+        "direct_steps": [
+          {
+            "capability": "ui.action.inflight-dedup",
+            "caption": "调用生产 runMutation 管理纯内存 Promise，验证同 key 共用一次执行与结果、按钮忙碌恢复、完成后可再次执行；无网络写入。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_c0ecf540f404",
+      "key": "design-live.ui.action.error-retry",
+      "title": "失败后可重试并先移除旧提示",
+      "description": "生产 Mutation 首次本地读取失败后显示可重试错误，点击真实 Toast 重试先移除旧提示，再执行一次恢复读取并更新结果。",
+      "importance": "P1",
+      "module": "workbench.components",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_b3022c27d22f"
+      ],
+      "design_point_ref": "decision_b3022c27d22f#6db4d575151b20a6",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "失败后可重试并先移除旧提示",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-ui",
+        "adapter_version": 1,
+        "estimated_seconds": 12,
+        "direct_steps": [
+          {
+            "capability": "ui.action.error-retry",
+            "caption": "生产 Mutation 首次本地读取失败后显示可重试错误，点击真实 Toast 重试先移除旧提示，再执行一次恢复读取并更新结果。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_f0d49cbd35f4",
+      "key": "design-live.ui.action.disabled-restoration",
+      "title": "失败取消后恢复原禁用状态与交互",
+      "description": "生产 Mutation 在成功、失败和本地 AbortError 后恢复原标签、原禁用状态和终结回调；禁用控件不会响应点击，执行中取消 Live 也释放临时任务。",
+      "importance": "P1",
+      "module": "workbench.components",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_b3022c27d22f"
+      ],
+      "design_point_ref": "decision_b3022c27d22f#3fb88184da2c7b70",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "失败取消后恢复原禁用状态与交互",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-ui",
+        "adapter_version": 1,
+        "estimated_seconds": 12,
+        "direct_steps": [
+          {
+            "capability": "ui.action.disabled-restoration",
+            "caption": "生产 Mutation 在成功、失败和本地 AbortError 后恢复原标签、原禁用状态和终结回调；禁用控件不会响应点击，执行中取消 Live 也释放临时任务。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_19e5834f17c0",
+      "key": "design-live.ui.form.search-clear-events",
+      "title": "搜索清除同步完整事件与筛选结果",
+      "description": "生产 Search Field 的清除按钮先清空值再依次触发一次 input/change，推动本地结果列表与已提交筛选条件同步更新；空值重复清除不重复通知。",
+      "importance": "P1",
+      "module": "workbench.components",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_b3022c27d22f"
+      ],
+      "design_point_ref": "decision_b3022c27d22f#1b45baa69862d56d",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "搜索清除同步完整事件与筛选结果",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-ui",
+        "adapter_version": 1,
+        "estimated_seconds": 12,
+        "direct_steps": [
+          {
+            "capability": "ui.form.search-clear-events",
+            "caption": "生产 Search Field 的清除按钮先清空值再依次触发一次 input/change，推动本地结果列表与已提交筛选条件同步更新；空值重复清除不重复通知。"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,398 @@
+{
+  "schema": "tfi.portal-design-live-cases.v1",
+  "cases": [
+    {
+      "id": "test_eaa95feb416a",
+      "key": "tests/cases/ui/design_tour_workbench.spec.js::Workbench Live retains runtimes and drafts when switching tabs",
+      "title": "工作台切换标签保留运行对象与草稿",
+      "description": "切换活动标签并再次选择原标签，核对 runtime 身份、connect 次数和未提交输入未改变。",
+      "importance": "P1",
+      "module": "workbench.panels",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_4348ed990621",
+        "decision_538e155e1102"
+      ],
+      "design_point_ref": "decision_4348ed990621#89993d75555b9c79",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "工作台切换标签保留运行对象与草稿",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-workbench",
+        "adapter_version": 1,
+        "estimated_seconds": 8,
+        "direct_steps": [
+          {
+            "capability": "workbench.tabs.retain-runtime",
+            "caption": "切换活动标签并再次选择原标签，核对 runtime 身份、connect 次数和未提交输入未改变。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_4546c98d0b66",
+      "key": "tests/cases/ui/design_tour_workbench.spec.js::Workbench Live restores hidden optional panels and protects required panels",
+      "title": "隐藏可选面板后从恢复入口找回原实例",
+      "description": "隐藏面板后核对布局移除与隐藏集合，再从生产自定义菜单恢复；必需面板拒绝隐藏。",
+      "importance": "P1",
+      "module": "workbench.panels",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_4348ed990621",
+        "decision_538e155e1102"
+      ],
+      "design_point_ref": "decision_4348ed990621#05dca2e918e33cbe",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "隐藏可选面板后从恢复入口找回原实例",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-workbench",
+        "adapter_version": 1,
+        "estimated_seconds": 9,
+        "direct_steps": [
+          {
+            "capability": "workbench.panels.hide-restore",
+            "caption": "隐藏面板后核对布局移除与隐藏集合，再从生产自定义菜单恢复；必需面板拒绝隐藏。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_cc0bae2c03d8",
+      "key": "tests/cases/ui/design_tour_workbench.spec.js::Workbench Live restores named layouts tabs visibility and collapsed state",
+      "title": "重新装配恢复命名布局、标签、隐藏与折叠",
+      "description": "变更演示内存布局后真实销毁并重建 Workbench，核对布局快照、命名工作区、活动标签、折叠和草稿恢复。",
+      "importance": "P1",
+      "module": "workbench.panels",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_4348ed990621",
+        "decision_538e155e1102"
+      ],
+      "design_point_ref": "decision_4348ed990621#2cf61ab0cbb935b0",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "重新装配恢复命名布局、标签、隐藏与折叠",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-workbench",
+        "adapter_version": 1,
+        "estimated_seconds": 10,
+        "direct_steps": [
+          {
+            "capability": "workbench.layout.restore",
+            "caption": "变更演示内存布局后真实销毁并重建 Workbench，核对布局快照、命名工作区、活动标签、折叠和草稿恢复。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_d8da54b696ee",
+      "key": "tests/cases/ui/design_tour_workbench.spec.js::Workbench Live keyboard splitters persist bounded accessible layout changes",
+      "title": "键盘分隔条调整保存布局并遵守可访问范围",
+      "description": "通过生产分隔条派发方向键、Shift、Home/End，验证相对变化、动态范围边界及每次布局保存。",
+      "importance": "P1",
+      "module": "workbench.panels",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_4348ed990621",
+        "decision_538e155e1102"
+      ],
+      "design_point_ref": "decision_4348ed990621#757fdb3070cff2a8",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "键盘分隔条调整保存布局并遵守可访问范围",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-workbench",
+        "adapter_version": 1,
+        "estimated_seconds": 9,
+        "direct_steps": [
+          {
+            "capability": "workbench.splitter.keyboard",
+            "caption": "通过生产分隔条派发方向键、Shift、Home/End，验证相对变化、动态范围边界及每次布局保存。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_7baaf0d5769b",
+      "key": "tests/cases/ui/design_tour_workbench.spec.js::Workbench Live reuses only safe editors and preserves dirty locked and pinned instances",
+      "title": "普通打开避开脏、锁定与禁止复用实例",
+      "description": "将三个受保护实例分别作为目标，验证打开协议仅复用安全实例；受保护绑定和草稿完全保留。",
+      "importance": "P0",
+      "module": "workbench.panels",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_79de71d9890d",
+        "decision_538e155e1102"
+      ],
+      "design_point_ref": "decision_79de71d9890d#23a5ed4f77a99f8e",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "普通打开避开脏、锁定与禁止复用实例",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-workbench",
+        "adapter_version": 1,
+        "estimated_seconds": 9,
+        "direct_steps": [
+          {
+            "capability": "workbench.editor.safe-reuse",
+            "caption": "将三个受保护实例分别作为目标，验证打开协议仅复用安全实例；受保护绑定和草稿完全保留。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_df8a203f25d5",
+      "key": "tests/cases/ui/design_tour_workbench.spec.js::Workbench Live repeated new-tab requests create separate editors in the target group",
+      "title": "重复新标签打开在指定组生成独立实例",
+      "description": "两次打开同一文档得到不同实例，两个标签均属于请求目标组并能真实切换，原实例内容不变。",
+      "importance": "P1",
+      "module": "workbench.panels",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_79de71d9890d",
+        "decision_538e155e1102"
+      ],
+      "design_point_ref": "decision_79de71d9890d#59aaf508b2ce02da",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "重复新标签打开在指定组生成独立实例",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-workbench",
+        "adapter_version": 1,
+        "estimated_seconds": 8,
+        "direct_steps": [
+          {
+            "capability": "workbench.editor.new-tab",
+            "caption": "两次打开同一文档得到不同实例，两个标签均属于请求目标组并能真实切换，原实例内容不变。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_29718deb49f0",
+      "key": "tests/cases/ui/design_tour_workbench.spec.js::Workbench Live side-open intents create directional adjacent groups with right fallback",
+      "title": "旁边打开遵循方向与默认右侧语义",
+      "description": "验证左、右、上、下四种相邻分栏顺序，缺省和无效方向使用右侧，原实例始终保留。",
+      "importance": "P1",
+      "module": "workbench.panels",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_79de71d9890d",
+        "decision_538e155e1102"
+      ],
+      "design_point_ref": "decision_79de71d9890d#83aeb63248a020bc",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "旁边打开遵循方向与默认右侧语义",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-workbench",
+        "adapter_version": 1,
+        "estimated_seconds": 12,
+        "direct_steps": [
+          {
+            "capability": "workbench.editor.open-side",
+            "caption": "验证左、右、上、下四种相邻分栏顺序，缺省和无效方向使用右侧，原实例始终保留。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_3adc4df6be0c",
+      "key": "tests/cases/ui/design_tour_workbench.spec.js::Workbench Live singleton open modes reuse one runtime and preserve rejected dirty bindings",
+      "title": "单实例打开与拒绝脏绑定切换",
+      "description": "三种打开模式均复用唯一 runtime；runtime dirty guard 拒绝请求后，验证草稿、绑定、布局和实例均未丢失。",
+      "importance": "P0",
+      "module": "workbench.panels",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_79de71d9890d",
+        "decision_538e155e1102"
+      ],
+      "design_point_ref": "decision_79de71d9890d#46f8ebd0d904b136",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "单实例打开与拒绝脏绑定切换",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-workbench",
+        "adapter_version": 1,
+        "estimated_seconds": 10,
+        "direct_steps": [
+          {
+            "capability": "workbench.editor.singleton-guard",
+            "caption": "三种打开模式均复用唯一 runtime；runtime dirty guard 拒绝请求后，验证草稿、绑定、布局和实例均未丢失。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_46de48d3f7f7",
+      "key": "tests/cases/ui/design_tour_workbench.spec.js::Workbench Live package instances isolate state and same-id replacement releases old runtimes",
+      "title": "Panel Package 独立实例装配与同 ID 替换",
+      "description": "通过生产工厂验证独立根节点、草稿与生命周期顺序；同 ID 创建新 Workbench 时旧实例、订阅、任务与临时 URL 全部释放。",
+      "importance": "P1",
+      "module": "workbench.panels",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_538e155e1102"
+      ],
+      "design_point_ref": "decision_538e155e1102#19970392d1ca0f9a",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "Panel Package 独立实例装配与同 ID 替换",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-workbench",
+        "adapter_version": 1,
+        "estimated_seconds": 12,
+        "direct_steps": [
+          {
+            "capability": "workbench.package.instance-lifecycle",
+            "caption": "通过生产工厂验证独立根节点、草稿与生命周期顺序；同 ID 创建新 Workbench 时旧实例、订阅、任务与临时 URL 全部释放。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_0f8baa6107fb",
+      "key": "tests/cases/ui/design_tour_workbench.spec.js::Workbench Live package close releases subscriptions tasks URLs and DOM without harming peers",
+      "title": "关闭面板释放订阅、任务、临时 URL 与 DOM",
+      "description": "建立真实本地订阅和 Blob URL 后关闭面板，核对已取消的异步等待、解绑回调、不可再读取的 URL、移除的 DOM 与仍可工作的相邻实例。",
+      "importance": "P1",
+      "module": "workbench.panels",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_538e155e1102"
+      ],
+      "design_point_ref": "decision_538e155e1102#f68d2a64dac8c743",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "关闭面板释放订阅、任务、临时 URL 与 DOM",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-workbench",
+        "adapter_version": 1,
+        "estimated_seconds": 12,
+        "direct_steps": [
+          {
+            "capability": "workbench.package.close-release",
+            "caption": "建立真实本地订阅和 Blob URL 后关闭面板，核对已取消的异步等待、解绑回调、不可再读取的 URL、移除的 DOM 与仍可工作的相邻实例。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_7dfc20c4d8ed",
+      "key": "tests/cases/ui/design_tour_workbench.spec.js::Workbench Live context delivery follows subscribed channels and rejects invalid routing",
+      "title": "Workbench Context 按订阅通道投递与隔离",
+      "description": "用面板选择按钮更新真实 Context，验证窄通道和通配订阅的准确投递、同值去重、非法选择拒绝和跨工作台隔离。",
+      "importance": "P1",
+      "module": "workbench.panels",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_538e155e1102"
+      ],
+      "design_point_ref": "decision_538e155e1102#ced08cb00976bcca",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "Workbench Context 按订阅通道投递与隔离",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-workbench",
+        "adapter_version": 1,
+        "estimated_seconds": 10,
+        "direct_steps": [
+          {
+            "capability": "workbench.context.channel-routing",
+            "caption": "用面板选择按钮更新真实 Context，验证窄通道和通配订阅的准确投递、同值去重、非法选择拒绝和跨工作台隔离。"
+          }
+        ]
+      }
+    }
+  ]
+}

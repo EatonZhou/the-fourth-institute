@@ -77,6 +77,10 @@ class AdminHttp:
             return self.respond(request, 500, {'error': '无法读取网络设置'})
 
     def network_post(self, request, _parsed, _actor):
+        try:
+            self._require_admin(request)
+        except PermissionError as exc:
+            return self.respond(request, 403, {'error': str(exc)})
         return self.respond(request, 409, {'error': 'Standalone TFI network settings are owned by install_tfi_release target configuration', 'supported': False})
 
     def embeddings_get(self, request, _parsed, _actor):

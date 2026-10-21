@@ -1,0 +1,238 @@
+{
+  "schema": "tfi.portal-design-live-cases.v1",
+  "cases": [
+    {
+      "id": "test_3d8350ce4e5b",
+      "key": "design-live.lineage.intake-work",
+      "title": "Resident 接收状态与工作状态独立驱动生产输入控件",
+      "description": "协议事件切换 closed/running、open/queued 和 idle，检验生产 Composer 发送权限与草稿保留，不发送消息。 每项还验证 Abort 自动清理及重复恢复，不覆盖并发人类草稿。",
+      "importance": "P1",
+      "module": "workbench.chat",
+      "aspects": [
+        "functional",
+        "behavior",
+        "ui"
+      ],
+      "is_design_point": true,
+      "design_point_ref": "decision_f560803947c6#e29df3f2f28cfc73",
+      "design_refs": [
+        "decision_ce44377c3257",
+        "decision_f560803947c6"
+      ],
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "mode": "direct",
+        "risk": "read-only",
+        "target": "/wall?view=test",
+        "adapter": "design-lineage",
+        "adapter_version": 1,
+        "direct_steps": [
+          {
+            "capability": "lineage.intake-work",
+            "caption": "Resident 接收状态与工作状态独立驱动生产输入控件"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_2065a7a89fbf",
+      "key": "design-live.lineage.derived-isolation",
+      "title": "派生 Resident 统一 Store 的消息与订阅隔离",
+      "description": "父与派生样例输入同名消息事件，验证正文互不覆盖、错目标回执拒绝、子订阅销毁隔离；不执行真实 Fork。 每项还验证 Abort 自动清理及重复恢复，不覆盖并发人类草稿。",
+      "importance": "P0",
+      "module": "resident.identity",
+      "aspects": [
+        "functional",
+        "behavior",
+        "ui"
+      ],
+      "is_design_point": true,
+      "design_point_ref": "decision_5bf5bfbd52cb#2118689397d263ea",
+      "design_refs": [
+        "decision_5bf5bfbd52cb"
+      ],
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "mode": "direct",
+        "risk": "read-only",
+        "target": "/wall?view=test",
+        "adapter": "design-lineage",
+        "adapter_version": 1,
+        "direct_steps": [
+          {
+            "capability": "lineage.derived-isolation",
+            "caption": "派生 Resident 统一 Store 的消息与订阅隔离"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_66a7e5c65567",
+      "key": "design-live.lineage.queue-receipts",
+      "title": "排队回执经事件确认进入正文且旧回执不能复活队列",
+      "description": "生产协议接收隔离 queued 回执，再按消息和队列事件确认；检验生产正文仅出现一次，过期回执不恢复清空队列。 每项还验证 Abort 自动清理及重复恢复，不覆盖并发人类草稿。",
+      "importance": "P1",
+      "module": "resident.conversation",
+      "aspects": [
+        "functional",
+        "behavior",
+        "ui"
+      ],
+      "is_design_point": true,
+      "design_point_ref": "decision_18abbdef3da3#0e0b0e87cc1fbadd",
+      "design_refs": [
+        "decision_ce44377c3257",
+        "decision_18abbdef3da3"
+      ],
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "mode": "direct",
+        "risk": "read-only",
+        "target": "/wall?view=test",
+        "adapter": "design-lineage",
+        "adapter_version": 1,
+        "direct_steps": [
+          {
+            "capability": "lineage.queue-receipts",
+            "caption": "排队回执经事件确认进入正文且旧回执不能复活队列"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_cdeb0e36bf2d",
+      "key": "design-live.lineage.cursor-recovery",
+      "title": "事件缺口按规范游标补齐并拒绝错目标恢复结果",
+      "description": "缺号实时事件触发生产恢复读取，验证乱序返回排序合并、旧事件忽略，错误 Resident 回包报错且不推进游标。 每项还验证 Abort 自动清理及重复恢复，不覆盖并发人类草稿。",
+      "importance": "P1",
+      "module": "resident.conversation",
+      "aspects": [
+        "functional",
+        "behavior",
+        "ui"
+      ],
+      "is_design_point": true,
+      "design_point_ref": "decision_c524c775e0be#f9ff8aa03007acee",
+      "design_refs": [
+        "decision_c524c775e0be"
+      ],
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "mode": "direct",
+        "risk": "read-only",
+        "target": "/wall?view=test",
+        "adapter": "design-lineage",
+        "adapter_version": 1,
+        "direct_steps": [
+          {
+            "capability": "lineage.cursor-recovery",
+            "caption": "事件缺口按规范游标补齐并拒绝错目标恢复结果"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_0eeb499a5649",
+      "key": "design-live.lineage.session-rebinding",
+      "title": "同一 Resident 的身份事件刷新会话绑定投影",
+      "description": "生产 Projection 订阅响应 identity 失效通知更新 Session 绑定，保留 Resident ID；读取失败保留有效缓存。不执行真实重启或迁移。 每项还验证 Abort 自动清理及重复恢复，不覆盖并发人类草稿。",
+      "importance": "P1",
+      "module": "resident.identity",
+      "aspects": [
+        "functional",
+        "behavior",
+        "ui"
+      ],
+      "is_design_point": true,
+      "design_point_ref": "decision_0f57656a2acd#b2a699fb82632958",
+      "design_refs": [
+        "decision_0f57656a2acd"
+      ],
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "mode": "direct",
+        "risk": "read-only",
+        "target": "/wall?view=test",
+        "adapter": "design-lineage",
+        "adapter_version": 1,
+        "direct_steps": [
+          {
+            "capability": "lineage.session-rebinding",
+            "caption": "同一 Resident 的身份事件刷新会话绑定投影"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_c9978427c142",
+      "key": "design-live.lineage.identity-race",
+      "title": "身份读取合并并发请求并隔离过期代际与错误目标",
+      "description": "延迟旧身份响应后触发失效，验证并发调用合并读取并追到新代际，返回副本不污染缓存，错目标回包拒绝。 每项还验证 Abort 自动清理及重复恢复，不覆盖并发人类草稿。",
+      "importance": "P0",
+      "module": "resident.identity",
+      "aspects": [
+        "functional",
+        "behavior",
+        "ui"
+      ],
+      "is_design_point": true,
+      "design_point_ref": "decision_0f57656a2acd#3751284b5092f9e5",
+      "design_refs": [
+        "decision_0f57656a2acd"
+      ],
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "mode": "direct",
+        "risk": "read-only",
+        "target": "/wall?view=test",
+        "adapter": "design-lineage",
+        "adapter_version": 1,
+        "direct_steps": [
+          {
+            "capability": "lineage.identity-race",
+            "caption": "身份读取合并并发请求并隔离过期代际与错误目标"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_91d91ea77076",
+      "key": "design-live.lineage.stop-receipt",
+      "title": "Stop 回执保持当前输入目标并抵御旧事件回退",
+      "description": "独立 iframe 本地传输使用生产 cancelInput，验证新确认目标不被旧事件覆盖、stopping 反馈与失败拒绝；不停止真实任务。 每项还验证 Abort 自动清理及重复恢复，不覆盖并发人类草稿。",
+      "importance": "P0",
+      "module": "resident.conversation",
+      "aspects": [
+        "functional",
+        "behavior",
+        "ui"
+      ],
+      "is_design_point": true,
+      "design_point_ref": "decision_c524c775e0be#cf89f5a6ba9a3603",
+      "design_refs": [
+        "decision_c524c775e0be"
+      ],
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "mode": "direct",
+        "risk": "read-only",
+        "target": "/wall?view=test",
+        "adapter": "design-lineage",
+        "adapter_version": 1,
+        "direct_steps": [
+          {
+            "capability": "lineage.stop-receipt",
+            "caption": "Stop 回执保持当前输入目标并抵御旧事件回退"
+          }
+        ]
+      }
+    }
+  ]
+}

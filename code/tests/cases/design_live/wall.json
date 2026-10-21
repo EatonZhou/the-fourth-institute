@@ -1,0 +1,390 @@
+{
+  "schema": "tfi.portal-design-live-cases.v1",
+  "cases": [
+    {
+      "id": "test_99819add7de7",
+      "key": "design-live.wall.stage-order",
+      "title": "WALL 阶段内分组与类别隔离",
+      "description": "切换文档与领域聚类、逐项筛选类别，验证点集合及改进、Dev、设计、不一致的阶段顺序。",
+      "importance": "P1",
+      "module": "workflow.wall",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_06defc47e960"
+      ],
+      "design_point_ref": "decision_06defc47e960#029993419ad78eaf",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "WALL 阶段内分组与类别隔离",
+        "target": "/wall?view=wall",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-wall",
+        "adapter_version": 1,
+        "estimated_seconds": 12,
+        "direct_steps": [
+          {
+            "capability": "wall.design.stage-order",
+            "caption": "切换文档与领域聚类、逐项筛选类别，验证点集合及改进、Dev、设计、不一致的阶段顺序。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_313ae472ea3e",
+      "key": "design-live.wall.horizontal-reading",
+      "title": "WALL 横向阅读与缩放可达",
+      "description": "切换详细阅读尺度并滚动至后续内容，验证卡片面积增加、点集合不变且分组内正文区域仍可达。",
+      "importance": "P1",
+      "module": "workflow.wall",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_06defc47e960"
+      ],
+      "design_point_ref": "decision_06defc47e960#6e75c504227cc8ed",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "WALL 横向阅读与缩放可达",
+        "target": "/wall?view=wall",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-wall",
+        "adapter_version": 1,
+        "estimated_seconds": 12,
+        "direct_steps": [
+          {
+            "capability": "wall.design.horizontal-reading",
+            "caption": "切换详细阅读尺度并滚动至后续内容，验证卡片面积增加、点集合不变且分组内正文区域仍可达。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_5e513fb5e7ae",
+      "key": "design-live.wall.metaness-filter",
+      "title": "WALL 元层级筛选与缺省值",
+      "description": "逐项切换可用 M 层级并回到全部，验证缺省 M1、合法层级和显式非法值各自进入正确集合。",
+      "importance": "P1",
+      "module": "workflow.wall",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_06defc47e960"
+      ],
+      "design_point_ref": "decision_06defc47e960#cb16f9f15c481493",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "WALL 元层级筛选与缺省值",
+        "target": "/wall?view=wall",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-wall",
+        "adapter_version": 1,
+        "estimated_seconds": 12,
+        "direct_steps": [
+          {
+            "capability": "wall.design.metaness-filter",
+            "caption": "逐项切换可用 M 层级并回到全部，验证缺省 M1、合法层级和显式非法值各自进入正确集合。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_1900e327a9ea",
+      "key": "design-live.wall.combined-filter",
+      "title": "WALL 模块、重要度与关键词交集",
+      "description": "选择一级模块及二级子模块，叠加重要度与关键词，验证结果为精确交集且不启动语义模型任务。",
+      "importance": "P1",
+      "module": "workflow.wall",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_06defc47e960"
+      ],
+      "design_point_ref": "decision_06defc47e960#9d21adf3de271ede",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "WALL 模块、重要度与关键词交集",
+        "target": "/wall?view=wall",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-wall",
+        "adapter_version": 1,
+        "estimated_seconds": 12,
+        "direct_steps": [
+          {
+            "capability": "wall.design.combined-filter",
+            "caption": "选择一级模块及二级子模块，叠加重要度与关键词，验证结果为精确交集且不启动语义模型任务。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_7e0f5fc58dd0",
+      "key": "design-live.wall.sort-order",
+      "title": "WALL 聚类内三种排序",
+      "description": "依次切换标题、重要度和最近打开，验证每组次序、同分标题规则与阶段方向，不增加过时推荐项。",
+      "importance": "P1",
+      "module": "workflow.wall",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_06defc47e960"
+      ],
+      "design_point_ref": "decision_06defc47e960#79db3ea2370b36dd",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "WALL 聚类内三种排序",
+        "target": "/wall?view=wall",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-wall",
+        "adapter_version": 1,
+        "estimated_seconds": 12,
+        "direct_steps": [
+          {
+            "capability": "wall.design.sort-order",
+            "caption": "依次切换标题、重要度和最近打开，验证每组次序、同分标题规则与阶段方向，不增加过时推荐项。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_fb7ebf205f1f",
+      "key": "design-live.wall.unread-filter",
+      "title": "WALL 未读筛选与卡片标记一致",
+      "description": "切换未读及全部，核对服务端只读快照、卡片未读标记与可见点集合，全程不写入已读回执。",
+      "importance": "P1",
+      "module": "workflow.wall",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_06defc47e960"
+      ],
+      "design_point_ref": "decision_06defc47e960#e94298bc32eb5fae",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "WALL 未读筛选与卡片标记一致",
+        "target": "/wall?view=wall",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-wall",
+        "adapter_version": 1,
+        "estimated_seconds": 12,
+        "direct_steps": [
+          {
+            "capability": "wall.design.unread-filter",
+            "caption": "切换未读及全部，核对服务端只读快照、卡片未读标记与可见点集合，全程不写入已读回执。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_d3051940d611",
+      "key": "design-live.wall.review-filter",
+      "title": "WALL 已审核与未审核筛选",
+      "description": "切换已审核、未审核和全部，验证集合及卡片复选状态一致，不点击审核控件或写入审核回执。",
+      "importance": "P1",
+      "module": "workflow.wall",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_06defc47e960"
+      ],
+      "design_point_ref": "decision_06defc47e960#0fef523f6d7a0263",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "WALL 已审核与未审核筛选",
+        "target": "/wall?view=wall",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-wall",
+        "adapter_version": 1,
+        "estimated_seconds": 12,
+        "direct_steps": [
+          {
+            "capability": "wall.design.review-filter",
+            "caption": "切换已审核、未审核和全部，验证集合及卡片复选状态一致，不点击审核控件或写入审核回执。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_2ec5bb7dbf03",
+      "key": "design-live.wall.source-roundtrip",
+      "title": "WALL 来源详情原位往返",
+      "description": "打开实际来源的生产资源详情宿主，校验就绪回执及资源身份，关闭后保留墙面 URL、卡片次序和滚动位置。",
+      "importance": "P1",
+      "module": "workflow.wall",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_06defc47e960"
+      ],
+      "design_point_ref": "decision_06defc47e960#9a11e4cf2e3500bd",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "WALL 来源详情原位往返",
+        "target": "/wall?view=wall",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-wall",
+        "adapter_version": 1,
+        "estimated_seconds": 18,
+        "direct_steps": [
+          {
+            "capability": "wall.design.source-roundtrip",
+            "caption": "打开实际来源的生产资源详情宿主，校验就绪回执及资源身份，关闭后保留墙面 URL、卡片次序和滚动位置。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_f621aebe107c",
+      "key": "design-live.wall.point-resolution",
+      "title": "WALL 同名点精确读取与错误正文隔离",
+      "description": "通过原生产WALL组件打开同名但ID不同的点，核对完整正文和该点的主Test链接；错误ID响应必须保留失败反馈且不得确认已读。所有数据及存储隔离。",
+      "importance": "P1",
+      "module": "workflow.wall",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_06defc47e960"
+      ],
+      "design_point_ref": "decision_06defc47e960#bb8e71f01c7f5a1b",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "WALL 同名点精确读取与错误正文隔离",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-wall",
+        "adapter_version": 1,
+        "estimated_seconds": 30,
+        "direct_steps": [
+          {
+            "capability": "wall.design.point-resolution",
+            "caption": "通过原生产WALL组件打开同名但ID不同的点，核对完整正文和该点的主Test链接；错误ID响应必须保留失败反馈且不得确认已读。所有数据及存储隔离。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_e60d4c8d8f8c",
+      "key": "design-live.wall.read-revision-lifecycle",
+      "title": "WALL 未读版本确认与失败保留",
+      "description": "在隔离数据中驱动原生产WALL完成当前版本读取及回执、新版本再次未读、回执失败和正文读取失败，验证每个版本的标记与确认条件，不写真实工程。",
+      "importance": "P1",
+      "module": "workflow.wall",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_06defc47e960"
+      ],
+      "design_point_ref": "decision_06defc47e960#0ea63a6b97da72f9",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "WALL 未读版本确认与失败保留",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-wall",
+        "adapter_version": 1,
+        "estimated_seconds": 30,
+        "direct_steps": [
+          {
+            "capability": "wall.design.read-revision-lifecycle",
+            "caption": "在隔离数据中驱动原生产WALL完成当前版本读取及回执、新版本再次未读、回执失败和正文读取失败，验证每个版本的标记与确认条件，不写真实工程。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_24d26c343f64",
+      "key": "design-live.wall.completed-result-history",
+      "title": "WALL 完成历史找回隐藏或不可用成果",
+      "description": "在原生产WALL的隔离页面中制造空搜索结果，从最近完成列表打开隐藏成果，再验证已删除成果的失败反馈和工作上下文保留，最后返回原筛选。",
+      "importance": "P1",
+      "module": "workflow.wall",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_06defc47e960"
+      ],
+      "design_point_ref": "decision_06defc47e960#49d7dbb2ce22793c",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "WALL 完成历史找回隐藏或不可用成果",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-wall",
+        "adapter_version": 1,
+        "estimated_seconds": 30,
+        "direct_steps": [
+          {
+            "capability": "wall.design.completed-result-history",
+            "caption": "在原生产WALL的隔离页面中制造空搜索结果，从最近完成列表打开隐藏成果，再验证已删除成果的失败反馈和工作上下文保留，最后返回原筛选。"
+          }
+        ]
+      }
+    }
+  ]
+}

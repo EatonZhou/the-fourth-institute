@@ -601,7 +601,7 @@ def _git_write_access_denied(message: object) -> bool:
 
 def _available_ssh_keys() -> list[str]:
     try:
-        candidates = _SSH_KEY_ROOT.iterdir()
+        candidates = list(_SSH_KEY_ROOT.iterdir())
     except OSError:
         return []
     return sorted(

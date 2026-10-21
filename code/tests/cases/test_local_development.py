@@ -1,6 +1,6 @@
 """本地开发分支、主分支发布与并发改动保护。
 
-:module: delivery.services
+:module: operations.deployment
 :design: decision_d88306d0bd17
 :profiles: local.fixture
 :risk: no-external-side-effects

@@ -175,7 +175,7 @@ def target_plan(target, *, protected_roots=None, allow_missing_native=False):
     return normalized
 
 
-def clean_environment(target):
+def clean_environment(target, *, postgres=False):
     root = Path(target["install_root"])
     runtime = root / "runtime"
     paths = target["data_roots"]
@@ -190,7 +190,8 @@ def clean_environment(target):
             timers_enabled = timers_enabled or initialization.get("result", {}).get("lineage_timer_required") is True
     windows = platform_adapter().__name__.endswith("_windows")
     env = {"PATH": (os.environ.get("SystemRoot", r"C:\Windows") + r"\System32;" +
-                     os.environ.get("SystemRoot", r"C:\Windows") + ";" + str(Path(target["pg_bin"])))
+                     os.environ.get("SystemRoot", r"C:\Windows") +
+                     (";" + str(Path(target["pg_bin"])) if postgres else ""))
                     if windows else "/usr/local/bin:/usr/bin:/bin", "LANG": "C.UTF-8",
            "HOME": str(root / "home"), "XDG_CONFIG_HOME": str(root / "home/.config"),
            "XDG_CACHE_HOME": str(root / "home/.cache"), "TMPDIR": str(runtime),
@@ -214,6 +215,11 @@ def clean_environment(target):
            "PORTAL_BUILD_ID": target["run_id"], "PORTAL_LINEAGE_READ_WORKERS": "2",
            "PORTAL_POSTGRES_DOMAIN_POOL_SIZE": "2"}
     env.update({ENV_KEYS[key]: value for key, value in paths.items()})
+    generation = root / "config/generation.env"
+    if generation.is_file():
+        for line in generation.read_text(encoding="utf-8").splitlines():
+            if line.startswith("PORTAL_BUILD_ID=") and line.partition("=")[2].strip():
+                env["PORTAL_BUILD_ID"] = line.partition("=")[2].strip()
     if windows:
         env.update({"SystemRoot": os.environ.get("SystemRoot", r"C:\Windows"),
                     "WINDIR": os.environ.get("WINDIR", r"C:\Windows"),
@@ -226,7 +232,7 @@ def clean_environment(target):
                     "TFI_WINDOWS_SERVICE_DIRECTORY": str(unit_directory())})
     for component in ("resource", "execution", "society"):
         env[f"PORTAL_{component.upper()}_SERVICE_SOCKET"] = str(runtime / "s" / f"{component}-service.sock")
-    if target.get("pg_lib"):
+    if postgres and target.get("pg_lib"):
         if windows:
             env["PATH"] = target["pg_lib"] + ";" + env["PATH"]
         else:
@@ -248,6 +254,21 @@ def runtime_python(target):
     return resolve(target)
 
 
+def command_environment(target, command):
+    """Keep bundled PostgreSQL libraries private to its native executables.
+
+    Portal and its system tools (Poppler, Node, TeX) must use their own native
+    dependencies. A PostgreSQL libstdc++ can be older than the host's libraries.
+    """
+    executable = Path(command[0])
+    tools = {native_tool(name) for name in (
+        "postgres", "initdb", "pg_ctl", "pg_isready", "psql", "createdb",
+        "dropdb", "pg_dump", "pg_dumpall", "pg_restore",
+    )}
+    postgres = executable.name in tools and executable.parent == Path(target["pg_bin"])
+    return clean_environment(target, postgres=postgres)
+
+
 def prepare_dependencies(state, manifest):
     from scripts.tfi_release_dependencies import prepare
     return prepare(sys.modules[__name__], state, manifest)
@@ -260,7 +281,14 @@ def native_tool(name):
 def component_command(target, component):
     root = Path(target["install_root"])
     runtime = root / "runtime"
-    env = clean_environment(target)
+    env = clean_environment(target, postgres=component == "postgres")
+    # Application HOME belongs to the instance, but native jobs are owned by
+    # the OS user manager. Preserve only its transport coordinates so RunScript
+    # can reach systemd without inheriting unrelated operator credentials.
+    if platform_adapter().__name__.endswith("_linux"):
+        for key in ("XDG_RUNTIME_DIR", "DBUS_SESSION_BUS_ADDRESS"):
+            if os.environ.get(key):
+                env[key] = os.environ[key]
     python = runtime_python(target)
     if component == "postgres":
         windows = platform_adapter().__name__.endswith("_windows")
@@ -331,7 +359,7 @@ def owned_state(root, *, allow_missing_native=False):
 
 
 def run_native(command, *, target, cwd=None, timeout=90, merge_output=False):
-    return run_native_capture(command, env=clean_environment(target), cwd=cwd,
+    return run_native_capture(command, env=command_environment(target, command), cwd=cwd,
                               timeout=timeout, merge_output=merge_output)
 
 
@@ -340,7 +368,7 @@ def run_checked(command, *, target, cwd=None, timeout=1800, native_output=False)
         if native_output:
             result = run_native(command, target=target, cwd=cwd, timeout=timeout, merge_output=True)
         else:
-            result = run_utf8_capture(command, env=clean_environment(target), cwd=cwd, timeout=timeout)
+            result = run_utf8_capture(command, env=command_environment(target, command), cwd=cwd, timeout=timeout)
     except subprocess.TimeoutExpired as exc:
         raise TimeoutError(f"{Path(command[0]).name} exceeded {timeout}s; its process tree was stopped") from exc
     if result.returncode:
@@ -362,7 +390,7 @@ def wait_database(target):
     for _ in range(60):
         command = database_command(target, "pg_isready", "-d", "postgres")
         try:
-            result = run_process(command, env=clean_environment(target),
+            result = run_process(command, env=command_environment(target, command),
                                  capture_output=True, timeout=9)
         except subprocess.TimeoutExpired:
             continue
@@ -807,6 +835,7 @@ def install(manifest_path, raw_target, *, prepare_only=False, freeze_evidence=No
             phase = "start"
             controller = service_controller()
             for component in COMPONENTS[1:]:
+                print('@TFI_PROGRESS ' + json.dumps({'message': '正在启动 ' + component}, ensure_ascii=False), flush=True)
                 controller.start(unit_name(target, component))
             save_stage(state, phase, "checking")
             phase = "health"
@@ -815,10 +844,16 @@ def install(manifest_path, raw_target, *, prepare_only=False, freeze_evidence=No
                 result = observed_status(state)
                 if result["status"] == "installed" or time.monotonic() >= deadline:
                     break
+                if target.get('windows_service_mode') == 'user' and any(
+                        service['active'] == 'inactive' and not service.get('pid')
+                        for service in result['services']):
+                    # User-mode supervisors do not auto-restart a crashed child.
+                    # Waiting six minutes cannot recover this process.
+                    break
                 time.sleep(2)
             state["result"] = result
             if result["status"] != "installed":
-                raise RuntimeError("Instance did not become healthy; inspect installation.json and its own service journals")
+                raise RuntimeError(health_failure(state, result))
             result["external_requirements"] = manifest.get("external_requirements", [])
             result["feature_initialization"] = state.get("feature_initialization", {}).get("result", {"status": "legacy_not_declared"})
             save_stage(state, phase, "installed")
@@ -843,6 +878,44 @@ def install(manifest_path, raw_target, *, prepare_only=False, freeze_evidence=No
             raise
 
 
+def health_failure(state, result):
+    """Save the pre-rollback observations and point at instance-owned logs."""
+    root = Path(state['target']['install_root'])
+    failures = [service['service'] + ': ' + service['active'] for service in result['services']
+                if service['active'] != 'active']
+    for check in result['checks']:
+        if check['ok']:
+            continue
+        detail = check.get('error', '')
+        payload = check.get('payload', {})
+        if isinstance(payload, dict):
+            reasons = [name for name in ('execution_layer', 'society_service')
+                       if isinstance(payload.get(name), dict) and payload[name].get('ok') is not True]
+            if reasons:
+                detail = '未就绪: ' + ', '.join(reasons)
+        failures.append((check.get('component') or check.get('route', 'health')) + ': ' + (detail or '未就绪'))
+    report = root / 'runtime/startup-diagnostics.json'
+    excerpts = {}
+    for component in COMPONENTS:
+        name = unit_name(state['target'], component)
+        if not any(s['service'] == name and s['active'] != 'active' for s in result['services']):
+            continue
+        log = root / 'runtime' / (component + '.log')
+        try:
+            with log.open('rb') as stream:
+                stream.seek(0, 2)
+                stream.seek(max(0, stream.tell() - 8192))
+                tail = stream.read().decode('utf-8', errors='replace')
+            excerpts[component] = '\n'.join(tail.splitlines()[-30:])
+        except OSError as exc:
+            excerpts[component] = f'无法读取组件日志: {exc}'
+    write_json(report, {'status': 'failed', 'observed': result,
+                       'component_log_tails': excerpts,
+                       'component_logs': {c: str(root / 'runtime' / (c + '.log')) for c in COMPONENTS}})
+    detail = ''.join(f'\n\n{c}.log（末尾）：\n{tail}' for c, tail in excerpts.items())
+    return '服务启动检查失败：' + '; '.join(failures) + f'。诊断记录：{report}；组件日志：{root / "runtime"}' + detail
+
+
 def observed_status(state):
     target = state["target"]
     expected_instance = target.get("runtime_instance", target["service_prefix"])
@@ -853,7 +926,12 @@ def observed_status(state):
     checks = []
     for route in ("/api/health", "/login"):
         try:
-            with urlopen(url + route, timeout=15) as response:
+            from urllib.error import HTTPError
+            try:
+                response = urlopen(url + route, timeout=15)
+            except HTTPError as exc:
+                response = exc
+            with response:
                 body = response.read()
                 ok = response.status == 200
             if route == "/api/health":

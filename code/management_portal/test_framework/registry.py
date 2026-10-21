@@ -44,7 +44,7 @@ class ProfileDescriptor:
 
 PROFILES = (
     ProfileDescriptor("local.fixture", "本地测试数据", "受控本地数据与服务。", "isolated"),
-    ProfileDescriptor("live.controlled", "Live · 受控账号", "在部署注册表唯一的当前 DEV 上使用本站配置的受控账号。", "live-account"),
+    ProfileDescriptor("live.controlled", "Live · 受控账号", "在显式选择的本站实例上使用受控测试账号。", "live-account"),
 )
 
 

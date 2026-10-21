@@ -1076,8 +1076,6 @@ def _run_job(job_id: str) -> None:
 
 
 def _start_job(job_id: str) -> None:
-    if os.getenv("PORTAL_INSTANCE", "dev") == "release":
-        return
     business_tasks.start(f"wall-job:{job_id}", _run_job, job_id)
 
 
@@ -1245,9 +1243,8 @@ def _tick() -> None:
 
 def start_runtime() -> None:
     global _RUNTIME_STARTED, _RUNTIME_STOP, _RUNTIME_THREAD
-    # Release serves the same documents; only Dev owns automatic job dispatch.
-    if os.getenv("PORTAL_INSTANCE", "dev") == "release":
-        return
+    # Each installation owns its database and jobs. A release label no longer
+    # denotes the read-only half of the retired shared-database Dev/Release pair.
     with _RUNTIME_LOCK:
         if _RUNTIME_STARTED:
             return

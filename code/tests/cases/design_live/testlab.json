@@ -1,0 +1,390 @@
+{
+  "schema": "tfi.portal-design-live-cases.v1",
+  "cases": [
+    {
+      "id": "test_51e61ac11f28",
+      "key": "design-live.testlab.filter-intersection",
+      "title": "Test Live 四维分类交集与方面并集",
+      "description": "四维分类筛选使用生产 Catalog 查询与结果列表，核对不同维度的交集、方面的并集和退役排除。",
+      "importance": "P1",
+      "module": "operations.test-framework",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_8273271b67b1"
+      ],
+      "design_point_ref": "decision_8273271b67b1#f6d5cd5af586d7d9",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "Test Live 四维分类交集与方面并集",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-testlab",
+        "adapter_version": 1,
+        "estimated_seconds": 12,
+        "direct_steps": [
+          {
+            "capability": "testlab.filter-intersection",
+            "caption": "四维分类筛选使用生产 Catalog 查询与结果列表，核对不同维度的交集、方面的并集和退役排除。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_8d6e5ff9eb1d",
+      "key": "design-live.testlab.design-filter",
+      "title": "Test Live 设计点与可播放能力筛选",
+      "description": "切换设计点、非设计点和有 Live 筛选，逐次验证 canonical ID 集合；清除筛选恢复完整非退役集合。",
+      "importance": "P1",
+      "module": "operations.test-workbench",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_f2a6a5dd4646"
+      ],
+      "design_point_ref": "decision_f2a6a5dd4646#db41a312acfcbdd0",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "Test Live 设计点与可播放能力筛选",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-testlab",
+        "adapter_version": 1,
+        "estimated_seconds": 12,
+        "direct_steps": [
+          {
+            "capability": "testlab.design-filter",
+            "caption": "切换设计点、非设计点和有 Live 筛选，逐次验证 canonical ID 集合；清除筛选恢复完整非退役集合。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_6827c6da52ea",
+      "key": "design-live.testlab.live-entry",
+      "title": "Test Live 入口与只读执行定义一致",
+      "description": "展开生产详情的 Live 区域，读取并核对登记用例、站内目标和只读适配器步骤；缺少定义时不能启动。",
+      "importance": "P1",
+      "module": "operations.test-workbench",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_f2a6a5dd4646"
+      ],
+      "design_point_ref": "decision_f2a6a5dd4646#b7cf3ad25909339b",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "Test Live 入口与只读执行定义一致",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-testlab",
+        "adapter_version": 1,
+        "estimated_seconds": 8,
+        "direct_steps": [
+          {
+            "capability": "testlab.live-entry",
+            "caption": "展开生产详情的 Live 区域，读取并核对登记用例、站内目标和只读适配器步骤；缺少定义时不能启动。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_02932e2d0ec8",
+      "key": "design-live.testlab.run-evidence",
+      "title": "Test Live 运行证据按用例隔离",
+      "description": "展开生产证据面板，按 RunPlan 的 case ID 校验保留记录、状态、输出和错误；排除其他用例并安全呈现文本。",
+      "importance": "P1",
+      "module": "operations.test-workbench",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_f2a6a5dd4646"
+      ],
+      "design_point_ref": "decision_f2a6a5dd4646#c35cd4fac1dc8352",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "Test Live 运行证据按用例隔离",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-testlab",
+        "adapter_version": 1,
+        "estimated_seconds": 8,
+        "direct_steps": [
+          {
+            "capability": "testlab.run-evidence",
+            "caption": "展开生产证据面板，按 RunPlan 的 case ID 校验保留记录、状态、输出和错误；排除其他用例并安全呈现文本。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_d01b10eee3d9",
+      "key": "design-live.testlab.gate-scope",
+      "title": "Test Live Gate 模板计数与完整范围",
+      "description": "展开三个即时 Gate 模板的完整范围，核对选择规则、数量、退役排除、canonical 入口与空范围禁用；不生成计划或启动运行。",
+      "importance": "P1",
+      "module": "operations.test-workbench",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_f2a6a5dd4646"
+      ],
+      "design_point_ref": "decision_f2a6a5dd4646#8b09a05d067f51bd",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "Test Live Gate 模板计数与完整范围",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-testlab",
+        "adapter_version": 1,
+        "estimated_seconds": 8,
+        "direct_steps": [
+          {
+            "capability": "testlab.gate-scope",
+            "caption": "展开三个即时 Gate 模板的完整范围，核对选择规则、数量、退役排除、canonical 入口与空范围禁用；不生成计划或启动运行。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_bd037d331a3d",
+      "key": "design-live.testlab.implementation-detail",
+      "title": "Test Live 实现详情与默认实现单选",
+      "description": "生产详情显示每个实现的真实入口、源码行、风险和 Profile；切换默认实现保持单选，仅修改可恢复的本地选择。",
+      "importance": "P1",
+      "module": "operations.test-workbench",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_f2a6a5dd4646"
+      ],
+      "design_point_ref": "decision_f2a6a5dd4646#faeb41830307a1bc",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "Test Live 实现详情与默认实现单选",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-testlab",
+        "adapter_version": 1,
+        "estimated_seconds": 8,
+        "direct_steps": [
+          {
+            "capability": "testlab.implementation-detail",
+            "caption": "生产详情显示每个实现的真实入口、源码行、风险和 Profile；切换默认实现保持单选，仅修改可恢复的本地选择。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_b568f095c455",
+      "key": "design-live.testlab.case-navigation",
+      "title": "Test Live canonical 导航与历史状态",
+      "description": "调用生产导航 API 切换 canonical 用例，核对 URL、选择和详情同步；只 replaceState，保留其他参数并拒绝无效 ID。",
+      "importance": "P1",
+      "module": "operations.test-workbench",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_f2a6a5dd4646"
+      ],
+      "design_point_ref": "decision_f2a6a5dd4646#33bc1370edb38533",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "Test Live canonical 导航与历史状态",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-testlab",
+        "adapter_version": 1,
+        "estimated_seconds": 8,
+        "direct_steps": [
+          {
+            "capability": "testlab.case-navigation",
+            "caption": "调用生产导航 API 切换 canonical 用例，核对 URL、选择和详情同步；只 replaceState，保留其他参数并拒绝无效 ID。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_011ee1c934ef",
+      "key": "design-live.testlab.retained-history",
+      "title": "Test Live 保留历史重开与证据真值",
+      "description": "展开完整历史并重开终态 Run，核对真实状态与输出，不按发起者隐藏记录、不启动新运行。",
+      "importance": "P1",
+      "module": "operations.test-workbench",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_f2a6a5dd4646"
+      ],
+      "design_point_ref": "decision_f2a6a5dd4646#0373e18a0ac45a6d",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "Test Live 保留历史重开与证据真值",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-testlab",
+        "adapter_version": 1,
+        "estimated_seconds": 12,
+        "direct_steps": [
+          {
+            "capability": "testlab.retained-history",
+            "caption": "展开完整历史并重开终态 Run，核对真实状态与输出，不按发起者隐藏记录、不启动新运行。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_1e1b42a6045a",
+      "key": "design-live.testlab.console-isolation",
+      "title": "Test Live 运行控制台实例与草稿隔离",
+      "description": "用两个独立生产 Run Console 选择不同用例，验证草稿不串用、ensureDraft 不覆盖已有草稿，无明确 Run ID 时不恢复历史。",
+      "importance": "P1",
+      "module": "operations.test-workbench",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_f2a6a5dd4646"
+      ],
+      "design_point_ref": "decision_f2a6a5dd4646#75c102096d38a68d",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "Test Live 运行控制台实例与草稿隔离",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-testlab",
+        "adapter_version": 1,
+        "estimated_seconds": 12,
+        "direct_steps": [
+          {
+            "capability": "testlab.console-isolation",
+            "caption": "用两个独立生产 Run Console 选择不同用例，验证草稿不串用、ensureDraft 不覆盖已有草稿，无明确 Run ID 时不恢复历史。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_522a22281280",
+      "key": "design-live.testlab.runner-feedback",
+      "title": "Test Live Runner 不可用与任务选择反馈",
+      "description": "全选、清空真实 TAU 任务集合，验证缺少实现的条目不混入，Runner 不可用仍保留任务及原因并禁用运行。",
+      "importance": "P1",
+      "module": "operations.test-workbench",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_f2a6a5dd4646"
+      ],
+      "design_point_ref": "decision_f2a6a5dd4646#095d448419037092",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "Test Live Runner 不可用与任务选择反馈",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-testlab",
+        "adapter_version": 1,
+        "estimated_seconds": 12,
+        "direct_steps": [
+          {
+            "capability": "testlab.runner-feedback",
+            "caption": "全选、清空真实 TAU 任务集合，验证缺少实现的条目不混入，Runner 不可用仍保留任务及原因并禁用运行。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_dfed8f5a05db",
+      "key": "design-live.testlab.live-write-guard",
+      "title": "Test Live 只读防护失败与退出恢复",
+      "description": "在生产 PortalLiveTour commit 中验证提交被只读保护阻止；使用不联网的 dialog 表单探针，故障时抛错并由播放器安全停止。",
+      "importance": "P1",
+      "module": "operations.test-workbench",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_f2a6a5dd4646"
+      ],
+      "design_point_ref": "decision_f2a6a5dd4646#3ea61b68cf659888",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "Test Live 只读防护失败与退出恢复",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-testlab",
+        "adapter_version": 1,
+        "estimated_seconds": 12,
+        "direct_steps": [
+          {
+            "capability": "testlab.live-write-guard",
+            "caption": "在生产 PortalLiveTour commit 中验证提交被只读保护阻止；使用不联网的 dialog 表单探针，故障时抛错并由播放器安全停止。"
+          }
+        ]
+      }
+    }
+  ]
+}

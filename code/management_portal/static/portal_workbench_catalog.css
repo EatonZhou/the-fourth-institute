@@ -88,5 +88,7 @@
 .workbenchCatalogErrorDetails pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; }
 
 @media (max-width: 640px) {
+  /* Leave the fixed mailbox launcher clear of card actions and status. */
+  .workbenchCatalog { padding-inline-end: 44px; }
   .workbenchCatalogTeamDetail { display: none; }
 }

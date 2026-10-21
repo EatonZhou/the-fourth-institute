@@ -34,7 +34,9 @@
     onConflict: ({ lineageId, lineage, error }) => {
       if (state.lineage?.lineage_id !== lineageId) return;
       const roots = [hatgComponentRoot, ...detachedRoots];
+      let retainedDrafts = 0;
       roots.forEach(root => root.querySelectorAll?.('[data-program-draft-dirty="true"]').forEach(form => {
+        retainedDrafts += 1;
         form.dataset.programDraftConflict = "true";
         if (lineage) definitionRevisions.set(form, lineage.revision);
         else definitionRevisions.delete(form);
@@ -47,6 +49,11 @@
         programFeature.setWireDraft(null);
         updateLineageSummary();
         renderLineageSurface();
+      }
+      if (retainedDrafts) {
+        error.message = window.PortalI18n.t(lineage
+          ? "图已被其他操作修改，本次修改未保存。草稿已保留，请核对后再次点击保存。"
+          : "本次修改未保存，草稿已保留；最新版本读取失败。再次点击保存时会先重读，再尝试保存。");
       }
       setSyncStatus(error.message, "error");
     },

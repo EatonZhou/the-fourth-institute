@@ -1,8 +1,8 @@
 """Avatar ownership, byte integrity, legacy import and instance isolation.
 
-:module: identity.avatars
+:module: security.identity-access
 :profiles: local.fixture
-:risk: isolated-database-schema
+:risk: no-external-side-effects
 """
 import base64
 import concurrent.futures

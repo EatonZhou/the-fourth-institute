@@ -278,8 +278,8 @@
         },
         {
           "path": "portal-graph/1.0.0/LICENSE.txt",
-          "sha256": "5dc1e9b73def0dccb9a255101a6457e71c37ebb3bfc9a19dd68ee149f854804a",
-          "size": 231,
+          "sha256": "81bd2dd29cfc81317046ecd105e9b29917ceb840e73361d091bdbf289d36471c",
+          "size": 225,
           "content_type": "text/plain"
         }
       ],

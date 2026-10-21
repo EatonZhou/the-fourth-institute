@@ -118,7 +118,14 @@ def render_unit(source: Path) -> str:
     content = content.replace("@PORTAL_PROVIDER_EGRESS_DIRECTIVE@", f"EnvironmentFile={egress}" if egress else "")
     if "@PORTAL_CODEX_BINARY@" in content:
         from management_portal.execution.provider_updates import CodexRuntime
-        binary = str(CodexRuntime().link())
+        # Rendering can follow a site-config change in the same process.
+        # Prefer that site's explicit path over the runtime module's cached
+        # deployment, keeping the executable link itself intact.
+        configured = deployment.get("providers", {}).get("codex_binary")
+        if configured is not None and not isinstance(configured, str):
+            raise ValueError("Codex executable must be a path")
+        path = Path(configured).expanduser() if configured else None
+        binary = str(resolve_directory(str(path.parent)) / path.name) if path else str(CodexRuntime().link())
         if not binary or any(character.isspace() or character in "'\"\\%$" for character in binary):
             raise ValueError("Codex executable is missing or its path cannot be used by systemd")
         content = content.replace("@PORTAL_CODEX_BINARY@", binary)

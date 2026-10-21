@@ -7,6 +7,8 @@ Var RemoveInstances
 Var RemoveInstancesCheckbox
 Var UninstallDialog
 Var ResidualItems
+Var IncludeExamples
+Var ExamplesCheckbox
 !define MUI_ICON "${PAYLOAD}/branding/tfi.ico"
 !define MUI_UNICON "${PAYLOAD}/branding/tfi.ico"
 
@@ -25,10 +27,11 @@ VIAddVersionKey /LANG=1033 "FileDescription" "Windows x64 preview installer"
 VIAddVersionKey /LANG=1033 "FileVersion" "0.9.0-preview"
 VIAddVersionKey /LANG=1033 "LegalCopyright" "The Fourth Institute contributors"
 !define MUI_ABORTWARNING
-!define MUI_WELCOMEPAGE_TEXT "Your own research space for people and AI.$\r$\n$\r$\nAfter setup, Portal automatically prepares the included example and opens in your browser. First use downloads the required environment; keep your Internet connection available.$\r$\n$\r$\nWindows 11 x64 preview. Uninstall keeps instance data unless you explicitly choose to remove it."
+!define MUI_WELCOMEPAGE_TEXT "Your own research space for people and AI.$\r$\n$\r$\nChoose whether to include the Lenia example. After setup, Portal prepares your space and opens in your browser. First use downloads the required environment; keep your Internet connection available.$\r$\n$\r$\nWindows 11 x64 preview. Uninstall keeps instance data unless you explicitly choose to remove it."
 !insertmacro MUI_PAGE_WELCOME
 !define MUI_DIRECTORYPAGE_TEXT_TOP "Choose a new or empty folder. Existing files and instances will not be overwritten."
 !insertmacro MUI_PAGE_DIRECTORY
+Page custom ExampleOptions ExampleOptionsLeave
 !insertmacro MUI_PAGE_INSTFILES
 !define MUI_FINISHPAGE_TEXT "Portal will now prepare your research space and open your browser. First use needs an Internet connection and can take several minutes."
 !insertmacro MUI_PAGE_FINISH
@@ -104,6 +107,7 @@ Function un.ListResiduals
 FunctionEnd
 
 Function .onInit
+  StrCpy $IncludeExamples ${BST_CHECKED}
   ${IfNot} ${RunningX64}
     MessageBox MB_ICONSTOP "This package requires 64-bit Windows."
     Abort
@@ -113,6 +117,25 @@ Function .onInit
     Abort
   ${EndIf}
   SetRegView 64
+FunctionEnd
+
+Function ExampleOptions
+  !insertmacro MUI_HEADER_TEXT "预置案例 / Example project" "选择首次安装的内容 / Choose initial content"
+  nsDialogs::Create 1018
+  Pop $0
+  ${If} $0 == error
+    Abort
+  ${EndIf}
+  ${NSD_CreateLabel} 0 0 100% 56u "Portal 基础平台始终安装。取消勾选后，不导入 Lenia 项目及其团队、工作区、资料和投影。$\r$\nPortal is always installed. Uncheck to exclude the Lenia project, team, files and workbench."
+  Pop $0
+  ${NSD_CreateCheckbox} 0 70u 100% 24u "安装 Lenia 预置案例 / Include Lenia example"
+  Pop $ExamplesCheckbox
+  ${NSD_SetState} $ExamplesCheckbox $IncludeExamples
+  nsDialogs::Show
+FunctionEnd
+
+Function ExampleOptionsLeave
+  ${NSD_GetState} $ExamplesCheckbox $IncludeExamples
 FunctionEnd
 
 Function .onVerifyInstDir
@@ -134,7 +157,19 @@ FunctionEnd
 Section "Platform"
   SetShellVarContext current
   SetOutPath "$INSTDIR"
-  File /r "${PAYLOAD}/*"
+  File /r /x example-seed.zip /x base-seed.zip "${PAYLOAD}/*"
+  ${If} $IncludeExamples == ${BST_CHECKED}
+    File "${PAYLOAD}/example-seed.zip"
+  ${Else}
+    File "${PAYLOAD}/base-seed.zip"
+  ${EndIf}
+  FileOpen $0 "$INSTDIR\installation-options.ini" w
+  ${If} $IncludeExamples == ${BST_CHECKED}
+    FileWrite $0 "[installation]$\r$\ninclude_examples=true$\r$\n"
+  ${Else}
+    FileWrite $0 "[installation]$\r$\ninclude_examples=false$\r$\n"
+  ${EndIf}
+  FileClose $0
   WriteUninstaller "$INSTDIR\Uninstall.exe"
   CreateDirectory "$SMPROGRAMS\The Fourth Institute"
   CreateShortcut "$SMPROGRAMS\The Fourth Institute\Portal.lnk" "$INSTDIR\dependencies\python\pythonw.exe" '"$INSTDIR\code\scripts\tfi_windows_launcher.py"' "$INSTDIR\branding\tfi.ico" 0
@@ -180,7 +215,9 @@ Section "Uninstall"
   RMDir /r "$INSTDIR\branding"
   Delete "$INSTDIR\prepare_install.py"
   Delete "$INSTDIR\example-seed.zip"
+  Delete "$INSTDIR\base-seed.zip"
   Delete "$INSTDIR\windows-package.json"
+  Delete "$INSTDIR\installation-options.ini"
   Delete "$INSTDIR\WINDOWS.md"
   Delete "$INSTDIR\INSTALL.md"
   Delete "$INSTDIR\README.md"

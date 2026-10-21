@@ -2,7 +2,7 @@
 
 The executor unit (``management_portal.test_framework.executor``) is started by Portal Web but
 lives outside it, so publishing and restarting Web never interrupts a
-Campaign. Cases still act on the current real DEV as ``test-actor``; the unit
+Campaign. Cases act on the explicitly selected instance as ``test-actor``; the unit
 is not sandboxed. One thread per module group runs its cases in order, at
 most ``max_parallel_modules`` groups at a time.
 

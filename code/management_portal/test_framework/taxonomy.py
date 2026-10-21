@@ -28,8 +28,8 @@ def node(module_id: str, label: str, *design_refs: str) -> ModuleNode:
     return ModuleNode(module_id, label, tuple(design_refs))
 
 
-# SPEC.md owns the eleven top-level domains. This registry owns their executable
-# Test Framework projection and is the only accepted module vocabulary.
+# SPEC.md owns the current Design index. This registry groups those resources
+# into test domains and is the only accepted module vocabulary.
 MODULE_GROUPS = (
     ModuleGroup("spec", "1. 规范管理与总体设计", (
         node("spec.design-governance", "Design 索引、生命周期与总体架构", "decision_ef80c6d3b5ee", "decision_9c258743f91e", "decision_463fd3e76150"),
@@ -64,9 +64,7 @@ MODULE_GROUPS = (
         node("lineage.service", "SocietyService 与领域状态", "decision_1b2bdf5c33d6", "decision_d918ebebc062"),
         node("lineage.hatg", "HATG 原语与程序", "decision_4adcc1ff2f2c"),
         node("lineage.team", "Agent Team 与协作图", "decision_6fc653d55c79"),
-        node("lineage.family", "Family 门面与监督", "decision_44cf587c1721", "decision_b77fde81e7a0",
-             "decision_328fb2548b8f", "decision_89b9df038a95", "decision_9ad68dd077d4", "decision_a64b3ea2c3c5",
-             "decision_f5ab721f3d5d"),
+        node("lineage.family", "Family 门面与监督", "decision_44cf587c1721", "decision_b77fde81e7a0"),
     )),
     ModuleGroup("execution", "7. Execution、Provider 与 Agent Harness", (
         node("execution.scheduled-triggered", "定时与自动触发的工作", "decision_5ff0cb51ed84", "decision_86721bb4e8c8"),

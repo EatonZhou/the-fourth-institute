@@ -263,9 +263,11 @@ class DatabaseSnapshot:
 
     def dump(self, selected, *, mappings=(), frozen_history=()):
         """Schema and content use the same read-only exported PostgreSQL snapshot."""
+        from management_common.postgres_configuration import postgres_settings
+        settings = postgres_settings()
         binary = shutil.which("pg_dump")
         if not binary:
-            candidate = os.path.expanduser("~/.local/postgresql-16/usr/lib/postgresql/16/bin/pg_dump")
+            candidate = os.path.join(settings["bin"], "pg_dump.exe" if os.name == "nt" else "pg_dump")
             if os.path.isfile(candidate):
                 binary = candidate
         if not binary:
@@ -277,8 +279,8 @@ class DatabaseSnapshot:
         env = {**os.environ}
         for key, value in conninfo_to_dict(portal_database_url()).items():
             env[{"dbname": "PGDATABASE", "connect_timeout": "PGCONNECT_TIMEOUT"}.get(key, "PG" + key.upper())] = value
-        if "/.local/postgresql-16/" in binary:
-            library = os.path.expanduser("~/.local/postgresql-16/usr/lib/x86_64-linux-gnu")
+        if os.path.dirname(binary) == settings["bin"]:
+            library = settings["lib"]
             env["LD_LIBRARY_PATH"] = library + ":" + env.get("LD_LIBRARY_PATH", "")
         def ddl(section):
             command = [binary, "--schema-only", "--no-owner", "--no-privileges", "--no-comments", "--snapshot", snapshot_id, "--section", section]

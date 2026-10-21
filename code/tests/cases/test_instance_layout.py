@@ -128,6 +128,8 @@ class SharedInstanceTests(unittest.TestCase):
             state = {"target": self.target(root), "completed": ["database"],
                      "stages": [{"status": "installed"}]}
             with patch.object(installer, "owned_state", return_value=state), \
+                    patch("scripts.tfi_release_provider_services.owned_services", return_value={"names": [], "daemons": [], "units": [], "template": None}), \
+                    patch("scripts.tfi_release_provider_services._run"), \
                     patch.object(installer, "check_available"), \
                     patch.object(installer, "register_services"), \
                     patch.object(installer, "wait_database"), \
@@ -184,6 +186,8 @@ class SharedInstanceTests(unittest.TestCase):
             target = self.target(root)
             state = {"target": target}
             with patch.object(installer, "owned_state", return_value=state), \
+                    patch("scripts.tfi_release_provider_services.owned_services", return_value={"names": [], "daemons": [], "units": [], "template": None}), \
+                    patch("scripts.tfi_release_provider_services._run"), \
                     patch.object(installer, "check_available"), \
                     patch.object(installer, "service_controller") as control, \
                     patch.object(installer, "platform_adapter") as adapter:

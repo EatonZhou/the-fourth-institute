@@ -1,0 +1,426 @@
+{
+  "schema": "tfi.portal-design-live-cases.v1",
+  "cases": [
+    {
+      "id": "test_42e382782472",
+      "key": "design-live.chat.loading-contract",
+      "title": "等待合同与失败禁用",
+      "description": "加载合同到达前不创建输入框；失败后展示错误，编辑和发送保持禁用。",
+      "importance": "P1",
+      "module": "workbench.chat",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_f560803947c6"
+      ],
+      "design_point_ref": "decision_f560803947c6#1825230e5dc623d6",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "等待合同与失败禁用",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-chat",
+        "adapter_version": 1,
+        "estimated_seconds": 6,
+        "direct_steps": [
+          {
+            "capability": "chat.loading-contract",
+            "caption": "加载合同到达前不创建输入框；失败后展示错误，编辑和发送保持禁用。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_92ed6b1e01df",
+      "key": "design-live.chat.target-transition",
+      "title": "切换会话时冻结旧目标",
+      "description": "等待新会话期间冻结旧控件；提交新合同后消息和草稿按目标隔离，切回可恢复。",
+      "importance": "P1",
+      "module": "workbench.chat",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_f560803947c6"
+      ],
+      "design_point_ref": "decision_f560803947c6#b972e0ffb9fd04bc",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "切换会话时冻结旧目标",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-chat",
+        "adapter_version": 1,
+        "estimated_seconds": 6,
+        "direct_steps": [
+          {
+            "capability": "chat.target-transition",
+            "caption": "等待新会话期间冻结旧控件；提交新合同后消息和草稿按目标隔离，切回可恢复。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_3f583ad3abf3",
+      "key": "design-live.chat.composer-refresh",
+      "title": "刷新保留输入法与选区",
+      "description": "刷新同目标合同后 Composer DOM、草稿、焦点、选区与输入法组合均保持。",
+      "importance": "P1",
+      "module": "workbench.chat",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_f560803947c6"
+      ],
+      "design_point_ref": "decision_f560803947c6#824f514494503776",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "刷新保留输入法与选区",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-chat",
+        "adapter_version": 1,
+        "estimated_seconds": 6,
+        "direct_steps": [
+          {
+            "capability": "chat.composer-refresh",
+            "caption": "刷新同目标合同后 Composer DOM、草稿、焦点、选区与输入法组合均保持。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_cab47af90051",
+      "key": "design-live.chat.draft-isolation",
+      "title": "草稿身份与目标隔离",
+      "description": "不同 owner、namespace、scope 不串草稿；匿名身份与相同 scope 的恢复遵守独立存储语义。",
+      "importance": "P1",
+      "module": "workbench.chat",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_f560803947c6"
+      ],
+      "design_point_ref": "decision_f560803947c6#cc23b0c23399daa6",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "草稿身份与目标隔离",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-chat",
+        "adapter_version": 1,
+        "estimated_seconds": 6,
+        "direct_steps": [
+          {
+            "capability": "chat.draft-isolation",
+            "caption": "不同 owner、namespace、scope 不串草稿；匿名身份与相同 scope 的恢复遵守独立存储语义。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_aec5b34d9601",
+      "key": "design-live.chat.draft-recovery",
+      "title": "草稿防抖保存与重建恢复",
+      "description": "真实防抖保存后重新创建 Chat 恢复未发送文本；清空后删除草稿记录。",
+      "importance": "P1",
+      "module": "workbench.chat",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_f560803947c6"
+      ],
+      "design_point_ref": "decision_f560803947c6#a32cb32c53acc7a2",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "草稿防抖保存与重建恢复",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-chat",
+        "adapter_version": 1,
+        "estimated_seconds": 8,
+        "direct_steps": [
+          {
+            "capability": "chat.draft-recovery",
+            "caption": "真实防抖保存后重新创建 Chat 恢复未发送文本；清空后删除草稿记录。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_05db66483d1d",
+      "key": "design-live.chat.message-reconciliation",
+      "title": "消息稳定身份与增量更新",
+      "description": "尾部新增和同 ID 内容更新保持无关历史 DOM、不产生重复消息节点。",
+      "importance": "P1",
+      "module": "workbench.chat",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_f560803947c6"
+      ],
+      "design_point_ref": "decision_f560803947c6#61dd5634ae47eae7",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "消息稳定身份与增量更新",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-chat",
+        "adapter_version": 1,
+        "estimated_seconds": 6,
+        "direct_steps": [
+          {
+            "capability": "chat.message-reconciliation",
+            "caption": "尾部新增和同 ID 内容更新保持无关历史 DOM、不产生重复消息节点。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_30d9cfcf7b67",
+      "key": "design-live.chat.identity-refresh",
+      "title": "绑定完成后就地刷新身份",
+      "description": "合并的新合同刷新标题、Session 与复制值，保留现有消息和输入实例。",
+      "importance": "P1",
+      "module": "workbench.chat",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_f560803947c6"
+      ],
+      "design_point_ref": "decision_f560803947c6#dcf65b6e06709909",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "绑定完成后就地刷新身份",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-chat",
+        "adapter_version": 1,
+        "estimated_seconds": 6,
+        "direct_steps": [
+          {
+            "capability": "chat.identity-refresh",
+            "caption": "合并的新合同刷新标题、Session 与复制值，保留现有消息和输入实例。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_4399954233a2",
+      "key": "design-live.chat.slash-navigation",
+      "title": "斜杠命令的只读键盘交互",
+      "description": "只列会话给出的命令，方向键选择、Enter 只插入文本、Escape 关闭；没有命令的会话不显示菜单，全程不生成消息。",
+      "importance": "P1",
+      "module": "workbench.chat",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_f560803947c6",
+        "decision_8b2fa224616b"
+      ],
+      "design_point_ref": "decision_8b2fa224616b#0e0cd8f4ce9baa54",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "斜杠命令的只读键盘交互",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-chat",
+        "adapter_version": 1,
+        "estimated_seconds": 6,
+        "direct_steps": [
+          {
+            "capability": "chat.slash-navigation",
+            "caption": "只列会话给出的命令，方向键选择、Enter 只插入文本、Escape 关闭；没有命令的会话不显示菜单，全程不生成消息。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_b224b3da4d37",
+      "key": "design-live.chat.workspace-update-isolation",
+      "title": "会话增量更新的目标隔离与去重",
+      "description": "拒绝其他 Workspace 更新；当前消息增量按修订和内容签名去重，reset 替换权威集合，force 允许重放。",
+      "importance": "P1",
+      "module": "workbench.chat",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_f560803947c6"
+      ],
+      "design_point_ref": "decision_f560803947c6#ec3d541ff8f7f5ea",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "会话增量更新的目标隔离与去重",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-chat",
+        "adapter_version": 1,
+        "estimated_seconds": 8,
+        "direct_steps": [
+          {
+            "capability": "chat.workspace-update-isolation",
+            "caption": "拒绝其他 Workspace 更新；当前消息增量按修订和内容签名去重，reset 替换权威集合，force 允许重放。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_5fa52c9173b9",
+      "key": "design-live.chat.history-reference",
+      "title": "历史选段的完整引用与会话隔离",
+      "description": "真实选择消息并添加上下文，验证完整引用、来源消息 ID、路径、不可编辑节点和跨 scope 隔离，不走上传流程。",
+      "importance": "P1",
+      "module": "workbench.chat",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_f560803947c6"
+      ],
+      "design_point_ref": "decision_f560803947c6#c4c00740fb38b8a7",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "历史选段的完整引用与会话隔离",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-chat",
+        "adapter_version": 1,
+        "estimated_seconds": 8,
+        "direct_steps": [
+          {
+            "capability": "chat.history-reference",
+            "caption": "真实选择消息并添加上下文，验证完整引用、来源消息 ID、路径、不可编辑节点和跨 scope 隔离，不走上传流程。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_1a9a4630af59",
+      "key": "design-live.chat.streaming-reading",
+      "title": "流式更新保持主动阅读位置",
+      "description": "向上阅读后验证运行状态、流式追加和容器尺寸改变均保留可见消息锚点，新消息仍正确追加。",
+      "importance": "P1",
+      "module": "workbench.chat",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_f560803947c6"
+      ],
+      "design_point_ref": "decision_f560803947c6#a4a3c871606fd5ba",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "流式更新保持主动阅读位置",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-chat",
+        "adapter_version": 1,
+        "estimated_seconds": 8,
+        "direct_steps": [
+          {
+            "capability": "chat.streaming-reading",
+            "caption": "向上阅读后验证运行状态、流式追加和容器尺寸改变均保留可见消息锚点，新消息仍正确追加。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_18a4e2c7e470",
+      "key": "design-live.chat.input-send-guards",
+      "title": "输入法与权限约束阻止误发送",
+      "description": "真实派发 Ctrl/⌘+Enter，验证输入法组合、发送能力、忙碌和附件上传阻塞；组合结束立即恢复发送可用性，草稿始终保留且不发送消息。",
+      "importance": "P1",
+      "module": "workbench.chat",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_f560803947c6"
+      ],
+      "design_point_ref": "decision_f560803947c6#fc700721a6e9e609",
+      "lifecycle": "active",
+      "implementations": [],
+      "live": {
+        "title": "输入法与权限约束阻止误发送",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "design-chat",
+        "adapter_version": 1,
+        "estimated_seconds": 8,
+        "direct_steps": [
+          {
+            "capability": "chat.input-send-guards",
+            "caption": "真实派发 Ctrl/⌘+Enter，验证输入法组合、发送能力、忙碌和附件上传阻塞；组合结束立即恢复发送可用性，草稿始终保留且不发送消息。"
+          }
+        ]
+      }
+    }
+  ]
+}

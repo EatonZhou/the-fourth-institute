@@ -68,12 +68,17 @@ def unit_environment(state_root: Path, *, tau: bool) -> dict[str, str]:
         "PORTAL_INSTANCE": instance_name(),
         **{
             key: os.environ[key]
-            for key in ("PATH", "PORTAL_TEST_STORAGE_STATE", "PORTAL_TEST_SLOT_ROOT", "PORTAL_TEST_MAX_CONCURRENCY",
+            for key in ("PATH", "PLAYWRIGHT_BROWSERS_PATH", "PORTAL_TEST_STORAGE_STATE", "PORTAL_TEST_SLOT_ROOT", "PORTAL_TEST_MAX_CONCURRENCY",
                         "PORTAL_SITE_CONFIG", "PORTAL_PATHS_CONFIG", *portal_paths.ENV_KEYS.values())
             if os.environ.get(key)
         },
     }
     if tau:
+        # Browser binaries and the local profile belong to this instance's
+        # installation, not to the systemd user manager's default HOME/cache.
+        for key in ("HOME",):
+            if os.environ.get(key):
+                environment[key] = os.environ[key]
         environment.update({
             key: value for key, value in os.environ.items()
             if key.startswith("PORTAL_") and value and not SECRET_NAME.search(key) and key not in environment

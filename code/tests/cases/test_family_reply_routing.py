@@ -1,0 +1,158 @@
+"""Replies to a Family's message out go back to the member that wrote it (decision_44cf587c1721).
+
+A member writes to a Resident outside its Family as the facade, and the
+facade's Conversation keeps a record of the message.  When the Resident
+answers - during the turn that works on the message, or later naming it in
+``reply_to_message_id`` - its message to the facade quotes that record, and
+the facade hands it straight to the member, without the Router's model.
+
+:module: spec.design-governance
+"""
+
+from __future__ import annotations
+from tests.cases.family_test_support import set_role
+
+import pytest
+
+from management_portal.society_service import (
+    family_facade,
+    outward_messages,
+    resident_execution_work,
+)
+from management_portal.society_service.resident_registration_domain import _build_resident_prompt
+from management_portal.society_service.resident_workspace_domain import _find_resident
+from tests.cases.isa_test_support import run
+from tests.cases.test_quote_replies import _register, _say, _stored, _text
+from tests.cases.test_resident_delivery_receipts import delivery_resident  # noqa: F401
+from tests.cases.test_resident_folder_creation_contract import future_creation_store  # noqa: F401
+
+
+@pytest.fixture
+def sent_out(delivery_resident, monkeypatch):
+    """A member asked an outside Resident a question through its facade."""
+
+    member = delivery_resident["resident_id"]
+    facade = _register("Family 门面")["resident_id"]
+    set_role(facade, family_id="fbi_reply00001", actor="sample_admin")
+    outsider = _register("外部协作者")["resident_id"]
+    monkeypatch.setattr(family_facade, "family_member_ids", lambda record: {member})
+    monkeypatch.setattr(outward_messages, "speaking_identity",
+                        lambda sender, recipient: facade if sender == member else sender)
+    turn: list[str] = []
+    monkeypatch.setattr(outward_messages, "_turn_messages", lambda resident_id: list(turn) if resident_id == outsider else [])
+    asked = run("DeliverMessage", {"resident_id": outsider, "message": _text("接口什么时候能冻结？")},
+                actor=member, key="ask-outsider").raise_for_error()["message_id"]
+    return {"member": member, "facade": facade, "outsider": outsider, "asked": asked, "turn": turn,
+            "record": outward_messages.outward_record_id(facade, asked)}
+
+
+def _answer(case, text, key, **arguments):
+    return run("DeliverMessage", {"resident_id": case["facade"], "message": _text(text), **arguments},
+               actor=case["outsider"], key=key)
+
+
+def _routed(case, message_id):
+    return family_facade.quoted_member(_find_resident(case["facade"]), _stored(case["facade"], message_id))
+
+
+def test_an_answer_sent_during_the_turn_on_the_question_goes_back_to_its_member(sent_out):
+    """问题所在轮次内的回复自动返回原成员"""
+    sent_out["turn"].append(sent_out["asked"])
+
+    answered = _answer(sent_out, "周五冻结。", "same-turn").raise_for_error()["message_id"]
+
+    assert _stored(sent_out["facade"], answered)["quote"] == {
+        "message_id": sent_out["record"], "author_id": sent_out["facade"], "text": "接口什么时候能冻结？"}
+    assert _routed(sent_out, answered) == sent_out["member"]
+
+
+def test_a_message_outside_that_turn_needs_reply_to_message_id(sent_out):
+    """轮次外回复需指定 reply_to_message_id 才路由回原成员"""
+    later = _answer(sent_out, "另外一件事。", "no-turn").raise_for_error()["message_id"]
+    assert "quote" not in _stored(sent_out["facade"], later)
+    assert _routed(sent_out, later) == ""
+
+    answered = _answer(sent_out, "改到下周一冻结。", "later-turn",
+                       reply_to_message_id=sent_out["asked"]).raise_for_error()["message_id"]
+    assert _stored(sent_out["facade"], answered)["quote"]["message_id"] == sent_out["record"]
+    assert _routed(sent_out, answered) == sent_out["member"]
+
+
+def test_a_turn_with_two_questions_from_the_facade_leaves_the_choice_to_the_router(sent_out):
+    """同轮收到门面两个问题时由 Router 选择回复去向"""
+    second = run("DeliverMessage", {"resident_id": sent_out["outsider"], "message": _text("文档放哪？")},
+                 actor=sent_out["member"], key="ask-again").raise_for_error()["message_id"]
+    sent_out["turn"].extend([sent_out["asked"], second])
+
+    answered = _answer(sent_out, "都在 wiki。", "two-questions").raise_for_error()["message_id"]
+
+    assert "quote" not in _stored(sent_out["facade"], answered)
+
+
+def test_reply_to_message_id_names_a_message_the_facade_sent_and_nothing_else(sent_out):
+    """reply_to_message_id 仅接受目标门面发来的原消息"""
+    outsider, facade = sent_out["outsider"], sent_out["facade"]
+    _say(outsider, "msg_00000000000002a1", "别人发的", role="user", author_id="sample_admin")
+    other = _register("另一个 Resident")["resident_id"]
+    cases = [
+        ({"reply_to_message_id": "msg_00000000000002a1"}, facade),
+        ({"reply_to_message_id": sent_out["asked"]}, other),
+        ({"reply_to_message_id": sent_out["asked"], "activation_policy": "attach_to_next"}, facade),
+    ]
+    for arguments, recipient in cases:
+        refused = run("DeliverMessage", {"resident_id": recipient, "message": _text("回复"), **arguments},
+                      actor=outsider)
+        assert refused.error["code"] == "instruction.invalid_arguments", arguments
+    quoted = run("DeliverMessage", {"resident_id": facade, "reply_to_message_id": sent_out["asked"],
+                                    "message": {**_text("回复"), "quote": {"message_id": sent_out["record"]}}},
+                 actor=outsider)
+    assert quoted.error["code"] == "instruction.invalid_arguments"
+    to_user = run("DeliverMessage", {"user_id": "sample_admin", "reply_to_message_id": sent_out["asked"],
+                                     "message": _text("回复")}, actor=outsider)
+    assert to_user.error["code"] == "instruction.invalid_arguments"
+
+
+def test_a_question_relayed_by_another_familys_router_is_answered_to_the_facade_that_sent_it(sent_out, monkeypatch):
+    """跨 Family 转交的问题回复返回原发信门面"""
+    # The outsider fronts its own Family; its Router relayed the question to a member.
+    outsider, facade = sent_out["outsider"], sent_out["facade"]
+    helper = _register("外部成员")["resident_id"]
+    _say(helper, "msg_00000000000002b1", "接口什么时候能冻结？", role="user", author_id=facade)
+    monkeypatch.setattr(family_facade, "relay_sources_of", lambda member_id, message_id: (
+        [(outsider, sent_out["asked"])] if (member_id, message_id) == (helper, "msg_00000000000002b1") else []))
+
+    assert outward_messages.reply_target(helper, "msg_00000000000002b1") == (facade, sent_out["record"])
+    assert outward_messages.reply_target(helper, "msg_00000000000002a9") is None
+
+
+def test_the_resident_reads_how_to_answer_a_message_the_facade_sent(sent_out):
+    """Resident 提示词包含门面消息的回复指引"""
+    outsider, facade, asked = sent_out["outsider"], sent_out["facade"], sent_out["asked"]
+    # Prompt composition happens when execution starts.
+    queued = [*resident_execution_work.normalized_queue(resident_execution_work.read(_find_resident(outsider))),
+              resident_execution_work.read(_find_resident(outsider))]
+    arrived = next(item for item in queued if item.get("user_message_id") == asked)
+    from management_portal.society_service.resident_execution_domain import _prepare_resident_prompt
+    arrived = _prepare_resident_prompt(_find_resident(outsider), arrived)
+    assert f"reply_to_message_id: {asked}" in arrived["actual_sent_prompt"]
+    assert f"Family 门面 {facade}" in arrived["actual_sent_prompt"]
+    # Rebuilt later, the facade's record still shows it.
+    rebuilt = _build_resident_prompt(_find_resident(outsider), {"actor": facade, "user_message_id": asked,
+                                                                 "message": "接口什么时候能冻结？"})
+    assert "<reply-hint>" in rebuilt and f"reply_to_message_id: {asked}" in rebuilt
+    # Any other message carries no hint.
+    other = _build_resident_prompt(_find_resident(outsider), {"actor": "sample_admin", "user_message_id": "msg_00000000000002c1",
+                                                               "message": "你好"})
+    assert "<reply-hint>" not in other
+
+
+def test_the_turns_messages_are_its_own_the_merged_ones_and_those_sent_into_it(delivery_resident, monkeypatch):
+    """当前轮消息包括主输入、合并输入和即时插入输入"""
+    resident = delivery_resident["resident_id"]
+    job = {'execution_id': "job_0000000000000001", "user_message_id": "msg_group",
+           "mailbox_members": [{"user_message_id": "msg_a"}, {"user_message_id": "msg_b"}],
+           "send_now_inputs": [{"user_message_id": "msg_c"}]}
+    monkeypatch.setattr(resident_execution_work, "read", lambda record: dict(job))
+    assert outward_messages._turn_messages(resident) == ["msg_group", "msg_a", "msg_b", "msg_c"]
+    job["finished_at"] = "2026-10-10T00:00:00Z"
+    assert outward_messages._turn_messages(resident) == []

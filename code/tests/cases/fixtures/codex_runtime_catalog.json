@@ -1,0 +1,235 @@
+{
+  "account_id": "codex_one",
+  "backend": "codex",
+  "backend_route_id": "one",
+  "default_efforts_by_model": {
+    "gpt-5.6-luna": "high",
+    "gpt-5.6-sol": "high",
+    "gpt-5.6-terra": "high",
+    "gpt-6-astra": "high",
+    "gpt-6-luna": "high",
+    "gpt-6-sol": "high",
+    "gpt-6.1-sol": "high"
+  },
+  "default_model": "gpt-6.1-sol",
+  "default_reasoning_effort": "high",
+  "defaults_source": "portal",
+  "efforts_by_model": {
+    "gpt-5.6-luna": [
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max"
+    ],
+    "gpt-5.6-sol": [
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max",
+      "ultra"
+    ],
+    "gpt-5.6-terra": [
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max",
+      "ultra"
+    ],
+    "gpt-6-astra": [
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max",
+      "ultra"
+    ],
+    "gpt-6-luna": [
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max"
+    ],
+    "gpt-6-sol": [
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max",
+      "ultra"
+    ],
+    "gpt-6.1-sol": [
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max",
+      "ultra"
+    ]
+  },
+  "input_modalities_by_model": {
+    "gpt-5.6-luna": [
+      "text",
+      "image"
+    ],
+    "gpt-5.6-sol": [
+      "text",
+      "image"
+    ],
+    "gpt-5.6-terra": [
+      "text",
+      "image"
+    ],
+    "gpt-6-astra": [
+      "text",
+      "image"
+    ],
+    "gpt-6-luna": [
+      "text",
+      "image"
+    ],
+    "gpt-6-sol": [
+      "text",
+      "image"
+    ],
+    "gpt-6.1-sol": [
+      "text",
+      "image"
+    ]
+  },
+  "models": [
+    "gpt-6.1-sol",
+    "gpt-6-astra",
+    "gpt-6-sol",
+    "gpt-6-luna",
+    "gpt-5.6-sol",
+    "gpt-5.6-terra",
+    "gpt-5.6-luna"
+  ],
+  "operations": [
+    "compact",
+    "create",
+    "fork",
+    "release",
+    "turn"
+  ],
+  "provider": "codex",
+  "runtime_capabilities": {
+    "default_permission_label": "Full Access",
+    "harness_capabilities": [
+      "active_turn_input",
+      "auto_compact_threshold",
+      "deferred_tool_catalog",
+      "error_continuation",
+      "input_image_detail",
+      "native_image_input",
+      "native_tool_events",
+      "portal_tools",
+      "turn_reasoning_effort"
+    ],
+    "harness_features": [
+      "tool_call_granularity",
+      "hatg_isa",
+      "lazy_tool_discovery",
+      "unified_resource_recall",
+      "native_tool_loop_governor",
+      "provider_error_continue",
+      "early_context_compaction",
+      "hash_aware_read_dedup",
+      "tool_output_offloading",
+      "artifact_search_and_slice",
+      "inline_media_history",
+      "jev_decision_tool",
+      "repo_map_context"
+    ],
+    "operations": [
+      "compact",
+      "create",
+      "fork",
+      "release",
+      "turn"
+    ],
+    "permission_labels": {
+      "auto-review": "Auto-review",
+      "default": "Ask",
+      "full-access": "Full Access"
+    },
+    "permission_presets": [
+      "default",
+      "auto-review",
+      "full-access"
+    ],
+    "schema": "tfi.runtime-capabilities.v1",
+    "settings": [
+      "model",
+      "reasoning_effort",
+      "service_tier",
+      "permissions",
+      "collaboration_mode"
+    ]
+  },
+  "runtime_settings": [
+    "model",
+    "reasoning_effort",
+    "service_tier",
+    "permissions",
+    "collaboration_mode"
+  ],
+  "schema": "tfi.agent-runtime-catalog.v1",
+  "service_tiers_by_model": {
+    "gpt-5.6-luna": [
+      {
+        "description": "1.5x speed, increased usage",
+        "id": "priority",
+        "name": "Fast"
+      }
+    ],
+    "gpt-5.6-sol": [
+      {
+        "description": "1.5x speed, increased usage",
+        "id": "priority",
+        "name": "Fast"
+      }
+    ],
+    "gpt-5.6-terra": [
+      {
+        "description": "1.5x speed, increased usage",
+        "id": "priority",
+        "name": "Fast"
+      }
+    ],
+    "gpt-6-astra": [
+      {
+        "description": "2x speed, increased usage",
+        "id": "priority",
+        "name": "Fast"
+      }
+    ],
+    "gpt-6-luna": [
+      {
+        "description": "1.5x speed",
+        "id": "priority",
+        "name": "Fast"
+      }
+    ],
+    "gpt-6-sol": [
+      {
+        "description": "1.5x speed",
+        "id": "priority",
+        "name": "Fast"
+      }
+    ],
+    "gpt-6.1-sol": [
+      {
+        "description": "2x speed, increased usage",
+        "id": "priority",
+        "name": "Fast"
+      }
+    ]
+  },
+  "source": "model/list",
+  "verified_unlisted_models": []
+}

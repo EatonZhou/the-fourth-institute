@@ -116,5 +116,9 @@
   .workbenchEditor .projectionPreview { height: 75vh; min-height: 420px; }
 }
 @media (max-width: 560px) {
+  .projectionHeading { flex-wrap: wrap; gap: 6px; }
+  .projectionHeadingText { flex-basis: 100%; }
+  .projectionHeading h1 { white-space: normal; overflow: visible; overflow-wrap: anywhere; }
+  .workbenchBreadcrumb { border-right: 0; padding-right: 0; }
   .projectionHeading p, .workbenchPreviewNote { display: none; }
 }

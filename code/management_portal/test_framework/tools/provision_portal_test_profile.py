@@ -31,8 +31,6 @@ ACCOUNT = test_actor()
 
 
 def storage_state_payload(deployment: PortalDeployment, token: str) -> dict:
-    if deployment.instance_id != "dev" or deployment.kind != "dev":
-        raise ValueError("test-actor 运行配置只能为当前唯一 DEV 创建")
     parsed = urlsplit(deployment.origin)
     host = parsed.hostname or ""
     return {
@@ -55,7 +53,7 @@ def storage_state_payload(deployment: PortalDeployment, token: str) -> dict:
 def provision(
     output: Path,
     *,
-    registry_path: Path = DEFAULT_DEPLOYMENT_REGISTRY_PATH,
+    registry_path: Path | None = None,
 ) -> dict[str, str]:
     deployment = resolve_unique_dev(registry_path)
     access = get_portal_access_store()

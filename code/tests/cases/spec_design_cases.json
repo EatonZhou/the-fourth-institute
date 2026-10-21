@@ -1,0 +1,267 @@
+{
+  "schema": "tfi.portal-spec-design-cases.v1",
+  "cases": [
+    {
+      "id": "test_7bacc479c7aa",
+      "key": "design.resident.mailbox.detail-panel",
+      "title": "Mailbox 详情显示完整队列与原始消息",
+      "description": "待实现验收：以超过500字且带附件/资源引用的两位发送者消息建立队列；从现有队列的 Mailbox 详情按钮打开单层面板，当前 Chat target 不变。逐项展开核对稳定作者ID、显示名称、原始时间及完整内容，群体项可展开每个成员；不能以摘要或静默截断当作全文。后台新增消息不破坏已有展开、选中、文本选择或滚动；关闭面板释放订阅且不新增轮询。无读取权限的成员不能从群体预览或详情泄露。",
+      "importance": "P1",
+      "module": "workbench.chat",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_b5d349190743"
+      ],
+      "lifecycle": "active",
+      "implementations": []
+    },
+    {
+      "id": "test_53d8dd34f4c5",
+      "key": "design.resident.mailbox.sender-and-supplement",
+      "title": "Mailbox 署名与补充消息保留真实主体",
+      "description": "待实现验收：ResourceService 原消息和 CASE-A 的针对性补充保持不同Message ID与作者，补充带原消息引用；已发送原文不可改写。合并消息使用author_id=mailbox、v2 origin.sender.kind=mailbox，记录真实合并者与Portal producer。客户端伪造作者、成员正文或mailbox身份必须被拒绝；mailbox不能成为登录Principal、owner、HATG actor或Execution请求主体。原始v1消息可回读，保留字冲突明确诊断而不误认User。",
+      "importance": "P0",
+      "module": "resident.conversation",
+      "aspects": [
+        "functional",
+        "behavior",
+        "architecture-conformance"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_b5d349190743"
+      ],
+      "lifecycle": "active",
+      "implementations": []
+    },
+    {
+      "id": "test_22e569ec7995",
+      "key": "design.resident.mailbox.merge-split-order",
+      "title": "Mailbox 合并和拆分保持成员身份与确定顺序",
+      "description": "待实现验收：队列[A,X,B]选中A/B后只生成一个新的G(A,B)，顺序为[G,X]；拆分后为[A,B,X]，原始ID、作者、时间、正文与引用逐字段不变，旧群体有mailbox_split取消记录。移动群体后拆分发生在其新位置；选择群体及单项时扁平化为原始成员，禁止嵌套、重复、单成员、跨Resident/Conversation/generation和已经被领取的输入。原始成员不同时出现在可调度顶层。",
+      "importance": "P0",
+      "module": "resident.conversation",
+      "aspects": [
+        "functional",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_b5d349190743"
+      ],
+      "lifecycle": "active",
+      "implementations": []
+    },
+    {
+      "id": "test_5f3804c321f4",
+      "key": "design.resident.mailbox.reorder-concurrency",
+      "title": "Mailbox 调序避免覆盖并发到达和他人操作",
+      "description": "待实现验收：拖动与上移/下移提交同一领域调序，单项和群体均整体移动且不改变created_at或作者；调序完整排列不能含漏项、重复或额外ID。模拟两个操作者及新消息到达，旧expected_mailbox_revision请求冲突且不丢消息；UI保留仍有效选择并显示权威顺序。重复幂等键同参数返回同一确认，不同参数冲突。调序与执行领取竞态只有一方成功，重启后仍为最后确认的顺序。",
+      "importance": "P0",
+      "module": "resident.conversation",
+      "aspects": [
+        "functional",
+        "behavior",
+        "architecture-conformance"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_b5d349190743"
+      ],
+      "lifecycle": "active",
+      "implementations": []
+    },
+    {
+      "id": "test_ad232440f2e4",
+      "key": "design.resident.mailbox.consumption-and-cancel",
+      "title": "Mailbox 只执行顶层输入且保留成员取消权",
+      "description": "待实现验收：G(A,B)被领取时只产生一份Execution，active_message_id为G，A/B关联G且不单独被领取；等待容量也禁止再拆分或改成员。优先发送/注入成功后等待队列移除G，聊天按消费位置呈现。领取前A的发送者取消A，B保持queued并恢复独立项；三成员取消一项生成新两成员群体，旧群体不可改写。拆分只取消群体外壳，明确取消整个群体才取消全部成员；终态不可复活。",
+      "importance": "P0",
+      "module": "resident.conversation",
+      "aspects": [
+        "functional",
+        "behavior",
+        "architecture-conformance"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_b5d349190743"
+      ],
+      "lifecycle": "active",
+      "implementations": []
+    },
+    {
+      "id": "test_978a08724366",
+      "key": "design.resident.mailbox.immutable-content-and-projection",
+      "title": "Mailbox 原始 Segment 与执行投影不重复",
+      "description": "待实现验收：群体members使用有序原始Message/Segment引用，expanded_members由服务端读取完整原作者、时间和content_parts，不接受客户端替代快照；来源缺失、引用不匹配或循环必须拒绝。Actual sent prompt完整包含每个成员一次，正文中的伪造作者/标签不改变可信边界；Conversation可以折叠成员但保留原作者搜索与展开。回复指向群体，成员沿关系查得同一回复；usage只按实际Execution累计一次，整理不制造来信或未读红点。",
+      "importance": "P0",
+      "module": "resident.conversation",
+      "aspects": [
+        "functional",
+        "architecture-conformance"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_b5d349190743"
+      ],
+      "lifecycle": "active",
+      "implementations": []
+    },
+    {
+      "id": "test_db7602568278",
+      "key": "design.resident.mailbox.authorization-and-constraints",
+      "title": "Mailbox 整理与执行不扩大原消息权限",
+      "description": "待实现验收：仅能发送的非owner不能整理他人输入；合并/拆分/调序检查全部受影响对象，成员作者仍可取消本人的未消费消息但不能连带取消他人；controls与写入口使用相同领域策略，权限撤销及缺失operation映射拒绝操作。终端用户参与合并不使非owner成员提升权限，附件和资源逐来源鉴权。不同cwd、Session generation、授权范围、特殊控制输入或无法共同表达的执行约束拒绝合并/派发，不能挑最高权限成员；旧客户端不能忽略mailbox part并继续执行。",
+      "importance": "P0",
+      "module": "resident.conversation",
+      "aspects": [
+        "functional",
+        "architecture-conformance"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_b5d349190743"
+      ],
+      "lifecycle": "active",
+      "implementations": []
+    },
+    {
+      "id": "test_43f014aac07b",
+      "key": "design.resident.mailbox.durability-and-existing-dispatch",
+      "title": "Mailbox 整理恢复保持原队列执行机制",
+      "description": "待实现验收：在整理意图、Segment投影、队列确认及Execution绑定边界模拟崩溃，恢复沿用原操作ID和群体ID，仅完整提交的项可被领取，不产生半合并或重复执行。刷新与重连恢复已确认顺序、归属与成员状态；消息正文/外部IO不占用Resident长锁。open/closed、激活策略与既有节流仍控制顶层项；独立消息不自动批量合并，不新增定时收信、等待窗口、强制自动回信或新的轮询线程。",
+      "importance": "P0",
+      "module": "resident.conversation",
+      "aspects": [
+        "functional",
+        "behavior",
+        "architecture-conformance"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_b5d349190743"
+      ],
+      "lifecycle": "active",
+      "implementations": []
+    },
+    {
+      "id": "test_feca9e1b8a36",
+      "key": "design.resident.session-generation-provider",
+      "title": "Resident 当前会话与 Provider 绑定保持一致",
+      "description": "验证 Resident Menu 的会话信息和 Session 操作窗口中的当前绑定一致，刷新或切换面板不会把历史会话误显示为当前会话。",
+      "importance": "P0",
+      "module": "resident.session",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_c47a13e8b962"
+      ],
+      "lifecycle": "active",
+      "implementations": [
+        {
+          "id": "impl-agent-use-resident-session",
+          "runner": "tau",
+          "entrypoint": "tau:resident-session",
+          "source": "tests/cases/spec_design_cases.json",
+          "line": 1,
+          "profiles": [
+            "live.controlled"
+          ],
+          "task_prompt": "在 Lineage 中打开一个有权访问且已有会话的 Resident，通过其 Chat 右上角齿轮进入 Resident Menu → Settings，记录完整 Session ID、Provider 和账号身份，核对复制得到完整值；打开 Backend 的 Session 操作窗口，在当前绑定信息中记录状态版本（Generation），只查看，不提交迁移。切换到另一个面板再返回并刷新，确认这些值仍对应同一 Resident 的当前会话，不把历史状态显示为当前运行。不要发送消息。第一阶段只读页面；第二阶段用 GetSessionRestart 的当前绑定回执核对页面并保留原始证据。"
+        }
+      ]
+    },
+    {
+      "id": "test_11f32a1fb7ba",
+      "key": "design.workflow.article-canonical-workspace",
+      "title": "Article 列表、工作台与预览始终打开同一权威 Article",
+      "description": "验证用户从 Article 列表进入工作台、查看来源和预览时始终保持同一资源身份，返回列表后浏览上下文可理解。",
+      "importance": "P1",
+      "module": "workflow.article",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_956154cd02f6"
+      ],
+      "lifecycle": "active",
+      "implementations": [
+        {
+          "id": "impl-agent-use-workflow-article",
+          "runner": "tau",
+          "entrypoint": "tau:workflow-article",
+          "source": "tests/cases/spec_design_cases.json",
+          "line": 1,
+          "profiles": [
+            "live.controlled"
+          ],
+          "task_prompt": "以只读方式进入 Article 列表，打开一条有权访问的 Article，核对列表身份、工作台标题和预览来源一致；返回列表后确认原浏览上下文仍可理解。若没有可见 Article，应明确报告空状态而不是制造数据。"
+        }
+      ]
+    },
+    {
+      "id": "test_35515a0fd198",
+      "key": "design.workbench.user-state-restore",
+      "title": "工作台 UI 状态按用户和页面恢复且不污染业务事实",
+      "description": "验证面板布局、打开项和临时偏好按当前用户恢复，切换页面或重新载入不会覆盖领域对象，也不会串到其他用户。",
+      "importance": "P1",
+      "module": "workbench.user-state",
+      "aspects": [
+        "functional",
+        "ui",
+        "behavior"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_9f6135cbbb22"
+      ],
+      "lifecycle": "active",
+      "implementations": [
+        {
+          "id": "impl-agent-use-workbench-user-state",
+          "runner": "tau",
+          "entrypoint": "tau:workbench-user-state",
+          "source": "tests/cases/spec_design_cases.json",
+          "line": 1,
+          "profiles": [
+            "live.controlled"
+          ],
+          "task_prompt": "在测试工作台只改变面板打开状态与当前测试用例，重新载入页面后确认布局和选择按 test-actor 恢复；同时确认没有因此修改测试用例分类或创建运行。"
+        }
+      ],
+      "live": {
+        "title": "工作台用户状态恢复",
+        "target": "/wall?view=test",
+        "mode": "direct",
+        "risk": "read-only",
+        "adapter": "test-lab",
+        "adapter_version": 1,
+        "direct_steps": [
+          {
+            "capability": "test.workbench.select-view",
+            "value": "agent",
+            "caption": "改变可见面板并保持当前测试用例。"
+          },
+          {
+            "capability": "test.workbench.select-view",
+            "value": "catalog",
+            "caption": "返回测试目录并核对当前测试用例。"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -21,7 +21,7 @@ CAPACITY = {
     "pytest": 32,
     # One browser slot is one Playwright worker.
     "browser": 32,
-    # Live tests act on the shared DEV as test-actor, one process at a time.
+    # Live tests act on the selected instance as test-actor, one process at a time.
     "live": 1,
     # One TAU slot is one active module group.
     "tau": 32,
