@@ -91,6 +91,7 @@ class Implementation:
     task_prompt: str = ""
     risk: str = "unspecified"
     lineage_fixture: str = ""
+    standalone_git_fixture: str = ""
 
     @classmethod
     def parse(cls, raw: Any, case_id: str) -> "Implementation":
@@ -115,12 +116,18 @@ class Implementation:
             raise CatalogError(f"{case_id}：lineage_fixture 必须说明独立测试团队的必要性")
         if fixture and (values["runner"] != "tau" or risk != "external-side-effects"):
             raise CatalogError(f"{case_id}：独立测试团队仅用于声明外部副作用的 TAU 实现")
+        standalone = raw.get("standalone_git_fixture", "")
+        if not isinstance(standalone, str) or ("standalone_git_fixture" in raw and not standalone.strip()):
+            raise CatalogError(f"{case_id}：standalone_git_fixture 必须说明独立文件目录的必要性")
+        if standalone and (values["runner"] != "tau" or risk != "external-side-effects"):
+            raise CatalogError(f"{case_id}：独立文件目录仅用于声明外部副作用的 TAU 实现")
         return cls(
             **values,
             profiles=clean_list(raw.get("profiles")),
             task_prompt=str(raw.get("task_prompt") or "").strip(),
             risk=risk,
             lineage_fixture=fixture.strip(),
+            standalone_git_fixture=standalone.strip(),
         )
 
     def public(self) -> dict[str, Any]:
@@ -133,6 +140,7 @@ class Implementation:
             "risk": self.risk,
             **({"task_prompt": self.task_prompt} if self.task_prompt else {}),
             **({"lineage_fixture": self.lineage_fixture} if self.lineage_fixture else {}),
+            **({"standalone_git_fixture": self.standalone_git_fixture} if self.standalone_git_fixture else {}),
         }
 
 

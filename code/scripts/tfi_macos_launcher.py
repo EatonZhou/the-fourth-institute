@@ -48,17 +48,30 @@ def materialize(bundle, destination):
 
 
 class MacStartup(DefaultStartup):
-    def __init__(self, platform, progress=lambda message: None, *, included=True):
+    def __init__(self, platform, progress=lambda message: None, *, included=True, bundle=None):
         super().__init__(platform, progress)
         self.included = included
+        self.bundle = bundle
         self.root = self.platform / "instance/desktop"
         self.log_path = self.platform / ".build/macos/logs/desktop.log"
+        if bundle is not None:
+            # A failed copy must not create log files in the still-empty target:
+            # materialize deliberately refuses to overwrite foreign contents.
+            self.log_path = self.platform.parent / ("." + self.platform.name + "-launcher") / "startup.log"
+
+    def run(self):
+        if self.bundle is not None:
+            self.progress("正在准备本地运行环境，首次复制可能需要一些时间")
+            materialize(self.bundle, self.platform)
+            self.log_path = self.platform / ".build/macos/logs/desktop.log"
+        return super().run()
 
     def command(self, *arguments):
         return [str(self.platform / "dependencies/python/bin/python3"),
                 str(self.platform / "code/scripts/tfi_release_install.py"), *map(str, arguments)]
 
     def initialize(self):
+        from scripts.tfi_release_install import write_json
         bundle = self.platform / ".build/example_instance-macos/engineering/manifest.json"
         target_path = self.platform / ".build/macos/target.json"
         options = self.platform / ".build/macos/options.json"
@@ -69,8 +82,7 @@ class MacStartup(DefaultStartup):
             if state_exists:
                 raise ValueError("已有实例缺少安装选项，不能重新导入资料。")
             included = self.included
-            options.parent.mkdir(parents=True, exist_ok=True)
-            options.write_text(json.dumps({"include_examples": included}))
+            write_json(options, {"include_examples": included})
         if not state_exists:
             self.progress("正在准备 Lenia 预置案例" if included else "正在准备基础平台（不含 Lenia 案例）")
             unpack_seed(self.platform, included=included, receipt_name="macos-package.json")
@@ -84,7 +96,7 @@ class MacStartup(DefaultStartup):
             target.pop("windows_service_mode")
             target["python"] = self.command()[0]
             target["offline_dependencies"] = True
-            target_path.write_text(json.dumps(target, ensure_ascii=False, indent=2))
+            write_json(target_path, target)
         self.progress("正在初始化 Portal；使用安装包内置的运行环境")
         self.execute(self.command("install", "--manifest", bundle, "--target", target_path))
 
@@ -103,6 +115,8 @@ def stop(platform, *, unregister=False):
             path = adapter.unit_path(adapter.unit_directory(), name)
             if path.exists() and path.read_text() != adapter.unit_text(target, component, api.COMPONENTS):
                 raise ValueError("拒绝删除不属于此实例的启动项")
+        from scripts.tfi_release_provider_services import remove_template
+        remove_template(target, adapter.unit_directory())
         adapter.remove_services(adapter.unit_directory(), names)
 
 
@@ -126,8 +140,7 @@ def main():
     lock_root = args.platform.parent / ("." + args.platform.name + "-launcher")
     with launcher_lock(lock_root, system="macos"):
         if args.headless:
-            materialize(args.bundle, args.platform)
-            flow = MacStartup(args.platform, print, included=not args.without_examples)
+            flow = MacStartup(args.platform, print, included=not args.without_examples, bundle=args.bundle)
             flow.run()  # Never print the first-user invitation secret.
             print(json.dumps({"status": "ready", "root": str(flow.root)}))
             return
@@ -140,16 +153,17 @@ def main():
         ttk.Label(frame, text="The Fourth Institute", font=("Helvetica", 24, "bold")).pack(pady=10)
         ttk.Label(frame, text="本地运行环境已内置。AI 账号和可选工具可在进入后配置。",
                   wraplength=450).pack(pady=10)
-        included = tk.BooleanVar(value=True)
+        included = tk.BooleanVar(value=not args.without_examples)
         choice = ttk.Checkbutton(frame, text="安装 Lenia 预置案例", variable=included)
         choice.pack(pady=15)
         if (args.platform / ".build/macos/options.json").exists():
             choice.pack_forget()
         def begin():
             try:
-                materialize(args.bundle, args.platform)
+                # Launcher runs flow.run in its worker thread; never copy a
+                # multi-hundred-MB payload on Tk's event loop.
+                Launcher(root, flow=MacStartup(args.platform, included=included.get(), bundle=args.bundle))
                 frame.destroy()
-                Launcher(root, flow=MacStartup(args.platform, included=included.get()))
             except Exception as exc:
                 messagebox.showerror("启动未完成", str(exc), parent=root)
         ttk.Button(frame, text="打开研究空间", command=begin).pack(pady=10)

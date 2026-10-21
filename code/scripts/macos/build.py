@@ -30,13 +30,13 @@ def command(argv, **kwargs):
     return result
 
 
-def smoke(payload, destination, included):
-    """Real DB import, launchd services, HTTP/login, repeat start and teardown."""
-    python = payload / "dependencies/python/bin/python3"
-    launcher = payload / "code/scripts/tfi_macos_launcher.py"
-    argv = [python, launcher, "--bundle", payload, "--platform", destination, "--headless"]
+def smoke(executable, destination, included):
+    """Exercise the shipped native entry, including stop/unregister and restart."""
+    argv = [executable, "--platform", destination, "--headless"]
+    cleanup = [executable, "--platform", destination, "--unregister"]
     if not included:
         argv.append("--without-examples")
+    failure = None
     try:
         command(argv, timeout=900)
         state_path = destination / "instance/desktop/installation.json"
@@ -49,7 +49,17 @@ def smoke(payload, destination, included):
         after = json.loads(state_path.read_text())
         if before["target"] != after["target"] or before["manifest_sha256"] != after["manifest_sha256"]:
             raise ValueError("Repeated launch changed instance identity")
-    except Exception:
+        marker = destination / "instance/desktop/data/restart-check.txt"
+        marker.write_text("user data survives unregister and restart")
+        command(cleanup, timeout=120)
+        command(argv, timeout=240)
+        restarted = json.loads(state_path.read_text())
+        if (before["target"] != restarted["target"]
+                or before["manifest_sha256"] != restarted["manifest_sha256"]
+                or marker.read_text() != "user data survives unregister and restart"):
+            raise ValueError("Restart after unregister changed instance identity or user data")
+    except Exception as exc:
+        failure = exc
         runtime = destination / "instance/desktop/runtime"
         for name in ("command-error.log", "resource.error.log", "execution.error.log", "society.error.log",
                      "worker.error.log", "web.error.log", "dependency-install.log"):
@@ -64,8 +74,10 @@ def smoke(payload, destination, included):
         if destination.exists():
             # Logs have instance-local paths but never contain invitation tokens.
             try:
-                command([python, launcher, "--platform", destination, "--unregister"], timeout=120)
-            except RuntimeError as exc:
+                command(cleanup, timeout=120)
+            except Exception as exc:
+                if failure is not None:
+                    raise ExceptionGroup("Native smoke and cleanup both failed", [failure, exc]) from None
                 raise RuntimeError(f"Native smoke cleanup failed; no release will be produced: {exc}") from exc
 
 
@@ -160,12 +172,6 @@ with tempfile.TemporaryDirectory() as tmp:
         "prepared_engineering_validation": "passed",
     }
     (payload / "macos-package.json").write_text(json.dumps(receipt, indent=2) + "\n")
-    # Keep socket paths short even on runners with a long checkout/temp path.
-    with tempfile.TemporaryDirectory(prefix="tfi-mac-", dir="/tmp") as tmp:
-        for included in (False, True):
-            destination = (Path(tmp) / ("full" if included else "base")).resolve()
-            smoke(payload, destination, included)
-    receipt["native_installation_smoke"] = "passed: base/full, login, repeat start, stop/unregister"
     executables = contents / "MacOS"
     executables.mkdir()
     command(["cc", "-Wall", "-Wextra", "-O2", "-mmacosx-version-min=15.0",
@@ -180,6 +186,16 @@ with tempfile.TemporaryDirectory() as tmp:
     }
     (contents / "Info.plist").write_bytes(plistlib.dumps(info))
     command([executables / "TheFourthInstitute", "--help"])
+    # Drive a real Tk loop through a failed copy and retry before real installs.
+    command([python, repo / "code/tests/cases/test_macos_desktop.py", "MacDesktopGUI"],
+            cwd=payload / "code", env={**env, "PYTHONPATH": str(payload / "code")}, timeout=60)
+    # Use the actual app executable, with spaces in its path. Keep destination
+    # paths short enough for Darwin's Unix socket limit.
+    with tempfile.TemporaryDirectory(prefix="tfi-mac-", dir="/tmp") as tmp:
+        for included in (False, True):
+            destination = (Path(tmp) / ("full" if included else "base")).resolve()
+            smoke(executables / "TheFourthInstitute", destination, included)
+    receipt["native_installation_smoke"] = "passed: native entry, base/full, login, repeat start, unregister/restart, GUI copy/retry"
     (image_root / "Applications").symlink_to("/Applications", target_is_directory=True)
     shutil.copyfile(repo / "code/scripts/macos/README.md", image_root / "README.md")
     dmg = output / ("TheFourthInstitute-macOS-" + ("arm64" if arch == "aarch64" else "x64") + ".dmg")

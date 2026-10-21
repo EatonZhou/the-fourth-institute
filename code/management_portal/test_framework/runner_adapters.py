@@ -461,6 +461,12 @@ class TauAdapter(RunnerAdapter):
                 # upgrading an older context with the durable cleanup scope.
                 context = {**context, **json.loads(path.read_text(encoding="utf-8")),
                            "resource_lifecycle_id": lifecycle_id}
+            standalone_reason = planned["implementation"].get("standalone_git_fixture", "")
+            if not isinstance(standalone_reason, str):
+                raise ValueError("Invalid TAU standalone_git_fixture")
+            if standalone_reason:
+                from management_portal.test_framework.tau_fixture_paths import prepare
+                context["standalone_fixture_dir"] = str(prepare(run_dir))
             temporary = run_dir / ".run-context.json.tmp"
             temporary.write_text(json.dumps(context, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
             os.replace(temporary, path)

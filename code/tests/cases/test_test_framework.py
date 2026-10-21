@@ -1805,8 +1805,9 @@ def test_agent_use_dev_preflight_verifies_build_page_and_actor(tmp_path: Path, m
     assert not isinstance(wrong_actor.value, DevBuildMismatch)
 
 
+@pytest.mark.parametrize('standalone_fixture', [False, True])
 def test_agent_use_adapter_invokes_resident_and_preserves_reviewable_result(
-    tmp_path: Path,
+    tmp_path: Path, monkeypatch, standalone_fixture,
 ) -> None:
     """TAU 适配器调用 Resident 并保留可复核结果，缺少机器可读结论记为错误，账号不符时不发送"""
     storage = tmp_path / "test-actor.json"
@@ -1814,7 +1815,13 @@ def test_agent_use_adapter_invokes_resident_and_preserves_reviewable_result(
     storage.chmod(0o600)
     config = _tau_config(storage)
     captured = {}
-    run_dir = tmp_path / "evidence"
+    from management_portal.test_framework import tau_fixture_paths
+    scratch_base = tmp_path / 'scratch'
+    scratch_base.mkdir()
+    monkeypatch.setattr(tau_fixture_paths, '_bases', lambda: [scratch_base])
+    checkout = tmp_path / 'checkout'
+    (checkout / '.git').mkdir(parents=True)
+    run_dir = checkout / "evidence"
     run_dir.mkdir()
     (run_dir / "test.png").write_bytes(b"valid-enough-for-path-validation")
 
@@ -1823,6 +1830,11 @@ def test_agent_use_adapter_invokes_resident_and_preserves_reviewable_result(
         from management_portal.resident_handoff import run_resident_turn
         inspect.signature(run_resident_turn).bind(**kwargs)
         captured.update(kwargs)
+        if standalone_fixture:
+            context = json.loads((run_dir / 'run-context.json').read_text())
+            fixture = Path(context['standalone_fixture_dir'])
+            assert fixture.is_dir() and not fixture.is_relative_to(checkout)
+            assert 'standalone_fixture_dir' in kwargs['prompt']
         kwargs["on_submitted"]({"resident_id": "resident-test", "message_id": "message-test"})
         return {
             "resident_id": "resident-test",
@@ -1842,7 +1854,8 @@ def test_agent_use_adapter_invokes_resident_and_preserves_reviewable_result(
             "case_title": "真实使用 Test 页面",
             "description": "验证用户能够使用页面。",
             "module": "operations.test-workbench",
-            "implementation": {"task_prompt": "打开页面并检查筛选。"},
+            "implementation": {"task_prompt": "打开页面并检查筛选。",
+                               **({'standalone_git_fixture': 'Verify uninitialized Git registration'} if standalone_fixture else {})},
         },
         run_dir=run_dir,
         actor="alice",
@@ -1901,6 +1914,7 @@ def test_agent_use_adapter_invokes_resident_and_preserves_reviewable_result(
         **outcome.details["target_preflight"],
         "build_changed": False,
     }
+    tau_fixture_paths.cleanup(run_dir)
 
     invalid = TauAdapter(
         config,
