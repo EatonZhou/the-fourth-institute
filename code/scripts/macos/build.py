@@ -115,8 +115,9 @@ def build(repo, output):
     # Exercise the real Darwin ACL API before starting any services.
     command([python, "-c", """
 from pathlib import Path
-import subprocess, tempfile
+import os, socket, socketserver, subprocess, tempfile
 from management_common.file_permissions import atomic_write_private_bytes, read_private_bytes, PrivateFileError
+from management_common.service_endpoint import LocalServiceSocketMixin, service_endpoint
 with tempfile.TemporaryDirectory() as tmp:
     key = Path(tmp).resolve() / 'private/key'
     atomic_write_private_bytes(key, b'fixture')
@@ -129,6 +130,20 @@ with tempfile.TemporaryDirectory() as tmp:
     else:
         raise AssertionError('An extended ACL grant was accepted')
     assert key.read_bytes() == b'fixture'
+    class Server(LocalServiceSocketMixin, socketserver.ThreadingUnixStreamServer):
+        def __init__(self, path):
+            self.endpoint = service_endpoint(path)
+            super().__init__(str(path), socketserver.StreamRequestHandler)
+    with Server(Path(tmp).resolve() / 'rpc.sock') as server:
+        server.socket.setblocking(False)
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as client:
+            client.connect(server.server_address)
+            accepted, _ = server.get_request()
+            with accepted:
+                assert os.get_blocking(accepted.fileno())
+                assert not os.get_blocking(server.socket.fileno())
+                client.sendall(b'fixture')
+                assert accepted.recv(7) == b'fixture'
 """], cwd=payload / "code", env=env)
     command([python, payload / "code/scripts/bootstrap_portal", "doctor", "core", "--tools-only",
              "--venv", python.parent.parent, "--json"], env=env)
