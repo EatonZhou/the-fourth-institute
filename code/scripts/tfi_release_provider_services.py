@@ -1,4 +1,7 @@
-"""Stop Linux account services owned by one release installation."""
+"""Stop account services owned by one release installation."""
+import hashlib
+import os
+import plistlib
 import re
 import subprocess
 import sys
@@ -16,6 +19,8 @@ def _run(*arguments):
 
 
 def owned_services(target, directory):
+    if sys.platform == "darwin":
+        return _macos_owned_services(target, directory)
     if not sys.platform.startswith("linux"):
         return None
     prefix = target["service_prefix"]
@@ -75,6 +80,37 @@ def owned_services(target, directory):
             "names": sorted(names | {path.name for path in daemons})}
 
 
+def _macos_owned_services(target, directory):
+    from scripts.portal_service_control import ServiceControl
+    from scripts import tfi_release_platform_macos as adapter
+    from scripts.tfi_instance_layout import code_root
+    from scripts.tfi_release_dependencies import runtime_python
+    root = Path(target["data_roots"]["instances_root"]).resolve()
+    accounts = Path(target["data_roots"]["accounts_root"])
+    scope = hashlib.sha256(os.fsencode(root)).hexdigest()[:10]
+    prefix = ServiceControl.label("portal-codex-app-server@")
+    names = []
+    for path in sorted(Path(directory).glob(prefix + "*-" + scope + ".plist")):
+        match = re.fullmatch(re.escape(prefix) + r"([A-Za-z0-9][A-Za-z0-9_-]{0,127})-" + scope + r"\.plist", path.name)
+        if not match or path.is_symlink() or not path.is_file():
+            raise ValueError("Provider launch agent ownership mismatch")
+        account = match.group(1)
+        name = f"portal-codex-app-server@{account}-{scope}.service"
+        definition = plistlib.loads(path.read_bytes())
+        argv = definition.get("ProgramArguments", [])
+        if (len(argv) != 9 or not isinstance(argv[6], str) or not Path(argv[6]).is_absolute()):
+            raise ValueError("Provider launch agent command mismatch")
+        expected_command = [runtime_python(target), "-m", "management_portal.codex_app_server_host",
+                            "--socket", str(root / "sockets" / f"codex-{account}.sock"),
+                            "--binary", argv[6], "--account-home", str(accounts / "codex" / account)]
+        expected = plistlib.loads(adapter.command_unit_text(
+            name, expected_command, cwd=code_root(target), log_root=root / "logs", log_name=name).encode())
+        if definition != expected:
+            raise ValueError("Provider launch agent belongs to another instance or has overrides")
+        names.append(name)
+    return {"platform": "macos", "template": None, "daemons": [], "names": names} if names else None
+
+
 def start_services(plan, controller):
     """Registered shared daemons start with the instance; Codex stays on demand."""
     if plan is not None:
@@ -93,13 +129,17 @@ def stop_services(plan, controller):
             raise RuntimeError("Provider services did not stop; cleanup refused")
     # Account services are restarted on demand by the next instance use.
     # Do not let default.target revive them while their instance is stopped.
-    if plan["names"]:
+    if plan["names"] and plan.get("platform") != "macos":
         _run("disable", *plan["names"])
 
 
 def remove_template(target, directory):
     plan = owned_services(target, directory)
     if plan is not None:
+        if plan.get("platform") == "macos":
+            from scripts.tfi_release_platform_macos import remove_services
+            remove_services(Path(directory), plan["names"])
+            return
         if plan["names"]:
             _run("disable", *plan["names"])
         if plan["template"] is not None:
