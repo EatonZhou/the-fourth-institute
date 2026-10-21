@@ -20,12 +20,16 @@ class Function:
 @pytest.fixture
 def mac_acl(monkeypatch):
     calls = []
-    state = {"entry": 0, "errno": errno.EINVAL, "acl": 123}
+    state = {"entry": 0, "errno": errno.EINVAL, "acl": 123, "query_errno": 0}
+    def query(fd, kind):
+        calls.append(("get", fd, kind))
+        ctypes.set_errno(state["query_errno"])
+        return state["acl"]
     def entry(*args):
         ctypes.set_errno(state["errno"])
         return state["entry"]
     lib = SimpleNamespace(
-        acl_get_fd_np=Function(lambda fd, kind: calls.append(("get", fd, kind)) or state["acl"]),
+        acl_get_fd_np=Function(query),
         acl_valid=Function(lambda acl: 0),
         acl_get_entry=Function(entry),
         acl_free=Function(lambda acl: calls.append(("free", acl)) or 0),
@@ -75,6 +79,22 @@ def test_acl_query_error_cannot_be_treated_as_empty_acl(tmp_path, mac_acl):
     with pytest.raises(OSError):
         private.read_private_bytes(target)
     assert mac_acl[1][-1] == ("free", 123)
+
+
+def test_absent_acl_on_open_descriptor_allows_private_roundtrip(tmp_path, mac_acl):
+    mac_acl[0].update(acl=None, query_errno=errno.ENOENT)
+    target = tmp_path / "private/key"
+    private.atomic_write_private_bytes(target, b"fixture")
+    assert private.read_private_bytes(target) == b"fixture"
+    assert not any(call[0] == "free" for call in mac_acl[1])
+
+
+@pytest.mark.parametrize("error", [0, errno.EACCES, errno.EBADF, errno.EINVAL, errno.ENOTSUP])
+def test_null_acl_query_only_accepts_explicit_absence(tmp_path, mac_acl, error):
+    mac_acl[0].update(acl=None, query_errno=error)
+    with pytest.raises(private.PrivateFileError):
+        private.atomic_write_private_bytes(tmp_path / "private/key", b"not-written")
+    assert not (tmp_path / "private/key").exists()
 
 
 def test_shared_private_atomic_write_checks_acl_before_payload(tmp_path, mac_acl):

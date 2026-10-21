@@ -52,9 +52,16 @@ def assert_private_posix_acl(descriptor: int) -> None:
     if sys.platform != "darwin":
         return
     library = _macos_acl_api()
+    ctypes.set_errno(0)
     acl = library.acl_get_fd_np(descriptor, 0x100)  # ACL_TYPE_EXTENDED
     if not acl:
-        raise PrivateFileError("Cannot verify private file extended ACL")
+        error = ctypes.get_errno()
+        # Darwin filesec_get_property(FILESEC_ACL) reports ENOENT when the
+        # opened object has no ACL. This is not a path lookup: the caller has
+        # already pinned and checked this descriptor's identity and mode.
+        if error == errno.ENOENT:
+            return
+        raise PrivateFileError(error, "Cannot verify private file extended ACL")
     try:
         if library.acl_valid(acl) != 0:
             raise PrivateFileError("Private file has an invalid extended ACL")
