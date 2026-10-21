@@ -982,7 +982,6 @@ modules:
       - "decision_2f67ed28db67"
       - "decision_769a35d6b5c7"
       - "decision_f22e45dfd382"
-      - "decision_46c37026e8ea"
     layer: "frontend"
     level: "component"
   - id: "interface.home"
@@ -1354,7 +1353,6 @@ protocols:
       - "decision_f22e45dfd382"
       - "decision_fc26f883773d"
       - "decision_fd9851ae01c0"
-      - "decision_46c37026e8ea"
       - "decision_605810a1292b"
       - "decision_f2a6a5dd4646"
       - "decision_4666241592d4"
@@ -1392,7 +1390,6 @@ protocols:
       - "decision_0f57656a2acd"
       - "decision_1b2bdf5c33d6"
       - "decision_4648f7fa3295"
-      - "decision_46c37026e8ea"
       - "decision_4adcc1ff2f2c"
       - "decision_4bc03b20c30f"
       - "decision_4dea0db1f45a"
@@ -2172,10 +2169,9 @@ protocols:
       - "interface.content"
     designs: []
     related_designs:
-      - "decision_46c37026e8ea"
       - "decision_9b94f218a188"
     description: "project_state.load_project_state 读取项目状态文件并形成规范响应；Project resource 的 read_state 动作复用该读模型，浏览器展示返回状态与诊断。项目目录接口另属 http-interface，不把它声称为 read_state。"
-    example: "项目页/Resource action read_state → project provider.project_state → load_project_state(project_id,resolved_root) → canonical_record → Overview。"
+    example: "Resource action read_state → project provider.project_state → load_project_state(project_id,resolved_root) → canonical_record → Overview。"
 
   - id: "resource-page-view"
     title: "资源页面地址、引用与正文呈现"
