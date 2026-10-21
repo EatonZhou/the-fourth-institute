@@ -52,6 +52,8 @@ def cleanup(run_dir: Path, *, timeout: float = 30) -> dict:
     manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
     if not isinstance(manifest, dict):
         raise ValueError('测试清理清单必须是对象')
+    from management_portal.test_framework import tau_fixture_paths
+    tau_fixture_paths.inspect(root)
     resources = manifest.get('resources', [])
     if not isinstance(resources, list) or any(
         not isinstance(resource_id, str)
@@ -105,8 +107,9 @@ def cleanup(run_dir: Path, *, timeout: float = 30) -> dict:
     if errors:
         # A registered/running project must keep its files for the next attempt.
         raise RuntimeError('；'.join(errors))
+    standalone_paths = tau_fixture_paths.cleanup(root)
     lifecycle.complete(scope_id)
-    removed = []
+    removed = standalone_paths
     for path in scratch:
         if path.is_symlink():
             path.unlink()

@@ -137,6 +137,14 @@ def build_prompt(
         "本用例没有独立团队声明：复用固定 Lineage，禁止因新 Run 或准备测试样本而新建团队。"
         "旧 Task Prompt 中笼统要求临时团队的语句不构成例外；无法在此范围内验证时报告缺口。"
     )
+    if planned["implementation"].get("standalone_git_fixture"):
+        fixture_instruction += (
+            " 本用例声明需在 Git checkout 外准备未初始化目录。"
+            "框架已在 run-context.json 的 standalone_fixture_dir 提供本用例专属位置；"
+            "仅在其下创建业务夹具，证据和 helper 仍写证据目录。"
+            "首次登记前确认候选目录不在任何既有 Git worktree 内。"
+            "结束通过正式入口注销本轮资源，再由框架回收该目录；不删除或移动其他目录。"
+        )
     account_instruction = ""
     if assignment and assignment.get("backend_route_id"):
         account_instruction = (
