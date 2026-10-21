@@ -12705,9 +12705,20 @@
     // time for the input history: the server lists it.
     async loadInputHistory(scope, pageToken = "") {
       const residentId = this.workspace.target().resident_id;
+      const revision = this.targetRevision;
       if (!residentId || scope !== this.workspace.inputHistoryScope()) return null;
-      const page = await window.PortalResidentService.inputHistory(residentId, { pageToken });
-      if (scope !== this.workspace.inputHistoryScope()) return null;
+      const isCurrent = () => revision === this.targetRevision
+        && residentId === this.workspace.target().resident_id
+        && scope === this.workspace.inputHistoryScope();
+      let page;
+      try {
+        page = await window.PortalResidentService.inputHistory(residentId, { pageToken });
+      } catch (error) {
+        if (!isCurrent()) return null;
+        if (Number(error?.status) === 404 && this.rejectUnavailableTarget(error)) return null;
+        throw error;
+      }
+      if (!isCurrent()) return null;
       return {
         messages: (Array.isArray(page?.messages) ? page.messages : []).map(residentProtocolMessageToWorkspace),
         next_page_token: String(page?.next_page_token || ""),

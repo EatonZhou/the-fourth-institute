@@ -29,16 +29,19 @@ function deferred() {let resolve, reject; const promise = new Promise((a, b) => 
 function deletionFixture() {
   const target = {id: 'resident_deleted', kind: 'resident', key: 'resident:resident_deleted', lineage_id: 'lineage_one', title: 'Known title'};
   const state = {chatTarget: target, residents: [{resident_id: target.id, title: target.title}], folderRequestSequence: 0};
-  const removal = deferred(), calls = [], notices = [];
+  const removal = deferred(), historyRead = deferred(), calls = [], notices = [];
   const location = new URL(`https://portal.test/lineage?resident=${target.id}`);
-  const shared = vm.createContext({window: {PortalI18n: i18n}, residentSessionScope: t => t.resident_id,
+  const shared = vm.createContext({window: {PortalI18n: i18n,
+    PortalResidentService: {inputHistory: () => historyRead.promise}}, residentSessionScope: t => t.resident_id,
+    residentProtocolMessageToWorkspace: message => message,
     RESIDENT_CHAT_WORKSPACE_SCHEMA: 'portal.chat_workspace.v3', newMessageIdentity: () => 'notice'});
-  vm.runInContext(declarations('portal_chat_workspace.js', ['rejectUnavailableTarget', 'showError']), shared);
+  vm.runInContext(declarations('portal_chat_workspace.js', ['rejectUnavailableTarget', 'showError', 'loadInputHistory']), shared);
   function panel(id) {
     const identity = {resident_id: id, title: 'Known title'};
-    return {target: () => identity, workspace: {target: () => identity}, options: {}, questions: {reset: noop},
+    return {target: () => identity, workspace: {target: () => identity, inputHistoryScope: () => identity.resident_id}, options: {}, questions: {reset: noop},
       targetRevision: 0, protocol: {destroy: () => calls.push(['detach', id])},
       rejectUnavailableTarget: shared.rejectUnavailableTarget, showError: shared.showError,
+      loadInputHistory: shared.loadInputHistory,
       showState(contract) {this.contract = contract;}, currentDetail: () => null,
       closeSurface: () => {throw Error('must not erase identity');}};
   }
@@ -62,8 +65,48 @@ function deletionFixture() {
   });
   vm.runInContext(declarations('lineage_workbench.js', ['deleteResidentFromWorkbench', 'retireDeletedResidentSurfaces',
     'clearDeletedResidentLocation', 'loadDetail', 'loadFolder']), ctx);
-  return {ctx, target, state, removal, calls, notices, primary, secondary, other, location};
+  return {ctx, target, state, removal, historyRead, calls, notices, primary, secondary, other, location};
 }
+
+test('history for a deleted Resident uses the unavailable Chat state instead of a global error', async () => {
+  const f = deletionFixture();
+  const pending = f.primary.loadInputHistory(f.target.id);
+  f.historyRead.reject(Object.assign(Error('resident not found'), {status: 404}));
+  assert.equal(await pending, null);
+  assert.equal(f.primary.target().resident_id, f.target.id);
+  assert.equal(f.primary.contract.subtitle, 'Resident 不可用');
+  assert.equal(f.primary.contract.composer.can_send, false);
+  assert.equal(f.primary.protocol, null);
+  assert.equal(f.other.contract, undefined);
+});
+
+test('late history results cannot affect a new Chat binding, including a reload of the same Resident', async () => {
+  for (const outcome of ['missing', 'success']) {
+    for (const sameResident of [true, false]) {
+      const f = deletionFixture();
+      const pending = f.primary.loadInputHistory(f.target.id);
+      f.primary.targetRevision++;
+      if (!sameResident) f.primary.target().resident_id = 'resident_other';
+      if (outcome === 'missing') f.historyRead.reject(Object.assign(Error('resident not found'), {status: 404}));
+      else f.historyRead.resolve({messages: [{message_id: 'old-message'}]});
+      assert.equal(await pending, null);
+      assert.equal(f.primary.contract, undefined);
+      assert.ok(f.primary.protocol);
+    }
+  }
+});
+
+test('history-specific permission and service errors still reach the error handler', async () => {
+  for (const status of [403, 500]) {
+    const f = deletionFixture();
+    const pending = f.primary.loadInputHistory(f.target.id);
+    const error = Object.assign(Error('history unavailable'), {status});
+    f.historyRead.reject(error);
+    await assert.rejects(pending, value => value === error);
+    assert.equal(f.primary.contract, undefined);
+    assert.ok(f.primary.protocol);
+  }
+});
 
 test('successful deletion keeps every matching Chat identity with a disabled composer', async () => {
   const f = deletionFixture();

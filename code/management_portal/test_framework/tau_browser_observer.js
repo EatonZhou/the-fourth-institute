@@ -249,7 +249,7 @@ async function observeBrowser(context, { evidenceDir }) {
           request_association: match ? 'portal_stream_identity' : 'unavailable_no_unique_transport_identity' });
       } else if (data.kind === 'portal_connections') {
         for (const entry of data.entries || []) {
-          const reason = /^(subscription_unchanged|subscription_changed|handover_complete|next_stream_closed|closed|stream_error|stale_stream|handover_timeout|next_stream_error|restart|leadership_released|page_closed|retry|caller_aborted|stream_batch_read|backlog_read|watch_closed|AbortError)$/.test(entry.reason || '') ? entry.reason : 'unknown';
+          const reason = /^(subscription_unchanged|subscription_changed|handover_complete|next_stream_closed|closed|stream_error|stale_stream|handover_timeout|next_stream_error|restart|leadership_released|page_closed|retry|caller_aborted|stream_batch_read|first_batch_read|backlog_read|watch_closed|AbortError)$/.test(entry.reason || '') ? entry.reason : 'unknown';
           const streamId = /^[a-z0-9-]{1,96}$/.test(entry.stream_id || '') ? entry.stream_id : null;
           const transportId = /^[a-z0-9-]{1,96}$/.test(entry.transport_id || '') ? entry.transport_id : null;
           const successor = /^[a-z0-9-]{1,96}$/.test(entry.successor_stream_id || '') ? entry.successor_stream_id : null;
@@ -294,7 +294,7 @@ async function observeBrowser(context, { evidenceDir }) {
       observer = new PerformanceObserver(list => entries(list.getEntries()));
       observer.observe({ type: 'resource', buffered: true });
     } catch { emit({ kind: 'observer_unavailable' }); }
-    const connectionReasons = new Set('subscription_unchanged subscription_changed handover_complete next_stream_closed closed stream_error stale_stream handover_timeout next_stream_error restart leadership_released page_closed retry caller_aborted stream_batch_read backlog_read watch_closed AbortError'.split(' '));
+    const connectionReasons = new Set('subscription_unchanged subscription_changed handover_complete next_stream_closed closed stream_error stale_stream handover_timeout next_stream_error restart leadership_released page_closed retry caller_aborted stream_batch_read first_batch_read backlog_read watch_closed AbortError'.split(' '));
     const connections = items => emit({ kind: 'portal_connections', entries: items.map(item => ({
       path: sanitize(item.url), reason: connectionReasons.has(item.reason) ? item.reason : 'unknown',
       stream_id: /^[a-z0-9-]{1,96}$/.test(item.stream_id || '') ? item.stream_id : null,

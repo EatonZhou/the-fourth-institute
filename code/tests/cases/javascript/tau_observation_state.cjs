@@ -84,7 +84,7 @@ function excludes(output, secrets) {
   for (const secret of secrets) assert.ok(!output.includes(secret), `must redact ${secret}`);
 }
 
-async function receiptIdentity(kind, reused, observe) {
+async function receiptIdentity(kind, reused, observe, reason = "AbortError") {
   const stream = kind === 'stream';
   const name = `${kind}_${reused ? 'reused' : 'unique'}`;
   await capture(name, async ({ context, observer, main, newFrame, openDocument, request, rows, output }) => {
@@ -116,7 +116,7 @@ async function receiptIdentity(kind, reused, observe) {
     current.closed.push({
       url: stream ? '/api/events?auth=event-query-secret' : '/api/instructions/execute?secret=fetch-query-secret',
       ...(stream ? { stream_id: ids[0] } : { transport_id: ids[0] }),
-      reason: stream ? 'handover_complete' : 'AbortError', at: '2026-10-16T01:02:03.000Z',
+      reason: stream ? 'handover_complete' : reason, at: '2026-10-16T01:02:03.000Z',
     });
     await observer.flush();
     const starts = rows().filter(row => row.kind === 'request_started'
@@ -135,7 +135,7 @@ async function receiptIdentity(kind, reused, observe) {
     assert.equal(closed.document_id, starts[0].document_id);
     assert.equal(closed.frame_id, starts[0].frame_id);
     assert.equal(closed.document_confirmed, true);
-    assert.equal(closed.reason, stream ? 'handover_complete' : 'AbortError');
+    assert.equal(closed.reason, stream ? 'handover_complete' : (reason === 'private-unknown-reason' ? 'unknown' : reason));
     assert.equal(closed.closed_at_ms, 1792112523000, 'production document probe serializes the receipt timestamp');
     assert.equal(closed.path, stream ? '/api/events' : '/api/instructions/execute');
     assert.equal(stream ? closed.stream_id : closed.transport_id, ids[0]);
@@ -264,6 +264,8 @@ const contracts = {
   stream_ready: streamReady,
   cancellation_unique: observe => receiptIdentity('cancellation', false, observe),
   cancellation_reused: observe => receiptIdentity('cancellation', true, observe),
+  first_batch_read: observe => receiptIdentity('cancellation', false, observe, 'first_batch_read'),
+  unknown_close_reason: observe => receiptIdentity('cancellation', false, observe, 'private-unknown-reason'),
   pending_capture: pendingCapture,
 };
 module.exports = { contracts, capture };

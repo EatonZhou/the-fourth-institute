@@ -87,3 +87,9 @@ def test_actual_stream_ready_precedes_handover_close():
     :design-point:
     """
     _run_contract("stream_ready")
+
+
+def test_first_batch_close_reason_survives_observation_without_guessing_unknown_reasons():
+    """首批读取完成的关闭回执可归因，未知原因仍保留未知。"""
+    _run_contract("first_batch_read")
+    _run_contract("unknown_close_reason")
