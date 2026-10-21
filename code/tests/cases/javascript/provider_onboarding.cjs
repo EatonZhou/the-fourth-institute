@@ -4,7 +4,7 @@ const {JSDOM} = require('jsdom');
 const dom = new JSDOM('<main></main>', {url: 'http://portal.invalid/'});
 const {window} = dom;
 const calls = [];
-let missing = false, fail = false, roles = [];
+let missing = false, fail = false, roles = [], finishCheck, holdCheck = false;
 window.PortalI18n = {t: value => value};
 window.PortalUI = {createDialogController: ({modal, onClose}) => ({
   open: () => modal.setAttribute('open', ''), close: () => onClose(), destroy: () => {},
@@ -19,7 +19,11 @@ window.PortalInstructionClient = {execute: async (name, args, options) => {
     case 'ListBackendRoles': return {roles};
     case 'GetProviderAccountSetup': return {setup: {provider: 'claude', enabled: true, runtime_ready: !missing,
       login_state: 'logged_in', supports_tools: true, models: [{id: 'model'}], default_model: 'model'}};
-    case 'CheckProviderAccount': return {execution_id: 'execution_check'};
+    case 'CheckProviderAccount':
+      if (holdCheck) return new Promise(resolve => { finishCheck = resolve; });
+      return {execution_id: 'execution_check'};
+    case 'OpenProviderAccountLogin': return {session: {state: 'pending'}};
+    case 'CancelProviderAccountLogin': return {};
     case 'GetProviderAccountCheck': return {check: {execution_id: 'execution_check', status: 'completed', passed: !fail,
       model: 'model', message: fail ? '测试未通过' : '测试通过'}};
     case 'UpdateBackendRole':
@@ -30,7 +34,7 @@ window.PortalInstructionClient = {execute: async (name, args, options) => {
   }
 }};
 const context = vm.createContext({window, document: window.document, Node: window.Node, AbortController,
-  setTimeout, clearTimeout, URL, console});
+  setTimeout, clearTimeout, setInterval, clearInterval, URL, console});
 const source = fs.readFileSync('management_portal/static/portal_management_backend.js', 'utf8').replaceAll('export ', '');
 vm.runInContext(source, context);
 const flush = () => new Promise(resolve => setImmediate(resolve));
@@ -54,5 +58,22 @@ const click = text => {
   click('测试并完成'); await flush(); await flush();
   assert(!calls.some(call => call.name === 'UpdateBackendRole'));
   assert.match(window.document.querySelector('[data-backend-setup-status]').textContent, /未通过/);
-  click('关闭'); console.log('provider onboarding UI passed');
+  click('关闭');
+  holdCheck = true; fail = false;
+  click('接入与测试'); await flush();
+  click('测试并完成'); await flush();
+  const status = window.document.querySelector('[data-backend-setup-status]');
+  assert.match(status.textContent, /正在启动本地后台/);
+  assert.equal(status.getAttribute('aria-busy'), 'true');
+  assert([...window.document.querySelectorAll('button')].find(el => el.textContent === '测试并完成').disabled);
+  finishCheck({execution_id: 'execution_check'}); await flush(); await flush();
+  assert.match(status.textContent, /测试通过/);
+  assert.equal(status.getAttribute('aria-busy'), 'false');
+  click('关闭');
+  const login = context.openLogin('existing'); await flush();
+  assert.match(window.document.querySelector('[data-backend-login-state]').textContent, /正在获取登录授权信息/);
+  click('取消登录'); await flush();
+  assert.match(window.document.querySelector('[data-backend-login-state]').textContent, /登录已取消/);
+  login.close();
+  console.log('provider onboarding UI passed');
 })().catch(error => {console.error(error); process.exitCode = 1;});

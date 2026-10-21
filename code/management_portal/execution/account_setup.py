@@ -6,6 +6,8 @@ owners. A check is an ordinary durable Execution, never a second model client.
 from __future__ import annotations
 
 import time
+import logging
+import subprocess
 
 from management_portal.hatg.contracts import InstructionError, invalid, not_found
 from . import account_registrations as registrations, provider_updates
@@ -13,6 +15,8 @@ from .accounts import default_execution_accounts
 from .client import ExecutionClient
 from .contracts import ExecutionRequest, SessionOptions
 from .provider_catalog import AGENT_PROVIDERS
+
+logger = logging.getLogger(__name__)
 
 
 def account(account_id):
@@ -55,7 +59,7 @@ def get_setup(inv):
         info = catalog(row)
         result.update(models=info.get("models", []), default_model=info.get("default_model", ""))
     except Exception:
-        result["catalog_error"] = "模型目录暂不可用，请准备环境、完成授权后重试。"
+        result["catalog_error"] = "模型列表尚未加载；完成授权后，点击“测试并完成”启动后台并验证连接。"
     return {"setup": result}
 
 
@@ -91,10 +95,21 @@ def check(inv):
         from . import account_hosting
         # Registration may precede runtime preparation. Starting an already
         # running instance is idempotent and preserves its existing login.
-        account_hosting.start_codex_instance(row["account_id"])
-        # systemd Type=simple confirms the process, not its listening socket.
-        # Validate only after the newly started app-server answers its catalog.
-        info = _started_codex_catalog(row)
+        from management_portal.codex_app_server_client import CodexAppServerUnavailable
+        try:
+            account_hosting.start_codex_instance(row["account_id"])
+        except (OSError, RuntimeError, ValueError, subprocess.SubprocessError) as exc:
+            logger.warning("Codex service start failed for %s (%s)", row["account_id"], type(exc).__name__)
+            raise InstructionError("instruction.owner_unavailable",
+                "Codex 本地后台启动失败。登录授权仍然保留；请重试“测试并完成”，若仍失败请检查该账号的后台服务日志。",
+                details={"reason": "account.service_start_failed"}, retryable=True) from None
+        try:
+            # Process startup does not prove that the listening socket is ready.
+            info = _started_codex_catalog(row)
+        except CodexAppServerUnavailable:
+            raise InstructionError("instruction.owner_unavailable",
+                "Codex 本地后台未能在规定时间内就绪。登录授权仍然保留；请重试“测试并完成”，若仍失败请检查该账号的后台服务日志。",
+                details={"reason": "account.service_not_ready"}, retryable=True) from None
     else:
         info = None
     model = inv.argument("model") or (info if info is not None else catalog(row)).get("default_model", "")

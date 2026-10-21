@@ -1,4 +1,32 @@
 {
+  "正在获取登录授权信息…已等待 {p0} 秒。显示授权链接或设备码后，请在浏览器完成授权。": {
+    "zh-CN": "正在获取登录授权信息…已等待 {p0} 秒。显示授权链接或设备码后，请在浏览器完成授权。",
+    "en": "Requesting sign-in details… {p0} seconds elapsed. When the link or device code appears, authorize in your browser."
+  },
+  "正在检查运行环境与登录状态…": {
+    "zh-CN": "正在检查运行环境与登录状态…",
+    "en": "Checking the runtime and sign-in status…"
+  },
+  "正在启动本地后台并检查连接，请稍候…": {
+    "zh-CN": "正在启动本地后台并检查连接，请稍候…",
+    "en": "Starting the local service and checking the connection. Please wait…"
+  },
+  "已等待 {p0} 秒": {
+    "zh-CN": "已等待 {p0} 秒",
+    "en": "{p0} seconds elapsed"
+  },
+  "模型列表尚未加载；完成授权后，点击“测试并完成”启动后台并验证连接。": {
+    "zh-CN": "模型列表尚未加载；完成授权后，点击“测试并完成”启动后台并验证连接。",
+    "en": "Models have not loaded yet. After signing in, select “Test and finish” to start the local service and verify the connection."
+  },
+  "Codex 本地后台启动失败。登录授权仍然保留；请重试“测试并完成”，若仍失败请检查该账号的后台服务日志。": {
+    "zh-CN": "Codex 本地后台启动失败。登录授权仍然保留；请重试“测试并完成”，若仍失败请检查该账号的后台服务日志。",
+    "en": "The local Codex service could not start. Your sign-in is preserved. Retry “Test and finish”; if it fails again, check this account’s service logs."
+  },
+  "Codex 本地后台未能在规定时间内就绪。登录授权仍然保留；请重试“测试并完成”，若仍失败请检查该账号的后台服务日志。": {
+    "zh-CN": "Codex 本地后台未能在规定时间内就绪。登录授权仍然保留；请重试“测试并完成”，若仍失败请检查该账号的后台服务日志。",
+    "en": "The local Codex service did not become ready in time. Your sign-in is preserved. Retry “Test and finish”; if it fails again, check this account’s service logs."
+  },
   "模型列表（可选，JSON 数组）": {
     "zh-CN": "模型列表（可选，JSON 数组）",
     "en": "Models (optional, JSON array)"

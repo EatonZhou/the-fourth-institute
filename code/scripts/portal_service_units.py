@@ -11,6 +11,8 @@ import os
 import shutil
 import re
 import shlex
+import plistlib
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -458,11 +460,49 @@ def _native_codex_service(account_id: str):
                                             cwd=SOURCE_ROOT, log_path=instance_root() / "logs" / f"{name}.log",
                                             directory=directory)
     else:
+        from scripts.portal_instance_storage import site_environment
+        # launchd does not inherit the installing process's environment. In
+        # particular npm's Codex entry uses /usr/bin/env node, and Node lives in
+        # the desktop bundle rather than the GUI login's default PATH.
+        environment = site_environment(deployment)
+        for key in ("PATH", "HOME", "XDG_CONFIG_HOME", "XDG_CACHE_HOME", "TMPDIR",
+                    "LANG", "LC_ALL", "TFI_MACOS_SERVICE_DIRECTORY"):
+            if key in os.environ:
+                environment[key] = os.environ[key]
+        environment.update(PYTHONNOUSERSITE="1", PYTHONDONTWRITEBYTECODE="1", PYTHONUTF8="1")
         log_root = instance_root() / "logs"
         log_root.mkdir(parents=True, exist_ok=True)
         content = adapter.command_unit_text(name, command, cwd=SOURCE_ROOT,
-                                            log_root=log_root, log_name=name)
+                                            log_root=log_root, log_name=name, environment=environment)
     return adapter, directory, name, content, ServiceControl()
+
+
+def _register_native_codex(adapter, directory, name, content, controller):
+    """Repair only the exact pre-environment macOS definition owned by us.
+
+    Existing jobs with a different command, account or logs remain foreign.
+    The caller holds the account lock; stop before atomically changing a job so
+    launchd cannot retain its old environment after a successful registration.
+    """
+    if sys.platform == "darwin":
+        path = adapter.unit_path(directory, name)
+        if path.is_file() and not path.is_symlink():
+            previous = path.read_text(encoding="utf-8")
+            legacy = plistlib.loads(content.encode("utf-8"))
+            legacy.pop("EnvironmentVariables", None)
+            if previous != content and previous == plistlib.dumps(legacy, sort_keys=True).decode("utf-8"):
+                controller.stop(name)
+                with tempfile.NamedTemporaryFile(dir=directory, prefix=".codex-", delete=False) as stream:
+                    temporary = Path(stream.name)
+                    try:
+                        stream.write(content.encode("utf-8"))
+                        stream.flush()
+                        os.fsync(stream.fileno())
+                        temporary.replace(path)
+                    finally:
+                        temporary.unlink(missing_ok=True)
+    return adapter.register_services(directory, {name: content}, **(
+        {"password_env": "PORTAL_WINDOWS_SERVICE_PASSWORD"} if sys.platform == "win32" else {}))
 
 
 def _native_codex_state(account_id: str) -> dict[str, Any]:
@@ -479,17 +519,20 @@ def start_codex_instance(account_id: str) -> dict[str, Any]:
     codex_socket_path(account_id).parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     if sys.platform in {"win32", "darwin"}:
         adapter, directory, name, content, controller = _native_codex_service(account_id)
-        created = adapter.register_services(directory, {name: content}, **(
-            {"password_env": "PORTAL_WINDOWS_SERVICE_PASSWORD"} if sys.platform == "win32" else {}))
-        try:
-            controller.start(name)
-        except Exception:
-            if created:
-                try:
-                    controller.stop(name)
-                finally:
-                    adapter.remove_services(directory, created)
-            raise
+        directory.mkdir(parents=True, exist_ok=True)
+        lock_root = instance_root() / "service-locks"
+        lock_root.mkdir(parents=True, exist_ok=True, mode=0o700)
+        with (lock_root / f"{name}.lock").open("a+b") as stream, lock_stream(stream):
+            created = _register_native_codex(adapter, directory, name, content, controller)
+            try:
+                controller.start(name)
+            except Exception:
+                if created:
+                    try:
+                        controller.stop(name)
+                    finally:
+                        adapter.remove_services(directory, created)
+                raise
         return _native_codex_state(account_id)
     install_codex_unit_template()
     _run("systemctl", "--user", "enable", "--now", _codex_unit(account_id))

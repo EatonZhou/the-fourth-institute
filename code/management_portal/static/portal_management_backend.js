@@ -49,7 +49,17 @@ function loadStyle() {
 function errorText(error) {
   if (error.details?.reason === "account.busy") return t("账号仍绑定 {p0} 个会话、{p1} 个执行；请先迁移会话。", {
     p0: error.details?.session_count ?? "—", p1: error.details?.execution_count ?? "—"});
-  return error.message || t("操作失败，请重试。");
+  return error.message ? t(error.message) : t("操作失败，请重试。");
+}
+function secretSubmissionError(error) {
+  // Never display an arbitrary exception from a request containing credentials.
+  const code = String(error.code || "");
+  if (error.details?.reason === "model_api.secret_write_failed") return t("Portal 服务器无法保存密钥。请管理员检查密钥存储目录的写入权限和磁盘空间，再重新提交；这不表示 API Key 无效。");
+  if (code === "instruction.conflict") return t("连接名称已存在。请在高级设置中换一个名称，或编辑已有连接；这不表示 API Key 无效。");
+  if (/permission|forbidden|unauthorized|access_denied/.test(code) || [401, 403].includes(error.status)) return t("当前登录身份没有添加或修改 AI 连接的权限。请重新登录或联系管理员。");
+  if (code === "instruction.invalid_arguments") return t("连接信息不符合要求。请检查接口地址、模型名称和高级设置后重试。");
+  if (["TypeError", "AbortError"].includes(error.name) || /network|timeout|unavailable/.test(code)) return t("未能确认保存结果。请检查网络与 Portal 服务，刷新连接列表确认是否已保存，再重试。");
+  return t("AI 连接保存失败。请检查 Portal 服务日志中的失败原因，再重新提交 API Key；密钥尚未经过模型服务验证。");
 }
 function dialog(title, onClose = () => {}) {
   loadStyle();
@@ -64,12 +74,16 @@ function dialog(title, onClose = () => {}) {
 
 export function openLogin(accountId, {onChanged = () => {}} = {}) {
   if (logins.has(accountId)) return logins.get(accountId);
-  let timer, closed = false, terminal = false;
+  let timer, closed = false, terminal = false, pending = true;
+  const startedAt = Date.now();
+  const waiting = () => t("正在获取登录授权信息…已等待 {p0} 秒。显示授权链接或设备码后，请在浏览器完成授权。", {
+    p0: Math.floor((Date.now() - startedAt) / 1000)});
+  const progressTimer = setInterval(() => { if (!closed && pending) status.textContent = waiting(); }, 1000);
   const abort = new AbortController();
   const view = dialog(t("账号登录：{p0}", {p0: accountId}), () => {
-    closed = true; clearTimeout(timer); abort.abort(); logins.delete(accountId);
+    closed = true; clearTimeout(timer); clearInterval(progressTimer); abort.abort(); logins.delete(accountId);
   });
-  const status = node("p", t("正在启动登录…"), {role: "status", "data-backend-login-state": ""});
+  const status = node("p", waiting(), {role: "status", "data-backend-login-state": "", "aria-busy": "true"});
   const code = node("code", "", {"data-backend-login-code": ""});
   const link = node("a", t("打开授权页面"), {target: "_blank", rel: "noopener noreferrer", hidden: true});
   const authorization = node("form", undefined, {class: "backendForm", hidden: true});
@@ -88,14 +102,16 @@ export function openLogin(accountId, {onChanged = () => {}} = {}) {
     cancel.disabled = true; clearTimeout(timer);
     try {
       await call("CancelProviderAccountLogin", {account_id: accountId});
-      if (!closed) { terminal = true; status.textContent = t("登录已取消"); code.textContent = ""; link.hidden = true; authorization.hidden = true; response.value = ""; }
+      if (!closed) { terminal = true; pending = false; clearInterval(progressTimer); status.setAttribute("aria-busy", "false"); status.textContent = t("登录已取消"); code.textContent = ""; link.hidden = true; authorization.hidden = true; response.value = ""; }
     } catch (error) { if (!closed) { status.textContent = errorText(error); cancel.disabled = false; } }
   }, true);
   view.el.append(status, code, link, authorization, cancel); view.open(); logins.set(accountId, view);
   const render = result => {
     if (closed || terminal) return;
     const session = result.session || {};
-    status.textContent = t(loginStates[session.state] || session.state || "正在启动登录…");
+    pending = !session.state || session.state === "pending";
+    status.setAttribute("aria-busy", String(pending));
+    status.textContent = pending ? waiting() : t(session.error || loginStates[session.state] || session.state);
     code.textContent = session.verification_code || "";
     link.hidden = true; link.removeAttribute("href");
     try {
@@ -103,6 +119,7 @@ export function openLogin(accountId, {onChanged = () => {}} = {}) {
       if (["https:", "http:"].includes(url.protocol)) { link.href = url.href; link.hidden = false; }
     } catch (_) { /* No authorization URL yet. */ }
     terminal = ["succeeded", "failed", "expired"].includes(session.state);
+    if (terminal) clearInterval(progressTimer);
     cancel.disabled = terminal;
     authorization.hidden = terminal || !session.requires_code_input;
     submit.disabled = session.state !== "awaiting_user";
@@ -114,6 +131,7 @@ export function openLogin(accountId, {onChanged = () => {}} = {}) {
     catch (error) { if (!closed && !terminal) { status.textContent = errorText(error); timer = setTimeout(poll, 4000); } }
   };
   void call("OpenProviderAccountLogin", {account_id: accountId}, {signal: abort.signal}).then(render).catch(error => {
+    pending = false; clearInterval(progressTimer); status.setAttribute("aria-busy", "false");
     if (!closed) status.textContent = errorText(error);
   });
   return view;
@@ -141,19 +159,22 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
   const choices = node("div", undefined, {class: "backendChoices"});
   for (const [title, description, action] of [
     ["订阅账号登录", "已有支持的 AI 编程订阅？给账号起名，选择后端，再通过浏览器登录授权，无需填写 API Key。", addSubscription],
-    ["使用模型 API", "已有 API Key？填写接口地址、模型名称和密钥，保存后继续测试；也可只保存接口。", addApi],
+    ["使用 API Key", "只需服务商提供的接口地址、API Key 和模型名称。Portal 自动建立连接，随后测试并启用 AI。", addApi],
   ]) {
     const card = node("div", undefined, {class: "backendChoice"});
     card.append(node("h3", t(title)), node("p", t(description)), action); choices.append(card);
   }
   introduction.append(choices); root.append(introduction);
+  const management = advanced(root);
   const sections = {};
-  for (const [key, title] of [["providers", "Provider"], ["accounts", "执行账号"], ["apis", "模型 API"], ["roles", "Backend 角色"]]) {
+  for (const [key, title] of [["accounts", "已接入的 AI"], ["providers", "Provider"], ["apis", "模型 API"], ["roles", "Backend 角色"]]) {
     const section = node("section", undefined, {class: "settingsSection", "data-backend-section": key, "aria-label": t(title)});
     const header = node("header"), actions = node("div", undefined, {class: "backendActions"});
     header.append(node("h2", t(title)), actions);
     const output = node("div", undefined, {class: "backendTableScroll"});
-    section.append(header, output); root.append(section); sections[key] = {output, actions};
+    section.append(header, output);
+    if (key === "accounts") root.insertBefore(section, management.parentElement); else management.append(section);
+    sections[key] = {output, actions};
   }
   const run = async (work, secret = false) => {
     if (busy || destroyed) return;
@@ -162,7 +183,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     const disabled = buttons.map(el => el.disabled); buttons.forEach(el => el.disabled = true);
     try { const completed = await work(); if (!destroyed && completed !== false) notice.textContent = t("已保存"); }
     catch (error) { if (!destroyed) {
-      const message = secret ? t("密钥提交失败，请检查配置后重新输入。") : errorText(error);
+      const message = secret ? secretSubmissionError(error) : errorText(error);
       notice.textContent = message;
       const alert = editor?.el.querySelector('[role="alert"]'); if (alert) alert.textContent = message;
     } }
@@ -192,8 +213,8 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
   }
   const saveButton = form => form.append(node("button", t("保存"), {type: "submit", class: "portalButton is-primary"}));
   function setupEditor(accountId) {
-    let timer, closed = false, checking = false, working = false, setup = null;
-    const {view, form} = newEditor("接入并启用 AI", () => { closed = true; clearTimeout(timer); });
+    let timer, progressTimer, closed = false, checking = false, working = false, setup = null;
+    const {view, form} = newEditor("接入并启用 AI", () => { closed = true; clearTimeout(timer); clearInterval(progressTimer); });
     form.append(node("p", accountId));
     const status = node("p", "", {role: "status", "data-backend-setup-status": ""});
     const capabilities = node("p", "");
@@ -207,9 +228,9 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       const result = await execute("PrepareProviderRuntime", {provider: setup.provider});
       status.textContent = t(result.preparation.message || (result.preparation.status === "ready" ? "运行环境已就绪" : "正在准备运行环境…"));
       await reload();
-    }), true);
+    }, "正在准备运行环境…"), true);
     const authorize = button("登录", () => {
-      login = openLogin(accountId, {onChanged: () => { login?.close(); void reload(); }});
+      login = openLogin(accountId, {onChanged: () => { login?.close(); void perform(reload); }});
     }, true);
     const retry = button("刷新", () => void perform(reload));
     const test = button("测试并完成", () => void perform(async () => {
@@ -219,7 +240,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
         const receipt = await execute("CheckProviderAccount", {account_id: accountId, model: model.value.trim()});
         await pollCheck(receipt.execution_id);
       } catch (error) { checking = false; model.disabled = false; useDefault.disabled = false; throw error; }
-    }), true);
+    }, "正在启动本地后台并检查连接，请稍候…"), true);
     form.append(capabilities, status, actions(prepare, authorize, retry, test));
     form.addEventListener("submit", event => event.preventDefault());
     function setButtons() {
@@ -229,12 +250,17 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       test.disabled = !canWrite || !setup?.enabled || !setup?.runtime_ready || working || checking;
       retry.disabled = working || checking;
     }
-    async function perform(work) {
+    async function perform(work, message = "正在检查运行环境与登录状态…") {
       if (closed || working) return;
       working = true; setButtons();
+      const startedAt = Date.now();
+      status.setAttribute("aria-busy", "true");
+      status.textContent = t(message);
+      progressTimer = setInterval(() => { if (!closed) status.textContent = t(message) + " " +
+        t("已等待 {p0} 秒", {p0: Math.floor((Date.now() - startedAt) / 1000)}); }, 1000);
       try { await work(); }
       catch (error) { if (!closed) status.textContent = errorText(error); }
-      finally { working = false; if (!closed) setButtons(); }
+      finally { clearInterval(progressTimer); working = false; if (!closed) { status.setAttribute("aria-busy", "false"); setButtons(); } }
     }
     async function reload() {
       const result = await execute("GetProviderAccountSetup", {account_id: accountId});
@@ -347,15 +373,16 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
   function apiEditor(api = null) {
     const {view, form} = newEditor(api ? "编辑模型 API" : "新增模型 API");
     form.append(node("p", t(api ? "修改连接信息。API Key 留空时保留当前密钥。" : "准备好服务商提供的 API Key、Base URL 和模型名称。新增接口使用 OpenAI 兼容的 Chat Completions 协议。"), {class: "backendHint"}));
-    const id = field(form, "连接名称", "api_id", api?.api_id || "", {required: true, readOnly: Boolean(api), placeholder: "my-model-api", ...(!api ? {pattern: "[a-z][a-z0-9_\\-]{0,127}"} : {})});
-    hint(id, "自己起一个唯一名称，保存后不可改名。以小写字母开头，只用小写字母、数字、下划线或短横线，最多 128 字符。");
     const url = field(form, "接口基础地址（Base URL）", "base_url", api?.base_url || "", {type: "url", required: true, placeholder: "https://api.example.com/v1"});
     hint(url, "复制服务商提供的 API 基础地址，不是官网或聊天网页；不要附加 /chat/completions。");
-    const model = field(form, "模型名称", "default_model", api?.default_model || "", {required: true, placeholder: "example-model"});
-    hint(model, "填写服务商文档中的模型标识，必须与接口支持的名称完全一致。");
     const secret = field(form, "API Key（密钥）", "secret", "", {type: "password", autocomplete: "new-password"});
     hint(secret, api ? "留空保留当前密钥；填写则替换。密钥不会回显，也不是一次性验证码。" : "粘贴服务商生成的 API Key。Portal 会保存供后续调用使用，提交后不回显；这不是一次性验证码。无需密钥的接口可留空。");
+    const model = field(form, "模型名称", "default_model", api?.default_model || "", {required: true, placeholder: "example-model"});
+    hint(model, "填写服务商文档中的模型标识，必须与接口支持的名称完全一致。");
     const options = advanced(form);
+    const generatedId = "api-" + [...window.crypto.getRandomValues(new Uint8Array(12))].map(n => n.toString(16).padStart(2, "0")).join("");
+    const id = field(options, "连接名称（可选）", "api_id", api?.api_id || "", {readOnly: Boolean(api), placeholder: t("留空自动生成，无需从服务商获取"), ...(!api ? {pattern: "[a-z][a-z0-9_\\-]{0,127}"} : {})});
+    hint(id, "仅用于在 Portal 中区分连接，留空即可。自定义时以小写字母开头，只用小写字母、数字、下划线或短横线，最多 128 字符。");
     const provider = field(options, "服务商名称（可选）", "provider", api?.provider || "", {placeholder: "example-provider"});
     hint(provider, "仅用于标记接口来源，不是登录账号；填写服务商名称即可。");
     const path = field(options, "服务器上的密钥文件路径（可选）", "secret_file", api?.secret_file || "");
@@ -367,11 +394,12 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     const enabled = field(options, "启用此接口", "enabled", "", {type: "checkbox"}); enabled.checked = api?.enabled !== false;
     const canCreateAccount = !api && canRegister && state.providers.some(p => p.provider === "provider_api" && p.kinds.includes("api_profile"));
     const account = canCreateAccount ? field(options, "AI 账号名称（可选）", "account_id", "", {pattern: "[a-z][a-z0-9_\\-]{0,127}", placeholder: t("留空使用连接名称")}) : null;
-    const register = canCreateAccount ? field(form, "同时添加为 AI 账号，继续接入与测试", "register_account", "", {type: "checkbox"}) : null;
+    const register = canCreateAccount ? field(options, "同时添加为 AI 账号，继续接入与测试", "register_account", "", {type: "checkbox"}) : null;
     if (register) { register.checked = true; hint(register, "用于 Resident 对话。保存后选择模型并测试，可设为默认 AI；直连模型 API 不提供工具执行。测试会发起模型调用，可能产生费用。"); }
     let createdId = "";
     saveButton(form); form.addEventListener("submit", event => {
       event.preventDefault(); if (busy) return;
+      const apiId = id.value.trim() || generatedId;
       const modelsChanged = models.value.trim() !== declaredModels;
       let catalog = api?.models || [];
       if (modelsChanged) {
@@ -389,8 +417,8 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       void run(async () => {
         try {
           if (!createdId) {
-            await execute(api ? "UpdateModelApi" : "CreateModelApi", api ? {api_id: api.api_id, changes} : {api_id: id.value.trim(), ...changes});
-            if (!api) createdId = id.value.trim();
+            await execute(api ? "UpdateModelApi" : "CreateModelApi", api ? {api_id: api.api_id, changes} : {api_id: apiId, ...changes});
+            if (!api) { createdId = apiId; id.value = apiId; }
           }
         }
         finally { delete changes.secret; }
@@ -399,6 +427,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
           try {
             await execute("RegisterProviderAccount", {account_id: accountId, provider: "provider_api", kind: "api_profile", config: {api_id: createdId}, max_concurrency: 1});
           } catch (_) {
+            options.parentElement.open = true;
             for (const input of [id, provider, url, model, path, models, secret, enabled]) input.disabled = true;
             const message = t("API 已保存，但 AI 账号尚未添加。可修改账号名称后重试保存，不会重复创建 API；也可取消勾选，仅保留接口。");
             form.querySelector('[role="alert"]').textContent = message; notice.textContent = message;

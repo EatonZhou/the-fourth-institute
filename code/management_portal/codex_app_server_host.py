@@ -85,6 +85,15 @@ def run_host(path, binary, account_home, stop_event, *, platform=None, startup_t
     if windows:
         command += ["--ws-auth", "capability-token", "--ws-token-sha256", hashlib.sha256(token.encode()).hexdigest()]
     env = dict(os.environ, CODEX_HOME=str(account_home))
+    # Native service definitions contain configuration paths, never proxy
+    # credentials. Resolve the same saved egress as login at process startup.
+    from management_common import portal_network
+    proxy = portal_network.saved_proxy_environment()
+    if proxy is None:
+        proxy = portal_network.inherited_proxy_environment()
+    for key in portal_network.PROXY_KEYS:
+        env.pop(key, None)
+    env.update(proxy)
     process = spawn_process(command, cwd=str(account_home), env=env, stdin=subprocess.DEVNULL,
                             stderr=subprocess.PIPE, text=True, encoding="utf-8", errors="replace")
     addresses = queue.Queue(maxsize=1)

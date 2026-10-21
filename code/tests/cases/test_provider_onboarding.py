@@ -154,6 +154,25 @@ def test_default_requires_successful_current_account_check(monkeypatch):
         setup.require_verified(args)
 
 
+@pytest.mark.parametrize("stage", ["start", "ready"])
+def test_failed_codex_service_reports_recovery_without_submitting(monkeypatch, stage):
+    from management_portal.execution import account_hosting
+    from management_portal.codex_app_server_client import CodexAppServerUnavailable
+    monkeypatch.setattr(setup, "account", lambda _: row("codex"))
+    monkeypatch.setattr(updates, "runtime_available", lambda _: True)
+    start = Mock(side_effect=OSError("private service detail") if stage == "start" else None)
+    monkeypatch.setattr(account_hosting, "start_codex_instance", start)
+    monkeypatch.setattr(setup, "_started_codex_catalog", Mock(side_effect=CodexAppServerUnavailable("private socket path")))
+    client = Mock()
+    monkeypatch.setattr(setup, "ExecutionClient", client)
+    with pytest.raises(InstructionError) as error:
+        setup.check(invoke(account_id="existing", model="model"))
+    assert "登录授权仍然保留" in str(error.value)
+    assert "private" not in str(error.value)
+    assert error.value.retryable
+    client.assert_not_called()
+
+
 def test_unmapped_imported_role_uses_default(monkeypatch):
     monkeypatch.setattr(registrations, "roles", lambda: [
         {"role": "coding", "account_id": None}, {"role": "default", "account_id": "existing"}])
