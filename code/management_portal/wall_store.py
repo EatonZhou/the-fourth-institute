@@ -9,7 +9,10 @@ TIME_FIELDS = {'wall_jobs': ('created_at', 'completed_at', 'updated_at'),
                'wall_resident_cleanup': ('retry_at',)}
 
 JOB_TEXT = ('action','actor','backend_route_id','block','effect_id','error','event_id','event_source_id','trigger_path_id','lineage_id','message','message_id','project','publication_commit','resident_id','resident_scope','retry_of','retry_requested_by','routing_note','source_id','status','summary','title','lineage_scope','backend','schema')
-JOB_JSON = ('recommendation','tau_failure','operation_error')
+SUBMISSION_TEXT = ('request_id', 'idempotency_key', 'instruction_id', 'instruction',
+                   'submission_state', 'submission_reason')
+JOB_TEXT += SUBMISSION_TEXT
+JOB_JSON = ('recommendation','tau_failure','operation_error','submission_error')
 JOB_ARRAY = ('published_blocks','published_paths','result_block_ids','test_case_ids','test_run_ids')
 TABLES = {
  'wall_projects': {'id':'TEXT PRIMARY KEY','title':'TEXT','root':'TEXT','project_id':'TEXT','automation':'JSONB','schedules':'JSONB','deleting':'BOOLEAN'},
@@ -24,6 +27,19 @@ CREATE TABLE IF NOT EXISTS wall_reads (actor TEXT NOT NULL,project TEXT NOT NULL
 CREATE TABLE IF NOT EXISTS wall_reviews (actor TEXT NOT NULL,project TEXT NOT NULL,block TEXT NOT NULL,revision TEXT NOT NULL,PRIMARY KEY(actor,project,block));
 CREATE TABLE IF NOT EXISTS wall_settings (name TEXT PRIMARY KEY, enabled BOOLEAN NOT NULL);
 """
+# Older instances already have wall_jobs. Add the nullable receipt fields without
+# rewriting historical jobs, and avoid taking an ALTER lock on every process start.
+DDL += '\n'.join("""
+DO $upgrade$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_attribute
+                   WHERE attrelid = 'wall_jobs'::regclass AND attname = '%s' AND NOT attisdropped) THEN
+        ALTER TABLE wall_jobs ADD COLUMN %s %s;
+    END IF;
+END
+$upgrade$;
+""" % (name, identifier(name), kind)
+    for name, kind in [*((name, 'TEXT') for name in SUBMISSION_TEXT), ('submission_error', 'JSONB')])
 
 
 @lru_cache(maxsize=8)

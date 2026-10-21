@@ -12,7 +12,7 @@ The Fourth Institute brings agents from different AI providers into a shared bro
 
 **Windows is currently a trial/preview release. Installation, startup, and some features are still being refined and validated.**
 
-[Download the Windows installer](https://github.com/EatonZhou/the-fourth-institute/releases/download/windows-preview-20261021.1/TheFourthInstitute-Setup-x64.exe) · [Release notes and SHA-256 checksum](https://github.com/EatonZhou/the-fourth-institute/releases/tag/windows-preview-20261021.1)
+[Download the Windows installer](https://github.com/EatonZhou/the-fourth-institute/releases/download/windows-preview-20261021.2/TheFourthInstitute-Setup-x64.exe) · [Release notes and SHA-256 checksum](https://github.com/EatonZhou/the-fourth-institute/releases/tag/windows-preview-20261021.2)
 
 Double-click `TheFourthInstitute-Setup-x64.exe` and choose a new, empty installation folder. Setup lets you choose whether to include the Lenia example, then starts Portal and opens your browser. Python, PostgreSQL, NATS, and Node.js are included. First use requires internet access for core Python packages. Optional tools such as TeX are not installed automatically; missing tools affect only the features that use them. Later, use the desktop icon to open Portal.
 

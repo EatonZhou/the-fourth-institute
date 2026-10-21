@@ -54,14 +54,17 @@ Portal 安装器和通用 bootstrap 不自动安装 TeX。Article 的资料与�
 案例选择保存在安装目录的 `installation-options.ini`，首次准备时读取；已有安装记录
 的重试沿用原工程，不改变案例选择。命令行准备支持 `prepare_install.py --without-examples`。
 构建器从公开种子分别生成基础包和案例包，同时筛选 SQL、文件及关联清单，不修改源种子。
-安装向导只写入所选资料包；解压和工程准备也只读取该包。
+安装向导只写入所选的已准备工程包。首次启动直接解压到 `.build/w/engineering`，
+省掉 seed 中间目录及 seed 到工程的复制，不再在用户机器上调用 `prepare_install.py`。
+解压和复制到实例时显示文件数、百分比和已处理大小；完整解压后的重试复用该工程。
 健康检查保留 HTTP 503 的组件诊断，并在错误窗口列出未就绪组件。Windows 用户态
 组件进程已退出时立即报告，不再等待完整的六分钟超时。失败组件日志末尾同时进入
 主安装日志，便于直接看到异常。数据库和实例文件保留供诊断。
 启动完 web 后，进度进入整体就绪检查，显示尚未通过的项目与已等待时间。
 HTTP 检查保留状态码；网页返回错误时，即使 web 进程仍在运行，也附上其有界日志末尾。
-示例资料采用临时文件写入，完整清单最后落盘；解压中断后可重新准备。
-初始化由正式安装器完成完整性校验，并在应用启动前只读检查旧任务冻结状态。
+示例资料先解压到临时目录，完成后改名；中断后可重试，切换案例选择不会遗留旧案例文件。
+桌面安装传入 `--skip-file-verification`，取消安装阶段全量文件 SHA 校验和共享代码比对，
+不再重新扫描案例内容。ZIP 自带的损坏检测、路径边界、实例归属与旧任务冻结检查仍保留。
 验收用 Resident 监督工程仍使用其显式核验流程。
 依赖下载尚未完成的实例也可停止并卸载平台，实例文件仍保留。
 后台 Python 统一使用 UTF-8；应用缓存放在实例的 `home/AppData/`，
@@ -145,6 +148,8 @@ python3 code/scripts/windows/build.py
 编译安装包前，从实际待打包的代码和 seed 压缩包运行 `prepare_install.py --platform windows`，
 由正式安装器校验生成工程的入口、数据库摘要及全部文件清单；失败时停止构建。
 带案例和不带案例两种准备流程都必须通过此校验。
+通过后将准备完成的工程压成 `example-engineering.zip` 和 `base-engineering.zip`，
+替代原 seed 归档进入安装包；完整性校验在构建阶段执行。
 
 安装向导使用 [NSIS](https://nsis.sourceforge.io/Docs/)；内置 Python 使用
 [python-build-standalone](https://github.com/astral-sh/python-build-standalone)。

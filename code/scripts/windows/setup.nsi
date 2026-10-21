@@ -157,11 +157,11 @@ FunctionEnd
 Section "Platform"
   SetShellVarContext current
   SetOutPath "$INSTDIR"
-  File /r /x example-seed.zip /x base-seed.zip "${PAYLOAD}/*"
+  File /r /x example-engineering.zip /x base-engineering.zip "${PAYLOAD}/*"
   ${If} $IncludeExamples == ${BST_CHECKED}
-    File "${PAYLOAD}/example-seed.zip"
+    File "${PAYLOAD}/example-engineering.zip"
   ${Else}
-    File "${PAYLOAD}/base-seed.zip"
+    File "${PAYLOAD}/base-engineering.zip"
   ${EndIf}
   FileOpen $0 "$INSTDIR\installation-options.ini" w
   ${If} $IncludeExamples == ${BST_CHECKED}
@@ -216,6 +216,8 @@ Section "Uninstall"
   Delete "$INSTDIR\prepare_install.py"
   Delete "$INSTDIR\example-seed.zip"
   Delete "$INSTDIR\base-seed.zip"
+  Delete "$INSTDIR\example-engineering.zip"
+  Delete "$INSTDIR\base-engineering.zip"
   Delete "$INSTDIR\windows-package.json"
   Delete "$INSTDIR\installation-options.ini"
   Delete "$INSTDIR\WINDOWS.md"
