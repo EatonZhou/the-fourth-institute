@@ -65,8 +65,8 @@ def smoke(payload, destination, included):
             # Logs have instance-local paths but never contain invitation tokens.
             try:
                 command([python, launcher, "--platform", destination, "--unregister"], timeout=120)
-            except RuntimeError:
-                raise RuntimeError("Native smoke cleanup failed; no release will be produced")
+            except RuntimeError as exc:
+                raise RuntimeError(f"Native smoke cleanup failed; no release will be produced: {exc}") from exc
 
 
 def build(repo, output):
@@ -112,6 +112,24 @@ def build(repo, output):
              "--only-binary=:all:", "-r", payload / "code/requirements.txt"], env=env)
     # Check GUI and native imports, not merely package metadata.
     command([python, "-c", "import tkinter,ssl,psycopg,cryptography,psutil; r=tkinter.Tk(); r.update(); r.destroy()"], env=env)
+    # Exercise the real Darwin ACL API before starting any services.
+    command([python, "-c", """
+from pathlib import Path
+import subprocess, tempfile
+from management_common.file_permissions import atomic_write_private_bytes, read_private_bytes, PrivateFileError
+with tempfile.TemporaryDirectory() as tmp:
+    key = Path(tmp).resolve() / 'private/key'
+    atomic_write_private_bytes(key, b'fixture')
+    assert read_private_bytes(key) == b'fixture'
+    subprocess.run(['/bin/chmod', '+a', 'everyone allow read', str(key)], check=True)
+    try:
+        read_private_bytes(key)
+    except PrivateFileError:
+        pass
+    else:
+        raise AssertionError('An extended ACL grant was accepted')
+    assert key.read_bytes() == b'fixture'
+"""], cwd=payload / "code", env=env)
     command([python, payload / "code/scripts/bootstrap_portal", "doctor", "core", "--tools-only",
              "--venv", python.parent.parent, "--json"], env=env)
     bundled = bundle_native_dependencies(repo, payload, cache, target="macos/" + arch)
