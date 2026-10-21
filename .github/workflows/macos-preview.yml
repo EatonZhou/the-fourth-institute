@@ -2,22 +2,19 @@ name: macOS preview installer
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - .github/workflows/macos-preview.yml
-      - code/scripts/macos/release.json
 
 permissions:
   contents: read
 
 concurrency:
   group: macos-preview-release
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   package:
-    if: github.ref == 'refs/heads/main'
+    # Withdrawn at the user's request. Re-enable only after the reported
+    # installation/account failures are verified and a new release is requested.
+    if: ${{ false }}
     strategy:
       fail-fast: false
       matrix:

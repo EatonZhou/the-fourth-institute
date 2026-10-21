@@ -1,7 +1,8 @@
 # macOS 安装包 · 试用版
 
-支持 macOS 15 及以上，分别提供 Apple Silicon（arm64）和 Intel（x64）DMG。
-下载与校验文件见仓库的 macOS Preview Release。此版本仍在试用阶段，暂不支持覆盖升级。
+macOS 试用安装包已暂时下架，自动构建与发布暂停。待安装和 AI 接入问题修复、验证，
+并收到明确的新版发布要求后再恢复。以下保留开发验证和已有安装的操作说明。
+目标为 macOS 15 及以上，分别构建 Apple Silicon（arm64）和 Intel（x64）DMG，暂不支持覆盖升级。
 
 打开 DMG，将 **The Fourth Institute.app** 拖到 Applications，弹出磁盘映像，然后打开应用。
 首次启动可以取消勾选“安装 Lenia 预置案例”。不勾选时只解压基础资料，案例相关的

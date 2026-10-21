@@ -1,0 +1,96 @@
+name: Withdraw unusable macOS preview
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/withdraw-macos-preview.yml
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: macos-preview-release
+  cancel-in-progress: false
+
+jobs:
+  withdraw:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Remove withdrawn macOS downloads and build artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import urllib.error
+          import urllib.request
+
+          tag = 'macos-preview-20261021.10'
+          release_id = 419333979
+          commit = 'beca0a9fe9719642890f15d73cec8ccaeb7015e3'
+          root = 'https://api.github.com/repos/' + os.environ['GH_REPO']
+
+          def api(path, method='GET'):
+              request = urllib.request.Request(root + path, method=method, headers={
+                  'Authorization': 'Bearer ' + os.environ['GH_TOKEN'],
+                  'Accept': 'application/vnd.github+json',
+                  'User-Agent': 'TFI-withdraw-macos-preview',
+              })
+              try:
+                  with urllib.request.urlopen(request, timeout=30) as response:
+                      data = response.read()
+                      return json.loads(data) if data else None
+              except urllib.error.HTTPError as error:
+                  if error.code == 404:
+                      return None
+                  raise
+
+          release = api('/releases/tags/' + tag)
+          ref_path = '/git/refs/tags/' + tag
+          ref = api('/git/ref/tags/' + tag)
+          if release is not None and (release['id'] != release_id or release['tag_name'] != tag):
+              raise RuntimeError('Release changed; refusing to remove another publication')
+          if ref is not None and (ref['ref'] != 'refs/tags/' + tag or ref['object']['sha'] != commit):
+              raise RuntimeError('Tag changed; refusing to remove another source revision')
+          if release is not None:
+              api('/releases/' + str(release_id), 'DELETE')
+          if ref is not None:
+              api(ref_path, 'DELETE')
+          if api('/releases/tags/' + tag) is not None or api('/git/ref/tags/' + tag) is not None:
+              raise RuntimeError('Withdrawal is incomplete')
+
+          # Collect before deletion so pagination cannot skip shifted results.
+          workflow = api('/actions/workflows/macos-preview.yml')
+          if workflow is None:
+              raise RuntimeError('Cannot identify the macOS build workflow')
+          artifacts = []
+          page = 1
+          while True:
+              batch = api('/actions/artifacts?per_page=100&page=' + str(page))['artifacts']
+              artifacts.extend(a for a in batch if a['name'] in ('macos-arm64', 'macos-x64'))
+              if len(batch) < 100:
+                  break
+              page += 1
+          runs = {}
+          removed = 0
+          for artifact in artifacts:
+              run_id = artifact['workflow_run']['id']
+              if run_id not in runs:
+                  runs[run_id] = api('/actions/runs/' + str(run_id))
+              run = runs[run_id]
+              if run is None or run['workflow_id'] != workflow['id']:
+                  continue
+              path = '/actions/artifacts/' + str(artifact['id'])
+              api(path, 'DELETE')
+              if api(path) is not None:
+                  raise RuntimeError('Build artifact removal is incomplete')
+              removed += 1
+          print('Removed ' + tag + ', its release assets and tag, and ' + str(removed) + ' macOS build archives')
+          PY

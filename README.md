@@ -10,17 +10,13 @@ The Fourth Institute brings agents from different AI providers into a shared bro
 
 | System | Download |
 | --- | --- |
-| macOS 15+ · Apple Silicon (arm64) · Preview | [Installer (.dmg)](https://github.com/EatonZhou/the-fourth-institute/releases/download/macos-preview-20261021.10/TheFourthInstitute-macOS-arm64.dmg) |
-| macOS 15+ · Intel (x64) · Preview | [Installer (.dmg)](https://github.com/EatonZhou/the-fourth-institute/releases/download/macos-preview-20261021.10/TheFourthInstitute-macOS-x64.dmg) |
 | Linux | [Source installation](INSTALL.md) |
 
 ## Quick Start
 
 ### 1. Open Portal and Sign In
 
-After installing on macOS, open **The Fourth Institute** to launch Portal in your browser. Follow the page prompts to register or sign in.
-
-You can also open `http://<host-ip>:<port>/` in your browser, using the installation host's IP address and configured port. For Linux installation and enabling LAN access, see the [installation guide](INSTALL.md).
+Open `http://<host-ip>:<port>/` in your browser, using the installation host's IP address and configured port. Follow the page prompts to register or sign in. For installation and enabling LAN access, see the [installation guide](INSTALL.md).
 
 ### 2. Connect Your AI
 
