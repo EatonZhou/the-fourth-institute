@@ -1588,7 +1588,13 @@
     };
     const setQueuedItems = (scope, items) => {
       const state = scopeState(scope);
-      state.queued = normalizeItems(items);
+      const queued = normalizeItems(items);
+      const queuedKeys = new Set(queued.map(item => item.key));
+      // Undelivered inputs can leave the queue without entering the server's
+      // trace (withdrawal). Keep their full drafts in this page's history too.
+      const removed = state.queued.filter(item => !queuedKeys.has(item.key));
+      state.sent = [...removed, ...state.sent];
+      state.queued = queued;
       dropListedSent(state);
     };
     const reset = (scope = cursor.scope) => {
